@@ -8,6 +8,14 @@
   "addressLine1Placeholder": "Calle, apartado postal",
   "addressLine2Label": "Dirección Línea 2",
   "addressLine2Placeholder": "Ciudad, Estado, Código Postal, País",
+  "cityLabel": "Ciudad",
+  "cityPlaceholder": "Ciudad",
+  "stateLabel": "Estado / Provincia",
+  "statePlaceholder": "Estado / Provincia",
+  "zipCodeLabel": "Código Postal",
+  "zipCodePlaceholder": "Código Postal",
+  "countryLabel": "País",
+  "countryPlaceholder": "País",
   "contactEmailLabel": "Email de Contacto",
   "contactEmailPlaceholder": "Ingrese email de contacto",
   "contactPhoneLabel": "Teléfono de Contacto",
@@ -72,5 +80,121 @@
   "logoAlt": "Logotipo",
   "pendingUploadTag": "Carga pendiente",
   "pendingRemovalTag": "Eliminación pendiente",
-  "organizationLogoWillBeUsedText": "Se usará el logotipo de la organización"
+  "organizationLogoWillBeUsedText": "Se usará el logotipo de la organización",
+  "settingsSaveFailedError": "No se pudo guardar la configuración.",
+  "navCompanyDetails": "Detalles de la Empresa",
+  "navBranding": "Marca",
+  "navInvoiceTemplate": "Plantilla de Factura",
+  "navVisibility": "Visibilidad para el Cliente",
+  "navNotifications": "Notificaciones",
+  "navClientUsers": "Gestión de Usuarios del Cliente",
+  "navTemplates": "Plantillas de Permisos",
+  "navTicketing": "Config. de Tickets",
+  "invalidLogoFileTypeError": "Seleccione un archivo de imagen.",
+  "logoFileTooLargeError": "El logotipo debe ser menor de 2MB.",
+  "logoUploadFailedError": "No se pudo subir el logotipo.",
+  "portalLogoLabel": "Logotipo del Portal",
+  "portalTitleLabel": "Título del Portal",
+  "portalTitlePlaceholder": "ej., Centro de Clientes Acme",
+  "brandColorLabel": "Color de Marca",
+  "recommendedColorsLabel": "Recomendado",
+  "portalThemeLabel": "Tema",
+  "lightPortalButton": "Portal claro",
+  "darkPortalButton": "Portal oscuro",
+  "defaultPortalTitlePreview": "Portal de Clientes",
+  "previewWelcomeText": "Bienvenido de nuevo",
+  "previewLatestInvoiceText": "Última factura",
+  "previewInvoiceSampleText": "USD 2.500,00 · vence en 6 días",
+  "previewViewTasksButton": "Ver mis tareas",
+  "brandingTitle": "Marca",
+  "invoiceTemplateTitle": "Plantilla de Factura",
+  "invoiceTemplateDescription": "Elija cómo se ven las facturas al descargarlas o previsualizarlas para su equipo y clientes.",
+  "invoiceMoreCustomizationTitle": "Más personalización próximamente",
+  "invoiceMoreCustomizationDescription": "Más opciones de diseño y maquetación para su plantilla de factura están en camino.",
+  "invoiceAccentColorLabel": "Color de Acento",
+  "invoiceAccentColorHint": "Usa el color de marca de la sección Marca.",
+  "invoiceShowLogoLabel": "Mostrar Logotipo de la Empresa en la Factura",
+  "invoiceShowLogoDescription": "Muestra el logotipo de su portal en el encabezado de la factura.",
+  "invoicePreviewLabel": "Vista previa",
+  "visibilityTitle": "Visibilidad para el Cliente",
+  "visibilityDescription": "Elija qué secciones aparecen en el portal de clientes.",
+  "visibility": {
+    "projectPlan": {
+      "label": "Plan de Proyecto (Tareas)",
+      "description": "Muestra la sección de Proyectos en el portal de clientes."
+    },
+    "ganttTimeline": {
+      "label": "Gantt / Cronograma",
+      "description": "Reservado para cuando exista una vista de Gantt/Cronograma en el portal de clientes; sin efecto por ahora."
+    },
+    "filesDocuments": {
+      "label": "Archivos y Documentos",
+      "description": "Reservado para cuando exista una sección independiente de Archivos en el portal de clientes; sin efecto por ahora."
+    },
+    "invoices": {
+      "label": "Facturas",
+      "description": "Muestra la sección de Facturas en el portal de clientes."
+    },
+    "feedbackForms": {
+      "label": "Formularios de Comentarios",
+      "description": "Reservado para cuando existan Formularios de Comentarios en el portal de clientes; sin efecto por ahora."
+    },
+    "teamMembers": {
+      "label": "Miembros del Equipo",
+      "description": "Reservado para cuando exista una página de Miembros del Equipo orientada al cliente; sin efecto por ahora."
+    },
+    "projectUpdates": {
+      "label": "Actualizaciones del Proyecto",
+      "description": "Reservado para cuando existan Actualizaciones del Proyecto en el portal de clientes; sin efecto por ahora."
+    },
+    "chat": {
+      "label": "Charla",
+      "description": "Muestra la sección de Chats en el portal de clientes."
+    }
+  },
+  "notificationsTitle": "Notificaciones",
+  "notificationsDescription": "Elija sobre qué se notifica a su equipo a partir de la actividad de los clientes.",
+  "notifications": {
+    "newMessage": {
+      "label": "Nuevo mensaje",
+      "description": "Notifica al equipo cuando un cliente envía un nuevo mensaje."
+    },
+    "taskStatusChange": {
+      "label": "Cambio de estado de tarea",
+      "description": "Notifica al equipo cuando cambia el estado de una tarea visible para el cliente."
+    },
+    "fileUploaded": {
+      "label": "Archivo subido",
+      "description": "Notifica al equipo cuando un cliente sube un archivo."
+    }
+  },
+  "clientUsers": {
+    "bannerTitle": "Aún no aplicado",
+    "bannerDescription": "Estos ajustes definen lo que el punto de contacto (POC) de una empresa podrá hacer una vez que el portal orientado al cliente lo admita. Por ahora, POC es solo una etiqueta de directorio: nada de esto se aplica todavía.",
+    "selfManagementTitle": "Autogestión de POC",
+    "selfManagementDescription": "Permita que el propio punto de contacto de una empresa gestione quién de su empresa tiene acceso al portal, en lugar de que cada adición o eliminación pase por su equipo.",
+    "canAdd": {
+      "label": "Permitir que los POC agreguen usuarios de la empresa",
+      "description": "Un POC puede invitar a un nuevo compañero de su propia empresa al portal de clientes."
+    },
+    "canRemove": {
+      "label": "Permitir que los POC eliminen usuarios de la empresa",
+      "description": "Un POC puede revocar el acceso al portal de otro usuario de su propia empresa."
+    },
+    "guardrailsTitle": "Siempre verdadero, sin importar los interruptores anteriores",
+    "guardrail1": "Un punto de contacto solo ve y gestiona los usuarios de su propia empresa, nunca los de otro cliente.",
+    "guardrail2": "Un punto de contacto nunca ve el directorio interno de su equipo ni obtiene acceso de administrador de la organización.",
+    "guardrail3": "Eliminar al único punto de contacto de una empresa nunca elimina la empresa ni sus otros usuarios; simplemente la deja sin punto de contacto."
+  },
+  "permissionTemplates": {
+    "bannerTitle": "Solo lectura",
+    "bannerDescription": "Elegir una plantilla establece ese nivel de permiso en todos los proyectos actuales de la empresa con un solo clic; los administradores pueden seguir ajustando el acceso proyecto por proyecto después. Disponible al agregar un usuario de empresa o desde Asignar Proyectos en cualquier usuario existente."
+  },
+  "ticketingConfig": {
+    "title": "Estados de tickets",
+    "description": "Abierto, En Progreso y Resuelto siempre existen y no se pueden eliminar. Añade estados definidos por tu equipo para flujos de trabajo específicos — aparecerán tanto en la Lista como en el Tablero de Tickets.",
+    "defaultStatusesLabel": "Estados predeterminados",
+    "defaultStatusesHint": "Estos siempre existen y no se pueden eliminar.",
+    "customStatusesLabel": "Estados personalizados"
+  }
 }

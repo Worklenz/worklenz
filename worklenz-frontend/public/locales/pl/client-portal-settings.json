@@ -1,0 +1,200 @@
+{
+  "title": "Ustawienia portalu",
+  "companyDetailsTitle": "Dane firmy",
+  "companyDetailsDescription": "Dane te będą widoczne na Twoich fakturach",
+  "companyNameLabel": "Nazwa firmy",
+  "companyNamePlaceholder": "Wpisz nazwę swojej firmy",
+  "addressLine1Label": "Linia adresu 1",
+  "addressLine1Placeholder": "Adres, P.O. pudełko",
+  "addressLine2Label": "Linia adresu 2",
+  "addressLine2Placeholder": "Miasto, stan, kod pocztowy, kraj",
+  "contactEmailLabel": "Kontakt e-mail",
+  "contactEmailPlaceholder": "Wpisz kontaktowy adres e-mail",
+  "contactPhoneLabel": "Kontakt Telefon",
+  "contactPhonePlaceholder": "Wpisz telefon kontaktowy",
+  "invalidPhoneNumberFormat": "Nieprawidłowy format numeru telefonu. Użyj formatu międzynarodowego (np. +1-234-567-8900)",
+  "invoiceFooterLabel": "Komunikat w stopce faktury",
+  "invoiceFooterPlaceholder": "np. „Dziękujemy za Twoją firmę!”",
+  "currentLogoText": "Aktualne logo",
+  "uploadLogoText": "Prześlij nowe logo (zalecany rozmiar: 250x100)",
+  "uploadLogoAltText": "Kliknij lub przeciągnij plik do tego obszaru, aby go przesłać",
+  "logoManagementTitle": "Zarządzanie logo",
+  "logoPreviewTitle": "Podgląd logo",
+  "noLogoUploadedText": "Nie przesłano żadnego logo",
+  "headerDisplayTag": "Wyświetlanie nagłówka",
+  "responsiveTag": "Responsywny",
+  "autoScaledTag": "Automatyczne skalowanie",
+  "logoGuidelinesTitle": "Wytyczne dotyczące logo",
+  "recommendedSizeText": "• Zalecany rozmiar: 250x100 pikseli",
+  "maxFileSizeText": "• Maksymalny rozmiar pliku: 2MB",
+  "supportedFormatsText": "• Obsługiwane formaty: PNG, JPG, SVG",
+  "autoScaledInfoText": "• Logo zostanie automatycznie przeskalowane w celu dopasowania",
+  "benefitsTitle": "Korzyści",
+  "professionalBrandingText": "Profesjonalny branding portalu Twojego klienta",
+  "consistentIdentityText": "Spójna identyfikacja wizualna na różnych platformach",
+  "enhancedTrustText": "Większe zaufanie i uznanie klientów",
+  "previewLogoTooltip": "Podgląd logo",
+  "removeLogoTooltip": "Usuń logo",
+  "customizePortalText": "Dostosuj wygląd i branding swojego portalu klienta",
+  "saveButton": "Zapisz zmiany",
+  "cancelButton": "Anuluj",
+  "discardButton": "Odrzuć zmiany",
+  "pendingChangesText": "Masz niezapisane zmiany",
+  "newLogoText": "Nowe logo (w oczekiwaniu)",
+  "logoUploadedText": "Logo zostało wybrane pomyślnie",
+  "settingsSavedText": "Ustawienia zostały zapisane pomyślnie",
+  "logoRemovedText": "Usunięto logo",
+  "savingText": "Zapisywanie...",
+  "selectFileButton": "Wybierz Logo",
+  "newLogoPendingTag": "Nowe logo (w oczekiwaniu)",
+  "fromOrganizationTag": "Z organizacji",
+  "customLogoTag": "Niestandardowe logo",
+  "logoWillBeRemovedText": "Logo zostanie usunięte",
+  "afterRemovalOrgLogoText": "Po usunięciu logo organizacji zostanie użyte automatycznie.",
+  "noLogoWillBeDisplayedText": "Żadne logo nie będzie wyświetlane.",
+  "usingOrganizationLogoText": "Korzystanie z logo organizacji",
+  "syncedFromOrgSettingsText": "To logo jest automatycznie synchronizowane z ustawieniami Twojej organizacji. Pojawia się w e-mailach i fakturach portalu klienta.",
+  "manageInAdminCenterText": "Zarządzaj w Centrum administracyjnym",
+  "logoGuidelinesSummaryText": "Wytyczne dotyczące logo",
+  "clickToPreviewText": "Kliknij, aby wyświetlić podgląd",
+  "saveNewLogoButton": "Zapisz nowe logo",
+  "changeLogoButton": "Zmień logo",
+  "uploadLogoButton": "Prześlij logo",
+  "removeLogoButton": "Usuń logo",
+  "useCustomLogoInsteadButton": "Zamiast tego użyj niestandardowego logo",
+  "confirmRemovalButton": "Potwierdź usunięcie",
+  "noLogoUploadedText2": "Nie przesłano żadnego logo",
+  "usingOrganizationLogoText2": "Korzystanie z logo organizacji",
+  "clickToUploadLogoText": "Kliknij, aby przesłać logo dla swojego portalu klienta",
+  "syncedFromOrgSettingsShortText": "To logo jest synchronizowane z ustawieniami Twojej organizacji.",
+  "newClientPortalLogoAlt": "Nowe logo Portalu Klienta",
+  "clientPortalLogoAlt": "Logo Portalu Klienta",
+  "logoAlt": "Logo",
+  "pendingUploadTag": "Oczekujące na przesłanie",
+  "pendingRemovalTag": "Oczekujące na usunięcie",
+  "organizationLogoWillBeUsedText": "Wykorzystane zostanie logo organizacji",
+  "cityLabel": "Miasto",
+  "cityPlaceholder": "Miasto",
+  "stateLabel": "Województwo / Region",
+  "statePlaceholder": "Województwo / Region",
+  "zipCodeLabel": "Kod pocztowy",
+  "zipCodePlaceholder": "Kod pocztowy",
+  "countryLabel": "Kraj",
+  "countryPlaceholder": "Kraj",
+  "settingsSaveFailedError": "Nie udało się zapisać ustawień.",
+  "navCompanyDetails": "Dane firmy",
+  "navBranding": "Branding",
+  "navInvoiceTemplate": "Szablon faktury",
+  "navVisibility": "Widoczność dla klienta",
+  "navNotifications": "Powiadomienia",
+  "navClientUsers": "Zarządzanie użytkownikami klienckimi",
+  "navTemplates": "Szablony uprawnień",
+  "navTicketing": "Konfiguracja zgłoszeń",
+  "invalidLogoFileTypeError": "Wybierz plik graficzny.",
+  "logoFileTooLargeError": "Logo musi być mniejsze niż 2 MB.",
+  "logoUploadFailedError": "Nie udało się przesłać logo.",
+  "portalLogoLabel": "Logo portalu",
+  "portalTitleLabel": "Tytuł portalu",
+  "portalTitlePlaceholder": "np. Acme Client Hub",
+  "brandColorLabel": "Kolor marki",
+  "recommendedColorsLabel": "Zalecane",
+  "portalThemeLabel": "Motyw",
+  "lightPortalButton": "Jasny portal",
+  "darkPortalButton": "Ciemny portal",
+  "defaultPortalTitlePreview": "Portal klienta",
+  "previewWelcomeText": "Witamy ponownie",
+  "previewLatestInvoiceText": "Najnowsza faktura",
+  "previewInvoiceSampleText": "2500,00 USD · termin płatności za 6 dni",
+  "previewViewTasksButton": "Zobacz moje zadania",
+  "brandingTitle": "Branding",
+  "invoiceTemplateTitle": "Szablon faktury",
+  "invoiceTemplateDescription": "Wybierz, jak wyglądają faktury pobierane lub podglądane przez Twój zespół i klientów.",
+  "invoiceMoreCustomizationTitle": "Więcej opcji personalizacji już wkrótce",
+  "invoiceMoreCustomizationDescription": "Dodatkowe opcje układu i wyglądu szablonu faktury są w przygotowaniu.",
+  "invoiceAccentColorLabel": "Kolor akcentu",
+  "invoiceAccentColorHint": "Wykorzystuje Twój kolor marki zdefiniowany w sekcji Marka.",
+  "invoiceShowLogoLabel": "Pokaż logo firmy na fakturze",
+  "invoiceShowLogoDescription": "Wyświetla logo Twojego portalu w nagłówku faktury.",
+  "invoicePreviewLabel": "Podgląd",
+  "visibilityTitle": "Widoczność dla klienta",
+  "visibilityDescription": "Wybierz, które sekcje pojawiają się w portalu klienta.",
+  "visibility": {
+    "projectPlan": {
+      "label": "Plan projektu (Zadania)",
+      "description": "Pokazuje sekcję Projekty w portalu klienta."
+    },
+    "ganttTimeline": {
+      "label": "Gantt / Oś czasu",
+      "description": "Zarezerwowane na czas, gdy w portalu klienta pojawi się widok Gantt/Oś czasu — na razie bez efektu."
+    },
+    "filesDocuments": {
+      "label": "Pliki i dokumenty",
+      "description": "Zarezerwowane na czas, gdy w portalu klienta pojawi się samodzielna sekcja Pliki — na razie bez efektu."
+    },
+    "invoices": {
+      "label": "Faktury",
+      "description": "Pokazuje sekcję Faktury w portalu klienta."
+    },
+    "feedbackForms": {
+      "label": "Formularze opinii",
+      "description": "Zarezerwowane na czas, gdy w portalu klienta pojawią się Formularze opinii — na razie bez efektu."
+    },
+    "teamMembers": {
+      "label": "Członkowie zespołu",
+      "description": "Zarezerwowane na czas, gdy pojawi się strona Członkowie zespołu widoczna dla klienta — na razie bez efektu."
+    },
+    "projectUpdates": {
+      "label": "Aktualizacje projektu",
+      "description": "Zarezerwowane na czas, gdy w portalu klienta pojawią się Aktualizacje projektu — na razie bez efektu."
+    },
+    "chat": {
+      "label": "Czat",
+      "description": "Pokazuje sekcję Czaty w portalu klienta."
+    }
+  },
+  "notificationsTitle": "Powiadomienia",
+  "notificationsDescription": "Wybierz, o czym Twój zespół ma być powiadamiany w związku z aktywnością klientów.",
+  "notifications": {
+    "newMessage": {
+      "label": "Nowa wiadomość",
+      "description": "Powiadamiaj zespół, gdy klient wyśle nową wiadomość."
+    },
+    "taskStatusChange": {
+      "label": "Zmiana statusu zadania",
+      "description": "Powiadamiaj zespół, gdy zmieni się status zadania widocznego dla klienta."
+    },
+    "fileUploaded": {
+      "label": "Przesłano plik",
+      "description": "Powiadamiaj zespół, gdy klient prześle plik."
+    }
+  },
+  "clientUsers": {
+    "bannerTitle": "Jeszcze nieegzekwowane",
+    "bannerDescription": "Te ustawienia określają, co osoba kontaktowa (POC) firmy będzie mogła robić, gdy portal klienta zacznie to obsługiwać. Na razie POC to tylko etykieta w katalogu — nic tutaj nie jest jeszcze egzekwowane.",
+    "selfManagementTitle": "Samodzielne zarządzanie przez osobę kontaktową",
+    "selfManagementDescription": "Pozwól osobie kontaktowej firmy zarządzać tym, kto z jej firmy ma dostęp do portalu, zamiast kierować każde dodanie/usunięcie przez Twój zespół.",
+    "canAdd": {
+      "label": "Pozwól osobom kontaktowym dodawać użytkowników firmy",
+      "description": "Osoba kontaktowa może zaprosić nowego współpracownika ze swojej firmy do portalu klienta."
+    },
+    "canRemove": {
+      "label": "Pozwól osobom kontaktowym usuwać użytkowników firmy",
+      "description": "Osoba kontaktowa może odebrać dostęp do portalu innemu użytkownikowi ze swojej firmy."
+    },
+    "guardrailsTitle": "Zawsze prawdziwe, niezależnie od powyższych ustawień",
+    "guardrail1": "Osoba kontaktowa widzi i zarządza wyłącznie użytkownikami swojej własnej firmy — nigdy innego klienta.",
+    "guardrail2": "Osoba kontaktowa nigdy nie widzi wewnętrznego katalogu Twojego zespołu ani nie uzyskuje dostępu administratora organizacji.",
+    "guardrail3": "Usunięcie jedynej osoby kontaktowej firmy nigdy nie usuwa firmy ani jej pozostałych użytkowników — po prostu pozostawia tę firmę bez osoby kontaktowej."
+  },
+  "permissionTemplates": {
+    "bannerTitle": "Tylko do odczytu",
+    "bannerDescription": "Wybranie szablonu ustawia ten poziom uprawnień dla wszystkich bieżących projektów firmy jednym kliknięciem — administratorzy mogą później dostosować dostęp dla poszczególnych projektów. Dostępne podczas dodawania użytkownika firmy lub w opcji Przypisz projekty dla dowolnego istniejącego użytkownika."
+  },
+  "ticketingConfig": {
+    "title": "Statusy zgłoszeń",
+    "description": "Otwarte, W trakcie i Rozwiązane zawsze istnieją i nie można ich usunąć. Dodaj statusy zdefiniowane przez zespół dla przepływów pracy specyficznych dla Twojego zespołu — pojawiają się one zarówno w widoku Listy, jak i Tablicy zgłoszeń.",
+    "defaultStatusesLabel": "Statusy domyślne",
+    "defaultStatusesHint": "Te zawsze istnieją i nie można ich usunąć.",
+    "customStatusesLabel": "Statusy niestandardowe"
+  }
+}

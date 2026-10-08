@@ -1,4 +1,5 @@
 {
+  "backlogGroupName": "Backlog",
   "task": {
     "open": "Open",
     "clickViewPhaseDetails": "Click to view phase details",

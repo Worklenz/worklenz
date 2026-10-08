@@ -1,0 +1,29 @@
+{
+  "pageTitle": "Pomoc",
+  "pageDescription": "Dokumentacja, informacje o wersji, linki społecznościowe i informacje o wersji.",
+  "opensInNewTab": "otwiera się w nowej karcie",
+  "opensEmailApp": "otwiera aplikację e-mail",
+  "items": {
+    "documentation": "Dokumentacja",
+    "releaseNotes": "Informacje o wydaniu",
+    "changelog": "Dziennik zmian",
+    "emailSupport": "Wsparcie e-mailowe",
+    "youtube": "YouTube",
+    "discord": "Niezgoda",
+    "github": "GitHub",
+    "facebook": "Facebooku",
+    "linkedin": "LinkedIn",
+    "x": "X",
+    "privacyPolicy": "Polityka prywatności",
+    "about": "O"
+  },
+  "releaseNotes": {
+    "unavailable": "Nie opublikowano jeszcze żadnych informacji o wydaniu",
+    "loadFailed": "Nie udało się wczytać informacji o wersji. Kliknij, aby spróbować ponownie.",
+    "loadFailedMessage": "Nie udało się wczytać informacji o wersji. Spróbuj ponownie."
+  },
+  "about": {
+    "version": "Wersja",
+    "lastUpdated": "Ostatnia aktualizacja"
+  }
+}

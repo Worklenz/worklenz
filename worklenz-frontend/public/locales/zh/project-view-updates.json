@@ -46,5 +46,10 @@
   "convertToTaskError": "创建任务失败",
   "convertToTaskEmpty": "消息没有可用作任务名称的文本",
   "attachFile": "附加文件",
-  "attachmentUploadError": "附件上传失败"
+  "attachmentUploadError": "附件上传失败",
+  "edited": "(已编辑)",
+  "editedTooltip": "由 {{author}} 于 {{time}} 编辑",
+  "unknown": "未知",
+  "you": "你",
+  "attachment": "附件"
 }

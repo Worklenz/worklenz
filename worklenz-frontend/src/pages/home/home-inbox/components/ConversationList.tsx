@@ -70,19 +70,25 @@ const ConversationList: React.FC<ConversationListProps> = ({
           <Flex vertical align="center" justify="center" gap={10} style={{ padding: 24, textAlign: 'center' }}>
             {search ? (
               <>
-                <Typography.Text type="secondary">{t('noConversations')}</Typography.Text>
+                <Typography.Text type="secondary">
+                  {t('noConversations', { defaultValue: 'No conversations found' })}
+                </Typography.Text>
                 <Button size="small" onClick={() => onSearchChange('')}>
-                  {t('clearSearch')}
+                  {t('clearSearch', { defaultValue: 'Clear search' })}
                 </Button>
               </>
             ) : (
               <>
-                <Typography.Text strong>{t('noConversationsYet')}</Typography.Text>
+                <Typography.Text strong>
+                  {t('noConversationsYet', { defaultValue: 'No conversations yet' })}
+                </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 12, maxWidth: 220 }}>
-                  {t('startFirstChat')}
+                  {t('startFirstChat', {
+                    defaultValue: 'Start a conversation with a project or client to see it here.',
+                  })}
                 </Typography.Text>
                 <Button size="small" type="primary" icon={<PlusOutlined />} onClick={onNewChat}>
-                  {t('newChat')}
+                  {t('newChat', { defaultValue: 'New chat' })}
                 </Button>
               </>
             )}

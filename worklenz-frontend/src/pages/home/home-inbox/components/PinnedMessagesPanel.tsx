@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
+import { formatDate } from '@/utils/dateUtils';
 import { Flex, Spin, Tooltip, Typography } from '@/shared/antd-imports';
 import { CloseOutlined, PushpinFilled } from '@ant-design/icons';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
@@ -20,7 +21,7 @@ interface PinnedMessagesPanelProps {
 }
 
 const PinnedMessagesPanel: React.FC<PinnedMessagesPanelProps> = ({ projectId, onClose }) => {
-  const { t } = useTranslation('home-inbox');
+  const { t, i18n } = useTranslation('home-inbox');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { socket } = useSocket();
 
@@ -136,7 +137,7 @@ const PinnedMessagesPanel: React.FC<PinnedMessagesPanelProps> = ({ projectId, on
                 {item.content_preview}
               </div>
               <div style={{ fontSize: 11, color: textSec, marginTop: 4 }}>
-                {item.created_at ? dayjs(item.created_at).format('MMM D, YYYY h:mm A') : ''}
+                {item.created_at ? formatDate(item.created_at, 'MMM D, YYYY h:mm A', i18n.language) : ''}
                 {item.pinned_by_name
                   ? ` · ${t('pinnedBy', { defaultValue: 'Pinned by' })} ${item.pinned_by_name}`
                   : ''}

@@ -10,7 +10,43 @@ import {
 import { AvatarNamesMap } from '@/shared/constants';
 import { useAuthService } from '@/hooks/useAuth';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { FilterSection, ThemeClasses } from './types';
+
+const MANAGE_BUTTON_BASE_CLASS =
+  'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2';
+
+const getManageButtonThemeClass = (isDarkMode: boolean) =>
+  isDarkMode
+    ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
+    : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white';
+
+interface ManagePhasesButtonProps {
+  isDarkMode: boolean;
+  onClick: () => void;
+}
+
+/** "Manage Phases" action; reads "Manage Sprints" in software projects. */
+export const ManagePhasesButton: React.FC<ManagePhasesButtonProps> = ({ isDarkMode, onClick }) => {
+  const { t } = useTranslation('task-list-filters');
+  const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+  const label = isSoftwareProjectType(projectType)
+    ? t('manageSprints', { defaultValue: 'Manage Sprints' })
+    : `${t('manage', { defaultValue: 'Manage' })} ${t('phasesText', { defaultValue: 'Phases' })}`;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`${MANAGE_BUTTON_BASE_CLASS} ${getManageButtonThemeClass(isDarkMode)}`}
+    >
+      <SettingOutlined className="w-3.5 h-3.5" />
+      {label}
+    </button>
+  );
+};
 
 interface FilterDropdownProps {
   section: FilterSection;
@@ -157,28 +193,13 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
 
       {section.id === 'groupBy' && canConfigure && (
         <div className="inline-flex items-center gap-1 ml-2">
-          {section.selectedValues[0] === 'phase' && (
-            <button
-              onClick={onManagePhase}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                isDarkMode
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
-                  : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
-              }`}
-            >
-              <SettingOutlined className="w-3.5 h-3.5" />
-              {t('manage', { defaultValue: 'Manage' })}{' '}
-              {t('phasesText', { defaultValue: 'Phases' })}
-            </button>
+          {section.selectedValues[0] === 'phase' && onManagePhase && (
+            <ManagePhasesButton isDarkMode={isDarkMode} onClick={onManagePhase} />
           )}
           {section.selectedValues[0] === 'status' && (
             <button
               onClick={onManageStatus}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                isDarkMode
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
-                  : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
-              }`}
+              className={`${MANAGE_BUTTON_BASE_CLASS} ${getManageButtonThemeClass(isDarkMode)}`}
             >
               <SettingOutlined className="w-3.5 h-3.5" />
               {t('manageStatuses', { defaultValue: 'Manage Statuses' })}

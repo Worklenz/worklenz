@@ -1,0 +1,16 @@
+{
+  "taskAssigned": "<strong>{{reporter}}</strong> te ha asignado en <strong>{{task}}</strong>",
+  "taskRemoved": "<strong>{{reporter}}</strong> te ha eliminado de <strong>{{task}}</strong>",
+  "taskAdded": "<strong>{{user}}</strong> añadió «<strong>{{task}}</strong>» a «<strong>{{project}}</strong>»",
+  "taskRemovedFromProject": "<strong>{{user}}</strong> eliminó «<strong>{{task}}</strong>» de «<strong>{{project}}</strong>»",
+  "addedToProject": "Has sido añadido a <strong>{{project}}</strong> por <strong>{{user}}</strong>",
+  "removedFromProject": "Has sido eliminado de <strong>{{project}}</strong> por <strong>{{user}}</strong>",
+  "addedToTeam": "Has sido añadido a <strong>{{team}}</strong>",
+  "removedFromTeam": "Has sido eliminado de <strong>{{team}}</strong> por <strong>{{user}}</strong>",
+  "commentAdded": "<strong>{{user}}</strong> añadió un comentario en <strong>{{task}}</strong>",
+  "mentionedInComment": "<strong>{{user}}</strong> te mencionó en un comentario en <strong>{{task}}</strong>",
+  "mentionedInProjectComment": "<strong>{{user}}</strong> te mencionó en un comentario en <strong>{{project}}</strong>",
+  "phaseTaskAssigned": "Se te ha asignado una tarea en <strong>{{phase}}</strong>: <strong>{{task}}</strong>",
+  "orgSwapped": "Tu organización <strong>{{previousOrganization}}</strong> se intercambió con <strong>{{organization}}</strong>. Ahora eres su propietario.",
+  "teamOwnershipChanged": "Tu propiedad de <strong>{{team}}</strong> ha cambiado."
+}

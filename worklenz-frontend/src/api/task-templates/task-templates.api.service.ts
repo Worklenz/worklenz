@@ -89,6 +89,16 @@ export const taskTemplatesApiService = {
     return response.data;
   },
 
+  /** One-click duplicate ("Copy of …"). */
+  duplicateTemplate: async (
+    id: string
+  ): Promise<IServerResponse<{ id: string; name: string }>> => {
+    const response = await apiClient.post<IServerResponse<{ id: string; name: string }>>(
+      `${rootUrl}/${id}/duplicate`
+    );
+    return response.data;
+  },
+
   updateTemplateScope: async (
     id: string,
     scope: 'team' | 'organization'

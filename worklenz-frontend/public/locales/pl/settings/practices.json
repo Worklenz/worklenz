@@ -1,0 +1,22 @@
+{
+  "title": "Zarządzaj praktykami",
+  "nameColumn": "Imię",
+  "search": "Praktyki wyszukiwania",
+  "createPracticeButton": "Stwórz praktykę",
+  "createPracticeDrawerTitle": "Stwórz praktykę",
+  "updatePracticeDrawerTitle": "Aktualizuj praktykę",
+  "nameLabel": "Imię",
+  "namePlaceholder": "Wpisz nazwę praktyki",
+  "nameRequiredError": "Nazwa praktyki jest wymagana",
+  "createButton": "Utwórz",
+  "updateButton": "Aktualizacja",
+  "editTooltip": "Edytuj",
+  "deleteTooltip": "Usuń",
+  "deleteConfirmationTitle": "Czy na pewno chcesz usunąć tę praktykę?",
+  "deleteConfirmationOk": "Usuń",
+  "deleteConfirmationCancel": "Anuluj",
+  "fetchPracticeErrorMessage": "Nie udało się pobrać ćwiczeń",
+  "createPracticeErrorMessage": "Nie udało się utworzyć praktyki",
+  "updatePracticeErrorMessage": "Nie udało się zaktualizować praktyki",
+  "pinTooltip": "Przypnij do paska nawigacyjnego"
+}

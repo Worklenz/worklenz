@@ -153,6 +153,10 @@ export const evt_settings_labels_delete = 'settings_labels_delete';
 export const evt_settings_category_delete = 'settings_category_delete';
 export const evt_settings_task_templates_delete = 'settings_task_templates_delete';
 export const evt_settings_profile_picture_update = 'settings_profile_picture_update';
+export const evt_settings_help_visit = 'settings_help_visit';
+// One event per Help row click; the row is identified by an `item` property
+// (see HelpItemId in pages/settings/help/help-settings.tsx).
+export const evt_settings_help_item_click = 'settings_help_item_click';
 
 // Theme & UI
 export const evt_dark_mode_toggled = 'dark_mode_toggled';
@@ -170,6 +174,7 @@ export const evt_reporting_overview = 'reporting_overview_visit';
 export const evt_reporting_allocation = 'reporting_allocation_visit';
 export const evt_reporting_projects_overview = 'reporting_projects_overview_visit';
 export const evt_reporting_projects_custom = 'reporting_projects_custom_visit';
+export const evt_reporting_progress_tracking = 'reporting_progress_tracking_visit';
 
 // Billing & Subscription
 export const evt_billing_current_bill = 'billing_current_bill';

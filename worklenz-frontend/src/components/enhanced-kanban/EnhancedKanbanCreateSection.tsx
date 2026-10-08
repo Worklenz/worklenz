@@ -82,9 +82,10 @@ const EnhancedKanbanCreateSection: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isAdding, showCategoryDropdown]);
 
-  // Don't show for priority grouping, guest project members, or users without permissions
+  // Don't show for priority/assignee grouping, guest project members, or users without permissions
   if (
     groupBy === IGroupBy.PRIORITY ||
+    groupBy === IGroupBy.ASSIGNEE ||
     isGuestProjectMember ||
     (!isOwnerorAdmin && !isProjectManager)
   ) {

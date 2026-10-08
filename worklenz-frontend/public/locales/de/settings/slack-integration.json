@@ -73,7 +73,7 @@
     "project": "Projekt",
     "slackChannel": "Slack-Kanal",
     "notifications": "Benachrichtigungen",
-    "status": "Status",
+    "status": "Alle Status",
     "statusActive": "Aktiv",
     "statusInactive": "Inaktiv",
     "active": "Aktiv",

@@ -3,6 +3,7 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import db from "../config/db";
 import { generatePrefixedToken, isValidBase62 } from "../utils/base62";
+import { linkContactToLogin } from "./client-contacts-service";
 
 interface ClientOrganization {
   id: string;
@@ -138,6 +139,16 @@ class TokenService {
     }
   }
 
+  // The organization link is a signed JWT, so a valid signature alone does not mean it is still the
+  // current link: regenerating replaces the stored token. Accepting must also match the stored one.
+  async isCurrentOrganizationInvite(token: string): Promise<boolean> {
+    const result = await db.query(
+      `SELECT 1 FROM organization_invitations WHERE token = $1 AND expires_at > NOW() LIMIT 1`,
+      [token]
+    );
+    return result.rows.length > 0;
+  }
+
   // Create invitation record in database
   async createInvitation(inviteData: {
     clientId: string;
@@ -146,14 +157,16 @@ class TokenService {
     role: string;
     invitedBy: string;
     token: string;
+    // The company user this invitation is for, so its portal status can be read per user.
+    clientContactId?: string | null;
   }): Promise<string> {
     const query = `
       INSERT INTO client_invitations (
-        id, client_id, email, name, role, invited_by, token, status, created_at, expires_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW() + INTERVAL '7 days')
+        id, client_id, email, name, role, invited_by, token, status, created_at, expires_at, client_contact_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW() + INTERVAL '7 days', $9)
       RETURNING id
     `;
-    
+
     const invitationId = crypto.randomUUID();
     const values = [
       invitationId,
@@ -163,7 +176,8 @@ class TokenService {
       inviteData.role,
       inviteData.invitedBy,
       inviteData.token,
-      "pending"
+      "pending",
+      inviteData.clientContactId ?? null
     ];
 
     const result = await db.query(query, values);
@@ -178,8 +192,13 @@ class TokenService {
       JOIN clients c ON ci.client_id = c.id
       LEFT JOIN teams t ON c.team_id = t.id
       WHERE ci.token = $1 AND ci.status = 'pending' AND ci.expires_at > NOW()
+        -- A disabled company user can't accept, even with a link that was sent before
+        AND NOT EXISTS (
+          SELECT 1 FROM client_contacts cc
+          WHERE cc.id = ci.client_contact_id AND cc.disabled_at IS NOT NULL
+        )
     `;
-    
+
     const result = await db.query(query, [token]);
     return result.rows[0] || null;
   }
@@ -310,6 +329,17 @@ class TokenService {
         ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, email = $2, password_hash = $3, updated_at = NOW()
       `;
       await client.query(portalAccessQuery, [invitation.client_id, invitation.email, (invitation as any).password_hash]);
+
+      // Tie the company user to the login that was just created or updated (creating the company
+      // user first if the invitation predates company users).
+      await linkContactToLogin(client, {
+        teamId: invitation.team_id,
+        clientId: invitation.client_id,
+        clientUserId: actualClientUserId,
+        email: invitation.email,
+        name: userData.name,
+        contactId: invitation.client_contact_id,
+      });
 
       await client.query("COMMIT");
 

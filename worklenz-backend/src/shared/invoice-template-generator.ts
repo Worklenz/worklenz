@@ -12,6 +12,15 @@ interface InvoiceData {
   amount: number;
   currency: string;
   isOverdue?: boolean;
+  /** unpaid | partially_paid | paid — shown as the document badge. */
+  paymentStatus?: string;
+  lineItems?: Array<{ description: string; quantity: number; rate: number; amount: number }>;
+  subtotal?: number;
+  discountType?: string | null;
+  discountValue?: number;
+  discountAmount?: number;
+  taxRate?: number;
+  taxAmount?: number;
   client: {
     name: string;
     companyName?: string | null;
@@ -35,7 +44,15 @@ interface InvoiceData {
     phone: string | null;
     addressLine1: string | null;
     addressLine2: string | null;
+    city?: string | null;
+    state?: string | null;
+    zipCode?: string | null;
+    country?: string | null;
     invoiceFooterMessage: string | null;
+    /** Defaults to 'classic' (today's centered-header, bordered-table look) when unset. */
+    templateStyle?: 'classic' | 'modern';
+    /** Defaults to true when unset. */
+    showLogo?: boolean;
   };
 }
 
@@ -68,10 +85,15 @@ export class InvoiceTemplateGenerator {
   private static getStatusText(status: string): string {
     const statusMap: Record<string, string> = {
       paid: 'Paid',
+      partially_paid: 'Partially Paid',
+      unpaid: 'Unpaid',
       sent: 'Sent',
       draft: 'Draft',
       overdue: 'Overdue',
       cancelled: 'Cancelled',
+      accepted: 'Accepted',
+      declined: 'Declined',
+      expired: 'Expired',
     };
     return statusMap[status] || status;
   }
@@ -82,12 +104,29 @@ export class InvoiceTemplateGenerator {
   private static getStatusBadgeStyle(status: string): string {
     const styleMap: Record<string, string> = {
       paid: 'background: #f6ffed; color: #52c41a;',
+      partially_paid: 'background: #fff7e6; color: #d46b08;',
+      unpaid: 'background: #fff2f0; color: #ff4d4f;',
       sent: 'background: #e6f7ff; color: #1890ff;',
       overdue: 'background: #fff2f0; color: #ff4d4f;',
       draft: 'background: #f5f5f5; color: #666;',
       cancelled: 'background: #f5f5f5; color: #666;',
+      accepted: 'background: #f6ffed; color: #52c41a;',
+      declined: 'background: #fff2f0; color: #ff4d4f;',
+      expired: 'background: #fff2f0; color: #ff4d4f;',
     };
     return styleMap[status] || 'background: #f5f5f5; color: #666;';
+  }
+
+  /**
+   * Combine city, state, and zip into a single "City, State ZIP" line
+   */
+  private static formatCityStateZip(
+    city?: string | null,
+    state?: string | null,
+    zipCode?: string | null
+  ): string {
+    const cityState = [city, state].filter(Boolean).join(', ');
+    return [cityState, zipCode].filter(Boolean).join(' ');
   }
 
   /**
@@ -117,18 +156,57 @@ export class InvoiceTemplateGenerator {
   }
 
   /**
+   * Generate a quote document. A quote shares the invoice layout; only the labels differ
+   * (QUOTE / PREPARED FOR / VALID UNTIL). `invoiceNumber` carries the quote number and `dueDate`
+   * the Valid Until date; `isOverdue` marks Valid Until in red once the quote has expired.
+   */
+  public static generateQuoteHTML(quote: InvoiceData): string {
+    return this.generateInvoiceHTML(quote, 'quote');
+  }
+
+  /**
    * Generate complete invoice HTML template
    */
-  public static generateInvoiceHTML(invoice: InvoiceData): string {
+  public static generateInvoiceHTML(
+    invoice: InvoiceData,
+    documentType: 'invoice' | 'quote' = 'invoice'
+  ): string {
+    const labels =
+      documentType === 'quote'
+        ? { title: 'Quote', heading: 'QUOTE', party: 'PREPARED FOR', date: 'Quote Date', due: 'Valid Until' }
+        : { title: 'Invoice', heading: 'INVOICE', party: 'BILLED TO', date: 'Invoice Date', due: 'Due Date' };
     const primaryColor = invoice.organization?.primaryColor || '#1890ff';
+    const isModern = invoice.organization?.templateStyle === 'modern';
+    const showLogo = invoice.organization?.showLogo !== false;
     const organizationName = invoice.organization?.name || 'Your Company';
     const organizationEmail = invoice.organization?.email || '';
     const organizationPhone = invoice.organization?.phone || '';
     const organizationAddressLine1 = invoice.organization?.addressLine1 || '';
     const organizationAddressLine2 = invoice.organization?.addressLine2 || '';
+    const organizationCityStateZip = this.formatCityStateZip(
+      invoice.organization?.city,
+      invoice.organization?.state,
+      invoice.organization?.zipCode
+    );
+    const organizationCountry = invoice.organization?.country || '';
     const organizationLogo = invoice.organization?.logoUrl || '';
     const invoiceFooterMessage = invoice.organization?.invoiceFooterMessage || '';
-    const serviceName = invoice.request?.service?.name || 'Service Items';
+    const badgeStatus = invoice.paymentStatus || invoice.status;
+    // Invoices saved before line items existed have none: show the whole amount as one line.
+    const lineItems =
+      invoice.lineItems && invoice.lineItems.length > 0
+        ? invoice.lineItems
+        : [
+            {
+              description: invoice.request?.service?.name || 'Service Items',
+              quantity: 1,
+              rate: invoice.subtotal || invoice.amount,
+              amount: invoice.subtotal || invoice.amount,
+            },
+          ];
+    const subtotal = invoice.subtotal || invoice.amount;
+    const discountAmount = invoice.discountAmount || 0;
+    const taxAmount = invoice.taxAmount || 0;
     const clientAddressParts = this.getClientAddressParts(invoice.client);
 
     return `
@@ -136,7 +214,7 @@ export class InvoiceTemplateGenerator {
       <html>
         <head>
           <meta charset="UTF-8">
-          <title>Invoice - ${this.escapeHtml(invoice.invoiceNumber)}</title>
+          <title>${labels.title} - ${this.escapeHtml(invoice.invoiceNumber)}</title>
           <style>
             @page {
               size: A4;
@@ -222,7 +300,7 @@ export class InvoiceTemplateGenerator {
               font-weight: 600;
               text-transform: uppercase;
               letter-spacing: 0.5px;
-              ${this.getStatusBadgeStyle(invoice.status)}
+              ${this.getStatusBadgeStyle(badgeStatus)}
             }
             .meta-section {
               display: flex;
@@ -372,36 +450,63 @@ export class InvoiceTemplateGenerator {
                 padding: 0;
               }
             }
+            /* Modern preset: a left accent bar instead of the classic bottom-border header,
+               and a borderless/striped items table instead of the classic bordered rows. */
+            .invoice-container.modern {
+              border-left: 6px solid ${primaryColor};
+              padding-left: 34px;
+            }
+            .invoice-container.modern .header {
+              border-bottom: none;
+              padding-bottom: 0;
+            }
+            .invoice-container.modern .invoice-title-section h2 {
+              color: ${primaryColor};
+              font-weight: 700;
+              letter-spacing: 0;
+            }
+            .invoice-container.modern .items-table th {
+              background: transparent;
+              border-bottom: 2px solid ${primaryColor};
+            }
+            .invoice-container.modern .items-table td {
+              border-bottom: none;
+            }
+            .invoice-container.modern .items-table tr:nth-child(even) td {
+              background: #fafafa;
+            }
           </style>
         </head>
         <body>
-          <div class="invoice-container">
+          <div class="invoice-container${isModern ? ' modern' : ''}">
             <div class="header">
               <div class="company-section">
-                <div class="company-logo">
-                  ${organizationLogo 
+                ${showLogo ? `<div class="company-logo">
+                  ${organizationLogo
                     ? `<img src="${this.escapeHtml(organizationLogo)}" alt="Logo" />`
                     : this.escapeHtml(organizationName.charAt(0).toUpperCase())
                   }
-                </div>
+                </div>` : ''}
                 <div class="company-info">
                   <h1>${this.escapeHtml(organizationName)}</h1>
                   ${organizationEmail ? `<p>${this.escapeHtml(organizationEmail)}</p>` : ''}
                   ${organizationPhone ? `<p>${this.escapeHtml(organizationPhone)}</p>` : ''}
                   ${organizationAddressLine1 ? `<p>${this.escapeHtml(organizationAddressLine1)}</p>` : ''}
                   ${organizationAddressLine2 ? `<p>${this.escapeHtml(organizationAddressLine2)}</p>` : ''}
+                  ${organizationCityStateZip ? `<p>${this.escapeHtml(organizationCityStateZip)}</p>` : ''}
+                  ${organizationCountry ? `<p>${this.escapeHtml(organizationCountry)}</p>` : ''}
                 </div>
               </div>
               <div class="invoice-title-section">
-                <h2>INVOICE</h2>
+                <h2>${labels.heading}</h2>
                 <p class="invoice-number">#${this.escapeHtml(invoice.invoiceNumber)}</p>
-                <span class="status-badge">${this.getStatusText(invoice.status)}</span>
+                <span class="status-badge">${this.getStatusText(badgeStatus)}</span>
               </div>
             </div>
 
             <div class="meta-section">
               <div class="bill-to">
-                <p class="section-label">BILLED TO</p>
+                <p class="section-label">${labels.party}</p>
                 <p class="bill-to-name">${this.escapeHtml(invoice.client?.name || '-')}</p>
                 <div class="bill-to-details">
                   ${clientAddressParts.map(part => `<p>${this.escapeHtml(part)}</p>`).join('')}
@@ -410,11 +515,11 @@ export class InvoiceTemplateGenerator {
               <div class="invoice-details">
                 <div class="invoice-details-grid">
                   <div class="detail-item">
-                    <p class="label">Invoice Date</p>
+                    <p class="label">${labels.date}</p>
                     <p class="value">${this.formatDate(invoice.createdAt)}</p>
                   </div>
                   <div class="detail-item">
-                    <p class="label">Due Date</p>
+                    <p class="label">${labels.due}</p>
                     <p class="value ${invoice.isOverdue ? 'danger' : ''}">${this.formatDate(invoice.dueDate)}</p>
                   </div>
                   <div class="detail-item">
@@ -439,12 +544,17 @@ export class InvoiceTemplateGenerator {
                 </tr>
               </thead>
               <tbody>
+                ${lineItems
+                  .map(
+                    item => `
                 <tr>
-                  <td>${this.escapeHtml(serviceName)}</td>
-                  <td>1</td>
-                  <td>${this.formatCurrency(invoice.amount, invoice.currency)}</td>
-                  <td>${this.formatCurrency(invoice.amount, invoice.currency)}</td>
-                </tr>
+                  <td>${this.escapeHtml(item.description)}</td>
+                  <td>${item.quantity}</td>
+                  <td>${this.formatCurrency(item.rate, invoice.currency)}</td>
+                  <td>${this.formatCurrency(item.amount, invoice.currency)}</td>
+                </tr>`
+                  )
+                  .join('')}
               </tbody>
             </table>
 
@@ -452,11 +562,16 @@ export class InvoiceTemplateGenerator {
               <div class="totals-box">
                 <div class="totals-row">
                   <span>Subtotal</span>
-                  <span>${this.formatCurrency(invoice.amount, invoice.currency)}</span>
+                  <span>${this.formatCurrency(subtotal, invoice.currency)}</span>
                 </div>
+                ${discountAmount > 0 ? `
                 <div class="totals-row">
-                  <span>Tax (0%)</span>
-                  <span>${this.formatCurrency(0, invoice.currency)}</span>
+                  <span>Discount (${invoice.discountType === 'percentage' ? `${invoice.discountValue || 0}%` : 'flat'})</span>
+                  <span>-${this.formatCurrency(discountAmount, invoice.currency)}</span>
+                </div>` : ''}
+                <div class="totals-row">
+                  <span>Tax (${invoice.taxRate || 0}%)</span>
+                  <span>${this.formatCurrency(taxAmount, invoice.currency)}</span>
                 </div>
                 <div class="totals-row total">
                   <span>Total</span>

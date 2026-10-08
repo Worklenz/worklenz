@@ -1,28 +1,41 @@
 {
-  "title": "Ruaj si Shabllon",
-  "templateName": "Emri i Shabllonit",
-  "templateNamePlaceholder": "Shkruani emrin e shabllonit",
-  "templateInfo": "Informacioni i Shabllonit",
-  "includes": "Elementet e Projektit",
-  "taskIncludes": "Elementet e Detyrës",
+  "title": "Ruaj si shabllon",
+  "templateName": "Emri i shabllonit",
+  "templateNamePlaceholder": "Vendosni emrin e shabllonit",
+  "templateInfo": "Informacioni i shabllonit",
+  "includes": "Elementet e projektit",
+  "projectSettings": "Cilësimet e projektit",
+  "taskIncludes": "Elementet e detyrës",
   "cancel": "Anulo",
   "save": "Ruaj",
   "creating": "Duke krijuar shabllonin...",
-  "created": "Shabllon u Krijua!",
-  "quickSelect": "Zgjedhja e Shpejtë:",
-  "selectAll": "Zgjidh të Gjitha",
-  "essentialOnly": "Vetëm të Nevojshme",
-  "clearAll": "Pastroji të Gjitha",
+  "created": "Shablloni u krijua!",
+  "quickSelect": "Zgjedhje e shpejtë:",
+  "selectAll": "Zgjidh të gjitha",
+  "essentialOnly": "Vetëm thelbësoret",
+  "clearAll": "Pastro të gjitha",
   "itemsSelected": "artikuj të zgjedhur",
+  "selected": "të zgjedhur",
   "readyToSave": "Gati për ruajtje",
   "validName": "Emër i vlefshëm",
-  "required": "I kërkuar",
-  "proTips": "Këshilla Pro",
+  "required": "E detyrueshme",
+  "characters": "karaktere",
+  "proTips": "Këshilla profesionale",
+  "budgetPlanHint": "Cilësimet e buxhetit janë të disponueshme në planet Business dhe Enterprise.",
   "includesOptions": {
     "statuses": "Statuset",
     "phases": "Fazat",
     "labels": "Etiketat",
-    "customColumns": "Kolonat e Personalizuara"
+    "customColumns": "Kolona të personalizuara"
+  },
+  "projectSettingsOptions": {
+    "category": "Kategoria",
+    "projectManager": "Menaxheri i projektit",
+    "estimatedWorkingDays": "Ditët e punës të vlerësuara",
+    "estimatedManDays": "Ditët-njeri të vlerësuara",
+    "hoursPerDay": "Orë në ditë",
+    "advanced": "Cilësime të avancuara",
+    "budget": "Cilësimet e buxhetit"
   },
   "taskIncludesOptions": {
     "name": "Emri",
@@ -30,44 +43,60 @@
     "status": "Statusi",
     "phase": "Faza",
     "label": "Etiketa",
-    "timeEstimate": "Vlerësimi i Kohës",
+    "timeEstimate": "Vlerësimi i kohës",
     "description": "Përshkrimi",
-    "subTasks": "Nëndetyrat"
+    "subTasks": "Nëndetyrat",
+    "assignees": "Të caktuarit",
+    "recurrence": "Opsionet e përsëritjes",
+    "dependencies": "Varësitë",
+    "billable": "I faturueshëm / Jo i faturueshëm"
   },
   "descriptions": {
-    "statuses": "Konfigurimi i rrjedhës së punës së statusit të projektit",
-    "phases": "Fazat e projektit dhe milestones",
+    "statuses": "Konfigurimi i rrjedhës së statusit të projektit",
+    "phases": "Fazat dhe milestonet e projektit",
     "labels": "Etiketa të personalizuara për kategorizim",
     "customColumns": "Fusha të personalizuara dhe metadata",
+    "category": "Kategoria e projektit për organizim",
+    "projectManager": "Menaxheri i caktuar i projektit",
+    "estimatedWorkingDays": "Ditët e punës të vlerësuara për projektin",
+    "estimatedManDays": "Ditët-njeri të vlerësuara për projektin",
+    "hoursPerDay": "Orët e punës për ditë sipas parazgjedhjes",
+    "advanced": "Mënyrat e progresit, parazgjedhjet e detyrave dhe kontrolli i aksesit",
+    "budget": "Shuma e buxhetit, valuta dhe karta e tarifave të projektit",
     "taskName": "Emrat dhe titujt e detyrave",
     "taskPriority": "Nivelet e prioritetit të detyrave",
-    "taskStatus": "Statusi i përfundimit të detyrës",
-    "taskPhase": "Faza e projektit të lidhur",
-    "taskLabel": "Etiketat dhe tags të detyrës",
+    "taskStatus": "Statusi i përfundimit të detyrave",
+    "taskPhase": "Faza e lidhur e projektit",
+    "taskLabel": "Etiketat e detyrave",
     "timeEstimate": "Vlerësimet e kohës dhe kohëzgjatja",
-    "description": "Përshkrimet dhe detajet e detyrës",
-    "subTasks": "Nëndetyrat dhe elementet e listës"
+    "description": "Përshkrimet dhe detajet e detyrave",
+    "subTasks": "Nëndetyrat dhe artikujt e listës",
+    "assignees": "Të caktuarit në detyra dhe nëndetyra",
+    "recurrence": "Frekuenca, intervali dhe rregulli i mbarimit për detyrë",
+    "dependencies": "Lidhjet midis detyrave në shabllon",
+    "billable": "Flamuri i faturueshmërisë për çdo detyrë"
   },
   "tooltips": {
-    "projectElements": "Zgjidhni cilat elemente të projektit të përfshini në shabllonin tuaj",
-    "taskElements": "Zgjidhni cilat elemente të detyrës të përfshini në shabllonin tuaj",
-    "required": "Ky element është i kërkuar dhe nuk mund të çzgjidhet"
+    "projectElements": "Zgjidhni cilat elemente të projektit të përfshihen në shabllon",
+    "projectSettings": "Zgjidhni cilat cilësime të projektit të përfshihen. Mund të rishikohen para se të krijoni një projekt nga ky shabllon.",
+    "taskElements": "Zgjidhni cilat elemente të detyrës të përfshihen në shabllon",
+    "required": "Ky artikull është i detyrueshëm dhe nuk mund të çzgjidhet"
   },
   "tips": {
-    "line1": "Shabllonet ruajnë strukturën e projektit tuaj për ripërdorim të shpejtë",
-    "line2": "Elementet themelore janë përfshirë gjithmonë dhe nuk mund të hiqen",
-    "line3": "Mund ta personalizoni shabllonin kur krijoni projekte të reja",
-    "line4": "Zgjidhni elementet që dëshironi të përfshini në shabllonin tuaj"
+    "line1": "Shabllonet ruajnë strukturën e projektit për ripërdorim të shpejtë",
+    "line2": "Artikujt thelbësorë përfshihen gjithmonë dhe nuk mund të hiqen",
+    "line3": "Cilësimet e projektit mund të rishikohen dhe ndryshohen kur krijoni një projekt nga ky shabllon",
+    "line4": "Lëreni njerëzit dhe buxhetin të fikur sipas parazgjedhjes për të shmangur caktime ose kosto të papritura"
   },
   "validation": {
-    "nameRequired": "Ju lutemi shkruani një emër shablloni",
-    "nameMinLength": "Emri i shabllonit duhet të jetë të paktën 3 karaktere",
-    "nameMaxLength": "Emri i shabllonit duhet të jetë më pak se 50 karaktere"
+    "nameRequired": "Ju lutemi vendosni një emër shablloni",
+    "nameMinLength": "Emri i shabllonit duhet të ketë të paktën 3 karaktere",
+    "nameMaxLength": "Emri i shabllonit duhet të ketë më pak se 50 karaktere"
   },
   "notifications": {
-    "createSuccess": "Shabllon u Krijua",
-    "createSuccessDesc": "Shablloni juaj i projektit u krijua me sukses dhe është gati për përdorim.",
-    "createError": "Dështoi Krijimi i Shabllonit",
+    "createSuccess": "Shablloni u krijua",
+    "createSuccessDesc": "Shablloni i projektit tuaj u krijua me sukses dhe është gati për përdorim.",
+    "createError": "Krijimi i shabllonit dështoi",
     "error": "Gabim"
   }
 }

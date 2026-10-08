@@ -11,9 +11,9 @@ import {
   theme,
   Typography,
 } from '@/shared/antd-imports';
-import { ClientPortalClient, useGetClientsQuery } from '@/ee/api/client-portal/client-portal-api';
+import { ClientPortalClient, useGetClientsQuery } from '@/api/client-portal/client-portal-api';
 import dayjs from 'dayjs';
-import PortalStatusTag from '@/ee/components/client-portal/PortalStatusTag';
+import PortalStatusTag from '@/components/client-portal/PortalStatusTag';
 
 const { Search } = Input;
 const { Option } = Select;

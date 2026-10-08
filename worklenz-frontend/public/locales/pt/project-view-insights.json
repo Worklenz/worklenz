@@ -64,10 +64,10 @@
     "includeArchivedTasks": "Incluir Tarefas Arquivadas",
     "export": "Exportar",
     "name": "Nome",
-    "status": "Status",
+    "status": "Estado",
     "dueDate": "Data de vencimento",
     "lastUpdated": "Última atualização",
-    "na": "N/A"
+    "na": "N/D"
   },
   "justNow": "Agora mesmo",
   "tasksTable": {

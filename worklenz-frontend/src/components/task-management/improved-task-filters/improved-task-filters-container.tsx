@@ -11,6 +11,7 @@ import {
   SettingOutlined,
   TagOutlined,
   TeamOutlined,
+  UserOutlined,
   CheckCircleOutlined,
   AppstoreOutlined,
 } from '@/shared/antd-imports';
@@ -28,11 +29,13 @@ import {
 } from '@/features/task-management/task-management.slice';
 import { selectSortField } from '@/features/task-management/task-management.selectors';
 import {
+  isGroupingType,
   selectCurrentGrouping,
   setCurrentGrouping,
 } from '@/features/task-management/grouping.slice';
 import { setLabels, setMembers, setPriorities, setFields, setStatuses, setPhases, persistFilters, setSearch as setTasksSearch } from '@/features/tasks/tasks.slice';
 import {
+  IGroupBy,
   fetchEnhancedKanbanGroups,
   setArchived as setKanbanArchived,
   setGroupBy as setKanbanGroupBy,
@@ -50,7 +53,10 @@ import { useAuthService } from '@/hooks/useAuth';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import { FieldsDropdown } from './fields-dropdown';
 import { FilterDropdown } from './filter-dropdown';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { SearchFilter } from './search-filter';
+import { SoftwareQuickFilterChips } from './software-quick-filter-chips';
+import { resetSoftwareQuickFilters } from '@/features/projects/singleProject/quick-filters/software-quick-filters.slice';
 import { SortDropdown } from './sort-dropdown';
 import { FilteredTaskExportButton } from './filtered-task-export-button';
 import { FilterSection, ImprovedTaskFiltersProps } from './types';
@@ -155,8 +161,25 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
   const isBoard = position === 'board';
   const tab = searchParams.get('tab');
   const currentProjectView = tab === 'tasks-list' ? 'list' : 'kanban';
+  const isSoftwareProject = isSoftwareProjectType(kanbanProject?.project_type);
+  const phaseLabel = isSoftwareProject
+    ? t('sprintText', { defaultValue: 'Sprint' })
+    : t('phaseText', { defaultValue: 'Phase' });
+  const assigneeLabel = isSoftwareProject
+    ? t('assigneeText', { defaultValue: 'Assignee' })
+    : t('membersText', { defaultValue: 'Members' });
+  const assigneeIcon = isSoftwareProject ? UserOutlined : TeamOutlined;
+  const groupByOptions = useMemo(
+    () => [
+      { id: 'status', label: t('statusText', { defaultValue: 'Status' }), value: 'status' },
+      { id: 'priority', label: t('priorityText', { defaultValue: 'Priority' }), value: 'priority' },
+      { id: 'phase', label: phaseLabel, value: 'phase' },
+      ...(isSoftwareProject ? [{ id: 'assignee', label: assigneeLabel, value: 'assignee' }] : []),
+    ],
+    [t, phaseLabel, assigneeLabel, isSoftwareProject]
+  );
 
-  return useMemo(() => {
+  const sections = useMemo<FilterSection[]>(() => {
     if (isBoard) {
       const currentPriorities = kanbanState.priorities || [];
       const currentLabels = kanbanState.labels || [];
@@ -194,7 +217,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
         },
         {
           id: 'phase',
-          label: t('phaseText', { defaultValue: 'Phase' }),
+          label: phaseLabel,
           options: filterData.allPhases.map((p: any) => ({
             id: p.id,
             value: p.id,
@@ -208,8 +231,8 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
         },
         {
           id: 'assignees',
-          label: t('membersText', { defaultValue: 'Members' }),
-          icon: TeamOutlined,
+          label: assigneeLabel,
+          icon: assigneeIcon,
           multiSelect: true,
           searchable: true,
           selectedValues: currentAssignees
@@ -247,19 +270,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           multiSelect: false,
           searchable: false,
           selectedValues: [groupByValue],
-          options: [
-            { id: 'status', label: t('statusText', { defaultValue: 'Status' }), value: 'status' },
-            {
-              id: 'priority',
-              label: t('priorityText', { defaultValue: 'Priority' }),
-              value: 'priority',
-            },
-            {
-              id: 'phase',
-              label: t('phaseText', { defaultValue: 'Phase' }),
-              value: 'phase',
-            },
-          ],
+          options: groupByOptions,
         },
       ];
     }
@@ -301,7 +312,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
       },
       {
         id: 'phase',
-        label: t('phaseText', { defaultValue: 'Phase' }),
+        label: phaseLabel,
         options: filterData.allPhases.map((p: any) => ({
           id: p.id,
           value: p.id,
@@ -315,8 +326,8 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
       },
       {
         id: 'assignees',
-        label: t('membersText', { defaultValue: 'Members' }),
-        icon: TeamOutlined,
+        label: assigneeLabel,
+        icon: assigneeIcon,
         multiSelect: true,
         searchable: true,
         selectedValues: currentAssignees
@@ -354,27 +365,42 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
         multiSelect: false,
         searchable: false,
         selectedValues: [groupByValue],
-        options: [
-          { id: 'status', label: t('statusText', { defaultValue: 'Status' }), value: 'status' },
-          {
-            id: 'priority',
-            label: t('priorityText', { defaultValue: 'Priority' }),
-            value: 'priority',
-          },
-          {
-            id: 'phase',
-            label: t('phaseText', { defaultValue: 'Phase' }),
-            value: 'phase',
-          },
-        ],
+        options: groupByOptions,
       },
     ];
-  }, [isBoard, kanbanState, kanbanProject, filterData, currentProjectView, t, currentGrouping]);
+  }, [
+    isBoard,
+    kanbanState,
+    kanbanProject,
+    filterData,
+    currentProjectView,
+    t,
+    currentGrouping,
+    phaseLabel,
+    assigneeLabel,
+    assigneeIcon,
+    groupByOptions,
+  ]);
+
+  return useMemo(
+    () => (isSoftwareProject ? prioritizeAssigneeSection(sections) : sections),
+    [isSoftwareProject, sections]
+  );
+};
+
+const GROUP_BY_MENU_KEY_PREFIX = 'group-by-';
+
+/** Software teams filter by assignee most often, so it leads the filter bar. */
+const prioritizeAssigneeSection = (sections: FilterSection[]): FilterSection[] => {
+  const assigneeSection = sections.find(section => section.id === 'assignees');
+  if (!assigneeSection) return sections;
+  return [assigneeSection, ...sections.filter(section => section.id !== 'assignees')];
 };
 
 const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   position,
   className = '',
+  mode = 'default',
 }) => {
   const { t } = useTranslation('task-list-filters');
   const dispatch = useAppDispatch();
@@ -406,18 +432,40 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     (((projectId: string, view: 'list' | 'board', groupBy: string) => void) & { cancel: () => void }) | null
   >(null);
   const filterSectionsData = useFilterData(position);
-  const isDataLoaded = useMemo(() => filterSectionsData.length > 0, [filterSectionsData]);
-  const memoizedFilterSections = useMemo(() => filterSectionsData, [filterSectionsData]);
+  const visibleFilterSections = useMemo(() => {
+    if (mode !== 'backlog') return filterSectionsData;
+    // The Backlog is always grouped by sprint, so sprint filtering and grouping are fixed.
+    return filterSectionsData.filter(section => section.id !== 'phase' && section.id !== 'groupBy');
+  }, [filterSectionsData, mode]);
+  const isDataLoaded = useMemo(() => visibleFilterSections.length > 0, [visibleFilterSections]);
+  const memoizedFilterSections = useMemo(() => visibleFilterSections, [visibleFilterSections]);
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');
   const isRestoringFilters = useAppSelector((state: RootState) => state.taskReducer.isRestoringFilters);
   const { projectId } = useAppSelector(state => state.projectReducer);
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const isProjectManager = useIsProjectManager();
   const canConfigure = isOwnerOrAdmin || isProjectManager;
+  const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+  const isSoftwareProject = isSoftwareProjectType(projectType);
+  const isBacklogMode = mode === 'backlog';
+  /** Software Backlog and Board show only search and quick filters, like the prototype toolbar. */
+  const isCompactToolbar = isSoftwareProject && (isBacklogMode || position === 'board');
   const currentGroupBySection = filterSectionsData.find(s => s.id === 'groupBy');
   const currentGroupByValue = currentGroupBySection?.selectedValues[0] || 'status';
   const sortFields = useAppSelector(state => state.taskReducer.fields);
   const taskManagementSortField = useAppSelector(selectSortField);
+  const quickFiltersCount = useAppSelector(
+    state => state.softwareQuickFiltersReducer.active.length
+  );
+
+  const refetchCurrentView = useCallback(() => {
+    if (!projectId) return;
+    if (position === 'board') {
+      dispatch(fetchEnhancedKanbanGroups(projectId));
+      return;
+    }
+    dispatch(fetchTasksV3(projectId));
+  }, [dispatch, position, projectId]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -438,6 +486,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   }, [memoizedFilterSections, filterSections]);
 
   const overflowMenuItems = useMemo(() => {
+    const groupByMenuOptions = currentGroupBySection?.options ?? [];
     const items: any[] = [
       {
         key: 'group-by-header',
@@ -445,41 +494,17 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         label: (
           <span className="font-semibold">{t('groupByText', { defaultValue: 'Group by' })}</span>
         ),
-        children: [
-          {
-            key: 'group-by-status',
-            label: (
-              <div className="flex items-center justify-between w-full">
-                <span>{t('statusText', { defaultValue: 'Status' })}</span>
-                {currentGroupByValue === 'status' && (
-                  <CheckOutlined className="text-blue-500 ml-2" />
-                )}
-              </div>
-            ),
-          },
-          {
-            key: 'group-by-priority',
-            label: (
-              <div className="flex items-center justify-between w-full">
-                <span>{t('priorityText', { defaultValue: 'Priority' })}</span>
-                {currentGroupByValue === 'priority' && (
-                  <CheckOutlined className="text-blue-500 ml-2" />
-                )}
-              </div>
-            ),
-          },
-          {
-            key: 'group-by-phase',
-            label: (
-              <div className="flex items-center justify-between w-full">
-                <span>{t('phaseText', { defaultValue: 'Phase' })}</span>
-                {currentGroupByValue === 'phase' && (
-                  <CheckOutlined className="text-blue-500 ml-2" />
-                )}
-              </div>
-            ),
-          },
-        ],
+        children: groupByMenuOptions.map(option => ({
+          key: `${GROUP_BY_MENU_KEY_PREFIX}${option.value}`,
+          label: (
+            <div className="flex items-center justify-between w-full">
+              <span>{option.label}</span>
+              {currentGroupByValue === option.value && (
+                <CheckOutlined className="text-blue-500 ml-2" />
+              )}
+            </div>
+          ),
+        })),
       },
     ];
 
@@ -496,13 +521,15 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         items.push({
           key: 'manage-phases',
           icon: <SettingOutlined />,
-          label: `${t('manage', { defaultValue: 'Manage' })} ${t('phasesText', { defaultValue: 'Phases' })}`,
+          label: isSoftwareProject
+            ? t('manageSprints', { defaultValue: 'Manage Sprints' })
+            : `${t('manage', { defaultValue: 'Manage' })} ${t('phasesText', { defaultValue: 'Phases' })}`,
         });
       }
     }
 
     return items;
-  }, [currentGroupByValue, t, canConfigure]);
+  }, [currentGroupByValue, currentGroupBySection, t, canConfigure, isSoftwareProject]);
 
   const themeClasses = useMemo(
     () => ({
@@ -566,14 +593,26 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   }, [dispatch, isRestoringFilters]);
 
   const calculatedActiveFiltersCount = useMemo(() => {
+    // Hidden filters (e.g. the Board's automatic active-sprint filter) are not user-visible here.
+    if (isCompactToolbar) return (searchValue ? 1 : 0) + quickFiltersCount;
     const count = filterSections.reduce(
       (acc, section) => (section.id === 'groupBy' ? acc : acc + section.selectedValues.length),
       0
     );
     const sortFieldsCount = position === 'list' ? sortFields.length : 0;
     const taskManagementSortCount = position === 'list' && taskManagementSortField ? 1 : 0;
-    return count + (searchValue ? 1 : 0) + sortFieldsCount + taskManagementSortCount;
-  }, [filterSections, searchValue, sortFields, taskManagementSortField, position]);
+    return (
+      count + (searchValue ? 1 : 0) + sortFieldsCount + taskManagementSortCount + quickFiltersCount
+    );
+  }, [
+    filterSections,
+    searchValue,
+    sortFields,
+    taskManagementSortField,
+    position,
+    quickFiltersCount,
+    isCompactToolbar,
+  ]);
 
   /** Filters that gate the Export button (excludes sort / groupBy). */
   const hasActiveFiltersForExport = useMemo(() => {
@@ -653,10 +692,13 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
       }
 
       if (sectionId === 'groupBy' && values.length > 0) {
-        dispatch(setCurrentGrouping(values[0] as 'status' | 'priority' | 'phase'));
+        if (!isGroupingType(values[0])) return;
+        dispatch(setCurrentGrouping(values[0]));
         dispatch(fetchTasksV3(projectId));
-        // Persist task list groupBy preference
-        debouncedGroupBySaveRef.current?.(projectId, 'list', values[0]);
+        // Backlog grouping is temporary and must not overwrite the List tab preference.
+        if (mode !== 'backlog') {
+          debouncedGroupBySaveRef.current?.(projectId, 'list', values[0]);
+        }
         return;
       }
       if (sectionId === 'priority') {
@@ -710,7 +752,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(fetchTasksV3(projectId));
       }
     },
-    [dispatch, projectId, position, currentTaskAssignees, currentTaskLabels, kanbanState, allStatuses, isRestoringFilters]
+    [dispatch, projectId, position, currentTaskAssignees, currentTaskLabels, kanbanState, allStatuses, isRestoringFilters, mode]
   );
 
   const handleSearchChange = useCallback(
@@ -729,8 +771,25 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     [dispatch, projectId, position]
   );
 
+  const clearCompactToolbarFilters = useCallback(() => {
+    if (!projectId) return;
+    debouncedSearchChangeRef.current?.cancel();
+    dispatch(resetSoftwareQuickFilters());
+    if (position === 'board') {
+      dispatch(setKanbanSearch(''));
+    } else {
+      dispatch(setTaskManagementSearch(''));
+      dispatch(setTasksSearch(''));
+    }
+    refetchCurrentView();
+  }, [dispatch, position, projectId, refetchCurrentView]);
+
   const clearAllFilters = useCallback(async () => {
     if (!projectId || clearingFilters) return;
+    if (isCompactToolbar) {
+      clearCompactToolbarFilters();
+      return;
+    }
 
     setClearingFilters(true);
 
@@ -747,6 +806,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
 
       dispatch(setTaskManagementSearch(''));
       dispatch(setTasksSearch(''));
+      dispatch(resetSoftwareQuickFilters());
       const clearedLabels = currentTaskLabels.map(label => ({
         ...label,
         selected: false,
@@ -781,13 +841,24 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
 
       setTimeout(() => {
         dispatch(fetchTasksV3(projectId));
+        if (position === 'board') dispatch(fetchEnhancedKanbanGroups(projectId));
         setTimeout(() => setClearingFilters(false), 100);
       }, 0);
     } catch (error) {
       console.error('Error clearing filters:', error);
       setClearingFilters(false);
     }
-  }, [projectId, dispatch, currentTaskLabels, currentTaskAssignees, clearingFilters, position, isRestoringFilters]);
+  }, [
+    projectId,
+    dispatch,
+    currentTaskLabels,
+    currentTaskAssignees,
+    clearingFilters,
+    position,
+    isRestoringFilters,
+    isCompactToolbar,
+    clearCompactToolbarFilters,
+  ]);
 
   const toggleArchived = useCallback(() => {
     if (position === 'board') {
@@ -810,39 +881,19 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   const handleOverflowMenuClick = (info: { key: string }) => {
     const { key } = info;
 
-    if (key === 'group-by-status') {
+    if (key.startsWith(GROUP_BY_MENU_KEY_PREFIX)) {
+      const grouping = key.slice(GROUP_BY_MENU_KEY_PREFIX.length);
+      if (!isGroupingType(grouping)) return;
       if (position === 'board') {
-        dispatch(setKanbanGroupBy('status' as any));
+        dispatch(setKanbanGroupBy(grouping as IGroupBy));
         if (projectId) dispatch(fetchEnhancedKanbanGroups(projectId));
       } else {
-        dispatch(setCurrentGrouping('status'));
+        dispatch(setCurrentGrouping(grouping));
         if (projectId) dispatch(fetchTasksV3(projectId));
       }
-      if (projectId) debouncedGroupBySaveRef.current?.(projectId, position === 'board' ? 'board' : 'list', 'status');
-      return;
-    }
-
-    if (key === 'group-by-priority') {
-      if (position === 'board') {
-        dispatch(setKanbanGroupBy('priority' as any));
-        if (projectId) dispatch(fetchEnhancedKanbanGroups(projectId));
-      } else {
-        dispatch(setCurrentGrouping('priority'));
-        if (projectId) dispatch(fetchTasksV3(projectId));
+      if (projectId && !isBacklogMode) {
+        debouncedGroupBySaveRef.current?.(projectId, position === 'board' ? 'board' : 'list', grouping);
       }
-      if (projectId) debouncedGroupBySaveRef.current?.(projectId, position === 'board' ? 'board' : 'list', 'priority');
-      return;
-    }
-
-    if (key === 'group-by-phase') {
-      if (position === 'board') {
-        dispatch(setKanbanGroupBy('phase' as any));
-        if (projectId) dispatch(fetchEnhancedKanbanGroups(projectId));
-      } else {
-        dispatch(setCurrentGrouping('phase'));
-        if (projectId) dispatch(fetchTasksV3(projectId));
-      }
-      if (projectId) debouncedGroupBySaveRef.current?.(projectId, position === 'board' ? 'board' : 'list', 'phase');
       return;
     }
 
@@ -865,16 +916,25 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
           <SearchFilter
             value={searchValue}
             onChange={handleSearchChange}
-            placeholder={t('searchTasks', { defaultValue: 'Search tasks by name or key...' })}
+            variant={isSoftwareProject ? 'inline' : 'collapsible'}
+            placeholder={
+              isSoftwareProject
+                ? t('searchWork', { defaultValue: 'Search work…' })
+                : mode === 'backlog'
+                  ? t('searchBacklog', { defaultValue: 'Search backlog issues...' })
+                  : t('searchTasks', { defaultValue: 'Search tasks by name or key...' })
+            }
             themeClasses={themeClasses}
           />
 
-          {position === 'list' && (
+          {isSoftwareProject && <SoftwareQuickFilterChips onChange={refetchCurrentView} />}
+
+          {position === 'list' && !isCompactToolbar && (
             <SortDropdown themeClasses={themeClasses} isDarkMode={isDarkMode} />
           )}
 
-          {isDataLoaded ? (
-            filterSectionsData.map(section =>
+          {isCompactToolbar ? null : isDataLoaded ? (
+            visibleFilterSections.map(section =>
               section.id === 'groupBy' && showOverflowMenu ? null : (
                 <FilterDropdown
                   key={section.id}
@@ -898,7 +958,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
             </div>
           )}
 
-          {showOverflowMenu && (
+          {showOverflowMenu && !isBacklogMode && (
             <Dropdown
               className="task-filters-overflow-menu"
               menu={{
@@ -954,29 +1014,33 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
             </div>
           )}
 
-          <FilteredTaskExportButton
-            position={position}
-            hasActiveFilters={hasActiveFiltersForExport}
-            isDarkMode={isDarkMode}
-          />
-
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showArchived}
-              onChange={toggleArchived}
-              className={`w-3.5 h-3.5 text-gray-600 rounded focus:ring-gray-500 transition-colors duration-150 ${
-                isDarkMode
-                  ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
-                  : 'border-gray-300 bg-white focus:ring-offset-white'
-              }`}
+          {!isCompactToolbar && (
+            <FilteredTaskExportButton
+              position={position}
+              hasActiveFilters={hasActiveFiltersForExport}
+              isDarkMode={isDarkMode}
             />
-            <span className={`text-xs ${themeClasses.optionText}`}>
-              {t('showArchivedText', { defaultValue: 'Show Archived' })}
-            </span>
-          </label>
+          )}
 
-          {position === 'list' && (
+          {!isCompactToolbar && (
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={toggleArchived}
+                className={`w-3.5 h-3.5 text-gray-600 rounded focus:ring-gray-500 transition-colors duration-150 ${
+                  isDarkMode
+                    ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
+                    : 'border-gray-300 bg-white focus:ring-offset-white'
+                }`}
+              />
+              <span className={`text-xs ${themeClasses.optionText}`}>
+                {t('showArchivedText', { defaultValue: 'Show Archived' })}
+              </span>
+            </label>
+          )}
+
+          {position === 'list' && !isCompactToolbar && (
             <FieldsDropdown
               themeClasses={themeClasses}
               isDarkMode={isDarkMode}

@@ -1,0 +1,171 @@
+{
+  "emptyValue": "—",
+  "noBudgetSet": "Aucun budget fixé",
+  "loadError": "Impossible de charger ce rapport. Essayer à nouveau.",
+  "retry": "Réessayer",
+  "searchPlaceholder": "Rechercher",
+  "budgets": {
+    "pageTitle": "Budgétisation",
+    "pageSubTitle": "Suivi du budget et taux d'utilisation de tous les projets. L'ETC correspond aux heures estimées restantes au taux horaire réalisé à partir du temps enregistré.",
+    "empty": "Aucun projet à afficher pour l'instant.",
+    "table": {
+      "project": "Projet",
+      "budget": "Montant budgété",
+      "spent": "Dépensé",
+      "remaining": "Restant",
+      "burnRate": "Taux de combustion",
+      "etc": "ETC.",
+      "alert": "Alerte"
+    },
+    "alert": {
+      "high": "Brûlure élevée",
+      "watch": "Regarder",
+      "ok": "D'accord",
+      "none": "Pas de budget"
+    }
+  },
+  "invoices": {
+    "pageTitle": "Factures",
+    "pageSubTitle": "Envoyez, suivez et collectez les paiements des clients à partir d’une seule vue de portefeuille.",
+    "empty": "Pas encore de factures. Créez des factures à partir du portail client.",
+    "openInvoice": "Facture ouverte",
+    "kpi": {
+      "totalInvoiced": "Total facturé",
+      "totalPaid": "Total payé",
+      "totalOutstanding": "Encours total"
+    },
+    "table": {
+      "invoice": "Facture",
+      "client": "Clientèle",
+      "project": "Projet",
+      "amount": "Montant",
+      "paymentStatus": "Statut du paiement",
+      "paidAmount": "Montant payé",
+      "status": "Statut",
+      "issued": "Publié",
+      "due": "Échéance"
+    },
+    "status": {
+      "draft": "Brouillon",
+      "sent": "Envoyé",
+      "paid": "Payé",
+      "overdue": "En retard",
+      "cancelled": "Annulé",
+      "outstanding": "Exceptionnel"
+    }
+  },
+  "billableTime": {
+    "pageTitle": "Temps facturable",
+    "pageSubTitle": "Heures enregistrées, indicateur facturable et valeur de la carte des tarifs au sein de l'équipe. L'approbation des feuilles de temps n'est pas requise : chaque journal est déjà enregistré.",
+    "empty": "Aucun temps enregistré dans cette période.",
+    "tableTitle": "Entrées de temps",
+    "range": {
+      "week": "Cette semaine",
+      "month": "Ce mois-ci",
+      "lastMonth": "Le mois dernier"
+    },
+    "kpi": {
+      "logged": "Enregistré cette période",
+      "billable": "Facturable",
+      "nonBillable": "Non facturable",
+      "value": "Valeur facturable"
+    },
+    "table": {
+      "member": "Membre",
+      "project": "Projet",
+      "task": "Tâche",
+      "date": "Date de saisie",
+      "time": "Temps",
+      "billable": "Facturable",
+      "rate": "Tarif",
+      "value": "Valeur"
+    },
+    "billable": "Facturable",
+    "internal": "Interne"
+  },
+  "utilization": {
+    "pageTitle": "Utilisation",
+    "pageSubTitle": "Heures facturables de l'équipe en fonction de la capacité pour la période sélectionnée. La surutilisation est supérieure à 85 % de la capacité.",
+    "empty": "Aucun membre de l'équipe à afficher.",
+    "tableTitle": "Utilisation par membre",
+    "kpi": {
+      "team": "Utilisation de l'équipe",
+      "billable": "Heures facturables",
+      "nonBillable": "Non facturable",
+      "overallocated": "Surutilisé"
+    },
+    "overallocatedCount_one": "{{count}} membre",
+    "overallocatedCount_other": "{{count}} membres",
+    "table": {
+      "member": "Membre",
+      "role": "Rôle",
+      "billableHours": "Heures facturables",
+      "totalHours": "Heures totales",
+      "utilization": "Utilisation",
+      "status": "Statut"
+    },
+    "status": {
+      "high": "Surutilisé",
+      "watch": "Regarder",
+      "ok": "D'accord"
+    }
+  },
+  "profitability": {
+    "pageTitle": "Rentabilité",
+    "pageSubTitle": "Revenus du portefeuille provenant des factures payées, suivi des coûts à partir du temps enregistré et des coûts fixes, et utilisation facturable par projet.",
+    "empty": "Aucun projet à afficher pour l'instant.",
+    "revenueNote": "Les revenus sont des factures payées sur le portail client. Les revenus au niveau du projet ne sont pas encore suivis, le tableau montre donc le coût et l'utilisation.",
+    "noRevenueNote": "Aucune facture payée pour l'instant, donc les revenus, les bénéfices et la marge restent vides jusqu'à ce que les factures soient collectées.",
+    "kpi": {
+      "revenue": "Revenus",
+      "trackedCost": "Coût suivi",
+      "profit": "Bénéfice",
+      "margin": "Marge bénéficiaire",
+      "billableUtil": "Utilitaire facturable."
+    },
+    "trendTitle": "Tendance des revenus et des bénéfices",
+    "costBreakdownTitle": "Répartition des coûts",
+    "tableTitle": "Rentabilité du projet",
+    "cost": {
+      "fixed": "Frais fixes",
+      "timeBased": "Coûts basés sur le temps"
+    },
+    "table": {
+      "project": "Projet",
+      "cost": "Coût",
+      "utilization": "Utilisation",
+      "health": "Santé"
+    },
+    "health": {
+      "high": "Brûlure élevée",
+      "watch": "Regarder",
+      "ok": "En bonne voie",
+      "none": "Pas de budget"
+    },
+    "legend": {
+      "revenue": "Revenus",
+      "profit": "Bénéfice",
+      "cost": "Coût"
+    }
+  },
+  "forecasts": {
+    "pageTitle": "Prévisions",
+    "pageSubTitle": "Trois prochains mois à partir d'une tendance linéaire des trois derniers mois des revenus facturés et du coût basé sur le temps.",
+    "methodology": "Méthode de prévision : tendance linéaire des trois mois précédents. Il ne s’agit pas d’une prévision basée sur un pipeline.",
+    "kpi": {
+      "projectedRevenue": "Revenus projetés (le mois prochain)",
+      "projectedProfit": "Bénéfice projeté (mois prochain)"
+    },
+    "vsPrevious": "{{value}}% par rapport à ce mois-ci",
+    "noRevenueBaseline": "Aucun revenu ce mois-ci à comparer",
+    "noProfitBaseline": "Aucun bénéfice ce mois-ci pour comparer",
+    "chartTitle": "Prévisions de revenus sur 3 mois",
+    "legend": {
+      "revenue": "Revenus",
+      "profit": "Bénéfice",
+      "actual": "Réel",
+      "projected": "Projeté"
+    },
+    "empty": "Pas encore assez d’histoire pour faire des prévisions. Enregistrez le temps et envoyez des factures pour créer une tendance."
+  }
+}

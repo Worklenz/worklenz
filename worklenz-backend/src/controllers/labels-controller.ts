@@ -5,7 +5,7 @@ import db from "../config/db";
 import {ServerResponse} from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import {TASK_PRIORITY_COLOR_ALPHA, WorklenzColorCodes, WorklenzColorShades} from "../shared/constants";
+import {WorklenzColorCodes, WorklenzColorShades} from "../shared/constants";
 
 export default class LabelsController extends WorklenzControllerBase {
   @HandleExceptions()
@@ -58,10 +58,6 @@ export default class LabelsController extends WorklenzControllerBase {
       ORDER BY name;
     `;
     const result = await db.query(q, [req.params.id, req.user?.team_id]);
-
-    for (const label of result.rows) {
-      label.color_code = label.color_code + TASK_PRIORITY_COLOR_ALPHA;
-    }
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }

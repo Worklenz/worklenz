@@ -1,4 +1,5 @@
 {
+  "backlogGroupName": "Pendências",
   "task": {
     "open": "Abrir",
     "clickViewPhaseDetails": "Clique para ver detalhes da fase",
@@ -47,7 +48,7 @@
   },
   "grouping": {
     "phase": "Fase",
-    "status": "Status",
+    "status": "Estado",
     "priority": "Prioridade"
   },
   "toolbar": {

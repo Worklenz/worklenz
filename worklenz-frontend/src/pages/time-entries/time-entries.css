@@ -19,6 +19,12 @@
   }
 }
 
+@media (max-width: 400px) {
+  .time-entries-stat-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Filters + view toggle row — stacks on mobile like the Overview task list's
    own header controls (see tasks-list.css .task-list-mobile-controls). */
 .time-entries-filters-row {
@@ -56,13 +62,80 @@
 
 /* Flat log table — same responsive-scroll pattern as the Overview priority
    table (tasks-list.css): a horizontally-scrolling wrapper below the
-   breakpoint instead of squeezing seven columns into a narrow screen. */
-@media (max-width: 900px) {
+   breakpoint instead of squeezing nine columns into a narrow screen.
+   min-width covers the widest case (Task/Member/Project/Status/Priority/
+   Billable/Description/Time/Due Date/Logged On, all ten columns visible
+   when scope=All adds the Member column). 1100px is the narrowest the
+   percentage column widths in TimeEntriesLogTable.tsx keep every header
+   (label + sort arrows + filter icon) on a single line. */
+@media (max-width: 1100px) {
   .time-entries-log-table .ant-table-wrapper {
     overflow-x: auto;
   }
 
   .time-entries-log-table .ant-table {
-    min-width: 720px;
+    min-width: 1100px;
+  }
+}
+
+/* Task name's "open task" expand icon — hidden until the row is hovered,
+   matching Home > Overview's priority table (tasks-list.css). */
+.time-entries-log-table .row-action-button {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.time-entries-log-table .ant-table-row:hover .row-action-button,
+.time-entries-log-table .ant-table-row:focus-within .row-action-button {
+  opacity: 1;
+}
+
+/* Visually hidden but still announced - the icon-only Actions column's header. */
+.time-entries-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 768px) {
+  .time-entries-log-table .row-action-button {
+    opacity: 1;
+  }
+}
+
+/* Grouped-by-Member/Client/Project views are
+   hand-rolled flex rows (not an antd Table), so they don't reflow onto
+   multiple lines the way table columns collapse. Below the phone breakpoint
+   they get the same horizontal-scroll treatment as the flat table instead
+   of overflowing the viewport; the outer bordered card stays put and only
+   the row content scrolls. */
+.time-entries-scroll-list {
+  overflow-x: visible;
+}
+
+@media (max-width: 640px) {
+  .time-entries-scroll-list {
+    overflow-x: auto;
+  }
+
+  .time-entries-scroll-list-inner {
+    min-width: 560px;
+  }
+}
+
+/* Row action buttons (edit/delete) in the grouped views are otherwise
+   only revealed on mouse hover, which makes them permanently unreachable on
+   touch devices — force them visible below the tablet breakpoint, same as
+   the flat table's own row-action-button rule above. `!important` is needed
+   because the hover state is also driven by an inline style. */
+@media (max-width: 768px) {
+  .time-entries-row-actions {
+    visibility: visible !important;
   }
 }

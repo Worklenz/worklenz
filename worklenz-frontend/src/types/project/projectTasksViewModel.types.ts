@@ -1,6 +1,7 @@
 import { InlineMember } from '../teamMembers/inlineMember.types';
 import { ITaskLabel } from '../tasks/taskLabel.types';
 import { ITaskStatusViewModel } from '../tasks/taskStatusGetResponse.types';
+import { IssueType } from './softwareIssue.types';
 
 export interface ITaskAssignee {
   team_member_id?: string | null;
@@ -17,6 +18,9 @@ export interface ITaskStatusCategory {
 
 export interface IProjectTask {
   manual_progress?: boolean;
+  story_points?: number | null;
+  issue_type?: IssueType;
+  is_blocked?: boolean;
   due_time?: string;
   id?: string;
   name?: string;

@@ -71,7 +71,7 @@ const ProjectsReports = () => {
   // Memoize the header children to prevent recreation on every render
   const headerChildren = useMemo(
     () => (
-      <Space>
+      <Space wrap style={{ rowGap: 8 }}>
         <Button>
           <Checkbox checked={archived} onChange={handleArchivedChange}>
             <Typography.Text>{t('includeArchivedButton')}</Typography.Text>

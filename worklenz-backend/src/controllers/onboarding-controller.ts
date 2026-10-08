@@ -114,6 +114,8 @@ export default class OnboardingController extends ProjectTemplatesControllerBase
 
     await this.handleAccountSetup(projectId as string, userId, safeTeamName);
 
+    this.logProjectCreatedFromTemplate(req.user, projectData.name);
+
     return res.status(200).send(new ServerResponse(true, { id: projectId }));
   }
 }

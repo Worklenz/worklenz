@@ -2,7 +2,7 @@
   "name": "Name",
   "client": "Kunde",
   "category": "Kategorie",
-  "status": "Status",
+  "status": "Alle Status",
   "priority": "Priorität",
   "tasksProgress": "Aufgabenfortschritt",
   "updated_at": "Zuletzt aktualisiert",

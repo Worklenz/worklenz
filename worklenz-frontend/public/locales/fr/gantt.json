@@ -1,0 +1,97 @@
+{
+  "backlogGroupName": "Carnet de commandes",
+  "task": {
+    "open": "Ouvert",
+    "clickViewPhaseDetails": "Cliquez pour voir les détails de la phase",
+    "clickNavigateTimeline": "Cliquez pour accéder à la tâche dans la chronologie",
+    "clickTimelineSetDates": "Cliquez sur la chronologie pour définir les dates de cette tâche",
+    "clickTimelineAddDates": "Cliquez sur la chronologie pour ajouter des dates",
+    "setTaskDate": "Définir les dates des tâches",
+    "setTaskDateHint": "Cliquez sur la chronologie pour définir une plage de dates {{duration}} pour cette tâche",
+    "addTask": "Ajouter une tâche",
+    "resizeStartDate": "Redimensionner la date de début",
+    "resizeEndDate": "Redimensionner la date de fin",
+    "dragToMove": "Faites glisser pour déplacer la tâche",
+    "addTaskFor": "Ajouter une tâche pour {{date}}",
+    "enterTaskName": "Entrez le nom de la tâche...",
+    "pressEnterToCreate": "Appuyez sur Entrée pour créer • Esc pour annuler",
+    "phaseTitle": "Phase : {{name}} - {{startDate}} à {{endDate}}",
+    "taskTitle": "{{name}} - {{startDate}} à {{endDate}}",
+    "datesUpdatedSuccessfully": "Dates des tâches mises à jour avec succès",
+    "failedToUpdateDates": "Échec de la mise à jour des dates des tâches",
+    "addSubtask": "Ajouter une sous-tâche",
+    "addTaskInputPlaceholder": "Tapez le nom de la tâche et appuyez sur Entrée pour enregistrer",
+    "writeTaskName": "Écrivez un nom de tâche",
+    "writeSubtaskName": "Écrivez un nom de sous-tâche",
+    "expandSubtasks": "Développer les sous-tâches",
+    "collapseSubtasks": "Réduire les sous-tâches",
+    "finishToStartDependency": "Dépendance de la fin au début",
+    "startToFinishDependency": "Dépendance du début à la fin",
+    "dependencyType": "Type de dépendance",
+    "removeDependency": "Supprimer",
+    "removeDependencyTooltip": "Supprimer la dépendance",
+    "circularDependencyError": "Cela créerait une dépendance circulaire.",
+    "dependencyCreatedSuccessfully": "Dépendance créée avec succès.",
+    "dependencyRemovedSuccessfully": "Dépendance supprimée avec succès.",
+    "failedToCreateDependency": "Échec de la création de la dépendance.",
+    "failedToRemoveDependency": "Échec de la suppression de la dépendance.",
+    "taskAddedToRoadmap": "Tâche ajoutée à la feuille de route pour les 5 prochains jours.",
+    "failedToAddTaskToRoadmap": "Échec de l'ajout de la tâche à la feuille de route.",
+    "unscheduledTaskNotFound": "Impossible de trouver la tâche sélectionnée."
+  },
+  "common": {
+    "noStart": "Pas de démarrage",
+    "noEnd": "Pas de fin"
+  },
+  "sections": {
+    "unmapped": "Non mappé"
+  },
+  "grouping": {
+    "phase": "Phase",
+    "status": "Statut",
+    "priority": "Priorité"
+  },
+  "toolbar": {
+    "zoomIn": "Zoomer",
+    "zoomOut": "Zoom arrière",
+    "expandAll": "Développer tout",
+    "collapseAll": "Réduire tout",
+    "today": "Aujourd'hui",
+    "fullscreen": "Plein écran",
+    "noDate": "Aucune date",
+    "viewBy": "Afficher par",
+    "sortBy": "Trier par",
+    "sortManual": "Manuel",
+    "sortChronological": "Chronologique"
+  },
+  "viewMode": {
+    "day": "Jour",
+    "week": "Semaine",
+    "month": "Mois",
+    "quarter": "Trimestre",
+    "year": "Année"
+  },
+  "businessPlan": {
+    "phaseCreationRestricted": "La création de phases est disponible uniquement pour les utilisateurs du plan Business",
+    "taskCreationRestricted": "La création de tâches est disponible uniquement pour les utilisateurs du plan Business",
+    "phaseEditingRestricted": "La modification des phases est disponible uniquement pour les utilisateurs du forfait Business.",
+    "taskEditingRestricted": "La modification des tâches est disponible uniquement pour les utilisateurs du plan Business",
+    "phaseReorderingRestricted": "La réorganisation des phases est disponible uniquement pour les utilisateurs du plan Business."
+  },
+  "list": {
+    "taskNameColumn": "Nom de la tâche",
+    "addNewPhase": "Ajouter une nouvelle phase",
+    "addNewStatus": "Ajouter un nouveau statut",
+    "noTasksAvailable": "Aucune tâche disponible",
+    "setDates": "Fixer des dates",
+    "clickToEditDates": "Cliquez pour modifier les dates"
+  },
+  "roadmap": {
+    "phasesAndTasks": "Phases et tâches",
+    "tasksCount": "tâches",
+    "complete": "complet",
+    "dragDisabledInChronological": "Passer à l'ordre manuel pour glisser-réorganiser les phases"
+  },
+  "unscheduledTasksTitle": "Tâches non planifiées",
+  "noUnscheduledTasks": "Aucune tâche non planifiée disponible."
+}

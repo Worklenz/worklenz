@@ -3,11 +3,12 @@ import { IServerResponse } from '@/types/common.types';
 import {
   IAccountSetupRequest,
   IAccountSetupResponse,
+  ICustomTemplate,
   IProjectTemplate,
   IWorklenzTemplate,
 } from '@/types/project-templates/project-templates.types';
 import apiClient from '../api-client';
-import { ICustomProjectTemplateCreateRequest } from '@/types/project/projectTemplate.types';
+import { ICustomProjectTemplateCreateRequest, ICustomProjectTemplateImportRequest, ICustomProjectTemplateImportResult, ICustomProjectTemplateDefinitionPayload, ICustomFromWorklenzTemplateRequest } from '@/types/project/projectTemplate.types';
 
 const rootUrl = `${API_BASE_URL}/project-templates`;
 const onboardingRootUrl = `${API_BASE_URL}/onboarding`;
@@ -37,7 +38,7 @@ export const projectTemplatesApiService = {
     return response.data;
   },
 
-  getCustomTemplates: async (): Promise<IServerResponse<IWorklenzTemplate[]>> => {
+  getCustomTemplates: async (): Promise<IServerResponse<ICustomTemplate[]>> => {
     const response = await apiClient.get(`${rootUrl}/custom-templates`);
     return response.data;
   },
@@ -58,7 +59,9 @@ export const projectTemplatesApiService = {
   createCustomTemplate: async (
     body: ICustomProjectTemplateCreateRequest
   ): Promise<IServerResponse<IProjectTemplate>> => {
-    const response = await apiClient.post(`${rootUrl}/custom-template`, body);
+    const response = await apiClient.post(`${rootUrl}/custom-template`, body, {
+      headers: { 'X-Silent-Request': '1' },
+    });
     return response.data;
   },
 
@@ -78,14 +81,40 @@ export const projectTemplatesApiService = {
     return response.data;
   },
 
-  createFromCustomTemplate: async (body: {
-    template_id: string;
-    project_name?: string;
-    color_code?: string;
-  }): Promise<IServerResponse<IProjectTemplate>> => {
+  createFromCustomTemplate: async (
+    body: ICustomProjectTemplateImportRequest
+  ): Promise<IServerResponse<IProjectTemplate & ICustomProjectTemplateImportResult>> => {
     const response = await apiClient.post(`${rootUrl}/import-custom-template`, body, {
       headers: { 'X-Silent-Request': '1' },
     });
+    return response.data;
+  },
+
+  /** One-click duplicate of a custom project template ("Copy of …"). */
+  duplicateCustomTemplate: async (
+    id: string
+  ): Promise<IServerResponse<{ id: string; name: string }>> => {
+    const response = await apiClient.post(`${rootUrl}/custom-template/${id}/duplicate`);
+    return response.data;
+  },
+
+  /** Full in-place update of a custom project template definition. */
+  updateCustomTemplateDefinition: async (
+    id: string,
+    body: ICustomProjectTemplateDefinitionPayload
+  ): Promise<IServerResponse<{ id: string; name: string }>> => {
+    const response = await apiClient.put(`${rootUrl}/custom-template/${id}`, body);
+    return response.data;
+  },
+
+  /**
+   * Copy & Customize: save a built-in (worklenz) template as a new custom template.
+   * Optional definition fields override the built-in catalog values.
+   */
+  createCustomFromWorklenzTemplate: async (
+    body: ICustomFromWorklenzTemplateRequest
+  ): Promise<IServerResponse<{ id: string; name: string }>> => {
+    const response = await apiClient.post(`${rootUrl}/custom-template/from-worklenz`, body);
     return response.data;
   },
 };

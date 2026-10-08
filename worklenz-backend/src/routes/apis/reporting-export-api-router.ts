@@ -4,6 +4,7 @@ import ReportingOverviewExportController from "../../controllers/reporting/overv
 import ReportingAllocationController from "../../controllers/reporting/reporting-allocation-controller";
 import ReportingProjectsExportController from "../../controllers/reporting/projects/reporting-projects-export-controller";
 import ReportingMembersController from "../../controllers/reporting/reporting-members-controller";
+import ReportingTimeLogsController from "../../controllers/reporting/reporting-time-logs-controller";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 
 const reportingExportApiRouter = express.Router();
@@ -22,6 +23,8 @@ reportingExportApiRouter.get("/member-tasks/export", teamOwnerOrAdminValidator, 
 reportingExportApiRouter.get("/flat-tasks/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.exportFlatTasks));
 reportingExportApiRouter.get("/member-time-log-breakdown/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.exportTimeLogs));
 reportingExportApiRouter.get("/member-activity-log-breakdown/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.exportActivityLogs));
+// The two timelogs-flat exports are superseded by /time-logs/export (CSV or Excel, filtered or all, with totals).
+reportingExportApiRouter.get("/time-logs/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingTimeLogsController.exportTimeLogs));
 reportingExportApiRouter.get("/timelogs-flat/export-csv", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.exportTimelogsFlatCSV));
 reportingExportApiRouter.get("/timelogs-flat/export-excel", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.exportTimelogsFlatExcel));
 

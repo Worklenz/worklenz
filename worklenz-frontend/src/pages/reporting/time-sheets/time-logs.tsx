@@ -1,326 +1,260 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Button,
-  Card,
-  Flex,
-  Select,
-  Table,
-  Typography,
-  Input,
-  Dropdown,
-  Space,
-  Checkbox,
-} from '@/shared/antd-imports';
-import { DownOutlined } from '@ant-design/icons';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Flex, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { reportingExportApiService } from '@/api/reporting/reporting-export.api.service';
-import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
-import { reportingApiService } from '@/api/reporting/reporting.api.service';
-import TimeWiseFilter from '@/components/reporting/time-wise-filter';
-import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
-import logger from '@/utils/errorLogger';
+import { reportingTimeLogsApiService } from '@/api/reporting/reporting-time-logs.api.service';
+import {
+  ITimeLogGroupsRequest,
+  ITimeLogsListRequest,
+  TimeLogSortField,
+  TimeLogSortOrder,
+  TimeLogsExportFormat,
+  TimeLogsExportMode,
+  TimeLogsGroupBy,
+  TimeLogsTableView,
+} from '@/types/reporting/time-logs.types';
+import { TimeLogsFilters } from './components/time-logs/TimeLogsFilters';
+import { TimeLogsGroupedList } from './components/time-logs/TimeLogsGroupedList';
+import { TimeLogsTable } from './components/time-logs/TimeLogsTable';
+import {
+  DEFAULT_TIME_LOGS_FILTERS,
+  ITimeLogsFilterState,
+  areFiltersEqual,
+  countActiveFilters,
+  formatResolvedRange,
+  resolveDateRange,
+  toFilterRequest,
+} from './components/time-logs/time-logs-filters';
+import { useTimeLogGroupsData } from './components/time-logs/useTimeLogGroupsData';
+import { useTimeLogsData } from './components/time-logs/useTimeLogsData';
+import {
+  useMemberFilterOptions,
+  useStaticFilterOptions,
+} from './components/time-logs/useTimeLogFilterOptions';
 
-interface LogRow {
-  key: string;
-  date: string;
-  member: string;
-  project: string;
-  task: string;
-  description?: string;
-  duration: string;
-}
+const { Title, Text } = Typography;
+
+const DEFAULT_PAGE_SIZE = 20;
+
+// `group_by` and `view` live in the URL (like Projects > Time Entries), so a shared link reproduces
+// the same layout. Anything else — an old bookmark, a typo — falls back to the default.
+const GROUP_BY_PARAM = 'group_by';
+const VIEW_PARAM = 'view';
+
+const parseGroupBy = (value: string | null): TimeLogsGroupBy =>
+  value === 'member' || value === 'project' || value === 'client' ? value : 'none';
+
+const parseTableView = (value: string | null): TimeLogsTableView =>
+  value === 'task' ? 'task' : 'flat';
 
 const TimeLogsPage: React.FC = () => {
   const { t } = useTranslation('time-report');
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Global context
-  const team = useAppSelector(state => (state as any).auth?.team);
-  const reporting = useAppSelector(state => state.reportingReducer);
-
-  // Local state
-  const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
-  const [selectedMemberId, setSelectedMemberId] = useState<string | undefined>();
-  const [loading, setLoading] = useState(false);
-  const [logs, setLogs] = useState<LogRow[]>([]);
-  const [search, setSearch] = useState<string>('');
-  const [pageSize, setPageSize] = useState(20);
-  const [billableFilter, setBillableFilter] = useState<{ billable: boolean; nonBillable: boolean }>(
-    { billable: true, nonBillable: true }
+  const [filters, setFilters] = useState<ITimeLogsFilterState>(DEFAULT_TIME_LOGS_FILTERS);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [sortField, setSortField] = useState<TimeLogSortField | null>(null);
+  const [sortOrder, setSortOrder] = useState<TimeLogSortOrder>('desc');
+  const [groupBy, setGroupBy] = useState<TimeLogsGroupBy>(() =>
+    parseGroupBy(searchParams.get(GROUP_BY_PARAM))
+  );
+  const [tableView, setTableView] = useState<TimeLogsTableView>(() =>
+    parseTableView(searchParams.get(VIEW_PARAM))
   );
 
-  // Columns
-  const columns = useMemo(
-    () => [
-      {
-        title: t('Date'),
-        dataIndex: 'date',
-        key: 'date',
-        width: 160,
-        render: (value: string) => dayjs(value).format('MMM DD, YYYY'),
-      },
-      { title: t('Member'), dataIndex: 'member', key: 'member', width: 200 },
-      { title: t('Project'), dataIndex: 'project', key: 'project', width: 220 },
-      { title: t('Task'), dataIndex: 'task', key: 'task', width: 260 },
-      { title: t('Description'), dataIndex: 'description', key: 'description' },
-      {
-        title: t('Duration'),
-        dataIndex: 'duration',
-        key: 'duration',
-        width: 140,
-        align: 'right' as const,
-      },
-    ],
-    [t]
+  const isGrouped = groupBy !== 'none';
+
+  const { datePreset, customRange } = filters;
+  const range = useMemo(
+    () => resolveDateRange({ datePreset, customRange }),
+    [datePreset, customRange]
   );
 
-  // Fetch members for filter (admin/owner friendly)
+  const filterRequest = useMemo(
+    () => toFilterRequest(filters, search, range),
+    [filters, search, range]
+  );
+
+  const request = useMemo<ITimeLogsListRequest>(
+    () => ({
+      ...filterRequest,
+      page,
+      page_size: pageSize,
+      view: tableView,
+      ...(sortField ? { sort_field: sortField, sort_order: sortOrder } : {}),
+    }),
+    [filterRequest, page, pageSize, tableView, sortField, sortOrder]
+  );
+
+  const groupsRequest = useMemo<ITimeLogGroupsRequest | null>(
+    () => (isGrouped ? { ...filterRequest, group_by: groupBy, page, page_size: pageSize } : null),
+    [isGrouped, filterRequest, groupBy, page, pageSize]
+  );
+
+  // Only the view on screen loads: the table (flat or by task) or the grouped list.
+  const table = useTimeLogsData(request, !isGrouped);
+  const grouped = useTimeLogGroupsData(groupsRequest);
+  const { projects, practices, clients } = useStaticFilterOptions();
+  const members = useMemberFilterOptions(range, filters.userIds);
+
+  // Keep the layout shareable through the URL.
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await teamMembersApiService.getAll();
-        if (res.done && Array.isArray(res.body)) {
-          const mapped = res.body.map(m => ({ id: m.id as string, name: m.name as string }));
-          setMembers(mapped);
-        }
-      } catch (error) {
-        logger.error('Error fetching team members', error);
-      }
-    })();
+    if (
+      searchParams.get(GROUP_BY_PARAM) === groupBy &&
+      searchParams.get(VIEW_PARAM) === tableView
+    ) {
+      return;
+    }
+    setSearchParams(
+      prev => {
+        const next = new URLSearchParams(prev);
+        next.set(GROUP_BY_PARAM, groupBy);
+        next.set(VIEW_PARAM, tableView);
+        return next;
+      },
+      { replace: true }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts to the layout, not to the URL
+  }, [groupBy, tableView]);
+
+  const handleApplyFilters = useCallback((next: ITimeLogsFilterState) => {
+    setFilters(prev => (areFiltersEqual(prev, next) ? prev : next));
+    setPage(1);
   }, []);
 
-  // Fetch logs
-  const fetchLogs = async () => {
-    const dr = reporting.dateRange;
-    if (!dr || dr.length !== 2) return;
-    setLoading(true);
-    try {
-      const startDate = dayjs(dr[0]).format('YYYY-MM-DD');
-      const endDate = dayjs(dr[1]).format('YYYY-MM-DD');
+  const handleSearch = useCallback((value: string) => {
+    setSearch(value);
+    setPage(1);
+  }, []);
 
-      // If a member is selected, fetch member-specific; otherwise fetch flat logs
-      if (selectedMemberId) {
-        // Use the same flat endpoint with member filter for consistency with the no-member case
-        const body = {
-          team_member_id: selectedMemberId,
-          team_id: team?.id || null,
-          duration: null,
-          date_range: [startDate, endDate],
-          billable: billableFilter,
-          archived: false,
-          search: search || undefined,
-        } as any;
-        const res = await reportingApiService.getTimelogsFlat(body);
-        if (res.done && Array.isArray(res.body)) {
-          const rows: LogRow[] = res.body.flatMap(group =>
-            group.logs.map((l: any, idx: number) => ({
-              key: `${group.log_day}-${idx}`,
-              date: group.log_day,
-              member: (l as any).user_name,
-              project: l.project_name,
-              task: l.task_name,
-              description: l.description || '',
-              duration: l.time_spent_string,
-            }))
-          );
-          setLogs(rows);
-        } else {
-          setLogs([]);
-        }
-      } else {
-        const body = {
-          team_member_id: null,
-          team_id: team?.id || null,
-          duration: null,
-          date_range: [startDate, endDate],
-          billable: billableFilter,
-          archived: false,
-          search: search || undefined,
-        } as any;
-        const res = await reportingApiService.getTimelogsFlat(body);
-        if (res.done && Array.isArray(res.body)) {
-          const rows: LogRow[] = res.body.flatMap(group =>
-            group.logs.map((l: any, idx: number) => ({
-              key: `${group.log_day}-${idx}`,
-              date: group.log_day,
-              member: (l as any).user_name,
-              project: l.project_name,
-              task: l.task_name,
-              description: l.description || '',
-              duration: l.time_spent_string,
-            }))
-          );
-          setLogs(rows);
-        } else {
-          setLogs([]);
-        }
-      }
-    } catch (error) {
-      logger.error('Error fetching time logs', error);
-      setLogs([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    selectedMemberId,
-    reporting.dateRange?.[0],
-    reporting.dateRange?.[1],
-    billableFilter.billable,
-    billableFilter.nonBillable,
-    search,
-  ]);
-
-  const onExportExcel = () => {
-    if (!reporting.dateRange || reporting.dateRange.length !== 2) return;
-    const startDate = dayjs(reporting.dateRange[0]).format('YYYY-MM-DD');
-    const endDate = dayjs(reporting.dateRange[1]).format('YYYY-MM-DD');
-
-    reportingExportApiService.exportTimelogsFlatExcel({
-      team_member_id: selectedMemberId || undefined,
-      duration: undefined,
-      date_range: [startDate, endDate],
-      billable: billableFilter,
-      search: search || undefined,
-    });
-  };
-
-  const onExportCSV = () => {
-    if (!reporting.dateRange || reporting.dateRange.length !== 2) return;
-    const startDate = dayjs(reporting.dateRange[0]).format('YYYY-MM-DD');
-    const endDate = dayjs(reporting.dateRange[1]).format('YYYY-MM-DD');
-
-    reportingExportApiService.exportTimelogsFlatCSV({
-      team_member_id: selectedMemberId || undefined,
-      duration: undefined,
-      date_range: [startDate, endDate],
-      billable: billableFilter,
-      search: search || undefined,
-    });
-  };
-
-  const filteredLogs = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return logs;
-    return logs.filter(
-      l =>
-        l.project.toLowerCase().includes(term) ||
-        l.task.toLowerCase().includes(term) ||
-        (l.description || '').toLowerCase().includes(term) ||
-        l.member.toLowerCase().includes(term)
-    );
-  }, [logs, search]);
-
-  const exportMenu = {
-    items: [
-      { key: 'excel', label: t('Export Excel') },
-      { key: 'csv', label: t('Export CSV') },
-    ],
-    onClick: ({ key }: any) => {
-      if (key === 'excel') onExportExcel();
-      if (key === 'csv') onExportCSV();
+  const handleSortChange = useCallback(
+    (field: TimeLogSortField) => {
+      setPage(1);
+      setSortOrder(prev => (sortField === field && prev === 'asc' ? 'desc' : 'asc'));
+      setSortField(field);
     },
-  } as any;
+    [sortField]
+  );
 
-  const secondaryFiltersMenu = {
-    items: [
-      {
-        key: 'filters',
-        label: (
-          <div style={{ padding: '8px 4px', minWidth: 200 }}>
-            <Typography.Text
-              type="secondary"
-              style={{
-                fontSize: 11,
-                fontWeight: 500,
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                display: 'block',
-                marginBottom: 12,
-              }}
-            >
-              {t('Task Type')}
-            </Typography.Text>
-            <Space direction="vertical" size={8} style={{ width: '100%' }}>
-              <Checkbox
-                checked={billableFilter.billable}
-                onChange={e => setBillableFilter(prev => ({ ...prev, billable: e.target.checked }))}
-                style={{ width: '100%' }}
-              >
-                <span style={{ fontSize: 14 }}>{t('Billable')}</span>
-              </Checkbox>
-              <Checkbox
-                checked={billableFilter.nonBillable}
-                onChange={e =>
-                  setBillableFilter(prev => ({ ...prev, nonBillable: e.target.checked }))
-                }
-                style={{ width: '100%' }}
-              >
-                <span style={{ fontSize: 14 }}>{t('Non-billable')}</span>
-              </Checkbox>
-            </Space>
-          </div>
-        ),
-      },
-    ],
-  } as any;
+  // (page, pageSize) matches TablePagination's contract: it resets to page 1 itself when
+  // rows-per-page changes.
+  const handlePageChange = useCallback((nextPage: number, nextPageSize: number) => {
+    setPage(nextPage);
+    setPageSize(nextPageSize);
+  }, []);
+
+  // A different layout is a different list: start from its first page.
+  const handleTableViewChange = useCallback((next: TimeLogsTableView) => {
+    setTableView(next);
+    setPage(1);
+  }, []);
+
+  const handleGroupByChange = useCallback((next: TimeLogsGroupBy) => {
+    setGroupBy(next);
+    setPage(1);
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setFilters(DEFAULT_TIME_LOGS_FILTERS);
+    setSearch('');
+    setPage(1);
+  }, []);
+
+  const handleExport = useCallback(
+    (mode: TimeLogsExportMode, format: TimeLogsExportFormat) => {
+      // "Filtered" exports the screen as it is — all of it, not just the page on screen: the groups
+      // when grouped, otherwise the entries or tasks in the table's view and sort.
+      reportingTimeLogsApiService.exportTimeLogs({
+        format,
+        mode,
+        filters: filterRequest,
+        groupBy: groupsRequest?.group_by,
+        sortField: isGrouped ? undefined : (sortField ?? undefined),
+        sortOrder: !isGrouped && sortField ? sortOrder : undefined,
+        view: isGrouped ? undefined : tableView,
+      });
+    },
+    [filterRequest, groupsRequest, isGrouped, sortField, sortOrder, tableView]
+  );
+
+  const canClearFilters = countActiveFilters(filters) > 0 || search.trim().length > 0;
+  const rangeLabel =
+    formatResolvedRange(range) ?? t('timeLogsPresetAllTime', { defaultValue: 'All Time' });
 
   return (
-    <Flex vertical>
-      <CustomPageHeader
-        title={t('Time Logs')}
-        style={{ padding: 0, marginBottom: 16 }}
-        children={
-          <Space wrap style={{ rowGap: 8 }}>
-            <TimeWiseFilter />
-            <Select
-              placeholder={t('Select member')}
-              style={{ width: 220, maxWidth: '100%' }}
-              allowClear
-              value={selectedMemberId}
-              onChange={setSelectedMemberId}
-              options={members.map(m => ({ label: m.name, value: m.id }))}
-            />
-            <Input.Search
-              placeholder={t('Search logs')}
-              allowClear
-              style={{ width: 220, maxWidth: '100%' }}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            <Dropdown menu={secondaryFiltersMenu} trigger={['click']}>
-              <Button>{t('Filters')}</Button>
-            </Dropdown>
-            <Button onClick={fetchLogs}>{t('Refresh')}</Button>
-            <Dropdown menu={exportMenu}>
-              <Button type="primary" icon={<DownOutlined />} iconPosition="end">
-                {t('export')}
-              </Button>
-            </Dropdown>
-          </Space>
-        }
-      />
+    // Fills the Reports content pane exactly (ReportingLayout gives it a definite height via
+    // flex-stretch) as a flex column, like Home > My Tasks: the title and the controls row are
+    // fixed-height (flexShrink: 0) and the table region is the one flexible area (flex: 1,
+    // minHeight: 0). The table card inside it shrinks to fit its rows and is capped at that
+    // region's height, scrolling its own rows — so the page itself never scrolls, not even when
+    // "rows per page" is raised.
+    <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <Flex align="baseline" wrap="wrap" gap={12} style={{ marginBottom: 16, flexShrink: 0 }}>
+        <Title level={4} style={{ margin: 0 }}>
+          {t('Time Logs', { defaultValue: 'Time Logs' })}
+        </Title>
+        <Text type="secondary" style={{ fontSize: 13 }}>
+          {rangeLabel}
+        </Text>
+      </Flex>
 
-      <Card style={{ borderRadius: '4px' }} styles={{ body: { padding: 0 } }}>
-        <Table
-          size="small"
-          loading={loading}
-          dataSource={filteredLogs}
-          columns={columns}
-          scroll={{ x: 'max-content' }}
-          locale={{ emptyText: t('noData') }}
-          pagination={{ pageSize,
-                        showSizeChanger: true,
-                        pageSizeOptions: ['20', '50', '100'],
-                        onShowSizeChange: (_current, size) => setPageSize(size), }}
+      <div style={{ marginBottom: 16, flexShrink: 0 }}>
+        <TimeLogsFilters
+          search={search}
+          onSearch={handleSearch}
+          filters={filters}
+          onApplyFilters={handleApplyFilters}
+          projects={projects}
+          practices={practices}
+          clients={clients}
+          members={members}
+          tableView={tableView}
+          onTableViewChange={handleTableViewChange}
+          groupBy={groupBy}
+          onGroupByChange={handleGroupByChange}
+          onExport={handleExport}
         />
-      </Card>
-    </Flex>
+      </div>
+
+      <div style={{ flex: '1 1 auto', minHeight: 0 }}>
+        {groupsRequest ? (
+          <TimeLogsGroupedList
+            groups={grouped.groups}
+            groupBy={groupsRequest.group_by}
+            filterRequest={filterRequest}
+            loading={grouped.loading}
+            failed={grouped.failed}
+            onRetry={grouped.reload}
+            totalGroups={grouped.totalGroups}
+            totalEntries={grouped.totalEntries}
+            totalSeconds={grouped.totalSeconds}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            onClearFilters={canClearFilters ? handleClearFilters : undefined}
+          />
+        ) : (
+          <TimeLogsTable
+            logs={table.logs}
+            view={tableView}
+            loading={table.loading}
+            failed={table.failed}
+            onRetry={table.reload}
+            total={table.total}
+            totalSeconds={table.totalSeconds}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            sortField={sortField}
+            sortOrder={sortOrder}
+            onSortChange={handleSortChange}
+            onClearFilters={canClearFilters ? handleClearFilters : undefined}
+          />
+        )}
+      </div>
+    </div>
   );
 };
 

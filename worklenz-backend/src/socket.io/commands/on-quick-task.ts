@@ -138,7 +138,9 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
             d.task.project_id,
             d.task.id,
             "task_created",
-            userName
+            userName,
+            undefined,
+            userId
           );
         } catch (notifError) {
           log_error("Error sending external notifications:", notifError);

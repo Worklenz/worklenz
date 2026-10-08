@@ -13,6 +13,7 @@ export interface IProjectMemberViewModel extends IProjectMember {
   job_title?: string;
   avatar_url?: string;
   team_member_id?: string;
+  active?: boolean;
 }
 
 export interface IProjectMembersViewModel {

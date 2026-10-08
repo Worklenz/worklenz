@@ -43,6 +43,7 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({ themeClasses, isDark
       { label: t('taskText', { defaultValue: 'Task' }), key: 'name' },
       { label: t('statusText', { defaultValue: 'Status' }), key: 'status' },
       { label: t('priorityText', { defaultValue: 'Priority' }), key: 'priority' },
+      { label: t('attachmentsText', { defaultValue: 'Attachments' }), key: 'attachments_count' },
       { label: t('startDateText', { defaultValue: 'Start Date' }), key: 'start_date' },
       { label: t('dueDateText', { defaultValue: 'Due Date' }), key: 'end_date' },
       { label: t('completedDateText', { defaultValue: 'Completed Date' }), key: 'completed_at' },

@@ -69,7 +69,9 @@ export async function on_task_name_change(_io: Server, socket: Socket, data?: st
           response.project_id,
           body.task_id,
           "task_updated",
-          userName
+          userName,
+          undefined,
+          userId
         );
       }
     } catch (notifError) {

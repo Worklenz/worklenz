@@ -62,7 +62,6 @@ export const BASE_COLUMNS: ColumnConfig[] = [
     isSticky: true,
     key: COLUMN_KEYS.NAME,
     minWidth: '200px',
-    maxWidth: '400px',
   },
   {
     id: 'description',
@@ -74,6 +73,7 @@ export const BASE_COLUMNS: ColumnConfig[] = [
   },
   { id: 'progress', label: 'progressColumn', width: '120px', key: COLUMN_KEYS.PROGRESS },
   { id: 'status', label: 'statusColumn', width: '120px', key: COLUMN_KEYS.STATUS },
+  { id: 'epic', label: 'epicColumn', width: '180px', key: 'EPIC' },
   { id: 'assignees', label: 'assigneesColumn', width: '150px', key: COLUMN_KEYS.ASSIGNEES },
   {
     id: 'labels',
@@ -84,6 +84,7 @@ export const BASE_COLUMNS: ColumnConfig[] = [
   },
   { id: 'phase', label: 'phaseColumn', width: '120px', key: COLUMN_KEYS.PHASE },
   { id: 'priority', label: 'priorityColumn', width: '120px', key: COLUMN_KEYS.PRIORITY },
+  { id: 'points', label: 'pointsColumn', width: '90px', key: 'POINTS' },
   {
     id: 'timeTracking',
     label: 'timeTrackingColumn',
@@ -103,6 +104,20 @@ export const BASE_COLUMNS: ColumnConfig[] = [
   { id: 'createdDate', label: 'createdDateColumn', width: '140px', key: COLUMN_KEYS.CREATED_DATE },
   { id: 'lastUpdated', label: 'lastUpdatedColumn', width: '140px', key: COLUMN_KEYS.LAST_UPDATED },
   { id: 'reporter', label: 'reporterColumn', width: '120px', key: COLUMN_KEYS.REPORTER },
+  {
+    id: 'attachments',
+    label: 'attachmentsColumn',
+    width: '120px',
+    key: COLUMN_KEYS.ATTACHMENTS,
+  },
+  {
+    id: 'comments',
+    label: 'commentsColumn',
+    width: '240px',
+    key: COLUMN_KEYS.COMMENTS,
+    minWidth: '160px',
+    maxWidth: '400px',
+  },
 ] as const;
 
 export type BaseColumn = typeof BASE_COLUMNS[number];

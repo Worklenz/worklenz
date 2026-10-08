@@ -10,7 +10,7 @@
     "connected": "Conectado"
   },
   "stats": {
-    "total": "Total",
+    "total": "totales",
     "active": "Activo",
     "available": "Disponible"
   },
@@ -23,7 +23,7 @@
     "step2": {
       "title": "2. Invitar Bot a los Canales",
       "description": "En cada canal de Slack donde desees recibir notificaciones, escribe:",
-      "command": "/invite @Worklenz",
+      "command": "/invitar a @Worklenz",
       "note": "Solo necesitas hacer esto una vez por canal."
     },
     "step3": {

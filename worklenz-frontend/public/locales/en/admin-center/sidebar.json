@@ -5,5 +5,7 @@
   "billing": "Billing",
   "projects": "Projects",
   "settings": "Utilization Settings",
-  "adminCenter": "Admin Center"
+  "adminCenter": "Admin Center",
+  "security": "Security",
+  "newBadge": "NEW"
 }

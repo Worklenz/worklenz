@@ -1,5 +1,25 @@
 {
   "noTasksInGroup": "Keine Aufgaben in dieser Gruppe",
+  "backlogGroupName": "Rückstand",
+  "unassignedGroupName": "Nicht zugewiesen",
+  "sprintStatusActive": "Aktiv",
+  "sprintStatusPlanned": "Geplant",
+  "sprintStatusCompleted": "Abgeschlossen",
+  "currentSprintName": "Aktueller Sprint · {{name}}",
+  "sprintCompletedCount": "{{done}}/{{total}} abgeschlossen",
+  "sprintCompletedPoints": "{{done}}/{{total}} Punkte abgeschlossen",
+  "sprintPointsTotal": "{{total}} Punkte gesamt",
+  "sprintScopeAdded": "+{{count}} Bereich",
+  "sprintScopeAddedTooltip": "Nach dem Start des Sprints hinzugefügte Probleme",
+  "sprintItemCount_one": "{{count}} Element",
+  "sprintItemCount_other": "{{count}} Elemente",
+  "backlogSectionGoal": "Priorisierte zukünftige Arbeit",
+  "selectAllInGroup": "Alles in {{name}} auswählen",
+  "sprintActionsFor": "Aktionen für {{name}}",
+  "viewOnBoard": "An Bord ansehen",
+  "completeSprint": "Kompletter Sprint",
+  "startSprint": "Sprint starten",
+  "editSprint": "Sprint bearbeiten",
   "noTasksInGroupDescription": "Fügen Sie eine Aufgabe hinzu, um zu beginnen",
   "addFirstTask": "Fügen Sie Ihre erste Aufgabe hinzu",
   "openTask": "Öffnen",
@@ -22,7 +42,6 @@
   "inProgress": "In Bearbeitung",
   "done": "Erledigt",
   "defaultTaskName": "Unbenannte Aufgabe",
-
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} Unteraufgabe",

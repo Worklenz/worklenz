@@ -87,7 +87,6 @@
     "todo": "Për të bërë",
     "doing": "Duke bërë",
     "done": "E kryer",
-    "priority": "Prioriteti",
     "newTask": "Detyrë e Re",
     "assignTask": "Cakto Detyrën",
     "createTask": "Krijo Detyrë",
@@ -148,7 +147,8 @@
       "managerAssigned": "{{userName}} caktoi një menaxher për projektin {{projectName}}",
       "managerRemoved": "{{userName}} hoqi menaxherin e projektit {{projectName}}",
       "memberAdded": "{{userName}} shtoi {{memberName}} në projektin {{projectName}}",
-      "memberRemoved": "{{userName}} hoqi {{memberName}} nga projekti {{projectName}}"
+      "memberRemoved": "{{userName}} hoqi {{memberName}} nga projekti {{projectName}}",
+      "managerFinanceChanged": "{{userName}} ndryshoi aksesin financiar të menaxherit të projektit në {{projectName}}"
     },
     "task": {
       "created": "{{userName}} krijoi detyrën {{taskName}}",
@@ -258,17 +258,17 @@
     "projectLabel": "Projekti",
     "projectPlaceholder": "Zgjidh projektin…",
     "taskLabel": "Detyra",
-    "taskPlaceholderWithProject": "Kërko detyrë…",
+    "taskPlaceholderWithProject": "Kërko detyrën…",
     "taskPlaceholderNoProject": "Zgjidh një projekt së pari",
     "taskLoading": "Duke ngarkuar…",
     "noTasksFound": "Nuk u gjetën detyra",
     "amountLabel": "Shuma",
     "amountPlaceholder": "0.00",
     "submitButton": "Shto Shpenzim të Detyrës",
-    "upgradePromptTitle": "Shpenzimet",
-    "upgradePromptDescription": "Gjurmoni kostot fikse kundrejt detyrave dhe përqendroni në raportet tuaja financiare. E disponueshme në planin Business.",
-    "loadTasksError": "Nuk mund të ngarkohen detyrat dhe monedha për këtë projekt.",
-    "successMessage": "Kostoja fikse u shtua në detyrë",
+    "upgradePromptTitle": "Shpenzime",
+    "upgradePromptDescription": "Gjurmo kostet fikse kundrejt detyrave dhe përfshiji në raportet tuaja financiare. I disponueshëm në planin Business.",
+    "loadTasksError": "Nuk mund të ngarkohen detyrat dhe valuta e këtij projekti.",
+    "successMessage": "Kostoja fikse u shtua detyrës",
     "errorMessage": "Dështoi shtimi i kostos fikse në detyrë"
   },
   "addClient": {
@@ -382,24 +382,6 @@
     "startTimer": "Nis kohëmatësin"
   },
   "views": "Pamjet",
-  "addExpense": {
-    "modalTitle": "Shto Shpenzim",
-    "projectLabel": "Projekti",
-    "projectPlaceholder": "Zgjidh projektin…",
-    "taskLabel": "Detyra",
-    "taskPlaceholderWithProject": "Kërko detyrën…",
-    "taskPlaceholderNoProject": "Zgjidh një projekt së pari",
-    "taskLoading": "Duke ngarkuar…",
-    "noTasksFound": "Nuk u gjetën detyra",
-    "amountLabel": "Shuma",
-    "amountPlaceholder": "0.00",
-    "submitButton": "Shto Shpenzim të Detyrës",
-    "upgradePromptTitle": "Shpenzime",
-    "upgradePromptDescription": "Gjurmo kostet fikse kundrejt detyrave dhe përfshiji në raportet tuaja financiare. I disponueshëm në planin Business.",
-    "loadTasksError": "Nuk mund të ngarkohen detyrat dhe valuta e këtij projekti.",
-    "successMessage": "Kostoja fikse u shtua detyrës",
-    "errorMessage": "Dështoi shtimi i kostos fikse në detyrë"
-  },
   "timeOff": {
     "timeOff": "Pushim",
     "off": "jashtë",

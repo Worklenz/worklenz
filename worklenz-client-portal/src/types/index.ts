@@ -207,6 +207,18 @@ export interface ClientSettings {
   project_updates: boolean;
   invoice_notifications: boolean;
   request_updates: boolean;
+  // Portal Settings (org-set branding/visibility) — see getOrganizationSettings.
+  primary_color?: string | null;
+  portal_title?: string | null;
+  portal_theme?: 'light' | 'dark';
+  visible_project_plan?: boolean;
+  visible_gantt_timeline?: boolean;
+  visible_files_documents?: boolean;
+  visible_invoices?: boolean;
+  visible_feedback_forms?: boolean;
+  visible_team_members?: boolean;
+  visible_project_updates?: boolean;
+  visible_chat?: boolean;
 }
 
 export interface ClientNotification {

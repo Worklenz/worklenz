@@ -1,5 +1,25 @@
 {
   "noTasksInGroup": "Nuk ka detyra në këtë grup",
+  "backlogGroupName": "Mbështetja",
+  "unassignedGroupName": "E pacaktuar",
+  "sprintStatusActive": "Aktiv",
+  "sprintStatusPlanned": "E planifikuar",
+  "sprintStatusCompleted": "E përfunduar",
+  "currentSprintName": "Sprint aktual · {{name}}",
+  "sprintCompletedCount": "{{done}}/{{total}} përfunduar",
+  "sprintCompletedPoints": "{{done}}/{{total}} pikë të përfunduara",
+  "sprintPointsTotal": "{{total}} pikë gjithsej",
+  "sprintScopeAdded": "+{{count}} fushëveprimi",
+  "sprintScopeAddedTooltip": "Çështjet u shtuan pas fillimit të sprintit",
+  "sprintItemCount_one": "{{count}} element",
+  "sprintItemCount_other": "{{count}} artikuj",
+  "backlogSectionGoal": "Punë me prioritet në të ardhmen",
+  "selectAllInGroup": "Zgjidh të gjitha në {{name}}",
+  "sprintActionsFor": "Veprimet për {{name}}",
+  "viewOnBoard": "Shiko në bord",
+  "completeSprint": "Sprint i plotë",
+  "startSprint": "Filloni sprintin",
+  "editSprint": "Redakto sprint",
   "noTasksInGroupDescription": "Shto një detyrë për të filluar",
   "addFirstTask": "Shto detyrën e parë",
   "openTask": "Hap",
@@ -22,7 +42,6 @@
   "inProgress": "Në Progres",
   "done": "E Kryer",
   "defaultTaskName": "Detyrë Pa Emër",
-
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} nëndetyrë",

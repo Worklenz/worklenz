@@ -23,7 +23,7 @@
     "step2": {
       "title": "2. 邀请机器人到频道",
       "description": "在每个您想要接收通知的 Slack 频道中，输入：",
-      "command": "/invite @Worklenz",
+      "command": "/邀请@Worklenz",
       "note": "每个频道只需执行一次此操作。"
     },
     "step3": {

@@ -1,4 +1,5 @@
 {
+  "backlogGroupName": "Rückstand",
   "task": {
     "open": "Öffnen",
     "clickViewPhaseDetails": "Klicken Sie, um Phasendetails anzuzeigen",
@@ -47,7 +48,7 @@
   },
   "grouping": {
     "phase": "Phase",
-    "status": "Status",
+    "status": "Alle Status",
     "priority": "Priorität"
   },
   "toolbar": {

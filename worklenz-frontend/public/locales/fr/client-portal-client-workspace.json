@@ -1,0 +1,84 @@
+{
+  "retry": "Réessayer",
+  "tabs": {
+    "overview": "Aperçu",
+    "messages": "Messages",
+    "members": "Membres de l'entreprise",
+    "projects": "Projets",
+    "billing": "Facturation"
+  },
+  "portalStatus": {
+    "active": "Actif",
+    "invited": "Invité",
+    "expired": "Expiré",
+    "not_invited": "Non invité"
+  },
+  "header": {
+    "back": "Clientèle",
+    "edit": "Modifier le client",
+    "actionsLabel": "Actions du client",
+    "lastSignedIn": "Dernière connexion {{time}}",
+    "invited": "Invité {{time}}",
+    "neverSignedIn": "Jamais connecté"
+  },
+  "rail": {
+    "contact": "Contacter",
+    "email": "E-mail",
+    "company": "Entreprise",
+    "projects": "Projets",
+    "balance": "Solde",
+    "portalHealth": "État du portail",
+    "signInMethod": "Méthode de connexion",
+    "signInPassword": "Mot de passe",
+    "signInNone": "Pas encore connecté",
+    "lastSignIn": "Dernière connexion",
+    "never": "Jamais",
+    "quickActions": "Actions rapides",
+    "sendMessage": "Envoyer un message",
+    "createInvoice": "Créer une facture",
+    "assignTask": "Assigner une tâche"
+  },
+  "overview": {
+    "tasksOpen": "Tâches ouvertes",
+    "invoicesDue": "Factures dues",
+    "unansweredMessages": "Messages sans réponse",
+    "statsError": "Impossible de charger les statistiques de ce client.",
+    "recentActivity": "Activité récente",
+    "activityError": "Impossible de charger l'activité récente.",
+    "noActivity": "Rien n'a encore été enregistré pour {{name}}."
+  },
+  "members": {
+    "title": "Membres de l'entreprise",
+    "addUser": "Ajouter un utilisateur"
+  },
+  "projects": {
+    "title": "Projets",
+    "project": "Projet",
+    "openProject": "Ouvrir {{name}}",
+    "health": "État",
+    "progress": "Progression",
+    "progressLabel": "Progression de {{name}}",
+    "due": "Échéance",
+    "assign": "Assigner un projet",
+    "loadError": "Impossible de charger les projets de ce client.",
+    "empty": "Aucun projet pour {{name}} pour l'instant.",
+    "truncated": "Affichage des {{shown}} premiers sur {{total}} projets."
+  },
+  "billing": {
+    "title": "Factures",
+    "createInvoice": "Créer une facture",
+    "warningTitle": "{{name}} ne peut pas encore utiliser son portail",
+    "warningDescription": "Il n'a pas encore accepté d'invitation, il ne peut donc pas consulter ni payer de factures dans son portail. Vous pouvez tout de même créer des factures. Envoyez d'abord l'invitation s'il doit pouvoir les voir.",
+    "sendInvite": "Envoyer l'invitation",
+    "resendInvite": "Renvoyer l'invitation",
+    "inviteSent": "Invitation envoyée à {{name}}.",
+    "inviteError": "Impossible d'envoyer l'invitation."
+  },
+  "errors": {
+    "notFoundTitle": "Client introuvable",
+    "notFoundDescription": "Il a peut-être été supprimé, ou le lien est incorrect.",
+    "loadTitle": "Impossible de charger ce client",
+    "loadDescription": "Veuillez réessayer.",
+    "backToClients": "Retour aux clients"
+  }
+}

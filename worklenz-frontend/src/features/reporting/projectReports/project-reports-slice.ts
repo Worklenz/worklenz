@@ -15,6 +15,7 @@ import {
 } from '@/types/reporting/reporting.types';
 import { getFromLocalStorage } from '@/utils/localStorageFunctions';
 import { createAsyncThunk, createSlice, createAction, PayloadAction } from '@reduxjs/toolkit';
+import dayjs from 'dayjs';
 
 const filterIndex = () => {
   return +(getFromLocalStorage(FILTER_INDEX_KEY.toString()) || 0);
@@ -428,11 +429,54 @@ const projectReportsSlice = createSlice({
       if (project) {
         project.start_date = action.payload.start_date;
       }
+      if (state.groupedProjects?.length) {
+        for (const group of state.groupedProjects) {
+          const gp = group.projects?.find(p => p.id === action.payload.id);
+          if (gp) {
+            gp.start_date = action.payload.start_date;
+          }
+        }
+      }
     },
     setProjectEndDate: (state, action) => {
+      const updateProjectDates = (project: IRPTProject) => {
+        project.end_date = action.payload.end_date;
+        if (!action.payload.end_date) {
+          project.days_left = null;
+          project.is_overdue = false;
+          project.is_today = false;
+        } else {
+          const today = dayjs().startOf('day');
+          const end = dayjs(action.payload.end_date).startOf('day');
+          const diff = end.diff(today, 'day');
+
+          if (diff < 0) {
+            project.is_overdue = true;
+            project.is_today = false;
+            project.days_left = Math.abs(diff);
+          } else if (diff === 0) {
+            project.is_overdue = false;
+            project.is_today = true;
+            project.days_left = 0;
+          } else {
+            project.is_overdue = false;
+            project.is_today = false;
+            project.days_left = diff;
+          }
+        }
+      };
+
       const project = state.projectList.find(p => p.id === action.payload.id);
       if (project) {
-        project.end_date = action.payload.end_date;
+        updateProjectDates(project);
+      }
+      if (state.groupedProjects?.length) {
+        for (const group of state.groupedProjects) {
+          const gp = group.projects?.find(p => p.id === action.payload.id);
+          if (gp) {
+            updateProjectDates(gp);
+          }
+        }
       }
     },
     setSelectedMember: (state, action) => {

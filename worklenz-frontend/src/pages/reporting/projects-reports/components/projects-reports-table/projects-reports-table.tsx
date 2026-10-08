@@ -35,7 +35,9 @@ import {
   setIndex,
   setOrder,
   setPageSize,
+  setProjectEndDate,
   setProjectHealth,
+  setProjectStartDate,
   toggleProjectReportsDrawer,
 } from '@/features/reporting/projectReports/project-reports-slice';
 import { colors } from '@/styles/colors';
@@ -83,14 +85,41 @@ const ProjectsReportsTable = () => {
     [dispatch]
   );
 
+  const handleEndDateChangeResponse = useCallback(
+    (data: { project_id: string; end_date: string }) => {
+      dispatch(
+        setProjectEndDate({
+          id: data.project_id,
+          end_date: data.end_date,
+        })
+      );
+    },
+    [dispatch]
+  );
+
+  const handleStartDateChangeResponse = useCallback(
+    (data: { project_id: string; start_date: string }) => {
+      dispatch(
+        setProjectStartDate({
+          id: data.project_id,
+          start_date: data.start_date,
+        })
+      );
+    },
+    [dispatch]
+  );
+
   useEffect(() => {
     if (!socket) return;
-    console.log('REGISTERING HEALTH LISTENER');
     socket.on(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+    socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
+    socket.on(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
     return () => {
       socket.off(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+      socket.off(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
+      socket.off(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
     };
-  }, [socket, handleHealthChangeResponse]);
+  }, [socket, handleHealthChangeResponse, handleEndDateChangeResponse, handleStartDateChangeResponse]);
 
   const handleDrawerOpen = useCallback(
     (record: IRPTProject) => {
@@ -195,8 +224,9 @@ const ProjectsReportsTable = () => {
       },
       {
         key: 'dates',
+        dataIndex: 'end_date',
         title: <CustomTableTitle title={t('datesColumn')} />,
-        render: record => (
+        render: (_, record: IRPTProject) => (
           <ProjectDatesCell
             projectId={record.id}
             startDate={record.start_date}
@@ -207,8 +237,9 @@ const ProjectsReportsTable = () => {
       },
       {
         key: 'daysLeft',
+        dataIndex: 'days_left',
         title: <CustomTableTitle title={t('daysLeftColumn')} />,
-        render: record => (
+        render: (_, record: IRPTProject) => (
           <ProjectDaysLeftAndOverdueCell
             daysLeft={record.days_left}
             isOverdue={record.is_overdue}

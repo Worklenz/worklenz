@@ -398,19 +398,23 @@ interface StatusColumnProps {
   projectId: string;
   isDarkMode: boolean;
   disabled?: boolean;
+  variant?: 'pill' | 'inline';
 }
 
 export const StatusColumn: React.FC<StatusColumnProps> = memo(
-  ({ width, task, projectId, isDarkMode, disabled = false }) => (
+  ({ width, task, projectId, isDarkMode, disabled = false, variant = 'pill' }) => (
     <div
-      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+      className={`flex items-center px-2 border-r border-gray-200 dark:border-gray-700 ${
+        variant === 'inline' ? 'justify-start min-w-0' : 'justify-center'
+      }`}
       style={{ width }}
     >
-      <TaskStatusDropdown 
-        task={task} 
-        projectId={projectId} 
+      <TaskStatusDropdown
+        task={task}
+        projectId={projectId}
         isDarkMode={isDarkMode}
         disabled={disabled}
+        variant={variant}
       />
     </div>
   )
@@ -478,19 +482,23 @@ interface PriorityColumnProps {
   projectId: string;
   isDarkMode: boolean;
   disabled?: boolean;
+  variant?: 'pill' | 'inline';
 }
 
 export const PriorityColumn: React.FC<PriorityColumnProps> = memo(
-  ({ width, task, projectId, isDarkMode, disabled = false }) => (
+  ({ width, task, projectId, isDarkMode, disabled = false, variant = 'pill' }) => (
     <div
-      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+      className={`flex items-center px-2 border-r border-gray-200 dark:border-gray-700 ${
+        variant === 'inline' ? 'justify-start min-w-0' : 'justify-center'
+      }`}
       style={{ width }}
     >
-      <TaskPriorityDropdown 
-        task={task} 
-        projectId={projectId} 
+      <TaskPriorityDropdown
+        task={task}
+        projectId={projectId}
         isDarkMode={isDarkMode}
         disabled={disabled}
+        variant={variant}
       />
     </div>
   )

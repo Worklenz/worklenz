@@ -1,0 +1,172 @@
+{
+  "tabCountLabel": "Usuarios totales de clientes",
+  "retryButton": "Reintentar",
+  "cancelButton": "Cancel",
+  "saveButton": "Guardar",
+  "refreshButton": "Actualizar",
+  "clearFiltersButton": "Borrar filtros",
+  "addButton": "Agregar cliente",
+  "rowActionsLabel": "Acciones para {{name}}",
+  "searchPlaceholder": "Buscar usuarios o empresas...",
+  "statusFilterLabel": "Filtrar por estado",
+  "allStatusesOption": "Todos los estados",
+  "paginationSummary": "Mostrando {{from}}-{{to}} de {{total}} usuarios",
+  "errorTitle": "Error al cargar usuarios del cliente",
+  "errorDescription": "Se produjo un error al cargar los usuarios del cliente. Por favor inténtalo de nuevo.",
+  "statsErrorMessage": "No se pudieron cargar las estadísticas de usuarios del cliente.",
+  "lastActivityInvited": "Invitado {{time}}",
+  "lastActivityNever": "Nunca inicie sesión",
+  "projectsNone": "No hay proyectos asignados",
+  "projectsCount_one": "{{count}} proyecto",
+  "projectsCount_other": "{{count}} proyectos",
+  "stats": {
+    "total": "Usuarios totales de clientes",
+    "pocs": "POCs",
+    "companiesWithoutPoc": "Empresas sin POC",
+    "companiesWithoutPocHint": "Permitido. Una empresa no puede tener POC.",
+    "disabled": "Discapacitado"
+  },
+  "columns": {
+    "user": "Usuario",
+    "email": "Email",
+    "phone": "Teléfono",
+    "company": "Company",
+    "access": "Acceso",
+    "jobTitle": "Título del trabajo",
+    "projects": "Proyectos",
+    "portalStatus": "Estado del portal",
+    "actions": "Actions"
+  },
+  "role": {
+    "poc": "POC",
+    "member": "Miembro"
+  },
+  "portalStatus": {
+    "active": "Activo",
+    "invited": "Invitado",
+    "expired": "Caducado",
+    "not_invited": "No invitado",
+    "disabled": "Discapacitado"
+  },
+  "empty": {
+    "title": "No se encontraron usuarios de clientes",
+    "filtered": "Ningún usuario coincide con los filtros actuales.",
+    "none": "Aún no hay usuarios de clientes. Agregue un cliente o un usuario a una empresa para brindar acceso al portal a las personas."
+  },
+  "menu": {
+    "viewProfile": "Ver perfil",
+    "editUser": "Editar usuario",
+    "assignProjects": "Asignar proyectos",
+    "makePoc": "hacer POC",
+    "removePoc": "Eliminar POC",
+    "sendInvite": "Enviar invitación",
+    "resendInvite": "Reenviar invitación",
+    "enableUser": "Habilitar usuario",
+    "disableUser": "Deshabilitar usuario",
+    "removeUser": "Eliminar usuario"
+  },
+  "confirmDisable": {
+    "title": "¿Desactivar a este usuario?",
+    "content": "{{name}} perderá el acceso al portal inmediatamente. Podrás volver a habilitarlos más tarde y volverán al estado que tenían.",
+    "ok": "Desactivar usuario"
+  },
+  "confirmRemove": {
+    "title": "¿Eliminar a este usuario?",
+    "content": "{{name}} será eliminado de la empresa y perderá el acceso al portal. Esto no se puede deshacer. La empresa y sus demás usuarios no se ven afectados.",
+    "ok": "Eliminar usuario"
+  },
+  "messages": {
+    "madePoc": "{{name}} ahora es un POC.",
+    "removedPoc": "{{name}} ya no es un POC.",
+    "roleError": "No se pudo cambiar el rol.",
+    "inviteSent": "Invitación enviada a {{email}}.",
+    "inviteEmailFailed": "Se creó la invitación pero no se pudo enviar el correo electrónico.",
+    "inviteError": "No se pudo enviar la invitación.",
+    "disabled": "{{name}} estaba deshabilitado.",
+    "enabled": "{{name}} estaba habilitado.",
+    "statusError": "No se pudo actualizar el usuario.",
+    "removed": "{{name}} fue eliminado.",
+    "removeError": "No se pudo eliminar al usuario.",
+    "linkCopied": "Enlace de invitación copiado.",
+    "linkCopyError": "No se pudo copiar el enlace."
+  },
+  "permissionLevels": {
+    "unknown": "Nivel desconocido",
+    "view": {
+      "label": "Ver sólo",
+      "description": "Estado, hitos, tareas y entregables. Sin comentarios, ediciones o cargas."
+    },
+    "comment": {
+      "label": "Ver + comentar",
+      "description": "Comente, apruebe o rechace y adjunte archivos a los comentarios. No se pueden crear tareas."
+    },
+    "contributor": {
+      "label": "Colaborador completo",
+      "description": "Todo lo anterior, además de crear y editar tareas, cambiar estados y cargar archivos adjuntos."
+    }
+  },
+  "permissionTemplates": {
+    "view_only": {
+      "name": "Ver sólo",
+      "description": "Partes interesadas que solo necesitan visibilidad: estado y entregables, sin edición."
+    },
+    "standard_contact": {
+      "name": "Contacto estándar",
+      "description": "El valor predeterminado para la mayoría de los contactos de los clientes: puede comentar, aprobar o rechazar y adjuntar archivos."
+    },
+    "full_partner": {
+      "name": "Socio pleno",
+      "description": "Colaboradores prácticos: pueden crear y editar tareas y cargar archivos adjuntos."
+    }
+  },
+  "assignProjects": {
+    "title": "Asignar proyectos: {{name}}",
+    "helper": "Elija a cuál de los proyectos de {{company}} puede acceder {{name}} y su nivel de permiso en cada uno. Un proyecto se puede asignar a muchos usuarios de la empresa.",
+    "noProjectsTitle": "{{company}} aún no tiene proyectos",
+    "noProjectsDescription": "Primero asigne un proyecto a esta empresa y luego regrese para darle acceso a este usuario. Las plantillas de permisos necesitan al menos un proyecto al que aplicar.",
+    "truncatedMessage": "Solo se muestran {{shown}} de {{total}} proyectos, por lo que el acceso no se puede editar aquí.",
+    "templatesTitle": "Aplicar una plantilla (establece todos los proyectos siguientes en ese nivel)",
+    "selectAll": "Seleccionar todo",
+    "selectedCount": "{{selected}} de {{total}} seleccionado",
+    "bulkLabel": "Establecer acceso para {{count}} seleccionado:",
+    "levelFor": "Nivel de permiso para {{project}}",
+    "saveButton": "Guardar acceso",
+    "savedMessage": "Acceso al proyecto actualizado para {{name}}.",
+    "saveError": "No se pudo actualizar el acceso al proyecto.",
+    "loadError": "No se pudieron cargar los proyectos de esta empresa."
+  },
+  "editUser": {
+    "title": "Editar usuario",
+    "nameLabel": "nombre completo",
+    "namePlaceholder": "Ana García",
+    "nameRequired": "Introduzca un nombre.",
+    "nameTooLong": "El nombre puede tener como máximo 255 caracteres.",
+    "emailLabel": "Dirección de correo electrónico",
+    "emailPlaceholder": "jane@company.com",
+    "emailRequired": "Introduzca una dirección de correo electrónico.",
+    "emailInvalid": "Ingrese una dirección de correo electrónico válida.",
+    "emailLockedHint": "Este es su correo electrónico de inicio de sesión, por lo que no se puede cambiar una vez que tengan acceso al portal.",
+    "jobTitleLabel": "Título del trabajo",
+    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "jobTitleTooLong": "El título del trabajo puede tener como máximo 100 caracteres.",
+    "phoneLabel": "Número de teléfono (opcional)",
+    "phonePlaceholder": "+1 415 555 0142",
+    "phoneTooLong": "El número de teléfono puede tener como máximo 50 caracteres.",
+    "footerHint": "La empresa ({{company}}) y el rol de acceso se gestionan por separado, desde el menú de filas.",
+    "savedMessage": "{{name}} actualizado.",
+    "saveError": "No se pudo actualizar este usuario."
+  },
+  "profile": {
+    "title": "Perfil de miembro",
+    "email": "Email",
+    "phone": "Teléfono",
+    "jobTitle": "Título del trabajo",
+    "lastActivity": "Última actividad",
+    "signInMethod": "Método de inicio de sesión",
+    "signInPassword": "Contraseña",
+    "signInNone": "Aún no has iniciado sesión",
+    "noJobTitle": "No hay título de trabajo en el archivo",
+    "assignedProjects": "Proyectos asignados ({{count}})",
+    "noProjects": "Aún no hay proyectos asignados."
+  }
+}

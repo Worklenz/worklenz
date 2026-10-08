@@ -1,0 +1,15 @@
+{
+  "modalTitle": "Aidez-nous à améliorer votre expérience",
+  "skip": "Passer pour l'instant",
+  "previous": "Précédent",
+  "next": "Suivant",
+  "completeSurvey": "Compléter l'enquête",
+  "submitting": "Envoi de vos réponses...",
+  "submitSuccessTitle": "Merci!",
+  "submitSuccessSubtitle": "Vos commentaires nous aident à améliorer Worklenz pour tout le monde.",
+  "submitSuccessMessage": "Merci d'avoir répondu au sondage !",
+  "submitErrorMessage": "Échec de la soumission de l'enquête. Veuillez réessayer.",
+  "submitErrorLog": "Échec de la soumission de l'enquête",
+  "fetchErrorLog": "Échec de la récupération de l'enquête",
+  "dontShowAgain": "Ne plus afficher cette enquête"
+}

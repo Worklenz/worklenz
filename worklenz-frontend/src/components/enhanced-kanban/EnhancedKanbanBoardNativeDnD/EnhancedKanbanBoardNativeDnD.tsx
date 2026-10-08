@@ -26,6 +26,7 @@ import {
   fetchBoardSubTasks,
   updateEnhancedKanbanTaskPriority,
   selectKanbanLoadedProjectId,
+  setKanbanPhases,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
@@ -41,6 +42,7 @@ import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priorit
 import { SocketEvents } from '@/shared/socket-events';
 import KanbanGroup from './KanbanGroup';
 import EnhancedKanbanCreateSection from '../EnhancedKanbanCreateSection';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 
 interface DragStateRef {
   draggedGroupId: string | null;
@@ -87,19 +89,43 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
 
   useTaskSocketHandlers();
 
+  const { project } = useAppSelector(state => state.projectReducer);
+  const kanbanPhases = useSelector((state: RootState) => state.enhancedKanbanReducer.phases);
+  const activeSprintFilterAppliedRef = useRef(false);
+
   useEffect(() => {
     if (projectId && loadedProjectId !== projectId) {
       dispatch(fetchEnhancedKanbanGroups(projectId) as any);
       dispatch(fetchEnhancedKanbanTaskAssignees(projectId) as any);
       dispatch(fetchEnhancedKanbanLabels(projectId) as any);
+      activeSprintFilterAppliedRef.current = false;
     }
     if (!statusCategories.length) {
       dispatch(fetchStatusesCategories() as any);
     }
-    if (groupBy === 'phase' && !phaseList.length) {
+    if (
+      (groupBy === 'phase' || isSoftwareProjectType(project?.project_type)) &&
+      !phaseList.length
+    ) {
       dispatch(fetchPhasesByProjectId(projectId) as any);
     }
-  }, [dispatch, projectId, loadedProjectId]);
+  }, [dispatch, projectId, loadedProjectId, groupBy, project?.project_type, phaseList.length]);
+
+  // Software projects: default Board filter to the active sprint (once per project load)
+  useEffect(() => {
+    if (!isSoftwareProjectType(project?.project_type)) return;
+    if (activeSprintFilterAppliedRef.current) return;
+    if (kanbanPhases.length > 0) {
+      activeSprintFilterAppliedRef.current = true;
+      return;
+    }
+    const activeSprint = phaseList.find(p => p.sprint_status === 'active');
+    if (!activeSprint?.id) return;
+
+    activeSprintFilterAppliedRef.current = true;
+    dispatch(setKanbanPhases([activeSprint.id]));
+    dispatch(fetchEnhancedKanbanGroups(projectId) as any);
+  }, [dispatch, project?.project_type, phaseList, kanbanPhases.length, projectId]);
 
   // When a filter is active, automatically fetch and expand sub-tasks for any parent task
   // whose descendants match the filter (has_filtered_children = true → show_sub_tasks = true).
@@ -173,12 +199,20 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
     return taskUpdates;
   }, []);
 
+  // Assignee columns are derived from task assignees and a task can sit in several columns,
+  // so neither column order nor task position can be changed by dragging.
+  const isAssigneeGrouping = groupBy === 'assignee';
+
   const handleGroupDragStart = useCallback((e: React.DragEvent, groupId: string) => {
     if (isGuest) return; // Prevent guests from dragging
+    if (isAssigneeGrouping) {
+      e.preventDefault();
+      return;
+    }
     dragStateRef.current = { ...dragStateRef.current, draggedGroupId: groupId, dragType: 'group' };
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', groupId);
-  }, [isGuest]);
+  }, [isGuest, isAssigneeGrouping]);
 
   const handleGroupDragOver = useCallback((e: React.DragEvent) => {
     if (dragStateRef.current.dragType !== 'group') return;
@@ -252,6 +286,10 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
 
   const handleTaskDragStart = useCallback((e: React.DragEvent, taskId: string, groupId: string) => {
     if (isGuest) return; // Prevent guests from dragging
+    if (isAssigneeGrouping) {
+      e.preventDefault();
+      return;
+    }
     dragStateRef.current = {
       ...dragStateRef.current,
       draggedTaskId: taskId,
@@ -260,7 +298,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
     };
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', taskId);
-  }, [isGuest]);
+  }, [isGuest, isAssigneeGrouping]);
 
   const handleTaskDragOver = useCallback(
     (e: React.DragEvent, groupId: string, taskIdx: number | null) => {
@@ -526,7 +564,14 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
           </div>
         ) : taskGroups.length === 0 ? (
           <Card>
-            <Empty description={t('noTasksFound')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty
+              description={
+                isSoftwareProjectType(project?.project_type)
+                  ? t('noIssuesFound', { defaultValue: 'No issues found' })
+                  : t('noTasksFound', { defaultValue: 'No tasks found' })
+              }
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
           </Card>
         ) : (
           <div className="kanban-groups-container">

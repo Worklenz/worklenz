@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useGetOrganizationChatsQuery } from '@/ee/api/client-portal/client-portal-api';
+import { useGetOrganizationChatsQuery } from '@/api/client-portal/client-portal-api';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
 import {
   IInboxProjectConversation,
   INewProjectCommentSocketPayload,
   IProjectCommentDeletedSocketPayload,
 } from '@/types/home/inbox.types';
-import { TempChatsType } from '@/ee/pages/client-portal/chats/chat-container/chat-box/chat-box-wrapper';
+import { TempChatsType } from '@/pages/client-portal/chats/chat-container/chat-box/chat-box-wrapper';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';

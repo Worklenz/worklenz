@@ -3,7 +3,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
@@ -41,7 +41,9 @@ import {
   CrownOutlined,
   message,
   LinkOutlined,
+  RocketOutlined,
 } from '@/shared/antd-imports';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 
 interface TaskContextMenuProps {
   task: Task;
@@ -72,17 +74,15 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   const statusList = useAppSelector(state => state.taskStatusReducer.status);
   const priorityList = useAppSelector(state => state.priorityReducer.priorities);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
+  const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+  const isSoftwareProject = isSoftwareProjectType(projectType);
   const currentGrouping = useAppSelector(state => state.grouping.currentGrouping);
   const archived = useAppSelector(state => state.taskManagement.archived);
 
   const [updatingAssignToMe, setUpdatingAssignToMe] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
-  const [showMoveToSubmenu, setShowMoveToSubmenu] = useState(false);
-
   const menuRef = useRef<HTMLDivElement>(null);
-  const moveToRef = useRef<HTMLDivElement>(null);
-
   // Calculate optimal position to prevent overflow
   useEffect(() => {
     if (menuRef.current) {
@@ -359,8 +359,8 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   );
 
   const handlePhaseMoveTo = useCallback(
-    async (targetId: string) => {
-      if (!projectId || !task.id || !targetId) return;
+    async (targetId: string | null) => {
+      if (!projectId || !task.id) return;
 
       try {
         socket?.emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
@@ -440,6 +440,44 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     handlePriorityMoveTo,
     handlePhaseMoveTo,
   ]);
+
+  const sprintMoveOptions = useMemo(() => {
+    if (!isSoftwareProject || task.parent_task_id || currentGrouping === IGroupBy.PHASE) {
+      return [];
+    }
+
+    const currentSprint = phaseList.find(
+      phase => phase.id === task.phase || phase.name === task.phase
+    );
+    const sprintOptions = phaseList
+      .filter(
+        phase => phase.id && phase.sprint_status !== 'completed' && phase.id !== currentSprint?.id
+      )
+      .map(phase => ({
+        key: phase.id!,
+        label: (
+          <div className="flex items-center gap-2">
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: phase.color_code }}
+            ></span>
+            <span className="truncate">{phase.name}</span>
+          </div>
+        ),
+        onClick: () => handlePhaseMoveTo(phase.id!),
+      }));
+
+    if (!currentSprint) return sprintOptions;
+
+    return [
+      {
+        key: 'backlog',
+        label: <span>{t('backlogNoSprint', { defaultValue: 'Backlog' })}</span>,
+        onClick: () => handlePhaseMoveTo(null),
+      },
+      ...sprintOptions,
+    ];
+  }, [isSoftwareProject, task.parent_task_id, task.phase, currentGrouping, phaseList, handlePhaseMoveTo, t]);
 
   const handleConvertToTask = useCallback(async () => {
     if (!task?.id || !projectId) return;
@@ -558,57 +596,24 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       items.push({
         key: 'moveTo',
         label: (
-          <div
-            ref={moveToRef}
-            className="relative"
-            onMouseEnter={() => setShowMoveToSubmenu(true)}
-            onMouseLeave={() => setShowMoveToSubmenu(false)}
-          >
-            <button
-              className="flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-            >
-              <div className="flex items-center gap-2">
-                <RetweetOutlined className="text-gray-500 dark:text-gray-400" />
-                <span>{t('contextMenu.moveTo')}</span>
-              </div>
-              <svg
-                className="w-4 h-4 text-gray-500 dark:text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5l7 7-7 7"
-                ></path>
-              </svg>
-            </button>
-            {showMoveToSubmenu && (
-              <ul
-                className="fixed w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-[10000]"
-                style={{
-                  left: moveToRef.current
-                    ? moveToRef.current.getBoundingClientRect().right
-                    : 0,
-                  top: moveToRef.current ? moveToRef.current.getBoundingClientRect().top : 0,
-                }}
-              >
-                {moveToOptions.map(option => (
-                  <li key={option.key}>
-                    <button
-                      onClick={option.onClick}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-                    >
-                      {option.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <ContextSubmenu
+            icon={<RetweetOutlined className="text-gray-500 dark:text-gray-400" />}
+            label={t('contextMenu.moveTo')}
+            options={moveToOptions}
+          />
+        ),
+      });
+    }
+
+    if (sprintMoveOptions.length > 0) {
+      items.push({
+        key: 'moveToSprint',
+        label: (
+          <ContextSubmenu
+            icon={<RocketOutlined className="text-gray-500 dark:text-gray-400" />}
+            label={t('contextMenu.moveToSprint', { defaultValue: 'Move to sprint' })}
+            options={sprintMoveOptions}
+          />
         ),
       });
     }
@@ -752,7 +757,6 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     archived,
     isFree,
     showDeleteConfirm,
-    showMoveToSubmenu,
     canCreateTask,
     handleAssignToMe,
     handleArchive,
@@ -762,6 +766,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     handleConvertToTask,
     handleCopyLink,
     getMoveToOptions,
+    sprintMoveOptions,
     dispatch,
     handleDuplicateTask,
     t,
@@ -786,6 +791,71 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
           </li>
         ))}
       </ul>
+    </div>
+  );
+};
+
+interface ContextSubmenuOption {
+  key: string;
+  label: React.ReactNode;
+  onClick: () => void;
+}
+
+interface ContextSubmenuProps {
+  icon: React.ReactNode;
+  label: string;
+  options: ContextSubmenuOption[];
+}
+
+const ContextSubmenu: React.FC<ContextSubmenuProps> = ({ icon, label, options }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rect = containerRef.current?.getBoundingClientRect();
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative"
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <button
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+        onFocus={() => setIsOpen(true)}
+        className="flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+      >
+        <div className="flex items-center gap-2">
+          {icon}
+          <span>{label}</span>
+        </div>
+        <svg
+          className="w-4 h-4 text-gray-500 dark:text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </button>
+      {isOpen && (
+        <ul
+          className="fixed w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-[10000]"
+          style={{ left: rect ? rect.right : 0, top: rect ? rect.top : 0 }}
+        >
+          {options.map(option => (
+            <li key={option.key}>
+              <button
+                onClick={option.onClick}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+              >
+                {option.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };

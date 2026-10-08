@@ -175,6 +175,87 @@ describe("client-auth-middleware", () => {
       expect(req.clientAccess.canViewServices).toBe(false);
     });
 
+    describe("per-request check of the signed-in person", () => {
+      const withLogin = () => {
+        mockedTokenService.verifyClientToken.mockReturnValue({
+          clientId: "client-123",
+          organizationId: "org-456",
+          clientUserId: "login-1",
+          email: "client@test.com",
+          permissions: [],
+          type: "client",
+        });
+        mockedTokenService.hasOrganizationAccess.mockResolvedValue(true);
+        mockedTokenService.getClientPermissions.mockResolvedValue([]);
+        mockedDb.query.mockResolvedValueOnce(
+          createQueryResult([{ client_status: "active", portal_access_active: true }])
+        );
+      };
+
+      it("returns 403 when an admin has disabled this company user", async () => {
+        const req = createMockRequest({ headers: { "x-client-token": "valid-token" } });
+        const res = createMockResponse();
+        const next = jest.fn();
+
+        withLogin();
+        mockedDb.query.mockResolvedValueOnce(
+          createQueryResult([{ login_status: "active", is_disabled: true }])
+        );
+
+        await authenticateClient(req, res, next);
+
+        expect(res.statusCode).toBe(403);
+        expect(res.body.message).toContain("disabled");
+        expect(next).not.toHaveBeenCalled();
+      });
+
+      it("returns 401 when the login row has been removed", async () => {
+        const req = createMockRequest({ headers: { "x-client-token": "valid-token" } });
+        const res = createMockResponse();
+        const next = jest.fn();
+
+        withLogin();
+        mockedDb.query.mockResolvedValueOnce(createQueryResult([]));
+
+        await authenticateClient(req, res, next);
+
+        expect(res.statusCode).toBe(401);
+        expect(next).not.toHaveBeenCalled();
+      });
+
+      it("returns 403 when the login itself is no longer active", async () => {
+        const req = createMockRequest({ headers: { "x-client-token": "valid-token" } });
+        const res = createMockResponse();
+        const next = jest.fn();
+
+        withLogin();
+        mockedDb.query.mockResolvedValueOnce(
+          createQueryResult([{ login_status: "inactive", is_disabled: false }])
+        );
+
+        await authenticateClient(req, res, next);
+
+        expect(res.statusCode).toBe(403);
+        expect(next).not.toHaveBeenCalled();
+      });
+
+      it("lets an active, enabled company user through", async () => {
+        const req = createMockRequest({ headers: { "x-client-token": "valid-token" } });
+        const res = createMockResponse();
+        const next = jest.fn();
+
+        withLogin();
+        mockedDb.query.mockResolvedValueOnce(
+          createQueryResult([{ login_status: "active", is_disabled: false }])
+        );
+
+        await authenticateClient(req, res, next);
+
+        expect(next).toHaveBeenCalled();
+        expect(req.clientUserId).toBe("login-1");
+      });
+    });
+
     it("blocks state-changing request if origin is explicitly disallowed", async () => {
       const req = createMockRequest({
         method: "POST",

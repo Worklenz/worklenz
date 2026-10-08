@@ -218,6 +218,7 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
             onChange={e => setEditName(e.target.value)}
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
+            maxLength={50}
             size="small"
             variant="borderless"
             style={{ padding: 0, fontSize: 12, fontWeight: 500 }}
@@ -465,6 +466,8 @@ const CategorySection: React.FC<CategorySectionProps> = ({
               value={newStatusName}
               onChange={e => setNewStatusName(e.target.value)}
               onKeyDown={handleKeyDown}
+              maxLength={50}
+              showCount
               size="small"
               autoFocus
               style={{ flex: 1 }}

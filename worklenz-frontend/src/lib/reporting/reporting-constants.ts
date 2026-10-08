@@ -9,6 +9,7 @@ import {
   ProjectOutlined,
   BarChartOutlined,
   FileOutlined,
+  RiseOutlined,
 } from '@/shared/antd-imports';
 
 const OverviewReports = lazy(() => import('@/pages/reporting/overview-reports/overview-reports'));
@@ -26,6 +27,9 @@ const EstimatedVsActualTimeReports = lazy(
   () => import('@/pages/reporting/time-sheets/estimated-vs-actual-time-reports')
 );
 const TimeLogsReports = lazy(() => import('@/pages/reporting/time-sheets/time-logs'));
+const ProgressTrackingPage = lazy(
+  () => import('@/pages/reporting/progress-tracking/progress-tracking-page')
+);
 
 // Type definition for a menu item
 export type ReportingMenuItems = {
@@ -71,6 +75,14 @@ export const reportingsItems: ReportingMenuItems[] = [
     endpoint: 'all-tasks',
     element: React.createElement(AllTasksReports),
     icon: React.createElement(UnorderedListOutlined),
+  },
+  {
+    key: 'progress-tracking',
+    name: 'progressTracking',
+    defaultValue: 'Progress Tracking',
+    endpoint: 'progress-tracking',
+    element: React.createElement(ProgressTrackingPage),
+    icon: React.createElement(RiseOutlined),
   },
   {
     key: 'time-sheet',

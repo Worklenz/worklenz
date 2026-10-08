@@ -1,12 +1,13 @@
 import express from "express";
 
 import ProjectsController from "../../controllers/projects-controller";
+import ProgressTrackingController from "../../controllers/reporting/progress-tracking/progress-tracking-controller";
 
 import idParamValidator from "../../middlewares/validators/id-param-validator";
 import projectsBodyValidator from "../../middlewares/validators/projects-body-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
-import projectManagerValidator from "../../middlewares/validators/project-manager-validator";
+import { requireProjectPermission } from "../../middlewares/validators/require-project-permission";
 import projectMemberValidator from "../../middlewares/validators/project-member-validator";
 import verifyProjectAccess from "../../middlewares/verify-project-access";
 import projectFilesApiRouter from "./project-files-api-router";
@@ -83,6 +84,18 @@ projectsApiRouter.get(
   safeControllerFunction(ProjectsController.toggleArchive),
 );
 projectsApiRouter.get(
+  "/delivery-confidence/:id",
+  idParamValidator,
+  verifyProjectAccess("params", "id"),
+  safeControllerFunction(ProgressTrackingController.getByProject),
+);
+projectsApiRouter.patch(
+  "/delivery-confidence/:id",
+  idParamValidator,
+  verifyProjectAccess("params", "id"),
+  safeControllerFunction(ProgressTrackingController.update),
+);
+projectsApiRouter.get(
   "/:id",
   idParamValidator,
   verifyProjectAccess("params", "id"),
@@ -95,20 +108,26 @@ projectsApiRouter.put(
 );
 projectsApiRouter.put(
   "/:id",
-  projectManagerValidator,
+  requireProjectPermission("settings", {
+    sources: ["query.current_project_id", "params.id"],
+  }),
   idParamValidator,
   projectsBodyValidator,
   safeControllerFunction(ProjectsController.update),
 );
 projectsApiRouter.delete(
   "/:id",
-  teamOwnerOrAdminValidator,
+  requireProjectPermission("delete", {
+    sources: ["params.id", "query.current_project_id"],
+  }),
   idParamValidator,
   safeControllerFunction(ProjectsController.deleteById),
 );
 projectsApiRouter.get(
   "/archive-all/:id",
-  teamOwnerOrAdminValidator,
+  requireProjectPermission("archive", {
+    sources: ["params.id", "query.current_project_id"],
+  }),
   idParamValidator,
   safeControllerFunction(ProjectsController.toggleArchiveAll),
 );

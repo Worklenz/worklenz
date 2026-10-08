@@ -1,0 +1,22 @@
+{
+  "title": "Gérer les départements",
+  "nameColumn": "Nom",
+  "search": "Départements de recherche",
+  "createDepartmentButton": "Créer un département",
+  "createDepartmentDrawerTitle": "Créer un département",
+  "updateDepartmentDrawerTitle": "Département de mise à jour",
+  "nameLabel": "Nom",
+  "namePlaceholder": "Entrez le nom du département",
+  "nameRequiredError": "Le nom du département est requis",
+  "createButton": "Créer",
+  "updateButton": "Mise à jour",
+  "editTooltip": "Modifier",
+  "deleteTooltip": "Supprimer",
+  "deleteConfirmationTitle": "Êtes-vous sûr de supprimer ce département ?",
+  "deleteConfirmationOk": "Supprimer",
+  "deleteConfirmationCancel": "Annuler",
+  "fetchDepartmentErrorMessage": "Échec de la récupération du département",
+  "createDepartmentErrorMessage": "Échec de la création du département",
+  "updateDepartmentErrorMessage": "Échec de la mise à jour du département",
+  "pinTooltip": "Épingler à la barre de navigation"
+}

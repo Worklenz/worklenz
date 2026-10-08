@@ -9,8 +9,8 @@ import {
   RocketOutlined,
 } from '@ant-design/icons';
 import { useAuthService } from '@/hooks/useAuth';
-import { isOnBusinessTrial, getPlanTrialDaysRemaining } from '@/ee/utils/subscription-utils';
-import { PlanTrialApiService } from '@/ee/api/admin-center/plan-trial.api.service';
+import { isOnBusinessTrial, getPlanTrialDaysRemaining } from '@/utils/subscription-utils';
+import { PlanTrialApiService } from '@/api/admin-center/plan-trial.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {

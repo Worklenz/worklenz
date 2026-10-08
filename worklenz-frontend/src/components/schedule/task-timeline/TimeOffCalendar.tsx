@@ -346,7 +346,7 @@ const TimeOffCalendar: React.FC<TimeOffCalendarProps> = ({
               <Form.Item
                 name="team_member_id"
                 label={t('teamMember', { defaultValue: 'Team Member' })}
-                rules={[{ required: true, message: t('selectMember', { defaultValue: 'Please select a team member' }) }]}
+                rules={[{ required: true, message: t('selectMemberRequired', { defaultValue: 'Please select a team member' }) }]}
                 style={{ flex: 1, minWidth: 200 }}
               >
                 <Select
@@ -428,7 +428,7 @@ const TimeOffCalendar: React.FC<TimeOffCalendarProps> = ({
 
             <Form.Item
               name="reason"
-              label={t('reason', { defaultValue: 'Reason (Optional)' })}
+              label={t('reasonOptional', { defaultValue: 'Reason (Optional)' })}
             >
               <TextArea
                 rows={2}

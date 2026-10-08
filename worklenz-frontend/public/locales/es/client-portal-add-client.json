@@ -1,0 +1,191 @@
+{
+  "retry": "Reintentar",
+  "upgrade": {
+    "title": "Clientes",
+    "description": "Ofrezca a los clientes un portal de marca para realizar un seguimiento del progreso del proyecto. Disponible en el plan Business."
+  },
+  "title": {
+    "method": "¿Cómo desea agregar este cliente?",
+    "company": "Cuéntanos sobre el cliente.",
+    "user": "Elija la empresa, luego el nuevo usuario.",
+    "existing": "Elige a quién invitar",
+    "csv": "Sube tu archivo CSV",
+    "review": "Revisar y enviar"
+  },
+  "steps": {
+    "method": "Método",
+    "details": "Details",
+    "file": "Archivo",
+    "review": "Revisión"
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "back": "Atrás",
+    "continue": "Continuar",
+    "done": "hecho",
+    "import": "Import",
+    "addClient": "Agregar cliente",
+    "addClientAndInvite": "Agregar cliente y enviar invitación",
+    "addUser": "Agregar usuario cliente",
+    "addUserAndInvite": "Agregar usuario y enviar invitación",
+    "sendInvite": "Enviar invitación"
+  },
+  "method": {
+    "helper": "Todo camino termina de la misma manera. Elija el que se ajuste a lo que ya sabe.",
+    "groupLabel": "¿Cómo desea agregar este cliente?",
+    "company": {
+      "name": "Nuevo cliente",
+      "description": "Cree un registro de empresa y su primer contacto juntos."
+    },
+    "user": {
+      "name": "Agregar un usuario cliente",
+      "description": "Añade otro contacto a una empresa que ya existe."
+    },
+    "existing": {
+      "name": "Invitar a un contacto existente",
+      "description": "¿Ya eres un cliente potencial o cliente? Simplemente envíe el acceso al portal."
+    },
+    "csv": {
+      "name": "Importar desde CSV",
+      "description": "Agregue clientes de forma masiva desde una hoja de cálculo."
+    }
+  },
+  "fields": {
+    "firstName": "Nombre de pila",
+    "firstNamePlaceholder": "Ana",
+    "lastName": "apellido",
+    "lastNamePlaceholder": "García",
+    "email": "Dirección de correo electrónico",
+    "emailPlaceholder": "jane@company.com",
+    "jobTitle": "Título del trabajo",
+    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "phone": "Teléfono (opcional)",
+    "phonePlaceholder": "+1 415 555 0142"
+  },
+  "errors": {
+    "firstNameRequired": "Introduzca un nombre.",
+    "emailRequired": "Introduzca una dirección de correo electrónico.",
+    "emailInvalid": "Ingrese una dirección de correo electrónico válida."
+  },
+  "newClient": {
+    "companyName": "Nombre de la empresa",
+    "companyNameHint": "Déjelo en blanco para nombrar al cliente con el nombre de la persona que aparece a continuación.",
+    "companyNamePlaceholder": "p.ej. Logística de baliza",
+    "setupTitle": "CONFIGURAR SU PORTAL",
+    "welcomeMessage": "Enviar un mensaje de bienvenida",
+    "welcomeMessageHint": "Publicado en Mensajes, por lo que los estará esperando cuando inicien sesión.",
+    "welcomeMessageText": "Hola {{name}}, bienvenido a tu portal de clientes. Envíanos un mensaje aquí en cualquier momento."
+  },
+  "companyUser": {
+    "chooseCompany": "Elige la empresa",
+    "searchCompanies": "Buscar empresas...",
+    "companiesLabel": "Empresas",
+    "companiesError": "No se pudieron cargar empresas.",
+    "noMatches": "Ninguna empresa coincide con \"{{query}}\".",
+    "noCompanies": "Aún no hay empresas. Primero agregue un nuevo cliente.",
+    "existingUsers_one": "{{count}} usuario existente",
+    "existingUsers_other": "{{count}} usuarios existentes",
+    "changeCompany": "Cambiar",
+    "makePoc": "Convertir a este usuario en un POC",
+    "makePocHint": "Una empresa puede tener cualquier número de POC o ninguno. Esto es independiente del estado de POC de otros usuarios.",
+    "projectAccess": "Acceso al proyecto",
+    "templateNone": "Configurar manualmente más tarde. Aún no hay proyectos asignados",
+    "templateNoProjects": "{{company}} aún no tiene proyectos, por lo que no hay nada a lo que aplicar una plantilla.",
+    "templateTooManyProjects": "{{company}} tiene más proyectos de los que se pueden enumerar aquí. Asigne acceso por proyecto posteriormente.",
+    "templateApplied": "Otorga a {{template}} acceso a todos los {{count}} de los proyectos actuales de {{company}}. Puede realizar ajustes por proyecto posteriormente desde el menú de filas.",
+    "templateHint": "Elija una plantilla para otorgar acceso a todos los proyectos actuales a la vez, o déjela como está y asigne proyectos individualmente después."
+  },
+  "existing": {
+    "helper": "Contactos sin acceso activo al portal.",
+    "search": "Buscar por nombre o correo electrónico...",
+    "loadError": "No se pudieron cargar los contactos.",
+    "noMatches": "No hay coincidencias para \"{{query}}\".",
+    "everyoneHasAccess": "Todos ya tienen acceso activo al portal.",
+    "groupLabel": "Contactos para invitar"
+  },
+  "review": {
+    "name": "Name",
+    "company": "Company",
+    "companyFromName": "El nombre de la persona",
+    "email": "Email",
+    "emailMissing": "no proporcionado",
+    "role": "Role",
+    "rolePocDefault": "POC (predeterminado para una nueva empresa)",
+    "rolePoc": "POC",
+    "roleMember": "Usuario cliente",
+    "projectAccess": "Acceso al proyecto",
+    "projectAccessTemplate": "{{template}} en todos los {{count}} proyectos actuales",
+    "projectAccessNone": "Ninguno todavía. Asigne proyectos después.",
+    "authentication": "Autenticación",
+    "portalAccess": "Acceso al portal",
+    "authInvitation": "Enlace de invitación. Establecieron una contraseña en el primer inicio de sesión.",
+    "notInvited": "Aún no invitado. Invítalos más tarde desde la mesa.",
+    "sendNow": "Enviar invitación al portal ahora",
+    "sendNowHint": "Déjelo sin marcar para agregar el registro sin enviar nada. Invítalos más tarde desde la mesa.",
+    "deliverVia": "ENTREGAR A TRAVÉS",
+    "deliveryEmail": "Enlace de invitación por correo electrónico",
+    "deliveryLink": "Copiar enlace de invitación"
+  },
+  "csv": {
+    "helper": "Cargue un CSV con una fila de encabezado y estas columnas: Empresa, Nombre, Apellido, Correo electrónico. Se requieren nombre y correo electrónico.",
+    "dropzone": "Haga clic para elegir un archivo CSV o arrástrelo aquí",
+    "dropzoneHint": "Hasta {{max}} filas.",
+    "dropzoneLabel": "Elija un archivo CSV",
+    "checking": "Revisando su expediente...",
+    "chooseAnother": "Elige otro archivo",
+    "problemsLabel": "Filas con problemas",
+    "columnNames": {
+      "firstName": "Nombre de pila",
+      "email": "Email"
+    },
+    "columns": {
+      "row": "Fila",
+      "person": "Persona",
+      "problem": "Problema"
+    },
+    "summary": {
+      "noneReady": "Ninguna de las filas se puede importar.",
+      "ready": "{{valid}} de {{total}} filas están listas para importarse.",
+      "detail": "Se crearán {{newCompanies}} nuevas empresas y {{existingCompanies}} empresas existentes obtendrán más usuarios. Se omiten las filas con problemas. Nadie recibe correos electrónicos. Invítalos de la lista después."
+    },
+    "result": {
+      "title": "Importación finalizada",
+      "detail": "{{companies}} empresas creadas, {{users}} usuarios agregados, {{skipped}} filas omitidas. No todos están invitados hasta que los invites desde la lista."
+    },
+    "error": {
+      "notCsv": "Elija un archivo .csv.",
+      "tooLarge": "Ese archivo es demasiado grande. El límite es {{size}} MB.",
+      "empty": "El archivo no tiene filas para importar.",
+      "unreadable": "Ese archivo no se pudo leer. Comprueba que sea un CSV válido y vuelve a intentarlo.",
+      "missingColumns": "El archivo necesita una fila de encabezado con estas columnas: {{columns}}.",
+      "tooManyRows": "El archivo tiene {{count}} filas. Una importación puede tener como máximo {{max}}.",
+      "requestFailed": "No se pudo comprobar el archivo. Por favor inténtalo de nuevo."
+    },
+    "errors": {
+      "missing_first_name": "Falta el nombre",
+      "missing_email": "Falta el correo electrónico",
+      "invalid_email": "El correo electrónico no es válido.",
+      "duplicate_in_file": "El correo electrónico aparece antes en el archivo.",
+      "email_in_use": "El correo electrónico ya pertenece a un usuario cliente",
+      "company_name_too_long": "El nombre de la empresa tiene más de 60 caracteres.",
+      "client_name_taken": "Ya existe un cliente con este nombre",
+      "import_failed": "No se pudo importar"
+    }
+  },
+  "messages": {
+    "linkCopied": "Enlace de invitación copiado.",
+    "linkCopyError": "No se pudo copiar el enlace.",
+    "saveError": "No se pudo guardar. Por favor inténtalo de nuevo.",
+    "importError": "La importación falló. Por favor inténtalo de nuevo.",
+    "clientAddedInvited": "Cliente agregado, con {{name}} como POC de forma predeterminada. Invitación enviada a {{email}}.",
+    "clientAddedLink": "Cliente añadido. Copie el enlace de invitación para compartirlo con {{name}}.",
+    "clientAddedNotInvited": "Cliente agregado, con {{name}} como POC de forma predeterminada. Aún no invitado.",
+    "userAddedInvited": "{{name}} se agregó a {{company}}. Invitación enviada a {{email}}.",
+    "userAddedLink": "{{name}} se agregó a {{company}}. Copie el enlace de la invitación para compartirlo.",
+    "userAddedNotInvited": "{{name}} se agregó a {{company}}. Aún no invitado.",
+    "inviteSent": "Invitación enviada a {{email}}.",
+    "inviteLinkReady": "Enlace de invitación listo para copiar.",
+    "inviteFailed": "{{name}} se guardó, pero no se pudo enviar la invitación ({{error}}). Puedes enviarlo desde la lista.",
+    "emailNotSent": "{{name}} se guardó, pero no se pudo enviar el correo electrónico. Comparte el enlace en su lugar."
+  }
+}

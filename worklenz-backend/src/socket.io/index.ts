@@ -62,12 +62,12 @@ import { on_task_due_time_change } from "./commands/on-task-due-time-change";
 import { on_subtask_sort_order_change } from "./commands/on-subtask-sort-order-change";
 
 // Client Portal imports
-import { on_client_connect } from "../ee/socket.io/commands/client-portal/on-client-connect";
-import { on_chat_send_message } from "../ee/socket.io/commands/client-portal/on-chat-send-message";
-import { on_chat_join } from "../ee/socket.io/commands/client-portal/on-chat-join";
-import { on_chat_leave } from "../ee/socket.io/commands/client-portal/on-chat-leave";
-import { on_chat_typing } from "../ee/socket.io/commands/client-portal/on-chat-typing";
-import { on_chat_mark_read } from "../ee/socket.io/commands/client-portal/on-chat-mark-read";
+import { on_client_connect } from "../socket.io/commands/client-portal/on-client-connect";
+import { on_chat_send_message } from "../socket.io/commands/client-portal/on-chat-send-message";
+import { on_chat_join } from "../socket.io/commands/client-portal/on-chat-join";
+import { on_chat_leave } from "../socket.io/commands/client-portal/on-chat-leave";
+import { on_chat_typing } from "../socket.io/commands/client-portal/on-chat-typing";
+import { on_chat_mark_read } from "../socket.io/commands/client-portal/on-chat-mark-read";
 
 export function register(io: any, socket: Socket) {
   log(socket.id, "client registered");

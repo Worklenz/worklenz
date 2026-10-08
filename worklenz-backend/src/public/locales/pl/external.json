@@ -1,0 +1,64 @@
+{
+  "slack": {
+    "task_created": {
+      "title": "Zadanie utworzone"
+    },
+    "task_assigned": {
+      "title": "Zadanie przypisane"
+    },
+    "task_completed": {
+      "title": "Zadanie ukończone"
+    },
+    "comment_added": {
+      "title": "Dodano komentarz"
+    },
+    "priority_changed": {
+      "title": "Zmieniono priorytet"
+    },
+    "due_date_changed": {
+      "title": "Zmieniono termin"
+    },
+    "task_updated": {
+      "title": "Zadanie zaktualizowane"
+    },
+    "task_status_changed": {
+      "title": "Zmieniono status zadania"
+    },
+    "viewTask": "Zobacz zadanie",
+    "assignedTo": "👥 Przypisano do",
+    "assignedBy": "👤 Przypisane przez",
+    "statusChange": "📊 Zmiana statusu",
+    "changedBy": "👤 Zmienione przez",
+    "createdBy": "👤 Utworzone przez",
+    "commentedBy": "💬 Skomentowane przez",
+    "updatedBy": "👤 Zaktualizowane przez",
+    "status": "📊 Status",
+    "currentStatus": "📊 Bieżący status",
+    "priority": "Priorytet",
+    "dueDate": "Termin",
+    "assignees": "👥 Przypisane osoby",
+    "comment": "Komentarz",
+    "priorityChanged": "🔺 Zmiana priorytetu",
+    "dueDateChanged": "📅 Zmiana terminu",
+    "updatedByWithUser": "Zaktualizowane przez {{user}}"
+  },
+  "teams": {
+    "task": "Zadanie",
+    "project": "Projekt",
+    "assignees": "Przypisane osoby",
+    "assignedBy": "Przypisane przez",
+    "createdBy": "Utworzone przez",
+    "commentedBy": "Skomentowane przez",
+    "updatedBy": "Zaktualizowane przez",
+    "status": "Status",
+    "priority": "Priorytet",
+    "dueDate": "Termin",
+    "previousStatus": "Poprzedni status",
+    "newStatus": "Nowy status",
+    "previousPriority": "Poprzedni priorytet",
+    "newPriority": "Nowy priorytet",
+    "statusChange": "Zmiana statusu",
+    "changedBy": "Zmienione przez",
+    "viewTask": "Zobacz zadanie"
+  }
+}

@@ -1,9 +1,8 @@
 {
   "overviewTitle": "Übersicht",
   "includeArchivedButton": "Archivierte Projekte einschließen",
-
   "teamCount": "Team",
-  "teamCountPlural": "Teams",
+  "teamCountPlural": "Mannschaften",
   "projectCount": "Projekt",
   "projectCountPlural": "Projekte",
   "memberCount": "Mitglied",
@@ -16,9 +15,7 @@
   "unassignedMemberCountPlural": "Nicht zugewiesene Mitglieder",
   "memberWithOverdueTaskCount": "Mitglied mit überfälliger Aufgabe",
   "memberWithOverdueTaskCountPlural": "Mitglieder mit überfälligen Aufgaben",
-
-  "teamsText": "Teams",
-
+  "teamsText": "Mannschaften",
   "nameColumn": "Name",
   "projectsColumn": "Projekte",
   "membersColumn": "Mitglieder"

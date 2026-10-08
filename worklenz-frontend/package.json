@@ -5,7 +5,7 @@
   "scripts": {
     "start": "vite dev",
     "dev": "vite dev",
-    "prebuild": "npm run locales:validate && npm run locales:compare",
+    "prebuild": "npm run locales:validate && npm run locales:compare && npm run locales:untranslated",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build",
     "dev-build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build",
     "serve": "vite preview",
@@ -13,6 +13,7 @@
     "type-check": "tsc --noEmit",
     "locales:validate": "node scripts/validate-locales.js",
     "locales:compare": "node scripts/compare-locales.js",
+    "locales:untranslated": "node scripts/check-untranslated-locales.js",
     "locales:sync": "node scripts/sync-locales.js",
     "locales:translate": "python3 scripts/translate-locales.py",
     "test": "vitest",

@@ -23,7 +23,7 @@
     "step2": {
       "title": "2. Convidar Bot para os Canais",
       "description": "Em cada canal do Slack onde você deseja receber notificações, digite:",
-      "command": "/invite @Worklenz",
+      "command": "/convidar @Worklenz",
       "note": "Você só precisa fazer isso uma vez por canal."
     },
     "step3": {
@@ -73,7 +73,7 @@
     "project": "Projeto",
     "slackChannel": "Canal do Slack",
     "notifications": "Notificações",
-    "status": "Status",
+    "status": "Estado",
     "statusActive": "Ativo",
     "statusInactive": "Inativo",
     "active": "Ativo",

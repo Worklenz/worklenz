@@ -1,9 +1,11 @@
 import React from 'react';
-import { theme } from '@/shared/antd-imports';
+import { Tooltip, theme } from '@/shared/antd-imports';
 
 export interface PillToggleOption<T extends string> {
   value: T;
   label: React.ReactNode;
+  /** A short description of what the option does, shown on hover and on keyboard focus. */
+  tooltip?: React.ReactNode;
 }
 
 interface PillToggleProps<T extends string> {
@@ -79,9 +81,8 @@ function PillToggle<T extends string>({
     >
       {options.map((opt, idx) => {
         const selected = value === opt.value;
-        return (
+        const segment = (
           <button
-            key={opt.value}
             type="button"
             role="radio"
             aria-checked={selected}
@@ -105,6 +106,15 @@ function PillToggle<T extends string>({
           >
             {opt.label}
           </button>
+        );
+        // The tooltip wraps the whole segment (not just its text), and adds no element of its
+        // own, so the arrow-key navigation above still finds the buttons as the group's children.
+        return opt.tooltip ? (
+          <Tooltip key={opt.value} title={opt.tooltip} trigger={['hover', 'focus']}>
+            {segment}
+          </Tooltip>
+        ) : (
+          <React.Fragment key={opt.value}>{segment}</React.Fragment>
         );
       })}
     </div>

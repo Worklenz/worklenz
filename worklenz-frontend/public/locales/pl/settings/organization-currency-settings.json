@@ -1,0 +1,15 @@
+{
+  "pageTitle": "Waluta organizacji",
+  "pageSubtitle": "Ustaw walutę podstawową dla swojej organizacji. Sumy finansowe zostaną przeliczone na tę walutę przy użyciu bieżących kursów wymiany.",
+  "save": "Zapisz",
+  "saveChanges": "Zapisz zmiany",
+  "adminOnly": "To ustawienie mogą zmieniać tylko właściciele i administratorzy organizacji.",
+  "successMessage": "Waluta podstawowa organizacji ustawiona na {{currency}}",
+  "errorMessage": "Nie udało się zapisać ustawienia waluty",
+  "selectAriaLabel": "Waluta bazowa organizacji",
+  "ratesCardTitle": "Aktualne kursy wymiany - 1 {{currency}} =",
+  "ratesUpdated": "Zaktualizowano: {{time}}",
+  "refreshRatesTooltip": "Częstotliwość odświeżania",
+  "refreshRatesAriaLabel": "Odśwież kursy walut",
+  "noRateData": "Brak dostępnych danych o stawkach."
+}

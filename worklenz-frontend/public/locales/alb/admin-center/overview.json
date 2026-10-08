@@ -102,8 +102,8 @@
   "customLogoUpgradeModalBenefitApp": "Logo e personalizuar në të gjithë aplikacionin",
   "customLogoUpgradeModalBenefitEmails": "Email-e të branduara për ekipin dhe klientët",
   "customLogoUpgradeModalBenefitProfessional": "Pamje profesionale për organizatën tuaj",
-  "emailAddress": "Email Address",
-  "enterOrganizationName": "Enter organization name",
-  "ownerSuffix": " (Owner)",
+  "emailAddress": "Adresa e Email-it",
+  "enterOrganizationName": "Fut emrin e organizatës",
+  "ownerSuffix": "(Pronar)",
   "closePopover": "Mbyll dritaren"
 }

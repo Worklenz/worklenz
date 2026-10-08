@@ -88,8 +88,8 @@ export const sortPhasesForDisplay = (milestones: GanttTask[], mode: PhaseSortMod
 
 export interface UpdateTaskDatesRequest {
   task_id: string;
-  start_date: string;
-  end_date: string;
+  start_date: string | null;
+  end_date: string | null;
 }
 
 export interface CreatePhaseRequest {
@@ -146,7 +146,7 @@ export const roadmapApi = createApi({
     },
     credentials: 'include',
   }),
-  tagTypes: ['RoadmapTasks'],
+  tagTypes: ['RoadmapTasks', 'ProjectPhases'],
   endpoints: builder => ({
     getRoadmapTasks: builder.query<
       IServerResponse<RoadmapTasksResponse[]>,
@@ -163,8 +163,8 @@ export const roadmapApi = createApi({
         { type: 'RoadmapTasks', id: projectId },
       ],
       // Data is kept for a short window so switching tabs and back (or a
-      // focus event) doesn't force a full refetch; mutations/socket events
-      // already trigger explicit refetch() calls from ProjectViewGantt.
+      // focus event) doesn't force a full refetch; socket events and
+      // mutations invalidate these tags / call refetch() from ProjectViewGantt.
       keepUnusedDataFor: 60,
     }),
 
@@ -176,8 +176,11 @@ export const roadmapApi = createApi({
           });
           return `${rootUrl}/project-phases?${params.toString()}`;
         },
-        // See getRoadmapTasks above — short cache window, explicit refetch()
-        // on mutations/socket events instead of forced refetch-on-focus/mount.
+        providesTags: (_result, _error, { projectId }) => [
+          { type: 'ProjectPhases', id: projectId },
+        ],
+        // See getRoadmapTasks above — short cache window; phase assignment /
+        // date / status socket events invalidate and refetch when subscribed.
         keepUnusedDataFor: 60,
       }
     ),

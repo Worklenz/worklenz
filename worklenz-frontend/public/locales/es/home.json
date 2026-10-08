@@ -80,13 +80,12 @@
     "errorLoadingRecentTasks": "Error al cargar tareas recientes",
     "errorLoadingTimeLoggedTasks": "Error al cargar tareas con tiempo registrado",
     "dueTask": "tarea vencida",
-    "total": "Total",
+    "total": "totales",
     "on": "el",
     "totalDue": "Total vencidas",
     "todo": "Por hacer",
     "doing": "Haciendo",
     "done": "Hecho",
-    "priority": "Prioridad",
     "pressTabToSelectDueDateAndProject": "Presiona Tab para seleccionar fecha de vencimiento y proyecto",
     "newTask": "Nueva tarea",
     "assignTask": "Asignar tarea",
@@ -148,7 +147,8 @@
       "managerAssigned": "{{userName}} asignó un gerente de proyecto a {{projectName}}",
       "managerRemoved": "{{userName}} removió el gerente del proyecto {{projectName}}",
       "memberAdded": "{{userName}} añadió a {{memberName}} al proyecto {{projectName}}",
-      "memberRemoved": "{{userName}} eliminó a {{memberName}} del proyecto {{projectName}}"
+      "memberRemoved": "{{userName}} eliminó a {{memberName}} del proyecto {{projectName}}",
+      "managerFinanceChanged": "{{userName}} cambió el acceso financiero del gerente de proyecto en {{projectName}}"
     },
     "task": {
       "created": "{{userName}} creó la tarea {{taskName}}",
@@ -166,7 +166,7 @@
     "emptyTitle": "¡Estás al día!",
     "emptySubtitle": "Aún no hay tareas aquí — crea una para empezar.",
     "sideUnassigned": "Sin asignar",
-    "columnId": "ID",
+    "columnId": "identificación",
     "columnTask": "Tarea",
     "columnAssignee": "Asignado",
     "columnDue": "Vencimiento",
@@ -254,7 +254,7 @@
     "rowsPerPage": "Filas por página:"
   },
   "addExpense": {
-    "modalTitle": "Agregar Gasto",
+    "modalTitle": "Agregar gasto",
     "projectLabel": "Proyecto",
     "projectPlaceholder": "Seleccionar proyecto…",
     "taskLabel": "Tarea",
@@ -262,12 +262,12 @@
     "taskPlaceholderNoProject": "Selecciona un proyecto primero",
     "taskLoading": "Cargando…",
     "noTasksFound": "No se encontraron tareas",
-    "amountLabel": "Monto",
+    "amountLabel": "Importe",
     "amountPlaceholder": "0.00",
-    "submitButton": "Agregar Gasto a la Tarea",
+    "submitButton": "Agregar gasto de tarea",
     "upgradePromptTitle": "Gastos",
     "upgradePromptDescription": "Registra costos fijos en las tareas y agrégalos a tus reportes financieros. Disponible en el plan Business.",
-    "loadTasksError": "No se pudieron cargar las tareas y la moneda para este proyecto.",
+    "loadTasksError": "No se pudieron cargar las tareas y la moneda de este proyecto.",
     "successMessage": "Costo fijo agregado a la tarea",
     "errorMessage": "Error al agregar costo fijo a la tarea"
   },
@@ -382,31 +382,13 @@
     "startTimer": "Iniciar temporizador"
   },
   "views": "Vistas",
-  "addExpense": {
-    "modalTitle": "Agregar gasto",
-    "projectLabel": "Proyecto",
-    "projectPlaceholder": "Seleccionar proyecto…",
-    "taskLabel": "Tarea",
-    "taskPlaceholderWithProject": "Buscar tarea…",
-    "taskPlaceholderNoProject": "Selecciona un proyecto primero",
-    "taskLoading": "Cargando…",
-    "noTasksFound": "No se encontraron tareas",
-    "amountLabel": "Importe",
-    "amountPlaceholder": "0.00",
-    "submitButton": "Agregar gasto de tarea",
-    "upgradePromptTitle": "Gastos",
-    "upgradePromptDescription": "Registra costos fijos en las tareas y agrégalos a tus reportes financieros. Disponible en el plan Business.",
-    "loadTasksError": "No se pudieron cargar las tareas y la moneda de este proyecto.",
-    "successMessage": "Costo fijo agregado a la tarea",
-    "errorMessage": "Error al agregar costo fijo a la tarea"
-  },
   "timeOff": {
     "timeOff": "Ausencia",
     "off": "ausente",
     "types": {
       "vacation": "Vacaciones",
       "sick": "Enfermedad",
-      "personal": "Personal",
+      "personal": "Asuntos propios",
       "other": "Otro"
     }
   }

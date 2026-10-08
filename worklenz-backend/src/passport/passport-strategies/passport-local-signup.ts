@@ -4,6 +4,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { DEFAULT_ERROR_MESSAGE } from "../../shared/constants";
 import { sendWelcomeEmail } from "../../shared/email-templates";
 import { log_error, sanitizePlainText } from "../../shared/utils";
+import { BLOCKED_SIGNUP_EMAIL_MESSAGE, isSignupEmailDomainBlocked } from "../../shared/signup-email-domain-policy";
 
 import db from "../../config/db";
 import { Request } from "express";
@@ -64,6 +65,9 @@ async function handleSignUp(req: Request, email: string, password: string, done:
   // This ensures malicious HTML/JavaScript cannot be stored in the database or rendered in emails
   const sanitizedName = sanitizePlainText(name || "");
 
+  if (await isSignupEmailDomainBlocked(email))
+    return done(null, null, req.flash(ERROR_KEY, BLOCKED_SIGNUP_EMAIL_MESSAGE));
+
   const googleAccountFound = await isGoogleAccountFound(email);
   if (googleAccountFound)
     return done(null, null, req.flash(ERROR_KEY, `${req.body.email} is already linked with a Google account.`));
@@ -82,6 +86,9 @@ async function handleSignUp(req: Request, email: string, password: string, done:
     if (message === "ERROR_INVALID_JOINING_EMAIL") {
       return done(null, null, req.flash(ERROR_KEY, `No invitations found for email ${req.body.email}.`));
     }
+
+    if (message.includes("ERROR_SIGNUP_EMAIL_DOMAIN_BLOCKED"))
+      return done(null, null, req.flash(ERROR_KEY, BLOCKED_SIGNUP_EMAIL_MESSAGE));
 
     // if error.message is "email already exists" then it should have the email address in the error message after ":".
     if (message.includes("EMAIL_EXISTS_ERROR") || error.constraint === "users_google_id_uindex") {

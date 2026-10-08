@@ -1,0 +1,221 @@
+/*
+ * Invoices module type scale. antd's default body size is 14px; every invoice surface
+ * (list, modals, preview) runs one step smaller, and the other sizes follow it:
+ *   body / cells / controls 14 -> 12   card + section titles 16 -> 14
+ *   stat value 26 -> 22                meta / helper text 12 -> 11
+ * The list table itself mirrors requests-table.css so both lists read the same.
+ * Scoped to .invoices-table / .invoices-modal so nothing outside this module changes.
+ */
+
+/* ---------- list table (same format as the Requests table) ---------- */
+
+.invoices-table .ant-table {
+  font-size: 12px;
+}
+
+.invoices-table .ant-table-thead > tr > th {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--ant-color-text-secondary);
+  padding: 4px 8px !important;
+}
+
+.invoices-table .ant-table-tbody > tr > td {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  /* Matches the Clients table's row height, which the 36px client avatar sets. */
+  height: 45px;
+}
+
+/* antd Typography and form controls set their own 14px; pin them to the row size. */
+.invoices-table .ant-table-tbody .ant-typography,
+.invoices-table .ant-table-tbody .ant-select-selection-item,
+.invoices-table .ant-table-tbody .ant-select-selector,
+.invoices-table .ant-table-tbody .ant-input-number-input,
+.invoices-table .ant-table-tbody .ant-input-number {
+  font-size: 12px !important;
+}
+
+.invoices-table .ant-table-tbody .ant-tag {
+  font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  .invoices-table .ant-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .invoices-table .ant-table {
+    min-width: 1100px;
+  }
+}
+
+/* ---------- page toolbar + stat cards ---------- */
+
+.invoices-page .ant-input,
+.invoices-page .ant-input-affix-wrapper,
+.invoices-page .ant-select-selection-item,
+.invoices-page .ant-select-selection-placeholder,
+.invoices-page .ant-btn {
+  font-size: 12px;
+}
+
+.invoices-stat-label {
+  font-size: 11px;
+}
+
+.invoices-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* ---------- modals (create, detail, record payment, preview) ---------- */
+
+.invoices-modal .ant-modal-title {
+  font-size: 14px;
+}
+
+.invoices-modal .ant-modal-body,
+.invoices-modal .ant-typography,
+.invoices-modal .ant-form-item-label > label,
+.invoices-modal .ant-input,
+.invoices-modal .ant-input-number,
+.invoices-modal .ant-input-number-input,
+.invoices-modal .ant-select-selection-item,
+.invoices-modal .ant-select-selection-placeholder,
+.invoices-modal .ant-picker,
+.invoices-modal .ant-picker-input > input,
+.invoices-modal .ant-btn,
+.invoices-modal .ant-table {
+  font-size: 12px;
+}
+
+.invoices-modal .ant-card-head-title {
+  font-size: 14px;
+}
+
+.invoices-modal .ant-card-head {
+  min-height: 40px;
+  padding: 0 12px;
+}
+
+.invoices-modal .ant-card-body {
+  padding: 12px;
+}
+
+.invoices-modal .ant-table-thead > tr > th {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 6px 8px !important;
+}
+
+.invoices-modal .ant-table-tbody > tr > td {
+  padding: 4px 8px !important;
+}
+
+.invoices-modal .ant-tag {
+  font-size: 11px;
+}
+
+.invoices-modal .invoices-meta,
+.invoices-modal .invoices-help {
+  font-size: 11px;
+}
+
+.invoices-modal .invoices-detail-label {
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.invoices-modal .invoices-total-hero {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Two-column create/detail layouts collapse to one column on narrow screens. */
+.invoices-modal .invoices-columns {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.invoices-modal .invoices-columns > .invoices-column-main {
+  flex: 2 1 0;
+  min-width: 0;
+}
+
+.invoices-modal .invoices-columns > .invoices-column-side {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .invoices-modal .invoices-columns {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Line items editor: the description cell should take whatever room is left. */
+.invoices-modal .invoices-line-items .ant-input,
+.invoices-modal .invoices-line-items .ant-input-number {
+  width: 100%;
+}
+
+/* Preview document */
+.invoices-modal .invoices-preview-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.invoices-modal .invoices-preview-total {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/*
+ * ---------- Create Invoice modal override ----------
+ * The Create Invoice modal (CreateInvoiceModal) matches the Clients > Services "Add Service"
+ * modal instead of the rest of the invoices module: antd's default 14px type scale, default-size
+ * controls/buttons, and box-shadowed card sections. Layered on top of .invoices-modal (kept for
+ * the shared .invoices-columns layout rules); these rules come later in the file so they win.
+ */
+.invoices-create-modal .ant-typography,
+.invoices-create-modal .ant-form-item-label > label,
+.invoices-create-modal .ant-input,
+.invoices-create-modal .ant-input-number,
+.invoices-create-modal .ant-input-number-input,
+.invoices-create-modal .ant-select-selection-item,
+.invoices-create-modal .ant-select-selection-placeholder,
+.invoices-create-modal .ant-picker,
+.invoices-create-modal .ant-picker-input > input,
+.invoices-create-modal .ant-btn {
+  font-size: 14px;
+}
+
+.invoices-create-modal .ant-table-thead > tr > th,
+.invoices-create-modal .ant-table-tbody > tr > td {
+  font-size: 14px !important;
+}
+
+.invoices-create-modal .ant-tag {
+  font-size: 12px;
+}
+
+.invoices-create-modal .invoices-meta,
+.invoices-create-modal .invoices-help {
+  font-size: 12px;
+}
+
+.invoices-create-modal .invoices-detail-label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.invoices-create-modal .ant-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}

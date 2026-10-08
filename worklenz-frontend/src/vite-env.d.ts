@@ -3,6 +3,7 @@ interface ImportMetaEnv {
   readonly VITE_API_URL: string;
   readonly VITE_APP_TITLE: string;
   readonly VITE_APP_ENV: string;
+  readonly VITE_APP_VERSION?: string;
 }
 
 interface ImportMeta {
@@ -20,3 +21,6 @@ declare module 'virtual:addons-registry' {
   export const addonMiddlewares: Middleware[];
 }
 
+// Injected by the `define` block in vite.config.ts. Not defined under vitest,
+// which uses its own vitest.config.ts, so read it through a `typeof` guard.
+declare const __BUILD_TIMESTAMP__: string;

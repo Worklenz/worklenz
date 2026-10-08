@@ -5,15 +5,17 @@ import {
   TeamOutlined,
   UserOutlined,
   SettingOutlined,
+  SafetyCertificateOutlined,
 } from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
 
 const Overview = lazy(() => import('../pages/admin-center/overview/overview'));
 const Users = lazy(() => import('../pages/admin-center/users/users'));
 const Teams = lazy(() => import('../pages/admin-center/teams/teams'));
-const Billing = lazy(() => import('../ee/pages/admin-center/billing/BillingSection'));
+const Billing = lazy(() => import('../pages/admin-center/billing/BillingSection'));
 const Projects = lazy(() => import('../pages/admin-center/projects/projects'));
 const Settings = lazy(() => import('../pages/admin-center/settings/settings'));
+const AuditLog = lazy(() => import('../pages/admin-center/security/audit-log-page'));
 
 // type of a menu item in admin center sidebar
 type AdminCenterMenuItems = {
@@ -24,6 +26,10 @@ type AdminCenterMenuItems = {
   icon: ReactNode;
   element: ReactNode;
   selfHostedExcluded?: boolean;
+  /** Hidden from the sidebar and route-guarded unless the user is an Owner or Admin. */
+  ownerOrAdminOnly?: boolean;
+  /** Shows a "NEW" badge next to the label. */
+  isNew?: boolean;
 };
 // settings all element items use for sidebar and routes
 export const adminCenterItems: AdminCenterMenuItems[] = [
@@ -75,5 +81,14 @@ export const adminCenterItems: AdminCenterMenuItems[] = [
     endpoint: 'settings',
     icon: React.createElement(SettingOutlined),
     element: React.createElement(Settings),
+  },
+  {
+    key: 'security',
+    name: 'security',
+    defaultValue: 'Security',
+    endpoint: 'security',
+    icon: React.createElement(SafetyCertificateOutlined),
+    element: React.createElement(AuditLog),
+    ownerOrAdminOnly: true,
   },
 ];

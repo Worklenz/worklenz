@@ -57,7 +57,7 @@
   "uploadSuccess": "文件上传成功。",
   "linkTitle": "标题",
   "linkTitleRequired": "标题为必填项",
-  "linkUrl": "URL",
+  "linkUrl": "网址",
   "invalidUrl": "请输入有效的 URL",
   "linkDescription": "描述",
   "linkDescriptionPlaceholder": "可选描述",

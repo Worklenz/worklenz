@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flex, Tooltip, Typography } from '@/shared/antd-imports';
 import { ArrowLeftOutlined, PushpinFilled, PushpinOutlined } from '@ant-design/icons';
-import ChatBox from '@/ee/pages/client-portal/chats/chat-container/chat-box/chat-box';
+import ChatBox from '@/pages/client-portal/chats/chat-container/chat-box/chat-box';
 import ProjectViewUpdates from '@/pages/projects/project-view-1/updates/project-view-updates';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@utils/themeWiseColor';

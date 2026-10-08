@@ -28,6 +28,12 @@ interface TimeLogFormProps {
   taskId?: string;
   projectId?: string;
   allowReassign?: boolean;  // Allow the form to reassign the log to a different task/project in edit mode
+  /** Save edits through the Time Entries endpoint (owners/admins may edit other members' entries).
+   * Only the Time Entries page sets this; the task drawer leaves it off and keeps its author-only route. */
+  asTimeEntry?: boolean;
+  /** Rendered inside a dialog: drops the divider/top padding that separate the inline form from the
+   * content above it, uses regular-size controls, and right-aligns the buttons like a modal footer. */
+  inModal?: boolean;
 
 
 }
@@ -51,9 +57,12 @@ const TimeLogForm = ({
   taskId: taskIdProp,
   projectId: projectIdProp,
   allowReassign = false,
+  asTimeEntry = false,
+  inModal = false,
 
 }: TimeLogFormProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
+  const controlSize = inModal ? 'middle' : 'small';
   const currentSession = useAuthService().getCurrentSession();
   const { socket, connected } = useSocket();
   const [form] = Form.useForm();
@@ -477,7 +486,9 @@ const TimeLogForm = ({
     setSubmitting(true);
     try {
       if (mode === 'edit' && initialValues?.id) {
-        await taskTimeLogsApiService.update(initialValues.id, requestBody);
+        await (asTimeEntry
+          ? taskTimeLogsApiService.updateEntry(initialValues.id, requestBody)
+          : taskTimeLogsApiService.update(initialValues.id, requestBody));
       } else {
         await taskTimeLogsApiService.create(requestBody);
       }
@@ -531,21 +542,23 @@ const TimeLogForm = ({
         position: 'relative',
         height: 'fit-content',
         justifySelf: 'flex-end',
-        paddingTop: 16,
+        paddingTop: inModal ? 0 : 16,
         paddingBottom: 0,
         overflow: 'visible',
       }}
     >
-      <div
-        style={{
-          marginBlockEnd: 0,
-          height: 1,
-          position: 'absolute',
-          top: 0,
-          width: '100%',
-          backgroundColor: themeWiseColor('#ebebeb', '#3a3a3a', themeMode),
-        }}
-      />
+      {!inModal && (
+        <div
+          style={{
+            marginBlockEnd: 0,
+            height: 1,
+            position: 'absolute',
+            top: 0,
+            width: '100%',
+            backgroundColor: themeWiseColor('#ebebeb', '#3a3a3a', themeMode),
+          }}
+        />
+      )}
 
       <Form
         form={form}
@@ -581,7 +594,7 @@ const TimeLogForm = ({
           style={{ marginBlockEnd: 6 }}
         >
           <Segmented
-            size="small"
+            size={controlSize}
             value={inputMode}
             onChange={value => handleModeChange(value as TimeLogInputMode)}
             options={[
@@ -613,7 +626,7 @@ const TimeLogForm = ({
                 style={{ flex: 1.4, minWidth: 170, marginBlockEnd: 0 }}
               >
                 <DatePicker
-                  size="small"
+                  size={controlSize}
                   style={{ width: '100%' }}
                   disabledDate={isDateDisabled}
                 />
@@ -633,7 +646,7 @@ const TimeLogForm = ({
                 ]}
                 style={{ flex: 1, minWidth: 120, marginBlockEnd: 0 }}
               >
-                <InputNumber size="small" min={0} precision={0} style={{ width: '100%' }} />
+                <InputNumber size={controlSize} min={0} precision={0} style={{ width: '100%' }} />
               </Form.Item>
 
               <Form.Item
@@ -651,7 +664,7 @@ const TimeLogForm = ({
                 ]}
                 style={{ flex: 1, minWidth: 120, marginBlockEnd: 0 }}
               >
-                <InputNumber size="small" min={0} max={59} precision={0} style={{ width: '100%' }} />
+                <InputNumber size={controlSize} min={0} max={59} precision={0} style={{ width: '100%' }} />
               </Form.Item>
             </Flex>
           </Form.Item>
@@ -668,7 +681,7 @@ const TimeLogForm = ({
               ]}
             >
               <DatePicker
-                size="small"
+                size={controlSize}
                 style={{ width: '100%' }}
                 disabledDate={isDateDisabled}
               />
@@ -687,7 +700,7 @@ const TimeLogForm = ({
                   ]}
                   style={{ flex: 1, minWidth: 140, marginBlockEnd: 0 }}
                 >
-                  <TimePicker size="small" format="HH:mm" style={{ width: '100%' }} />
+                  <TimePicker size={controlSize} format="HH:mm" style={{ width: '100%' }} />
                 </Form.Item>
 
                 <Form.Item
@@ -701,7 +714,7 @@ const TimeLogForm = ({
                   ]}
                   style={{ flex: 1, minWidth: 140, marginBlockEnd: 0 }}
                 >
-                  <TimePicker size="small" format="HH:mm" style={{ width: '100%' }} />
+                  <TimePicker size={controlSize} format="HH:mm" style={{ width: '100%' }} />
                 </Form.Item>
               </Flex>
             </Form.Item>
@@ -754,7 +767,7 @@ const TimeLogForm = ({
                   setSelectedReassignTaskId(null);
                   setReassignTasks([]);
                 }}
-                size="small"
+                size={controlSize}
                 style={{ width: '100%' }}
                 notFoundContent={reassignProjectLoading ? <Spin size="small" /> : null}
                 options={reassignProjectSearchResults.map(p => ({ value: p.id, label: p.name }))}
@@ -785,7 +798,7 @@ const TimeLogForm = ({
                   loading={reassignTaskLoading}
                   onSearch={val => setReassignTaskSearch(val)}
                   onChange={(val: string | undefined) => setSelectedReassignTaskId(val || null)}
-                  size="small"
+                  size={controlSize}
                   style={{ width: '100%' }}
                   notFoundContent={reassignTaskLoading ? <Spin size="small" /> : null}
                   options={reassignTasks.map(task => ({ value: task.id, label: task.name }))}
@@ -810,7 +823,7 @@ const TimeLogForm = ({
         </Form.Item>
 
         <Form.Item style={{ marginBlockEnd: 0 }}>
-          <Flex gap={8}>
+          <Flex gap={8} justify={inModal ? 'flex-end' : undefined}>
             <Button onClick={onCancel}>{t('taskTimeLogTab.timeLogForm.cancel')}</Button>
             <Button
               type="primary"

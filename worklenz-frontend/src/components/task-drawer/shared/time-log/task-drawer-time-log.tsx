@@ -14,8 +14,8 @@ import { useTaskTimerWithConflictCheck } from '@/hooks/useTaskTimerWithConflictC
 import logger from '@/utils/errorLogger';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { formatSecondsToTimeString } from '@/utils/time-format.utils';
 

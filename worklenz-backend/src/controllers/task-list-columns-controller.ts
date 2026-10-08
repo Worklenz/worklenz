@@ -33,8 +33,22 @@ export default class TaskListColumnsController extends WorklenzControllerBase {
                SET pinned = $3
                WHERE project_id = $1
                  AND key = $2 RETURNING *;`;
-    const result = await db.query(q, [req.params.id, req.body.key, !!req.body.pinned]);
-    const [data] = result.rows;
+    let result = await db.query(q, [req.params.id, req.body.key, !!req.body.pinned]);
+    let [data] = result.rows;
+    if (!data) {
+      const insertResult = await db.query(
+        `INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
+         VALUES ($1, $2, $3::WL_TASK_LIST_COL_KEY, COALESCE((SELECT MAX(index) + 1 FROM project_task_list_cols WHERE project_id = $1), 0), $4)
+         RETURNING *;`,
+        [
+          req.params.id,
+          req.body.name || req.body.key,
+          req.body.key,
+          !!req.body.pinned,
+        ]
+      );
+      [data] = insertResult.rows;
+    }
     return res.status(200).send(new ServerResponse(true, data));
   }
 }
