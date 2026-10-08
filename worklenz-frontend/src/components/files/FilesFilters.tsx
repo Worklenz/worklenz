@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flex, Select, ConfigProvider } from '@/shared/antd-imports';
+import { Flex, Select, ConfigProvider, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
@@ -25,6 +25,13 @@ const FILE_TYPE_OPTIONS = Object.keys(IconsMap)
 
 export const FilesFilters: React.FC<FilesFiltersProps> = ({ value, onChange, showFileType = true }) => {
   const { t } = useTranslation('team-files');
+
+  const { token } = theme.useToken();
+
+  const dropdownScrollbarStyle = {
+    '--files-scrollbar-thumb': token.colorTextQuaternary,
+    '--files-scrollbar-thumb-hover': token.colorTextTertiary,
+  } as React.CSSProperties;
 
   const { data: projectsData } = useGetProjectsQuery({
     index: 1,
@@ -58,6 +65,8 @@ export const FilesFilters: React.FC<FilesFiltersProps> = ({ value, onChange, sho
         }}
       >
         <Select
+          classNames={{ popup: { root: 'files-filter-dropdown' } }}
+          styles={{ popup: { root: dropdownScrollbarStyle } }}
           allowClear
           showSearch
           placeholder={t('filterProject', { defaultValue: 'All Projects' })}
@@ -74,6 +83,8 @@ export const FilesFilters: React.FC<FilesFiltersProps> = ({ value, onChange, sho
         />
         {showFileType && (
           <Select
+            classNames={{ popup: { root: 'files-filter-dropdown' } }}
+            styles={{ popup: { root: dropdownScrollbarStyle } }}
             allowClear
             showSearch
             placeholder={t('filterFileType', { defaultValue: 'File Type' })}
@@ -87,6 +98,8 @@ export const FilesFilters: React.FC<FilesFiltersProps> = ({ value, onChange, sho
           />
         )}
         <Select
+          classNames={{ popup: { root: 'files-filter-dropdown' } }}
+          styles={{ popup: { root: dropdownScrollbarStyle } }}
           allowClear
           showSearch
           placeholder={t('filterUploadedBy', { defaultValue: 'Uploaded By' })}
