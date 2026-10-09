@@ -810,7 +810,13 @@ import { useBulkActions } from './hooks/useBulkActions';
 
 // Constants and types
 import { BASE_COLUMNS, ColumnStyle, AddTaskRowItem } from './constants/columns';
-import { validateColumnWidths, validateColumnWidth } from '@/utils/column-width-validation';
+import {
+  validateColumnWidths,
+  validateColumnWidth,
+  CUSTOM_COLUMN_MIN_WIDTH,
+  CUSTOM_COLUMN_MAX_WIDTH,
+  CUSTOM_COLUMN_DEFAULT_WIDTH,
+} from '@/utils/column-width-validation';
 import { Task } from '@/types/task-management.types';
 import { SocketEvents } from '@/shared/socket-events';
 import { evt_project_task_list_visit } from '@/shared/worklenz-analytics-events';
@@ -1068,11 +1074,11 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
         ?.map(column => {
           // Give selection columns more width for dropdown content
           const fieldType = column.custom_column_obj?.fieldType;
-          let defaultWidth = 180;
+          let defaultWidth = CUSTOM_COLUMN_DEFAULT_WIDTH;
           if (fieldType === 'selection') {
-            defaultWidth = 180;
+            defaultWidth = CUSTOM_COLUMN_DEFAULT_WIDTH;
           } else if (fieldType === 'people') {
-            defaultWidth = 180;
+            defaultWidth = CUSTOM_COLUMN_DEFAULT_WIDTH;
           }
 
           // Map the configuration data structure to the expected format
@@ -1099,8 +1105,8 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           const rawWidth = columnWidths[columnId] || column.width || defaultWidth;
           const validatedWidth = validateColumnWidth(columnId, rawWidth, {
             id: columnId,
-            minWidth: '180px',
-            maxWidth: '400px',
+            minWidth: `${CUSTOM_COLUMN_MIN_WIDTH}px`,
+            maxWidth: `${CUSTOM_COLUMN_MAX_WIDTH}px`,
             width: `${defaultWidth}px`,
           });
 
@@ -1110,8 +1116,8 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
             width: validatedWidth,
             key: column.key || column.id || 'unknown',
             isSticky: false,
-            minWidth: '180px',
-            maxWidth: '400px',
+            minWidth: `${CUSTOM_COLUMN_MIN_WIDTH}px`,
+            maxWidth: `${CUSTOM_COLUMN_MAX_WIDTH}px`,
             custom_column: true,
             custom_column_obj: transformedColumnObj,
             isCustom: true,
