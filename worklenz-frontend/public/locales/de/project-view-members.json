@@ -28,6 +28,8 @@
   "Invite": "Einladen",
   "removeSuccess": "{{name}} aus Projekt entfernt",
   "removeError": "Mitglied konnte nicht entfernt werden",
+  "assignFailedTitle": "Zuweisung fehlgeschlagen",
+  "assignFailedMessage": "Die Aufgaben-Zuweisungen konnten nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
   "memberNotFound": "Teammitgliedsinformationen nicht gefunden",
   "manageTimeOff": "Abwesenheit verwalten",
   "seatLimitReached": "Sitzplatzlimit erreicht",

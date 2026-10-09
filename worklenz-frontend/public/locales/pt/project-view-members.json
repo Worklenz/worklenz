@@ -28,6 +28,8 @@
   "Invite": "Convidar",
   "removeSuccess": "{{name}} removido do projeto",
   "removeError": "Falha ao remover membro",
+  "assignFailedTitle": "atribuição falhou",
+  "assignFailedMessage": "Não foi possível atualizar os responsáveis ​​pela tarefa. Por favor, tente novamente.",
   "memberNotFound": "Informações do membro da equipe não encontradas",
   "manageTimeOff": "Gerenciar folga",
   "seatLimitReached": "Limite de assentos atingido",
