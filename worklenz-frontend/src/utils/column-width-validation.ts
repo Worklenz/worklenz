@@ -9,8 +9,9 @@ interface BaseColumn {
   width?: string;
 }
 
-export const CUSTOM_COLUMN_MIN_WIDTH = 180;
+export const CUSTOM_COLUMN_MIN_WIDTH = 100;
 export const CUSTOM_COLUMN_MAX_WIDTH = 400;
+export const CUSTOM_COLUMN_DEFAULT_WIDTH = 180;
 
 /**
  * Validates a column width against min/max constraints and special rules
