@@ -5,7 +5,7 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 dayjs.extend(isoWeek);
 import { useTranslation } from 'react-i18next';
 import { Button, Flex, Space, theme, Tooltip, Popover, message } from '@/shared/antd-imports';
-import { SettingOutlined, ReloadOutlined, BranchesOutlined } from '@ant-design/icons';
+import { SettingOutlined, SyncOutlined, BranchesOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@/utils/themeWiseColor';
@@ -1467,14 +1467,15 @@ const PlannerScheduleView: React.FC = () => {
         </div>
 
         <Space size={4}>
-          <Button
-            size="small"
-            icon={<ReloadOutlined />}
-            onClick={handleRefresh}
-            loading={isRefreshing}
-            shape="circle"
-            title={t('refreshSchedule', { defaultValue: 'Refresh Schedule' })}
-          />
+          <Tooltip title={t('refreshSchedule', { defaultValue: 'Refresh Schedule' })}>
+            <Button
+              size="small"
+              shape="circle"
+              icon={<SyncOutlined spin={isRefreshing} />}
+              onClick={handleRefresh}
+              aria-label={t('refreshSchedule', { defaultValue: 'Refresh Schedule' })}
+            />
+          </Tooltip>
           <Button
             size="small"
             shape="circle"
