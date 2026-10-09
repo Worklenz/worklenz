@@ -9,6 +9,12 @@ import { ILocalSession } from '@/types/auth/local-session.types';
 export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean => {
   if (!session) return false;
 
+  // Self-hosted deployments include Business features. The backend provides
+  // this UI hint and remains the enforcement point for protected APIs.
+  if (session.business_features_enabled === true) {
+    return true;
+  }
+
   const isTruthy = (value: unknown): boolean =>
     value === true || value === 1 || value === 'true' || value === 't';
 

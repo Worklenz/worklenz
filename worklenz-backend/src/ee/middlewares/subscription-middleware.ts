@@ -3,12 +3,20 @@ import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
+import { isSelfHostedDeployment } from "../../shared/deployment-mode";
 
 /**
  * Checks if user has business plan access based on session data
  * Includes active business plan trials, manual overrides, and AppSumo eligibility
  */
 export function hasBusinessPlanAccess(user: any): boolean {
+  // A self-hosted installation is licensed at deployment level. Check this
+  // before organization subscription data so its bundled Business features
+  // are available to every organization.
+  if (isSelfHostedDeployment()) {
+    return true;
+  }
+
   if (!user) {
     return false;
   }
@@ -94,6 +102,10 @@ export const requireBusinessPlanForOrganization = async (
   res: Response,
   next: NextFunction
 ): Promise<Response | void> => {
+  if (isSelfHostedDeployment()) {
+    return next();
+  }
+
   const teamId = req.organizationId;
 
   if (!teamId) {

@@ -31,4 +31,6 @@ export interface IPassportSession extends IUser {
     primary_source: string;
     enforced: boolean; // true when gates follow entitlements (ENTITLEMENTS_ENFORCE=on)
   };
+  business_features_enabled?: boolean;
+  deployment_mode?: "cloud" | "self_hosted";
 }

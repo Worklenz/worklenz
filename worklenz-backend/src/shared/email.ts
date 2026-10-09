@@ -1,4 +1,5 @@
 import { SendEmailCommand, SESClient } from "@aws-sdk/client-ses";
+import nodemailer from "nodemailer";
 import { Validator } from "jsonschema";
 import { QueryResult } from "pg";
 import lodash from "lodash";
@@ -8,6 +9,95 @@ import emailRequestSchema from "../json_schemas/email-request-schema";
 import db from "../config/db";
 
 const sesClient = new SESClient({ region: process.env.AWS_REGION });
+
+type EmailProvider = "ses" | "smtp";
+
+interface EmailConfiguration {
+  provider: EmailProvider;
+  from: string;
+}
+
+/** Resolves a supported provider, or null when the configured value is invalid. */
+function getEmailProvider(): EmailProvider | null {
+  const configuredProvider = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
+
+  if (!configuredProvider || configuredProvider === "ses") {
+    return "ses";
+  }
+
+  return configuredProvider === "smtp" ? "smtp" : null;
+}
+
+/** Returns the selected provider and sender address with backwards-compatible defaults. */
+function getEmailConfiguration(): EmailConfiguration {
+  return {
+    // A configuration error prevents mail delivery before this fallback can be
+    // used to create a transport.
+    provider: getEmailProvider() || "ses",
+    // Backwards-compatible default for existing SES installations.
+    from: process.env.EMAIL_FROM?.trim() || "Worklenz <noreply@worklenz.com>",
+  };
+}
+
+/** Lists configuration problems without exposing credential values. */
+export function getEmailConfigurationErrors(): string[] {
+  const provider = getEmailProvider();
+  const errors: string[] = [];
+
+  if (!provider) {
+    errors.push("EMAIL_PROVIDER must be either ses or smtp");
+    return errors;
+  }
+
+  const requiredKeys = provider === "smtp"
+    ? ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD"]
+    : ["AWS_REGION"];
+
+  for (const key of requiredKeys) {
+    if (!process.env[key]?.trim()) {
+      errors.push(`${key} is required when EMAIL_PROVIDER=${provider}`);
+    }
+  }
+
+  if (provider === "smtp" && !getSmtpPort()) {
+    errors.push("SMTP_PORT must be an integer from 1 to 65535");
+  }
+
+  if (provider === "smtp" && !process.env.EMAIL_FROM?.trim()) {
+    errors.push("EMAIL_FROM is required when EMAIL_PROVIDER=smtp");
+  }
+
+  return errors;
+}
+
+/** Parses a valid TCP port without accepting malformed numeric prefixes. */
+function getSmtpPort(): number | null {
+  const rawPort = process.env.SMTP_PORT?.trim();
+  if (!rawPort || !/^\d+$/.test(rawPort)) {
+    return null;
+  }
+
+  const port = Number(rawPort);
+  return Number.isInteger(port) && port >= 1 && port <= 65535 ? port : null;
+}
+
+/** Creates an SMTP transport after getEmailConfigurationErrors has validated it. */
+function createSmtpTransport() {
+  const port = getSmtpPort();
+  if (!port) {
+    throw new Error("SMTP_PORT must be an integer from 1 to 65535");
+  }
+
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port,
+    secure: process.env.SMTP_SECURE?.trim().toLowerCase() === "true",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
+    },
+  });
+}
 
 export interface IEmail {
   to?: string[];
@@ -207,6 +297,17 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
       };
     }
 
+    const configurationErrors = getEmailConfigurationErrors();
+    if (configurationErrors.length) {
+      return {
+        success: false,
+        error: {
+          code: "EMAIL_CONFIGURATION_ERROR",
+          message: configurationErrors.join("; "),
+        },
+      };
+    }
+
     // Log email attempt for each recipient
     for (const recipient of options.to) {
       const logId = await logEmailAttempt(
@@ -220,9 +321,9 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
     }
 
     let messageId: string | undefined;
+    const { provider, from } = getEmailConfiguration();
 
-    // Send via AWS SES
-    console.log("\n📧 Sending email via AWS SES...");
+    console.log(`\n📧 Sending email via ${provider.toUpperCase()}...`);
     console.log("To:", options.to.join(", "));
     console.log("Subject:", options.subject);
 
@@ -237,31 +338,30 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
       .replace(/\s+/g, ' ')
       .trim();
     
-    const command = new SendEmailCommand({
-      Destination: {
-        ToAddresses: options.to,
-      },
-      Message: {
-        Subject: {
-          Charset: charset,
-          Data: options.subject,
-        },
-        Body: {
-          Html: {
-            Charset: charset,
-            Data: options.html,
+    if (provider === "smtp") {
+      const response = await createSmtpTransport().sendMail({
+        from,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: plainText,
+      });
+      messageId = response.messageId;
+    } else {
+      const command = new SendEmailCommand({
+        Destination: { ToAddresses: options.to },
+        Message: {
+          Subject: { Charset: charset, Data: options.subject },
+          Body: {
+            Html: { Charset: charset, Data: options.html },
+            Text: { Charset: charset, Data: plainText },
           },
-          Text: {
-            Charset: charset,
-            Data: plainText,
-          },
         },
-      },
-      Source: "Worklenz <noreply@worklenz.com>",
-    });
-
-    const res = await sesClient.send(command);
-    messageId = res.MessageId;
+        Source: from,
+      });
+      const response = await sesClient.send(command);
+      messageId = response.MessageId;
+    }
     console.log("✅ Email sent successfully!");
     console.log("Message ID:", messageId);
 
