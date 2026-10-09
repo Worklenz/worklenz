@@ -212,6 +212,12 @@ export default class ProjectsController extends WorklenzControllerBase {
                    OR r.admin_role = TRUE
                    OR pm.id IS NOT NULL
                  )
+                 AND NOT EXISTS (
+                   SELECT 1
+                   FROM archived_projects ap
+                   WHERE ap.project_id = p.id
+                     AND ap.user_id = $2
+                 )
                ORDER BY p.name ASC`;
     const result = await db.query(q, [req.user?.team_id, req.user?.id || null]);
     return res.status(200).send(new ServerResponse(true, result.rows));
