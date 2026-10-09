@@ -1052,6 +1052,7 @@ export default class HomePageController extends WorklenzControllerBase {
                         WHERE archived_projects.project_id = projects.id
                           AND archived_projects.user_id = $2)
         ${filterByMember}
+      ORDER BY name;
     `;
     const result = await db.query(q, queryParams);
     return res.status(200).send(new ServerResponse(true, result.rows));
