@@ -11,6 +11,8 @@ exports.up = async (pgm) => {
 -- Date: 2026-02-10
 -- Fixes: missing columns, missing unique constraint, create_quick_task not saving schedule_id
 
+BEGIN;
+
 -- 1. Add missing columns to task_recurring_schedules
 ALTER TABLE task_recurring_schedules
 ADD COLUMN IF NOT EXISTS date_of_month INTEGER,
@@ -28,7 +30,7 @@ ADD COLUMN IF NOT EXISTS status_id UUID;
 -- 3. Add unique constraint to prevent duplicate recurring tasks for the same date
 -- Using a partial unique index since schedule_id can be NULL for non-recurring tasks
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_schedule_end_date_unique
-ON tasks (schedule_id, (end_date::DATE))
+ON tasks (schedule_id, ((end_date AT TIME ZONE 'UTC')::DATE))
 WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL;
 
 -- 4. Update create_quick_task to accept and save schedule_id + description
@@ -141,6 +143,7 @@ BEGIN
 END;
 $$;
 
+COMMIT;
 
   `);
 };
