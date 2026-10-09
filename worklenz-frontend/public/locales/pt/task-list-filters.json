@@ -109,6 +109,14 @@
   "descendingOrder": "Decrescente",
   "currentSort": "Ordenação atual: {{field}} {{order}}",
   "apply": "Aplicar",
-  "showingYourTasksOnly": "Mostrando apenas suas tarefas",
-  "showingYourTasksOnlyTooltip": "Este projeto mostra apenas tarefas atribuídas a você. As contagens e o progresso refletem esse subconjunto."
+  "showingYourTasksOnly": "Exibindo apenas as suas tarefas",
+  "showingYourTasksOnlyTooltip": "Este projeto exibe apenas as tarefas atribuídas a você. As contagens e o progresso refletem esse subconjunto.",
+  "filters": "Filtros",
+  "quickFilters": "Filtros rápidos",
+  "addFilter": "Adicionar um filtro",
+  "allFiltersApplied": "Todas as opções de filtro aplicadas",
+  "removeFilter": "Remover filtro",
+  "selectAll": "Selecionar tudo",
+  "clear": "Limpar",
+  "noFiltersAvailable": "Nenhum filtro disponível"
 }
