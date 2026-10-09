@@ -18,5 +18,7 @@
   "fetchPracticeErrorMessage": "获取实践领域失败",
   "createPracticeErrorMessage": "创建实践领域失败",
   "updatePracticeErrorMessage": "更新实践领域失败",
-  "pinTooltip": "固定到导航栏"
+  "pinTooltip": "固定到导航栏",
+  "rowsPerPage": "每页行数：",
+  "paginationSummary": "{{range}} / {{total}}"
 }

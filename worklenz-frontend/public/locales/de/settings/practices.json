@@ -18,5 +18,7 @@
   "fetchPracticeErrorMessage": "Praktik konnte nicht abgerufen werden",
   "createPracticeErrorMessage": "Praktik konnte nicht erstellt werden",
   "updatePracticeErrorMessage": "Praktik konnte nicht aktualisiert werden",
-  "pinTooltip": "An Navigationsleiste anheften"
+  "pinTooltip": "An Navigationsleiste anheften",
+  "rowsPerPage": "Zeilen pro Seite:",
+  "paginationSummary": "{{range}} von {{total}}"
 }

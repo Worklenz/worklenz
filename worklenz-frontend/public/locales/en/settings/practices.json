@@ -18,5 +18,7 @@
   "fetchPracticeErrorMessage": "Failed to fetch practice",
   "createPracticeErrorMessage": "Failed to create practice",
   "updatePracticeErrorMessage": "Failed to update practice",
-  "pinTooltip": "Pin to navbar"
+  "pinTooltip": "Pin to navbar",
+  "rowsPerPage": "Rows per page:",
+  "paginationSummary": "{{range}} of {{total}}"
 }
