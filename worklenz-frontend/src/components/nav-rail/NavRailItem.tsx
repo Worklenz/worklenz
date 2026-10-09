@@ -247,7 +247,7 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
                 fontSize: 14,
                 color: token.colorPrimary,
                 background: token.colorBgContainer,
-                borderRadius: 4,
+                borderRadius: token.borderRadiusSM,
                 padding: '2px',
                 cursor: 'grab',
                 display: 'flex',
