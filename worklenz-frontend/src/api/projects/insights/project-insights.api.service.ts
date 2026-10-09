@@ -3,9 +3,10 @@ import apiClient from '@/api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { toQueryString } from '@/utils/toQueryString';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
-import { IDeadlineTaskStats } from '@/types/project/projectInsights.types';
 import {
+  IDeadlineTaskStats,
   IInsightTasks,
+  ILastUpdatedTasksResponse,
   IProjectInsightsGetRequest,
   IProjectLogs,
   IProjectMemberStats,
@@ -44,9 +45,9 @@ export const projectInsightsApiService = {
     include_archived: boolean,
     limit = 20,
     offset = 0
-  ): Promise<IServerResponse<IInsightTasks[]>> => {
+  ): Promise<IServerResponse<ILastUpdatedTasksResponse | IInsightTasks[]>> => {
     const url = `${rootUrl}/last-updated/${id}/${limit}/${offset}?archived=${include_archived}`;
-    const response = await apiClient.get<IServerResponse<IInsightTasks[]>>(url);
+    const response = await apiClient.get<IServerResponse<ILastUpdatedTasksResponse | IInsightTasks[]>>(url);
     return response.data;
   },
 

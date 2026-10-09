@@ -54,3 +54,9 @@ export interface IDeadlineTaskStats {
   project_end_date?: string;
   tasks?: IInsightTasks[];
 }
+
+export interface ILastUpdatedTasksResponse {
+  tasks: IInsightTasks[];
+  total: number;
+}
+

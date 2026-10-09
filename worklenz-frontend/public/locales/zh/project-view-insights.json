@@ -54,6 +54,7 @@
   },
   "common": {
     "seeAll": "查看全部",
+    "paginationRange": "第 {{from}}–{{to}} 条，共 {{total}} 条",
     "totalLoggedHours": "总记录小时数",
     "totalEstimation": "总估算",
     "completedTasks": "已完成任务",
