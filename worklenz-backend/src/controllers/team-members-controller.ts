@@ -2315,8 +2315,35 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
     }
 
-    // if (subscriptionData.status === "trialing") break;
-    if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
+    // Per-user Paddle Billing plans sell a fixed number of seats that members fill later, so adding
+    // a member never changes the quantity here: it only has to fit the purchased seats.
+    // Paddle Classic subscriptions keep the original behavior below.
+    if (
+      subscriptionData.billing_provider === "paddle_billing" &&
+      subscriptionData.subscription_status === "active" &&
+      subscriptionData.team_member_limit_override !== true
+    ) {
+      const seatLimit = getTeamMemberSeatLimit(subscriptionData);
+      const currentMembers = parseInt(subscriptionData.current_count) || 0;
+      const emailsToAdd = req.body.emails?.length || 1;
+      if (currentMembers + emailsToAdd > seatLimit) {
+        return res.status(200).send(
+          new ServerResponse(
+            false,
+            {
+              error_code: "SEAT_LIMIT_EXCEEDED",
+              seats_enough: false,
+              required_count: currentMembers + emailsToAdd - seatLimit,
+              current_members: currentMembers,
+              plan_seat_limit: seatLimit,
+              current_seat_amount: seatLimit,
+              subscription_type: subscriptionData.subscription_type,
+            },
+            "Not enough seats. Add more seats to invite this member.",
+          ),
+        );
+      }
+    } else if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
       if (subscriptionData.subscription_status === "active") {
         const response = await updateUsers(
           subscriptionData.subscription_ref ?? subscriptionData.subscription_id,

@@ -5,7 +5,7 @@ import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import { getCurrentSubscriptionRef, getTeamMemberCount } from "../shared/paddle-utils";
+import { getActiveTeamMemberCount, getCurrentSubscriptionRef, getTeamMemberCount } from "../shared/paddle-utils";
 import { generatePayLinkRequest, updateUsers } from "../shared/paddle-requests";
 
 import axios from "axios";
@@ -37,10 +37,15 @@ export default class BillingController extends WorklenzControllerBase {
   public static async upgradeToPaidPlan(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { plan, seatCount, replaceLegacy } = req.query;
 
-    const teamMemberData = await getTeamMemberCount(req.user?.owner_id ?? "");
+    const ownerId = req.user?.owner_id ?? "";
+    const teamMemberData = await getTeamMemberCount(ownerId);
     if (seatCount) {
       teamMemberData.user_count = parseInt(seatCount as string, 10);
     }
+    // Never sell fewer seats than the team already uses (active, non-guest members), whatever the
+    // client sent. Buying more than that is allowed: the extra seats are for members added later.
+    const activeMembers = (await getActiveTeamMemberCount(ownerId))?.user_count ?? 0;
+    teamMemberData.user_count = Math.max(Number(teamMemberData.user_count) || 0, activeMembers, 1);
     const axiosResponse = await generatePayLinkRequest(
       teamMemberData,
       plan as string,
@@ -104,6 +109,14 @@ export default class BillingController extends WorklenzControllerBase {
     const subscriptionRef = await getCurrentSubscriptionRef(req.user?.owner_id ?? "");
     if (!subscriptionRef) {
       return res.status(200).send(new ServerResponse(false, null, "Please check your subscription."));
+    }
+
+    // Seats can never be set below the number of members already using them.
+    const activeMembers = (await getActiveTeamMemberCount(req.user?.owner_id ?? ""))?.user_count ?? 0;
+    if (!Number.isFinite(Number(seatCount)) || Number(seatCount) < Math.max(activeMembers, 1)) {
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, `Seats cannot be fewer than your ${activeMembers} active members.`));
     }
 
     const response = await updateUsers(subscriptionRef, seatCount);

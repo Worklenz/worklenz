@@ -260,8 +260,8 @@ describe("shadow comparison", () => {
   });
 
   it("flags known legacy inconsistencies", () => {
-    // Plan named "Pro" (not "Professional") gets 0 guests from the legacy check; matrix says 5.
-    expect(compare(paddle("Pro"))).toEqual([{ check: "guest_limit", legacy: 0, entitlements: 5 }]);
+    // A plan named "Pro" now gets 5 guests from the legacy check too, so it agrees with the matrix.
+    expect(compare(paddle("Pro"))).toEqual([]);
     // Custom/DirectPay Business never passes the legacy business check.
     expect(compare({ subscription_type: "CUSTOM", plan_name: "Business Plan" })).toEqual([
       { check: "business_features", legacy: false, entitlements: true },
@@ -269,7 +269,8 @@ describe("shadow comparison", () => {
   });
 
   it("logs a mismatch once per user/check, and counts compared sessions", () => {
-    const user = { id: "u1", team_id: "t1", ...paddle("Pro") };
+    // Custom/DirectPay Business never passes the legacy business check, so it always mismatches.
+    const user = { id: "u1", team_id: "t1", subscription_type: "CUSTOM", plan_name: "Business Plan" };
     const e = resolveEntitlements(user, NOW);
     runShadowComparison(user, e, 1000);
     runShadowComparison(user, e, 2000);

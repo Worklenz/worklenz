@@ -55,7 +55,8 @@ export function resolveLegacyGuestPlan(subscriptionData: any): { guestLimit: num
     planTier = "APPSUMO_LTD";
   } else if (
     subscriptionData?.subscription_type === "PADDLE" &&
-    subscriptionData?.plan_name?.toLowerCase().includes("professional")
+    // "Professional" (Classic) or "Pro (per user, ...)" (Paddle Billing)
+    /^pro\b|professional/.test(String(subscriptionData?.plan_name ?? "").toLowerCase())
   ) {
     guestLimit = PRO_GUEST_LIMIT;
     planTier = "PROFESSIONAL";

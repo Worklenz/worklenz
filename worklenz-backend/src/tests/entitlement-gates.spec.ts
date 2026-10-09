@@ -133,10 +133,10 @@ describe("guest limit under enforcement", () => {
   const status = paddleUtils.checkTeamSubscriptionStatus as jest.Mock;
   const guests = paddleUtils.getActiveGuestCount as jest.Mock;
 
-  it("gives a plan named 'Pro' 5 guests (legacy gave 0)", async () => {
+  it("gives a plan named 'Pro' 5 guests, in legacy mode and when enforcing", async () => {
     status.mockResolvedValue(proClassic);
     guests.mockResolvedValue(0);
-    expect((await getGuestSeatLimit("t1")).guest_limit).toBe(0);
+    expect((await getGuestSeatLimit("t1")).guest_limit).toBe(5);
 
     process.env.ENTITLEMENTS_ENFORCE = "on";
     const result = await getGuestSeatLimit("t1");

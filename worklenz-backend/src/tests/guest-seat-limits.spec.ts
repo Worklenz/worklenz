@@ -132,6 +132,19 @@ describe("guest-seat-limits", () => {
       });
     });
 
+    it("should treat per-user Paddle Billing Pro plans as PROFESSIONAL", async () => {
+      (paddleUtils.checkTeamSubscriptionStatus as jest.Mock).mockResolvedValue({
+        subscription_type: "PADDLE",
+        plan_name: "Pro (per user, monthly)"
+      });
+      (paddleUtils.getActiveGuestCount as jest.Mock).mockResolvedValue(0);
+
+      const result = await getGuestSeatLimit(teamId);
+
+      expect(result.plan_tier).toBe("PROFESSIONAL");
+      expect(result.guest_limit).toBe(5);
+    });
+
     it("should return PROFESSIONAL tier with 5 guest limit", async () => {
       (paddleUtils.checkTeamSubscriptionStatus as jest.Mock).mockResolvedValue({
         subscription_type: "PADDLE",

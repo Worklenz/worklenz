@@ -7,6 +7,11 @@ const local = isLocalServer() ? LOCAL_URL : PRODUCTION_SERVER_URL;
 const serverUrl = isTestServer() ? UAT_SERVER_URL : local;
 const jwtSecret: Secret = process.env.JWT_SECRET ?? "";
 
+/** False when requests to the license manager would go to the unset placeholder URL. */
+export function isPaddleServiceConfigured(): boolean {
+  return !/^https?:\/\/your-/.test(serverUrl);
+}
+
 async function post(endpoint: string, body: Record<string, unknown>) {
   const token = jwt.sign({serverId: "01"}, jwtSecret, {expiresIn: "1h"});
   try {
