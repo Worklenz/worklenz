@@ -237,8 +237,9 @@ interface TimelineBarRowProps {
 // rest of Planner's light-mode chrome), left to antd's own dark styling in dark mode.
 const tooltipProps = (themeMode: string, token: any) => ({
   color: themeMode === 'dark' ? undefined : '#fff',
-  overlayInnerStyle:
-    themeMode === 'dark' ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+  styles: {
+    body: themeMode === 'dark' ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+  },
 });
 
 // Drag handle at a bar edge — mousedown starts a resize that only moves that one edge's

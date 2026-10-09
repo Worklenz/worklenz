@@ -246,7 +246,7 @@ const ClientDetailsDrawer = () => {
       open={isClientDetailsDrawerOpen}
       onCancel={handleClose}
       width={900}
-      destroyOnClose
+      destroyOnHidden
       styles={{
         body: {
           maxHeight: 'calc(100vh - 280px)',

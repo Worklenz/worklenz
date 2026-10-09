@@ -66,7 +66,7 @@ const WhatsNewReleaseModal = ({ open, release, loading, notFound, onClose }: Wha
       onCancel={onClose}
       width={600}
       styles={{ body: { maxHeight: '72vh', overflowY: 'auto' } }}
-      destroyOnClose
+      destroyOnHidden
       footer={
         release && isSafeChangelogUrl(release.changelog_url) ? (
           <a href={release.changelog_url} target="_blank" rel="noopener noreferrer">

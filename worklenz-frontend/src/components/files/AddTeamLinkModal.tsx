@@ -84,7 +84,7 @@ export const AddTeamLinkModal: React.FC<AddTeamLinkModalProps> = ({
       onCancel={handleCancel}
       confirmLoading={loading}
       okText={isEdit ? t('save', { defaultValue: 'Save' }) : t('addLink', { defaultValue: 'Add Link' })}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" requiredMark={false}>
         {!isEdit && (

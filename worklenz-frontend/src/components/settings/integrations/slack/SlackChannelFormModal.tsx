@@ -219,7 +219,7 @@ export function SlackChannelFormModal({
             disabled={!!editingChannel}
             loading={projectsLoading}
             notFoundContent={projectsLoading ? <Spin size="small" /> : null}
-            dropdownRender={menu => (
+            popupRender={menu => (
               <>
                 {menu}
                 {projectsLoading && projects.length > 0 && (

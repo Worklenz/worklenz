@@ -230,7 +230,7 @@ export const UploadFilesModal: React.FC<UploadFilesModalProps> = ({ open, onClos
       onOk={uploadFiles}
       confirmLoading={uploading}
       width={700}
-      destroyOnClose
+      destroyOnHidden
     >
       <Typography.Text style={{ display: 'block', marginBottom: 8 }}>
         {t('selectProjectLabel', { defaultValue: 'Project' })}

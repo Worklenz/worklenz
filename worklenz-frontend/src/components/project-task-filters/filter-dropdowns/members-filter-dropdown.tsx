@@ -165,7 +165,7 @@ const MembersFilterDropdown = () => {
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => membersDropdownContent}
+      popupRender={() => membersDropdownContent}
       onOpenChange={handleMembersDropdownOpen}
     >
       <Button icon={<CaretDownFilled />} iconPosition="end" style={buttonStyle}>

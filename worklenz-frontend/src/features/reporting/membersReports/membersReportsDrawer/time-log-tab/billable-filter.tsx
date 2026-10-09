@@ -65,7 +65,7 @@ const BillableFilter = ({ billable, onBillableChange }: BillableFilterProps) => 
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => billableDropdownContent}
+      popupRender={() => billableDropdownContent}
       onOpenChange={open => setIsDropdownOpen(open)}
     >
       <Button

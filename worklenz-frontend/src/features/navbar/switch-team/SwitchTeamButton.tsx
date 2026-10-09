@@ -208,7 +208,7 @@ const SwitchTeamButton = () => {
       open={isOpen}
       onOpenChange={handleOpenChange}
       overlayClassName="navbar-switch-team-dropdown"
-      dropdownRender={() => dropdownContent}
+      popupRender={() => dropdownContent}
       trigger={['click']}
       placement="bottomRight"
     >

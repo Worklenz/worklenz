@@ -115,7 +115,9 @@ const PlannerLeftSidebar: React.FC<PlannerLeftSidebarProps> = ({ activeView, onV
   // for the nav items themselves, applied here for the footer's own Tooltips.
   const tooltipProps = {
     color: isDark ? undefined : '#fff',
-    overlayInnerStyle: isDark ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+    styles: {
+      body: isDark ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+    },
   };
 
   const [settingsOpen, setSettingsOpen] = useState(false);

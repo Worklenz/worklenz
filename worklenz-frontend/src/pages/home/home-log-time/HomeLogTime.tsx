@@ -799,7 +799,7 @@ const HomeLogTime: React.FC = () => {
               value={selTaskId}
               onChange={setSelTaskId}
               notFoundContent={tasksLoading ? t('logTime.taskSearching', { defaultValue: 'Searching...' }) : t('logTime.noTasksFound', { defaultValue: 'No tasks found' })}
-              dropdownRender={menu => (
+              popupRender={menu => (
                 <>
                   {menu}
                   <div

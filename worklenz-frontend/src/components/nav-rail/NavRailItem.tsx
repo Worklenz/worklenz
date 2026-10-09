@@ -54,7 +54,9 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
   // rewriting the same workaround.
   const tooltipProps = {
     color: isDark ? undefined : '#fff',
-    overlayInnerStyle: isDark ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+    styles: {
+      body: isDark ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+    },
   };
 
   // `soon` items are non-clickable by default; `soonClickable` opts a

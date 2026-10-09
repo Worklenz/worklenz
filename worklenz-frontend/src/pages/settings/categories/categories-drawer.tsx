@@ -411,7 +411,7 @@ const CategoriesDrawer = ({
 
   const handleClose = () => {
     // Don't resetFields() here — the Drawer animates closed over ~300ms
-    // (destroyOnClose only unmounts *after* that animation finishes), so
+    // (destroyOnHidden only unmounts *after* that animation finishes), so
     // resetting synchronously on click made the color picker briefly show
     // the default blue while the drawer was still visually closing.
     // The useEffect above already repopulates fields correctly on next open.
@@ -426,7 +426,7 @@ const CategoriesDrawer = ({
     onChange?: (color: string) => void;
   }) => (
     <Dropdown
-      dropdownRender={() => (
+      popupRender={() => (
         <div
           style={{
             padding: 16,
@@ -514,7 +514,7 @@ const CategoriesDrawer = ({
       }
       open={drawerOpen}
       onClose={handleClose}
-      destroyOnClose
+      destroyOnHidden
       width={400}
     >
       <Form form={form} layout="vertical" onFinish={handleFormSubmit}>

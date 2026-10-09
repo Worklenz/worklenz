@@ -827,7 +827,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           {/* Change Labels */}
           <Tooltip title={t('ADD_LABELS')} placement="top">
             <Dropdown
-              dropdownRender={() => labelsDropdownContent}
+              popupRender={() => labelsDropdownContent}
               trigger={['click']}
               placement="top"
               arrow
@@ -860,7 +860,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           {/* Change Assignees */}
           <Tooltip title={t('ASSIGN_MEMBERS')} placement="top">
             <Dropdown
-              dropdownRender={() => assigneesDropdownContent}
+              popupRender={() => assigneesDropdownContent}
               open={canCreateTask ? assigneeDropdownOpen : false}
               onOpenChange={canCreateTask ? onAssigneeDropdownOpenChange : undefined}
               trigger={['click']}
@@ -895,7 +895,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
               placement="top"
               arrow
               disabled={!canCreateTask}
-              dropdownRender={() => (
+              popupRender={() => (
                 <div style={datePickerDropdownStyle}>
                   <DatePicker
                     open
@@ -933,7 +933,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
               placement="top"
               arrow
               disabled={!canCreateTask}
-              dropdownRender={() => (
+              popupRender={() => (
                 <div style={datePickerDropdownStyle}>
                   <DatePicker
                     open

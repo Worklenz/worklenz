@@ -143,7 +143,7 @@ const LabelsFilterDropdown = () => {
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => labelsDropdownContent}
+      popupRender={() => labelsDropdownContent}
       onOpenChange={handleLabelsDropdownOpen}
     >
       <Button

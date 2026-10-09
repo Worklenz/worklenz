@@ -1871,11 +1871,12 @@ const PlannerScheduleView: React.FC = () => {
                                   placement={showTaskDrawer ? 'left' : 'right'}
                                   autoAdjustOverflow
                                   color={themeMode === 'dark' ? undefined : '#fff'}
-                                  overlayInnerStyle={
-                                    themeMode === 'dark'
-                                      ? undefined
-                                      : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' }
-                                  }
+                                  styles={{
+                                    body:
+                                      themeMode === 'dark'
+                                        ? undefined
+                                        : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+                                  }}
                                   title={renderTaskTooltipTitle(task, d.date)}
                                 >
                                 <div
@@ -1974,7 +1975,7 @@ const PlannerScheduleView: React.FC = () => {
                               <Popover
                                 trigger="hover"
                                 placement={showTaskDrawer ? 'left' : 'right'}
-                                overlayInnerStyle={{ padding: 6 }}
+                                styles={{ body: { padding: 6 } }}
                                 content={
                                   <div
                                     style={{
@@ -1997,11 +1998,12 @@ const PlannerScheduleView: React.FC = () => {
                                         placement={showTaskDrawer ? 'left' : 'right'}
                                         autoAdjustOverflow
                                         color={themeMode === 'dark' ? undefined : '#fff'}
-                                        overlayInnerStyle={
-                                          themeMode === 'dark'
-                                            ? undefined
-                                            : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' }
-                                        }
+                                        styles={{
+                                          body:
+                                            themeMode === 'dark'
+                                              ? undefined
+                                              : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+                                        }}
                                         title={renderTaskTooltipTitle(task, d.date)}
                                       >
                                         <div

@@ -459,7 +459,7 @@ const WorkloadFilters = ({
     <Flex align="center" gap={12} wrap="wrap">
       <Dropdown
         trigger={['click']}
-        dropdownRender={() => timeWiseDropdownContent}
+        popupRender={() => timeWiseDropdownContent}
         onOpenChange={open => setIsDateDropdownOpen(open)}
         open={isDateDropdownOpen}
         getPopupContainer={trigger => trigger.parentElement || document.body}

@@ -347,7 +347,7 @@ const HomeAddTaskModal = ({ open, defaultDate, onClose, onTaskCreated }: HomeAdd
         loading: submitting,
         disabled: createMode === 'unassigned' && !selectedUnassignedTask,
       }}
-      destroyOnClose
+      destroyOnHidden
     >
       <PillToggle<CreateMode>
         value={createMode}

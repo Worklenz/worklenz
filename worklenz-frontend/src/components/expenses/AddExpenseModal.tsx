@@ -128,7 +128,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ open, onClose,
   };
 
   return (
-    <Modal open={open} onCancel={onClose} title={te('modalTitle', 'Add Expense')} footer={null} width={440} destroyOnClose>
+    <Modal open={open} onCancel={onClose} title={te('modalTitle', 'Add Expense')} footer={null} width={440} destroyOnHidden>
       <div style={{ marginBottom: 14 }}>
         <label style={fldLbl}>{te('projectLabel', 'Project')}</label>
         <Select

@@ -1104,7 +1104,7 @@ export const SelectionCustomColumnCell: React.FC<{
       <Dropdown
         open={isDropdownOpen}
         onOpenChange={setIsDropdownOpen}
-        dropdownRender={() => dropdownContent}
+        popupRender={() => dropdownContent}
         trigger={['click']}
         placement="bottomLeft"
         overlayClassName="custom-selection-dropdown"

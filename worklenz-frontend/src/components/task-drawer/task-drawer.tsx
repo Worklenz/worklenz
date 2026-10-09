@@ -320,7 +320,7 @@ const TaskDrawer = () => {
     mask: false,
     afterOpenChange: handleAfterOpenChange,
     width: isSoftwareProject ? SOFTWARE_DRAWER_WIDTH : 720,
-    destroyOnClose: false,
+    destroyOnHidden: false,
     title: taskAccessDenied ? (
       t('taskAccessDenied.title', { defaultValue: 'No access' })
     ) : (

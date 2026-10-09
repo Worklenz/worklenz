@@ -50,7 +50,7 @@ const AddTeamDrawer: React.FC<AddTeamDrawerProps> = ({ isDrawerOpen, onClose, re
         </Typography.Text>
       }
       open={isDrawerOpen}
-      destroyOnClose
+      destroyOnHidden
       afterOpenChange={() => {
         setTimeout(() => {
           addTeamNameInputRef.current?.focus();

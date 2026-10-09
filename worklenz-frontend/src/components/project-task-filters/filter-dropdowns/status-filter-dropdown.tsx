@@ -115,7 +115,7 @@ const StatusFilterDropdown = ({ statuses }: StatusFilterDropdownProps) => {
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => dropdownContent}
+      popupRender={() => dropdownContent}
     >
       <Button icon={<CaretDownFilled />} iconPosition="end" style={buttonStyle}>
         <Space>

@@ -134,7 +134,7 @@ const MembersReportsDrawer = ({ memberId }: MembersReportsDrawerProps) => {
       open={isDrawerOpen}
       onClose={handleClose}
       width={900}
-      destroyOnClose
+      destroyOnHidden
       title={
         selectedMember && (
           <Flex align="center" justify="space-between">

@@ -427,7 +427,7 @@ const ProfileSettings = () => {
         onCancel={handleCancelCrop}
         width={520}
         centered
-        destroyOnClose
+        destroyOnHidden
         footer={[
           <Button key="cancel" onClick={handleCancelCrop} disabled={uploading}>
             {t('cancel')}

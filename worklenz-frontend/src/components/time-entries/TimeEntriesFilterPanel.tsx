@@ -117,7 +117,7 @@ const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
   );
 
   return (
-    <Dropdown overlayClassName="custom-dropdown" trigger={['click']} dropdownRender={() => dropdownContent} open={open} onOpenChange={setOpen}>
+    <Dropdown overlayClassName="custom-dropdown" trigger={['click']} popupRender={() => dropdownContent} open={open} onOpenChange={setOpen}>
       <Button
         icon={<CaretDownFilled />}
         iconPosition="end"
@@ -313,8 +313,10 @@ export const TimeEntriesFilterPanel: React.FC<TimeEntriesFilterPanelProps> = ({
       placement="bottomLeft"
       open={panelOpen}
       onOpenChange={setPanelOpen}
-      overlayStyle={{ padding: 0 }}
-      overlayInnerStyle={{ padding: '12px 16px', borderRadius: 8 }}
+      styles={{
+        root: { padding: 0 },
+        body: { padding: '12px 16px', borderRadius: 8 },
+      }}
     >
       <Button
         icon={<FilterOutlined />}

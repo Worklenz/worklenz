@@ -487,7 +487,7 @@ const TaskListBulkActionsBar = () => {
           <Tooltip title={t('changeLabel')} getPopupContainer={() => changeLabelRef.current!}>
             <div ref={changeLabelRef}>
               <Dropdown
-                dropdownRender={() => labelsDropdownContent}
+                popupRender={() => labelsDropdownContent}
                 placement="top"
                 arrow
                 trigger={['click']}
@@ -526,7 +526,7 @@ const TaskListBulkActionsBar = () => {
           >
             <div ref={changeAssigneesRef}>
               <Dropdown
-                dropdownRender={getAssigneesMenu}
+                popupRender={getAssigneesMenu}
                 open={assigneeDropdownOpen}
                 onOpenChange={onAssigneeDropdownOpenChange}
                 placement="top"

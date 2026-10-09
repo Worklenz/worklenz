@@ -924,7 +924,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
         width="100%"
         style={{ maxWidth: '1400px', top: 20 }}
         className={`pricing-modal ${isDarkMode ? 'dark' : 'light'} ${useMobileDrawer ? 'mobile-preferred' : ''}`}
-        destroyOnClose
+        destroyOnHidden
         aria-labelledby="pricing-modal-title"
         aria-describedby="pricing-modal-description"
       >

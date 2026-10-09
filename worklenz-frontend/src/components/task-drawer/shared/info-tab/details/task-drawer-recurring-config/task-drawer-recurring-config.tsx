@@ -526,7 +526,7 @@ const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskView
                   </Form>
                 </Skeleton>
               }
-              overlayStyle={{ width: 510 }}
+              styles={{ root: { width: 510 } }}
               open={showConfig}
               onOpenChange={configVisibleChange}
               trigger="click"

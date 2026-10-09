@@ -116,7 +116,7 @@ const PriorityFilterDropdown = ({ priorities }: PriorityFilterDropdownProps) => 
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => priorityDropdownContent}
+      popupRender={() => priorityDropdownContent}
     >
       <Button icon={<CaretDownFilled />} iconPosition="end" style={buttonStyle}>
         <Space>

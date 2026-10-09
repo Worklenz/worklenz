@@ -305,7 +305,7 @@ const TimeWiseFilter = () => {
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => renderDropdownContent()}
+      popupRender={() => renderDropdownContent()}
       onOpenChange={open => setIsDropdownOpen(open)}
       open={isDropdownOpen}
     >

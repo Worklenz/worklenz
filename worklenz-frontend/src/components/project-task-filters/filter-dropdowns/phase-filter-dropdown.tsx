@@ -104,7 +104,7 @@ const PhaseFilterDropdown = ({ phases }: PhaseFilterDropdownProps) => {
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => dropdownContent}
+      popupRender={() => dropdownContent}
     >
       <Button icon={<CaretDownFilled />} iconPosition="end" style={buttonStyle}>
         <Space>

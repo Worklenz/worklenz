@@ -827,9 +827,9 @@ const PlannerWorkloadView: React.FC = () => {
       placement={showTaskDrawer ? 'left' : 'right'}
       autoAdjustOverflow
       color={themeMode === 'dark' ? undefined : '#fff'}
-      overlayInnerStyle={
-        themeMode === 'dark' ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' }
-      }
+      styles={{
+        body: themeMode === 'dark' ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+      }}
       title={renderTaskChipTooltip(wl)}
     >
       <div
@@ -882,9 +882,9 @@ const PlannerWorkloadView: React.FC = () => {
         placement={showTaskDrawer ? 'left' : 'right'}
         autoAdjustOverflow
         color={themeMode === 'dark' ? undefined : '#fff'}
-        overlayInnerStyle={
-          themeMode === 'dark' ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' }
-        }
+        styles={{
+          body: themeMode === 'dark' ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+        }}
         title={renderBlockChipTooltip(b)}
       >
         <div
@@ -1779,7 +1779,7 @@ const WorkloadAddPopover: React.FC<{
       onCancel={onClose}
       title={`${t('addFor', { defaultValue: 'Add for' })} ${ctx.rowLabel}`}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
     >
       {/* Same tab-pill toggle (bordered container, filled active pill) as
           PlannerAddTaskModal's mode switch in Schedule, plus a third,

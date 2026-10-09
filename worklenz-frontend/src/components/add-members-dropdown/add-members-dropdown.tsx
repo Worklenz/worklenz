@@ -117,7 +117,7 @@ const AddMembersDropdown: React.FC = () => {
     <Dropdown
       menu={{ items: inviteItems }}
       trigger={['click']}
-      dropdownRender={() => menu}
+      popupRender={() => menu}
       overlayClassName="custom-dropdown-menu"
       overlayStyle={{
         width: '300px',

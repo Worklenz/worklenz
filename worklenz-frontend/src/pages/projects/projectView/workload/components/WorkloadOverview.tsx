@@ -268,8 +268,7 @@ const CompactStatCard = ({ label, tooltip, value, valueColor, caption, split }: 
       >
         <span>{label}</span>
         <Tooltip
-          overlayStyle={{ maxWidth: 'none' }}
-          overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
+          styles={{ root: { maxWidth: 'none' }, body: { width: 'max-content', maxWidth: 320 } }}
           title={tooltip}
         >
           <InfoCircleOutlined style={{ fontSize: 11, cursor: 'help' }} />

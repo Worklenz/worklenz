@@ -105,7 +105,7 @@ export const RecordPaymentModal = ({
       onCancel={onClose}
       rootClassName="invoices-modal"
       width={440}
-      destroyOnClose
+      destroyOnHidden
       title={t('recordPaymentTitle', { defaultValue: 'Record Payment' })}
       footer={
         <Flex justify="flex-end" gap={8}>

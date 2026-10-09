@@ -109,7 +109,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({
       footer={null}
       title={t('newChat', { defaultValue: 'New chat' })}
       width={420}
-      destroyOnClose
+      destroyOnHidden
     >
       <Input
         placeholder={

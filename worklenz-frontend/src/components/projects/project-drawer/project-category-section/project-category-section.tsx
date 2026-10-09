@@ -165,7 +165,7 @@ const ProjectCategorySection = ({ form, t, disabled }: ProjectCategorySectionPro
             loading={creating}
             allowClear
             onDropdownVisibleChange={handleDropdownVisibleChange}
-            dropdownRender={menu => (
+            popupRender={menu => (
               <>
                 {menu}
                 <Divider style={{ margin: '8px 0' }} />

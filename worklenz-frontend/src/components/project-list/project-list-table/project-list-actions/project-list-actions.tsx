@@ -102,8 +102,10 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
             ? t('settingsDisabledForGuest', { defaultValue: 'Settings Disabled For Guest' })
             : t('setting', { defaultValue: 'Settings' })
         }
-        overlayStyle={{ maxWidth: '280px' }}
-        overlayInnerStyle={{ padding: '8px 12px', wordBreak: 'break-word', wordSpacing: '0.1em', lineHeight: '1.5' }}
+        styles={{
+          root: { maxWidth: '280px' },
+          body: { padding: '8px 12px', wordBreak: 'break-word', wordSpacing: '0.1em', lineHeight: '1.5' },
+        }}
       >
         <Button
           className="action-button"

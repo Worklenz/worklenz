@@ -86,7 +86,7 @@ export const FileUploadModal = ({
       onOk={onUpload}
       confirmLoading={uploading}
       width={700}
-      destroyOnClose
+      destroyOnHidden
     >
       <Typography.Paragraph style={{ marginBottom: 16 }}>
         {t('uploadDescription', {

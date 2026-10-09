@@ -173,7 +173,7 @@ const LabelsSelector = ({ task }: LabelsSelectorProps) => {
   return (
     <Dropdown
       trigger={['click']}
-      dropdownRender={() => labelDropdownContent}
+      popupRender={() => labelDropdownContent}
       onOpenChange={handleLabelDropdownOpen}
     >
       <Button

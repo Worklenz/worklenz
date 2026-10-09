@@ -491,7 +491,7 @@ const UpdateMemberDrawer = ({
       afterOpenChange={afterOpenChange}
       width={400}
       loading={loading}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} onFinish={handleFormSubmit} layout="vertical">
         <Form.Item
@@ -556,7 +556,7 @@ const UpdateMemberDrawer = ({
             notFoundContent={
               jobTitlesLoading && jobTitles.length === 0 ? <Spin size="small" /> : null
             }
-            dropdownRender={menu => (
+            popupRender={menu => (
               <div>
                 {menu}
                 {jobTitlesLoading && jobTitles.length > 0 && (

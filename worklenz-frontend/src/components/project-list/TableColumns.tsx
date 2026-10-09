@@ -90,7 +90,7 @@ const TableColumns = (): ColumnsType<DataType> => {
                 {(record.startDate || record.endDate) && (
                   <Tooltip
                     title={`Start date: ${formattedStartDate}\nEnd date: ${formattedEndDate}`}
-                    overlayStyle={{ width: '200px' }}
+                    styles={{ root: { width: '200px' } }}
                   >
                     <CalendarOutlined style={{ marginLeft: '0.5rem' }} />
                   </Tooltip>

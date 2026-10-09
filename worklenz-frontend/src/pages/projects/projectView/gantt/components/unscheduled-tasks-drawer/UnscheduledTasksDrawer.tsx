@@ -24,7 +24,7 @@ const UnscheduledTasksDrawer: React.FC<UnscheduledTasksDrawerProps> = ({
       open={open}
       onClose={onClose}
       width={420}
-      destroyOnClose={false}
+      destroyOnHidden={false}
       bodyStyle={{ paddingBottom: 24 }}
       zIndex={1000}
     >

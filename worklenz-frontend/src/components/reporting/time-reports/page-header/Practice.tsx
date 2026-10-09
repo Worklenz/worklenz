@@ -63,7 +63,7 @@ const Practice: React.FC<PracticeProps> = ({ disabled = false }) => {
       menu={undefined}
       placement="bottomLeft"
       trigger={['click']}
-      dropdownRender={() => (
+      popupRender={() => (
         <div
           style={{
             background: colors.dropdownBg,

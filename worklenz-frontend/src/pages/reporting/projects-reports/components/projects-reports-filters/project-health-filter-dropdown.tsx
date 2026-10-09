@@ -95,7 +95,7 @@ const ProjectHealthFilterDropdown = () => {
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => projectHealthDropdownContent}
+      popupRender={() => projectHealthDropdownContent}
       onOpenChange={open => setIsDropdownOpen(open)}
     >
       <Button
