@@ -51,8 +51,8 @@ export const ProjectRateCell: React.FC<{
       <Tooltip
         title={
           isFavorite
-            ? t('removeFromFavorites', 'Remove from favorites')
-            : t('addToFavorites', 'Add to favourites')
+            ? t('removeFromFavourites', { defaultValue: 'Remove from favourites' })
+            : t('addToFavourites', { defaultValue: 'Add to favourites' })
         }
       >
         <Button

@@ -37,6 +37,7 @@ i18n
     saveMissing: import.meta.env.DEV,
     missingKeyHandler: import.meta.env.DEV
       ? (lngs, ns, key) => {
+          if (!lngs.every(lng => i18n.hasLoadedNamespace(ns, { lng }))) return;
           console.warn(`[i18n] Missing key "${key}" in namespace "${ns}" for language(s): ${lngs.join(', ')}`);
         }
       : undefined,

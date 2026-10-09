@@ -31,7 +31,7 @@ const PLAN_TRIAL_SUBSCRIPTION_TYPES = ['TRIAL', 'BUSINESS_TRIAL', 'ENTERPRISE_TR
 
 const CurrentBill: React.FC = React.memo(() => {
   const dispatch = useAppDispatch();
-  const { t } = useTranslation('admin-center/current-bill');
+  const { t, ready } = useTranslation('admin-center/current-bill');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isTablet = useDebouncedMediaQuery({ query: '(min-width: 1025px)' });
   const currentSession = useAuthService().getCurrentSession();
@@ -51,7 +51,9 @@ const CurrentBill: React.FC = React.memo(() => {
     const getUserType = (): UserType => {
       const planName = billingInfo?.plan_name?.toLowerCase() || '';
       const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
-      const normalizedSubscriptionType = String(currentSession?.subscription_type || '').toUpperCase();
+      const normalizedSubscriptionType = String(
+        currentSession?.subscription_type || ''
+      ).toUpperCase();
 
       // Trial users should never be considered AppSumo users.
       if (PLAN_TRIAL_SUBSCRIPTION_TYPES.includes(normalizedSubscriptionType)) return 'trial';
@@ -121,8 +123,10 @@ const CurrentBill: React.FC = React.memo(() => {
           <Card
             title={
               <span style={titleStyle}>
-                <span>{t('charges')}</span>
-                <Tooltip title={t('tooltip')}>
+                <span>{t('charges', { defaultValue: 'Charges' })}</span>
+                <Tooltip
+                  title={t('tooltip', { defaultValue: 'Charges for the current billing cycle' })}
+                >
                   <InfoCircleTwoTone />
                 </Tooltip>
               </span>
@@ -134,7 +138,10 @@ const CurrentBill: React.FC = React.memo(() => {
         </div>
 
         <div style={colStyle}>
-          <Card title={<span style={titleStyle}>{t('invoices')}</span>} style={cardStyle}>
+          <Card
+            title={<span style={titleStyle}>{t('invoices', { defaultValue: 'Invoices' })}</span>}
+            style={cardStyle}
+          >
             <InvoicesTable />
           </Card>
         </div>
@@ -155,6 +162,10 @@ const CurrentBill: React.FC = React.memo(() => {
     [currentSession?.subscription_type]
   );
 
+  // Avoid rendering child billing components until their namespace is available.
+  // With Suspense disabled globally, rendering early would emit false missing-key warnings.
+  if (!ready) return null;
+
   return (
     <div style={{ width: '100%' }} className="current-billing">
       {isTablet ? (
@@ -172,7 +183,14 @@ const CurrentBill: React.FC = React.memo(() => {
       {shouldShowChargesAndInvoices && renderChargesAndInvoices()}
       {shouldShowLkrHistory && (
         <div style={colStyle}>
-          <Card title={<span style={titleStyle}>Payment History</span>} style={cardStyle}>
+          <Card
+            title={
+              <span style={titleStyle}>
+                {t('paymentHistory', { defaultValue: 'Payment History' })}
+              </span>
+            }
+            style={cardStyle}
+          >
             <LkrPaymentHistoryTable />
           </Card>
         </div>

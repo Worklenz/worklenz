@@ -60,7 +60,7 @@ const AccountStorage = ({ themeMode }: IAccountStorageProps) => {
             fontSize: '16px',
           }}
         >
-          {t('accountStorage')}
+          {t('accountStorage', { defaultValue: 'Account Storage' })}
         </span>
       }
     >
@@ -69,7 +69,12 @@ const AccountStorage = ({ themeMode }: IAccountStorageProps) => {
           <Progress
             percent={storageInfo?.used_percent ?? 0}
             type="circle"
-            format={percent => <span style={{ fontSize: '13px' }}>{percent}% Used</span>}
+            format={percent => (
+              <span style={{ fontSize: '13px' }}>
+                {percent}
+                {t('percentUsed', { defaultValue: '% Used' })}
+              </span>
+            )}
           />
         </div>
         <div
@@ -80,10 +85,12 @@ const AccountStorage = ({ themeMode }: IAccountStorageProps) => {
           }}
         >
           <Typography.Text>
-            {t('used')} <strong>{formatBytes(storageInfo?.used ?? 0, 1)}</strong>
+            {t('used', { defaultValue: 'Used:' })}{' '}
+            <strong>{formatBytes(storageInfo?.used ?? 0, 1)}</strong>
           </Typography.Text>
           <Typography.Text>
-            {t('remaining')} <strong>{formatBytes(storageInfo?.remaining ?? 0, 1)}</strong>
+            {t('remaining', { defaultValue: 'Remaining:' })}{' '}
+            <strong>{formatBytes(storageInfo?.remaining ?? 0, 1)}</strong>
           </Typography.Text>
         </div>
       </div>

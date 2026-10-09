@@ -22,10 +22,8 @@ exports.up = (pgm) => {
     COMMENT ON COLUMN organizations.audit_log_retention_months IS
       'How long Audit Log entries (audit_events) are kept before the retention purge job ages them out. Defaults to 12 months to meet the PCI DSS minimum out of the box. Configurable by the organization owner; DB-level bound (1-120) is a sanity guard, not the product-exposed range.';
 
-    -- The sole sanctioned path for removing audit_events rows. SECURITY DEFINER so it runs with
-    -- this migration's (schema-owner) privileges rather than the caller's - worklenz_client has
-    -- no direct DELETE on audit_events (see create-audit-events-table migration) and is only
-    -- granted EXECUTE on this function below. It also flips the transaction-local flag that
+    -- The sole sanctioned path for removing audit_events rows. SECURITY DEFINER lets it run with
+    -- the function owner's privileges. It also flips the transaction-local flag that
     -- prevent_audit_events_mutation_trigger checks, so the append-only trigger lets this
     -- specific, age-based delete through and nothing else.
     CREATE OR REPLACE FUNCTION purge_expired_audit_events(p_organization_id UUID DEFAULT NULL)
@@ -56,7 +54,6 @@ exports.up = (pgm) => {
     COMMENT ON FUNCTION purge_expired_audit_events(UUID) IS
       'Deletes audit_events rows older than their organization''s audit_log_retention_months. Pass an organization_id to scope to one org, or NULL (default) to sweep all orgs - intended to be invoked by a scheduled retention job, never from a user-facing endpoint.';
 
-    GRANT EXECUTE ON FUNCTION purge_expired_audit_events(UUID) TO worklenz_client;
   `);
 };
 

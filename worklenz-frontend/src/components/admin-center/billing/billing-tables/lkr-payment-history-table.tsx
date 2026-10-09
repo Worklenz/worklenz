@@ -3,8 +3,10 @@ import logger from '@/utils/errorLogger';
 import { Button, Table, TableProps, Tag, notification } from '@/shared/antd-imports';
 import { DownloadOutlined } from '@ant-design/icons';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const LkrPaymentHistoryTable: React.FC = () => {
+  const { t, i18n } = useTranslation('admin-center/current-bill');
   const [payments, setPayments] = useState<ILkrPayment[]>([]);
   const [loading, setLoading] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -33,7 +35,12 @@ const LkrPaymentHistoryTable: React.FC = () => {
       await billingApiService.downloadLkrReceipt(record.id, receiptNumber);
     } catch (e) {
       logger.error('Receipt download failed', e);
-      notification.error({ message: 'Download failed', description: 'Could not generate receipt. Please try again.' });
+      notification.error({
+        message: t('receiptDownloadFailed', { defaultValue: 'Download failed' }),
+        description: t('receiptDownloadFailedDescription', {
+          defaultValue: 'Could not generate receipt. Please try again.',
+        }),
+      });
     } finally {
       setDownloadingId(null);
     }
@@ -45,14 +52,18 @@ const LkrPaymentHistoryTable: React.FC = () => {
 
   const columns: TableProps<ILkrPayment>['columns'] = [
     {
-      title: 'Date',
+      title: t('date', { defaultValue: 'Date' }),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (v: string) =>
-        new Date(v).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        new Intl.DateTimeFormat(i18n.resolvedLanguage ?? 'en', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }).format(new Date(v)),
     },
     {
-      title: 'Amount',
+      title: t('amount', { defaultValue: 'Amount' }),
       key: 'amount',
       render: (_, r) => {
         const amt = r.transaction_amount ?? r.amount;
@@ -61,7 +72,7 @@ const LkrPaymentHistoryTable: React.FC = () => {
       },
     },
     {
-      title: 'Status',
+      title: t('status', { defaultValue: 'Status' }),
       key: 'status',
       render: (_, r) => {
         const s = r.transaction_status ?? r.status ?? '';
@@ -70,13 +81,13 @@ const LkrPaymentHistoryTable: React.FC = () => {
       },
     },
     {
-      title: 'Transaction ID',
+      title: t('transactionId', { defaultValue: 'Transaction ID' }),
       dataIndex: 'transaction_id',
       key: 'transaction_id',
       render: (v: string | null) => v ?? '—',
     },
     {
-      title: 'Card',
+      title: t('card', { defaultValue: 'Card' }),
       dataIndex: 'card_number',
       key: 'card_number',
       render: (v: string | null) => (v ? `•••• ${v.slice(-4)}` : '—'),
@@ -93,7 +104,7 @@ const LkrPaymentHistoryTable: React.FC = () => {
           loading={downloadingId === record.id}
           onClick={() => handleDownload(record)}
         >
-          Receipt
+          {t('receipt', { defaultValue: 'Receipt' })}
         </Button>
       ),
     },
@@ -106,7 +117,7 @@ const LkrPaymentHistoryTable: React.FC = () => {
       pagination={false}
       loading={loading}
       rowKey="id"
-      locale={{ emptyText: 'No payment history' }}
+      locale={{ emptyText: t('noPaymentHistory', { defaultValue: 'No payment history' }) }}
     />
   );
 };

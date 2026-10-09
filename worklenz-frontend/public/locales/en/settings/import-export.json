@@ -10,6 +10,7 @@
   "steps": {
     "selectList": "Select list",
     "uploadCsv": "Upload CSV",
+    "previewCsv": "Preview",
     "setupProject": "Set up project",
     "mapFields": "Map fields",
     "mapValues": "Map statuses",

@@ -34,7 +34,6 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { WarningTwoTone, PlusOutlined, TagOutlined } from '@/shared/antd-imports';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
-import { formatDate } from '@/utils/timeUtils';
 // import UpgradePlansLKR from '../drawers/upgrade-plans-lkr/upgrade-plans-lkr';
 // UpgradePlans modal is now handled globally in MainLayout.tsx
 import { ISUBSCRIPTION_TYPE, SUBSCRIPTION_STATUS } from '@/shared/constants';
@@ -59,7 +58,7 @@ const STATISTIC_VALUE_STYLE = {
 
 const CurrentPlanDetails = () => {
   const dispatch = useAppDispatch();
-  const { t } = useTranslation('admin-center/current-bill');
+  const { t, i18n } = useTranslation('admin-center/current-bill');
   const { trackMixpanelEvent } = useMixpanelTracking();
   const currentSession = useAuthService().getCurrentSession();
 
@@ -148,16 +147,21 @@ const CurrentPlanDetails = () => {
         currentUsers
       );
       if (res.done) {
-        message.success(t('pricingModelSwitched', 'Pricing model updated successfully'));
+        message.success(
+          t('pricingModelSwitched', { defaultValue: 'Pricing model updated successfully' })
+        );
         dispatch(fetchBillingInfo());
       } else {
         message.error(
-          res.message || t('errorSwitchingPricingModel', 'Failed to switch pricing model')
+          res.message ||
+            t('errorSwitchingPricingModel', { defaultValue: 'Failed to switch pricing model' })
         );
       }
     } catch (error) {
       logger.error('Error switching pricing model', error);
-      message.error(t('errorSwitchingPricingModel', 'Failed to switch pricing model'));
+      message.error(
+        t('errorSwitchingPricingModel', { defaultValue: 'Failed to switch pricing model' })
+      );
     }
   }, [billingInfo, dispatch, t]);
 
@@ -310,7 +314,7 @@ const CurrentPlanDetails = () => {
               dispatch(toggleUpgradeModal());
             }}
           >
-            {t('renewPlan', 'Renew Plan')}
+            {t('renewPlan', { defaultValue: 'Renew Plan' })}
           </Button>
         </Space>
       );
@@ -327,7 +331,7 @@ const CurrentPlanDetails = () => {
             loading={pausingPlan}
             onClick={() => handleSubscriptionAction('pause')}
           >
-            {t('pausePlan')}
+            {t('pausePlan', { defaultValue: 'Pause Plan' })}
           </Button>
         )}
 
@@ -337,7 +341,7 @@ const CurrentPlanDetails = () => {
             loading={cancellingPlan}
             onClick={() => handleSubscriptionAction('resume')}
           >
-            {t('resumePlan')}
+            {t('resumePlan', { defaultValue: 'Resume Plan' })}
           </Button>
         )}
 
@@ -354,7 +358,7 @@ const CurrentPlanDetails = () => {
               dispatch(toggleUpgradeModal());
             }}
           >
-            {t('upgradePlan')}
+            {t('upgradePlan', { defaultValue: 'Upgrade Plan' })}
           </Button>
         )}
 
@@ -371,7 +375,7 @@ const CurrentPlanDetails = () => {
               dispatch(toggleUpgradeModal());
             }}
           >
-            {t('upgradePlan')}
+            {t('upgradePlan', { defaultValue: 'Upgrade Plan' })}
           </Button>
         )}
 
@@ -388,7 +392,7 @@ const CurrentPlanDetails = () => {
               dispatch(toggleUpgradeModal());
             }}
           >
-            {t('upgradePlan')}
+            {t('upgradePlan', { defaultValue: 'Upgrade Plan' })}
           </Button>
         )}
 
@@ -398,7 +402,7 @@ const CurrentPlanDetails = () => {
             loading={pausingPlan || cancellingPlan}
             onClick={() => dispatch(toggleUpgradeModal())}
           >
-            {t('changePlan')}
+            {t('changePlan', { defaultValue: 'Change Plan' })}
           </Button>
         )}
       </Space>
@@ -421,7 +425,12 @@ const CurrentPlanDetails = () => {
     return (
       <Flex vertical>
         <Typography.Text strong>{billingInfo.plan_name}</Typography.Text>
-        <Typography.Text>{t('ltdUsers', { ltd_users: billingInfo.ltd_users })}</Typography.Text>
+        <Typography.Text>
+          {t('ltdUsers', {
+            ltd_users: billingInfo.ltd_users,
+            defaultValue: 'You can add up to {{ltd_users}} users.',
+          })}
+        </Typography.Text>
       </Flex>
     );
   }, [billingInfo, t]);
@@ -447,16 +456,16 @@ const CurrentPlanDetails = () => {
       expDate.setHours(0, 0, 0, 0);
 
       if (expDate.getTime() === today.getTime()) {
-        return t('expirestoday', 'today');
+        return t('expirestoday', { defaultValue: 'today' });
       } else if (expDate.getTime() === tomorrow.getTime()) {
-        return t('expirestomorrow', 'tomorrow');
+        return t('expirestomorrow', { defaultValue: 'tomorrow' });
       } else if (expDate < today) {
         const diffTime = Math.abs(today.getTime() - expDate.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         if (diffDays === 1) {
-          return t('expiredDayAgo', '{{days}} day ago', { days: diffDays });
+          return t('expiredDayAgo', { days: diffDays, defaultValue: '{{days}} day ago' });
         }
-        return t('expiredDaysAgo', '{{days}} days ago', { days: diffDays });
+        return t('expiredDaysAgo', { days: diffDays, defaultValue: '{{days}} days ago' });
       } else {
         return calculateTimeGap(expireDate);
       }
@@ -471,35 +480,50 @@ const CurrentPlanDetails = () => {
     return (
       <Flex vertical>
         <Typography.Text strong>
-          {t('trialPlan')}
+          {t('trialPlan', { defaultValue: 'Free Trial' })}
           {isExpired && <WarningTwoTone twoToneColor="#faad14" style={{ marginLeft: 8 }} />}
         </Typography.Text>
-        <Tooltip title={formatDate(new Date(trialExpireDate))}>
+        <Tooltip
+          title={new Intl.DateTimeFormat(i18n.resolvedLanguage ?? 'en', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          }).format(new Date(trialExpireDate))}
+        >
           <Typography.Text>
             {isExpired
               ? t('trialExpired', {
                   trial_expire_string: getExpirationMessage(trialExpireDate),
+                  defaultValue: 'Your free trial expired {{trial_expire_string}}',
                 })
               : t('trialInProgress', {
                   trial_expire_string: getExpirationMessage(trialExpireDate),
+                  defaultValue: 'Your free trial expires {{trial_expire_string}}',
                 })}
           </Typography.Text>
         </Tooltip>
       </Flex>
     );
-  }, [billingInfo?.trial_expire_date, checkIfTrialExpired, getExpirationMessage, t]);
+  }, [
+    billingInfo?.trial_expire_date,
+    checkIfTrialExpired,
+    getExpirationMessage,
+    i18n.resolvedLanguage,
+    t,
+  ]);
 
   const renderFreePlan = useCallback(
     () => (
       <Flex vertical>
-        <Typography.Text strong>{t('freePlan')}</Typography.Text>
+        <Typography.Text strong>{t('freePlan', { defaultValue: 'Free Plan' })}</Typography.Text>
         <Typography.Text>
           <br />-{' '}
           {freePlanSettings?.team_member_limit === 0
-            ? t('unlimitedTeamMembers')
-            : `${freePlanSettings?.team_member_limit} ${t('teamMembers')}`}
-          <br />- {freePlanSettings?.projects_limit} {t('projects')}
-          <br />- {freePlanSettings?.free_tier_storage} MB {t('storage')}
+            ? t('unlimitedTeamMembers', { defaultValue: 'Unlimited Team Members' })
+            : `${freePlanSettings?.team_member_limit} ${t('teamMembers', { defaultValue: 'Team Members' })}`}
+          <br />- {freePlanSettings?.projects_limit} {t('projects', { defaultValue: 'Projects' })}
+          <br />- {freePlanSettings?.free_tier_storage} MB{' '}
+          {t('storage', { defaultValue: 'Storage' })}
         </Typography.Text>
       </Flex>
     ),
@@ -516,14 +540,18 @@ const CurrentPlanDetails = () => {
         <Row gutter={16}>
           <Col span={12}>
             <Statistic
-              title={t('pricingModel', 'Pricing Model')}
-              value={isFlat ? t('flatRate', 'Flat Rate') : t('perUser', 'Per User')}
+              title={t('pricingModel', { defaultValue: 'Pricing Model' })}
+              value={
+                isFlat
+                  ? t('flatRate', { defaultValue: 'Flat Rate' })
+                  : t('perUser', { defaultValue: 'Per User' })
+              }
               valueStyle={{ fontSize: '14px', fontWeight: 500 }}
             />
           </Col>
           <Col span={12}>
             <Statistic
-              title={t('monthlyCost', 'Monthly Cost')}
+              title={t('monthlyCost', { defaultValue: 'Monthly Cost' })}
               value={
                 isFlat
                   ? billingInfo.flat_rate_price
@@ -537,7 +565,10 @@ const CurrentPlanDetails = () => {
 
         {isFlat && billingInfo.flat_rate_max_users && (
           <Alert
-            message={`Flat rate pricing for up to ${billingInfo.flat_rate_max_users} users`}
+            message={t('flatRatePricingDescription', {
+              defaultValue: 'Flat rate pricing for up to {{count}} users',
+              count: billingInfo.flat_rate_max_users,
+            })}
             type="info"
             showIcon
             style={{ marginTop: 8 }}
@@ -555,9 +586,16 @@ const CurrentPlanDetails = () => {
 
         {billingInfo?.pricing_model === 'flat_rate' ? (
           <Typography.Text>
-            {billingInfo?.default_currency} {billingInfo?.flat_rate_price} per month
+            {t('flatRateMonthlyPrice', {
+              defaultValue: '{{currency}} {{price}} per month',
+              currency: billingInfo?.default_currency,
+              price: billingInfo?.flat_rate_price,
+            })}
             <Typography.Text type="secondary" style={{ marginLeft: 8 }}>
-              (up to {billingInfo?.flat_rate_max_users} users)
+              {t('upToUsers', {
+                defaultValue: '(up to {{count}} users)',
+                count: billingInfo?.flat_rate_max_users,
+              })}
             </Typography.Text>
           </Typography.Text>
         ) : (
@@ -567,7 +605,7 @@ const CurrentPlanDetails = () => {
               {billingInfo?.billing_type === 'year'
                 ? billingInfo.unit_price_per_month
                 : billingInfo?.unit_price}
-              &nbsp;{t('perMonthPerUser')}
+              &nbsp;{t('perMonthPerUser', { defaultValue: 'per user/month' })}
             </Typography.Text>
           </Flex>
         )}
@@ -581,7 +619,7 @@ const CurrentPlanDetails = () => {
               <Row gutter={16} align="middle">
                 <Col span={6}>
                   <Statistic
-                    title={t('totalSeats') as string}
+                    title={t('totalSeats', { defaultValue: 'Total seats' })}
                     value={billingInfo.total_seats}
                     valueStyle={STATISTIC_VALUE_STYLE}
                   />
@@ -593,12 +631,12 @@ const CurrentPlanDetails = () => {
                     onClick={handleAddMoreSeats}
                     style={BUTTON_STYLE}
                   >
-                    {t('addMoreSeats')}
+                    {t('addMoreSeats', { defaultValue: 'Add more seats' })}
                   </Button>
                 </Col>
                 <Col span={6}>
                   <Statistic
-                    title={t('availableSeats') as string}
+                    title={t('availableSeats', { defaultValue: 'Available seats' })}
                     value={calculateRemainingSeats}
                     valueStyle={STATISTIC_VALUE_STYLE}
                   />
@@ -613,11 +651,11 @@ const CurrentPlanDetails = () => {
             onClick={handleSwitchPricingModel}
             style={{ padding: 0, marginTop: 12, textAlign: 'left' }}
           >
-            {t('switchTo', 'Switch to')}{' '}
+            {t('switchTo', { defaultValue: 'Switch to' })}{' '}
             {billingInfo.pricing_model === 'flat_rate'
-              ? t('perUser', 'Per User')
-              : t('flatRate', 'Flat Rate')}{' '}
-            {t('pricing', 'pricing')}
+              ? t('perUser', { defaultValue: 'Per User' })
+              : t('flatRate', { defaultValue: 'Flat Rate' })}{' '}
+            {t('pricing', { defaultValue: 'pricing' })}
           </Button>
         )}
       </Flex>
@@ -634,7 +672,7 @@ const CurrentPlanDetails = () => {
   const renderCreditSubscriptionInfo = useCallback(() => {
     return (
       <Flex vertical>
-        <Typography.Text strong>{t('creditPlan', 'Credit Plan')}</Typography.Text>
+        <Typography.Text strong>{t('creditPlan', { defaultValue: 'Credit Plan' })}</Typography.Text>
       </Flex>
     );
   }, [t]);
@@ -642,10 +680,11 @@ const CurrentPlanDetails = () => {
   const renderCustomSubscriptionInfo = useCallback(() => {
     return (
       <Flex vertical>
-        <Typography.Text strong>{t('customPlan', 'Custom Plan')}</Typography.Text>
+        <Typography.Text strong>{t('customPlan', { defaultValue: 'Custom Plan' })}</Typography.Text>
         <Typography.Text>
-          {t('planValidTill', 'Your plan is valid till {{date}}', {
+          {t('planValidTill', {
             date: billingInfo?.valid_till_date,
+            defaultValue: 'Your plan is valid till {{date}}',
           })}
         </Typography.Text>
       </Flex>
@@ -657,25 +696,39 @@ const CurrentPlanDetails = () => {
       <Flex vertical>
         <Typography.Text strong>{billingInfo?.plan_name}</Typography.Text>
         <Typography.Text>
-          {t('planValidTill', 'Your plan is valid till {{date}}', {
+          {t('planValidTill', {
             date: billingInfo?.valid_till_date,
+            defaultValue: 'Your plan is valid till {{date}}',
           })}
         </Typography.Text>
         {billingInfo?.unit_price != null && (
           <Typography.Text>
             {billingInfo.is_lkr_billing
-              ? t('unitPriceFlat', 'LKR {{price}} / month', { price: billingInfo.unit_price })
-              : t('unitPrice', 'LKR {{price}} / user / month', { price: billingInfo.unit_price })}
+              ? t('unitPriceFlat', {
+                  price: billingInfo.unit_price,
+                  defaultValue: 'LKR {{price}} / month',
+                })
+              : t('unitPrice', {
+                  price: billingInfo.unit_price,
+                  defaultValue: 'LKR {{price}} / user / month',
+                })}
           </Typography.Text>
         )}
         {!billingInfo?.is_lkr_billing && billingInfo?.total_used != null && (
           <Typography.Text>
-            {t('totalUsed', 'Members: {{count}}', { count: billingInfo.total_used })}
+            {t('totalUsed', { count: billingInfo.total_used, defaultValue: 'Members: {{count}}' })}
           </Typography.Text>
         )}
       </Flex>
     );
-  }, [billingInfo?.plan_name, billingInfo?.valid_till_date, billingInfo?.unit_price, billingInfo?.total_used, billingInfo?.is_lkr_billing, t]);
+  }, [
+    billingInfo?.plan_name,
+    billingInfo?.valid_till_date,
+    billingInfo?.unit_price,
+    billingInfo?.total_used,
+    billingInfo?.is_lkr_billing,
+    t,
+  ]);
 
   const renderSubscriptionContent = useCallback(() => {
     if (!billingInfo) return null;
@@ -730,7 +783,7 @@ const CurrentPlanDetails = () => {
             fontSize: '16px',
           }}
         >
-          {t('currentPlanDetails')}
+          {t('currentPlanDetails', { defaultValue: 'Current Plan Details' })}
         </Typography.Text>
       }
       loading={loadingBillingInfo}
@@ -777,14 +830,14 @@ const CurrentPlanDetails = () => {
               style={{ paddingLeft: 0 }}
               onClick={() => dispatch(toggleRedeemCodeDrawer())}
             >
-              {t('redeemCode')}
+              {t('redeemCode', { defaultValue: 'Redeem Code' })}
             </Button>
             <RedeemCodeDrawer />
           </>
         )}
 
         <Modal
-          title={t('addMoreSeats')}
+          title={t('addMoreSeats', { defaultValue: 'Add more seats' })}
           open={isMoreSeatsModalVisible}
           onCancel={() => setIsMoreSeatsModalVisible(false)}
           footer={null}
@@ -796,36 +849,41 @@ const CurrentPlanDetails = () => {
               style={{ fontSize: '16px', margin: '0 0 16px 0', fontWeight: 500 }}
             >
               {billingInfo?.total_used === 1
-                ? t(
-                    'purchaseSeatsTextSingle',
-                    'Add more seats to invite team members to your workspace.'
-                  )
-                : t('purchaseSeatsText', "To continue, you'll need to purchase additional seats.")}
+                ? t('purchaseSeatsTextSingle', {
+                    defaultValue: 'Add more seats to invite team members to your workspace.',
+                  })
+                : t('purchaseSeatsText', {
+                    defaultValue: "To continue, you'll need to purchase additional seats.",
+                  })}
             </Typography.Paragraph>
 
             <Typography.Paragraph style={{ margin: '0 0 16px 0' }}>
-              {t('currentSeatsText', 'You currently have {{seats}} seats available.', {
+              {t('currentSeatsText', {
                 seats: billingInfo?.total_seats,
+                defaultValue: 'You currently have {{seats}} seats available.',
               })}
               {billingInfo?.total_used === 1 && (
                 <span style={{ color: '#666', marginLeft: '8px' }}>
-                  ({t('singleUserNote', 'Currently used by 1 team member')})
+                  ({t('singleUserNote', { defaultValue: 'Currently used by 1 team member' })})
                 </span>
               )}
             </Typography.Paragraph>
 
             <Typography.Paragraph style={{ margin: '0 0 24px 0' }}>
               {billingInfo?.total_used === 1
-                ? t(
-                    'selectSeatsTextSingle',
-                    'Select how many additional seats you need for new team members.'
-                  )
-                : t('selectSeatsText', 'Please select the number of additional seats to purchase.')}
+                ? t('selectSeatsTextSingle', {
+                    defaultValue: 'Select how many additional seats you need for new team members.',
+                  })
+                : t('selectSeatsText', {
+                    defaultValue: 'Please select the number of additional seats to purchase.',
+                  })}
             </Typography.Paragraph>
 
             <div style={{ marginBottom: '24px' }}>
               <span style={{ color: '#ff4d4f', marginRight: '4px' }}>*</span>
-              <span style={{ marginRight: '8px' }}>Seats:</span>
+              <span style={{ marginRight: '8px' }}>
+                {t('seatsLabel', { defaultValue: 'Seats:' })}
+              </span>
               <Select
                 value={selectedSeatCount}
                 onChange={setSelectedSeatCount}
@@ -846,11 +904,11 @@ const CurrentPlanDetails = () => {
                     borderRadius: '2px',
                   }}
                 >
-                  {t('purchase', 'Purchase')}
+                  {t('purchase', { defaultValue: 'Purchase' })}
                 </Button>
               ) : (
                 <Button type="primary" size="middle">
-                  {t('contactSales', 'Contact sales')}
+                  {t('contactSales', { defaultValue: 'Contact sales' })}
                 </Button>
               )}
             </Flex>

@@ -69,6 +69,7 @@ const InviteTeamMembers = () => {
   const currentSession = authService.getCurrentSession();
   const isInviteRestricted = Boolean(currentSession?.is_expired);
   const inviteRestrictedMessage = t('license-expired-subtitle', {
+    ns: 'common',
     defaultValue:
       'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
   });
