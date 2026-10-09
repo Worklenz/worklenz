@@ -66,7 +66,7 @@
     "@slack/web-api": "^7.11.0",
     "@types/nodemailer": "^8.0.2",
     "archiver": "^7.0.1",
-    "axios": "^1.6.0",
+    "axios": "^1.20.0",
     "bcrypt": "^5.1.0",
     "bluebird": "^3.7.2",
     "chartjs-to-image": "^1.2.1",
