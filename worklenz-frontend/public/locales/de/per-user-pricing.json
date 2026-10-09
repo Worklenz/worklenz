@@ -1,9 +1,9 @@
 {
   "title": "Wählen Sie einen Tarif",
-  "subtitle": "Sie zahlen nur für die Personen in Ihrem Team. Die Preise gelten pro Benutzer.",
+  "subtitle": "Sie zahlen nur für die Personen in Ihrem Team. Die Preise gelten pro Benutzer, in USD.",
   "monthly": "Monatlich",
   "annual": "Jährlich",
-  "saveUpTo": "Sparen Sie bis zu {{percent}} %",
+  "saveUpTo": "{{percent}} % sparen mit jährlicher Abrechnung",
   "seats": "Benutzer",
   "seatsHelp": "Sie haben derzeit {{count}} aktive Benutzer.",
   "perUserPerMonth": "pro Benutzer / Monat",
@@ -19,6 +19,7 @@
       "name": "Pro",
       "description": "Alles, was Sie für Projekte und Zeiterfassung brauchen.",
       "features": [
+        "Alles aus Free",
         "Unbegrenzte Projekte",
         "Zeiterfassung und Berichte",
         "Benutzerdefinierte Felder und Vorlagen",
@@ -30,7 +31,7 @@
       "description": "Planung, Finanzen und Kundentools für wachsende Teams.",
       "features": [
         "Alles aus Pro",
-        "Planer: Zeitplan, Timeline und Auslastung",
+        "Planer, Timeline, Auslastung",
         "Finanzen und Kundenportal",
         "Unbegrenzte Gäste und Slack"
       ]
@@ -42,6 +43,27 @@
         "Business-Funktionen",
         "Zusätzliche Plätze pro Benutzer abgerechnet",
         "Für AppSumo-Kunden"
+      ]
+    },
+    "free": {
+      "name": "Free",
+      "description": "Ideal für den Einstieg.",
+      "features": [
+        "3 Projekte",
+        "Bis zu 5 Benutzer",
+        "Aufgabenliste und Kanban-Board",
+        "Dateien und Kommentare"
+      ]
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Für große Organisationen.",
+      "features": [
+        "Alles aus Business",
+        "Unbegrenzte Benutzer ohne Aufpreis",
+        "Erweiterte Sicherheit",
+        "Individuelle Integrationen",
+        "Prioritäts-Support"
       ]
     }
   },
@@ -56,5 +78,29 @@
     "changed": "Tarif erfolgreich gewechselt!",
     "error": "Die Zahlung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
     "checkoutError": "Fehler beim Bezahlvorgang: {{message}}"
+  },
+  "annualBadge": "Sparen Sie bis zu {{percent}} %",
+  "mostPopular": "Am beliebtesten",
+  "billingPeriod": "Abrechnungszeitraum",
+  "seatsHelp_one": "Mindestens {{count}} (Ihr aktueller aktiver Benutzer)",
+  "seatsHelp_other": "Mindestens {{count}} (Ihre aktuellen aktiven Benutzer)",
+  "totalMonthly_one": "{{total}} pro Monat für {{count}} Benutzer",
+  "totalMonthly_other": "{{total}} pro Monat für {{count}} Benutzer",
+  "totalAnnual_one": "{{total}} pro Jahr für {{count}} Benutzer",
+  "totalAnnual_other": "{{total}} pro Jahr für {{count}} Benutzer",
+  "freeForever": "für immer",
+  "switchToFree": "Zu Free wechseln",
+  "custom": "Individuell",
+  "customNote": "Preis",
+  "decreaseUsers": "Benutzer verringern",
+  "increaseUsers": "Benutzer erhöhen",
+  "freeLimitHint": "Der Free-Plan unterstützt bis zu {{count}} Benutzer. Entfernen Sie Benutzer, um zu Free zu wechseln.",
+  "trustLine": "Jederzeit kündbar. Steuern werden an der Kasse berechnet. Sichere Zahlung über Paddle.",
+  "contactSales": "Vertrieb kontaktieren",
+  "freeConfirm": {
+    "title": "Zum Free-Plan wechseln?",
+    "content": "Ihr kostenpflichtiger Plan endet und Sie verlieren die kostenpflichtigen Funktionen, einschließlich Projekten über dem Free-Limit. Dies kann hier nicht rückgängig gemacht werden.",
+    "ok": "Zu Free wechseln",
+    "cancel": "Aktuellen Plan behalten"
   }
 }

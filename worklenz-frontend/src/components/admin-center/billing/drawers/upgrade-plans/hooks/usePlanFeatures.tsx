@@ -15,6 +15,8 @@ export function usePlanFeatures(
   const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal']);
 
   const generateFreePlanFeatures = () => [
+    // Empty header row so the feature lists start at the same height on every card
+    <span key="header" aria-hidden className="upgrade-plan-card__features-header" />,
     ...(plans.projects_limit
       ? [<PlanFeature key="1" text={`${plans.projects_limit} ${t('projects', 'Projects')}`} />]
       : []),
@@ -28,6 +30,9 @@ export function usePlanFeatures(
   ];
 
   const generateProPlanFeatures = () => [
+    <Typography.Text key="header" strong className="upgrade-plan-card__features-header">
+      {t('everythingInFree', 'Everything in Free, plus:')}
+    </Typography.Text>,
     <PlanFeature key="1" text={t('unlimitedProjects', 'Unlimited Projects')} />,
     <PlanFeature
       key="2"
@@ -77,11 +82,7 @@ export function usePlanFeatures(
 
   const generateBusinessPlanFeatures = () => {
     const header = (
-      <Typography.Text
-        key="header"
-        strong
-        style={{ display: 'block', marginBottom: 12, textAlign: 'center' }}
-      >
+      <Typography.Text key="header" strong className="upgrade-plan-card__features-header">
         {t('everythingInPro', 'Everything in Pro, plus:')}
       </Typography.Text>
     );
@@ -172,11 +173,7 @@ export function usePlanFeatures(
   };
 
   const generateEnterprisePlanFeatures = () => [
-    <Typography.Text
-      key="header"
-      strong
-      style={{ display: 'block', marginBottom: 12, textAlign: 'center' }}
-    >
+    <Typography.Text key="header" strong className="upgrade-plan-card__features-header">
       {t('everythingInBusiness', 'Everything in Business, plus:')}
     </Typography.Text>,
     <PlanFeature key="1" text={`${pricingData.enterprise.users_included} Users`} />,

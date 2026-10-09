@@ -13,11 +13,16 @@ vi.mock('react-i18next', () => ({
     },
   }),
 }));
+const trackMixpanelEvent = vi.fn();
+vi.mock('@/hooks/useMixpanelTracking', () => ({ useMixpanelTracking: () => ({ trackMixpanelEvent }) }));
 vi.mock('@/hooks/useAppDispatch', () => ({ useAppDispatch: () => dispatch }));
 vi.mock('@/hooks/useAppSelector', () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({ adminCenterReducer: { billingInfo } }),
 }));
-vi.mock('@/hooks/useAuth', () => ({ useAuthService: () => ({ setCurrentSession: vi.fn() }) }));
+let session: Record<string, unknown> = { team_id: 'team-1', subscription_type: 'PADDLE' };
+vi.mock('@/hooks/useAuth', () => ({
+  useAuthService: () => ({ setCurrentSession: vi.fn(), getCurrentSession: () => session }),
+}));
 vi.mock('@/features/admin-center/admin-center.slice', () => ({
   fetchBillingInfo: () => ({ type: 'fetchBillingInfo' }),
   toggleUpgradeModal: () => ({ type: 'toggleUpgradeModal' }),
@@ -30,7 +35,13 @@ vi.mock('@/api/auth/auth.api.service', () => ({
 }));
 
 const changePlan = vi.fn();
-vi.mock('@/api/admin-center/admin-center.api.service', () => ({ adminCenterApiService: { changePlan: (id: string) => changePlan(id) } }));
+const switchToFreePlan = vi.fn();
+vi.mock('@/api/admin-center/admin-center.api.service', () => ({
+  adminCenterApiService: {
+    changePlan: (id: string) => changePlan(id),
+    switchToFreePlan: (teamId: string) => switchToFreePlan(teamId),
+  },
+}));
 
 const upgradeToPaidPlan = vi.fn();
 const getPerUserPlans = vi.fn();
@@ -75,7 +86,80 @@ const checkoutPayload = { provider: 'paddle_billing', client_token: 't', items: 
 beforeEach(() => {
   vi.clearAllMocks();
   billingInfo = { total_used: 5 };
+  session = { team_id: 'team-1', subscription_type: 'PADDLE' };
   upgradeToPaidPlan.mockResolvedValue({ done: true, body: checkoutPayload });
+});
+
+describe('PerUserUpgradePlans Free and Enterprise cards', () => {
+  it('shows Free and Enterprise next to the paid plans', () => {
+    render(<PerUserUpgradePlans data={data()} />);
+    expect(screen.getByText('plans.free.name')).toBeTruthy();
+    expect(screen.getByText('plans.enterprise.name')).toBeTruthy();
+  });
+
+  it('hides the Free card for AppSumo customers', () => {
+    render(<PerUserUpgradePlans data={data({ has_ltd_codes: true })} />);
+    expect(screen.queryByText('plans.free.name')).toBeNull();
+    expect(screen.getByText('plans.enterprise.name')).toBeTruthy();
+  });
+
+  it('disables the Free button for a team already on Free', () => {
+    session = { team_id: 'team-1', subscription_type: 'FREE' };
+    render(<PerUserUpgradePlans data={data()} />);
+    const buttons = screen.getAllByText('currentPlan').map(node => node.closest('button')).filter(Boolean);
+    expect(buttons.length).toBe(1);
+    expect((buttons[0] as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('asks before switching to Free, then switches the team', async () => {
+    const user = userEvent.setup();
+    switchToFreePlan.mockResolvedValue({ done: true });
+    render(<PerUserUpgradePlans data={data()} />);
+
+    await user.click(screen.getByText('switchToFree'));
+    expect(await screen.findByRole('dialog')).toBeTruthy();
+    expect(switchToFreePlan).not.toHaveBeenCalled();
+
+    await user.click(screen.getByText('freeConfirm.ok'));
+    await waitFor(() => expect(switchToFreePlan).toHaveBeenCalledWith('team-1'));
+  });
+
+  it('links Enterprise to sales', () => {
+    render(<PerUserUpgradePlans data={data()} />);
+    const link = screen.getByText('contactSales').closest('a');
+    expect(link?.getAttribute('href')).toContain('mailto:');
+  });
+});
+
+describe('PerUserUpgradePlans analytics', () => {
+  it('tracks the modal opening, the billing period toggle, plan selection and checkout start', async () => {
+    const user = userEvent.setup();
+    render(<PerUserUpgradePlans data={data()} />);
+    expect(trackMixpanelEvent).toHaveBeenCalledWith('pricing_modal_opened', expect.anything());
+
+    await user.click(screen.getByText('annual'));
+    expect(trackMixpanelEvent).toHaveBeenCalledWith('billing_frequency_changed', expect.objectContaining({ billing_frequency: 'annual' }));
+
+    await user.click(screen.getAllByText('select')[0]);
+    expect(trackMixpanelEvent).toHaveBeenCalledWith('plan_selected', expect.objectContaining({ plan_key: 'pro' }));
+    await waitFor(() =>
+      expect(trackMixpanelEvent).toHaveBeenCalledWith('checkout_initiated', expect.objectContaining({ plan_key: 'pro', seats: 5 }))
+    );
+  });
+});
+
+describe('PerUserUpgradePlans seat minimum', () => {
+  it('raises the seat count to the team size when billing info arrives after mount', async () => {
+    const user = userEvent.setup();
+    billingInfo = {};
+    const { rerender } = render(<PerUserUpgradePlans data={data()} />);
+
+    billingInfo = { total_used: 7 };
+    rerender(<PerUserUpgradePlans data={data()} />);
+
+    await user.click(screen.getAllByText('select')[0]);
+    await waitFor(() => expect(upgradeToPaidPlan).toHaveBeenCalledWith('pro-m', 'per_user', 7, false));
+  });
 });
 
 describe('PerUserUpgradePlans', () => {

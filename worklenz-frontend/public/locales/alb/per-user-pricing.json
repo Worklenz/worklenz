@@ -1,9 +1,9 @@
 {
   "title": "Zgjidhni një plan",
-  "subtitle": "Paguani vetëm për njerëzit e ekipit tuaj. Çmimet janë për përdorues.",
+  "subtitle": "Paguani vetëm për njerëzit e ekipit tuaj. Çmimet janë për përdorues, në USD.",
   "monthly": "Mujor",
   "annual": "Vjetor",
-  "saveUpTo": "Kurseni deri në {{percent}}%",
+  "saveUpTo": "Kurseni {{percent}}% me faturimin vjetor",
   "seats": "Përdorues",
   "seatsHelp": "Aktualisht keni {{count}} përdorues aktivë.",
   "perUserPerMonth": "për përdorues / muaj",
@@ -19,6 +19,7 @@
       "name": "Pro",
       "description": "Gjithçka që ju nevojitet për të menaxhuar projekte dhe për të regjistruar kohën.",
       "features": [
+        "Gjithçka nga Free",
         "Projekte të pakufizuara",
         "Regjistrim i kohës dhe raporte",
         "Fusha të personalizuara dhe shabllone",
@@ -30,7 +31,7 @@
       "description": "Planifikim, financa dhe mjete klienti për ekipe në rritje.",
       "features": [
         "Gjithçka nga Pro",
-        "Planifikuesi: orari, kronologjia dhe ngarkesa",
+        "Planifikuesi, kronologjia dhe ngarkesa",
         "Financa dhe portali i klientëve",
         "Të ftuar të pakufizuar dhe Slack"
       ]
@@ -42,6 +43,27 @@
         "Veçoritë Business",
         "Vende shtesë të faturuara për përdorues",
         "Për klientët e AppSumo"
+      ]
+    },
+    "free": {
+      "name": "Free",
+      "description": "Ideal për fillim.",
+      "features": [
+        "3 projekte",
+        "Deri në 5 përdorues",
+        "Lista e detyrave dhe tabela Kanban",
+        "Skedarë dhe komente"
+      ]
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Për organizata të mëdha.",
+      "features": [
+        "Gjithçka nga Business",
+        "Përdorues të pakufizuar pa kosto shtesë",
+        "Siguri e avancuar",
+        "Integrime të personalizuara",
+        "Mbështetje prioritare"
       ]
     }
   },
@@ -56,5 +78,29 @@
     "changed": "Plani i abonimit u ndryshua me sukses!",
     "error": "Nuk mundëm të nisim pagesën. Provoni përsëri.",
     "checkoutError": "Gabim gjatë pagesës: {{message}}"
+  },
+  "annualBadge": "Kurseni deri në {{percent}}%",
+  "mostPopular": "Më i popullarizuari",
+  "billingPeriod": "Periudha e faturimit",
+  "seatsHelp_one": "Minimumi {{count}} (përdoruesi juaj aktiv aktual)",
+  "seatsHelp_other": "Minimumi {{count}} (përdoruesit tuaj aktivë aktualë)",
+  "totalMonthly_one": "{{total}} në muaj për {{count}} përdorues",
+  "totalMonthly_other": "{{total}} në muaj për {{count}} përdorues",
+  "totalAnnual_one": "{{total}} në vit për {{count}} përdorues",
+  "totalAnnual_other": "{{total}} në vit për {{count}} përdorues",
+  "freeForever": "përgjithmonë",
+  "switchToFree": "Kalo te Free",
+  "custom": "I personalizuar",
+  "customNote": "çmim",
+  "decreaseUsers": "Ul përdoruesit",
+  "increaseUsers": "Rrit përdoruesit",
+  "freeLimitHint": "Plani Free mbështet deri në {{count}} përdorues. Hiqni përdorues për të kaluar te Free.",
+  "trustLine": "Anuloni në çdo kohë. Tatimet llogariten gjatë pagesës. Pagesë e sigurt përmes Paddle.",
+  "contactSales": "Kontaktoni shitjet",
+  "freeConfirm": {
+    "title": "Të kaloni te plani Free?",
+    "content": "Plani juaj me pagesë përfundon dhe humbisni veçoritë me pagesë, përfshirë projektet mbi kufirin e Free. Kjo nuk mund të zhbëhet këtu.",
+    "ok": "Kalo te Free",
+    "cancel": "Mbaj planin aktual"
   }
 }

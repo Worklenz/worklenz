@@ -1,15 +1,21 @@
 {
   "title": "Choose a plan",
-  "subtitle": "Pay only for the people on your team. Prices are per user.",
+  "subtitle": "Pay only for the people on your team. Prices are per user, in USD.",
   "monthly": "Monthly",
   "annual": "Annual",
-  "saveUpTo": "Save up to {{percent}}%",
+  "saveUpTo": "Save {{percent}}% with annual billing",
+  "annualBadge": "Save up to {{percent}}%",
+  "mostPopular": "Most popular",
+  "billingPeriod": "Billing period",
   "seats": "Users",
-  "seatsHelp": "You currently have {{count}} active users.",
+  "seatsHelp_one": "Minimum {{count}} (your current active user)",
+  "seatsHelp_other": "Minimum {{count}} (your current active users)",
   "perUserPerMonth": "per user / month",
   "billedAnnually": "billed annually ({{total}} per user / year)",
-  "totalMonthly": "{{total}} per month for {{count}} users",
-  "totalAnnual": "{{total}} per year for {{count}} users",
+  "totalMonthly_one": "{{total}} per month for {{count}} user",
+  "totalMonthly_other": "{{total}} per month for {{count}} users",
+  "totalAnnual_one": "{{total}} per year for {{count}} user",
+  "totalAnnual_other": "{{total}} per year for {{count}} users",
   "currentPlan": "Current plan",
   "select": "Select plan",
   "switch": "Switch to this plan",
@@ -19,6 +25,7 @@
       "name": "Pro",
       "description": "Everything you need to run projects and track time.",
       "features": [
+        "Everything in Free",
         "Unlimited projects",
         "Time tracking and reports",
         "Custom fields and templates",
@@ -30,7 +37,7 @@
       "description": "Planning, finance and client tools for growing teams.",
       "features": [
         "Everything in Pro",
-        "Planner: schedule, timeline and workload",
+        "Planner, timeline, workload",
         "Finance and client portal",
         "Unlimited guests and Slack"
       ]
@@ -42,6 +49,27 @@
         "Business features",
         "Extra seats billed per user",
         "For AppSumo customers"
+      ]
+    },
+    "free": {
+      "name": "Free",
+      "description": "Perfect for getting started.",
+      "features": [
+        "3 projects",
+        "Up to 5 users",
+        "Task list and Kanban board",
+        "Files and comments"
+      ]
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "For large organizations.",
+      "features": [
+        "Everything in Business",
+        "Unlimited users at no extra cost",
+        "Advanced security",
+        "Custom integrations",
+        "Priority support"
       ]
     }
   },
@@ -56,5 +84,20 @@
     "changed": "Subscription plan changed successfully!",
     "error": "We could not start checkout. Please try again.",
     "checkoutError": "Error during checkout: {{message}}"
-  }
+  },
+  "trustLine": "Cancel anytime. Taxes are calculated at checkout. Secure payment by Paddle.",
+  "contactSales": "Contact sales",
+  "freeForever": "forever",
+  "switchToFree": "Switch to Free",
+  "custom": "Custom",
+  "customNote": "pricing",
+  "freeConfirm": {
+    "title": "Switch to the Free plan?",
+    "content": "Your paid plan ends and you lose paid features, including projects beyond the Free limits. This cannot be undone from here.",
+    "ok": "Switch to Free",
+    "cancel": "Keep current plan"
+  },
+  "decreaseUsers": "Decrease users",
+  "increaseUsers": "Increase users",
+  "freeLimitHint": "The Free plan supports up to {{count}} users. Remove users to switch to Free."
 }

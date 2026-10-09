@@ -1,9 +1,9 @@
 {
   "title": "Escolha um plano",
-  "subtitle": "Pague apenas pelas pessoas da sua equipa. Os preços são por utilizador.",
+  "subtitle": "Pague apenas pelas pessoas da sua equipa. Os preços são por utilizador, em USD.",
   "monthly": "Mensal",
   "annual": "Anual",
-  "saveUpTo": "Poupe até {{percent}}%",
+  "saveUpTo": "Poupe {{percent}}% com a faturação anual",
   "seats": "Utilizadores",
   "seatsHelp": "Atualmente tem {{count}} utilizadores ativos.",
   "perUserPerMonth": "por utilizador / mês",
@@ -19,6 +19,7 @@
       "name": "Pro",
       "description": "Tudo o que precisa para gerir projetos e registar tempo.",
       "features": [
+        "Tudo do Free",
         "Projetos ilimitados",
         "Registo de tempo e relatórios",
         "Campos personalizados e modelos",
@@ -30,7 +31,7 @@
       "description": "Planeamento, finanças e ferramentas de clientes para equipas em crescimento.",
       "features": [
         "Tudo do Pro",
-        "Planeador: agenda, cronograma e carga de trabalho",
+        "Planeador, cronograma e carga de trabalho",
         "Finanças e portal de clientes",
         "Convidados ilimitados e Slack"
       ]
@@ -42,6 +43,27 @@
         "Funcionalidades Business",
         "Lugares extra faturados por utilizador",
         "Para clientes AppSumo"
+      ]
+    },
+    "free": {
+      "name": "Free",
+      "description": "Ideal para começar.",
+      "features": [
+        "3 projetos",
+        "Até 5 utilizadores",
+        "Lista de tarefas e quadro Kanban",
+        "Ficheiros e comentários"
+      ]
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Para grandes organizações.",
+      "features": [
+        "Tudo do Business",
+        "Utilizadores ilimitados sem custo adicional",
+        "Segurança avançada",
+        "Integrações personalizadas",
+        "Suporte prioritário"
       ]
     }
   },
@@ -56,5 +78,29 @@
     "changed": "Plano de subscrição alterado com sucesso!",
     "error": "Não foi possível iniciar o pagamento. Tente novamente.",
     "checkoutError": "Erro durante o pagamento: {{message}}"
+  },
+  "annualBadge": "Poupe até {{percent}}%",
+  "mostPopular": "Mais popular",
+  "billingPeriod": "Período de faturação",
+  "seatsHelp_one": "Mínimo {{count}} (o seu utilizador ativo atual)",
+  "seatsHelp_other": "Mínimo {{count}} (os seus utilizadores ativos atuais)",
+  "totalMonthly_one": "{{total}} por mês para {{count}} utilizador",
+  "totalMonthly_other": "{{total}} por mês para {{count}} utilizadores",
+  "totalAnnual_one": "{{total}} por ano para {{count}} utilizador",
+  "totalAnnual_other": "{{total}} por ano para {{count}} utilizadores",
+  "freeForever": "para sempre",
+  "switchToFree": "Mudar para Free",
+  "custom": "Personalizado",
+  "customNote": "preço",
+  "decreaseUsers": "Diminuir utilizadores",
+  "increaseUsers": "Aumentar utilizadores",
+  "freeLimitHint": "O plano Free suporta até {{count}} utilizadores. Remova utilizadores para mudar para Free.",
+  "trustLine": "Cancele quando quiser. Os impostos são calculados no pagamento. Pagamento seguro com a Paddle.",
+  "contactSales": "Contactar as vendas",
+  "freeConfirm": {
+    "title": "Mudar para o plano Free?",
+    "content": "O seu plano pago termina e perde as funcionalidades pagas, incluindo projetos acima do limite do Free. Não pode ser revertido aqui.",
+    "ok": "Mudar para Free",
+    "cancel": "Manter o plano atual"
   }
 }

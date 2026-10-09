@@ -893,7 +893,19 @@ const UpgradePlans = () => {
                   title={t('pricing-modal:plans.enterprise.name')}
                   description={t('pricing-modal:plans.enterprise.description')}
                   features={generateEnterprisePlanFeatures()}
-                  priceDisplay={null}
+                  priceDisplay={
+                    <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                      <Typography.Title
+                        level={2}
+                        style={{ fontSize: '28px', margin: 0, lineHeight: 1.2 }}
+                      >
+                        {t('pricing-modal:plans.enterprise.customPricing', 'Custom')}
+                      </Typography.Title>
+                      <Typography.Text style={{ fontSize: '14px', display: 'block' }}>
+                        {t('pricing-modal:plans.enterprise.customPricingNote', 'tailored to your team')}
+                      </Typography.Text>
+                    </div>
+                  }
                   selectedPlanType={selectedPlanType}
                   onPlanSelect={handlePlanSelect}
                   primaryActionLabel={t(

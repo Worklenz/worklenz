@@ -7,20 +7,31 @@
 }
 
 .upgrade-plan-card__header {
-  margin-bottom: 12px;
-  min-height: 64px;
+  margin-bottom: 8px;
+  min-height: 56px;
 }
 
 .upgrade-plan-card__price {
-  min-height: 110px;
+  min-height: 84px;
   display: flex;
   align-items: flex-start;
   justify-content: center;
 }
 
 .upgrade-plan-card__action {
-  margin-top: 12px;
-  margin-bottom: 16px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
+.upgrade-plan-card__note {
+  min-height: 20px;
+}
+
+.upgrade-plan-card__features-header {
+  display: block;
+  min-height: 22px;
+  margin-bottom: 12px;
+  text-align: center;
 }
 
 .upgrade-plan-card__features {
