@@ -70,7 +70,7 @@
     "bcrypt": "^5.1.0",
     "bluebird": "^3.7.2",
     "chartjs-to-image": "^1.2.1",
-    "compression": "^1.8.1",
+    "compression": "^1.8.2",
     "connect-flash": "^0.1.1",
     "connect-pg-simple": "^10.0.0",
     "cookie-parser": "~1.4.4",
