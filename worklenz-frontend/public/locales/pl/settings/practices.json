@@ -18,5 +18,7 @@
   "fetchPracticeErrorMessage": "Nie udało się pobrać ćwiczeń",
   "createPracticeErrorMessage": "Nie udało się utworzyć praktyki",
   "updatePracticeErrorMessage": "Nie udało się zaktualizować praktyki",
-  "pinTooltip": "Przypnij do paska nawigacyjnego"
+  "pinTooltip": "Przypnij do paska nawigacyjnego",
+  "rowsPerPage": "Wierszy na stronę:",
+  "paginationSummary": "{{range}} z {{total}}"
 }
