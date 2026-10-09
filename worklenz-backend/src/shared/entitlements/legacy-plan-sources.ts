@@ -5,6 +5,7 @@ import {
   APPSUMO_UNLIMITED_GUEST_CODE_COUNT,
   UNLIMITED,
 } from "./feature-registry";
+import { isSelfHostedDeployment } from "../deployment-mode";
 import { IPlanSource, PlanTier } from "./types";
 
 /**
@@ -62,6 +63,12 @@ export function legacySnapshotToPlanSources(
   snapshot: ILegacyPlanSnapshot | null | undefined,
   now: Date = new Date(),
 ): IPlanSource[] {
+  // A self-hosted installation is licensed at deployment level (mirrors hasBusinessPlanAccess),
+  // so every organization gets the bundled Business entitlements regardless of subscription data.
+  if (isSelfHostedDeployment()) {
+    return [{ kind: "self_hosted", tier: "business", seats: UNLIMITED, guests: UNLIMITED }];
+  }
+
   if (!snapshot) return [{ kind: "free", tier: "free" }];
 
   const sources: IPlanSource[] = [];

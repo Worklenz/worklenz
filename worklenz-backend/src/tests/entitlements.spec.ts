@@ -217,6 +217,22 @@ describe("legacySnapshotToPlanSources", () => {
   });
 });
 
+describe("self-hosted deployment", () => {
+  afterEach(() => {
+    process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud";
+  });
+
+  it("grants every Business feature regardless of the subscription data", () => {
+    process.env.WORKLENZ_DEPLOYMENT_MODE = "self_hosted";
+    const e = resolveEntitlements({ subscription_type: "FREE" }, NOW);
+    expect(e.tier).toBe("business");
+    expect(e.primarySource).toBe("self_hosted");
+    expect(hasFeature(e, "finance_module")).toBe(true);
+    expect(hasFeature(e, "client_portal")).toBe(true);
+    expect(resolveEntitlements(null, NOW).primarySource).toBe("self_hosted");
+  });
+});
+
 describe("shadow comparison", () => {
   beforeEach(() => {
     resetShadowState();
