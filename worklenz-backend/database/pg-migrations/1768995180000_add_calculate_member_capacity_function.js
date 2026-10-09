@@ -10,6 +10,10 @@ exports.up = async (pgm) => {
 -- This migration completely fixes the issue where tasks with same start and end date
 -- were not getting their estimation allocated properly
 
+-- Drop existing function first so PostgreSQL allows changing the return table structure
+DROP FUNCTION IF EXISTS calculate_member_capacity(UUID, DATE, DATE) CASCADE;
+DROP FUNCTION IF EXISTS calculate_member_capacity CASCADE;
+
 CREATE OR REPLACE FUNCTION calculate_member_capacity(
     p_team_member_id UUID,
     p_start_date DATE,

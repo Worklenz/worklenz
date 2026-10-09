@@ -28,6 +28,8 @@
   "Invite": "Inviter",
   "removeSuccess": "{{name}} supprimé du projet",
   "removeError": "Échec de la suppression du membre",
+  "assignFailedTitle": "Échec de l'affectation",
+  "assignFailedMessage": "Impossible de mettre à jour les assignés de la tâche. Veuillez réessayer.",
   "memberNotFound": "Informations sur le membre de l'équipe introuvables",
   "manageTimeOff": "Gérer les congés",
   "seatLimitReached": "Limite de sièges atteinte",
