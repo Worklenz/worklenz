@@ -22,7 +22,7 @@ import {
   NAV_RAIL_DIVIDER_LIGHT,
 } from '@/components/nav-rail/nav-rail-constants';
 import { useAuthService } from '@/hooks/useAuth';
-import { canUseFeature } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/utils/subscription-utils';
 import FeatureUpgradePreview from '@/components/upgrade/FeatureUpgradePreview';
 import PlannerSchedulePreviewMockup from '@/components/upgrade/mockups/PlannerSchedulePreviewMockup';
 import PlannerTimelinePreviewMockup from '@/components/upgrade/mockups/PlannerTimelinePreviewMockup';

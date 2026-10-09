@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Select, Input, Button, theme, appMessage } from '@/shared/antd-imports';
 import { useGetProjectsByTeamQuery } from '@/api/home-page/home-page.api.service';
-import { projectFinanceApiService } from '@/ee/api/project-finance-ratecard/project-finance.api.service';
-import { IProjectFinanceTask } from '@/ee/types/project/project-finance.types';
+import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
+import { IProjectFinanceTask } from '@/types/project/project-finance.types';
 import { IProject } from '@/types/project/project.types';
 import { TASK_FIXED_COST_CHANGED_EVENT } from '@/shared/constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
 
 interface AddExpenseModalProps {

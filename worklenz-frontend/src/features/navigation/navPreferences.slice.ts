@@ -22,13 +22,41 @@ export interface NavPreferencesState {
   // surfaceKey -> groupKey -> ordered item keys. groupKey '' is the default,
   // ungrouped bucket every surface but Reporting uses today.
   order: Partial<Record<SurfaceKey, Record<string, string[]>>>;
+  // surfaceKey -> the ORDER_VERSIONS value this user's saved order was last reset at.
+  orderVersions?: Partial<Record<SurfaceKey, number>>;
 }
+
+// A saved order always wins over the registry's default order, so changing a surface's default
+// order would never reach anyone who had dragged its items once. Bumping a surface's version
+// here discards that surface's saved order once per browser, so the new default shows; items
+// reordered after that are saved as usual. Bump only when the default order itself changes.
+const ORDER_VERSIONS: Partial<Record<SurfaceKey, number>> = {
+  // v1: Clients, Requests, Services, Quotes, Invoices, Chats, Ticketing, ... Portal Settings
+  'client-portal': 1,
+};
+
+/** Drops the saved order of any surface whose default order was changed since it was saved. */
+export const applyOrderResets = (state: NavPreferencesState): { state: NavPreferencesState; changed: boolean } => {
+  let changed = false;
+  const order = { ...state.order };
+  const orderVersions = { ...(state.orderVersions ?? {}) };
+
+  for (const [surfaceKey, version] of Object.entries(ORDER_VERSIONS) as [SurfaceKey, number][]) {
+    if ((orderVersions[surfaceKey] ?? 0) >= version) continue;
+    delete order[surfaceKey];
+    orderVersions[surfaceKey] = version;
+    changed = true;
+  }
+
+  return { state: changed ? { ...state, order, orderVersions } : state, changed };
+};
 
 const EMPTY_STATE: NavPreferencesState = {
   collapsed: false,
   collapsedIsUserSet: false,
   pinnedDefaults: {},
   order: {},
+  orderVersions: {},
 };
 
 const loadFromLocalStorage = (): NavPreferencesState => {
@@ -68,7 +96,9 @@ const saveToLocalStorage = (state: NavPreferencesState): void => {
   }
 };
 
-const initialState: NavPreferencesState = loadFromLocalStorage();
+const loaded = applyOrderResets(loadFromLocalStorage());
+if (loaded.changed) saveToLocalStorage(loaded.state);
+const initialState: NavPreferencesState = loaded.state;
 
 const navPreferencesSlice = createSlice({
   name: 'navPreferencesReducer',

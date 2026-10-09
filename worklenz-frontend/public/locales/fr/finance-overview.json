@@ -1,0 +1,60 @@
+{
+  "pageTitle": "Aperçu des finances",
+  "pageSubTitle": "Budget, coût réel et écart cumulés sur tous les projets. Cliquez sur un projet pour accéder à son onglet Finance complet.",
+  "noBudgetSet": "Aucun budget fixé",
+  "emptyValue": "—",
+  "viewFinanceButton": "Voir le financement",
+  "viewButton": "Voir",
+  "exportButton": "Exporter sous Excel",
+  "exportSuccess": "Exporté avec succès.",
+  "exportFailed": "Échec de l'exportation.",
+  "kpiCard": {
+    "totalManualBudget": "Budget manuel total",
+    "totalActualCost": "Coût total réel",
+    "totalVariance": "Écart total",
+    "budgetUtilization": "Utilisation du budget",
+    "estimatedHours": "Heures estimées",
+    "mixedCurrencyWarning": "Les projets utilisent des devises différentes. Ce total n'est pas converti en devises.",
+    "mixedCurrencyNote": "Affichage de {{dominant}} pour {{count}} des {{total}} projets. Comprend également : {{others}}.",
+    "prevCurrency": "Devise précédente",
+    "nextCurrency": "Devise suivante"
+  },
+  "attention": {
+    "title": "Projets nécessitant une attention particulière",
+    "emptyState": "Tous les projets respectent le budget.",
+    "overBudget": "Au-dessus du budget",
+    "watch": "Regarder",
+    "ofBudgetSpent": "du budget dépensé"
+  },
+  "distribution": {
+    "title": "Répartition du statut du budget",
+    "onTrack": "En bonne voie (≤65 % dépensés)",
+    "watch": "Regarder (65 à 100 % dépensés)",
+    "overBudget": "Dépassement du budget (> 100 % dépensé)",
+    "projects": "projets",
+    "total": "Total",
+    "breakdown": "Répartition des coûts réels : {{fixed}} fixe · {{timeBased}} basé sur le temps"
+  },
+  "tableCard": {
+    "title": "Santé financière du projet"
+  },
+  "currencyNote": {
+    "convertedPrefix": "Totaux des KPI convertis en",
+    "convertedSuffix": "en utilisant les taux de change en direct. Tarifs mis à jour {{time}}.",
+    "changeCurrency": "Changer de devise",
+    "unavailable": "Taux de change indisponibles : les totaux des KPI ne peuvent pas être convertis.",
+    "checkSettings": "Vérifier les paramètres de devise",
+    "fetchUnavailable": "Service de taux de change indisponible.",
+    "fetchFailed": "Échec de la récupération des taux de change."
+  },
+  "table": {
+    "project": "Projet",
+    "client": "Clientèle",
+    "manualBudget": "Budget manuel",
+    "actualCost": "Coût réel",
+    "variance": "Écart",
+    "budgetUtilization": "Utilisation du budget",
+    "estHours": "Est. Horaires",
+    "searchPlaceholder": "Rechercher des projets"
+  }
+}

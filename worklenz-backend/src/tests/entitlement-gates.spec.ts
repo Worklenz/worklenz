@@ -1,12 +1,15 @@
+// Legacy plan checks only apply to cloud deployments; self-hosted grants Business to everyone.
+process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud";
+
 import {
   canUseFeature,
   requireFeature,
   requireFeatureForOrganization,
   teamCanUseFeature,
 } from "../shared/entitlements/gates";
-import * as paddleUtils from "../ee/shared/paddle-utils";
+import * as paddleUtils from "../shared/paddle-utils";
 
-jest.mock("../ee/shared/paddle-utils");
+jest.mock("../shared/paddle-utils");
 jest.mock("../shared/utils", () => ({ log_error: jest.fn() }));
 
 const proClassic = { subscription_type: "PADDLE", plan_name: "Pro" };

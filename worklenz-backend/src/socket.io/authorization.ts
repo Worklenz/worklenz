@@ -6,6 +6,7 @@ import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/gue
 import { canUserAccessTaskDetail, canUserEditTask } from "../shared/assignee-task-scope";
 import { ISocketSession } from "../interfaces/socket-session";
 import { IPassportSession } from "../interfaces/passport-session";
+import { SocketEvents } from "./events";
 
 /**
  * Verify user has access to a task via their team
@@ -211,7 +212,8 @@ export async function verifyProjectTemplateAccessSocket(
 }
 
 /**
- * Log unauthorized access attempts for security monitoring
+ * Log unauthorized access attempts for security monitoring.
+ * Phase 6: also emit PROJECT_PERMISSION_CHANGED so the client reloads Member view.
  */
 export function logUnauthorizedSocketAccess(
   socket: Socket,
@@ -234,4 +236,13 @@ export function logUnauthorizedSocketAccess(
   };
   
   console.error("[SECURITY]", JSON.stringify(logEntry));
+
+  // Phase 6 / D3: notify the caller their project permission may have been revoked.
+  if (resourceType === "project" && resourceId) {
+    socket.emit(SocketEvents.PROJECT_PERMISSION_CHANGED.toString(), {
+      project_id: resourceId,
+      reason: "pm_removed",
+      affected_user_ids: userId ? [userId] : [],
+    });
+  }
 }

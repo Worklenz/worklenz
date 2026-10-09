@@ -32,7 +32,7 @@ import { taskRecurringApiService } from '@/api/tasks/task-recurring.api.service'
 import logger from '@/utils/errorLogger';
 import { setTaskRecurringSchedule } from '@/features/task-drawer/task-drawer.slice';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { ITaskStatus } from '@/types/tasks/taskStatus.types';
@@ -106,6 +106,8 @@ const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskView
   const [loadingStatuses, setLoadingStatuses] = useState(false);
 
   const handleChange = (checked: boolean) => {
+    if (disabled) return;
+
     if (isFree) {
       dispatch(toggleUpgradeModal());
       return;

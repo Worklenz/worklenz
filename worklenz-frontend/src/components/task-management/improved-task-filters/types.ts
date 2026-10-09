@@ -44,4 +44,6 @@ export interface ThemeClasses {
 export interface ImprovedTaskFiltersProps {
   position: 'board' | 'list';
   className?: string;
+  /** Backlog mode hides sprint/phase and group-by filters. */
+  mode?: 'default' | 'backlog';
 }

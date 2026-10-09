@@ -1,37 +1,37 @@
 {
-  "title": "Phase Details",
+  "title": "Detajet e Fazës",
   "overview": {
-    "title": "Overview",
-    "totalTasks": "Total Tasks",
-    "completion": "Completion",
-    "progress": "Progress"
+    "title": "Përmbledhje",
+    "totalTasks": "Detyra gjithsej",
+    "completion": "Përfundimi",
+    "progress": "Progresi"
   },
   "timeline": {
-    "title": "Timeline",
-    "startDate": "Start Date",
-    "endDate": "End Date",
-    "status": "Status",
-    "notSet": "Not set",
+    "title": "Afati Kohor",
+    "startDate": "Data e fillimit",
+    "endDate": "Data e përfundimit",
+    "status": "Statusi",
+    "notSet": "I pa caktuar",
     "statusLabels": {
-      "upcoming": "Upcoming",
-      "active": "In Progress",
-      "overdue": "Overdue",
-      "notScheduled": "Not Scheduled"
+      "upcoming": "Ardhj",
+      "active": "Në progres",
+      "overdue": "Vonuar",
+      "notScheduled": "Nuk është planifikuar"
     }
   },
   "taskBreakdown": {
-    "title": "Task Breakdown",
-    "completed": "Completed",
-    "pending": "Pending",
-    "overdue": "Overdue"
+    "title": "Zbërthimi i detyrës",
+    "completed": "E përfunduar",
+    "pending": "Në pritje",
+    "overdue": "Vonuar"
   },
   "phaseColor": {
-    "title": "Phase Color",
-    "description": "Phase identifier color"
+    "title": "Ngjyra e Fazës",
+    "description": "Ngjyra e identifikuesit të fazës"
   },
   "tasksInPhase": {
-    "title": "Tasks in this Phase",
-    "noTasks": "No tasks in this phase",
+    "title": "Detyrat në këtë fazë",
+    "noTasks": "Nuk ka detyra në këtë fazë",
     "priority": "Prioriteti",
     "assignees": "Të caktuarit",
     "dueDate": "Data e përfundimit",

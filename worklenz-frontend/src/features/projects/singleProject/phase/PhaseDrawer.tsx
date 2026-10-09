@@ -15,7 +15,7 @@ import { PlusOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import PhaseOptionItem from './PhaseOptionItem';
 import {

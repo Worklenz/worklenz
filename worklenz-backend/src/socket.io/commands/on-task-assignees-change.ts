@@ -156,7 +156,9 @@ export async function on_task_assignees_change(
           body.project_id,
           body.task_id,
           "task_assigned",
-          userName
+          userName,
+          undefined,
+          userId
         );
       } catch (notifError) {
         log_error("Error sending external notifications:", notifError);

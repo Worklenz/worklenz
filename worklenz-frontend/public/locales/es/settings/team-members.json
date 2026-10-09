@@ -183,8 +183,8 @@
   "closePopover": "Cerrar ventana emergente",
   "memberDeactivatedInviteSent": "Miembro desactivado. Tu invitación ha sido enviada.",
   "memberDeactivatedProjectInviteSent": "Miembro desactivado. Invitación al proyecto enviada para \"{{projectName}}\".",
-  "saveMemberNameTooltip": "Save name",
-  "cancelRenameTooltip": "Cancel rename",
+  "saveMemberNameTooltip": "Guardar nombre",
+  "cancelRenameTooltip": "Cancelar cambio de nombre",
   "seatUsageText": "{{used}} asientos usados",
   "seatUsageLoading": "Cargando uso de asientos...",
   "seatLimitReached": "Límite de asientos alcanzado",
@@ -233,5 +233,7 @@
   "guestInviteError": "Ocurrió un error al invitar invitados",
   "partialSuccess": "{{count}} invitado(s) invitado(s) con éxito. Fallidos: {{emails}}",
   "selectProjectFirst": "Seleccione un proyecto primero",
-  "manageTimeOff": "Gestionar Ausencias"
+  "manageTimeOff": "Gestionar Ausencias",
+  "createFromTemplatesLabel": "Crear proyectos desde plantillas",
+  "createFromTemplatesHint": "Permite a este miembro crear proyectos desde plantillas. Se convierten en Gerente de Proyecto del nuevo proyecto sin acceso financiero. No permite crear proyectos en blanco."
 }

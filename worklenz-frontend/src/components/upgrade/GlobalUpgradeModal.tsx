@@ -5,9 +5,9 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
 import { useRegionCheck } from '@/hooks/useRegionCheck';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { isAppSumoUser as checkIsAppSumoUser } from '@/ee/utils/subscription-utils';
-import UpgradePlansSwitch from '@/ee/components/admin-center/billing/drawers/upgrade-plans-per-user/UpgradePlansSwitch';
-import UpgradePlansLKR from '@/ee/components/admin-center/billing/drawers/upgrade-plans-lkr/upgrade-plans-lkr';
+import { isAppSumoUser as checkIsAppSumoUser } from '@/utils/subscription-utils';
+import UpgradePlansSwitch from '@/components/admin-center/billing/drawers/upgrade-plans-per-user/UpgradePlansSwitch';
+import UpgradePlansLKR from '@/components/admin-center/billing/drawers/upgrade-plans-lkr/upgrade-plans-lkr';
 
 // The single "Upgrade Now" pricing modal, driven by isUpgradeModalOpen and
 // mounted once per top-level layout (MainLayout, ReportingLayout,

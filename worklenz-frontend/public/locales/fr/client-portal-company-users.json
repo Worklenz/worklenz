@@ -1,0 +1,172 @@
+{
+  "tabCountLabel": "Total des utilisateurs clients",
+  "retryButton": "Réessayer",
+  "cancelButton": "Annuler",
+  "saveButton": "Enregistrer",
+  "refreshButton": "Actualiser",
+  "clearFiltersButton": "Effacer les filtres",
+  "addButton": "Ajouter un client",
+  "rowActionsLabel": "Actions pour {{name}}",
+  "searchPlaceholder": "Rechercher des utilisateurs ou des entreprises...",
+  "statusFilterLabel": "Filtrer par statut",
+  "allStatusesOption": "Tous les statuts",
+  "paginationSummary": "Affichage de {{from}}-{{to}} sur {{total}} utilisateurs",
+  "errorTitle": "Erreur lors du chargement des utilisateurs clients",
+  "errorDescription": "Une erreur s'est produite lors du chargement des utilisateurs clients. Veuillez réessayer.",
+  "statsErrorMessage": "Impossible de charger les statistiques des utilisateurs clients.",
+  "lastActivityInvited": "Invité {{time}}",
+  "lastActivityNever": "Jamais connecté",
+  "projectsNone": "Aucun projet assigné",
+  "projectsCount_one": "{{count}} projet",
+  "projectsCount_other": "{{count}} projets",
+  "stats": {
+    "total": "Total des utilisateurs clients",
+    "pocs": "Contacts principaux",
+    "companiesWithoutPoc": "Entreprises sans contact principal",
+    "companiesWithoutPocHint": "Autorisé. Une entreprise peut ne pas avoir de contact principal.",
+    "disabled": "Désactivés"
+  },
+  "columns": {
+    "user": "Utilisateur",
+    "email": "E-mail",
+    "phone": "Téléphone",
+    "company": "Entreprise",
+    "access": "Accès",
+    "jobTitle": "Poste",
+    "projects": "Projets",
+    "portalStatus": "Statut du portail",
+    "actions": "Actions"
+  },
+  "role": {
+    "poc": "Contact principal",
+    "member": "Membre"
+  },
+  "portalStatus": {
+    "active": "Actif",
+    "invited": "Invité",
+    "expired": "Expiré",
+    "not_invited": "Non invité",
+    "disabled": "Désactivé"
+  },
+  "empty": {
+    "title": "Aucun utilisateur client trouvé",
+    "filtered": "Aucun utilisateur ne correspond aux filtres actuels.",
+    "none": "Aucun utilisateur client pour l'instant. Ajoutez un client ou un utilisateur à une entreprise pour lui donner accès au portail."
+  },
+  "menu": {
+    "viewProfile": "Voir le profil",
+    "editUser": "Modifier l'utilisateur",
+    "assignProjects": "Assigner des projets",
+    "makePoc": "Définir comme contact principal",
+    "removePoc": "Retirer le statut de contact principal",
+    "sendInvite": "Envoyer une invitation",
+    "resendInvite": "Renvoyer l'invitation",
+    "enableUser": "Activer l'utilisateur",
+    "disableUser": "Désactiver l'utilisateur",
+    "removeUser": "Supprimer l'utilisateur"
+  },
+  "confirmDisable": {
+    "title": "Désactiver cet utilisateur ?",
+    "content": "{{name}} perdra immédiatement l'accès au portail. Vous pourrez le réactiver plus tard et il retrouvera son statut précédent.",
+    "ok": "Désactiver l'utilisateur"
+  },
+  "confirmRemove": {
+    "title": "Supprimer cet utilisateur ?",
+    "content": "{{name}} sera retiré de l'entreprise et perdra l'accès au portail. Cette action est irréversible. L'entreprise et ses autres utilisateurs ne sont pas affectés.",
+    "ok": "Supprimer l'utilisateur"
+  },
+  "messages": {
+    "madePoc": "{{name}} est maintenant contact principal.",
+    "removedPoc": "{{name}} n'est plus contact principal.",
+    "roleError": "Impossible de modifier le rôle.",
+    "inviteSent": "Invitation envoyée à {{email}}.",
+    "inviteEmailFailed": "L'invitation a été créée mais l'e-mail n'a pas pu être envoyé.",
+    "inviteError": "Impossible d'envoyer l'invitation.",
+    "disabled": "{{name}} a été désactivé.",
+    "enabled": "{{name}} a été activé.",
+    "statusError": "Impossible de mettre à jour l'utilisateur.",
+    "removed": "{{name}} a été supprimé.",
+    "removeError": "Impossible de supprimer l'utilisateur.",
+    "linkCopied": "Lien d'invitation copié.",
+    "linkCopyError": "Impossible de copier le lien."
+  },
+  "permissionLevels": {
+    "unknown": "Niveau inconnu",
+    "view": {
+      "label": "Lecture seule",
+      "description": "Statut, jalons, tâches et livrables. Pas de commentaires, de modifications ni d'envois."
+    },
+    "comment": {
+      "label": "Lecture + commentaire",
+      "description": "Commenter, approuver ou rejeter et joindre des fichiers aux commentaires. Ne peut pas créer de tâches."
+    },
+    "contributor": {
+      "label": "Contributeur complet",
+      "description": "Tout ce qui précède, plus la création et la modification de tâches, le changement de statut et l'envoi de pièces jointes."
+    }
+  },
+  "permissionTemplates": {
+    "view_only": {
+      "name": "Lecture seule",
+      "description": "Parties prenantes qui n'ont besoin que de visibilité : statut et livrables, sans modification."
+    },
+    "standard_contact": {
+      "name": "Contact standard",
+      "description": "Le paramètre par défaut pour la plupart des contacts clients : peut commenter, approuver ou rejeter et joindre des fichiers."
+    },
+    "full_partner": {
+      "name": "Partenaire complet",
+      "description": "Collaborateurs actifs : peuvent créer et modifier des tâches et envoyer des pièces jointes."
+    }
+  },
+  "assignProjects": {
+    "title": "Assigner des projets — {{name}}",
+    "helper": "Choisissez à quels projets de {{company}} {{name}} peut accéder, ainsi que son niveau de permission pour chacun. Un projet peut être assigné à plusieurs utilisateurs de l'entreprise.",
+    "noProjectsTitle": "{{company}} n'a encore aucun projet",
+    "noProjectsDescription": "Assignez d'abord un projet à cette entreprise, puis revenez donner l'accès à cet utilisateur. Les modèles de permission nécessitent au moins un projet à appliquer.",
+    "truncatedMessage": "Seuls {{shown}} des {{total}} projets sont affichés, l'accès ne peut donc pas être modifié ici.",
+    "templatesTitle": "Appliquer un modèle (définit tous les projets ci-dessous à ce niveau)",
+    "selectAll": "Tout sélectionner",
+    "selectedCount": "{{selected}} sur {{total}} sélectionné(s)",
+    "bulkLabel": "Définir l'accès pour {{count}} sélectionné(s) :",
+    "levelFor": "Niveau de permission pour {{project}}",
+    "saveButton": "Enregistrer l'accès",
+    "savedMessage": "Accès aux projets mis à jour pour {{name}}.",
+    "saveError": "Impossible de mettre à jour l'accès aux projets.",
+    "loadError": "Impossible de charger les projets de cette entreprise."
+  },
+  "editUser": {
+    "title": "Modifier l'utilisateur",
+    "nameLabel": "Nom complet",
+    "namePlaceholder": "Marie Dupont",
+    "nameRequired": "Saisissez un nom.",
+    "nameTooLong": "Le nom ne peut pas dépasser 255 caractères.",
+    "emailLabel": "Adresse e-mail",
+    "emailPlaceholder": "jane@company.com",
+    "emailRequired": "Saisissez une adresse e-mail.",
+    "emailInvalid": "Saisissez une adresse e-mail valide.",
+    "emailLockedHint": "Il s'agit de son e-mail de connexion, il ne peut donc pas être modifié une fois l'accès au portail accordé.",
+    "jobTitleLabel": "Poste",
+    "jobTitlePlaceholder": "p. ex. Responsable marketing",
+    "jobTitleTooLong": "Le poste ne peut pas dépasser 100 caractères.",
+    "phoneLabel": "Numéro de téléphone (facultatif)",
+    "phonePlaceholder": "+1 415 555 0142",
+    "phoneTooLong": "Le numéro de téléphone ne peut pas dépasser 50 caractères.",
+    "footerHint": "L'entreprise ({{company}}) et le rôle d'accès sont gérés séparément, depuis le menu de la ligne.",
+    "savedMessage": "{{name}} mis à jour.",
+    "saveError": "Impossible de mettre à jour cet utilisateur."
+  },
+  "profile": {
+    "title": "Profil du membre",
+    "email": "E-mail",
+    "phone": "Téléphone",
+    "jobTitle": "Poste",
+    "lastActivity": "Dernière activité",
+    "signInMethod": "Méthode de connexion",
+    "signInPassword": "Mot de passe",
+    "signInNone": "Pas encore connecté",
+    "noJobTitle": "Aucun poste renseigné",
+    "assignedProjects": "Projets assignés ({{count}})",
+    "noProjects": "Aucun projet assigné pour l'instant."
+  }
+}

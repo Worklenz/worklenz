@@ -25,7 +25,7 @@ import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
 import alertService from '@/services/alerts/alertService';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import logger from '@/utils/errorLogger';
 import { TaskExportPublicJob } from '@/types/project/task-export.types';
 

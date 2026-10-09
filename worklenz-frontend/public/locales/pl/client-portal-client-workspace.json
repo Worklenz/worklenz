@@ -1,0 +1,93 @@
+{
+  "retry": "Spróbuj ponownie",
+
+  "tabs": {
+    "overview": "Przegląd",
+    "messages": "Wiadomości",
+    "members": "Członkowie firmy",
+    "projects": "Projekty",
+    "billing": "Rozliczenia"
+  },
+
+  "portalStatus": {
+    "active": "Aktywny",
+    "invited": "Zaproszony",
+    "expired": "Wygasły",
+    "not_invited": "Niezaproszony"
+  },
+
+  "header": {
+    "back": "Klienci",
+    "edit": "Edytuj klienta",
+    "actionsLabel": "Działania klienta",
+    "lastSignedIn": "Ostatnie logowanie {{time}}",
+    "invited": "Zaproszono {{time}}",
+    "neverSignedIn": "Nigdy się nie zalogował"
+  },
+
+  "rail": {
+    "contact": "Kontakt",
+    "email": "E-mail",
+    "company": "Firma",
+    "projects": "Projekty",
+    "balance": "Saldo",
+    "portalHealth": "Stan portalu",
+    "signInMethod": "Metoda logowania",
+    "signInPassword": "Hasło",
+    "signInNone": "Jeszcze się nie zalogował",
+    "lastSignIn": "Ostatnie logowanie",
+    "never": "Nigdy",
+    "quickActions": "Szybkie akcje",
+    "sendMessage": "Wyślij wiadomość",
+    "createInvoice": "Utwórz fakturę",
+    "assignTask": "Przypisz zadanie"
+  },
+
+  "overview": {
+    "tasksOpen": "Otwarte zadania",
+    "invoicesDue": "Faktury do zapłaty",
+    "unansweredMessages": "Wiadomości bez odpowiedzi",
+    "statsError": "Nie udało się załadować statystyk tego klienta.",
+    "recentActivity": "Ostatnia aktywność",
+    "activityError": "Nie udało się załadować ostatniej aktywności.",
+    "noActivity": "Dla {{name}} nie odnotowano jeszcze żadnej aktywności."
+  },
+
+  "members": {
+    "title": "Członkowie firmy",
+    "addUser": "Dodaj użytkownika"
+  },
+
+  "projects": {
+    "title": "Projekty",
+    "project": "Projekt",
+    "openProject": "Otwórz {{name}}",
+    "health": "Stan",
+    "progress": "Postęp",
+    "progressLabel": "Postęp {{name}}",
+    "due": "Termin",
+    "assign": "Przypisz projekt",
+    "loadError": "Nie udało się załadować projektów tego klienta.",
+    "empty": "Brak projektów dla {{name}}.",
+    "truncated": "Wyświetlanie pierwszych {{shown}} z {{total}} projektów."
+  },
+
+  "billing": {
+    "title": "Faktury",
+    "createInvoice": "Utwórz fakturę",
+    "warningTitle": "{{name}} nie może jeszcze korzystać ze swojego portalu",
+    "warningDescription": "Nie zaakceptował jeszcze zaproszenia, więc nie może przeglądać ani płacić faktur w swoim portalu. Nadal możesz tworzyć faktury. Najpierw wyślij zaproszenie, jeśli mają je zobaczyć.",
+    "sendInvite": "Wyślij zaproszenie",
+    "resendInvite": "Wyślij zaproszenie ponownie",
+    "inviteSent": "Zaproszenie wysłane do {{name}}.",
+    "inviteError": "Nie udało się wysłać zaproszenia."
+  },
+
+  "errors": {
+    "notFoundTitle": "Nie znaleziono klienta",
+    "notFoundDescription": "Mógł zostać usunięty lub link jest nieprawidłowy.",
+    "loadTitle": "Nie udało się załadować tego klienta",
+    "loadDescription": "Spróbuj ponownie.",
+    "backToClients": "Powrót do klientów"
+  }
+}

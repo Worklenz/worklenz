@@ -1,7 +1,7 @@
 import express from "express";
 
 jest.mock("../config/db", () => ({ __esModule: true, default: { query: jest.fn(), pool: { connect: jest.fn() } } }));
-jest.mock("../ee/shared/paddle-utils");
+jest.mock("../shared/paddle-utils");
 jest.mock("../shared/utils", () => ({ log_error: jest.fn() }));
 
 import scheduleV1 from "../routes/apis/gannt-apis/schedule-api-router";

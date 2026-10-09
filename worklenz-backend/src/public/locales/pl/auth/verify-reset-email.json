@@ -1,0 +1,16 @@
+{
+  "title": "Ustaw nowe hasło",
+  "description": "Wpisz swoje nowe hasło",
+  "placeholder": "Wpisz swoje nowe hasło",
+  "confirmPasswordPlaceholder": "Potwierdź swoje nowe hasło",
+  "passwordHint": "Minimum 8 znaków, duże i małe litery oraz cyfra i symbol.",
+  "resetPasswordButton": "Zresetuj hasło",
+  "orText": "Lub",
+  "resendResetEmail": "Wyślij ponownie e-mail resetujący",
+  "passwordRequired": "Proszę wprowadzić nowe hasło",
+  "returnToLoginButton": "Wróć do logowania",
+  "confirmPasswordRequired": "Potwierdź swoje nowe hasło",
+  "passwordMismatch": "Obydwa hasła nie pasują do siebie",
+  "successTitle": "Resetowanie hasła powiodło się",
+  "successMessage": "Twoje hasło zostało zaktualizowane. Możesz teraz zalogować się przy użyciu nowego hasła."
+}

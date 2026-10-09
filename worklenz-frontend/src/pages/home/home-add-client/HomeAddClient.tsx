@@ -18,12 +18,12 @@ import {
   useGetClientsQuery,
   clientPortalApi,
   CreateClientRequest,
-} from '@/ee/api/client-portal/client-portal-api';
+} from '@/api/client-portal/client-portal-api';
 import { useGetProjectsByTeamQuery } from '@/api/home-page/home-page.api.service';
 import PhoneInput from '@/components/PhoneInput/PhoneInput';
 import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
 import { useAuthService } from '@/hooks/useAuth';
-import { canUseFeature } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/utils/subscription-utils';
 import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
 import { useResponsive } from '@/hooks/useResponsive';
 import dayjs from 'dayjs';

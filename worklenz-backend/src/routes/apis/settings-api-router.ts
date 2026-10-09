@@ -2,7 +2,7 @@ import express from "express";
 import NotificationController from "../../controllers/notification-controller";
 
 import ProfileSettingsController from "../../controllers/profile-settings-controller";
-import ClientPortalSettingsController from "../../ee/controllers/client-portal/client-portal-settings-controller";
+import ClientPortalSettingsController from "../../controllers/client-portal/client-portal-settings-controller";
 import OrgConfigurationController from "../../controllers/org-configuration-controller";
 import CurrencyRatesController from "../../controllers/currency-rates-controller";
 

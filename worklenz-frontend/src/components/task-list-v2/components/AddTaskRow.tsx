@@ -6,6 +6,15 @@ import { useTranslation } from 'react-i18next';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { openCreateIssueModal } from '@/features/projects/singleProject/create-issue/create-issue-modal.slice';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { assignTaskToMember } from '@/utils/assign-task-to-member';
+import {
+  UNMAPPED_PHASE_ID,
+  useTaskListMode,
+} from '@/features/task-management/task-list-mode-context';
 
 interface AddTaskRowProps {
   groupId: string;
@@ -46,34 +55,59 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
     isInsertMode = false,
     insertAfterTaskId = null,
   }) => {
-    const [isAdding, setIsAdding] = useState(autoFocus || isActive);
+    const listMode = useTaskListMode();
+    const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+    const isSoftwareProject = isSoftwareProjectType(projectType);
+    const isCreateIssueModalMode = isSoftwareProject && listMode === 'backlog' && !isInsertMode;
+    const [isAdding, setIsAdding] = useState(!isCreateIssueModalMode && (autoFocus || isActive));
     const [taskName, setTaskName] = useState('');
     const [creatingTask, setCreatingTask] = useState(false);
     const inputRef = useRef<any>(null);
     const { socket, connected } = useSocket();
     const { t } = useTranslation('task-list-table');
+    const dispatch = useAppDispatch();
+    const isGroupedBySprint = useAppSelector(
+      state => groupType === 'phase' && state.phaseReducer.phaseList.some(phase => phase.id === groupValue)
+    );
+    const targetSprintId = isGroupedBySprint ? groupValue : null;
+    const addTaskLabel = isCreateIssueModalMode
+      ? t('createWorkItemText', { defaultValue: 'Create work item' })
+      : isSoftwareProject
+        ? t('createIssueText', { defaultValue: 'Create Issue' })
+        : t('addTaskText', { defaultValue: 'Add Task' });
+    const insertTaskLabel = isSoftwareProject
+      ? t('insertIssueText', { defaultValue: 'Insert Issue' })
+      : t('insertTaskText', { defaultValue: 'Insert Task' });
+    const addTaskPlaceholder = isSoftwareProject
+      ? t('createIssueInputPlaceholder', {
+          defaultValue: 'Type issue title and press Enter to save',
+        })
+      : t('addTaskInputPlaceholder', {
+          defaultValue: 'Type task name and press Enter to save',
+        });
 
     // Get session data for reporter_id and team_id
     const currentSession = useAuthService().getCurrentSession();
 
     // Auto-focus when autoFocus prop is true
     useEffect(() => {
+      if (isCreateIssueModalMode) return;
       if (autoFocus && inputRef.current) {
         setIsAdding(true);
         setTimeout(() => {
           inputRef.current?.focus();
         }, 100);
       }
-    }, [autoFocus]);
+    }, [autoFocus, isCreateIssueModalMode]);
 
     useEffect(() => {
-      if (isActive) {
+      if (isActive && !isCreateIssueModalMode) {
         setIsAdding(true);
         setTimeout(() => {
           inputRef.current?.focus();
         }, 50);
       }
-    }, [isActive]);
+    }, [isActive, isCreateIssueModalMode]);
 
     // The global socket handler (useTaskSocketHandlers) will handle task addition
     // No need for local socket listener to avoid duplicate additions
@@ -108,10 +142,18 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
           case 'phase':
             body.phase_id = groupValue;
             break;
+          case 'assignee':
+            // Assigned after creation (quick-create does not accept assignees)
+            break;
           default:
             // For any other grouping types, use the groupType as is
             body[groupType] = groupValue;
             break;
+        }
+
+        // Backlog tab: keep newly created issues unassigned to a sprint
+        if (listMode === 'backlog' && !body.phase_id) {
+          body.phase_id = UNMAPPED_PHASE_ID;
         }
 
         if (socket && connected) {
@@ -137,6 +179,16 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
             if (task?.id) {
               // Task created successfully
               setTaskName('');
+              if (groupType === 'assignee') {
+                assignTaskToMember({
+                  socket,
+                  taskId: task.id,
+                  projectId,
+                  teamMemberId: groupValue,
+                  reporterId: currentSession.id,
+                  teamId: currentSession.team_id,
+                });
+              }
               if (onTaskCreated) {
                 onTaskCreated(task, {
                   openDrawer,
@@ -175,6 +227,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
         currentSession,
         onTaskCreated,
         insertAfterTaskId,
+        listMode,
         t,
       ]
     );
@@ -266,15 +319,17 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
                   {!isAdding ? (
                     <button
                       onClick={() => {
+                        if (isCreateIssueModalMode) {
+                          dispatch(openCreateIssueModal({ sprintId: targetSprintId }));
+                          return;
+                        }
                         onActivate?.();
                         setIsAdding(true);
                       }}
                       className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors h-full w-full px-2"
                     >
                       <PlusOutlined className="text-xs" />
-                      {isInsertMode
-                        ? t('insertTaskText', { defaultValue: 'Insert Task' })
-                        : t('addTaskText', { defaultValue: 'Add Task' })}
+                      {isInsertMode ? insertTaskLabel : addTaskLabel}
                     </button>
                   ) : (
                     <div className="flex items-center w-full h-full gap-1 pr-1">
@@ -292,9 +347,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
                         maxLength={250}
                         onBlur={handleBlur}
                         onKeyDown={handleKeyDown}
-                        placeholder={t('addTaskInputPlaceholder', {
-                          defaultValue: 'Type task name and press Enter to save',
-                        })}
+                        placeholder={addTaskPlaceholder}
                         className="w-full h-full border-none shadow-none bg-transparent"
                         style={{
                           height: '100%',
@@ -339,6 +392,9 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
         visibleColumns,
         onActivate,
         isInsertMode,
+        isCreateIssueModalMode,
+        targetSprintId,
+        dispatch,
       ]
     );
 

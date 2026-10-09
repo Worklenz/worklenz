@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-import { hasBusinessPlanAccess } from "../../ee/middlewares/subscription-middleware";
-import { checkTeamSubscriptionStatus } from "../../ee/shared/paddle-utils";
+import { hasBusinessPlanAccess } from "../../middlewares/subscription-middleware";
+import { checkTeamSubscriptionStatus } from "../../shared/paddle-utils";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";

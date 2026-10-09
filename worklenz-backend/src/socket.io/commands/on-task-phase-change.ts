@@ -9,6 +9,7 @@ import { getTaskPhaseDetails, logPhaseChange } from "../../services/activity-log
 import {getAssignees, runAssignOrRemove} from "./on-quick-assign-or-remove";
 import WorklenzControllerBase from "../../controllers/worklenz-controller-base";
 import { isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task-scope";
+import { advanceBacklogIssuesToTodo } from "../../shared/software-sprint-utils";
 
 async function autoAssignPhaseAssignee(
   io: Server,
@@ -163,6 +164,14 @@ export async function on_task_phase_change(_io: Server, socket: Socket, body?: a
 
     // Bump task updated_at so "Updated X ago" reflects the phase change
     await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [body.task_id]);
+
+    if (phaseId) {
+      try {
+        await advanceBacklogIssuesToTodo([body.task_id]);
+      } catch (advanceError) {
+        log_error(advanceError);
+      }
+    }
 
     changeResponse.color_code = changeResponse.color_code
       ? changeResponse.color_code : getColor(changeResponse.name) + TASK_STATUS_COLOR_ALPHA;

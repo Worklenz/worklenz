@@ -120,7 +120,7 @@
       ]
     },
     "enterprise": {
-      "name": "Enterprise",
+      "name": "Empresa",
       "description": "Para grandes organizaciones",
       "features": [
         "Todo en Business Grande",
@@ -224,10 +224,10 @@
     "title": "Confirma tu Suscripción",
     "subtitle": "Revisa los detalles de tu plan antes de continuar",
     "summary": "Resumen de Suscripción",
-    "plan": "Plan",
+    "plan": "Planificar",
     "teamSize": "Tamaño del Equipo",
     "discount": "Descuento",
-    "total": "Total",
+    "total": "totales",
     "secureCheckout": "Pago Seguro",
     "secureDescription": "Tu pago será procesado de forma segura a través de Paddle. Puedes cancelar o cambiar tu plan en cualquier momento.",
     "appsumoSpecial": "Precios Especiales AppSumo",

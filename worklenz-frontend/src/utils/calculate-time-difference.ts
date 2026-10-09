@@ -8,7 +8,7 @@ import {
   differenceInYears,
   formatDistanceToNow,
 } from 'date-fns';
-import { enUS, es, pt, de, zhCN, sq } from 'date-fns/locale';
+import { enUS, es, pt, de, zhCN, sq, pl, fr } from 'date-fns/locale';
 import { getLanguageFromLocalStorage } from './language-utils';
 
 const JUST_NOW: Record<string, string> = {
@@ -19,6 +19,8 @@ const JUST_NOW: Record<string, string> = {
   zh: '刚刚',
   zh_cn: '刚刚',
   alb: 'Sapo tani',
+  pl: 'Przed chwilą',
+  fr: "À l'instant",
 };
 
 const DATE_FNS_LOCALE: Record<string, typeof enUS> = {
@@ -28,6 +30,8 @@ const DATE_FNS_LOCALE: Record<string, typeof enUS> = {
   de: de,
   zh_cn: zhCN,
   alb: sq,
+  pl: pl,
+  fr: fr,
 };
 
 export function calculateTimeDifference(timestamp: string | Date, justNow?: string): string {

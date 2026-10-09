@@ -72,6 +72,8 @@ interface ITaskDrawerState {
   targetCommentId: string | null;
   /** When set, TaskDrawer opens on this tab then clears the value. */
   targetDrawerTab: TaskDrawerTabKey | null;
+  /** Id of the most recent task deleted from the drawer, for views that keep local task state. */
+  lastDeletedTaskId: string | null;
   timeLogEditing: {
     isEditing: boolean;
     logBeingEdited: ITaskLogViewModel | null;
@@ -95,6 +97,7 @@ const initialState: ITaskDrawerState = {
   taskAccessFrom: null,
   targetCommentId: null,
   targetDrawerTab: null,
+  lastDeletedTaskId: null,
   timeLogEditing: {
 
     isEditing: false,
@@ -109,9 +112,9 @@ const isTaskAssigneeRestrictedError = (error: unknown): boolean => {
   const response = (error as { response?: { status?: number; data?: { body?: { code?: string }; message?: string } } })
     ?.response;
   if (response?.status !== 403) return false;
-  if (response.data?.body?.code === TASK_ASSIGNEE_RESTRICTED_CODE) return true;
-  const message = (response.data?.message || '').toLowerCase();
-  return message.includes('permission to access this task');
+  // Only the coded TVR-11 response — the same message text is also used for
+  // team-mismatch 403s, which must not show the "assigned to you only" UI.
+  return response.data?.body?.code === TASK_ASSIGNEE_RESTRICTED_CODE;
 };
 
 export const fetchTask = createAsyncThunk(
@@ -240,6 +243,9 @@ const taskDrawerSlice = createSlice({
     clearTaskAccessDenied: state => {
       state.taskAccessDenied = false;
     },
+    setLastDeletedTaskId: (state, action: PayloadAction<string | null>) => {
+      state.lastDeletedTaskId = action.payload;
+    },
 
     setTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
       if (!action.payload) return;
@@ -304,6 +310,33 @@ const taskDrawerSlice = createSlice({
       const { phase_id, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         (state.taskFormViewModel.task as any).phase_id = phase_id;
+      }
+    },
+    setTaskStoryPoints: (
+      state,
+      action: PayloadAction<{ id: string; story_points: number | null }>
+    ) => {
+      const { story_points, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.story_points = story_points;
+      }
+    },
+    setTaskEpic: (state, action: PayloadAction<{ id: string; epic_id: string | null }>) => {
+      const { epic_id, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.epic_id = epic_id;
+      }
+    },
+    setTaskRelease: (state, action: PayloadAction<{ id: string; release_id: string | null }>) => {
+      const { release_id, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.release_id = release_id;
+      }
+    },
+    setTaskBlocked: (state, action: PayloadAction<{ id: string; is_blocked: boolean }>) => {
+      const { is_blocked, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.is_blocked = is_blocked;
       }
     },
     setTaskLabels: (state, action: PayloadAction<ILabelsChangeResponse>) => {
@@ -458,11 +491,19 @@ const taskDrawerSlice = createSlice({
     },
   },
   extraReducers: builder => {
-    (builder.addCase(fetchTask.pending, state => {
+    (builder.addCase(fetchTask.pending, (state, action) => {
+      if (action.meta.arg.taskId !== state.selectedTaskId) {
+        return;
+      }
       state.loadingTask = true;
       state.taskAccessDenied = false;
     }),
       builder.addCase(fetchTask.fulfilled, (state, action) => {
+        // Ignore outdated responses when the user already opened another task
+        if (action.meta.arg.taskId !== state.selectedTaskId) {
+          return;
+        }
+
         state.loadingTask = false;
         state.taskAccessDenied = false;
         if (!action.payload) return;
@@ -509,6 +550,12 @@ const taskDrawerSlice = createSlice({
         }
       }),
       builder.addCase(fetchTask.rejected, (state, action) => {
+        // A slower 403 from a previous team's deep-link must not overwrite a
+        // newer successful (or in-flight) open after team switch.
+        if (action.meta.arg.taskId !== state.selectedTaskId) {
+          return;
+        }
+
         state.loadingTask = false;
         const payload = action.payload as { code?: string } | string | undefined;
         if (
@@ -531,6 +578,7 @@ export const {
   setTargetDrawerTab,
   setTaskAccessFrom,
   clearTaskAccessDenied,
+  setLastDeletedTaskId,
   setTaskStatus,
   setStartDate,
   setTaskEndDate,
@@ -538,6 +586,10 @@ export const {
   setTaskAssignee,
   setTaskPriority,
   setTaskPhase,
+  setTaskStoryPoints,
+  setTaskEpic,
+  setTaskRelease,
+  setTaskBlocked,
   setTaskLabels,
   setTaskSubscribers,
   setTimeLogEditing,

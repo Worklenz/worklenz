@@ -1,0 +1,84 @@
+{
+  "retry": "Reintentar",
+  "tabs": {
+    "overview": "Overview",
+    "messages": "Messages",
+    "members": "Miembros de la empresa",
+    "projects": "Proyectos",
+    "billing": "Facturación"
+  },
+  "portalStatus": {
+    "active": "Activo",
+    "invited": "Invitado",
+    "expired": "Caducado",
+    "not_invited": "No invitado"
+  },
+  "header": {
+    "back": "Clientes",
+    "edit": "Editar cliente",
+    "actionsLabel": "Acciones del cliente",
+    "lastSignedIn": "Último inicio de sesión {{time}}",
+    "invited": "Invitado {{time}}",
+    "neverSignedIn": "Nunca inicie sesión"
+  },
+  "rail": {
+    "contact": "Contacto",
+    "email": "Email",
+    "company": "Company",
+    "projects": "Proyectos",
+    "balance": "Saldo",
+    "portalHealth": "Salud del portal",
+    "signInMethod": "Método de inicio de sesión",
+    "signInPassword": "Contraseña",
+    "signInNone": "Aún no has iniciado sesión",
+    "lastSignIn": "Último inicio de sesión",
+    "never": "nunca",
+    "quickActions": "Acciones rápidas",
+    "sendMessage": "enviar mensaje",
+    "createInvoice": "Crear factura",
+    "assignTask": "Asignar tarea"
+  },
+  "overview": {
+    "tasksOpen": "Tareas abiertas",
+    "invoicesDue": "facturas vencidas",
+    "unansweredMessages": "Mensajes sin respuesta",
+    "statsError": "No se pudieron cargar los números de este cliente.",
+    "recentActivity": "Actividad reciente",
+    "activityError": "No se pudo cargar la actividad reciente.",
+    "noActivity": "Aún no se ha registrado nada para {{name}}."
+  },
+  "members": {
+    "title": "Miembros de la empresa",
+    "addUser": "Agregar usuario"
+  },
+  "projects": {
+    "title": "Proyectos",
+    "project": "Proyecto",
+    "openProject": "Abrir {{name}}",
+    "health": "Salud",
+    "progress": "Progreso",
+    "progressLabel": "Progreso de {{name}}",
+    "due": "debido",
+    "assign": "Asignar proyecto",
+    "loadError": "No se pudieron cargar los proyectos de este cliente.",
+    "empty": "Aún no hay proyectos para {{name}}.",
+    "truncated": "Mostrando el primer {{shown}} de {{total}} proyectos."
+  },
+  "billing": {
+    "title": "Facturas",
+    "createInvoice": "Crear factura",
+    "warningTitle": "{{name}} aún no puede usar su portal",
+    "warningDescription": "No han aceptado una invitación, por lo que no pueden ver ni pagar facturas en su portal. Aún puedes crear facturas. Envíe la invitación primero si los ven.",
+    "sendInvite": "enviar invitación",
+    "resendInvite": "Reenviar invitación",
+    "inviteSent": "Invitación enviada a {{name}}.",
+    "inviteError": "No se pudo enviar la invitación."
+  },
+  "errors": {
+    "notFoundTitle": "Cliente no encontrado",
+    "notFoundDescription": "Es posible que lo hayan eliminado o que el enlace sea incorrecto.",
+    "loadTitle": "No se pudo cargar este cliente",
+    "loadDescription": "Por favor inténtalo de nuevo.",
+    "backToClients": "Volver a clientes"
+  }
+}

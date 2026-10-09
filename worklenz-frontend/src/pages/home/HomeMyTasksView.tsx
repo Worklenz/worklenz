@@ -866,7 +866,7 @@ const HomeMyTasksView: React.FC = () => {
                 <Dropdown
                   trigger={['click']}
                   menu={{
-                    items: [10, 20, 50].map(n => ({ key: String(n), label: String(n) })),
+                     items: [10, 20, 50, 100].map(n => ({ key: String(n), label: String(n) })),
                     selectedKeys: [String(pageSize)],
                     onClick: info => { setPageSize(Number(info.key)); setPage(1); },
                   }}

@@ -5,6 +5,7 @@ import {IPassportSession} from "../interfaces/passport-session";
 import {resolveEntitlements, runShadowComparison} from "../shared/entitlements";
 import {isEnforceMode} from "../shared/entitlements/gates";
 import { getDeploymentMode, isSelfHostedDeployment } from "../shared/deployment-mode";
+import {enrichSessionWithTemplateCreateAccess} from "../shared/template-create-access";
 
 async function setLastActive(id: string) {
   try {
@@ -46,7 +47,19 @@ export async function deserialize(user: { id: string | null }, done: IDeserializ
         // short in every downstream check that reads req.user.
 
         data.user.is_member = !!data.user.team_member_id;
-        if (excludedSubscriptionTypes.includes(data.user.subscription_type)) data.user.is_expired = realExpiredDate.isBefore(moment(), "days");
+        const passwordResult = await db.query(
+          "SELECT (password IS NOT NULL AND btrim(password) <> '') AS has_password FROM users WHERE id = $1;",
+          [data.user.id]
+        );
+        data.user.has_password = passwordResult.rows[0]?.has_password === true;
+        const isFreePlan =
+          data.user.subscription_type === "FREE" ||
+          String(data.user.subscription_status || "").toLowerCase() === "free";
+        if (!isFreePlan && excludedSubscriptionTypes.includes(data.user.subscription_type)) {
+          data.user.is_expired = realExpiredDate.isBefore(moment(), "days");
+        }
+
+        await enrichSessionWithTemplateCreateAccess(data.user as IPassportSession);
 
         try {
           // Additive: resolved plan entitlements, plus shadow comparison against the legacy checks.

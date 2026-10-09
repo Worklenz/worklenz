@@ -27,5 +27,18 @@
   "invite": "邀请",
   "Invite": "邀请",
   "removeSuccess": "{{name}} 已从项目中移除",
-  "removeError": "移除成员失败"
+  "removeError": "移除成员失败",
+  "memberNotFound": "未找到团队成员信息",
+  "manageTimeOff": "管理休假",
+  "seatLimitReached": "席位上限已达",
+  "memberDeactivated": "成员已成功停用",
+  "memberActivated": "成员已成功启用",
+  "statusChangeError": "更改成员状态失败",
+  "deactivateTooltip": "停用成员",
+  "activateTooltip": "启用成员",
+  "editTooltip": "编辑成员",
+  "moreOptions": "更多选项",
+  "changeMemberStatusConfirmation": "确定要更改此成员的状态吗？",
+  "yesProceed": "是，继续",
+  "cancel": "取消"
 }

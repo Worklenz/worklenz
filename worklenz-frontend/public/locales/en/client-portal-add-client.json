@@ -1,0 +1,204 @@
+{
+  "retry": "Retry",
+
+  "upgrade": {
+    "title": "Clients",
+    "description": "Give clients a branded portal to track project progress. Available on the Business plan."
+  },
+
+  "title": {
+    "method": "How do you want to add this client?",
+    "company": "Tell us about the client",
+    "user": "Choose the company, then the new user",
+    "existing": "Choose who to invite",
+    "csv": "Upload your CSV file",
+    "review": "Review & send"
+  },
+
+  "steps": {
+    "method": "Method",
+    "details": "Details",
+    "file": "File",
+    "review": "Review"
+  },
+
+  "actions": {
+    "cancel": "Cancel",
+    "back": "Back",
+    "continue": "Continue",
+    "done": "Done",
+    "import": "Import",
+    "addClient": "Add Client",
+    "addClientAndInvite": "Add Client & Send Invite",
+    "addUser": "Add Client User",
+    "addUserAndInvite": "Add User & Send Invite",
+    "sendInvite": "Send Invite"
+  },
+
+  "method": {
+    "helper": "Every path ends the same way. Pick whichever fits what you already know.",
+    "groupLabel": "How do you want to add this client?",
+    "company": {
+      "name": "New client",
+      "description": "Create a company record and its first contact together."
+    },
+    "user": {
+      "name": "Add a client user",
+      "description": "Add another contact to a company that already exists."
+    },
+    "existing": {
+      "name": "Invite an existing contact",
+      "description": "Already a lead or client? Just send portal access."
+    },
+    "csv": {
+      "name": "Import from CSV",
+      "description": "Bulk add clients from a spreadsheet."
+    }
+  },
+
+  "fields": {
+    "firstName": "First name",
+    "firstNamePlaceholder": "Jane",
+    "lastName": "Last name",
+    "lastNamePlaceholder": "Doe",
+    "email": "Email address",
+    "emailPlaceholder": "jane@company.com",
+    "jobTitle": "Job title",
+    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "phone": "Phone (optional)",
+    "phonePlaceholder": "+1 415 555 0142"
+  },
+
+  "errors": {
+    "firstNameRequired": "Enter a first name.",
+    "emailRequired": "Enter an email address.",
+    "emailInvalid": "Enter a valid email address."
+  },
+
+  "newClient": {
+    "companyName": "Company name",
+    "companyNameHint": "Leave empty to name the client after the person below.",
+    "companyNamePlaceholder": "e.g. Beacon Logistics",
+    "setupTitle": "SET UP THEIR PORTAL",
+    "welcomeMessage": "Send a welcome message",
+    "welcomeMessageHint": "Posted to Messages, so it is waiting for them when they sign in.",
+    "welcomeMessageText": "Hi {{name}}, welcome to your client portal. Send us a message here any time."
+  },
+
+  "companyUser": {
+    "chooseCompany": "Choose the company",
+    "searchCompanies": "Search companies...",
+    "companiesLabel": "Companies",
+    "companiesError": "Could not load companies.",
+    "noMatches": "No companies match “{{query}}”.",
+    "noCompanies": "No companies yet. Add a new client first.",
+    "existingUsers_one": "{{count}} existing user",
+    "existingUsers_other": "{{count}} existing users",
+    "changeCompany": "Change",
+    "makePoc": "Make this user a POC",
+    "makePocHint": "A company can have any number of POCs, or none. This is independent of other users’ POC status.",
+    "projectAccess": "Project access",
+    "templateNone": "Set up manually later. No projects assigned yet",
+    "templateNoProjects": "{{company}} has no projects yet, so there is nothing to apply a template to.",
+    "templateTooManyProjects": "{{company}} has more projects than can be listed here. Assign access per project afterwards.",
+    "templateApplied": "Grants {{template}} access to all {{count}} of {{company}}’s current projects. You can fine-tune per project afterwards from the row menu.",
+    "templateHint": "Pick a template to grant access to every current project at once, or leave as is and assign projects individually afterwards."
+  },
+
+  "existing": {
+    "helper": "Contacts without active portal access.",
+    "search": "Search by name or email...",
+    "loadError": "Could not load contacts.",
+    "noMatches": "No matches for “{{query}}”.",
+    "everyoneHasAccess": "Everyone already has active portal access.",
+    "groupLabel": "Contacts to invite"
+  },
+
+  "review": {
+    "name": "Name",
+    "company": "Company",
+    "companyFromName": "Named after the person",
+    "email": "Email",
+    "emailMissing": "not provided",
+    "role": "Role",
+    "rolePocDefault": "POC (default for a new company)",
+    "rolePoc": "POC",
+    "roleMember": "Client user",
+    "projectAccess": "Project access",
+    "projectAccessTemplate": "{{template}} on all {{count}} current projects",
+    "projectAccessNone": "None yet. Assign projects afterwards.",
+    "authentication": "Authentication",
+    "portalAccess": "Portal access",
+    "authInvitation": "Invitation link. They set a password on first sign-in.",
+    "notInvited": "Not invited yet. Invite them later from the table.",
+    "sendNow": "Send portal invite now",
+    "sendNowHint": "Leave unchecked to add the record without sending anything. Invite them later from the table.",
+    "deliverVia": "DELIVER VIA",
+    "deliveryEmail": "Email invitation link",
+    "deliveryLink": "Copy invitation link"
+  },
+
+  "csv": {
+    "helper": "Upload a CSV with a header row and these columns: Company, First name, Last name, Email. First name and Email are required.",
+    "dropzone": "Click to choose a CSV file, or drag it here",
+    "dropzoneHint": "Up to {{max}} rows.",
+    "dropzoneLabel": "Choose a CSV file",
+    "checking": "Checking your file...",
+    "chooseAnother": "Choose another file",
+    "problemsLabel": "Rows with problems",
+    "columnNames": {
+      "firstName": "First name",
+      "email": "Email"
+    },
+    "columns": {
+      "row": "Row",
+      "person": "Person",
+      "problem": "Problem"
+    },
+    "summary": {
+      "noneReady": "None of the rows can be imported.",
+      "ready": "{{valid}} of {{total}} rows are ready to import.",
+      "detail": "{{newCompanies}} new companies will be created and {{existingCompanies}} existing companies will get more users. Rows with problems are skipped. Nobody is emailed. Invite them from the list afterwards."
+    },
+    "result": {
+      "title": "Import finished",
+      "detail": "{{companies}} companies created, {{users}} users added, {{skipped}} rows skipped. Everyone is Not invited until you invite them from the list."
+    },
+    "error": {
+      "notCsv": "Choose a .csv file.",
+      "tooLarge": "That file is too large. The limit is {{size}} MB.",
+      "empty": "The file has no rows to import.",
+      "unreadable": "That file could not be read. Check that it is a valid CSV and try again.",
+      "missingColumns": "The file needs a header row with these columns: {{columns}}.",
+      "tooManyRows": "The file has {{count}} rows. An import can have at most {{max}}.",
+      "requestFailed": "The file could not be checked. Please try again."
+    },
+    "errors": {
+      "missing_first_name": "First name is missing",
+      "missing_email": "Email is missing",
+      "invalid_email": "Email is not valid",
+      "duplicate_in_file": "Email appears earlier in the file",
+      "email_in_use": "Email already belongs to a client user",
+      "company_name_too_long": "Company name is over 60 characters",
+      "client_name_taken": "A client with this name already exists",
+      "import_failed": "Could not be imported"
+    }
+  },
+
+  "messages": {
+    "linkCopied": "Invitation link copied.",
+    "linkCopyError": "Could not copy the link.",
+    "saveError": "Could not save. Please try again.",
+    "importError": "The import failed. Please try again.",
+    "clientAddedInvited": "Client added, with {{name}} as POC by default. Invitation sent to {{email}}.",
+    "clientAddedLink": "Client added. Copy the invitation link to share it with {{name}}.",
+    "clientAddedNotInvited": "Client added, with {{name}} as POC by default. Not invited yet.",
+    "userAddedInvited": "{{name}} was added to {{company}}. Invitation sent to {{email}}.",
+    "userAddedLink": "{{name}} was added to {{company}}. Copy the invitation link to share it.",
+    "userAddedNotInvited": "{{name}} was added to {{company}}. Not invited yet.",
+    "inviteSent": "Invitation sent to {{email}}.",
+    "inviteLinkReady": "Invitation link ready to copy.",
+    "inviteFailed": "{{name}} was saved, but the invitation could not be sent ({{error}}). You can send it from the list.",
+    "emailNotSent": "{{name}} was saved, but the email could not be sent. Share the link instead."
+  }
+}

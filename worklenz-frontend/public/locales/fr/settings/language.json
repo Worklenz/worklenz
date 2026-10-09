@@ -1,0 +1,8 @@
+{
+  "language": "Langue",
+  "language_required": "La langue est requise",
+  "time_zone": "Fuseau horaire",
+  "time_zone_required": "Le fuseau horaire est requis",
+  "save_changes": "Enregistrer les modifications",
+  "save": "Enregistrer"
+}

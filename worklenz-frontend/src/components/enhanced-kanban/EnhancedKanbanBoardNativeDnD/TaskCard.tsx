@@ -50,7 +50,12 @@ import {
   ExclamationOutlined,
   MinusOutlined,
   PauseOutlined,
+  Tooltip,
+  theme,
 } from '@/shared/antd-imports';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { formatStoryPoints } from '@/lib/project/story-points';
+import { IssueTypeBadge } from '@/components/projects/software/issue-type-badge';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
 
@@ -70,6 +75,69 @@ interface TaskCardProps {
   onDragEnd: (e: React.DragEvent) => void; // <-- add this
   canCreateTask: boolean;
 }
+
+/** Mockup-style "◆ High" priority text for software issue cards. */
+const PriorityLevelLabel = ({ priorityValue }: { priorityValue?: number }) => {
+  const { t } = useTranslation('kanban-board');
+  const { token } = theme.useToken();
+  const level = typeof priorityValue === 'number' ? PRIORITY_LEVELS[priorityValue] : undefined;
+  if (!level) return null;
+
+  const label = t(level.labelKey, { defaultValue: level.defaultLabel });
+  const colorByLevel: Record<PriorityLevelKey, string> = {
+    low: token.colorSuccess,
+    medium: token.colorWarning,
+    high: token.colorError,
+    critical: token.colorError,
+  };
+
+  return (
+    <span
+      className="mr-1.5 inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold"
+      style={{ color: colorByLevel[level.labelKey] }}
+      title={t('priorityTooltip', { defaultValue: 'Priority: {{level}}', level: label })}
+    >
+      <span aria-hidden className="text-[8px]">
+        ◆
+      </span>
+      {label}
+    </span>
+  );
+};
+
+type PriorityLevelKey = 'low' | 'medium' | 'high' | 'critical';
+
+const PRIORITY_LEVELS: Record<number, { labelKey: PriorityLevelKey; defaultLabel: string }> = {
+  0: { labelKey: 'low', defaultLabel: 'Low' },
+  1: { labelKey: 'medium', defaultLabel: 'Medium' },
+  2: { labelKey: 'high', defaultLabel: 'High' },
+  3: { labelKey: 'critical', defaultLabel: 'Critical' },
+};
+
+/** Mockup-style estimate pill; shows "–" for unestimated issues. */
+const StoryPointsBadge = ({ storyPoints }: { storyPoints?: number | null }) => {
+  const { t } = useTranslation('kanban-board');
+  const { token } = theme.useToken();
+  const hasEstimate = typeof storyPoints === 'number';
+  const label = hasEstimate
+    ? t('storyPointsTooltip', {
+        defaultValue: '{{count}} story points',
+        count: storyPoints,
+      })
+    : t('noEstimateTooltip', { defaultValue: 'No estimate' });
+
+  return (
+    <Tooltip title={label}>
+      <span
+        aria-label={label}
+        className="mr-1.5 inline-grid h-[20px] min-w-[22px] place-items-center rounded-md px-1.5 text-[11px] font-bold"
+        style={{ background: token.colorFillSecondary, color: token.colorTextSecondary }}
+      >
+        {hasEstimate ? formatStoryPoints(storyPoints) : '–'}
+      </span>
+    </Tooltip>
+  );
+};
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -93,6 +161,10 @@ const TaskCard: React.FC<TaskCardProps> = memo(
     const { socket } = useSocket();
     const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
     const { projectId } = useSelector((state: RootState) => state.projectReducer);
+    const isSoftwareProject = useSelector((state: RootState) =>
+      isSoftwareProjectType(state.projectReducer.project?.project_type)
+    );
+    const { token } = theme.useToken();
     const archived = useSelector((state: RootState) => state.enhancedKanbanReducer.archived);
     const background = themeWiseColor('#fff', '#1e1e1e', themeMode);
     const color = themeWiseColor('#181818', '#fff', themeMode);
@@ -587,6 +659,32 @@ const TaskCard: React.FC<TaskCardProps> = memo(
             }}
           >
             <div className="task-content">
+              {isSoftwareProject && !task.is_parent_container && (
+                <div className="flex items-center gap-1.5 mb-1 pr-6">
+                  <IssueTypeBadge type={task.parent_task_id ? 'subtask' : task.issue_type ?? 'task'} />
+                  {task.task_key && (
+                    <span
+                      className="text-[11px] font-bold whitespace-nowrap"
+                      style={{ color: token.colorTextSecondary }}
+                    >
+                      {task.task_key}
+                    </span>
+                  )}
+                  {task.is_blocked && (
+                    <Tooltip
+                      title={t('blockedTooltip', { defaultValue: 'This issue is flagged as blocked' })}
+                    >
+                      <span
+                        className="inline-flex items-center gap-0.5 whitespace-nowrap text-[11px] font-bold"
+                        style={{ color: token.colorError }}
+                      >
+                        <span aria-hidden>⚑</span>
+                        {t('blockedFlag', { defaultValue: 'Blocked' })}
+                      </span>
+                    </Tooltip>
+                  )}
+                </div>
+              )}
               <div className="task_labels" style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
                 {task.labels?.map(label => {
                   const bgColor = label.color_code || label.color || '#000000';
@@ -618,7 +716,9 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                 })}
               </div>
               <div className="task-content" style={{ display: 'flex', alignItems: 'center' }}>
-                {!task.is_parent_container && renderPriorityIcon(task.priority_value, task.priority_color, task.priority_color_dark)}
+                {!task.is_parent_container &&
+                  !isSoftwareProject &&
+                  renderPriorityIcon(task.priority_value, task.priority_color, task.priority_color_dark)}
                 <div className="task-title" title={task.name} style={{ marginLeft: 0 }}>
                   {task.name}
                 </div>
@@ -633,7 +733,13 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                   width: '100%',
                 }}
               >
-                <div className="relative">
+                <div className="relative flex items-center">
+                  {isSoftwareProject && !task.is_parent_container && (
+                    <>
+                      <PriorityLevelLabel priorityValue={task.priority_value} />
+                      <StoryPointsBadge storyPoints={task.story_points} />
+                    </>
+                  )}
                   <div
                     ref={dateButtonRef}
                     className={`task-due-date rounded px-1 py-0.5 transition-colors ${

@@ -12,6 +12,11 @@
   width: unset !important;
 }
 
+/* Keep the sorted Name column from staying permanently highlighted. */
+.project-card .ant-table-thead > tr > th.ant-table-column-sort {
+  background: transparent !important;
+}
+
 /* The card fills whatever space the flex column in project-list.tsx (page
    wrapper -> box + card) leaves it — no viewport-relative guessing, so it
    can never grow past the pane's real available height and force the

@@ -1,0 +1,84 @@
+{
+  "retry": "Provo sërish",
+  "tabs": {
+    "overview": "Overview",
+    "messages": "Messages",
+    "members": "Anëtarët e kompanisë",
+    "projects": "Projektet",
+    "billing": "Faturimi"
+  },
+  "portalStatus": {
+    "active": "Aktiv",
+    "invited": "I ftuar",
+    "expired": "I skaduar",
+    "not_invited": "Jo i ftuar"
+  },
+  "header": {
+    "back": "Klientët",
+    "edit": "Redakto klientin",
+    "actionsLabel": "Veprimet e klientit",
+    "lastSignedIn": "Identifikimi i fundit në {{time}}",
+    "invited": "I ftuar {{time}}",
+    "neverSignedIn": "Nuk u identifikua kurrë"
+  },
+  "rail": {
+    "contact": "Kontaktoni",
+    "email": "Email",
+    "company": "Company",
+    "projects": "Projektet",
+    "balance": "Bilanci",
+    "portalHealth": "Shëndeti i portalit",
+    "signInMethod": "Metoda e hyrjes",
+    "signInPassword": "Fjalëkalimi",
+    "signInNone": "Nuk jeni identifikuar ende",
+    "lastSignIn": "Hyrja e fundit",
+    "never": "kurrë",
+    "quickActions": "Veprime të shpejta",
+    "sendMessage": "Dërgo mesazh",
+    "createInvoice": "Krijo faturë",
+    "assignTask": "Cakto detyrë"
+  },
+  "overview": {
+    "tasksOpen": "Detyrat hapen",
+    "invoicesDue": "Faturat e paguara",
+    "unansweredMessages": "Mesazhe pa përgjigje",
+    "statsError": "Numrat e këtij klienti nuk mund të ngarkoheshin.",
+    "recentActivity": "Aktiviteti i fundit",
+    "activityError": "Aktiviteti i fundit nuk mund të ngarkohej.",
+    "noActivity": "Asgjë nuk është regjistruar ende për {{name}}."
+  },
+  "members": {
+    "title": "Anëtarët e kompanisë",
+    "addUser": "Shto përdorues"
+  },
+  "projects": {
+    "title": "Projektet",
+    "project": "Projekti",
+    "openProject": "Hap {{name}}",
+    "health": "Shëndeti",
+    "progress": "Përparim",
+    "progressLabel": "Përparimi i {{name}}",
+    "due": "Për shkak",
+    "assign": "Caktoni projektin",
+    "loadError": "Projektet e këtij klienti nuk mund të ngarkoheshin.",
+    "empty": "Nuk ka ende projekte për {{name}}.",
+    "truncated": "Duke shfaqur {{shown}} e para nga projektet {{total}}."
+  },
+  "billing": {
+    "title": "Faturat",
+    "createInvoice": "Krijo faturë",
+    "warningTitle": "{{name}} nuk mund ta përdorë ende portalin e tyre",
+    "warningDescription": "Ata nuk kanë pranuar një ftesë, kështu që nuk mund të shikojnë apo paguajnë fatura në portalin e tyre. Mund të krijoni ende fatura. Dërgoni fillimisht ftesën nëse duhet t'i shohin.",
+    "sendInvite": "Dërgo ftesë",
+    "resendInvite": "Ridërgo ftesën",
+    "inviteSent": "Ftesa u dërgua te {{name}}.",
+    "inviteError": "Ftesa nuk mund të dërgohej."
+  },
+  "errors": {
+    "notFoundTitle": "Klienti nuk u gjet",
+    "notFoundDescription": "Mund të jetë hequr, ose lidhja është e gabuar.",
+    "loadTitle": "Ky klient nuk mund të ngarkohej",
+    "loadDescription": "Ju lutemi provoni përsëri.",
+    "backToClients": "Kthehu te klientët"
+  }
+}

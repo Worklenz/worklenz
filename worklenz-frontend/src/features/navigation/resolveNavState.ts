@@ -6,17 +6,20 @@ import type { NavPreferencesState } from './navPreferences.slice';
 // from the registry since it was saved) is silently dropped, and a registry
 // item with no saved order entry is appended at the end of its group.
 export function resolveNavState(
-  surface: NavSurface, 
+  surface: NavSurface,
   prefs: NavPreferencesState,
-  isGuestUser?: boolean
+  isGuestUser?: boolean,
+  isOwnerOrAdmin?: boolean
 ): ResolvedNavState {
   const savedOrderForSurface = prefs.order[surface.key] || {};
 
   const groups: NavGroup[] = surface.groups.map(group => {
-    // Filter out guest-excluded items if user is a guest
-    const filteredItems = isGuestUser 
-      ? group.items.filter(item => !item.guestExcluded)
-      : group.items;
+    // Filter out role-restricted items before applying saved order/pins
+    const filteredItems = group.items.filter(item => {
+      if (isGuestUser && item.guestExcluded) return false;
+      if (item.adminOnly && !isOwnerOrAdmin) return false;
+      return true;
+    });
 
     const savedOrder = savedOrderForSurface[group.key];
     if (!savedOrder || savedOrder.length === 0) return { ...group, items: filteredItems };

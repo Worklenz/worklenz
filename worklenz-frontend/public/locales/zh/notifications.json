@@ -1,0 +1,16 @@
+{
+  "taskAssigned": "<strong>{{reporter}}</strong> 已将 <strong>{{task}}</strong> 指派给您",
+  "taskRemoved": "<strong>{{reporter}}</strong> 已将您从 <strong>{{task}}</strong> 中移除",
+  "taskAdded": "<strong>{{user}}</strong> 已将 “<strong>{{task}}</strong>” 添加到 “<strong>{{project}}</strong>”",
+  "taskRemovedFromProject": "<strong>{{user}}</strong> 已从 “<strong>{{project}}</strong>” 中移除了 “<strong>{{task}}</strong>”",
+  "addedToProject": "您已被 <strong>{{user}}</strong> 添加到 <strong>{{project}}</strong>",
+  "removedFromProject": "您已被 <strong>{{user}}</strong> 从 <strong>{{project}}</strong> 中移除",
+  "addedToTeam": "您已被添加到 <strong>{{team}}</strong>",
+  "removedFromTeam": "您已被 <strong>{{user}}</strong> 从 <strong>{{team}}</strong> 中移除",
+  "commentAdded": "<strong>{{user}}</strong> 在 <strong>{{task}}</strong> 上添加了评论",
+  "mentionedInComment": "<strong>{{user}}</strong> 在 <strong>{{task}}</strong> 的评论中提及了您",
+  "mentionedInProjectComment": "<strong>{{user}}</strong> 在 <strong>{{project}}</strong> 的评论中提及了您",
+  "phaseTaskAssigned": "在 <strong>{{phase}}</strong> 中已将一项任务指派给您：<strong>{{task}}</strong>",
+  "orgSwapped": "您的组织 <strong>{{previousOrganization}}</strong> 已与 <strong>{{organization}}</strong> 互换。您现在是其所有者。",
+  "teamOwnershipChanged": "您对 <strong>{{team}}</strong> 的所有权已变更。"
+}

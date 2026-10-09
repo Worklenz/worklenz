@@ -1,10 +1,13 @@
 import { theme } from '@/shared/antd-imports';
 import type { ThemeConfig } from 'antd';
 
-export const getThemeConfig = (currentTheme: 'light' | 'dark'): ThemeConfig => ({
+export const getThemeConfig = (
+  currentTheme: 'light' | 'dark',
+  primaryColor?: string | null
+): ThemeConfig => ({
   algorithm: currentTheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
   token: {
-    colorPrimary: '#1890ff',
+    colorPrimary: primaryColor || '#1890ff',
     borderRadius: 6,
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
     colorBgLayout: currentTheme === 'dark' ? '#141414' : '#f5f5f5',
@@ -27,7 +30,7 @@ export const getThemeConfig = (currentTheme: 'light' | 'dark'): ThemeConfig => (
       itemBg: 'transparent',
       itemSelectedBg: currentTheme === 'dark' ? 'rgba(24, 144, 255, 0.15)' : '#e6f4ff',
       itemHoverBg: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-      itemSelectedColor: '#1890ff',
+      itemSelectedColor: primaryColor || '#1890ff',
       itemColor: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)',
       itemMarginBlock: 4,
       itemMarginInline: 8,

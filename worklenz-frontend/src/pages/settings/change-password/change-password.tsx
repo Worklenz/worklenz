@@ -1,15 +1,22 @@
 import { EyeInvisibleOutlined, EyeOutlined } from '@/shared/antd-imports';
-import { Button, Card, Form, Input, notification, Row, Typography } from '@/shared/antd-imports';
+import { Button, Card, Form, Input, Row, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
 import logger from '@/utils/errorLogger';
 import { useTranslation } from 'react-i18next';
+import { useAuthService } from '@/hooks/useAuth';
 
 const ChangePassword: React.FC = () => {
   const { t } = useTranslation('settings/change-password');
-  useDocumentTitle(t('title'));
+  useDocumentTitle(t('title', { defaultValue: 'Change Password' }));
+  const authService = useAuthService();
+  const session = authService.getCurrentSession();
   const [loading, setLoading] = useState<boolean>(false);
+  // Only accounts with no password yet (e.g. Google-only signups) may skip the current password.
+  const [askForCurrentPassword, setAskForCurrentPassword] = useState<boolean>(
+    () => session?.has_password !== false
+  );
   const [form] = Form.useForm();
 
   // Password validation regex
@@ -25,18 +32,33 @@ const ChangePassword: React.FC = () => {
     return Promise.resolve();
   };
 
-  const handleFormSubmit = async (values: any) => {
+  const handleFormSubmit = async (values: {
+    currentPassword?: string;
+    newPassword: string;
+    confirmPassword: string;
+  }) => {
     try {
       setLoading(true);
       const body = {
         new_password: values.newPassword,
         confirm_password: values.confirmPassword,
-        password: values.currentPassword,
+        password: askForCurrentPassword ? values.currentPassword || '' : '',
       };
 
       const res = await profileSettingsApiService.changePassword(body);
       if (res.done) {
         form.resetFields();
+        const currentSession = authService.getCurrentSession();
+        if (currentSession && !currentSession.has_password) {
+          authService.setCurrentSession({ ...currentSession, has_password: true });
+        }
+        setAskForCurrentPassword(true);
+        return;
+      }
+
+      const message = String(res.message || '').toLowerCase();
+      if (message.includes('old password')) {
+        setAskForCurrentPassword(true);
       }
     } catch (error) {
       logger.error('Error changing password', error);
@@ -61,21 +83,39 @@ const ChangePassword: React.FC = () => {
   return (
     <Card style={{ width: '100%' }}>
       <Form layout="vertical" form={form} onFinish={handleFormSubmit}>
-        <Row>
-          <Form.Item
-            name="currentPassword"
-            label={t('currentPassword')}
-            rules={[
-              {
-                required: true,
-                message: t('currentPasswordRequired'),
-              },
-            ]}
-            style={{ marginBottom: '24px' }}
-          >
-            <Input.Password {...getPasswordInputProps(t('currentPasswordPlaceholder'))} />
-          </Form.Item>
-        </Row>
+        {!askForCurrentPassword && (
+          <Row style={{ width: '350px', marginBottom: '16px' }}>
+            <Typography.Text type="secondary">
+              {t('setPasswordHint', {
+                defaultValue:
+                  'You signed in with Google. Set a password to also sign in with your email.',
+              })}
+            </Typography.Text>
+          </Row>
+        )}
+        {askForCurrentPassword && (
+          <Row>
+            <Form.Item
+              name="currentPassword"
+              label={t('currentPassword', { defaultValue: 'Current Password' })}
+              rules={[
+                {
+                  required: true,
+                  message: t('currentPasswordRequired', {
+                    defaultValue: 'Please input your current password!',
+                  }),
+                },
+              ]}
+              style={{ marginBottom: '24px' }}
+            >
+              <Input.Password
+                {...getPasswordInputProps(
+                  t('currentPasswordPlaceholder', { defaultValue: 'Enter your current password' })
+                )}
+              />
+            </Form.Item>
+          </Row>
+        )}
         <Row>
           <Form.Item
             name="newPassword"

@@ -4,7 +4,11 @@ import { formatDate } from './dateUtils';
 // Shared by project-view-updates.tsx and chat-box.tsx so both chat threads
 // group messages by day identically. Callers pass their own `t` (from
 // useTranslation) so the separator translates in each namespace.
-export const formatDateForSeparator = (date: string, t: (key: string, opts?: Record<string, unknown>) => string) => {
+export const formatDateForSeparator = (
+  date: string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+  language?: string
+) => {
   const today = dayjs();
   const commentDate = dayjs(date);
 
@@ -16,7 +20,8 @@ export const formatDateForSeparator = (date: string, t: (key: string, opts?: Rec
     // 'LL' is dayjs's localized long-date token (via localizedFormat, loaded
     // by dateUtils.ts) — it resolves to the active locale's own month/day/year
     // ordering instead of a fixed English pattern.
-    return formatDate(commentDate, 'LL');
+    const activeLang = language || (t as any)?.i18n?.language;
+    return formatDate(commentDate, 'LL', activeLang);
   }
 };
 

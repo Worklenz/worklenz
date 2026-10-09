@@ -49,7 +49,7 @@ const ProjectsReportsFilters = () => {
       <Flex
         gap={8}
         align="center"
-        wrap="nowrap"
+        wrap="wrap"
         style={{ marginLeft: 'auto' }}
       >
         <ProjectViewModeToggle />

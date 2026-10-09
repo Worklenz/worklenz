@@ -9,6 +9,9 @@ interface BaseColumn {
   width?: string;
 }
 
+export const CUSTOM_COLUMN_MIN_WIDTH = 180;
+export const CUSTOM_COLUMN_MAX_WIDTH = 400;
+
 /**
  * Validates a column width against min/max constraints and special rules
  * @param columnId - The ID of the column being validated
@@ -27,7 +30,7 @@ export function validateColumnWidth(
 
   // Handle NaN or invalid values
   if (isNaN(currentWidth)) {
-    return baseColumn?.width || '150px';
+    return baseColumn?.width || `${CUSTOM_COLUMN_MIN_WIDTH}px`;
   }
 
   let validatedWidth = currentWidth;
@@ -49,12 +52,14 @@ export function validateColumnWidth(
         validatedWidth = maxWidth;
       }
     }
-  }
-
-  // Special rules for specific columns
-  // Force title column to max width constraint (400px)
-  if (columnId === 'title' && validatedWidth > 400) {
-    validatedWidth = 400;
+  } else {
+    // Custom column (not in base columns): enforce custom column min/max constraints
+    if (validatedWidth < CUSTOM_COLUMN_MIN_WIDTH) {
+      validatedWidth = CUSTOM_COLUMN_MIN_WIDTH;
+    }
+    if (validatedWidth > CUSTOM_COLUMN_MAX_WIDTH) {
+      validatedWidth = CUSTOM_COLUMN_MAX_WIDTH;
+    }
   }
 
   // Force description column to min width constraint (200px)

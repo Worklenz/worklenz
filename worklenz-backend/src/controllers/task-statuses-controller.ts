@@ -44,15 +44,21 @@ export default class TaskStatusesController extends WorklenzControllerBase {
     if (!req.query.project)
       return res.status(400).send(new ServerResponse(false, null));
 
+    // A colour picked for a single status is theme independent - it must render
+    // the same in light and dark mode. Only statuses without their own colour
+    // fall back to the category's light/dark pair.
     const q = `
   SELECT task_statuses.id,
          task_statuses.name,
-         COALESCE(task_statuses.color_code, stsc.color_code) AS color_code,
-         stsc.color_code                                      AS category_color_code,
-         stsc.color_code_dark                                 AS color_code_dark,
-         stsc.name                                            AS category_name,
+         COALESCE(task_statuses.color_code, stsc.color_code)   AS color_code,
+         stsc.color_code                                       AS category_color_code,
+         COALESCE(task_statuses.color_code,
+                  stsc.color_code_dark,
+                  stsc.color_code)                             AS color_code_dark,
+         stsc.name                                             AS category_name,
          task_statuses.category_id,
-         stsc.description
+         stsc.description,
+         stsc.is_done
   FROM task_statuses
          INNER JOIN sys_task_status_categories stsc ON task_statuses.category_id = stsc.id
   WHERE project_id = $1
@@ -85,7 +91,10 @@ export default class TaskStatusesController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `
-      SELECT task_statuses.id, task_statuses.name, stsc.color_code, stsc.color_code_dark
+      SELECT task_statuses.id,
+             task_statuses.name,
+             COALESCE(task_statuses.color_code, stsc.color_code)                       AS color_code,
+             COALESCE(task_statuses.color_code, stsc.color_code_dark, stsc.color_code) AS color_code_dark
       FROM task_statuses
              INNER JOIN sys_task_status_categories stsc ON task_statuses.category_id = stsc.id
       WHERE task_statuses.id = $1
@@ -125,7 +134,14 @@ export default class TaskStatusesController extends WorklenzControllerBase {
           category_id = COALESCE($4, (SELECT id FROM sys_task_status_categories WHERE is_todo IS TRUE))
       WHERE id = $1
         AND project_id = $3
-      RETURNING (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id), (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id);
+      RETURNING (SELECT COALESCE(s.color_code, c.color_code)
+                 FROM task_statuses s
+                        INNER JOIN sys_task_status_categories c ON c.id = s.category_id
+                 WHERE s.id = task_statuses.id),
+                (SELECT COALESCE(s.color_code, c.color_code_dark, c.color_code)
+                 FROM task_statuses s
+                        INNER JOIN sys_task_status_categories c ON c.id = s.category_id
+                 WHERE s.id = task_statuses.id);
     `;
     const result = await db.query(q, [req.params.id, req.body.name, req.body.project_id, req.body.category_id]);
     const [data] = result.rows;
@@ -140,7 +156,14 @@ export default class TaskStatusesController extends WorklenzControllerBase {
         SET name = $2
         WHERE id = $1
           AND project_id = $3
-        RETURNING (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id);
+        RETURNING (SELECT COALESCE(s.color_code, c.color_code)
+                   FROM task_statuses s
+                          INNER JOIN sys_task_status_categories c ON c.id = s.category_id
+                   WHERE s.id = task_statuses.id),
+                  (SELECT COALESCE(s.color_code, c.color_code_dark, c.color_code)
+                   FROM task_statuses s
+                          INNER JOIN sys_task_status_categories c ON c.id = s.category_id
+                   WHERE s.id = task_statuses.id);
     `;
     const result = await db.query(q, [req.params.id, req.body.name, req.body.project_id]);
     const [data] = result.rows;
@@ -160,7 +183,14 @@ export default class TaskStatusesController extends WorklenzControllerBase {
       SET category_id = $2
       WHERE id = $1
         AND project_id = $3
-      RETURNING (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id), (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id);
+      RETURNING (SELECT COALESCE(s.color_code, c.color_code)
+                 FROM task_statuses s
+                        INNER JOIN sys_task_status_categories c ON c.id = s.category_id
+                 WHERE s.id = task_statuses.id),
+                (SELECT COALESCE(s.color_code, c.color_code_dark, c.color_code)
+                 FROM task_statuses s
+                        INNER JOIN sys_task_status_categories c ON c.id = s.category_id
+                 WHERE s.id = task_statuses.id);
     `;
     const result = await db.query(q, [req.params.id, req.body.category_id, req.query.current_project_id]);
     const [data] = result.rows;

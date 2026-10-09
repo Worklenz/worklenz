@@ -68,6 +68,12 @@ import {
   toggleCustomColumnModalOpen,
 } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import {
+  UNMAPPED_PHASE_ID,
+  useTaskListMode,
+} from '@/features/task-management/task-list-mode-context';
+import { assignTaskToMember } from '@/utils/assign-task-to-member';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import {
   fetchTask as fetchTaskDrawer,
@@ -81,9 +87,12 @@ import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 // Components
 import TaskRowWithSubtasks from './TaskRowWithSubtasks';
 import TaskGroupHeader from './TaskGroupHeader';
+import { BacklogSectionColumnHeader } from './components/BacklogSectionColumnHeader';
 import OptimizedBulkActionBar from '@/components/task-management/optimized-bulk-action-bar';
 import AddTaskRow from './components/AddTaskRow';
 import { AddCustomColumnButton, CustomColumnHeader } from './components/CustomColumnComponents';
+import { EpicColumn } from './components/EpicColumn';
+import { PointsColumn } from './components/PointsColumn';
 import TaskListSkeleton from './components/TaskListSkeleton';
 import ConvertToSubtaskDrawer from '@/components/task-list-common/convert-to-subtask-drawer/convert-to-subtask-drawer';
 import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal';
@@ -256,6 +265,15 @@ const GroupDropZone: React.FC<{
   );
 };
 
+const SOFTWARE_COLUMN_LABELS: Record<string, string> = {
+  title: 'issueColumn',
+  phase: 'sprintColumn',
+  assignees: 'assigneeColumn',
+};
+
+const BACKLOG_COLUMN_IDS: readonly string[] = ['status', 'epic', 'assignees', 'priority', 'points'];
+/** Card borders (3px active-sprint accent + 1px right) and row padding around backlog columns. */
+const BACKLOG_ROW_CHROME_WIDTH = 18;
 const ExampleTaskRows: React.FC<{
   visibleColumns: any[];
   isDarkMode?: boolean;
@@ -294,12 +312,28 @@ const ExampleTaskRows: React.FC<{
   const [taskName, setTaskName] = React.useState('');
   const [creatingTask, setCreatingTask] = React.useState(false);
   const inputRef = React.useRef<any>(null);
+  const listMode = useTaskListMode();
 
-  const exampleTaskNames = [
-    t('exampleTasks.task1', { defaultValue: 'Define project scope and objectives' }),
-    t('exampleTasks.task2', { defaultValue: 'Review and align with stakeholders' }),
-    t('exampleTasks.task3', { defaultValue: 'Schedule kickoff meeting' }),
-  ];
+  const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+  const isSoftwareProject = isSoftwareProjectType(projectType);
+  const exampleTaskNames = isSoftwareProject
+    ? [
+        t('exampleIssues.issue1', { defaultValue: 'Fix login redirect loop' }),
+        t('exampleIssues.issue2', { defaultValue: 'Add API rate limiting' }),
+        t('exampleIssues.issue3', { defaultValue: 'Set up CI pipeline' }),
+      ]
+    : [
+        t('exampleTasks.task1', { defaultValue: 'Define project scope and objectives' }),
+        t('exampleTasks.task2', { defaultValue: 'Review and align with stakeholders' }),
+        t('exampleTasks.task3', { defaultValue: 'Schedule kickoff meeting' }),
+      ];
+  const addTaskPlaceholder = isSoftwareProject
+    ? t('createIssueInputPlaceholder', {
+        defaultValue: 'Type issue title and press Enter to save',
+      })
+    : t('addTaskInputPlaceholder', {
+        defaultValue: 'Type task name and press Enter to save',
+      });
   const egPrefix = t('exampleTasks.prefix', { defaultValue: 'e.g.' });
 
   React.useEffect(() => {
@@ -334,9 +368,16 @@ const ExampleTaskRows: React.FC<{
         case 'phase':
           body.phase_id = groupValue;
           break;
+        case 'assignee':
+          break;
         default:
           body[groupType] = groupValue;
           break;
+      }
+
+      // Backlog tab: keep newly created issues unassigned to a sprint
+      if (listMode === 'backlog' && !body.phase_id) {
+        body.phase_id = UNMAPPED_PHASE_ID;
       }
 
       setCreatingTask(true);
@@ -344,6 +385,16 @@ const ExampleTaskRows: React.FC<{
       socket.once(SocketEvents.QUICK_TASK.toString(), (task: any) => {
         setCreatingTask(false);
         if (task?.id) {
+          if (groupType === 'assignee') {
+            assignTaskToMember({
+              socket,
+              taskId: task.id,
+              projectId,
+              teamMemberId: groupValue,
+              reporterId: currentSession.id,
+              teamId: currentSession.team_id,
+            });
+          }
           onTaskCreated(task, { openDrawer, insertAfterTaskId: null });
         }
       });
@@ -361,6 +412,7 @@ const ExampleTaskRows: React.FC<{
       connected,
       currentSession,
       onTaskCreated,
+      listMode,
     ]
   );
 
@@ -407,6 +459,10 @@ const ExampleTaskRows: React.FC<{
           priority_value: groupType === 'priority' ? undefined : mediumPriority?.value,
           // Phase
           phase_id: groupType === 'phase' ? groupValue : undefined,
+          phase:
+            groupType === 'phase' && groupValue !== UNMAPPED_PHASE_ID
+              ? groupValue.replace('phase-', '')
+              : undefined,
           names: [],
           labels: [],
           sub_tasks: [],
@@ -465,9 +521,7 @@ const ExampleTaskRows: React.FC<{
                         onChange={e => setTaskName(e.target.value)}
                         onKeyDown={handleKeyDown}
                         onBlur={handleBlur}
-                        placeholder={t('addTaskInputPlaceholder', {
-                          defaultValue: 'Type task name and press Enter to save',
-                        })}
+                        placeholder={addTaskPlaceholder}
                         className="w-full border-none shadow-none bg-transparent"
                         style={{ height: '100%', padding: '4px 8px', fontSize: '14px' }}
                         disabled={creatingTask}
@@ -587,6 +641,24 @@ const ExampleTaskRows: React.FC<{
                         task={mockTask}
                         projectId={projectId}
                         isDarkMode={isDarkMode}
+                      />
+                    );
+                  case 'epic':
+                    return (
+                      <EpicColumn
+                        width={column.width}
+                        task={mockTask}
+                        projectId={projectId}
+                        disabled
+                      />
+                    );
+                  case 'points':
+                    return (
+                      <PointsColumn
+                        width={column.width}
+                        task={mockTask}
+                        projectId={projectId}
+                        disabled
                       />
                     );
                   case 'timeTracking':
@@ -779,6 +851,20 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const { selectedTaskId, showTaskDrawer } = useAppSelector(state => state.taskDrawerReducer);
 
   const fields = useAppSelector(state => state.taskManagementFields?.fields) || [];
+  const listMode = useTaskListMode();
+  const isBacklogMode = listMode === 'backlog';
+  const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+  const isSoftwareProject = isSoftwareProjectType(projectType);
+  const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
+  const activeSprintGroupIds = useMemo(
+    () =>
+      new Set(
+        phaseList
+          .filter(phase => phase.sprint_status === 'active')
+          .flatMap(phase => [phase.id, `phase-${phase.id}`])
+      ),
+    [phaseList]
+  );
   const columns = useAppSelector(selectColumns);
   const customColumns = useAppSelector(selectCustomColumns);
   const loadingColumns = useAppSelector(selectLoadingColumns);
@@ -802,7 +888,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   // State hooks
   const [initializedFromDatabase, setInitializedFromDatabase] = useState(false);
   const columnReorderStorageKey = urlProjectId
-    ? `worklenz.taskList.columnOrder.${urlProjectId}`
+    ? `worklenz.taskList.${isBacklogMode ? 'backlogColumnOrder' : 'columnOrder'}.${urlProjectId}`
     : null;
   const [columnOrder, setColumnOrder] = useState<string[]>(() => {
     if (!columnReorderStorageKey) return [];
@@ -929,6 +1015,8 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const rawVisibleColumns = useMemo(() => {
     // Start with base columns
     const baseVisibleColumns = BASE_COLUMNS.filter(column => {
+      if (isBacklogMode && column.id === 'checkbox') return false;
+
       // Always show essential UI controls (drag handle, checkbox, title)
       // These are required for task list functionality
       if (
@@ -938,6 +1026,9 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
         return true;
       }
 
+      if (isBacklogMode) {
+        return BACKLOG_COLUMN_IDS.includes(column.id);
+      }
       // For other columns (including taskKey), respect the visibility settings
       // Primary: Check local fields configuration
       const field = fields.find(f => f.key === column.key);
@@ -959,9 +1050,13 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
 
       // Validate width using shared utility function
       const width = validateColumnWidth(column.id, rawWidth, column);
+      const label = isSoftwareProject
+        ? SOFTWARE_COLUMN_LABELS[column.id] ?? column.label
+        : column.label;
 
       return {
         ...column,
+        label,
         width,
       };
     });
@@ -969,15 +1064,15 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     // Add visible custom columns
     const visibleCustomColumns =
       customColumns
-        ?.filter(column => column.pinned)
+        ?.filter(column => column.pinned && !isBacklogMode)
         ?.map(column => {
           // Give selection columns more width for dropdown content
           const fieldType = column.custom_column_obj?.fieldType;
-          let defaultWidth = 160;
+          let defaultWidth = 180;
           if (fieldType === 'selection') {
-            defaultWidth = 150; // Reduced width for selection dropdowns
+            defaultWidth = 180;
           } else if (fieldType === 'people') {
-            defaultWidth = 170; // Extra width for people with avatars
+            defaultWidth = 180;
           }
 
           // Map the configuration data structure to the expected format
@@ -1001,13 +1096,21 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           }
 
           const columnId = column.key || column.id || 'unknown';
+          const rawWidth = columnWidths[columnId] || column.width || defaultWidth;
+          const validatedWidth = validateColumnWidth(columnId, rawWidth, {
+            id: columnId,
+            minWidth: '180px',
+            maxWidth: '400px',
+            width: `${defaultWidth}px`,
+          });
+
           return {
             id: columnId,
             label: column.name || t('customColumns.customColumnHeader'),
-            width: columnWidths[columnId] || `${column.width || defaultWidth}px`,
+            width: validatedWidth,
             key: column.key || column.id || 'unknown',
             isSticky: false,
-            minWidth: '100px',
+            minWidth: '180px',
             maxWidth: '400px',
             custom_column: true,
             custom_column_obj: transformedColumnObj,
@@ -1019,15 +1122,22 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
         }) || [];
 
     return [...baseVisibleColumns, ...visibleCustomColumns];
-  }, [fields, columns, customColumns, t, columnWidths]);
+  }, [fields, columns, customColumns, t, columnWidths, isBacklogMode, isSoftwareProject]);
 
-  // Ensure column order includes only visible non-sticky columns and append any newly shown ones
+  // Ensure column order includes only visible non-sticky columns; newly shown ones are placed
+  // after the nearest column that precedes them in the default order.
   useEffect(() => {
     const reorderableIds = rawVisibleColumns.filter(column => !column.isSticky).map(c => c.id);
     setColumnOrder(prev => {
-      const filtered = prev.filter(id => reorderableIds.includes(id));
-      const missing = reorderableIds.filter(id => !filtered.includes(id));
-      const next = [...filtered, ...missing];
+      const next = prev.filter(id => reorderableIds.includes(id));
+      reorderableIds.forEach((id, defaultIndex) => {
+        if (next.includes(id)) return;
+        const precedingId = reorderableIds
+          .slice(0, defaultIndex)
+          .reverse()
+          .find(candidateId => next.includes(candidateId));
+        next.splice(precedingId ? next.indexOf(precedingId) + 1 : 0, 0, id);
+      });
       const hasChanged =
         next.length !== prev.length || next.some((id, index) => id !== prev[index]);
       return hasChanged ? next : prev;
@@ -1077,16 +1187,42 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
 
   // Create CSS style object with column width variables for instant resizing
   // Apply to document root so CSS variables are globally accessible
+  const [backlogViewportWidth, setBacklogViewportWidth] = useState(0);
+
+  useEffect(() => {
+    if (!isBacklogMode || !scrollContainer) return;
+    const updateWidth = () => setBacklogViewportWidth(scrollContainer.clientWidth);
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(scrollContainer);
+    return () => observer.disconnect();
+  }, [isBacklogMode, scrollContainer]);
+
+  /** Backlog: the title column absorbs spare width so the other columns sit on the right. */
+  const backlogTitleWidth = useMemo(() => {
+    if (!isBacklogMode || !backlogViewportWidth) return null;
+    const titleColumn = visibleColumns.find(col => col.id === 'title');
+    if (!titleColumn) return null;
+    const otherColumnsWidth = visibleColumns
+      .filter(col => col.id !== 'title')
+      .reduce((total, col) => total + (parseFloat(String(col.width)) || 0), 0);
+    const availableWidth =
+      backlogViewportWidth - otherColumnsWidth - BACKLOG_ROW_CHROME_WIDTH;
+    const baseWidth = parseFloat(String(titleColumn.width)) || 0;
+    return `${Math.max(baseWidth, Math.floor(availableWidth))}px`;
+  }, [isBacklogMode, backlogViewportWidth, visibleColumns]);
+
   const containerStyle = useMemo(() => {
     const style: any = {};
     visibleColumns.forEach(col => {
-      style[`--col-width-${col.id}`] = col.width;
+      const width = col.id === 'title' && backlogTitleWidth ? backlogTitleWidth : col.width;
+      style[`--col-width-${col.id}`] = width;
       // Also set on document root for global access
-      document.documentElement.style.setProperty(`--col-width-${col.id}`, col.width);
+      document.documentElement.style.setProperty(`--col-width-${col.id}`, width);
     });
 
     return style;
-  }, [visibleColumns]);
+  }, [visibleColumns, backlogTitleWidth]);
 
   // Set project context for field visibility when project changes
   useEffect(() => {
@@ -1118,8 +1254,9 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const activeMembers = useAppSelector((state: any) =>
     (state.taskReducer?.taskAssignees || []).filter((m: any) => m.selected)
   );
+  // The Backlog tab always pins a sprint filter, so it doesn't count as a user filter there.
   const hasActiveFilters =
-    activePhases.length > 0 ||
+    (listMode !== 'backlog' && activePhases.length > 0) ||
     activePriorities.length > 0 ||
     activeStatuses.length > 0 ||
     activeLabels.length > 0 ||
@@ -1229,8 +1366,10 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
         ) {
           el.classList.add('virtuoso-group-header-wrapper');
           // Use Ant Design's colorBgContainer token — matches the actual page background
-          // in both light (#ffffff) and dark (#141414) modes.
-          el.style.backgroundColor = themeToken.colorBgContainer;
+          // in both light (#ffffff) and dark (#141414) modes. Backlog cards sit on the layout background.
+          el.style.backgroundColor = isBacklogMode
+            ? themeToken.colorBgLayout
+            : themeToken.colorBgContainer;
         }
       });
     };
@@ -1243,7 +1382,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       clearTimeout(timeoutId);
       observer.disconnect();
     };
-  }, [loading, loadingColumns, themeToken.colorBgContainer]);
+  }, [loading, loadingColumns, themeToken.colorBgContainer, themeToken.colorBgLayout, isBacklogMode]);
 
   // Cleanup column resize listeners on unmount to prevent memory leaks
   useEffect(() => {
@@ -1574,6 +1713,15 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     return virtuosoGroups.flatMap(group => group.tasks);
   }, [virtuosoGroups]);
 
+  // Assignee grouping can repeat an issue across groups; sortable ids must stay unique.
+  const sortableTaskIds = useMemo(() => {
+    const ids = virtuosoItems
+      .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
+      .map(item => item.id)
+      .filter((id): id is string => id !== undefined);
+    return Array.from(new Set(ids));
+  }, [virtuosoItems]);
+
   // Render functions
   const renderGroup = useCallback(
     (groupIndex: number) => {
@@ -1581,8 +1729,10 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       const isGroupCollapsed = collapsedGroups.has(group.id);
       const isGroupEmpty = group.actualCount === 0;
 
+      const groupSpacingClass = isBacklogMode ? 'pt-3' : 'mt-2';
+
       return (
-        <div className={groupIndex > 0 ? 'mt-2' : ''} data-group-header="true">
+        <div className={groupIndex > 0 ? groupSpacingClass : ''} data-group-header="true">
           <GroupDropZone
             groupId={group.id}
             isActive={activeId !== null && overGroupId === group.id}
@@ -1598,6 +1748,12 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
               onToggle={() => handleGroupCollapse(group.id)}
               projectId={urlProjectId || ''}
             />
+            {isBacklogMode && !isGroupCollapsed && (
+              <BacklogSectionColumnHeader
+                visibleColumns={visibleColumns}
+                isActiveSprint={activeSprintGroupIds.has(group.id)}
+              />
+            )}
             {isGroupEmpty && !isGroupCollapsed && hasNoTasks && !isGuest && (
               <ExampleTaskRows
                 visibleColumns={visibleColumns}
@@ -1631,6 +1787,8 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       activeId,
       overGroupId,
       canCreateTask,
+      isBacklogMode,
+      activeSprintGroupIds,
     ]
   );
 
@@ -2141,12 +2299,14 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 );
               })}
               {/* Add Custom Column Button - positioned at the end and scrolls with content */}
-              <div
-                className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
-                style={{ width: '50px', flexShrink: 0 }}
-              >
-                <AddCustomColumnButton />
-              </div>
+              {!isBacklogMode && (
+                <div
+                  className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+                  style={{ width: '50px', flexShrink: 0 }}
+                >
+                  <AddCustomColumnButton />
+                </div>
+              )}
             </div>
           </div>
         </SortableContext>
@@ -2165,6 +2325,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     handleColumnDragEnd,
     columnWidths,
     reorderableColumnIds,
+    isBacklogMode,
   ]);
 
   // Loading and error states
@@ -2232,6 +2393,22 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                         onToggle={() => {}}
                         projectId={urlProjectId || ''}
                       />
+                      {hasNoTasks && !isGuest && (
+                        <ExampleTaskRows
+                          visibleColumns={visibleColumns}
+                          isDarkMode={isDarkMode}
+                          groupId={unmappedGroupId}
+                          groupType="phase"
+                          groupValue={unmappedGroupId}
+                          groupName={unmappedGroupId}
+                          groupColor="#fbc84c69"
+                          projectId={urlProjectId || ''}
+                          canCreateTask={canCreateTask}
+                          onTaskCreated={(task, options) =>
+                            handleTaskCreated(task, unmappedGroupId, !!options?.openDrawer, null)
+                          }
+                        />
+                      )}
                       {/* Single add task row - reused for all tasks */}
                       {canCreateTask && !isGuest && (
                         <AddTaskRow
@@ -2289,6 +2466,31 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
             z-index: 20 !important;
           }
 
+          /* Software Backlog: sprint cards have no global column header and no cell dividers. */
+          .tasklist-backlog .virtuoso-group-header-wrapper {
+            top: 0 !important;
+          }
+
+          .tasklist-backlog .border-r {
+            border-right-color: transparent !important;
+          }
+
+          .tasklist-backlog .ant-select-borderless .ant-select-selector {
+            background-color: transparent !important;
+            border: 1px solid transparent !important;
+            transition: border-color 0.15s ease;
+          }
+
+          .tasklist-backlog .ant-select-borderless:hover .ant-select-selector,
+          .tasklist-backlog .ant-select-borderless.ant-select-focused .ant-select-selector {
+            border-color: ${themeToken.colorBorder} !important;
+          }
+
+          .tasklist-backlog .epic-inline-select .ant-select-selection-item {
+            color: ${themeToken.purple};
+            font-size: 11px;
+          }
+
           /* Column drag performance optimization */
           .column-header-cell {
             will-change: auto;
@@ -2325,12 +2527,14 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       >
         <div
           id="task-list-container"
-          className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden"
+          className={`flex flex-col h-full overflow-hidden ${
+            isBacklogMode ? 'tasklist-backlog' : 'bg-white dark:bg-gray-900'
+          }`}
           style={containerStyle}
         >
           {/* Table Container */}
           <div
-            className="border border-gray-200 dark:border-gray-700 rounded-lg"
+            className={isBacklogMode ? '' : 'border border-gray-200 dark:border-gray-700 rounded-lg'}
             style={{
               height: 'calc(100vh - 240px)', // Slightly reduce height to ensure scrollbar visibility
               display: 'flex',
@@ -2343,7 +2547,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 TaskGroupHeader's sticky left:0 containing block is this element — full scroll width. */}
             <div
               ref={outerScrollRef}
-              className="flex-1 bg-white dark:bg-gray-900 relative"
+              className={`flex-1 relative ${isBacklogMode ? '' : 'bg-white dark:bg-gray-900'}`}
               style={{
                 overflowX: 'auto',
                 overflowY: 'auto',
@@ -2360,18 +2564,17 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                   overflowY: 'visible',
                 }}
               >
-                {/* Sticky Column Headers */}
-                <div
-                  className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800"
-                  style={{ minWidth: 'max-content' }}
-                >
-                  {renderColumnHeaders()}
-                </div>
+                {/* Sticky Column Headers (Backlog cards render their own per section) */}
+                {!isBacklogMode && (
+                  <div
+                    className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800"
+                    style={{ minWidth: 'max-content' }}
+                  >
+                    {renderColumnHeaders()}
+                  </div>
+                )}
                 <SortableContext
-                  items={virtuosoItems
-                    .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
-                    .map(item => item.id)
-                    .filter((id): id is string => id !== undefined)}
+                  items={sortableTaskIds}
                   strategy={verticalListSortingStrategy}
                 >
                   <GroupedVirtuoso
@@ -2406,10 +2609,26 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                         activeId && overId === item.id && !('isAddTaskRow' in item);
                       const showBefore = isOverThisTask && dropPosition === 'before';
                       const showAfter = isOverThisTask && dropPosition === 'after';
+                      const isLastItemOfGroup = indexInGroup === (group?.tasks.length ?? 0) - 1;
+                      const backlogCardStyle: React.CSSProperties = isBacklogMode
+                        ? {
+                            background: themeToken.colorBgContainer,
+                            borderLeft: activeSprintGroupIds.has(group?.id ?? '')
+                              ? `3px solid ${themeToken.colorPrimary}`
+                              : `1px solid ${themeToken.colorBorderSecondary}`,
+                            borderRight: `1px solid ${themeToken.colorBorderSecondary}`,
+                            ...(isLastItemOfGroup && {
+                              borderBottom: `1px solid ${themeToken.colorBorderSecondary}`,
+                              borderBottomLeftRadius: 10,
+                              borderBottomRightRadius: 10,
+                              overflow: 'hidden',
+                            }),
+                          }
+                        : {};
 
                       return (
                         <div
-                          style={{ minWidth: 'max-content' }}
+                          style={{ minWidth: 'max-content', ...backlogCardStyle }}
                           className="relative"
                           onMouseMove={e => {
                             // Find the InsertTaskDivider button inside this row and update

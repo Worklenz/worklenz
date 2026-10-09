@@ -8,6 +8,7 @@ import {
   MessageOutlined,
   SettingOutlined,
 } from '@/shared/antd-imports';
+import { ClientSettings } from '@/types';
 
 export interface ClientPortalMenuItems {
   key: string;
@@ -15,6 +16,17 @@ export interface ClientPortalMenuItems {
   icon: React.ReactNode;
   endpoint: string;
 }
+
+/** Of the 8 "Client Visible Selection" toggles (Portal Settings, admin side), only these 3 map
+ * to a real nav item/route in this app today (Gantt/Files-as-a-section/Feedback Forms/a
+ * client-facing Team page/Project Updates don't exist yet) — so only these gate anything.
+ * Shared by ClientPortalSidebar (hides the menu entry) and ClientLayout (redirects a direct
+ * URL visit) so both stay in sync off one map. */
+export const VISIBILITY_GATED_KEYS: Record<string, keyof ClientSettings> = {
+  projects: 'visible_project_plan',
+  invoices: 'visible_invoices',
+  chats: 'visible_chat',
+};
 
 export const clientPortalItems: ClientPortalMenuItems[] = [
   {

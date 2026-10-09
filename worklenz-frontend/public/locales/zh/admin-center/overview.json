@@ -92,7 +92,7 @@
   "logoUpgradeToChangeOrRemove": "升级到付费计划以更改或删除组织徽标。",
   "availableOnPaidPlans": "在付费计划中可用",
   "logoAltText": "组织徽标",
-  "logoSupportedFormats": "PNG, JPG, WEBP",
+  "logoSupportedFormats": "PNG、JPG、WEBP",
   "organizationProfile": "组织资料",
   "customLogoUpgradePopoverTitle": "自定义组织徽标",
   "customLogoUpgradePopoverBody": "上传您的徽标，以替换整个应用以及所有发送给团队的邮件中的 Worklenz 品牌标识。在商业计划中可用。",
@@ -102,8 +102,8 @@
   "customLogoUpgradeModalBenefitApp": "全应用自定义徽标",
   "customLogoUpgradeModalBenefitEmails": "面向团队和客户的品牌化邮件",
   "customLogoUpgradeModalBenefitProfessional": "为您的组织打造专业形象",
-  "emailAddress": "Email Address",
-  "enterOrganizationName": "Enter organization name",
-  "ownerSuffix": " (Owner)",
+  "emailAddress": "电子邮箱",
+  "enterOrganizationName": "输入组织名称",
+  "ownerSuffix": "（业主）",
   "closePopover": "关闭弹出层"
 }

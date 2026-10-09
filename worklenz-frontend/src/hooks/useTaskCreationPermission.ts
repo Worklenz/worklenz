@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
-import { canUseFeature } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/utils/subscription-utils';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
 import { ROLE_NAMES } from '@/types/roles/role.types';
 

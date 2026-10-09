@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import dayjs from 'dayjs';
 import {
   Button,
   ConfigProvider,
@@ -87,13 +88,65 @@ const ReportingOverviewProjectsTable = ({
     []
   );
 
+  const handleEndDateChangeResponse = useCallback(
+    (data: { project_id: string; end_date: string }) => {
+      setProjectList(prev =>
+        prev.map(project => {
+          if (project.id !== data.project_id) return project;
+          let days_left: number | null = null;
+          let is_overdue = false;
+          let is_today = false;
+          if (data.end_date) {
+            const today = dayjs().startOf('day');
+            const end = dayjs(data.end_date).startOf('day');
+            const diff = end.diff(today, 'day');
+            if (diff < 0) {
+              is_overdue = true;
+              days_left = Math.abs(diff);
+            } else if (diff === 0) {
+              is_today = true;
+              days_left = 0;
+            } else {
+              days_left = diff;
+            }
+          }
+          return {
+            ...project,
+            end_date: data.end_date,
+            days_left,
+            is_overdue,
+            is_today,
+          };
+        })
+      );
+    },
+    []
+  );
+
+  const handleStartDateChangeResponse = useCallback(
+    (data: { project_id: string; start_date: string }) => {
+      setProjectList(prev =>
+        prev.map(project =>
+          project.id === data.project_id
+            ? { ...project, start_date: data.start_date }
+            : project
+        )
+      );
+    },
+    []
+  );
+
   useEffect(() => {
     if (!socket) return;
     socket.on(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+    socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
+    socket.on(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
     return () => {
       socket.off(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+      socket.off(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
+      socket.off(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
     };
-  }, [socket, handleHealthChangeResponse]);
+  }, [socket, handleHealthChangeResponse, handleEndDateChangeResponse, handleStartDateChangeResponse]);
 
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
@@ -184,8 +237,9 @@ const ReportingOverviewProjectsTable = ({
       },
       {
         key: 'dates',
+        dataIndex: 'end_date',
         title: <CustomTableTitle title={t('datesColumn')} />,
-        render: record => (
+        render: (_, record: IRPTProject) => (
           <ProjectDatesCell
             projectId={record.id}
             startDate={record.start_date}
@@ -196,8 +250,9 @@ const ReportingOverviewProjectsTable = ({
       },
       {
         key: 'daysLeft',
+        dataIndex: 'days_left',
         title: <CustomTableTitle title={t('daysLeftColumn')} />,
-        render: record => (
+        render: (_, record: IRPTProject) => (
           <ProjectDaysLeftAndOverdueCell
             daysLeft={record.days_left}
             isOverdue={record.is_overdue}

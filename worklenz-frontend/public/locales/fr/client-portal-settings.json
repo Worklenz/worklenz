@@ -1,0 +1,200 @@
+{
+  "title": "Paramètres du portail",
+  "companyDetailsTitle": "Détails de l'entreprise",
+  "companyDetailsDescription": "Ces détails apparaîtront sur vos factures",
+  "companyNameLabel": "Nom de l'entreprise",
+  "companyNamePlaceholder": "Entrez le nom de votre entreprise",
+  "addressLine1Label": "Ligne d'adresse 1",
+  "addressLine1Placeholder": "Adresse municipale, C.P. boîte",
+  "addressLine2Label": "Ligne d'adresse 2",
+  "addressLine2Placeholder": "Ville, État, code postal, pays",
+  "contactEmailLabel": "E-mail de contact",
+  "contactEmailPlaceholder": "Entrez l'adresse e-mail du contact",
+  "contactPhoneLabel": "Téléphone de contact",
+  "contactPhonePlaceholder": "Entrez le téléphone du contact",
+  "invalidPhoneNumberFormat": "Format de numéro de téléphone invalide. Utilisez le format international (par exemple, +1-234-567-8900)",
+  "invoiceFooterLabel": "Message de pied de page de facture",
+  "invoiceFooterPlaceholder": "par exemple, Merci pour votre travail !",
+  "currentLogoText": "Logo actuel",
+  "uploadLogoText": "Téléchargez un nouveau logo (taille recommandée : 250 x 100)",
+  "uploadLogoAltText": "Cliquez ou faites glisser le fichier vers cette zone pour le télécharger",
+  "logoManagementTitle": "Gestion des logos",
+  "logoPreviewTitle": "Aperçu du logo",
+  "noLogoUploadedText": "Aucun logo téléchargé",
+  "headerDisplayTag": "Affichage de l'en-tête",
+  "responsiveTag": "Réactif",
+  "autoScaledTag": "Mise à l'échelle automatique",
+  "logoGuidelinesTitle": "Directives relatives aux logos",
+  "recommendedSizeText": "• Taille recommandée : 250 x 100 pixels",
+  "maxFileSizeText": "• Taille maximale du fichier : 2 Mo",
+  "supportedFormatsText": "• Formats pris en charge : PNG, JPG, SVG",
+  "autoScaledInfoText": "• Le logo sera automatiquement mis à l'échelle pour s'adapter",
+  "benefitsTitle": "Avantages",
+  "professionalBrandingText": "Image de marque professionnelle pour votre portail client",
+  "consistentIdentityText": "Identité visuelle cohérente sur toutes les plateformes",
+  "enhancedTrustText": "Confiance et reconnaissance accrues des clients",
+  "previewLogoTooltip": "Aperçu du logo",
+  "removeLogoTooltip": "Supprimer le logo",
+  "customizePortalText": "Personnalisez l'apparence et l'image de votre portail client",
+  "saveButton": "Enregistrer les modifications",
+  "cancelButton": "Annuler",
+  "discardButton": "Ignorer les modifications",
+  "pendingChangesText": "Vous avez des modifications non enregistrées",
+  "newLogoText": "Nouveau logo (en attente)",
+  "logoUploadedText": "Logo sélectionné avec succès",
+  "settingsSavedText": "Paramètres enregistrés avec succès",
+  "logoRemovedText": "Logo supprimé",
+  "savingText": "Sauvegarde...",
+  "selectFileButton": "Sélectionnez le logo",
+  "newLogoPendingTag": "Nouveau logo (en attente)",
+  "fromOrganizationTag": "De l'organisation",
+  "customLogoTag": "Logo personnalisé",
+  "logoWillBeRemovedText": "Le logo sera supprimé",
+  "afterRemovalOrgLogoText": "Après suppression, le logo de l’organisation sera utilisé automatiquement.",
+  "noLogoWillBeDisplayedText": "Aucun logo ne sera affiché.",
+  "usingOrganizationLogoText": "Utilisation du logo de l'organisation",
+  "syncedFromOrgSettingsText": "Ce logo est automatiquement synchronisé à partir des paramètres de votre organisation. Il apparaît dans les e-mails et les factures du portail client.",
+  "manageInAdminCenterText": "Gérer dans le centre d'administration",
+  "logoGuidelinesSummaryText": "Directives relatives aux logos",
+  "clickToPreviewText": "Cliquez pour prévisualiser",
+  "saveNewLogoButton": "Enregistrer le nouveau logo",
+  "changeLogoButton": "Changer de logo",
+  "uploadLogoButton": "Télécharger le logo",
+  "removeLogoButton": "Supprimer le logo",
+  "useCustomLogoInsteadButton": "Utilisez plutôt un logo personnalisé",
+  "confirmRemovalButton": "Confirmer la suppression",
+  "noLogoUploadedText2": "Aucun logo téléchargé",
+  "usingOrganizationLogoText2": "Utilisation du logo de l'organisation",
+  "clickToUploadLogoText": "Cliquez pour télécharger un logo pour votre portail client",
+  "syncedFromOrgSettingsShortText": "Ce logo est synchronisé à partir des paramètres de votre organisation.",
+  "newClientPortalLogoAlt": "Nouveau logo du portail client",
+  "clientPortalLogoAlt": "Logo du portail client",
+  "logoAlt": "Logo",
+  "pendingUploadTag": "En attente de téléchargement",
+  "pendingRemovalTag": "En attente de suppression",
+  "organizationLogoWillBeUsedText": "Le logo de l'organisation sera utilisé",
+  "cityLabel": "Ville",
+  "cityPlaceholder": "Ville",
+  "stateLabel": "État / Province",
+  "statePlaceholder": "État / Province",
+  "zipCodeLabel": "Code postal",
+  "zipCodePlaceholder": "Code postal",
+  "countryLabel": "Pays",
+  "countryPlaceholder": "Pays",
+  "settingsSaveFailedError": "Échec de l'enregistrement des paramètres.",
+  "navCompanyDetails": "Détails de l'entreprise",
+  "navBranding": "Identité visuelle",
+  "navInvoiceTemplate": "Modèle de facture",
+  "navVisibility": "Sélection visible par le client",
+  "navNotifications": "Notifications",
+  "navClientUsers": "Gestion des utilisateurs clients",
+  "navTemplates": "Modèles de permission",
+  "navTicketing": "Configuration des tickets",
+  "invalidLogoFileTypeError": "Veuillez sélectionner un fichier image.",
+  "logoFileTooLargeError": "Le logo doit faire moins de 2 Mo.",
+  "logoUploadFailedError": "Échec du téléversement du logo.",
+  "portalLogoLabel": "Logo du portail",
+  "portalTitleLabel": "Titre du portail",
+  "portalTitlePlaceholder": "p. ex. Acme Client Hub",
+  "brandColorLabel": "Couleur de marque",
+  "recommendedColorsLabel": "Recommandé",
+  "portalThemeLabel": "Thème",
+  "lightPortalButton": "Portail clair",
+  "darkPortalButton": "Portail sombre",
+  "defaultPortalTitlePreview": "Portail client",
+  "previewWelcomeText": "Bon retour",
+  "previewLatestInvoiceText": "Dernière facture",
+  "previewInvoiceSampleText": "2 500,00 USD · échéance dans 6 jours",
+  "previewViewTasksButton": "Voir mes tâches",
+  "brandingTitle": "Identité visuelle",
+  "invoiceTemplateTitle": "Modèle de facture",
+  "invoiceTemplateDescription": "Choisissez l'apparence des factures lorsqu'elles sont téléchargées ou prévisualisées par votre équipe et vos clients.",
+  "invoiceMoreCustomizationTitle": "Plus de personnalisation à venir",
+  "invoiceMoreCustomizationDescription": "D'autres options de mise en page et de design pour votre modèle de facture arrivent bientôt.",
+  "invoiceAccentColorLabel": "Couleur d'accent",
+  "invoiceAccentColorHint": "Utilise votre couleur de marque définie dans Image de marque.",
+  "invoiceShowLogoLabel": "Afficher le logo de l'entreprise sur la facture",
+  "invoiceShowLogoDescription": "Affiche le logo de votre portail dans l'en-tête de la facture.",
+  "invoicePreviewLabel": "Aperçu",
+  "visibilityTitle": "Sélection visible par le client",
+  "visibilityDescription": "Choisissez les sections qui apparaissent dans le portail client.",
+  "visibility": {
+    "projectPlan": {
+      "label": "Plan de projet (Tâches)",
+      "description": "Affiche la section Projets dans le portail client."
+    },
+    "ganttTimeline": {
+      "label": "Gantt / Chronologie",
+      "description": "Réservé pour quand une vue Gantt/Chronologie sera disponible dans le portail client — aucun effet pour l'instant."
+    },
+    "filesDocuments": {
+      "label": "Fichiers et documents",
+      "description": "Réservé pour quand une section Fichiers autonome sera disponible dans le portail client — aucun effet pour l'instant."
+    },
+    "invoices": {
+      "label": "Factures",
+      "description": "Affiche la section Factures dans le portail client."
+    },
+    "feedbackForms": {
+      "label": "Formulaires de retour",
+      "description": "Réservé pour quand les Formulaires de retour seront disponibles dans le portail client — aucun effet pour l'instant."
+    },
+    "teamMembers": {
+      "label": "Membres de l'équipe",
+      "description": "Réservé pour quand une page Membres de l'équipe destinée aux clients sera disponible — aucun effet pour l'instant."
+    },
+    "projectUpdates": {
+      "label": "Mises à jour du projet",
+      "description": "Réservé pour quand les Mises à jour du projet seront disponibles dans le portail client — aucun effet pour l'instant."
+    },
+    "chat": {
+      "label": "Discussion",
+      "description": "Affiche la section Discussions dans le portail client."
+    }
+  },
+  "notificationsTitle": "Notifications",
+  "notificationsDescription": "Choisissez ce dont votre équipe est notifiée concernant l'activité des clients.",
+  "notifications": {
+    "newMessage": {
+      "label": "Nouveau message",
+      "description": "Notifier l'équipe lorsqu'un client envoie un nouveau message."
+    },
+    "taskStatusChange": {
+      "label": "Changement de statut de tâche",
+      "description": "Notifier l'équipe lorsqu'une tâche visible par le client change de statut."
+    },
+    "fileUploaded": {
+      "label": "Fichier téléversé",
+      "description": "Notifier l'équipe lorsqu'un client téléverse un fichier."
+    }
+  },
+  "clientUsers": {
+    "bannerTitle": "Pas encore appliqué",
+    "bannerDescription": "Ces paramètres définissent ce que le contact principal (POC) d'une entreprise pourra faire une fois que le portail client le prendra en charge. Pour l'instant, POC n'est qu'une étiquette d'annuaire — rien ici n'est encore appliqué nulle part.",
+    "selfManagementTitle": "Autogestion du contact principal",
+    "selfManagementDescription": "Laissez le contact principal de l'entreprise gérer qui, dans son entreprise, a accès au portail, plutôt que de faire passer chaque ajout/suppression par votre équipe.",
+    "canAdd": {
+      "label": "Autoriser les contacts principaux à ajouter des utilisateurs de l'entreprise",
+      "description": "Un contact principal peut inviter un nouveau collègue de sa propre entreprise dans le portail client."
+    },
+    "canRemove": {
+      "label": "Autoriser les contacts principaux à retirer des utilisateurs de l'entreprise",
+      "description": "Un contact principal peut révoquer l'accès au portail d'un autre utilisateur de sa propre entreprise."
+    },
+    "guardrailsTitle": "Toujours vrai, indépendamment des options ci-dessus",
+    "guardrail1": "Un contact principal ne voit et ne gère jamais que les utilisateurs de sa propre entreprise — jamais ceux d'un autre client.",
+    "guardrail2": "Un contact principal ne voit jamais l'annuaire interne de votre équipe et n'obtient jamais d'accès administrateur de l'organisation.",
+    "guardrail3": "Supprimer l'unique contact principal d'une entreprise ne supprime jamais l'entreprise ni ses autres utilisateurs — cela laisse simplement cette entreprise sans contact principal."
+  },
+  "permissionTemplates": {
+    "bannerTitle": "Lecture seule",
+    "bannerDescription": "Choisir un modèle applique ce niveau de permission à tous les projets actuels de l'entreprise en un clic — les administrateurs peuvent ensuite ajuster l'accès projet par projet. Disponible lors de l'ajout d'un utilisateur d'entreprise ou depuis Assigner des projets sur un utilisateur existant."
+  },
+  "ticketingConfig": {
+    "title": "Statuts des tickets",
+    "description": "Ouvert, En cours et Résolu existent toujours et ne peuvent pas être supprimés. Ajoutez des statuts définis par l'équipe pour des flux de travail spécifiques à votre équipe — ils apparaissent dans les vues Liste et Tableau des tickets.",
+    "defaultStatusesLabel": "Statuts par défaut",
+    "defaultStatusesHint": "Ceux-ci existent toujours et ne peuvent pas être supprimés.",
+    "customStatusesLabel": "Statuts personnalisés"
+  }
+}

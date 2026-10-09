@@ -31,21 +31,21 @@ import {
   updateProjectFinanceCurrency,
   fetchProjectFinancesSilent,
   setBillableFilter,
-} from '@/ee/features/projects/finance/project-finance.slice';
+} from '@/features/projects/finance/project-finance.slice';
 import { changeCurrency, toggleImportRatecardsDrawer } from '@/features/finance/finance-slice';
 import { updateProjectCurrency, getProject } from '@/features/project/project.slice';
-import { projectFinanceApiService } from '@/ee/api/project-finance-ratecard/project-finance.api.service';
+import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
 import { RootState } from '@/app/store';
-import FinanceTableWrapper from '@/ee/components/projects/project-finance/finance-table-wrapper/FinanceTableWrapper';
-import ImportRatecardsDrawer from '@/ee/components/projects/import-ratecards-drawer/ImportRateCardsDrawer';
+import FinanceTableWrapper from '@/components/projects/project-finance/finance-table-wrapper/FinanceTableWrapper';
+import ImportRatecardsDrawer from '@/components/projects/import-ratecards-drawer/ImportRateCardsDrawer';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasFinanceEditPermission } from '@/utils/finance-permissions';
 import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from '@/shared/currencies';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import RateCardTable from '@/ee/components/projects/project-finance/ratecard-table/RateCardTable';
+import RateCardTable from '@/components/projects/project-finance/ratecard-table/RateCardTable';
 import ProjectBudgetSettingsDrawer from '@/components/projects/project-budget-settings-drawer/ProjectBudgetSettingsDrawer';
-import { canUseFeature } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/utils/subscription-utils';
 import { UpgradeOverlayCard, useUpgradeMaskBackground } from '@/components/upgrade/FeatureUpgradePreview';
 
 const ProjectViewFinance = () => {

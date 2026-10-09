@@ -1,7 +1,6 @@
 {
   "title": "Informes de Mi Equipo",
   "subtitle": "Seguimiento del tiempo e información de rendimiento para los miembros de su equipo",
-
   "dateRange": {
     "label": "Rango de Fechas",
     "showing": "Mostrando",
@@ -17,7 +16,6 @@
     "custom": "Rango Personalizado",
     "apply": "Aplicar"
   },
-
   "summary": {
     "totalMembers": "Total de Miembros",
     "totalMembersTooltip": "Número total de miembros del equipo que han registrado tiempo durante el rango de fechas seleccionado.",
@@ -28,7 +26,6 @@
     "avgCompletionRate": "Tasa de Finalización Promedio",
     "hours": "horas"
   },
-
   "timeTracking": {
     "title": "Resumen de Seguimiento de Tiempo",
     "chartTitle": "Gráfico de Seguimiento de Tiempo del Equipo",
@@ -51,7 +48,6 @@
     "projectsTooltip": "Número de proyectos distintos en los que este miembro registró tiempo durante el rango de fechas seleccionado.",
     "activeDaysTooltip": "Número de días distintos en los que este miembro registró tiempo durante el rango de fechas seleccionado."
   },
-
   "performance": {
     "title": "Rendimiento del Equipo",
     "member": "Miembro",
@@ -70,7 +66,6 @@
     "projectsInvolved": "Proyectos Involucrados",
     "noData": "No hay datos de rendimiento disponibles"
   },
-
   "detailedLogs": {
     "title": "Registros de Tiempo Detallados",
     "for": "para",
@@ -82,24 +77,21 @@
     "description": "Descripción",
     "method": "Método",
     "type": "Tipo",
-    "manual": "Manual",
+    "manual": "manuales",
     "timer": "Temporizador",
     "noLogs": "No se encontraron registros detallados",
     "close": "Cerrar",
     "timeLogsRange": "registros de tiempo"
   },
-
   "errors": {
     "failedToLoad": "Error al cargar los informes del equipo",
     "tryAgain": "Por favor, inténtelo de nuevo",
     "noTeamMembers": "No se encontraron miembros del equipo",
     "loadingError": "Error al cargar los datos"
   },
-
   "loading": {
     "fetchingData": "Cargando informes del equipo...",
     "fetchingLogs": "Cargando registros detallados..."
   },
-
   "export": "Exportar"
 }

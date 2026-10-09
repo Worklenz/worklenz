@@ -87,7 +87,6 @@
     "todo": "待办",
     "doing": "进行中",
     "done": "完成",
-    "priority": "优先级",
     "newTask": "新建任务",
     "assignTask": "分配任务",
     "createTask": "创建任务",
@@ -148,7 +147,8 @@
       "managerAssigned": "{{userName}}为项目{{projectName}}分配了项目经理",
       "managerRemoved": "{{userName}}移除了项目{{projectName}}的项目经理",
       "memberAdded": "{{userName}}将{{memberName}}添加到项目{{projectName}}",
-      "memberRemoved": "{{userName}}从项目{{projectName}}中移除了{{memberName}}"
+      "memberRemoved": "{{userName}}从项目{{projectName}}中移除了{{memberName}}",
+      "managerFinanceChanged": "{{userName}} 更改了 {{projectName}} 的项目经理财务访问权限"
     },
     "task": {
       "created": "{{userName}}创建了任务{{taskName}}",
@@ -166,7 +166,7 @@
     "emptyTitle": "太棒了，任务全部完成！",
     "emptySubtitle": "这里还没有任务 — 创建一个开始吧。",
     "sideUnassigned": "未分配",
-    "columnId": "ID",
+    "columnId": "身份证号",
     "columnTask": "任务",
     "columnAssignee": "负责人",
     "columnDue": "截止日期",
@@ -266,10 +266,10 @@
     "amountPlaceholder": "0.00",
     "submitButton": "添加任务费用",
     "upgradePromptTitle": "费用",
-    "upgradePromptDescription": "跟踪任务的固定成本并将其汇总到您的财务报告中。仅在商业版计划中可用。",
+    "upgradePromptDescription": "追踪任务上的固定成本并汇总到您的财务报告中。适用于 Business 计划。",
     "loadTasksError": "无法加载此项目的任务和货币。",
-    "successMessage": "固定成本已添加到任务",
-    "errorMessage": "无法将固定成本添加到任务"
+    "successMessage": "已添加任务固定成本",
+    "errorMessage": "添加任务固定成本失败"
   },
   "addClient": {
     "pageTitle": "添加新客户",
@@ -382,24 +382,6 @@
     "startTimer": "开始计时"
   },
   "views": "视图",
-  "addExpense": {
-    "modalTitle": "添加费用",
-    "projectLabel": "项目",
-    "projectPlaceholder": "选择项目…",
-    "taskLabel": "任务",
-    "taskPlaceholderWithProject": "搜索任务…",
-    "taskPlaceholderNoProject": "请先选择一个项目",
-    "taskLoading": "加载中…",
-    "noTasksFound": "未找到任务",
-    "amountLabel": "金额",
-    "amountPlaceholder": "0.00",
-    "submitButton": "添加任务费用",
-    "upgradePromptTitle": "费用",
-    "upgradePromptDescription": "追踪任务上的固定成本并汇总到您的财务报告中。适用于 Business 计划。",
-    "loadTasksError": "无法加载此项目的任务和货币。",
-    "successMessage": "已添加任务固定成本",
-    "errorMessage": "添加任务固定成本失败"
-  },
   "timeOff": {
     "timeOff": "请假",
     "off": "休假",

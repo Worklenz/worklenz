@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { selectTaskById } from '@/features/task-management/task-management.slice';
 import { selectIsTaskSelected } from '@/features/task-management/selection.slice';
+import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
 import { useTaskRowState } from './hooks/useTaskRowState';
 import { useTaskRowActions } from './hooks/useTaskRowActions';
 import { useTaskRowColumns } from './hooks/useTaskRowColumns';
@@ -75,6 +76,8 @@ const TaskRow: React.FC<TaskRowProps> = memo(
 
     // TVR-13: parent-context rows are view-only (reuse guest edit gating)
     const isRowReadOnly = isGuest || !!safeTask.assignee_scope_readonly;
+    // Assignee groups can list the same issue several times, so rows are not draggable there.
+    const isGroupedByAssignee = useAppSelector(selectCurrentGrouping) === 'assignee';
 
     // Use extracted hooks for state management
     const {
@@ -112,7 +115,8 @@ const TaskRow: React.FC<TaskRowProps> = memo(
           type: 'task',
           task: safeTask,
         },
-        disabled: (isSubtask && !enableSubtaskDnd) || !task || isRowReadOnly,
+        disabled:
+          (isSubtask && !enableSubtaskDnd) || !task || isRowReadOnly || isGroupedByAssignee,
       });
 
     const { renderColumn } = useTaskRowColumns({

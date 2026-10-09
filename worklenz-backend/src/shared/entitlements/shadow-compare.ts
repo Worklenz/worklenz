@@ -1,4 +1,4 @@
-import { hasBusinessPlanAccess } from "../../ee/middlewares/subscription-middleware";
+import { hasBusinessPlanAccess } from "../../middlewares/subscription-middleware";
 import { resolveLegacyGuestPlan } from "../guest-seat-limits";
 import { hasFeature } from "./resolve-entitlements";
 import { IEntitlements } from "./types";

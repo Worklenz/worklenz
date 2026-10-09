@@ -24,6 +24,10 @@ import projectsReducer from '@features/projects/projectsSlice';
 import projectMemberReducer from '@features/projects/singleProject/members/projectMembersSlice';
 import projectViewTaskListColumnsReducer from '@features/projects/singleProject/taskListColumns/taskColumnsSlice';
 import phaseReducer from '@/features/projects/singleProject/phase/phases.slice';
+import epicsReducer from '@/features/projects/singleProject/epics/epics.slice';
+import releasesReducer from '@/features/projects/singleProject/releases/releases.slice';
+import createIssueModalReducer from '@/features/projects/singleProject/create-issue/create-issue-modal.slice';
+import softwareQuickFiltersReducer from '@/features/projects/singleProject/quick-filters/software-quick-filters.slice';
 import updatesReducer from '../features/projects/singleProject/updates/updatesSlice';
 import statusReducer from '@features/projects/status/StatusSlice';
 import deleteStatusReducer from '@features/projects/status/DeleteStatusSlice';
@@ -56,12 +60,14 @@ import memberReducer from '@features/settings/member/memberSlice';
 import clientReducer from '@features/settings/client/clientSlice';
 import jobReducer from '@features/settings/job/jobSlice';
 import teamReducer from '@features/teams/teamSlice';
-import billingReducer from '@/ee/features/admin-center/billing/billing.slice';
+import billingReducer from '@/features/admin-center/billing/billing.slice';
 import categoriesReducer from '@features/settings/categories/categoriesSlice';
 import labelReducer from '@features/settings/label/labelSlice';
 
 // Admin Center
 import adminCenterReducer from '@features/admin-center/admin-center.slice';
+import auditLogReducer from '@features/admin-center/audit-log/audit-log.slice';
+import { auditLogApi } from '@/api/admin-center/audit-log.api.service';
 
 // Features
 import dateReducer from '@features/date/dateSlice';
@@ -101,19 +107,19 @@ import taskManagementFieldsReducer from '@features/task-management/taskListField
 import projectWorkloadReducer from '@features/project-workload/projectWorkloadSlice';
 
 //clients portal
-import clientsPortalReducer from '../ee/features/clients-portal';
+import clientsPortalReducer from '../features/clients-portal';
 
 //client view
-import clientViewReducer from '../ee/features/client-view';
+import clientViewReducer from '../features/client-view';
 
 // Client Portal API
-import { clientPortalApi } from '@/ee/api/client-portal/client-portal-api';
+import { clientPortalApi } from '@/api/client-portal/client-portal-api';
 
 // Schedule API
 import { scheduleApi } from '@/api/schedule/scheduleApi';
 
-import projectFinanceRateCardReducer from '@/ee/features/finance/project-finance-slice';
-import projectFinancesReducer from '@/ee/features/projects/finance/project-finance.slice';
+import projectFinanceRateCardReducer from '@/features/finance/project-finance-slice';
+import projectFinancesReducer from '@/features/projects/finance/project-finance.slice';
 import financeReducer from '@/features/projects/finance/finance-slice';
 import financeOverviewReducer from '@/features/finance-overview/finance-overview.slice';
 
@@ -244,6 +250,14 @@ const coreReducers = {
 
   // What's New
   whatsNewReducer: whatsNewReducer,
+
+  // Software projects & audit log
+  [auditLogApi.reducerPath]: auditLogApi.reducer,
+  epicsReducer: epicsReducer,
+  releasesReducer: releasesReducer,
+  createIssueModalReducer: createIssueModalReducer,
+  softwareQuickFiltersReducer: softwareQuickFiltersReducer,
+  auditLogReducer: auditLogReducer,
 };
 
 const safeAddonReducers: Record<string, (typeof addonReducers)[string]> = {};
@@ -270,6 +284,7 @@ export const store = configureStore({
       roadmapApi.middleware,
       projectWorkloadApi.middleware,
       scheduleApi.middleware,
+      auditLogApi.middleware,
       ...addonMiddlewares
     ),
   reducer: {

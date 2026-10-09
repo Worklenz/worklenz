@@ -1,0 +1,22 @@
+{
+  "title": "Zarządzaj działami",
+  "nameColumn": "Imię",
+  "search": "Szukaj działów",
+  "createDepartmentButton": "Utwórz dział",
+  "createDepartmentDrawerTitle": "Utwórz dział",
+  "updateDepartmentDrawerTitle": "Dział aktualizacji",
+  "nameLabel": "Imię",
+  "namePlaceholder": "Wprowadź nazwę działu",
+  "nameRequiredError": "Nazwa działu jest wymagana",
+  "createButton": "Utwórz",
+  "updateButton": "Aktualizacja",
+  "editTooltip": "Edytuj",
+  "deleteTooltip": "Usuń",
+  "deleteConfirmationTitle": "Czy na pewno chcesz usunąć ten dział?",
+  "deleteConfirmationOk": "Usuń",
+  "deleteConfirmationCancel": "Anuluj",
+  "fetchDepartmentErrorMessage": "Nie udało się pobrać działu",
+  "createDepartmentErrorMessage": "Nie udało się utworzyć działu",
+  "updateDepartmentErrorMessage": "Nie udało się zaktualizować działu",
+  "pinTooltip": "Przypnij do paska nawigacyjnego"
+}

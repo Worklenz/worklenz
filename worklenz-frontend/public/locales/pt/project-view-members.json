@@ -1,7 +1,7 @@
 {
   "nameColumn": "Nome",
   "jobTitleColumn": "Título do Cargo",
-  "emailColumn": "Email",
+  "emailColumn": "E-mail",
   "tasksColumn": "Tarefas",
   "taskProgressColumn": "Progresso da Tarefa",
   "accessColumn": "Acesso",
@@ -27,5 +27,18 @@
   "invite": "Convidar",
   "Invite": "Convidar",
   "removeSuccess": "{{name}} removido do projeto",
-  "removeError": "Falha ao remover membro"
+  "removeError": "Falha ao remover membro",
+  "memberNotFound": "Informações do membro da equipe não encontradas",
+  "manageTimeOff": "Gerenciar folga",
+  "seatLimitReached": "Limite de assentos atingido",
+  "memberDeactivated": "Membro desativado com sucesso",
+  "memberActivated": "Membro ativado com sucesso",
+  "statusChangeError": "Falha ao alterar o status do membro",
+  "deactivateTooltip": "Desativar membro",
+  "activateTooltip": "Ativar membro",
+  "editTooltip": "Editar membro",
+  "moreOptions": "Mais opções",
+  "changeMemberStatusConfirmation": "Tem certeza de que deseja alterar o status deste membro?",
+  "yesProceed": "Sim, continuar",
+  "cancel": "Cancelar"
 }

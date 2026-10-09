@@ -187,16 +187,6 @@
           "付款状态一目了然"
         ]
       },
-      "ticketing": {
-        "title": "工单",
-        "description": "让客户直接从他们的门户提出和跟踪支持请求。",
-        "features": [
-          "客户提交的支持票",
-          "票证状态跟踪和更新",
-          "内部笔记和作业",
-          "优先级和 SLA 标记"
-        ]
-      },
       "settings": {
         "title": "门户设置",
         "description": "使用您自己的品牌定制您的客户门户。",
@@ -273,23 +263,6 @@
       "dateColumn": "日期",
       "rowsPerPage": "每页行数：{{count}}"
     }
-  },
-  "ticketingMockup": {
-    "openTickets": "公开门票",
-    "inProgress": "进行中",
-    "resolvedToday": "今天解决了",
-    "avgResponseTime": "平均。响应时间",
-    "ticketsCard": "门票",
-    "ticketNoColumn": "票号#",
-    "clientColumn": "客户",
-    "subjectColumn": "主题",
-    "priorityColumn": "优先级",
-    "statusColumn": "状态",
-    "priorityHigh": "高",
-    "priorityMedium": "中等",
-    "priorityLow": "低",
-    "statusOpen": "打开",
-    "statusResolved": "已解决"
   },
   "plannerMockup": {
     "chrome": {

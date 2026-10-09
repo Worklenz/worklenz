@@ -112,6 +112,11 @@
     "totalLogged": "Total Logged",
     "exportToExcel": "Export to Excel",
     "noTimeLogsFound": "No time logs found",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this time log?",
+    "confirmDeleteYes": "Yes",
+    "confirmDeleteNo": "No",
     "timeLogForm": {
       "date": "Date",
       "startTime": "Start Time",

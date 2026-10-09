@@ -1,0 +1,22 @@
+{
+  "title": "Gérer les pratiques",
+  "nameColumn": "Nom",
+  "search": "Pratiques de recherche",
+  "createPracticeButton": "Créer une pratique",
+  "createPracticeDrawerTitle": "Créer une pratique",
+  "updatePracticeDrawerTitle": "Pratique de mise à jour",
+  "nameLabel": "Nom",
+  "namePlaceholder": "Entrez le nom du cabinet",
+  "nameRequiredError": "Le nom du cabinet est obligatoire",
+  "createButton": "Créer",
+  "updateButton": "Mise à jour",
+  "editTooltip": "Modifier",
+  "deleteTooltip": "Supprimer",
+  "deleteConfirmationTitle": "Êtes-vous sûr de supprimer cette pratique ?",
+  "deleteConfirmationOk": "Supprimer",
+  "deleteConfirmationCancel": "Annuler",
+  "fetchPracticeErrorMessage": "Échec de la récupération de la pratique",
+  "createPracticeErrorMessage": "Échec de la création d'une pratique",
+  "updatePracticeErrorMessage": "Échec de la mise à jour de la pratique",
+  "pinTooltip": "Épingler à la barre de navigation"
+}

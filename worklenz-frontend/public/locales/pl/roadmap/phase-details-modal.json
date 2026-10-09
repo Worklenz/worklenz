@@ -1,0 +1,42 @@
+{
+  "title": "Szczegóły fazy",
+  "overview": {
+    "title": "Przegląd",
+    "totalTasks": "Łączna liczba zadań",
+    "completion": "Zakończenie",
+    "progress": "Postęp"
+  },
+  "timeline": {
+    "title": "Oś czasu",
+    "startDate": "Data rozpoczęcia",
+    "endDate": "Data zakończenia",
+    "status": "Stan",
+    "notSet": "Nie ustawiono",
+    "statusLabels": {
+      "upcoming": "Nadchodzące",
+      "active": "W toku",
+      "overdue": "Zaległe",
+      "notScheduled": "Niezaplanowane"
+    }
+  },
+  "taskBreakdown": {
+    "title": "Podział zadań",
+    "completed": "Ukończono",
+    "pending": "Oczekujące",
+    "overdue": "Zaległe"
+  },
+  "phaseColor": {
+    "title": "Kolor fazy",
+    "description": "Kolor identyfikatora fazy"
+  },
+  "tasksInPhase": {
+    "title": "Zadania w tej fazie",
+    "noTasks": "Brak zadań w tej fazie",
+    "priority": "Priorytet",
+    "assignees": "Osoby przypisane",
+    "dueDate": "Termin",
+    "startDate": "Data rozpoczęcia",
+    "noAssignees": "Nieprzypisany",
+    "noDueDate": "Brak terminu"
+  }
+}

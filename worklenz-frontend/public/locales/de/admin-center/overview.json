@@ -102,8 +102,8 @@
   "customLogoUpgradeModalBenefitApp": "Eigenes Logo in der gesamten App",
   "customLogoUpgradeModalBenefitEmails": "Gebrandete E-Mails für Team und Kunden",
   "customLogoUpgradeModalBenefitProfessional": "Professioneller Auftritt für Ihre Organisation",
-  "emailAddress": "Email Address",
-  "enterOrganizationName": "Enter organization name",
-  "ownerSuffix": " (Owner)",
+  "emailAddress": "E-Mail-Adresse",
+  "enterOrganizationName": "Geben Sie den Namen der Organisation ein",
+  "ownerSuffix": "(Besitzer)",
   "closePopover": "Popover schließen"
 }

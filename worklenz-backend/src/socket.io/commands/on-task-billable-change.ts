@@ -3,7 +3,7 @@ import { getLoggedInUserIdFromSocket, log_error, emitToTaskVisibleProjectMembers
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 import { body } from "express-validator";
-import { isRestrictedFromProPlanFeatures } from "../../ee/middlewares/subscription-middleware";
+import { isRestrictedFromProPlanFeatures } from "../../middlewares/subscription-middleware";
 import { isTaskCreationRestrictedForTask } from "../../shared/task-creation-restriction";
 import { isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task-scope";
 

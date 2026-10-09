@@ -1,0 +1,29 @@
+{
+  "pageTitle": "Ndihmë",
+  "pageDescription": "Dokumentacioni, shënimet e versionit, lidhjet e komunitetit dhe informacioni i versionit.",
+  "opensInNewTab": "hapet në një skedë të re",
+  "opensEmailApp": "hap aplikacionin tënd të email-it",
+  "items": {
+    "documentation": "Dokumentacioni",
+    "releaseNotes": "Shënimet e versionit",
+    "changelog": "Regjistri i ndryshimeve",
+    "emailSupport": "Mbështetje me email",
+    "youtube": "YouTube",
+    "discord": "Mosmarrëveshje",
+    "github": "GitHub",
+    "facebook": "Facebook",
+    "linkedin": "LinkedIn",
+    "x": "X",
+    "privacyPolicy": "Politika e privatësisë",
+    "about": "Rreth"
+  },
+  "releaseNotes": {
+    "unavailable": "Ende nuk janë publikuar shënime versioni",
+    "loadFailed": "Shënimet e versionit nuk u ngarkuan. Kliko për të provuar përsëri.",
+    "loadFailedMessage": "Shënimet e versionit nuk u ngarkuan. Provo përsëri."
+  },
+  "about": {
+    "version": "Versioni",
+    "lastUpdated": "Përditësuar së fundmi"
+  }
+}

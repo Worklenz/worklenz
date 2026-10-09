@@ -164,7 +164,7 @@ export const FinanceBudgetsPage = () => {
           columns={columns}
           dataSource={projects}
           loading={loading}
-          pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: [5, 10, 20, 50] }}
+          pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50, 100] }}
           locale={{
             emptyText: (
               <Empty description={t('budgets.empty', { defaultValue: 'No projects to show yet.' })} />

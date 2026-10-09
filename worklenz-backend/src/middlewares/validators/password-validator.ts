@@ -17,7 +17,9 @@ export default function (req: Request, res: Response, next: NextFunction) {
   const psw = (password || "").trim();
   const newPws = (new_password || "").trim();
 
-  if (!psw)
+  // Change-password sends new_password. Google accounts with no password yet
+  // omit the current password; AuthController still checks it when one exists.
+  if (!psw && !newPws)
     return res.status(200).send(new ServerResponse(false, null, "Password is required"));
 
   if (newPws) {

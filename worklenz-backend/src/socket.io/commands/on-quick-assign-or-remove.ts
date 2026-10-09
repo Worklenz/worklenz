@@ -81,26 +81,29 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
       return;
     }
 
-    // Ensure we have a project_id — some clients may omit it. Try to infer
-    // the project from the task if missing, otherwise return a clear error
-    // to avoid DB not-null violations when creating project members.
-    if (!body.project_id) {
-      try {
-        const projRes = await db.query(`SELECT project_id FROM tasks WHERE id = $1`, [body.task_id]);
-        body.project_id = projRes.rows[0]?.project_id || null;
-      } catch (err) {
-        log_error('Error resolving project_id for quick assign:', err);
-      }
-    }
+    // Assignment context must come from the task, not the client payload.
+    // Several callers span multiple projects and some omit `team_id`; trusting
+    // their cached values can create/look up members in the wrong project.
+    const taskContextResult = await db.query(
+      `SELECT tasks.project_id, projects.team_id
+       FROM tasks
+       INNER JOIN projects ON projects.id = tasks.project_id
+       WHERE tasks.id = $1`,
+      [body.task_id]
+    );
+    const taskContext = taskContextResult.rows[0];
 
-    if (!body.project_id) {
-      log_error('QUICK_ASSIGNEES_UPDATE called without project_id', body);
+    if (!taskContext) {
+      log_error('QUICK_ASSIGNEES_UPDATE called for an unknown task', body);
       socket.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), {
         error: true,
-        message: 'Missing project_id for task assignment',
+        message: 'Task assignment context could not be resolved',
       });
       return;
     }
+
+    body.project_id = taskContext.project_id;
+    body.team_id = taskContext.team_id;
 
     const assignment = await runAssignOrRemove(body, isAssign);
 
@@ -134,6 +137,20 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
     }
     notifyProjectUpdates(socket, body.task_id);
 
+    const res = {
+      id: body.task_id,
+      parent_task: body.parent_task,
+      members,
+      assignees,
+      names,
+      assignee_names: names,
+      mode: body.mode,
+      team_member_id: body.team_member_id,
+    };
+    // Ack before external notifications: those make outbound Slack/Teams HTTP calls,
+    // and the client keeps the card's avatars stale until this ack lands.
+    socket.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), res);
+
     // Send external notifications (Slack, Teams) only for assignments
     if (isAssign) {
       try {
@@ -150,7 +167,9 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
             projectId,
             body.task_id,
             "task_assigned",
-            userName
+            userName,
+            undefined,
+            userId
           );
         }
       } catch (notifError) {
@@ -158,18 +177,6 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
         // Don't throw - continue even if notifications fail
       }
     }
-
-    const res = {
-      id: body.task_id,
-      parent_task: body.parent_task,
-      members,
-      assignees,
-      names,
-      assignee_names: names,
-      mode: body.mode,
-      team_member_id: body.team_member_id,
-    };
-    socket.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), res);
     return;
   } catch (error) {
     log_error(error);

@@ -6,7 +6,7 @@ import mainRoutes from './main-routes';
 import notFoundRoute from './not-found-route';
 import accountSetupRoute from './account-setup-routes';
 import reportingRoutes from './reporting-routes';
-import clientPortalRoutes from '../../ee/app/routes/client-portal-routes';
+import clientPortalRoutes from '../../app/routes/client-portal-routes';
 import { useAuthService } from '@/hooks/useAuth';
 import { AuthenticatedLayout } from '@/layouts/AuthenticatedLayout';
 import AppShellLayout from '@/layouts/AppShellLayout';
@@ -34,7 +34,7 @@ const withCodeSplitting = (Component: React.LazyExoticComponent<React.ComponentT
 
 // Memoized guard components with defensive programming
 import { useAuthStatus } from '@/hooks/useAuthStatus';
-import clientViewRoutes from '../../ee/app/routes/client-view-routes';
+import clientViewRoutes from '../../app/routes/client-view-routes';
 
 export const AuthGuard = memo(({ children }: GuardProps) => {
   const { isAuthenticated, location } = useAuthStatus();
@@ -68,7 +68,7 @@ export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
   const { isLicenseExpired, location } = useAuthStatus();
 
   const isAdminCenterRoute = location.pathname.includes('/worklenz/admin-center');
-  const isAccountDeletionRoute = location.pathname.includes('/worklenz/settings/account-deletion');
+  const isSettingsRoute = location.pathname.includes('/worklenz/settings');
   const isLicenseExpiredPage = location.pathname.includes('/worklenz/license-expired');
 
   // NEW: Check if current route is a project view (with or without query params)
@@ -80,9 +80,9 @@ export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
     return <Navigate to="/worklenz/home" replace />;
   }
 
-  // Redirect to license expired page if license is expired
-  // Except when on admin center, account deletion, or already on license expired page
-  if (isLicenseExpired && !isAdminCenterRoute && !isAccountDeletionRoute && !isLicenseExpiredPage && !isProjectViewRoute) {
+  // Redirect to license expired page if license is expired.
+  // Settings stays reachable so the profile menu can open it.
+  if (isLicenseExpired && !isAdminCenterRoute && !isSettingsRoute && !isLicenseExpiredPage && !isProjectViewRoute) {
     return <Navigate to="/worklenz/license-expired" replace />;
   }
   return <>{children}</>;

@@ -22,13 +22,15 @@ export async function on_project_status_change(_io: Server, socket: Socket, data
     const result = await db.query(q2, [body.status_id]);
     const [d] = result.rows;
 
-    socket.emit(SocketEvents.PROJECT_STATUS_CHANGE.toString(), {
+    const payload = {
       id: body.project_id,
       status: d.id,
       status_icon: d.icon,
       status_color: d.color_code,
       status_name: d.name
-    });
+    };
+    socket.broadcast.to(body.project_id).emit(SocketEvents.PROJECT_STATUS_CHANGE.toString(), payload);
+    socket.emit(SocketEvents.PROJECT_STATUS_CHANGE.toString(), payload);
   } catch (error) {
     log_error(error);
   }

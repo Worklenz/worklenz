@@ -15,52 +15,91 @@ import { useTranslation } from 'react-i18next';
 
 type ProjectDatesCellProps = {
   projectId: string;
-  startDate: Date | null;
-  endDate: Date | null;
+  startDate: string | Date | null;
+  endDate: string | Date | null;
 };
 
 const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCellProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
-  const startDayjs = startDate ? dayjs(startDate) : null;
-  const endDayjs = endDate ? dayjs(endDate) : null;
   const { socket, connected } = useSocket();
 
-  // Active date picker state - similar to task DatePickerColumn
+  // Optimistic local state
+  const [localStartDate, setLocalStartDate] = useState<Dayjs | null>(() =>
+    startDate ? dayjs(startDate) : null
+  );
+  const [localEndDate, setLocalEndDate] = useState<Dayjs | null>(() =>
+    endDate ? dayjs(endDate) : null
+  );
+
+  useEffect(() => {
+    setLocalStartDate(startDate ? dayjs(startDate) : null);
+  }, [startDate]);
+
+  useEffect(() => {
+    setLocalEndDate(endDate ? dayjs(endDate) : null);
+  }, [endDate]);
+
+  // Active date picker state
   const [activeDatePicker, setActiveDatePicker] = useState<'start' | 'end' | null>(null);
+
+  // Date validation: start date cannot be after end date, and end date cannot be before start date
+  const disabledStartDate = useCallback(
+    (current: Dayjs) => {
+      if (localEndDate && current) {
+        return current.startOf('day').isAfter(localEndDate.startOf('day'));
+      }
+      return false;
+    },
+    [localEndDate]
+  );
+
+  const disabledEndDate = useCallback(
+    (current: Dayjs) => {
+      if (localStartDate && current) {
+        return current.startOf('day').isBefore(localStartDate.startOf('day'));
+      }
+      return false;
+    },
+    [localStartDate]
+  );
 
   const handleStartDateChangeResponse = useCallback(
     (data: { project_id: string; start_date: string }) => {
       try {
-        // FIX: Use 'id' instead of 'project_id' to match Redux slice expectations
+        if (data.project_id === projectId) {
+          setLocalStartDate(data.start_date ? dayjs(data.start_date) : null);
+        }
         dispatch(
           setProjectStartDate({
             id: data.project_id,
-            start_date: data.start_date, // Backend now returns YYYY-MM-DD format
+            start_date: data.start_date,
           })
         );
       } catch (error) {
         logger.error('Error updating start date:', error);
       }
     },
-    [dispatch]
+    [dispatch, projectId]
   );
 
   const handleEndDateChangeResponse = useCallback(
     (data: { project_id: string; end_date: string }) => {
       try {
-        // FIX: Use 'id' instead of 'project_id' to match Redux slice expectations
+        if (data.project_id === projectId) {
+          setLocalEndDate(data.end_date ? dayjs(data.end_date) : null);
+        }
         dispatch(
           setProjectEndDate({
             id: data.project_id,
-            end_date: data.end_date, // Backend now returns YYYY-MM-DD format
+            end_date: data.end_date,
           })
         );
       } catch (error) {
         logger.error('Error updating end date:', error);
       }
     },
-    [dispatch]
+    [dispatch, projectId]
   );
 
   const handleStartDateChange = useCallback(
@@ -69,23 +108,33 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
         if (!socket) {
           throw new Error('Socket connection not available');
         }
-        // FIX: Send date in YYYY-MM-DD format consistently like tasks, including timezone info
+
+        const formattedDate = date ? date.format('YYYY-MM-DD') : null;
+        setLocalStartDate(date);
+
+        // Optimistically update Redux
+        dispatch(
+          setProjectStartDate({
+            id: projectId,
+            start_date: formattedDate,
+          })
+        );
+
         socket.emit(
           SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
           JSON.stringify({
             project_id: projectId,
-            start_date: date?.format('YYYY-MM-DD'),
+            start_date: formattedDate,
             time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           })
         );
 
-        // Close the date picker after selection - like tasks
         setActiveDatePicker(null);
       } catch (error) {
         logger.error('Error sending start date change:', error);
       }
     },
-    [socket, projectId]
+    [socket, projectId, dispatch]
   );
 
   const handleEndDateChange = useCallback(
@@ -94,26 +143,36 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
         if (!socket) {
           throw new Error('Socket connection not available');
         }
-        // FIX: Send date in YYYY-MM-DD format consistently like tasks, including timezone info
+
+        const formattedDate = date ? date.format('YYYY-MM-DD') : null;
+        setLocalEndDate(date);
+
+        // Optimistically update Redux so Days Left / Overdue column updates in real-time
+        dispatch(
+          setProjectEndDate({
+            id: projectId,
+            end_date: formattedDate,
+          })
+        );
+
         socket.emit(
           SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
           JSON.stringify({
             project_id: projectId,
-            end_date: date?.format('YYYY-MM-DD'),
+            end_date: formattedDate,
             time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           })
         );
 
-        // Close the date picker after selection - like tasks
         setActiveDatePicker(null);
       } catch (error) {
         logger.error('Error sending end date change:', error);
       }
     },
-    [socket, projectId]
+    [socket, projectId, dispatch]
   );
 
-  // Handle clear date - similar to task DatePickerColumn
+  // Handle clear date on mousedown so it fires before blur/unmount
   const handleClearStartDate = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -132,7 +191,6 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
     [handleEndDateChange]
   );
 
-  // Handle open date picker - similar to task DatePickerColumn
   const handleOpenStartDatePicker = useCallback(() => {
     setActiveDatePicker('start');
   }, []);
@@ -147,11 +205,11 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
       socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
 
       return () => {
-        socket.removeListener(
+        socket.off(
           SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
           handleStartDateChangeResponse
         );
-        socket.removeListener(
+        socket.off(
           SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
           handleEndDateChangeResponse
         );
@@ -165,10 +223,11 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
       {activeDatePicker === 'start' ? (
         <div className="relative">
           <DatePicker
-            disabledDate={current => current > (endDayjs || dayjs())}
+            disabledDate={disabledStartDate}
             placeholder={t('setStartDate')}
-            value={startDayjs}
+            value={localStartDate}
             format={'MMM DD, YYYY'}
+            allowClear={false}
             suffixIcon={null}
             onChange={handleStartDateChange}
             open={true}
@@ -185,9 +244,9 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
             autoFocus
           />
           {/* Custom clear button */}
-          {startDayjs && (
+          {localStartDate && (
             <button
-              onClick={handleClearStartDate}
+              onMouseDown={handleClearStartDate}
               className="absolute right-1 top-1/2 transform -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
               title={t('clearStartDate')}
             >
@@ -203,9 +262,9 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
             handleOpenStartDatePicker();
           }}
         >
-          {startDayjs ? (
+          {localStartDate ? (
             <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-              {startDayjs.format('MMM DD, YYYY')}
+              {localStartDate.format('MMM DD, YYYY')}
             </span>
           ) : (
             <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">
@@ -221,10 +280,11 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
       {activeDatePicker === 'end' ? (
         <div className="relative">
           <DatePicker
-            disabledDate={current => current < (startDayjs || dayjs())}
+            disabledDate={disabledEndDate}
             placeholder={t('setEndDate')}
-            value={endDayjs}
+            value={localEndDate}
             format={'MMM DD, YYYY'}
+            allowClear={false}
             suffixIcon={null}
             onChange={handleEndDateChange}
             open={true}
@@ -241,9 +301,9 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
             autoFocus
           />
           {/* Custom clear button */}
-          {endDayjs && (
+          {localEndDate && (
             <button
-              onClick={handleClearEndDate}
+              onMouseDown={handleClearEndDate}
               className="absolute right-1 top-1/2 transform -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
               title={t('clearEndDate')}
             >
@@ -259,9 +319,9 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
             handleOpenEndDatePicker();
           }}
         >
-          {endDayjs ? (
+          {localEndDate ? (
             <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-              {endDayjs.format('MMM DD, YYYY')}
+              {localEndDate.format('MMM DD, YYYY')}
             </span>
           ) : (
             <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">

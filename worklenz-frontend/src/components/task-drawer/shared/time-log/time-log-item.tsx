@@ -1,6 +1,6 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Divider, Flex, Popconfirm, Typography, Space } from '@/shared/antd-imports';
-import { colors } from '@/styles/colors';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { formatDateTimeWithUserTimezone } from '@/utils/format-date-time-with-user-timezone';
@@ -10,8 +10,8 @@ import { taskTimeLogsApiService } from '@/api/tasks/task-time-logs.api.service';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setTimeLogEditing } from '@/features/task-drawer/task-drawer.slice';
-import TimeLogForm from './time-log-form';
 import { useAuthService } from '@/hooks/useAuth';
+import useIsProjectManager from '@/hooks/useIsProjectManager';
 
 type TimeLogItemProps = {
   log: ITaskLogViewModel;
@@ -20,6 +20,7 @@ type TimeLogItemProps = {
 };
 
 const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
+  const { t } = useTranslation('task-drawer/task-drawer');
   const {
     user_name,
     avatar_url,
@@ -29,9 +30,15 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
     user_id,
     description,
   } = log;
-  const { selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
+  const { selectedTaskId, taskFormViewModel } = useAppSelector(
+    state => state.taskDrawerReducer
+  );
   const dispatch = useAppDispatch();
-  const currentSession = useAuthService().getCurrentSession();
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const projectId = taskFormViewModel?.task?.project_id ?? null;
+  const isProjectManager = useIsProjectManager(projectId);
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
 
   const renderLoggedByTimer = () => {
     if (!logged_by_timer) return null;
@@ -45,7 +52,10 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
     );
   };
 
-  const canDelete = user_id === currentSession?.id;
+  const isOwnLog = user_id === currentSession?.id;
+  // Own logs, or Owner/Admin / PM on this project (full task actions).
+  const canManageLog =
+    !isGuest && (isOwnLog || isOwnerOrAdmin || isProjectManager);
 
   const handleDeleteTimeLog = async (logId: string | undefined) => {
     if (!logId || !selectedTaskId) return;
@@ -65,7 +75,7 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
   };
 
   const renderActionButtons = () => {
-    if (!canDelete || isGuest) return null;
+    if (!canManageLog) return null;
 
     return (
       <Space size={8}>
@@ -73,15 +83,24 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
           type="link"
           onClick={handleEdit}
           style={{ padding: '0', height: 'auto', fontSize: '14px' }}
+          aria-label={t('taskTimeLogTab.edit', { defaultValue: 'Edit' })}
         >
-          Edit
+          {t('taskTimeLogTab.edit', { defaultValue: 'Edit' })}
         </Button>
         <Popconfirm
-          title="Are you sure you want to delete this time log?"
+          title={t('taskTimeLogTab.confirmDelete', {
+            defaultValue: 'Are you sure you want to delete this time log?',
+          })}
           onConfirm={() => handleDeleteTimeLog(log.id)}
+          okText={t('taskTimeLogTab.confirmDeleteYes', { defaultValue: 'Yes' })}
+          cancelText={t('taskTimeLogTab.confirmDeleteNo', { defaultValue: 'No' })}
         >
-          <Button type="link" style={{ padding: '0', height: 'auto', fontSize: '14px' }}>
-            Delete
+          <Button
+            type="link"
+            style={{ padding: '0', height: 'auto', fontSize: '14px' }}
+            aria-label={t('taskTimeLogTab.delete', { defaultValue: 'Delete' })}
+          >
+            {t('taskTimeLogTab.delete', { defaultValue: 'Delete' })}
           </Button>
         </Popconfirm>
       </Space>

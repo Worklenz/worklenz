@@ -58,9 +58,9 @@ import {
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
 import { message } from '@/shared/antd-imports';
 import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { SeatLimitModal } from '@/components/common/seat-limit-modal/SeatLimitModal';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import './team-members-settings.css';
 

@@ -6,7 +6,7 @@ import "./config";
 import {Server, Socket} from "socket.io";
 import http, {IncomingHttpHeaders} from "http";
 
-import app from "../app";
+import app, { startBackgroundWorkers } from "../app";
 import {register} from "../socket.io";
 import {IO} from "../shared/io";
 import sessionMiddleware from "../middlewares/session-middleware";
@@ -15,11 +15,14 @@ import {startCronJobs} from "../cron_jobs";
 import {startRecurringTasksJob} from "../cron_jobs/recurring-tasks";
 import {startProjectFilesCleanupJob} from "../cron_jobs/project-files-cleanup-job";
 import {startTaskExportCleanupJob} from "../cron_jobs/task-export-cleanup-job";
+import {startAuditLogExportCleanupJob} from "../cron_jobs/audit-log-export-cleanup-job";
+import {startAuditLogRetentionJob} from "../cron_jobs/audit-log-retention-job";
 import FileConstants from "../shared/file-constants";
 import {initRedis} from "../redis/client";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
 import { getEmailConfigurationErrors } from "../shared/email";
 import { getDeploymentMode } from "../shared/deployment-mode";
+import { initializeI18n } from "../config/i18n";
 
 function normalizePort(val?: string) {
   const p = parseInt(val || "0", 10);
@@ -116,9 +119,12 @@ function onListening() {
     : `port ${addr.port}`;
 
   process.env.ENABLE_EMAIL_CRONJOBS === "true" && startCronJobs();
+  startBackgroundWorkers();
   process.env.ENABLE_RECURRING_JOBS === "true" && startRecurringTasksJob();
   startProjectFilesCleanupJob();
   startTaskExportCleanupJob();
+  startAuditLogExportCleanupJob();
+  startAuditLogRetentionJob();
   // void initRedis();
   FileConstants.init();
   void DbTaskStatusChangeListener.connect();
@@ -138,4 +144,14 @@ process.on("SIGINT", () => {
   server.close();
 });
 
-server.listen(port);
+const startServer = async (): Promise<void> => {
+  try {
+    await initializeI18n();
+    server.listen(port);
+  } catch (error) {
+    console.error("Failed to initialize i18n", error);
+    process.exit(1);
+  }
+};
+
+void startServer();

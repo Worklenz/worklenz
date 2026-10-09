@@ -2586,8 +2586,6 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
     // Handle task date update
     const handleTaskDateUpdate = useCallback(
       async (taskId: string, startDate: Date | null, endDate: Date | null) => {
-        if (!startDate || !endDate) return;
-
         // Find the task to check if it's a phase
         const task = finalTasks.find(t => 'id' in t && t.id === taskId);
         if (task && 'type' in task && (task.type === 'milestone' || task.is_milestone)) {
@@ -2600,20 +2598,28 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
         // matching TaskBarRow's own optimistic `tempDates` — so a row that just went
         // from dateless to dated re-enables its "+ Add Task" rollover ghost right away
         // instead of waiting for the mutation + onRefresh() to catch up the `tasks` prop.
+        // When both dates are null (clearing), remove any pending entry so the bar
+        // reverts to dateless immediately.
         setPendingTaskDates(prev => {
           const next = new Map(prev);
-          next.set(taskId, { start: startDate, end: endDate });
+          if (startDate && endDate) {
+            next.set(taskId, { start: startDate, end: endDate });
+          } else {
+            next.delete(taskId);
+          }
           return next;
         });
 
         try {
           await updateTaskDates({
             task_id: taskId,
-            start_date: formatDateLocal(startDate),
-            end_date: formatDateLocal(endDate),
+            start_date: startDate ? formatDateLocal(startDate) : null,
+            end_date: endDate ? formatDateLocal(endDate) : null,
           }).unwrap();
 
-          message.success(t('task.datesUpdatedSuccessfully', 'Task dates updated successfully'));
+          if (startDate && endDate) {
+            message.success(t('task.datesUpdatedSuccessfully', 'Task dates updated successfully'));
+          }
 
           // Delay the refresh slightly to allow the UI to settle
           // This prevents the task bar from jumping back

@@ -118,6 +118,62 @@ export const updatePhaseName = createAsyncThunk(
   }
 );
 
+export const updatePhaseDates = createAsyncThunk(
+  'phase/updatePhaseDates',
+  async (
+    {
+      phase,
+      projectId,
+      start_date,
+      end_date,
+    }: {
+      phase: ITaskPhase;
+      projectId: string;
+      start_date: string | null;
+      end_date: string | null;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await phasesApiService.updateNameOfPhase(
+        phase.id,
+        { ...phase, start_date, end_date },
+        projectId
+      );
+      return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
+export interface SprintDetailsUpdate {
+  name: string;
+  sprint_goal: string | null;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+export const updateSprintDetails = createAsyncThunk(
+  'phase/updateSprintDetails',
+  async (
+    { phase, projectId, details }: { phase: ITaskPhase; projectId: string; details: SprintDetailsUpdate },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await phasesApiService.updateNameOfPhase(
+        phase.id,
+        { ...phase, ...details },
+        projectId
+      );
+      if (!response.done) return rejectWithValue(response);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
 export const updatePhaseDefaultAssignee = createAsyncThunk(
   'phase/updatePhaseDefaultAssignee',
   async (
@@ -134,6 +190,73 @@ export const updatePhaseDefaultAssignee = createAsyncThunk(
         projectId,
         defaultAssigneeId
       );
+      return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
+export const startSprint = createAsyncThunk(
+  'phase/startSprint',
+  async (
+    { phaseId, projectId }: { phaseId: string; projectId: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await phasesApiService.startSprint(phaseId, projectId);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
+export const completeSprint = createAsyncThunk(
+  'phase/completeSprint',
+  async (
+    {
+      phaseId,
+      projectId,
+      destinationPhaseId,
+    }: { phaseId: string; projectId: string; destinationPhaseId?: string | null },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await phasesApiService.completeSprint(
+        phaseId,
+        projectId,
+        destinationPhaseId ?? null
+      );
+      return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
+export const addPhaseWithDates = createAsyncThunk(
+  'phase/addPhaseWithDates',
+  async (
+    {
+      projectId,
+      name,
+      start_date,
+      end_date,
+    }: {
+      projectId: string;
+      name: string;
+      start_date?: string | null;
+      end_date?: string | null;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await phasesApiService.addPhaseOptionWithDates(projectId, {
+        name,
+        start_date,
+        end_date,
+      });
       return response;
     } catch (error) {
       return rejectWithValue(error);
@@ -196,6 +319,56 @@ const phaseSlice = createSlice({
       }
     });
 
+    builder.addCase(addPhaseWithDates.fulfilled, (state, action) => {
+      if (action.payload?.body) {
+        const newPhase = action.payload.body;
+        state.phaseList.unshift({
+          ...newPhase,
+          color_code:
+            newPhase.color_code?.length === 9
+              ? newPhase.color_code.slice(0, 7)
+              : newPhase.color_code,
+        });
+      }
+    });
+
+    builder.addCase(startSprint.fulfilled, (state, action) => {
+      if (action.payload?.body) {
+        const updated = action.payload.body;
+        state.phaseList = state.phaseList.map(p =>
+          p.id === updated.id
+            ? {
+                ...p,
+                ...updated,
+                color_code:
+                  updated.color_code?.length === 9
+                    ? updated.color_code.slice(0, 7)
+                    : updated.color_code,
+              }
+            : p.sprint_status === 'active'
+              ? { ...p, sprint_status: 'planned' as const }
+              : p
+        );
+      }
+    });
+
+    builder.addCase(completeSprint.fulfilled, (state, action) => {
+      if (action.payload?.body) {
+        const updated = action.payload.body;
+        const idx = state.phaseList.findIndex(p => p.id === updated.id);
+        if (idx !== -1) {
+          state.phaseList[idx] = {
+            ...state.phaseList[idx],
+            ...updated,
+            color_code:
+              updated.color_code?.length === 9
+                ? updated.color_code.slice(0, 7)
+                : updated.color_code,
+          };
+        }
+      }
+    });
+
     builder.addCase(updatePhaseColor.fulfilled, (state, action) => {
       if (action.payload?.body) {
         const updated = action.payload.body;
@@ -219,6 +392,35 @@ const phaseSlice = createSlice({
         if (idx !== -1) {
           state.phaseList[idx] = { ...state.phaseList[idx], name: updated.name };
         }
+      }
+    });
+
+    builder.addCase(updatePhaseDates.fulfilled, (state, action) => {
+      if (action.payload?.body) {
+        const updated = action.payload.body;
+        const idx = state.phaseList.findIndex(p => p.id === updated.id);
+        if (idx !== -1) {
+          state.phaseList[idx] = {
+            ...state.phaseList[idx],
+            start_date: updated.start_date,
+            end_date: updated.end_date,
+          };
+        }
+      }
+    });
+
+    builder.addCase(updateSprintDetails.fulfilled, (state, action) => {
+      const updated = action.payload?.body;
+      if (!updated) return;
+      const idx = state.phaseList.findIndex(p => p.id === updated.id);
+      if (idx !== -1) {
+        state.phaseList[idx] = {
+          ...state.phaseList[idx],
+          name: updated.name,
+          sprint_goal: updated.sprint_goal ?? null,
+          start_date: updated.start_date,
+          end_date: updated.end_date,
+        };
       }
     });
 

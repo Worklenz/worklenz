@@ -3,7 +3,12 @@ import { TaskGroup } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
 import { selectAllTasksArray } from './task-management.selectors';
 
-type GroupingType = 'status' | 'priority' | 'phase';
+export type GroupingType = 'status' | 'priority' | 'phase' | 'assignee';
+
+export const GROUPING_TYPES: readonly GroupingType[] = ['status', 'priority', 'phase', 'assignee'];
+
+export const isGroupingType = (value: unknown): value is GroupingType =>
+  typeof value === 'string' && (GROUPING_TYPES as readonly string[]).includes(value);
 
 interface LocalGroupingState {
   currentGrouping: GroupingType | null;
@@ -13,6 +18,7 @@ interface LocalGroupingState {
     status: string[];
     priority: string[];
     phase: string[];
+    assignee: string[];
   };
   groupStates: Record<string, { collapsed: boolean }>;
   collapsedGroups: string[];
@@ -28,13 +34,13 @@ const getLocalStorageKey = (projectId?: string | null): string =>
 const loadGroupingFromLocalStorage = (projectId?: string | null): GroupingType | null => {
   try {
     const stored = localStorage.getItem(getLocalStorageKey(projectId));
-    if (stored && ['status', 'priority', 'phase'].includes(stored)) {
-      return stored as GroupingType;
+    if (isGroupingType(stored)) {
+      return stored;
     }
     // Fallback to legacy global key for backward compatibility
     const legacy = localStorage.getItem(LOCALSTORAGE_GROUP_KEY_PREFIX);
-    if (legacy && ['status', 'priority', 'phase'].includes(legacy)) {
-      return legacy as GroupingType;
+    if (isGroupingType(legacy)) {
+      return legacy;
     }
   } catch (error) {
     console.warn('Failed to load grouping from localStorage:', error);
@@ -63,6 +69,7 @@ const initialState: LocalGroupingState = {
     status: ['todo', 'doing', 'done'],
     priority: ['critical', 'high', 'medium', 'low'],
     phase: ['Planning', 'Development', 'Testing', 'Deployment'],
+    assignee: [],
   },
   groupStates: {},
   collapsedGroups: [],
@@ -303,6 +310,7 @@ const getGroupColor = (groupType: GroupingType, value: string): string => {
       Deployment: '#52c41a',
       Unmapped: '#fbc84c69',
     },
+    assignee: {},
   };
 
   const colorMap = colorMaps[groupType];

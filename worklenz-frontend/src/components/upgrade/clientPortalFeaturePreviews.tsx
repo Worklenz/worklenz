@@ -6,7 +6,6 @@ import ClientPortalServicesPreviewMockup from './mockups/ClientPortalServicesPre
 import ClientPortalChatsPreviewMockup from './mockups/ClientPortalChatsPreviewMockup';
 import ClientPortalInvoicesPreviewMockup from './mockups/ClientPortalInvoicesPreviewMockup';
 import ClientPortalSettingsPreviewMockup from './mockups/ClientPortalSettingsPreviewMockup';
-import TicketingPreviewMockup from './mockups/TicketingPreviewMockup';
 
 export interface ClientPortalFeaturePreview {
   title: string;
@@ -66,7 +65,7 @@ export const useClientPortalFeaturePreviews = (): Record<string, ClientPortalFea
       mockup: <ClientPortalServicesPreviewMockup />,
     },
     chats: {
-      title: t('title', { ns: 'client-portal-chats', defaultValue: 'Messages' }),
+      title: t('title', { ns: 'client-portal-chats', defaultValue: 'Chats' }),
       description: t('cards.clientPortal.chats.description', {
         ns: 'upgrade-preview',
         defaultValue: 'Message clients directly from the same portal they use for everything else.',
@@ -82,15 +81,6 @@ export const useClientPortalFeaturePreviews = (): Record<string, ClientPortalFea
       }),
       features: t('cards.clientPortal.invoices.features', { ns: 'upgrade-preview', returnObjects: true, defaultValue: [] }) as string[],
       mockup: <ClientPortalInvoicesPreviewMockup />,
-    },
-    ticketing: {
-      title: t('cards.clientPortal.ticketing.title', { ns: 'upgrade-preview', defaultValue: 'Ticketing' }),
-      description: t('cards.clientPortal.ticketing.description', {
-        ns: 'upgrade-preview',
-        defaultValue: 'Let clients raise and track support tickets right from their portal.',
-      }),
-      features: t('cards.clientPortal.ticketing.features', { ns: 'upgrade-preview', returnObjects: true, defaultValue: [] }) as string[],
-      mockup: <TicketingPreviewMockup />,
     },
     settings: {
       title: t('title', { ns: 'client-portal-settings', defaultValue: 'Portal Settings' }),

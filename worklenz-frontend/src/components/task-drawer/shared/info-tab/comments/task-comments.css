@@ -179,6 +179,13 @@
   box-shadow: none !important;
 }
 
+.current-user-comment:has(.comment-edit-container) .ant-comment-content-detail {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
 /* Mentions in current user comments */
 .theme-light .current-user-comment .mentions {
   background: #d1e9ff;
@@ -290,7 +297,6 @@
 }
 
 /* ─── Hover bar (floats above the bubble on hover) ───────────────────────── */
-
 .comment-hover-bar {
   position: absolute;
   bottom: -52px;
@@ -308,6 +314,12 @@
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   pointer-events: none;
+}
+
+/* Left-side comments (other users) → put the bar on the left */
+.ant-comment:not(.current-user-comment) .comment-hover-bar {
+  right: auto;
+  left: 4px;
 }
 
 .comment-hover-bar.theme-light {
@@ -473,7 +485,8 @@
 
 .comment-edit-container {
   position: relative;
-  width: fit-content;
+  width: max-content;
+  min-width: 160px;
   max-width: 85%;
   margin-left: auto;
   padding: 8px 12px;

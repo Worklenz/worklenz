@@ -21,7 +21,7 @@ import PeopleDropdown from '@/components/common/people-dropdown/PeopleDropdown';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { setTaskCustomColumnValue } from '@/features/task-drawer/task-drawer.slice';
 import { updateTask } from '@/features/task-management/task-management.slice';
 import { selectCustomColumns } from '@/features/task-management/task-management.selectors';
@@ -47,7 +47,7 @@ import {
   getTaskCustomFieldDisplayName,
   parsePeopleCustomFieldValue,
 } from '@/utils/task-custom-columns';
-import { hasBusinessFeatureAccess, isFreeUser } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess, isFreeUser } from '@/utils/subscription-utils';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import { LICENSING_SETTINGS } from '@/shared/licensing_settings';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';

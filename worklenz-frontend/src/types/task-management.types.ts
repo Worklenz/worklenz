@@ -1,6 +1,7 @@
 import { InlineMember } from './teamMembers/inlineMember.types';
 import { EntityState } from '@reduxjs/toolkit';
 import { ITaskListColumn } from './tasks/taskList.types';
+import { IssueType } from './project/softwareIssue.types';
 
 export interface Task {
   id: string;
@@ -11,6 +12,10 @@ export interface Task {
   status: string;
   priority: string;
   phase?: string;
+  epic_id?: string | null;
+  story_points?: number | null;
+  is_blocked?: boolean;
+  issue_type?: IssueType;
   assignee?: string;
   assignees?: string[]; // Array of assigned member IDs
   assignee_names?: InlineMember[]; // Array of assigned members
@@ -48,6 +53,10 @@ export interface Task {
   all_labels?: { id: string; name: string; color_code: string }[]; // Complete list of labels for selection logic
   comments_count?: number;
   attachments_count?: number;
+  attachments?: ITaskAttachmentViewModel[];
+  latest_comment?: string | null;
+  latest_comment_at?: string | null;
+  latest_comment_author?: string | null;
   has_dependencies?: boolean;
   has_subscribers?: boolean;
   billable?: boolean;
@@ -74,16 +83,17 @@ export interface TaskGroup {
   id: string;
   title: string;
   taskIds: string[];
-  type?: 'status' | 'priority' | 'phase' | 'members';
+  type?: 'status' | 'priority' | 'phase' | 'members' | 'assignee';
   color?: string;
   color_code_dark?: string;
   collapsed?: boolean;
   groupValue?: string;
+  avatar_url?: string | null;
   // Add any other group properties as needed
 }
 
 export interface GroupingConfig {
-  currentGrouping: 'status' | 'priority' | 'phase';
+  currentGrouping: 'status' | 'priority' | 'phase' | 'assignee';
   customPhases: string[]; // User-defined phases
   groupOrder: Record<string, string[]>; // Order of groups for each grouping type
 }
@@ -120,6 +130,8 @@ export interface TaskManagementState {
   loading: boolean;
   error: string | null;
   loadedProjectId: string | null;
+  /** Request id of the most recent task list fetch; older responses are ignored. */
+  latestTasksRequestId?: string | null;
   groups: TaskGroup[];
   grouping: string | undefined;
   selectedPriorities: string[];

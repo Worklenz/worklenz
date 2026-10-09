@@ -1,0 +1,14 @@
+{
+  "formTitle": "Stwórz swój pierwszy projekt",
+  "inputLabel": "Nad jakim projektem teraz pracujesz?",
+  "or": "lub",
+  "templateButton": "Importuj z szablonu",
+  "createFromTemplate": "Utwórz z szablonu",
+  "importTasks": "Importuj zadania",
+  "goBack": "Wróć",
+  "continue": "Kontynuuj",
+  "cancel": "Anuluj",
+  "create": "Utwórz",
+  "templateDrawerTitle": "Wybierz z szablonów",
+  "createProject": "Utwórz projekt"
+}

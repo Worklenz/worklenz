@@ -5,5 +5,7 @@
   "billing": "Facturación",
   "projects": "Proyectos",
   "settings": "Configuración",
-  "adminCenter": "Centro de Administración"
+  "adminCenter": "Centro de Administración",
+  "security": "Seguridad",
+  "newBadge": "NUEVO"
 }

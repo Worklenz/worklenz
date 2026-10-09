@@ -1,13 +1,13 @@
 {
   "connect": "Verbinden",
-  "comingSoon": "Demnächst verfügbar",
+  "comingSoon": "Demnächst",
   "availableSoon": "Demnächst verfügbar",
   "slack": {
-    "title": "Slack",
+    "title": "Locker",
     "description": "Integrieren Sie Slack, um Echtzeit-Benachrichtigungen zu erhalten, Aufgaben zu erstellen und Ihr Team zu synchronisieren."
   },
   "teams": {
-    "title": "Microsoft Teams",
+    "title": "Microsoft-Teams",
     "description": "Integrieren Sie Microsoft Teams mit Ihrem Worklenz-Team, um Echtzeit-Benachrichtigungen zu erhalten, Aufgaben aus Teams zu erstellen und Ihr Team auf beiden Plattformen synchronisiert zu halten."
   },
   "github": {
@@ -21,7 +21,5 @@
   "googleCalendar": {
     "title": "Google Kalender",
     "description": "Synchronisieren Sie Ihre Aufgaben und Fristen mit Google Kalender, um Ihren Zeitplan zu verwalten, Erinnerungen einzustellen und wichtige Projektmeilensteine nicht zu verpassen."
-  },
-  "connect": "Verbinden",
-  "comingSoon": "Demnächst"
+  }
 }

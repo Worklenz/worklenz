@@ -23,7 +23,7 @@ import { ITaskViewModel } from '@/types/tasks/task.types';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import logger from '@/utils/errorLogger';
-import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { sortTeamMembers } from '@/utils/sort-team-members';

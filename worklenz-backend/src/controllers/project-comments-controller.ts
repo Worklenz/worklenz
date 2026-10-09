@@ -17,7 +17,7 @@ import { getBaseUrl } from "../cron_jobs/helpers";
 import { syncProjectCommentLinks, deleteCommentLinks } from "../shared/url-extractor";
 import { isValidUuid } from "../shared/validation-helpers";
 import { uploadBase64, getProjectCommentAttachmentKey, getPublicUrl } from "../shared/storage";
-import { getFreePlanSettings, getUsedStorage } from "../ee/shared/paddle-utils";
+import { getFreePlanSettings, getUsedStorage } from "../shared/paddle-utils";
 
 const ALLOWED_ATTACHMENT_TYPES = [
   "image/jpeg", "image/png", "image/gif", "image/webp",
@@ -237,6 +237,9 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
         teamId: req.user?.team_id as string,
         socketId: member.socket_id,
         message: commentMessage,
+        messageKey: "notifications.commentAdded",
+        messageParams: { user: req.user?.name || "Unknown User", task: data.comment.project_name },
+        notificationTypeKey: "PROJECT_COMMENT_ADDED",
         taskId: null,
         projectId
       });
@@ -267,6 +270,9 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
           team: data.comment.team_name,
           receiver_socket_id: member.socket_id,
           message: mentionMessage,
+          message_key: "notifications.mentionedInProjectComment",
+          message_params: { user: req.user?.name, project: data.comment.project_name },
+          notification_type_key: "PROJECT_COMMENT_MENTION",
           task_id: "",
           project_id: projectId,
           project: data.comment.project_name,

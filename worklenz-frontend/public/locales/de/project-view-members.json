@@ -27,5 +27,18 @@
   "invite": "Einladen",
   "Invite": "Einladen",
   "removeSuccess": "{{name}} aus Projekt entfernt",
-  "removeError": "Mitglied konnte nicht entfernt werden"
+  "removeError": "Mitglied konnte nicht entfernt werden",
+  "memberNotFound": "Teammitgliedsinformationen nicht gefunden",
+  "manageTimeOff": "Abwesenheit verwalten",
+  "seatLimitReached": "Sitzplatzlimit erreicht",
+  "memberDeactivated": "Mitglied erfolgreich deaktiviert",
+  "memberActivated": "Mitglied erfolgreich aktiviert",
+  "statusChangeError": "Der Status des Mitglieds konnte nicht geändert werden",
+  "deactivateTooltip": "Mitglied deaktivieren",
+  "activateTooltip": "Mitglied aktivieren",
+  "editTooltip": "Mitglied bearbeiten",
+  "moreOptions": "Weitere Optionen",
+  "changeMemberStatusConfirmation": "Möchten Sie den Status dieses Mitglieds wirklich ändern?",
+  "yesProceed": "Ja, fortfahren",
+  "cancel": "Abbrechen"
 }

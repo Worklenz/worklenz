@@ -11,6 +11,8 @@ interface TaskPriorityDropdownProps {
   projectId: string;
   isDarkMode?: boolean;
   disabled?: boolean;
+  /** `inline` renders colored text instead of a filled pill (software Backlog). */
+  variant?: 'pill' | 'inline';
 }
 
 const TaskPriorityDropdown: React.FC<TaskPriorityDropdownProps> = ({
@@ -18,6 +20,7 @@ const TaskPriorityDropdown: React.FC<TaskPriorityDropdownProps> = ({
   projectId,
   isDarkMode = false,
   disabled = false,
+  variant = 'pill',
 }) => {
   const { socket, connected } = useSocket();
   const [isOpen, setIsOpen] = useState(false);
@@ -126,6 +129,13 @@ const TaskPriorityDropdown: React.FC<TaskPriorityDropdownProps> = ({
 
   if (!task.priority) return null;
 
+  const priorityColor = currentPriority
+    ? getPriorityColor(currentPriority)
+    : isDarkMode
+      ? '#4b5563'
+      : '#9ca3af';
+  const isInline = variant === 'inline';
+
   return (
     <>
       {/* Priority Button - Simple text display like status */}
@@ -138,34 +148,49 @@ const TaskPriorityDropdown: React.FC<TaskPriorityDropdownProps> = ({
           setIsOpen(!isOpen);
         }}
         disabled={disabled}
-        className={`
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        className={
+          isInline
+            ? `inline-flex items-center gap-1.5 h-[30px] px-2 rounded-md text-xs font-semibold max-w-full
+               whitespace-nowrap bg-transparent border border-transparent transition-colors duration-150
+               hover:border-gray-300 dark:hover:border-gray-600 focus-visible:outline focus-visible:outline-2
+               ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`
+            : `
           inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium
           transition-all duration-200 hover:opacity-80 border-0 min-w-[70px] max-w-full justify-center
           whitespace-nowrap
           ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
-        `}
-        style={{
-          backgroundColor: currentPriority
-            ? getPriorityColor(currentPriority)
-            : isDarkMode
-              ? '#4b5563'
-              : '#9ca3af',
-          color: 'white',
-        }}
+        `
+        }
+        style={
+          isInline
+            ? { color: priorityColor }
+            : { backgroundColor: priorityColor, color: 'white' }
+        }
       >
+        {isInline && (
+          <span
+            aria-hidden="true"
+            className="inline-block w-1.5 h-1.5 rounded-full flex-none"
+            style={{ backgroundColor: priorityColor }}
+          />
+        )}
         <span className="truncate">
           {currentPriority
             ? formatPriorityName(currentPriority.name || '')
             : formatPriorityName(task.priority)}
         </span>
-        <svg
-          className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        {!isInline && (
+          <svg
+            className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        )}
       </button>
 
       {/* Dropdown Menu */}

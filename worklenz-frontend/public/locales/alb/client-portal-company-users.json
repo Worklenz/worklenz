@@ -1,0 +1,172 @@
+{
+  "tabCountLabel": "Totali i përdoruesve të klientëve",
+  "retryButton": "Provo sërish",
+  "cancelButton": "Cancel",
+  "saveButton": "Ruaj",
+  "refreshButton": "Rifresko",
+  "clearFiltersButton": "Pastro filtrat",
+  "addButton": "Shto Klient",
+  "rowActionsLabel": "Veprimet për {{name}}",
+  "searchPlaceholder": "Kërkoni përdoruesit ose kompanitë...",
+  "statusFilterLabel": "Filtro sipas statusit",
+  "allStatusesOption": "Të gjitha statuset",
+  "paginationSummary": "Po shfaq {{from}}-{{to}} nga përdoruesit {{total}}",
+  "errorTitle": "Gabim gjatë ngarkimit të përdoruesve të klientit",
+  "errorDescription": "Pati një gabim gjatë ngarkimit të përdoruesve të klientit. Ju lutemi provoni përsëri.",
+  "statsErrorMessage": "Statistikat e përdoruesve të klientit nuk mund të ngarkoheshin.",
+  "lastActivityInvited": "I ftuar {{time}}",
+  "lastActivityNever": "Nuk u identifikua kurrë",
+  "projectsNone": "Asnjë projekt i caktuar",
+  "projectsCount_one": "Projekti {{count}}",
+  "projectsCount_other": "{{count}} projekte",
+  "stats": {
+    "total": "Totali i përdoruesve të klientëve",
+    "pocs": "POC",
+    "companiesWithoutPoc": "Kompanitë pa POC",
+    "companiesWithoutPocHint": "E lejuar. Një kompani nuk mund të ketë POC.",
+    "disabled": "I paaftë"
+  },
+  "columns": {
+    "user": "Përdoruesi",
+    "email": "Email",
+    "phone": "Telefoni",
+    "company": "Company",
+    "access": "Qasja",
+    "jobTitle": "Titulli i punës",
+    "projects": "Projektet",
+    "portalStatus": "Statusi i Portalit",
+    "actions": "Actions"
+  },
+  "role": {
+    "poc": "POC",
+    "member": "Anëtar"
+  },
+  "portalStatus": {
+    "active": "Aktiv",
+    "invited": "I ftuar",
+    "expired": "I skaduar",
+    "not_invited": "Jo i ftuar",
+    "disabled": "I paaftë"
+  },
+  "empty": {
+    "title": "Nuk u gjet asnjë përdorues klient",
+    "filtered": "Asnjë përdorues nuk përputhet me filtrat aktualë.",
+    "none": "Ende nuk ka përdorues klientë. Shtoni një klient ose një përdorues në një kompani për t'u dhënë njerëzve akses në portalin."
+  },
+  "menu": {
+    "viewProfile": "Shiko profilin",
+    "editUser": "Redakto përdoruesin",
+    "assignProjects": "Caktoni projekte",
+    "makePoc": "Bëni POC",
+    "removePoc": "Hiq POC",
+    "sendInvite": "Dërgo Ftesë",
+    "resendInvite": "Ridërgo Ftesën",
+    "enableUser": "Aktivizo Përdoruesin",
+    "disableUser": "Çaktivizo Përdoruesin",
+    "removeUser": "Hiq përdoruesin"
+  },
+  "confirmDisable": {
+    "title": "Të çaktivizohet ky përdorues?",
+    "content": "{{name}} do të humbasë qasjen në portal menjëherë. Mund t'i aktivizoni përsëri më vonë dhe ata do të kthehen në statusin që kishin.",
+    "ok": "Çaktivizo përdoruesin"
+  },
+  "confirmRemove": {
+    "title": "Të hiqet ky përdorues?",
+    "content": "{{name}} do të hiqet nga kompania dhe do të humbasë aksesin në portal. Kjo nuk mund të zhbëhet. Kompania dhe përdoruesit e tjerë të saj nuk preken.",
+    "ok": "Hiq përdoruesin"
+  },
+  "messages": {
+    "madePoc": "{{name}} tani është një POC.",
+    "removedPoc": "{{name}} nuk është më një POC.",
+    "roleError": "Roli nuk mund të ndryshohej.",
+    "inviteSent": "Ftesa u dërgua te {{email}}.",
+    "inviteEmailFailed": "Ftesa u krijua por emaili nuk mund të dërgohej.",
+    "inviteError": "Ftesa nuk mund të dërgohej.",
+    "disabled": "{{name}} u çaktivizua.",
+    "enabled": "{{name}} u aktivizua.",
+    "statusError": "Përdoruesi nuk mund të përditësohej.",
+    "removed": "{{name}} u hoq.",
+    "removeError": "Përdoruesi nuk mund të hiqej.",
+    "linkCopied": "Lidhja e ftesës u kopjua.",
+    "linkCopyError": "Lidhja nuk mund të kopjohej."
+  },
+  "permissionLevels": {
+    "unknown": "Niveli i panjohur",
+    "view": {
+      "label": "Shiko vetëm",
+      "description": "Statusi, piketa, detyrat dhe rezultatet. Nuk ka komente, modifikime apo ngarkime."
+    },
+    "comment": {
+      "label": "Shiko + koment",
+      "description": "Komentoni, miratoni ose refuzoni dhe bashkëngjitni skedarë në komente. Nuk mund të krijohen detyra."
+    },
+    "contributor": {
+      "label": "Kontribues i plotë",
+      "description": "Gjithçka e mësipërme, plus krijimi dhe modifikimi i detyrave, ndryshimi i statusit dhe ngarkimi i bashkëngjitjeve."
+    }
+  },
+  "permissionTemplates": {
+    "view_only": {
+      "name": "Shiko Vetëm",
+      "description": "Palët e interesuara që kanë nevojë vetëm për dukshmëri: statusi dhe rezultatet, pa modifikim."
+    },
+    "standard_contact": {
+      "name": "Kontakt standard",
+      "description": "Parazgjedhja për shumicën e kontakteve të klientit: mund të komentojë, miratojë ose refuzojë dhe bashkëngjisë skedarë."
+    },
+    "full_partner": {
+      "name": "Partner i plotë",
+      "description": "Bashkëpunëtorë praktikë: mund të krijojnë dhe modifikojnë detyra dhe të ngarkojnë bashkëngjitje."
+    }
+  },
+  "assignProjects": {
+    "title": "Cakto projekte — {{name}}",
+    "helper": "Zgjidh se cili nga projektet e {{company}} mund të ketë akses {{name}} dhe nivelin e tyre të lejes për secilin. Një projekt mund t'u caktohet shumë përdoruesve të kompanisë.",
+    "noProjectsTitle": "{{company}} nuk ka ende projekte",
+    "noProjectsDescription": "Cakto një projekt për këtë kompani fillimisht, pastaj kthehu për t'i dhënë këtij përdoruesi akses. Modelet e lejeve kanë nevojë për të paktën një projekt për të aplikuar.",
+    "truncatedMessage": "Shfaqen vetëm {{shown}} nga projektet {{total}}, kështu që qasja nuk mund të modifikohet këtu.",
+    "templatesTitle": "Aplikoni një shabllon (vendos çdo projekt më poshtë në atë nivel)",
+    "selectAll": "Zgjidh të gjitha",
+    "selectedCount": "Zgjedhur {{selected}} nga {{total}}",
+    "bulkLabel": "Cakto qasjen për {{count}} të zgjedhur:",
+    "levelFor": "Niveli i lejes për {{project}}",
+    "saveButton": "Ruaj aksesin",
+    "savedMessage": "Qasja në projekt u përditësua për {{name}}.",
+    "saveError": "Qasja në projekt nuk mund të përditësohej.",
+    "loadError": "Projektet e kësaj kompanie nuk mund të ngarkoheshin."
+  },
+  "editUser": {
+    "title": "Redakto përdoruesin",
+    "nameLabel": "Emri i plotë",
+    "namePlaceholder": "Zanë Duka",
+    "nameRequired": "Fut një emër.",
+    "nameTooLong": "Emri mund të jetë më së shumti 255 karaktere.",
+    "emailLabel": "Adresa e emailit",
+    "emailPlaceholder": "jane@company.com",
+    "emailRequired": "Futni një adresë emaili.",
+    "emailInvalid": "Fut një adresë të vlefshme emaili.",
+    "emailLockedHint": "Ky është emaili i tyre i hyrjes, kështu që nuk mund të ndryshohet pasi të kenë akses në portal.",
+    "jobTitleLabel": "Titulli i punës",
+    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "jobTitleTooLong": "Titulli i punës mund të jetë më së shumti 100 karaktere.",
+    "phoneLabel": "Numri i telefonit (opsionale)",
+    "phonePlaceholder": "+1 415 555 0142",
+    "phoneTooLong": "Numri i telefonit mund të jetë më së shumti 50 karaktere.",
+    "footerHint": "Kompania ({{company}}) dhe roli i aksesit menaxhohen veçmas, nga menyja e rreshtave.",
+    "savedMessage": "{{name}} përditësuar.",
+    "saveError": "Ky përdorues nuk mund të përditësohej."
+  },
+  "profile": {
+    "title": "Profili i anëtarit",
+    "email": "Email",
+    "phone": "Telefoni",
+    "jobTitle": "Titulli i punës",
+    "lastActivity": "Aktiviteti i fundit",
+    "signInMethod": "Metoda e hyrjes",
+    "signInPassword": "Fjalëkalimi",
+    "signInNone": "Nuk jeni identifikuar ende",
+    "noJobTitle": "Nuk ka titull pune në dosje",
+    "assignedProjects": "Projektet e caktuara ({{count}})",
+    "noProjects": "Asnjë projekt i caktuar ende."
+  }
+}

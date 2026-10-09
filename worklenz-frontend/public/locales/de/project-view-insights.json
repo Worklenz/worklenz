@@ -64,7 +64,7 @@
     "includeArchivedTasks": "Archivierte Aufgaben einbeziehen",
     "export": "Exportieren",
     "name": "Name",
-    "status": "Status",
+    "status": "Alle Status",
     "dueDate": "Fälligkeitsdatum",
     "lastUpdated": "Zuletzt aktualisiert",
     "na": "n/a"

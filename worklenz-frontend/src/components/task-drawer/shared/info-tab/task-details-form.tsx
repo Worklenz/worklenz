@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Form, ConfigProvider, Flex } from '@/shared/antd-imports';
+import { ConfigProvider, Flex, Form, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { ITaskFormViewModel, ITaskViewModel } from '@/types/tasks/task.types';
 
@@ -11,13 +11,31 @@ import TaskDrawerAssigneeSelector from './details/task-drawer-assignee-selector/
 import Avatars from '@/components/avatars/avatars';
 import TaskDrawerDueDate from './details/task-drawer-due-date/task-drawer-due-date';
 import TaskDrawerEstimation from './details/task-drawer-estimation/task-drawer-estimation';
+import TaskDrawerStoryPoints from './details/task-drawer-story-points/task-drawer-story-points';
 import TaskDrawerPrioritySelector from './details/task-drawer-priority-selector/task-drawer-priority-selector';
 import TaskDrawerBillable from './details/task-drawer-billable/task-drawer-billable';
 import TaskDrawerProgress from './details/task-drawer-progress/task-drawer-progress';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import logger from '@/utils/errorLogger';
 import TaskDrawerRecurringConfig from './details/task-drawer-recurring-config/task-drawer-recurring-config';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import TaskDrawerEpicSelector from './details/task-drawer-epic-selector/task-drawer-epic-selector';
+import TaskDrawerReleaseSelector from './details/task-drawer-release-selector/task-drawer-release-selector';
+import TaskDrawerBlocked from './details/task-drawer-blocked/task-drawer-blocked';
+import TaskDrawerStatusDropdown from '@/components/task-drawer/task-drawer-status-dropdown/task-drawer-status-dropdown';
+import { useTaskDrawerStatuses } from '@/hooks/useTaskDrawerStatuses';
+import { useAuthService } from '@/hooks/useAuth';
+
+const FORM_INITIAL_VALUES = {
+  priority: 'medium',
+  hours: 0,
+  minutes: 0,
+  billable: false,
+  progress_value: null,
+  weight: null,
+  dueTime: null,
+};
 
 interface TaskDetailsFormProps {
   taskFormViewModel?: ITaskFormViewModel | null;
@@ -68,12 +86,43 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
   const { t } = useTranslation('task-drawer/task-drawer');
   const [form] = Form.useForm();
   const { project } = useAppSelector(state => state.projectReducer);
-
+  const isSoftwareProject = isSoftwareProjectType(project?.project_type);
+  const statuses = useTaskDrawerStatuses();
+  const currentSession = useAuthService().getCurrentSession();
   // Use ref to track the current task ID to prevent unnecessary form resets
   const previousTaskIdRef = useRef<string | null>(null);
 
   // Guests cannot edit tasks - disable all fields
   const isReadOnly = isGuest || !canCreateTask;
+
+  const assigneeMembers =
+    taskFormViewModel?.task?.assignee_names ||
+    (taskFormViewModel?.task?.names as unknown as InlineMember[]) ||
+    [];
+  const hasAssignees = assigneeMembers.length > 0;
+
+  const assigneeField = (
+    <Form.Item
+      name="assignees"
+      label={
+        isSoftwareProject
+          ? t('taskInfoTab.details.assignee', { defaultValue: 'Assignee' })
+          : t('taskInfoTab.details.assignees', { defaultValue: 'Assignees' })
+      }
+    >
+      <Flex gap={4} align="center">
+        <Avatars members={assigneeMembers} />
+        {isSoftwareProject && !hasAssignees && (
+          <Typography.Text type="secondary">
+            {t('taskInfoTab.details.unassigned', { defaultValue: 'Unassigned' })}
+          </Typography.Text>
+        )}
+        {!isGuest && (
+          <TaskDrawerAssigneeSelector task={(taskFormViewModel?.task as ITaskViewModel) || null} />
+        )}
+      </Flex>
+    </Form.Item>
+  );
 
   useEffect(() => {
     if (!taskFormViewModel) {
@@ -124,6 +173,54 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
     }
   };
 
+  const task = taskFormViewModel?.task as ITaskViewModel | undefined;
+
+  const phaseField = task && (
+    <TaskDrawerPhaseSelector phases={taskFormViewModel?.phases || []} task={task} />
+  );
+
+  const priorityField = (
+    <Form.Item name="priority" label={t('taskInfoTab.details.priority', { defaultValue: 'Priority' })}>
+      {task && <TaskDrawerPrioritySelector task={task} />}
+    </Form.Item>
+  );
+
+  if (isSoftwareProject) {
+    return (
+      <ConfigProvider theme={{ components: { Form: { itemMarginBottom: 10 } } }}>
+        <Form
+          form={form}
+          layout="horizontal"
+          labelAlign="left"
+          labelCol={{ flex: '120px' }}
+          wrapperCol={{ flex: 1 }}
+          colon={false}
+          initialValues={FORM_INITIAL_VALUES}
+          onFinish={handleSubmit}
+          disabled={isReadOnly}
+        >
+          <Form.Item label={t('taskInfoTab.details.status', { defaultValue: 'Status' })}>
+            {task && (
+              <TaskDrawerStatusDropdown
+                statuses={statuses}
+                task={task}
+                teamId={currentSession?.team_id ?? ''}
+                disabled={isGuest}
+              />
+            )}
+          </Form.Item>
+          {assigneeField}
+          {phaseField}
+          {task && <TaskDrawerEpicSelector task={task} disabled={isReadOnly} />}
+          {task && <TaskDrawerReleaseSelector task={task} disabled={isReadOnly} />}
+          {priorityField}
+          {task && <TaskDrawerStoryPoints task={task} disabled={isReadOnly} />}
+          {task && <TaskDrawerBlocked task={task} disabled={isReadOnly} />}
+        </Form>
+      </ConfigProvider>
+    );
+  }
+
   return (
     <ConfigProvider
       theme={{
@@ -137,15 +234,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
         layout="horizontal"
         labelCol={{ span: 6 }}
         wrapperCol={{ span: 18 }}
-        initialValues={{
-          priority: 'medium',
-          hours: 0,
-          minutes: 0,
-          billable: false,
-          progress_value: null,
-          weight: null,
-          dueTime: null,
-        }}
+        initialValues={FORM_INITIAL_VALUES}
         onFinish={handleSubmit}
         disabled={isReadOnly}
       >
@@ -153,76 +242,24 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
           taskKey={taskFormViewModel?.task?.task_key || 'NEW-TASK'}
           label={t('taskInfoTab.details.task-key', { defaultValue: 'Task Key' })}
         />
-        {taskFormViewModel?.task && (
-          <TaskDrawerPhaseSelector
-            phases={taskFormViewModel?.phases || []}
-            task={taskFormViewModel.task as ITaskViewModel}
-          />
-        )}
-
-        <Form.Item name="assignees" label={t('taskInfoTab.details.assignees', { defaultValue: 'Assignees' })}>
-          {!isGuest ? (
-            <Flex gap={4} align="center">
-              <Avatars
-                members={
-                  taskFormViewModel?.task?.assignee_names ||
-                  (taskFormViewModel?.task?.names as unknown as InlineMember[]) ||
-                  []
-                }
-              />
-              <TaskDrawerAssigneeSelector
-                task={(taskFormViewModel?.task as ITaskViewModel) || null}
-              />
-            </Flex>
-          ) : (
-            <Avatars
-              members={
-                taskFormViewModel?.task?.assignee_names ||
-                (taskFormViewModel?.task?.names as unknown as InlineMember[]) ||
-                []
-              }
-            />
-          )}
-        </Form.Item>
-
-     {taskFormViewModel?.task && (
-  <TaskDrawerDueDate task={taskFormViewModel.task as ITaskViewModel} t={t} form={form} disabled={isGuest} />
-)}
-
-        {taskFormViewModel?.task && (
-          <TaskDrawerEstimation t={t} task={taskFormViewModel.task as ITaskViewModel} form={form} disabled={isGuest} />
-        )}
-
-        {taskFormViewModel?.task && (
-          <ConditionalProgressInput task={taskFormViewModel?.task as ITaskViewModel} form={form} />
-        )}
-
-        <Form.Item name="priority" label={t('taskInfoTab.details.priority', { defaultValue: 'Priority' })}>
-          {taskFormViewModel?.task && (
-            <TaskDrawerPrioritySelector task={taskFormViewModel.task as ITaskViewModel} />
-          )}
-        </Form.Item>
-
-        {taskFormViewModel?.task && (
-          <TaskDrawerLabels task={taskFormViewModel.task as ITaskViewModel} t={t} isGuest={isGuest} />
-        )}
+        {phaseField}
+        {assigneeField}
+        {task && <TaskDrawerDueDate task={task} t={t} form={form} disabled={isReadOnly} />}
+        {task && <TaskDrawerEstimation t={t} task={task} form={form} disabled={isReadOnly} />}
+        {task && <ConditionalProgressInput task={task} form={form} />}
+        {priorityField}
+        {task && <TaskDrawerLabels task={task} t={t} isGuest={isGuest} />}
 
         <Form.Item name="billable" label={t('taskInfoTab.details.billable', { defaultValue: 'Billable' })}>
-          {taskFormViewModel?.task && (
-            <TaskDrawerBillable task={taskFormViewModel.task as ITaskViewModel} disabled={isGuest} />
-          )}
+          {task && <TaskDrawerBillable task={task} disabled={isReadOnly} />}
         </Form.Item>
 
         <Form.Item name="recurring" label={t('taskInfoTab.details.recurring', { defaultValue: 'Recurring' })}>
-          {taskFormViewModel?.task && (
-            <TaskDrawerRecurringConfig task={taskFormViewModel.task as ITaskViewModel} disabled={isGuest} />
-          )}
+          {task && <TaskDrawerRecurringConfig task={task} disabled={isReadOnly} />}
         </Form.Item>
 
         <Form.Item name="notify" label={t('taskInfoTab.details.notify', { defaultValue: 'Notify' })}>
-          {taskFormViewModel?.task && (
-            <NotifyMemberSelector task={taskFormViewModel.task as ITaskViewModel} t={t} disabled={isGuest} />
-          )}
+          {task && <NotifyMemberSelector task={task} t={t} disabled={isReadOnly} />}
         </Form.Item>
       </Form>
     </ConfigProvider>

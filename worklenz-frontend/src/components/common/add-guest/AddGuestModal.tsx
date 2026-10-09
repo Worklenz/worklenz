@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { ROLE_NAMES } from '@/types/roles/role.types';
+import { useAuthService } from '@/hooks/useAuth';
+import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 
 interface AddGuestModalProps {
   open: boolean;
@@ -17,15 +19,30 @@ interface ProjectOption {
 }
 
 interface FormValues {
-  projectId: string;
+  projectId?: string;
   emails: string[];
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const isCurrentUserProjectManager = (
+  project: IProjectViewModel,
+  teamMemberId: string | undefined
+): boolean => {
+  if (!teamMemberId) return false;
+  const pmId =
+    project.project_manager?.id ||
+    (project as IProjectViewModel & { project_manager_team_member_id?: string })
+      .project_manager_team_member_id;
+  return Boolean(pmId && pmId === teamMemberId);
+};
+
 const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
   const [form] = Form.useForm<FormValues>();
   const { t } = useTranslation('settings/team-members');
+  const authService = useAuthService();
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
+  const currentSession = authService.getCurrentSession();
   const [loading, setLoading] = useState(false);
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -44,9 +61,9 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
   // Fetch projects when modal opens
   useEffect(() => {
     if (open) {
-      fetchProjects();
+      void fetchProjects();
       if (activeTab === 'link') {
-        checkExistingInvitationLink();
+        void checkExistingInvitationLink();
       }
     } else {
       // Reset form when modal closes
@@ -60,14 +77,38 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, activeTab]);
 
+  const applyProjectSelection = (options: ProjectOption[]) => {
+    setProjectOptions(options);
+
+    const currentValue = form.getFieldValue('projectId') as string | undefined;
+    const isCurrentStillValid = Boolean(
+      currentValue && options.some(option => option.value === currentValue)
+    );
+
+    if (options.length === 1) {
+      const onlyProjectId = options[0].value;
+      form.setFieldsValue({ projectId: onlyProjectId });
+      setInvitationLink('');
+      setHasActiveLink(false);
+      setLinkExpiry('');
+      return;
+    }
+
+    if (!isCurrentStillValid) {
+      form.setFieldsValue({ projectId: undefined });
+      setInvitationLink('');
+      setHasActiveLink(false);
+      setLinkExpiry('');
+    }
+  };
+
   const fetchProjects = async (searchQuery?: string) => {
     try {
       setSearchLoading(true);
-      
-      // Fetch projects using the actual API
+
       const response = await projectsApiService.getProjects(
         1, // index - starts from 1, not 0
-        50, // size - fetch first 50 projects
+        100, // size — enough to cover PM-managed projects in one page
         null, // field
         null, // order
         searchQuery || null, // search query
@@ -75,17 +116,28 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
         null, // statuses
         null, // categories
         null, // priorities
-        null  // clients
+        null // clients
       );
 
       if (response.done && response.body?.data) {
-        const options = response.body.data.map(project => ({
-          value: project.id,
-          label: project.name,
-        }));
-        setProjectOptions(options);
+        const teamMemberId = currentSession?.team_member_id;
+        // Owner/Admin can invite guests to any project; others only projects they manage as PM.
+        const manageableProjects = isOwnerOrAdmin
+          ? response.body.data
+          : response.body.data.filter(project =>
+              isCurrentUserProjectManager(project, teamMemberId)
+            );
+
+        const options = manageableProjects
+          .filter(project => Boolean(project.id && project.name))
+          .map(project => ({
+            value: project.id as string,
+            label: project.name as string,
+          }));
+
+        applyProjectSelection(options);
       } else {
-        setProjectOptions([]);
+        applyProjectSelection([]);
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -94,7 +146,7 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
           defaultValue: 'Failed to fetch projects',
         })
       );
-      setProjectOptions([]);
+      applyProjectSelection([]);
     } finally {
       setSearchLoading(false);
     }
@@ -435,7 +487,11 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
           filterOption={false}
           notFoundContent={
             <Typography.Text type="secondary">
-              {t('noProjectsFound', { defaultValue: 'No projects found' })}
+              {isOwnerOrAdmin
+                ? t('noProjectsFound', { defaultValue: 'No projects found' })
+                : t('noManagedProjectsFound', {
+                    defaultValue: 'No projects where you are Project Manager',
+                  })}
             </Typography.Text>
           }
         />
@@ -523,33 +579,31 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
   // Link invitation tab content
   const linkTabContent = (
     <Flex vertical gap={16}>
-      <Form form={form} component={false}>
-        <Form.Item
-          name="projectId"
-          label={
-            <Typography.Text strong>
-              {t('selectProjectLabel', { defaultValue: 'Select Project' })}
+      <Flex vertical gap={4}>
+        <Typography.Text strong>
+          {t('selectProjectLabel', { defaultValue: 'Select Project' })}
+        </Typography.Text>
+        <Select
+          showSearch
+          value={selectedProjectId}
+          placeholder={t('searchProjectPlaceholder', { defaultValue: 'Search for a project...' })}
+          suffixIcon={<SearchOutlined />}
+          options={projectOptions}
+          loading={searchLoading}
+          onSearch={handleProjectSearch}
+          onChange={handleProjectChange}
+          filterOption={false}
+          notFoundContent={
+            <Typography.Text type="secondary">
+              {isOwnerOrAdmin
+                ? t('noProjectsFound', { defaultValue: 'No projects found' })
+                : t('noManagedProjectsFound', {
+                    defaultValue: 'No projects where you are Project Manager',
+                  })}
             </Typography.Text>
           }
-          style={{ marginBottom: 0 }}
-        >
-          <Select
-            showSearch
-            placeholder={t('searchProjectPlaceholder', { defaultValue: 'Search for a project...' })}
-            suffixIcon={<SearchOutlined />}
-            options={projectOptions}
-            loading={searchLoading}
-            onSearch={handleProjectSearch}
-            onChange={handleProjectChange}
-            filterOption={false}
-            notFoundContent={
-              <Typography.Text type="secondary">
-                {t('noProjectsFound', { defaultValue: 'No projects found' })}
-              </Typography.Text>
-            }
-          />
-        </Form.Item>
-      </Form>
+        />
+      </Flex>
 
       <div>
         <Typography.Text strong>
