@@ -142,17 +142,24 @@ describe("validateHomePreferences - layout", () => {
 
   describe("optional widgets added from Add widget", () => {
     const OPTIONAL_WIDGETS = ["team-members", "assigned-by-me", "mentions", "todo"];
+    // The default layout already places "todo" in the side column, so start from a
+    // document that has none of the optional widgets placed.
+    const withoutOptional = () => {
+      const doc = clone();
+      doc.layout.columns.side = doc.layout.columns.side.filter(id => !OPTIONAL_WIDGETS.includes(id));
+      return doc;
+    };
 
     it("accepts a document that has none of them", () => {
-      expect(error(clone())).toBeNull();
+      expect(error(withoutOptional())).toBeNull();
     });
 
     it.each(OPTIONAL_WIDGETS)("accepts %s in either column", id => {
-      const inSide = clone();
+      const inSide = withoutOptional();
       inSide.layout.columns.side.push(id);
       expect(error(inSide)).toBeNull();
 
-      const inMain = clone();
+      const inMain = withoutOptional();
       inMain.layout.columns.main.push(id);
       expect(error(inMain)).toBeNull();
     });
@@ -164,7 +171,7 @@ describe("validateHomePreferences - layout", () => {
     });
 
     it.each(OPTIONAL_WIDGETS)("accepts hiding %s", id => {
-      const doc = clone();
+      const doc = withoutOptional();
       doc.layout.columns.side.push(id);
       doc.layout.hidden = [id];
       expect(error(doc)).toBeNull();
