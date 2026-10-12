@@ -62,21 +62,43 @@ describe.each([
 });
 
 describe("on_join_or_leave_reporting_room", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    (db.query as jest.Mock).mockResolvedValue({ rows: [{ user_id: "owner1" }] });
+  const dbRow = (extra: Record<string, unknown> = {}) => ({
+    rows: [{ owner_id: "owner1", role_name: null, admin_role: false, ...extra }],
   });
 
-  it("joins the org room for an admin", async () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (db.query as jest.Mock).mockResolvedValue(dbRow());
+  });
+
+  it("joins the org room for a current admin", async () => {
+    (db.query as jest.Mock).mockResolvedValue(dbRow({ role_name: "Admin", admin_role: true }));
     const socket = makeSocket({ id: "u1", team_id: "t1", role_name: "Admin" });
+    await on_join_or_leave_reporting_room({} as Server, socket, { type: "join" });
+    expect(db.query).toHaveBeenCalledWith(expect.any(String), ["t1", "u1"]);
+    expect(socket.join).toHaveBeenCalledWith("reporting:owner1");
+  });
+
+  it("joins the org room for the team owner", async () => {
+    const socket = makeSocket({ id: "owner1", team_id: "t1" });
     await on_join_or_leave_reporting_room({} as Server, socket, { type: "join" });
     expect(socket.join).toHaveBeenCalledWith("reporting:owner1");
   });
 
-  it("refuses a regular member", async () => {
+  it("refuses a regular member and evicts the socket", async () => {
+    (db.query as jest.Mock).mockResolvedValue(dbRow({ role_name: "Member" }));
     const socket = makeSocket({ id: "u2", team_id: "t1", role_name: "Member" });
     await on_join_or_leave_reporting_room({} as Server, socket, { type: "join" });
     expect(socket.join).not.toHaveBeenCalled();
+    expect(socket.leave).toHaveBeenCalledWith("reporting:owner1");
+  });
+
+  it("refuses a stale session admin who was demoted or removed", async () => {
+    (db.query as jest.Mock).mockResolvedValue(dbRow({ role_name: null }));
+    const socket = makeSocket({ id: "u3", team_id: "t1", role_name: "Admin", is_admin: true });
+    await on_join_or_leave_reporting_room({} as Server, socket, { type: "join" });
+    expect(socket.join).not.toHaveBeenCalled();
+    expect(socket.leave).toHaveBeenCalledWith("reporting:owner1");
   });
 
   it("leaves the room on leave", async () => {

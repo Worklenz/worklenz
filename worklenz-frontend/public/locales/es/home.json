@@ -463,6 +463,7 @@
   "widgets": {
     "menu": {
       "options": "Opciones de {{name}}",
+      "showPeriod": "Mostrar",
       "remove": "Quitar widget"
     },
     "add": {
