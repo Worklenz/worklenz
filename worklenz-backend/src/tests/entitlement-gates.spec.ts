@@ -5,6 +5,7 @@ import {
   canUseFeature,
   requireFeature,
   requireFeatureForOrganization,
+  planLiftsLtdMemberLimit,
   teamCanUseFeature,
 } from "../shared/entitlements/gates";
 import * as paddleUtils from "../shared/paddle-utils";
@@ -182,5 +183,28 @@ describe("requireAnyFeature", () => {
     const res = makeRes();
     requireAnyFeature(planner)({} as any, res, jest.fn());
     expect(res.status).toHaveBeenCalledWith(401);
+  });
+});
+
+describe("planLiftsLtdMemberLimit", () => {
+  it("legacy: Business names, annual business, override and eligibility lift the cap", () => {
+    expect(planLiftsLtdMemberLimit(business)).toBe(true);
+    expect(planLiftsLtdMemberLimit({ subscription_type: "ANNUAL_BUSINESS" })).toBe(true);
+    expect(planLiftsLtdMemberLimit({ business_plan_override: true })).toBe(true);
+    expect(planLiftsLtdMemberLimit({ appsumo_business_eligible: true })).toBe(true);
+    expect(planLiftsLtdMemberLimit(proClassic)).toBe(false);
+    expect(planLiftsLtdMemberLimit(null)).toBe(false);
+  });
+
+  it("per-user Billing plans lift it: the purchased seats are the cap", () => {
+    expect(
+      planLiftsLtdMemberLimit({ billing_provider: "paddle_billing", plan_name: "Pro (per user, monthly)" })
+    ).toBe(true);
+  });
+
+  it("enforcing: follows the resolved tier", () => {
+    process.env.ENTITLEMENTS_ENFORCE = "on";
+    expect(planLiftsLtdMemberLimit(business)).toBe(true);
+    expect(planLiftsLtdMemberLimit(proClassic)).toBe(false);
   });
 });

@@ -5,7 +5,7 @@ import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import { FEATURE_REGISTRY, FeatureKey } from "./feature-registry";
-import { hasFeature, resolveEntitlements } from "./resolve-entitlements";
+import { hasFeature, resolveEntitlements, tierAtLeast } from "./resolve-entitlements";
 
 /**
  * Feature gates. Routes and controllers ask "can this account use <feature>?" instead of
@@ -100,3 +100,24 @@ export const requireFeatureForOrganization = (feature: FeatureKey) =>
     }
     return next();
   };
+
+/**
+ * Does the account's plan lift the AppSumo (LTD) member cap? Invite and accept paths used to repeat
+ * the "is this a Business plan" check inline (nine copies); they all ask this instead.
+ *
+ * - Paddle Billing plans are sold by seat, so the purchased quantity is the cap (enforced through
+ *   getTeamMemberSeatLimit) and the LTD cap must not also apply.
+ * - Enforcing: Business tier or above in the resolved entitlements.
+ * - Otherwise: the legacy checks, unchanged.
+ */
+export function planLiftsLtdMemberLimit(subscriptionData: any): boolean {
+  if (!subscriptionData) return false;
+  if (subscriptionData.billing_provider === "paddle_billing") return true;
+  if (isEnforceMode()) return tierAtLeast(resolveEntitlements(subscriptionData), "business");
+  return (
+    subscriptionData.subscription_type === "ANNUAL_BUSINESS" ||
+    Boolean(subscriptionData.plan_name?.toLowerCase().includes("business")) ||
+    subscriptionData.business_plan_override === true ||
+    subscriptionData.appsumo_business_eligible === true
+  );
+}
