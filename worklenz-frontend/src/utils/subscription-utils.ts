@@ -82,12 +82,18 @@ const LEGACY_BUSINESS_FEATURES = new Set([
 
 /**
  * Can the current session use a feature? Follows the backend's resolved entitlements once it is
- * enforcing them; until then it reproduces the legacy plan checks.
+ * enforcing them; until then it reproduces the legacy plan checks, or the caller's `legacy` rule.
  */
-export const canUseFeature = (session: ILocalSession | null, feature: string): boolean => {
+export const canUseFeature = (
+  session: ILocalSession | null,
+  feature: string,
+  legacy?: (session: ILocalSession) => boolean
+): boolean => {
   if (!session) return false;
   const entitlements = session.entitlements;
   if (entitlements?.enforced) return entitlements.features.includes(feature);
+  // `legacy` keeps today's behavior for gates that differ from "Business only" (not in the set above).
+  if (legacy) return legacy(session);
   return LEGACY_BUSINESS_FEATURES.has(feature) ? hasBusinessFeatureAccess(session) : true;
 };
 

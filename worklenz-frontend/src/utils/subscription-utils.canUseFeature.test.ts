@@ -52,4 +52,23 @@ describe('canUseFeature', () => {
     });
     expect(canUseFeature(pro, 'finance_module')).toBe(false);
   });
+
+  it('uses the caller legacy rule only while the backend is not enforcing', () => {
+    const legacy = () => true;
+    const free = session({ subscription_type: 'FREE' });
+    expect(canUseFeature(free, 'recurring_tasks', legacy)).toBe(true);
+
+    const enforced = session({
+      subscription_type: 'FREE',
+      entitlements: {
+        tier: 'free',
+        features: [],
+        guest_limit: 0,
+        seat_limit: 5,
+        primary_source: 'free',
+        enforced: true,
+      },
+    });
+    expect(canUseFeature(enforced, 'recurring_tasks', legacy)).toBe(false);
+  });
 });
