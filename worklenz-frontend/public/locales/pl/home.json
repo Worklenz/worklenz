@@ -103,7 +103,15 @@
     "assignees": "Osoby przypisane",
     "searchMembers": "Szukaj według nazwy lub adresu e-mail…",
     "noMembersFound": "Nie znaleziono żadnych członków",
-    "time": "Czas"
+    "time": "Czas",
+    "pinned": "Przypięte",
+    "tabsLabel": "Filtruj zadania",
+    "pinTask": "Przypnij zadanie",
+    "unpinTask": "Odepnij zadanie",
+    "pinLimitReached": "Możesz przypiąć maksymalnie {{limit}} zadań. Odepnij jedno, aby przypiąć kolejne.",
+    "noPinnedTasks": "Brak przypiętych zadań. Najedź na dowolne zadanie i kliknij ikonę pinezki, aby zachować je tutaj.",
+    "pinFailed": "Nie udało się zaktualizować przypięcia. Spróbuj ponownie.",
+    "viewAll": "Zobacz wszystkie ({{total}})"
   },
   "homeCalendar": {
     "todayButton": "Dzisiaj",
@@ -373,7 +381,8 @@
     "tasks": "Zadania",
     "activity": "Aktywność",
     "timeLogged": "Czas zarejestrowany",
-    "title": "Kontynuuj od miejsca, w którym skończyłeś"
+    "title": "Kontynuuj od miejsca, w którym skończyłeś",
+    "showTabs": "Pokaż karty"
   },
   "focusTime": {
     "title": "Skupienie i czas",
@@ -391,5 +400,130 @@
       "personal": "Osobiste",
       "other": "Inne"
     }
+  },
+  "customize": {
+    "button": "Dostosuj",
+    "title": "Dostosuj stronę główną",
+    "description": "Przeciągnij sekcje, aby zmienić ich kolejność, lub użyj przycisków strzałek. Wyłącz sekcję, aby ukryć ją na stronie głównej.",
+    "mainColumn": "Obszar główny",
+    "sideColumn": "Panel boczny",
+    "emptyColumn": "Upuść sekcję tutaj",
+    "dragHandle": "Zmień kolejność: {{name}}. Naciśnij spację, aby chwycić, a następnie użyj klawiszy strzałek.",
+    "moveUp": "Przesuń w górę",
+    "moveDown": "Przesuń w dół",
+    "moveUpNamed": "Przesuń {{name}} w górę",
+    "moveDownNamed": "Przesuń {{name}} w dół",
+    "moveToSide": "Przenieś do panelu bocznego",
+    "moveToMain": "Przenieś do obszaru głównego",
+    "cannotHide": "Tej sekcji nie można ukryć.",
+    "showNamed": "Pokaż {{name}}",
+    "reset": "Przywróć domyślne",
+    "resetConfirm": "Przywrócić domyślne ustawienia strony głównej?",
+    "cancel": "Anuluj",
+    "save": "Zapisz",
+    "widgets": {
+      "statCards": "Karty podsumowania",
+      "priorities": "Priorytety zadań",
+      "progressDonut": "Mój postęp",
+      "continue": "Kontynuuj tam, gdzie skończyłeś",
+      "greeting": "Baner powitalny",
+      "teamMembers": "Członkowie zespołu",
+      "assignedByMe": "Zadania przypisane przeze mnie",
+      "mentions": "Komentarze wspominające o mnie",
+      "todo": "Moja lista rzeczy do zrobienia"
+    },
+    "tabs": {
+      "layout": "Układ",
+      "taskTabs": "Karty zadań",
+      "sorting": "Sortowanie",
+      "sidebar": "Lewy pasek boczny",
+      "defaultView": "Widok domyślny"
+    },
+    "topSection": "Góra strony",
+    "tabsDescription": "Wybierz, które karty pojawiają się nad tabelą zadań i w jakiej kolejności. Co najmniej jedna karta musi pozostać włączona.",
+    "cannotHideLastTab": "Co najmniej jedna karta musi pozostać widoczna.",
+    "sortDescription": "Wybierz, jak zadania są sortowane w tabeli. Przypięte zadania zawsze pozostają na górze.",
+    "sortField": "Sortuj według",
+    "sortOrder": "Kierunek",
+    "sortDefault": "Domyślna kolejność (termin, najwcześniejszy pierwszy)",
+    "sortAsc": "Rosnąco",
+    "sortDesc": "Malejąco",
+    "sortPinnedNote": "Karta Przypięte zawsze pokazuje najpierw ostatnio przypięte zadanie.",
+    "sidebarDescription": "Zmień kolejność elementów w lewym pasku bocznym i wybierz, które są widoczne. Przypnij jeden, aby był stroną otwieraną jako pierwsza po przejściu do strony głównej.",
+    "pinSidebarItem": "Przypnij {{name}} jako stronę otwieraną jako pierwszą",
+    "unpinSidebarItem": "Odepnij {{name}}",
+    "assignedDefault": "Otwieraj tabelę na",
+    "assignedLastUsed": "Ostatnio używany widok",
+    "cannotHideLanding": "Strona główna otwiera się na tej stronie. Przypnij inną stronę, aby ją ukryć.",
+    "cannotHideLastItem": "Co najmniej jeden element musi pozostać widoczny.",
+    "tableTitle": "Dostosuj tabelę zadań",
+    "tableResetConfirm": "Przywrócić ustawienia domyślne tabeli zadań?",
+    "done": "Gotowe"
+  },
+  "widgets": {
+    "menu": {
+      "options": "Opcje: {{name}}",
+      "remove": "Usuń widżet"
+    },
+    "add": {
+      "button": "Dodaj widżet",
+      "hint": "Naciśnij Dodaj lub przeciągnij widżet na stronę.",
+      "addAction": "Dodaj",
+      "addNamed": "Dodaj: {{name}}",
+      "empty": "Wszystkie widżety są już na Twojej stronie głównej."
+    },
+    "descriptions": {
+      "greeting": "Powitanie z dzisiejszą datą i tym, co wymaga Twojej uwagi.",
+      "statCards": "Dzisiejsze zadania, zaległe, ukończone i Twój czas skupienia.",
+      "priorities": "Twoje zadania na dziś lub ten tydzień, gotowe do realizacji.",
+      "progressDonut": "Ile z przypisanej Ci pracy jest zrobione, w toku lub jeszcze do zrobienia.",
+      "continue": "Wróć do ostatnich projektów, zadań, aktywności i zarejestrowanego czasu.",
+      "teamMembers": "Zobacz, kto jest w Twoim zespole, i otwórz pełną stronę zespołu.",
+      "assignedByMe": "Zadania przekazane współpracownikom, żeby łatwo śledzić ich postępy.",
+      "mentions": "Ostatnie komentarze do zadań, w których ktoś oznaczył Cię przez @.",
+      "todo": "Zapisuj osobiste zadania i odhaczaj je po wykonaniu."
+    },
+    "drag": {
+      "pickedUp": "Podniesiono: {{name}}.",
+      "dropped": "Upuszczono: {{name}}.",
+      "cancelled": "Anulowano przenoszenie: {{name}}."
+    },
+    "dropHere": "Upuść widżet tutaj",
+    "state": {
+      "error": "Nie można załadować tego widżetu.",
+      "retry": "Spróbuj ponownie"
+    },
+    "empty": {
+      "title": "Przeciągnij i upuść nowe widżety",
+      "titleNoDrag": "Dodaj widżety do swojej strony głównej",
+      "button": "Dodaj widżety"
+    }
+  },
+  "teamMembers": {
+    "empty": "Brak członków zespołu.",
+    "viewTeam": "Zobacz zespół"
+  },
+  "assignedByMe": {
+    "empty": "Nie przypisano żadnych otwartych zadań.",
+    "assignNewTask": "Przypisz nowe zadanie",
+    "viewAll": "Zobacz wszystkie przypisane zadania ({{total}})"
+  },
+  "mentions": {
+    "empty": "Nikt jeszcze nie wspomniał o Tobie w komentarzu.",
+    "reply": "Odpowiedz",
+    "replyPlaceholder": "Napisz odpowiedź…",
+    "replyHint": "Zostanie dodana jako komentarz do zadania „{{task}}”.",
+    "replySent": "Odpowiedź dodana do zadania „{{task}}”.",
+    "replyFailed": "Nie udało się opublikować odpowiedzi. Spróbuj ponownie.",
+    "replyLabel": "Odpowiedz użytkownikowi {{name}}"
+  },
+  "todoWidget": {
+    "addPlaceholder": "Dodaj zadanie i naciśnij Enter",
+    "addLabel": "Nowe zadanie",
+    "empty": "Wszystko zrobione.",
+    "viewAll": "Otwórz moją listę rzeczy do zrobienia",
+    "viewAllMore": "Zobacz wszystkie (jeszcze {{remaining}})",
+    "addFailed": "Nie można dodać zadania. Spróbuj ponownie.",
+    "completeFailed": "Nie można zaktualizować zadania. Spróbuj ponownie."
   }
 }

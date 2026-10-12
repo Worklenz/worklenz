@@ -158,6 +158,8 @@ function defaultDescriptionFor(eventType: AuditEventTypeId): string {
  * Mirrors that same function's join exactly - `organizations.user_id = teams.user_id` (the
  * org is matched by the team's owner, not by a teams.organization_id column) - so this never
  * silently disagrees with what the rest of the app considers "the" organization for a team.
+ * A preferred team must also be owned by, or have a membership for, the user; callers must
+ * never be able to use a request-supplied team id to write an audit row in another workspace.
  *
  * Returns null if nothing resolves (e.g. an unknown email with no matching account at all) -
  * callers should skip logging in that case rather than writing a row with no real workspace.
@@ -171,6 +173,15 @@ export async function resolveOrganizationIdForUserId(
       SELECT o.id AS organization_id, t.id AS team_id
       FROM users u
       INNER JOIN teams t ON t.id = COALESCE($2::UUID, u.active_team)
+                       AND (
+                         t.user_id = u.id
+                         OR EXISTS (
+                           SELECT 1
+                           FROM team_members tm
+                           WHERE tm.team_id = t.id
+                             AND tm.user_id = u.id
+                         )
+                       )
       LEFT JOIN organizations o ON o.user_id = t.user_id
       WHERE u.id = $1::UUID
       LIMIT 1;
@@ -200,6 +211,15 @@ export async function resolveOrganizationIdForEmail(
       SELECT u.id AS user_id, o.id AS organization_id, t.id AS team_id
       FROM users u
       INNER JOIN teams t ON t.id = u.active_team
+                       AND (
+                         t.user_id = u.id
+                         OR EXISTS (
+                           SELECT 1
+                           FROM team_members tm
+                           WHERE tm.team_id = t.id
+                             AND tm.user_id = u.id
+                         )
+                       )
       LEFT JOIN organizations o ON o.user_id = t.user_id
       WHERE LOWER(u.email) = LOWER($1) AND u.is_deleted IS FALSE
       LIMIT 1;

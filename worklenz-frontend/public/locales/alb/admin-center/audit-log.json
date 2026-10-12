@@ -27,6 +27,7 @@
   "eventProjectDeleted": "Projekti u fshi",
   "eventProjectRestored": "Projekti u rikthye",
   "eventWorkspaceRenamed": "Hapësira e punës u riemërtua",
+  "eventTeamDeleted": "Ekipi u fshi",
   "eventWorkspaceDeleted": "Hapësira e punës u fshi",
   "eventMemberUpdated": "Të dhënat e anëtarit u ndryshuan",
   "eventMemberActivated": "Anëtari u aktivizua",

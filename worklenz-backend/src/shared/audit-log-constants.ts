@@ -244,6 +244,12 @@ export const AUDIT_EVENT_TYPE = {
     i18nKey: "eventWorkspaceRenamed",
     defaultLabel: "Workspace renamed",
   }),
+  TEAM_DELETED: defineEventType({
+    id: "team_deleted",
+    category: AUDIT_EVENT_CATEGORY.LIFECYCLE.id,
+    i18nKey: "eventTeamDeleted",
+    defaultLabel: "Team deleted",
+  }),
   WORKSPACE_DELETED: defineEventType({
     id: "workspace_deleted",
     category: AUDIT_EVENT_CATEGORY.LIFECYCLE.id,

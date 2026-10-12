@@ -90,5 +90,6 @@ export const adminCenterItems: AdminCenterMenuItems[] = [
     icon: React.createElement(SafetyCertificateOutlined),
     element: React.createElement(AuditLog),
     ownerOrAdminOnly: true,
+    isNew: true,
   },
 ];

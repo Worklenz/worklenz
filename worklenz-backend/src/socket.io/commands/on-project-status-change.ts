@@ -4,6 +4,7 @@ import {SocketEvents} from "../events";
 
 import {log_error} from "../util";
 import {verifyProjectAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
+import {reportingRoomName} from "../reporting-room";
 
 export async function on_project_status_change(_io: Server, socket: Socket, data?: string) {
   try {
@@ -15,8 +16,10 @@ export async function on_project_status_change(_io: Server, socket: Socket, data
       return;
     }
 
-    const q = `UPDATE projects SET status_id = $2 WHERE id = $1;`;
-    await db.query(q, [body.project_id, body.status_id]);
+    const q = `UPDATE projects SET status_id = $2 WHERE id = $1
+               RETURNING (SELECT t.user_id FROM teams t WHERE t.id = projects.team_id) AS org_owner_id;`;
+    const updated = await db.query(q, [body.project_id, body.status_id]);
+    const orgOwnerId = updated.rows[0]?.org_owner_id;
 
     const q2 = "SELECT id,name,color_code,icon FROM sys_project_statuses WHERE id=$1";
     const result = await db.query(q2, [body.status_id]);
@@ -29,7 +32,8 @@ export async function on_project_status_change(_io: Server, socket: Socket, data
       status_color: d.color_code,
       status_name: d.name
     };
-    socket.broadcast.to(body.project_id).emit(SocketEvents.PROJECT_STATUS_CHANGE.toString(), payload);
+    const room = socket.broadcast.to(body.project_id);
+    (orgOwnerId ? room.to(reportingRoomName(orgOwnerId)) : room).emit(SocketEvents.PROJECT_STATUS_CHANGE.toString(), payload);
     socket.emit(SocketEvents.PROJECT_STATUS_CHANGE.toString(), payload);
   } catch (error) {
     log_error(error);

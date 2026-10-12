@@ -2,6 +2,7 @@ import moment from "moment";
 
 import db from "../../config/db";
 import { log_error } from "../../shared/utils";
+import { isValidUuid } from "../../shared/validation-helpers";
 import {
   createPresignedUrlWithClient,
   getAuditLogExportStorageKey,
@@ -24,7 +25,7 @@ const parseJobRow = (row: Record<string, unknown>): AuditLogExportJob => {
   return {
     id: String(row.id),
     organization_id: String(row.organization_id),
-    created_by: String(row.created_by),
+    created_by: row.created_by == null ? null : String(row.created_by),
     status: row.status as AuditLogExportJobStatus,
     filters,
     row_count: row.row_count != null ? Number(row.row_count) : null,
@@ -58,6 +59,9 @@ export async function createJob(input: CreateAuditLogExportJobInput): Promise<Au
 }
 
 export async function getJob(jobId: string): Promise<AuditLogExportJob | null> {
+  // Route params are user-controlled; avoid passing malformed values to Postgres's UUID cast.
+  if (!isValidUuid(jobId)) return null;
+
   const { rows } = await db.query(`SELECT * FROM audit_log_export_jobs WHERE id = $1::UUID LIMIT 1`, [jobId]);
   return rows[0] ? parseJobRow(rows[0]) : null;
 }

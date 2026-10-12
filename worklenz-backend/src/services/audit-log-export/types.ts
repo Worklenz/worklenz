@@ -7,7 +7,8 @@ export type AuditLogExportJobStatus = "queued" | "processing" | "ready" | "faile
 export interface AuditLogExportJob {
   id: string;
   organization_id: string;
-  created_by: string;
+  /** Null when the user who requested the export has since been deleted. */
+  created_by: string | null;
   status: AuditLogExportJobStatus;
   filters: AuditLogFilters;
   row_count: number | null;

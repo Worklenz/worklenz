@@ -21,6 +21,8 @@
   "openButton": "Abrir",
   "setStartDate": "Establecer Fecha de Inicio",
   "setEndDate": "Establecer Fecha de Finalización",
+  "startDateSaveFailed": "No se pudo guardar la fecha de inicio. Inténtalo de nuevo.",
+  "endDateSaveFailed": "No se pudo guardar la fecha de finalización. Inténtalo de nuevo.",
   "clearStartDate": "Limpiar fecha de inicio",
   "clearEndDate": "Limpiar fecha de finalización",
   "estimatedText": "Estimado",

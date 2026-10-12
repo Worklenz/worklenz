@@ -119,17 +119,41 @@ export function buildTaskFilterClauses(
   return clauses.length ? `AND ${clauses.join(" AND ")}` : "";
 }
 
-export function buildTaskOrderClause(query: { sort_field?: unknown; sort_order?: unknown }): string {
+// Pins live in user_pinned_tasks (personal task pinning, #2372). Queries that show them join it as
+// `upt` on the current user's id; the join is exposed here so the list and its counts query can't
+// drift apart. `userParamIndex` is the positional param the caller bound the user id to.
+export function buildPinnedJoin(userParamIndex: number): string {
+  return `LEFT JOIN user_pinned_tasks upt ON upt.task_id = t.id AND upt.user_id = $${userParamIndex}`;
+}
+
+export const PINNED_SELECT_COLUMNS = `(upt.id IS NOT NULL) AS is_pinned,
+             upt.pinned_at`;
+
+// `tab` is only passed by queries that join `upt` (see buildPinnedJoin); the unassigned-tasks list
+// has no pins and calls this without it.
+//   - Pinned tab: every pin, most recently pinned first.
+//   - Any other tab: that tab's own tasks, with the user's pinned ones first (most recently pinned
+//     first), then the chosen sort. A pin only floats inside a tab it already belongs to - Overdue
+//     stays overdue-only.
+export function buildTaskOrderClause(
+  query: { sort_field?: unknown; sort_order?: unknown },
+  tab?: string
+): string {
+  if (tab === "Pinned") {
+    return `ORDER BY upt.pinned_at DESC, t.id ASC`;
+  }
+
   const field = TASK_SORT_FIELDS[(query.sort_field as string) || ""] || "t.end_date";
   const order = ((query.sort_order as string) || "").toLowerCase() === "desc" ? "DESC" : "ASC";
+  const pinnedFirst = tab === undefined ? "" : `(upt.id IS NULL) ASC, upt.pinned_at DESC NULLS LAST, `;
   // t.id is a tiebreaker: without it, ties on `field` have no guaranteed
   // ordering across separate LIMIT/OFFSET pages, so rows can duplicate onto
   // one page and disappear from another.
-  return `ORDER BY ${field} ${order} NULLS LAST, t.id ASC`;
+  return `ORDER BY ${pinnedFirst}${field} ${order} NULLS LAST, t.id ASC`;
 }
 
 // Tab predicate for the server-paginated My Tasks / Overview list
-// (All/Today/Upcoming/Overdue/NoDueDate/UpcomingNowOn). Shared between the
+// (All/Today/Upcoming/Overdue/NoDueDate/UpcomingNowOn/Pinned). Shared between the
 // task list itself and its counts query so the two can't disagree — same tz
 // param convention as buildTaskFilterClauses's overdue_only clause.
 export function buildTabClause(tab: string, tzParamIndex: number): string {
@@ -146,6 +170,9 @@ export function buildTabClause(tab: string, tzParamIndex: number): string {
       return `AND ${endDateInTz} >= ${todayInTz}`;
     case "NoDueDate":
       return `AND t.end_date IS NULL`;
+    // Needs the `upt` join from buildPinnedJoin in the same query.
+    case "Pinned":
+      return `AND upt.id IS NOT NULL`;
     case "All":
     default:
       return "";

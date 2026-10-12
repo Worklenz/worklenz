@@ -21,6 +21,8 @@
   "openButton": "Abrir",
   "setStartDate": "Definir Data de Início",
   "setEndDate": "Definir Data de Fim",
+  "startDateSaveFailed": "Falha ao salvar a data de início. Tente novamente.",
+  "endDateSaveFailed": "Falha ao salvar a data de fim. Tente novamente.",
   "clearStartDate": "Limpar data de início",
   "clearEndDate": "Limpar data de fim",
   "estimatedText": "Estimado",
