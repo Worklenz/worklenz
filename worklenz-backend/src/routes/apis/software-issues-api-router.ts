@@ -18,4 +18,10 @@ softwareIssuesApiRouter.post(
   safeControllerFunction(SoftwareIssuesController.create)
 );
 
+softwareIssuesApiRouter.put(
+  "/:taskId/type",
+  requireProjectPermission("tasks", { sources: ["body.project_id"] }),
+  safeControllerFunction(SoftwareIssuesController.updateType)
+);
+
 export default softwareIssuesApiRouter;

@@ -13,6 +13,8 @@ import { ExternalNotificationsService } from "../../services/external-notificati
 import { log_error } from "../../shared/utils";
 import { isTaskCreationRestricted } from "../../shared/task-creation-restriction";
 
+const QUICK_TASK_ISSUE_TYPES = ["task", "story", "bug"];
+
 export async function getTaskCompleteInfo(task: any) {
   if (!task) return null;
 
@@ -89,6 +91,11 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
       const result = await db.query(q, [JSON.stringify(body)]);
       const [d] = result.rows;
       if (d.task) {
+
+        if (QUICK_TASK_ISSUE_TYPES.includes(body.issue_type) && body.issue_type !== "task") {
+          await db.query("UPDATE tasks SET issue_type = $2 WHERE id = $1;", [d.task.id, body.issue_type]);
+          d.task.issue_type = body.issue_type;
+        }
 
         if (body.chart_start) {
           d.task.chart_start = moment(body.chart_start).format("YYYY-MM-DD");
