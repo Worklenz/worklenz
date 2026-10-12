@@ -13,6 +13,11 @@ export interface UpdateSortOrderBody {
   project_id: string;
 }
 
+export interface SprintSettings {
+  auto_archive_on_sprint_complete: boolean;
+  auto_start_complete_sprints: boolean;
+}
+
 export const phasesApiService = {
   addPhaseOption: async (projectId: string, name?: string) => {
     const q = toQueryString({ id: projectId, current_project_id: projectId });
@@ -97,13 +102,12 @@ export const phasesApiService = {
     return response.data;
   },
 
-  updateSprintSettings: async (projectId: string, autoArchiveOnSprintComplete: boolean) => {
+  updateSprintSettings: async (projectId: string, settings: Partial<SprintSettings>) => {
     const q = toQueryString({ id: projectId, current_project_id: projectId });
-    const response = await apiClient.put<
-      IServerResponse<{ id: string; auto_archive_on_sprint_complete: boolean }>
-    >(`${rootUrl}/sprint-settings/${projectId}${q}`, {
-      auto_archive_on_sprint_complete: autoArchiveOnSprintComplete,
-    });
+    const response = await apiClient.put<IServerResponse<{ id: string } & SprintSettings>>(
+      `${rootUrl}/sprint-settings/${projectId}${q}`,
+      settings
+    );
     return response.data;
   },
 

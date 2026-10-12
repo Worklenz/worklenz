@@ -54,7 +54,6 @@ import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 import ManageStatusContent from '@/components/task-management/ManageStatusContent';
-import ManagePhaseContent from '@/components/task-management/ManagePhaseContent';
 import CustomColumnsSettingsSection from '../project-settings-modal/sections/custom-columns-settings-section';
 import IntegrationsSettingsSection from '../project-settings-modal/sections/integrations-settings-section';
 import TaskExportSettingsSection from '../project-settings-modal/sections/task-export-settings-section';
@@ -63,6 +62,7 @@ import { SectionHeader } from './components/section-header';
 import { SoftwareDetailsSection } from './sections/software-details-section';
 import { SoftwareTeamAccessSection } from './sections/software-team-access-section';
 import { SoftwareEstimationSection } from './sections/software-estimation-section';
+import { SoftwareSprintsSection } from './sections/software-sprints-section';
 
 export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSettingsModalProps) => {
   const dispatch = useAppDispatch();
@@ -300,19 +300,10 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
         icon: <ThunderboltOutlined />,
         label: softwareLabels.phasePlural,
         content: (
-          <Flex vertical gap={16}>
-            <SectionHeader
-              title={softwareLabels.phasePlural}
-              description={t('softwareSettings.sprintsDescription', {
-                defaultValue:
-                  'Plan, start and complete sprints, and choose what happens to finished work. Changes save automatically.',
-              })}
-            />
-            <ManagePhaseContent
-              projectId={projectId}
-              disabled={!canEditSettings && !permissions.phases}
-            />
-          </Flex>
+          <SoftwareSprintsSection
+            projectId={projectId}
+            disabled={!canEditSettings && !permissions.phases}
+          />
         ),
       },
       {
