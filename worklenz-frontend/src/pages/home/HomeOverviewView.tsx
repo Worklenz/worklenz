@@ -1,64 +1,100 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Flex from 'antd/es/flex';
 import GreetingWithTime from './GreetingWithTime';
 import TasksList from '@/pages/home/task-list/TasksList';
 import HomeStatCards from './home-stat-cards/HomeStatCards';
 import HomeProgressDonut from './home-progress-donut/HomeProgressDonut';
 import HomeContinueCard from './home-continue-card/HomeContinueCard';
-import PillToggle from './PillToggle';
+import HomeTeamMembersWidget from './home-team-members-widget/HomeTeamMembersWidget';
+import HomeAssignedByMeWidget from './home-assigned-by-me-widget/HomeAssignedByMeWidget';
+import HomeMentionsWidget from './home-mentions-widget/HomeMentionsWidget';
+import HomeTodoWidget from './home-todo-widget/HomeTodoWidget';
+import { AddWidgetButton } from './home-widgets/AddWidgetButton';
+import { HomeGreetingFrame } from './home-widgets/HomeGreetingFrame';
+import { HomeWidgetBoard } from './home-widgets/HomeWidgetBoard';
+import { HomeWidgetDnd } from './home-widgets/HomeWidgetDnd';
+import { useHomePreferencesSync } from './home-layout/useHomePreferencesSync';
+import {
+  addSection,
+  HOME_GREETING_ID,
+  isGreetingVisible,
+  removeSection,
+  type HomeLayout,
+  type HomeSectionId,
+  type HomeWidgetId,
+} from './home-layout/homeLayout';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import {
+  selectHomeLayout,
+  setHomeLayout,
+  type HomePeriod,
+} from '@/features/home-page/homePreferences.slice';
 import { useMediaQuery } from 'react-responsive';
 import { useTranslation } from 'react-i18next';
 
-export type HomePeriod = 'today' | 'week';
+export type { HomePeriod };
 
 const DESKTOP_MIN_WIDTH = 1024;
-
-const PeriodToggle: React.FC<{ period: HomePeriod; onChange: (p: HomePeriod) => void }> = ({
-  period,
-  onChange,
-}) => {
-  const { t } = useTranslation('home');
-  return (
-  <PillToggle<HomePeriod>
-    value={period}
-    onChange={onChange}
-    options={[
-      { value: 'today', label: t('greeting.today', { defaultValue: 'Today' }) },
-      { value: 'week', label: t('greeting.thisWeek', { defaultValue: 'This Week' }) },
-    ]}
-    equalWidth
-    style={{ marginBottom: 14, width: 220 }}
-  />
-);
-};
+/** How long a freshly added widget stays highlighted. */
+const JUST_ADDED_HIGHLIGHT_MS = 2000;
 
 const HomeOverviewView: React.FC = () => {
+  const dispatch = useAppDispatch();
   const isDesktop = useMediaQuery({ query: `(min-width: ${DESKTOP_MIN_WIDTH}px)` });
-  const [period, setPeriod] = useState<HomePeriod>('today');
+  const isReady = useHomePreferencesSync();
+  const selections = useAppSelector(state => state.homePreferencesReducer.selections);
+  // The saved layout, or the live preview of one while a draft is being previewed.
+  const layout = useAppSelector(selectHomeLayout);
+  const [justAddedId, setJustAddedId] = useState<HomeWidgetId | null>(null);
   const { t } = useTranslation('home');
 
+  const period = selections.period;
   const prioritiesTitle = period === 'today' ? t('greeting.todaysPriorities', { defaultValue: "Today's Priorities" }) : t('greeting.weeksPriorities', { defaultValue: "This Week's Priorities" });
 
-  const leftCol = (
-    <Flex vertical gap={12} style={{ flex: 1, minWidth: 0, height: '100%' }}>
-      <HomeStatCards period={period} />
-      {/* Fills remaining leftCol height down to the bottom of the screen */}
-      <div style={{ flex: 1, minHeight: 0 }}>
-        <TasksList cardTitle={prioritiesTitle} />
-      </div>
-    </Flex>
+  // Moving, adding and removing widgets on the page are saved straight away, like the period choice.
+  const handleLayoutChange = useCallback((next: HomeLayout) => dispatch(setHomeLayout(next)), [dispatch]);
+
+  const handleAddSection = useCallback(
+    (id: HomeSectionId) => {
+      handleLayoutChange(addSection(layout, id));
+      // The greeting banner has no box to highlight; it simply appears at the top.
+      if (id !== HOME_GREETING_ID) setJustAddedId(id);
+    },
+    [handleLayoutChange, layout]
   );
 
-  const rightCol = (
-    <Flex vertical gap={12} style={{ width: 320, minWidth: 320, height: '100%' }}>
-      <HomeProgressDonut period={period} />
-      {/* Fills remaining rightCol height down to the bottom of the screen —
-          now the only thing below the donut, since the Projects card was removed */}
-      <div style={{ flex: 1, minHeight: 0 }}>
-        <HomeContinueCard />
-      </div>
-    </Flex>
+  const handleRemoveGreeting = useCallback(
+    () => handleLayoutChange(removeSection(layout, HOME_GREETING_ID)),
+    [handleLayoutChange, layout]
   );
+
+  useEffect(() => {
+    if (!justAddedId) return;
+    const timer = setTimeout(() => setJustAddedId(null), JUST_ADDED_HIGHLIGHT_MS);
+    return () => clearTimeout(timer);
+  }, [justAddedId]);
+
+  const renderWidgetContent = (id: HomeWidgetId) => {
+    switch (id) {
+      case 'stat-cards':
+        return <HomeStatCards period={period} />;
+      case 'priorities':
+        return <TasksList cardTitle={prioritiesTitle} />;
+      case 'progress-donut':
+        return <HomeProgressDonut period={period} />;
+      case 'continue':
+        return <HomeContinueCard />;
+      case 'team-members':
+        return <HomeTeamMembersWidget />;
+      case 'assigned-by-me':
+        return <HomeAssignedByMeWidget />;
+      case 'mentions':
+        return <HomeMentionsWidget />;
+      case 'todo':
+        return <HomeTodoWidget />;
+    }
+  };
 
   return (
     <div
@@ -73,27 +109,41 @@ const HomeOverviewView: React.FC = () => {
         boxSizing: 'border-box',
       }}
     >
-      {/* Greeting banner */}
-      <div style={{ marginBottom: 10 }}>
-        <GreetingWithTime />
-      </div>
+      {/* One drag context for the whole page, so a widget can be dragged out of the "Add widget"
+          menu in the toolbar onto the board below it. It renders no element of its own. */}
+      <HomeWidgetDnd
+        layout={layout}
+        isEnabled={isDesktop}
+        onLayoutChange={handleLayoutChange}
+        onWidgetAdded={setJustAddedId}
+      >
+        {isGreetingVisible(layout) && (
+          <div style={{ marginBottom: 10 }}>
+            <HomeGreetingFrame onRemove={handleRemoveGreeting}>
+              <GreetingWithTime />
+            </HomeGreetingFrame>
+          </div>
+        )}
 
-      {/* Period toggle */}
-      <PeriodToggle period={period} onChange={setPeriod} />
-
-      {isDesktop ? (
-        <div style={{ display: 'flex', gap: 16, alignItems: 'stretch', flex: 1, minHeight: 0 }}>
-          {leftCol}
-          {rightCol}
-        </div>
-      ) : (
-        <Flex vertical gap={12}>
-          <HomeStatCards period={period} />
-          <TasksList cardTitle={prioritiesTitle} />
-          <HomeProgressDonut period={period} />
-          <HomeContinueCard />
+        <Flex justify="flex-end" style={{ marginBottom: 14 }}>
+          {/* The period is chosen from the "..." menu of the widgets that show one. */}
+          <AddWidgetButton layout={layout} onAdd={handleAddSection} isDragEnabled={isDesktop} />
         </Flex>
-      )}
+
+        {/* Nothing below renders until the saved layout and pins are loaded (a synchronous read
+            today), so the page never flashes the default layout or fires a request with the
+            wrong tab. */}
+        {isReady && (
+          <HomeWidgetBoard
+            layout={layout}
+            isDesktop={isDesktop}
+            onLayoutChange={handleLayoutChange}
+            renderWidget={renderWidgetContent}
+            justAddedId={justAddedId}
+            onAddSection={handleAddSection}
+          />
+        )}
+      </HomeWidgetDnd>
     </div>
   );
 };

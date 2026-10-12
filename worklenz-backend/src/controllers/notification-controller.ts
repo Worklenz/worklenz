@@ -22,6 +22,9 @@ export default class NotificationController extends WorklenzControllerBase {
     const buildQuery = (includeReleaseId: boolean) => `
       SELECT un.id,
              un.message,
+             un.message_key,
+             un.message_params,
+             un.notification_type_key,
              un.created_at,
              un.read,
              ${includeReleaseId ? "un.release_id," : ""}

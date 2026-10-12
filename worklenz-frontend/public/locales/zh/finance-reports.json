@@ -1,171 +1,171 @@
 {
   "emptyValue": "—",
-  "noBudgetSet": "No budget set",
-  "loadError": "Could not load this report. Try again.",
-  "retry": "Retry",
-  "searchPlaceholder": "Search",
+  "noBudgetSet": "未设置预算",
+  "loadError": "无法加载此报告，请重试。",
+  "retry": "重试",
+  "searchPlaceholder": "搜索",
   "budgets": {
-    "pageTitle": "Budgets",
-    "pageSubTitle": "Budget tracking and burn rate across all projects. ETC is remaining estimated hours at the realized hourly rate from logged time.",
-    "empty": "No projects to show yet.",
+    "pageTitle": "预算",
+    "pageSubTitle": "跟踪所有项目的预算和消耗率。ETC 是按记录工时的实际时薪计算的剩余预计小时数。",
+    "empty": "暂无可显示的项目。",
     "table": {
-      "project": "Project",
-      "budget": "Budget",
-      "spent": "Spent",
-      "remaining": "Remaining",
-      "burnRate": "Burn Rate",
+      "project": "项目",
+      "budget": "预算",
+      "spent": "已支出",
+      "remaining": "剩余",
+      "burnRate": "消耗率",
       "etc": "ETC",
-      "alert": "Alert"
+      "alert": "提醒"
     },
     "alert": {
-      "high": "High burn",
-      "watch": "Watch",
+      "high": "消耗过高",
+      "watch": "需关注",
       "ok": "OK",
-      "none": "No budget"
+      "none": "无预算"
     }
   },
   "invoices": {
-    "pageTitle": "Invoices",
-    "pageSubTitle": "Send, track, and collect client payments from one portfolio view.",
-    "empty": "No invoices yet. Create invoices from Client Portal.",
-    "openInvoice": "Open invoice",
+    "pageTitle": "发票",
+    "pageSubTitle": "从一个项目组合视图发送、跟踪并收取客户付款。",
+    "empty": "暂无发票。请从客户门户创建发票。",
+    "openInvoice": "打开发票",
     "kpi": {
-      "totalInvoiced": "Total invoiced",
-      "totalPaid": "Total paid",
-      "totalOutstanding": "Total outstanding"
+      "totalInvoiced": "发票总额",
+      "totalPaid": "已付总额",
+      "totalOutstanding": "未付总额"
     },
     "table": {
-      "invoice": "Invoice",
-      "client": "Client",
-      "project": "Project",
-      "amount": "Amount",
-      "paymentStatus": "Payment Status",
-      "paidAmount": "Paid Amount",
-      "status": "Status",
-      "issued": "Issued",
-      "due": "Due"
+      "invoice": "发票",
+      "client": "客户",
+      "project": "项目",
+      "amount": "金额",
+      "paymentStatus": "付款状态",
+      "paidAmount": "已付金额",
+      "status": "状态",
+      "issued": "开具日期",
+      "due": "到期日"
     },
     "status": {
-      "draft": "Draft",
-      "sent": "Sent",
-      "paid": "Paid",
-      "overdue": "Overdue",
-      "cancelled": "Cancelled",
-      "outstanding": "Outstanding"
+      "draft": "草稿",
+      "sent": "已发送",
+      "paid": "已支付",
+      "overdue": "逾期",
+      "cancelled": "已取消",
+      "outstanding": "未付"
     }
   },
   "billableTime": {
-    "pageTitle": "Billable Time",
-    "pageSubTitle": "Logged hours, billable flag, and rate-card value across the team. Timesheet approval is not required — every log is already recorded.",
-    "empty": "No time logged in this period.",
-    "tableTitle": "Time Entries",
+    "pageTitle": "可计费工时",
+    "pageSubTitle": "团队记录工时、计费标记和费率卡价值。无需审批工时表，每条记录都已保存。",
+    "empty": "此期间没有记录工时。",
+    "tableTitle": "工时记录",
     "range": {
-      "week": "This week",
-      "month": "This month",
-      "lastMonth": "Last month"
+      "week": "本周",
+      "month": "本月",
+      "lastMonth": "上月"
     },
     "kpi": {
-      "logged": "Logged this period",
-      "billable": "Billable",
-      "nonBillable": "Non-billable",
-      "value": "Billable value"
+      "logged": "本期已记录",
+      "billable": "可计费",
+      "nonBillable": "不可计费",
+      "value": "可计费价值"
     },
     "table": {
-      "member": "Member",
-      "project": "Project",
-      "task": "Task",
-      "date": "Date",
-      "time": "Time",
-      "billable": "Billable",
-      "rate": "Rate",
-      "value": "Value"
+      "member": "成员",
+      "project": "项目",
+      "task": "任务",
+      "date": "日期",
+      "time": "时间",
+      "billable": "可计费",
+      "rate": "费率",
+      "value": "价值"
     },
-    "billable": "Billable",
-    "internal": "Internal"
+    "billable": "可计费",
+    "internal": "内部"
   },
   "utilization": {
-    "pageTitle": "Utilization",
-    "pageSubTitle": "Team billable hours against capacity for the selected period. Overallocated is above 85% of capacity.",
-    "empty": "No team members to show.",
-    "tableTitle": "Utilization by Member",
+    "pageTitle": "利用率",
+    "pageSubTitle": "所选期间团队可计费工时与容量的对比。超过容量 85% 即为超额分配。",
+    "empty": "暂无团队成员。",
+    "tableTitle": "按成员统计利用率",
     "kpi": {
-      "team": "Team utilization",
-      "billable": "Billable hours",
-      "nonBillable": "Non-billable",
-      "overallocated": "Overallocated"
+      "team": "团队利用率",
+      "billable": "可计费工时",
+      "nonBillable": "不可计费",
+      "overallocated": "超额分配"
     },
-    "overallocatedCount_one": "{{count}} member",
-    "overallocatedCount_other": "{{count}} members",
+    "overallocatedCount_one": "{{count}} 名成员",
+    "overallocatedCount_other": "{{count}} 名成员",
     "table": {
-      "member": "Member",
-      "role": "Role",
-      "billableHours": "Billable Hours",
-      "totalHours": "Total Hours",
-      "utilization": "Utilization",
-      "status": "Status"
+      "member": "成员",
+      "role": "角色",
+      "billableHours": "可计费工时",
+      "totalHours": "总工时",
+      "utilization": "利用率",
+      "status": "状态"
     },
     "status": {
-      "high": "Overallocated",
-      "watch": "Watch",
+      "high": "超额分配",
+      "watch": "需关注",
       "ok": "OK"
     }
   },
   "profitability": {
-    "pageTitle": "Profitability",
-    "pageSubTitle": "Portfolio revenue from paid invoices, tracked cost from logged time and fixed costs, and billable utilization by project.",
-    "empty": "No projects to show yet.",
-    "revenueNote": "Revenue is paid client-portal invoices. Project-level revenue is not tracked yet, so the table shows cost and utilization.",
-    "noRevenueNote": "No paid invoices yet, so revenue, profit, and margin stay empty until invoices are collected.",
+    "pageTitle": "盈利能力",
+    "pageSubTitle": "来自已付发票的组合收入、来自记录时间和固定成本的跟踪成本以及按项目计费的利用率。",
+    "empty": "暂无项目",
+    "revenueNote": "收入通过客户门户发票支付。项目级收入尚未跟踪，因此该表显示了成本和利用率。",
+    "noRevenueNote": "尚未支付发票，因此在收取发票之前，收入、利润和利润保持为空。",
     "kpi": {
-      "revenue": "Revenue",
-      "trackedCost": "Tracked Cost",
-      "profit": "Profit",
-      "margin": "Profit Margin",
-      "billableUtil": "Billable Util."
+      "revenue": "收入",
+      "trackedCost": "跟踪成本",
+      "profit": "利润",
+      "margin": "利润率",
+      "billableUtil": "可计费公用事业。"
     },
-    "trendTitle": "Revenue & Profit Trend",
-    "costBreakdownTitle": "Cost Breakdown",
-    "tableTitle": "Project Profitability",
+    "trendTitle": "收入及利润趋势",
+    "costBreakdownTitle": "成本明细",
+    "tableTitle": "项目盈利能力",
     "cost": {
-      "fixed": "Fixed costs",
-      "timeBased": "Time-based costs"
+      "fixed": "固定成本",
+      "timeBased": "基于时间的成本"
     },
     "table": {
-      "project": "Project",
-      "cost": "Cost",
-      "utilization": "Utilization",
-      "health": "Health"
+      "project": "项目",
+      "cost": "成本",
+      "utilization": "利用率",
+      "health": "健康状况"
     },
     "health": {
-      "high": "High burn",
-      "watch": "Watch",
-      "ok": "On track",
-      "none": "No budget"
+      "high": "消耗过高",
+      "watch": "需关注",
+      "ok": "进展顺利",
+      "none": "无预算"
     },
     "legend": {
-      "revenue": "Revenue",
-      "profit": "Profit",
-      "cost": "Cost"
+      "revenue": "收入",
+      "profit": "利润",
+      "cost": "成本"
     }
   },
   "forecasts": {
-    "pageTitle": "Forecasts",
-    "pageSubTitle": "Next three months from a linear trend of the last three months of invoiced revenue and time-based cost.",
-    "methodology": "Forecast method: linear trend of the previous three months. Not a pipeline-based forecast.",
+    "pageTitle": "预测",
+    "pageSubTitle": "根据最近三个月的开票收入和基于工时的成本线性趋势预测未来三个月。",
+    "methodology": "预测方法：前面三个月的线性趋势，不是基于销售管道的预测。",
     "kpi": {
-      "projectedRevenue": "Projected Revenue (This Month)",
-      "projectedProfit": "Projected Profit (This Month)"
+      "projectedRevenue": "预计收入（下个月）",
+      "projectedProfit": "预计利润（下个月）"
     },
-    "vsPrevious": "{{value}}% vs last month",
+    "vsPrevious": "较上月 {{value}}%",
     "noRevenueBaseline": "本月没有收入可供比较",
     "noProfitBaseline": "本月没有利润可供比较",
-    "chartTitle": "3-Month Revenue Forecast",
+    "chartTitle": "三个月收入预测",
     "legend": {
-      "revenue": "Revenue",
-      "profit": "Profit",
-      "actual": "Actual",
-      "projected": "Projected"
+      "revenue": "收入",
+      "profit": "利润",
+      "actual": "实际",
+      "projected": "预测"
     },
-    "empty": "Not enough history to forecast yet. Log time and send invoices to build a trend."
+    "empty": "历史数据不足，暂时无法预测。请记录工时并发送发票以建立趋势。"
   }
 }

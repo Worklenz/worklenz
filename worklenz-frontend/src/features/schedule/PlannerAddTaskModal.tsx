@@ -465,7 +465,7 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
           >
             <Input
               autoFocus
-              placeholder={t('addTask', { defaultValue: 'Enter task name…' })}
+              placeholder={t('enterTaskName', { defaultValue: 'Enter task name…' })}
               onKeyDown={e => {
                 if (e.key === 'Enter') form.submit();
               }}
@@ -477,7 +477,7 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
           <Form.Item label={t('unassignedTask', { defaultValue: 'Unassigned Task' })} required>
             {!selectedProjectId ? (
               <div style={{ fontSize: 12, opacity: 0.45, padding: '8px 0' }}>
-                {t('selectProjectFirst', { defaultValue: 'Select a project to see its unassigned tasks.' })}
+                {t('pickProjectFirst', { defaultValue: 'Select a project to see its unassigned tasks.' })}
               </div>
             ) : (
               <>

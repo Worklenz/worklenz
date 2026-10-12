@@ -50,7 +50,7 @@
     "addTaskButton": "Aufgabe hinzufügen",
     "name": "Name",
     "project": "Projekt",
-    "status": "Status",
+    "status": "Alle Status",
     "dueDate": "Fälligkeitsdatum",
     "dueDatePlaceholder": "Fälligkeitsdatum festlegen",
     "tomorrow": "Morgen",
@@ -87,7 +87,6 @@
     "todo": "Zu tun",
     "doing": "In Bearbeitung",
     "done": "Erledigt",
-    "priority": "Priorität",
     "newTask": "Neue Aufgabe",
     "assignTask": "Aufgabe zuweisen",
     "createTask": "Aufgabe erstellen",
@@ -104,7 +103,15 @@
     "searchMembers": "Nach Name oder E-Mail suchen…",
     "noMembersFound": "Keine Mitglieder gefunden",
     "time": "Zeit",
-    "markTimeOff": "Abwesenheit / Urlaub markieren"
+    "markTimeOff": "Abwesenheit / Urlaub markieren",
+    "pinned": "Angeheftet",
+    "tabsLabel": "Aufgaben filtern",
+    "pinTask": "Aufgabe anheften",
+    "unpinTask": "Aufgabe lösen",
+    "pinLimitReached": "Sie können bis zu {{limit}} Aufgaben anheften. Lösen Sie eine, um eine andere anzuheften.",
+    "noPinnedTasks": "Noch keine angehefteten Aufgaben. Fahren Sie über eine Aufgabe und klicken Sie auf die Stecknadel, um sie hier zu behalten.",
+    "pinFailed": "Die Anheftung konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
+    "viewAll": "Alle anzeigen ({{total}})"
   },
   "homeCalendar": {
     "todayButton": "Heute",
@@ -112,7 +119,7 @@
     "monthView": "Monat",
     "yearView": "Jahr",
     "addHint": "+ Hinzufügen",
-    "statusesPlaceholder": "Status",
+    "statusesPlaceholder": "Alle Status",
     "clientsPlaceholder": "Kunden",
     "projectsPlaceholder": "Projekte",
     "clearFilters": "Zurücksetzen",
@@ -148,7 +155,8 @@
       "managerAssigned": "{{userName}} hat einen Projektmanager für {{projectName}} zugewiesen",
       "managerRemoved": "{{userName}} hat den Projektmanager von {{projectName}} entfernt",
       "memberAdded": "{{userName}} hat {{memberName}} zum Projekt {{projectName}} hinzugefügt",
-      "memberRemoved": "{{userName}} hat {{memberName}} aus dem Projekt {{projectName}} entfernt"
+      "memberRemoved": "{{userName}} hat {{memberName}} aus dem Projekt {{projectName}} entfernt",
+      "managerFinanceChanged": "{{userName}} hat den Finanzierungszugang des Projektmanagers für {{projectName}} geändert"
     },
     "task": {
       "created": "{{userName}} hat Aufgabe {{taskName}} erstellt",
@@ -166,7 +174,7 @@
     "emptyTitle": "Alles erledigt!",
     "emptySubtitle": "Noch keine Aufgaben – erstellen Sie eine, um loszulegen.",
     "sideUnassigned": "Nicht zugewiesen",
-    "columnId": "ID",
+    "columnId": "Ausweis",
     "columnTask": "Aufgabe",
     "columnAssignee": "Zugewiesen an",
     "columnDue": "Fällig",
@@ -221,7 +229,7 @@
     "viewAll": "Alle anzeigen",
     "taskColumn": "Aufgabe",
     "projectColumn": "Projekt",
-    "statusColumn": "Status",
+    "statusColumn": "Alle Status",
     "priorityColumn": "Priorität",
     "billableColumn": "Abrechenbar",
     "yes": "Ja",
@@ -259,17 +267,17 @@
     "projectPlaceholder": "Projekt auswählen…",
     "taskLabel": "Aufgabe",
     "taskPlaceholderWithProject": "Aufgabe suchen…",
-    "taskPlaceholderNoProject": "Wählen Sie zuerst ein Projekt aus",
+    "taskPlaceholderNoProject": "Bitte wählen Sie zuerst ein Projekt aus",
     "taskLoading": "Laden…",
     "noTasksFound": "Keine Aufgaben gefunden",
     "amountLabel": "Betrag",
-    "amountPlaceholder": "0.00",
+    "amountPlaceholder": "0,00",
     "submitButton": "Aufgabenausgabe hinzufügen",
     "upgradePromptTitle": "Ausgaben",
-    "upgradePromptDescription": "Verfolgen Sie feste Kosten für Aufgaben und rollen Sie sie in Ihre Finanzberichte auf. Verfügbar im Business-Plan.",
+    "upgradePromptDescription": "Erfassen Sie Fixkosten für Aufgaben und bündeln Sie sie in Ihren Finanzberichten. Verfügbar im Business-Plan.",
     "loadTasksError": "Aufgaben und Währung für dieses Projekt konnten nicht geladen werden.",
-    "successMessage": "Feste Kosten zur Aufgabe hinzugefügt",
-    "errorMessage": "Hinzufügen von festen Kosten zur Aufgabe fehlgeschlagen"
+    "successMessage": "Fixkosten zur Aufgabe hinzugefügt",
+    "errorMessage": "Fehler beim Hinzufügen von Fixkosten zur Aufgabe"
   },
   "addClient": {
     "pageTitle": "Neuen Kunden hinzufügen",
@@ -373,7 +381,8 @@
     "tasks": "Aufgaben",
     "activity": "Aktivität",
     "timeLogged": "Erfasste Zeit",
-    "title": "Machen Sie dort weiter, wo Sie aufgehört haben"
+    "title": "Machen Sie dort weiter, wo Sie aufgehört haben",
+    "showTabs": "Tabs anzeigen"
   },
   "focusTime": {
     "title": "Fokus & Zeit",
@@ -382,24 +391,6 @@
     "startTimer": "Timer starten"
   },
   "views": "Ansichten",
-  "addExpense": {
-    "modalTitle": "Ausgabe hinzufügen",
-    "projectLabel": "Projekt",
-    "projectPlaceholder": "Projekt auswählen…",
-    "taskLabel": "Aufgabe",
-    "taskPlaceholderWithProject": "Aufgabe suchen…",
-    "taskPlaceholderNoProject": "Bitte wählen Sie zuerst ein Projekt aus",
-    "taskLoading": "Laden…",
-    "noTasksFound": "Keine Aufgaben gefunden",
-    "amountLabel": "Betrag",
-    "amountPlaceholder": "0.00",
-    "submitButton": "Aufgabenausgabe hinzufügen",
-    "upgradePromptTitle": "Ausgaben",
-    "upgradePromptDescription": "Erfassen Sie Fixkosten für Aufgaben und bündeln Sie sie in Ihren Finanzberichten. Verfügbar im Business-Plan.",
-    "loadTasksError": "Aufgaben und Währung für dieses Projekt konnten nicht geladen werden.",
-    "successMessage": "Fixkosten zur Aufgabe hinzugefügt",
-    "errorMessage": "Fehler beim Hinzufügen von Fixkosten zur Aufgabe"
-  },
   "timeOff": {
     "timeOff": "Abwesenheit",
     "off": "frei",
@@ -409,5 +400,131 @@
       "personal": "Persönlich",
       "other": "Sonstiges"
     }
+  },
+  "customize": {
+    "button": "Anpassen",
+    "title": "Startseite anpassen",
+    "description": "Ziehen Sie Bereiche, um sie neu anzuordnen, oder nutzen Sie die Pfeiltasten. Schalten Sie einen Bereich aus, um ihn auf Ihrer Startseite auszublenden.",
+    "mainColumn": "Hauptbereich",
+    "sideColumn": "Seitenleiste",
+    "emptyColumn": "Bereich hier ablegen",
+    "dragHandle": "{{name}} neu anordnen. Leertaste zum Aufnehmen, dann die Pfeiltasten verwenden.",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten",
+    "moveUpNamed": "{{name}} nach oben verschieben",
+    "moveDownNamed": "{{name}} nach unten verschieben",
+    "moveToSide": "In die Seitenleiste verschieben",
+    "moveToMain": "In den Hauptbereich verschieben",
+    "cannotHide": "Dieser Bereich kann nicht ausgeblendet werden.",
+    "showNamed": "{{name}} anzeigen",
+    "reset": "Auf Standard zurücksetzen",
+    "resetConfirm": "Startseite auf die Standardeinstellungen zurücksetzen?",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "widgets": {
+      "statCards": "Übersichtskarten",
+      "priorities": "Aufgabenprioritäten",
+      "progressDonut": "Mein Fortschritt",
+      "continue": "Dort weitermachen, wo Sie aufgehört haben",
+      "greeting": "Begrüßungsbanner",
+      "teamMembers": "Teammitglieder",
+      "assignedByMe": "Von mir zugewiesene Aufgaben",
+      "mentions": "Kommentare, die mich erwähnen",
+      "todo": "Meine Aufgabenliste"
+    },
+    "tabs": {
+      "layout": "Layout",
+      "taskTabs": "Aufgaben-Tabs",
+      "sorting": "Sortierung",
+      "sidebar": "Linke Seitenleiste",
+      "defaultView": "Standardansicht"
+    },
+    "topSection": "Seitenanfang",
+    "tabsDescription": "Wählen Sie, welche Tabs über der Aufgabentabelle erscheinen und in welcher Reihenfolge. Mindestens ein Tab muss aktiviert bleiben.",
+    "cannotHideLastTab": "Mindestens ein Tab muss sichtbar bleiben.",
+    "sortDescription": "Legen Sie fest, wie Aufgaben in der Tabelle sortiert werden. Angeheftete Aufgaben bleiben immer oben.",
+    "sortField": "Sortieren nach",
+    "sortOrder": "Richtung",
+    "sortDefault": "Standardreihenfolge (Fälligkeitsdatum, frühestes zuerst)",
+    "sortAsc": "Aufsteigend",
+    "sortDesc": "Absteigend",
+    "sortPinnedNote": "Der Tab „Angeheftet“ zeigt immer die zuletzt angeheftete Aufgabe zuerst.",
+    "sidebarDescription": "Ordnen Sie die Einträge der linken Seitenleiste neu an und wählen Sie, welche angezeigt werden. Heften Sie einen an, damit er beim Öffnen der Startseite zuerst angezeigt wird.",
+    "pinSidebarItem": "{{name}} als zuerst geöffnete Seite anheften",
+    "unpinSidebarItem": "{{name}} lösen",
+    "assignedDefault": "Tabelle öffnen mit",
+    "assignedLastUsed": "Zuletzt verwendete Ansicht",
+    "cannotHideLanding": "Die Startseite öffnet diese Seite. Heften Sie eine andere Seite an, um sie auszublenden.",
+    "cannotHideLastItem": "Mindestens ein Eintrag muss sichtbar bleiben.",
+    "tableTitle": "Aufgabentabelle anpassen",
+    "tableResetConfirm": "Aufgabentabelle auf die Standardeinstellungen zurücksetzen?",
+    "done": "Fertig"
+  },
+  "widgets": {
+    "menu": {
+      "options": "Optionen für {{name}}",
+      "showPeriod": "Anzeigen",
+      "remove": "Widget entfernen"
+    },
+    "add": {
+      "button": "Widget hinzufügen",
+      "hint": "Auf „Hinzufügen“ klicken oder ein Widget auf Ihre Seite ziehen.",
+      "addAction": "Hinzufügen",
+      "addNamed": "{{name}} hinzufügen",
+      "empty": "Alle Widgets befinden sich bereits auf Ihrer Startseite."
+    },
+    "descriptions": {
+      "greeting": "Eine Begrüßung mit dem heutigen Datum und dem, was Ihre Aufmerksamkeit braucht.",
+      "statCards": "Heutige Aufgaben, Überfälliges, Erledigtes und Ihre Fokuszeit.",
+      "priorities": "Ihre Aufgaben für heute oder diese Woche, bereit zur Bearbeitung.",
+      "progressDonut": "Wie viel Ihrer zugewiesenen Arbeit erledigt, in Bearbeitung oder noch offen ist.",
+      "continue": "Springen Sie zurück zu zuletzt verwendeten Projekten, Aufgaben, Aktivitäten und erfasster Zeit.",
+      "teamMembers": "Sehen Sie, wer in Ihrem Team ist, und öffnen Sie die vollständige Teamseite.",
+      "assignedByMe": "Aufgaben, die Sie an Teammitglieder übergeben haben, damit Sie den Stand verfolgen können.",
+      "mentions": "Aktuelle Aufgabenkommentare, in denen ein Teammitglied Sie mit @ erwähnt hat.",
+      "todo": "Notieren Sie persönliche Aufgaben und haken Sie sie nach und nach ab."
+    },
+    "drag": {
+      "pickedUp": "{{name}} aufgenommen.",
+      "dropped": "{{name}} abgelegt.",
+      "cancelled": "Das Verschieben von {{name}} wurde abgebrochen."
+    },
+    "dropHere": "Widget hier ablegen",
+    "state": {
+      "error": "Dieses Widget konnte nicht geladen werden.",
+      "retry": "Erneut versuchen"
+    },
+    "empty": {
+      "title": "Neue Widgets per Drag & Drop hinzufügen",
+      "titleNoDrag": "Fügen Sie Widgets zu Ihrer Startseite hinzu",
+      "button": "Widgets hinzufügen"
+    }
+  },
+  "teamMembers": {
+    "empty": "Noch keine Teammitglieder.",
+    "viewTeam": "Team ansehen"
+  },
+  "assignedByMe": {
+    "empty": "Sie haben keine offenen Aufgaben zugewiesen.",
+    "assignNewTask": "Neue Aufgabe zuweisen",
+    "viewAll": "Alle zugewiesenen Aufgaben anzeigen ({{total}})"
+  },
+  "mentions": {
+    "empty": "Sie wurden noch in keinem Kommentar erwähnt.",
+    "reply": "Antworten",
+    "replyPlaceholder": "Antwort schreiben …",
+    "replyHint": "Wird als Kommentar zu „{{task}}“ veröffentlicht.",
+    "replySent": "Antwort zu „{{task}}“ hinzugefügt.",
+    "replyFailed": "Ihre Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+    "replyLabel": "Auf {{name}} antworten"
+  },
+  "todoWidget": {
+    "addPlaceholder": "Aufgabe hinzufügen und Enter drücken",
+    "addLabel": "Neue Aufgabe",
+    "empty": "Alles erledigt.",
+    "viewAll": "Meine Aufgabenliste öffnen",
+    "viewAllMore": "Alle anzeigen ({{remaining}} weitere)",
+    "addFailed": "Die Aufgabe konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.",
+    "completeFailed": "Die Aufgabe konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut."
   }
 }

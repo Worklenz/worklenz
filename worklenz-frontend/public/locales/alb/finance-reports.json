@@ -1,171 +1,171 @@
 {
   "emptyValue": "—",
-  "noBudgetSet": "No budget set",
-  "loadError": "Could not load this report. Try again.",
-  "retry": "Retry",
-  "searchPlaceholder": "Search",
+  "noBudgetSet": "Nuk është vendosur buxheti",
+  "loadError": "Raporti nuk u ngarkua. Provo përsëri.",
+  "retry": "Provo përsëri",
+  "searchPlaceholder": "Kërko",
   "budgets": {
-    "pageTitle": "Budgets",
-    "pageSubTitle": "Budget tracking and burn rate across all projects. ETC is remaining estimated hours at the realized hourly rate from logged time.",
-    "empty": "No projects to show yet.",
+    "pageTitle": "Buxhetet",
+    "pageSubTitle": "Ndjekja e buxhetit dhe normës së shpenzimit për të gjitha projektet. ETC janë orët e vlerësuara të mbetura sipas tarifës së realizuar për orë.",
+    "empty": "Nuk ka ende projekte për t'u shfaqur.",
     "table": {
-      "project": "Project",
-      "budget": "Budget",
-      "spent": "Spent",
-      "remaining": "Remaining",
-      "burnRate": "Burn Rate",
+      "project": "Projekt",
+      "budget": "Buxhet",
+      "spent": "Shpenzuar",
+      "remaining": "Mbetur",
+      "burnRate": "Norma e shpenzimit",
       "etc": "ETC",
-      "alert": "Alert"
+      "alert": "Njoftim"
     },
     "alert": {
-      "high": "High burn",
-      "watch": "Watch",
+      "high": "Shpenzim i lartë",
+      "watch": "Për t'u ndjekur",
       "ok": "OK",
-      "none": "No budget"
+      "none": "Pa buxhet"
     }
   },
   "invoices": {
-    "pageTitle": "Invoices",
-    "pageSubTitle": "Send, track, and collect client payments from one portfolio view.",
-    "empty": "No invoices yet. Create invoices from Client Portal.",
-    "openInvoice": "Open invoice",
+    "pageTitle": "Faturat",
+    "pageSubTitle": "Dërgo, ndiq dhe mblidh pagesat e klientëve nga një pamje e vetme e portofolit.",
+    "empty": "Nuk ka ende fatura. Krijo fatura nga Portali i Klientit.",
+    "openInvoice": "Hap faturën",
     "kpi": {
-      "totalInvoiced": "Total invoiced",
-      "totalPaid": "Total paid",
-      "totalOutstanding": "Total outstanding"
+      "totalInvoiced": "Totali i faturuar",
+      "totalPaid": "Totali i paguar",
+      "totalOutstanding": "Totali i papaguar"
     },
     "table": {
-      "invoice": "Invoice",
-      "client": "Client",
-      "project": "Project",
-      "amount": "Amount",
-      "paymentStatus": "Payment Status",
-      "paidAmount": "Paid Amount",
-      "status": "Status",
-      "issued": "Issued",
-      "due": "Due"
+      "invoice": "Faturë",
+      "client": "Klient",
+      "project": "Projekt",
+      "amount": "Shumë",
+      "paymentStatus": "Statusi i pagesës",
+      "paidAmount": "Shuma e paguar",
+      "status": "Statusi",
+      "issued": "Lëshuar",
+      "due": "Afati"
     },
     "status": {
-      "draft": "Draft",
-      "sent": "Sent",
-      "paid": "Paid",
-      "overdue": "Overdue",
-      "cancelled": "Cancelled",
-      "outstanding": "Outstanding"
+      "draft": "Drafti",
+      "sent": "Dërguar",
+      "paid": "Paguar",
+      "overdue": "Vonuar",
+      "cancelled": "Anuluar",
+      "outstanding": "Papaguar"
     }
   },
   "billableTime": {
-    "pageTitle": "Billable Time",
-    "pageSubTitle": "Logged hours, billable flag, and rate-card value across the team. Timesheet approval is not required — every log is already recorded.",
-    "empty": "No time logged in this period.",
-    "tableTitle": "Time Entries",
+    "pageTitle": "Koha e faturueshme",
+    "pageSubTitle": "Orët e regjistruara, treguesi i faturueshmërisë dhe vlera e tarifës për ekipin. Miratimi i fletës së kohës nuk kërkohet.",
+    "empty": "Nuk ka kohë të regjistruar në këtë periudhë.",
+    "tableTitle": "Hyrjet e kohës",
     "range": {
-      "week": "This week",
-      "month": "This month",
-      "lastMonth": "Last month"
+      "week": "Këtë javë",
+      "month": "Këtë muaj",
+      "lastMonth": "Muajin e kaluar"
     },
     "kpi": {
-      "logged": "Logged this period",
-      "billable": "Billable",
-      "nonBillable": "Non-billable",
-      "value": "Billable value"
+      "logged": "Regjistruar këtë periudhë",
+      "billable": "Faturueshme",
+      "nonBillable": "Jo të faturueshme",
+      "value": "Vlera e faturueshme"
     },
     "table": {
-      "member": "Member",
-      "project": "Project",
-      "task": "Task",
-      "date": "Date",
-      "time": "Time",
-      "billable": "Billable",
-      "rate": "Rate",
-      "value": "Value"
+      "member": "Anëtar",
+      "project": "Projekt",
+      "task": "Detyrë",
+      "date": "Datë",
+      "time": "Kohë",
+      "billable": "Faturueshme",
+      "rate": "Tarifë",
+      "value": "Vlerë"
     },
-    "billable": "Billable",
-    "internal": "Internal"
+    "billable": "Faturueshme",
+    "internal": "E brendshme"
   },
   "utilization": {
-    "pageTitle": "Utilization",
-    "pageSubTitle": "Team billable hours against capacity for the selected period. Overallocated is above 85% of capacity.",
-    "empty": "No team members to show.",
-    "tableTitle": "Utilization by Member",
+    "pageTitle": "Shfrytëzimi",
+    "pageSubTitle": "Orët e faturueshme të ekipit kundrejt kapacitetit për periudhën e zgjedhur. Mbi-ndarja është mbi 85% të kapacitetit.",
+    "empty": "Nuk ka anëtarë ekipi për t'u shfaqur.",
+    "tableTitle": "Shfrytëzimi sipas anëtarit",
     "kpi": {
-      "team": "Team utilization",
-      "billable": "Billable hours",
-      "nonBillable": "Non-billable",
-      "overallocated": "Overallocated"
+      "team": "Shfrytëzimi i ekipit",
+      "billable": "Orë të faturueshme",
+      "nonBillable": "Jo të faturueshme",
+      "overallocated": "Mbi-ndarë"
     },
-    "overallocatedCount_one": "{{count}} member",
-    "overallocatedCount_other": "{{count}} members",
+    "overallocatedCount_one": "{{count}} anëtar",
+    "overallocatedCount_other": "{{count}} anëtarë",
     "table": {
-      "member": "Member",
-      "role": "Role",
-      "billableHours": "Billable Hours",
-      "totalHours": "Total Hours",
-      "utilization": "Utilization",
-      "status": "Status"
+      "member": "Anëtar",
+      "role": "Roli",
+      "billableHours": "Orë të faturueshme",
+      "totalHours": "Orë gjithsej",
+      "utilization": "Shfrytëzim",
+      "status": "Statusi"
     },
     "status": {
-      "high": "Overallocated",
-      "watch": "Watch",
+      "high": "Mbi-ndarë",
+      "watch": "Për t'u ndjekur",
       "ok": "OK"
     }
   },
   "profitability": {
-    "pageTitle": "Profitability",
-    "pageSubTitle": "Portfolio revenue from paid invoices, tracked cost from logged time and fixed costs, and billable utilization by project.",
-    "empty": "No projects to show yet.",
-    "revenueNote": "Revenue is paid client-portal invoices. Project-level revenue is not tracked yet, so the table shows cost and utilization.",
-    "noRevenueNote": "No paid invoices yet, so revenue, profit, and margin stay empty until invoices are collected.",
+    "pageTitle": "Përfitueshmëria",
+    "pageSubTitle": "Të ardhurat e portofolit nga faturat e paguara, kostoja e gjurmuar nga koha e regjistruar dhe kostot fikse, dhe përdorimi i faturueshëm sipas projektit.",
+    "empty": "Asnjë projekt për të shfaqur.",
+    "revenueNote": "Të ardhurat janë faturat e paguara klient-portal. Të ardhurat në nivel projekti nuk janë gjurmuar ende, kështu që tabela tregon koston dhe përdorimin.",
+    "noRevenueNote": "Nuk ka ende fatura të paguara, kështu që të ardhurat, fitimi dhe marzhi mbeten bosh derisa të mblidhen faturat.",
     "kpi": {
-      "revenue": "Revenue",
-      "trackedCost": "Tracked Cost",
-      "profit": "Profit",
-      "margin": "Profit Margin",
-      "billableUtil": "Billable Util."
+      "revenue": "Të ardhura",
+      "trackedCost": "Kostoja e gjurmuar",
+      "profit": "Fitim",
+      "margin": "Marzhi i Fitimit",
+      "billableUtil": "Përdorimi i faturueshëm."
     },
-    "trendTitle": "Revenue & Profit Trend",
-    "costBreakdownTitle": "Cost Breakdown",
-    "tableTitle": "Project Profitability",
+    "trendTitle": "Trendi i të ardhurave dhe fitimeve",
+    "costBreakdownTitle": "Ndarja e kostos",
+    "tableTitle": "Përfitueshmëria e projektit",
     "cost": {
-      "fixed": "Fixed costs",
-      "timeBased": "Time-based costs"
+      "fixed": "Kostot fikse",
+      "timeBased": "Kostot e bazuara në kohë"
     },
     "table": {
-      "project": "Project",
-      "cost": "Cost",
-      "utilization": "Utilization",
-      "health": "Health"
+      "project": "Projekti",
+      "cost": "Kostoja",
+      "utilization": "Shfrytëzimi",
+      "health": "Gjendja"
     },
     "health": {
-      "high": "High burn",
-      "watch": "Watch",
-      "ok": "On track",
-      "none": "No budget"
+      "high": "Shpenzim i lartë",
+      "watch": "Për t'u ndjekur",
+      "ok": "Në rrugë të mbarë",
+      "none": "Pa buxhet"
     },
     "legend": {
-      "revenue": "Revenue",
-      "profit": "Profit",
-      "cost": "Cost"
+      "revenue": "Të ardhura",
+      "profit": "Fitim",
+      "cost": "Kostoja"
     }
   },
   "forecasts": {
-    "pageTitle": "Forecasts",
-    "pageSubTitle": "Next three months from a linear trend of the last three months of invoiced revenue and time-based cost.",
-    "methodology": "Forecast method: linear trend of the previous three months. Not a pipeline-based forecast.",
+    "pageTitle": "Parashikime",
+    "pageSubTitle": "Tre muajt e ardhshëm nga një trend linear i tre muajve të fundit të të ardhurave të faturuara dhe kostos së bazuar në kohë.",
+    "methodology": "Metoda e parashikimit: trend linear i tre muajve të mëparshëm. Nuk bazohet në pipeline.",
     "kpi": {
-      "projectedRevenue": "Projected Revenue (This Month)",
-      "projectedProfit": "Projected Profit (This Month)"
+      "projectedRevenue": "Të ardhurat e parashikuara (muajin e ardhshëm)",
+      "projectedProfit": "Fitimi i parashikuar (muajin e ardhshëm)"
     },
-    "vsPrevious": "{{value}}% vs last month",
+    "vsPrevious": "{{value}}% krahasuar me muajin e kaluar",
     "noRevenueBaseline": "Nuk ka të ardhura për të krahasuar këtë muaj",
     "noProfitBaseline": "Nuk ka fitim për të krahasuar këtë muaj",
-    "chartTitle": "3-Month Revenue Forecast",
+    "chartTitle": "Parashikimi i të ardhurave për 3 muaj",
     "legend": {
-      "revenue": "Revenue",
-      "profit": "Profit",
-      "actual": "Actual",
-      "projected": "Projected"
+      "revenue": "Të ardhura",
+      "profit": "Fitim",
+      "actual": "Aktuale",
+      "projected": "E parashikuar"
     },
-    "empty": "Not enough history to forecast yet. Log time and send invoices to build a trend."
+    "empty": "Nuk ka ende histori të mjaftueshme për parashikim. Regjistro kohën dhe dërgo faturat për të krijuar një trend."
   }
 }

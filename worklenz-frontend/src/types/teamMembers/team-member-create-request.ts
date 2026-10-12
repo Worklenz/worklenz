@@ -8,4 +8,6 @@ export interface ITeamMemberCreateRequest extends ITeamMember {
   is_admin?: boolean;
   is_guest?: boolean;
   role_name?: string; // Support for role selection (Admin, Team Lead, Member)
+  /** Phase 5 — grant create-from-templates (Owner/Admin only). */
+  can_create_projects_from_templates?: boolean;
 }

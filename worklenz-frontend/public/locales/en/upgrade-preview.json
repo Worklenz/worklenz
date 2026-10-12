@@ -187,16 +187,6 @@
           "Payment status at a glance"
         ]
       },
-      "ticketing": {
-        "title": "Ticketing",
-        "description": "Let clients raise and track support tickets right from their portal.",
-        "features": [
-          "Client-submitted support tickets",
-          "Ticket status tracking & updates",
-          "Internal notes & assignment",
-          "Priority & SLA tagging"
-        ]
-      },
       "settings": {
         "title": "Portal Settings",
         "description": "Customize your client portal with your own branding.",
@@ -273,23 +263,6 @@
       "dateColumn": "Date",
       "rowsPerPage": "Rows per page: {{count}}"
     }
-  },
-  "ticketingMockup": {
-    "openTickets": "Open Tickets",
-    "inProgress": "In Progress",
-    "resolvedToday": "Resolved Today",
-    "avgResponseTime": "Avg. Response Time",
-    "ticketsCard": "Tickets",
-    "ticketNoColumn": "Ticket #",
-    "clientColumn": "Client",
-    "subjectColumn": "Subject",
-    "priorityColumn": "Priority",
-    "statusColumn": "Status",
-    "priorityHigh": "High",
-    "priorityMedium": "Medium",
-    "priorityLow": "Low",
-    "statusOpen": "Open",
-    "statusResolved": "Resolved"
   },
   "plannerMockup": {
     "chrome": {

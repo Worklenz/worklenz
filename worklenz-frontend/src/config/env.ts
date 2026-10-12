@@ -10,8 +10,23 @@ declare global {
     VITE_API_URL?: string;
     VITE_SOCKET_URL?: string;
     VITE_CLIENT_PORTAL_URL?: string;
+    VITE_APP_VERSION?: string;
   }
 }
+
+/**
+ * Version shown in Settings > Help > About. Set it through an env file
+ * (VITE_APP_VERSION): at build time via `.env`, or on self-hosted Docker via
+ * `.env.production`, which env-config.js picks up at container start without
+ * a rebuild. Deliberately has no package.json fallback — that version is not
+ * bumped per release, so a stale number would be worse than none.
+ * @returns the configured version, or null when none is set
+ */
+export const getAppVersion = (): string | null => {
+  const version = window.VITE_APP_VERSION || import.meta.env.VITE_APP_VERSION;
+  const trimmedVersion = version?.trim();
+  return trimmedVersion ? trimmedVersion : null;
+};
 
 export const getApiUrl = (): string => {
   // First check runtime-injected environment variables

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { theme } from '@/shared/antd-imports';
+import { Button, CaretDownFilled, Dropdown, theme } from '@/shared/antd-imports';
 
 export interface TablePaginationProps {
   page: number;
@@ -10,9 +10,23 @@ export interface TablePaginationProps {
   rowsPerPageLabel: string;
   /** Given the "start-end" range text and the total count, render the summary label. */
   renderSummary?: (range: string, total: number) => React.ReactNode;
+  /**
+   * Horizontal inset (px) of the bar's left / right edge. Defaults to 16. A table that wants the
+   * bar's content to line up with its own cell text passes its cell padding here.
+   */
+  insetStart?: number;
+  insetEnd?: number;
+  /**
+   * How the rows-per-page choice is rendered. `select` (default) is a native <select>;
+   * `dropdown` is the button + menu used by Home > My Tasks, with its "start – end of total"
+   * summary, so a table that follows that page's look gets the same pagination bar.
+   */
+  variant?: 'select' | 'dropdown';
 }
 
-const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 50];
+const DEFAULT_INSET = 16;
+
+const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 /**
  * Rows-per-page select + "start-end of total" summary + first/prev/page/next/last
@@ -27,6 +41,9 @@ const TablePagination: React.FC<TablePaginationProps> = ({
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
   rowsPerPageLabel,
   renderSummary,
+  insetStart = DEFAULT_INSET,
+  insetEnd = DEFAULT_INSET,
+  variant = 'select',
 }) => {
   const { token } = theme.useToken();
 
@@ -93,8 +110,11 @@ const TablePagination: React.FC<TablePaginationProps> = ({
 
   if (total === 0) return null;
 
+  const rangeSeparator = variant === 'dropdown' ? ' – ' : '-';
   const range =
-    total === 0 ? '0' : `${(safePage - 1) * pageSize + 1}-${Math.min(safePage * pageSize, total)}`;
+    total === 0
+      ? '0'
+      : `${(safePage - 1) * pageSize + 1}${rangeSeparator}${Math.min(safePage * pageSize, total)}`;
 
   return (
     <div
@@ -104,24 +124,40 @@ const TablePagination: React.FC<TablePaginationProps> = ({
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         rowGap: 8,
-        padding: '10px 16px',
+        padding: `10px ${insetEnd}px 10px ${insetStart}px`,
         borderTop: `1px solid ${token.colorBorderSecondary}`,
         flexShrink: 0,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', rowGap: 4 }}>
         <span style={{ fontSize: 12, color: token.colorTextSecondary }}>{rowsPerPageLabel}</span>
-        <select
-          style={selectStyle}
-          value={pageSize}
-          onChange={e => onPageChange(1, Number(e.target.value))}
-        >
-          {pageSizeOptions.map(n => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
+        {variant === 'dropdown' ? (
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: pageSizeOptions.map(n => ({ key: String(n), label: String(n) })),
+              selectedKeys: [String(pageSize)],
+              onClick: info => onPageChange(1, Number(info.key)),
+            }}
+          >
+            <Button size="small" aria-label={`${rowsPerPageLabel} ${pageSize}`}>
+              {pageSize} <CaretDownFilled />
+            </Button>
+          </Dropdown>
+        ) : (
+          <select
+            aria-label={rowsPerPageLabel}
+            style={selectStyle}
+            value={pageSize}
+            onChange={e => onPageChange(1, Number(e.target.value))}
+          >
+            {pageSizeOptions.map(n => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        )}
         <span style={{ fontSize: 12, color: token.colorTextSecondary, marginLeft: 4 }}>
           {renderSummary ? renderSummary(range, total) : `${range} of ${total}`}
         </span>

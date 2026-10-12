@@ -27,5 +27,18 @@
   "invite": "Invitar",
   "Invite": "Invitar",
   "removeSuccess": "{{name}} eliminado del proyecto",
-  "removeError": "Error al eliminar miembro"
+  "removeError": "Error al eliminar miembro",
+  "memberNotFound": "No se encontró la información del miembro del equipo",
+  "manageTimeOff": "Gestionar tiempo libre",
+  "seatLimitReached": "Límite de asientos alcanzado",
+  "memberDeactivated": "Miembro desactivado correctamente",
+  "memberActivated": "Miembro activado correctamente",
+  "statusChangeError": "Error al cambiar el estado del miembro",
+  "deactivateTooltip": "Desactivar miembro",
+  "activateTooltip": "Activar miembro",
+  "editTooltip": "Editar miembro",
+  "moreOptions": "Más opciones",
+  "changeMemberStatusConfirmation": "¿Estás seguro de que deseas cambiar el estado de este miembro?",
+  "yesProceed": "Sí, continuar",
+  "cancel": "Cancelar"
 }

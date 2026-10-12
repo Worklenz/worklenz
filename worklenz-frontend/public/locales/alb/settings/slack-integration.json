@@ -23,7 +23,7 @@
     "step2": {
       "title": "2. Fto Bot-in në Kanale",
       "description": "Në çdo kanal të Slack ku dëshironi të merrni njoftime, shkruani:",
-      "command": "/invite @Worklenz",
+      "command": "/fto @Worklenz",
       "note": "Ju duhet ta bëni këtë vetëm një herë për kanal."
     },
     "step3": {

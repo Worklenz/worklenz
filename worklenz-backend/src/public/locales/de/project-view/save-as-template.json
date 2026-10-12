@@ -1,17 +1,43 @@
 {
   "title": "Als Vorlage speichern",
   "templateName": "Vorlagenname",
-  "includes": "Was soll aus dem Projekt in die Vorlage aufgenommen werden?",
+  "templateNamePlaceholder": "Vorlagennamen eingeben",
+  "templateInfo": "Vorlageninformationen",
+  "includes": "Projektelemente",
+  "projectSettings": "Projekteinstellungen",
+  "taskIncludes": "Aufgabenelemente",
+  "cancel": "Abbrechen",
+  "save": "Speichern",
+  "creating": "Vorlage wird erstellt...",
+  "created": "Vorlage erstellt!",
+  "quickSelect": "Schnellauswahl:",
+  "selectAll": "Alle auswählen",
+  "essentialOnly": "Nur Wesentliches",
+  "clearAll": "Alle löschen",
+  "itemsSelected": "Elemente ausgewählt",
+  "selected": "ausgewählt",
+  "readyToSave": "Bereit zum Speichern",
+  "validName": "Gültiger Name",
+  "required": "Erforderlich",
+  "characters": "Zeichen",
+  "proTips": "Profi-Tipps",
+  "budgetPlanHint": "Budgeteinstellungen sind in den Plänen Business und Enterprise verfügbar.",
   "includesOptions": {
     "statuses": "Status",
     "phases": "Phasen",
-    "labels": "Labels"
-  },
-  "taskIncludes": "Was soll aus den Aufgaben in die Vorlage aufgenommen werden?",
-  "taskIncludesOptions": {
-    "statuses": "Status",
-    "phases": "Phasen",
     "labels": "Labels",
+    "customColumns": "Benutzerdefinierte Spalten"
+  },
+  "projectSettingsOptions": {
+    "category": "Kategorie",
+    "projectManager": "Projektmanager",
+    "estimatedWorkingDays": "Geschätzte Arbeitstage",
+    "estimatedManDays": "Geschätzte Manntage",
+    "hoursPerDay": "Stunden pro Tag",
+    "advanced": "Erweiterte Einstellungen",
+    "budget": "Budgeteinstellungen"
+  },
+  "taskIncludesOptions": {
     "name": "Name",
     "priority": "Priorität",
     "status": "Status",
@@ -19,9 +45,58 @@
     "label": "Label",
     "timeEstimate": "Zeitschätzung",
     "description": "Beschreibung",
-    "subTasks": "Unteraufgaben"
+    "subTasks": "Unteraufgaben",
+    "assignees": "Zugewiesene",
+    "recurrence": "Wiederholungsoptionen",
+    "dependencies": "Abhängigkeiten",
+    "billable": "Abrechenbar / Nicht abrechenbar"
   },
-  "cancel": "Abbrechen",
-  "save": "Speichern",
-  "templateNamePlaceholder": "Vorlagennamen eingeben"
+  "descriptions": {
+    "statuses": "Konfiguration des Projektstatus-Workflows",
+    "phases": "Projektphasen und Meilensteine",
+    "labels": "Benutzerdefinierte Labels zur Kategorisierung",
+    "customColumns": "Benutzerdefinierte Felder und Metadaten",
+    "category": "Projektkategorie zur Organisation",
+    "projectManager": "Zugewiesener Projektmanager",
+    "estimatedWorkingDays": "Geschätzte Arbeitstage für das Projekt",
+    "estimatedManDays": "Geschätzte Manntage für das Projekt",
+    "hoursPerDay": "Standard-Arbeitsstunden pro Tag",
+    "advanced": "Fortschrittsmodi, Aufgabenstandards und Zugriffskontrollen",
+    "budget": "Budgetbetrag, Währung und Projekttarifkarte",
+    "taskName": "Aufgabennamen und Titel",
+    "taskPriority": "Aufgabenprioritätsstufen",
+    "taskStatus": "Aufgabenabschlussstatus",
+    "taskPhase": "Zugehörige Projektphase",
+    "taskLabel": "Aufgabenlabels und Tags",
+    "timeEstimate": "Zeitschätzungen und Dauer",
+    "description": "Aufgabenbeschreibungen und Details",
+    "subTasks": "Unteraufgaben und Checklisten",
+    "assignees": "Zugewiesene für Aufgaben und Unteraufgaben",
+    "recurrence": "Häufigkeit, Intervall und Endregel pro Aufgabe",
+    "dependencies": "Verknüpfungen zwischen Aufgaben in der Vorlage",
+    "billable": "Abrechenbarkeitskennzeichen pro Aufgabe"
+  },
+  "tooltips": {
+    "projectElements": "Wählen Sie, welche Projektelemente in Ihre Vorlage aufgenommen werden sollen",
+    "projectSettings": "Wählen Sie, welche Projekteinstellungen enthalten sein sollen. Diese können vor dem Erstellen eines Projekts aus der Vorlage überprüft werden.",
+    "taskElements": "Wählen Sie, welche Aufgabenelemente in Ihre Vorlage aufgenommen werden sollen",
+    "required": "Dieses Element ist erforderlich und kann nicht abgewählt werden"
+  },
+  "tips": {
+    "line1": "Vorlagen bewahren Ihre Projektstruktur für die schnelle Wiederverwendung",
+    "line2": "Wesentliche Elemente sind immer enthalten und können nicht entfernt werden",
+    "line3": "Projekteinstellungen können beim Erstellen eines Projekts aus dieser Vorlage überprüft und bearbeitet werden",
+    "line4": "Lassen Sie Personen und Budget standardmäßig aus, um Überraschungen bei Zuweisungen oder Kosten zu vermeiden"
+  },
+  "validation": {
+    "nameRequired": "Bitte geben Sie einen Vorlagennamen ein",
+    "nameMinLength": "Der Vorlagenname muss mindestens 3 Zeichen lang sein",
+    "nameMaxLength": "Der Vorlagenname darf höchstens 50 Zeichen lang sein"
+  },
+  "notifications": {
+    "createSuccess": "Vorlage erstellt",
+    "createSuccessDesc": "Ihre Projektvorlage wurde erfolgreich erstellt und ist einsatzbereit.",
+    "createError": "Erstellen der Vorlage fehlgeschlagen",
+    "error": "Fehler"
+  }
 }

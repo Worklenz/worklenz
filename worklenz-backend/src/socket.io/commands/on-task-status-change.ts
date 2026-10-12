@@ -208,7 +208,8 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
           {
             oldStatusId: taskData.status_id,
             newStatusId: body.status_id
-          }
+          },
+          userId
         );
       }
     } catch (notifError) {

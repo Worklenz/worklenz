@@ -35,7 +35,10 @@ import {
   setIndex,
   setOrder,
   setPageSize,
+  setProjectEndDate,
   setProjectHealth,
+  setProjectStartDate,
+  setProjectStatus,
   toggleProjectReportsDrawer,
 } from '@/features/reporting/projectReports/project-reports-slice';
 import { colors } from '@/styles/colors';
@@ -47,6 +50,7 @@ import './projects-reports-table.css';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
 
 const ProjectsReportsTable = () => {
   const dispatch = useAppDispatch();
@@ -74,6 +78,12 @@ const ProjectsReportsTable = () => {
     archived,
   } = useAppSelector(state => state.projectReportsReducer);
 
+  const projectIds = useMemo(
+    () => new Set(projectList.map(p => p.id).filter((id): id is string => Boolean(id))),
+    [projectList]
+  );
+  useProjectRoomSync(projectIds);
+
   const columnsVisibility = useAppSelector(state => state.projectReportsTableColumnsReducer);
 
   const handleHealthChangeResponse = useCallback(
@@ -83,14 +93,56 @@ const ProjectsReportsTable = () => {
     [dispatch]
   );
 
+  const handleStatusChangeResponse = useCallback(
+    (data: { id: string; status: string; status_name: string; status_color: string }) => {
+      dispatch(setProjectStatus(data));
+    },
+    [dispatch]
+  );
+
+  const handleEndDateChangeResponse = useCallback(
+    (data: { project_id: string; end_date: string }) => {
+      dispatch(
+        setProjectEndDate({
+          id: data.project_id,
+          end_date: data.end_date,
+        })
+      );
+    },
+    [dispatch]
+  );
+
+  const handleStartDateChangeResponse = useCallback(
+    (data: { project_id: string; start_date: string }) => {
+      dispatch(
+        setProjectStartDate({
+          id: data.project_id,
+          start_date: data.start_date,
+        })
+      );
+    },
+    [dispatch]
+  );
+
   useEffect(() => {
     if (!socket) return;
-    console.log('REGISTERING HEALTH LISTENER');
     socket.on(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+    socket.on(SocketEvents.PROJECT_STATUS_CHANGE.toString(), handleStatusChangeResponse);
+    socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
+    socket.on(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
     return () => {
       socket.off(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+      socket.off(SocketEvents.PROJECT_STATUS_CHANGE.toString(), handleStatusChangeResponse);
+      socket.off(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
+      socket.off(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
     };
-  }, [socket, handleHealthChangeResponse]);
+  }, [
+    socket,
+    handleHealthChangeResponse,
+    handleStatusChangeResponse,
+    handleEndDateChangeResponse,
+    handleStartDateChangeResponse,
+  ]);
 
   const handleDrawerOpen = useCallback(
     (record: IRPTProject) => {
@@ -195,8 +247,9 @@ const ProjectsReportsTable = () => {
       },
       {
         key: 'dates',
+        dataIndex: 'end_date',
         title: <CustomTableTitle title={t('datesColumn')} />,
-        render: record => (
+        render: (_, record: IRPTProject) => (
           <ProjectDatesCell
             projectId={record.id}
             startDate={record.start_date}
@@ -207,8 +260,9 @@ const ProjectsReportsTable = () => {
       },
       {
         key: 'daysLeft',
+        dataIndex: 'days_left',
         title: <CustomTableTitle title={t('daysLeftColumn')} />,
-        render: record => (
+        render: (_, record: IRPTProject) => (
           <ProjectDaysLeftAndOverdueCell
             daysLeft={record.days_left}
             isOverdue={record.is_overdue}

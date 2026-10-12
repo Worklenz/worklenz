@@ -19,6 +19,9 @@ import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { Task } from '@/types/task-management.types';
+import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
+
+import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service';
 
 import {
   fetchTaskAssignees,
@@ -51,6 +54,8 @@ import {
   fetchTaskListColumns,
   addSubtaskToParent,
   removeTemporarySubtask,
+  setTaskLatestComment,
+  setTaskAttachments,
 } from '@/features/task-management/task-management.slice';
 import {
   updateEnhancedKanbanSubtask,
@@ -83,6 +88,7 @@ import {
   setTaskPhase,
   fetchTask,
 } from '@/features/task-drawer/task-drawer.slice';
+import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { useMixpanelTracking } from './useMixpanelTracking';
 import {
@@ -104,6 +110,18 @@ export const useTaskSocketHandlers = () => {
   // Suppresses PROJECT_UPDATES_AVAILABLE refetch while a phase auto-advance is in progress
   // so the task list doesn't flash a loading spinner during the real-time update.
   const suppressProjectUpdateRef = useRef(false);
+
+  // Roadmap (Gantt) uses its own RTK Query cache. Invalidate so an open Roadmap
+  // tab (or the next visit) reflects phase / date / status / priority changes.
+  const invalidateRoadmapCache = useCallback(() => {
+    if (!projectId) return;
+    dispatch(
+      roadmapApi.util.invalidateTags([
+        { type: 'RoadmapTasks', id: projectId },
+        { type: 'ProjectPhases', id: projectId },
+      ])
+    );
+  }, [dispatch, projectId]);
 
   // Memoize socket event handlers
   const handleAssigneesUpdate = useCallback(
@@ -172,8 +190,16 @@ export const useTaskSocketHandlers = () => {
       if (projectId && !loadingAssignees) {
         dispatch(fetchTaskAssignees(projectId));
       }
+
+      // Assignee groups are built server-side, so regroup when assignees change.
+      if (projectId && currentGroupingV3 === 'assignee') {
+        dispatch(fetchTasksV3({ projectId, silent: true }));
+      }
+      if (projectId && enhancedKanbanGroupBy === 'assignee') {
+        dispatch(fetchEnhancedKanbanGroups(projectId));
+      }
     },
-    [taskGroups, dispatch, projectId, loadingAssignees]
+    [taskGroups, dispatch, projectId, loadingAssignees, currentGroupingV3, enhancedKanbanGroupBy]
   );
 
   const handleLabelsChange = useCallback(
@@ -294,6 +320,7 @@ export const useTaskSocketHandlers = () => {
           setTimeout(() => {
             dispatch(fetchTasksV3({ projectId, silent: true }));
             dispatch(fetchEnhancedKanbanGroups(projectId));
+            invalidateRoadmapCache();
           }, 150);
         }
         return;
@@ -426,8 +453,10 @@ export const useTaskSocketHandlers = () => {
           }
         }
       }
+
+      invalidateRoadmapCache();
     },
-    [dispatch, currentGroupingV3, projectId]
+    [dispatch, currentGroupingV3, projectId, invalidateRoadmapCache]
   );
 
   const handleTaskProgress = useCallback(
@@ -572,8 +601,10 @@ export const useTaskSocketHandlers = () => {
           // Not grouped by priority, skipping group movement
         }
       }
+
+      invalidateRoadmapCache();
     },
-    [dispatch, currentGroupingV3]
+    [dispatch, currentGroupingV3, invalidateRoadmapCache]
   );
 
   const handleDueTimeChange = useCallback(
@@ -613,8 +644,10 @@ export const useTaskSocketHandlers = () => {
           })
         );
       }
+
+      invalidateRoadmapCache();
     },
-    [dispatch]
+    [dispatch, invalidateRoadmapCache]
   );
 
   const handleTaskNameChange = useCallback(
@@ -758,8 +791,10 @@ export const useTaskSocketHandlers = () => {
           }
         }
       }
+
+      invalidateRoadmapCache();
     },
-    [dispatch, currentGroupingV3, projectId]
+    [dispatch, currentGroupingV3, projectId, invalidateRoadmapCache]
   );
 
   const handleStartDateChange = useCallback(
@@ -785,8 +820,10 @@ export const useTaskSocketHandlers = () => {
         };
         dispatch(updateTask(updatedTask));
       }
+
+      invalidateRoadmapCache();
     },
-    [dispatch]
+    [dispatch, invalidateRoadmapCache]
   );
 
   const handleTaskSubscribersChange = useCallback(
@@ -1265,7 +1302,61 @@ export const useTaskSocketHandlers = () => {
     dispatch(fetchTasksV3({ projectId, silent: true }));
     dispatch(fetchEnhancedKanbanGroups(projectId));
     dispatch(fetchBoardTaskGroups(projectId));
-  }, [dispatch, projectId]);
+    invalidateRoadmapCache();
+  }, [dispatch, projectId, invalidateRoadmapCache]);
+
+  // Handler for TASK_COMMENTS_UPDATED — keeps the Latest Comment column in the
+  // task list in sync without a page refresh when a comment is added, edited or
+  // deleted (by this user or by anyone else in the project).
+  const handleTaskCommentsUpdated = useCallback(
+    async (data: string | { task_id?: string }) => {
+      const taskId = typeof data === 'string' ? data : data?.task_id;
+      if (!taskId) return;
+      try {
+        const res = await taskCommentsApiService.getByTaskId(taskId);
+        if (!res.done) return;
+
+        // Mirror the list query: newest comment that actually has text.
+        const latest = [...(res.body ?? [])]
+          .filter(comment => (comment.content ?? '').trim() !== '')
+          .sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))
+          .pop();
+
+        dispatch(
+          setTaskLatestComment({
+            taskId,
+            comment: latest
+              ? {
+                  text: latest.content ?? '',
+                  at: latest.created_at ?? null,
+                  author: latest.member_name ?? null,
+                }
+              : null,
+          })
+        );
+      } catch (error) {
+        logger.error('Handle Task Comments Updated Error:', error);
+      }
+    },
+    [dispatch]
+  );
+
+  // Handler for TASK_ATTACHMENTS_UPDATED event
+  const handleTaskAttachmentsUpdated = useCallback(
+    async (data: string | { task_id?: string }) => {
+      const taskId = typeof data === 'string' ? data : data?.task_id;
+      if (!taskId) return;
+      try {
+        const res = await taskAttachmentsApiService.getTaskAttachments(taskId);
+        if (res.done) {
+          dispatch(setTaskAttachments({ taskId, attachments: res.body ?? [] }));
+        }
+      } catch (error) {
+        logger.error('Handle Task Attachments Updated Error:', error);
+      }
+    },
+    [dispatch]
+  );
 
   // Register socket event listeners
   useEffect(() => {
@@ -1315,6 +1406,14 @@ export const useTaskSocketHandlers = () => {
         event: SocketEvents.PROJECT_UPDATES_AVAILABLE.toString(),
         handler: handleProjectUpdatesAvailable,
       },
+      {
+        event: SocketEvents.TASK_COMMENTS_UPDATED.toString(),
+        handler: handleTaskCommentsUpdated,
+      },
+      {
+        event: SocketEvents.TASK_ATTACHMENTS_UPDATED.toString(),
+        handler: handleTaskAttachmentsUpdated,
+      },
     ];
 
     // Register all event listeners
@@ -1353,5 +1452,7 @@ export const useTaskSocketHandlers = () => {
     handleTimerStop,
     handleTaskSortOrderChange,
     handleProjectUpdatesAvailable,
+    handleTaskCommentsUpdated,
+    handleTaskAttachmentsUpdated,
   ]);
 };

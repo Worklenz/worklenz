@@ -27,5 +27,20 @@
   "invite": "Invite",
   "Invite": "Invite",
   "removeSuccess": "{{name}} removed from project",
-  "removeError": "Failed to remove member"
+  "removeError": "Failed to remove member",
+  "assignFailedTitle": "Assignment failed",
+  "assignFailedMessage": "Could not update the task assignees. Please try again.",
+  "memberNotFound": "Team member information not found",
+  "manageTimeOff": "Manage Time Off",
+  "seatLimitReached": "Seat limit reached",
+  "memberDeactivated": "Member deactivated successfully",
+  "memberActivated": "Member activated successfully",
+  "statusChangeError": "Failed to change member status",
+  "deactivateTooltip": "Deactivate member",
+  "activateTooltip": "Activate member",
+  "editTooltip": "Edit member",
+  "moreOptions": "More options",
+  "changeMemberStatusConfirmation": "Are you sure you want to change this member's status?",
+  "yesProceed": "Yes, Proceed",
+  "cancel": "Cancel"
 }

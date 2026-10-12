@@ -6,7 +6,8 @@ import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import db from "../config/db";
 
 import { ServerResponse } from "../models/server-response";
-import { S3_URL, TASK_STATUS_COLOR_ALPHA } from "../shared/constants";
+import { S3_URL, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../shared/constants";
+import { advanceBacklogIssuesToTodo } from "../shared/software-sprint-utils";
 import {
   getDates,
   getMinMaxOfTaskDates,
@@ -45,7 +46,7 @@ import {
   IActivityLogChangeType,
 } from "../services/activity-logs/interfaces";
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
-import { isRestrictedFromProPlanFeatures } from "../ee/middlewares/subscription-middleware";
+import { isRestrictedFromProPlanFeatures } from "../middlewares/subscription-middleware";
 
 export default class TasksController extends TasksControllerBase {
   private static async getTaskDrawerCustomColumns(projectId: string | null) {
@@ -928,6 +929,16 @@ export default class TasksController extends TasksControllerBase {
       task.names = WorklenzControllerBase.createTagList(task.assignees);
       task.assignee_names = task.names;
 
+      const planningResult = await db.query(
+        "SELECT story_points, epic_id, release_id, is_blocked, issue_type FROM tasks WHERE id = $1;",
+        [task.id]
+      );
+      task.story_points = planningResult.rows[0]?.story_points ?? null;
+      task.epic_id = planningResult.rows[0]?.epic_id ?? null;
+      task.release_id = planningResult.rows[0]?.release_id ?? null;
+      task.is_blocked = planningResult.rows[0]?.is_blocked === true;
+      task.issue_type = planningResult.rows[0]?.issue_type || "task";
+
       const totalMinutes = task.total_minutes;
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
@@ -1084,6 +1095,11 @@ export default class TasksController extends TasksControllerBase {
     const q = `SELECT bulk_change_tasks_phase($1, $2) AS task;`;
     const result = await db.query(q, [JSON.stringify(req.body), req.user?.id]);
     const [data] = result.rows;
+
+    if (req.body.phase_id && req.body.phase_id !== UNMAPPED) {
+      const taskIds = (req.body.tasks as Array<{ id: string }>).map(task => task.id);
+      await advanceBacklogIssuesToTodo(taskIds);
+    }
 
     TasksController.notifyProjectUpdates(
       req.user?.socket_id as string,

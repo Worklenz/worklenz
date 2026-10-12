@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Flex, Input, Modal, Spin, Typography } from '@/shared/antd-imports';
 import { SearchOutlined, UserOutlined } from '@ant-design/icons';
 import { useGetProjectsByTeamQuery } from '@/api/home-page/home-page.api.service';
-import { useGetClientsQuery } from '@/ee/api/client-portal/client-portal-api';
+import { useGetClientsQuery } from '@/api/client-portal/client-portal-api';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@utils/themeWiseColor';
 import { InboxConversation } from '../hooks/useInboxConversations';

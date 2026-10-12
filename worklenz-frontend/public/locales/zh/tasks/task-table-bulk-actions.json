@@ -26,6 +26,7 @@
   "CHANGE_STATUS": "更改状态",
   "CHANGE_PRIORITY": "更改优先级",
   "CHANGE_PHASE": "更改阶段",
+  "MOVE_TO_SPRINT": "转向冲刺",
   "ADD_LABELS": "添加标签",
   "ASSIGN_TO_ME": "分配给我",
   "ASSIGN_MEMBERS": "分配成员",

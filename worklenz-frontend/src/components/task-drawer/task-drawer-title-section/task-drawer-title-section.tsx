@@ -11,6 +11,7 @@ import { Task } from '@/types/task-management.types';
 import { TFunction } from 'i18next';
 import TaskHierarchyBreadcrumb from '../task-hierarchy-breadcrumb/task-hierarchy-breadcrumb';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import './task-drawer-title-section.css';
 
 type Props = {
@@ -28,6 +29,9 @@ const TaskDrawerTitleSection = ({ inputRef, t, canCreateTask = true }: Props) =>
     state => state.taskDrawerReducer
   );
   const projectName = useAppSelector(state => state.projectReducer.project?.name ?? null);
+  const isSoftwareProject = useAppSelector(state =>
+    isSoftwareProjectType(state.projectReducer.project?.project_type)
+  );
   const taskManagementEntity = useAppSelector(state => 
     selectedTaskId ? state.taskManagement.entities[selectedTaskId] : null
   );
@@ -126,7 +130,7 @@ const TaskDrawerTitleSection = ({ inputRef, t, canCreateTask = true }: Props) =>
   return (
     <div className="task-drawer-title-section">
       {/* Breadcrumb: project name / parent task */}
-      <TaskHierarchyBreadcrumb t={t} projectName={projectName} />
+      <TaskHierarchyBreadcrumb t={t} projectName={isSoftwareProject ? null : projectName} />
 
       {/* Large task name */}
       <div className="task-drawer-title-name">
@@ -174,4 +178,4 @@ const TaskDrawerTitleSection = ({ inputRef, t, canCreateTask = true }: Props) =>
   );
 };
 
-export default TaskDrawerTitleSection;
+export default React.memo(TaskDrawerTitleSection);

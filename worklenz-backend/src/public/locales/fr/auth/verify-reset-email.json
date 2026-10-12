@@ -1,0 +1,16 @@
+{
+  "title": "Définir un nouveau mot de passe",
+  "description": "Entrez votre nouveau mot de passe",
+  "placeholder": "Entrez votre nouveau mot de passe",
+  "confirmPasswordPlaceholder": "Confirmez votre nouveau mot de passe",
+  "passwordHint": "Minimum de 8 caractères, avec des majuscules et des minuscules ainsi qu'un chiffre et un symbole.",
+  "resetPasswordButton": "Réinitialiser le mot de passe",
+  "orText": "Ou",
+  "resendResetEmail": "Renvoyer l'e-mail de réinitialisation",
+  "passwordRequired": "Veuillez entrer votre nouveau mot de passe",
+  "returnToLoginButton": "Revenir à la connexion",
+  "confirmPasswordRequired": "Veuillez confirmer votre nouveau mot de passe",
+  "passwordMismatch": "Les deux mots de passe ne correspondent pas",
+  "successTitle": "Réinitialisation du mot de passe réussie",
+  "successMessage": "Votre mot de passe a été mis à jour. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe."
+}

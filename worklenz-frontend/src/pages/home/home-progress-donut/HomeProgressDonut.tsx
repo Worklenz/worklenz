@@ -5,6 +5,9 @@ import { useGetMyProgressQuery } from '@/api/home-page/home-page.api.service';
 import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader';
 import { Tooltip, InfoCircleOutlined, theme } from '@/shared/antd-imports';
 import type { HomePeriod } from '../HomeOverviewView';
+import { HomeWidgetMenuButton } from '../home-widgets/HomeWidgetMenuButton';
+import { WIDGET_DATA_ATTRIBUTE } from '../home-widgets/widgetInteraction';
+import { useHomePeriodMenuItems } from '../home-widgets/useHomePeriodMenuItems';
 import { useTranslation } from 'react-i18next';
 
 const DONUT_SIZE = 120;
@@ -33,6 +36,7 @@ const HomeProgressDonut: React.FC<HomeProgressDonutProps> = ({ period }) => {
   const tasksGroupBy = useAppSelector(state => state.homePageReducer.homeTasksConfig.tasks_group_by);
   const { data } = useGetMyProgressQuery({ group_by: tasksGroupBy, time_zone: TIME_ZONE });
   const { t } = useTranslation('home');
+  const periodMenuItems = useHomePeriodMenuItems();
 
   const title = period === 'today' ? t('progressDonut.myProgressToday', { defaultValue: 'My Progress Today' }) : t('progressDonut.myProgressThisWeek', { defaultValue: 'My Progress This Week' });
   const periodWord = period === 'today' ? 'today' : 'this week';
@@ -63,6 +67,9 @@ const HomeProgressDonut: React.FC<HomeProgressDonutProps> = ({ period }) => {
       >
         <InfoCircleOutlined style={{ fontSize: 12, color: 'currentColor', opacity: 0.55, cursor: 'help' }} />
       </Tooltip>
+      <div style={{ marginLeft: 'auto', fontWeight: 400 }}>
+        <HomeWidgetMenuButton extraItems={periodMenuItems} />
+      </div>
     </div>
   );
 
@@ -70,7 +77,10 @@ const HomeProgressDonut: React.FC<HomeProgressDonutProps> = ({ period }) => {
     return (
       <Card styles={{ body: { padding: '20px' } }} style={{ borderRadius: 10 }}>
         {titleRow}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 120 }}>
+        <div
+          {...{ [WIDGET_DATA_ATTRIBUTE]: '' }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 120 }}
+        >
           <WorklenzLogoLoader />
         </div>
       </Card>
@@ -94,7 +104,7 @@ const HomeProgressDonut: React.FC<HomeProgressDonutProps> = ({ period }) => {
   return (
     <Card styles={{ body: { padding: '20px' } }} style={{ borderRadius: 10 }}>
       {titleRow}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+      <div {...{ [WIDGET_DATA_ATTRIBUTE]: '' }} style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <svg width={DONUT_SIZE} height={DONUT_SIZE} viewBox={`0 0 ${DONUT_SIZE} ${DONUT_SIZE}`}>
             <circle

@@ -16,7 +16,7 @@ import {
   canAccessTaskExport,
   hasTaskExportRoleAccess,
 } from '@/utils/task-export-access';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import logger from '@/utils/errorLogger';
 import { isTeamLeadRole } from '@/types/roles/role.types';
 

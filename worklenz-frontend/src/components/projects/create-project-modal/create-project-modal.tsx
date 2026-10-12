@@ -10,11 +10,12 @@ import {
   FileOutlined,
   Flex,
   Form,
-  InfoCircleOutlined,
   Input,
   Modal,
   SearchOutlined,
+  Segmented,
   Skeleton,
+  Switch,
   Tooltip,
   Typography,
   theme,
@@ -23,6 +24,7 @@ import type { InputRef } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAuthService } from '@/hooks/useAuth';
 import { projectColors } from '@/lib/project/project-constants';
 import {
   projectsApi,
@@ -30,7 +32,7 @@ import {
 } from '@/api/projects/projects.v1.api.service';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { IProjectViewModel, type ProjectType } from '@/types/project/projectViewModel.types';
 import {
   IWorklenzTemplate,
   ICustomTemplate,
@@ -42,6 +44,11 @@ import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import logger from '@/utils/errorLogger';
 import { TemplatePreviewDrawer } from './template-preview-drawer';
 import ImportSourceModal from '@/pages/settings/import-export/ImportSourceModal';
+import ProjectTemplatePreviewModal, {
+  ProjectTemplateImportPayload,
+} from '@/components/project-templates/project-template-preview-modal';
+import { presentCustomTemplateImportResult } from '@/utils/project-template-import-result';
+import { IProjectTemplateApplySkip } from '@/types/project/projectTemplate.types';
 import './create-project-modal.css';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 
@@ -84,6 +91,7 @@ interface TemplateCardProps {
   onClick: () => void;
   onPreview?: () => void;
   isBlank?: boolean;
+  blankDescKey?: 'blankProjectDesc' | 'blankSoftwareProjectDesc';
 }
 
 const TemplateCard = ({
@@ -92,6 +100,7 @@ const TemplateCard = ({
   onClick,
   onPreview,
   isBlank = false,
+  blankDescKey,
 }: TemplateCardProps) => {
   const { token } = theme.useToken();
   const { t } = useTranslation('create-project-modal');
@@ -134,12 +143,20 @@ const TemplateCard = ({
           style={{ fontSize: 12 }}
         >
           {isBlank
-            ? t('blankProjectDesc', { defaultValue: 'Empty project you can shape from scratch.' })
+            ? t(
+                blankDescKey ?? 'blankProjectDesc',
+                {
+                  defaultValue:
+                    blankDescKey === 'blankSoftwareProjectDesc'
+                      ? 'Empty software project with issue and sprint defaults.'
+                      : 'Empty project you can shape from scratch.',
+                }
+              )
             : t('templateMeta', {
-                defaultValue: '{{tasks}} tasks, {{phases}} phases',
-                tasks: template.task_count ?? 0,
-                phases: template.phase_count ?? 0,
-              })}
+              defaultValue: '{{tasks}} tasks, {{phases}} phases',
+              tasks: template.task_count ?? 0,
+              phases: template.phase_count ?? 0,
+            })}
         </Typography.Text>
       </span>
 
@@ -196,10 +213,15 @@ export const CreateProjectModal = ({
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const authService = useAuthService();
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
+  // Phase 5: Members with the flag may only create from templates (D5).
+  const canCreateBlankOrCsv = isOwnerOrAdmin;
   const { trackMixpanelEvent } = useMixpanelTracking();
   const [form] = Form.useForm();
 
   const [projectName, setProjectName] = useState('');
+  const [projectType, setProjectType] = useState<ProjectType>('general');
   const [selectedColor, setSelectedColor] = useState(projectColors[0]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [selectedTemplateType, setSelectedTemplateType] = useState<'worklenz' | 'custom' | null>(
@@ -220,6 +242,9 @@ export const CreateProjectModal = ({
   const [previewTemplateType, setPreviewTemplateType] = useState<'worklenz' | 'custom'>('worklenz');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [configureCustomVisible, setConfigureCustomVisible] = useState(false);
+  const [configureFinishMode, setConfigureFinishMode] = useState<'direct' | 'customize'>('direct');
+  const [customizeBeforeCreate, setCustomizeBeforeCreate] = useState(false);
 
   const [createProject, { isLoading: isCreatingBlank }] = useCreateProjectMutation();
   const isCreating = isCreatingBlank || isCreatingProject;
@@ -240,6 +265,34 @@ export const CreateProjectModal = ({
     }),
     [t]
   );
+
+  const isSoftwareProject = projectType === 'software';
+
+  const projectTypeOptions = useMemo(
+    () => [
+      {
+        label: t('projectTypeGeneral', { defaultValue: 'General' }),
+        value: 'general' as ProjectType,
+      },
+      {
+        label: t('projectTypeSoftware', { defaultValue: 'Software' }),
+        value: 'software' as ProjectType,
+      },
+    ],
+    [t]
+  );
+
+  const handleProjectTypeChange = useCallback((value: ProjectType | string) => {
+    const nextType = value === 'software' ? 'software' : 'general';
+    setProjectType(nextType);
+    if (nextType === 'software') {
+      setSelectedTemplateId(null);
+      setSelectedTemplateType(null);
+      setIsCsvImportSelected(false);
+      setActiveTab('templates');
+      setTemplateSearch('');
+    }
+  }, []);
 
   const modalCssVariables = useMemo<CreateProjectCssVariables>(
     () => ({
@@ -297,6 +350,7 @@ export const CreateProjectModal = ({
   useEffect(() => {
     if (open) {
       setProjectName('');
+      setProjectType('general');
       setSelectedColor(projectColors[0]);
       setSelectedTemplateId(null);
       setSelectedTemplateType(null);
@@ -308,6 +362,7 @@ export const CreateProjectModal = ({
       setIsCsvImportSelected(false);
       setIsCsvImportOpen(false);
       setIsCreatingProject(false);
+      setCustomizeBeforeCreate(false);
       form.resetFields();
       hasLoadedTemplates.current = false;
       setTimeout(() => nameInputRef.current?.focus(), 100);
@@ -343,10 +398,23 @@ export const CreateProjectModal = ({
     );
   }, [selectedTemplateId, selectedTemplateType, templates, customTemplates, t]);
 
+  const configureTemplateName = useMemo(() => {
+    if (projectName.trim()) return projectName.trim();
+    return selectedTemplateName;
+  }, [projectName, selectedTemplateName]);
+
   const finishCreate = useCallback(
-    (newProjectId: string, options?: { reloadOnNavigate?: boolean; showSetupBanner?: boolean }) => {
+    (
+      newProjectId: string,
+      options?: {
+        reloadOnNavigate?: boolean;
+        showSetupBanner?: boolean;
+        projectType?: ProjectType;
+      }
+    ) => {
       const reloadOnNavigate = options?.reloadOnNavigate ?? false;
       const showSetupBanner = options?.showSetupBanner ?? true;
+      const createdProjectType = options?.projectType ?? 'general';
 
       dispatch(homePageApi.util.invalidateTags(['teamProjects']));
       onClose();
@@ -357,8 +425,9 @@ export const CreateProjectModal = ({
       }
 
       const setupQuery = showSetupBanner ? '&new_project=1' : '';
+      const defaultTab = createdProjectType === 'software' ? 'backlog' : 'tasks-list';
       navigate(
-        `/worklenz/projects/${newProjectId}?tab=tasks-list&pinned_tab=tasks-list${setupQuery}`
+        `/worklenz/projects/${newProjectId}?tab=${defaultTab}&pinned_tab=${defaultTab}${setupQuery}`
       );
       if (reloadOnNavigate) {
         setTimeout(() => {
@@ -370,7 +439,14 @@ export const CreateProjectModal = ({
   );
 
   const createFromTemplate = useCallback(
-    async (name: string, color: string): Promise<string> => {
+    async (
+      name: string,
+      color: string,
+      options?: {
+        start_date?: string;
+        settings_overrides?: ProjectTemplateImportPayload['settings_overrides'];
+      }
+    ): Promise<string> => {
       if (!selectedTemplateId) {
         throw new Error(
           t('createError', { defaultValue: 'Failed to create project. Please try again.' })
@@ -380,29 +456,43 @@ export const CreateProjectModal = ({
       const response =
         selectedTemplateType === 'custom'
           ? await projectTemplatesApiService.createFromCustomTemplate({
-              template_id: selectedTemplateId,
-              project_name: name || undefined,
-              color_code: color,
-            })
+            template_id: selectedTemplateId,
+            project_name: name || undefined,
+            color_code: color,
+            start_date: options?.start_date || new Date().toISOString().slice(0, 10),
+            settings_overrides: options?.settings_overrides,
+          })
           : await projectTemplatesApiService.createFromWorklenzTemplate({
-              template_id: selectedTemplateId,
-              project_name: name || undefined,
-              color_code: color,
-            });
+            template_id: selectedTemplateId,
+            project_name: name || undefined,
+            color_code: color,
+          });
 
       if (response.done && response.body.project_id) {
         trackMixpanelEvent(evt_projects_create);
         dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: 'LIST' }]));
         dispatch(homePageApi.util.invalidateTags(['teamProjects']));
+
+        if (selectedTemplateType === 'custom') {
+          // Feedback only — callers own navigation (direct / customize / callback)
+          presentCustomTemplateImportResult({
+            t,
+            projectId: response.body.project_id,
+            skips: (response.body as { skips?: IProjectTemplateApplySkip[] })?.skips,
+            navigate,
+            skipNavigation: true,
+          });
+        }
+
         return response.body.project_id;
       }
 
       throw new Error(
         response.message ||
-          t('createError', { defaultValue: 'Failed to create project. Please try again.' })
+        t('createError', { defaultValue: 'Failed to create project. Please try again.' })
       );
     },
-    [dispatch, selectedTemplateId, selectedTemplateType, t, trackMixpanelEvent]
+    [dispatch, navigate, selectedTemplateId, selectedTemplateType, t, trackMixpanelEvent]
   );
 
   const createBlankProject = useCallback(
@@ -433,7 +523,7 @@ export const CreateProjectModal = ({
 
       throw new Error(
         response.data?.message ||
-          t('createError', { defaultValue: 'Failed to create project. Please try again.' })
+        t('createError', { defaultValue: 'Failed to create project. Please try again.' })
       );
     },
     [createProject, dispatch, t, trackMixpanelEvent]
@@ -450,27 +540,48 @@ export const CreateProjectModal = ({
       name,
       color_code: selectedColor,
       status_id: defaultStatusId,
+      project_type: projectType,
     });
   }, [
     createBlankProject,
     createFromTemplate,
     defaultStatusId,
     projectName,
+    projectType,
     selectedColor,
     selectedTemplateId,
   ]);
+
+  const openCustomConfigure = useCallback((mode: 'direct' | 'customize') => {
+    setConfigureFinishMode(mode);
+    setConfigureCustomVisible(true);
+  }, []);
 
   const handleCreateDirect = useCallback(async () => {
     const name = projectName.trim();
     if (!name && !selectedTemplateId) return;
 
+    if (!isSoftwareProject && selectedTemplateType === 'custom' && selectedTemplateId) {
+      openCustomConfigure('direct');
+      return;
+    }
+
     setError(null);
     setIsCreatingProject(true);
 
     try {
-      if (selectedTemplateId) {
+      if (!isSoftwareProject && selectedTemplateId) {
         const projectId = await createFromTemplate(name, selectedColor);
-        finishCreate(projectId, { showSetupBanner: true });
+        finishCreate(projectId, { showSetupBanner: true, projectType: 'general' });
+        return;
+      }
+
+      if (!canCreateBlankOrCsv) {
+        setError(
+          t('templateRequired', {
+            defaultValue: 'Select a template to create a project.',
+          })
+        );
         return;
       }
 
@@ -478,8 +589,13 @@ export const CreateProjectModal = ({
         name,
         color_code: selectedColor,
         status_id: defaultStatusId,
+        project_type: projectType,
       });
-      finishCreate(projectId, { reloadOnNavigate: true, showSetupBanner: true });
+      finishCreate(projectId, {
+        reloadOnNavigate: true,
+        showSetupBanner: true,
+        projectType,
+      });
     } catch (err) {
       logger.error('Error creating project', err);
       setError(
@@ -491,13 +607,18 @@ export const CreateProjectModal = ({
       setIsCreatingProject(false);
     }
   }, [
+    canCreateBlankOrCsv,
     createBlankProject,
     createFromTemplate,
     defaultStatusId,
     finishCreate,
+    isSoftwareProject,
+    openCustomConfigure,
     projectName,
+    projectType,
     selectedColor,
     selectedTemplateId,
+    selectedTemplateType,
     t,
   ]);
 
@@ -505,17 +626,24 @@ export const CreateProjectModal = ({
     const name = projectName.trim();
     if (!name && !selectedTemplateId) return;
 
+    if (!isSoftwareProject && selectedTemplateType === 'custom' && selectedTemplateId) {
+      openCustomConfigure('customize');
+      return;
+    }
+
     setError(null);
     setIsCreatingProject(true);
 
     try {
-      const projectId = selectedTemplateId
-        ? await createFromTemplate(name, selectedColor)
-        : await createBlankProject({
-            name,
-            color_code: selectedColor,
-            status_id: defaultStatusId,
-          });
+      const projectId =
+        !isSoftwareProject && selectedTemplateId
+          ? await createFromTemplate(name, selectedColor)
+          : await createBlankProject({
+              name,
+              color_code: selectedColor,
+              status_id: defaultStatusId,
+              project_type: projectType,
+            });
 
       dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: 'LIST' }]));
 
@@ -553,18 +681,75 @@ export const CreateProjectModal = ({
     createFromTemplate,
     defaultStatusId,
     dispatch,
+    isSoftwareProject,
     navigate,
     onClose,
     onProjectCreated,
+    openCustomConfigure,
     projectName,
+    projectType,
     selectedColor,
     selectedTemplateId,
+    selectedTemplateType,
     t,
   ]);
 
-  const handleCreateDirectClick = useCallback(() => {
+  const handleConfiguredCustomImport = useCallback(
+    async (
+      templateId: string,
+      payload: ProjectTemplateImportPayload
+    ): Promise<string | null> => {
+      setError(null);
+      setIsCreatingProject(true);
+      try {
+        const projectId = await createFromTemplate(payload.projectName, selectedColor, {
+          start_date: payload.start_date,
+          settings_overrides: payload.settings_overrides,
+        });
+        setConfigureCustomVisible(false);
+
+        if (onProjectCreated) {
+          onProjectCreated(projectId);
+          onClose();
+          return null;
+        }
+
+        if (configureFinishMode === 'customize') {
+          onClose();
+          navigate(`/worklenz/projects/${projectId}?open_settings=1`);
+          return null;
+        }
+
+        finishCreate(projectId, { showSetupBanner: true });
+        return null;
+      } catch (err) {
+        logger.error('Error creating project from custom template', err);
+        return err instanceof Error
+          ? err.message
+          : t('createError', { defaultValue: 'Failed to create project. Please try again.' });
+      } finally {
+        setIsCreatingProject(false);
+      }
+    },
+    [
+      configureFinishMode,
+      createFromTemplate,
+      finishCreate,
+      navigate,
+      onClose,
+      onProjectCreated,
+      selectedColor,
+      t,
+    ]
+  );
+
+  const handleCreateClick = useCallback(() => {
+    if (customizeBeforeCreate) {
+      void handleCustomizeClick();
+      return;
+    }
     void handleCreateDirect();
-  }, [handleCreateDirect]);
+  }, [customizeBeforeCreate, handleCreateDirect, handleCustomizeClick]);
 
   const handleCsvContinue = useCallback(() => {
     const name = projectName.trim();
@@ -575,8 +760,8 @@ export const CreateProjectModal = ({
 
   const canCreate = isCsvImportSelected
     ? projectName.trim().length > 0 && !!defaultStatusId
-    : (projectName.trim().length > 0 || selectedTemplateId) &&
-      (selectedTemplateId ? true : !!defaultStatusId);
+    : (projectName.trim().length > 0 || (!isSoftwareProject && !!selectedTemplateId)) &&
+      (!isSoftwareProject && selectedTemplateId ? true : !!defaultStatusId);
 
   const handleCsvImportStarted = useCallback(
     (projectId: string) => {
@@ -605,10 +790,10 @@ export const CreateProjectModal = ({
           handleCsvContinue();
           return;
         }
-        handleCreateDirectClick();
+        handleCreateClick();
       }
     },
-    [canCreate, handleCreateDirectClick, handleCsvContinue, isCreating, isCsvImportSelected]
+    [canCreate, handleCreateClick, handleCsvContinue, isCreating, isCsvImportSelected]
   );
 
   return (
@@ -638,17 +823,17 @@ export const CreateProjectModal = ({
             <aside className="create-project-config-panel">
               <Form.Item
                 label={t('projectName', { defaultValue: 'Project name' })}
-                required={!selectedTemplateId}
+                required={!selectedTemplateId || isSoftwareProject}
                 style={{ marginBottom: 16 }}
               >
                 <Input
                   ref={nameInputRef}
                   size="large"
                   placeholder={
-                    selectedTemplateId
+                    !isSoftwareProject && selectedTemplateId
                       ? t('projectNameOptional', {
-                          defaultValue: 'Optional - will use template name',
-                        })
+                        defaultValue: 'Optional - will use template name',
+                      })
                       : t('projectNameExample', { defaultValue: 'e.g. Q3 Website Refresh' })
                   }
                   value={projectName}
@@ -657,6 +842,30 @@ export const CreateProjectModal = ({
                   aria-label={t('projectName', { defaultValue: 'Project name' })}
                   autoComplete="off"
                 />
+              </Form.Item>
+
+              <Form.Item
+                label={t('projectType', { defaultValue: 'Project type' })}
+                style={{ marginBottom: 16 }}
+              >
+                <Segmented
+                  block
+                  options={projectTypeOptions}
+                  value={projectType}
+                  onChange={handleProjectTypeChange}
+                  disabled={isCreating}
+                  aria-label={t('projectType', { defaultValue: 'Project type' })}
+                />
+                {isSoftwareProject && (
+                  <Typography.Text
+                    type="secondary"
+                    style={{ display: 'block', fontSize: 12, marginTop: 8 }}
+                  >
+                    {t('projectTypeHint', {
+                      defaultValue: 'Software projects use issues, backlog, and sprints.',
+                    })}
+                  </Typography.Text>
+                )}
               </Form.Item>
 
               <Form.Item
@@ -691,24 +900,48 @@ export const CreateProjectModal = ({
                   {selectedTemplateName}
                 </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {selectedTemplateId
+                  {selectedTemplateId && !isSoftwareProject
                     ? t('templateSelectedHint', {
                         defaultValue: 'Template structure will be copied into your project.',
                       })
-                    : t('blankSelectedHint', {
-                        defaultValue:
-                          'Empty project. Pick a template on the right to get a head start.',
-                      })}
+                    : isSoftwareProject
+                      ? t('blankSoftwareSelectedHint', {
+                          defaultValue:
+                            'Blank software project with issue tracking defaults. Templates are not used for Software projects.',
+                        })
+                      : t('blankSelectedHint', {
+                          defaultValue:
+                            'Empty project. Pick a template on the right to get a head start.',
+                        })}
                 </Typography.Text>
               </div>
 
-              <Typography.Text className="create-project-config-note" type="secondary">
-                <InfoCircleOutlined />{' '}
-                {t('configureHint', {
-                  defaultValue:
-                    'You can customize status, client, manager, dates and more before creating.',
+              <Flex
+                className="create-project-config-note"
+                justify="space-between"
+                align="center"
+                gap={10}
+                role="group"
+                aria-label={t('customizeBeforeCreate', {
+                  defaultValue: 'Customize before creating',
                 })}
-              </Typography.Text>
+              >
+                <Typography.Text style={{ fontSize: 12, lineHeight: 1.35, flex: 1, fontWeight: 500 }}>
+                  {t('configureHint', {
+                    defaultValue:
+                      'You can customize status, client, manager, dates and more before creating.',
+                  })}
+                </Typography.Text>
+                <Switch
+                  size="small"
+                  checked={customizeBeforeCreate}
+                  onChange={checked => setCustomizeBeforeCreate(checked)}
+                  disabled={isCreating || isCsvImportSelected}
+                  aria-label={t('customizeBeforeCreate', {
+                    defaultValue: 'Customize before creating',
+                  })}
+                />
+              </Flex>
             </aside>
 
             <div
@@ -718,45 +951,55 @@ export const CreateProjectModal = ({
                 <div className="create-project-template-tabs" style={{ marginBottom: 16 }}>
                   <Button
                     type={activeTab === 'templates' ? 'primary' : 'default'}
-                    onClick={() => setActiveTab('templates')}
+                    onClick={() => {
+                      setIsCsvImportSelected(false);
+                      setActiveTab('templates');
+                    }}
                     style={{ marginRight: 8 }}
                   >
                     {t('templates', { defaultValue: 'Templates' })}
                   </Button>
-                  {customTemplates.length > 0 && (
+                  {!isSoftwareProject && customTemplates.length > 0 && (
                     <Button
                       type={activeTab === 'projectTemplates' ? 'primary' : 'default'}
-                      onClick={() => setActiveTab('projectTemplates')}
+                      onClick={() => {
+                        setIsCsvImportSelected(false);
+                        setActiveTab('projectTemplates');
+                      }}
                     >
                       {t('yourLibrary', { defaultValue: 'Your Library' })}
                     </Button>
                   )}
-                  <Button
-                    type={activeTab === 'csv' ? 'primary' : 'default'}
-                    onClick={() => {
-                      setIsCsvImportSelected(true);
-                      setActiveTab('csv');
-                    }}
-                    aria-pressed={isCsvImportSelected}
-                  >
-                    {t('importTasksCsv', { defaultValue: 'Import from CSV' })}
-                  </Button>
+                  {!isSoftwareProject && (
+                    <Button
+                      type={activeTab === 'csv' ? 'primary' : 'default'}
+                      onClick={() => {
+                        setIsCsvImportSelected(true);
+                        setActiveTab('csv');
+                      }}
+                      aria-pressed={isCsvImportSelected}
+                    >
+                      {t('importTasksCsv', { defaultValue: 'Import from CSV' })}
+                    </Button>
+                  )}
                 </div>
 
                 {/* Templates Tab */}
                 {activeTab === 'templates' && (
                   <>
-                    <div className="create-project-template-toolbar">
-                      <Input
-                        size="middle"
-                        placeholder={t('searchTemplates', { defaultValue: 'Search templates' })}
-                        prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
-                        value={templateSearch}
-                        onChange={event => setTemplateSearch(event.target.value)}
-                        className="create-project-template-search"
-                        aria-label={t('searchTemplates', { defaultValue: 'Search templates' })}
-                      />
-                    </div>
+                    {!isSoftwareProject && (
+                      <div className="create-project-template-toolbar">
+                        <Input
+                          size="middle"
+                          placeholder={t('searchTemplates', { defaultValue: 'Search templates' })}
+                          prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
+                          value={templateSearch}
+                          onChange={event => setTemplateSearch(event.target.value)}
+                          className="create-project-template-search"
+                          aria-label={t('searchTemplates', { defaultValue: 'Search templates' })}
+                        />
+                      </div>
+                    )}
 
                     <div
                       className="create-project-template-list"
@@ -765,48 +1008,55 @@ export const CreateProjectModal = ({
                     >
                       <TemplateCard
                         template={blankTemplate}
-                        selected={!selectedTemplateId}
+                        selected={!selectedTemplateId || isSoftwareProject}
                         onClick={() => {
                           setSelectedTemplateId(null);
                           setSelectedTemplateType(null);
                         }}
                         isBlank
+                        blankDescKey={
+                          isSoftwareProject ? 'blankSoftwareProjectDesc' : 'blankProjectDesc'
+                        }
                       />
 
-                      {loadingTemplates ? (
-                        <Skeleton active paragraph={{ rows: 2 }} title={false} />
-                      ) : filteredTemplates.length === 0 ? (
-                        <Typography.Text type="secondary" className="create-project-template-empty">
-                          {t('noTemplates', { defaultValue: 'No templates found.' })}
-                        </Typography.Text>
-                      ) : (
-                        filteredTemplates.map(template => (
-                          <TemplateCard
-                            key={template.id}
-                            template={template}
-                            selected={
-                              selectedTemplateId === template.id &&
-                              selectedTemplateType === 'worklenz'
-                            }
-                            onClick={() => {
-                              setSelectedTemplateId(template.id ?? null);
-                              setSelectedTemplateType('worklenz');
-                            }}
-                            onPreview={() => {
-                              setPreviewTemplateId(template.id ?? null);
-                              setPreviewTemplateName(template.name);
-                              setPreviewTemplateType('worklenz');
-                              setPreviewOpen(true);
-                            }}
-                          />
-                        ))
-                      )}
+                      {!isSoftwareProject &&
+                        (loadingTemplates ? (
+                          <Skeleton active paragraph={{ rows: 2 }} title={false} />
+                        ) : filteredTemplates.length === 0 ? (
+                          <Typography.Text
+                            type="secondary"
+                            className="create-project-template-empty"
+                          >
+                            {t('noTemplates', { defaultValue: 'No templates found.' })}
+                          </Typography.Text>
+                        ) : (
+                          filteredTemplates.map(template => (
+                            <TemplateCard
+                              key={template.id}
+                              template={template}
+                              selected={
+                                selectedTemplateId === template.id &&
+                                selectedTemplateType === 'worklenz'
+                              }
+                              onClick={() => {
+                                setSelectedTemplateId(template.id ?? null);
+                                setSelectedTemplateType('worklenz');
+                              }}
+                              onPreview={() => {
+                                setPreviewTemplateId(template.id ?? null);
+                                setPreviewTemplateName(template.name);
+                                setPreviewTemplateType('worklenz');
+                                setPreviewOpen(true);
+                              }}
+                            />
+                          ))
+                        ))}
                     </div>
                   </>
                 )}
 
                 {/* Project Templates Tab */}
-                {activeTab === 'projectTemplates' && (
+                {!isSoftwareProject && activeTab === 'projectTemplates' && (
                   <>
                     <div className="create-project-template-toolbar">
                       <Input
@@ -864,7 +1114,7 @@ export const CreateProjectModal = ({
                   </>
                 )}
 
-                {activeTab === 'csv' && (
+                {!isSoftwareProject && activeTab === 'csv' && (
                   <Flex
                     vertical
                     gap={12}
@@ -901,22 +1151,13 @@ export const CreateProjectModal = ({
           )}
 
           <Flex
-            justify="space-between"
+            justify="flex-end"
             align="center"
             className="create-project-footer"
             style={{ borderColor: token.colorBorderSecondary }}
             gap={12}
             wrap="wrap"
           >
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {isCsvImportSelected
-                ? t('csvImportFooterHint', {
-                    defaultValue: 'You will map CSV fields before this project is created.',
-                  })
-                : t('customizeFooterQuestion', {
-                    defaultValue: 'Want to customize before creating?',
-                  })}
-            </Typography.Text>
             <Flex gap={8} wrap="wrap">
               <Button onClick={onClose} disabled={isCreating}>
                 {t('cancel', { defaultValue: 'Cancel' })}
@@ -943,47 +1184,29 @@ export const CreateProjectModal = ({
                   </Button>
                 </Tooltip>
               ) : (
-                <>
-                  <Tooltip
-                    title={
-                      !canCreate
-                        ? t('nameRequired', { defaultValue: 'Enter a project name to continue.' })
+                <Tooltip
+                  title={
+                    !canCreate
+                      ? t('nameRequired', { defaultValue: 'Enter a project name to continue.' })
+                      : customizeBeforeCreate
+                        ? t('customizeYesHint', {
+                          defaultValue: 'Set client, status, dates and more first',
+                        })
                         : t('customizeNoHint', {
-                            defaultValue: 'Create now and open the project',
-                          })
-                    }
+                          defaultValue: 'Create now and open the project',
+                        })
+                  }
+                >
+                  <Button
+                    type="primary"
+                    onClick={handleCreateClick}
+                    loading={isCreating}
+                    disabled={!canCreate}
+                    aria-label={t('createProject', { defaultValue: 'Create' })}
                   >
-                    <Button
-                      onClick={handleCreateDirectClick}
-                      loading={isCreating}
-                      disabled={!canCreate}
-                      aria-label={t('customizeNo', { defaultValue: 'No' })}
-                    >
-                      {t('customizeNo', { defaultValue: 'No' })}
-                    </Button>
-                  </Tooltip>
-                  <Tooltip
-                    title={
-                      !canCreate
-                        ? t('nameRequired', { defaultValue: 'Enter a project name to continue.' })
-                        : t('customizeYesHint', {
-                            defaultValue: 'Set client, status, dates and more first',
-                          })
-                    }
-                  >
-                    <Button
-                      type="primary"
-                      onClick={() => {
-                        void handleCustomizeClick();
-                      }}
-                      loading={isCreating}
-                      disabled={!canCreate}
-                      aria-label={t('customizeYes', { defaultValue: 'Yes, customize' })}
-                    >
-                      {t('customizeYes', { defaultValue: 'Yes, customize' })}
-                    </Button>
-                  </Tooltip>
-                </>
+                    {t('createProject', { defaultValue: 'Create' })}
+                  </Button>
+                </Tooltip>
               )}
             </Flex>
           </Flex>
@@ -1016,6 +1239,16 @@ export const CreateProjectModal = ({
         initialProjectName={projectName.trim()}
         hideProjectSetup
         onImportStarted={handleCsvImportStarted}
+      />
+
+      <ProjectTemplatePreviewModal
+        visible={configureCustomVisible}
+        templateId={selectedTemplateId}
+        templateName={configureTemplateName}
+        importing={isCreatingProject}
+        initialStep="confirm"
+        onClose={() => setConfigureCustomVisible(false)}
+        onImport={handleConfiguredCustomImport}
       />
     </>
   );

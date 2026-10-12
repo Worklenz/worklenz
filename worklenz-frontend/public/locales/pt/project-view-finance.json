@@ -2,7 +2,7 @@
   "financeText": "Finanças",
   "ratecardSingularText": "Tabela de Preços",
   "groupByText": "Agrupar por",
-  "statusText": "Status",
+  "statusText": "Estado",
   "phaseText": "Fase",
   "priorityText": "Prioridade",
   "exportButton": "Exportar",
@@ -48,10 +48,8 @@
   "yes": "Sim",
   "no": "Não",
   "alreadyImportedRateCardMessage": "Uma tabela de preços já foi importada. Limpe todas as tabelas de preços importadas para adicionar uma nova.",
-
   "noCurrenciesFound": "Nenhuma moeda encontrada",
   "unknownProject": "Projeto Desconhecido",
-
   "messages": {
     "projectIdNotFound": "ID do projeto não encontrado",
     "financeDataExportedSuccessfully": "Dados financeiros exportados com sucesso",
@@ -64,7 +62,6 @@
     "projectBudgetUpdatedSuccessfully": "Orçamento do projeto atualizado com sucesso",
     "failedToUpdateProjectBudget": "Falha ao atualizar o orçamento do projeto"
   },
-
   "alerts": {
     "businessPlanRequired": {
       "message": "Plano de Negócios Necessário",
@@ -76,12 +73,10 @@
       "ratecardDescription": "Você pode visualizar dados da tabela de preços, mas não pode editar taxas ou gerenciar atribuições de membros. Apenas gerentes de projeto, administradores de equipe e proprietários de equipe podem fazer alterações."
     }
   },
-
   "tooltips": {
     "availableOnlyOnBusinessPlan": "Disponível apenas no plano Business",
     "budgetCalculationSettings": "Configurações de Orçamento e Cálculo"
   },
-
   "budgetOverviewTooltips": {
     "manualBudget": "Valor do orçamento manual do projeto definido pelo gerente do projeto",
     "totalActualCost": "Custo total real incluindo custos fixos",

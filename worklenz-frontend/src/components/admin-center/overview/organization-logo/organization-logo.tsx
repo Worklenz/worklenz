@@ -20,11 +20,11 @@ import { getBase64 } from '@/utils/file-utils';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import logger from '@/utils/errorLogger';
 import { IOrganization } from '@/types/admin-center/admin-center.types';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { openUpgradeModal, setOrganizationLogo } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 interface OrganizationLogoProps {

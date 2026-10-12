@@ -46,7 +46,6 @@ const SettingSidebar: React.FC = () => {
     () =>
       getAccessibleSettings(isOwnerOrAdmin, currentSession)
         .filter(item => item.showInSidebar !== false)
-        .filter(item => !(currentSession?.is_google && item.key === 'change-password'))
         .reduce<
     Array<{
       key: string;

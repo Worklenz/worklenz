@@ -1,0 +1,81 @@
+{
+  "overviewTab": "Przegląd",
+  "membersTab": "Członkowie",
+  "tasksTab": "Zadania",
+  "overview": {
+    "title": "Przegląd",
+    "statusOverview": "Przegląd stanu",
+    "priorityOverview": "Przegląd priorytetów",
+    "lastUpdatedTasks": "Ostatnio zaktualizowane zadania"
+  },
+  "members": {
+    "title": "Członkowie",
+    "tooltip": "Członkowie",
+    "tasksByMembers": "Zadania członków",
+    "tasksByMembersTooltip": "Zadania członków",
+    "name": "Imię",
+    "taskCount": "Liczba zadań",
+    "contribution": "Wkład",
+    "completed": "Ukończono",
+    "incomplete": "Niekompletny",
+    "overdue": "Zaległe",
+    "progress": "Postęp"
+  },
+  "tasks": {
+    "overdueTasks": "Zaległe zadania",
+    "overLoggedTasks": "Przekroczone zadania",
+    "tasksCompletedEarly": "Zadania zakończone wcześniej",
+    "tasksCompletedLate": "Zadania zakończone z opóźnieniem",
+    "overLoggedTasksTooltip": "Zadania, których czas zarejestrowany przekracza szacowany czas",
+    "overdueTasksTooltip": "Zadania, których termin realizacji minął"
+  },
+  "projectDeadline": {
+    "title": "Termin realizacji projektu",
+    "overdueTasksHours": "Zadania zaległe (godziny)",
+    "overdueTasksHoursTooltip": "Zadania, których czas rejestracji przekroczył datę zakończenia projektu",
+    "overdueTasks": "Zaległe zadania",
+    "overdueTasksTooltip": "Zadania, które minęły od daty zakończenia projektu"
+  },
+  "priorityChart": {
+    "priorityAxis": "Priorytet",
+    "taskCountAxis": "Liczba zadań",
+    "tasks": "Zadania",
+    "taskCount": "zadanie",
+    "noPriority": "Brak priorytetu",
+    "low": "Niski",
+    "medium": "Średni",
+    "high": "Wysoka",
+    "critical": "Krytyczny"
+  },
+  "memberStats": {
+    "projectMembers": "Członkowie projektu",
+    "assigneesWithOverdueTasks": "Osoby z zaległymi zadaniami",
+    "unassignedMembers": "Nieprzypisani członkowie"
+  },
+  "common": {
+    "seeAll": "Zobacz wszystko",
+    "totalLoggedHours": "Całkowita liczba zarejestrowanych godzin",
+    "totalEstimation": "Całkowita ocena",
+    "completedTasks": "Wykonane zadania",
+    "incompleteTasks": "Niekompletne zadania",
+    "overdueTasks": "Zaległe zadania",
+    "overdueTasksTooltip": "Zadania, których termin realizacji minął",
+    "totalLoggedHoursTooltip": "Oszacowanie zadań i zarejestrowany czas wykonania zadań.",
+    "includeArchivedTasks": "Dołącz zarchiwizowane zadania",
+    "export": "Eksportuj",
+    "name": "Imię",
+    "status": "Stan",
+    "dueDate": "Termin",
+    "lastUpdated": "Ostatnia aktualizacja",
+    "na": "Nie dotyczy"
+  },
+  "justNow": "Właśnie teraz",
+  "tasksTable": {
+    "daysOverdue": "Zaległe dni",
+    "completedAt": "Zakończono o godz",
+    "members": "Członkowie",
+    "overLoggedTime": "Przekroczenie zarejestrowanego czasu",
+    "completedDate": "Data ukończenia",
+    "totalAllocation": "Całkowita alokacja"
+  }
+}

@@ -142,8 +142,8 @@
   "surveyStepTitle": "Conte-nos sobre você",
   "surveyStepLabel": "Ajude-nos a personalizar sua experiência no Worklenz respondendo algumas perguntas.",
   "organizationType": "O que melhor descreve sua organização?",
-  "organizationTypeFreelancer": "Freelancer",
-  "organizationTypeStartup": "Startup",
+  "organizationTypeFreelancer": "Autônomo",
+  "organizationTypeStartup": "Inicialização",
   "organizationTypeSmallMediumBusiness": "Pequena ou Média Empresa",
   "organizationTypeAgency": "Agência",
   "organizationTypeEnterprise": "Empresa",
@@ -179,17 +179,17 @@
   "previousToolsLabel": "Que ferramentas você usou antes? (Opcional)",
   "roleSuggestions": {
     "designer": "UI/UX, Gráficos, Criativo",
-    "developer": "Frontend, Backend, Full-stack",
+    "developer": "Front-end, back-end, pilha completa",
     "projectManager": "Planejamento, Coordenação",
     "marketing": "Conteúdo, Mídias Sociais, Crescimento",
     "sales": "Desenvolvimento de Negócios, Relacionamento com Clientes",
     "operations": "Administração, RH, Finanças"
   },
   "languages": {
-    "en": "English",
-    "es": "Español",
+    "en": "Inglês",
+    "es": "Espanhol",
     "pt": "Português",
-    "de": "Deutsch",
+    "de": "Alemão",
     "alb": "Shqip",
     "zh": "简体中文"
   },

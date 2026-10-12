@@ -1,0 +1,23 @@
+{
+  "uploadError": "Możesz przesłać tylko plik JPG/PNG!",
+  "uploadSizeError": "Obraz musi być mniejszy niż 2 MB!",
+  "upload": "Prześlij",
+  "nameLabel": "Imię",
+  "nameRequiredError": "Imię i nazwisko jest wymagane",
+  "emailLabel": "E-mail",
+  "emailRequiredError": "Adres e-mail jest wymagany",
+  "saveChanges": "Zapisz zmiany",
+  "save": "Zapisz",
+  "profileJoinedText": "Dołączył do {{date}}",
+  "profileLastUpdatedText": "Ostatnia aktualizacja {{date}}",
+  "avatarTooltip": "Kliknij, aby przesłać awatar",
+  "removeAvatar": "Usuń zdjęcie",
+  "removeAvatarConfirmTitle": "Usunąć zdjęcie profilowe?",
+  "removeAvatarConfirmDescription": "Twój awatar zostanie usunięty, a zamiast niego pojawią się Twoje inicjały.",
+  "cancel": "Anuluj",
+  "justNow": "Właśnie teraz",
+  "cropProfilePicture": "Przytnij zdjęcie profilowe",
+  "title": "Ustawienia profilu",
+  "nameMinLengthError": "Nazwa musi składać się z co najmniej 2 znaków",
+  "nameMaxLengthError": "Nazwa nie może przekraczać 50 znaków"
+}

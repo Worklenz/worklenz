@@ -187,16 +187,6 @@
           "Statusi i pagesës me një shikim"
         ]
       },
-      "ticketing": {
-        "title": "Tiketimi",
-        "description": "Lërini klientët të mbledhin dhe të gjurmojnë biletat e mbështetjes direkt nga portali i tyre.",
-        "features": [
-          "Bileta mbështetëse të dorëzuara nga klienti",
-          "Ndjekja dhe përditësimet e statusit të biletave",
-          "Shënime dhe detyra të brendshme",
-          "Etiketimi me përparësi dhe SLA"
-        ]
-      },
       "settings": {
         "title": "Cilësimet e Portalit",
         "description": "Personalizoni portalin tuaj të klientit me markën tuaj.",
@@ -273,23 +263,6 @@
       "dateColumn": "Data",
       "rowsPerPage": "Rreshtat për faqe: {{count}}"
     }
-  },
-  "ticketingMockup": {
-    "openTickets": "Hap Biletat",
-    "inProgress": "Në progres",
-    "resolvedToday": "Zgjidhet sot",
-    "avgResponseTime": "Mesatar Koha e përgjigjes",
-    "ticketsCard": "Biletat",
-    "ticketNoColumn": "Bileta nr",
-    "clientColumn": "Klienti",
-    "subjectColumn": "Subjekti",
-    "priorityColumn": "Prioriteti",
-    "statusColumn": "Statusi",
-    "priorityHigh": "E lartë",
-    "priorityMedium": "Mesatar",
-    "priorityLow": "E ulët",
-    "statusOpen": "Hap",
-    "statusResolved": "E zgjidhur"
   },
   "plannerMockup": {
     "chrome": {

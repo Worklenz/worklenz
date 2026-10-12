@@ -1,0 +1,172 @@
+{
+  "tabCountLabel": "Łączna liczba użytkowników klienckich",
+  "retryButton": "Spróbuj ponownie",
+  "cancelButton": "Anuluj",
+  "saveButton": "Zapisz",
+  "refreshButton": "Odśwież",
+  "clearFiltersButton": "Wyczyść filtry",
+  "addButton": "Dodaj klienta",
+  "rowActionsLabel": "Działania dla {{name}}",
+  "searchPlaceholder": "Szukaj użytkowników lub firm...",
+  "statusFilterLabel": "Filtruj według statusu",
+  "allStatusesOption": "Wszystkie statusy",
+  "paginationSummary": "Wyświetlanie {{from}}-{{to}} z {{total}} użytkowników",
+  "errorTitle": "Błąd ładowania użytkowników klienckich",
+  "errorDescription": "Wystąpił błąd podczas ładowania użytkowników klienckich. Spróbuj ponownie.",
+  "statsErrorMessage": "Nie udało się załadować statystyk użytkowników klienckich.",
+  "lastActivityInvited": "Zaproszono {{time}}",
+  "lastActivityNever": "Nigdy się nie zalogował",
+  "projectsNone": "Brak przypisanych projektów",
+  "projectsCount_one": "{{count}} projekt",
+  "projectsCount_other": "{{count}} projekty",
+  "stats": {
+    "total": "Łączna liczba użytkowników klienckich",
+    "pocs": "Osoby kontaktowe",
+    "companiesWithoutPoc": "Firmy bez osoby kontaktowej",
+    "companiesWithoutPocHint": "Dozwolone. Firma może nie mieć osoby kontaktowej.",
+    "disabled": "Wyłączeni"
+  },
+  "columns": {
+    "user": "Użytkownik",
+    "email": "E-mail",
+    "phone": "Telefon",
+    "company": "Firma",
+    "access": "Dostęp",
+    "jobTitle": "Stanowisko",
+    "projects": "Projekty",
+    "portalStatus": "Status portalu",
+    "actions": "Działania"
+  },
+  "role": {
+    "poc": "Osoba kontaktowa",
+    "member": "Członek"
+  },
+  "portalStatus": {
+    "active": "Aktywny",
+    "invited": "Zaproszony",
+    "expired": "Wygasły",
+    "not_invited": "Niezaproszony",
+    "disabled": "Wyłączony"
+  },
+  "empty": {
+    "title": "Nie znaleziono użytkowników klienckich",
+    "filtered": "Żaden użytkownik nie pasuje do bieżących filtrów.",
+    "none": "Brak użytkowników klienckich. Dodaj klienta lub użytkownika do firmy, aby dać mu dostęp do portalu."
+  },
+  "menu": {
+    "viewProfile": "Zobacz profil",
+    "editUser": "Edytuj użytkownika",
+    "assignProjects": "Przypisz projekty",
+    "makePoc": "Ustaw jako osobę kontaktową",
+    "removePoc": "Usuń status osoby kontaktowej",
+    "sendInvite": "Wyślij zaproszenie",
+    "resendInvite": "Wyślij zaproszenie ponownie",
+    "enableUser": "Włącz użytkownika",
+    "disableUser": "Wyłącz użytkownika",
+    "removeUser": "Usuń użytkownika"
+  },
+  "confirmDisable": {
+    "title": "Wyłączyć tego użytkownika?",
+    "content": "{{name}} natychmiast straci dostęp do portalu. Możesz go ponownie włączyć później, a wróci do wcześniejszego statusu.",
+    "ok": "Wyłącz użytkownika"
+  },
+  "confirmRemove": {
+    "title": "Usunąć tego użytkownika?",
+    "content": "{{name}} zostanie usunięty z firmy i straci dostęp do portalu. Tej czynności nie można cofnąć. Firma i jej pozostali użytkownicy nie zostaną dotknięci.",
+    "ok": "Usuń użytkownika"
+  },
+  "messages": {
+    "madePoc": "{{name}} jest teraz osobą kontaktową.",
+    "removedPoc": "{{name}} nie jest już osobą kontaktową.",
+    "roleError": "Nie udało się zmienić roli.",
+    "inviteSent": "Zaproszenie wysłane na adres {{email}}.",
+    "inviteEmailFailed": "Zaproszenie zostało utworzone, ale nie udało się wysłać wiadomości e-mail.",
+    "inviteError": "Nie udało się wysłać zaproszenia.",
+    "disabled": "{{name}} został wyłączony.",
+    "enabled": "{{name}} został włączony.",
+    "statusError": "Nie udało się zaktualizować użytkownika.",
+    "removed": "{{name}} został usunięty.",
+    "removeError": "Nie udało się usunąć użytkownika.",
+    "linkCopied": "Skopiowano link zaproszenia.",
+    "linkCopyError": "Nie udało się skopiować linku."
+  },
+  "permissionLevels": {
+    "unknown": "Nieznany poziom",
+    "view": {
+      "label": "Tylko podgląd",
+      "description": "Status, kamienie milowe, zadania i wyniki prac. Bez komentarzy, edycji i przesyłania plików."
+    },
+    "comment": {
+      "label": "Podgląd + komentarze",
+      "description": "Komentowanie, zatwierdzanie lub odrzucanie oraz dołączanie plików do komentarzy. Nie można tworzyć zadań."
+    },
+    "contributor": {
+      "label": "Pełny współautor",
+      "description": "Wszystko powyżej, plus tworzenie i edycja zadań, zmiana statusu i przesyłanie załączników."
+    }
+  },
+  "permissionTemplates": {
+    "view_only": {
+      "name": "Tylko podgląd",
+      "description": "Interesariusze, którzy potrzebują tylko wglądu: status i wyniki prac, bez edycji."
+    },
+    "standard_contact": {
+      "name": "Standardowy kontakt",
+      "description": "Domyślne ustawienie dla większości kontaktów klienckich: może komentować, zatwierdzać lub odrzucać oraz dołączać pliki."
+    },
+    "full_partner": {
+      "name": "Pełny partner",
+      "description": "Aktywni współpracownicy: mogą tworzyć i edytować zadania oraz przesyłać załączniki."
+    }
+  },
+  "assignProjects": {
+    "title": "Przypisz projekty — {{name}}",
+    "helper": "Wybierz, do których projektów firmy {{company}} użytkownik {{name}} ma dostęp, oraz jego poziom uprawnień w każdym z nich. Projekt może być przypisany do wielu użytkowników firmy.",
+    "noProjectsTitle": "Firma {{company}} nie ma jeszcze żadnych projektów",
+    "noProjectsDescription": "Najpierw przypisz projekt do tej firmy, a następnie wróć, aby nadać temu użytkownikowi dostęp. Szablony uprawnień wymagają co najmniej jednego projektu do zastosowania.",
+    "truncatedMessage": "Wyświetlono tylko {{shown}} z {{total}} projektów, więc dostęp nie może być tutaj edytowany.",
+    "templatesTitle": "Zastosuj szablon (ustawia wszystkie poniższe projekty na ten poziom)",
+    "selectAll": "Zaznacz wszystko",
+    "selectedCount": "Zaznaczono {{selected}} z {{total}}",
+    "bulkLabel": "Ustaw dostęp dla {{count}} zaznaczonych:",
+    "levelFor": "Poziom uprawnień dla {{project}}",
+    "saveButton": "Zapisz dostęp",
+    "savedMessage": "Zaktualizowano dostęp do projektów dla {{name}}.",
+    "saveError": "Nie udało się zaktualizować dostępu do projektów.",
+    "loadError": "Nie udało się załadować projektów tej firmy."
+  },
+  "editUser": {
+    "title": "Edytuj użytkownika",
+    "nameLabel": "Imię i nazwisko",
+    "namePlaceholder": "Anna Kowalska",
+    "nameRequired": "Wprowadź imię i nazwisko.",
+    "nameTooLong": "Nazwa może mieć maksymalnie 255 znaków.",
+    "emailLabel": "Adres e-mail",
+    "emailPlaceholder": "jan@firma.com",
+    "emailRequired": "Wprowadź adres e-mail.",
+    "emailInvalid": "Wprowadź prawidłowy adres e-mail.",
+    "emailLockedHint": "To jest jego e-mail logowania, więc nie można go zmienić po uzyskaniu dostępu do portalu.",
+    "jobTitleLabel": "Stanowisko",
+    "jobTitlePlaceholder": "np. Kierownik ds. marketingu",
+    "jobTitleTooLong": "Stanowisko może mieć maksymalnie 100 znaków.",
+    "phoneLabel": "Numer telefonu (opcjonalnie)",
+    "phonePlaceholder": "+1 415 555 0142",
+    "phoneTooLong": "Numer telefonu może mieć maksymalnie 50 znaków.",
+    "footerHint": "Firma ({{company}}) i rola dostępu są zarządzane osobno, z menu wiersza.",
+    "savedMessage": "{{name}} zaktualizowano.",
+    "saveError": "Nie udało się zaktualizować tego użytkownika."
+  },
+  "profile": {
+    "title": "Profil członka",
+    "email": "E-mail",
+    "phone": "Telefon",
+    "jobTitle": "Stanowisko",
+    "lastActivity": "Ostatnia aktywność",
+    "signInMethod": "Metoda logowania",
+    "signInPassword": "Hasło",
+    "signInNone": "Jeszcze się nie zalogował",
+    "noJobTitle": "Brak podanego stanowiska",
+    "assignedProjects": "Przypisane projekty ({{count}})",
+    "noProjects": "Brak przypisanych projektów."
+  }
+}

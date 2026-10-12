@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import {
   Button,
   Typography,
@@ -38,7 +39,7 @@ import { InputRef } from 'antd/es/input';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { CrownOutlined } from '@/shared/antd-imports';
 import { Calendar1 } from 'lucide-react';
@@ -194,6 +195,8 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     const statusList = useAppSelector(state => state.taskStatusReducer.status);
     const priorityList = useAppSelector(state => state.priorityReducer.priorities);
     const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
+    const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+    const isSoftwareProject = isSoftwareProjectType(projectType);
     const labelsList = useAppSelector(state => state.taskLabelsReducer.labels);
     const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
     const tasks = useAppSelector(state => state.taskManagement.entities);
@@ -281,11 +284,13 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
 
     const phaseMenuItems = useMemo(
       () =>
-        phaseList.map(phase => ({
-          key: phase.id || '',
-          label: <Badge color={phase.color_code} text={phase.name} />,
-        })),
-      [phaseList]
+        phaseList
+          .filter(phase => !isSoftwareProject || phase.sprint_status !== 'completed')
+          .map(phase => ({
+            key: phase.id || '',
+            label: <Badge color={phase.color_code} text={phase.name} />,
+          })),
+      [phaseList, isSoftwareProject]
     );
 
     // Menu click handlers
@@ -795,7 +800,14 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           </Tooltip>
 
           {/* Change Phase */}
-          <Tooltip title={t('CHANGE_PHASE')} placement="top">
+          <Tooltip
+            title={
+              isSoftwareProject
+                ? t('MOVE_TO_SPRINT', { defaultValue: 'Move to sprint' })
+                : t('CHANGE_PHASE')
+            }
+            placement="top"
+          >
             <Dropdown
               menu={{ items: phaseMenuItems, onClick: handlePhaseMenuClick }}
               trigger={['click']}

@@ -4,8 +4,11 @@ import { Select, Form } from '@/shared/antd-imports';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { setTaskPhase } from '@/features/task-drawer/task-drawer.slice';
-import { useEffect, useState } from 'react';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface TaskDrawerPhaseSelectorProps {
   phases: ITaskPhase[];
@@ -15,6 +18,9 @@ interface TaskDrawerPhaseSelectorProps {
 const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps) => {
   const { socket } = useSocket();
   const dispatch = useAppDispatch();
+  const { t } = useTranslation('task-drawer/task-drawer');
+  const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+  const isSoftwareProject = isSoftwareProjectType(projectType);
 
   const [selectedPhase, setSelectedPhase] = useState<string | undefined>(task?.phase_id);
 
@@ -29,11 +35,23 @@ const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps)
     setSelectedPhase(task.phase_id ?? undefined);
   }, [task?.phase_id, task?.id]);
 
-  const phaseMenuItems = phases?.map(phase => ({
-    key: phase.id,
-    value: phase.id,
-    label: phase.name,
-  }));
+  // Software projects: completed sprints can no longer receive issues
+  const phaseMenuItems = useMemo(
+    () =>
+      phases
+        ?.filter(
+          phase =>
+            !isSoftwareProject ||
+            phase.sprint_status !== 'completed' ||
+            phase.id === selectedPhase
+        )
+        .map(phase => ({
+          key: phase.id,
+          value: phase.id,
+          label: phase.name,
+        })),
+    [phases, isSoftwareProject, selectedPhase]
+  );
 
   const handlePhaseChange = (value: string | null) => {
     setSelectedPhase(value || undefined);
@@ -52,11 +70,19 @@ const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps)
     );
   };
 
+  const fieldLabel = isSoftwareProject
+    ? t('taskInfoTab.details.sprint', { defaultValue: 'Sprint' })
+    : t('taskInfoTab.details.phase', { defaultValue: 'Phase' });
+  const placeholder = isSoftwareProject
+    ? t('taskInfoTab.details.sprintPlaceholder', { defaultValue: 'Backlog' })
+    : t('taskInfoTab.details.phasePlaceholder', { defaultValue: 'Select Phase' });
+
   return (
-    <Form.Item name="phase" label="Phase">
+    <Form.Item name="phase" label={fieldLabel}>
       <Select
         allowClear
-        placeholder="Select Phase"
+        placeholder={placeholder}
+        aria-label={fieldLabel}
         value={selectedPhase}
         options={phaseMenuItems}
         style={{ width: 'fit-content', minWidth: 145 }}

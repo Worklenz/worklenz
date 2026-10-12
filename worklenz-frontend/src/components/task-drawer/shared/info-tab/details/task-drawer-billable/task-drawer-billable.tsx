@@ -5,13 +5,13 @@ import logger from '@/utils/errorLogger';
 import { Switch, Tooltip, Button, Popover, Flex, Typography } from '@/shared/antd-imports';
 import { CrownOutlined } from '@ant-design/icons';
 import { useAuthService } from '@/hooks/useAuth';
-import { shouldRestrictBillableFeature } from '@/ee/utils/subscription-utils';
+import { shouldRestrictBillableFeature } from '@/utils/subscription-utils';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useEffect, useState } from 'react';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 interface TaskDrawerBillableProps {
@@ -47,6 +47,8 @@ const TaskDrawerBillable = ({ task = null, disabled = false }: TaskDrawerBillabl
   }, [billableFromRedux, task?.billable]);
 
   const handleBillableChange = (checked: boolean) => {
+    if (disabled) return;
+
     if (isRestricted) {
       dispatch(toggleUpgradeModal());
       return;

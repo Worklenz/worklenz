@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import Skeleton from 'antd/es/skeleton';
 import Tooltip from 'antd/es/tooltip';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import {
   theme,
   Button,
@@ -75,6 +76,9 @@ const SIDE_ITEMS: { key: SideFilter; svg: string }[] = [
   },
 ];
 
+const isSideFilter = (value: string | null): value is SideFilter =>
+  SIDE_ITEMS.some(item => item.key === value);
+
 const BASE_QUERY_CONFIG: IHomeTasksConfig = {
   tasks_group_by: 0,
   current_tab: 'All',
@@ -115,7 +119,12 @@ const HomeMyTasksView: React.FC = () => {
     'no-due': t('tasks.noDueDate', { defaultValue: 'No due date' }),
   }), [t]);
 
-  const [sideFilter, setSideFilter] = useState<SideFilter>('everything');
+  // A link can open this page on one of the side filters, e.g. `?filter=assigned-by-me`.
+  const [searchParams] = useSearchParams();
+  const [sideFilter, setSideFilter] = useState<SideFilter>(() => {
+    const requested = searchParams.get('filter');
+    return isSideFilter(requested) ? requested : 'everything';
+  });
   const [search,     setSearch]     = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortField, setSortField] = useState<SortField>(null);
@@ -866,7 +875,7 @@ const HomeMyTasksView: React.FC = () => {
                 <Dropdown
                   trigger={['click']}
                   menu={{
-                    items: [10, 20, 50].map(n => ({ key: String(n), label: String(n) })),
+                     items: [10, 20, 50, 100].map(n => ({ key: String(n), label: String(n) })),
                     selectedKeys: [String(pageSize)],
                     onClick: info => { setPageSize(Number(info.key)); setPage(1); },
                   }}

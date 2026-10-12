@@ -1846,7 +1846,7 @@ const WorkloadAddPopover: React.FC<{
               autoFocus
               value={newTaskName}
               onChange={e => setNewTaskName(e.target.value)}
-              placeholder={t('addTask', { defaultValue: 'Enter task name…' })}
+              placeholder={t('enterTaskName', { defaultValue: 'Enter task name…' })}
               onKeyDown={e => {
                 if (e.key === 'Enter') submitNewTask();
               }}
@@ -1952,7 +1952,12 @@ const WorkloadAddPopover: React.FC<{
                             </span>
                           </span>
                           <span style={{ opacity: 0.5, flexShrink: 0, fontSize: 11 }}>
-                            {hours > 0 ? `${Math.round(hours * 10) / 10}h` : `${fallbackEst}h default`}
+                            {hours > 0
+                              ? `${Math.round(hours * 10) / 10}h`
+                              : t('defaultHours', {
+                                  hours: fallbackEst,
+                                  defaultValue: `${fallbackEst}h default`,
+                                })}
                           </span>
                         </div>
                       );

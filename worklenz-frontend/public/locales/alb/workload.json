@@ -37,7 +37,7 @@
     "totalMembersStat": "Anëtarë gjithsej: {{count}}",
     "overallocatedStat": "Mbingarkuar: {{count}} (>100% shfrytëzim)",
     "underutilizedStat": "Nën-shfrytëzuar: {{count}} (<{{threshold}}% shfrytëzim)",
-    "optimalStat": "Optimal: {{count}}",
+    "optimalStat": "Optimale: {{count}}",
     "totalWorkloadTooltipTitle": "Ngarkesa totale e vlerësuar e punës për të gjithë anëtarët e ekipit",
     "includesLabel": "Përfshin:",
     "estimatedHoursStat": "Orë të vlerësuara: {{hours}} orë",
@@ -135,7 +135,7 @@
   "status": {
     "overallocated": "Mbingarkuar",
     "underutilized": "Nën-shfrytëzuar",
-    "optimal": "Optimal"
+    "optimal": "Optimale"
   },
   "actions": {
     "viewDetails": "Shiko detajet",

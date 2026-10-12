@@ -1,171 +1,171 @@
 {
   "emptyValue": "—",
-  "noBudgetSet": "No budget set",
-  "loadError": "Could not load this report. Try again.",
-  "retry": "Retry",
-  "searchPlaceholder": "Search",
+  "noBudgetSet": "Kein Budget festgelegt",
+  "loadError": "Dieser Bericht konnte nicht geladen werden. Versuchen Sie es erneut.",
+  "retry": "Erneut versuchen",
+  "searchPlaceholder": "Suchen",
   "budgets": {
-    "pageTitle": "Budgets",
-    "pageSubTitle": "Budget tracking and burn rate across all projects. ETC is remaining estimated hours at the realized hourly rate from logged time.",
-    "empty": "No projects to show yet.",
+    "pageTitle": "Budgetplanung",
+    "pageSubTitle": "Budgetverfolgung und Burn-Rate für alle Projekte. ETC sind die verbleibenden geschätzten Stunden zum realisierten Stundensatz ab der protokollierten Zeit.",
+    "empty": "Keine Projekte zum Anzeigen.",
     "table": {
-      "project": "Project",
-      "budget": "Budget",
-      "spent": "Spent",
-      "remaining": "Remaining",
-      "burnRate": "Burn Rate",
+      "project": "Projekt",
+      "budget": "Budgetbetrag",
+      "spent": "Ausgegeben",
+      "remaining": "Übrig",
+      "burnRate": "Brennrate",
       "etc": "ETC",
-      "alert": "Alert"
+      "alert": "Alarm"
     },
     "alert": {
-      "high": "High burn",
-      "watch": "Watch",
+      "high": "Hohe Verbrennung",
+      "watch": "Beobachten",
       "ok": "OK",
-      "none": "No budget"
+      "none": "Kein Budget"
     }
   },
   "invoices": {
-    "pageTitle": "Invoices",
-    "pageSubTitle": "Send, track, and collect client payments from one portfolio view.",
-    "empty": "No invoices yet. Create invoices from Client Portal.",
-    "openInvoice": "Open invoice",
+    "pageTitle": "Rechnungen",
+    "pageSubTitle": "Senden, verfolgen und sammeln Sie Kundenzahlungen über eine Portfolioansicht.",
+    "empty": "Noch keine Rechnungen. Erstellen Sie Rechnungen über das Kundenportal.",
+    "openInvoice": "Rechnung öffnen",
     "kpi": {
-      "totalInvoiced": "Total invoiced",
-      "totalPaid": "Total paid",
-      "totalOutstanding": "Total outstanding"
+      "totalInvoiced": "Gesamtbetrag in Rechnung gestellt",
+      "totalPaid": "Insgesamt bezahlt",
+      "totalOutstanding": "Insgesamt ausstehend"
     },
     "table": {
-      "invoice": "Invoice",
-      "client": "Client",
-      "project": "Project",
-      "amount": "Amount",
-      "paymentStatus": "Payment Status",
-      "paidAmount": "Paid Amount",
-      "status": "Status",
-      "issued": "Issued",
-      "due": "Due"
+      "invoice": "Rechnung",
+      "client": "Kunde",
+      "project": "Projekt",
+      "amount": "Betrag",
+      "paymentStatus": "Zahlungsstatus",
+      "paidAmount": "Bezahlter Betrag",
+      "status": "Alle Status",
+      "issued": "Ausgestellt",
+      "due": "Fällig"
     },
     "status": {
-      "draft": "Draft",
-      "sent": "Sent",
-      "paid": "Paid",
-      "overdue": "Overdue",
-      "cancelled": "Cancelled",
-      "outstanding": "Outstanding"
+      "draft": "Entwurf",
+      "sent": "Gesendet",
+      "paid": "Bezahlt",
+      "overdue": "Überfällig",
+      "cancelled": "Abgebrochen",
+      "outstanding": "Hervorragend"
     }
   },
   "billableTime": {
-    "pageTitle": "Billable Time",
-    "pageSubTitle": "Logged hours, billable flag, and rate-card value across the team. Timesheet approval is not required — every log is already recorded.",
-    "empty": "No time logged in this period.",
-    "tableTitle": "Time Entries",
+    "pageTitle": "Abrechenbare Zeit",
+    "pageSubTitle": "Protokollierte Stunden, abrechenbare Markierung und Tarifkartenwert im gesamten Team. Eine Genehmigung der Arbeitszeittabelle ist nicht erforderlich – jedes Protokoll ist bereits aufgezeichnet.",
+    "empty": "In diesem Zeitraum war keine Zeit angemeldet.",
+    "tableTitle": "Zeiterfassung",
     "range": {
-      "week": "This week",
-      "month": "This month",
-      "lastMonth": "Last month"
+      "week": "Diese Woche",
+      "month": "Diesen Monat",
+      "lastMonth": "Letzten Monat"
     },
     "kpi": {
-      "logged": "Logged this period",
-      "billable": "Billable",
-      "nonBillable": "Non-billable",
-      "value": "Billable value"
+      "logged": "Diesen Zeitraum protokolliert",
+      "billable": "Abrechenbar",
+      "nonBillable": "Nicht abrechenbar",
+      "value": "Abrechenbarer Wert"
     },
     "table": {
-      "member": "Member",
-      "project": "Project",
-      "task": "Task",
-      "date": "Date",
-      "time": "Time",
-      "billable": "Billable",
-      "rate": "Rate",
-      "value": "Value"
+      "member": "Mitglied",
+      "project": "Projekt",
+      "task": "Aufgabe",
+      "date": "Datum",
+      "time": "Zeit",
+      "billable": "Abrechenbar",
+      "rate": "Preis",
+      "value": "Wert"
     },
-    "billable": "Billable",
-    "internal": "Internal"
+    "billable": "Abrechenbar",
+    "internal": "Intern"
   },
   "utilization": {
-    "pageTitle": "Utilization",
-    "pageSubTitle": "Team billable hours against capacity for the selected period. Overallocated is above 85% of capacity.",
-    "empty": "No team members to show.",
-    "tableTitle": "Utilization by Member",
+    "pageTitle": "Auslastung",
+    "pageSubTitle": "Abzurechnende Teamstunden im Vergleich zur Kapazität für den ausgewählten Zeitraum. Die Überlastung liegt bei über 85 % der Kapazität.",
+    "empty": "Keine Teammitglieder zum Anzeigen vorhanden.",
+    "tableTitle": "Nutzung durch Mitglied",
     "kpi": {
-      "team": "Team utilization",
-      "billable": "Billable hours",
-      "nonBillable": "Non-billable",
-      "overallocated": "Overallocated"
+      "team": "Teamauslastung",
+      "billable": "Abrechnungsfähige Stunden",
+      "nonBillable": "Nicht abrechenbar",
+      "overallocated": "Überlastet"
     },
-    "overallocatedCount_one": "{{count}} member",
-    "overallocatedCount_other": "{{count}} members",
+    "overallocatedCount_one": "{{count}} Mitglied",
+    "overallocatedCount_other": "{{count}} Mitglieder",
     "table": {
-      "member": "Member",
-      "role": "Role",
-      "billableHours": "Billable Hours",
-      "totalHours": "Total Hours",
-      "utilization": "Utilization",
-      "status": "Status"
+      "member": "Mitglied",
+      "role": "Rolle",
+      "billableHours": "Abrechnungsfähige Stunden",
+      "totalHours": "Gesamtstunden",
+      "utilization": "Auslastung",
+      "status": "Alle Status"
     },
     "status": {
-      "high": "Overallocated",
-      "watch": "Watch",
+      "high": "Überlastet",
+      "watch": "Beobachten",
       "ok": "OK"
     }
   },
   "profitability": {
-    "pageTitle": "Profitability",
-    "pageSubTitle": "Portfolio revenue from paid invoices, tracked cost from logged time and fixed costs, and billable utilization by project.",
-    "empty": "No projects to show yet.",
-    "revenueNote": "Revenue is paid client-portal invoices. Project-level revenue is not tracked yet, so the table shows cost and utilization.",
-    "noRevenueNote": "No paid invoices yet, so revenue, profit, and margin stay empty until invoices are collected.",
+    "pageTitle": "Rentabilität",
+    "pageSubTitle": "Portfolioeinnahmen aus bezahlten Rechnungen, nachverfolgte Kosten aus protokollierter Zeit und Fixkosten sowie abrechnungsfähige Nutzung nach Projekt.",
+    "empty": "Keine Projekte zum Anzeigen.",
+    "revenueNote": "Der Umsatz besteht aus bezahlten Rechnungen des Kundenportals. Der Umsatz auf Projektebene wird noch nicht erfasst, daher zeigt die Tabelle Kosten und Nutzung.",
+    "noRevenueNote": "Noch keine bezahlten Rechnungen, daher bleiben Umsatz, Gewinn und Marge leer, bis die Rechnungen eingezogen sind.",
     "kpi": {
-      "revenue": "Revenue",
-      "trackedCost": "Tracked Cost",
-      "profit": "Profit",
-      "margin": "Profit Margin",
-      "billableUtil": "Billable Util."
+      "revenue": "Einnahmen",
+      "trackedCost": "Verfolgte Kosten",
+      "profit": "Gewinn",
+      "margin": "Gewinnspanne",
+      "billableUtil": "Abrechenbarer Verbrauch."
     },
-    "trendTitle": "Revenue & Profit Trend",
-    "costBreakdownTitle": "Cost Breakdown",
-    "tableTitle": "Project Profitability",
+    "trendTitle": "Umsatz- und Gewinntrend",
+    "costBreakdownTitle": "Kostenaufschlüsselung",
+    "tableTitle": "Projektrentabilität",
     "cost": {
-      "fixed": "Fixed costs",
-      "timeBased": "Time-based costs"
+      "fixed": "Fixkosten",
+      "timeBased": "Zeitbasierte Kosten"
     },
     "table": {
-      "project": "Project",
-      "cost": "Cost",
-      "utilization": "Utilization",
-      "health": "Health"
+      "project": "Projekt",
+      "cost": "Kosten",
+      "utilization": "Auslastung",
+      "health": "Gesundheit"
     },
     "health": {
-      "high": "High burn",
-      "watch": "Watch",
-      "ok": "On track",
-      "none": "No budget"
+      "high": "Hohe Verbrennung",
+      "watch": "Beobachten",
+      "ok": "Auf Kurs",
+      "none": "Kein Budget"
     },
     "legend": {
-      "revenue": "Revenue",
-      "profit": "Profit",
-      "cost": "Cost"
+      "revenue": "Einnahmen",
+      "profit": "Gewinn",
+      "cost": "Kosten"
     }
   },
   "forecasts": {
-    "pageTitle": "Forecasts",
-    "pageSubTitle": "Next three months from a linear trend of the last three months of invoiced revenue and time-based cost.",
-    "methodology": "Forecast method: linear trend of the previous three months. Not a pipeline-based forecast.",
+    "pageTitle": "Prognosen",
+    "pageSubTitle": "Die nächsten drei Monate aus einem linearen Trend der in Rechnung gestellten Einnahmen und zeitbasierten Kosten der letzten drei Monate.",
+    "methodology": "Prognosemethode: linearer Trend der letzten drei Monate. Keine Pipeline-basierte Prognose.",
     "kpi": {
-      "projectedRevenue": "Projected Revenue (This Month)",
-      "projectedProfit": "Projected Profit (This Month)"
+      "projectedRevenue": "Prognostizierter Umsatz (nächster Monat)",
+      "projectedProfit": "Prognostizierter Gewinn (nächster Monat)"
     },
-    "vsPrevious": "{{value}}% vs last month",
+    "vsPrevious": "{{value}} % gegenüber dem letzten Monat",
     "noRevenueBaseline": "In diesem Monat gibt es keinen vergleichbaren Umsatz",
     "noProfitBaseline": "In diesem Monat gibt es keinen vergleichbaren Gewinn",
-    "chartTitle": "3-Month Revenue Forecast",
+    "chartTitle": "3-Monats-Umsatzprognose",
     "legend": {
-      "revenue": "Revenue",
-      "profit": "Profit",
-      "actual": "Actual",
-      "projected": "Projected"
+      "revenue": "Einnahmen",
+      "profit": "Gewinn",
+      "actual": "Tatsächlich",
+      "projected": "Projiziert"
     },
-    "empty": "Not enough history to forecast yet. Log time and send invoices to build a trend."
+    "empty": "Noch nicht genug Geschichte für eine Prognose. Protokollieren Sie die Zeit und senden Sie Rechnungen, um einen Trend zu erstellen."
   }
 }

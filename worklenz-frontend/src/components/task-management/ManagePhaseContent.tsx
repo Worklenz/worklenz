@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Modal, Input, Button, Typography, ColorPicker, Tooltip, Avatar, Checkbox, Spin, DatePicker, theme } from '@/shared/antd-imports';
-import { PlusOutlined, HolderOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@/shared/antd-imports';
+import { Modal, Input, Button, Typography, ColorPicker, Tooltip, Avatar, Checkbox, Spin, DatePicker, Tag, Switch, message, theme } from '@/shared/antd-imports';
+import { PlusOutlined, HolderOutlined, EditOutlined, DeleteOutlined, UserOutlined, PlayCircleOutlined, CheckCircleOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -15,6 +15,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   addPhaseOption,
+  addPhaseWithDates,
   fetchPhasesByProjectId,
   updatePhaseOrder,
   updatePhaseListOrder,
@@ -23,14 +24,21 @@ import {
   deletePhaseOption,
   updatePhaseColor,
   updatePhaseDefaultAssignee,
+  updatePhaseDates,
 } from '@/features/projects/singleProject/phase/phases.slice';
-import { updatePhaseLabel } from '@/features/project/project.slice';
-import { ITaskPhase } from '@/types/tasks/taskPhase.types';
+import { useSprintActions } from '@/hooks/useSprintActions';
+import { mergeProject, updatePhaseLabel } from '@/features/project/project.slice';
+import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
+import { ITaskPhase, SprintStatus } from '@/types/tasks/taskPhase.types';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { PhaseColorCodes } from '@/shared/constants';
 import { IProjectMemberViewModel } from '@/types/projectMember.types';
 import { getAllProjectMembers } from '@/features/projects/singleProject/members/projectMembersSlice';
+import {
+  getSoftwareProjectLabels,
+  isSoftwareProjectType,
+} from '@/lib/project/software-project';
 
 const { Text } = Typography;
 
@@ -40,10 +48,20 @@ interface PhaseItemProps {
   onDelete: (id: string) => void;
   onColorChange: (id: string, color: string) => void;
   onAssigneeChange: (id: string, assigneeId: string | null) => void;
+  onDatesChange?: (id: string, startDate: Dayjs | null, endDate: Dayjs | null) => void;
+  onStartSprint?: (id: string) => void;
+  onCompleteSprint?: (id: string) => void;
   phaseAssigneesEnabled: boolean;
+  isSoftware?: boolean;
   members: IProjectMemberViewModel[];
   disabled?: boolean;
 }
+
+const sprintStatusColor = (status?: SprintStatus): string => {
+  if (status === 'active') return 'blue';
+  if (status === 'completed') return 'green';
+  return 'purple';
+};
 
 // Phase Assignee Dropdown with Phase Name Header (Portal-based like PhaseAssigneeSelector)
 interface PhaseAssigneeDropdownProps {
@@ -232,7 +250,11 @@ const SortablePhaseItem: React.FC<PhaseItemProps & { id: string }> = ({
   onDelete,
   onColorChange,
   onAssigneeChange,
+  onDatesChange,
+  onStartSprint,
+  onCompleteSprint,
   phaseAssigneesEnabled,
+  isSoftware = false,
   members,
   disabled = false,
 }) => {
@@ -407,6 +429,45 @@ const SortablePhaseItem: React.FC<PhaseItemProps & { id: string }> = ({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {isSoftware && (
+              <Tag
+                color={sprintStatusColor(phase.sprint_status)}
+                style={{ margin: 0, textTransform: 'capitalize', fontSize: 11 }}
+              >
+                {phase.sprint_status || 'planned'}
+              </Tag>
+            )}
+
+            {isSoftware && !disabled && phase.sprint_status === 'planned' && onStartSprint && (
+              <Tooltip title={t('startSprint', { defaultValue: 'Start sprint' })}>
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<PlayCircleOutlined />}
+                  onClick={() => onStartSprint(id)}
+                  aria-label={t('startSprint', { defaultValue: 'Start sprint' })}
+                >
+                  {t('start', { defaultValue: 'Start' })}
+                </Button>
+              </Tooltip>
+            )}
+
+            {isSoftware &&
+              !disabled &&
+              phase.sprint_status === 'active' &&
+              onCompleteSprint && (
+                <Tooltip title={t('completeSprint', { defaultValue: 'Complete sprint' })}>
+                  <Button
+                    size="small"
+                    icon={<CheckCircleOutlined />}
+                    onClick={() => onCompleteSprint(id)}
+                    aria-label={t('completeSprint', { defaultValue: 'Complete sprint' })}
+                  >
+                    {t('complete', { defaultValue: 'Complete' })}
+                  </Button>
+                </Tooltip>
+              )}
+
             {phaseAssigneesEnabled && (
               <div ref={assigneeButtonRef} style={{ display: 'flex', alignItems: 'center' }}>
                 {defaultAssigneeMember ? (
@@ -498,6 +559,28 @@ const SortablePhaseItem: React.FC<PhaseItemProps & { id: string }> = ({
             )}
           </div>
         </div>
+
+        {isSoftware && onDatesChange && (
+          <div style={{ padding: '0 8px 6px 49px' }}>
+            <DatePicker.RangePicker
+              size="small"
+              variant="borderless"
+              allowEmpty={[true, true]}
+              disabled={disabled}
+              value={[
+                phase.start_date ? dayjs(phase.start_date) : null,
+                phase.end_date ? dayjs(phase.end_date) : null,
+              ]}
+              onChange={dates => onDatesChange(id, dates?.[0] ?? null, dates?.[1] ?? null)}
+              placeholder={[
+                t('startDate', { defaultValue: 'Start date' }),
+                t('endDate', { defaultValue: 'End date' }),
+              ]}
+              aria-label={t('sprintDates', { defaultValue: 'Sprint dates' })}
+              style={{ padding: 0, fontSize: 11, maxWidth: 260 }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Phase Assignee Dropdown Portal */}
@@ -554,9 +637,15 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
   const [newPhaseStartDate, setNewPhaseStartDate] = useState<Dayjs | null>(null);
   const [newPhaseEndDate, setNewPhaseEndDate] = useState<Dayjs | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isSavingAutoArchive, setIsSavingAutoArchive] = useState(false);
   const [createRoadmapPhase, { isLoading: isCreatingRoadmapPhase }] = useCreatePhaseMutation();
 
   const finalProjectId = projectId || currentProjectId;
+  const sprintActions = useSprintActions(finalProjectId);
+  const [modal, modalContextHolder] = Modal.useModal();
+  const isSoftware = isSoftwareProjectType(project?.project_type);
+  const softwareLabels = getSoftwareProjectLabels(project?.project_type);
+  const showSprintFields = enableDates || isSoftware;
 
   // Whether phase assignees feature is enabled for this project
   const phaseAssigneesEnabled = Boolean(project?.phase_assignees_enabled);
@@ -646,13 +735,19 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
           start_date: newPhaseStartDate ? newPhaseStartDate.toISOString() : undefined,
           end_date: newPhaseEndDate ? newPhaseEndDate.toISOString() : undefined,
         }).unwrap();
-        // Board/Task List's phase list is a separate cache that never reads
-        // dates, but it still needs to learn the phase now exists.
         await dispatch(fetchPhasesByProjectId(finalProjectId));
+      } else if (isSoftware) {
+        await dispatch(
+          addPhaseWithDates({
+            projectId: finalProjectId,
+            name: newPhaseName.trim(),
+            start_date: newPhaseStartDate ? newPhaseStartDate.toISOString() : null,
+            end_date: newPhaseEndDate ? newPhaseEndDate.toISOString() : null,
+          })
+        ).unwrap();
       } else {
         await dispatch(addPhaseOption({ projectId: finalProjectId, name: newPhaseName.trim() }));
       }
-      // Slice appends the new phase in-place; no full re-fetch needed.
       await refreshTasks();
       setNewPhaseName('');
       setNewPhaseStartDate(null);
@@ -668,6 +763,7 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
     newPhaseName,
     disabled,
     enableDates,
+    isSoftware,
     newPhaseStartDate,
     newPhaseEndDate,
     createRoadmapPhase,
@@ -716,7 +812,7 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
     async (id: string) => {
       if (disabled || !finalProjectId) return;
 
-      Modal.confirm({
+      modal.confirm({
         title: t('deletePhase'),
         content: t('deletePhaseConfirm'),
         okText: t('delete'),
@@ -735,7 +831,7 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
         },
       });
     },
-    [finalProjectId, dispatch, refreshTasks, t, disabled]
+    [finalProjectId, dispatch, modal, refreshTasks, t, disabled]
   );
 
   const handleColorChange = useCallback(
@@ -778,6 +874,47 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
     [finalProjectId, dispatch, disabled]
   );
 
+  const handleStartSprint = useCallback(
+    (phaseId: string) => {
+      if (disabled) return;
+      void sprintActions.startSprint(phaseId);
+    },
+    [disabled, sprintActions]
+  );
+
+  const handleDatesChange = useCallback(
+    async (phaseId: string, startDate: Dayjs | null, endDate: Dayjs | null) => {
+      if (disabled || !finalProjectId) return;
+      const phase = phaseList.find(p => p.id === phaseId);
+      if (!phase) return;
+
+      try {
+        await dispatch(
+          updatePhaseDates({
+            phase,
+            projectId: finalProjectId,
+            start_date: startDate ? startDate.startOf('day').toISOString() : null,
+            end_date: endDate ? endDate.endOf('day').toISOString() : null,
+          })
+        ).unwrap();
+      } catch (error: unknown) {
+        const errMsg =
+          (error as { message?: string })?.message ||
+          t('sprintDatesError', { defaultValue: 'Could not update sprint dates' });
+        message.error(errMsg);
+      }
+    },
+    [disabled, dispatch, finalProjectId, phaseList, t]
+  );
+
+  const handleCompleteSprint = useCallback(
+    (phaseId: string) => {
+      if (disabled) return;
+      sprintActions.completeSprint(phaseId);
+    },
+    [disabled, sprintActions]
+  );
+
   const handlePhaseNameBlur = useCallback(async () => {
     if (disabled || !finalProjectId || phaseName === initialPhaseName) return;
 
@@ -799,15 +936,44 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
     }
   }, [finalProjectId, phaseName, initialPhaseName, dispatch, refreshTasks, disabled]);
 
+  const isAutoArchiveEnabled = project?.auto_archive_on_sprint_complete !== false;
+
+  const handleAutoArchiveChange = useCallback(
+    async (checked: boolean) => {
+      if (disabled || !finalProjectId) return;
+
+      setIsSavingAutoArchive(true);
+      try {
+        const res = await phasesApiService.updateSprintSettings(finalProjectId, checked);
+        if (!res.done) throw new Error(res.message);
+        dispatch(mergeProject({ auto_archive_on_sprint_complete: checked }));
+      } catch (error) {
+        console.error('Error updating sprint settings:', error);
+        message.error(
+          t('sprintSettingsError', { defaultValue: 'Could not update sprint settings' })
+        );
+      } finally {
+        setIsSavingAutoArchive(false);
+      }
+    },
+    [disabled, finalProjectId, dispatch, t]
+  );
+
   const handleOpenAddForm = useCallback(() => {
     if (disabled) return;
     setShowAddForm(true);
   }, [disabled]);
 
-  const phaseWord = t('phasesText', { defaultValue: 'Phases' }).toLowerCase();
+  const phaseWord = (
+    isSoftware
+      ? softwareLabels.phasePlural
+      : t('phasesText', { defaultValue: 'Phases' })
+  ).toLowerCase();
 
   return (
     <Spin spinning={loadingPhases && phaseList.length === 0}>
+      {sprintActions.sprintModalContextHolder}
+      {modalContextHolder}
       <div
         style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
         aria-disabled={disabled}
@@ -837,6 +1003,46 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
             style={{ cursor: disabled ? 'not-allowed' : undefined }}
           />
         </div>
+
+        {isSoftware && (
+          <div
+            style={{
+              padding: '10px 12px',
+              borderRadius: 8,
+              border: `1px solid ${token.colorBorderSecondary}`,
+              background: token.colorFillTertiary,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <Text
+                id="auto-archive-sprint-label"
+                style={{ fontSize: 12, fontWeight: 600, display: 'block' }}
+              >
+                {t('autoArchiveOnSprintComplete', {
+                  defaultValue: 'Auto-archive done issues when a sprint completes',
+                })}
+              </Text>
+              <Text style={{ fontSize: 12, color: token.colorTextSecondary }}>
+                {t('autoArchiveOnSprintCompleteHint', {
+                  defaultValue:
+                    'Done issues in the completed sprint are archived automatically. Unfinished issues move to the destination you choose.',
+                })}
+              </Text>
+            </div>
+            <Switch
+              size="small"
+              checked={isAutoArchiveEnabled}
+              loading={isSavingAutoArchive}
+              disabled={disabled}
+              onChange={handleAutoArchiveChange}
+              aria-labelledby="auto-archive-sprint-label"
+            />
+          </div>
+        )}
 
         {/* Phase Assignees info banner — only when feature is enabled */}
         {phaseAssigneesEnabled && (
@@ -903,7 +1109,7 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
               </Button>
             </div>
 
-            {enableDates && (
+            {showSprintFields && (
               <div style={{ display: 'flex', gap: 6 }}>
                 <DatePicker
                   placeholder={t('startDate', { defaultValue: 'Start date' })}
@@ -976,7 +1182,11 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
                     onDelete={handleDeletePhase}
                     onColorChange={handleColorChange}
                     onAssigneeChange={handleAssigneeChange}
+                    onDatesChange={isSoftware ? handleDatesChange : undefined}
+                    onStartSprint={isSoftware ? handleStartSprint : undefined}
+                    onCompleteSprint={isSoftware ? handleCompleteSprint : undefined}
                     phaseAssigneesEnabled={phaseAssigneesEnabled}
+                    isSoftware={isSoftware}
                     members={currentMembersList as IProjectMemberViewModel[]}
                     disabled={disabled}
                   />

@@ -1,0 +1,16 @@
+{
+  "taskAssigned": "<strong>{{reporter}}</strong> ju ka caktuar në <strong>{{task}}</strong>",
+  "taskRemoved": "<strong>{{reporter}}</strong> ju ka hequr nga <strong>{{task}}</strong>",
+  "taskAdded": "<strong>{{user}}</strong> shtoi \"<strong>{{task}}</strong>\" te \"<strong>{{project}}</strong>\"",
+  "taskRemovedFromProject": "<strong>{{user}}</strong> hoqi \"<strong>{{task}}</strong>\" nga \"<strong>{{project}}</strong>\"",
+  "addedToProject": "Ju jeni shtuar në <strong>{{project}}</strong> nga <strong>{{user}}</strong>",
+  "removedFromProject": "Ju jeni hequr nga <strong>{{project}}</strong> nga <strong>{{user}}</strong>",
+  "addedToTeam": "Ju jeni shtuar në <strong>{{team}}</strong>",
+  "removedFromTeam": "Ju jeni hequr nga <strong>{{team}}</strong> nga <strong>{{user}}</strong>",
+  "commentAdded": "<strong>{{user}}</strong> shtoi një koment në <strong>{{task}}</strong>",
+  "mentionedInComment": "<strong>{{user}}</strong> ju përmendi në një koment në <strong>{{task}}</strong>",
+  "mentionedInProjectComment": "<strong>{{user}}</strong> ju përmendi në një koment në <strong>{{project}}</strong>",
+  "phaseTaskAssigned": "Një detyrë ju është caktuar në <strong>{{phase}}</strong>: <strong>{{task}}</strong>",
+  "orgSwapped": "Organizata juaj <strong>{{previousOrganization}}</strong> u shkëmbye me <strong>{{organization}}</strong>. Tani jeni pronari i saj.",
+  "teamOwnershipChanged": "Pronësia juaj për <strong>{{team}}</strong> ka ndryshuar."
+}

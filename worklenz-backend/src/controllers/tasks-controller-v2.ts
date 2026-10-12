@@ -1,4 +1,4 @@
-﻿import { ParsedQs } from "qs";
+import { ParsedQs } from "qs";
 
 import db from "../config/db";
 import HandleExceptions from "../decorators/handle-exceptions";
@@ -6,12 +6,14 @@ import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { ServerResponse } from "../models/server-response";
 import {
-  TASK_PRIORITY_COLOR_ALPHA,
   TASK_STATUS_COLOR_ALPHA,
   UNMAPPED,
 } from "../shared/constants";
-import { getColor, log_error } from "../shared/utils";
+import { getColor, humanFileSize, log_error } from "../shared/utils";
+import { getStorageUrl } from "../shared/constants";
+import { getRootDir } from "../shared/storage";
 import { SqlHelper } from "../shared/sql-helpers";
+import { isValidUuid } from "../shared/validation-helpers";
 import {
   AssigneeTaskScope,
   buildAssigneeScopeFilter,
@@ -22,6 +24,7 @@ import {
 import TasksControllerBase, {
   GroupBy,
   ITaskGroup,
+  UNASSIGNED_GROUP_ID,
 } from "./tasks-controller-base";
 
 const normalizePeopleCustomColumnValue = (value: unknown): string[] => {
@@ -173,21 +176,80 @@ export default class TasksControllerV2 extends TasksControllerBase {
     };
   }
 
-  private static getFilterByPhaseWhereClosure(
+  private static buildPhaseFilterClause(
     text: string,
+    taskAlias: string,
     paramOffset: number = 1
   ): { clause: string; params: string[] } {
     if (!text) return { clause: "", params: [] };
 
-    const phaseIds = text.split(" ").filter(id => id.trim());
-    if (!phaseIds.length) return { clause: "", params: [] };
+    const tokens = text.split(" ").filter(id => id.trim());
+    if (!tokens.length) return { clause: "", params: [] };
 
-    const { clause: inClause, params } = SqlHelper.buildInClause(phaseIds, paramOffset);
+    const includeUnmapped = tokens.some(
+      token => token === UNMAPPED || token.toLowerCase() === "unmapped"
+    );
+    const phaseIds = tokens.filter(
+      token => token !== UNMAPPED && token.toLowerCase() !== "unmapped"
+    );
+
+    const clauses: string[] = [];
+    const params: string[] = [];
+    let offset = paramOffset;
+
+    if (phaseIds.length) {
+      const { clause: inClause, params: inParams } = SqlHelper.buildInClause(phaseIds, offset);
+      clauses.push(
+        `(SELECT phase_id FROM task_phase WHERE task_id = ${taskAlias}.id) IN (${inClause})`
+      );
+      params.push(...inParams);
+      offset += inParams.length;
+    }
+
+    if (includeUnmapped) {
+      clauses.push(`NOT EXISTS (SELECT 1 FROM task_phase WHERE task_id = ${taskAlias}.id)`);
+    }
+
+    if (!clauses.length) return { clause: "", params: [] };
 
     return {
-      clause: `(SELECT phase_id FROM task_phase WHERE task_id = t.id) IN (${inClause})`,
+      clause: `(${clauses.join(" OR ")})`,
       params,
     };
+  }
+
+  private static getFilterByPhaseWhereClosure(
+    text: string,
+    paramOffset: number = 1
+  ): { clause: string; params: string[] } {
+    return TasksControllerV2.buildPhaseFilterClause(text, "t", paramOffset);
+  }
+
+  private static getFilterByEpicWhereClosure(
+    epicId: string | undefined,
+    paramOffset: number
+  ): { clause: string; params: string[] } {
+    const trimmed = epicId?.trim();
+    if (!trimmed || !isValidUuid(trimmed)) return { clause: "", params: [] };
+    return { clause: `t.epic_id = $${paramOffset}::UUID`, params: [trimmed] };
+  }
+
+  /**
+   * Software-project quick filters ("mine bugs blocked"). Unknown tokens are ignored and
+   * no request values are interpolated; "mine" matches the requesting user ($1).
+   */
+  private static getFilterByQuickFiltersWhereClosure(quickFilters: string | undefined): string {
+    const tokens = new Set((quickFilters || "").split(" ").map(token => token.trim()));
+    const clauses: string[] = [];
+    if (tokens.has("mine")) {
+      clauses.push(`t.id IN (
+        SELECT ta.task_id FROM tasks_assignees ta
+        INNER JOIN team_members tm ON tm.id = ta.team_member_id
+        WHERE tm.user_id = $1::UUID)`);
+    }
+    if (tokens.has("bugs")) clauses.push("t.issue_type = 'bug'");
+    if (tokens.has("blocked")) clauses.push("t.is_blocked IS TRUE");
+    return clauses.join(" AND ");
   }
 
   private static getFilterByAssignee(filterBy: string, projectIdParam: number) {
@@ -290,6 +352,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       'completed_at': 't.completed_at',
       'created_at': "t.created_at",
       'updated_at': "t.updated_at",
+      'attachments_count': '(SELECT COUNT(*) FROM task_attachments WHERE task_id = t.id)',
     };
 
     // Apply field mapping if needed
@@ -351,25 +414,19 @@ export default class TasksControllerV2 extends TasksControllerBase {
       ? buildAssigneeScopeReadonlyExpression("t.id", assigneeScopeMemberParamIndex)
       : "FALSE";
 
-    // TVR-15: when assignee-scope applies, progress % must ignore non-visible subtasks
-    const progressSelect = assigneeScopeMemberParamIndex
+    // TVR-15: when assignee-scope applies, progress % must ignore non-visible subtasks.
+    // The scoped expression only references t.id, so it is evaluated in the base CTE;
+    // otherwise progress is derived from the joined status category in the outer query.
+    const scopedProgressSelect = assigneeScopeMemberParamIndex
       ? buildAssigneeScopedProgressExpression("t.id", assigneeScopeMemberParamIndex)
-      : `(CASE
-                WHEN EXISTS(SELECT 1
-                            FROM tasks_with_status_view
-                            WHERE tasks_with_status_view.task_id = t.id
-                              AND is_done IS TRUE) THEN 100
-                ELSE t.progress_value
-              END)`;
-    const completeRatioSelect = assigneeScopeMemberParamIndex
-      ? buildAssigneeScopedProgressExpression("t.id", assigneeScopeMemberParamIndex)
-      : `(CASE
-                WHEN EXISTS(SELECT 1
-                            FROM tasks_with_status_view
-                            WHERE tasks_with_status_view.task_id = t.id
-                              AND is_done IS TRUE) THEN 100
-                ELSE COALESCE(t.progress_value, 0)
-              END)`;
+      : null;
+    const baseProgressColumns = scopedProgressSelect
+      ? `, ${scopedProgressSelect} AS progress_value, ${scopedProgressSelect} AS complete_ratio`
+      : ", t.progress_value";
+    const outerProgressColumns = scopedProgressSelect
+      ? "t.progress_value, t.complete_ratio"
+      : `CASE WHEN t.archived IS FALSE AND stsc.is_done IS TRUE THEN 100 ELSE t.progress_value END AS progress_value,
+             CASE WHEN t.archived IS FALSE AND stsc.is_done IS TRUE THEN 100 ELSE COALESCE(t.progress_value, 0) END AS complete_ratio`;
 
     const projectsResult = TasksControllerV2.getFilterByProjectsWhereClosure(
       options.projects as string,
@@ -398,9 +455,24 @@ export default class TasksControllerV2 extends TasksControllerBase {
       paramOffset += phaseResult.params.length;
     }
 
+    const epicResult = TasksControllerV2.getFilterByEpicWhereClosure(
+      options.epics as string,
+      paramOffset
+    );
+    if (epicResult.params.length > 0) {
+      queryParams.push(...epicResult.params);
+      paramOffset += epicResult.params.length;
+    }
+
     let enhancedSearchQuery = searchQuery;
     let searchParamNum = 0;
-    
+    // Recursive descendant walks are hoisted into top-level CTEs that run once per
+    // request. Each CTE collects the ancestors of every matching task, so the main
+    // query only needs a membership test instead of a per-row recursive traversal.
+    const ancestorCtes: string[] = [];
+    const descendantProjectScope =
+      projectIdParam > 0 ? `AND td.project_id = $${projectIdParam}::UUID` : "";
+
     if (options.search) {
       const searchTerm = options.search.toString().trim();
       if (searchTerm) {
@@ -408,26 +480,27 @@ export default class TasksControllerV2 extends TasksControllerBase {
         queryParams.push(searchParam);
         searchParamNum = paramOffset++;
 
+        ancestorCtes.push(`search_ancestors AS (
+          SELECT td.parent_task_id AS id
+          FROM tasks td
+          WHERE td.archived IS FALSE
+            AND td.parent_task_id IS NOT NULL
+            ${descendantProjectScope}
+            AND (
+              td.name ILIKE $${searchParamNum}
+              OR CONCAT((SELECT key FROM projects WHERE id = td.project_id), '-', td.task_no) ILIKE $${searchParamNum}
+            )
+          UNION
+          SELECT p.parent_task_id
+          FROM tasks p
+          INNER JOIN search_ancestors sa ON p.id = sa.id
+          WHERE p.archived IS FALSE AND p.parent_task_id IS NOT NULL
+        )`);
+
         enhancedSearchQuery = `AND (
       t.name ILIKE $${searchParamNum}
       OR CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) ILIKE $${searchParamNum}
-      OR EXISTS (
-        WITH RECURSIVE task_descendants AS (
-          SELECT id, parent_task_id, name, task_no, project_id
-          FROM tasks
-          WHERE parent_task_id = t.id AND archived IS FALSE
-          
-          UNION ALL
-          
-          SELECT child.id, child.parent_task_id, child.name, child.task_no, child.project_id
-          FROM tasks child
-          INNER JOIN task_descendants td ON child.parent_task_id = td.id
-          WHERE child.archived IS FALSE
-        )
-        SELECT 1 FROM task_descendants td
-        WHERE td.name ILIKE $${searchParamNum}
-        OR CONCAT((SELECT key FROM projects WHERE id = td.project_id), '-', td.task_no) ILIKE $${searchParamNum}
-      )
+      OR t.id IN (SELECT id FROM search_ancestors)
     )`;
       }
     }
@@ -471,6 +544,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const archivedFilter =
       options.archived === "true" ? "archived IS TRUE" : "archived IS FALSE";
 
+    const quickFiltersClause = TasksControllerV2.getFilterByQuickFiltersWhereClosure(
+      typeof options.quick_filters === "string" ? options.quick_filters : undefined
+    );
+
     // Add project_id filter if projectId is provided
     const projectIdFilter = projectIdParam > 0 ? `t.project_id = $${projectIdParam}::UUID` : "";
 
@@ -494,7 +571,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         // sub-task even when its parent is not Low).
         // Without active filters, only show top-level tasks (parent_task_id IS NULL).
         const hasDirectFilters = !!(
-          options.priorities || options.labels || options.members || options.statuses || options.phases
+          options.priorities || options.labels || options.members || options.statuses || options.phases || quickFiltersClause
         );
         if (hasDirectFilters) {
           subTasksFilter = "(parent_task_id IS NULL OR parent_task_id IS NOT NULL)";
@@ -512,6 +589,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
       statusesResult.clause,
       priorityResult.clause,
       phaseResult.clause,
+      epicResult.clause,
+      quickFiltersClause,
       labelsResult.clause,
       membersResult.clause,
       assigneeScopeResult.clause,
@@ -551,7 +630,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     // Apply phase filter to subtasks if present (reuse parameters)
     if (options.phases && phaseResult.clause) {
-      const phaseIds = (options.phases as string).split(" ").filter(id => id.trim());
       let phaseParamStart = 2;
       if (projectId) phaseParamStart++;
       if (isSubTasks && options.parent_task) phaseParamStart++;
@@ -561,8 +639,14 @@ export default class TasksControllerV2 extends TasksControllerBase {
       phaseParamStart += assigneeScopeResult.params.length;
       phaseParamStart += projectsResult.params.length;
       phaseParamStart += priorityResult.params.length;
-      const { clause: inClause } = SqlHelper.buildInClause(phaseIds, phaseParamStart);
-      subtaskFilters.push(`(SELECT phase_id FROM task_phase WHERE task_id = subtask.id) IN (${inClause})`);
+      const subtaskPhaseFilter = TasksControllerV2.buildPhaseFilterClause(
+        options.phases as string,
+        "subtask",
+        phaseParamStart
+      );
+      if (subtaskPhaseFilter.clause) {
+        subtaskFilters.push(subtaskPhaseFilter.clause);
+      }
     }
 
     // Apply labels filter to subtasks if present (reuse parameters)
@@ -692,7 +776,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
       // Phase filter for descendants — phase lives in the task_phase join table,
       // so we use a correlated subquery against td.id
       if (options.phases) {
-        const phaseIds = (options.phases as string).split(" ").filter(id => id.trim());
         let phaseParamStart = 2;
         if (projectId) phaseParamStart++;
         if (isSubTasks && options.parent_task) phaseParamStart++;
@@ -703,60 +786,200 @@ export default class TasksControllerV2 extends TasksControllerBase {
         phaseParamStart += projectsResult.params.length;
         phaseParamStart += priorityResult.params.length;
 
-        const { clause: inClause } = SqlHelper.buildInClause(phaseIds, phaseParamStart);
-        descendantFilterConditions.push(`(SELECT phase_id FROM task_phase WHERE task_id = td.id) IN (${inClause})`);
+        const descendantPhaseFilter = TasksControllerV2.buildPhaseFilterClause(
+          options.phases as string,
+          "td",
+          phaseParamStart
+        );
+        if (descendantPhaseFilter.clause) {
+          descendantFilterConditions.push(descendantPhaseFilter.clause);
+        }
       }
 
       if (descendantFilterConditions.length > 0) {
         const descendantFilterClause = descendantFilterConditions.join(" OR ");
-        hasFilteredChildrenQuery = `(
-          EXISTS (
-            WITH RECURSIVE task_descendants AS (
-              -- Base case: direct children
-              SELECT id, parent_task_id, priority_id, status_id, name, task_no, project_id
-              FROM tasks
-              WHERE parent_task_id = t.id AND archived IS FALSE
-              
-              UNION ALL
-              
-              -- Recursive case: children of children (all levels)
-              SELECT child.id, child.parent_task_id, child.priority_id, child.status_id, child.name, child.task_no, child.project_id
-              FROM tasks child
-              INNER JOIN task_descendants td ON child.parent_task_id = td.id
-              WHERE child.archived IS FALSE
-            )
-            SELECT 1 FROM task_descendants td
-            WHERE ${descendantFilterClause}
-          )
-        )`;
+        ancestorCtes.push(`filtered_ancestors AS (
+          SELECT td.parent_task_id AS id
+          FROM tasks td
+          WHERE td.archived IS FALSE
+            AND td.parent_task_id IS NOT NULL
+            ${descendantProjectScope}
+            AND (${descendantFilterClause})
+          UNION
+          SELECT p.parent_task_id
+          FROM tasks p
+          INNER JOIN filtered_ancestors fa ON p.id = fa.id
+          WHERE p.archived IS FALSE AND p.parent_task_id IS NOT NULL
+        )`);
+        hasFilteredChildrenQuery = "EXISTS (SELECT 1 FROM filtered_ancestors fa WHERE fa.id = t.id)";
       }
     }
 
+    // The dynamic filter/sort fragments above use unqualified column names, so they
+    // are evaluated in a base CTE where `tasks t` is the only relation in scope.
+    // The outer query then joins the 1:1 lookups (project, parent, status, priority,
+    // phase, reporter) that were previously correlated scalar subqueries per row.
+    const passThroughColumns = [
+      options.customColumns ? "t.custom_column_values" : "",
+      options.filterBy === "member" ? "t.statuses" : "",
+    ]
+      .filter((c) => !!c)
+      .map((c) => `, ${c}`)
+      .join("");
+
+    const baseCte = `base AS (
+      SELECT t.id,
+             t.name,
+             t.description,
+             t.task_no,
+             t.project_id,
+             t.parent_task_id,
+             t.status_id,
+             t.priority_id,
+             t.reporter_id,
+             t.archived,
+             t.sort_order,
+             t.status_sort_order,
+             t.priority_sort_order,
+             t.phase_sort_order,
+             t.manual_progress,
+             t.weight,
+             t.total_minutes,
+             t.created_at,
+             t.updated_at,
+             t.completed_at,
+             t.start_date,
+             t.end_date,
+             t.billable,
+             t.schedule_id,
+             t.due_time,
+             t.epic_id,
+             t.story_points,
+             t.is_blocked,
+             t.issue_type,
+             ROW_NUMBER() OVER (ORDER BY ${sortFields}, t.sort_order, t.created_at) AS sort_rank,
+             ${assigneeScopeReadonlySelect} AS assignee_scope_readonly
+             ${baseProgressColumns} ${customColumnsQuery} ${statusesQuery}
+      FROM tasks t
+      WHERE ${filters} ${enhancedSearchQuery}
+    )`;
+
+    // Per-row correlated aggregates are replaced by one grouped pass each, scoped to
+    // the rows the base CTE actually returns. Each aggregate gets its own CTE —
+    // joining them together before aggregating would fan out and inflate SUM().
+    const aggregateCtes = [
+      `comments_agg AS (
+        SELECT task_id, COUNT(*) AS comments_count
+        FROM task_comments WHERE task_id IN (SELECT id FROM base) GROUP BY task_id
+      )`,
+      `latest_comment_agg AS (
+        SELECT DISTINCT ON (tc.task_id)
+               tc.task_id,
+               tcc.text_content AS latest_comment,
+               tc.created_at AS latest_comment_at,
+               COALESCE(u.name, '') AS latest_comment_author
+        FROM task_comments tc
+        INNER JOIN task_comment_contents tcc
+                ON tcc.comment_id = tc.id
+               AND tcc.text_content IS NOT NULL
+               AND BTRIM(tcc.text_content) <> ''
+        LEFT JOIN users u ON u.id = tc.user_id
+        WHERE tc.task_id IN (SELECT id FROM base)
+          AND COALESCE(tc.is_deleted, FALSE) IS FALSE
+        ORDER BY tc.task_id, tc.created_at DESC, tcc.index DESC
+      )`,
+      `attachments_agg AS (
+        SELECT ta.task_id,
+               COUNT(*) AS attachments_count,
+               COALESCE(JSON_AGG(
+                 JSON_BUILD_OBJECT(
+                   'id', ta.id,
+                   'name', ta.name,
+                   'size', ta.size,
+                   'url', CONCAT('${getStorageUrl()}/${getRootDir()}', '/', ta.team_id, '/', ta.project_id, '/', ta.id, '.', ta.type),
+                   'type', ta.type,
+                   'created_at', ta.created_at,
+                   'uploader_name', u.name
+                 ) ORDER BY ta.created_at ASC
+               ), '[]'::JSON) AS attachments
+        FROM task_attachments ta
+        LEFT JOIN users u ON u.id = ta.uploaded_by
+        WHERE ta.task_id IN (SELECT id FROM base)
+        GROUP BY ta.task_id
+      )`,
+      `worklog_agg AS (
+        SELECT task_id, SUM(time_spent) AS total_minutes_spent
+        FROM task_work_log WHERE task_id IN (SELECT id FROM base) GROUP BY task_id
+      )`,
+      `subscribers_agg AS (
+        SELECT DISTINCT task_id FROM task_subscribers WHERE task_id IN (SELECT id FROM base)
+      )`,
+      `dependencies_agg AS (
+        SELECT DISTINCT task_id FROM task_dependencies WHERE task_id IN (SELECT id FROM base)
+      )`,
+      `timers_agg AS (
+        SELECT task_id, MIN(start_time) AS start_time
+        FROM task_timers WHERE user_id = $1 AND task_id IN (SELECT id FROM base) GROUP BY task_id
+      )`,
+      `completed_children_agg AS (
+        SELECT c.parent_task_id, COUNT(*)::INT AS completed_sub_tasks
+        FROM tasks c
+        INNER JOIN task_statuses cs ON cs.id = c.status_id
+        INNER JOIN sys_task_status_categories cc ON cc.id = cs.category_id
+        WHERE c.parent_task_id IN (SELECT id FROM base)
+          AND c.archived IS FALSE AND cc.is_done IS TRUE
+        GROUP BY c.parent_task_id
+      )`,
+      // Replaces get_task_assignees(t.id). The per-row PL/pgSQL call re-scanned
+      // notification_settings and team_member_info_view once per task; here every
+      // lookup is joined a single time for the whole result set. The inner LATERAL
+      // defines the exact JSON shape so task_id stays out of the emitted objects.
+      `assignees_agg AS (
+        SELECT r.task_id, COALESCE(JSON_AGG(r.assignee), '[]'::JSON) AS assignees
+        FROM (
+          SELECT ta.task_id, ROW_TO_JSON(shape) AS assignee
+          FROM tasks_assignees ta
+          INNER JOIN team_members tm ON tm.id = ta.team_member_id
+          LEFT JOIN users u ON u.id = tm.user_id
+          LEFT JOIN notification_settings ns ON ns.team_id = tm.team_id AND ns.user_id = u.id
+          CROSS JOIN LATERAL (
+            SELECT ta.team_member_id,
+                   ta.project_member_id,
+                   COALESCE(u.name,
+                            (SELECT ei.name FROM email_invitations ei WHERE ei.team_member_id = tm.id),
+                            '') AS name,
+                   COALESCE(ns.email_notifications_enabled, FALSE) AS email_notifications_enabled,
+                   COALESCE(u.avatar_url, '') AS avatar_url,
+                   u.id AS user_id,
+                   COALESCE(u.email, '') AS email,
+                   COALESCE(u.socket_id, '') AS socket_id,
+                   tm.team_id
+          ) shape
+          WHERE ta.task_id IN (SELECT id FROM base)
+        ) r
+        GROUP BY r.task_id
+      )`,
+    ];
+
     const q = `
-      SELECT id,
-             name,
-             CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) AS task_key,
-             (SELECT name FROM projects WHERE id = t.project_id) AS project_name,
-             t.project_id AS project_id,
+      WITH RECURSIVE ${[...ancestorCtes, baseCte, ...aggregateCtes].join(",\n")}
+      SELECT t.id,
+             t.name,
+             CONCAT(pj.key, '-', t.task_no) AS task_key,
+             pj.name AS project_name,
+             t.project_id,
              t.parent_task_id,
              t.parent_task_id IS NOT NULL AS is_sub_task,
-             ${assigneeScopeReadonlySelect} AS assignee_scope_readonly,
-             (SELECT name FROM tasks WHERE id = t.parent_task_id) AS parent_task_name,
-             (SELECT CONCAT((SELECT key FROM projects WHERE id = p.project_id), '-', p.task_no)
-              FROM tasks p
-              WHERE p.id = t.parent_task_id) AS parent_task_key,
-             (SELECT archived FROM tasks WHERE id = t.parent_task_id) AS parent_task_archived,
-             (SELECT status_id FROM tasks WHERE id = t.parent_task_id) AS parent_task_status_id,
-             (SELECT LOWER(REPLACE(name, ' ', '_')) FROM task_statuses WHERE id = (SELECT status_id FROM tasks WHERE id = t.parent_task_id)) AS parent_task_status_name,
-             (SELECT priority_id FROM tasks WHERE id = t.parent_task_id) AS parent_task_priority_id,
-             (SELECT value
-              FROM task_priorities
-              WHERE id = (SELECT priority_id FROM tasks WHERE id = t.parent_task_id)) AS parent_task_priority_value,
-             (SELECT color_code
-              FROM task_priorities
-              WHERE id = (SELECT priority_id FROM tasks WHERE id = t.parent_task_id)) AS parent_task_priority_color,
-             (SELECT parent_task_id IS NOT NULL
-              FROM tasks WHERE id = t.parent_task_id) AS parent_is_subtask,
+             t.assignee_scope_readonly,
+             pt.name AS parent_task_name,
+             CASE WHEN pt.id IS NULL THEN NULL ELSE CONCAT(pj.key, '-', pt.task_no) END AS parent_task_key,
+             pt.archived AS parent_task_archived,
+             pt.status_id AS parent_task_status_id,
+             LOWER(REPLACE(pts.name, ' ', '_')) AS parent_task_status_name,
+             pt.priority_id AS parent_task_priority_id,
+             ptp.value AS parent_task_priority_value,
+             ptp.color_code AS parent_task_priority_color,
+             CASE WHEN pt.id IS NULL THEN NULL ELSE pt.parent_task_id IS NOT NULL END AS parent_is_subtask,
              (SELECT COUNT(*)::INT
               FROM tasks subtask
               WHERE subtask.parent_task_id = t.id
@@ -770,80 +993,86 @@ export default class TasksControllerV2 extends TasksControllerBase {
              t.status_sort_order,
              t.priority_sort_order,
              t.phase_sort_order,
-             ${progressSelect} AS progress_value,
+             ${outerProgressColumns},
              t.manual_progress,
              t.weight,
-             (SELECT use_manual_progress FROM projects WHERE id = t.project_id) AS project_use_manual_progress,
-             (SELECT use_weighted_progress FROM projects WHERE id = t.project_id) AS project_use_weighted_progress,
-             (SELECT use_time_progress FROM projects WHERE id = t.project_id) AS project_use_time_progress,
-             ${completeRatioSelect} AS complete_ratio,
+             pj.use_manual_progress AS project_use_manual_progress,
+             pj.use_weighted_progress AS project_use_weighted_progress,
+             pj.use_time_progress AS project_use_time_progress,
 
-             (SELECT phase_id FROM task_phase WHERE task_id = t.id) AS phase_id,
-             (SELECT name
-              FROM project_phases
-              WHERE id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_name,
-              (SELECT color_code
-                FROM project_phases
-                WHERE id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_color_code,
+             tph.phase_id,
+             pph.name AS phase_name,
+             pph.color_code AS phase_color_code,
+             t.epic_id,
+             t.story_points,
+             t.is_blocked,
+             t.issue_type,
 
-             (EXISTS(SELECT 1 FROM task_subscribers WHERE task_id = t.id)) AS has_subscribers,
-             (EXISTS(SELECT 1 FROM task_dependencies td WHERE td.task_id = t.id)) AS has_dependencies,
-             (SELECT start_time
-              FROM task_timers
-              WHERE task_id = t.id
-                AND user_id = $1) AS timer_start_time,
+             sub.task_id IS NOT NULL AS has_subscribers,
+             dep.task_id IS NOT NULL AS has_dependencies,
+             tmr.start_time AS timer_start_time,
 
-             (SELECT color_code
-              FROM sys_task_status_categories
-              WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color,
+             COALESCE(ts.color_code, stsc.color_code)                       AS status_color,
+             COALESCE(ts.color_code, stsc.color_code_dark, stsc.color_code) AS status_color_dark,
+             CASE WHEN stsc.id IS NULL THEN '{}'::JSON
+                  ELSE JSON_BUILD_OBJECT('is_done', stsc.is_done, 'is_doing', stsc.is_doing, 'is_todo', stsc.is_todo)
+             END AS status_category,
 
-             (SELECT color_code_dark
-              FROM sys_task_status_categories
-              WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color_dark,
-
-             (SELECT COALESCE(ROW_TO_JSON(r), '{}'::JSON)
-              FROM (SELECT is_done, is_doing, is_todo
-                    FROM sys_task_status_categories
-                    WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) r) AS status_category,
-
-             (SELECT COUNT(*) FROM task_comments WHERE task_id = t.id) AS comments_count,
-             (SELECT COUNT(*) FROM task_attachments WHERE task_id = t.id) AS attachments_count,
-             (CASE
-                WHEN EXISTS(SELECT 1
-                            FROM tasks_with_status_view
-                            WHERE tasks_with_status_view.task_id = t.id
-                              AND is_done IS TRUE) THEN 1
-                ELSE 0 END) AS parent_task_completed,
-             (SELECT get_task_assignees(t.id)) AS assignees,
-             (SELECT COUNT(*)
-              FROM tasks_with_status_view tt
-              WHERE tt.parent_task_id = t.id
-                AND tt.is_done IS TRUE)::INT
-               AS completed_sub_tasks,
-
-             (SELECT COALESCE(JSON_AGG(r), '[]'::JSON)
-              FROM (SELECT task_labels.label_id AS id,
-                           (SELECT name FROM team_labels WHERE id = task_labels.label_id),
-                           (SELECT color_code FROM team_labels WHERE id = task_labels.label_id)
-                    FROM task_labels
-                    WHERE task_id = t.id) r) AS labels,
-             (SELECT is_completed(status_id, project_id)) AS is_complete,
-             (SELECT name FROM users WHERE id = t.reporter_id) AS reporter,
-             (SELECT id FROM task_priorities WHERE id = t.priority_id) AS priority,
-             (SELECT value FROM task_priorities WHERE id = t.priority_id) AS priority_value,
-             total_minutes,
-             (SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id) AS total_minutes_spent,
-             created_at,
-             updated_at,
-             completed_at,
-             start_date,
-             billable,
-             schedule_id,
-             END_DATE,
-             due_time ${customColumnsQuery} ${statusesQuery}
-      FROM tasks t
-      WHERE ${filters} ${enhancedSearchQuery}
-      ORDER BY ${sortFields}
+             COALESCE(cma.comments_count, 0) AS comments_count,
+             COALESCE(ata.attachments_count, 0) AS attachments_count,
+             COALESCE(ata.attachments, '[]'::JSON) AS attachments,
+             lc.latest_comment,
+             lc.latest_comment_at,
+             lc.latest_comment_author,
+             CASE WHEN t.archived IS FALSE AND stsc.is_done IS TRUE THEN 1 ELSE 0 END AS parent_task_completed,
+             COALESCE(asg.assignees, '[]'::JSON) AS assignees,
+             COALESCE(cca.completed_sub_tasks, 0) AS completed_sub_tasks,
+             lbl.labels,
+             COALESCE(stsc.is_done IS TRUE AND ts.project_id = t.project_id, FALSE) AS is_complete,
+             ru.name AS reporter,
+             tp.id AS priority,
+             tp.value AS priority_value,
+             tp.color_code AS priority_color,
+             t.total_minutes,
+             wla.total_minutes_spent,
+             t.created_at,
+             t.updated_at,
+             t.completed_at,
+             t.start_date,
+             t.billable,
+             t.schedule_id,
+             t.end_date,
+             t.due_time ${passThroughColumns}
+      FROM base t
+      LEFT JOIN projects pj ON pj.id = t.project_id
+      LEFT JOIN tasks pt ON pt.id = t.parent_task_id
+      LEFT JOIN task_statuses pts ON pts.id = pt.status_id
+      LEFT JOIN task_priorities ptp ON ptp.id = pt.priority_id
+      LEFT JOIN task_statuses ts ON ts.id = t.status_id
+      LEFT JOIN sys_task_status_categories stsc ON stsc.id = ts.category_id
+      LEFT JOIN task_priorities tp ON tp.id = t.priority_id
+      LEFT JOIN users ru ON ru.id = t.reporter_id
+      LEFT JOIN comments_agg cma ON cma.task_id = t.id
+      LEFT JOIN attachments_agg ata ON ata.task_id = t.id
+      LEFT JOIN latest_comment_agg lc ON lc.task_id = t.id
+      LEFT JOIN worklog_agg wla ON wla.task_id = t.id
+      LEFT JOIN subscribers_agg sub ON sub.task_id = t.id
+      LEFT JOIN dependencies_agg dep ON dep.task_id = t.id
+      LEFT JOIN timers_agg tmr ON tmr.task_id = t.id
+      LEFT JOIN completed_children_agg cca ON cca.parent_task_id = t.id
+      LEFT JOIN LATERAL (
+        SELECT phase_id FROM task_phase WHERE task_id = t.id LIMIT 1
+      ) tph ON TRUE
+      LEFT JOIN project_phases pph ON pph.id = tph.phase_id
+      LEFT JOIN assignees_agg asg ON asg.task_id = t.id
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(JSON_AGG(rec), '[]'::JSON) AS labels
+        FROM (SELECT tl.label_id AS id, tml.name, tml.color_code
+              FROM task_labels tl
+              LEFT JOIN team_labels tml ON tml.id = tl.label_id
+              WHERE tl.task_id = t.id) rec
+      ) lbl ON TRUE
+      ORDER BY t.sort_rank
     `;
 
     return { query: q, params: queryParams, isSubTasks };
@@ -864,7 +1093,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
                    (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
                  ) AS color_code,
                  COALESCE(task_statuses.color_code,
-                   (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id)
+                   (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id),
+                   (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
                  ) AS color_code_dark,
                  category_id
                  category_id
@@ -904,6 +1134,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
       default:
         break;
     }
+
+    if (!q) return [];
 
     const result = await db.query(q, params);
     return result.rows;
@@ -1437,9 +1669,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   public static async getTaskStatusColor(status_id: string) {
     try {
-      const q = `SELECT color_code, color_code_dark
-      FROM sys_task_status_categories
-      WHERE id = (SELECT category_id FROM task_statuses WHERE id = $1)`;
+      const q = `SELECT COALESCE(s.color_code, c.color_code)                       AS color_code,
+                        COALESCE(s.color_code, c.color_code_dark, c.color_code) AS color_code_dark
+                 FROM task_statuses s
+                        INNER JOIN sys_task_status_categories c ON c.id = s.category_id
+                 WHERE s.id = $1`;
       const result = await db.query(q, [status_id]);
       const [data] = result.rows;
       return data;
@@ -1860,6 +2094,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
         priority: priorityMap[task.priority_value?.toString()] || "medium",
         // Use actual phase name from database
         phase: task.phase_name || "Development",
+        epic_id: task.epic_id || null,
+        story_points: task.story_points ?? null,
+        is_blocked: task.is_blocked === true,
+        issue_type: task.issue_type || "task",
         progress: calculatedProgress,
         complete_ratio: task.complete_ratio, // Also include original field
         progress_value: task.progress_value, // Also include original field
@@ -1915,6 +2153,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
         comments_count: task.comments_count || 0,
         has_subscribers: !!task.has_subscribers,
         attachments_count: task.attachments_count || 0,
+        attachments: (task.attachments || []).map((attachment: any) => ({
+          ...attachment,
+          size: humanFileSize(Number(attachment.size || 0)),
+        })),
+        latest_comment: task.latest_comment || null,
+        latest_comment_at: task.latest_comment_at || null,
+        latest_comment_author: task.latest_comment_author || null,
         has_dependencies: !!task.has_dependencies,
         schedule_id: task.schedule_id || null,
         reporter: task.reporter || null,
@@ -2059,7 +2304,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
       req.query.labels ||
       req.query.members ||
       req.query.statuses ||
-      req.query.phases
+      req.query.phases ||
+      req.query.quick_filters
     );
     let filteredTransformedTasks = transformedTasks;
     if (hasActiveFilters && !isSubTasks) {
@@ -2082,6 +2328,22 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
       filteredTransformedTasks = transformedTasks.filter(
         (task: any) => !task.parent_task_id || !hasAncestorInSet(task.id)
+      );
+    }
+
+    if (groupBy === GroupBy.ASSIGNEE) {
+      return res.status(200).send(
+        new ServerResponse(true, {
+          groups: TasksControllerV2.buildAssigneeGroups(
+            filteredTransformedTasks,
+            tasks,
+            req.query.include_empty === "true"
+          ),
+          allTasks: filteredTransformedTasks,
+          grouping: groupBy,
+          totalTasks: filteredTransformedTasks.length,
+          assignee_scope_active: assigneeScope.applyFilter,
+        })
       );
     }
 
@@ -2251,6 +2513,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const selectedPhaseIds = req.query.phases
       ? (req.query.phases as string).split(" ").filter(id => id.trim())
       : [];
+    const includeUnmappedGroup =
+      selectedPhaseIds.length === 0 ||
+      selectedPhaseIds.some(
+        id => id === UNMAPPED || id.toLowerCase() === "unmapped"
+      );
 
     // Convert to array format expected by frontend, maintaining database order
     const responseGroups = groups
@@ -2276,9 +2543,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
         }
       );
 
-    // Add unmapped group to the end if it exists and no phase filter is active
-    if (groupedResponse[UNMAPPED.toLowerCase()] && selectedPhaseIds.length === 0) {
-      responseGroups.push(groupedResponse[UNMAPPED.toLowerCase()]);
+    // Add unmapped group when not filtered out (or when Unmapped is explicitly selected)
+    if (groupedResponse[UNMAPPED.toLowerCase()] && includeUnmappedGroup) {
+      if (groupBy === GroupBy.PHASE) {
+        responseGroups.push(groupedResponse[UNMAPPED.toLowerCase()]);
+      }
     }
 
     const endTime = performance.now();
@@ -2302,6 +2571,79 @@ export default class TasksControllerV2 extends TasksControllerBase {
         assignee_scope_active: assigneeScope.applyFilter,
       })
     );
+  }
+
+  /**
+   * Groups tasks by assignee. A task with several assignees appears in each of
+   * their groups; tasks without assignees go to the Unassigned group (last).
+   * Groups are keyed by team_member_id so members sharing a name stay separate.
+   */
+  private static buildAssigneeGroups(
+    transformedTasks: any[],
+    rawTasks: any[],
+    includeEmpty: boolean
+  ): any[] {
+    const rawTaskById = new Map<string, any>(rawTasks.map(task => [task.id, task]));
+    const groupsById = new Map<string, any>();
+    const unassignedTasks: any[] = [];
+
+    const createGroup = (id: string, title: string, avatarUrl: string | null, color: string) => ({
+      id,
+      title,
+      groupType: GroupBy.ASSIGNEE,
+      groupValue: id,
+      collapsed: false,
+      tasks: [] as any[],
+      taskIds: [] as string[],
+      color,
+      color_code_dark: color,
+      avatar_url: avatarUrl,
+      category_id: null,
+      start_date: null,
+      end_date: null,
+    });
+
+    for (const task of transformedTasks) {
+      const assignees: any[] = rawTaskById.get(task.id)?.assignees || [];
+      if (assignees.length === 0) {
+        unassignedTasks.push(task);
+        continue;
+      }
+      for (const assignee of assignees) {
+        const memberId = assignee.team_member_id;
+        if (!memberId) continue;
+        if (!groupsById.has(memberId)) {
+          groupsById.set(
+            memberId,
+            createGroup(memberId, assignee.name || "", assignee.avatar_url || null, getColor(assignee.name || memberId))
+          );
+        }
+        const group = groupsById.get(memberId);
+        group.tasks.push(task);
+        group.taskIds.push(task.id);
+      }
+    }
+
+    const groups = [...groupsById.values()].sort((a, b) => a.title.localeCompare(b.title));
+
+    if (unassignedTasks.length > 0 || includeEmpty) {
+      const unassignedGroup = createGroup(UNASSIGNED_GROUP_ID, "Unassigned", null, "#d9d9d9");
+      unassignedGroup.tasks = unassignedTasks;
+      unassignedGroup.taskIds = unassignedTasks.map(task => task.id);
+      groups.push(unassignedGroup);
+    }
+
+    for (const group of groups) {
+      group.tasks.sort((a: any, b: any) => a.order - b.order);
+      const total = group.tasks.length;
+      const countByCategory = (category: "is_todo" | "is_doing" | "is_done") =>
+        group.tasks.filter((task: any) => rawTaskById.get(task.id)?.status_category?.[category]).length;
+      group.todo_progress = total > 0 ? +((countByCategory("is_todo") / total) * 100).toFixed(0) : 0;
+      group.doing_progress = total > 0 ? +((countByCategory("is_doing") / total) * 100).toFixed(0) : 0;
+      group.done_progress = total > 0 ? +((countByCategory("is_done") / total) * 100).toFixed(0) : 0;
+    }
+
+    return groups;
   }
 
   private static getTaskSortOrder(task: any, groupBy: string): number {

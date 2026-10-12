@@ -8,11 +8,15 @@ import { ITaskStatusViewModel } from '@/types/tasks/taskStatusGetResponse.types'
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { projectsApiService } from '@/api/projects/projects.api.service';
+import { ICachedProjectAccess } from '@/types/project/project-access.types';
+import { extractProjectAccess } from '@/utils/project-access.utils';
 
 interface TaskListState {
   projectId: string | null;
   project: IProjectViewModel | null;
   projectLoading: boolean;
+  /** Phase 3 — permissions keyed by project id so A→B never reuses A's PM controls. */
+  permissionsByProjectId: Record<string, ICachedProjectAccess>;
   columns: ITaskListColumn[];
   members: ITeamMemberViewModel[];
   activeMembers: [];
@@ -31,10 +35,22 @@ interface TaskListState {
   refreshTimestamp: string | null;
 }
 
+const cacheAccessFromProject = (
+  state: TaskListState,
+  project: IProjectViewModel | null | undefined
+) => {
+  if (!project?.id) return;
+  const access = extractProjectAccess(project);
+  if (access) {
+    state.permissionsByProjectId[project.id] = access;
+  }
+};
+
 const initialState: TaskListState = {
   projectId: null,
   project: null,
   projectLoading: false,
+  permissionsByProjectId: {},
   activeMembers: [],
   columns: [],
   members: [],
@@ -85,6 +101,7 @@ const projectSlice = createSlice({
     },
     setProject: (state, action: PayloadAction<IProjectViewModel>) => {
       state.project = action.payload;
+      cacheAccessFromProject(state, action.payload);
     },
     mergeProject: (state, action: PayloadAction<Partial<IProjectViewModel>>) => {
       if (state.project) {
@@ -92,6 +109,19 @@ const projectSlice = createSlice({
       } else {
         state.project = action.payload as IProjectViewModel;
       }
+      cacheAccessFromProject(state, state.project);
+    },
+    cacheProjectAccess: (
+      state,
+      action: PayloadAction<{ projectId: string; access: ICachedProjectAccess }>
+    ) => {
+      state.permissionsByProjectId[action.payload.projectId] = action.payload.access;
+    },
+    clearProjectAccessCache: state => {
+      state.permissionsByProjectId = {};
+    },
+    clearProjectAccessForId: (state, action: PayloadAction<string>) => {
+      delete state.permissionsByProjectId[action.payload];
     },
     setColumns: (state, action: PayloadAction<ITaskListColumn[]>) => {
       state.columns = action.payload;
@@ -208,6 +238,7 @@ const projectSlice = createSlice({
       .addCase(getProject.fulfilled, (state, action) => {
         state.projectLoading = false;
         state.project = action.payload;
+        cacheAccessFromProject(state, action.payload);
       })
       .addCase(getProject.rejected, (state, action) => {
         state.projectLoading = false;
@@ -221,6 +252,9 @@ export const {
   setProjectId,
   setProject,
   mergeProject,
+  cacheProjectAccess,
+  clearProjectAccessCache,
+  clearProjectAccessForId,
   setColumns,
   setMembers,
   setLabels,

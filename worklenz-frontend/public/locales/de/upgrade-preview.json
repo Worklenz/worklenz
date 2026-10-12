@@ -44,7 +44,7 @@
         ]
       },
       "budgets": {
-        "title": "Budgets",
+        "title": "Budgetplanung",
         "description": "Legen Sie Budgets pro Projekt fest und verfolgen Sie die Ausgaben im Vergleich dazu in Echtzeit.",
         "features": [
           "Projektbudgetplanung",
@@ -187,16 +187,6 @@
           "Zahlungsstatus auf einen Blick"
         ]
       },
-      "ticketing": {
-        "title": "Ticketverkauf",
-        "description": "Ermöglichen Sie Kunden, Support-Tickets direkt über ihr Portal zu erstellen und zu verfolgen.",
-        "features": [
-          "Vom Kunden eingereichte Support-Tickets",
-          "Verfolgung und Aktualisierung des Ticketstatus",
-          "Interne Notizen und Aufgaben",
-          "Prioritäts- und SLA-Tagging"
-        ]
-      },
       "settings": {
         "title": "Portal-Einstellungen",
         "description": "Passen Sie Ihr Kundenportal mit Ihrem eigenen Branding an.",
@@ -273,23 +263,6 @@
       "dateColumn": "Datum",
       "rowsPerPage": "Zeilen pro Seite: {{count}}"
     }
-  },
-  "ticketingMockup": {
-    "openTickets": "Offene Tickets",
-    "inProgress": "In Bearbeitung",
-    "resolvedToday": "Heute gelöst",
-    "avgResponseTime": "Durchschn. Reaktionszeit",
-    "ticketsCard": "Tickets",
-    "ticketNoColumn": "Ticket-Nr.",
-    "clientColumn": "Kunde",
-    "subjectColumn": "Betreff",
-    "priorityColumn": "Priorität",
-    "statusColumn": "Alle Status",
-    "priorityHigh": "Hoch",
-    "priorityMedium": "Mittel",
-    "priorityLow": "Niedrig",
-    "statusOpen": "Öffnen",
-    "statusResolved": "Gelöst"
   },
   "plannerMockup": {
     "chrome": {

@@ -119,6 +119,7 @@ const ProjectList: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
+  const canCreateFromTemplates = useAuthService().canCreateProjectsFromTemplates();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { token } = theme.useToken();
 
@@ -489,8 +490,12 @@ const ProjectList: React.FC = () => {
   ]);
 
   const navigateToProject = useCallback(
-    (projectId: string | undefined, defaultView: string | undefined) => {
-      if (projectId) navigate(buildProjectRoute(projectId, defaultView));
+    (
+      projectId: string | undefined,
+      defaultView: string | undefined,
+      projectType?: IProjectViewModel['project_type']
+    ) => {
+      if (projectId) navigate(buildProjectRoute(projectId, defaultView, projectType));
     },
     [navigate]
   );
@@ -506,7 +511,8 @@ const ProjectList: React.FC = () => {
 
   const handleRow = useCallback(
     (record: IProjectViewModel) => ({
-      onClick: () => navigateToProject(record.id, record.team_member_default_view),
+      onClick: () =>
+        navigateToProject(record.id, record.team_member_default_view, record.project_type),
       onMouseEnter: prefetchProjectView,
     }),
     [navigateToProject, prefetchProjectView]
@@ -685,6 +691,7 @@ const ProjectList: React.FC = () => {
             searchValue={searchValue}
             isRefreshing={isRefreshing}
             isOwnerOrAdmin={isOwnerOrAdmin}
+            canCreateFromTemplates={canCreateFromTemplates}
             activeFilterCount={activeFilterCount}
             onRefresh={handleRefresh}
             onFilterSegmentChange={handleFilterSegmentChange}

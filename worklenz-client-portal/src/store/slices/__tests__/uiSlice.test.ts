@@ -3,6 +3,7 @@ import uiReducer, {
   toggleSidebar,
   setSidebarCollapsed,
   setTheme,
+  setOrgBranding,
   setLanguage,
   setUnreadNotifications,
   toggleNotificationPanel,
@@ -22,6 +23,8 @@ describe('uiSlice', () => {
       unreadCount: 0,
       showNotificationPanel: false,
     },
+    orgPrimaryColor: null,
+    orgPortalTitle: null,
   };
 
   it('should return initial state by default', () => {
@@ -68,5 +71,14 @@ describe('uiSlice', () => {
 
     const panelExplicitClosed = uiReducer(panelOpen, setNotificationPanel(false));
     expect(panelExplicitClosed.notifications.showNotificationPanel).toBe(false);
+  });
+
+  it('should set organization branding', () => {
+    const state = uiReducer(
+      baseUIState,
+      setOrgBranding({ primaryColor: '#1890ff', portalTitle: 'Acme Portal' })
+    );
+    expect(state.orgPrimaryColor).toBe('#1890ff');
+    expect(state.orgPortalTitle).toBe('Acme Portal');
   });
 });

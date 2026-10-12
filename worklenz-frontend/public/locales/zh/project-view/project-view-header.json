@@ -1,7 +1,10 @@
 {
   "importTasks": "导入任务",
   "importTask": "导入任务",
+  "importTasksFromCsv": "从CSV导入任务",
   "createTask": "创建任务",
+  "createIssue": "创建问题",
+  "createIssueTooltip": "创建一个新问题",
   "settings": "设置",
   "subscribe": "订阅",
   "unsubscribe": "取消订阅",
@@ -23,6 +26,7 @@
   "inviteTooltip": "邀请团队成员加入此项目",
   "createTaskTooltip": "创建新任务",
   "importTaskTooltip": "从模板导入任务",
+  "importTasksFromCsvTooltip": "从CSV文件导入任务",
   "navigateBackTooltip": "返回项目列表",
   "projectStatusTooltip": "项目状态",
   "projectDatesInfo": "项目时间线信息",

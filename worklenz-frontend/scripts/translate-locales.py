@@ -27,6 +27,8 @@ LANG_CONFIG = {
     "es": {"code": "es", "name": "Spanish"},
     "pt": {"code": "pt", "name": "Portuguese"},
     "zh": {"code": "zh-CN", "name": "Chinese (Simplified)"},
+    "pl": {"code": "pl", "name": "Polish"},
+    "fr": {"code": "fr", "name": "French"},
 }
 
 GLOSSARY = {
@@ -36,6 +38,8 @@ GLOSSARY = {
         "es": "Recurrente",
         "pt": "Recorrente",
         "zh": "重复",
+        "pl": "Cykliczne",
+        "fr": "Récurrent",
     },
     "Subtasks": {
         "alb": "Nëndetyrat",
@@ -43,6 +47,8 @@ GLOSSARY = {
         "es": "Subtareas",
         "pt": "Subtarefas",
         "zh": "子任务",
+        "pl": "Podzadania",
+        "fr": "Sous-tâches",
     },
     "Subtask": {
         "alb": "Nëndetyrë",
@@ -50,6 +56,8 @@ GLOSSARY = {
         "es": "Subtarea",
         "pt": "Subtarefa",
         "zh": "子任务",
+        "pl": "Podzadanie",
+        "fr": "Sous-tâche",
     },
     "Rollup": {
         "alb": "Përmbledhje",
@@ -57,6 +65,8 @@ GLOSSARY = {
         "es": "Acumulado",
         "pt": "Acumulado",
         "zh": "汇总",
+        "pl": "Zestawienie",
+        "fr": "Cumul",
     },
     "Client Portal": {
         "alb": "Portali i Klientit",
@@ -64,6 +74,8 @@ GLOSSARY = {
         "es": "Portal de Clientes",
         "pt": "Portal do Cliente",
         "zh": "客户门户",
+        "pl": "Portal klienta",
+        "fr": "Portail client",
     },
     "Order No": {
         "alb": "Nr. i Porosisë",
@@ -71,6 +83,8 @@ GLOSSARY = {
         "es": "N.º de pedido",
         "pt": "Nº do Pedido",
         "zh": "订单号",
+        "pl": "Nr zamówienia",
+        "fr": "N° de commande",
     },
     "Pro": {
         "alb": "Pro",
@@ -78,6 +92,8 @@ GLOSSARY = {
         "es": "Pro",
         "pt": "Pro",
         "zh": "专业版",
+        "pl": "Pro",
+        "fr": "Pro",
     },
     "Worklenz": {
         "alb": "Worklenz",
@@ -85,6 +101,8 @@ GLOSSARY = {
         "es": "Worklenz",
         "pt": "Worklenz",
         "zh": "Worklenz",
+        "pl": "Worklenz",
+        "fr": "Worklenz",
     },
     "Phase Color": {
         "alb": "Ngjyra e Fazës",
@@ -92,10 +110,39 @@ GLOSSARY = {
         "es": "Color de la Fase",
         "pt": "Cor da Fase",
         "zh": "阶段颜色",
+        "pl": "Kolor fazy",
+        "fr": "Couleur de la phase",
     },
 }
 
-KEEP_AS_IS = {"*", "KB", "MB", "GB", "TB", "/month", "/year", "% Used", "Total $", "UTIL"}
+KEEP_AS_IS = {
+    "*", "KB", "MB", "GB", "TB", "/month", "/year", "/page", "% Used", "Total $", "UTIL",
+    "Slack", "Microsoft Teams", "Teams", "GitHub", "LinkedIn", "Google", "Apple", "Excel",
+    "YouTube", "Discord", "Facebook", "Google Drive", "Google Calendar", "Twitter", "Worklenz",
+    "URL", "ID", "Pro", "AppSumo Special", "Deutsch", "Español", "Português", "Shqip", "简体中文", "English"
+}
+UNTRANSLATED_ALLOWLIST = {
+    "—", "...", "OK", "Ok", "ETC", "N/A", "UTIL", "% Used", "Total $",
+    "KB", "MB", "GB", "TB", "URL", "ID", "Pro", "AppSumo Special",
+    "Slack", "Microsoft Teams", "Teams", "GitHub", "LinkedIn", "Google",
+    "Apple", "Excel", "YouTube", "Discord", "Facebook", "Google Drive",
+    "Google Calendar", "Twitter", "Worklenz",
+    "Deutsch", "Español", "Português", "Shqip", "简体中文", "English",
+    "Status", "Total", "Normal", "Email", "No", "Name", "Phase", "Actions",
+    "Client", "Import", "Export", "Filter", "Marketing", "Plan", "Menu",
+    "Logo", "Date", "Currency", "Role", "Offline", "Online", "Overview",
+    "Startup", "Startups", "Reports", "Chats", "Color", "Designer", "Bytes",
+    "Roadmap", "Version", "Labels", "Mobile App", "Notifications",
+    "Configuration", "System & Integrations", "Subtotal", "Estimation",
+    "Optimal", "Text", "Links", "Manager", "Tickets", "Details", "Position",
+    "Admin", "Cancel", "Category", "Company", "Draft", "Error", "General",
+    "Info", "Parent", "Switch", "URGENT", "Weekend", "min", "Formula",
+    "Single Sign-On (SSO)", "Option {n}", "Frontend, Backend, Full-stack",
+    "Team", "Timer", "Service", "Message", "Messages", "Question", "Visible",
+    "Dates", "Documentation", "Expression", "Construction", "Freelancer",
+    "Reporter", "Upgrade", "Downgrade", "Optional", "(Optional)", "in",
+    "clients", "Conversations", "phases", "Services", "page", "question",
+}
 
 def is_object(val):
     return isinstance(val, dict)
@@ -219,7 +266,7 @@ def get_added_keys_per_file(lang):
         p = ROOT_DIR / fpath[fpath.index(f"public/locales/{lang}"):]
         
         if p.is_dir():
-            for sub in p.glob("*.json"):
+            for sub in p.rglob("*.json"):
                 rel = str(sub.relative_to(lang_dir))
                 file_map[rel] = True # All keys in untracked file
         elif st == "??" and p.suffix == ".json":
@@ -257,8 +304,47 @@ def get_added_keys_per_file(lang):
                 
     return file_map
 
+def get_untranslated_keys_per_file(lang, namespace_filter=None):
+    """Find existing locale strings that are still identical to the English source."""
+    file_map = {}
+    source_dir = LOCALES_DIR / SOURCE_LANG
+    lang_dir = LOCALES_DIR / lang
+
+    for source_file in source_dir.rglob("*.json"):
+        rel = str(source_file.relative_to(source_dir))
+        if namespace_filter and rel != namespace_filter:
+            continue
+        locale_file = lang_dir / rel
+        if not locale_file.exists():
+            continue
+        try:
+            with open(source_file, "r", encoding="utf-8") as sf, open(locale_file, "r", encoding="utf-8") as lf:
+                source_data = json.load(sf)
+                locale_data = json.load(lf)
+        except Exception:
+            continue
+
+        matches = set()
+        def scan(source_node, locale_node, prefix=""):
+            if is_object(source_node) and is_object(locale_node):
+                for key, source_value in source_node.items():
+                    if key in locale_node:
+                        path = f"{prefix}.{key}" if prefix else key
+                        scan(source_value, locale_node[key], path)
+            elif isinstance(source_node, str) and isinstance(locale_node, str):
+                if (source_node == locale_node and source_node.strip() and len(source_node.strip()) > 1
+                    and source_node not in UNTRANSLATED_ALLOWLIST):
+                    matches.add(prefix)
+        scan(source_data, locale_data)
+        if matches:
+            file_map[rel] = matches
+    return file_map
+
 def main():
     dry_run = "--dry-run" in sys.argv
+    translate_untranslated = "--untranslated" in sys.argv
+    namespace_arg = next((arg for arg in sys.argv if arg.startswith("--namespace=")), None)
+    namespace_filter = namespace_arg.split("=", 1)[1] if namespace_arg else None
     print("=== Translating Untranslated Locale Keys ===", flush=True)
     if dry_run:
         print("(DRY RUN - Preview only)\n", flush=True)
@@ -281,7 +367,10 @@ def main():
         
         existing_dict = build_existing_dictionary(lang)
         lang_cache = cache.setdefault(lang, {})
-        added_files_map = get_added_keys_per_file(lang)
+        added_files_map = (
+            get_untranslated_keys_per_file(lang, namespace_filter)
+            if translate_untranslated else get_added_keys_per_file(lang)
+        )
         
         # 1. Collect all unique strings needing translation
         needed_strings = set()
@@ -319,12 +408,23 @@ def main():
             
         print(f"  Total untranslated strings: {len(needed_strings)} ({len(to_fetch)} new API calls needed)", flush=True)
         
-        # 3. Batch fetch in chunks of 15
-        BATCH_SIZE = 15
+        # 3. Batch fetch in chunks of 35
+        BATCH_SIZE = 35
         for i in range(0, len(to_fetch), BATCH_SIZE):
             chunk = to_fetch[i : i + BATCH_SIZE]
             batch_res = translate_batch_api(chunk, lang_code)
-            lang_cache.update(batch_res)
+            for k, v in batch_res.items():
+                if v != k:
+                    lang_cache[k] = v
+            done_count = min(i + BATCH_SIZE, len(to_fetch))
+            if done_count % 140 == 0 or done_count == len(to_fetch):
+                print(f"    [{done_count}/{len(to_fetch)}] Translated strings cached...", flush=True)
+                if not dry_run:
+                    try:
+                        with open(cache_file, "w", encoding="utf-8") as f:
+                            json.dump(cache, f, indent=2, ensure_ascii=False)
+                    except Exception:
+                        pass
             time.sleep(0.05)
             
         # 4. Apply translations to target files

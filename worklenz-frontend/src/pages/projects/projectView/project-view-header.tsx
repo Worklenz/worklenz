@@ -38,6 +38,8 @@ import {
   getProject,
 } from '@features/project/project.slice';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { openCreateIssueModal } from '@/features/projects/singleProject/create-issue/create-issue-modal.slice';
 import {
   addTask,
   fetchTaskGroups,
@@ -57,20 +59,26 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { getGroupIdByGroupedColumn } from '@/services/task-list/taskList.service';
 import logger from '@/utils/errorLogger';
 import ImportTaskTemplate from '@/components/task-templates/import-task-template';
+import ImportSourceModal from '@/pages/settings/import-export/ImportSourceModal';
 import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/project-settings-modal';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
+import useProjectPermissions from '@/hooks/useProjectPermissions';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { addTaskCardToTheTop, fetchBoardTaskGroups } from '@/features/board/board-slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { fetchProjectReleases } from '@/features/projects/singleProject/releases/releases.slice';
 import { fetchTasksV3, setLoading } from '@/features/task-management/task-management.slice';
 import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
-import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { ProjectIntegrationsButton } from '@/components/projects/integrations/ProjectIntegrationsButton';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 import { isUserGuest } from '@/lib/project/project-view-guest';
+import { getImportProgress } from '@/api/imports';
 import styles from './project-view-header.module.css';
+
+const CSV_IMPORT_SOURCE = { key: 'csv', label: 'CSV', icon: null };
 
 const ProjectViewHeader = memo(() => {
   const navigate = useNavigate();
@@ -82,6 +90,7 @@ const ProjectViewHeader = memo(() => {
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
   const isProjectManager = useIsProjectManager();
+  const { permissions } = useProjectPermissions();
 
   const { socket } = useSocket();
 
@@ -91,9 +100,17 @@ const ProjectViewHeader = memo(() => {
   const groupBy = useAppSelector(state => state.taskReducer.groupBy);
 
   const isGuest = useMemo(() => isUserGuest(selectedProject), [selectedProject]);
+  const isSoftwareProject = isSoftwareProjectType(selectedProject?.project_type);
+  const createTaskLabel = isSoftwareProject
+    ? t('createIssue', { defaultValue: 'Create Issue' })
+    : t('createTask', { defaultValue: 'Create task' });
+  const createTaskTooltip = isSoftwareProject
+    ? t('createIssueTooltip', { defaultValue: 'Create a new issue' })
+    : t('createTaskTooltip', { defaultValue: 'Create a new task' });
 
   const [creatingTask, setCreatingTask] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [isCsvImportOpen, setIsCsvImportOpen] = useState(false);
   const projectTasksFetching = useAppSelector(state => state.taskManagement.loading);
   const [isBackButtonHovered, setIsBackButtonHovered] = useState(false);
 
@@ -115,6 +132,7 @@ const ProjectViewHeader = memo(() => {
               dispatch(fetchPhasesByProjectId(projectId)).unwrap(),
               dispatch(fetchTasksV3(projectId)).unwrap(),
             ]);
+            dispatch(setRefreshTimestamp());
             break;
           case 'board':
             await Promise.allSettled([
@@ -122,9 +140,17 @@ const ProjectViewHeader = memo(() => {
               dispatch(fetchEnhancedKanbanGroups(projectId)).unwrap(),
             ]);
             break;
+          case 'releases':
+            await Promise.allSettled([
+              projectPromise,
+              dispatch(fetchProjectReleases(projectId)).unwrap(),
+            ]);
+            dispatch(setRefreshTimestamp());
+            break;
           case 'workload':
           case 'roadmap':
           case 'finance':
+          case 'reports':
           case 'project-insights-member-overview':
           case 'all-attachments':
           case 'members':
@@ -211,6 +237,10 @@ const ProjectViewHeader = memo(() => {
   }, [dispatch, selectedProject]);
 
   const handleCreateTask = useCallback(() => {
+    if (isSoftwareProject) {
+      dispatch(openCreateIssueModal());
+      return;
+    }
     if (!selectedProject?.id || !currentSession?.id || !socket) return;
 
     try {
@@ -247,7 +277,7 @@ const ProjectViewHeader = memo(() => {
       logger.error('Error creating task', error);
       setCreatingTask(false);
     }
-  }, [selectedProject?.id, currentSession, socket, dispatch, groupBy, tab, t]);
+  }, [isSoftwareProject, selectedProject?.id, currentSession, socket, dispatch, groupBy, tab, t]);
 
   const handleImportTaskTemplate = useCallback(() => {
     if (isFreeUser(currentSession)) {
@@ -256,6 +286,54 @@ const ProjectViewHeader = memo(() => {
       dispatch(setImportTaskTemplateDrawerOpen(true));
     }
   }, [dispatch, currentSession]);
+
+  const handleImportTasksFromCsv = useCallback(() => {
+    setIsCsvImportOpen(true);
+  }, []);
+
+  const handleCsvImportRefresh = useCallback(() => {
+    if (!projectId) return;
+    dispatch(setLoading(true));
+
+    const run = async () => {
+      try {
+        const projectPromise = dispatch(getProject(projectId)).unwrap();
+        switch (tab) {
+          case 'tasks-list': {
+            await Promise.allSettled([
+              projectPromise,
+              dispatch(fetchStatuses(projectId)).unwrap(),
+              dispatch(fetchTaskListColumns(projectId)).unwrap(),
+              dispatch(fetchPhasesByProjectId(projectId)).unwrap(),
+              dispatch(fetchTasksV3(projectId)).unwrap(),
+            ]);
+            dispatch(setRefreshTimestamp());
+            break;
+          }
+          case 'board': {
+            await Promise.allSettled([
+              projectPromise,
+              dispatch(fetchEnhancedKanbanGroups(projectId)).unwrap(),
+            ]);
+            break;
+          }
+          default:
+            await Promise.all([
+              projectPromise,
+              new Promise(resolve => setTimeout(resolve, 1000)),
+            ]);
+            dispatch(setRefreshTimestamp());
+            break;
+        }
+      } catch (error) {
+        logger.error('Error refreshing project data after CSV import:', error);
+      } finally {
+        dispatch(setLoading(false));
+      }
+    };
+
+    run();
+  }, [dispatch, projectId, tab]);
 
   const handleNavigateToProjects = useCallback(() => {
     navigate('/worklenz/projects');
@@ -287,14 +365,50 @@ const ProjectViewHeader = memo(() => {
           </div>
         ),
       },
+      {
+        key: 'import-csv',
+        label: (
+          <div
+            style={{ width: '100%', margin: 0, padding: 0 }}
+            onClick={handleImportTasksFromCsv}
+            title={t('importTasksFromCsvTooltip', { defaultValue: 'Import tasks from a CSV file' })}
+          >
+            <ImportOutlined /> {t('importTasksFromCsv', { defaultValue: 'Import tasks from CSV' })}
+          </div>
+        ),
+      },
     ],
-    [handleImportTaskTemplate, t]
+    [handleImportTaskTemplate, handleImportTasksFromCsv, t]
   );
 
   const projectAttributes = useMemo(() => {
     if (!selectedProject) return null;
 
     const elements = [];
+
+    if (isSoftwareProjectType(selectedProject.project_type)) {
+      elements.push(
+        <Tooltip
+          key="software-type-tooltip"
+          title={t('softwareProjectTooltip', {
+            defaultValue: 'Software project — issues, backlog, and sprints',
+          })}
+        >
+          <Tag
+            key="software-type"
+            color="blue"
+            style={{
+              margin: 0,
+              border: 'none',
+            }}
+          >
+            <span style={{ fontSize: 12 }}>
+              {t('softwareProjectTag', { defaultValue: 'Software' })}
+            </span>
+          </Tag>
+        </Tooltip>
+      );
+    }
 
     if (selectedProject.category_id) {
       const bgColor = selectedProject.category_color || colors.vibrantOrange;
@@ -364,10 +478,87 @@ const ProjectViewHeader = memo(() => {
     );
   }, [selectedProject, t]);
 
+  // One poll timer per import job so concurrent CSV imports don't cancel each
+  // other's polling and every terminal job can trigger its own refresh.
+  const importRefreshTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const handleCsvImportRefreshRef = useRef(handleCsvImportRefresh);
+
+  useEffect(() => {
+    handleCsvImportRefreshRef.current = handleCsvImportRefresh;
+  }, [handleCsvImportRefresh]);
+
+  const readPendingImportJobs = (): string[] => {
+    try {
+      const raw = localStorage.getItem('worklenz.imports.pending_jobs');
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+    } catch {
+      return [];
+    }
+  };
+
+  const stopImportPolling = useCallback((jobId: string) => {
+    const timer = importRefreshTimersRef.current.get(jobId);
+    if (timer) {
+      clearTimeout(timer);
+    }
+    importRefreshTimersRef.current.delete(jobId);
+  }, []);
+
+  const pollImportJob = useCallback(
+    (jobId: string, targetProjectId: string) => {
+      const poll = async (): Promise<void> => {
+        try {
+          const progress = await getImportProgress(jobId);
+          const status = progress?.job?.status;
+          const jobProjectId = progress?.job?.target_project_id;
+
+          if (status === 'success' || status === 'failed') {
+            stopImportPolling(jobId);
+            // Refresh the project this job targeted. Each terminal job refreshes
+            // independently, so a job finishing early can't stop the polling of
+            // another in-flight import.
+            if (jobProjectId === targetProjectId) {
+              handleCsvImportRefreshRef.current();
+            }
+            return;
+          }
+        } catch {
+          // transient error: keep polling this job
+        }
+
+        // Reschedule only while this job is still being tracked (i.e. not
+        // terminal and the component hasn't unmounted).
+        if (importRefreshTimersRef.current.has(jobId)) {
+          importRefreshTimersRef.current.set(jobId, setTimeout(poll, 2000));
+        }
+      };
+
+      // Register the job before the first tick so unmount cleanup can cancel it.
+      importRefreshTimersRef.current.set(jobId, setTimeout(poll, 0));
+    },
+    [stopImportPolling]
+  );
+
+  const waitForImportAndRefresh = useCallback(
+    (targetProjectId: string) => {
+      setIsCsvImportOpen(false);
+
+      for (const jobId of readPendingImportJobs()) {
+        // Skip jobs that already have an active poll so starting a second import
+        // can't restart or cancel the first job's polling.
+        if (importRefreshTimersRef.current.has(jobId)) continue;
+        pollImportJob(jobId, targetProjectId);
+      }
+    },
+    [pollImportJob]
+  );
+
   const headerActions = useMemo(() => {
     const actions = [];
 
-    if (isOwnerOrAdmin && !isGuest) {
+    if (permissions.saveAsTemplate && !isGuest) {
       actions.push(
         <Tooltip
           key="template"
@@ -402,7 +593,7 @@ const ProjectViewHeader = memo(() => {
       </Tooltip>
     );
 
-    if (isOwnerOrAdmin || isProjectManager) {
+    if ((isOwnerOrAdmin || isProjectManager) && !isGuest) {
       actions.push(
         <div key="integrations" className={styles.actionButton}>
           <ProjectIntegrationsButton
@@ -438,7 +629,7 @@ const ProjectViewHeader = memo(() => {
       </Tooltip>
     );
 
-    if (isOwnerOrAdmin || isProjectManager) {
+    if (permissions.members.add && !isGuest) {
       actions.push(
         <Tooltip
           key="invite-tooltip"
@@ -461,7 +652,7 @@ const ProjectViewHeader = memo(() => {
       actions.push(
         <Tooltip
           key="create-task-tooltip"
-          title={t('createTaskTooltip', { defaultValue: 'Create a new task' })}
+          title={createTaskTooltip}
         >
           <Dropdown.Button
             key="create-task-dropdown"
@@ -473,7 +664,7 @@ const ProjectViewHeader = memo(() => {
             trigger={['click']}
             onClick={handleCreateTask}
           >
-            <EditOutlined /> <span className={styles.buttonLabel}>{t('createTask', { defaultValue: 'Create task' })}</span>
+            <EditOutlined /> <span className={styles.buttonLabel}>{createTaskLabel}</span>
           </Dropdown.Button>
         </Tooltip>
       );
@@ -481,7 +672,7 @@ const ProjectViewHeader = memo(() => {
       actions.push(
         <Tooltip
           key="create-task-tooltip"
-          title={t('createTaskTooltip', { defaultValue: 'Create a new task' })}
+          title={createTaskTooltip}
         >
           <Button
             key="create-task"
@@ -491,7 +682,7 @@ const ProjectViewHeader = memo(() => {
             icon={<EditOutlined />}
             onClick={handleCreateTask}
           >
-            <span className={styles.buttonLabel}>{t('createTask', { defaultValue: 'Create task' })}</span>
+            <span className={styles.buttonLabel}>{createTaskLabel}</span>
           </Button>
         </Tooltip>
       );
@@ -515,12 +706,16 @@ const ProjectViewHeader = memo(() => {
     selectedProject?.name,
     handleSubscribe,
     isProjectManager,
+    permissions.saveAsTemplate,
+    permissions.members.add,
     handleInvite,
     creatingTask,
     dropdownItems,
     handleCreateTask,
     canCreateTask,
     isGuest,
+    createTaskLabel,
+    createTaskTooltip,
   ]);
 
   const pageHeaderTitle = useMemo(
@@ -554,6 +749,10 @@ const ProjectViewHeader = memo(() => {
       if (subscriptionTimeoutRef.current) {
         clearTimeout(subscriptionTimeoutRef.current);
       }
+      for (const timer of importRefreshTimersRef.current.values()) {
+        clearTimeout(timer);
+      }
+      importRefreshTimersRef.current.clear();
     };
   }, []);
 
@@ -585,6 +784,22 @@ const ProjectViewHeader = memo(() => {
         'project-settings-modal'
       )}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
+      {createPortal(<ImportSourceModal
+        open={isCsvImportOpen}
+        onClose={() => setIsCsvImportOpen(false)}
+        source={CSV_IMPORT_SOURCE}
+        createTargetProject={async () => {
+          if (!selectedProject?.id) {
+            throw new Error('No project selected');
+          }
+          return selectedProject.id;
+        }}
+        initialProjectName={selectedProject?.name || ''}
+        hideProjectSetup
+        onImportStarted={(projectId) => {
+          waitForImportAndRefresh(projectId);
+        }}
+      />, document.body, 'import-source-modal')}
       {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}
     </>
   );

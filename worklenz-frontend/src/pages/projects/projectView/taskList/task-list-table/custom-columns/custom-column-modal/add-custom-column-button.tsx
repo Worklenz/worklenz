@@ -2,7 +2,7 @@ import { PlusOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { Button, Tooltip, message } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess, isFreeUser } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess, isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -16,6 +16,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
 import { useState } from 'react';
+import { CUSTOM_COLUMN_DEFAULT_WIDTH } from '@/utils/column-width-validation';
 
 const AddCustomColumnButton = () => {
   const dispatch = useAppDispatch();
@@ -64,7 +65,7 @@ const AddCustomColumnButton = () => {
         name: defaultFieldTitle,
         key: columnKey,
         field_type: 'text',
-        width: 120,
+        width: CUSTOM_COLUMN_DEFAULT_WIDTH,
         is_visible: true,
         configuration,
       });
@@ -74,7 +75,7 @@ const AddCustomColumnButton = () => {
           key: columnKey,
           name: defaultFieldTitle,
           columnHeader: null, // Will be rendered dynamically
-          width: 120,
+          width: CUSTOM_COLUMN_DEFAULT_WIDTH,
           isVisible: true,
           custom_column: true,
           custom_column_obj: {

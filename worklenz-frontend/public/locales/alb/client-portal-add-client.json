@@ -1,0 +1,191 @@
+{
+  "retry": "Provo sërish",
+  "upgrade": {
+    "title": "Klientët",
+    "description": "Jepuni klientëve një portal të markës për të ndjekur progresin e projektit. E disponueshme në planin e biznesit."
+  },
+  "title": {
+    "method": "Si dëshironi ta shtoni këtë klient?",
+    "company": "Na tregoni për klientin",
+    "user": "Zgjidhni kompaninë, pastaj përdoruesin e ri",
+    "existing": "Zgjidhni kë të ftoni",
+    "csv": "Ngarkoni skedarin tuaj CSV",
+    "review": "Rishikoni dhe dërgoni"
+  },
+  "steps": {
+    "method": "Metoda",
+    "details": "Details",
+    "file": "Skedari",
+    "review": "Rishikimi"
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "back": "Mbrapa",
+    "continue": "Vazhdoni",
+    "done": "U krye",
+    "import": "Import",
+    "addClient": "Shto Klient",
+    "addClientAndInvite": "Shto klient dhe dërgo ftesë",
+    "addUser": "Shto përdorues klienti",
+    "addUserAndInvite": "Shto përdorues dhe dërgo ftesë",
+    "sendInvite": "Dërgo Ftesë"
+  },
+  "method": {
+    "helper": "Çdo rrugë përfundon në të njëjtën mënyrë. Zgjidhni cilëndo që i përshtatet asaj që tashmë dini.",
+    "groupLabel": "Si dëshironi ta shtoni këtë klient?",
+    "company": {
+      "name": "Klient i ri",
+      "description": "Krijoni një regjistrim të kompanisë dhe kontaktin e saj të parë së bashku."
+    },
+    "user": {
+      "name": "Shto një përdorues klienti",
+      "description": "Shtoni një kontakt tjetër në një kompani që ekziston tashmë."
+    },
+    "existing": {
+      "name": "Ftoni një kontakt ekzistues",
+      "description": "Tashmë një drejtues apo klient? Thjesht dërgoni hyrjen në portal."
+    },
+    "csv": {
+      "name": "Importo nga CSV",
+      "description": "Shto në masë klientët nga një fletëllogaritëse."
+    }
+  },
+  "fields": {
+    "firstName": "Emri i parë",
+    "firstNamePlaceholder": "Zanë",
+    "lastName": "Mbiemri",
+    "lastNamePlaceholder": "Duka",
+    "email": "Adresa e emailit",
+    "emailPlaceholder": "jane@company.com",
+    "jobTitle": "Titulli i punës",
+    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "phone": "Telefoni (opsionale)",
+    "phonePlaceholder": "+1 415 555 0142"
+  },
+  "errors": {
+    "firstNameRequired": "Futni një emër të parë.",
+    "emailRequired": "Futni një adresë emaili.",
+    "emailInvalid": "Fut një adresë të vlefshme emaili."
+  },
+  "newClient": {
+    "companyName": "Emri i kompanisë",
+    "companyNameHint": "Lëreni bosh për të emëruar klientin sipas personit më poshtë.",
+    "companyNamePlaceholder": "p.sh. Beacon Logistics",
+    "setupTitle": "VENDOSUR PORTALIN E TYRE",
+    "welcomeMessage": "Dërgo një mesazh mirëseardhjeje",
+    "welcomeMessageHint": "Postuar te Messages, kështu që i pret kur të identifikohen.",
+    "welcomeMessageText": "Përshëndetje {{name}}, mirë se vini në portalin tuaj të klientit. Na dërgoni një mesazh këtu në çdo kohë."
+  },
+  "companyUser": {
+    "chooseCompany": "Zgjidhni kompaninë",
+    "searchCompanies": "Kërkoni kompani...",
+    "companiesLabel": "Kompanitë",
+    "companiesError": "Kompanitë nuk mund të ngarkoheshin.",
+    "noMatches": "Asnjë kompani nuk përputhet me \"{{query}}\".",
+    "noCompanies": "Ende nuk ka kompani. Fillimisht shtoni një klient të ri.",
+    "existingUsers_one": "{{count}} përdorues ekzistues",
+    "existingUsers_other": "{{count}} përdoruesit ekzistues",
+    "changeCompany": "Ndryshimi",
+    "makePoc": "Bëje këtë përdorues një POC",
+    "makePocHint": "Një kompani mund të ketë çdo numër POC-sh, ose asnjë. Kjo është e pavarur nga statusi POC i përdoruesve të tjerë.",
+    "projectAccess": "Akses në projekt",
+    "templateNone": "Konfiguro manualisht më vonë. Asnjë projekt i caktuar ende",
+    "templateNoProjects": "{{company}} nuk ka ende projekte, kështu që nuk ka asgjë për të aplikuar një shabllon.",
+    "templateTooManyProjects": "{{company}} ka më shumë projekte sesa mund të renditen këtu. Cakto akses për projekt më pas.",
+    "templateApplied": "I jep {{template}} qasje në të gjitha {{count}} nga projektet aktuale të {{company}}. Ju mund të rregulloni mirë për projekt më pas nga menyja e rreshtave.",
+    "templateHint": "Zgjidh një shabllon për t'i dhënë qasje çdo projekti aktual menjëherë, ose lëre siç është dhe cakto projektet individualisht më pas."
+  },
+  "existing": {
+    "helper": "Kontaktet pa qasje aktive në portal.",
+    "search": "Kërko me emër ose email...",
+    "loadError": "Kontaktet nuk mund të ngarkoheshin.",
+    "noMatches": "Nuk ka përputhje për \"{{query}}\".",
+    "everyoneHasAccess": "Të gjithë tashmë kanë qasje aktive në portal.",
+    "groupLabel": "Kontaktet për të ftuar"
+  },
+  "review": {
+    "name": "Name",
+    "company": "Company",
+    "companyFromName": "Emërtuar sipas personit",
+    "email": "Email",
+    "emailMissing": "nuk ofrohet",
+    "role": "Role",
+    "rolePocDefault": "POC (i parazgjedhur për një kompani të re)",
+    "rolePoc": "POC",
+    "roleMember": "Përdorues klienti",
+    "projectAccess": "Akses në projekt",
+    "projectAccessTemplate": "{{template}} në të gjitha {{count}} projektet aktuale",
+    "projectAccessNone": "Asnjë ende. Caktoni projekte më pas.",
+    "authentication": "Autentifikimi",
+    "portalAccess": "Qasja në portal",
+    "authInvitation": "Lidhja e ftesës. Ata vendosën një fjalëkalim në hyrjen e parë.",
+    "notInvited": "Nuk është ftuar ende. Ftojini ata më vonë nga tavolina.",
+    "sendNow": "Dërgo ftesën për portalin tani",
+    "sendNowHint": "Lëreni të pazgjedhur për të shtuar regjistrimin pa dërguar asgjë. Ftojini ata më vonë nga tavolina.",
+    "deliverVia": "DORËZIMI PËRMES",
+    "deliveryEmail": "Lidhja e ftesës me email",
+    "deliveryLink": "Kopjo lidhjen e ftesës"
+  },
+  "csv": {
+    "helper": "Ngarko një CSV me një rresht kokë dhe këto kolona: Kompania, Emri, Mbiemri, Email. Kërkohet emri dhe emaili.",
+    "dropzone": "Klikoni për të zgjedhur një skedar CSV ose tërhiqeni këtu",
+    "dropzoneHint": "Deri në {{max}} rreshta.",
+    "dropzoneLabel": "Zgjidhni një skedar CSV",
+    "checking": "Po kontrollon skedarin tënd...",
+    "chooseAnother": "Zgjidhni një skedar tjetër",
+    "problemsLabel": "Rreshtat me probleme",
+    "columnNames": {
+      "firstName": "Emri i parë",
+      "email": "Email"
+    },
+    "columns": {
+      "row": "Rreshti",
+      "person": "Person",
+      "problem": "Problem"
+    },
+    "summary": {
+      "noneReady": "Asnjë nga rreshtat nuk mund të importohet.",
+      "ready": "{{valid}} nga rreshtat {{total}} janë gati për import.",
+      "detail": "{{newCompanies}} do të krijohen kompani të reja dhe {{existingCompanies}} kompanitë ekzistuese do të kenë më shumë përdorues. Rreshtat me probleme janë anashkaluar. Askujt nuk i dërgohet email. Ftojini ata nga lista më pas."
+    },
+    "result": {
+      "title": "Importi përfundoi",
+      "detail": "Kompanitë e krijuara {{companies}}, përdoruesit {{users}} u shtuan, {{skipped}} rreshta u anashkaluan. Të gjithë nuk janë të ftuar derisa t'i ftoni nga lista."
+    },
+    "error": {
+      "notCsv": "Zgjidhni një skedar .csv.",
+      "tooLarge": "Ai skedar është shumë i madh. Kufiri është {{size}} MB.",
+      "empty": "Skedari nuk ka rreshta për të importuar.",
+      "unreadable": "Ai skedar nuk mund të lexohej. Kontrollo që është një CSV e vlefshme dhe provo sërish.",
+      "missingColumns": "Skedari ka nevojë për një rresht kokë me këto kolona: {{columns}}.",
+      "tooManyRows": "Skedari ka {{count}} rreshta. Një import mund të ketë më së shumti {{max}}.",
+      "requestFailed": "Skedari nuk mund të kontrollohej. Ju lutemi provoni përsëri."
+    },
+    "errors": {
+      "missing_first_name": "Mungon emri",
+      "missing_email": "Email-i mungon",
+      "invalid_email": "Email-i nuk është i vlefshëm",
+      "duplicate_in_file": "Email-i shfaqet më herët në skedar",
+      "email_in_use": "Email-i tashmë i përket një përdoruesi të klientit",
+      "company_name_too_long": "Emri i kompanisë është mbi 60 karaktere",
+      "client_name_taken": "Një klient me këtë emër ekziston tashmë",
+      "import_failed": "Nuk mund të importohej"
+    }
+  },
+  "messages": {
+    "linkCopied": "Lidhja e ftesës u kopjua.",
+    "linkCopyError": "Lidhja nuk mund të kopjohej.",
+    "saveError": "Nuk u ruajt dot. Ju lutemi provoni përsëri.",
+    "importError": "Importimi dështoi. Ju lutemi provoni përsëri.",
+    "clientAddedInvited": "Klienti u shtua, me {{name}} si POC si parazgjedhje. Ftesa u dërgua te {{email}}.",
+    "clientAddedLink": "Klienti u shtua. Kopjo lidhjen e ftesës për ta ndarë me {{name}}.",
+    "clientAddedNotInvited": "Klienti u shtua, me {{name}} si POC si parazgjedhje. Nuk është ftuar ende.",
+    "userAddedInvited": "{{name}} u shtua te {{company}}. Ftesa u dërgua te {{email}}.",
+    "userAddedLink": "{{name}} u shtua te {{company}}. Kopjo lidhjen e ftesës për ta shpërndarë.",
+    "userAddedNotInvited": "{{name}} u shtua te {{company}}. Nuk është ftuar ende.",
+    "inviteSent": "Ftesa u dërgua te {{email}}.",
+    "inviteLinkReady": "Lidhja e ftesës gati për t'u kopjuar.",
+    "inviteFailed": "{{name}} u ruajt, por ftesa nuk mund të dërgohej ({{error}}). Mund ta dërgoni nga lista.",
+    "emailNotSent": "{{name}} u ruajt, por emaili nuk mund të dërgohej. Ndani lidhjen në vend."
+  }
+}

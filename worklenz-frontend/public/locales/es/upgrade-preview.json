@@ -187,16 +187,6 @@
           "Estado de pago de un vistazo"
         ]
       },
-      "ticketing": {
-        "title": "Tickets",
-        "description": "Permita que los clientes generen y realicen un seguimiento de los tickets de soporte directamente desde su portal.",
-        "features": [
-          "Tickets de soporte enviados por el cliente",
-          "Seguimiento y actualizaciones del estado del ticket",
-          "Notas internas y tareas",
-          "Etiquetado de prioridad y SLA"
-        ]
-      },
       "settings": {
         "title": "Configuración del Portal",
         "description": "Personaliza tu portal de clientes con tu propia marca.",
@@ -273,23 +263,6 @@
       "dateColumn": "Fecha",
       "rowsPerPage": "Filas por página: {{count}}"
     }
-  },
-  "ticketingMockup": {
-    "openTickets": "Entradas abiertas",
-    "inProgress": "En progreso",
-    "resolvedToday": "Resuelto hoy",
-    "avgResponseTime": "Promedio Tiempo de respuesta",
-    "ticketsCard": "Entradas",
-    "ticketNoColumn": "Boleto #",
-    "clientColumn": "Cliente",
-    "subjectColumn": "Asunto",
-    "priorityColumn": "Prioridad",
-    "statusColumn": "Estado",
-    "priorityHigh": "Alto",
-    "priorityMedium": "Media",
-    "priorityLow": "Bajo",
-    "statusOpen": "Abrir",
-    "statusResolved": "Resuelto"
   },
   "plannerMockup": {
     "chrome": {

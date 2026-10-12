@@ -1,0 +1,14 @@
+{
+  "taskAssigned": "<b>{{reporter}}</b> ju ka caktuar në <b>{{task}}</b>",
+  "taskRemoved": "<b>{{reporter}}</b> ju ka hequr nga <b>{{task}}</b>",
+  "taskAdded": "<b>{{user}}</b> shtoi \"<b>{{task}}</b>\" te \"<b>{{project}}</b>\"",
+  "taskRemovedFromProject": "<b>{{user}}</b> hoqi \"<b>{{task}}</b>\" nga \"<b>{{project}}</b>\"",
+  "addedToProject": "Ju jeni shtuar në <b>{{project}}</b> nga <b>{{user}}</b>",
+  "removedFromProject": "Ju jeni hequr nga <b>{{project}}</b> nga <b>{{user}}</b>",
+  "addedToTeam": "Ju jeni shtuar në <b>{{team}}</b>",
+  "removedFromTeam": "Ju jeni hequr nga <b>{{team}}</b> nga <b>{{user}}</b>",
+  "commentAdded": "<b>{{user}}</b> shtoi një koment në <b>{{task}}</b>",
+  "mentionedInComment": "<b>{{user}}</b> ju përmendi në një koment në <b>{{task}}</b>",
+  "mentionedInProjectComment": "<b>{{user}}</b> ju përmendi në një koment në <b>{{project}}</b>",
+  "phaseTaskAssigned": "Një detyrë ju është caktuar në <b>{{phase}}</b>: <b>{{task}}</b>"
+}

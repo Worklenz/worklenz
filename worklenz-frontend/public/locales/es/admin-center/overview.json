@@ -69,7 +69,7 @@
   "deleteHolidayConfirm": "¿Está seguro de que desea eliminar este día festivo?",
   "yes": "Sí",
   "no": "No",
-  "logo": "Logo",
+  "logo": "Logotipo",
   "uploadLogo": "Subir Logo",
   "changeLogo": "Cambiar Logo",
   "removeLogo": "Eliminar Logo",
@@ -102,8 +102,8 @@
   "customLogoUpgradeModalBenefitApp": "Logo personalizado en toda la aplicación",
   "customLogoUpgradeModalBenefitEmails": "Correos con marca para equipo y clientes",
   "customLogoUpgradeModalBenefitProfessional": "Aspecto profesional para tu organización",
-  "emailAddress": "Email Address",
-  "enterOrganizationName": "Enter organization name",
-  "ownerSuffix": " (Owner)",
+  "emailAddress": "Correo electrónico",
+  "enterOrganizationName": "Introduzca el nombre de la organización",
+  "ownerSuffix": "(Propietario)",
   "closePopover": "Cerrar ventana emergente"
 }

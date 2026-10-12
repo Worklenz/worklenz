@@ -32,7 +32,7 @@ import useTaskDrawerNavigation from '@/hooks/useTaskDrawerNavigation';
 import InfoTabFooter from './shared/info-tab/info-tab-footer';
 import { CrownOutlined } from '@ant-design/icons';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
@@ -40,6 +40,7 @@ import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { getProject } from '@/features/project/project.slice';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal';
 
 const TaskDrawer = () => {
@@ -68,6 +69,7 @@ const TaskDrawer = () => {
   // TVR-13: parent of assigned-only subtask is view-only
   const isAssigneeScopeReadonly = !!taskFormViewModel?.task?.assignee_scope_readonly;
   const isTaskReadOnly = isGuest || isAssigneeScopeReadonly;
+  const isSoftwareProject = isSoftwareProjectType(project?.project_type);
 
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
   useTaskDrawerNavigation();
@@ -85,6 +87,11 @@ const TaskDrawer = () => {
   useEffect(() => {
     if (!showTaskDrawer || !targetDrawerTab || !selectedTaskId) return;
 
+    if (isSoftwareProject) {
+      dispatch(setTargetDrawerTab(null));
+      return;
+    }
+
     if (isFree && (targetDrawerTab === 'timeLog' || targetDrawerTab === 'activityLog')) {
       dispatch(toggleUpgradeModal());
       dispatch(setTargetDrawerTab(null));
@@ -93,7 +100,7 @@ const TaskDrawer = () => {
 
     setActiveTab(targetDrawerTab);
     dispatch(setTargetDrawerTab(null));
-  }, [showTaskDrawer, targetDrawerTab, selectedTaskId, isFree, dispatch]);
+  }, [showTaskDrawer, targetDrawerTab, selectedTaskId, isFree, isSoftwareProject, dispatch]);
 
   useEffect(() => {
     if (!showTaskDrawer || taskAccessDenied) return;
@@ -271,7 +278,7 @@ const TaskDrawer = () => {
 
   const renderFooter = () => {
     if (taskAccessDenied) return null;
-    if (activeTab === 'info') return <InfoTabFooter />;
+    if (activeTab === 'info' || isSoftwareProject) return <InfoTabFooter />;
     if (activeTab === 'timeLog') {
       if (isTaskReadOnly) return null;
       if (timeLogEditing.isEditing) {
@@ -312,7 +319,7 @@ const TaskDrawer = () => {
     maskClosable: false,
     mask: false,
     afterOpenChange: handleAfterOpenChange,
-    width: 720,
+    width: isSoftwareProject ? SOFTWARE_DRAWER_WIDTH : 720,
     destroyOnClose: false,
     title: taskAccessDenied ? (
       t('taskAccessDenied.title', { defaultValue: 'No access' })
@@ -383,9 +390,12 @@ const TaskDrawer = () => {
               canCreateTask={canCreateTask && !isTaskReadOnly}
             />
 
-            {/* Tabs */}
             <div style={{ padding: '0 24px' }}>
-              <Tabs type="card" items={tabItems} onChange={handleTabChange} activeKey={activeTab} />
+              {isSoftwareProject ? (
+                <TaskDrawerInfoTab t={t} canCreateTask={canCreateTask} isGuest={isTaskReadOnly} />
+              ) : (
+                <Tabs type="card" items={tabItems} onChange={handleTabChange} activeKey={activeTab} />
+              )}
             </div>
           </>
         )}
@@ -398,5 +408,7 @@ const TaskDrawer = () => {
     </>
   );
 };
+
+const SOFTWARE_DRAWER_WIDTH = 'min(520px, 100vw)';
 
 export default TaskDrawer;

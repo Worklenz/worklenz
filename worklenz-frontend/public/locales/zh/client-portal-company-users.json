@@ -1,0 +1,172 @@
+{
+  "tabCountLabel": "客户端用户总数",
+  "retryButton": "重试",
+  "cancelButton": "Cancel",
+  "saveButton": "保存",
+  "refreshButton": "刷新",
+  "clearFiltersButton": "清除过滤器",
+  "addButton": "添加客户端",
+  "rowActionsLabel": "{{name}} 的操作",
+  "searchPlaceholder": "搜索用户或公司...",
+  "statusFilterLabel": "按状态过滤",
+  "allStatusesOption": "所有状态",
+  "paginationSummary": "显示 {{from}}-{{to}}（共 {{total}} 个用户）",
+  "errorTitle": "加载客户端用户时出错",
+  "errorDescription": "加载客户端用户时出错。请再试一次。",
+  "statsErrorMessage": "无法加载客户端用户统计信息。",
+  "lastActivityInvited": "已邀请 {{time}}",
+  "lastActivityNever": "从未登录过",
+  "projectsNone": "没有分配项目",
+  "projectsCount_one": "{{count}} 项目",
+  "projectsCount_other": "{{count}} 项目",
+  "stats": {
+    "total": "客户端用户总数",
+    "pocs": "POC",
+    "companiesWithoutPoc": "没有 POC 的公司",
+    "companiesWithoutPocHint": "允许。公司可以没有 POC。",
+    "disabled": "残疾人"
+  },
+  "columns": {
+    "user": "用户",
+    "email": "Email",
+    "phone": "电话",
+    "company": "Company",
+    "access": "访问",
+    "jobTitle": "职称",
+    "projects": "项目",
+    "portalStatus": "门户状态",
+    "actions": "Actions"
+  },
+  "role": {
+    "poc": "POC",
+    "member": "会员"
+  },
+  "portalStatus": {
+    "active": "活跃",
+    "invited": "受邀",
+    "expired": "已过期",
+    "not_invited": "未受邀",
+    "disabled": "残疾人"
+  },
+  "empty": {
+    "title": "未找到客户端用户",
+    "filtered": "没有用户匹配当前的过滤器。",
+    "none": "还没有客户端用户。将客户或用户添加到公司以授予人们门户访问权限。"
+  },
+  "menu": {
+    "viewProfile": "查看资料",
+    "editUser": "编辑用户",
+    "assignProjects": "分配项目",
+    "makePoc": "制作POC",
+    "removePoc": "删除 POC",
+    "sendInvite": "发送邀请",
+    "resendInvite": "重新发送邀请",
+    "enableUser": "启用用户",
+    "disableUser": "禁用用户",
+    "removeUser": "删除用户"
+  },
+  "confirmDisable": {
+    "title": "禁用该用户？",
+    "content": "{{name}} 将立即失去对门户的访问权限。您可以稍后再次启用它们，它们将恢复到原来的状态。",
+    "ok": "禁用用户"
+  },
+  "confirmRemove": {
+    "title": "删除该用户？",
+    "content": "{{name}} 将从公司中删除并失去门户访问权限。此操作无法撤消。该公司及其其他用户不受影响。",
+    "ok": "删除用户"
+  },
+  "messages": {
+    "madePoc": "{{name}} 现在是一个 POC。",
+    "removedPoc": "{{name}} 不再是 POC。",
+    "roleError": "无法改变角色。",
+    "inviteSent": "邀请已发送至 {{email}}。",
+    "inviteEmailFailed": "邀请已创建，但无法发送电子邮件。",
+    "inviteError": "无法发送邀请。",
+    "disabled": "{{name}} 被禁用。",
+    "enabled": "{{name}} 已启用。",
+    "statusError": "无法更新用户。",
+    "removed": "{{name}} 已被删除。",
+    "removeError": "无法删除用户。",
+    "linkCopied": "邀请链接已复制。",
+    "linkCopyError": "无法复制链接。"
+  },
+  "permissionLevels": {
+    "unknown": "未知级别",
+    "view": {
+      "label": "仅供查看",
+      "description": "状态、里程碑、任务和可交付成果。没有评论、编辑或上传。"
+    },
+    "comment": {
+      "label": "查看+评论",
+      "description": "评论、批准或拒绝并将文件附加到评论中。无法创建任务。"
+    },
+    "contributor": {
+      "label": "完全贡献者",
+      "description": "上述所有内容，加上创建和编辑任务、更改状态和上传附件。"
+    }
+  },
+  "permissionTemplates": {
+    "view_only": {
+      "name": "仅供查看",
+      "description": "只需要可见性的利益相关者：状态和可交付成果，无需编辑。"
+    },
+    "standard_contact": {
+      "name": "标准触点",
+      "description": "大多数客户联系人的默认设��：可以评论、批准或拒绝以及附加文件。"
+    },
+    "full_partner": {
+      "name": "正式合伙人",
+      "description": "实践协作者：可以创建和编辑任务以及上传附件。"
+    }
+  },
+  "assignProjects": {
+    "title": "分配项目 — {{name}}",
+    "helper": "选择 {{name}} 可以访问 {{company}} 的哪些项目，以及每个项目的权限级别。一个项目可以分配给许多公司用户。",
+    "noProjectsTitle": "{{company}} 还没有项目",
+    "noProjectsDescription": "首先将项目分配给该公司，然后再回来授予该用户访问权限。权限模板至少需要应用于一个项目。",
+    "truncatedMessage": "仅显示 {{total}} 项目中的 {{shown}}，因此无法在此处编辑访问权限。",
+    "templatesTitle": "应用模板（将下面的每个项目设置为该级别）",
+    "selectAll": "选择全部",
+    "selectedCount": "已选择 {{total}} 中的 {{selected}}",
+    "bulkLabel": "设置所选 {{count}} 的访问权限：",
+    "levelFor": "{{project}} 的权限级别",
+    "saveButton": "保存访问权限",
+    "savedMessage": "已更新 {{name}} 的项目访问权限。",
+    "saveError": "无法更新项目访问权限。",
+    "loadError": "无法加载该公司的项目。"
+  },
+  "editUser": {
+    "title": "编辑用户",
+    "nameLabel": "全名",
+    "namePlaceholder": "张三",
+    "nameRequired": "输入名称。",
+    "nameTooLong": "该名称最多可以包含 255 个字符。",
+    "emailLabel": "电子邮件地址",
+    "emailPlaceholder": "jane@company.com",
+    "emailRequired": "输入电子邮件地址。",
+    "emailInvalid": "输入有效的电子邮件地址。",
+    "emailLockedHint": "这是他们的登录电子邮件，因此一旦获得门户访问权限就无法更改。",
+    "jobTitleLabel": "职称",
+    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "jobTitleTooLong": "职位名称最多可包含 100 个字符。",
+    "phoneLabel": "电话号码（可选）",
+    "phonePlaceholder": "+1 415 555 0142",
+    "phoneTooLong": "电话号码最多可包含 50 个字符。",
+    "footerHint": "公司 ({{company}}) 和访问角色通过行菜单单独管理。",
+    "savedMessage": "{{name}} 已更新。",
+    "saveError": "无法更新该用户。"
+  },
+  "profile": {
+    "title": "会员简介",
+    "email": "Email",
+    "phone": "电话",
+    "jobTitle": "职称",
+    "lastActivity": "上次活动",
+    "signInMethod": "登录方式",
+    "signInPassword": "密码",
+    "signInNone": "尚未登录",
+    "noJobTitle": "文件中没有职位名称",
+    "assignedProjects": "分配的项目 ({{count}})",
+    "noProjects": "尚未分配项目。"
+  }
+}

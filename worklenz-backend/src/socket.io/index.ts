@@ -26,6 +26,7 @@ import { on_task_phase_change } from "./commands/on-task-phase-change";
 import { on_roadmap_sort_order_change } from "./commands/on-roadmap-sort-order-change";
 import { on_phase_start_date_change } from "./commands/on-phase-start-date-change";
 import { on_phase_end_date_change } from "./commands/on-phase-end-date-change";
+import { on_join_or_leave_reporting_room } from "./commands/on-join-or-leave-reporting-room";
 import { on_project_health_change } from "./commands/on-project-health-change";
 import { on_project_start_date_change } from "./commands/on-project-start-date-change";
 import { on_project_end_date_change } from "./commands/on-project-end-date-change";
@@ -62,12 +63,12 @@ import { on_task_due_time_change } from "./commands/on-task-due-time-change";
 import { on_subtask_sort_order_change } from "./commands/on-subtask-sort-order-change";
 
 // Client Portal imports
-import { on_client_connect } from "../ee/socket.io/commands/client-portal/on-client-connect";
-import { on_chat_send_message } from "../ee/socket.io/commands/client-portal/on-chat-send-message";
-import { on_chat_join } from "../ee/socket.io/commands/client-portal/on-chat-join";
-import { on_chat_leave } from "../ee/socket.io/commands/client-portal/on-chat-leave";
-import { on_chat_typing } from "../ee/socket.io/commands/client-portal/on-chat-typing";
-import { on_chat_mark_read } from "../ee/socket.io/commands/client-portal/on-chat-mark-read";
+import { on_client_connect } from "../socket.io/commands/client-portal/on-client-connect";
+import { on_chat_send_message } from "../socket.io/commands/client-portal/on-chat-send-message";
+import { on_chat_join } from "../socket.io/commands/client-portal/on-chat-join";
+import { on_chat_leave } from "../socket.io/commands/client-portal/on-chat-leave";
+import { on_chat_typing } from "../socket.io/commands/client-portal/on-chat-typing";
+import { on_chat_mark_read } from "../socket.io/commands/client-portal/on-chat-mark-read";
 
 export function register(io: any, socket: Socket) {
   log(socket.id, "client registered");
@@ -89,6 +90,7 @@ export function register(io: any, socket: Socket) {
   socket.on(SocketEvents.TASK_TIMER_STOP.toString(), data => on_task_timer_stop(io, socket, data));
   socket.on(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), data => on_task_sort_order_change(io, socket, data));
   socket.on(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), data => on_join_or_leave_project_room(io, socket, data));
+  socket.on(SocketEvents.JOIN_OR_LEAVE_REPORTING_ROOM.toString(), data => on_join_or_leave_reporting_room(io, socket, data));
   socket.on(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), data => on_task_subscriber_change(io, socket, data));
   socket.on(SocketEvents.PROJECT_SUBSCRIBERS_CHANGE.toString(), data => on_project_subscriber_change(io, socket, data));
   socket.on(SocketEvents.TASK_PHASE_CHANGE.toString(), data => on_task_phase_change(io, socket, data));
@@ -96,8 +98,8 @@ export function register(io: any, socket: Socket) {
   socket.on(SocketEvents.PHASE_START_DATE_CHANGE.toString(), data => on_phase_start_date_change(io, socket, data));
   socket.on(SocketEvents.PHASE_END_DATE_CHANGE.toString(), data => on_phase_end_date_change(io, socket, data));
   socket.on(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), data => on_project_health_change(io, socket, data));
-  socket.on(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), data => on_project_start_date_change(io, socket, data));
-  socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), data => on_project_end_date_change(io, socket, data));
+  socket.on(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), (data, callback) => on_project_start_date_change(io, socket, data, callback));
+  socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), (data, callback) => on_project_end_date_change(io, socket, data, callback));
   socket.on(SocketEvents.PROJECT_STATUS_CHANGE.toString(), data => on_project_status_change(io, socket, data));
   socket.on(SocketEvents.PROJECT_CATEGORY_CHANGE.toString(), data => on_project_category_change(io, socket, data));
   socket.on(SocketEvents.CREATE_PROJECT_CATEGORY.toString(), data => on_create_project_category(io, socket, data));

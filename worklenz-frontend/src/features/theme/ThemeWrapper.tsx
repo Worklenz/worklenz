@@ -12,6 +12,8 @@ import 'dayjs/locale/pt';
 import 'dayjs/locale/sq';
 import 'dayjs/locale/de';
 import 'dayjs/locale/zh-cn';
+import 'dayjs/locale/pl';
+import 'dayjs/locale/fr';
 
 // Import Ant Design locales
 import enUS from 'antd/locale/en_US';
@@ -19,6 +21,8 @@ import esES from 'antd/locale/es_ES';
 import ptPT from 'antd/locale/pt_PT';
 import deDE from 'antd/locale/de_DE';
 import zhCN from 'antd/locale/zh_CN';
+import plPL from 'antd/locale/pl_PL';
+import frFR from 'antd/locale/fr_FR';
 
 type ChildrenProp = {
   children: React.ReactNode;
@@ -39,6 +43,8 @@ const ThemeWrapper = memo(({ children }: ChildrenProp) => {
     alb: 'sq',
     de: 'de',
     zh_cn: 'zh-cn',
+    pl: 'pl',
+    fr: 'fr',
   };
 
   // Language mapping for Ant Design
@@ -49,6 +55,8 @@ const ThemeWrapper = memo(({ children }: ChildrenProp) => {
     alb: enUS, // Albanian not available in Ant Design
     de: deDE,
     zh_cn: zhCN,
+    pl: plPL,
+    fr: frFR,
   };
 
   // Memoize theme configuration to prevent unnecessary re-renders

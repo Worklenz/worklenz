@@ -24,6 +24,9 @@ export interface ITaskListConfigV2 {
   labels?: string | null;
   priorities?: string | null;
   phases?: string | null;
+  epics?: string | null;
+  /** Software-project quick filters, space separated: `mine bugs blocked`. */
+  quick_filters?: string | null;
   archived?: boolean;
   count?: boolean;
   parent_task?: string;

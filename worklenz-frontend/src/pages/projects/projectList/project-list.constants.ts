@@ -9,6 +9,8 @@ import {
 } from '@/features/projects/projectsSlice';
 import { IProjectFilter } from '@/types/project/project.types';
 import { ProjectListField, ProjectListFieldKey } from '@/types/project-list-field.types';
+import type { ProjectType } from '@/types/project/projectViewModel.types';
+import { getProjectDefaultTab } from '@/lib/project/software-project';
 
 export const SEARCH_DEBOUNCE_MS = 500;
 export const MAX_SEARCH_LENGTH = 100;
@@ -119,7 +121,11 @@ export const parsePositiveIntegerParam = (value: string | null): number | null =
   return parsed;
 };
 
-export const buildProjectRoute = (projectId: string, defaultView: string | undefined): string => {
-  const tab = defaultView === 'BOARD' ? 'board' : 'tasks-list';
+export const buildProjectRoute = (
+  projectId: string,
+  defaultView: string | undefined,
+  projectType?: ProjectType
+): string => {
+  const tab = getProjectDefaultTab(defaultView, projectType);
   return `/worklenz/projects/${projectId}?tab=${tab}&pinned_tab=${tab}`;
 };

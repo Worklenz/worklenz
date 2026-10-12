@@ -183,8 +183,8 @@
   "closePopover": "Popover schließen",
   "memberDeactivatedInviteSent": "Mitglied deaktiviert. Ihre Einladung wurde gesendet.",
   "memberDeactivatedProjectInviteSent": "Mitglied deaktiviert. Projekteinladung für \"{{projectName}}\" wurde gesendet.",
-  "saveMemberNameTooltip": "Save name",
-  "cancelRenameTooltip": "Cancel rename",
+  "saveMemberNameTooltip": "Namen speichern",
+  "cancelRenameTooltip": "Umbenennen abbrechen",
   "seatUsageText": "{{used}} Plätze verwendet",
   "seatUsageLoading": "Sitzplatznutzung wird geladen...",
   "seatLimitReached": "Sitzplatzlimit erreicht",
@@ -233,5 +233,7 @@
   "guestInviteError": "Beim Einladen von Gästen ist ein Fehler aufgetreten",
   "partialSuccess": "{{count}} Gast(e) erfolgreich eingeladen. Fehlgeschlagen: {{emails}}",
   "selectProjectFirst": "Bitte wählen Sie zuerst ein Projekt aus",
-  "manageTimeOff": "Abwesenheiten verwalten"
+  "manageTimeOff": "Abwesenheiten verwalten",
+  "createFromTemplatesLabel": "Projekte aus Vorlagen erstellen",
+  "createFromTemplatesHint": "Ermöglicht diesem Mitglied, Projekte aus Vorlagen zu erstellen. Sie werden Projektmanager des neuen Projekts ohne Finanzzugang. Ermöglicht keine Erstellung leerer Projekte."
 }

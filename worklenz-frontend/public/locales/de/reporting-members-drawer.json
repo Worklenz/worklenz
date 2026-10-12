@@ -4,12 +4,10 @@
   "activityLogsButton": "Aktivitätsprotokolle",
   "tasksButton": "Aufgaben",
   "searchByNameInputPlaceholder": "Nach Namen suchen",
-
   "overviewTab": "Übersicht",
   "timeLogsTab": "Zeiterfassungen",
   "activityLogsTab": "Aktivitätsprotokolle",
   "tasksTab": "Aufgaben",
-
   "projectsText": "Projekte",
   "totalTasksText": "Gesamtaufgaben",
   "assignedTasksText": "Zugewiesene Aufgaben",
@@ -17,14 +15,11 @@
   "ongoingTasksText": "Laufende Aufgaben",
   "overdueTasksText": "Überfällige Aufgaben",
   "loggedHoursText": "Erfasste Stunden",
-
   "tasksText": "Aufgaben",
   "allText": "Alle",
-
   "tasksByProjectsText": "Aufgaben nach Projekten",
   "tasksByStatusText": "Aufgaben nach Status",
   "tasksByPriorityText": "Aufgaben nach Priorität",
-
   "todoText": "Zu erledigen",
   "doingText": "Tun",
   "doneText": "Erledigt",
@@ -32,11 +27,9 @@
   "mediumText": "Mittel",
   "highText": "Hoch",
   "criticalText": "Kritisch",
-
   "billableButton": "Abrechenbar",
   "billableText": "Abrechenbar",
   "nonBillableText": "Nicht abrechenbar",
-
   "timeLogsEmptyPlaceholder": "Keine Zeiterfassungen vorhanden",
   "loggedText": "Erfasst",
   "forText": "für",
@@ -45,16 +38,13 @@
   "fromText": "Von",
   "toText": "bis",
   "withinText": "innerhalb",
-
   "activityLogsEmptyPlaceholder": "Keine Aktivitätsprotokolle vorhanden",
-
   "filterByText": "Filtern nach:",
   "selectProjectPlaceholder": "Projekt auswählen",
-
   "taskColumn": "Aufgabe",
   "nameColumn": "Name",
   "projectColumn": "Projekt",
-  "statusColumn": "Status",
+  "statusColumn": "Alle Status",
   "priorityColumn": "Priorität",
   "dueDateColumn": "Fälligkeitsdatum",
   "completedDateColumn": "Abschlussdatum",
@@ -68,10 +58,8 @@
   "projectHealthColumn": "Projektstatus",
   "categoryColumn": "Kategorie",
   "projectManagerColumn": "Projektleiter",
-
   "tasksStatsOverviewDrawerTitle": "Aufgaben von",
   "projectsStatsOverviewDrawerTitle": "Projekte von",
-
   "cancelledText": "Abgebrochen",
   "blockedText": "Blockiert",
   "onHoldText": "Pausiert",
@@ -80,10 +68,8 @@
   "inProgressText": "In Bearbeitung",
   "completedText": "Abgeschlossen",
   "continuousText": "Kontinuierlich",
-
   "daysLeftText": "Tage übrig",
   "daysOverdueText": "Tage überfällig",
-
   "notSetText": "Nicht festgelegt",
   "needsAttentionText": "Benötigt Aufmerksamkeit",
   "atRiskText": "Gefährdet",

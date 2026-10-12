@@ -503,3 +503,15 @@ tr:hover .action-buttons {
 .files-filter-dropdown .rc-virtual-list-scrollbar-thumb:hover {
   background-color: var(--files-scrollbar-thumb-hover) !important;
 }
+
+.files-filter-dropdown .rc-virtual-list-holder {
+  scrollbar-color: var(--files-scrollbar-thumb) transparent;
+}
+
+.files-filter-dropdown .rc-virtual-list-holder::-webkit-scrollbar-thumb {
+  background-color: var(--files-scrollbar-thumb);
+}
+
+.files-filter-dropdown .rc-virtual-list-holder::-webkit-scrollbar-thumb:hover {
+  background-color: var(--files-scrollbar-thumb-hover);
+}

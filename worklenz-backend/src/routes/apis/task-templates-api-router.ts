@@ -12,6 +12,11 @@ const taskTemplatesApiRouter = express.Router();
 taskTemplatesApiRouter.post("/", bodyNameValidator, safeControllerFunction(TasktemplatesController.create));
 taskTemplatesApiRouter.post("/import/:id", importTaskTemplatesValidator, safeControllerFunction(TasktemplatesController.import));
 taskTemplatesApiRouter.get("/", safeControllerFunction(TasktemplatesController.get));
+taskTemplatesApiRouter.post(
+  "/:id/duplicate",
+  idParamValidator,
+  safeControllerFunction(TasktemplatesController.duplicate)
+);
 taskTemplatesApiRouter.get("/:id", idParamValidator, safeControllerFunction(TasktemplatesController.getById));
 taskTemplatesApiRouter.put("/:id", idParamValidator, safeControllerFunction(TasktemplatesController.update));
 taskTemplatesApiRouter.patch(
