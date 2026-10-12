@@ -767,6 +767,11 @@ const CurrentPlanDetails = () => {
     renderAnnualBusinessSubscriptionInfo,
   ]);
 
+  // Paddle Classic subscribers are grandfathered: new sales go through Paddle Billing.
+  const isLegacyPaddlePlan =
+    billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE &&
+    billingInfo?.billing_provider !== 'paddle_billing';
+
   const appsumoRedeemedCodesCount = useMemo(
     () => billingInfo?.redeemed_codes_count ?? 0,
     [billingInfo?.redeemed_codes_count]
@@ -805,6 +810,19 @@ const CurrentPlanDetails = () => {
               {t('updateCardDetails', { defaultValue: 'Update card details' })}
             </Typography.Link>
           </Flex>
+        )}
+
+        {isLegacyPaddlePlan && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message={t('legacyPlanTitle', { defaultValue: 'Legacy plan' })}
+            description={t('legacyPlanDescription', {
+              defaultValue:
+                'You are on a plan we no longer sell, and it stays as it is. Switching to a current per-user plan is optional and your existing subscription is only replaced when you confirm.',
+            })}
+          />
         )}
 
         {shouldShowAppSumoBusinessUnlock && (
