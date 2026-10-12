@@ -1,8 +1,17 @@
 import {
+  Button,
+  Card,
   DeleteOutlined,
   EditOutlined,
   ExclamationCircleFilled,
+  Flex,
+  Input,
+  Popconfirm,
   SearchOutlined,
+  Table,
+  TableProps,
+  Tooltip,
+  Typography,
 } from '@/shared/antd-imports';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { practicesApiService } from '@/api/settings/practices/practices.api.service';
@@ -10,30 +19,20 @@ import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
 import { colors } from '@/styles/colors';
 import { IPractice, IPracticesViewModel } from '@/types/practice.types';
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
-import {
-  Button,
-  Card,
-  Flex,
-  Input,
-  Popconfirm,
-  Table,
-  TableProps,
-  Tooltip,
-  Typography,
-} from '@/shared/antd-imports';
+import TablePagination from '@/components/TablePagination';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PracticeDrawer from './practices-drawer';
 import logger from '@/utils/errorLogger';
 
-interface PaginationType {
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+
+interface PaginationState {
   current: number;
   pageSize: number;
   field: string;
   order: string;
   total: number;
-  pageSizeOptions: string[];
-  size: 'small' | 'default';
 }
 
 const PracticesSettings = () => {
@@ -44,28 +43,41 @@ const PracticesSettings = () => {
   const [showDrawer, setShowDrawer] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [practices, setPractices] = useState<IPracticesViewModel>({});
-  const [pagination, setPagination] = useState<PaginationType>({
+  const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState<PaginationState>({
     current: 1,
     pageSize: DEFAULT_PAGE_SIZE,
     field: 'name',
     order: 'desc',
     total: 0,
-    pageSizeOptions: ['10', '20', '50', '100'],
-    size: 'small',
   });
 
   const getPractices = useMemo(() => {
     return async () => {
-      const response = await practicesApiService.getPractices(
-        pagination.current,
-        pagination.pageSize,
-        pagination.field,
-        pagination.order,
-        searchQuery
-      );
-      if (response.done) {
-        setPractices(response.body);
-        setPagination(prev => ({ ...prev, total: response.body.total || 0 }));
+      setLoading(true);
+      try {
+        const response = await practicesApiService.getPractices(
+          pagination.current,
+          pagination.pageSize,
+          pagination.field,
+          pagination.order,
+          searchQuery
+        );
+        if (response.done) {
+          setPractices(response.body);
+          const total = Number(response.body.total) || 0;
+          setPagination(prev => {
+            const maxPage = Math.max(1, Math.ceil(total / prev.pageSize));
+            if (prev.current > maxPage) {
+              return { ...prev, total, current: maxPage };
+            }
+            return { ...prev, total };
+          });
+        }
+      } catch (error) {
+        logger.error('Failed to get practices:', error);
+      } finally {
+        setLoading(false);
       }
     };
   }, [pagination.current, pagination.pageSize, pagination.field, pagination.order, searchQuery]);
@@ -73,6 +85,14 @@ const PracticesSettings = () => {
   useEffect(() => {
     getPractices();
   }, [getPractices]);
+
+  const handlePageChange = (page: number, pageSize: number) => {
+    setPagination(prev => ({
+      ...prev,
+      current: page,
+      pageSize,
+    }));
+  };
 
   const handleEditClick = (id: string) => {
     setSelectedPracticeId(id);
@@ -85,9 +105,14 @@ const PracticesSettings = () => {
   };
 
   const handleDrawerClose = () => {
+    const isCreate = selectedPracticeId === null;
     setSelectedPracticeId(null);
     setShowDrawer(false);
-    getPractices();
+    if (isCreate && pagination.current !== 1) {
+      setPagination(prev => ({ ...prev, current: 1 }));
+    } else {
+      getPractices();
+    }
   };
 
   const deletePractice = async (id: string) => {
@@ -146,14 +171,19 @@ const PracticesSettings = () => {
     [t]
   );
 
-  const handleTableChange = (newPagination: any, _filters: any, sorter: any) => {
+  const handleTableChange = (_newPagination: any, _filters: any, sorter: any) => {
+    const sort = Array.isArray(sorter) ? sorter[0] : sorter;
     setPagination(prev => ({
       ...prev,
-      current: newPagination.current,
-      pageSize: newPagination.pageSize,
-      field: sorter.field || 'name',
-      order: sorter.order === 'ascend' ? 'asc' : 'desc',
+      current: 1,
+      field: (sort?.field as string) || 'name',
+      order: sort?.order === 'ascend' ? 'asc' : 'desc',
     }));
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.currentTarget.value);
+    setPagination(prev => ({ ...prev, current: 1 }));
   };
 
   return (
@@ -164,7 +194,7 @@ const PracticesSettings = () => {
           <Flex gap={8} align="center" justify="flex-end" style={{ width: '100%', maxWidth: 460 }}>
             <Input
               value={searchQuery}
-              onChange={e => setSearchQuery(e.currentTarget.value)}
+              onChange={handleSearchChange}
               placeholder={t('search', { defaultValue: 'Search practices' })}
               style={{ maxWidth: 232 }}
               suffix={<SearchOutlined />}
@@ -189,8 +219,26 @@ const PracticesSettings = () => {
         size="small"
         columns={columns}
         rowKey={(record: IPractice) => record.id!}
-        pagination={pagination}
+        pagination={false}
+        loading={loading}
         onChange={handleTableChange}
+      />
+      <TablePagination
+        page={pagination.current}
+        pageSize={pagination.pageSize}
+        total={pagination.total}
+        onPageChange={handlePageChange}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        rowsPerPageLabel={t('rowsPerPage', { defaultValue: 'Rows per page:' })}
+        renderSummary={(range, total) =>
+          t('paginationSummary', {
+            range,
+            total,
+            defaultValue: `${range} of ${total}`,
+          })
+        }
+        insetStart={8}
+        insetEnd={8}
       />
       <PracticeDrawer
         drawerOpen={showDrawer}

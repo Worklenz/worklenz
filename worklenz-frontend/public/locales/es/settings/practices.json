@@ -18,5 +18,7 @@
   "fetchPracticeErrorMessage": "Error al obtener la práctica",
   "createPracticeErrorMessage": "Error al crear la práctica",
   "updatePracticeErrorMessage": "Error al actualizar la práctica",
-  "pinTooltip": "Fijar en la barra de navegación"
+  "pinTooltip": "Fijar en la barra de navegación",
+  "rowsPerPage": "Filas por página:",
+  "paginationSummary": "{{range}} de {{total}}"
 }
