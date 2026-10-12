@@ -16,6 +16,7 @@ import {
   PERCENT_RANGE_FILTERS,
   SORT_FIELDS,
 } from "../../controllers/reporting/progress-tracking/progress-tracking-query";
+import DashboardsController from "../../controllers/reporting/dashboards-controller";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import {
   validateUuidParam,
@@ -37,6 +38,17 @@ reportingApiRouter.get("/overview/teams", teamOwnerOrAdminValidator, safeControl
 reportingApiRouter.get("/overview/layout", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getLayout));
 reportingApiRouter.put("/overview/layout", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.saveLayout));
 reportingApiRouter.delete("/overview/layout", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.resetLayout));
+
+// Custom Dashboards - user-created dashboards and their gadgets. Only the owner can change one;
+// ones shared with the viewer are read-only. `shared/:token` is declared before `:id`.
+reportingApiRouter.get("/dashboards", teamOwnerOrAdminValidator, safeControllerFunction(DashboardsController.list));
+reportingApiRouter.post("/dashboards", teamOwnerOrAdminValidator, safeControllerFunction(DashboardsController.create));
+reportingApiRouter.get("/dashboards/shared/:token", teamOwnerOrAdminValidator, safeControllerFunction(DashboardsController.getShared));
+reportingApiRouter.get("/dashboards/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(DashboardsController.get));
+reportingApiRouter.patch("/dashboards/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(DashboardsController.update));
+reportingApiRouter.delete("/dashboards/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(DashboardsController.remove));
+reportingApiRouter.put("/dashboards/:id/gadgets", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(DashboardsController.saveGadgets));
+reportingApiRouter.post("/dashboards/:id/share-token/rotate", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(DashboardsController.rotateToken));
 
 // Overview projects - accepts team as query parameter (for pagination and filtering)
 reportingApiRouter.get("/overview/projects",
