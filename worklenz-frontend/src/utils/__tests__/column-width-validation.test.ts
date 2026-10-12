@@ -34,11 +34,11 @@ describe('column-width-validation', () => {
     ).toBe('400px');
   });
 
-  it('clamps custom column widths without base column configuration to 180px-400px range', () => {
-    // Clamps below minimum 180px
-    expect(validateColumnWidth('custom-col-1', '120px')).toBe('180px');
-    expect(validateColumnWidths({ 'custom-col-1': '120px' }, [])).toEqual({
-      'custom-col-1': '180px',
+  it('clamps custom column widths without base column configuration to 100px-400px range', () => {
+    // Clamps below minimum 100px
+    expect(validateColumnWidth('custom-col-1', '80px')).toBe('100px');
+    expect(validateColumnWidths({ 'custom-col-1': '80px' }, [])).toEqual({
+      'custom-col-1': '100px',
     });
 
     // Preserves valid width in range
