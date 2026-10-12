@@ -113,13 +113,38 @@ const noopAppSumoMigrationService: IAppSumoMigrationService = {
   }),
 };
 
+export interface ISignupEmailDomainPolicy {
+  /** Resolves true when signups from the email's domain must be rejected. */
+  isBlocked(email: string): Promise<boolean>;
+}
+
+const noopSignupEmailDomainPolicy: ISignupEmailDomainPolicy = {
+  isBlocked: async () => false,
+};
+
+let hasLoggedMissingPrivateExtensions = false;
+
+const isMissingPrivateExtension = (error: unknown, modulePath: string): boolean => {
+  if (!(error instanceof Error)) return false;
+
+  const moduleNotFoundError = error as NodeJS.ErrnoException;
+  return moduleNotFoundError.code === "MODULE_NOT_FOUND" && error.message.includes(`'${modulePath}'`);
+};
+
 function load<T>(modulePath: string, exportName: string, fallback: T): T {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const mod = require(modulePath);
     return (mod[exportName] as T) ?? fallback;
   } catch (error) {
-    log_error(`private-extensions: ${modulePath} not present, using no-op (${(error as Error).message})`);
+    if (isMissingPrivateExtension(error, modulePath)) {
+      if (!hasLoggedMissingPrivateExtensions) {
+        console.info("Optional AppSumo extensions are unavailable; AppSumo-specific features are disabled.");
+        hasLoggedMissingPrivateExtensions = true;
+      }
+    } else {
+      log_error(error);
+    }
     return fallback;
   }
 }
@@ -132,3 +157,6 @@ export const appSumoLtdEntitlementService: IAppSumoLtdEntitlementService =
 
 export const appSumoMigrationService: IAppSumoMigrationService =
   load("../private/services/appsumo-migration-service", "AppSumoMigrationService", noopAppSumoMigrationService);
+
+export const signupEmailDomainPolicy: ISignupEmailDomainPolicy =
+  load("../private/shared/signup-email-domain-policy", "SignupEmailDomainPolicy", noopSignupEmailDomainPolicy);

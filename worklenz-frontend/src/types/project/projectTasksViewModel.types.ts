@@ -1,9 +1,10 @@
 import { InlineMember } from '../teamMembers/inlineMember.types';
 import { ITaskLabel } from '../tasks/taskLabel.types';
 import { ITaskStatusViewModel } from '../tasks/taskStatusGetResponse.types';
+import { IssueType } from './softwareIssue.types';
 
 export interface ITaskAssignee {
-  team_member_id: any;
+  team_member_id?: string | null;
   id: string;
   project_member_id: string;
   name: string;
@@ -16,7 +17,10 @@ export interface ITaskStatusCategory {
 }
 
 export interface IProjectTask {
-  manual_progress: any;
+  manual_progress?: boolean;
+  story_points?: number | null;
+  issue_type?: IssueType;
+  is_blocked?: boolean;
   due_time?: string;
   id?: string;
   name?: string;
@@ -100,6 +104,8 @@ export interface IProjectTask {
   project_use_manual_progress?: boolean;
   project_use_time_progress?: boolean;
   project_use_weighted_progress?: boolean;
+  /** TVR-13: parent of assigned-only subtask — viewable, not editable */
+  assignee_scope_readonly?: boolean;
 }
 
 export interface IProjectTasksViewModel {

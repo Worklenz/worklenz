@@ -1,0 +1,17 @@
+{
+  "configurationTitle": "Configuration",
+  "configurationDescription": "Gérez les paramètres à l’échelle de l’organisation qui s’appliquent à tous les projets.",
+  "businessPlanRequired": "Plan d'affaires requis",
+  "businessPlanRequiredDescription": "Les paramètres de restriction des tâches au niveau de l'organisation sont disponibles sur les forfaits Business et Enterprise.",
+  "upgradePlan": "Plan de mise à niveau",
+  "taskManagementSection": "Gestion des tâches",
+  "restrictTaskCreation": "Restreindre l'attribution des tâches aux administrateurs et aux chefs d'équipe",
+  "restrictTaskCreationTooltip": "Lorsqu'il est activé, seuls les administrateurs et les chefs d'équipe peuvent créer et attribuer des tâches sur tous les projets. Les membres de l'équipe peuvent uniquement afficher les tâches qui leur sont assignées. Les paramètres au niveau du projet remplacent ce paramètre au niveau de l’organisation.",
+  "restrictTaskCreationNote": "Remarque : Les paramètres au niveau du projet sont prioritaires sur ce paramètre au niveau de l'organisation. Les modifications prennent effet immédiatement.",
+  "timeTrackingSection": "Suivi du temps",
+  "limitTimelogBackdating": "Limiter la distance dans laquelle le temps peut être enregistré",
+  "limitTimelogBackdatingTooltip": "Lorsque cette option est activée, les membres ne peuvent pas créer un journal de temps antérieur au nombre de jours autorisé. S'applique à tout le monde, y compris les propriétaires et les administrateurs. Les minuteries en cours d’exécution et les journaux importés ne sont pas affectés.",
+  "timelogBackdateLimitDays": "Nombre maximum de jours pendant lesquels un journal de temps peut être antidaté",
+  "timelogBackdateLimitNote": "Remarque : Les journaux de temps existants ne sont jamais modifiés. L'édition d'un journal déjà ancien reste possible tant que sa date n'est pas modifiée.",
+  "days": "jours"
+}

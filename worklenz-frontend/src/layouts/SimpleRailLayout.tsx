@@ -76,14 +76,14 @@ const SimpleRailLayout: React.FC<SimpleRailLayoutProps> = memo(({ surfaceKey, co
     const rest = location.pathname.startsWith(basePath)
       ? location.pathname.slice(basePath.length).replace(/^\//, '')
       : '';
-    return rest || surface.defaultItemKey;
-  }, [location.pathname, basePath, surface.defaultItemKey]);
+    return rest || resolved.activeDefaultKey;
+  }, [location.pathname, basePath, resolved.activeDefaultKey]);
 
   const handleSelect = useCallback(
     (itemKey: string) => {
-      navigate(itemKey === surface.defaultItemKey ? basePath : `${basePath}/${itemKey}`);
+      navigate(`${basePath}/${itemKey}`);
     },
-    [navigate, basePath, surface.defaultItemKey]
+    [navigate, basePath]
   );
 
   return (

@@ -29,5 +29,7 @@
   "role": "角色",
   "owner": "所有者",
   "admin": "管理员",
-  "member": "成员"
+  "member": "成员",
+  "cannotChangeOwnerRole": "所有者角色无法更改",
+  "pendingInvitation": "待处理邀请"
 }

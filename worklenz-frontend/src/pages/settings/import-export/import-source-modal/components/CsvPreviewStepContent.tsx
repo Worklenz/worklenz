@@ -1,15 +1,16 @@
 import React from 'react';
 import { Table, Typography } from '@/shared/antd-imports';
+import type { TranslateFn, ThemeToken } from '../types';
 
 const CSV_PREVIEW_ROW_COUNT = 8;
 const CSV_PREVIEW_COLUMN_COUNT = 8;
 
 interface CsvPreviewStepContentProps {
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
-  themeToken: any;
+  t: TranslateFn;
+  themeToken: ThemeToken;
   uploadedCsvFileRef: React.MutableRefObject<File | null>;
   csvColumns: string[];
-  csvRows: Record<string, any>[];
+  csvRows: Record<string, unknown>[];
 }
 
 export const CsvPreviewStepContent: React.FC<CsvPreviewStepContentProps> = ({

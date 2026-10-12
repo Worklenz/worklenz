@@ -14,15 +14,28 @@ import { useTranslation } from 'react-i18next';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { setProjectId } from '@/features/project/project.slice';
 
-type MembersReportsTasksTableProps = {
-  tasksData: any[];
-  loading: boolean;
-};
-
 interface ReportingTaskRecord {
   id: string;
   project_id: string;
+  name?: string;
+  sub_tasks_count?: number | string;
+  project_color?: string;
+  project_name?: string;
+  status_color?: string;
+  status_name?: string;
+  priority_color?: string;
+  priority_name?: string;
+  end_date?: string | null;
+  completed_at?: string | null;
+  estimated_string?: string;
+  time_spent_string?: string;
+  overlogged_time?: string;
 }
+
+type MembersReportsTasksTableProps = {
+  tasksData: ReportingTaskRecord[];
+  loading: boolean;
+};
 
 const MembersReportsTasksTable = ({ tasksData, loading }: MembersReportsTasksTableProps) => {
   // localization
@@ -41,7 +54,7 @@ const MembersReportsTasksTable = ({ tasksData, loading }: MembersReportsTasksTab
     dispatch(setShowTaskDrawer(true));
   };
 
-  const columns: TableColumnsType = [
+  const columns: TableColumnsType<ReportingTaskRecord> = [
     {
       key: 'task',
       title: <CustomTableTitle title={t('taskColumn')} />,

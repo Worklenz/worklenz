@@ -7,7 +7,7 @@
   "actionsColumn": "Acciones",
   "fileIconAlt": "Icono de archivo",
   "emptyText": "Aún no hay archivos.",
-  "uploadButton": "Subir",
+  "uploadButton": "Subir Archivo",
   "uploaderTitle": "Subir Archivos",
   "filePickerHint": "Arrastra & Suelta archivos o haz clic para explorar",
   "uploadHintLimit": "PDF, imágenes, documentos y archivos. Máx. {{maxSize}} MB por archivo.",

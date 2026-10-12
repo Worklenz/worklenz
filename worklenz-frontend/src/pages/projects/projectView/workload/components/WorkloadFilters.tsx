@@ -462,8 +462,9 @@ const WorkloadFilters = ({
         dropdownRender={() => timeWiseDropdownContent}
         onOpenChange={open => setIsDateDropdownOpen(open)}
         open={isDateDropdownOpen}
+        getPopupContainer={trigger => trigger.parentElement || document.body}
       >
-        <Button icon={<DownOutlined />} iconPosition="end">
+        <Button size="small" icon={<DownOutlined />} iconPosition="end">
           {getDisplayLabel()}
         </Button>
       </Dropdown>
@@ -475,13 +476,15 @@ const WorkloadFilters = ({
         open={filterPopoverOpen}
         onOpenChange={setFilterPopoverOpen}
         placement="bottomRight"
+        getPopupContainer={trigger => trigger.parentElement || document.body}
       >
-        <Button icon={activeFiltersCount > 0 ? <FilterFilled /> : <FilterOutlined />}>
+        <Button size="small" icon={activeFiltersCount > 0 ? <FilterFilled /> : <FilterOutlined />}>
           {t('filters.filters')}
         </Button>
       </Popover>
 
       <Button
+        size="small"
         icon={<ReloadOutlined spin={isRefreshing} />}
         onClick={handleRefresh}
         title={t('filters.refresh')}

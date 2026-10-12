@@ -7,7 +7,7 @@
   "actionsColumn": "Aktionen",
   "fileIconAlt": "Dateisymbol",
   "emptyText": "Es gibt noch keine Dateien.",
-  "uploadButton": "Hochladen",
+  "uploadButton": "Datei hochladen",
   "uploaderTitle": "Dateien hochladen",
   "filePickerHint": "Dateien per Drag & Drop oder Klicken auswählen",
   "uploadHintLimit": "PDF, Bilder, Dokumente, Archive. Max. {{maxSize}} MB pro Datei.",

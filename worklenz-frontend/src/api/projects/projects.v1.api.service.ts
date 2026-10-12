@@ -39,14 +39,14 @@ export const projectsApi = createApi({
       {
         index: number;
         size: number;
-        field: string | null;
-        order: string | null;
-        search: string | null;
-        filter: number | null;
-        statuses: string | null;
-        categories: string | null;
-        priorities: string | null;
-        clients: string | null;
+        field?: string | null;
+        order?: string | null;
+        search?: string | null;
+        filter?: number | null;
+        statuses?: string | null;
+        categories?: string | null;
+        priorities?: string | null;
+        clients?: string | null;
       }
     >({
       query: ({

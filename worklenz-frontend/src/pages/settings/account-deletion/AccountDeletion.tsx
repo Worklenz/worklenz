@@ -53,8 +53,8 @@ const AccountDeletion: React.FC = () => {
     try {
       const response = await accountApiService.requestDeletion({
         userId: currentSession.id,
-        userEmail: currentSession.email,
-        userName: currentSession.name,
+        userEmail: currentSession.email ?? '',
+        userName: currentSession.name ?? '',
       });
 
       if (response.done) {

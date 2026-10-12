@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useMediaQuery } from 'react-responsive';
-import { LockOutlined, MailOutlined, UserOutlined } from '@/shared/antd-imports';
-import { Form, Card, Input, Flex, Button, Typography, Space, message } from '@/shared/antd-imports';
-import { Rule } from 'antd/es/form';
+import { Form, Input, Flex, Button, Typography, Divider, message } from '@/shared/antd-imports';
 import { CheckCircleTwoTone, CloseCircleTwoTone } from '@/shared/antd-imports';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { Rule } from 'antd/es/form';
 
 import googleIcon from '@/assets/images/google-icon.png';
 import appleIcon from '@/assets/images/apple-icon.svg';
@@ -15,6 +12,7 @@ import PageHeader from '@components/AuthPageHeader';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { IUserSignUpRequest } from '@/types/auth/signup.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { signUp } from '@/features/auth/authSlice';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
@@ -28,7 +26,7 @@ const evt_signup_with_apple_click = 'signup_with_apple_click';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import logger from '@/utils/errorLogger';
 import alertService from '@/services/alerts/alertService';
-import { WORKLENZ_REDIRECT_PROJ_KEY } from '@/shared/constants';
+import { WORKLENZ_REDIRECT_PROJ_KEY, AUTH_PRIMARY_BUTTON_COLOR } from '@/shared/constants';
 
 // Define the global grecaptcha type
 declare global {
@@ -47,7 +45,6 @@ const SignupPage = () => {
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   const { t } = useTranslation('auth/signup');
-  const isMobile = useMediaQuery({ query: '(max-width: 576px)' });
 
   useDocumentTitle('Signup');
 
@@ -60,6 +57,9 @@ const SignupPage = () => {
     teamMemberId: '',
     projectId: '',
   });
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const [passwordValue, setPasswordValue] = useState('');
+  const [passwordActive, setPasswordActive] = useState(false);
 
   const setProjectId = (projectId: string) => {
     if (!projectId) {
@@ -330,56 +330,76 @@ const SignupPage = () => {
     {
       key: 'minLength',
       test: (v: string) => v.length >= 8,
-      label: t('passwordChecklist.minLength', { defaultValue: 'At least 8 characters' }),
+      label: t('passwordChecklist.minLength'),
     },
     {
       key: 'uppercase',
       test: (v: string) => /[A-Z]/.test(v),
-      label: t('passwordChecklist.uppercase', { defaultValue: 'One uppercase letter' }),
+      label: t('passwordChecklist.uppercase'),
     },
     {
       key: 'lowercase',
       test: (v: string) => /[a-z]/.test(v),
-      label: t('passwordChecklist.lowercase', { defaultValue: 'One lowercase letter' }),
+      label: t('passwordChecklist.lowercase'),
     },
     {
       key: 'number',
       test: (v: string) => /\d/.test(v),
-      label: t('passwordChecklist.number', { defaultValue: 'One number' }),
+      label: t('passwordChecklist.number'),
     },
     {
       key: 'special',
       test: (v: string) => /[@$!%*?&#]/.test(v),
-      label: t('passwordChecklist.special', { defaultValue: 'One special character' }),
+      label: t('passwordChecklist.special'),
     },
   ];
 
-  const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const [passwordValue, setPasswordValue] = useState('');
-  const [passwordActive, setPasswordActive] = useState(false);
-
   return (
-    <Card
-      style={{
-        width: '100%',
-        boxShadow: 'none',
-      }}
-      styles={{
-        body: {
-          paddingInline: isMobile ? 24 : 48,
-        },
-      }}
-      variant="outlined"
-    >
-      <PageHeader
-        description={t('headerDescription', { defaultValue: 'Sign up to get started' })}
-      />
+    <>
+      <PageHeader title={t('headline')} description={t('headerDescription')} />
+
+      {(enableGoogleLogin || enableAppleLogin) && (
+        <>
+          <Typography.Text
+            type="secondary"
+            style={{ display: 'block', textAlign: 'center', fontSize: 12, marginBottom: 10 }}
+          >
+            {t('signUpWithLabel')}
+          </Typography.Text>
+          <Flex gap={10} style={{ marginBottom: 24 }}>
+            {enableGoogleLogin && (
+              <Button
+                size="large"
+                onClick={onGoogleSignUpClick}
+                aria-label={t('signInWithGoogleAriaLabel')}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                <img src={googleIcon} alt="" style={{ width: 18, height: 18 }} />
+                {t('signInWithGoogleButton')}
+              </Button>
+            )}
+            {enableAppleLogin && (
+              <Button
+                size="large"
+                onClick={onAppleSignUpClick}
+                aria-label={t('signUpWithAppleAriaLabel')}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                <img src={appleIcon} alt="" style={{ width: 16, height: 16 }} />
+                {t('signUpWithAppleButton')}
+              </Button>
+            )}
+          </Flex>
+          <Divider style={{ margin: '0 0 22px', fontSize: 12 }}>{t('orText')}</Divider>
+        </>
+      )}
+
       <Form
         form={form}
         name="signup"
         layout="vertical"
         autoComplete="off"
-        requiredMark="optional"
+        requiredMark={false}
         onFinish={onFinish}
         style={{ width: '100%' }}
         initialValues={{
@@ -387,46 +407,24 @@ const SignupPage = () => {
           name: urlParams.name,
         }}
       >
-        <Form.Item
-          name="name"
-          label={t('nameLabel', { defaultValue: 'Full Name' })}
-          rules={formRules.name}
-        >
-          <Input
-            prefix={<UserOutlined />}
-            placeholder={t('namePlaceholder', { defaultValue: 'Enter your full name' })}
-            size="large"
-            style={{ borderRadius: 4 }}
-          />
+        <Form.Item name="name" label={t('nameLabel')} rules={formRules.name}>
+          <Input size="large" placeholder={t('namePlaceholder')} />
         </Form.Item>
 
-        <Form.Item
-          name="email"
-          label={t('emailLabel', { defaultValue: 'Email' })}
-          rules={formRules.email as Rule[]}
-        >
-          <Input
-            prefix={<MailOutlined />}
-            placeholder={t('emailPlaceholder', { defaultValue: 'Enter your email' })}
-            size="large"
-            style={{ borderRadius: 4 }}
-          />
+        <Form.Item name="email" label={t('emailLabel')} rules={formRules.email as Rule[]}>
+          <Input size="large" placeholder={t('emailPlaceholder')} />
         </Form.Item>
 
         <Form.Item
           name="password"
-          label={t('passwordLabel', { defaultValue: 'Password' })}
+          label={t('passwordLabel')}
           rules={formRules.password}
           validateTrigger={['onBlur', 'onSubmit']}
         >
           <div>
             <Input.Password
-              prefix={<LockOutlined />}
-              placeholder={t('strongPasswordPlaceholder', {
-                defaultValue: 'Enter a strong password',
-              })}
               size="large"
-              style={{ borderRadius: 4 }}
+              placeholder={t('passwordPlaceholder')}
               value={passwordValue}
               onFocus={() => setPasswordActive(true)}
               onChange={e => {
@@ -437,21 +435,11 @@ const SignupPage = () => {
                 if (!passwordValue) setPasswordActive(false);
               }}
             />
-            <Typography.Text
-              type="secondary"
-              style={{ fontSize: 12, marginTop: 4, marginBottom: 0, display: 'block' }}
-            >
-              {t('passwordGuideline', {
-                defaultValue:
-                  'Password must be at least 8 characters, include uppercase and lowercase letters, a number, and a special character.',
-              })}
-            </Typography.Text>
             {passwordActive && (
               <div style={{ marginTop: 8, marginBottom: 4 }}>
                 {passwordChecklistItems.map(item => {
                   const passed = item.test(passwordValue);
-                  // Only green if passed, otherwise neutral (never red)
-                  let color = passed
+                  const color = passed
                     ? themeMode === 'dark'
                       ? '#52c41a'
                       : '#389e0d'
@@ -461,9 +449,7 @@ const SignupPage = () => {
                   return (
                     <Flex key={item.key} align="center" gap={8} style={{ color, fontSize: 13 }}>
                       {passed ? (
-                        <CheckCircleTwoTone
-                          twoToneColor={themeMode === 'dark' ? '#52c41a' : '#52c41a'}
-                        />
+                        <CheckCircleTwoTone twoToneColor="#52c41a" />
                       ) : (
                         <CloseCircleTwoTone
                           twoToneColor={themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf'}
@@ -478,96 +464,50 @@ const SignupPage = () => {
           </div>
         </Form.Item>
 
-        <Form.Item>
-          <Typography.Paragraph style={{ fontSize: 14 }}>
-            {t('bySigningUpText')}{' '}
-            <a href="https://worklenz.com/privacy/" target="_blank" rel="noopener noreferrer">
-              {t('privacyPolicyLink')}
-            </a>{' '}
-            {t('andText')}{' '}
-            <a href="https://worklenz.com/terms/" target="_blank" rel="noopener noreferrer">
-              {t('termsOfUseLink')}
-            </a>
-            .
-          </Typography.Paragraph>
-        </Form.Item>
+        <Button
+          block
+          type="primary"
+          htmlType="submit"
+          size="large"
+          loading={loading || validating}
+          style={{ backgroundColor: AUTH_PRIMARY_BUTTON_COLOR, borderColor: AUTH_PRIMARY_BUTTON_COLOR }}
+        >
+          {t('signupButton')}
+        </Button>
 
-        <Form.Item>
-          <Flex vertical gap={8}>
-            <Button
-              block
-              type="primary"
-              htmlType="submit"
-              size="large"
-              loading={loading || validating}
-              style={{ borderRadius: 4 }}
-            >
-              {t('signupButton')}
-            </Button>
-
-            {(enableGoogleLogin || enableAppleLogin) && (
-              <>
-                <Typography.Text style={{ textAlign: 'center' }}>{t('orText')}</Typography.Text>
-
-                {enableGoogleLogin && (
-                  <Button
-                    block
-                    type="default"
-                    size="large"
-                    onClick={onGoogleSignUpClick}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      borderRadius: 4,
-                    }}
-                  >
-                    <img
-                      src={googleIcon}
-                      alt="google icon"
-                      style={{ maxWidth: 20, width: '100%' }}
-                    />
-                    {t('signInWithGoogleButton')}
-                  </Button>
-                )}
-
-                {enableAppleLogin && (
-                  <Button
-                    block
-                    type="default"
-                    size="large"
-                    onClick={onAppleSignUpClick}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      borderRadius: 4,
-                    }}
-                  >
-                    <img src={appleIcon} alt="apple icon" style={{ maxWidth: 20, width: '100%' }} />
-                    {t('signUpWithAppleButton', { defaultValue: 'Sign up with Apple' })}
-                  </Button>
-                )}
-              </>
-            )}
-          </Flex>
-        </Form.Item>
-
-        <Form.Item>
-          <Space>
-            <Typography.Text style={{ fontSize: 14 }}>
-              {t('alreadyHaveAccountText', { defaultValue: 'Already have an account?' })}
-            </Typography.Text>
-
-            <Link
-              to="/auth/login"
-              className="ant-typography ant-typography-link blue-link"
-              style={{ fontSize: 14 }}
-            >
-              {t('loginButton')}
-            </Link>
-          </Space>
-        </Form.Item>
+        <Typography.Paragraph
+          type="secondary"
+          style={{ fontSize: 11.5, textAlign: 'center', marginTop: 12, marginBottom: 0 }}
+        >
+          {t('bySigningUpText')}{' '}
+          <a
+            href="https://worklenz.com/terms/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'inherit', fontWeight: 700, textDecoration: 'underline' }}
+          >
+            {t('termsOfUseLink')}
+          </a>{' '}
+          {t('andText')}{' '}
+          <a
+            href="https://worklenz.com/privacy/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'inherit', fontWeight: 700, textDecoration: 'underline' }}
+          >
+            {t('privacyPolicyLink')}
+          </a>
+          .
+        </Typography.Paragraph>
       </Form>
-    </Card>
+
+      <Flex justify="center" gap={4} style={{ marginTop: 26, fontSize: 12.5 }}>
+        <Typography.Text type="secondary">{t('alreadyHaveAccountText')}</Typography.Text>
+        <Link to="/auth/login" className="blue-link" style={{ fontWeight: 600 }}>
+          {t('loginButton')}
+        </Link>
+      </Flex>
+    </>
   );
 };
 

@@ -22,8 +22,8 @@ export async function requireTeamLead(
     }
     
     next();
-  } catch (error) {
-    return res.status(500).send(error);
+  } catch {
+    return res.status(500).send("Internal Server Error");
   }
 }
 
@@ -48,8 +48,7 @@ export async function requireTeamLeadOrAdmin(
     }
     
     next();
-  } catch (error) {
-    return res.status(500).send(error);
+  } catch {
+    return res.status(500).send("Internal Server Error");
   }
 }
-

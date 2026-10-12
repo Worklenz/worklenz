@@ -1,22 +1,6 @@
-import {
-  Row,
-  Col,
-  Card,
-  Statistic,
-  Progress,
-  Flex,
-  Skeleton,
-  Typography,
-  theme,
-  Tooltip,
-} from '@/shared/antd-imports';
-import {
-  TeamOutlined,
-  ClockCircleOutlined,
-  AlertOutlined,
-  CheckCircleOutlined,
-  InfoCircleOutlined,
-} from '@ant-design/icons';
+import type { ReactNode } from 'react';
+import { Row, Col, Skeleton, Typography, theme, Tooltip } from '@/shared/antd-imports';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { IWorkloadData } from '@/types/workload/workload.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -236,6 +220,107 @@ const calculateSummaryFromRawData = (data: any, startDate?: string, endDate?: st
   };
 };
 
+// Compact stat card shell, styled to match the Home > Overview stat cards
+// (pages/home/home-stat-cards/HomeStatCards.tsx) — 12px label + info tooltip,
+// 22px bold value, tight padding, no icon/progress bar.
+interface CompactStatCardSplit {
+  leftValue: ReactNode;
+  leftLabel: ReactNode;
+  leftColor?: string;
+  rightValue: ReactNode;
+  rightLabel: ReactNode;
+  rightColor?: string;
+}
+
+interface CompactStatCardProps {
+  label: ReactNode;
+  tooltip: ReactNode;
+  value?: ReactNode;
+  valueColor?: string;
+  caption?: ReactNode;
+  /** Renders a two-value layout (divider between them) instead of a single value —
+   * mirrors HomeStatCards.tsx's Focus Time card (billable/non-billable split). */
+  split?: CompactStatCardSplit;
+}
+
+const CompactStatCard = ({ label, tooltip, value, valueColor, caption, split }: CompactStatCardProps) => {
+  const { token } = theme.useToken();
+
+  return (
+    <div
+      style={{
+        height: '100%',
+        borderRadius: 10,
+        padding: '12px 16px',
+        border: `1px solid ${token.colorBorderSecondary}`,
+        background: token.colorBgContainer,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          fontSize: 12,
+          marginBottom: 4,
+          color: token.colorTextSecondary,
+        }}
+      >
+        <span>{label}</span>
+        <Tooltip
+          overlayStyle={{ maxWidth: 'none' }}
+          overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
+          title={tooltip}
+        >
+          <InfoCircleOutlined style={{ fontSize: 11, cursor: 'help' }} />
+        </Tooltip>
+      </div>
+      {split ? (
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
+          <div>
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                color: split.leftColor ?? token.colorText,
+              }}
+            >
+              {split.leftValue}
+            </div>
+            <div style={{ fontSize: 11, color: token.colorTextSecondary, marginTop: 2 }}>
+              {split.leftLabel}
+            </div>
+          </div>
+          <div style={{ width: 1, alignSelf: 'stretch', background: token.colorBorderSecondary }} />
+          <div style={{ textAlign: 'right' }}>
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                color: split.rightColor ?? token.colorText,
+              }}
+            >
+              {split.rightValue}
+            </div>
+            <div style={{ fontSize: 11, color: token.colorTextSecondary, marginTop: 2 }}>
+              {split.rightLabel}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2, color: valueColor ?? token.colorText }}>
+          {value}
+        </div>
+      )}
+      {caption && (
+        <div style={{ fontSize: 12, color: token.colorTextSecondary, marginTop: 8 }}>{caption}</div>
+      )}
+    </div>
+  );
+};
+
 interface WorkloadOverviewProps {
   data?: IWorkloadData | any; // Allow raw API responses
   isLoading: boolean;
@@ -246,14 +331,22 @@ const WorkloadOverview = ({ data, isLoading }: WorkloadOverviewProps) => {
   const { token } = theme.useToken();
   const { alertThresholds, dateRange } = useAppSelector(state => state.projectWorkload);
 
+  const cardShellStyle = {
+    height: '100%',
+    borderRadius: 10,
+    padding: '12px 16px',
+    border: `1px solid ${token.colorBorderSecondary}`,
+    background: token.colorBgContainer,
+  } as const;
+
   if (isLoading) {
     return (
       <Row gutter={[16, 16]}>
         {[1, 2, 3, 4].map(key => (
-          <Col xs={24} sm={12} lg={6} key={key}>
-            <Card style={{ height: '100%' }}>
+          <Col xs={12} sm={12} lg={6} key={key}>
+            <div style={cardShellStyle}>
               <Skeleton active paragraph={{ rows: 2 }} />
-            </Card>
+            </div>
           </Col>
         ))}
       </Row>
@@ -264,11 +357,11 @@ const WorkloadOverview = ({ data, isLoading }: WorkloadOverviewProps) => {
     return (
       <Row gutter={[16, 16]}>
         <Col span={24}>
-          <Card style={{ height: '100%' }}>
+          <div style={cardShellStyle}>
             <div style={{ textAlign: 'center', padding: '20px' }}>
               <Typography.Text type="secondary">{t('noWorkloadData')}</Typography.Text>
             </div>
-          </Card>
+          </div>
         </Col>
       </Row>
     );
@@ -287,154 +380,112 @@ const WorkloadOverview = ({ data, isLoading }: WorkloadOverviewProps) => {
 
   return (
     <Row gutter={[16, 16]}>
-      <Col xs={24} sm={12} md={6}>
-        <Card style={{ height: '100%' }}>
-          <Tooltip
-          overlayStyle={{ maxWidth: 'none' }}
-  overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
-            title={
-              <div>
-                <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.teamMembersTooltip.title')}</div>
-                <div style={{ marginBottom: 4, opacity: 0.85 }}>{t('overview.teamMembersTooltip.memberStatusLabel')}</div>
-                <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
-                  <li>{t('overview.teamMembersTooltip.totalMembersLabel')} {summary.totalMembers}</li>
-                  <li>{t('overview.teamMembersTooltip.overallocatedLabel')} {summary.overallocatedMembers} (&gt;100% utilization)</li>
-                  <li>{t('overview.teamMembersTooltip.underutilizedLabel')} {summary.underutilizedMembers} (&lt;{alertThresholds.underutilization}% utilization)</li>
-                  <li>{t('overview.teamMembersTooltip.optimalLabel')} {summary.totalMembers - summary.overallocatedMembers - summary.underutilizedMembers}</li>
-                </ul>
-              </div>
-            }
-          >
-            <Statistic
-              title={
-                <Flex align="center" gap={4}>
-                  {t('overview.teamMembers')}
-                  <InfoCircleOutlined style={{ fontSize: 12, opacity: 0.5 }} />
-                </Flex>
-              }
-              value={summary.totalMembers}
-              prefix={<TeamOutlined />}
-            />
-          </Tooltip>
-        </Card>
+      <Col xs={12} sm={12} md={6}>
+        <CompactStatCard
+          label={t('overview.teamMembers')}
+          tooltip={
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.teamMembersTooltipTitle')}</div>
+              <div style={{ marginBottom: 4, opacity: 0.85 }}>{t('overview.memberStatusLabel')}</div>
+              <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
+                <li>{t('overview.totalMembersStat', { count: summary.totalMembers })}</li>
+                <li>{t('overview.overallocatedStat', { count: summary.overallocatedMembers })}</li>
+                <li>
+                  {t('overview.underutilizedStat', {
+                    count: summary.underutilizedMembers,
+                    threshold: alertThresholds.underutilization,
+                  })}
+                </li>
+                <li>
+                  {t('overview.optimalStat', {
+                    count: summary.totalMembers - summary.overallocatedMembers - summary.underutilizedMembers,
+                  })}
+                </li>
+              </ul>
+            </div>
+          }
+          value={summary.totalMembers}
+        />
       </Col>
 
-      <Col xs={24} sm={12} md={6}>
-        <Card style={{ height: '100%' }}>
-          <Tooltip
-          overlayStyle={{ maxWidth: 'none' }}
-  overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
-            title={
-              <div>
-                <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.totalWorkloadTooltip.title')}</div>
-                <div style={{ marginBottom: 4, opacity: 0.85 }}>{t('overview.totalWorkloadTooltip.includesLabel')}</div>
-                <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
-                  <li >{t('overview.totalWorkloadTooltip.estimatedHoursLabel')} {summary.totalEstimatedHours}h</li>
-                  <li >{t('overview.totalWorkloadTooltip.actualHoursLoggedLabel')} {summary.totalActualHours}h</li>
-                  <li >{t('overview.totalWorkloadTooltip.progressLabel')} {summary.totalEstimatedHours > 0 ? Math.round((summary.totalActualHours / summary.totalEstimatedHours) * 100) : summary.totalActualHours > 0 ? 100 : 0}%</li>
-                </ul>
-              </div>
-            }
-          >
-            <Statistic
-              title={
-                <Flex align="center" gap={4}>
-                  {t('overview.totalWorkload')}
-                  <InfoCircleOutlined style={{ fontSize: 12, opacity: 0.5 }} />
-                </Flex>
-              }
-              value={formatTime(summary.totalEstimatedHours)}
-              prefix={<ClockCircleOutlined />}
-            />
-          </Tooltip>
-          <Progress
-            percent={
-              summary.totalEstimatedHours > 0
-                ? Math.round((summary.totalActualHours / summary.totalEstimatedHours) * 100)
-                : summary.totalActualHours > 0
-                  ? 100
-                  : 0
-            }
-            size="small"
-            status={summary.totalActualHours > summary.totalEstimatedHours ? 'exception' : 'active'}
-          />
-        </Card>
+      <Col xs={12} sm={12} md={6}>
+        <CompactStatCard
+          label={t('overview.totalWorkload')}
+          tooltip={
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.totalWorkloadTooltipTitle')}</div>
+              <div style={{ marginBottom: 4, opacity: 0.85 }}>{t('overview.includesLabel')}</div>
+              <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
+                <li>{t('overview.estimatedHoursStat', { hours: summary.totalEstimatedHours })}</li>
+                <li>{t('overview.actualHoursLoggedStat', { hours: summary.totalActualHours })}</li>
+                <li>
+                  {t('overview.progressStat', {
+                    percent:
+                      summary.totalEstimatedHours > 0
+                        ? Math.round((summary.totalActualHours / summary.totalEstimatedHours) * 100)
+                        : summary.totalActualHours > 0
+                          ? 100
+                          : 0,
+                  })}
+                </li>
+              </ul>
+            </div>
+          }
+          value={formatTime(summary.totalEstimatedHours)}
+        />
       </Col>
 
-      <Col xs={24} sm={12} md={6}>
-        <Card style={{ height: '100%' }}>
-          <Tooltip
-            overlayStyle={{ maxWidth: 'none' }}
-            overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
-            title={
-              <div>
-                <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.averageUtilization')}</div>
-                <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
-                  <li>{t('overview.averageUtilizationTooltip.averageLabel')} {summary.averageUtilization.toFixed(1)}%</li>
-                  <li >{t('overview.averageUtilizationTooltip.membersLabel')} {summary.totalMembers}</li>
-                  <li >{t('overview.averageUtilizationTooltip.totalAssignedLabel')} {summary.totalEstimatedHours}h</li>
-                  <li >{t('overview.averageUtilizationTooltip.totalCapacityLabel')} {summary.totalMembers > 0 && summary.averageUtilization > 0 ? Math.round((summary.totalEstimatedHours * 100) / summary.averageUtilization) : 0}h</li>
-                </ul>
-              </div>
-            }
-          >
-            <Statistic
-              title={
-                <Flex align="center" gap={4}>
-                  {t('overview.averageUtilization')}
-                  <InfoCircleOutlined style={{ fontSize: 12, opacity: 0.5 }} />
-                </Flex>
-              }
-              value={summary.averageUtilization}
-              precision={1}
-              suffix="%"
-              valueStyle={{ color: utilizationColor }}
-              prefix={<CheckCircleOutlined />}
-            />
-          </Tooltip>
-          <Progress
-            percent={summary.averageUtilization}
-            strokeColor={utilizationColor}
-            size="small"
-            showInfo={false}
-          />
-        </Card>
+      <Col xs={12} sm={12} md={6}>
+        <CompactStatCard
+          label={t('overview.averageUtilization')}
+          tooltip={
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.averageUtilization')}</div>
+              <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
+                <li>{t('overview.averageStat', { percent: summary.averageUtilization.toFixed(1) })}</li>
+                <li>{t('overview.membersStat', { count: summary.totalMembers })}</li>
+                <li>{t('overview.totalAssignedStat', { hours: summary.totalEstimatedHours })}</li>
+                <li>
+                  {t('overview.totalCapacityStat', {
+                    hours:
+                      summary.totalMembers > 0 && summary.averageUtilization > 0
+                        ? Math.round((summary.totalEstimatedHours * 100) / summary.averageUtilization)
+                        : 0,
+                  })}
+                </li>
+              </ul>
+            </div>
+          }
+          value={`${summary.averageUtilization.toFixed(1)}%`}
+          valueColor={utilizationColor}
+        />
       </Col>
 
-      <Col xs={24} sm={12} md={6}>
-        <Card style={{ height: '100%' }}>
-          <Tooltip
-            overlayStyle={{ maxWidth: 'none' }}
-            overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
-            title={
-              <div>
-                <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.criticalTasks')}</div>
-                <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
-                  <li >{t('overview.criticalTasksTooltip.criticalTasksLabel')} {summary.criticalTasks}</li>
-                  <li >{t('overview.criticalTasksTooltip.totalTasksLabel')} {summary.totalTasks}</li>
-                  <li >{t('overview.criticalTasksTooltip.criticalPercentageLabel')} {summary.totalTasks > 0 ? Math.round((summary.criticalTasks / summary.totalTasks) * 100) : 0}%</li>
-                </ul>
-              </div>
-            }
-          >
-            <Statistic
-              title={
-                <Flex align="center" gap={4}>
-                  {t('overview.criticalTasks')}
-                  <InfoCircleOutlined style={{ fontSize: 12, opacity: 0.5 }} />
-                </Flex>
-              }
-              value={summary.criticalTasks}
-              valueStyle={{
-                color: summary.criticalTasks > 0 ? token.colorError : token.colorSuccess,
-              }}
-              prefix={<AlertOutlined />}
-            />
-          </Tooltip>
-          <div style={{ fontSize: 12, color: token.colorTextSecondary, marginTop: 8 }}>
-            {t('overview.totalTasks', { count: summary.totalTasks })}
-          </div>
-        </Card>
+      <Col xs={12} sm={12} md={6}>
+        <CompactStatCard
+          label={t('overview.tasks')}
+          tooltip={
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.criticalTasks')}</div>
+              <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
+                <li>{t('overview.criticalTasksStat', { count: summary.criticalTasks })}</li>
+                <li>{t('overview.totalTasksStat', { count: summary.totalTasks })}</li>
+                <li>
+                  {t('overview.criticalPercentageStat', {
+                    percent: summary.totalTasks > 0 ? Math.round((summary.criticalTasks / summary.totalTasks) * 100) : 0,
+                  })}
+                </li>
+              </ul>
+            </div>
+          }
+          split={{
+            leftValue: summary.criticalTasks,
+            leftLabel: t('overview.criticalTasks'),
+            leftColor: summary.criticalTasks > 0 ? token.colorError : token.colorSuccess,
+            rightValue: summary.totalTasks,
+            rightLabel: t('overview.totalTasksLabel'),
+          }}
+        />
       </Col>
     </Row>
   );

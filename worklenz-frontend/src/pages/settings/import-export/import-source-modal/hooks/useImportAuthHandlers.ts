@@ -11,12 +11,12 @@ import {
 } from '@/api/imports';
 import type { ImportJob } from '@/api/imports';
 import { validateEmail } from '@/utils/validateEmail';
-import type { ClickupTeam } from '../types';
+import type { ClickupTeam, TranslateFn } from '../types';
 import { isValidDomain, normalizeDomain } from '../utils';
 
 interface UseImportAuthHandlersArgs {
   job: ImportJob | null;
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
+  t: TranslateFn;
   runAutoMapping: (suppressToast?: boolean) => Promise<void>;
   persistAsanaSelection: (projectId: string, workspaceId?: string, projectName?: string) => Promise<void>;
 

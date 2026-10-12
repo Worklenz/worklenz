@@ -101,8 +101,18 @@ export const ProjectLinksTab: React.FC<ProjectLinksTabProps> = ({
   const dispatch = useAppDispatch();
   const { projectId } = useAppSelector(state => state.projectReducer);
 
-  const { links, loading, total, pageIndex, pageSize, setPageIndex, addLink, editLink, removeLink } =
-    useProjectLinks(active);
+  const {
+    links,
+    loading,
+    total,
+    pageIndex,
+    pageSize,
+    pageSizeOptions,
+    setPageIndex,
+    addLink,
+    editLink,
+    removeLink,
+  } = useProjectLinks(active);
 
   const [addLoading, setAddLoading] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -293,8 +303,16 @@ export const ProjectLinksTab: React.FC<ProjectLinksTabProps> = ({
           current: pageIndex,
           pageSize,
           total,
-          onChange: (page) => setPageIndex(page),
-          showSizeChanger: false,
+          onChange: (page, size) => setPageIndex(page, size),
+          showSizeChanger: true,
+          pageSizeOptions,
+          showTotal: (count, range) =>
+            t('linksPaginationSummary', {
+              defaultValue: '{{start}}–{{end}} of {{count}} links',
+              start: range[0],
+              end: range[1],
+              count,
+            }),
         }}
         onRow={record => ({
           style: { cursor: record.source_type === 'manual' || record.source_task_id ? 'pointer' : 'default' },

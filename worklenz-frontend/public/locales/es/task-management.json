@@ -1,5 +1,25 @@
 {
   "noTasksInGroup": "No hay tareas en este grupo",
+  "backlogGroupName": "Trabajo pendiente",
+  "unassignedGroupName": "No asignado",
+  "sprintStatusActive": "Activo",
+  "sprintStatusPlanned": "planeado",
+  "sprintStatusCompleted": "Completado",
+  "currentSprintName": "Sprint actual · {{name}}",
+  "sprintCompletedCount": "{{done}}/{{total}} completado",
+  "sprintCompletedPoints": "{{done}}/{{total}} puntos completados",
+  "sprintPointsTotal": "{{total}} puntos en total",
+  "sprintScopeAdded": "+{{count}} alcance",
+  "sprintScopeAddedTooltip": "Problemas agregados después de que comenzó el sprint",
+  "sprintItemCount_one": "{{count}} elemento",
+  "sprintItemCount_other": "{{count}} elementos",
+  "backlogSectionGoal": "Trabajo futuro priorizado",
+  "selectAllInGroup": "Seleccionar todo en {{name}}",
+  "sprintActionsFor": "Acciones para {{name}}",
+  "viewOnBoard": "Ver a bordo",
+  "completeSprint": "Sprint completo",
+  "startSprint": "Iniciar sprint",
+  "editSprint": "Editar sprint",
   "noTasksInGroupDescription": "Añade una tarea para comenzar",
   "addFirstTask": "Añade tu primera tarea",
   "openTask": "Abrir",
@@ -22,7 +42,6 @@
   "inProgress": "En Progreso",
   "done": "Hecho",
   "defaultTaskName": "Tarea Sin Título",
-
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} subtarea",

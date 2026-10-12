@@ -5,5 +5,7 @@
   "billing": "Faturimi",
   "projects": "Projektet",
   "settings": "Cilësimet",
-  "adminCenter": "Qendra Administrative"
+  "adminCenter": "Qendra Administrative",
+  "security": "Siguria",
+  "newBadge": "E RE"
 }

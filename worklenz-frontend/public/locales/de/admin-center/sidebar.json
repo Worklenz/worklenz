@@ -1,9 +1,11 @@
 {
   "overview": "Übersicht",
   "users": "Benutzer",
-  "teams": "Teams",
+  "teams": "Mannschaften",
   "billing": "Abrechnung",
   "projects": "Projekte",
   "settings": "Einstellungen",
-  "adminCenter": "Admin-Center"
+  "adminCenter": "Admin-Center",
+  "security": "Sicherheit",
+  "newBadge": "NEU"
 }

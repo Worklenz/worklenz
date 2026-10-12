@@ -35,7 +35,7 @@ const UpdateJobTitleDrawer = ({ selectedJobTitleId }: UpdateJobTitleDrawerProps)
   }, [selectedJobTitle, form]);
 
   // this function for handle form submit
-  const handleFormSubmit = async (values: any) => {
+  const handleFormSubmit = async (values: { name: string }) => {
     try {
       if (selectedJobTitle) {
         const updatedJobTitle: JobType = {

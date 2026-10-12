@@ -6,11 +6,8 @@
   "taskProgressColumn": "Progreso de Tareas",
   "accessColumn": "Acceso",
   "fileIconAlt": "Icono de archivo",
-  "deleteConfirmationTitle": "¿Estás seguro?",
-  "deleteConfirmationOk": "Sí",
   "deleteConfirmationCancel": "Cancelar",
   "refreshButtonTooltip": "Actualizar miembros",
-  "deleteButtonTooltip": "Eliminar del proyecto",
   "memberCount": "Miembro",
   "membersCountPlural": "Miembros",
   "emptyText": "No hay archivos adjuntos en el proyecto."

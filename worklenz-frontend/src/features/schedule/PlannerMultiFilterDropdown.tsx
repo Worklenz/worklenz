@@ -1,11 +1,12 @@
 import React, { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Card, Checkbox, Dropdown, Input, List } from '@/shared/antd-imports';
 import { CaretDownFilled, SearchOutlined } from '@ant-design/icons';
 import { InputRef } from 'antd/es/input';
 
 export interface PlannerFilterOption {
   value: string;
-  label: string;
+  label?: string | null;
 }
 
 interface PlannerMultiFilterDropdownProps {
@@ -26,14 +27,19 @@ const PlannerMultiFilterDropdown: React.FC<PlannerMultiFilterDropdownProps> = ({
   onChange,
   showSearch = true,
 }) => {
+  const { t } = useTranslation('schedule');
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const inputRef = useRef<InputRef>(null);
 
-  const filteredOptions = useMemo(
-    () => options.filter(o => o.label.toLowerCase().includes(search.toLowerCase())),
-    [options, search]
-  );
+  const filteredOptions = useMemo(() => {
+    const searchLower = (search || '').trim().toLowerCase();
+    if (!searchLower) return options || [];
+    return (options || []).filter(o => {
+      const itemLabel = String(o?.label ?? o?.value ?? '').toLowerCase();
+      return itemLabel.includes(searchLower);
+    });
+  }, [options, search]);
 
   const toggle = (value: string) => {
     onChange(selected.includes(value) ? selected.filter(v => v !== value) : [...selected, value]);
@@ -59,7 +65,7 @@ const PlannerMultiFilterDropdown: React.FC<PlannerMultiFilterDropdownProps> = ({
               ref={inputRef}
               size="small"
               prefix={<SearchOutlined style={{ opacity: 0.45 }} />}
-              placeholder="Search..."
+              placeholder={t('search', { defaultValue: 'Search...' })}
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{ marginBottom: 8, borderRadius: 7 }}
@@ -68,11 +74,11 @@ const PlannerMultiFilterDropdown: React.FC<PlannerMultiFilterDropdownProps> = ({
           <List
             style={{ maxHeight: 260, overflowY: 'auto' }}
             dataSource={filteredOptions}
-            locale={{ emptyText: 'No results' }}
+            locale={{ emptyText: t('noResults', { defaultValue: 'No results' }) }}
             renderItem={item => (
               <List.Item style={{ padding: '4px 4px', border: 'none' }}>
                 <Checkbox checked={selected.includes(item.value)} onChange={() => toggle(item.value)}>
-                  <span style={{ fontSize: 13 }}>{item.label}</span>
+                  <span style={{ fontSize: 13 }}>{item.label || item.value || ''}</span>
                 </Checkbox>
               </List.Item>
             )}

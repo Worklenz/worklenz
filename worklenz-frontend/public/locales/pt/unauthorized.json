@@ -1,5 +1,13 @@
 {
   "title": "¡Não autorizado!",
   "subtitle": "Você não tem permissão para acessar esta página",
+  "commentAccessTitle": "Você precisa de acesso para visualizar este comentário",
+  "commentAccessContactAdmin": "Você não está convidado para este projeto. Entre em contato com seu administrador ou proprietário do projeto para solicitar acesso.",
+  "commentAccessDenied": "Você não está convidado para este projeto. Entre em contato com seu administrador ou proprietário do projeto para solicitar acesso.",
+  "invalidCommentLink": "Este link de comentário é inválido.",
+  "commentNotFound": "Este comentário não foi encontrado.",
+  "commentLinkOpenFailed": "Não foi possível abrir este link de comentário. Tente novamente ou abra o comentário da tarefa.",
+  "unableToOpenComment": "Não foi possível abrir o comentário",
+  "openingComment": "Comentário de abertura...",
   "button": "Ir para Início"
 }

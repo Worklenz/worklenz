@@ -80,13 +80,12 @@
     "errorLoadingRecentTasks": "Error al cargar tareas recientes",
     "errorLoadingTimeLoggedTasks": "Error al cargar tareas con tiempo registrado",
     "dueTask": "tarea vencida",
-    "total": "Total",
+    "total": "totales",
     "on": "el",
     "totalDue": "Total vencidas",
     "todo": "Por hacer",
     "doing": "Haciendo",
     "done": "Hecho",
-    "priority": "Prioridad",
     "pressTabToSelectDueDateAndProject": "Presiona Tab para seleccionar fecha de vencimiento y proyecto",
     "newTask": "Nueva tarea",
     "assignTask": "Asignar tarea",
@@ -103,7 +102,16 @@
     "assignees": "Asignados",
     "searchMembers": "Buscar por nombre o correo…",
     "noMembersFound": "No se encontraron miembros",
-    "time": "Tiempo"
+    "time": "Tiempo",
+    "markTimeOff": "Marcar Ausencia / Permiso",
+    "pinned": "Fijadas",
+    "tabsLabel": "Filtrar tareas",
+    "pinTask": "Fijar tarea",
+    "unpinTask": "Desfijar tarea",
+    "pinLimitReached": "Puedes fijar hasta {{limit}} tareas. Desfija una para fijar otra.",
+    "noPinnedTasks": "Aún no hay tareas fijadas. Pasa el cursor sobre cualquier tarea y haz clic en el icono de chincheta para mantenerla aquí.",
+    "pinFailed": "No se pudo actualizar la chincheta. Inténtalo de nuevo.",
+    "viewAll": "Ver todo ({{total}})"
   },
   "homeCalendar": {
     "todayButton": "Hoy",
@@ -147,7 +155,8 @@
       "managerAssigned": "{{userName}} asignó un gerente de proyecto a {{projectName}}",
       "managerRemoved": "{{userName}} removió el gerente del proyecto {{projectName}}",
       "memberAdded": "{{userName}} añadió a {{memberName}} al proyecto {{projectName}}",
-      "memberRemoved": "{{userName}} eliminó a {{memberName}} del proyecto {{projectName}}"
+      "memberRemoved": "{{userName}} eliminó a {{memberName}} del proyecto {{projectName}}",
+      "managerFinanceChanged": "{{userName}} cambió el acceso financiero del gerente de proyecto en {{projectName}}"
     },
     "task": {
       "created": "{{userName}} creó la tarea {{taskName}}",
@@ -165,7 +174,7 @@
     "emptyTitle": "¡Estás al día!",
     "emptySubtitle": "Aún no hay tareas aquí — crea una para empezar.",
     "sideUnassigned": "Sin asignar",
-    "columnId": "ID",
+    "columnId": "identificación",
     "columnTask": "Tarea",
     "columnAssignee": "Asignado",
     "columnDue": "Vencimiento",
@@ -200,9 +209,9 @@
     "hoursLabel": "Horas",
     "hoursPlaceholder": "0",
     "minutesLabel": "Minutos",
-    "requiredDate": "* Fecha",
-    "requiredStartTime": "* Hora de inicio",
-    "requiredEndTime": "* Hora de fin",
+    "requiredDate": "Fecha",
+    "requiredStartTime": "Hora de inicio",
+    "requiredEndTime": "Hora de fin",
     "workDescriptionLabel": "Descripción del trabajo",
     "workDescriptionPlaceholder": "¿En qué trabajaste?",
     "submitButton": "Registrar tiempo",
@@ -253,7 +262,7 @@
     "rowsPerPage": "Filas por página:"
   },
   "addExpense": {
-    "modalTitle": "Agregar Gasto",
+    "modalTitle": "Agregar gasto",
     "projectLabel": "Proyecto",
     "projectPlaceholder": "Seleccionar proyecto…",
     "taskLabel": "Tarea",
@@ -261,12 +270,12 @@
     "taskPlaceholderNoProject": "Selecciona un proyecto primero",
     "taskLoading": "Cargando…",
     "noTasksFound": "No se encontraron tareas",
-    "amountLabel": "Monto",
+    "amountLabel": "Importe",
     "amountPlaceholder": "0.00",
-    "submitButton": "Agregar Gasto a la Tarea",
+    "submitButton": "Agregar gasto de tarea",
     "upgradePromptTitle": "Gastos",
     "upgradePromptDescription": "Registra costos fijos en las tareas y agrégalos a tus reportes financieros. Disponible en el plan Business.",
-    "loadTasksError": "No se pudieron cargar las tareas y la moneda para este proyecto.",
+    "loadTasksError": "No se pudieron cargar las tareas y la moneda de este proyecto.",
     "successMessage": "Costo fijo agregado a la tarea",
     "errorMessage": "Error al agregar costo fijo a la tarea"
   },
@@ -372,7 +381,8 @@
     "tasks": "Tareas",
     "activity": "Actividad",
     "timeLogged": "Tiempo registrado",
-    "title": "Continúa donde lo dejaste"
+    "title": "Continúa donde lo dejaste",
+    "showTabs": "Mostrar pestañas"
   },
   "focusTime": {
     "title": "Enfoque y Tiempo",
@@ -381,22 +391,140 @@
     "startTimer": "Iniciar temporizador"
   },
   "views": "Vistas",
-  "addExpense": {
-    "modalTitle": "Agregar gasto",
-    "projectLabel": "Proyecto",
-    "projectPlaceholder": "Seleccionar proyecto…",
-    "taskLabel": "Tarea",
-    "taskPlaceholderWithProject": "Buscar tarea…",
-    "taskPlaceholderNoProject": "Selecciona un proyecto primero",
-    "taskLoading": "Cargando…",
-    "noTasksFound": "No se encontraron tareas",
-    "amountLabel": "Importe",
-    "amountPlaceholder": "0.00",
-    "submitButton": "Agregar gasto de tarea",
-    "upgradePromptTitle": "Gastos",
-    "upgradePromptDescription": "Registra costos fijos en las tareas y agrégalos a tus reportes financieros. Disponible en el plan Business.",
-    "loadTasksError": "No se pudieron cargar las tareas y la moneda de este proyecto.",
-    "successMessage": "Costo fijo agregado a la tarea",
-    "errorMessage": "Error al agregar costo fijo a la tarea"
+  "timeOff": {
+    "timeOff": "Ausencia",
+    "off": "ausente",
+    "types": {
+      "vacation": "Vacaciones",
+      "sick": "Enfermedad",
+      "personal": "Asuntos propios",
+      "other": "Otro"
+    }
+  },
+  "customize": {
+    "button": "Personalizar",
+    "title": "Personalizar Inicio",
+    "description": "Arrastra las secciones para reordenarlas o usa los botones de flecha. Desactiva una sección para ocultarla de tu página de inicio.",
+    "mainColumn": "Área principal",
+    "sideColumn": "Panel lateral",
+    "emptyColumn": "Suelta una sección aquí",
+    "dragHandle": "Reordenar {{name}}. Pulsa espacio para recoger y usa las flechas del teclado.",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "moveUpNamed": "Subir {{name}}",
+    "moveDownNamed": "Bajar {{name}}",
+    "moveToSide": "Mover al panel lateral",
+    "moveToMain": "Mover al área principal",
+    "cannotHide": "Esta sección no se puede ocultar.",
+    "showNamed": "Mostrar {{name}}",
+    "reset": "Restablecer valores",
+    "resetConfirm": "¿Restablecer Inicio a su configuración predeterminada?",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "widgets": {
+      "statCards": "Tarjetas de resumen",
+      "priorities": "Prioridades de tareas",
+      "progressDonut": "Mi progreso",
+      "continue": "Continúa donde lo dejaste",
+      "greeting": "Banner de bienvenida",
+      "teamMembers": "Miembros del equipo",
+      "assignedByMe": "Tareas asignadas por mí",
+      "mentions": "Comentarios que me mencionan",
+      "todo": "Mi lista de tareas"
+    },
+    "tabs": {
+      "layout": "Diseño",
+      "taskTabs": "Pestañas de tareas",
+      "sorting": "Orden",
+      "sidebar": "Barra lateral izquierda",
+      "defaultView": "Vista predeterminada"
+    },
+    "topSection": "Parte superior de la página",
+    "tabsDescription": "Elige qué pestañas aparecen sobre la tabla de tareas y en qué orden. Al menos una pestaña debe permanecer activa.",
+    "cannotHideLastTab": "Al menos una pestaña debe permanecer visible.",
+    "sortDescription": "Elige cómo se ordenan las tareas en la tabla. Las tareas fijadas siempre quedan arriba.",
+    "sortField": "Ordenar por",
+    "sortOrder": "Dirección",
+    "sortDefault": "Orden predeterminado (fecha de vencimiento, la más próxima primero)",
+    "sortAsc": "Ascendente",
+    "sortDesc": "Descendente",
+    "sortPinnedNote": "La pestaña Fijadas siempre muestra primero la tarea fijada más recientemente.",
+    "sidebarDescription": "Reordena los elementos de la barra lateral izquierda y elige cuáles se muestran. Fija uno para que sea la página que se abre al entrar en Inicio.",
+    "pinSidebarItem": "Fijar {{name}} como la página que se abre primero",
+    "unpinSidebarItem": "Desfijar {{name}}",
+    "assignedDefault": "Abrir la tabla en",
+    "assignedLastUsed": "La que usé por última vez",
+    "cannotHideLanding": "Inicio se abre en esta página. Fija otra página para ocultarla.",
+    "cannotHideLastItem": "Al menos un elemento debe permanecer visible.",
+    "tableTitle": "Personalizar la tabla de tareas",
+    "tableResetConfirm": "¿Restablecer la tabla de tareas a su configuración predeterminada?",
+    "done": "Listo"
+  },
+  "widgets": {
+    "menu": {
+      "options": "Opciones de {{name}}",
+      "showPeriod": "Mostrar",
+      "remove": "Quitar widget"
+    },
+    "add": {
+      "button": "Agregar widget",
+      "hint": "Pulsa Agregar, o arrastra un widget a tu página.",
+      "addAction": "Agregar",
+      "addNamed": "Agregar {{name}}",
+      "empty": "Todos los widgets ya están en tu página de inicio."
+    },
+    "descriptions": {
+      "greeting": "Un saludo con la fecha de hoy y lo que necesita tu atención.",
+      "statCards": "Tareas de hoy, vencidas, completadas y tu tiempo de enfoque.",
+      "priorities": "Tus tareas de hoy o de esta semana, listas para trabajar.",
+      "progressDonut": "Cuánto de tu trabajo asignado está terminado, en curso o pendiente.",
+      "continue": "Vuelve a tus proyectos, tareas, actividad y tiempo registrado recientes.",
+      "teamMembers": "Mira quién está en tu equipo y abre la página completa del equipo.",
+      "assignedByMe": "Tareas que has asignado a tus compañeros, para que puedas darles seguimiento.",
+      "mentions": "Comentarios recientes en tareas donde un compañero te @mencionó.",
+      "todo": "Anota tareas personales y márcalas como hechas."
+    },
+    "drag": {
+      "pickedUp": "{{name}} seleccionado.",
+      "dropped": "{{name}} soltado.",
+      "cancelled": "Se canceló el movimiento de {{name}}."
+    },
+    "dropHere": "Suelta un widget aquí",
+    "state": {
+      "error": "No se pudo cargar este widget.",
+      "retry": "Reintentar"
+    },
+    "empty": {
+      "title": "Arrastra y suelta nuevos widgets",
+      "titleNoDrag": "Agrega widgets a tu página de inicio",
+      "button": "Agregar widgets"
+    }
+  },
+  "teamMembers": {
+    "empty": "Aún no hay miembros en el equipo.",
+    "viewTeam": "Ver equipo"
+  },
+  "assignedByMe": {
+    "empty": "No has asignado ninguna tarea abierta.",
+    "assignNewTask": "Asignar nueva tarea",
+    "viewAll": "Ver todas las tareas asignadas ({{total}})"
+  },
+  "mentions": {
+    "empty": "Nadie te ha mencionado en un comentario todavía.",
+    "reply": "Responder",
+    "replyPlaceholder": "Escribe una respuesta…",
+    "replyHint": "Se publica como comentario en «{{task}}».",
+    "replySent": "Respuesta agregada a «{{task}}».",
+    "replyFailed": "No se pudo publicar tu respuesta. Inténtalo de nuevo.",
+    "replyLabel": "Responder a {{name}}"
+  },
+  "todoWidget": {
+    "addPlaceholder": "Agrega una tarea y pulsa Enter",
+    "addLabel": "Nueva tarea pendiente",
+    "empty": "Estás al día.",
+    "viewAll": "Abrir mi lista de tareas",
+    "viewAllMore": "Ver todas ({{remaining}} más)",
+    "addFailed": "No se pudo agregar esa tarea. Inténtalo de nuevo.",
+    "completeFailed": "No se pudo actualizar esa tarea. Inténtalo de nuevo."
   }
 }

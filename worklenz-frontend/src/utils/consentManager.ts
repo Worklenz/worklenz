@@ -21,8 +21,13 @@ declare global {
   }
 }
 
+// Exported so logout/cache-clearing flows can preserve this key: cookie
+// consent is a device-level GDPR record, not session data, and shouldn't be
+// wiped just because the account logged out (see CacheCleanup.clearAllCaches).
+export const COOKIE_CONSENT_STORAGE_KEY = 'worklenz_cookie_consent';
+
 class ConsentManager {
-  private readonly STORAGE_KEY = 'worklenz_cookie_consent';
+  private readonly STORAGE_KEY = COOKIE_CONSENT_STORAGE_KEY;
   private readonly CONSENT_VERSION = '1.0';
   private readonly CONSENT_EXPIRY_DAYS = 365;
 

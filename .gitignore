@@ -91,4 +91,10 @@ addons/*
 !addons/.gitignore
 
 graphify-out
+playwright-mcp
 .playwright-mcp
+
+# Private (non-public) build extensions
+worklenz-backend/src/private/
+worklenz-backend/database/pg-migrations-private/
+worklenz-backend/database/migrations-private/

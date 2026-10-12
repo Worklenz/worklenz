@@ -1,6 +1,7 @@
 import { holidayApiService } from '@/api/holiday/holiday.api.service';
 import { scheduleAPIService } from '@/api/schedule/schedule.api.service';
 import dayjs from 'dayjs';
+import axios from 'axios';
 import logger from '@/utils/errorLogger';
 
 export interface UtilizationParams {
@@ -32,8 +33,8 @@ class UtilizationCalculator {
       const workingHoursPerDay = params.workingHoursPerDay || (await this.getDefaultWorkingHours());
 
       // Get holidays for the date range
-      const holidays = await this.getHolidaysForRange(params.fromDate, params.toDate);
-      const holidayDates = holidays.map(h => h.date);
+      const holidays = (await this.getHolidaysForRange(params.fromDate, params.toDate)) || [];
+      const holidayDates = holidays.map((h: { date: string }) => h.date);
 
       // Calculate working days
       let totalWorkingDays = 0;
@@ -117,20 +118,20 @@ class UtilizationCalculator {
           const res = await holidayApiService.getOrganizationHolidays(year);
           if (res.done && res.body) {
             // Filter holidays to the date range
-            const filteredHolidays = res.body.filter((holiday: any) => {
+            const filteredHolidays = res.body.filter((holiday: { date: string }) => {
               const holidayDate = holiday.date;
               return holidayDate >= fromDate && holidayDate <= toDate;
             });
             allHolidays.push(...filteredHolidays);
           }
-        } catch (yearError) {
-          logger.warn(`Failed to fetch holidays for year ${year}:`, yearError);
+        } catch (yearError: unknown) {
+          logger.warning(`Failed to fetch holidays for year ${year}:`, yearError);
         }
       }
 
       if (allHolidays.length > 0) {
         // Cache the holiday dates
-        const holidayDates = allHolidays.map(h => h.date);
+        const holidayDates = allHolidays.map((h: { date: string }) => h.date);
         this.holidayCache.set(cacheKey, holidayDates);
 
         // Set cache expiration
@@ -138,18 +139,18 @@ class UtilizationCalculator {
           this.holidayCache.delete(cacheKey);
         }, this.cacheTimeout);
 
-        return allHolidays.map(h => ({
+        return allHolidays.map((h: { id: string; date: string; name: string }) => ({
           id: h.id,
           date: h.date,
           name: h.name,
           source: 'custom', // Default to custom since we don't have official holidays yet
         }));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error fetching holidays for utilization calculation', error);
       // If rate limited (429), add longer delay before retry
-      if (error.response?.status === 429) {
-        logger.warn('Rate limited on holiday API, implementing backoff');
+      if (axios.isAxiosError(error) && error.response?.status === 429) {
+        logger.warning('Rate limited on holiday API, implementing backoff');
         // Don't cache failed requests, but don't retry immediately
         setTimeout(() => {
           this.holidayCache.delete(cacheKey);

@@ -73,59 +73,30 @@ const PriorityTaskCreateCard = forwardRef<InputRef, PriorityProps>(({ status, po
 
   const handleAddTask = () => {
     if (taskName.trim()) {
+      const newTask = {
+        id: `SP-${Date.now()}`,
+        name: taskName,
+        status: status,
+        status_id: status,
+        priority: 'medium',
+        priority_id: 'medium',
+        end_date: dueDate ? dueDate.format('YYYY-MM-DD') : undefined,
+        start_date: dayjs().format('YYYY-MM-DD'),
+        progress: status === 'done' ? 100 : 0,
+        assignees: [],
+      };
+
       if (position === 'bottom') {
-        dispatch(
-          addTask({
-            taskId: `SP-${Date.now()}`,
-            task: taskName,
-            description: '-',
-            progress: status === 'done' ? 100 : 0,
-            members: [],
-            labels: [],
-            status: status,
-            priority: 'medium',
-            timeTracking: 0,
-            estimation: '-',
-            startDate: new Date(),
-            dueDate: dueDate ? dueDate.toDate() : null,
-            completedDate: null,
-            createdDate: new Date(),
-            lastUpdated: new Date(),
-            reporter: '-',
-            phase: '',
-            subTasks: [],
-          })
-        );
+        dispatch(addTask({ task: newTask, groupId: status }));
       } else if (position === 'top') {
-        dispatch(
-          addTaskToTop({
-            taskId: `SP-${Date.now()}`,
-            task: taskName,
-            description: '-',
-            progress: status === 'done' ? 100 : 0,
-            members: [],
-            labels: [],
-            status: status,
-            priority: 'medium',
-            timeTracking: 0,
-            estimation: '-',
-            startDate: new Date(),
-            dueDate: dueDate ? dueDate.toDate() : null,
-            completedDate: null,
-            createdDate: new Date(),
-            lastUpdated: new Date(),
-            reporter: '-',
-            phase: '-',
-            subTasks: [],
-          })
-        );
+        dispatch(addTaskToTop({ task: newTask, groupId: status }));
       }
     }
     setTaskName('');
   };
 
   const handleClose = () => {
-    dispatch(setTaskCardDisabled({ status, position, disabled: true }));
+    dispatch(setTaskCardDisabled({ group: status, position, disabled: true }));
   };
 
   return (

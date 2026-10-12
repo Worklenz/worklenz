@@ -1,0 +1,22 @@
+{
+  "title": "Abteilungen verwalten",
+  "nameColumn": "Name",
+  "search": "Abteilungen suchen",
+  "createDepartmentButton": "Abteilung erstellen",
+  "createDepartmentDrawerTitle": "Abteilung erstellen",
+  "updateDepartmentDrawerTitle": "Abteilung aktualisieren",
+  "nameLabel": "Name",
+  "namePlaceholder": "Abteilungsnamen eingeben",
+  "nameRequiredError": "Der Abteilungsname ist erforderlich",
+  "createButton": "Erstellen",
+  "updateButton": "Aktualisieren",
+  "editTooltip": "Bearbeiten",
+  "deleteTooltip": "Löschen",
+  "deleteConfirmationTitle": "Möchten Sie diese Abteilung wirklich löschen?",
+  "deleteConfirmationOk": "Löschen",
+  "deleteConfirmationCancel": "Abbrechen",
+  "fetchDepartmentErrorMessage": "Abteilung konnte nicht abgerufen werden",
+  "createDepartmentErrorMessage": "Abteilung konnte nicht erstellt werden",
+  "updateDepartmentErrorMessage": "Abteilung konnte nicht aktualisiert werden",
+  "pinTooltip": "An Navigationsleiste anheften"
+}

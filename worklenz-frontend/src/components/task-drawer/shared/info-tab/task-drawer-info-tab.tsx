@@ -2,6 +2,7 @@ import {
   Collapse,
   CollapseProps,
   Flex,
+  message,
   Skeleton,
   Typography,
 } from '@/shared/antd-imports';
@@ -12,7 +13,7 @@ import SubTaskTable from './subtask-table';
 import DependenciesTable from './dependencies-table';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import TaskDetailsForm from './task-details-form';
-import { fetchTask } from '@/features/tasks/tasks.slice';
+import { fetchTask } from '@/features/task-drawer/task-drawer.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { updateTaskCounts } from '@/features/task-management/task-management.slice';
@@ -36,13 +37,14 @@ import { ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import TaskDrawerCustomFields from './details/task-drawer-custom-fields/task-drawer-custom-fields';
-import { hasDrawerSupportedCustomFields } from '@/utils/task-custom-columns';
+import { hasDrawerSupportedCustomFields, getDrawerSupportedCustomFields } from '@/utils/task-custom-columns';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 
 interface TaskDrawerInfoTabProps {
   t: TFunction;
@@ -65,6 +67,9 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   const attachmentSizeLimitBytes = attachmentSizeLimitMb * 1024 * 1024;
 
   const { projectId } = useAppSelector(state => state.projectReducer);
+  const isSoftwareProject = useAppSelector(state =>
+    isSoftwareProjectType(state.projectReducer.project?.project_type)
+  );
   const { taskFormViewModel, loadingTask, selectedTaskId } = useAppSelector(
     state => state.taskDrawerReducer
   );
@@ -96,6 +101,25 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   // Controlled collapse keys so we can auto-expand attachments on drop
   const defaultCollapseKeys = ['details', 'description', 'subTasks', 'dependencies', 'attachments', 'comments'];
   const [collapseActiveKeys, setCollapseActiveKeys] = useState<string[]>(defaultCollapseKeys);
+  const [expandedCustomFieldsByTask, setExpandedCustomFieldsByTask] = useState<Record<string, boolean>>({});
+
+  // Keep the custom fields section expanded when fields exist or the user can add one.
+  useEffect(() => {
+    const supportedCustomFields = getDrawerSupportedCustomFields(
+      taskFormViewModel?.custom_columns || []
+    );
+    const canShowEmptyCustomFieldsSection = !isGuest && canCreateTask;
+
+    if (supportedCustomFields.length > 0 || canShowEmptyCustomFieldsSection) {
+      setCollapseActiveKeys(prev =>
+        prev.includes('customFields') ? prev : [...prev, 'customFields']
+      );
+    } else {
+      setCollapseActiveKeys(prev =>
+        prev.filter(key => key !== 'customFields')
+      );
+    }
+  }, [canCreateTask, isGuest, taskFormViewModel?.custom_columns]);
 
   // FIX: Track the previous task ID so we only re-fetch when a REAL task is
   // opened (selectedTaskId is a non-null string), not when the drawer closes
@@ -112,6 +136,11 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   const handleFilesSelected = async (files: File[]) => {
     if (!taskFormViewModel?.task?.id || !projectId) return;
 
+    // Reveal the attachments panel so pasted or dropped files are visible.
+    setCollapseActiveKeys(prev =>
+      prev.includes('attachments') ? prev : [...prev, 'attachments']
+    );
+
     const oversizedFiles = files.filter(file => file.size > attachmentSizeLimitBytes);
     if (oversizedFiles.length > 0) {
       if (!hasBusinessAccess) {
@@ -122,6 +151,15 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
           });
         }
         dispatch(toggleUpgradeModal());
+      } else {
+        message.error(
+          t('taskInfoTab.attachments.filesTooLarge', {
+            defaultValue:
+              'These files exceed the {{maxSize}}MB limit and were not added: {{names}}',
+            maxSize: attachmentSizeLimitMb,
+            names: oversizedFiles.map(file => file.name).join(', '),
+          })
+        );
       }
       return;
     }
@@ -380,20 +418,21 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   const hasSupportedCustomFields = hasDrawerSupportedCustomFields(
     taskFormViewModel?.custom_columns || []
   );
+  const shouldShowCustomFieldsSection = hasSupportedCustomFields || (!isGuest && canCreateTask);
 
   const allInfoItems: CollapseProps['items'] = [
     {
       key: 'details',
-      label: <Typography.Text strong>{t('taskInfoTab.details.title')}</Typography.Text>,
+      label: <Typography.Text strong>{t('taskInfoTab.details.title', { defaultValue: 'Details' })}</Typography.Text>,
       children: <TaskDetailsForm taskFormViewModel={taskFormViewModel} canCreateTask={canCreateTask} isGuest={isGuest} />,
       style: panelStyle,
       className: 'custom-task-drawer-info-collapse',
     },
-    ...(hasSupportedCustomFields
+    ...(shouldShowCustomFieldsSection
       ? [
           {
             key: 'customFields',
-            label: <Typography.Text strong>{t('taskInfoTab.customFields.title')}</Typography.Text>,
+            label: <Typography.Text strong>{t('taskInfoTab.customFields.title', { defaultValue: 'Custom Fields' })}</Typography.Text>,
             children: (
               <TaskDrawerCustomFields
                 customColumns={taskFormViewModel?.custom_columns || []}
@@ -402,6 +441,17 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
                 teamMembers={taskFormViewModel?.team_members || []}
                 isGuest={isGuest}
                 canCreateTask={canCreateTask}
+                isExpanded={Boolean(
+                  taskFormViewModel?.task?.id && expandedCustomFieldsByTask[taskFormViewModel.task.id]
+                )}
+                onExpandedChange={isExpanded => {
+                  const taskId = taskFormViewModel?.task?.id;
+                  if (!taskId) return;
+                  setExpandedCustomFieldsByTask(previous => ({
+                    ...previous,
+                    [taskId]: isExpanded,
+                  }));
+                }}
               />
             ),
             style: panelStyle,
@@ -411,7 +461,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
       : []),
     {
       key: 'description',
-      label: <Typography.Text strong>{t('taskInfoTab.description.title')}</Typography.Text>,
+      label: <Typography.Text strong>{t('taskInfoTab.description.title', { defaultValue: 'Description' })}</Typography.Text>,
       children: (
         <DescriptionEditor
           description={taskFormViewModel?.task?.description || null}
@@ -425,7 +475,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     },
     {
       key: 'subTasks',
-      label: <Typography.Text strong>{t('taskInfoTab.subTasks.title')}</Typography.Text>,
+      label: <Typography.Text strong>{t('taskInfoTab.subTasks.title', { defaultValue: 'Sub Tasks' })}</Typography.Text>,
       children: (
         <SubTaskTable
           subTasks={subTasks}
@@ -441,7 +491,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     },
     {
       key: 'dependencies',
-      label: <Typography.Text strong>{t('taskInfoTab.dependencies.title')}</Typography.Text>,
+      label: <Typography.Text strong>{t('taskInfoTab.dependencies.title', { defaultValue: 'Dependencies' })}</Typography.Text>,
       children: (
         <DependenciesTable
           task={(taskFormViewModel?.task as ITaskViewModel) || ({} as ITaskViewModel)}
@@ -458,7 +508,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     },
     {
       key: 'attachments',
-      label: <Typography.Text strong>{t('taskInfoTab.attachments.title')}</Typography.Text>,
+      label: <Typography.Text strong>{t('taskInfoTab.attachments.title', { defaultValue: 'Attachments' })}</Typography.Text>,
       children: isGuest ? (
         // For guests, show attachments in read-only mode (no upload controls)
         <Flex vertical gap={16}>
@@ -509,17 +559,28 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     },
     {
       key: 'comments',
-      label: <Typography.Text strong>{t('taskInfoTab.comments.title')}</Typography.Text>,
+      label: <Typography.Text strong>{t('taskInfoTab.comments.title', { defaultValue: 'Comments' })}</Typography.Text>,
       style: panelStyle,
       className: 'custom-task-drawer-info-collapse',
       children: <TaskComments taskId={selectedTaskId || ''} t={t} isGuest={isGuest} />,
     },
   ];
 
-  const infoItems =
+  const levelInfoItems =
     (taskFormViewModel?.task?.task_level ?? 0) >= 2
       ? allInfoItems.filter(item => item.key !== 'subTasks')
       : allInfoItems;
+
+  const infoItems = isSoftwareProject
+    ? levelInfoItems
+        .filter(item => SOFTWARE_SECTION_ORDER.includes(String(item.key)))
+        .sort(
+          (first, second) =>
+            SOFTWARE_SECTION_ORDER.indexOf(String(first.key)) -
+            SOFTWARE_SECTION_ORDER.indexOf(String(second.key))
+        )
+        .map(item => ({ ...item, label: <SoftwareSectionLabel>{item.label}</SoftwareSectionLabel> }))
+    : levelInfoItems;
 
   useEffect(() => {
     // FIX: Only fetch and reset data when selectedTaskId changes to a REAL
@@ -575,16 +636,34 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
       selectedFilesRef.current = [];
       setTaskComments([]);
     };
-  }, [selectedTaskId, projectId, fetchSubTasks]);
+  }, [selectedTaskId, projectId, fetchSubTasks, loadingTask, taskFormViewModel?.task?.id, taskFormViewModel?.task?.name]);
+
+  useEffect(() => {
+    if (!selectedTaskId || !projectId || loadingTask) return;
+
+    const hasIncompleteTaskData =
+      taskFormViewModel?.task?.id === selectedTaskId && !taskFormViewModel.task?.name;
+
+    if (hasIncompleteTaskData) {
+      dispatch(fetchTask({ taskId: selectedTaskId, projectId }));
+    }
+  }, [
+    selectedTaskId,
+    projectId,
+    loadingTask,
+    taskFormViewModel?.task?.id,
+    taskFormViewModel?.task?.name,
+    dispatch,
+  ]);
 
   return (
     <Skeleton active loading={loadingTask}>
       <div
         className="task-drawer-info-tab-drop-zone"
-        onDragEnter={handleTabDragEnter}
-        onDragOver={handleTabDragOver}
-        onDragLeave={handleTabDragLeave}
-        onDrop={handleTabDrop}
+        onDragEnter={isSoftwareProject ? undefined : handleTabDragEnter}
+        onDragOver={isSoftwareProject ? undefined : handleTabDragOver}
+        onDragLeave={isSoftwareProject ? undefined : handleTabDragLeave}
+        onDrop={isSoftwareProject ? undefined : handleTabDrop}
       >
         {isTabDragOver && (
           <div className="task-drawer-info-tab-drop-overlay">
@@ -606,5 +685,13 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     </Skeleton>
   );
 };
+
+/** Sections shown in the software issue drawer, in display order. */
+const SOFTWARE_SECTION_ORDER = ['description', 'details', 'comments'];
+
+/** Small uppercase section heading used by the software issue drawer. */
+const SoftwareSectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <span className="uppercase tracking-wide text-xs opacity-70">{children}</span>
+);
 
 export default TaskDrawerInfoTab;

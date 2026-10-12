@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, ReactNode } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -46,14 +46,18 @@ import ProjectCategorySection from '../project-drawer/project-category-section/p
 import ProjectClientSection from '../project-drawer/project-client-section/project-client-section';
 import ProjectPrioritySection from '../project-drawer/project-priority-section/project-priority-section';
 import { ProjectDatePicker } from '../project-drawer/components/ProjectDatePicker';
+import useProjectPermissions from '@/hooks/useProjectPermissions';
 
 import SettingsCard from './components/settings-card';
 import StatusesSettingsSection from './sections/statuses-settings-section';
 import PhasesSettingsSection from './sections/phases-settings-section';
 import CustomColumnsSettingsSection from './sections/custom-columns-settings-section';
 import IntegrationsSettingsSection from './sections/integrations-settings-section';
+import TaskExportSettingsSection from './sections/task-export-settings-section';
 import DangerZoneSection from './sections/danger-zone-section';
 import { getAddonSlotItems } from '@/addons/addon-slots';
+import PrivacySettingsSection from './sections/privacy-settings-section';
+import DeliveryConfidenceSettingsSection from './sections/delivery-confidence-settings-section';
 
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
@@ -63,12 +67,19 @@ import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
-import { setProjectData, setProjectId as setDrawerProjectId } from '@/features/project/project-drawer.slice';
+import {
+  fetchProjectData,
+  setProjectData,
+  setProjectId as setDrawerProjectId,
+} from '@/features/project/project-drawer.slice';
 import { closeProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
 import { useAuthService } from '@/hooks/useAuth';
+import { hasTaskExportRoleAccess } from '@/utils/task-export-access';
+import { isTeamLeadRole } from '@/types/roles/role.types';
 import { evt_projects_create } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { hasBusinessFeatureAccess, isFreeUser } from '@/ee/utils/subscription-utils';
+import { progressTrackingApiService } from '@/api/reporting/progress-tracking.api.service';
+import { hasBusinessFeatureAccess, isFreeUser } from '@/utils/subscription-utils';
 import {
   CrownOutlined,
   InfoCircleOutlined,
@@ -79,14 +90,26 @@ import {
   FlagOutlined,
   TableOutlined,
   ApiOutlined,
+  ExportOutlined,
   WarningOutlined,
+  LockOutlined,
 } from '@/shared/antd-imports';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { ensureCsrfToken, refreshCsrfToken } from '@/api/api-client';
 import { CURRENCY_OPTIONS } from '@/shared/currencies';
-import { projectFinanceApiService } from '@/ee/api/project-finance-ratecard/project-finance.api.service';
+import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { SoftwareProjectSettingsModal } from '../software-project-settings-modal/software-project-settings-modal';
 
 export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
+  const { projectId, project } = useAppSelector(state => state.projectDrawerReducer);
+  const isSoftwareProject = Boolean(projectId) && isSoftwareProjectType(project?.project_type);
+
+  if (isSoftwareProject) return <SoftwareProjectSettingsModal onClose={onClose} />;
+  return <GeneralProjectSettingsModal onClose={onClose} />;
+};
+
+const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { trackMixpanelEvent } = useMixpanelTracking();
@@ -94,7 +117,8 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
   const { t: tCommon } = useTranslation('common');
   const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(true);
-  const currentSession = useAuthService().getCurrentSession();
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
   const { token } = theme.useToken();
 
   // State
@@ -103,15 +127,21 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     null
   );
   const [isFormValid, setIsFormValid] = useState<boolean>(true);
+  const [settingsLoadFailed, setSettingsLoadFailed] = useState<boolean>(false);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [activeSection, setActiveSection] = useState<string>('general');
   const [isDeletingProject, setIsDeletingProjectState] = useState<boolean>(false);
+  const savedConfidenceRef = useRef<{ status: 'green' | 'amber' | 'red' | null; note: string | null }>({
+    status: null,
+    note: null,
+  });
+  const confidenceLoadedRef = useRef(false);
 
   // Selectors
   const { clients, loading: loadingClients } = useAppSelector(state => state.clientReducer);
   const { requestParams } = useAppSelector(state => state.projectsReducer);
   const { projectId, projectLoading, project } = useAppSelector(state => state.projectDrawerReducer);
-  const { isOpen: isProjectSettingsModalOpen } = useAppSelector(
+  const { isOpen: isProjectSettingsModalOpen, navigateToProjectOnUpdate } = useAppSelector(
     state => state.projectSettingsModalReducer
   );
   const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
@@ -150,6 +180,8 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
       auto_assign_task_creator: project?.auto_assign_task_creator || false,
       restrict_task_creation: project?.restrict_task_creation || false,
       phase_assignees_enabled: project?.phase_assignees_enabled || false,
+      restrict_tasks_to_assignee: project?.restrict_tasks_to_assignee || false,
+      auto_assign_subtask_phase: project?.auto_assign_subtask_phase || false,
       health_id: project?.health_id || projectHealths.find(health => health.is_default)?.id,
     };
   }, [project, projectStatuses, projectHealths, defaultPriorityId]);
@@ -187,13 +219,24 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     []
   );
 
-  // Auth and permissions
-  const isProjectManager = currentSession?.team_member_id == selectedProjectManager?.id;
-  const isOwnerorAdmin = useAuthService().isOwnerOrAdmin();
-  const isEditable = isProjectManager || isOwnerorAdmin;
+  // Auth and permissions — keyed by the modal's project id (not team role / form PM field).
+  const { permissions, isProjectManager, financeAccess } = useProjectPermissions(projectId);
+  const isOwnerorAdmin = authService.isOwnerOrAdmin();
+  const isTeamLead = isTeamLeadRole(authService.role);
+  // Create mode (no project yet): Owner/Admin only. Edit mode: server permissions for that project.
+  const isEditable = projectId ? permissions.settings : isOwnerorAdmin;
   const isFree = isFreeUser(currentSession);
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
-  const canManageBudgetSettings = hasBusinessAccess && (isProjectManager || isOwnerorAdmin);
+  const canViewExport = hasTaskExportRoleAccess(
+    isOwnerorAdmin,
+    isProjectManager,
+    isTeamLead
+  );
+  const canManageBudgetSettings = projectId
+    ? hasBusinessAccess && permissions.finance && financeAccess
+    : hasBusinessAccess && isOwnerorAdmin;
+  const canAssignPm = projectId ? permissions.assignPm : isOwnerorAdmin;
+  const canDeleteProject = projectId ? permissions.delete : false;
 
   // Effects
   useEffect(() => {
@@ -217,6 +260,7 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
   useEffect(() => {
     if (modalVisible && projectId && project && !projectLoading) {
       setEditMode(true);
+      setSettingsLoadFailed(false);
 
       try {
         const formValues: any = {
@@ -232,11 +276,23 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
           auto_assign_task_creator: project.auto_assign_task_creator || false,
           restrict_task_creation: project.restrict_task_creation || false,
           phase_assignees_enabled: project.phase_assignees_enabled || false,
+          restrict_tasks_to_assignee: project.restrict_tasks_to_assignee || false,
+          auto_assign_subtask_phase: project.auto_assign_subtask_phase || false,
           budget: project.budget ?? 0,
           currency: project.currency || 'USD',
         };
 
-        form.setFieldsValue(formValues);
+        const projectManager =
+          project.project_manager?.id ? project.project_manager : null;
+
+        form.setFieldsValue({
+          ...formValues,
+          project_manager: projectManager,
+          finance_access:
+            typeof project.project_manager?.finance_access === 'boolean'
+              ? project.project_manager.finance_access
+              : true,
+        });
 
         if (formValues.start_date && formValues.end_date) {
           try {
@@ -247,7 +303,7 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
           }
         }
 
-        setSelectedProjectManager(project.project_manager || null);
+        setSelectedProjectManager(projectManager);
         setLoading(false);
 
         refreshCsrfToken().catch(error => {
@@ -276,17 +332,33 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         console.warn('[CSRF] Failed to refresh token for project creation:', error);
       });
     } else if (modalVisible && projectId && !project && !projectLoading) {
+      // The project exists (we have a real projectId) but fetching its current
+      // settings failed (network blip, etc). We still set editMode so that IF the
+      // user manages to submit, it calls updateProject on this project instead of
+      // createProject — which would otherwise silently create a duplicate. But the
+      // form's fields are empty/default here, not the project's real values, so we
+      // block submission (see isFormValid below) until a retry succeeds: saving now
+      // would overwrite the real project's fields with blanks (update_project sets
+      // columns directly, it does not preserve existing values for omitted fields).
+      setEditMode(true);
       setLoading(false);
+      setSettingsLoadFailed(true);
     }
-  }, [
-    modalVisible,
-    projectId,
-    project,
-    projectLoading,
-    form,
-    calculateWorkingDays,
-    defaultFormValues,
-  ]);
+  }, [modalVisible, projectId, project, projectLoading, form, calculateWorkingDays, defaultFormValues]);
+
+  const handleRetryLoadSettings = useCallback(() => {
+    if (!projectId) return;
+    setLoading(true);
+    dispatch(fetchProjectData(projectId))
+      .unwrap()
+      .then(projectData => {
+        dispatch(setProjectData(projectData));
+      })
+      .catch(error => {
+        logger.error('Retry: failed to fetch project data for settings', error);
+        setLoading(false);
+      });
+  }, [dispatch, projectId]);
 
   useEffect(() => {
     if (modalVisible && projectId && projectLoading) {
@@ -437,6 +509,38 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     dispatch(toggleUpgradeModal());
   }, [dispatch]);
 
+  useEffect(() => {
+    if (!modalVisible || !projectId) {
+      confidenceLoadedRef.current = false;
+      return;
+    }
+
+    let cancelled = false;
+    confidenceLoadedRef.current = false;
+
+    const loadConfidence = async () => {
+      try {
+        const response = await progressTrackingApiService.getConfidence(projectId);
+        if (cancelled || !response.done || !response.body) return;
+        const status = response.body.confidence;
+        const note = response.body.confidence_note;
+        savedConfidenceRef.current = { status, note };
+        confidenceLoadedRef.current = true;
+        form.setFieldsValue({
+          delivery_confidence: status ?? 'unset',
+          delivery_confidence_note: note ?? '',
+        });
+      } catch (error) {
+        logger.error('Error loading delivery confidence', error);
+      }
+    };
+
+    void loadConfidence();
+    return () => {
+      cancelled = true;
+    };
+  }, [form, modalVisible, projectId]);
+
   const handleFormSubmit = async (values: any) => {
     try {
       const csrfToken = await ensureCsrfToken();
@@ -467,12 +571,19 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         man_days: parseInt(values.man_days),
         hours_per_day: parseInt(values.hours_per_day),
         project_manager: selectedProjectManager,
+        ...(canAssignPm
+          ? { finance_access: values.finance_access !== false }
+          : {}),
         use_manual_progress: Boolean(values.use_manual_progress),
         use_weighted_progress: Boolean(values.use_weighted_progress),
         use_time_progress: Boolean(values.use_time_progress),
         auto_assign_task_creator: Boolean(values.auto_assign_task_creator),
         restrict_task_creation: Boolean(values.restrict_task_creation),
         phase_assignees_enabled: Boolean(values.phase_assignees_enabled),
+        auto_assign_subtask_phase: Boolean(values.auto_assign_subtask_phase),
+        ...(permissions.settings
+          ? { restrict_tasks_to_assignee: Boolean(values.restrict_tasks_to_assignee) }
+          : {}),
         health_id: values.health_id,
       };
 
@@ -503,19 +614,62 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
           }
         }
 
+        if (editMode && projectId && isEditable && confidenceLoadedRef.current) {
+          const rawStatus = values.delivery_confidence;
+          const nextStatus = !rawStatus || rawStatus === 'unset' ? null : rawStatus;
+          const nextNote =
+            typeof values.delivery_confidence_note === 'string' && values.delivery_confidence_note.trim()
+              ? values.delivery_confidence_note.trim()
+              : null;
+          const saved = savedConfidenceRef.current;
+          if (nextStatus !== saved.status || nextNote !== saved.note) {
+            try {
+              const confidenceResponse = await progressTrackingApiService.updateConfidence(projectId, {
+                status: nextStatus,
+                note: nextNote,
+              });
+              if (!confidenceResponse.done) {
+                notification.error({
+                  message: t('deliveryConfidenceSaveFailed', {
+                    defaultValue: 'Could not save Delivery Confidence.',
+                  }),
+                });
+              }
+            } catch (error) {
+              logger.error('Error saving delivery confidence', error);
+              notification.error({
+                message: t('deliveryConfidenceSaveFailed', {
+                  defaultValue: 'Could not save Delivery Confidence.',
+                }),
+              });
+            }
+          }
+        }
+
         if (!editMode) {
           trackMixpanelEvent(evt_projects_create);
+          dispatch(closeProjectSettingsModal());
           navigate(
             `/worklenz/projects/${response.data.body.id}?tab=tasks-list&pinned_tab=tasks-list`
           );
           setTimeout(() => {
             window.location.reload();
           }, 100);
-        } else {
-          dispatch(closeProjectSettingsModal());
-          refetchProjects();
-          window.location.reload();
+          return;
         }
+
+        dispatch(closeProjectSettingsModal());
+        refetchProjects();
+
+        if (navigateToProjectOnUpdate && projectId) {
+          navigate(`/worklenz/projects/${projectId}?tab=tasks-list&pinned_tab=tasks-list`);
+          setTimeout(() => {
+            window.location.reload();
+          }, 100);
+          return;
+        }
+
+        window.location.reload();
       } else {
         notification.error({ message: response?.data?.message });
         logger.error(
@@ -536,11 +690,16 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         resetForm();
       } else if (visible && projectId) {
         setLoading(true);
+        // Ensure manager is restored when modal opens with already-loaded project data
+        if (project?.project_manager?.id && !projectLoading) {
+          setSelectedProjectManager(project.project_manager);
+          setLoading(false);
+        }
       } else if (visible && !projectId) {
         setLoading(false);
       }
     },
-    [projectId, resetForm]
+    [projectId, resetForm, project, projectLoading]
   );
 
   const handleModalClose = useCallback(() => {
@@ -651,10 +810,29 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     }
   };
 
-  const disabledForNonManagers = !isProjectManager && !isOwnerorAdmin;
+  const disabledForNonManagers = projectId ? !permissions.settings : !isOwnerorAdmin;
 
   // ─── Sidebar sections ───────────────────────────────────────────────────
   const sectionItems = useMemo(() => {
+    // Helper to conditionally render section content based on editMode & projectId guard.
+    // When guard fails, shows placeholder alert that user must create project first.
+    const createFirstPlaceholder = (
+      <Alert
+        type="info"
+        showIcon
+        message={t('sectionAvailableAfterCreateTitle', {
+          defaultValue: 'Available after project is created',
+        })}
+        description={t('sectionAvailableAfterCreateDescription', {
+          defaultValue:
+            'Statuses, phases, custom columns, integrations, and danger zone can be configured once the project exists. Complete General settings and click Create first.',
+        })}
+      />
+    );
+
+    const guardedSection = (children: ReactNode) =>
+      editMode && projectId ? children : createFirstPlaceholder;
+
     const items: { key: string; label: ReactNode; icon?: ReactNode; children: ReactNode }[] = [
       {
         key: 'general',
@@ -683,6 +861,13 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
                 t={t}
                 disabled={isFree || disabledForNonManagers}
               />
+              {editMode && projectId ? (
+                <DeliveryConfidenceSettingsSection
+                  form={form}
+                  t={t}
+                  disabled={disabledForNonManagers}
+                />
+              ) : null}
               <ProjectCategorySection
                 form={form}
                 t={t}
@@ -742,9 +927,29 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
                 <ProjectManagerDropdown
                   selectedProjectManager={selectedProjectManager}
                   setSelectedProjectManager={setSelectedProjectManager}
-                  disabled={isFree || disabledForNonManagers}
+                  disabled={isFree || disabledForNonManagers || !canAssignPm}
                 />
               </Form.Item>
+              {canAssignPm && selectedProjectManager?.id && (
+                <Form.Item
+                  name="finance_access"
+                  label={t('financeAccessLabel', {
+                    defaultValue: 'Finance access',
+                  })}
+                  valuePropName="checked"
+                  extra={t('financeAccessHelp', {
+                    defaultValue:
+                      'When on, this project manager can view and edit the Finance tab, budget, and rate card.',
+                  })}
+                >
+                  <Switch
+                    disabled={isFree || disabledForNonManagers}
+                    aria-label={t('financeAccessLabel', {
+                      defaultValue: 'Finance access',
+                    })}
+                  />
+                </Form.Item>
+              )}
             </SettingsCard>
 
             <SettingsCard
@@ -1069,11 +1274,23 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
           </Flex>
         ),
       },
-      {
-        key: 'budget',
-        icon: <DollarOutlined />,
-        label: t('budgetSettingsTab', { defaultValue: 'Budget Settings' }),
-        children: (
+      ...(isOwnerorAdmin
+        ? [
+            {
+              key: 'privacy',
+              icon: <LockOutlined />,
+              label: t('projectPrivacyTab', { defaultValue: 'Project Privacy' }),
+              children: <PrivacySettingsSection disabled={!isOwnerorAdmin} />,
+            },
+          ]
+        : []),
+      ...(canManageBudgetSettings
+        ? [
+            {
+              key: 'budget',
+              icon: <DollarOutlined />,
+              label: t('budgetSettingsTab', { defaultValue: 'Budget Settings' }),
+              children: (
           <SettingsCard
             title={t('budgetSettingsTab', { defaultValue: 'Budget Settings' })}
           >
@@ -1171,76 +1388,87 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
           </SettingsCard>
         ),
       },
+    ]
+        : []),
     ];
 
-    if (editMode && projectId) {
-      items.push(
-        {
-          key: 'statuses',
-          icon: <TagsOutlined />,
-          label: t('statusesTab', { defaultValue: 'Statuses' }),
-          children: <StatusesSettingsSection projectId={projectId} />,
-        },
-        {
-          key: 'phases',
-          icon: <FlagOutlined />,
-          label: t('phasesTab', { defaultValue: 'Phases' }),
-          children: <PhasesSettingsSection projectId={projectId} />,
-        },
-        {
-          key: 'customColumns',
-          icon: <TableOutlined />,
-          label: t('customColumnsTab', { defaultValue: 'Custom Columns' }),
-          children: <CustomColumnsSettingsSection projectId={projectId} />,
-        },
-        {
-          key: 'integrations',
-          icon: <ApiOutlined />,
-          label: t('integrationsTab', { defaultValue: 'Integrations' }),
-          children: (
-            <IntegrationsSettingsSection
-              projectId={projectId}
-              projectName={project?.name}
-            />
-          ),
-        },
-        ...getAddonSlotItems('projectSettingsTabs')
-          .filter(item => Boolean(item.component))
-          .map(item => {
-            const AddonComponent = item.component!;
-            return {
-              key: item.key,
-              icon: item.icon,
-              label: item.labelKey
-                ? t(item.labelKey, { defaultValue: item.defaultLabel || item.key })
-                : (item.defaultLabel || item.key),
-              children: (
-                <AddonComponent
-                  project={project}
-                  projectId={projectId}
-                  editMode={editMode}
-                />
+    items.push(
+      {
+        key: 'statuses',
+        icon: <TagsOutlined />,
+        label: t('statusesTab', { defaultValue: 'Statuses' }),
+        children: guardedSection(
+          <StatusesSettingsSection projectId={projectId} disabled={disabledForNonManagers} />
+        ),
+      },
+      {
+        key: 'phases',
+        icon: <FlagOutlined />,
+        label: t('phasesTab', { defaultValue: 'Phases' }),
+        children: guardedSection(
+          <PhasesSettingsSection projectId={projectId} disabled={disabledForNonManagers} />
+        ),
+      },
+      {
+        key: 'customColumns',
+        icon: <TableOutlined />,
+        label: t('customColumnsTab', { defaultValue: 'Custom Columns' }),
+        children: guardedSection(
+          <CustomColumnsSettingsSection projectId={projectId} disabled={disabledForNonManagers} />
+        ),
+      },
+      {
+        key: 'integrations',
+        icon: <ApiOutlined />,
+        label: t('integrationsTab', { defaultValue: 'Integrations' }),
+        children: guardedSection(
+          <IntegrationsSettingsSection projectId={projectId} projectName={project?.name} />
+        ),
+      },
+      ...(canViewExport
+        ? [
+            {
+              key: 'taskExport',
+              icon: <ExportOutlined />,
+              label: t('taskExportTab', { defaultValue: 'Task Export' }),
+              children: guardedSection(
+                projectId ? <TaskExportSettingsSection projectId={projectId} /> : null
               ),
-            };
-          }),
-        {
-          key: 'dangerZone',
-          icon: <WarningOutlined />,
-          label: (
-            <Typography.Text type="danger">
-              {t('dangerZoneTab', { defaultValue: 'Danger Zone' })}
-            </Typography.Text>
-          ),
-          children: (
-            <DangerZoneSection
-              onConfirmDelete={handleDeleteProject}
-              isDeleting={isDeletingProject}
-              canDelete={isProjectManager || isOwnerorAdmin}
-            />
-          ),
-        }
-      );
-    }
+            },
+          ]
+        : []),
+      ...getAddonSlotItems('projectSettingsTabs')
+        .filter(item => Boolean(item.component))
+        .map(item => {
+          const AddonComponent = item.component!;
+          return {
+            key: item.key,
+            icon: item.icon,
+            label: item.labelKey
+              ? t(item.labelKey, { defaultValue: item.defaultLabel || item.key })
+              : item.defaultLabel || item.key,
+            children: guardedSection(
+              <AddonComponent project={project} projectId={projectId} editMode={editMode} />
+            ),
+          };
+        }),
+      {
+        key: 'dangerZone',
+        icon: <WarningOutlined />,
+        label: (
+          <Typography.Text type="danger">
+            {t('dangerZoneTab', { defaultValue: 'Danger Zone' })}
+          </Typography.Text>
+        ),
+        children: guardedSection(
+          <DangerZoneSection
+            onConfirmDelete={handleDeleteProject}
+            isDeleting={isDeletingProject}
+            canDelete={canDeleteProject}
+          />
+        ),
+      }
+    );
 
     return items;
   }, [
@@ -1269,6 +1497,10 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     isDeletingProject,
     isProjectManager,
     isOwnerorAdmin,
+    canDeleteProject,
+    canAssignPm,
+    permissions.settings,
+    canViewExport,
     handleDeleteProject,
   ]);
 
@@ -1296,6 +1528,9 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         </Typography.Text>
       }
       width={1040}
+      // Antd anchors the dialog 100px down and reserves 24px beneath it, which pushed
+      // the footer off-screen; a 24px offset keeps the whole dialog inside the viewport.
+      style={{ top: 24 }}
       open={isProjectSettingsModalOpen}
       onCancel={handleModalClose}
       destroyOnClose
@@ -1307,7 +1542,9 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
           margin: 0,
           borderBottom: `1px solid ${token.colorBorderSecondary}`,
         },
-        body: { padding: 0 },
+        // The body is the single scroll container: capping its height keeps the dialog
+        // (and .ant-modal-wrap) inside the viewport while header and footer stay put.
+        body: { padding: 0, maxHeight: 'calc(100vh - 200px)', overflow: 'auto' },
         footer: {
           padding: '12px 20px',
           margin: 0,
@@ -1316,12 +1553,12 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
       }}
       footer={
         <Flex justify="end">
-          {(isProjectManager || isOwnerorAdmin) && (
+          {(projectId ? permissions.settings : isOwnerorAdmin) && (
             <Button
               type="primary"
               onClick={() => form.submit()}
               loading={isCreatingProject || isUpdatingProject}
-              disabled={!isFormValid}
+              disabled={!isFormValid || settingsLoadFailed}
             >
               {editMode ? t('update') : t('create')}
             </Button>
@@ -1335,32 +1572,63 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         loading={editMode && (loading || projectLoading)}
         style={{ padding: '20px 24px' }}
       >
-        <Flex style={{ minHeight: 480 }}>
+        <Flex style={{ minHeight: 'min(480px, calc(100vh - 200px))' }}>
           <div
             style={{
               width: 248,
               flexShrink: 0,
               borderRight: `1px solid ${token.colorBorderSecondary}`,
               background: token.colorFillTertiary,
-              padding: '12px 8px',
             }}
           >
-            <Menu
-              mode="inline"
-              selectedKeys={[activeItem.key]}
-              items={menuItems}
-              onClick={({ key }) => setActiveSection(key)}
-              style={{ border: 'none', background: 'transparent' }}
-            />
+            <div
+              // Sticky so the section nav stays in view while the settings content
+              // scrolls underneath it inside the height-capped modal body.
+              style={{
+                position: 'sticky',
+                top: 0,
+                padding: '12px 8px',
+                maxHeight: 'calc(100vh - 200px)',
+                overflowY: 'auto',
+              }}
+            >
+              <Menu
+                mode="inline"
+                selectedKeys={[activeItem.key]}
+                items={menuItems}
+                onClick={({ key }) => setActiveSection(key)}
+                style={{ border: 'none', background: 'transparent' }}
+              />
+            </div>
           </div>
 
-          <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto', maxHeight: '70vh' }}>
+          <div style={{ flex: 1, padding: '20px 24px' }}>
             {!isEditable && (
               <Alert
                 message={t('noPermission')}
                 type="warning"
                 showIcon
                 style={{ marginBottom: 16 }}
+              />
+            )}
+
+            {settingsLoadFailed && (
+              <Alert
+                message={t('loadSettingsFailedTitle', {
+                  defaultValue: 'Could not load project settings',
+                })}
+                description={t('loadSettingsFailedDescription', {
+                  defaultValue:
+                    'The project was created, but its current settings could not be loaded. Saving is disabled until this succeeds, to avoid overwriting the project with blank fields.',
+                })}
+                type="error"
+                showIcon
+                style={{ marginBottom: 16 }}
+                action={
+                  <Button size="small" loading={loading} onClick={handleRetryLoadSettings}>
+                    {t('retry', { defaultValue: 'Retry' })}
+                  </Button>
+                }
               />
             )}
 
@@ -1377,12 +1645,20 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
               <div style={{ display: activeItem.key === 'advanced' ? 'block' : 'none' }}>
                 {sectionItems.find(item => item.key === 'advanced')?.children}
               </div>
+              <div style={{ display: activeItem.key === 'privacy' ? 'block' : 'none' }}>
+                {sectionItems.find(item => item.key === 'privacy')?.children}
+              </div>
               <div style={{ display: activeItem.key === 'budget' ? 'block' : 'none' }}>
                 {sectionItems.find(item => item.key === 'budget')?.children}
               </div>
+              {/* Phases must stay inside Form so auto_assign_subtask_phase is submitted on Update */}
+              <div style={{ display: activeItem.key === 'phases' ? 'block' : 'none' }}>
+                {sectionItems.find(item => item.key === 'phases')?.children}
+              </div>
             </Form>
 
-            {!['general', 'advanced', 'budget'].includes(activeItem.key) && activeItem.children}
+            {!['general', 'advanced', 'privacy', 'budget', 'phases'].includes(activeItem.key) &&
+              activeItem.children}
 
             {editMode && (
               <Flex vertical gap={4}>

@@ -27,7 +27,12 @@ import { statusApiService } from '@/api/taskAttributes/status/status.api.service
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { UNASSIGNED_GROUP_ID } from '@/utils/assign-task-to-member';
 import { useAuthService } from '@/hooks/useAuth';
+import useIsProjectManager from '@/hooks/useIsProjectManager';
+import { useTaskListMode } from '@/features/task-management/task-list-mode-context';
+import { SprintSectionHeader } from './SprintSectionHeader';
 import { ITaskStatusUpdateModel } from '@/types/tasks/task-status-update-model.types';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import logger from '@/utils/errorLogger';
@@ -38,6 +43,7 @@ import PhaseAssigneeSelector from './PhaseAssigneeSelector';
 
 // ✅ FIX: Max character limit for phase names
 const PHASE_NAME_MAX_LENGTH = 50;
+const STATUS_NAME_MAX_LENGTH = 50;
 
 interface TaskGroupHeaderProps {
   group: {
@@ -71,7 +77,9 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
   const themeMode = useAppSelector(state => (state as any).themeReducer?.mode || 'light');
   const isDarkMode = themeMode === 'dark';
   const { trackMixpanelEvent } = useMixpanelTracking();
-  const { isOwnerOrAdmin } = useAuthService();
+  const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
+  const isProjectManager = useIsProjectManager();
+  const listMode = useTaskListMode();
 
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -85,6 +93,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
   // Get phase data if grouping by phase
   const { phaseList } = useAppSelector(state => state.phaseReducer);
   const { project } = useAppSelector(state => state.projectReducer);
+  const isSoftwareProject = isSoftwareProjectType(project?.project_type);
   const phaseAssigneesEnabled = project?.phase_assignees_enabled || false;
   const isGuest = project?.is_guest === true;
 
@@ -93,6 +102,8 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     const phaseId = group.id.replace('phase-', '');
     return phaseList.find(p => p.id === phaseId);
   }, [currentGrouping, group.id, phaseList]);
+
+  const canManageGroups = (isOwnerOrAdmin || isProjectManager) && !isGuest;
 
   // ✅ FIX: Trim to 50 chars on init if phase (handles existing long DB values)
   const [editingName, setEditingName] = useState(
@@ -289,12 +300,14 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
 
   const isUnmappedPhaseForClick =
     currentGrouping === 'phase' && (group.id === 'Unmapped' || group.name === 'Unmapped');
+  // Assignee groups are people, not editable attributes.
+  const isAssigneeGrouping = currentGrouping === 'assignee';
 
   const handleNameClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (!isOwnerOrAdmin || isGuest) return;
-      if (isUnmappedPhaseForClick) return;
+      if (!canManageGroups) return;
+      if (isUnmappedPhaseForClick || isAssigneeGrouping) return;
       setIsEditingName(true);
       // ✅ FIX: Trim to 50 chars when starting to edit
       setEditingName(
@@ -303,7 +316,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
           : group.name
       );
     },
-    [group.name, isOwnerOrAdmin, isGuest, isUnmappedPhaseForClick, currentGrouping]
+    [group.name, canManageGroups, isUnmappedPhaseForClick, isAssigneeGrouping, currentGrouping]
   );
 
   const handleNameKeyDown = useCallback(
@@ -358,8 +371,18 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     return currentGrouping === 'phase' && (group.id === 'Unmapped' || group.name === 'Unmapped');
   }, [currentGrouping, group.id, group.name]);
 
+  const groupDisplayName = (() => {
+    if (isUnmappedPhase && isSoftwareProject) {
+      return t('backlogGroupName', { defaultValue: 'Backlog' });
+    }
+    if (isAssigneeGrouping && group.id === UNASSIGNED_GROUP_ID) {
+      return t('unassignedGroupName', { defaultValue: 'Unassigned' });
+    }
+    return group.name;
+  })();
+
   const menuItems = useMemo(() => {
-    if (!isOwnerOrAdmin || isGuest) return [];
+    if (!canManageGroups) return [];
     if (isUnmappedPhase) return [];
 
     const items = [
@@ -410,12 +433,106 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     currentGrouping,
     handleRenameGroup,
     handleCategoryChange,
-    isOwnerOrAdmin,
-    isGuest,
+    canManageGroups,
     isUnmappedPhase,
     statusCategories,
     t,
   ]);
+
+  const phaseAssigneeControl =
+    currentGrouping === 'phase' && currentPhaseData && phaseAssigneesEnabled ? (
+      <div ref={assigneeButtonRef} className="flex items-center ml-2">
+        {currentPhaseData.default_assignee_id ? (
+          // When assignee exists: show avatar, clicking opens dropdown
+          <button
+            className="flex items-center hover:opacity-80 transition-opacity focus:outline-none cursor-pointer"
+            onClick={e => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsPhaseAssigneeSelectorOpen(true);
+            }}
+            title="Manage phase assignee"
+          >
+            <div style={{ pointerEvents: 'none' }}>
+              <AvatarGroup
+                members={[
+                  {
+                    id: currentPhaseData.default_assignee_id,
+                    name: currentPhaseData.default_assignee_name || '',
+                    avatar_url: currentPhaseData.default_assignee_avatar_url || undefined,
+                  },
+                ]}
+                maxCount={3}
+                size={24}
+                isDarkMode={false}
+              />
+            </div>
+          </button>
+        ) : (
+          // When no assignee: show plus button
+          <button
+            className="flex items-center justify-center rounded-full hover:opacity-80 transition-opacity focus:outline-none"
+            style={{ width: '28px', height: '28px' }}
+            onClick={e => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsPhaseAssigneeSelectorOpen(true);
+            }}
+            title="Manage phase assignee"
+          >
+            <div
+              className="text-xs font-semibold rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110"
+              style={{
+                width: '28px',
+                height: '28px',
+                backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                color: headerTextColor,
+              }}
+            >
+              +
+            </div>
+          </button>
+        )}
+      </div>
+    ) : null;
+
+  const phaseAssigneeSelector =
+    currentGrouping === 'phase' &&
+    currentPhaseData &&
+    phaseAssigneesEnabled &&
+    isPhaseAssigneeSelectorOpen ? (
+      <PhaseAssigneeSelector
+        phase={currentPhaseData}
+        projectId={projectId}
+        isDarkMode={isDarkMode}
+        isOpen={isPhaseAssigneeSelectorOpen}
+        onClose={() => setIsPhaseAssigneeSelectorOpen(false)}
+        triggerRef={assigneeButtonRef}
+      />
+    ) : null;
+
+  const isSprintPlanningSection =
+    listMode === 'backlog' &&
+    isSoftwareProject &&
+    currentGrouping === 'phase' &&
+    (isUnmappedPhase || (!!currentPhaseData && currentPhaseData.sprint_status !== 'completed'));
+
+  if (isSprintPlanningSection) {
+    return (
+      <>
+        <SprintSectionHeader
+          sprint={isUnmappedPhase ? null : currentPhaseData ?? null}
+          taskIds={tasksInGroup}
+          isCollapsed={isCollapsed}
+          onToggle={onToggle}
+          projectId={projectId}
+          canManage={canManageGroups}
+          extraControls={phaseAssigneeControl}
+        />
+        {phaseAssigneeSelector}
+      </>
+    );
+  }
 
   return (
     <div className="relative flex items-center" style={{ width: '100%', minWidth: 'max-content' }}>
@@ -471,14 +588,19 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
         <div className="flex items-center flex-1 ml-1">
           <div className="flex items-center">
             {isEditingName ? (
-              // ✅ FIX: Input with suffix counter inside, adapts to phase background color
               <div onClick={e => e.stopPropagation()}>
                 <Input
                   value={editingName}
                   onChange={e => {
                     const value = e.target.value;
-                    // ✅ FIX: Only enforce limit for phase grouping
-                    if (currentGrouping === 'phase' && value.length > PHASE_NAME_MAX_LENGTH) return;
+
+                    if (
+                      (currentGrouping === 'phase' && value.length > PHASE_NAME_MAX_LENGTH) ||
+                      (currentGrouping === 'status' && value.length > STATUS_NAME_MAX_LENGTH)
+                    ) {
+                      return;
+                    }
+
                     setEditingName(value);
                   }}
                   onKeyDown={handleNameKeyDown}
@@ -486,7 +608,13 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
                   autoFocus
                   size="small"
                   className="text-sm font-semibold"
-                  maxLength={currentGrouping === 'phase' ? PHASE_NAME_MAX_LENGTH : undefined}
+                  maxLength={
+                    currentGrouping === 'phase'
+                      ? PHASE_NAME_MAX_LENGTH
+                      : currentGrouping === 'status'
+                        ? STATUS_NAME_MAX_LENGTH
+                        : undefined
+                  }
                   style={{
                     width: 'auto',
                     minWidth: '150px',
@@ -495,19 +623,24 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
                     border: '1px solid rgba(255, 255, 255, 0.3)',
                   }}
                   suffix={
-                    currentGrouping === 'phase' ? (
+                    currentGrouping === 'phase' || currentGrouping === 'status' ? (
                       <span
                         style={{
                           fontSize: '11px',
-                          // ✅ FIX: Adapts color based on phase background for visibility
                           color:
-                            editingName.length >= PHASE_NAME_MAX_LENGTH
+                            editingName.length >=
+                              (currentGrouping === 'phase'
+                                ? PHASE_NAME_MAX_LENGTH
+                                : STATUS_NAME_MAX_LENGTH)
                               ? '#ff4d4f'
                               : headerTextColor,
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {editingName.length}/{PHASE_NAME_MAX_LENGTH}
+                        {editingName.length}/
+                        {currentGrouping === 'phase'
+                          ? PHASE_NAME_MAX_LENGTH
+                          : STATUS_NAME_MAX_LENGTH}
                       </span>
                     ) : undefined
                   }
@@ -515,75 +648,32 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
               </div>
             ) : (
               <span
-                className={`text-sm font-semibold pr-2 ${isUnmappedPhase ? '' : 'cursor-pointer hover:underline'}`}
+                className={`text-sm font-semibold pr-2 ${isUnmappedPhase || isAssigneeGrouping ? '' : 'cursor-pointer hover:underline'}`}
                 style={{ color: headerTextColor }}
                 onClick={handleNameClick}
               >
-                {group.name}
+                {groupDisplayName}
               </span>
             )}
             <span className="text-sm font-semibold ml-1" style={{ color: headerTextColor }}>
               ({group.count})
             </span>
+            {isSoftwareProject && currentGrouping === 'phase' && currentPhaseData?.sprint_status && (
+              <span
+                className="ml-2 text-[10px] font-semibold uppercase tracking-wide opacity-80"
+                style={{ color: headerTextColor }}
+              >
+                {currentPhaseData.sprint_status === 'active'
+                  ? t('sprintStatusActive', { defaultValue: 'Active' })
+                  : currentPhaseData.sprint_status === 'completed'
+                    ? t('sprintStatusCompleted', { defaultValue: 'Completed' })
+                    : t('sprintStatusPlanned', { defaultValue: 'Planned' })}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Phase Assignee Profile Icon or Avatar Group */}
-        {currentGrouping === 'phase' && currentPhaseData && phaseAssigneesEnabled && (
-          <div ref={assigneeButtonRef} className="flex items-center ml-2">
-            {currentPhaseData.default_assignee_id ? (
-              // When assignee exists: show avatar, clicking opens dropdown
-              <button
-                className="flex items-center hover:opacity-80 transition-opacity focus:outline-none cursor-pointer"
-                onClick={e => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsPhaseAssigneeSelectorOpen(true);
-                }}
-                title="Manage phase assignee"
-              >
-                <div style={{ pointerEvents: 'none' }}>
-                  <AvatarGroup
-                    members={[
-                      {
-                        id: currentPhaseData.default_assignee_id,
-                        name: currentPhaseData.default_assignee_name || '',
-                        avatar_url: currentPhaseData.default_assignee_avatar_url || undefined,
-                      },
-                    ]}
-                    maxCount={3}
-                    size={24}
-                    isDarkMode={false}
-                  />
-                </div>
-              </button>
-            ) : (
-              // When no assignee: show plus button
-              <button
-                className="flex items-center justify-center rounded-full hover:opacity-80 transition-opacity focus:outline-none"
-                style={{ width: '28px', height: '28px' }}
-                onClick={e => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsPhaseAssigneeSelectorOpen(true);
-                }}
-                title="Manage phase assignee"
-              >
-                <div
-                  className="text-xs font-semibold rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110"
-                  style={{
-                    width: '28px',
-                    height: '28px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                    color: headerTextColor,
-                  }}
-                >
-                  +
-                </div>
-              </button>
-            )}
-          </div>
-        )}
+        {phaseAssigneeControl}
 
         {/* Three-dot menu */}
         {menuItems.length > 0 && (currentGrouping === 'status' || currentGrouping === 'phase') && (
@@ -637,17 +727,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
           </div>
         )}
 
-      {/* Phase Assignee Selector Modal */}
-      {currentGrouping === 'phase' && currentPhaseData && phaseAssigneesEnabled && isPhaseAssigneeSelectorOpen && (
-        <PhaseAssigneeSelector
-          phase={currentPhaseData}
-          projectId={projectId}
-          isDarkMode={isDarkMode}
-          isOpen={isPhaseAssigneeSelectorOpen}
-          onClose={() => setIsPhaseAssigneeSelectorOpen(false)}
-          triggerRef={assigneeButtonRef}
-        />
-      )}
+      {phaseAssigneeSelector}
     </div>
   );
 };

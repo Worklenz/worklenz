@@ -17,7 +17,7 @@ const CreateJobTitlesDrawer = () => {
   const [form] = Form.useForm();
 
   // this function for handle form submit
-  const handleFormSubmit = async (values: any) => {
+  const handleFormSubmit = async (values: { name: string }) => {
     try {
       const newJobTitle: JobType = {
         jobId: nanoid(),

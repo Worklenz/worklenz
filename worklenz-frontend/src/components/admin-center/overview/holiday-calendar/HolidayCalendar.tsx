@@ -167,14 +167,14 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
 
         // Index backend types by lowercase name for O(1) lookup
         const backendByName = new Map<string, IHolidayType>(
-          backendTypes.map(t => [t.name.toLowerCase(), t])
+          backendTypes.map(t => [String(t?.name || '').toLowerCase(), t])
         );
 
         // Walk the predefined order; substitute each slot with its real DB row.
         // If the DB row is missing for a predefined type, log a warning and skip it.
         const orderedTypes: IHolidayType[] = [];
         for (const predefined of PREDEFINED_HOLIDAY_DISPLAY) {
-          const dbRow = backendByName.get(predefined.name.toLowerCase());
+          const dbRow = backendByName.get(String(predefined.name || '').toLowerCase());
           if (dbRow) {
             orderedTypes.push(dbRow); // real UUID ✓
           } else {
@@ -188,8 +188,8 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
         }
 
         // Append any backend types that are NOT in the predefined list
-        const predefinedNames = new Set(PREDEFINED_HOLIDAY_DISPLAY.map(p => p.name.toLowerCase()));
-        const extraTypes = backendTypes.filter(t => !predefinedNames.has(t.name.toLowerCase()));
+        const predefinedNames = new Set(PREDEFINED_HOLIDAY_DISPLAY.map(p => String(p?.name || '').toLowerCase()));
+        const extraTypes = backendTypes.filter(t => !predefinedNames.has(String(t?.name || '').toLowerCase()));
 
         const mergedTypes: IHolidayType[] = [...orderedTypes, ...extraTypes];
         setHolidayTypes(mergedTypes);
@@ -241,6 +241,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
         from_date: startOfYear.format('YYYY-MM-DD'),
         to_date: endOfYear.format('YYYY-MM-DD'),
         include_custom: true,
+        country_code: holidaySettings?.country_code || undefined,
       })
     );
   };
@@ -256,6 +257,10 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
 
   useEffect(() => {
     setHasAttemptedPopulation(false);
+    // When country changes, refetch holidays immediately
+    if (holidaySettings?.country_code) {
+      fetchHolidaysForDateRange(true); // Force refresh with new country
+    }
   }, [holidaySettings?.country_code]);
 
   const customHolidays = useMemo(() => holidays.filter(h => h.source === 'custom'), [holidays]);

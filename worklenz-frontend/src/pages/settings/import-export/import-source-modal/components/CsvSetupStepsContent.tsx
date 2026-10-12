@@ -21,6 +21,8 @@ const SAMPLE_CSV_CONTENT = [
   '"Fix login redirect bug","Users are redirected to the wrong page after login",Doing,Critical,john@example.com,2026-08-25,Bug,1',
 ].join('\n');
 
+import type { TranslateFn, ThemeToken } from '../types';
+
 const downloadSampleCsv = () => {
   const blob = new Blob([SAMPLE_CSV_CONTENT], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -35,8 +37,8 @@ const downloadSampleCsv = () => {
 
 interface CsvSetupStepsContentProps {
   step: number;
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
-  themeToken: any;
+  t: TranslateFn;
+  themeToken: ThemeToken;
   uploadedCsvFileRef: React.MutableRefObject<File | null>;
   parseCsvData: (text: string) => { columnsCount: number; rowsCount: number };
   encoding: string;

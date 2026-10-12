@@ -1,0 +1,14 @@
+{
+  "taskAssigned": "<b>{{reporter}}</b> vous a assigné à <b>{{task}}</b>",
+  "taskRemoved": "<b>{{reporter}}</b> vous a retiré de <b>{{task}}</b>",
+  "taskAdded": "<b>{{user}}</b> a ajouté « <b>{{task}}</b> » à « <b>{{project}}</b> »",
+  "taskRemovedFromProject": "<b>{{user}}</b> a retiré « <b>{{task}}</b> » de « <b>{{project}}</b> »",
+  "addedToProject": "Vous avez été ajouté à <b>{{project}}</b> par <b>{{user}}</b>",
+  "removedFromProject": "Vous avez été retiré de <b>{{project}}</b> par <b>{{user}}</b>",
+  "addedToTeam": "Vous avez été ajouté à <b>{{team}}</b>",
+  "removedFromTeam": "Vous avez été retiré de <b>{{team}}</b> par <b>{{user}}</b>",
+  "commentAdded": "<b>{{user}}</b> a ajouté un commentaire sur <b>{{task}}</b>",
+  "mentionedInComment": "<b>{{user}}</b> vous a mentionné dans un commentaire sur <b>{{task}}</b>",
+  "mentionedInProjectComment": "<b>{{user}}</b> vous a mentionné dans un commentaire sur <b>{{project}}</b>",
+  "phaseTaskAssigned": "Une tâche vous a été assignée dans <b>{{phase}}</b> : <b>{{task}}</b>"
+}

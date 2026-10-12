@@ -7,6 +7,7 @@ import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 
 import { ServerResponse } from "../models/server-response";
 import { NotificationsService } from "../services/notifications/notifications.service";
+import { claimAppSumoPopupSlot } from "../shared/appsumo-popup";
 import { slugify, sanitizePlainText } from "../shared/utils";
 import { generateProjectKey } from "../utils/generate-project-key";
 import WorklenzControllerBase from "./worklenz-controller-base";
@@ -59,6 +60,18 @@ export default class ProfileSettingsController extends WorklenzControllerBase {
   public static async dismissMobileAppBanner(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     await db.query(`UPDATE users SET mobile_app_banner_dismissed = TRUE WHERE id = $1;`, [req.user?.id]);
     return res.status(200).send(new ServerResponse(true, null));
+  }
+
+  /**
+   * Asks whether the AppSumo promo popup may be shown to this user now and, if so, records it
+   * (see claimAppSumoPopupSlot). Answers done:false with a null body when the claim could not be
+   * made, e.g. before the appsumo_popup_last_shown_at migration has been applied; the client then
+   * falls back to its local gate instead of showing an error.
+   */
+  @HandleExceptions()
+  public static async claimAppSumoPopup(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const claim = await claimAppSumoPopupSlot(req.user?.id);
+    return res.status(200).send(new ServerResponse(claim !== null, claim));
   }
 
   @HandleExceptions()

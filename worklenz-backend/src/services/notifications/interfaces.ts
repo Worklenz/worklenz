@@ -8,6 +8,9 @@ export interface IReceiver {
   team: string;
   team_id: string;
   message: string;
+  message_key?: string;
+  message_params?: Record<string, any>;
+  notification_type_key?: string;
   project_id?: string;
   project?: string;
   project_color?: string;
@@ -18,10 +21,12 @@ export interface IReceiver {
 export interface ICreateNotificationRequest {
   userId: string;
   teamId: string;
-  socketId: string;
+  socketId?: string;
   message: string;
+  messageKey?: string;
+  messageParams?: Record<string, any>;
+  notificationTypeKey?: string;
   taskId: string | null;
   projectId: string | null;
   commentId?: string;
-
 }

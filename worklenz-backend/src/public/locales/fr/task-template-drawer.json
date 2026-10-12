@@ -1,0 +1,16 @@
+{
+  "createTaskTemplate": "Créer un modèle de tâche",
+  "editTaskTemplate": "Modifier le modèle de tâche",
+  "cancelText": "Annuler",
+  "saveText": "Enregistrer",
+  "templateNameText": "Nom du modèle",
+  "templateNameRequired": "Le nom du modèle est obligatoire",
+  "selectedTasks": "Tâches sélectionnées",
+  "removeTask": "Supprimer",
+  "cancelButton": "Annuler",
+  "saveButton": "Enregistrer",
+  "includeSubtasks": "Inclure la hiérarchie des sous-tâches",
+  "subtasksLabel": "sous-tâches",
+  "subtaskCount": "{{count}} sous-tâche(s)",
+  "subtaskHierarchyInfo": "Lorsque cette case est cochée, les sous-tâches sont enregistrées sous leur tâche parent. Lorsque cette case n'est pas cochée, les sous-tâches sont enregistrées en tant que tâches principales distinctes."
+}

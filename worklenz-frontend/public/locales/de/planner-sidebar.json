@@ -1,5 +1,10 @@
 {
+  "getMobileApp": "Mobile App herunterladen",
+  "helpSupport": "Hilfe & Support",
   "schedule": "Zeitplan",
+  "settingsTooltip": "Einstellungen",
   "timeline": "Zeitachse",
+  "trialDaysLeft": "{{count}} Tage verbleiben in Ihrer Testversion",
+  "upgradeToPro": "Auf Pro upgraden",
   "workload": "Arbeitsbelastung"
 }

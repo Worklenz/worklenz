@@ -1,7 +1,10 @@
 {
   "importTasks": "Importar tarefas",
   "importTask": "Importar tarefa",
+  "importTasksFromCsv": "Importar tarefas de CSV",
   "createTask": "Criar tarefa",
+  "createIssue": "Criar problema",
+  "createIssueTooltip": "Crie um novo problema",
   "settings": "Configurações",
   "subscribe": "Inscrever-se",
   "unsubscribe": "Cancelar inscrição",
@@ -23,6 +26,7 @@
   "inviteTooltip": "Convidar membros da equipe para este projeto",
   "createTaskTooltip": "Criar uma nova tarefa",
   "importTaskTooltip": "Importar tarefa do modelo",
+  "importTasksFromCsvTooltip": "Importar tarefas de um arquivo CSV",
   "navigateBackTooltip": "Voltar para a lista de projetos",
   "projectStatusTooltip": "Status do projeto",
   "projectDatesInfo": "Informações da linha do tempo do projeto",

@@ -3,8 +3,11 @@ import HolidayController from "../../controllers/holiday-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import idParamValidator from "../../middlewares/validators/id-param-validator";
+import { holidayRateLimiter } from "../../middlewares/holiday-rate-limiter";
 
 const holidayApiRouter = express.Router();
+
+holidayApiRouter.use(holidayRateLimiter);
 
 // Holiday types
 holidayApiRouter.get("/types", safeControllerFunction(HolidayController.getHolidayTypes));
@@ -26,4 +29,4 @@ holidayApiRouter.get("/calendar", teamOwnerOrAdminValidator, safeControllerFunct
 // Populate holidays
 holidayApiRouter.post("/populate", teamOwnerOrAdminValidator, safeControllerFunction(HolidayController.populateCountryHolidays));
 
-export default holidayApiRouter; 
+export default holidayApiRouter;

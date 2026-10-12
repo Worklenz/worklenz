@@ -31,7 +31,23 @@
       "taskWeightTooltip": "Gewicht dieser Teilaufgabe festlegen (Prozent)",
       "taskWeightRequired": "Bitte geben Sie ein Aufgabengewicht ein",
       "taskWeightRange": "Gewicht muss zwischen 0 und 100 liegen",
+      "customFields": {
+        "empty": "Leer",
+        "enterNumber": "Zahl eingeben",
+        "selectDate": "Datum auswählen",
+        "selectOption": "Option auswählen",
+        "selectPeople": "Personen auswählen",
+        "updateError": "Benutzerdefiniertes Feld konnte nicht aktualisiert werden"
+      },
       "recurring": "Wiederkehrend"
+    },
+    "customFields": {
+      "title": "Benutzerdefinierte Felder",
+      "autoSaveHint": "Änderungen werden automatisch gespeichert, wenn Sie ein Feld verlassen.",
+      "addCustomField": "Benutzerdefiniertes Feld hinzufügen",
+      "addCustomColumn": "Benutzerdefinierte Spalte hinzufügen",
+      "showMoreFields": "{{count}} weitere Felder anzeigen",
+      "hideFields": "Felder ausblenden"
     },
     "labels": {
       "labelInputPlaceholder": "Suchen oder erstellen",

@@ -32,5 +32,7 @@
   "clientsLockedTooltip": "仅在 Business 方案中可用",
   "clientChatLockedTitle": "客户聊天已锁定",
   "clientChatLockedBody": "直接在收件箱中与客户聊天仅在 Business 方案中可用。",
-  "upgradeNow": "立即升级"
+  "upgradeNow": "立即升级",
+  "today": "今天",
+  "edited": "(已编辑)"
 }

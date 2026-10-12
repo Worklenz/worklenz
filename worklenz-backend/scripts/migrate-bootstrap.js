@@ -19,11 +19,11 @@
  *
  * Safe to re-run (truncates and re-seeds each time).
  *
- * Usage:  node scripts/migrate-bootstrap.js [--before <migration-name>]
+ * Usage:  node scripts/migrate-bootstrap.js [--before <unix-ms-id>]
  *
- * --before records only migrations that sort before the named migration. This
- * is useful when bootstrapping a database with an existing schema while
- * allowing a newly introduced migration to run normally.
+ * When --before is supplied, only migrations with an ID lower than that
+ * timestamp are seeded. This is useful when historical files are converted
+ * to pg-migrations but a newer data migration must still run afterwards.
  */
 
 const args = process.argv.slice(2);
@@ -44,20 +44,44 @@ const fs   = require('fs');
 const { Pool } = require('pg');
 
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'database', 'pg-migrations');
+const beforeIndex = process.argv.indexOf('--before');
+const beforeMigrationId = beforeIndex === -1 ? null : Number(process.argv[beforeIndex + 1]);
 
-const { DB_USER, DB_PASSWORD, DB_HOST, DB_PORT = '5432', DB_NAME } = process.env;
+if (beforeIndex !== -1 && (!Number.isSafeInteger(beforeMigrationId) || beforeMigrationId <= 0)) {
+  console.error('The --before option requires a positive Unix-millisecond migration ID.');
+  process.exit(1);
+}
 
-if (!DB_USER || !DB_NAME) {
-  console.error('Missing required DB env vars (DB_USER, DB_NAME, DB_HOST, DB_PASSWORD).');
+const {
+  DB_USER,
+  DB_PASSWORD,
+  DB_HOST,
+  DB_PORT = '5432',
+  DB_NAME,
+  MIGRATION_DB_USER,
+  MIGRATION_DB_PASSWORD,
+  MIGRATION_DB_HOST,
+  MIGRATION_DB_PORT,
+  MIGRATION_DB_NAME,
+} = process.env;
+
+const migrationDbUser = MIGRATION_DB_USER || DB_USER;
+const migrationDbPassword = MIGRATION_DB_PASSWORD ?? DB_PASSWORD;
+const migrationDbHost = MIGRATION_DB_HOST || DB_HOST || 'localhost';
+const migrationDbPort = MIGRATION_DB_PORT || DB_PORT;
+const migrationDbName = MIGRATION_DB_NAME || DB_NAME;
+
+if (!migrationDbUser || !migrationDbName) {
+  console.error('Missing migration database credentials (MIGRATION_DB_USER/DB_USER and MIGRATION_DB_NAME/DB_NAME).');
   process.exit(1);
 }
 
 const pool = new Pool({
-  host:     DB_HOST || 'localhost',
-  port:     Number(DB_PORT),
-  database: DB_NAME,
-  user:     DB_USER,
-  password: DB_PASSWORD,
+  host:     migrationDbHost,
+  port:     Number(migrationDbPort),
+  database: migrationDbName,
+  user:     migrationDbUser,
+  password: migrationDbPassword,
 });
 
 // Collect names sorted by filename (= timestamp order, same as node-pg-migrate)
@@ -65,6 +89,7 @@ const allNames = fs
   .readdirSync(MIGRATIONS_DIR)
   .filter(f => f.endsWith('.js'))
   .map(f => f.replace(/\.js$/, ''))
+  .filter(name => beforeMigrationId === null || Number(name.split('_')[0]) < beforeMigrationId)
   .sort();
 
 if (beforeMigration && !allNames.includes(beforeMigration)) {
@@ -111,12 +136,12 @@ function runOnFromName(name) {
 }
 
 async function run() {
-  // Pre-validate all migration names before touching pgmigrations
+  // Pre-validate all migration names before touching pgmigrations.
   const validated = [];
   let lastRunOn = new Date(0);
   for (const name of names) {
     let run_on = runOnFromName(name);
-    // Ensure monotonic timestamps so ORDER BY run_on, id in DB matches file sort order
+    // Keep database ordering identical to filename ordering.
     if (run_on <= lastRunOn) {
       run_on = new Date(lastRunOn.getTime() + 1000);
     }
@@ -128,14 +153,21 @@ async function run() {
   try {
     await client.query('BEGIN');
 
-    // Ensure table exists
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS pgmigrations (
-        id      SERIAL PRIMARY KEY,
-        name    VARCHAR(255) NOT NULL,
-        run_on  TIMESTAMP NOT NULL
-      )
-    `);
+    // `CREATE TABLE IF NOT EXISTS` still requires CREATE on schema public even
+    // when pgmigrations already exists. Avoid that unnecessary permission
+    // requirement when bootstrapping an established database.
+    const { rows: migrationTableRows } = await client.query(
+      "SELECT to_regclass('public.pgmigrations') IS NOT NULL AS exists"
+    );
+    if (!migrationTableRows[0]?.exists) {
+      await client.query(`
+        CREATE TABLE pgmigrations (
+          id      SERIAL PRIMARY KEY,
+          name    VARCHAR(255) NOT NULL,
+          run_on  TIMESTAMP NOT NULL
+        )
+      `);
+    }
 
     // Wipe all existing rows so we start from a clean, ordered state
     const { rowCount: deleted } = await client.query('DELETE FROM pgmigrations');

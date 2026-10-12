@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Flex, Card, Segmented, Spin, Empty, Skeleton } from '@/shared/antd-imports';
+import { Flex, Card, Spin, Empty, Skeleton, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -9,12 +9,14 @@ import WorkloadChart from './components/WorkloadChart';
 import WorkloadCalendar from './components/WorkloadCalendar';
 import WorkloadTable from './components/WorkloadTable';
 import WorkloadFilters from './components/WorkloadFilters';
+import PillToggleGroup from './components/PillToggleGroup';
 import {
   useGetProjectWorkloadQuery,
   useGetWorkloadMembersQuery,
 } from '@/api/project-workload/project-workload.api.service';
 import projectWorkloadApi from '@/api/project-workload/project-workload.api.service';
 import { setWorkloadView, setDateRange } from '@/features/project-workload/projectWorkloadSlice';
+import { useProjectWorkloadSocketHandlers } from '@/hooks/useProjectWorkloadSocketHandlers';
 import dayjs from 'dayjs';
 import './project-view-workload.css'; // Import CSS file
 
@@ -24,6 +26,9 @@ const ProjectViewWorkload = React.memo(() => {
   const { t } = useTranslation('workload');
   const { projectId } = useParams<{ projectId: string }>();
   const dispatch = useAppDispatch();
+  const { token } = theme.useToken();
+
+  useProjectWorkloadSocketHandlers();
 
   const { workloadView, dateRange, filters } = useAppSelector(state => state.projectWorkload);
   const [localView, setLocalView] = useState<WorkloadView>(workloadView || 'chart');
@@ -211,10 +216,7 @@ const ProjectViewWorkload = React.memo(() => {
     <Flex
       vertical
       style={{
-        height: 'calc(100vh - 220px)', // Adjust based on your header height
-        paddingLeft: '24px',
-        paddingRight: '24px',
-        paddingTop: '16px',
+        height: 'calc(100vh - 186px)', // Matches Roadmap's header-height offset so content fills to the screen bottom
       }}
     >
       {/* Fixed Header Section - View Tabs and Filters */}
@@ -223,9 +225,16 @@ const ProjectViewWorkload = React.memo(() => {
         align="center"
         wrap="wrap"
         gap={16}
-        style={{ marginBottom: '16px' }}
+        style={{
+          marginBottom: '8px',
+          padding: '6px',
+          background: token.colorBgContainer,
+          border: `1px solid ${token.colorBorderSecondary}`,
+          borderRadius: 6,
+          boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        }}
       >
-        <Segmented
+        <PillToggleGroup<WorkloadView>
           value={localView}
           onChange={handleViewChange}
           options={[
@@ -248,13 +257,16 @@ const ProjectViewWorkload = React.memo(() => {
           flex: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         <Flex
           vertical
-          gap={16}
+          gap={8}
           style={{
-            paddingBottom: '24px',
+            flex: 1,
+            minHeight: 0,
           }}
         >
           {finalLoading || finalFetching ? (
@@ -263,7 +275,20 @@ const ProjectViewWorkload = React.memo(() => {
             <>
               <WorkloadOverview data={finalData as any} isLoading={finalLoading} />
 
-              <Card>{renderContent()}</Card>
+              <Card
+                style={{ flex: 1, minHeight: 420 }}
+                styles={{
+                  body: {
+                    padding: 0,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflowY: 'auto',
+                  },
+                }}
+              >
+                {renderContent()}
+              </Card>
             </>
           )}
         </Flex>

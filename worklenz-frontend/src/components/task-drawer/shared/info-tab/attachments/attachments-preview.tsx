@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ITaskAttachmentViewModel } from '@/types/tasks/task-attachment-view-model';
 import { Button, Tooltip, Popconfirm, message, dayjs } from '@/shared/antd-imports';
 import {
@@ -16,6 +17,21 @@ import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { FilePreviewModal } from '@/components/common/FilePreviewModal';
 
+const extractPresignedUrl = (body: unknown): string | null => {
+  if (typeof body === 'string' && body.length > 0) {
+    return body;
+  }
+
+  if (body && typeof body === 'object' && 'url' in body) {
+    const url = (body as { url?: unknown }).url;
+    if (typeof url === 'string' && url.length > 0) {
+      return url;
+    }
+  }
+
+  return null;
+};
+
 interface AttachmentsPreviewProps {
   attachment: ITaskAttachmentViewModel;
   onDelete?: (id: string) => void;
@@ -29,6 +45,7 @@ const AttachmentsPreview = ({
   isCommentAttachment = false,
   isGuest = false,
 }: AttachmentsPreviewProps) => {
+  const { t } = useTranslation('task-drawer/task-drawer');
   const { selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const [deleting, setDeleting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -50,17 +67,26 @@ const AttachmentsPreview = ({
     if (isGuest || !id || !name) return;
     try {
       setDownloading(true);
-      const res = await attachmentsApiService.downloadAttachment(id, name);
-      if (res && res.done && res.body?.url) {
+      const res = isCommentAttachment
+        ? await taskCommentsApiService.download(id, name)
+        : await attachmentsApiService.downloadAttachment(id, name);
+      const url = extractPresignedUrl(res?.body);
+      if (res?.done && url) {
         const link = document.createElement('a');
-        link.href = res.body.url;
+        link.href = url;
         link.download = name;
         link.click();
         link.remove();
+        return;
       }
+      message.error(
+        t('taskInfoTab.attachments.downloadFailed', { defaultValue: 'Failed to download file' })
+      );
     } catch (e) {
-      console.error(e);
-      message.error('Failed to download file');
+      logger.error('Error downloading attachment:', e);
+      message.error(
+        t('taskInfoTab.attachments.downloadFailed', { defaultValue: 'Failed to download file' })
+      );
     } finally {
       setDownloading(false);
     }
@@ -86,7 +112,9 @@ const AttachmentsPreview = ({
       }
     } catch (e) {
       logger.error('Error deleting attachment:', e);
-      message.error('Failed to delete attachment');
+      message.error(
+        t('taskInfoTab.attachments.deleteFailed', { defaultValue: 'Failed to delete attachment' })
+      );
     } finally {
       setDeleting(false);
     }

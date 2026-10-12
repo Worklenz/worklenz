@@ -7,5 +7,7 @@
   "templates": "Shabllonet",
   "remove": "Hiq",
   "cancel": "Anulo",
-  "import": "Importo"
+  "import": "Importo",
+  "subtasksLabel": "nëndetyrë(t)",
+  "subtaskCountTooltip": "{{count}} nëndetyra(t) do të importohen"
 }

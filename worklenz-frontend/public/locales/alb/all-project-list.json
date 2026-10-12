@@ -6,6 +6,8 @@
   "priority": "Prioriteti",
   "tasksProgress": "Përparimi i Detyrave",
   "updated_at": "E Përditësuar së Fundi",
+  "endDate": "Data e përfundimit të projektit",
+  "favorite": "E preferuar",
   "setting": "Cilësimet",
   "settingsDisabledForGuest": "Cilësimet e paaktivizuara për mysafirëve",
   "settingsTooltip": "Hapehu cilësimet e projektit",
@@ -37,16 +39,16 @@
     "clients": "klientët"
   },
   "noPermission": "Nuk keni leje për të kryer këtë veprim",
-  "favorite": "E preferuar",
   "fieldsText": "Fushat",
   "fieldsWithCount": "Fushat: {{count}}",
-  "projectFields": "Fushat e Projektit",
+  "showFields": "Shfaq fushat",
   "noOptionsFound": "Nuk u gjetën opsione",
-  "required": "I kërkuar",
   "activeFiltersCount": "Filtrat: {{count}}",
   "filter": {
     "noClient": "Pa Klient",
     "noPriority": "Pa Prioritet",
     "noCategory": "Pa Kategori"
-  }
+  },
+  "projectFields": "Fushat e Projektit",
+  "required": "I kërkuar"
 }

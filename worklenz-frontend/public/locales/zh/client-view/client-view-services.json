@@ -1,0 +1,10 @@
+{
+  "title": "{{items}} 服务",
+  "requestButton": "提出请求",
+  "modal": {
+    "title": "提出请求",
+    "submitButton": "提交"
+  },
+  "uploadLogoText": "点击或拖动文件到此区域上传",
+  "uploadLogoAltText": "支持单次或批量上传。严禁上传公司数据或其他乐队文件"
+}

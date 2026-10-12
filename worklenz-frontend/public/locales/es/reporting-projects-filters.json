@@ -4,15 +4,17 @@
   "searchClientsPlaceholder": "Buscar clientes...",
   "noClient": "Sin cliente",
   "noCategoryText": "Sin Categoría",
-  "clearAll": "Limpiar todo",
   "showingFirstN": "Mostrando {{count}} de {{total}} — escribe para buscar",
-
+  "teams": "Equipos",
+  "allTeams": "Todos los equipos",
+  "searchByName": "Buscar por nombre",
+  "selectAll": "Seleccionar Todo",
+  "clearAll": "Limpiar todo",
   "statusText": "Estado",
   "healthText": "Salud",
   "categoryText": "Categoría",
   "projectManagerText": "Gerente de Proyecto",
   "showFieldsText": "Mostrar campos",
-
   "cancelledText": "Cancelado",
   "blockedText": "Bloqueado",
   "onHoldText": "En Espera",
@@ -21,12 +23,10 @@
   "inProgressText": "En Progreso",
   "completedText": "Completado",
   "continuousText": "Continuo",
-
   "notSetText": "No Establecido",
   "needsAttentionText": "Necesita Atención",
   "atRiskText": "En Riesgo",
   "goodText": "Bien",
-
   "nameText": "Proyecto",
   "estimatedVsActualText": "Estimado vs Real",
   "tasksProgressText": "Progreso de Tareas",
@@ -42,7 +42,6 @@
   "filtersTitle": "Filtros",
   "quickFilters": "Filtros rápidos",
   "filterButton": "Filtrar",
-
   "tableViewText": "Tabla",
   "groupedViewText": "Agrupado",
   "groupByCategoryText": "Categoría",

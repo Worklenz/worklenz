@@ -117,7 +117,7 @@ const BoardViewCreateTaskCard = ({
               ...task,
               id: task.id || nanoid(),
               name: task.name || newTaskName.trim(),
-              end_date: task.end_date || dueDate,
+              end_date: task.end_date || (dueDate ? dueDate.toISOString() : undefined),
             },
           })
         );
@@ -161,7 +161,7 @@ const BoardViewCreateTaskCard = ({
               ...task,
               id: task.id || nanoid(),
               name: task.name || newTaskName.trim(),
-              end_date: task.end_date || dueDate,
+              end_date: task.end_date || (dueDate ? dueDate.toISOString() : undefined),
             },
           })
         );

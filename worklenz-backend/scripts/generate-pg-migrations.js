@@ -27,11 +27,8 @@ function makeIdempotent(sql) {
   s = s.replace(/\bADD COLUMN\b(?!\s+IF\s+NOT\s+EXISTS\b)/gi,
     'ADD COLUMN IF NOT EXISTS');
 
-  // ALTER TABLE … ADD CONSTRAINT → skip silently when duplicate
-  s = s.replace(
-    /\bADD CONSTRAINT\b(?!\s+IF\s+NOT\s+EXISTS\b)/gi,
-    'ADD CONSTRAINT IF NOT EXISTS'
-  );
+  // NOTE: Postgres does NOT support ADD CONSTRAINT IF NOT EXISTS.
+  // Constraints should not be blindly transformed with IF NOT EXISTS.
 
   // CREATE [UNIQUE] INDEX → IF NOT EXISTS
   s = s.replace(/\bCREATE UNIQUE INDEX\b(?!\s+IF\s+NOT\s+EXISTS\b)/gi,

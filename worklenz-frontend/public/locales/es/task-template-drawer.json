@@ -4,8 +4,13 @@
   "cancelText": "Cancelar",
   "saveText": "Guardar",
   "templateNameText": "Nombre de la Plantilla",
+  "templateNameRequired": "El nombre de la plantilla es obligatorio",
   "selectedTasks": "Tareas Seleccionadas",
   "removeTask": "Eliminar",
   "cancelButton": "Cancelar",
-  "saveButton": "Guardar"
+  "saveButton": "Guardar",
+  "includeSubtasks": "Incluir jerarquía de subtareas",
+  "subtasksLabel": "subtarea(s)",
+  "subtaskCount": "{{count}} subtarea(s)",
+  "subtaskHierarchyInfo": "Cuando está marcada, las subtareas se guardan bajo su tarea principal. Cuando no está marcada, las subtareas se guardan como tareas principales independientes."
 }

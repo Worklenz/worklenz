@@ -28,19 +28,29 @@
     },
     "hours": "hours",
     "averageUtilization": "Average Utilization",
-    "averageUtilizationTooltip": {
-      "averageLabel": "Average:",
-      "membersLabel": "Members:",
-      "totalAssignedLabel": "Total Assigned:",
-      "totalCapacityLabel": "Total Capacity:"
-    },
+    "tasks": "Tasks",
     "criticalTasks": "Critical Tasks",
-    "criticalTasksTooltip": {
-      "criticalTasksLabel": "Critical Tasks:",
-      "totalTasksLabel": "Total Tasks:",
-      "criticalPercentageLabel": "Critical Percentage:"
-    },
-    "totalTasks": "{{count}} Total Tasks"
+    "totalTasksLabel": "Total Tasks",
+    "totalTasks": "{{count}} Total Tasks",
+    "criticalTasksTooltip": "High priority tasks requiring immediate attention.\n\nTask Breakdown:\n• Critical Tasks: {{criticalTasks}}\n• Total Tasks: {{totalTasks}}\n• Critical Percentage: {{criticalPercentage}}%",
+    "teamMembersTooltipTitle": "Team composition and allocation status",
+    "memberStatusLabel": "Member Status:",
+    "totalMembersStat": "Total Members: {{count}}",
+    "overallocatedStat": "Overallocated: {{count}} (>100% utilization)",
+    "underutilizedStat": "Underutilized: {{count}} (<{{threshold}}% utilization)",
+    "optimalStat": "Optimal: {{count}}",
+    "totalWorkloadTooltipTitle": "Total estimated workload across all team members",
+    "includesLabel": "Includes:",
+    "estimatedHoursStat": "Estimated Hours: {{hours}}h",
+    "actualHoursLoggedStat": "Actual Hours Logged: {{hours}}h",
+    "progressStat": "Progress: {{percent}}%",
+    "averageStat": "Average: {{percent}}%",
+    "membersStat": "Members: {{count}}",
+    "totalAssignedStat": "Total Assigned: {{hours}}h",
+    "totalCapacityStat": "Total Capacity: {{hours}}h",
+    "criticalTasksStat": "Critical Tasks: {{count}}",
+    "totalTasksStat": "Total Tasks: {{count}}",
+    "criticalPercentageStat": "Critical Percentage: {{percent}}%"
   },
 
   "chart": {
@@ -109,7 +119,9 @@
     "currentCapacityLabel": "Current capacity:",
     "allocatedLabel": "Allocated:",
     "utilizationLabel": "Utilization:",
-    "statusLabel": "Status:"
+    "statusLabel": "Status:",
+    "noTasksAssigned": "No tasks assigned to this member in this project yet.",
+    "noTasksAssignedForPeriod": "No tasks assigned to this member in this project for {{startDate}} - {{endDate}}."
   },
 
   "export": {
@@ -139,6 +151,20 @@
     "reassignTasks": "Reassign Tasks",
     "exportWorkload": "Export Workload",
     "reassign": "Reassign"
+  },
+
+  "export": {
+    "startDateHeader": "Start Date",
+    "endDateHeader": "End Date",
+    "progressHeader": "Progress (%)",
+    "taskFallback": "Task {{id}}",
+    "defaultPriority": "Normal",
+    "memberLabel": "Member: {{name}}",
+    "emailLabel": "Email: {{email}}",
+    "capacityLabel": "Capacity: {{value}}",
+    "allocatedLabel": "Allocated: {{value}}",
+    "utilizationLabel": "Utilization: {{value}}%",
+    "statusLabel": "Status: {{value}}"
   },
 
   "modal": {

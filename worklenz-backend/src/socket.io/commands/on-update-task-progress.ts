@@ -1,9 +1,10 @@
 import { Socket } from "socket.io";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
-import { log, log_error, notifyProjectUpdates } from "../util";
+import { getLoggedInUserIdFromSocket, log, log_error, notifyProjectUpdates, emitToTaskVisibleProjectMembers } from "../util";
 import { logProgressChange } from "../../services/activity-logs/activity-logs.service";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
+import { isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task-scope";
 
 interface UpdateTaskProgressData {
   task_id: string;
@@ -52,8 +53,11 @@ async function updateTaskAncestors(io: any, projectId: string, taskId: string | 
       }
     }
     
-    // Broadcast the updated progress to ALL clients in the project room
-    io.to(projectId).emit(
+    // Broadcast the updated progress to clients who can see this task
+    await emitToTaskVisibleProjectMembers(
+      io,
+      projectId,
+      taskId,
       SocketEvents.TASK_PROGRESS_UPDATED.toString(),
       {
         task_id: taskId,
@@ -85,6 +89,10 @@ export async function on_update_task_progress(io: any, socket: Socket, data: str
     const { task_id, progress_value, parent_task_id } = parsedData;    
     
     if (!task_id || progress_value === undefined) {
+      return;
+    }
+
+    if (await isAssigneeScopeEditRestrictedForTask(getLoggedInUserIdFromSocket(socket), task_id)) {
       return;
     }
     
@@ -147,8 +155,11 @@ export async function on_update_task_progress(io: any, socket: Socket, data: str
         }
       }
 
-      // Broadcast the update to all clients in the project room
-      io.to(projectId).emit(
+      // Broadcast the update to clients who can see this task
+      await emitToTaskVisibleProjectMembers(
+        io,
+        projectId,
+        task_id,
         SocketEvents.TASK_PROGRESS_UPDATED.toString(),
         {
           task_id,

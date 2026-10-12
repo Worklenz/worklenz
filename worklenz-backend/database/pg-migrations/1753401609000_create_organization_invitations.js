@@ -59,7 +59,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER organization_invitations_updated_at_trigger
+CREATE OR REPLACE TRIGGER organization_invitations_updated_at_trigger
     BEFORE UPDATE ON organization_invitations
     FOR EACH ROW
     EXECUTE FUNCTION update_organization_invitations_updated_at();

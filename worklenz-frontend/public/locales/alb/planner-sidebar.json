@@ -1,5 +1,10 @@
 {
+  "getMobileApp": "Merr aplikacionin celular",
+  "helpSupport": "Ndihmë dhe mbështetje",
   "schedule": "Orari",
+  "settingsTooltip": "Cilësimet",
   "timeline": "Afati Kohor",
+  "trialDaysLeft": "{{count}} ditë të mbetura në periudhën provë",
+  "upgradeToPro": "Kalo në Pro",
   "workload": "Ngarkesa e Punës"
 }

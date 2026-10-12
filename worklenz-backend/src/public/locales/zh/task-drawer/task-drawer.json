@@ -31,7 +31,23 @@
       "taskWeightTooltip": "设置此子任务的权重（百分比）",
       "taskWeightRequired": "请输入任务权重",
       "taskWeightRange": "权重必须在0到100之间",
+      "customFields": {
+        "empty": "空",
+        "enterNumber": "输入数字",
+        "selectDate": "选择日期",
+        "selectOption": "选择选项",
+        "selectPeople": "选择人员",
+        "updateError": "更新自定义字段失败"
+      },
       "recurring": "重复"
+    },
+    "customFields": {
+      "title": "自定义字段",
+      "autoSaveHint": "离开字段时更改会自动保存。",
+      "addCustomField": "添加自定义字段",
+      "addCustomColumn": "添加自定义列",
+      "showMoreFields": "显示另外 {{count}} 个字段",
+      "hideFields": "隐藏字段"
     },
     "labels": {
       "labelInputPlaceholder": "搜索或创建",

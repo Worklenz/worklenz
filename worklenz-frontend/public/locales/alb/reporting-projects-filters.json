@@ -4,15 +4,17 @@
   "searchClientsPlaceholder": "Kërko klientë...",
   "noClient": "Pa klient",
   "noCategoryText": "Pa Kategori",
-  "clearAll": "Pastro të gjitha",
   "showingFirstN": "Duke shfaqur {{count}} nga {{total}} — shkruaj për të kërkuar",
-
+  "teams": "Ekipet",
+  "allTeams": "Të gjitha ekipet",
+  "searchByName": "Kërko sipas emrit",
+  "selectAll": "Zgjidh të Gjitha",
+  "clearAll": "Pastro të gjitha",
   "statusText": "Statusi",
   "healthText": "Gjendja",
   "categoryText": "Kategoria",
   "projectManagerText": "Menaxheri i Projektit",
   "showFieldsText": "Shfaq fushat",
-
   "cancelledText": "Anuluar",
   "blockedText": "E bllokuar",
   "onHoldText": "Në pritje",
@@ -21,12 +23,10 @@
   "inProgressText": "Në progres",
   "completedText": "E përfunduar",
   "continuousText": "E vazhdueshme",
-
   "notSetText": "Pa caktuar",
   "needsAttentionText": "Kërkon vëmendje",
   "atRiskText": "Në rrezik",
   "goodText": "Në rregull",
-
   "nameText": "Projekti",
   "estimatedVsActualText": "Vlerësuar vs Aktual",
   "tasksProgressText": "Progresi i detyrave",
@@ -42,7 +42,6 @@
   "filtersTitle": "Filtrat",
   "quickFilters": "Filtra të shpejta",
   "filterButton": "Filtro",
-
   "tableViewText": "Tabelë",
   "groupedViewText": "Grupuar",
   "groupByCategoryText": "Kategoria",

@@ -1,0 +1,11 @@
+{
+  "title": "Anfragen",
+  "table": {
+    "header": {
+      "service": "Dienstleistung",
+      "status": "Alle Status",
+      "time": "Zeit",
+      "lastChat": "Letzter Chat"
+    }
+  }
+}

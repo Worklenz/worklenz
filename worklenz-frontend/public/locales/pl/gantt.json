@@ -1,0 +1,97 @@
+{
+  "backlogGroupName": "Zaległości",
+  "task": {
+    "open": "Otwórz",
+    "clickViewPhaseDetails": "Kliknij, aby wyświetlić szczegóły fazy",
+    "clickNavigateTimeline": "Kliknij, aby przejść do zadania na osi czasu",
+    "clickTimelineSetDates": "Kliknij oś czasu, aby ustawić daty tego zadania",
+    "clickTimelineAddDates": "Kliknij oś czasu, aby dodać daty",
+    "setTaskDate": "Ustaw daty zadań",
+    "setTaskDateHint": "Kliknij oś czasu, aby ustawić zakres dat {{duration}} dla tego zadania",
+    "addTask": "Dodaj zadanie",
+    "resizeStartDate": "Zmień rozmiar daty rozpoczęcia",
+    "resizeEndDate": "Zmień rozmiar daty końcowej",
+    "dragToMove": "Przeciągnij, aby przenieść zadanie",
+    "addTaskFor": "Dodaj zadanie dla {{date}}",
+    "enterTaskName": "Wpisz nazwę zadania...",
+    "pressEnterToCreate": "Naciśnij Enter, aby utworzyć • Esc, aby anulować",
+    "phaseTitle": "Faza: {{name}} - {{startDate}} do {{endDate}}",
+    "taskTitle": "{{name}} - {{startDate}} do {{endDate}}",
+    "datesUpdatedSuccessfully": "Daty zadań zostały pomyślnie zaktualizowane",
+    "failedToUpdateDates": "Nie udało się zaktualizować dat zadań",
+    "addSubtask": "Dodaj podzadanie",
+    "addTaskInputPlaceholder": "Wpisz nazwę zadania i naciśnij klawisz Enter, aby zapisać",
+    "writeTaskName": "Wpisz nazwę zadania",
+    "writeSubtaskName": "Wpisz nazwę podzadania",
+    "expandSubtasks": "Rozwiń podzadania",
+    "collapseSubtasks": "Zwiń podzadania",
+    "finishToStartDependency": "Zależność od zakończenia do początku",
+    "startToFinishDependency": "Zależność od początku do końca",
+    "dependencyType": "Typ zależności",
+    "removeDependency": "Usuń",
+    "removeDependencyTooltip": "Usuń zależność",
+    "circularDependencyError": "Stworzyłoby to zależność cykliczną.",
+    "dependencyCreatedSuccessfully": "Zależność została utworzona pomyślnie.",
+    "dependencyRemovedSuccessfully": "Zależność została pomyślnie usunięta.",
+    "failedToCreateDependency": "Nie udało się utworzyć zależności.",
+    "failedToRemoveDependency": "Nie udało się usunąć zależności.",
+    "taskAddedToRoadmap": "Zadanie dodane do planu działania na najbliższe 5 dni.",
+    "failedToAddTaskToRoadmap": "Nie udało się dodać zadania do planu działania.",
+    "unscheduledTaskNotFound": "Nie można znaleźć wybranego zadania."
+  },
+  "common": {
+    "noStart": "Bez początku",
+    "noEnd": "Bez końca"
+  },
+  "sections": {
+    "unmapped": "Niezmapowane"
+  },
+  "grouping": {
+    "phase": "Faza",
+    "status": "Stan",
+    "priority": "Priorytet"
+  },
+  "toolbar": {
+    "zoomIn": "Powiększ",
+    "zoomOut": "Pomniejsz",
+    "expandAll": "Rozwiń wszystko",
+    "collapseAll": "Zwiń wszystko",
+    "today": "Dzisiaj",
+    "fullscreen": "Pełny ekran",
+    "noDate": "Brak daty",
+    "viewBy": "Zobacz według",
+    "sortBy": "Sortuj według",
+    "sortManual": "Instrukcja",
+    "sortChronological": "Chronologiczny"
+  },
+  "viewMode": {
+    "day": "Dzień",
+    "week": "Tydzień",
+    "month": "Miesiąc",
+    "quarter": "ćwiartka",
+    "year": "Rok"
+  },
+  "businessPlan": {
+    "phaseCreationRestricted": "Tworzenie fazy jest dostępne tylko dla użytkowników planu Business",
+    "taskCreationRestricted": "Tworzenie zadań jest dostępne tylko dla użytkowników planu Business",
+    "phaseEditingRestricted": "Edycja faz jest dostępna tylko dla użytkowników planu Business",
+    "taskEditingRestricted": "Edycja zadań jest dostępna tylko dla użytkowników planu Biznes",
+    "phaseReorderingRestricted": "Zmiana kolejności faz jest dostępna tylko dla użytkowników planu Business"
+  },
+  "list": {
+    "taskNameColumn": "Nazwa zadania",
+    "addNewPhase": "Dodaj nową fazę",
+    "addNewStatus": "Dodaj nowy status",
+    "noTasksAvailable": "Brak dostępnych zadań",
+    "setDates": "Ustal daty",
+    "clickToEditDates": "Kliknij, aby edytować daty"
+  },
+  "roadmap": {
+    "phasesAndTasks": "Fazy i zadania",
+    "tasksCount": "zadania",
+    "complete": "kompletny",
+    "dragDisabledInChronological": "Przejdź do opcji Kolejność ręczna, aby zmienić kolejność faz za pomocą przeciągania"
+  },
+  "unscheduledTasksTitle": "Niezaplanowane zadania",
+  "noUnscheduledTasks": "Brak dostępnych niezaplanowanych zadań."
+}

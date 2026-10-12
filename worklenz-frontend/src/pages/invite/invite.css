@@ -1,0 +1,113 @@
+/* Invite pages (Join Team / Join Project) - mirrors the account-setup wizard
+   shell (see src/pages/account-setup/account-setup.css) so invitation and
+   onboarding feel like one continuous flow: fixed-height shell, logo pinned
+   top-left, content centered, actions pinned to a bottom bar. */
+
+.invite-shell {
+  position: relative;
+  height: 100vh;
+  height: 100dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-size: 12px;
+}
+
+.invite-page-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
+.invite-header {
+  flex: 0 0 auto;
+  padding: 32px 24px 0;
+}
+
+.invite-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.invite-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0;
+}
+
+.invite-body-inner {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Pinned to the bottom of the scrollable body, just above the footer's
+   divider line, instead of flowing right after the terms paragraph. */
+.invite-joining-as {
+  flex: 0 0 auto;
+  width: 100%;
+  text-align: center;
+}
+
+.invite-footer {
+  flex: 0 0 auto;
+  padding: 16px 0;
+  position: relative;
+}
+
+.invite-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.invite-terms-link {
+  color: inherit !important;
+  font-weight: 600;
+  text-decoration: underline !important;
+}
+
+/* Theme & language switcher - pinned to the true right edge of the footer,
+   independent of the centered .invite-page-wrap used by Skip/Join. Mirrors
+   .wiz-footer-utils in account-setup.css. */
+.invite-footer-utils {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Below ~1080px there isn't enough gutter beside the centered page-wrap for
+   the utils to clear the Join button, so drop them out of flow and stack
+   under the Skip/Join row instead of overlapping it. */
+@media (max-width: 1080px) {
+  .invite-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .invite-footer-utils {
+    position: static;
+    transform: none;
+    width: 100%;
+    justify-content: flex-end;
+    padding: 0 24px;
+    box-sizing: border-box;
+  }
+}

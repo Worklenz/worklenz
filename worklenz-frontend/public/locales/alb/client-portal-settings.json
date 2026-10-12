@@ -8,6 +8,14 @@
   "addressLine1Placeholder": "Adresa e rrugës, kutia postare",
   "addressLine2Label": "Adresa Linja 2",
   "addressLine2Placeholder": "Qyteti, Shteti, Kodi Postar, Vendi",
+  "cityLabel": "Qyteti",
+  "cityPlaceholder": "Qyteti",
+  "stateLabel": "Shteti / Provinca",
+  "statePlaceholder": "Shteti / Provinca",
+  "zipCodeLabel": "Kodi Postar",
+  "zipCodePlaceholder": "Kodi Postar",
+  "countryLabel": "Vendi",
+  "countryPlaceholder": "Vendi",
   "contactEmailLabel": "Email Kontakti",
   "contactEmailPlaceholder": "Shkruani email-in e kontaktit",
   "contactPhoneLabel": "Telefoni i Kontaktit",
@@ -72,5 +80,121 @@
   "logoAlt": "Logo",
   "pendingUploadTag": "Ngarkim në pritje",
   "pendingRemovalTag": "Heqje në pritje",
-  "organizationLogoWillBeUsedText": "Do të përdoret logoja e organizatës"
+  "organizationLogoWillBeUsedText": "Do të përdoret logoja e organizatës",
+  "settingsSaveFailedError": "Ruajtja e cilësimeve dështoi.",
+  "navCompanyDetails": "Detajet e Kompanisë",
+  "navBranding": "Markë",
+  "navInvoiceTemplate": "Modeli i Faturës",
+  "navVisibility": "Zgjedhja e Dukshmërisë për Klientin",
+  "navNotifications": "Njoftimet",
+  "navClientUsers": "Menaxhimi i Përdoruesve të Klientit",
+  "navTemplates": "Modelet e Lejeve",
+  "navTicketing": "Konfigurimi i Tiketave",
+  "invalidLogoFileTypeError": "Ju lutemi zgjidhni një file imazhi.",
+  "logoFileTooLargeError": "Logo duhet të jetë më e vogël se 2MB.",
+  "logoUploadFailedError": "Ngarkimi i logos dështoi.",
+  "portalLogoLabel": "Logo e Portalit",
+  "portalTitleLabel": "Titulli i Portalit",
+  "portalTitlePlaceholder": "p.sh., Acme Client Hub",
+  "brandColorLabel": "Ngjyra e Brendit",
+  "recommendedColorsLabel": "Të Rekomanduara",
+  "portalThemeLabel": "Tema",
+  "lightPortalButton": "Portal i çelur",
+  "darkPortalButton": "Portal i errët",
+  "defaultPortalTitlePreview": "Portali i Klientit",
+  "previewWelcomeText": "Mirë se u ktheve",
+  "previewLatestInvoiceText": "Fatura e fundit",
+  "previewInvoiceSampleText": "USD 2,500.00 · afati brenda 6 ditëve",
+  "previewViewTasksButton": "Shiko detyrat e mia",
+  "brandingTitle": "Markë",
+  "invoiceTemplateTitle": "Modeli i Faturës",
+  "invoiceTemplateDescription": "Zgjidhni pamjen e faturave kur shkarkohen ose parashikohen për ekipin dhe klientët tuaj.",
+  "invoiceMoreCustomizationTitle": "Më shumë personalizim së shpejti",
+  "invoiceMoreCustomizationDescription": "Opsione shtesë për stilin dhe paraqitjen e modelit të faturës po vijnë së shpejti.",
+  "invoiceAccentColorLabel": "Ngjyra Theksuese",
+  "invoiceAccentColorHint": "Përdor Ngjyrën e Brendit nga Branding.",
+  "invoiceShowLogoLabel": "Shfaq Logon e Kompanisë në Faturë",
+  "invoiceShowLogoDescription": "Shfaq logon e portalit tuaj në header-in e faturës.",
+  "invoicePreviewLabel": "Parashikim",
+  "visibilityTitle": "Zgjedhja e Dukshmërisë për Klientin",
+  "visibilityDescription": "Zgjidhni cilat seksione shfaqen në portalin e klientit.",
+  "visibility": {
+    "projectPlan": {
+      "label": "Plani i Projektit (Detyrat)",
+      "description": "Shfaq seksionin e Projekteve në portalin e klientit."
+    },
+    "ganttTimeline": {
+      "label": "Gantt / Vijë kohore",
+      "description": "Ruajtur për kur të shfaqet një pamje Gantt/Vijë kohore në portalin e klientit — pa efekt për tani."
+    },
+    "filesDocuments": {
+      "label": "Skedarë & Dokumente",
+      "description": "Ruajtur për kur të shfaqet një seksion i veçantë Skedarësh në portalin e klientit — pa efekt për tani."
+    },
+    "invoices": {
+      "label": "Faturat",
+      "description": "Shfaq seksionin e Faturave në portalin e klientit."
+    },
+    "feedbackForms": {
+      "label": "Formularët e Feedback-ut",
+      "description": "Ruajtur për kur të shfaqen Formularët e Feedback-ut në portalin e klientit — pa efekt për tani."
+    },
+    "teamMembers": {
+      "label": "Anëtarët e Ekipit",
+      "description": "Ruajtur për kur të shfaqet një faqe Anëtarësh Ekipi për klientin — pa efekt për tani."
+    },
+    "projectUpdates": {
+      "label": "Përditësimet e Projektit",
+      "description": "Ruajtur për kur të shfaqen Përditësime Projekti në portalin e klientit — pa efekt për tani."
+    },
+    "chat": {
+      "label": "Bisedë",
+      "description": "Shfaq seksionin e Chat-eve në portalin e klientit."
+    }
+  },
+  "notificationsTitle": "Njoftimet",
+  "notificationsDescription": "Zgjidhni për çfarë njoftohet ekipi juaj nga aktiviteti i klientëve.",
+  "notifications": {
+    "newMessage": {
+      "label": "Mesazh i ri",
+      "description": "Njofton ekipin kur një klient dërgon një mesazh të ri."
+    },
+    "taskStatusChange": {
+      "label": "Ndryshim i statusit të detyrës",
+      "description": "Njofton ekipin kur ndryshon statusi i një detyre të dukshme për klientin."
+    },
+    "fileUploaded": {
+      "label": "Skedar i ngarkuar",
+      "description": "Njofton ekipin kur një klient ngarkon një skedar."
+    }
+  },
+  "clientUsers": {
+    "bannerTitle": "Ende pa u zbatuar",
+    "bannerDescription": "Këto cilësime përcaktojnë çfarë do të lejohet të bëjë personi i kontaktit (POC) i një kompanie sapo portali i klientit ta mbështesë këtë. Për tani, POC është thjesht një etiketë në direktori — asgjë këtu nuk zbatohet ende.",
+    "selfManagementTitle": "Vetë-menaxhimi i POC",
+    "selfManagementDescription": "Lejoni që personi i kontaktit i një kompanie të menaxhojë kush nga kompania e tyre ka akses në portal, në vend që çdo shtim/heqje të kalojë nga ekipi juaj.",
+    "canAdd": {
+      "label": "Lejo POC-të të shtojnë përdorues të kompanisë",
+      "description": "Një POC mund të ftojë një koleg të ri nga kompania e tij në portalin e klientit."
+    },
+    "canRemove": {
+      "label": "Lejo POC-të të heqin përdorues të kompanisë",
+      "description": "Një POC mund të heqë aksesin në portal të një përdoruesi tjetër nga kompania e tij."
+    },
+    "guardrailsTitle": "Gjithmonë e vërtetë, pavarësisht nga çelësat më sipër",
+    "guardrail1": "Një person kontakti shikon dhe menaxhon vetëm përdoruesit e kompanisë së tij — kurrë të një klienti tjetër.",
+    "guardrail2": "Një person kontakti nuk shikon kurrë direktorinë e brendshme të ekipit tuaj dhe nuk merr akses administrator organizate.",
+    "guardrail3": "Heqja e personit të vetëm të kontaktit të një kompanie nuk fshin kurrë kompaninë ose përdoruesit e tjerë të saj — thjesht e lë atë kompani pa person kontakti."
+  },
+  "permissionTemplates": {
+    "bannerTitle": "Vetëm-lexim",
+    "bannerDescription": "Zgjedhja e një modeli vendos atë nivel lejeje në të gjitha projektet aktuale të kompanisë me një klikim — administratorët mund të rregullojnë ende aksesin projekt-për-projekt më vonë. I disponueshëm kur shtoni një përdorues kompanie ose nga Cakto Projekte tek çdo përdorues ekzistues."
+  },
+  "ticketingConfig": {
+    "title": "Statuset e Biletave",
+    "description": "Hapur, Në Progres dhe Zgjidhur ekzistojnë gjithmonë dhe nuk mund të hiqen. Shtoni statuse të përcaktuara nga ekipi juaj për rrjedha pune specifike — ato shfaqen si në pamjen Lista ashtu edhe në Tabelën e Tiketimit.",
+    "defaultStatusesLabel": "Statuset e paracaktuara",
+    "defaultStatusesHint": "Këto ekzistojnë gjithmonë dhe nuk mund të hiqen.",
+    "customStatusesLabel": "Statuset e personalizuara"
+  }
 }

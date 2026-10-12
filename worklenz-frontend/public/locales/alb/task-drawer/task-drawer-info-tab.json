@@ -15,7 +15,8 @@
     "hide-start-date": "Fshih Datën e Fillimit",
     "show-start-date": "Shfaq Datën e Fillimit",
     "hours": "Orë",
-    "minutes": "Minuta"
+    "minutes": "Minuta",
+    "recurring": "E përsëritur"
   },
   "description": {
     "title": "Përshkrimi",

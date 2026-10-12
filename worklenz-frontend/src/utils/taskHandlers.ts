@@ -11,6 +11,7 @@ import {
   addTaskToGroup as addEnhancedKanbanTaskToGroup,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import { UNASSIGNED_GROUP_ID } from '@/utils/assign-task-to-member';
 
 interface HandleNewTaskReceivedOptions {
   dispatch: Dispatch;
@@ -245,6 +246,9 @@ export const handleNewTaskReceived = (response: any, options: HandleNewTaskRecei
             groupId = 'Unmapped';
           }
         }
+      } else if (grouping === 'assignee') {
+        // Quick-created issues have no assignees yet; assignment triggers a regroup refetch.
+        groupId = UNASSIGNED_GROUP_ID;
       }
 
       return groupId || '';

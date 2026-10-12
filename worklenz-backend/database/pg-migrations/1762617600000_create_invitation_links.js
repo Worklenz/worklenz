@@ -164,24 +164,24 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create triggers for team invitation links
-CREATE TRIGGER team_invitation_links_updated_at_trigger
+CREATE OR REPLACE TRIGGER team_invitation_links_updated_at_trigger
     BEFORE UPDATE ON team_invitation_links
     FOR EACH ROW
     EXECUTE FUNCTION update_invitation_links_updated_at();
 
-CREATE TRIGGER team_invitation_links_revoke_existing_trigger
+CREATE OR REPLACE TRIGGER team_invitation_links_revoke_existing_trigger
     AFTER INSERT ON team_invitation_links
     FOR EACH ROW
     WHEN (NEW.status = 'active')
     EXECUTE FUNCTION revoke_existing_team_invitations();
 
 -- Create triggers for project invitation links
-CREATE TRIGGER project_invitation_links_updated_at_trigger
+CREATE OR REPLACE TRIGGER project_invitation_links_updated_at_trigger
     BEFORE UPDATE ON project_invitation_links
     FOR EACH ROW
     EXECUTE FUNCTION update_invitation_links_updated_at();
 
-CREATE TRIGGER project_invitation_links_revoke_existing_trigger
+CREATE OR REPLACE TRIGGER project_invitation_links_revoke_existing_trigger
     AFTER INSERT ON project_invitation_links
     FOR EACH ROW
     WHEN (NEW.status = 'active')
@@ -224,7 +224,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create trigger to increment usage count
-CREATE TRIGGER invitation_link_usage_increment_trigger
+CREATE OR REPLACE TRIGGER invitation_link_usage_increment_trigger
     AFTER INSERT ON invitation_link_usage
     FOR EACH ROW
     EXECUTE FUNCTION increment_invitation_usage();

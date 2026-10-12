@@ -1,17 +1,24 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, Dispatch } from '@reduxjs/toolkit';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 
 interface UpdateProjectPayload {
   id: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
+
+interface ProjectsState {
+  loading: boolean;
+  error: string | null;
+}
+
+const initialState: ProjectsState = {
+  loading: false,
+  error: null,
+};
 
 export const projectsSlice = createSlice({
   name: 'projects',
-  initialState: {
-    loading: false,
-    error: null,
-  },
+  initialState,
   reducers: {
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -26,7 +33,7 @@ export const projectsSlice = createSlice({
 export const { setLoading, setError } = projectsSlice.actions;
 
 // Async thunks
-export const updateProject = (payload: UpdateProjectPayload) => async (dispatch: any) => {
+export const updateProject = (payload: UpdateProjectPayload) => async (dispatch: Dispatch) => {
   try {
     dispatch(setLoading(true));
     const response = await projectsApiService.updateProject(payload);

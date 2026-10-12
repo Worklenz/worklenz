@@ -20,13 +20,23 @@ CREATE TABLE IF NOT EXISTS user_deletion_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-ALTER TABLE user_deletion_logs
-    ADD CONSTRAINT user_deletion_logs_pk
-        PRIMARY KEY (id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'user_deletion_logs'::regclass AND contype = 'p'
+    ) THEN
+        ALTER TABLE user_deletion_logs ADD CONSTRAINT user_deletion_logs_pk PRIMARY KEY (id);
+    END IF;
 
-ALTER TABLE user_deletion_logs
-    ADD CONSTRAINT user_deletion_logs_user_id_fk
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'user_deletion_logs'::regclass AND conname = 'user_deletion_logs_user_id_fk'
+    ) THEN
+        ALTER TABLE user_deletion_logs ADD CONSTRAINT user_deletion_logs_user_id_fk
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- CREATE INDEX IF NOT EXISTS for faster queries
 CREATE INDEX IF NOT EXISTS idx_user_deletion_logs_user_id ON user_deletion_logs(user_id);

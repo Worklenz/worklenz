@@ -566,13 +566,16 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const orgIdResult = await db.query(orgIdQuery, teamIdsParams);
     const organizationId = orgIdResult.rows[0]?.organization_id;
 
-    // Fetch organization holidays within the date range
+    // Fetch organization holidays within the date range. Do not hide rows that
+    // share a name/date with another country's official holiday (e.g. Christmas).
+    // Leftover auto-synced rows are removed on country change instead.
     const orgHolidaysQuery = `
-      SELECT date 
-      FROM organization_holidays
-      WHERE organization_id = $1
-        AND date >= $2::date
-        AND date <= $3::date
+      SELECT oh.date 
+      FROM organization_holidays oh
+      LEFT JOIN holiday_types ht ON oh.holiday_type_id = ht.id
+      WHERE oh.organization_id = $1
+        AND oh.date >= $2::date
+        AND oh.date <= $3::date
     `;
     const orgHolidaysResult = await db.query(orgHolidaysQuery, [
       organizationId,
@@ -846,8 +849,80 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const result = await db.query(q, queryParams);
     const utilization = (req.body.utilization || []) as string[];
 
-    // Precompute totalWorkingHours * 3600 for efficiency
-    const totalWorkingSeconds = totalWorkingHours * 3600;
+    // Fetch approved leave/time-off overlapping the selected date range for these members.
+    // Mirrors calculate_member_capacity() (used by the schedule/workload capacity view):
+    // a full-day entry removes the whole day, a partial-day entry removes hours_off
+    // (capped at the org's hours-per-day).
+    interface IMemberTimeOffEntry {
+      start: moment.Moment;
+      end: moment.Moment;
+      isFullDay: boolean;
+      hoursOff: number | null;
+    }
+    const memberTimeOffMap = new Map<string, IMemberTimeOffEntry[]>();
+    const memberIds: string[] = result.rows.map((r: any) => r.team_member_id).filter(Boolean);
+    if (memberIds.length > 0 && !isNonWorkingPeriod) {
+      const timeOffResult = await db.query(
+        `SELECT team_member_id, start_date, end_date, is_full_day, hours_off
+         FROM member_time_off
+         WHERE team_member_id = ANY($1::uuid[])
+           AND start_date::date <= $3::date
+           AND end_date::date >= $2::date`,
+        [memberIds, startDate.format('YYYY-MM-DD'), endDate.format('YYYY-MM-DD')]
+      );
+      timeOffResult.rows.forEach((row: any) => {
+        const list = memberTimeOffMap.get(row.team_member_id) ?? [];
+        list.push({
+          start: moment(row.start_date),
+          end: moment(row.end_date),
+          isFullDay: row.is_full_day !== false,
+          hoursOff: row.hours_off !== null ? parseFloat(row.hours_off) : null,
+        });
+        memberTimeOffMap.set(row.team_member_id, list);
+      });
+    }
+
+    // Counts a member's expected working hours in the date range, subtracting holidays and
+    // any overlapping time-off so members on leave aren't shown as under-utilized. Time-off
+    // is only subtracted on days that are otherwise working days (not weekends/holidays),
+    // matching calculate_member_capacity()'s day_flags -> holiday_check -> time_off_check chain.
+    const calcMemberEffectiveWorkingHours = (
+      holidays: Set<string>,
+      timeOffEntries: IMemberTimeOffEntry[]
+    ): number => {
+      let total = 0;
+      const cur = startDate.clone();
+      while (cur.isSameOrBefore(endDate, 'day')) {
+        const day = cur.isoWeekday();
+        const dateStr = cur.format('YYYY-MM-DD');
+        const isWorkingDay =
+          (day === 1 && workingDaysConfig.monday) ||
+          (day === 2 && workingDaysConfig.tuesday) ||
+          (day === 3 && workingDaysConfig.wednesday) ||
+          (day === 4 && workingDaysConfig.thursday) ||
+          (day === 5 && workingDaysConfig.friday) ||
+          (day === 6 && workingDaysConfig.saturday) ||
+          (day === 7 && workingDaysConfig.sunday);
+
+        if (isWorkingDay && !holidays.has(dateStr)) {
+          let fullDayOff = false;
+          let partialOffHours = 0;
+          for (const entry of timeOffEntries) {
+            if (cur.isSameOrAfter(entry.start, 'day') && cur.isSameOrBefore(entry.end, 'day')) {
+              if (entry.isFullDay) {
+                fullDayOff = true;
+              } else {
+                partialOffHours += Math.min(entry.hoursOff ?? 0, orgWorkingHours);
+              }
+            }
+          }
+          const dayOffHours = fullDayOff ? orgWorkingHours : Math.min(partialOffHours, orgWorkingHours);
+          total += Math.max(orgWorkingHours - dayOffHours, 0);
+        }
+        cur.add(1, 'day');
+      }
+      return total;
+    };
 
     // calculate utilization state
     for (let i = 0, len = result.rows.length; i < len; i++) {
@@ -865,11 +940,23 @@ export default class ReportingAllocationController extends ReportingControllerBa
         // Any time logged during non-working period is overtime
         utilizationPercent = loggedSeconds > 0 ? 100 : 0; // Show 100+ as numeric 100 for consistency
       } else {
-        // Normal working period
-        memberWorkingHours = totalWorkingHours;
-        utilizationPercent = memberWorkingHours > 0 && loggedSeconds
-          ? ((loggedSeconds / (memberWorkingHours * 3600)) * 100)
-          : 0;
+        // Normal working period: subtract any approved leave (full-day or partial-day) that overlaps the range.
+        const memberTimeOffEntries = memberTimeOffMap.get(member.team_member_id) ?? [];
+        const rawMemberWorkingHours = calcMemberEffectiveWorkingHours(holidayDates, memberTimeOffEntries);
+
+        if (rawMemberWorkingHours > 0) {
+          memberWorkingHours = rawMemberWorkingHours;
+          utilizationPercent = loggedSeconds
+            ? ((loggedSeconds / (memberWorkingHours * 3600)) * 100)
+            : 0;
+        } else {
+          // No expected working hours for this member in the range (e.g. fully on leave,
+          // or every day is a holiday/weekend) - expected capacity is genuinely 0, not a
+          // divide-by-zero placeholder. Any time logged anyway is flagged as overtime,
+          // matching the org-wide isNonWorkingPeriod handling above.
+          memberWorkingHours = 0;
+          utilizationPercent = loggedSeconds > 0 ? 100 : 0;
+        }
       }
       const overUnder = utilizedHours - memberWorkingHours;
 
@@ -913,8 +1000,10 @@ export default class ReportingAllocationController extends ReportingControllerBa
       // Special handling for utilization on non-working days
       total_utilization = total_time_logs > 0 ? "100+" : "0";
     } else {
-      // Normal working period calculation
-      total_estimated_hours = totalWorkingHours * filteredRows.length;
+      // Normal working period calculation: sum each member's own expected hours
+      // (already adjusted per-member for holidays and approved leave) rather
+      // than a uniform org-wide figure, so leave is reflected in the card's totals too.
+      total_estimated_hours = filteredRows.reduce((sum, member) => sum + (member.total_working_hours || 0), 0);
       total_utilization = total_time_logs > 0 && total_estimated_hours > 0
         ? ((total_time_logs / (total_estimated_hours * 3600)) * 100).toFixed(1)
         : '0';

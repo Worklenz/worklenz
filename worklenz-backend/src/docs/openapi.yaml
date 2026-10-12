@@ -787,6 +787,53 @@ paths:
         '403':
           $ref: '#/components/responses/CsrfError'
 
+  /digest/preferences:
+    get:
+      operationId: getDigestPreferences
+      tags:
+        - Settings
+      summary: Get scheduled task digest preferences
+      description: Returns the authenticated user's Daily Task Reminder, Weekly Start Summary, and Weekly End Summary preferences. Defaults all toggles to off.
+      responses:
+        '200':
+          description: Digest preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/DigestPreferences'
+
+    put:
+      operationId: putDigestPreferences
+      tags:
+        - Settings
+      summary: Update scheduled task digest preferences
+      description: Saves the authenticated user's scheduled task digest email preferences.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DigestPreferences'
+      responses:
+        '200':
+          description: Digest preferences updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/DigestPreferences'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
   /statuses:
     get:
       operationId: getStatuses
@@ -3865,6 +3912,28 @@ components:
           type: boolean
         daily_digest_enabled:
           type: boolean
+
+    DigestPreferences:
+      type: object
+      properties:
+        daily_enabled:
+          type: boolean
+          example: false
+        daily_send_time:
+          type: string
+          example: "09:00"
+        weekly_start_enabled:
+          type: boolean
+          example: false
+        weekly_start_send_time:
+          type: string
+          example: "08:00"
+        weekly_end_enabled:
+          type: boolean
+          example: false
+        weekly_end_send_time:
+          type: string
+          example: "16:00"
 
     TaskStatus:
       type: object

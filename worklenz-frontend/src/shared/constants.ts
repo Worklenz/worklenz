@@ -6,6 +6,7 @@ import {
   StopOutlined,
 } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
+import { DatePresetKey, getDatePresetRange } from '@/utils/date-presets';
 
 // logos
 export const LOGO_LIGHT =
@@ -158,6 +159,11 @@ export const API_BASE_URL = '/api/v1';
 export const AUTH_API_BASE_URL = '/secure';
 export const CLIENT_PORTAL_API_BASE_URL = '/api/client-portal';
 
+// Fixed brand blue for primary button backgrounds on the login, signup, and
+// account-setup pages specifically - same value in both light and dark mode,
+// deliberately not tied to the app-wide theme.config.ts colorPrimary token.
+export const AUTH_PRIMARY_BUTTON_COLOR = '#067efc';
+
 export const DEFAULT_TASK_NAME = 'Untitled Task';
 
 // Fired on `document` whenever a task's fixed cost is added/changed (Quick
@@ -168,12 +174,14 @@ export const DEFAULT_TASK_NAME = 'Untitled Task';
 // task comments (see task-comments.tsx).
 export const TASK_FIXED_COST_CHANGED_EVENT = 'task-fixed-cost-changed';
 
+export const TODAY = 'TODAY';
 export const YESTERDAY = 'YESTERDAY';
 export const LAST_WEEK = 'LAST_WEEK';
 export const LAST_MONTH = 'LAST_MONTH';
 export const LAST_QUARTER = 'LAST_QUARTER';
 export const PREV_WEEK = 'PREV_WEEK';
 export const PREV_MONTH = 'PREV_MONTH';
+export const THIS_MONTH = 'THIS_MONTH';
 export const ALL_TIME = 'ALL_TIME';
 
 export const PASSWORD_POLICY =
@@ -197,7 +205,7 @@ export const TASK_DUE_OVERDUE_COLOR = '#f37070';
 export const TASK_DUE_NO_DUE_COLOR = '#a9a9a9';
 
 export const DEFAULT_PAGE_SIZE = 20;
-export const PAGE_SIZE_OPTIONS = ['5', '10', '15', '20', '50', '100'];
+export const PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
 export const ALPHA_CHANNEL = '69';
 
 export const FILTER_INDEX_KEY = 'worklenz.projects.filter_index';
@@ -297,57 +305,27 @@ export const IconsMap: { [x: string]: string } = {
   zip: 'zip.png',
 };
 
+// Builds the legacy `dates` string the duration consumers parse: a JS Date
+// string, or "<start> - <end>" for ranges. Dates are built from the local
+// calendar day (dayjs parses 'YYYY-MM-DD' as local midnight) — `new Date('YYYY-MM-DD')`
+// would parse as UTC and shift the day for viewers west of Greenwich.
+const toDurationDates = (preset: DatePresetKey, singleDay = false): string => {
+  const range = getDatePresetRange(preset);
+  if (!range) return '';
+  const start = dayjs(range.from).toDate().toString();
+  return singleDay ? start : `${start} - ${dayjs(range.to).toDate().toString()}`;
+};
+
 export const durations: IRPTDuration[] = [
-  {
-    key: YESTERDAY,
-    label: 'yesterdayText',
-    dates: new Date(dayjs().subtract(1, 'day').format()).toString(),
-  },
-  {
-    key: LAST_WEEK,
-    label: 'lastSevenDaysText',
-    dates:
-      new Date(dayjs().subtract(7, 'day').format()).toString() +
-      ' - ' +
-      new Date(dayjs().format()).toString(),
-  },
-  {
-    key: PREV_WEEK,
-    label: 'lastWeekText',
-    dates:
-      new Date(dayjs().startOf('week').subtract(1, 'week').format()).toString() +
-      ' - ' +
-      new Date(dayjs().endOf('week').subtract(1, 'week').format()).toString(),
-  },
-  {
-    key: LAST_MONTH,
-    label: 'lastThirtyDaysText',
-    dates:
-      new Date(dayjs().subtract(30, 'day').format()).toString() +
-      ' - ' +
-      new Date(dayjs().format()).toString(),
-  },
-  {
-    key: PREV_MONTH,
-    label: 'lastMonthText',
-    dates:
-      new Date(dayjs().startOf('month').subtract(1, 'month').format()).toString() +
-      ' - ' +
-      new Date(dayjs().endOf('month').subtract(1, 'month').format()).toString(),
-  },
-  {
-    key: LAST_QUARTER,
-    label: 'lastThreeMonthsText',
-    dates:
-      new Date(dayjs().subtract(3, 'month').format()).toString() +
-      ' - ' +
-      new Date(dayjs().format()).toString(),
-  },
-  {
-    key: ALL_TIME,
-    label: 'allTimeText',
-    dates: '',
-  },
+  { key: TODAY, label: 'todayText', dates: toDurationDates('today', true) },
+  { key: YESTERDAY, label: 'yesterdayText', dates: toDurationDates('yesterday', true) },
+  { key: LAST_WEEK, label: 'lastSevenDaysText', dates: toDurationDates('last_7_days') },
+  { key: PREV_WEEK, label: 'lastWeekText', dates: toDurationDates('last_week') },
+  { key: THIS_MONTH, label: 'thisMonthText', dates: toDurationDates('this_month') },
+  { key: LAST_MONTH, label: 'lastThirtyDaysText', dates: toDurationDates('last_30_days') },
+  { key: PREV_MONTH, label: 'lastMonthText', dates: toDurationDates('last_month') },
+  { key: LAST_QUARTER, label: 'lastThreeMonthsText', dates: toDurationDates('last_3_months') },
+  { key: ALL_TIME, label: 'allTimeText', dates: '' },
 ];
 
 export const WorklenzColorCodes = [

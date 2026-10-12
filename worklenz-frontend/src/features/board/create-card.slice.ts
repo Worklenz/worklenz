@@ -20,9 +20,15 @@ const createCardSlice = createSlice({
     },
     setTaskCardDisabled: (
       state,
-      action: PayloadAction<{ group: string; position: 'top' | 'bottom'; disabled: boolean }>
+      action: PayloadAction<{
+        group?: string;
+        status?: string;
+        position: 'top' | 'bottom';
+        disabled: boolean;
+      }>
     ) => {
-      const { group, position, disabled } = action.payload;
+      const group = action.payload.group ?? action.payload.status ?? '';
+      const { position, disabled } = action.payload;
       if (!state.taskCardDisabledStatus[group]) {
         state.taskCardDisabledStatus[group] = { top: true, bottom: true };
       }
@@ -32,4 +38,5 @@ const createCardSlice = createSlice({
 });
 
 export const { setTaskCardDisabled, initializeGroup } = createCardSlice.actions;
+export const initializeStatus = initializeGroup;
 export default createCardSlice.reducer;

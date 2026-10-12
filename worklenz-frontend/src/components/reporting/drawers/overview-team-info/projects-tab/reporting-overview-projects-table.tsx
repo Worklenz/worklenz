@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import dayjs from 'dayjs';
 import {
   Button,
   ConfigProvider,
@@ -42,6 +43,7 @@ import logger from '@/utils/errorLogger';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
 
 interface ReportingOverviewProjectsTableProps {
   searchQuery: string;
@@ -60,6 +62,13 @@ const ReportingOverviewProjectsTable = ({
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [projectList, setProjectList] = useState<IRPTProject[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const projectIds = useMemo(
+    () => new Set(projectList.map(p => p.id).filter((id): id is string => Boolean(id))),
+    [projectList]
+  );
+  useProjectRoomSync(projectIds);
+
   const [pagination, setPagination] = useState<PaginationProps>({
     current: 1,
     pageSize: DEFAULT_PAGE_SIZE,
@@ -87,13 +96,91 @@ const ReportingOverviewProjectsTable = ({
     []
   );
 
+  const handleStatusChangeResponse = useCallback(
+    (data: { id: string; status: string; status_name: string; status_color: string }) => {
+      setProjectList(prev =>
+        prev.map(project =>
+          project.id === data.id
+            ? {
+                ...project,
+                status_id: data.status,
+                status_name: data.status_name,
+                status_color: data.status_color,
+              }
+            : project
+        )
+      );
+    },
+    []
+  );
+
+  const handleEndDateChangeResponse = useCallback(
+    (data: { project_id: string; end_date: string }) => {
+      setProjectList(prev =>
+        prev.map(project => {
+          if (project.id !== data.project_id) return project;
+          let days_left: number | null = null;
+          let is_overdue = false;
+          let is_today = false;
+          if (data.end_date) {
+            const today = dayjs().startOf('day');
+            const end = dayjs(data.end_date).startOf('day');
+            const diff = end.diff(today, 'day');
+            if (diff < 0) {
+              is_overdue = true;
+              days_left = Math.abs(diff);
+            } else if (diff === 0) {
+              is_today = true;
+              days_left = 0;
+            } else {
+              days_left = diff;
+            }
+          }
+          return {
+            ...project,
+            end_date: data.end_date,
+            days_left,
+            is_overdue,
+            is_today,
+          };
+        })
+      );
+    },
+    []
+  );
+
+  const handleStartDateChangeResponse = useCallback(
+    (data: { project_id: string; start_date: string }) => {
+      setProjectList(prev =>
+        prev.map(project =>
+          project.id === data.project_id
+            ? { ...project, start_date: data.start_date }
+            : project
+        )
+      );
+    },
+    []
+  );
+
   useEffect(() => {
     if (!socket) return;
     socket.on(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+    socket.on(SocketEvents.PROJECT_STATUS_CHANGE.toString(), handleStatusChangeResponse);
+    socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
+    socket.on(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
     return () => {
       socket.off(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+      socket.off(SocketEvents.PROJECT_STATUS_CHANGE.toString(), handleStatusChangeResponse);
+      socket.off(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
+      socket.off(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
     };
-  }, [socket, handleHealthChangeResponse]);
+  }, [
+    socket,
+    handleHealthChangeResponse,
+    handleStatusChangeResponse,
+    handleEndDateChangeResponse,
+    handleStartDateChangeResponse,
+  ]);
 
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
@@ -184,8 +271,9 @@ const ReportingOverviewProjectsTable = ({
       },
       {
         key: 'dates',
+        dataIndex: 'end_date',
         title: <CustomTableTitle title={t('datesColumn')} />,
-        render: record => (
+        render: (_, record: IRPTProject) => (
           <ProjectDatesCell
             projectId={record.id}
             startDate={record.start_date}
@@ -196,8 +284,9 @@ const ReportingOverviewProjectsTable = ({
       },
       {
         key: 'daysLeft',
+        dataIndex: 'days_left',
         title: <CustomTableTitle title={t('daysLeftColumn')} />,
-        render: record => (
+        render: (_, record: IRPTProject) => (
           <ProjectDaysLeftAndOverdueCell
             daysLeft={record.days_left}
             isOverdue={record.is_overdue}

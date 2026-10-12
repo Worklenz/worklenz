@@ -208,6 +208,7 @@ CREATE TABLE IF NOT EXISTS custom_project_templates (
     name        TEXT                                                NOT NULL,
     phase_label TEXT                     DEFAULT 'Phase'::TEXT      NOT NULL,
     team_id     UUID                                                NOT NULL,
+    scope       TEXT                     DEFAULT 'team'::TEXT       NOT NULL,
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
     updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
     color_code  TEXT                                                NOT NULL,
@@ -562,6 +563,61 @@ CREATE TABLE IF NOT EXISTS notification_settings (
 ALTER TABLE notification_settings
     ADD CONSTRAINT notification_settings_pk
         PRIMARY KEY (user_id, team_id);
+
+CREATE TABLE IF NOT EXISTS user_digest_preferences (
+    user_id                UUID                     NOT NULL,
+    daily_enabled          BOOLEAN                  DEFAULT FALSE            NOT NULL,
+    daily_send_time        TIME                     DEFAULT '09:00'          NOT NULL,
+    weekly_start_enabled   BOOLEAN                  DEFAULT FALSE            NOT NULL,
+    weekly_start_send_time TIME                     DEFAULT '08:00'          NOT NULL,
+    weekly_end_enabled     BOOLEAN                  DEFAULT FALSE            NOT NULL,
+    weekly_end_send_time   TIME                     DEFAULT '16:00'          NOT NULL,
+    created_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+ALTER TABLE user_digest_preferences
+    ADD CONSTRAINT user_digest_preferences_pk
+        PRIMARY KEY (user_id);
+
+CREATE TABLE IF NOT EXISTS digest_send_log (
+    id                UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    user_id           UUID                                                NOT NULL,
+    email_type        TEXT                                                NOT NULL,
+    sent_at           TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
+    workspace_count   INTEGER                  DEFAULT 0                  NOT NULL,
+    section_count     INTEGER                  DEFAULT 0                  NOT NULL,
+    skipped           BOOLEAN                  DEFAULT FALSE              NOT NULL,
+    skip_reason       TEXT,
+    timezone_missing  BOOLEAN                  DEFAULT FALSE              NOT NULL
+);
+
+ALTER TABLE digest_send_log
+    ADD CONSTRAINT digest_send_log_pk
+        PRIMARY KEY (id);
+
+CREATE INDEX IF NOT EXISTS idx_digest_send_log_user_type_date
+    ON digest_send_log (user_id, email_type, sent_at);
+
+CREATE TABLE IF NOT EXISTS digest_unsubscribe_tokens (
+    id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    user_id    UUID                                                NOT NULL,
+    token      TEXT                                                NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
+    used_at    TIMESTAMP WITH TIME ZONE
+);
+
+ALTER TABLE digest_unsubscribe_tokens
+    ADD CONSTRAINT digest_unsubscribe_tokens_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE digest_unsubscribe_tokens
+    ADD CONSTRAINT digest_unsubscribe_tokens_token_key
+        UNIQUE (token);
+
+ALTER TABLE digest_unsubscribe_tokens
+    ADD CONSTRAINT digest_unsubscribe_tokens_user_id_key
+        UNIQUE (user_id);
 
 CREATE TABLE IF NOT EXISTS organizations (
     id                       UUID                     DEFAULT uuid_generate_v4() NOT NULL,
@@ -1356,6 +1412,7 @@ CREATE TABLE IF NOT EXISTS task_templates (
     id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name       TEXT                                                NOT NULL,
     team_id    UUID                                                NOT NULL,
+    scope      TEXT                     DEFAULT 'team'::TEXT       NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
@@ -1365,9 +1422,10 @@ ALTER TABLE task_templates
         PRIMARY KEY (id);
 
 CREATE TABLE IF NOT EXISTS task_templates_tasks (
-    name          TEXT              NOT NULL,
-    template_id   UUID              NOT NULL,
-    total_minutes NUMERIC DEFAULT 0 NOT NULL
+    name             TEXT              NOT NULL,
+    template_id      UUID              NOT NULL,
+    total_minutes    NUMERIC DEFAULT 0 NOT NULL,
+    parent_task_name TEXT              DEFAULT NULL
 );
 
 ALTER TABLE task_templates_tasks
@@ -1609,6 +1667,7 @@ CREATE TABLE IF NOT EXISTS team_members (
     team_id      UUID                                                NOT NULL,
     role_id      UUID                                                NOT NULL,
     job_title_id UUID,
+    is_guest     BOOLEAN                  DEFAULT FALSE                    NOT NULL,
     created_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
     updated_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
     active       BOOLEAN                  DEFAULT TRUE
@@ -1722,6 +1781,21 @@ ALTER TABLE licensing_user_subscriptions
 
 ALTER TABLE notification_settings
     ADD CONSTRAINT notification_settings_user_id_fk
+        FOREIGN KEY (user_id) REFERENCES users
+            ON DELETE CASCADE;
+
+ALTER TABLE user_digest_preferences
+    ADD CONSTRAINT user_digest_preferences_user_id_fk
+        FOREIGN KEY (user_id) REFERENCES users
+            ON DELETE CASCADE;
+
+ALTER TABLE digest_send_log
+    ADD CONSTRAINT digest_send_log_user_id_fk
+        FOREIGN KEY (user_id) REFERENCES users
+            ON DELETE CASCADE;
+
+ALTER TABLE digest_unsubscribe_tokens
+    ADD CONSTRAINT digest_unsubscribe_tokens_user_id_fk
         FOREIGN KEY (user_id) REFERENCES users
             ON DELETE CASCADE;
 
@@ -2272,6 +2346,7 @@ CREATE TABLE IF NOT EXISTS cc_custom_columns (
     width            INTEGER                  DEFAULT 150,
     is_visible       BOOLEAN                  DEFAULT TRUE,
     is_custom_column BOOLEAN                  DEFAULT TRUE,
+    type_locked      BOOLEAN                  DEFAULT FALSE NOT NULL,
     created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

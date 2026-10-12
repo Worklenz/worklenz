@@ -10,15 +10,27 @@ export default defineConfig(({ command, mode }) => {
   const buildTimestamp = Date.now().toString();
 
   const env = loadEnv(mode, process.cwd(), '');
+  const hasSentryToken = Boolean(env.VITE_SENTRY_AUTH_TOKEN);
+  const shouldGenerateSourcemap =
+    hasSentryToken || env.VITE_GENERATE_SOURCEMAP === 'true';
 
   return {
+    // **Esbuild optimization: fast multi-threaded JS transform and debug stripping**
+    esbuild: isProduction
+      ? {
+          drop: ['debugger'],
+          pure: ['console.log', 'console.info', 'console.debug'],
+          legalComments: 'none',
+        }
+      : undefined,
+
     // **Plugins**
     plugins: [
       react(),
       addonsPlugin(env),
       // Sentry plugin for source maps upload in production
       // sentryVitePlugin returns an array of plugins, so we spread it
-      ...(isProduction
+      ...(isProduction && hasSentryToken
         ? sentryVitePlugin({
             org: env.VITE_SENTRY_ORG,
             project: env.VITE_SENTRY_PROJECT,
@@ -188,9 +200,8 @@ export default defineConfig(({ command, mode }) => {
       cssCodeSplit: true,
 
       // **Sourcemaps**
-      // Generate sourcemaps in production for Sentry (they'll be uploaded, not included in bundle)
-      // Use 'hidden' so sourcemaps are generated but not referenced in the bundle
-      sourcemap: !isProduction ? 'inline' : 'hidden',
+      // Generate hidden sourcemaps in production only when Sentry upload is active or explicitly requested
+      sourcemap: !isProduction ? 'inline' : shouldGenerateSourcemap ? 'hidden' : false,
 
       // **Module Preload Polyfill** - Helps with chunk loading reliability
       modulePreload: {
@@ -198,23 +209,8 @@ export default defineConfig(({ command, mode }) => {
       },
 
       // **Minification**
-      minify: isProduction ? 'terser' : false,
-      terserOptions: isProduction
-        ? {
-            compress: {
-              drop_console: true,
-              drop_debugger: true,
-              pure_funcs: ['console.log', 'console.info', 'console.debug'],
-              passes: 2, // Multiple passes for better compression
-            },
-            mangle: {
-              safari10: true,
-            },
-            format: {
-              comments: false,
-            },
-          }
-        : undefined,
+      // Native esbuild minifier is 10x-20x faster than terser and leverages multi-core processing
+      minify: isProduction ? 'esbuild' : false,
 
       // **Chunk Size Warnings**
       chunkSizeWarningLimit: 1000,
@@ -309,8 +305,6 @@ export default defineConfig(({ command, mode }) => {
       exclude: [
         // Add any packages that should not be pre-bundled
       ],
-      // Force pre-bundling to avoid runtime issues
-      force: true,
     },
 
     // **Define global constants**

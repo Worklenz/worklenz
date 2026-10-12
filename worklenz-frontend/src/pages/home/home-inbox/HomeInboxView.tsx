@@ -6,9 +6,9 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@utils/themeWiseColor';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useInboxConversations, InboxConversation } from './hooks/useInboxConversations';
@@ -16,7 +16,7 @@ import ConversationList from './components/ConversationList';
 import InboxThreadPanel from './components/InboxThreadPanel';
 import PinnedMessagesPanel from './components/PinnedMessagesPanel';
 import NewChatModal, { NewChatMode } from './components/NewChatModal';
-import ClientPortalNewChatModal from '@/ee/components/client-portal/NewChatModal';
+import ClientPortalNewChatModal from '@/components/client-portal/NewChatModal';
 
 export type { InboxCategory, InboxConversation } from './hooks/useInboxConversations';
 

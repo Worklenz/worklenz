@@ -1,0 +1,171 @@
+{
+  "emptyValue": "—",
+  "noBudgetSet": "Kein Budget festgelegt",
+  "loadError": "Dieser Bericht konnte nicht geladen werden. Versuchen Sie es erneut.",
+  "retry": "Erneut versuchen",
+  "searchPlaceholder": "Suchen",
+  "budgets": {
+    "pageTitle": "Budgetplanung",
+    "pageSubTitle": "Budgetverfolgung und Burn-Rate für alle Projekte. ETC sind die verbleibenden geschätzten Stunden zum realisierten Stundensatz ab der protokollierten Zeit.",
+    "empty": "Keine Projekte zum Anzeigen.",
+    "table": {
+      "project": "Projekt",
+      "budget": "Budgetbetrag",
+      "spent": "Ausgegeben",
+      "remaining": "Übrig",
+      "burnRate": "Brennrate",
+      "etc": "ETC",
+      "alert": "Alarm"
+    },
+    "alert": {
+      "high": "Hohe Verbrennung",
+      "watch": "Beobachten",
+      "ok": "OK",
+      "none": "Kein Budget"
+    }
+  },
+  "invoices": {
+    "pageTitle": "Rechnungen",
+    "pageSubTitle": "Senden, verfolgen und sammeln Sie Kundenzahlungen über eine Portfolioansicht.",
+    "empty": "Noch keine Rechnungen. Erstellen Sie Rechnungen über das Kundenportal.",
+    "openInvoice": "Rechnung öffnen",
+    "kpi": {
+      "totalInvoiced": "Gesamtbetrag in Rechnung gestellt",
+      "totalPaid": "Insgesamt bezahlt",
+      "totalOutstanding": "Insgesamt ausstehend"
+    },
+    "table": {
+      "invoice": "Rechnung",
+      "client": "Kunde",
+      "project": "Projekt",
+      "amount": "Betrag",
+      "paymentStatus": "Zahlungsstatus",
+      "paidAmount": "Bezahlter Betrag",
+      "status": "Alle Status",
+      "issued": "Ausgestellt",
+      "due": "Fällig"
+    },
+    "status": {
+      "draft": "Entwurf",
+      "sent": "Gesendet",
+      "paid": "Bezahlt",
+      "overdue": "Überfällig",
+      "cancelled": "Abgebrochen",
+      "outstanding": "Hervorragend"
+    }
+  },
+  "billableTime": {
+    "pageTitle": "Abrechenbare Zeit",
+    "pageSubTitle": "Protokollierte Stunden, abrechenbare Markierung und Tarifkartenwert im gesamten Team. Eine Genehmigung der Arbeitszeittabelle ist nicht erforderlich – jedes Protokoll ist bereits aufgezeichnet.",
+    "empty": "In diesem Zeitraum war keine Zeit angemeldet.",
+    "tableTitle": "Zeiterfassung",
+    "range": {
+      "week": "Diese Woche",
+      "month": "Diesen Monat",
+      "lastMonth": "Letzten Monat"
+    },
+    "kpi": {
+      "logged": "Diesen Zeitraum protokolliert",
+      "billable": "Abrechenbar",
+      "nonBillable": "Nicht abrechenbar",
+      "value": "Abrechenbarer Wert"
+    },
+    "table": {
+      "member": "Mitglied",
+      "project": "Projekt",
+      "task": "Aufgabe",
+      "date": "Datum",
+      "time": "Zeit",
+      "billable": "Abrechenbar",
+      "rate": "Preis",
+      "value": "Wert"
+    },
+    "billable": "Abrechenbar",
+    "internal": "Intern"
+  },
+  "utilization": {
+    "pageTitle": "Auslastung",
+    "pageSubTitle": "Abzurechnende Teamstunden im Vergleich zur Kapazität für den ausgewählten Zeitraum. Die Überlastung liegt bei über 85 % der Kapazität.",
+    "empty": "Keine Teammitglieder zum Anzeigen vorhanden.",
+    "tableTitle": "Nutzung durch Mitglied",
+    "kpi": {
+      "team": "Teamauslastung",
+      "billable": "Abrechnungsfähige Stunden",
+      "nonBillable": "Nicht abrechenbar",
+      "overallocated": "Überlastet"
+    },
+    "overallocatedCount_one": "{{count}} Mitglied",
+    "overallocatedCount_other": "{{count}} Mitglieder",
+    "table": {
+      "member": "Mitglied",
+      "role": "Rolle",
+      "billableHours": "Abrechnungsfähige Stunden",
+      "totalHours": "Gesamtstunden",
+      "utilization": "Auslastung",
+      "status": "Alle Status"
+    },
+    "status": {
+      "high": "Überlastet",
+      "watch": "Beobachten",
+      "ok": "OK"
+    }
+  },
+  "profitability": {
+    "pageTitle": "Rentabilität",
+    "pageSubTitle": "Portfolioeinnahmen aus bezahlten Rechnungen, nachverfolgte Kosten aus protokollierter Zeit und Fixkosten sowie abrechnungsfähige Nutzung nach Projekt.",
+    "empty": "Keine Projekte zum Anzeigen.",
+    "revenueNote": "Der Umsatz besteht aus bezahlten Rechnungen des Kundenportals. Der Umsatz auf Projektebene wird noch nicht erfasst, daher zeigt die Tabelle Kosten und Nutzung.",
+    "noRevenueNote": "Noch keine bezahlten Rechnungen, daher bleiben Umsatz, Gewinn und Marge leer, bis die Rechnungen eingezogen sind.",
+    "kpi": {
+      "revenue": "Einnahmen",
+      "trackedCost": "Verfolgte Kosten",
+      "profit": "Gewinn",
+      "margin": "Gewinnspanne",
+      "billableUtil": "Abrechenbarer Verbrauch."
+    },
+    "trendTitle": "Umsatz- und Gewinntrend",
+    "costBreakdownTitle": "Kostenaufschlüsselung",
+    "tableTitle": "Projektrentabilität",
+    "cost": {
+      "fixed": "Fixkosten",
+      "timeBased": "Zeitbasierte Kosten"
+    },
+    "table": {
+      "project": "Projekt",
+      "cost": "Kosten",
+      "utilization": "Auslastung",
+      "health": "Gesundheit"
+    },
+    "health": {
+      "high": "Hohe Verbrennung",
+      "watch": "Beobachten",
+      "ok": "Auf Kurs",
+      "none": "Kein Budget"
+    },
+    "legend": {
+      "revenue": "Einnahmen",
+      "profit": "Gewinn",
+      "cost": "Kosten"
+    }
+  },
+  "forecasts": {
+    "pageTitle": "Prognosen",
+    "pageSubTitle": "Die nächsten drei Monate aus einem linearen Trend der in Rechnung gestellten Einnahmen und zeitbasierten Kosten der letzten drei Monate.",
+    "methodology": "Prognosemethode: linearer Trend der letzten drei Monate. Keine Pipeline-basierte Prognose.",
+    "kpi": {
+      "projectedRevenue": "Prognostizierter Umsatz (nächster Monat)",
+      "projectedProfit": "Prognostizierter Gewinn (nächster Monat)"
+    },
+    "vsPrevious": "{{value}} % gegenüber dem letzten Monat",
+    "noRevenueBaseline": "In diesem Monat gibt es keinen vergleichbaren Umsatz",
+    "noProfitBaseline": "In diesem Monat gibt es keinen vergleichbaren Gewinn",
+    "chartTitle": "3-Monats-Umsatzprognose",
+    "legend": {
+      "revenue": "Einnahmen",
+      "profit": "Gewinn",
+      "actual": "Tatsächlich",
+      "projected": "Projiziert"
+    },
+    "empty": "Noch nicht genug Geschichte für eine Prognose. Protokollieren Sie die Zeit und senden Sie Rechnungen, um einen Trend zu erstellen."
+  }
+}

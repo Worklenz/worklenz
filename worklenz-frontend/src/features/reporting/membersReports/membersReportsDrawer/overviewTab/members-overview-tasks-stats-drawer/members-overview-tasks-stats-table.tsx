@@ -21,17 +21,31 @@ import {
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { setProjectId } from '@/features/project/project.slice';
 
+interface ReportingTaskRecord {
+  id: string;
+  project_id?: string;
+  sub_tasks_count?: number | string;
+  name?: string;
+  status_color?: string;
+  status_name?: string;
+  priority_color?: string;
+  priority_name?: string;
+  phase_color?: string;
+  phase_name?: string;
+  due_date?: string | null;
+  completed_date?: string | null;
+  overdue_days?: number | string;
+  total_time_string?: string;
+  time_spent_string?: string;
+  overlogged_time_string?: string;
+}
+
 type MembersOverviewTasksStatsTableProps = {
-  tasksData: any[];
+  tasksData: ReportingTaskRecord[];
   title: string;
   color: string;
   setSeletedTaskId: (id: string) => void;
 };
-
-interface ReportingTaskRecord {
-  id: string;
-  project_id?: string;
-}
 
 const MembersOverviewTasksStatsTable = ({
   tasksData,
@@ -56,7 +70,7 @@ const MembersOverviewTasksStatsTable = ({
     dispatch(setShowTaskDrawer(true));
   };
 
-  const columns: TableColumnsType = [
+  const columns: TableColumnsType<ReportingTaskRecord> = [
     {
       key: 'task',
       title: <CustomTableTitle title={t('taskColumn')} />,

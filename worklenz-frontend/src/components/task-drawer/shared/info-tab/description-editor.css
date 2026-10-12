@@ -79,6 +79,13 @@
   padding: 12px;
 }
 
+/* Text wrapping fix to prevent overflow */
+.description-editor-shell .description-content,
+.description-editor-shell .description-content * {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .description-editor-shell .description-editor-footer {
   margin-top: 6px;
   font-size: 12px;

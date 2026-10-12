@@ -15,6 +15,7 @@ export interface IOrganizationHoliday {
   description?: string;
   date: string;
   is_recurring: boolean;
+  is_auto_synced?: boolean;
   created_at: string;
   updated_at: string;
   holiday_type?: IHolidayType;

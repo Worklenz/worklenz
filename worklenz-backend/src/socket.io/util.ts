@@ -2,6 +2,7 @@ import {Socket} from "socket.io";
 import {ISocketSession} from "../interfaces/socket-session";
 import db from "../config/db";
 import {SocketEvents} from "./events";
+import { emitToTaskVisibleProjectMembers } from "../shared/assignee-task-scope";
 
 /** [Socket IO] Log a socket io debug log */
 export function log(id: string, value: any) {
@@ -26,9 +27,20 @@ export async function notifyProjectUpdates(socket: Socket, taskId: string) {
     const result = await db.query("SELECT project_id FROM tasks WHERE id = $1;", [taskId]);
     const [data] = result.rows;
     if (data.project_id) {
-      socket.to(data.project_id).emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+      // PROJECT_UPDATES_AVAILABLE is a refetch ping (no task payload). Restrict
+      // delivery so members who cannot see this task do not churn their lists.
+      await emitToTaskVisibleProjectMembers(
+        socket,
+        data.project_id,
+        taskId,
+        SocketEvents.PROJECT_UPDATES_AVAILABLE.toString(),
+        undefined,
+        { excludeSocketId: socket.id }
+      );
     }
   } catch (error) {
     // ignore
   }
 }
+
+export { emitToTaskVisibleProjectMembers };

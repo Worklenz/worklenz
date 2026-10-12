@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Modal, Typography } from '@/shared/antd-imports';
 import { AVAILABLE_IMPORT_SOURCES } from '../source-icons';
+import type { TranslateFn } from '../types';
 
 interface ImportSourceOption {
   key: string;
@@ -13,7 +14,7 @@ interface ImportSourceOption {
 interface ChooseImportSourceContentProps {
   open: boolean;
   onClose: () => void;
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
+  t: TranslateFn;
   modalTitle: React.ReactNode;
   onSourcePick: (selected: ImportSourceOption) => void;
 }

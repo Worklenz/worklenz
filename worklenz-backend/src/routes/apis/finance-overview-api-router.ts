@@ -1,13 +1,14 @@
 import express from "express";
 import FinanceOverviewController from "../../controllers/finance-overview-controller";
+import FinanceReportsController from "../../controllers/finance-reports-controller";
 import teamLeadFinanceValidator from "../../middlewares/validators/team-lead-finance-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
-import { requireBusinessPlan } from "../../ee/middlewares/subscription-middleware";
+import { requireBusinessPlan } from "../../middlewares/subscription-middleware";
 
 const financeOverviewApiRouter = express.Router();
 
 // Portfolio-wide finance reporting is a Business Edition feature, same tier as
-// per-project finance (ee/routes/apis/project-finance-api-router.ts) — gate every route.
+// per-project finance (routes/apis/project-finance-api-router.ts) — gate every route.
 financeOverviewApiRouter.use(requireBusinessPlan);
 
 /**
@@ -37,6 +38,42 @@ financeOverviewApiRouter.get(
     "/fixed-costs",
     teamLeadFinanceValidator,
     safeControllerFunction(FinanceOverviewController.getTeamFixedCosts)
+);
+
+financeOverviewApiRouter.get(
+    "/budgets",
+    teamLeadFinanceValidator,
+    safeControllerFunction(FinanceReportsController.getBudgets)
+);
+
+financeOverviewApiRouter.get(
+    "/invoices",
+    teamLeadFinanceValidator,
+    safeControllerFunction(FinanceReportsController.getInvoices)
+);
+
+financeOverviewApiRouter.get(
+    "/billable-time",
+    teamLeadFinanceValidator,
+    safeControllerFunction(FinanceReportsController.getBillableTime)
+);
+
+financeOverviewApiRouter.get(
+    "/utilization",
+    teamLeadFinanceValidator,
+    safeControllerFunction(FinanceReportsController.getUtilization)
+);
+
+financeOverviewApiRouter.get(
+    "/profitability",
+    teamLeadFinanceValidator,
+    safeControllerFunction(FinanceReportsController.getProfitability)
+);
+
+financeOverviewApiRouter.get(
+    "/forecasts",
+    teamLeadFinanceValidator,
+    safeControllerFunction(FinanceReportsController.getForecasts)
 );
 
 export default financeOverviewApiRouter;

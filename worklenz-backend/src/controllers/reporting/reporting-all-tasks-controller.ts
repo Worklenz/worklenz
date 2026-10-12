@@ -387,7 +387,10 @@ export default class ReportingAllTasksController extends ReportingControllerBase
         (SELECT color_code FROM projects WHERE id = t.project_id) AS color_code,
         t.status_id,
         (SELECT name FROM task_statuses WHERE id = t.status_id) AS status_name,
-        (SELECT color_code FROM sys_task_status_categories WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color,
+        (SELECT COALESCE(ts.color_code, stsc.color_code)
+        FROM task_statuses ts
+        LEFT JOIN sys_task_status_categories stsc ON stsc.id = ts.category_id
+        WHERE ts.id = t.status_id) AS status_color,
         t.priority_id,
         (SELECT name FROM task_priorities WHERE id = t.priority_id) AS priority_name,
         (SELECT color_code FROM task_priorities WHERE id = t.priority_id) AS priority_color,

@@ -7,11 +7,12 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { useAuthService } from '../hooks/useAuth';
 import { TrialExpirationAlert } from '@/components/TrialExpirationAlert/TrialExpirationAlert';
 import { ImportProgressNotifier } from '@/components/imports/ImportProgressNotifier';
+import { TaskExportProgressNotifier } from '@/components/projects/task-export/TaskExportProgressNotifier';
 import { MobileAppBanner } from '@/components/mobile-app/MobileAppBanner';
 import { AppSumoPopup } from '@/components/appsumo-popup/AppSumoPopup';
 import { NAV_RAIL_BG_DARK, NAV_RAIL_BG_LIGHT } from '@/components/nav-rail/nav-rail-constants';
 import { PROJECTS_RAIL_SUB_ROUTES, FINANCE_RAIL_SUB_ROUTES } from '@/features/navigation/nav-registry';
-import { shouldShowAppSumoPromo } from '@/ee/utils/subscription-utils';
+import { shouldShowAppSumoPromo } from '@/utils/subscription-utils';
 
 // Single shared header for every authenticated section (main app, reporting,
 // client portal) so there is exactly one <Navbar/> mount and one header
@@ -76,6 +77,7 @@ const AppShellLayout = memo(() => {
   return (
     <Layout className="min-h-screen">
       <ImportProgressNotifier />
+      <TaskExportProgressNotifier />
       <AppSumoPopup
         isAppSumoUser={isAppSumoUser}
         frequencyDays={currentSession?.appsumo_popup_frequency_days}

@@ -21,6 +21,17 @@ export default defineConfig({
   build: {
     outDir: process.env.VITE_BUILD_OUTDIR || 'dist',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          redux: ['@reduxjs/toolkit', 'react-redux'],
+          antd: ['antd', '@ant-design/icons'],
+          socket: ['socket.io-client'],
+        },
+      },
+    },
   },
   define: {
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),

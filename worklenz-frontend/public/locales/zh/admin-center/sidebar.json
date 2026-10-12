@@ -5,5 +5,7 @@
   "billing": "账单",
   "projects": "项目",
   "settings": "设置",
-  "adminCenter": "管理中心"
+  "adminCenter": "管理中心",
+  "security": "安全",
+  "newBadge": "新"
 }

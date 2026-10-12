@@ -3,10 +3,10 @@ import {
   canAddGuest,
   getGuestLimitByTier
 } from "../shared/guest-seat-limits";
-import * as paddleUtils from "../ee/shared/paddle-utils";
+import * as paddleUtils from "../shared/paddle-utils";
 import * as utils from "../shared/utils";
 
-jest.mock("../ee/shared/paddle-utils");
+jest.mock("../shared/paddle-utils");
 jest.mock("../shared/utils", () => ({
   log_error: jest.fn()
 }));

@@ -15,7 +15,6 @@ import {
   theme,
   Space,
   CaretDownFilled,
-  FilterOutlined,
   CheckCircleFilled,
   CheckboxChangeEvent,
 } from '@/shared/antd-imports';
@@ -205,43 +204,9 @@ const Utilization: React.FC = () => {
         </div>
       )}
     >
-      <Button
-        loading={loadingUtilization}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          height: '30px',
-          fontSize: '12px',
-          borderColor: colors.buttonBorder,
-          color: colors.buttonText,
-          fontWeight: activeFiltersCount > 0 ? 600 : 400,
-          transition: 'all 0.2s ease-in-out',
-          backgroundColor: colors.buttonBg,
-          borderRadius: '6px',
-          padding: '4px 10px',
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.backgroundColor = isDark ? '#262626' : '#f0f0f0';
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.backgroundColor = colors.buttonBg;
-        }}
-      >
-        <FilterOutlined
-          style={{
-            fontSize: '14px',
-            color: colors.buttonText,
-          }}
-        />
-        <span>{getButtonText()}</span>
-        <CaretDownFilled
-          style={{
-            fontSize: '10px',
-            marginLeft: '2px',
-            color: colors.buttonText,
-          }}
-        />
+      <Button loading={loadingUtilization} size="small" style={{ fontSize: 12, borderRadius: 7 }}>
+        {getButtonText()}
+        <CaretDownFilled style={{ fontSize: 10, marginLeft: 4 }} />
       </Button>
     </Dropdown>
   );

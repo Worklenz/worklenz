@@ -22,12 +22,12 @@ BEGIN
         IF NOT EXISTS (
             SELECT 1 FROM roles 
             WHERE team_id = team_record.id 
-            AND name = 'Team Lead' 
-            AND admin_role = TRUE
+            AND name = 'Team Lead'
         ) THEN
             -- Insert Team Lead role for this team
             INSERT INTO roles (name, team_id, admin_role) 
-            VALUES ('Team Lead', team_record.id, TRUE);
+            VALUES ('Team Lead', team_record.id, TRUE)
+            ON CONFLICT (name, team_id) DO UPDATE SET admin_role = TRUE;
             
             RAISE NOTICE 'Added Team Lead role to team: %', team_record.id;
         END IF;
@@ -259,6 +259,8 @@ BEGIN
            );
 END;
 $$;
+
+DROP FUNCTION IF EXISTS update_team_member(json);
 
 CREATE OR REPLACE FUNCTION update_team_member(_body json) RETURNS TEXT
     LANGUAGE plpgsql

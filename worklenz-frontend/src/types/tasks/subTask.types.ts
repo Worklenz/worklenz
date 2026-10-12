@@ -5,6 +5,7 @@ export interface ISubTask extends IProjectTask {
   id?: string;
   name?: string;
   status_color?: string;
+  phase_color_dark?: string;
   status?: string;
   status_name?: string;
   priority?: string;

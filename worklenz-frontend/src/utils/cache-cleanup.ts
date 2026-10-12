@@ -3,6 +3,8 @@
  * Handles clearing of various caches to prevent stale data issues
  */
 
+import { COOKIE_CONSENT_STORAGE_KEY } from './consentManager';
+
 export class CacheCleanup {
   /**
    * Clear all caches including service worker, browser cache, and storage
@@ -73,8 +75,18 @@ export class CacheCleanup {
       console.log('CacheCleanup: Clearing localStorage keys:', localStorageKeys);
       console.log('CacheCleanup: Clearing sessionStorage keys:', sessionStorageKeys);
 
+      // Cookie consent is a device-level GDPR decision, not session data - it
+      // shouldn't be forgotten (re-prompting the banner) just because the
+      // account logged out. Preserve it across the clear.
+      const cookieConsent = localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY);
+
       localStorage.clear();
       sessionStorage.clear();
+
+      if (cookieConsent !== null) {
+        localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, cookieConsent);
+      }
+
       console.log('CacheCleanup: Local storage cleared');
 
       console.log('CacheCleanup: Cache clearing process completed successfully');

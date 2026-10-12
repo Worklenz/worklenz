@@ -6,6 +6,9 @@ export interface IWorklenzNotification {
   team: string;
   team_id: string;
   message: string;
+  message_key?: string;
+  message_params?: Record<string, any>;
+  notification_type_key?: string;
   project?: string;
   color?: string;
   url?: string;
@@ -13,6 +16,7 @@ export interface IWorklenzNotification {
   comment_id?: string;
   params?: Params;
   created_at?: string;
+  release_id?: string;
 }
 
 export interface ITeamInvitationViewModel extends ITeamInvites {

@@ -36,7 +36,7 @@ $$ LANGUAGE plpgsql;
 
 -- Recreate the trigger as BEFORE UPDATE instead of AFTER UPDATE
 -- This ensures completed_at is set in the same UPDATE statement
-CREATE TRIGGER tasks_status_id_change
+CREATE OR REPLACE TRIGGER tasks_status_id_change
     BEFORE UPDATE OF status_id
     ON tasks
     FOR EACH ROW

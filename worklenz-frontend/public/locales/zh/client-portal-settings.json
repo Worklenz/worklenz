@@ -8,6 +8,14 @@
   "addressLine1Placeholder": "街道地址、邮政信箱",
   "addressLine2Label": "地址行2",
   "addressLine2Placeholder": "城市、省份、邮编、国家",
+  "cityLabel": "城市",
+  "cityPlaceholder": "城市",
+  "stateLabel": "省/州",
+  "statePlaceholder": "省/州",
+  "zipCodeLabel": "邮政编码",
+  "zipCodePlaceholder": "邮政编码",
+  "countryLabel": "国家",
+  "countryPlaceholder": "国家",
   "contactEmailLabel": "联系邮箱",
   "contactEmailPlaceholder": "输入联系邮箱",
   "contactPhoneLabel": "联系电话",
@@ -72,5 +80,121 @@
   "logoAlt": "标志",
   "pendingUploadTag": "待上传",
   "pendingRemovalTag": "待移除",
-  "organizationLogoWillBeUsedText": "将使用组织标志"
+  "organizationLogoWillBeUsedText": "将使用组织标志",
+  "settingsSaveFailedError": "保存设置失败。",
+  "navCompanyDetails": "公司详情",
+  "navBranding": "品牌",
+  "navInvoiceTemplate": "发票模板",
+  "navVisibility": "客户可见选择",
+  "navNotifications": "通知",
+  "navClientUsers": "客户用户管理",
+  "navTemplates": "权限模板",
+  "navTicketing": "工单配置",
+  "invalidLogoFileTypeError": "请选择图片文件。",
+  "logoFileTooLargeError": "标志文件必须小于2MB。",
+  "logoUploadFailedError": "标志上传失败。",
+  "portalLogoLabel": "门户标志",
+  "portalTitleLabel": "门户标题",
+  "portalTitlePlaceholder": "例如：Acme 客户中心",
+  "brandColorLabel": "品牌颜色",
+  "recommendedColorsLabel": "推荐",
+  "portalThemeLabel": "主题",
+  "lightPortalButton": "浅色门户",
+  "darkPortalButton": "深色门户",
+  "defaultPortalTitlePreview": "客户门户",
+  "previewWelcomeText": "欢迎回来",
+  "previewLatestInvoiceText": "最新发票",
+  "previewInvoiceSampleText": "USD 2,500.00 · 6天后到期",
+  "previewViewTasksButton": "查看我的任务",
+  "brandingTitle": "品牌",
+  "invoiceTemplateTitle": "发票模板",
+  "invoiceTemplateDescription": "选择您的团队和客户下载或预览发票时的外观。",
+  "invoiceMoreCustomizationTitle": "更多自定义选项即将推出",
+  "invoiceMoreCustomizationDescription": "更多发票模板的布局与设计选项即将上线。",
+  "invoiceAccentColorLabel": "强调色",
+  "invoiceAccentColorHint": "使用品牌设置中的品牌颜色。",
+  "invoiceShowLogoLabel": "在发票上显示公司标志",
+  "invoiceShowLogoDescription": "在发票页头显示您的门户标志。",
+  "invoicePreviewLabel": "预览",
+  "visibilityTitle": "客户可见选择",
+  "visibilityDescription": "选择客户门户中显示哪些部分。",
+  "visibility": {
+    "projectPlan": {
+      "label": "项目计划（任务）",
+      "description": "在客户门户中显示项目部分。"
+    },
+    "ganttTimeline": {
+      "label": "甘特图 / 时间线",
+      "description": "为客户门户未来的甘特图/时间线视图预留 — 目前尚无效果。"
+    },
+    "filesDocuments": {
+      "label": "文件与文档",
+      "description": "为客户门户未来独立的文件部分预留 — 目前尚无效果。"
+    },
+    "invoices": {
+      "label": "发票",
+      "description": "在客户门户中显示发票部分。"
+    },
+    "feedbackForms": {
+      "label": "反馈表单",
+      "description": "为客户门户未来的反馈表单预留 — 目前尚无效果。"
+    },
+    "teamMembers": {
+      "label": "团队成员",
+      "description": "为未来面向客户的团队成员页面预留 — 目前尚无效果。"
+    },
+    "projectUpdates": {
+      "label": "项目更新",
+      "description": "为客户门户未来的项目更新预留 — 目前尚无效果。"
+    },
+    "chat": {
+      "label": "聊天",
+      "description": "在客户门户中显示聊天部分。"
+    }
+  },
+  "notificationsTitle": "通知",
+  "notificationsDescription": "选择您的团队会收到哪些客户活动通知。",
+  "notifications": {
+    "newMessage": {
+      "label": "新消息",
+      "description": "客户发送新消息时通知团队。"
+    },
+    "taskStatusChange": {
+      "label": "任务状态变更",
+      "description": "客户可见任务状态变更时通知团队。"
+    },
+    "fileUploaded": {
+      "label": "文件已上传",
+      "description": "客户上传文件时通知团队。"
+    }
+  },
+  "clientUsers": {
+    "bannerTitle": "尚未生效",
+    "bannerDescription": "这些设置定义了一旦面向客户的门户支持后，公司联系人（POC）将被允许执行的操作。目前，POC 仅是一个目录标签 — 这里的任何设置尚未生效。",
+    "selfManagementTitle": "POC 自我管理",
+    "selfManagementDescription": "让公司自己的联系人管理其公司中哪些人拥有门户访问权限，而不必每次添加/移除都经由您的团队处理。",
+    "canAdd": {
+      "label": "允许 POC 添加公司用户",
+      "description": "POC 可以邀请其所在公司的新同事加入客户门户。"
+    },
+    "canRemove": {
+      "label": "允许 POC 移除公司用户",
+      "description": "POC 可以撤销其所在公司另一位用户的门户访问权限。"
+    },
+    "guardrailsTitle": "无论上述开关如何设置，以下始终成立",
+    "guardrail1": "联系人只能查看和管理自己公司的用户 — 绝不涉及其他客户。",
+    "guardrail2": "联系人永远无法查看您的内部团队目录，也不会获得组织管理员权限。",
+    "guardrail3": "移除公司唯一的联系人绝不会删除该公司或其其他用户 — 只会使该公司暂无联系人。"
+  },
+  "permissionTemplates": {
+    "bannerTitle": "只读",
+    "bannerDescription": "选择模板会一键将该权限级别应用到该公司当前的所有项目 — 管理员之后仍可按项目逐一微调访问权限。可在添加公司用户或对现有用户执行“分配项目”时使用。"
+  },
+  "ticketingConfig": {
+    "title": "工单状态",
+    "description": "开放、进行中和已解决始终存在，且无法移除。添加团队自定义的状态以适应您团队的工作流程 — 它们会同时显示在工单的列表视图和看板视图中。",
+    "defaultStatusesLabel": "默认状态",
+    "defaultStatusesHint": "这些状态始终存在，且无法移除。",
+    "customStatusesLabel": "自定义状态"
+  }
 }

@@ -1,21 +1,9 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
-import {
-  Card,
-  Input,
-  Flex,
-  Checkbox,
-  Button,
-  Typography,
-  Space,
-  Form,
-  message,
-} from '@/shared/antd-imports';
+import { Input, Flex, Button, Typography, Form, Divider, message } from '@/shared/antd-imports';
 import { Rule } from 'antd/es/form';
 
-import { LockOutlined, UserOutlined } from '@/shared/antd-imports';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useMediaQuery } from 'react-responsive';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -31,7 +19,6 @@ import {
   evt_login_page_visit,
   evt_login_with_email_click,
   evt_login_with_google_click,
-  evt_login_remember_me_click,
   evt_login_page_login,
 } from '@/shared/worklenz-analytics-events';
 
@@ -40,24 +27,24 @@ const evt_login_with_apple_click = 'login_with_apple_click';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import alertService from '@/services/alerts/alertService';
-import { useAuthService } from '@/hooks/useAuth';
-import { WORKLENZ_REDIRECT_PROJ_KEY } from '@/shared/constants';
+import { WORKLENZ_REDIRECT_PROJ_KEY, AUTH_PRIMARY_BUTTON_COLOR } from '@/shared/constants';
+import { validateEmail } from '@/utils/validateEmail';
+import { getDefaultAuthenticatedPath } from '@/utils/guest-session';
 
 interface LoginFormValues {
   email: string;
   password: string;
-  remember?: boolean;
 }
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('auth/login');
-  const isMobile = useMediaQuery({ query: '(max-width: 576px)' });
   const dispatch = useAppDispatch();
   const { isLoading } = useAppSelector(state => state.auth);
   const { trackMixpanelEvent } = useMixpanelTracking();
   const [form] = Form.useForm<LoginFormValues>();
-  const currentSession = useAuthService().getCurrentSession();
+  const [step, setStep] = useState<'email' | 'password'>('email');
+  const [confirmedEmail, setConfirmedEmail] = useState('');
   const [urlParams, setUrlParams] = useState({
     teamId: '',
     userId: '',
@@ -66,6 +53,11 @@ const LoginPage: React.FC = () => {
 
   const enableGoogleLogin = import.meta.env.VITE_ENABLE_GOOGLE_LOGIN === 'true' || false;
   const enableAppleLogin = import.meta.env.VITE_ENABLE_APPLE_LOGIN === 'true' || false;
+
+  const emailValue = Form.useWatch('email', form);
+  const passwordValue = Form.useWatch('password', form);
+  const isEmailValid = validateEmail((emailValue ?? '').trim());
+  const isPasswordValid = !!passwordValue && passwordValue.length >= 8;
 
   // Use ref to prevent multiple executions of auth check
   const hasCheckedAuth = useRef(false);
@@ -108,10 +100,6 @@ const LoginPage: React.FC = () => {
     }
 
     trackMixpanelEvent(evt_login_page_visit);
-    if (currentSession && !currentSession?.setup_completed) {
-      navigate('/worklenz/setup');
-      return;
-    }
 
     // Verify auth status with the extracted params
     const checkAuth = async () => {
@@ -138,13 +126,13 @@ const LoginPage: React.FC = () => {
                   // Redirect to the specific project
                   window.location.href = `/worklenz/projects/${projectId}`;
                 } else {
-                  // Team-only invitation, redirect to home with the new active team
-                  window.location.href = '/worklenz/home';
+                  // Team-only invitation — guests land on Projects, others on Home
+                  window.location.href = getDefaultAuthenticatedPath(updatedSession.user);
                 }
               } else {
                 // Session verification failed after team switch
                 message.error('Failed to update session. Please try again.');
-                window.location.href = '/worklenz/home';
+                window.location.href = getDefaultAuthenticatedPath(session.user);
               }
             } catch (error) {
               // Could not switch team - user is not a team member yet
@@ -152,12 +140,12 @@ const LoginPage: React.FC = () => {
               message.info('Please check your notifications to accept the team invitation.');
 
               setTimeout(() => {
-                window.location.href = '/worklenz/home';
+                window.location.href = getDefaultAuthenticatedPath(session.user);
               }, 2000);
             }
           } else {
-            // No invitation params, redirect to home
-            window.location.href = '/worklenz/home';
+            // No invitation params — guests land on Projects, others on Home
+            window.location.href = getDefaultAuthenticatedPath(session.user);
           }
         }
       } catch (error) {
@@ -194,10 +182,13 @@ const LoginPage: React.FC = () => {
           localStorage.setItem(WORKLENZ_REDIRECT_PROJ_KEY, urlParams.projectId);
         }
 
-        // Normalize email to lowercase for case-insensitive comparison
+        // Normalize email to lowercase for case-insensitive comparison.
+        // The email field is unmounted once we're on the password step, so
+        // `values.email` is not registered with the form anymore - use the
+        // confirmed email captured when the user advanced past that step.
         const normalizedValues = {
           ...values,
-          email: values.email.toLowerCase().trim(),
+          email: confirmedEmail.toLowerCase().trim(),
           // Include invitation parameters in login request
           team_id: urlParams.teamId || undefined,
           team_member_id: urlParams.userId || undefined,
@@ -219,7 +210,7 @@ const LoginPage: React.FC = () => {
         );
       }
     },
-    [dispatch, navigate, t, trackMixpanelEvent, urlParams]
+    [dispatch, navigate, t, trackMixpanelEvent, urlParams, confirmedEmail]
   );
 
   const handleGoogleLogin = useCallback(() => {
@@ -260,150 +251,169 @@ const LoginPage: React.FC = () => {
     }
   }, [trackMixpanelEvent, urlParams]);
 
-  const handleRememberMeChange = useCallback(
-    (checked: boolean) => {
-      trackMixpanelEvent(evt_login_remember_me_click, { checked });
-    },
-    [trackMixpanelEvent]
-  );
+  const goNext = useCallback(async () => {
+    try {
+      await form.validateFields(['email']);
+      setConfirmedEmail(form.getFieldValue('email'));
+      setStep('password');
+    } catch {
+      // validation errors are rendered inline by the form
+    }
+  }, [form]);
 
-  const styles = {
-    card: {
-      width: '100%',
-      boxShadow: 'none',
-    },
-    button: {
-      borderRadius: 4,
-    },
-    googleButton: {
-      borderRadius: 4,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    link: {
-      fontSize: 14,
-    },
-    googleIcon: {
-      maxWidth: 20,
-      marginRight: 8,
-    },
-  };
+  const changeEmail = useCallback(() => {
+    setStep('email');
+  }, []);
 
   return (
-    <Card
-      style={styles.card}
-      styles={{ body: { paddingInline: isMobile ? 24 : 48 } }}
-      variant="outlined"
-    >
-      <PageHeader description={t('headerDescription')} />
+    <>
+      <PageHeader title={t('headline')} description={t('headerDescription')} />
+
+      {(enableGoogleLogin || enableAppleLogin) && (
+        <>
+          <Typography.Text
+            type="secondary"
+            style={{ display: 'block', textAlign: 'center', fontSize: 12, marginBottom: 10 }}
+          >
+            {t('signInWithLabel')}
+          </Typography.Text>
+          <Flex gap={10} style={{ marginBottom: 24 }}>
+            {enableGoogleLogin && (
+              <Button
+                size="large"
+                onClick={handleGoogleLogin}
+                aria-label={t('signInWithGoogleAriaLabel')}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                <img src={googleIcon} alt="" style={{ width: 18, height: 18 }} />
+                {t('signInWithGoogleButton')}
+              </Button>
+            )}
+            {enableAppleLogin && (
+              <Button
+                size="large"
+                onClick={handleAppleLogin}
+                aria-label={t('signInWithAppleAriaLabel')}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                <img src={appleIcon} alt="" style={{ width: 16, height: 16 }} />
+                {t('signInWithAppleButton')}
+              </Button>
+            )}
+          </Flex>
+          <Divider style={{ margin: '0 0 22px', fontSize: 12 }}>{t('orText')}</Divider>
+        </>
+      )}
 
       <Form
         form={form}
         name="login"
         layout="vertical"
         autoComplete="off"
-        requiredMark="optional"
-        initialValues={{ remember: true }}
+        requiredMark={false}
         onFinish={onFinish}
         style={{ width: '100%' }}
       >
-        <Form.Item name="email" rules={validationRules.email as Rule[]}>
-          <Input
-            prefix={<UserOutlined />}
-            placeholder={t('emailPlaceholder')}
-            size="large"
-            style={styles.button}
-          />
-        </Form.Item>
-
-        <Form.Item name="password" rules={validationRules.password}>
-          <Input.Password
-            prefix={<LockOutlined />}
-            placeholder={t('passwordPlaceholder')}
-            size="large"
-            style={styles.button}
-          />
-        </Form.Item>
-
-        <Form.Item>
-          <Flex justify="space-between" align="center">
-            <Form.Item name="remember" valuePropName="checked" noStyle>
-              <Checkbox onChange={e => handleRememberMeChange(e.target.checked)}>
-                {t('rememberMe')}
-              </Checkbox>
+        {step === 'email' ? (
+          <>
+            <Form.Item name="email" label={t('emailLabel')} rules={validationRules.email as Rule[]}>
+              <Input
+                size="large"
+                placeholder={t('emailPlaceholder')}
+                autoFocus
+                onPressEnter={e => {
+                  e.preventDefault();
+                  void goNext();
+                }}
+              />
             </Form.Item>
-            <Link
-              to="/auth/forgot-password"
-              className="ant-typography ant-typography-link blue-link"
-              style={styles.link}
+            <Button
+              block
+              type="primary"
+              size="large"
+              disabled={!isEmailValid}
+              onClick={goNext}
+              style={
+                isEmailValid
+                  ? { backgroundColor: AUTH_PRIMARY_BUTTON_COLOR, borderColor: AUTH_PRIMARY_BUTTON_COLOR }
+                  : undefined
+              }
             >
-              {t('forgotPasswordButton')}
-            </Link>
-          </Flex>
-        </Form.Item>
+              {t('nextButton')}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Flex justify="space-between" align="center" style={{ marginBottom: 14 }}>
+              <Typography.Text type="secondary" style={{ fontSize: 12.5 }}>
+                {confirmedEmail}
+              </Typography.Text>
+              <Typography.Link onClick={changeEmail} style={{ fontSize: 12.5, fontWeight: 600 }}>
+                {t('changeEmailLink')}
+              </Typography.Link>
+            </Flex>
 
-        <Form.Item>
-          <Flex vertical gap={8}>
+            <Form.Item name="password" label={t('passwordLabel')} rules={validationRules.password as Rule[]}>
+              <Input.Password size="large" placeholder={t('passwordPlaceholder')} autoFocus />
+            </Form.Item>
+
+            <div style={{ textAlign: 'right', marginTop: -10, marginBottom: 14 }}>
+              <Link to="/auth/forgot-password" className="blue-link" style={{ fontSize: 12 }}>
+                {t('forgotPasswordButton')}
+              </Link>
+            </div>
+
             <Button
               block
               type="primary"
               htmlType="submit"
               size="large"
               loading={isLoading}
-              style={styles.button}
+              disabled={!isPasswordValid}
+              style={
+                isPasswordValid
+                  ? { backgroundColor: AUTH_PRIMARY_BUTTON_COLOR, borderColor: AUTH_PRIMARY_BUTTON_COLOR }
+                  : undefined
+              }
             >
               {t('loginButton')}
             </Button>
 
-            {(enableGoogleLogin || enableAppleLogin) && (
-              <>
-                <Typography.Text style={{ textAlign: 'center' }}>{t('orText')}</Typography.Text>
-
-                {enableGoogleLogin && (
-                  <Button
-                    block
-                    type="default"
-                    size="large"
-                    onClick={handleGoogleLogin}
-                    style={styles.googleButton}
-                  >
-                    <img src={googleIcon} alt="Google" style={styles.googleIcon} />
-                    {t('signInWithGoogleButton')}
-                  </Button>
-                )}
-
-                {enableAppleLogin && (
-                  <Button
-                    block
-                    type="default"
-                    size="large"
-                    onClick={handleAppleLogin}
-                    style={styles.googleButton}
-                  >
-                    <img src={appleIcon} alt="Apple" style={styles.googleIcon} />
-                    {t('signInWithAppleButton', { defaultValue: 'Sign in with Apple' })}
-                  </Button>
-                )}
-              </>
-            )}
-          </Flex>
-        </Form.Item>
-
-        <Form.Item>
-          <Space>
-            <Typography.Text style={styles.link}>{t('dontHaveAccountText')}</Typography.Text>
-            <Link
-              to="/auth/signup"
-              className="ant-typography ant-typography-link blue-link"
-              style={styles.link}
+            <Typography.Paragraph
+              type="secondary"
+              style={{ fontSize: 11.5, textAlign: 'center', marginTop: 12, marginBottom: 0 }}
             >
-              {t('signupButton')}
-            </Link>
-          </Space>
-        </Form.Item>
+              {t('bySigningInText')}{' '}
+              <a
+                href="https://worklenz.com/terms/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontWeight: 700, textDecoration: 'underline' }}
+              >
+                {t('termsOfServiceLink')}
+              </a>{' '}
+              {t('andText')}{' '}
+              <a
+                href="https://worklenz.com/privacy/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontWeight: 700, textDecoration: 'underline' }}
+              >
+                {t('privacyPolicyLink')}
+              </a>
+              .
+            </Typography.Paragraph>
+          </>
+        )}
       </Form>
-    </Card>
+
+      <Flex justify="center" gap={4} style={{ marginTop: 26, fontSize: 12.5 }}>
+        <Typography.Text type="secondary">{t('dontHaveAccountText')}</Typography.Text>
+        <Link to="/auth/signup" className="blue-link" style={{ fontWeight: 600 }}>
+          {t('signupButton')}
+        </Link>
+      </Flex>
+    </>
   );
 };
 

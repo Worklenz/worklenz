@@ -31,5 +31,10 @@
   "intervalDays": "Intervali (ditë)",
   "intervalWeeks": "Intervali (javë)",
   "intervalMonths": "Intervali (muaj)",
-  "saveChanges": "Ruaj ndryshimet"
+  "saveChanges": "Ruaj ndryshimet",
+  "recurringMode": "Modaliteti i përsëritur",
+  "createNewTask": "Krijo Detyrë të Re",
+  "changeTaskStatus": "Ndrysho statusin e detyrës",
+  "targetStatus": "Statusi i synuar",
+  "selectStatus": "Zgjidhni Statusin"
 }

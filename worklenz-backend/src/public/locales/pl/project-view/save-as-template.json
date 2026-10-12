@@ -1,0 +1,102 @@
+{
+  "title": "Zapisz jako szablon",
+  "templateName": "Nazwa szablonu",
+  "templateNamePlaceholder": "Wprowadź nazwę szablonu",
+  "templateInfo": "Informacje o szablonie",
+  "includes": "Elementy projektu",
+  "projectSettings": "Ustawienia projektu",
+  "taskIncludes": "Elementy zadania",
+  "cancel": "Anuluj",
+  "save": "Zapisz",
+  "creating": "Tworzenie szablonu...",
+  "created": "Szablon utworzony!",
+  "quickSelect": "Szybki wybór:",
+  "selectAll": "Wybierz wszystko",
+  "essentialOnly": "Tylko niezbędne",
+  "clearAll": "Wyczyść wszystko",
+  "itemsSelected": "wybrane elementy",
+  "selected": "wybrane",
+  "readyToSave": "Gotowy do zapisania",
+  "validName": "Prawidłowa nazwa",
+  "required": "Wymagane",
+  "characters": "postacie",
+  "proTips": "Profesjonalne wskazówki",
+  "budgetPlanHint": "Ustawienia budżetu są dostępne w planach Business i Enterprise.",
+  "includesOptions": {
+    "statuses": "Statusy",
+    "phases": "Fazy",
+    "labels": "Etykiety",
+    "customColumns": "Niestandardowe kolumny"
+  },
+  "projectSettingsOptions": {
+    "category": "Kategoria",
+    "projectManager": "Kierownik projektu",
+    "estimatedWorkingDays": "Szacowane dni robocze",
+    "estimatedManDays": "Szacowana osobodni",
+    "hoursPerDay": "Godziny dziennie",
+    "advanced": "Ustawienia zaawansowane",
+    "budget": "Ustawienia budżetu"
+  },
+  "taskIncludesOptions": {
+    "name": "Imię",
+    "priority": "Priorytet",
+    "status": "Stan",
+    "phase": "Faza",
+    "label": "Etykieta",
+    "timeEstimate": "Oszacowanie czasu",
+    "description": "Opis",
+    "subTasks": "Podzadania",
+    "assignees": "Osoby przypisane",
+    "recurrence": "Opcje powtarzające się",
+    "dependencies": "Zależności",
+    "billable": "Rozliczane/niepodlegające rozliczeniu"
+  },
+  "descriptions": {
+    "statuses": "Konfiguracja przepływu pracy statusu projektu",
+    "phases": "Fazy projektu i kamienie milowe",
+    "labels": "Niestandardowe etykiety do kategoryzacji",
+    "customColumns": "Niestandardowe pola i metadane",
+    "category": "Kategoria projektu dla organizacji",
+    "projectManager": "Przydzielony kierownik projektu",
+    "estimatedWorkingDays": "Szacunkowe dni pracy nad projektem",
+    "estimatedManDays": "Szacunkowa liczba osobodni projektu",
+    "hoursPerDay": "Domyślne godziny pracy w ciągu dnia",
+    "advanced": "Tryby postępu, domyślne ustawienia zadań i kontrola dostępu",
+    "budget": "Kwota budżetu, waluta i arkusz stawek projektu",
+    "taskName": "Nazwy i tytuły zadań",
+    "taskPriority": "Poziomy priorytetów zadań",
+    "taskStatus": "Stan wykonania zadania",
+    "taskPhase": "Powiązana faza projektu",
+    "taskLabel": "Etykiety i znaczniki zadań",
+    "timeEstimate": "Szacowany czas i czas trwania",
+    "description": "Opisy i szczegóły zadań",
+    "subTasks": "Podzadania i elementy listy kontrolnej",
+    "assignees": "Osoby przypisane do zadań i podzadań",
+    "recurrence": "Częstotliwość, interwał i reguła zakończenia dla każdego zadania",
+    "dependencies": "Powiązania pomiędzy zadaniami w szablonie",
+    "billable": "Flaga płatna dla każdego zadania"
+  },
+  "tooltips": {
+    "projectElements": "Wybierz, jakie elementy projektu chcesz uwzględnić w szablonie",
+    "projectSettings": "Wybierz, które ustawienia projektu mają zostać uwzględnione. Można je przejrzeć przed utworzeniem projektu na podstawie tego szablonu.",
+    "taskElements": "Wybierz, jakie elementy zadania mają zostać uwzględnione w szablonie",
+    "required": "Ten element jest wymagany i nie można go odznaczyć"
+  },
+  "tips": {
+    "line1": "Szablony zachowują strukturę projektu w celu szybkiego ponownego wykorzystania",
+    "line2": "Niezbędne elementy są zawsze uwzględnione i nie można ich usunąć",
+    "line3": "Ustawienia projektu można przeglądać i edytować podczas tworzenia projektu na podstawie tego szablonu",
+    "line4": "Zostaw domyślnie wyłączone osoby i budżet, aby uniknąć niespodziewanych przydziałów lub kosztów w nowych projektach"
+  },
+  "validation": {
+    "nameRequired": "Proszę wprowadzić nazwę szablonu",
+    "nameMinLength": "Nazwa szablonu musi składać się z co najmniej 3 znaków",
+    "nameMaxLength": "Nazwa szablonu musi mieć mniej niż 50 znaków"
+  },
+  "notifications": {
+    "createSuccess": "Szablon został utworzony",
+    "createSuccessDesc": "Twój szablon projektu został pomyślnie utworzony i jest gotowy do użycia.",
+    "createError": "Tworzenie szablonu nie powiodło się",
+    "error": "Błąd"
+  }
+}

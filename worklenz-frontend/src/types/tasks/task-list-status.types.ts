@@ -1,5 +1,8 @@
 export interface ITaskListStatusChangeResponse {
   status_id: string | undefined;
+  /** Display name of the new status (project-scoped statuses can't be resolved
+   *  client-side outside the owning project's view). */
+  status_name?: string;
   id: string;
   parent_task: string;
   color_code: string;

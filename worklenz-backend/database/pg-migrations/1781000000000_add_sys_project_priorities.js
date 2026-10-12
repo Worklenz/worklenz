@@ -4,9 +4,9 @@
 // projects.priority_id FK, and updates create_project/update_project to default
 // from the new table.
 
-exports.up = async function (db) {
+exports.up = async function (pgm) {
     // 1. New table mirroring task_priorities
-    await db.query(`
+    pgm.sql(`
         CREATE TABLE IF NOT EXISTS sys_project_priorities (
             id              UUID    DEFAULT uuid_generate_v4() NOT NULL,
             name            TEXT                               NOT NULL,
@@ -18,7 +18,7 @@ exports.up = async function (db) {
     `);
 
     // 2. Seed (idempotent) - same values/colors as task priorities today
-    await db.query(`
+    pgm.sql(`
         INSERT INTO sys_project_priorities (name, value, color_code, color_code_dark)
         SELECT v.name, v.value, v.color_code, v.color_code_dark
         FROM (VALUES
@@ -31,7 +31,7 @@ exports.up = async function (db) {
     `);
 
     // 3. Migrate existing projects by name (their priority_id still points at task_priorities here)
-    await db.query(`
+    pgm.sql(`
         UPDATE projects p
         SET priority_id = COALESCE(
             (SELECT spp.id
@@ -47,7 +47,7 @@ exports.up = async function (db) {
     //    Migration-built DBs auto-named the original FK projects_priority_id_fkey
     //    (inline REFERENCES), while the canonical SQL names it projects_priority_id_fk.
     //    Drop both so this works regardless of how the schema was created.
-    await db.query(`
+    pgm.sql(`
         ALTER TABLE projects DROP CONSTRAINT IF EXISTS projects_priority_id_fkey;
         ALTER TABLE projects DROP CONSTRAINT IF EXISTS projects_priority_id_fk;
         ALTER TABLE projects
@@ -56,7 +56,7 @@ exports.up = async function (db) {
     `);
 
     // 5. Default the priority lookup from the new table; also include restrict_task_creation
-    await db.query(`
+    pgm.sql(`
         CREATE OR REPLACE FUNCTION create_project(_body json) RETURNS json
             LANGUAGE plpgsql
         AS
@@ -136,7 +136,7 @@ exports.up = async function (db) {
         $$;
     `);
 
-    await db.query(`
+    pgm.sql(`
         CREATE OR REPLACE FUNCTION update_project(_body json) RETURNS json
             LANGUAGE plpgsql
         AS
@@ -215,9 +215,9 @@ exports.up = async function (db) {
     `);
 };
 
-exports.down = async function (db) {
+exports.down = async function (pgm) {
     // Re-point projects' priority_id back to the matching task_priorities row by name
-    await db.query(`
+    pgm.sql(`
         UPDATE projects p
         SET priority_id = (
             SELECT tp.id
@@ -228,7 +228,7 @@ exports.down = async function (db) {
         WHERE p.priority_id IS NOT NULL;
     `);
 
-    await db.query(`
+    pgm.sql(`
         ALTER TABLE projects DROP CONSTRAINT IF EXISTS projects_priority_id_fk;
         ALTER TABLE projects
             ADD CONSTRAINT projects_priority_id_fk
@@ -236,12 +236,12 @@ exports.down = async function (db) {
     `);
 
     // Restore the Medium default to task_priorities in both functions
-    await db.query(`
+    pgm.sql(`
         UPDATE pg_proc SET prosrc = REPLACE(prosrc,
             'sys_project_priorities WHERE name = ''Medium''',
             'task_priorities WHERE name = ''Medium''')
         WHERE proname IN ('create_project', 'update_project');
     `);
 
-    await db.query(`DROP TABLE IF EXISTS sys_project_priorities;`);
+    pgm.sql(`DROP TABLE IF EXISTS sys_project_priorities;`);
 };

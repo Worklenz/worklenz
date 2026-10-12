@@ -4,6 +4,9 @@ import { useGetUserTimeLoggedSummaryQuery } from '@/api/home-page/user-activity.
 import { useGetTaskStatsQuery } from '@/api/home-page/home-page.api.service';
 import { theme, Tooltip, InfoCircleOutlined } from '@/shared/antd-imports';
 import type { HomePeriod } from '../HomeOverviewView';
+import { HomeWidgetMenuButton } from '../home-widgets/HomeWidgetMenuButton';
+import { WIDGET_DATA_ATTRIBUTE } from '../home-widgets/widgetInteraction';
+import { useHomePeriodMenuItems } from '../home-widgets/useHomePeriodMenuItems';
 import { useTranslation } from 'react-i18next';
 
 const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -41,6 +44,7 @@ const HomeStatCards: React.FC<HomeStatCardsProps> = ({ period }) => {
   });
   const { token } = theme.useToken();
   const { t } = useTranslation('home');
+  const periodMenuItems = useHomePeriodMenuItems();
 
   const stats = statsData?.body;
   const tasksCount = period === 'today' ? (stats?.today ?? 0) : (stats?.week ?? 0);
@@ -86,6 +90,8 @@ const HomeStatCards: React.FC<HomeStatCardsProps> = ({ period }) => {
       {cards.map(card => (
         <div
           key={card.label}
+          // Each tile is data: the widget can be dragged by the gaps around them, not by the tiles.
+          {...{ [WIDGET_DATA_ATTRIBUTE]: '' }}
           style={{
             borderRadius: 10,
             padding: '12px 16px',
@@ -153,6 +159,9 @@ const HomeStatCards: React.FC<HomeStatCardsProps> = ({ period }) => {
           )}
         </div>
       ))}
+      {/* No header to hold the "..." menu, so it floats in the widget's corner while the widget is
+          hovered. Absolutely positioned, so it takes no cell of the grid. */}
+      <HomeWidgetMenuButton isFloating extraItems={periodMenuItems} />
     </div>
   );
 };

@@ -16,13 +16,16 @@ const SingleAvatar: React.FC<SingleAvatarProps> = ({
   size = 28,
   marginRight = '8px',
 }) => {
+  const displayName = (name || email || '').trim();
+  const initial = displayName ? displayName.charAt(0).toUpperCase() : '';
+
   return (
     <Avatar
       src={
         avatarUrl ? (
           <img
             src={avatarUrl}
-            alt={name ?? 'avatar'}
+            alt={displayName || 'avatar'}
             width={size}
             height={size}
             style={{ objectFit: 'cover', display: 'block' }}
@@ -31,13 +34,13 @@ const SingleAvatar: React.FC<SingleAvatarProps> = ({
       }
       size={size}
       style={{
-        backgroundColor: avatarUrl ? 'transparent' : AvatarNamesMap[name?.charAt(0) || ''],
+        backgroundColor: avatarUrl ? 'transparent' : AvatarNamesMap[initial],
         border: avatarUrl ? 'none' : '1px solid #d9d9d9',
         marginRight,
         flexShrink: 0,
       }}
     >
-      {name?.charAt(0)}
+      {initial}
     </Avatar>
   );
 };

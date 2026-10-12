@@ -164,7 +164,10 @@ BEGIN
                                            ELSE TRUE
                                            END                                                             AS setup_completed,
                                        is_owner(nd.id, nd.active_team)                                     AS owner,
-                                       is_admin(nd.id, nd.active_team)                                     AS is_admin
+                                       is_admin(nd.id, nd.active_team)                                     AS is_admin,
+                                       (COALESCE(tm.is_guest, FALSE) = TRUE
+                                           AND NOT is_owner(nd.id, nd.active_team)
+                                           AND NOT is_admin(nd.id, nd.active_team))                         AS is_guest
                                 FROM notification_data nd
                                          CROSS JOIN alerts_data ad
                                          LEFT JOIN timezones tz ON tz.id = nd.timezone

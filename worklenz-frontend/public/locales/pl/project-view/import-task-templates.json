@@ -1,0 +1,13 @@
+{
+  "importTaskTemplate": "Importuj szablon zadania",
+  "templateName": "Nazwa szablonu",
+  "templateDescription": "Opis szablonu",
+  "selectedTasks": "Wybrane zadania",
+  "tasks": "Zadania",
+  "templates": "Szablony",
+  "remove": "Usuń",
+  "cancel": "Anuluj",
+  "import": "Importuj",
+  "subtasksLabel": "podzadania",
+  "subtaskCountTooltip": "{{count}} podzadań zostanie zaimportowanych"
+}

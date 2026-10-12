@@ -4,8 +4,13 @@
   "cancelText": "取消",
   "saveText": "保存",
   "templateNameText": "模板名称",
+  "templateNameRequired": "模板名称为必填项",
   "selectedTasks": "已选任务",
   "removeTask": "移除",
   "cancelButton": "取消",
-  "saveButton": "保存"
+  "saveButton": "保存",
+  "includeSubtasks": "包括子任务层次结构",
+  "subtasksLabel": "子任务",
+  "subtaskCount": "{{count}} 子任务",
+  "subtaskHierarchyInfo": "选中后，子任务将保存在其父任务下。取消选中时，子任务将保存为单独的主任务。"
 }

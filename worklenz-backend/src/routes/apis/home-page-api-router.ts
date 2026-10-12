@@ -1,6 +1,7 @@
 import express from "express";
 
 import HomePageController from "../../controllers/home-page-controller";
+import HomePreferencesController from "../../controllers/home-preferences-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
 
 const homePageApiRouter = express.Router();
@@ -16,6 +17,11 @@ homePageApiRouter.get("/tasks-by-date-range", safeControllerFunction(HomePageCon
 homePageApiRouter.get("/personal-tasks", safeControllerFunction(HomePageController.getPersonalTasks));
 homePageApiRouter.get("/projects", safeControllerFunction(HomePageController.getProjects));
 homePageApiRouter.get("/team-projects", safeControllerFunction(HomePageController.getProjectsByTeam));
+homePageApiRouter.get("/mentions", safeControllerFunction(HomePageController.getMentions));
+homePageApiRouter.post("/pinned-tasks/:taskId", safeControllerFunction(HomePageController.pinTask));
+homePageApiRouter.delete("/pinned-tasks/:taskId", safeControllerFunction(HomePageController.unpinTask));
+homePageApiRouter.get("/preferences", safeControllerFunction(HomePreferencesController.getPreferences));
+homePageApiRouter.put("/preferences", safeControllerFunction(HomePreferencesController.updatePreferences));
 homePageApiRouter.put("/update-personal-task", safeControllerFunction(HomePageController.updatePersonalTask));
 
 export default homePageApiRouter;

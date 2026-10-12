@@ -2,9 +2,12 @@ import {
   Button,
   Dropdown,
   Flex,
-  message,
+  notification,
+  Tooltip,
 } from '@/shared/antd-imports';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   EllipsisOutlined,
   CopyOutlined,
@@ -26,6 +29,7 @@ import {
   navigateToPreviousTask,
   fetchTask,
   syncNavigationIndex,
+  setLastDeletedTaskId,
 } from '@/features/task-drawer/task-drawer.slice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -33,6 +37,7 @@ import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
 import { deleteTask } from '@/features/tasks/tasks.slice';
 import {
   deleteTask as deleteTaskFromManagement,
+  fetchTasksV3,
 } from '@/features/task-management/task-management.slice';
 import { deselectTask } from '@/features/task-management/selection.slice';
 import { deleteBoardTask } from '@/features/board/board-slice';
@@ -42,8 +47,15 @@ import {
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import TaskDrawerNavigation from '../task-drawer-navigation/task-drawer-navigation';
+import { TaskDrawerIssueIdentity } from './task-drawer-issue-identity';
+import { useTaskDrawerStatuses } from '@/hooks/useTaskDrawerStatuses';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import logger from '@/utils/errorLogger';
 import homePageApi from '@/api/home-page/home-page.api.service';
+import CopyTaskToProjectModal from '@/components/task-list-v2/components/CopyTaskToProjectModal';
+import { duplicateTask } from '@/features/task-management/task-management.slice';
+import taskDuplicateApiService from '@/api/tasks/task-duplicate.api.service';
+import { StickyTaskName } from './sticky-task-name';
 
 type TaskDrawerHeaderProps = {
   t: TFunction;
@@ -53,12 +65,16 @@ type TaskDrawerHeaderProps = {
 
 const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeaderProps) => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const { t: tDuplicate } = useTranslation('task-duplicate');
   const { socket } = useSocket();
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
   const isDeleting = useRef(false);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [copyToProjectOpen, setCopyToProjectOpen] = useState(false);
+  const [copyToProjectLoading, setCopyToProjectLoading] = useState(false);
 
   const {
     taskFormViewModel,
@@ -66,11 +82,19 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
     navigationContext,
   } = useAppSelector(state => state.taskDrawerReducer);
 
+  const statusesForDropdown = useTaskDrawerStatuses();
+  const isSoftwareProject = useAppSelector(state =>
+    isSoftwareProjectType(state.projectReducer.project?.project_type)
+  );
+
   const currentSession = useAuthService().getCurrentSession();
 
   const isSubTask =
     taskFormViewModel?.task?.is_sub_task ||
     !!taskFormViewModel?.task?.parent_task_id;
+
+  const sourceProjectId =
+    taskFormViewModel?.task?.project_id || navigationContext?.projectId;
 
   useEffect(() => {
     if (selectedTaskId && navigationContext) {
@@ -86,30 +110,36 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
 
       await navigator.clipboard.writeText(taskLink);
 
-      message.success(
-        t('Link copied to clipboard') ||
-          'Task link copied to clipboard'
-      );
+      notification.success({
+        message: t('Link copied to clipboard') || 'Task link copied to clipboard',
+      });
     } catch (error) {
       logger.error('Error copying task link:', error);
 
-      message.error(
-        t('Failed to copy task link') ||
-          'Failed to copy task link'
-      );
+      notification.error({
+        message: t('Failed to copy task link') || 'Failed to copy task link',
+      });
     }
   };
 
   const handleDeleteTask = async () => {
-    if (!selectedTaskId) return;
+    if (!selectedTaskId || isDeleting.current) return;
 
     isDeleting.current = true;
     setDropdownOpen(false);
     setShowDeleteConfirm(false);
 
-    const res = await tasksApiService.deleteTask(selectedTaskId);
+    let res: Awaited<ReturnType<typeof tasksApiService.deleteTask>>;
+    try {
+      res = await tasksApiService.deleteTask(selectedTaskId);
+    } catch (error) {
+      logger.error('Error deleting task:', error);
+      isDeleting.current = false;
+      return;
+    }
 
     if (res.done) {
+      dispatch(setLastDeletedTaskId(selectedTaskId));
       dispatch(deleteTask({ taskId: selectedTaskId }));
       dispatch(deleteTaskFromManagement(selectedTaskId));
       dispatch(deselectTask(selectedTaskId));
@@ -156,7 +186,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
     } else {
       isDeleting.current = false;
     }
-  };
+  };                 
 
   const renderPopup = () => {
     return (
@@ -180,6 +210,28 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
           <CopyOutlined />
           {t('Copy link to task') || 'Copy link to task'}
         </div>
+
+        {canCreateTask && !isGuest && sourceProjectId && selectedTaskId && (
+          <Tooltip
+            title={taskFormViewModel?.task?.is_sub_task ? t('copyToProject.subtaskTooltip', { defaultValue: 'Only main tasks can be copied to other projects' }) : ''}
+            placement="top"
+          >
+            <div
+              className={`task-drawer-dropdown-item task-drawer-dropdown-item--default ${
+                taskFormViewModel?.task?.is_sub_task ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              onClick={() => {
+                if (!taskFormViewModel?.task?.is_sub_task) {
+                  setDropdownOpen(false);
+                  setCopyToProjectOpen(true);
+                }
+              }}
+            >
+              <CopyOutlined />
+              {tDuplicate('copyToProject.title', { defaultValue: 'Copy to project' })}
+            </div>
+          </Tooltip>
+        )}
 
         {/* Delete Task item */}
         {canCreateTask && !isGuest && (
@@ -292,11 +344,19 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
     <Flex
       align="center"
       justify="space-between"
-      style={{ width: '100%' }}
+      style={{ width: '100%', gap: 12 }}
     >
-      <div />
+      {isSoftwareProject ? (
+        <TaskDrawerIssueIdentity
+          taskKey={taskFormViewModel?.task?.task_key}
+          issueType={taskFormViewModel?.task?.issue_type}
+          isSubTask={isSubTask}
+        />
+      ) : (
+        <div />
+      )}
 
-      <Flex gap={6} align="center">
+      <Flex gap={6} align="center" style={{ flexShrink: 0 }}>
         {!isSubTask &&
           navigationContext &&
           navigationContext.taskIds.length > 1 && (
@@ -313,15 +373,17 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
             />
           )}
 
-        <TaskDrawerStatusDropdown
-          statuses={taskFormViewModel?.statuses ?? []}
-          task={
-            taskFormViewModel?.task ??
-            ({} as ITaskViewModel)
-          }
-          teamId={currentSession?.team_id ?? ''}
-          disabled={isGuest}
-        />
+        {!isSoftwareProject && (
+          <TaskDrawerStatusDropdown
+            statuses={statusesForDropdown}
+            task={
+              taskFormViewModel?.task ??
+              ({} as ITaskViewModel)
+            }
+            teamId={currentSession?.team_id ?? ''}
+            disabled={isGuest}
+          />
+        )}
 
         <Dropdown
           overlayClassName={'task-drawer-actions-dropdown'}
@@ -345,8 +407,79 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
           />
         </Dropdown>
       </Flex>
+
+      <CopyTaskToProjectModal
+        open={copyToProjectOpen}
+        sourceProjectId={sourceProjectId ?? undefined}
+        taskTitle={taskFormViewModel?.task?.name}
+        hasDependencies={taskFormViewModel?.task?.has_dependencies || false}
+        confirmLoading={copyToProjectLoading}
+        onCompare={async destinationProjectId => {
+          const response = await taskDuplicateApiService.compare({
+            task_id: selectedTaskId as string,
+            project_id: sourceProjectId as string,
+            destination_project_id: destinationProjectId,
+          });
+          return response.body;
+        }}
+        onClose={() => setCopyToProjectOpen(false)}
+        onConfirm={async (destinationProjectId, confirmedDifferences, includeDependencies) => {
+          if (!selectedTaskId || !sourceProjectId) return;
+
+          setCopyToProjectLoading(true);
+          try {
+            const response = await dispatch(
+              duplicateTask({
+                taskId: selectedTaskId,
+                projectId: sourceProjectId,
+                destinationProjectId,
+                confirmProjectDifferences: confirmedDifferences,
+                duplicateOptions: {
+                  subtasks: true,
+                  attachments: true,
+                  dates: true,
+                  dependencies: includeDependencies,
+                  assignees: true,
+                  labels: true,
+                  customFields: true,
+                  subscribers: true,
+                },
+              })
+            ).unwrap();
+
+            if (response.done) {
+              const copiedTaskId = response.body?.id;
+              notification.success({
+                message: tDuplicate('copyToProject.success', {
+                  defaultValue: 'Task copied successfully',
+                }),
+                btn: copiedTaskId ? (
+                  <Button
+                    size="small"
+                    type="link"
+                    onClick={() => navigate(`/worklenz/t/${copiedTaskId}`)}
+                  >
+                    {tDuplicate('copyToProject.openTask', { defaultValue: 'Open task' })}
+                  </Button>
+                ) : undefined,
+              });
+              setCopyToProjectOpen(false);
+            }
+          } catch (error) {
+            logger.error('Failed to copy task to project:', error);
+            notification.error({
+              message: tDuplicate('copyToProject.error', {
+                defaultValue: 'Failed to copy task',
+              }),
+              description: typeof error === 'string' ? error : undefined,
+            });
+          } finally {
+            setCopyToProjectLoading(false);
+          }
+        }}
+      />
     </Flex>
   );
 };
 
-export default TaskDrawerHeader;
+export default React.memo(TaskDrawerHeader);

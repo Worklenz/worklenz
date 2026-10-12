@@ -13,8 +13,18 @@ import { NotificationsService } from "../services/notifications/notifications.se
 import { IPassportSession } from "../interfaces/passport-session";
 import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
-import { getCurrentProjectsCount, getFreePlanSettings } from "../ee/shared/paddle-utils";
+import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-utils";
 import { ActivityLoggingService } from "../services/activity-logging.service";
+import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
+import { getProjectAccessForRequest } from "../shared/project-access";
+import { stripProjectFinanceFields } from "../shared/strip-finance-fields";
+import { actorFromSessionUser, logAuditEvent } from "../services/audit-log.service";
+import { captureProjectSettings, logProjectSettingChanges } from "../services/project-settings-audit.service";
+import { AUDIT_EVENT_TYPE } from "../shared/audit-log-constants";
+import {
+  emitProjectPermissionChanged,
+} from "../shared/pm-lifecycle";
+
 
 export default class ProjectsController extends WorklenzControllerBase {
 
@@ -88,6 +98,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     req.body.project_member_added_log = LOG_DESCRIPTIONS.PROJECT_MEMBER_ADDED;
     req.body.project_manager_id = req.body.project_manager ? req.body.project_manager.id : null;
     req.body.priority_id = req.body.priority_id || null;
+    req.body.project_type = req.body.project_type === "software" ? "software" : "general";
 
     // FIX: Format dates consistently like tasks - parse as date-only strings to avoid timezone issues
     if (req.body.start_date) {
@@ -107,16 +118,46 @@ export default class ProjectsController extends WorklenzControllerBase {
     if (data.project?.id) {
       await this.setProjectPriority(data.project.id, req.body.priority_id, req.user?.team_id || null);
 
+      if (data.project.project_type === "software") {
+        await this.createDefaultSprint(data.project.id);
+      }
+
       await ActivityLoggingService.logProjectCreated(
         req.user?.team_id || "",
         data.project.id,
         req.user?.id || "",
         req.body.name
       );
+
+      // additive alongside ActivityLoggingService above, which logs
+      // into the separate per-task activity_logs table and is out of scope per the spec's
+      // non-goals; this call targets audit_events only.
+      if (req.user?.organization_id) {
+        logAuditEvent({
+          organizationId: req.user.organization_id,
+          teamId: req.user.team_id || null,
+          actor: actorFromSessionUser(req.user),
+          eventType: AUDIT_EVENT_TYPE.PROJECT_CREATED.id,
+          description: `Created project "${req.body.name}"`,
+        });
+      }
     }
 
     return res.status(200).send(new ServerResponse(true, data.project || {}));
   }
+
+  /** New software projects start with a planned "Sprint 1" so the Backlog is ready for planning. */
+  private static async createDefaultSprint(projectId: string): Promise<void> {
+    const q = `
+      INSERT INTO project_phases (name, color_code, project_id, sort_index, sprint_status)
+      SELECT $2, $3, $1, 1, 'planned'
+      WHERE NOT EXISTS (SELECT 1 FROM project_phases WHERE project_id = $1);
+    `;
+    await db.query(q, [projectId, this.DEFAULT_SPRINT_NAME, this.DEFAULT_SPRINT_COLOR]);
+  }
+
+  private static readonly DEFAULT_SPRINT_NAME = "Sprint 1";
+  private static readonly DEFAULT_SPRINT_COLOR = "#fbc84c";
 
   @HandleExceptions()
   public static async updatePinnedView(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
@@ -128,7 +169,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     const params: any[] = [];
     let paramIndex = 1;
 
-    const VALID_GROUP_BY = ['status', 'priority', 'phase'];
+    const VALID_GROUP_BY = ['status', 'priority', 'phase', 'assignee'];
 
     if (req.body.default_view) {
       updates.push(`default_view = $${paramIndex++}`);
@@ -158,10 +199,26 @@ export default class ProjectsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getMyProjectsToTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT id, name, color_code
-               FROM projects
-               WHERE team_id = $1
-                 AND is_member_of_project(projects.id, $2, $1)`;
+    const q = `SELECT p.id, p.name, p.color_code
+               FROM projects p
+               ${NON_GUEST_ACCESS_JOIN('$2')}
+               -- For non-admins, require explicit project membership
+               LEFT JOIN project_members pm ON pm.project_id = p.id 
+                 AND pm.team_member_id = (SELECT id FROM team_members WHERE user_id = $2 AND team_id = p.team_id)
+               WHERE p.team_id = $1
+                 AND ${NON_GUEST_ACCESS_PREDICATE}
+                 AND (
+                   r.owner = TRUE 
+                   OR r.admin_role = TRUE
+                   OR pm.id IS NOT NULL
+                 )
+                 AND NOT EXISTS (
+                   SELECT 1
+                   FROM archived_projects ap
+                   WHERE ap.project_id = p.id
+                     AND ap.user_id = $2
+                 )
+               ORDER BY p.name ASC`;
     const result = await db.query(q, [req.user?.team_id, req.user?.id || null]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -439,7 +496,8 @@ export default class ProjectsController extends WorklenzControllerBase {
     const fieldMapping: Record<string, string> = {
       'name': 'name',
       'email': 'email',
-      'access': 'access',
+      'access': 'role_level',
+      'role_level': 'role_level',
       'job_title': 'job_title',
       'all_tasks_count': 'all_tasks_count',
       'completed_tasks_count': 'completed_tasks_count',
@@ -687,21 +745,29 @@ export default class ProjectsController extends WorklenzControllerBase {
                (SELECT COUNT(*) FROM tasks WHERE archived IS FALSE AND project_id = project_members.project_id AND id IN (SELECT task_id FROM tasks_assignees WHERE tasks_assignees.project_member_id = project_members.id)) AS all_tasks_count,
                (SELECT COUNT(*) FROM tasks WHERE archived IS FALSE AND project_id = project_members.project_id AND id IN (SELECT task_id FROM tasks_assignees WHERE tasks_assignees.project_member_id = project_members.id) AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE))) AS completed_tasks_count,
                EXISTS(SELECT email FROM email_invitations WHERE team_member_id = project_members.team_member_id AND email_invitations.team_id = $2) AS pending_invitation,
-               COALESCE((SELECT name FROM project_access_levels WHERE id = project_members.project_access_level_id),
-                        COALESCE((SELECT name FROM roles WHERE id = tm.role_id), 'Member')) AS access,
-               (SELECT name FROM job_titles WHERE id = tm.job_title_id) AS job_title
-        FROM project_members
-        INNER JOIN team_members tm ON project_members.team_member_id = tm.id
-        LEFT JOIN users u ON tm.user_id = u.id
-        WHERE project_id = $1
-        ${search ? searchFilter : ""}
+                COALESCE(pal.name, (SELECT name FROM roles WHERE id = tm.role_id), 'Member') AS access,
+                COALESCE(pal.name, (SELECT name FROM roles WHERE id = tm.role_id), 'Member') AS access_level,
+               (SELECT name FROM job_titles WHERE id = tm.job_title_id) AS job_title,
+                 CASE
+                   WHEN (SELECT name FROM roles WHERE id = tm.role_id) = 'Team Lead' THEN 3
+                   WHEN (SELECT owner FROM roles WHERE id = tm.role_id) = true THEN 1
+                   WHEN (SELECT admin_role FROM roles WHERE id = tm.role_id) = true THEN 2
+                   WHEN pal.key = 'GUEST' THEN 5
+                   ELSE 4
+                 END AS role_level
+         FROM project_members
+         INNER JOIN team_members tm ON project_members.team_member_id = tm.id
+         LEFT JOIN users u ON tm.user_id = u.id
+         LEFT JOIN project_access_levels pal ON project_members.project_access_level_id = pal.id
+         WHERE project_id = $1
+         ${search ? searchFilter : ""}
       )
       SELECT
         (SELECT COUNT(*) FROM filtered_members) AS total,
         (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
            FROM (
              SELECT * FROM filtered_members
-             ORDER BY ${safeSortField} ${safeSortOrder}
+             ORDER BY ${safeSortField} ${safeSortOrder}${safeSortField === 'role_level' ? ", name ASC" : ""}
              LIMIT $3 OFFSET $4) t) AS data
     `;
 
@@ -736,6 +802,9 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.updated_at,
              projects.folder_id,
              projects.phase_label,
+             projects.project_type,
+             projects.auto_archive_on_sprint_complete,
+             projects.story_point_scale,
              projects.category_id,
              projects.currency,
              projects.budget,
@@ -759,28 +828,34 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.restrict_task_creation,
              projects.phase_assignees_enabled,
              to_jsonb(projects)->>'worklenz_id' AS worklenz_id,
+             projects.restrict_tasks_to_assignee,
+             projects.auto_assign_subtask_phase,
              (SELECT task_list_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS task_list_group_by,
              (SELECT board_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS board_group_by,
 
-             (SELECT COALESCE(ROW_TO_JSON(pm), '{}'::JSON)
+             (SELECT COALESCE(ROW_TO_JSON(pm), NULL)
                     FROM (SELECT team_member_id AS id,
-                                (SELECT COALESCE(ROW_TO_JSON(pmi), '{}'::JSON)
+                                (SELECT ROW_TO_JSON(pmi)
                                   FROM (SELECT name,
                                               email,
                                               avatar_url
                                         FROM team_member_info_view tmiv
                                         WHERE tmiv.team_member_id = pm.team_member_id
-                                          AND tmiv.team_id = (SELECT team_id FROM projects WHERE id = $1)) pmi) AS project_manager_info,
+                                          AND tmiv.team_id = (SELECT team_id FROM projects WHERE id = $1)
+                                        LIMIT 1) pmi) AS project_manager_info,
                                 EXISTS(SELECT email
                                         FROM email_invitations
                                         WHERE team_member_id = pm.team_member_id
                                           AND email_invitations.team_id = (SELECT team_id
                                                                           FROM team_member_info_view
-                                                                          WHERE team_member_id = pm.team_member_id)) AS pending_invitation,
-                                (SELECT active FROM team_members WHERE id = pm.team_member_id)
+                                                                          WHERE team_member_id = pm.team_member_id
+                                                                          LIMIT 1)) AS pending_invitation,
+                                (SELECT active FROM team_members WHERE id = pm.team_member_id),
+                                COALESCE(pm.finance_access, FALSE) AS finance_access
                           FROM project_members pm
                           WHERE project_id = $1
-                            AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')) pm) AS project_manager
+                            AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')
+                          LIMIT 1) pm) AS project_manager
       FROM projects
              LEFT JOIN sys_project_statuses sps ON projects.status_id = sps.id
              LEFT JOIN sys_project_priorities tp ON projects.priority_id = tp.id
@@ -790,11 +865,16 @@ export default class ProjectsController extends WorklenzControllerBase {
     const result = await db.query(q, [req.params.id, req.user?.team_id ?? null, req.user?.id ?? null]);
     const [data] = result.rows;
 
-    if (data && data.project_manager) {
-      data.project_manager.name = data.project_manager.project_manager_info.name;
-      data.project_manager.email = data.project_manager.project_manager_info.email;
-      data.project_manager.avatar_url = data.project_manager.project_manager_info.avatar_url;
+    if (data?.project_manager?.id) {
+      const info = data.project_manager.project_manager_info;
+      if (info && typeof info === "object") {
+        data.project_manager.name = info.name;
+        data.project_manager.email = info.email;
+        data.project_manager.avatar_url = info.avatar_url;
+      }
       data.project_manager.color_code = getColor(data.project_manager.name);
+    } else if (data) {
+      data.project_manager = null;
     }
 
     // FIX: Format dates consistently like tasks to avoid timezone issues
@@ -809,12 +889,16 @@ export default class ProjectsController extends WorklenzControllerBase {
       // Add is_guest flag to indicate if current user is a guest
       const isGuestQuery = `
         SELECT 1
-        FROM project_members pm
-        INNER JOIN project_access_levels pal ON pm.project_access_level_id = pal.id
-        INNER JOIN team_members tm ON pm.team_member_id = tm.id
-        WHERE pm.project_id = $1 
+        FROM team_members tm
+        WHERE tm.team_id = (SELECT team_id FROM projects WHERE id = $1)
           AND tm.user_id = $2 
-          AND pal.key = 'GUEST'
+          AND tm.is_guest = TRUE
+          AND EXISTS (
+            SELECT 1
+            FROM project_members pm
+            WHERE pm.project_id = $1
+              AND pm.team_member_id = tm.id
+          )
         LIMIT 1;
       `;
 
@@ -824,6 +908,39 @@ export default class ProjectsController extends WorklenzControllerBase {
       } catch (error) {
         // If query fails, default to false
         data.is_guest = false;
+      }
+
+      // Phase 1: current-user permissions for this project (UI must key by project id).
+      try {
+        const access = await getProjectAccessForRequest(req, req.params.id);
+        data.permissions = access.permissions;
+        data.is_project_manager = access.isProjectManager;
+        data.finance_access = access.financeAccess;
+        data.can_create_projects_from_templates =
+          access.canCreateProjectsFromTemplates;
+
+        // Phase 4: omit financial fields when the caller has no finance access.
+        if (!access.permissions.finance) {
+          const stripped = stripProjectFinanceFields(
+            data as Record<string, unknown>,
+            false
+          );
+          if (stripped) {
+            Object.assign(data, stripped);
+          }
+        }
+      } catch (error) {
+        data.permissions = null;
+        data.is_project_manager = false;
+        data.finance_access = false;
+        data.can_create_projects_from_templates = false;
+        const stripped = stripProjectFinanceFields(
+          data as Record<string, unknown>,
+          false
+        );
+        if (stripped) {
+          Object.assign(data, stripped);
+        }
       }
     }
 
@@ -859,8 +976,81 @@ export default class ProjectsController extends WorklenzControllerBase {
     req.body.project_created_log = LOG_DESCRIPTIONS.PROJECT_UPDATED;
     req.body.project_member_added_log = LOG_DESCRIPTIONS.PROJECT_MEMBER_ADDED;
     req.body.project_member_removed_log = LOG_DESCRIPTIONS.PROJECT_MEMBER_REMOVED;
-    req.body.team_member_id = req.body.project_manager ? req.body.project_manager.id : null;
     req.body.priority_id = req.body.priority_id || null;
+
+    // Phase 2: derive actions from project-scoped permissions (not team role alone).
+    const projectAccess = await getProjectAccessForRequest(req, req.params.id);
+    const canUpdateProjectPrivacy = projectAccess.permissions.settings;
+    const canAssignPm = projectAccess.permissions.assignPm;
+    const canMoveProject = projectAccess.permissions.move;
+
+    // PM / Team Lead with settings may toggle restrict_tasks_to_assignee (Phase 0).
+    const hasRestrictTasksToAssignee = Object.prototype.hasOwnProperty.call(
+      req.body,
+      "restrict_tasks_to_assignee"
+    );
+    if (hasRestrictTasksToAssignee && !canUpdateProjectPrivacy) {
+      delete req.body.restrict_tasks_to_assignee;
+    }
+
+    // read before update_project(), which also writes this column,
+    // so the audit entry below records the real old → new transition.
+    let previousRestrictTasksToAssignee = false;
+    if (canUpdateProjectPrivacy && hasRestrictTasksToAssignee) {
+      const previousPrivacyResult = await db.query(
+        `SELECT restrict_tasks_to_assignee FROM projects WHERE id = $1::UUID AND team_id = $2::UUID LIMIT 1`,
+        [req.params.id, req.user?.team_id || null]
+      );
+      previousRestrictTasksToAssignee = Boolean(previousPrivacyResult.rows[0]?.restrict_tasks_to_assignee);
+    }
+
+    const settingsBefore = await captureProjectSettings(req.user, req.params.id);
+
+    // Only Owner/Admin (assignPm) may change the project manager.
+    // update_project demotes all PMs then re-applies team_member_id — preserve current PM.
+    let previousPmId: string | null = null;
+    let previousFinanceAccess: boolean | null = null;
+    if (canAssignPm) {
+      const previousManagers = await db.query(
+        `
+          SELECT team_member_id, COALESCE(finance_access, FALSE) AS finance_access
+          FROM project_members
+          WHERE project_id = $1::UUID
+            AND project_access_level_id = (
+              SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'
+            )
+          ORDER BY created_at ASC
+          LIMIT 1;
+        `,
+        [req.params.id]
+      );
+      previousPmId = previousManagers.rows[0]?.team_member_id || null;
+      previousFinanceAccess =
+        previousManagers.rows[0] != null
+          ? Boolean(previousManagers.rows[0].finance_access)
+          : null;
+    }
+
+    if (!canAssignPm) {
+      delete req.body.project_manager;
+      const managers = await ProjectsController.getProjectManager(req.params.id);
+      req.body.team_member_id = managers[0]?.team_member_id || null;
+    } else {
+      req.body.team_member_id = req.body.project_manager
+        ? req.body.project_manager.id
+        : null;
+    }
+
+    // Move between folders stays Owner/Admin — preserve current folder when denied.
+    if (!canMoveProject) {
+      const folderResult = await db.query(
+        `SELECT folder_id FROM projects WHERE id = $1::UUID AND team_id = $2::UUID LIMIT 1`,
+        [req.params.id, req.user?.team_id || null]
+      );
+      req.body.folder_id = folderResult.rows[0]?.folder_id ?? null;
+    } else {
+      req.body.folder_id = req.body.folder_id || null;
+    }
 
     // FIX: Format dates consistently like tasks - parse as date-only strings to avoid timezone issues
     if (req.body.start_date) {
@@ -886,7 +1076,66 @@ export default class ProjectsController extends WorklenzControllerBase {
         );
       }
 
+      if (Object.prototype.hasOwnProperty.call(req.body, 'auto_assign_subtask_phase')) {
+        await db.query(
+          `
+            UPDATE projects
+            SET auto_assign_subtask_phase = $1
+            WHERE id = $2
+              AND team_id = $3
+          `,
+          [Boolean(req.body.auto_assign_subtask_phase), req.params.id, req.user?.team_id || null]
+        );
+      }
+
+      if (canUpdateProjectPrivacy && hasRestrictTasksToAssignee) {
+        const nextRestrictTasksToAssignee = Boolean(req.body.restrict_tasks_to_assignee);
+
+        await db.query(
+          `
+            UPDATE projects
+            SET restrict_tasks_to_assignee = $1
+            WHERE id = $2
+              AND team_id = $3
+          `,
+          [nextRestrictTasksToAssignee, req.params.id, req.user?.team_id || null]
+        );
+
+        if (req.user?.organization_id && previousRestrictTasksToAssignee !== nextRestrictTasksToAssignee) {
+          logAuditEvent({
+            organizationId: req.user.organization_id,
+            teamId: req.user.team_id || null,
+            actor: actorFromSessionUser(req.user),
+            eventType: AUDIT_EVENT_TYPE.PROJECT_PRIVACY_CHANGED.id,
+            description: `Project "${data.project.name || req.params.id}" privacy (restrict tasks to assignee) changed`,
+            oldValue: String(previousRestrictTasksToAssignee),
+            newValue: String(nextRestrictTasksToAssignee),
+          });
+        }
+      }
+
+      // Phase 4: Owner/Admin may set finance_access on the PM assignment.
+      if (canAssignPm && req.body.team_member_id) {
+        const financeAccess =
+          Object.prototype.hasOwnProperty.call(req.body, "finance_access")
+            ? Boolean(req.body.finance_access)
+            : true;
+        await db.query(
+          `
+            UPDATE project_members
+            SET finance_access = $1
+            WHERE project_id = $2::UUID
+              AND team_member_id = $3::UUID
+              AND project_access_level_id = (
+                SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'
+              )
+          `,
+          [financeAccess, req.params.id, req.body.team_member_id]
+        );
+      }
+
       await this.setProjectPriority(data.project.id, req.body.priority_id, req.user?.team_id || null);
+      await logProjectSettingChanges(req.user, req.params.id, settingsBefore);
     }
 
     await ActivityLoggingService.logProjectUpdated(
@@ -896,14 +1145,60 @@ export default class ProjectsController extends WorklenzControllerBase {
       req.body.name
     );
 
-    if (req.body.project_manager && req.body.project_manager.id) {
-      await ActivityLoggingService.logProjectActivity({
-        teamId: req.user?.team_id || "",
-        projectId: req.params.id,
-        userId: req.user?.id || "",
-        i18nKey: LOG_I18N_KEYS.PROJECT_MANAGER_ASSIGNED,
-        projectName: req.body.name
-      });
+    // Phase 6 — audit PM assign / remove / finance change + socket notify.
+    if (canAssignPm) {
+      const nextPmId = req.body.team_member_id || null;
+      const nextFinance =
+        nextPmId && Object.prototype.hasOwnProperty.call(req.body, "finance_access")
+          ? Boolean(req.body.finance_access)
+          : nextPmId
+            ? true
+            : null;
+
+      if (previousPmId && !nextPmId) {
+        await ActivityLoggingService.logProjectActivity({
+          teamId: req.user?.team_id || "",
+          projectId: req.params.id,
+          userId: req.user?.id || "",
+          i18nKey: LOG_I18N_KEYS.PROJECT_MANAGER_REMOVED,
+          projectName: req.body.name,
+        });
+        emitProjectPermissionChanged({
+          project_id: req.params.id,
+          reason: "pm_removed",
+        });
+      } else if (nextPmId && nextPmId !== previousPmId) {
+        await ActivityLoggingService.logProjectActivity({
+          teamId: req.user?.team_id || "",
+          projectId: req.params.id,
+          userId: req.user?.id || "",
+          i18nKey: LOG_I18N_KEYS.PROJECT_MANAGER_ASSIGNED,
+          projectName: req.body.name,
+        });
+        emitProjectPermissionChanged({
+          project_id: req.params.id,
+          reason: "pm_assigned",
+        });
+      } else if (
+        nextPmId &&
+        nextPmId === previousPmId &&
+        previousFinanceAccess !== null &&
+        nextFinance !== null &&
+        nextFinance !== previousFinanceAccess
+      ) {
+        await ActivityLoggingService.logProjectActivity({
+          teamId: req.user?.team_id || "",
+          projectId: req.params.id,
+          userId: req.user?.id || "",
+          i18nKey: LOG_I18N_KEYS.PROJECT_MANAGER_FINANCE_CHANGED,
+          projectName: req.body.name,
+          i18nParams: { financeAccess: nextFinance },
+        });
+        emitProjectPermissionChanged({
+          project_id: req.params.id,
+          reason: "finance_access_changed",
+        });
+      }
     }
 
     this.notifyProjecManagertUpdates(req.params.id, req.user as IPassportSession, req.body.project_manager ? req.body.project_manager.id : null);
@@ -930,6 +1225,18 @@ export default class ProjectsController extends WorklenzControllerBase {
       req.user?.id || "",
       project.name
     );
+
+    // fire before the DELETEs below (the project row still exists at
+    // this point), additive alongside ActivityLoggingService above.
+    if (req.user?.organization_id) {
+      logAuditEvent({
+        organizationId: req.user.organization_id,
+        teamId: req.user.team_id || null,
+        actor: actorFromSessionUser(req.user),
+        eventType: AUDIT_EVENT_TYPE.PROJECT_DELETED.id,
+        description: `Deleted project "${project.name}"`,
+      });
+    }
 
     // Explicitly delete all tasks first to avoid FK constraint errors on
     // databases where ON DELETE CASCADE may not have been applied yet.
@@ -1223,14 +1530,56 @@ export default class ProjectsController extends WorklenzControllerBase {
       );
     }
 
+    // toggle_archive_project() is a single flip, so "restored" is just
+    // the wasArchived branch of the same toggle, not a separate endpoint.
+    if (req.user?.organization_id) {
+      logAuditEvent({
+        organizationId: req.user.organization_id,
+        teamId: req.user.team_id || null,
+        actor: actorFromSessionUser(req.user),
+        eventType: wasArchived
+          ? AUDIT_EVENT_TYPE.PROJECT_RESTORED.id
+          : AUDIT_EVENT_TYPE.PROJECT_ARCHIVED.id,
+        description: wasArchived
+          ? `Restored project "${project.name}" from archive`
+          : `Archived project "${project.name}"`,
+      });
+    }
+
     return res.status(200).send(new ServerResponse(true, result.rows || []));
   }
 
   @HandleExceptions()
   public static async toggleArchiveAll(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // toggle_archive_all_projects() restores when any archive row exists,
+    // so the same check taken before the call tells archive and restore apart.
+    const checkResult = await db.query(
+      `SELECT p.name,
+              EXISTS(SELECT 1 FROM archived_projects WHERE project_id = p.id) AS is_archived
+       FROM projects p
+       WHERE p.id = $1`,
+      [req.params.id]
+    );
+    const project = checkResult.rows[0];
+
     const q = `SELECT toggle_archive_all_projects($1);`;
     const result = await db.query(q, [req.params.id]);
     const [data] = result.rows;
+
+    if (project && req.user?.organization_id) {
+      logAuditEvent({
+        organizationId: req.user.organization_id,
+        teamId: req.user.team_id || null,
+        actor: actorFromSessionUser(req.user),
+        eventType: project.is_archived
+          ? AUDIT_EVENT_TYPE.PROJECT_RESTORED.id
+          : AUDIT_EVENT_TYPE.PROJECT_ARCHIVED.id,
+        description: project.is_archived
+          ? `Restored project "${project.name}" for all members`
+          : `Archived project "${project.name}" for all members`,
+      });
+    }
+
     return res.status(200).send(new ServerResponse(true, data.toggle_archive_all_projects || []));
   }
 

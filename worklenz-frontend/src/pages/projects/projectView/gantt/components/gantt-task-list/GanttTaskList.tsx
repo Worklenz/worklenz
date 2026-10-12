@@ -13,11 +13,15 @@ import {
   DndContext,
   DragEndEvent,
   DragOverEvent,
+  DragStartEvent,
+  DraggableAttributes,
   PointerSensor,
   useDroppable,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import { getUserSession } from '@/utils/session-helper';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GanttTask, GanttViewMode, GanttGroupingMode } from '../../types/gantt-types';
@@ -117,7 +121,7 @@ const SortableTaskRow: React.FC<SortableTaskRowProps> = memo(props => {
     <div ref={setNodeRef} style={style}>
       <TaskRow
         {...props}
-        isDraggable={true}
+        isDraggable={props.isDraggable ?? true}
         dragAttributes={attributes}
         dragListeners={listeners}
       />
@@ -127,7 +131,9 @@ const SortableTaskRow: React.FC<SortableTaskRowProps> = memo(props => {
 
 SortableTaskRow.displayName = 'SortableTaskRow';
 
-const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: any }> = memo(
+const TaskRow: React.FC<
+  TaskRowProps & { dragAttributes?: DraggableAttributes; dragListeners?: SyntheticListenerMap }
+> = memo(
   ({
     task,
     projectId,
@@ -151,11 +157,8 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
     const [taskName, setTaskName] = useState('');
     const { socket, connected } = useSocket();
     const dispatch = useAppDispatch();
-    // ✅ After
     const formatDateRange = useCallback(() => {
-      if (!task.start_date || !task.end_date) {
-        return <span className="text-gray-400 dark:text-gray-500">Not scheduled</span>;
-      }
+      if (!task.start_date || !task.end_date) return null;
       const start = dayjs(task.start_date).isValid() ? dayjs(task.start_date).format('MMM D, YYYY') : 'Invalid';
       const end = dayjs(task.end_date).isValid() ? dayjs(task.end_date).format('MMM D, YYYY') : 'Invalid';
       return `${start} - ${end}`;
@@ -255,11 +258,12 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
         endDate.setDate(endDate.getDate() + 4); // +4 to make it 5 days inclusive
         endDate.setHours(23, 59, 59, 999);
 
+        const session = getUserSession();
         const requestBody = {
           project_id: projectId,
           name: taskName.trim(),
-          reporter_id: authUser.id,
-          team_id: authUser.team_id,
+          reporter_id: session?.id || authUser?.id || '',
+          team_id: session?.team_id || '',
           phase_id: phaseId,
           start_date: formatDateLocal(startDate),
           end_date: formatDateLocal(endDate),
@@ -268,7 +272,7 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
         socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(requestBody));
 
         // Handle the response and update UI
-        socket.once(SocketEvents.QUICK_TASK.toString(), (response: any) => {
+        socket.once(SocketEvents.QUICK_TASK.toString(), (response: { error?: boolean; [key: string]: unknown }) => {
           if (response) {
             // The task will be automatically added to the task management slice
             // via global socket handlers, no need to call onCreateQuickTask again
@@ -420,11 +424,41 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
                   >
                     {task.name}
                   </span>
-                  
-
                 </div>
               </div>
             </div>
+
+            {isPhase && task.id !== 'phase-unmapped' && (() => {
+              const dateRangeLabel = formatDateRange();
+              return (
+                <div className="flex-shrink-0 ml-2">
+                  {dateRangeLabel ? (
+                    <span
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer transition-colors"
+                      title={t('list.clickToEditDates', { defaultValue: 'Click to edit dates' })}
+                      onClick={e => {
+                        e.stopPropagation();
+                        handlePhaseClick();
+                      }}
+                    >
+                      {dateRangeLabel}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        handlePhaseClick();
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                    >
+                      <CalendarOutlined className="text-[10px]" />
+                      {t('list.setDates', { defaultValue: 'Set dates' })}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
 
 
           </div>
@@ -747,7 +781,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
       [visibleTasks]
     );
 
-    const handleDragStart = useCallback((event: any) => {
+    const handleDragStart = useCallback((event: DragStartEvent) => {
       setActiveId(event.active.id as string);
     }, []);
 
@@ -767,6 +801,8 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
         const { active, over } = event;
         setActiveId(null);
         setOverId(null);
+
+        if (!canCreateTask) return;
 
         if (!over || active.id === over.id) return;
 
@@ -842,6 +878,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
         onTaskReorder,
         taskParentMap,
         groupChildTaskIds,
+        canCreateTask,
       ]
     );
 
@@ -980,6 +1017,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
                       expandedTasks={expandedTasks}
                       onCreateTask={onCreateTask}
                       onCreateQuickTask={onCreateQuickTask}
+                      isDraggable={canCreateTask}
                       activeId={activeId}
                       overId={overId}
                       onTaskNameClick={onTaskNameClick}
@@ -1061,12 +1099,20 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
 
           {/* Add Phase Row - only show in phase view */}
           {groupingMode === 'phase' && (
-            <AddPhaseRow projectId={projectId} onCreatePhase={onCreatePhase} />
+            canCreateTask ? (
+              <AddPhaseRow projectId={projectId} onCreatePhase={onCreatePhase} />
+            ) : (
+              <div className="h-12 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800" />
+            )
           )}
 
           {/* Add Status Row - only show in status view */}
           {groupingMode === 'status' && (
-            <AddStatusRow projectId={projectId} onCreateStatus={onCreateStatus} />
+            canCreateTask ? (
+              <AddStatusRow projectId={projectId} onCreateStatus={onCreateStatus} />
+            ) : (
+              <div className="h-12 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800" />
+            )
           )}
 
           {/* Priority view has no "add new" concept — render a matching trailing

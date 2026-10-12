@@ -4,8 +4,13 @@
   "cancelText": "Abbrechen",
   "saveText": "Speichern",
   "templateNameText": "Vorlagenname",
+  "templateNameRequired": "Der Name der Vorlage ist erforderlich",
   "selectedTasks": "Ausgewählte Aufgaben",
   "removeTask": "Entfernen",
   "cancelButton": "Abbrechen",
-  "saveButton": "Speichern"
+  "saveButton": "Speichern",
+  "includeSubtasks": "Unteraufgabenhierarchie einbeziehen",
+  "subtasksLabel": "Teilaufgabe(n)",
+  "subtaskCount": "{{count}} Unteraufgabe(n)",
+  "subtaskHierarchyInfo": "Wenn diese Option aktiviert ist, werden Unteraufgaben unter ihrer übergeordneten Aufgabe gespeichert. Wenn diese Option deaktiviert ist, werden Unteraufgaben als separate Hauptaufgaben gespeichert."
 }

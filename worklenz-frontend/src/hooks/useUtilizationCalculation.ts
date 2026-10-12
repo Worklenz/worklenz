@@ -39,7 +39,7 @@ export const useUtilizationCalculation = (
   const [error, setError] = useState<string | null>(null);
   const [workingDaysCount, setWorkingDaysCount] = useState(0);
 
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Fetch holidays for date range if not already loaded (with debouncing)
   const fetchHolidaysForRange = useCallback(

@@ -1,5 +1,13 @@
 {
   "title": "¡No autorizado!",
   "subtitle": "No tienes permisos para acceder a esta página",
+  "commentAccessTitle": "Necesitas acceso para ver este comentario.",
+  "commentAccessContactAdmin": "No estás invitado a este proyecto. Comuníquese con su administrador o propietario del proyecto para solicitar acceso.",
+  "commentAccessDenied": "No estás invitado a este proyecto. Comuníquese con su administrador o propietario del proyecto para solicitar acceso.",
+  "invalidCommentLink": "Este enlace de comentario no es válido.",
+  "commentNotFound": "Este comentario no se pudo encontrar.",
+  "commentLinkOpenFailed": "No se puede abrir este enlace de comentario. Inténtelo de nuevo o abra el comentario de la tarea.",
+  "unableToOpenComment": "No se puede abrir el comentario",
+  "openingComment": "Comentario de apertura...",
   "button": "Ir a Inicio"
 }

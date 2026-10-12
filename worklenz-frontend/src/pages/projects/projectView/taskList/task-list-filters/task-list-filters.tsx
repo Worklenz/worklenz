@@ -28,6 +28,7 @@ import PriorityFilterDropdown from '@components/project-task-filters/filter-drop
 
 import StatusFilterDropdown from '@components/project-task-filters/filter-dropdowns/status-filter-dropdown';
 import PhaseFilterDropdown from '@components/project-task-filters/filter-dropdowns/phase-filter-dropdown';
+import AssigneeScopeIndicator from '@/components/task-management/assignee-scope-indicator';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 import { useState } from 'react';
@@ -125,6 +126,7 @@ const [phases, setPhaseList] = useState<ITaskPhase[]>([]);
       </Flex>
 
       <Flex gap={12} align="center" style={{ flexShrink: 0 }}>
+        <AssigneeScopeIndicator />
         <GroupByFilterDropdown />
         {position === 'list' && (
           <>

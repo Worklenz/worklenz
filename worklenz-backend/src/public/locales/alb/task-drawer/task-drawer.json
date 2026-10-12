@@ -31,7 +31,23 @@
       "taskWeightTooltip": "Vendosni peshën e kësaj nëndetyre (përqindje)",
       "taskWeightRequired": "Ju lutemi vendosni një peshë detyre",
       "taskWeightRange": "Pesha duhet të jetë midis 0 dhe 100",
+      "customFields": {
+        "empty": "Bosh",
+        "enterNumber": "Vendos numrin",
+        "selectDate": "Zgjidh datën",
+        "selectOption": "Zgjidh opsionin",
+        "selectPeople": "Zgjidh personat",
+        "updateError": "Përditësimi i fushës së personalizuar dështoi"
+      },
       "recurring": "E Përsëritur"
+    },
+    "customFields": {
+      "title": "Fusha të personalizuara",
+      "autoSaveHint": "Ndryshimet ruhen automatikisht kur largoheni nga një fushë.",
+      "addCustomField": "Shto një fushë të personalizuar",
+      "addCustomColumn": "Shto kolonë të personalizuar",
+      "showMoreFields": "Shfaq {{count}} fusha të tjera",
+      "hideFields": "Fshih fushat"
     },
     "labels": {
       "labelInputPlaceholder": "Kërko ose krijo",

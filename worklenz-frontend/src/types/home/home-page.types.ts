@@ -22,6 +22,8 @@ export interface IHomeTasksConfig {
   sortOrder?: 'asc' | 'desc';
   overdueOnly?: boolean;
   noDueOnly?: boolean;
+  /** Ask the server to put the user's pinned tasks first within the tab (Today's Priorities). */
+  pinFirst?: boolean;
 }
 
 export interface IHomeTasksModel {

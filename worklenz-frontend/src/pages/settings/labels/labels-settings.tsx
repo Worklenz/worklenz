@@ -19,7 +19,7 @@ import {
   ExclamationCircleFilled,
   SearchOutlined,
 } from '@ant-design/icons';
-import { ITaskLabel } from '@/types/label.type';
+import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 import { labelsApiService } from '@/api/taskAttributes/labels/labels.api.service';
 import CustomColorLabel from '@components/task-list-common/labelsSelector/custom-color-label';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
@@ -274,14 +274,14 @@ const LabelsSettings = () => {
           pagination={{
             showSizeChanger: true,
             defaultPageSize: 20,
-            pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
+             pageSizeOptions: ['10', '20', '50', '100'],
             size: 'small',
           }}
         />
 
         <LabelsDrawer
           drawerOpen={showDrawer}
-          labelId={selectedLabelId}
+          selectedLabel={labels.find(l => l.id === selectedLabelId) || null}
           drawerClosed={handleDrawerClose}
         />
       </Card>

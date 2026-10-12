@@ -5,6 +5,13 @@ import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import WorklenzControllerBase from "../worklenz-controller-base";
 
+/**
+ * Schedule v2 team workload.
+ *
+ * TVR-18 / TVR-1: intentionally does NOT apply `restrict_tasks_to_assignee`.
+ * Workload is out of scope this pass — see `ASSIGNEE_SCOPE_EXCLUDED_SURFACES`
+ * in shared/assignee-task-scope.ts.
+ */
 export default class WorkloadController extends WorklenzControllerBase {
 
     /**
@@ -369,23 +376,13 @@ export default class WorkloadController extends WorklenzControllerBase {
             team_capacity AS (
                 SELECT 
                     COUNT(DISTINCT tm.id) AS total_members,
-                    (
-                        SELECT COUNT(*) 
-                        FROM generate_series(dr.start_date, dr.end_date, '1 day'::interval) AS day
-                        JOIN public.organization_working_days owd ON owd.organization_id = dr.organization_id
-                        WHERE 
-                            (EXTRACT(ISODOW FROM day) = 1 AND owd.monday = true) OR
-                            (EXTRACT(ISODOW FROM day) = 2 AND owd.tuesday = true) OR
-                            (EXTRACT(ISODOW FROM day) = 3 AND owd.wednesday = true) OR
-                            (EXTRACT(ISODOW FROM day) = 4 AND owd.thursday = true) OR
-                            (EXTRACT(ISODOW FROM day) = 5 AND owd.friday = true) OR
-                            (EXTRACT(ISODOW FROM day) = 6 AND owd.saturday = true) OR
-                            (EXTRACT(ISODOW FROM day) = 7 AND owd.sunday = true)
-                    ) * COUNT(DISTINCT tm.id) * dr.hours_per_day AS total_capacity_hours
+                    COALESCE(SUM(cap.working_hours), 0) AS total_capacity_hours
                 FROM team_members tm
                 JOIN teams t ON t.id = tm.team_id
                 CROSS JOIN date_range dr
+                CROSS JOIN LATERAL calculate_member_capacity(tm.id, dr.start_date, dr.end_date) cap
                 WHERE t.organization_id = dr.organization_id
+                    AND tm.active = true
                     ${teamId ? 'AND t.id = $5' : ''}
             ),
             allocated_capacity AS (

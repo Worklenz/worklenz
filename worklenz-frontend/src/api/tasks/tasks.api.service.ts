@@ -23,6 +23,10 @@ export interface ITaskListConfigV2 {
   projects: string | null;
   labels?: string | null;
   priorities?: string | null;
+  phases?: string | null;
+  epics?: string | null;
+  /** Software-project quick filters, space separated: `mine bugs blocked`. */
+  quick_filters?: string | null;
   archived?: boolean;
   count?: boolean;
   parent_task?: string;
@@ -46,6 +50,8 @@ export interface ITaskListV3Response {
   allTasks: any[];
   grouping: string;
   totalTasks: number;
+  /** TVR-15/16: true when the response is filtered to the requester's assigned tasks */
+  assignee_scope_active?: boolean;
 }
 
 export interface IQuickTaskSearchResult {
@@ -88,11 +94,13 @@ export const tasksApiService = {
 
   getFormViewModel: async (
     taskId: string | null,
-    projectId: string | null
+    projectId: string | null,
+    accessContext?: { from?: string | null }
   ): Promise<IServerResponse<ITaskFormViewModel>> => {
-    const params = [];
+    const params: string[] = [];
     if (taskId) params.push(`task_id=${taskId}`);
     if (projectId) params.push(`project_id=${projectId}`);
+    if (accessContext?.from) params.push(`from=${encodeURIComponent(accessContext.from)}`);
     const q = params.length ? `?${params.join('&')}` : '';
     const response = await apiClient.get(`${rootUrl}/info${q}`);
     return response.data;

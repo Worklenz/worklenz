@@ -1,16 +1,27 @@
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
+import { departmentsApiService } from '@/api/settings/departments/departments.api.service';
+import { practicesApiService } from '@/api/settings/practices/practices.api.service';
 import {
   ISelectableCategory,
+  ISelectableDepartment,
+  ISelectablePractice,
   ISelectableProject,
   ISelectableTeam,
 } from '@/types/reporting/reporting-filters.types';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+const NO_DEPARTMENT_FILTER_ID = '__no_department__';
+const NO_PRACTICE_FILTER_ID = '__no_practice__';
 
 interface ITimeReportsOverviewState {
   archived: boolean;
 
   teams: ISelectableTeam[];
   loadingTeams: boolean;
+  departments: ISelectableDepartment[];
+  loadingDepartments: boolean;
+  practices: ISelectablePractice[];
+  loadingPractices: boolean;
 
   categories: ISelectableCategory[];
   noCategory: boolean;
@@ -29,13 +40,21 @@ interface ITimeReportsOverviewState {
 
   utilization: any[];
   loadingUtilization: boolean;
+  utilizationVisible: boolean;
+  showOnlyMembersWithTimeLogs: boolean;
 }
 
 const initialState: ITimeReportsOverviewState = {
   archived: false,
+  utilizationVisible: true,
+  showOnlyMembersWithTimeLogs: false,
 
   teams: [],
   loadingTeams: false,
+  departments: [],
+  loadingDepartments: false,
+  practices: [],
+  loadingPractices: false,
 
   categories: [],
   noCategory: false,
@@ -55,12 +74,18 @@ const initialState: ITimeReportsOverviewState = {
   loadingUtilization: false,
 };
 
-const selectedMembers = (state: ITimeReportsOverviewState) => {
-  return state.members.filter(member => member.selected).map(member => member.id) as string[];
-};
-
 const selectedTeams = (state: ITimeReportsOverviewState) => {
   return state.teams.filter(team => team.selected).map(team => team.id) as string[];
+};
+
+const selectedPracticeIds = (state: ITimeReportsOverviewState) => {
+  return state.practices.filter(practice => practice.selected).map(practice => practice.id) as string[];
+};
+
+const selectedDepartmentIds = (state: ITimeReportsOverviewState) => {
+  return state.departments
+    .filter(department => department.selected)
+    .map(department => department.id) as string[];
 };
 
 const selectedCategories = (state: ITimeReportsOverviewState) => {
@@ -106,22 +131,17 @@ export const fetchReportingMembers = createAsyncThunk(
     const { timeReportsOverviewReducer } = state;
 
     try {
-      // If members array is empty (initial load), fetch all members without pagination
-      // Otherwise, use the selected members filter
-      let queryParams;
-      if (timeReportsOverviewReducer.members.length === 0) {
-        // Initial load - fetch all members with a large page size to avoid pagination
-        queryParams = {
-          size: 1000, // Large number to get all members
-          index: 1,
-          search: '',
-          field: 'name',
-          order: 'asc',
-        };
-      } else {
-        // Subsequent calls - use selected members
-        queryParams = selectedMembers(timeReportsOverviewReducer);
-      }
+      // Fetch the full member list (large page size to avoid pagination), scoped to the
+      // currently selected practices/departments so the dropdown narrows along with them.
+      const queryParams = {
+        size: 1000,
+        index: 1,
+        search: '',
+        field: 'name',
+        order: 'asc',
+        practices: selectedPracticeIds(timeReportsOverviewReducer),
+        departments: selectedDepartmentIds(timeReportsOverviewReducer),
+      };
 
       const res = await reportingApiService.getMembers(queryParams);
       if (res.done) {
@@ -144,6 +164,44 @@ export const fetchReportingTeams = createAsyncThunk(
   async () => {
     const res = await reportingApiService.getOverviewTeams();
     return res.body;
+  }
+);
+
+export const fetchReportingDepartments = createAsyncThunk(
+  'timeReportsOverview/fetchReportingDepartments',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await departmentsApiService.getDepartments(1, 1000, 'name', 'asc', '');
+      if (!res.done) {
+        return rejectWithValue(res.message || 'Failed to fetch departments');
+      }
+      return res.body?.data || [];
+    } catch (error) {
+      let errorMessage = 'An error occurred while fetching departments';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const fetchReportingPractices = createAsyncThunk(
+  'timeReportsOverview/fetchReportingPractices',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await practicesApiService.getPractices(1, 1000, 'name', 'asc', '');
+      if (!res.done) {
+        return rejectWithValue(res.message || 'Failed to fetch practices');
+      }
+      return res.body?.data || [];
+    } catch (error) {
+      let errorMessage = 'An error occurred while fetching practices';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      return rejectWithValue(errorMessage);
+    }
   }
 );
 
@@ -204,6 +262,34 @@ const timeReportsOverviewSlice = createSlice({
       if (team) {
         team.selected = action.payload.selected;
       }
+    },
+    setSelectOrDeselectDepartment: (
+      state,
+      action: PayloadAction<{ id: string; selected: boolean }>
+    ) => {
+      const department = state.departments.find(dep => dep.id === action.payload.id);
+      if (department) {
+        department.selected = action.payload.selected;
+      }
+    },
+    setSelectOrDeselectAllDepartments: (state, action: PayloadAction<boolean>) => {
+      state.departments.forEach(department => {
+        department.selected = action.payload;
+      });
+    },
+    setSelectOrDeselectPractice: (
+      state,
+      action: PayloadAction<{ id: string; selected: boolean }>
+    ) => {
+      const practice = state.practices.find(p => p.id === action.payload.id);
+      if (practice) {
+        practice.selected = action.payload.selected;
+      }
+    },
+    setSelectOrDeselectAllPractices: (state, action: PayloadAction<boolean>) => {
+      state.practices.forEach(practice => {
+        practice.selected = action.payload;
+      });
     },
     setSelectOrDeselectCategory: (
       state,
@@ -268,6 +354,12 @@ const timeReportsOverviewSlice = createSlice({
         utilization.selected = action.payload;
       });
     },
+    setUtilizationVisible: (state, action: PayloadAction<boolean>) => {
+      state.utilizationVisible = action.payload;
+    },
+    setShowOnlyMembersWithTimeLogs: (state, action: PayloadAction<boolean>) => {
+      state.showOnlyMembersWithTimeLogs = action.payload;
+    },
   },
   extraReducers: builder => {
     builder.addCase(fetchReportingTeams.fulfilled, (state, action) => {
@@ -283,6 +375,44 @@ const timeReportsOverviewSlice = createSlice({
     });
     builder.addCase(fetchReportingTeams.rejected, state => {
       state.loadingTeams = false;
+    });
+    builder.addCase(fetchReportingDepartments.fulfilled, (state, action) => {
+      state.departments = [
+        {
+          selected: true,
+          name: NO_DEPARTMENT_FILTER_ID,
+          id: NO_DEPARTMENT_FILTER_ID,
+        } as any,
+        ...(action.payload || []).map((department: any) => ({
+          selected: true,
+          name: department.name,
+          id: department.id,
+        })),
+      ];
+      state.loadingDepartments = false;
+    });
+    builder.addCase(fetchReportingDepartments.pending, state => {
+      state.loadingDepartments = true;
+    });
+    builder.addCase(fetchReportingDepartments.rejected, state => {
+      state.loadingDepartments = false;
+    });
+    builder.addCase(fetchReportingPractices.fulfilled, (state, action) => {
+      state.practices = [
+        { selected: true, name: NO_PRACTICE_FILTER_ID, id: NO_PRACTICE_FILTER_ID } as any,
+        ...(action.payload || []).map((practice: any) => ({
+          selected: true,
+          name: practice.name,
+          id: practice.id,
+        })),
+      ];
+      state.loadingPractices = false;
+    });
+    builder.addCase(fetchReportingPractices.pending, state => {
+      state.loadingPractices = true;
+    });
+    builder.addCase(fetchReportingPractices.rejected, state => {
+      state.loadingPractices = false;
     });
     builder.addCase(fetchReportingCategories.fulfilled, (state, action) => {
       const categories = [];
@@ -361,6 +491,10 @@ export const {
   setTeams,
   setSelectOrDeselectAllTeams,
   setSelectOrDeselectTeam,
+  setSelectOrDeselectDepartment,
+  setSelectOrDeselectAllDepartments,
+  setSelectOrDeselectPractice,
+  setSelectOrDeselectAllPractices,
   setSelectOrDeselectCategory,
   setSelectOrDeselectAllCategories,
   setSelectOrDeselectProject,
@@ -372,5 +506,7 @@ export const {
   setSelectOrDeselectAllUtilization,
   setNoCategory,
   setArchived,
+  setUtilizationVisible,
+  setShowOnlyMembersWithTimeLogs,
 } = timeReportsOverviewSlice.actions;
 export default timeReportsOverviewSlice.reducer;

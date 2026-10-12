@@ -1,13 +1,14 @@
 import apiClient from '@api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
-import { IProfileSettings } from '@/types/settings/profile.types';
+import { IAppSumoPopupClaim, IProfileSettings } from '@/types/settings/profile.types';
 import { IDigestPreferences, INotificationSettings } from '@/types/settings/notifications.types';
 import {
   IAccountSetupRequest,
   IAccountSetupResponse,
 } from '@/types/project-templates/project-templates.types';
 import { ITeam } from '@/types/teams/team.type';
+import { IClientPortalSettings } from '@/types/settings/client-portal-settings.types';
 
 const rootUrl = `${API_BASE_URL}/settings`;
 const digestUrl = `${API_BASE_URL}/digest`;
@@ -91,13 +92,20 @@ export const profileSettingsApiService = {
   },
 
   // Client Portal Settings
-  getClientPortalSettings: async (): Promise<IServerResponse<any>> => {
-    const response = await apiClient.get<IServerResponse<any>>(`${rootUrl}/client-portal`);
+  getClientPortalSettings: async (): Promise<IServerResponse<IClientPortalSettings>> => {
+    const response = await apiClient.get<IServerResponse<IClientPortalSettings>>(
+      `${rootUrl}/client-portal`
+    );
     return response.data;
   },
 
-  updateClientPortalSettings: async (body: any): Promise<IServerResponse<any>> => {
-    const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/client-portal`, body);
+  updateClientPortalSettings: async (
+    body: Partial<IClientPortalSettings>
+  ): Promise<IServerResponse<IClientPortalSettings>> => {
+    const response = await apiClient.put<IServerResponse<IClientPortalSettings>>(
+      `${rootUrl}/client-portal`,
+      body
+    );
     return response.data;
   },
 
@@ -114,6 +122,20 @@ export const profileSettingsApiService = {
   dismissMobileAppBanner: async (): Promise<IServerResponse<null>> => {
     const response = await apiClient.put<IServerResponse<null>>(
       `${rootUrl}/mobile-app-banner-dismissed`
+    );
+    return response.data;
+  },
+
+  /**
+   * Asks the server whether the AppSumo promo popup may be shown now and, if so, records it.
+   * Background call: the silent header keeps the response interceptor from toasting a failure
+   * (the popup falls back to its local gate instead). On a server-side failure the body is null.
+   */
+  claimAppSumoPopup: async (): Promise<IServerResponse<IAppSumoPopupClaim | null>> => {
+    const response = await apiClient.post<IServerResponse<IAppSumoPopupClaim | null>>(
+      `${rootUrl}/appsumo-popup/claim`,
+      undefined,
+      { headers: { 'X-Silent-Request': '1' } }
     );
     return response.data;
   },

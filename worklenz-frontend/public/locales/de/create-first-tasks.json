@@ -1,7 +1,8 @@
 {
   "formTitle": "Erstellen Sie Ihre erste Aufgabe.",
-  "inputLabel": "Geben Sie einige Aufgaben ein, die Sie erledigen werden in",
+  "inputLable": "Geben Sie einige Aufgaben ein, die Sie in",
   "addAnother": "Einen weiteren hinzufügen",
   "goBack": "Zurück",
-  "continue": "Weiter"
+  "continue": "Weiter",
+  "inputLabel": "Geben Sie einige Aufgaben ein, die Sie erledigen werden in"
 }

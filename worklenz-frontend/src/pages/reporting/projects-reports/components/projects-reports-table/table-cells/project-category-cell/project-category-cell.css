@@ -12,7 +12,12 @@
   padding: 8px !important;
 }
 
-.project-category-menu .ant-menu-item {
+.project-category-dropdown .ant-dropdown-menu {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.project-category-dropdown .ant-menu-item {
   display: flex;
   align-items: center;
   height: 32px;

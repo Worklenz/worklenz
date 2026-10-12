@@ -10,5 +10,7 @@
   "passwordRequired": "请输入您的新密码",
   "returnToLoginButton": "返回登录",
   "confirmPasswordRequired": "请确认您的新密码",
-  "passwordMismatch": "两次输入的密码不匹配"
+  "passwordMismatch": "两次输入的密码不匹配",
+  "successTitle": "密码重置成功",
+  "successMessage": "您的密码已更新，现在可以使用新密码登录。"
 }

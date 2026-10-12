@@ -1,0 +1,64 @@
+{
+  "slack": {
+    "task_created": {
+      "title": "Tarefa criada"
+    },
+    "task_assigned": {
+      "title": "Tarefa atribuída"
+    },
+    "task_completed": {
+      "title": "Tarefa concluída"
+    },
+    "comment_added": {
+      "title": "Comentário adicionado"
+    },
+    "priority_changed": {
+      "title": "Prioridade alterada"
+    },
+    "due_date_changed": {
+      "title": "Data de vencimento alterada"
+    },
+    "task_updated": {
+      "title": "Tarefa atualizada"
+    },
+    "task_status_changed": {
+      "title": "Status da tarefa alterado"
+    },
+    "viewTask": "Ver tarefa",
+    "assignedTo": "👥 Atribuído a",
+    "assignedBy": "👤 Atribuído por",
+    "statusChange": "📊 Alteração de status",
+    "changedBy": "👤 Alterado por",
+    "createdBy": "👤 Criado por",
+    "commentedBy": "💬 Comentado por",
+    "updatedBy": "👤 Atualizado por",
+    "status": "📊 Status",
+    "currentStatus": "📊 Status atual",
+    "priority": "Prioridade",
+    "dueDate": "Data de vencimento",
+    "assignees": "👥 Responsáveis",
+    "comment": "Comentário",
+    "priorityChanged": "🔺 Prioridade alterada",
+    "dueDateChanged": "📅 Data de vencimento alterada",
+    "updatedByWithUser": "Atualizado por {{user}}"
+  },
+  "teams": {
+    "task": "Tarefa",
+    "project": "Projeto",
+    "assignees": "Responsáveis",
+    "assignedBy": "Atribuído por",
+    "createdBy": "Criado por",
+    "commentedBy": "Comentado por",
+    "updatedBy": "Atualizado por",
+    "status": "Status",
+    "priority": "Prioridade",
+    "dueDate": "Data de vencimento",
+    "previousStatus": "Status anterior",
+    "newStatus": "Novo status",
+    "previousPriority": "Prioridade anterior",
+    "newPriority": "Nova prioridade",
+    "statusChange": "Alteração de status",
+    "changedBy": "Alterado por",
+    "viewTask": "Ver tarefa"
+  }
+}

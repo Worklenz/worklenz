@@ -6,11 +6,8 @@
   "taskProgressColumn": "Progresi i Detyrave",
   "accessColumn": "Qasja",
   "fileIconAlt": "Ikona e skedarit",
-  "deleteConfirmationTitle": "Jeni i sigurt?",
-  "deleteConfirmationOk": "Po",
   "deleteConfirmationCancel": "Anulo",
   "refreshButtonTooltip": "Rifresko anëtarët",
-  "deleteButtonTooltip": "Hiq nga projekti",
   "memberCount": "Anëtar",
   "membersCountPlural": "Anëtarë",
   "emptyText": "Nuk ka bashkëngjitje në projekt."

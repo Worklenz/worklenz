@@ -162,6 +162,30 @@ export interface IProjectTemplateTask {
     
     /** Reference to the original task ID (used during template import to maintain relationships) */
     original_task_id?: string;
+
+    /** Billable flag (schema_version 2+) */
+    billable?: boolean;
+
+    /** Calendar-day offset from project start for task start_date; null = undated */
+    start_offset_days?: number | null;
+
+    /** Calendar-day offset from project start for task due/end_date; null = undated */
+    due_offset_days?: number | null;
+
+    /** FK to cpt_task_recurring_schedules when recurrence was included */
+    schedule_id?: string | null;
+
+    /** Original task duration in days (for recurring occurrence calculation) */
+    task_duration_days?: number | null;
+
+    /** Assignees when assignees include is on */
+    assignees?: ICustomTemplateTaskAssignee[];
+
+    /** Dependencies within the template when dependencies include is on */
+    dependencies?: ICustomTemplateTaskDependency[];
+
+    /** Recurrence rule when recurrence include is on */
+    recurrence?: ICustomTemplateTaskRecurrence | null;
 }
 
 /**
@@ -186,7 +210,145 @@ export interface ITaskIncludes {
     
     /** Include subtask information */
     subtasks?: boolean;
+
+    /** Include assignees (schema_version 2+) */
+    assignees?: boolean;
+
+    /** Include recurrence rules (schema_version 2+) */
+    recurrence?: boolean;
+
+    /** Include dependencies (schema_version 2+) */
+    dependencies?: boolean;
+
+    /** Include billable flag (schema_version 2+) */
+    billable?: boolean;
+
+    /** Include start/due date offsets (schema_version 2+) */
+    dateOffsets?: boolean;
 }
+
+/**
+ * Which project settings to persist when saving a custom template (schema_version 2+).
+ */
+export interface IProjectSettingsIncludes {
+    category?: boolean;
+    projectManager?: boolean;
+    estimatedWorkingDays?: boolean;
+    estimatedManDays?: boolean;
+    hoursPerDay?: boolean;
+    advanced?: boolean;
+    budget?: boolean;
+}
+
+export interface IProjectTemplateAdvancedSettings {
+    use_manual_progress?: boolean;
+    use_weighted_progress?: boolean;
+    use_time_progress?: boolean;
+    auto_assign_task_creator?: boolean;
+    restrict_task_creation?: boolean;
+    phase_assignees_enabled?: boolean;
+}
+
+export interface ICustomTemplateRateCardRole {
+    job_title_id?: string | null;
+    job_title_name: string;
+    rate: number;
+    man_day_rate?: number | null;
+}
+
+export interface IProjectTemplateBudgetSettings {
+    amount?: number;
+    currency?: string;
+    rate_card?: ICustomTemplateRateCardRole[];
+}
+
+export interface IProjectTemplateSettingsSnapshot {
+    category_id?: string | null;
+    category_name?: string | null;
+    project_manager_id?: string | null;
+    estimated_working_days?: number | null;
+    estimated_man_days?: number | null;
+    hours_per_day?: number | null;
+    advanced?: IProjectTemplateAdvancedSettings | null;
+    budget?: IProjectTemplateBudgetSettings | null;
+    project_duration_days?: number | null;
+}
+
+export interface IProjectTemplateIncludesPayload {
+    project?: {
+        statuses?: boolean;
+        phases?: boolean;
+        labels?: boolean;
+        customColumns?: boolean;
+    };
+    projectSettings?: IProjectSettingsIncludes;
+    task?: ITaskIncludes;
+}
+
+export interface ICustomTemplateTaskAssignee {
+    team_member_id: string;
+    email?: string | null;
+    name?: string | null;
+}
+
+export interface ICustomTemplateTaskDependency {
+    related_task_id: string;
+    dependency_type?: string;
+}
+
+export interface ICustomTemplateTaskRecurrence {
+    schedule_type: string;
+    days_of_week?: number[] | null;
+    day_of_month?: number | null;
+    date_of_month?: number | null;
+    week_of_month?: number | null;
+    interval_days?: number | null;
+    interval_weeks?: number | null;
+    interval_months?: number | null;
+    end_offset_days?: number | null;
+    max_occurrences?: number | null;
+    recurring_mode?: "create_task" | "change_status";
+    target_status_name?: string | null;
+    timezone_name?: string | null;
+}
+
+export interface IProjectTemplateSettingsOverrides {
+    category_id?: string | null;
+    project_manager_id?: string | null;
+    estimated_working_days?: number | null;
+    estimated_man_days?: number | null;
+    hours_per_day?: number | null;
+    advanced?: Partial<IProjectTemplateAdvancedSettings> | null;
+    budget?: {
+        amount?: number | null;
+        currency?: string | null;
+    } | null;
+}
+
+export interface ICustomProjectTemplateImportRequest {
+    template_id: string;
+    project_name?: string;
+    color_code?: string;
+    start_date?: string | null;
+    settings_overrides?: IProjectTemplateSettingsOverrides | null;
+}
+
+export interface IProjectTemplateApplySkip {
+    type:
+        | "assignee"
+        | "project_manager"
+        | "rate_card_role"
+        | "dependency"
+        | "recurrence"
+        | "category"
+        | "plan_gated"
+        | "other";
+    reason: string;
+    detail?: string;
+}
+
+/** Current schema version written by createCustomTemplate after this feature. */
+export const CUSTOM_PROJECT_TEMPLATE_SCHEMA_VERSION = 2;
 
 /**
  * Represents a custom project template created by users.
@@ -207,6 +369,15 @@ export interface ICustomProjectTemplate {
     
     /** UUID of the team that owns this template */
     team_id?: string;
+
+    /** Payload version; 1 = legacy, 2 = config preservation */
+    schema_version?: number;
+
+    /** Which elements were saved */
+    includes?: IProjectTemplateIncludesPayload | null;
+
+    /** Project settings snapshot when toggles were on */
+    settings?: IProjectTemplateSettingsSnapshot | null;
 }
 
 /**

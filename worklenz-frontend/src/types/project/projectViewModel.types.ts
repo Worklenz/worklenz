@@ -3,6 +3,30 @@ import { ITeamMemberViewModel } from '../teamMembers/teamMembersGetResponse.type
 import { ITask } from '../tasks/task.types';
 import { InlineMember } from '../teamMembers/inlineMember.types';
 
+export interface IProjectPermissions {
+  settings: boolean;
+  statuses: boolean;
+  phases: boolean;
+  customColumns: boolean;
+  members: {
+    add: boolean;
+    removeMember: boolean;
+    changeMemberRole: boolean;
+  };
+  tasks: boolean;
+  saveAsTemplate: boolean;
+  finance: boolean;
+  archive: boolean;
+  delete: boolean;
+  move: boolean;
+  assignPm: boolean;
+  insights: boolean;
+  files: boolean;
+  updates: boolean;
+  roadmap: boolean;
+  workload: boolean;
+}
+
 export interface IProjectViewModel extends IProject {
   key?: string;
   client_name?: string | null;
@@ -15,10 +39,16 @@ export interface IProjectViewModel extends IProject {
   start_date?: string;
   end_date?: string;
   phase_label?: string;
+  /** Delivery mode: general PM vs software (issues/sprints/backlog). */
+  project_type?: ProjectType;
+  /** Software projects: archive Done issues when a sprint is completed. */
+  auto_archive_on_sprint_complete?: boolean;
+  /** Software projects: allowed story point values. */
+  story_point_scale?: number[];
   category_name?: string;
   category_color?: string;
-  category_id?: string;
-  health_id?: string;
+  category_id?: string | null;
+  health_id?: string | null;
   task_count?: number;
   members_count?: number;
   progress?: number;
@@ -45,8 +75,8 @@ export interface IProjectViewModel extends IProject {
   priority_color_dark?: string | null;
 
   team_member_default_view?: string;
-  task_list_group_by?: 'status' | 'priority' | 'phase';
-  board_group_by?: 'status' | 'priority' | 'phase';
+  task_list_group_by?: 'status' | 'priority' | 'phase' | 'assignee';
+  board_group_by?: 'status' | 'priority' | 'phase' | 'assignee';
   working_days?: number;
 
   id?: string;
@@ -75,8 +105,20 @@ export interface IProjectViewModel extends IProject {
   auto_assign_task_creator?: boolean;
   restrict_task_creation?: boolean;
   phase_assignees_enabled?: boolean;
+  restrict_tasks_to_assignee?: boolean;
+  auto_assign_subtask_phase?: boolean;
   currency?: string;
   budget?: number;
   calculation_method?: 'hourly' | 'man_days';
   is_guest?: boolean; // Indicates if current user is a guest in this project
+
+  /** Current user's project-scoped permissions (from GET project). Key UI by project id. */
+  permissions?: IProjectPermissions | null;
+  is_project_manager?: boolean;
+  /** Current user's finance access on this project. */
+  finance_access?: boolean;
+  can_create_projects_from_templates?: boolean;
 }
+
+export type ProjectType = 'general' | 'software';
+

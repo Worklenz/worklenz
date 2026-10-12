@@ -47,6 +47,18 @@ export const greetingString = (name: string): string => {
     morning = '早上好';
     afternoon = '下午好';
     evening = '晚上好';
+  } else if (language === 'pl') {
+    greetingPrefix = 'Cześć';
+    greetingSuffix = '';
+    morning = 'Dzień dobry';
+    afternoon = 'Dzień dobry';
+    evening = 'Dobry wieczór';
+  } else if (language === 'fr') {
+    greetingPrefix = 'Bonjour';
+    greetingSuffix = '';
+    morning = 'Bonjour';
+    afternoon = 'Bon après-midi';
+    evening = 'Bonsoir';
   }
 
   // Get the localized time period based on the current time
@@ -55,8 +67,8 @@ export const greetingString = (name: string): string => {
   else if (greet === 'afternoon') localizedTimePeriod = afternoon;
   else localizedTimePeriod = evening;
 
-  // Handle Chinese language which has different structure
-  if (language === 'zh_cn') {
+  // Handle Chinese, Polish, and French languages which have custom sentence structures
+  if (language === 'zh_cn' || language === 'pl' || language === 'fr') {
     return `${greetingPrefix} ${name}, ${localizedTimePeriod}!`;
   }
 

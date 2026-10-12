@@ -7,8 +7,11 @@ export const GroupBy = {
   STATUS: "status",
   PRIORITY: "priority",
   LABELS: "labels",
-  PHASE: "phase"
+  PHASE: "phase",
+  ASSIGNEE: "assignee"
 };
+
+export const UNASSIGNED_GROUP_ID = "unassigned";
 
 export interface ITaskGroup {
   id?: string;

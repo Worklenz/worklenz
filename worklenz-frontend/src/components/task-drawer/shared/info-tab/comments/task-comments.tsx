@@ -6,8 +6,9 @@ import {
   Button,
   Space,
   Popover,
+  message,
 } from '@/shared/antd-imports';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, LinkOutlined } from '@ant-design/icons';
 import { Comment } from '@ant-design/compatible';
 import dayjs from 'dayjs';
 
@@ -26,29 +27,32 @@ import { themeWiseColor } from '@/utils/themeWiseColor';
 import { colors } from '@/styles/colors';
 import AttachmentsGrid from '../attachments/attachments-grid';
 import { TFunction } from 'i18next';
+import { formatDate } from '@/utils/dateUtils';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { sanitizeCommentContent, stripHtmlTags } from '@/utils/sanitizeInput';
 import { REACTION_CONFIGS } from '@/shared/reaction-config';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMember } from '@/types/teamMembers/teamMember.types';
 import CustomMentionsInput, { MentionOption } from './custom-mentions-input';
 import '../info-tab-footer.css';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 // Helper function to format date for time separators
-const formatDateForSeparator = (date: string) => {
+const formatDateForSeparator = (date: string, t?: TFunction) => {
   const today = dayjs();
   const commentDate = dayjs(date);
 
   if (commentDate.isSame(today, 'day')) {
-    return 'Today';
+    return t ? t('today', { defaultValue: 'Today' }) : 'Today';
   } else if (commentDate.isSame(today.subtract(1, 'day'), 'day')) {
-    return 'Yesterday';
+    return t ? t('yesterday', { defaultValue: 'Yesterday' }) : 'Yesterday';
   } else {
-    return commentDate.format('MMMM D, YYYY');
+    return formatDate(commentDate, 'LL');
   }
 };
 
@@ -168,6 +172,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
   const { targetCommentId } = useAppSelector(state => state.taskDrawerReducer);
   const dispatch = useAppDispatch();
   const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(null);
+  const { socket } = useSocket();
 
 
   // Inline-edit state
@@ -311,6 +316,23 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
     };
   }, [taskId, getComments, scrollIntoView]);
 
+  // Real-time sync for other members viewing the same task (Inbox / Project Updates pattern)
+  useEffect(() => {
+    if (!socket || !taskId) return;
+
+    const handleCommentsUpdated = (data: string | { task_id?: string }) => {
+      const updatedTaskId = typeof data === 'string' ? data : data?.task_id;
+      if (!updatedTaskId || updatedTaskId !== taskId) return;
+      getComments(false);
+    };
+
+    socket.on(SocketEvents.TASK_COMMENTS_UPDATED.toString(), handleCommentsUpdated);
+
+    return () => {
+      socket.off(SocketEvents.TASK_COMMENTS_UPDATED.toString(), handleCommentsUpdated);
+    };
+  }, [socket, taskId, getComments]);
+
   const canEdit = (userId?: string) => {
     if (!userId) return false;
     return userId === currentUserId;
@@ -369,6 +391,30 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
     };
   }, [targetCommentId, loading, dispatch]);
 
+
+  // ─── Copy Comment Link ────────────────────────────────────────────────────
+
+  const copyCommentLink = async (commentId?: string) => {
+    if (!commentId) return;
+
+    try {
+      const commentLink = `${window.location.origin}/worklenz/c/${commentId}`;
+
+      await navigator.clipboard.writeText(commentLink);
+      message.success(
+        t('taskInfoTab.comments.linkCopied', {
+          defaultValue: 'Comment link copied',
+        })
+      );
+    } catch (error) {
+      logger.error('Error copying comment link', error);
+      message.error(
+        t('taskInfoTab.comments.linkCopyFailed', {
+          defaultValue: 'Failed to copy link',
+        })
+      );
+    }
+  };
 
   // ─── Reactions ────────────────────────────────────────────────────────────
 
@@ -474,9 +520,21 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
             detail: { taskId: resolvedTaskId },
           })
         );
+      } else {
+        message.error(
+          res.message ||
+            t('taskInfoTab.comments.saveCommentError', {
+              defaultValue: 'Failed to save comment. Please try again.',
+            })
+        );
       }
     } catch (e) {
       logger.error('Error updating comment', e);
+      message.error(
+        t('taskInfoTab.comments.saveCommentError', {
+          defaultValue: 'Failed to save comment. Please try again.',
+        })
+      );
     } finally {
       setEditLoading(false);
     }
@@ -520,7 +578,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
           backgroundColor: themeWiseColor('#fff', '#1e1e1e', themeMode),
         }}
       >
-        {formatDateForSeparator(date)}
+        {formatDateForSeparator(date, t)}
       </span>
     </div>
   );
@@ -689,6 +747,25 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
                               ))}
                             </div>
 
+                            {/* Copy Link Button */}
+                            <div className={`hover-divider theme-${themeMode}`} />
+                            <Tooltip
+                              title={t('taskInfoTab.comments.copyLink', {
+                                defaultValue: 'Copy Link',
+                              })}
+                            >
+                              <Button
+                                type="text"
+                                size="small"
+                                icon={<LinkOutlined />}
+                                className="hover-action-btn comment-copy-link-btn"
+                                aria-label={t('taskInfoTab.comments.copyLink', {
+                                  defaultValue: 'Copy Link',
+                                })}
+                                onClick={() => copyCommentLink(item.id)}
+                              />
+                            </Tooltip>
+
                             {/* Edit + Delete (own comments only) */}
                             {isUserComment && (
                               <>
@@ -752,18 +829,25 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
                               })}
                             </p>
                           ) : isEditing ? (
-                            <div>
-                              <div style={{ position: 'relative' }}>
+                            <div className="comment-edit-container">
+                              <div className="comment-edit-input">
                                 <CustomMentionsInput
                                   value={editContent}
                                   onChange={(val: string) => setEditContent(val)}
                                   onSelect={(option: MentionOption) => {
                                     const member = members.find(m => m.id === option.key);
                                     if (!member) return;
+
                                     setEditSelectedMembers(prev =>
                                       prev.some(p => p.team_member_id === member.id)
                                         ? prev
-                                        : [...prev, { team_member_id: member.id!, name: member.name! }]
+                                        : [
+                                          ...prev,
+                                          {
+                                            team_member_id: member.id!,
+                                            name: member.name!,
+                                          },
+                                        ]
                                     );
                                   }}
                                   options={mentionOptions}
@@ -774,24 +858,41 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
                                   })}
                                   filterOption={(input: string, option: MentionOption) => {
                                     if (!input) return true;
-                                    return option.label.toLowerCase().includes(input.toLowerCase());
+
+                                    return option.label
+                                      .toLowerCase()
+                                      .includes(input.toLowerCase());
                                   }}
-                                  style={{ minHeight: 60, maxHeight: 150, borderRadius: 4 }}
+                                  style={{
+                                    width: '100%',
+                                    minHeight: 60,
+                                    maxHeight: 200,
+                                    borderRadius: 6,
+                                  }}
                                 />
                               </div>
-                              <Space style={{ marginTop: 8 }}>
+
+                              <div className="comment-edit-actions">
                                 <Button
                                   size="small"
                                   type="primary"
                                   loading={editLoading}
                                   onClick={() => saveEdit(item)}
                                 >
-                                  {t('taskInfoTab.comments.save', { defaultValue: 'Save' })}
+                                  {t('taskInfoTab.comments.save', {
+                                    defaultValue: 'Save',
+                                  })}
                                 </Button>
-                                <Button size="small" onClick={cancelEdit}>
-                                  {t('taskInfoTab.comments.cancel', { defaultValue: 'Cancel' })}
+
+                                <Button
+                                  size="small"
+                                  onClick={cancelEdit}
+                                >
+                                  {t('taskInfoTab.comments.cancel', {
+                                    defaultValue: 'Cancel',
+                                  })}
                                 </Button>
-                              </Space>
+                              </div>
                             </div>
                           ) : (
                             <>

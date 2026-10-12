@@ -3,10 +3,12 @@
   "home": "Kryefaqja",
   "projects": "Projektet",
   "planner": "Planifikuesi",
+  "reporting": "Raportet e Ekipit Tim",
   "my-team-reports": "Raportet e Ekipit Tim",
-  "clients": "Klientët",
   "finance": "Financat",
   "client-portal": "Klientët",
+  "closePopover": "Mbyll dritaren",
+  "clients": "Klientët",
   "teams": "Ekipet",
   "labels": "Etiketa",
   "jobTitles": "Tituj Pune",
@@ -15,6 +17,8 @@
   "invite": "Fto",
   "inviteTooltip": "Fto anëtarë të ekipit të bashkohen",
   "switchTeamTooltip": "Ndrysho ekipin",
+  "searchTeams": "Kërko ekipe...",
+  "noTeamsFound": "Nuk u gjetën ekipe",
   "help": "Ndihmë",
   "notificationTooltip": "Shiko njoftimet",
   "profileTooltip": "Shiko profilin",
@@ -32,7 +36,11 @@
     "readAndJoin": "Lexo & Bashkohu",
     "accept": "Prano",
     "acceptAndJoin": "Prano & Bashkohu",
-    "noNotifications": "Asnjë njoftim"
+    "noNotifications": "Asnjë njoftim",
+    "invitationMessage": "Ju jeni ftuar të punoni me <1>{{teamName}}</1>.",
+    "teamInvitation": "Ju jeni ftuar të bashkoheni me {{teamName}}",
+    "loading": "Duke u ngarkuar...",
+    "markAllAsRead": "Shëno të gjitha si të lexuara"
   },
   "searchAnything": "Kërko gjithçka",
   "globalSearchPlaceholder": "Kërko detyra, projekte, klientë, anëtarë…",
@@ -40,12 +48,14 @@
   "timeEntries": "Regjistrimet e Kohës",
   "new": "I Ri",
   "quickActions": {
+    "new": "I Ri",
     "task": "Detyra",
-    "logTime": "Regjistro kohën",
+    "logTime": "Regjistro Kohë",
+    "markTimeOff": "Shëno pushim / leje",
     "project": "Projekti",
     "client": "Klienti",
     "addExpense": "Shto Shpenzim",
-    "addGuest": "Shto Mysafir",
+    "addGuest": "Shto Vizitor",
     "inviteMember": "Fto Anëtar"
   },
   "billing": "Faturim",
@@ -68,25 +78,22 @@
     "conflictTitle": "Konflikt Kohëmatësi",
     "conflictMessage": "Një tjetër kohëmatës po ekzekutohet për \"{{taskName}}\" në projektin \"{{projectName}}\". Dëshironi ta ndaloni dhe ta filloni këtë kohëmatës?",
     "stopAndStart": "Ndalo dhe Fillo",
-    "cancel": "Anulo"
+    "cancel": "Anulo",
+    "logTime": "Regjistro kohën",
+    "openTimeLogPanel": "Hape regjistrin e kohës për {{taskName}}"
   },
-  "reporting": "Reports",
-  "closePopover": "Mbyll dritaren",
-  "account": "Llogaria",
-  "billing": "Faturim",
   "ownerRole": "Pronar",
   "adminRole": "Administrator",
   "teamLeadRole": "Udhëheqës Ekipi",
   "memberRole": "Anëtar",
   "themeToggleOn": "Po",
   "themeToggleOff": "Jo",
-  "quickActions": {
-    "new": "I Ri",
-    "task": "Detyra",
-    "logTime": "Regjistro Kohë",
-    "project": "Projekti",
-    "client": "Klienti",
-    "addExpense": "Shto Shpenzim",
-    "inviteMember": "Fto Anëtar"
+  "whatsNew": {
+    "tag": "Të Rejat",
+    "tooltip": "Shiko çfarë ka ndryshuar në këtë version",
+    "newBadge": "E Re",
+    "modalHeading": "Të Rejat — {{title}}",
+    "readFullChangelog": "Shiko regjistrin e plotë të ndryshimeve →",
+    "releaseUnavailable": "Ky përditësim nuk është më i disponueshëm."
   }
 }

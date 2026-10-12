@@ -5,6 +5,7 @@ export interface IProjectMemberViewModel extends IProjectMember {
   name?: string;
   email?: string;
   access?: string;
+  access_level?: string;
   pending_invitation?: boolean;
   all_tasks_count?: number;
   completed_tasks_count?: number;
@@ -12,6 +13,7 @@ export interface IProjectMemberViewModel extends IProjectMember {
   job_title?: string;
   avatar_url?: string;
   team_member_id?: string;
+  active?: boolean;
 }
 
 export interface IProjectMembersViewModel {

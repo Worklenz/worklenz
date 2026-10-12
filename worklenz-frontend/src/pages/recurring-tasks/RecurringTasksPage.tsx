@@ -10,7 +10,7 @@ import { RecurringTasksFilters, RecurringTasksFiltersValue } from '@/components/
 import { RecurringTasksTable, RecurringTasksSortField } from '@/components/recurring-tasks/RecurringTasksTable';
 import TaskDrawer from '@components/task-drawer/task-drawer';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { UpgradeOverlayCard, useUpgradeMaskBackground } from '@/components/upgrade/FeatureUpgradePreview';
 import { IRecurringMode } from '@/types/tasks/task-recurring-schedule';
 

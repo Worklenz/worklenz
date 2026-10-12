@@ -12,9 +12,11 @@ import { getBaseUrl } from "../cron_jobs/helpers";
 import { ICommentEmailNotification } from "../interfaces/comment-email-notification";
 import { sendTaskComment } from "../shared/email-notifications";
 import { getRootDir, uploadBase64, getKey, getTaskAttachmentKey, createPresignedUrlWithClient } from "../shared/s3";
-import { getFreePlanSettings, getUsedStorage } from "../ee/shared/paddle-utils";
+import { getFreePlanSettings, getUsedStorage } from "../shared/paddle-utils";
 import { ExternalNotificationsService } from "../services/external-notifications.service";
 import { syncCommentLinks, deleteCommentLinks } from "../shared/url-extractor";
+import { SocketEvents } from "../socket.io/events";
+import { IO } from "../shared/io";
 
 interface ITaskAssignee {
   team_member_id: string;
@@ -54,6 +56,20 @@ async function getAssignees(taskId: string): Promise<Array<ITaskAssignee>> {
 }
 
 export default class TaskCommentsController extends WorklenzControllerBase {
+
+  /**
+   * Notify clients in the task's project room that comments changed so open
+   * Task Drawers can refresh. Same room as PROJECT_UPDATES_AVAILABLE
+   * (socket.join(projectId)); payload stays the task id.
+   */
+  private static emitTaskCommentsUpdated(projectId: string | undefined, taskId: string | undefined) {
+    if (!projectId || !taskId) return;
+    try {
+      IO.getInstance()?.to(projectId).emit(SocketEvents.TASK_COMMENTS_UPDATED.toString(), taskId);
+    } catch (e) {
+      log_error(e);
+    }
+  }
 
   private static replaceContent(messageContent: string, mentions: IMention[]) {
     const mentionNames = mentions.map(mention => mention.name);
@@ -117,7 +133,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
   private static async sendMail(config: IMailConfig) {
     const subject = config.message.replace(HTML_TAG_REGEXP, "");
-    const taskUrl = `${getBaseUrl()}/worklenz/projects/${config.projectId}?tab=tasks-list&task=${config.taskId}&focus=comments`;
+    const taskUrl = `${getBaseUrl()}/worklenz/projects/${config.projectId}?tab=tasks-list&task=${config.taskId}&from=notification&focus=comments`;
     const settingsUrl = `${getBaseUrl()}/worklenz/settings/notifications`;
 
     const data: ICommentEmailNotification = {
@@ -208,6 +224,9 @@ export default class TaskCommentsController extends WorklenzControllerBase {
         teamId: req.user?.team_id as string,
         socketId: member.socket_id,
         message: commentMessage,
+        messageKey: "notifications.commentAdded",
+        messageParams: { user: safeName, task: response.task_name },
+        notificationTypeKey: "COMMENT_ADDED",
         taskId: req.body.task_id,
         projectId: response.project_id,
         commentId: commentId,
@@ -239,6 +258,9 @@ export default class TaskCommentsController extends WorklenzControllerBase {
             team: member.team,
             receiver_socket_id: member.socket_id,
             message: mentionMessage,
+            message_key: "notifications.mentionedInComment",
+            message_params: { user: safeName, task: response.task_name },
+            notification_type_key: "COMMENT_MENTION",
             task_id: req.body.task_id,
             project_id: response.project_id,
             project: member.project,
@@ -300,13 +322,17 @@ export default class TaskCommentsController extends WorklenzControllerBase {
         response.project_id,
         req.body.task_id,
         "comment_added",
-        req.user?.name || "Unknown User"
+        req.user?.name || "Unknown User",
+        undefined,
+        req.user?.id
       );
     } catch (notifError) {
       log_error("Error sending external notifications for comment:", notifError);
     }
 
     void syncCommentLinks(response.project_id, task_id, commentId, req.user?.team_id as string, commentContent, req.user?.id);
+
+    this.emitTaskCommentsUpdated(response.project_id, task_id);
 
     return res.status(200).send(new ServerResponse(true, commentdata));
   } // ← end of create()
@@ -418,6 +444,8 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     if (projectRow.rows[0]) {
       void syncCommentLinks(projectRow.rows[0].project_id, updatedComment.task_id, commentId, req.user?.team_id as string, commentContent, req.user?.id);
     }
+
+    this.emitTaskCommentsUpdated(projectRow.rows[0]?.project_id, updatedComment.task_id);
 
     return res.status(200).send(new ServerResponse(true, {
       id: updatedComment.id,
@@ -534,21 +562,37 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       WHERE id = $1
         AND task_id = $2
         AND user_id = $3
-      RETURNING id;
+      RETURNING id, (SELECT project_id FROM tasks WHERE id = task_comments.task_id) AS project_id;
     `;
     const result = await db.query(q, [req.params.id, req.params.taskId, req.user?.id || null]);
     if (result.rowCount) {
       void deleteCommentLinks(req.params.id);
+      this.emitTaskCommentsUpdated(result.rows[0]?.project_id, req.params.taskId);
     }
-    return res.status(200).send(new ServerResponse(true, result.rows));
+    const rows = result.rows.map((row: { id: string }) => ({ id: row.id }));
+    return res.status(200).send(new ServerResponse(true, rows));
   }
 
   @HandleExceptions()
   public static async deleteAttachmentById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const lookupQ = `
+      SELECT tca.task_id,
+             COALESCE(tca.project_id, t.project_id) AS project_id
+      FROM task_comment_attachments tca
+      LEFT JOIN tasks t ON t.id = tca.task_id
+      WHERE tca.id = $1;
+    `;
+    const lookupResult = await db.query(lookupQ, [req.params.id]);
+    const taskId = lookupResult.rows[0]?.task_id as string | undefined;
+    const projectId = lookupResult.rows[0]?.project_id as string | undefined;
+
     const q = `DELETE
                 FROM task_comment_attachments
                 WHERE id = $1;`;
     const result = await db.query(q, [req.params.id]);
+    if (result.rowCount) {
+      this.emitTaskCommentsUpdated(projectId, taskId);
+    }
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
@@ -600,6 +644,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     }
 
     const existingReaction = await this.checkIfAlreadyExists(id, req.user?.team_member_id, reaction_type as string);
+    let projectId: string | undefined;
 
     if (existingReaction === reaction_type) {
       const deleteQ = `DELETE FROM task_comment_reactions WHERE comment_id = $1 AND team_member_id = $2;`;
@@ -612,6 +657,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       const safeReactorName = sanitizePlainText(getTaskCommentData.reactor_name || "Unknown User");
       const commentMessage = `<b>${safeReactorName}</b> reacted to your comment on <b>${getTaskCommentData.task_name}</b> (${getTaskCommentData.team_name})`;
 
+      projectId = getTaskCommentData?.project_id;
       if (getTaskCommentData && getTaskCommentData.user_id !== req.user?.id) {
         void NotificationsService.createNotification({
           userId: getTaskCommentData.user_id,
@@ -630,6 +676,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       const safeReactorName = sanitizePlainText(getTaskCommentData.reactor_name || "Unknown User");
       const commentMessage = `<b>${safeReactorName}</b> reacted to your comment on <b>${getTaskCommentData.task_name}</b> (${getTaskCommentData.team_name})`;
 
+      projectId = getTaskCommentData?.project_id;
       if (getTaskCommentData && getTaskCommentData.user_id !== req.user?.id) {
         void NotificationsService.createNotification({
           userId: getTaskCommentData.user_id,
@@ -643,6 +690,11 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     }
 
     const result = await TaskCommentsController.getTaskComments(task_id as string);
+    if (!projectId && task_id) {
+      const projectResult = await db.query(`SELECT project_id FROM tasks WHERE id = $1`, [task_id]);
+      projectId = projectResult.rows[0]?.project_id;
+    }
+    this.emitTaskCommentsUpdated(projectId, task_id as string);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
@@ -725,23 +777,80 @@ export default class TaskCommentsController extends WorklenzControllerBase {
         });
     }
 
+    let attachmentProjectId = attachments?.[0]?.project_id as string | undefined;
+    if (!attachmentProjectId && task_id) {
+      const projectResult = await db.query(`SELECT project_id FROM tasks WHERE id = $1`, [task_id]);
+      attachmentProjectId = projectResult.rows[0]?.project_id;
+    }
+    this.emitTaskCommentsUpdated(attachmentProjectId, task_id);
+
     return res.status(200).send(new ServerResponse(true, []));
   }
 
   @HandleExceptions()
   public static async download(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT CONCAT($2::TEXT, '/', team_id, '/', project_id, '/', task_id, '/', comment_id, '/', id, '.', type) AS key
-               FROM task_comment_attachments
-               WHERE id = $1;`;
-    const result = await db.query(q, [req.query.id, getRootDir()]);
-    const [data] = result.rows;
+    const attachmentId = req.query.id as string | undefined;
+    const filename = (req.query.file as string | undefined) || "download";
+    const teamId = req.user?.team_id;
 
-    if (data?.key) {
-      const url = await createPresignedUrlWithClient(data.key, req.query.file as string);
-      return res.status(200).send(new ServerResponse(true, url));
+    if (!attachmentId || !teamId) {
+      return res.status(400).send(new ServerResponse(false, null, "Attachment ID is required"));
     }
 
-    return res.status(200).send(new ServerResponse(true, null));
+    const q = `
+      SELECT team_id, project_id, task_id, comment_id, id, type
+      FROM task_comment_attachments
+      WHERE id = $1 AND team_id = $2;
+    `;
+    const result = await db.query(q, [attachmentId, teamId]);
+    const [data] = result.rows;
+
+    if (!data) {
+      return res.status(404).send(new ServerResponse(false, null, "Attachment not found"));
+    }
+
+    const key = getTaskAttachmentKey(
+      data.team_id,
+      data.project_id,
+      data.task_id,
+      data.comment_id,
+      data.id,
+      data.type
+    );
+    const url = await createPresignedUrlWithClient(key, filename);
+    return res.status(200).send(new ServerResponse(true, { url, expires_in: 3600 }));
   }
 
-} 
+  /**
+   * Resolves a comment short link to its task + project IDs.
+   * Used by /worklenz/c/:commentId redirects.
+   */
+  @HandleExceptions()
+  public static async resolveShortLink(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const commentId = req.params.id;
+    const q = `
+      SELECT tc.id AS comment_id,
+             t.id AS task_id,
+             t.project_id
+      FROM task_comments tc
+      INNER JOIN tasks t ON t.id = tc.task_id
+      WHERE tc.id = $1
+      LIMIT 1;
+    `;
+    const result = await db.query(q, [commentId]);
+    const [row] = result.rows;
+
+    if (!row?.task_id || !row?.project_id) {
+      return res.status(404).send(new ServerResponse(false, null, "Comment not found"));
+    }
+
+    return res.status(200).send(
+      new ServerResponse(true, {
+        comment_id: row.comment_id,
+        task_id: row.task_id,
+        project_id: row.project_id,
+      })
+    );
+  }
+
+}

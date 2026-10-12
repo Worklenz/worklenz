@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: chamikajaycey/worklenz-frontend:latest
+    image: chamikajaycey/worklenz-frontend:3.2.0
     container_name: worklenz_frontend
     ports:
       - "5000:5000"
@@ -13,7 +13,7 @@ services:
       - worklenz
 
   backend:
-    image: chamikajaycey/worklenz-backend:latest
+    image: chamikajaycey/worklenz-backend:3.2.0
     container_name: worklenz_backend
     ports:
       - "3000:3000"
@@ -37,11 +37,12 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-disabled}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-disabled}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://localhost/api/auth/google/verify}
+      WORKLENZ_DEPLOYMENT_MODE: ${WORKLENZ_DEPLOYMENT_MODE:-self_hosted}
     networks:
       - worklenz
 
   client-portal:
-    image: chamikajaycey/worklenz-client-portal:latest
+    image: chamikajaycey/worklenz-client-portal:3.2.0
     container_name: worklenz_client_portal
     ports:
       - "5174:5174"
@@ -136,10 +137,6 @@ services:
       - type: bind
         source: ./worklenz-backend/database/sql
         target: /docker-entrypoint-initdb.d/sql
-        consistency: cached
-      - type: bind
-        source: ./worklenz-backend/database/migrations
-        target: /docker-entrypoint-initdb.d/migrations
         consistency: cached
       - type: bind
         source: ./worklenz-backend/database/00_init.sh

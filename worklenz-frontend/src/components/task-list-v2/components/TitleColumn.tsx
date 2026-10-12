@@ -9,15 +9,17 @@ import {
   MinusCircleOutlined,
   RetweetOutlined,
 } from '@/shared/antd-imports';
-import { Input, Tooltip } from '@/shared/antd-imports';
+import { Button, Input, Tooltip, notification } from '@/shared/antd-imports';
 import type { InputRef } from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { Task } from '@/types/task-management.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   toggleTaskExpansion,
   fetchSubTasks,
   selectGroups,
+  duplicateTask,
 } from '@/features/task-management/task-management.slice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {
@@ -29,6 +31,11 @@ import {
 import { useTranslation } from 'react-i18next';
 import { getTaskDisplayName } from './TaskRowColumns';
 import TaskContextMenu from './TaskContextMenu';
+import CopyTaskToProjectModal from './CopyTaskToProjectModal';
+import taskDuplicateApiService from '@/api/tasks/task-duplicate.api.service';
+import logger from '@/utils/errorLogger';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { IssueTypeBadge } from '@/components/projects/software/issue-type-badge';
 
 interface TitleColumnProps {
   width: string;
@@ -65,10 +72,17 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
     isGuest = false,
   }) => {
     const dispatch = useAppDispatch();
+    const navigate = useNavigate();
     const { t } = useTranslation('task-list-table');
+    const { t: tDuplicate } = useTranslation('task-duplicate');
     const inputRef = useRef<InputRef>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const [copyToProjectOpen, setCopyToProjectOpen] = useState(false);
+    const [copyToProjectLoading, setCopyToProjectLoading] = useState(false);
     const groups = useAppSelector(selectGroups);
+    const isSoftwareProject = useAppSelector(state =>
+      isSoftwareProjectType(state.projectReducer.project?.project_type)
+    );
     const { showTaskDrawer, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
 
     // True nesting depth for rendering the hierarchy chevron icon.
@@ -266,6 +280,12 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
                       </span>
                     )}
 
+                    {isSoftwareProject && (
+                      <IssueTypeBadge
+                        type={task.parent_task_id ? 'subtask' : task.issue_type ?? 'task'}
+                      />
+                    )}
+
                     <span
                       className={`text-sm text-gray-700 dark:text-gray-300 truncate ${canCreateTask ? 'cursor-text' : 'cursor-default'} flex-shrink min-w-0`}
                       style={{
@@ -287,6 +307,16 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
                   </div>
 
                   <div className="flex items-center gap-1 flex-shrink-0">
+                    {task.is_blocked && (
+                      <Tooltip
+                        title={t('blockedTooltip', { defaultValue: 'This issue is flagged as blocked' })}
+                      >
+                        <div className="px-1.5 py-0.5 rounded text-[11px] leading-4 font-medium bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                          {t('blockedBadge', { defaultValue: 'Blocked' })}
+                        </div>
+                      </Tooltip>
+                    )}
+
                     {depth < 2 && task.sub_tasks_count != null && task.sub_tasks_count > 0 && (
                       <Tooltip
                         title={t(
@@ -413,9 +443,65 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
               position={contextMenuPosition}
               onClose={handleContextMenuClose}
               canCreateTask={canCreateTask}
+              onCopyToProject={() => {
+                handleContextMenuClose();
+                setCopyToProjectOpen(true);
+              }}
             />,
             document.body
           )}
+
+        <CopyTaskToProjectModal
+          open={copyToProjectOpen}
+          sourceProjectId={projectId}
+          taskTitle={taskDisplayName}
+          hasDependencies={task.has_dependencies || false}
+          confirmLoading={copyToProjectLoading}
+          onCompare={async destinationProjectId => {
+            const response = await taskDuplicateApiService.compare({
+              task_id: task.id,
+              project_id: projectId,
+              destination_project_id: destinationProjectId,
+            });
+            return response.body;
+          }}
+          onClose={() => setCopyToProjectOpen(false)}
+          onConfirm={async (destinationProjectId, confirmedDifferences, includeDependencies) => {
+            setCopyToProjectLoading(true);
+            try {
+              await dispatch(
+                duplicateTask({
+                  taskId: task.id,
+                  projectId,
+                  destinationProjectId,
+                  confirmProjectDifferences: confirmedDifferences,
+                  duplicateOptions: {
+                    subtasks: true,
+                    attachments: true,
+                    dates: true,
+                    dependencies: includeDependencies,
+                    assignees: true,
+                    labels: true,
+                    customFields: true,
+                    subscribers: true,
+                  },
+                })
+              ).unwrap();
+
+              setCopyToProjectOpen(false);
+            } catch (error) {
+              logger.error('Failed to copy task to project:', error);
+              notification.error({
+                message: tDuplicate('copyToProject.error', {
+                  defaultValue: 'Failed to copy task',
+                }),
+                description: typeof error === 'string' ? error : undefined,
+              });
+            } finally {
+              setCopyToProjectLoading(false);
+            }
+          }}
+        />
       </div>
     );
   }

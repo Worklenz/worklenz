@@ -1,0 +1,171 @@
+{
+  "emptyValue": "—",
+  "noBudgetSet": "Sem orçamento definido",
+  "loadError": "Não foi possível carregar este relatório. Tente novamente.",
+  "retry": "Tentar novamente",
+  "searchPlaceholder": "Pesquisar",
+  "budgets": {
+    "pageTitle": "Orçamentos",
+    "pageSubTitle": "Acompanhamento do orçamento e da taxa de consumo em todos os projetos. ETC são as horas estimadas restantes à taxa horária realizada a partir do tempo registado.",
+    "empty": "Ainda não há projetos para mostrar.",
+    "table": {
+      "project": "Projeto",
+      "budget": "Orçamento",
+      "spent": "Gasto",
+      "remaining": "Restante",
+      "burnRate": "Taxa de consumo",
+      "etc": "ETC",
+      "alert": "Alerta"
+    },
+    "alert": {
+      "high": "Consumo elevado",
+      "watch": "Acompanhar",
+      "ok": "OK",
+      "none": "Sem orçamento"
+    }
+  },
+  "invoices": {
+    "pageTitle": "Faturas",
+    "pageSubTitle": "Envie, acompanhe e receba pagamentos de clientes numa única vista do portefólio.",
+    "empty": "Ainda não há faturas. Crie faturas no Portal do Cliente.",
+    "openInvoice": "Abrir fatura",
+    "kpi": {
+      "totalInvoiced": "Total faturado",
+      "totalPaid": "Total pago",
+      "totalOutstanding": "Total pendente"
+    },
+    "table": {
+      "invoice": "Fatura",
+      "client": "Cliente",
+      "project": "Projeto",
+      "amount": "Montante",
+      "paymentStatus": "Estado do pagamento",
+      "paidAmount": "Montante pago",
+      "status": "Estado",
+      "issued": "Emitida",
+      "due": "Vencimento"
+    },
+    "status": {
+      "draft": "Rascunho",
+      "sent": "Enviada",
+      "paid": "Paga",
+      "overdue": "Em atraso",
+      "cancelled": "Cancelada",
+      "outstanding": "Pendente"
+    }
+  },
+  "billableTime": {
+    "pageTitle": "Tempo faturável",
+    "pageSubTitle": "Horas registadas, indicação de faturação e valor da tabela de preços em toda a equipa. Não é necessária aprovação da folha de horas.",
+    "empty": "Não há tempo registado neste período.",
+    "tableTitle": "Registos de tempo",
+    "range": {
+      "week": "Esta semana",
+      "month": "Este mês",
+      "lastMonth": "Mês passado"
+    },
+    "kpi": {
+      "logged": "Registado neste período",
+      "billable": "Faturável",
+      "nonBillable": "Não faturável",
+      "value": "Valor faturável"
+    },
+    "table": {
+      "member": "Membro",
+      "project": "Projeto",
+      "task": "Tarefa",
+      "date": "Data",
+      "time": "Tempo",
+      "billable": "Faturável",
+      "rate": "Taxa",
+      "value": "Valor"
+    },
+    "billable": "Faturável",
+    "internal": "Interno"
+  },
+  "utilization": {
+    "pageTitle": "Utilização",
+    "pageSubTitle": "Horas faturáveis da equipa face à capacidade no período selecionado. A sobrealocação está acima de 85% da capacidade.",
+    "empty": "Não há membros da equipa para mostrar.",
+    "tableTitle": "Utilização por membro",
+    "kpi": {
+      "team": "Utilização da equipa",
+      "billable": "Horas faturáveis",
+      "nonBillable": "Não faturável",
+      "overallocated": "Sobrealocado"
+    },
+    "overallocatedCount_one": "{{count}} membro",
+    "overallocatedCount_other": "{{count}} membros",
+    "table": {
+      "member": "Membro",
+      "role": "Função",
+      "billableHours": "Horas faturáveis",
+      "totalHours": "Total de horas",
+      "utilization": "Utilização",
+      "status": "Estado"
+    },
+    "status": {
+      "high": "Sobrealocado",
+      "watch": "Acompanhar",
+      "ok": "OK"
+    }
+  },
+  "profitability": {
+    "pageTitle": "Rentabilidade",
+    "pageSubTitle": "Receita do portfólio proveniente de faturas pagas, custo rastreado de tempo registrado e custos fixos e utilização faturável por projeto.",
+    "empty": "Nenhum projeto para mostrar.",
+    "revenueNote": "A receita é paga por faturas do portal do cliente. A receita no nível do projeto ainda não é rastreada, portanto a tabela mostra o custo e a utilização.",
+    "noRevenueNote": "Ainda não há faturas pagas, portanto a receita, o lucro e a margem permanecem vazios até que as faturas sejam cobradas.",
+    "kpi": {
+      "revenue": "Receita",
+      "trackedCost": "Custo rastreado",
+      "profit": "Lucro",
+      "margin": "Margem de lucro",
+      "billableUtil": "Util Faturável."
+    },
+    "trendTitle": "Tendência de receita e lucro",
+    "costBreakdownTitle": "Divisão de custos",
+    "tableTitle": "Rentabilidade do Projeto",
+    "cost": {
+      "fixed": "Custos fixos",
+      "timeBased": "Custos baseados no tempo"
+    },
+    "table": {
+      "project": "Projeto",
+      "cost": "Custo",
+      "utilization": "Utilização",
+      "health": "Saúde"
+    },
+    "health": {
+      "high": "Consumo elevado",
+      "watch": "Acompanhar",
+      "ok": "No caminho",
+      "none": "Sem orçamento"
+    },
+    "legend": {
+      "revenue": "Receita",
+      "profit": "Lucro",
+      "cost": "Custo"
+    }
+  },
+  "forecasts": {
+    "pageTitle": "Previsões",
+    "pageSubTitle": "Os próximos três meses a partir de uma tendência linear dos últimos três meses de receita faturada e custos baseados no tempo.",
+    "methodology": "Método de previsão: tendência linear dos três meses anteriores. Não é uma previsão baseada no pipeline.",
+    "kpi": {
+      "projectedRevenue": "Receita projetada (próximo mês)",
+      "projectedProfit": "Lucro projetado (próximo mês)"
+    },
+    "vsPrevious": "{{value}}% em relação ao mês passado",
+    "noRevenueBaseline": "Nenhuma receita este mês para comparar",
+    "noProfitBaseline": "Nenhum lucro este mês para comparar",
+    "chartTitle": "Previsão de receita a 3 meses",
+    "legend": {
+      "revenue": "Receita",
+      "profit": "Lucro",
+      "actual": "Real",
+      "projected": "Projetado"
+    },
+    "empty": "Ainda não há histórico suficiente para prever. Registe tempo e envie faturas para criar uma tendência."
+  }
+}

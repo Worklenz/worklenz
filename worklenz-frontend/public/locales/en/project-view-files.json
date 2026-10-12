@@ -7,7 +7,7 @@
   "actionsColumn": "Actions",
   "fileIconAlt": "File icon",
   "emptyText": "There are no files yet.",
-  "uploadButton": "Upload",
+  "uploadButton": "Upload File",
   "uploaderTitle": "Upload Files",
   "filePickerHint": "Drag & Drop files or click to browse",
   "uploadHintLimit": "PDF, images, documents, archives. Max {{maxSize}} MB per file.",

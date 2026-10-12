@@ -19,6 +19,7 @@
   "weeklyEndTitle": "Weekly End Summary",
   "weeklyEndDescription": "Sent every Friday. A wrap-up of completed tasks, overdue, and a look at next week.",
   "channelLabel": "Channel",
+  "channelEmail": "Email",
   "timeLabel": "Send at",
   "saveDigestPreferences": "Save Notification Preferences",
   "digestPreferencesSaved": "Your notification preferences have been saved"

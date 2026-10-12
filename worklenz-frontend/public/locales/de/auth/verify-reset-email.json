@@ -10,5 +10,7 @@
   "passwordRequired": "Bitte geben Sie Ihr neues Passwort ein",
   "returnToLoginButton": "Zurück zur Anmeldung",
   "confirmPasswordRequired": "Bitte bestätigen Sie Ihr neues Passwort",
-  "passwordMismatch": "Die beiden Passwörter stimmen nicht überein"
+  "passwordMismatch": "Die beiden Passwörter stimmen nicht überein",
+  "successTitle": "Passwort erfolgreich zurückgesetzt",
+  "successMessage": "Ihr Passwort wurde aktualisiert. Sie können sich jetzt mit Ihrem neuen Passwort anmelden."
 }

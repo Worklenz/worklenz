@@ -1,5 +1,10 @@
 {
+  "getMobileApp": "Get Mobile App",
+  "helpSupport": "Help & Support",
   "schedule": "Schedule",
+  "settingsTooltip": "Settings",
   "timeline": "Timeline",
+  "trialDaysLeft": "{{count}} days left in your trial",
+  "upgradeToPro": "Upgrade to Pro",
   "workload": "Workload"
 }

@@ -61,16 +61,35 @@ BEGIN
     INNER JOIN teams t ON t.id = utd.team_id
     LEFT JOIN organizations o ON o.user_id = t.user_id
   ),
-  -- AppSumo entitlement lookup is a private, unpublished feature (see
-  -- database/pg-migrations-private/20260821010000_restore_appsumo_in_deserialize_user.js,
-  -- which overlays this function with the real query in the full/private build only).
-  -- This always resolves to "not an AppSumo user", correct for every public-schema account.
   appsumo_data AS (
     SELECT
       tod.owner_id,
-      FALSE AS is_ltd,
-      0 AS redeemed_codes_count,
-      FALSE AS appsumo_business_eligible
+      EXISTS(
+        SELECT 1
+        FROM licensing_coupon_codes lcc
+        WHERE lcc.redeemed_by = tod.owner_id
+          AND lcc.is_redeemed = TRUE
+          AND lcc.is_refunded = FALSE
+      ) AS is_ltd,
+      (
+        SELECT COUNT(*)::INT
+        FROM licensing_coupon_codes lcc
+        WHERE lcc.redeemed_by = tod.owner_id
+          AND lcc.is_redeemed = TRUE
+          AND lcc.is_refunded = FALSE
+      ) AS redeemed_codes_count,
+      (
+        SELECT CASE
+          WHEN (
+            SELECT COUNT(*)::INT
+            FROM licensing_coupon_codes lcc
+            WHERE lcc.redeemed_by = tod.owner_id
+              AND lcc.is_redeemed = TRUE
+              AND lcc.is_refunded = FALSE
+          ) >= 5 THEN TRUE
+          ELSE FALSE
+        END
+      ) AS appsumo_business_eligible
     FROM team_org_data tod
   ),
   plan_trial_data AS (

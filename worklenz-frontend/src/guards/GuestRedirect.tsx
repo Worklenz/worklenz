@@ -2,15 +2,16 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
 import { selectCurrentProject } from '@/app/selectors';
+import { isSessionGuest } from '@/utils/guest-session';
 
 /**
  * GuestRedirect Component
- * 
+ *
  * Prevents guest-only users from accessing the Home page.
  * Guest users should only have access to Projects section.
- * 
- * Guest status is project-scoped and is provided by the project response. A
- * session-level MEMBER role is not enough to classify a user as a Guest.
+ *
+ * Guest status is team-scoped in the authenticated session. Project membership
+ * still controls which projects the user can see.
  */
 const GuestRedirect = ({ children }: { children: React.ReactNode }) => {
   const authService = useAuthService();
@@ -24,7 +25,8 @@ const GuestRedirect = ({ children }: { children: React.ReactNode }) => {
       return <>{children}</>;
     }
 
-    const isGuest = Boolean(currentProject?.project?.is_guest);
+    const isGuest =
+      isSessionGuest(session) || Boolean(currentProject?.project?.is_guest);
 
     if (isGuest && location.pathname.startsWith('/worklenz/home')) {
       return <Navigate to="/worklenz/projects" replace />;

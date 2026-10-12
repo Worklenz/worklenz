@@ -12,33 +12,24 @@ exports.up = async (pgm) => {
 
 -- 1. CREATE TABLE IF NOT EXISTS for template custom columns
 CREATE TABLE IF NOT EXISTS cpt_custom_columns (
-    id               UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    template_id      UUID                                                NOT NULL,
-    name             TEXT                                                NOT NULL,
-    key              TEXT                                                NOT NULL,
-    field_type       TEXT                                                NOT NULL,
+    id               UUID                     DEFAULT uuid_generate_v4() PRIMARY KEY,
+    template_id      UUID                     NOT NULL REFERENCES custom_project_templates ON DELETE CASCADE,
+    name             TEXT                     NOT NULL,
+    key              TEXT                     NOT NULL,
+    field_type       TEXT                     NOT NULL,
     width            INTEGER                  DEFAULT 150,
     is_visible       BOOLEAN                  DEFAULT TRUE,
     is_custom_column BOOLEAN                  DEFAULT TRUE,
     sort_order       INTEGER                  DEFAULT 0,
     created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT cpt_custom_columns_template_id_key_key UNIQUE (template_id, key)
 );
-
-ALTER TABLE cpt_custom_columns
-    ADD PRIMARY KEY (id);
-
-ALTER TABLE cpt_custom_columns
-    ADD UNIQUE (template_id, key);
-
-ALTER TABLE cpt_custom_columns
-    ADD FOREIGN KEY (template_id) REFERENCES custom_project_templates
-        ON DELETE CASCADE;
 
 -- 2. CREATE TABLE IF NOT EXISTS for column configurations
 CREATE TABLE IF NOT EXISTS cpt_column_configurations (
-    id                        UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    column_id                 UUID                                                NOT NULL,
+    id                        UUID                     DEFAULT uuid_generate_v4() PRIMARY KEY,
+    column_id                 UUID                     NOT NULL REFERENCES cpt_custom_columns ON DELETE CASCADE,
     field_title               TEXT,
     field_type                TEXT,
     number_type               TEXT,
@@ -52,50 +43,29 @@ CREATE TABLE IF NOT EXISTS cpt_column_configurations (
     updated_at                TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-ALTER TABLE cpt_column_configurations
-    ADD PRIMARY KEY (id);
-
-ALTER TABLE cpt_column_configurations
-    ADD FOREIGN KEY (column_id) REFERENCES cpt_custom_columns
-        ON DELETE CASCADE;
-
 -- 3. CREATE TABLE IF NOT EXISTS for selection options (dropdown/select columns)
 CREATE TABLE IF NOT EXISTS cpt_selection_options (
-    id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    column_id       UUID                                                NOT NULL,
-    selection_id    TEXT                                                NOT NULL,
-    selection_name  TEXT                                                NOT NULL,
+    id              UUID                     DEFAULT uuid_generate_v4() PRIMARY KEY,
+    column_id       UUID                     NOT NULL REFERENCES cpt_custom_columns ON DELETE CASCADE,
+    selection_id    TEXT                     NOT NULL,
+    selection_name  TEXT                     NOT NULL,
     selection_color TEXT,
-    selection_order INTEGER                                             NOT NULL,
+    selection_order INTEGER                  NOT NULL,
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-ALTER TABLE cpt_selection_options
-    ADD PRIMARY KEY (id);
-
-ALTER TABLE cpt_selection_options
-    ADD FOREIGN KEY (column_id) REFERENCES cpt_custom_columns
-        ON DELETE CASCADE;
-
 -- 4. CREATE TABLE IF NOT EXISTS for label options (label columns)
 CREATE TABLE IF NOT EXISTS cpt_label_options (
-    id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    column_id   UUID                                                NOT NULL,
-    label_id    TEXT                                                NOT NULL,
-    label_name  TEXT                                                NOT NULL,
+    id          UUID                     DEFAULT uuid_generate_v4() PRIMARY KEY,
+    column_id   UUID                     NOT NULL REFERENCES cpt_custom_columns ON DELETE CASCADE,
+    label_id    TEXT                     NOT NULL,
+    label_name  TEXT                     NOT NULL,
     label_color TEXT,
-    label_order INTEGER                                             NOT NULL,
+    label_order INTEGER                  NOT NULL,
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
-ALTER TABLE cpt_label_options
-    ADD PRIMARY KEY (id);
-
-ALTER TABLE cpt_label_options
-    ADD FOREIGN KEY (column_id) REFERENCES cpt_custom_columns
-        ON DELETE CASCADE;
 
 -- 5. Add include_custom_columns flag to custom_project_templates table
 ALTER TABLE custom_project_templates

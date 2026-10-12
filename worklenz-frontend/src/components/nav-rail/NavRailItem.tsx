@@ -244,10 +244,15 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
                 position: 'absolute',
                 bottom: 2,
                 right: 2,
-                fontSize: 10,
-                color: isDark ? 'rgba(255,255,255,.4)' : 'rgba(0,0,0,.35)',
+                fontSize: 14,
+                color: token.colorPrimary,
+                background: token.colorBgContainer,
+                borderRadius: token.borderRadiusSM,
+                padding: '2px',
                 cursor: 'grab',
                 display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 zIndex: 2,
               }}
             >

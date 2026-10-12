@@ -5,8 +5,8 @@
 // this FK as ON DELETE CASCADE, but older databases have it without cascade.
 // Re-create the constraint with ON DELETE CASCADE so the log rows are removed
 // together with the project.
-exports.up = async (db) => {
-  await db.query(`
+exports.up = async (pgm) => {
+  pgm.sql(`
     ALTER TABLE task_activity_logs
         DROP CONSTRAINT IF EXISTS task_activity_logs_projects_id_fk;
 
@@ -17,8 +17,8 @@ exports.up = async (db) => {
   `);
 };
 
-exports.down = async (db) => {
-  await db.query(`
+exports.down = async (pgm) => {
+  pgm.sql(`
     ALTER TABLE task_activity_logs
         DROP CONSTRAINT IF EXISTS task_activity_logs_projects_id_fk;
 
@@ -27,3 +27,4 @@ exports.down = async (db) => {
             FOREIGN KEY (project_id) REFERENCES projects (id);
   `);
 };
+

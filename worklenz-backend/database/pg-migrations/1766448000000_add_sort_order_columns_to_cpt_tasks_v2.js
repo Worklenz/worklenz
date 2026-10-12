@@ -23,17 +23,29 @@ COMMENT ON COLUMN cpt_tasks.priority_sort_order IS 'Sort order when tasks are gr
 COMMENT ON COLUMN cpt_tasks.phase_sort_order IS 'Sort order when tasks are grouped by phase';
 
 -- 3. Add CHECK constraints to ensure non-negative values
-ALTER TABLE cpt_tasks
-    ADD CONSTRAINT cpt_tasks_status_sort_order_check
-        CHECK (status_sort_order >= 0);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'cpt_tasks'::regclass AND conname = 'cpt_tasks_status_sort_order_check'
+    ) THEN
+        ALTER TABLE cpt_tasks ADD CONSTRAINT cpt_tasks_status_sort_order_check CHECK (status_sort_order >= 0);
+    END IF;
 
-ALTER TABLE cpt_tasks
-    ADD CONSTRAINT cpt_tasks_priority_sort_order_check
-        CHECK (priority_sort_order >= 0);
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'cpt_tasks'::regclass AND conname = 'cpt_tasks_priority_sort_order_check'
+    ) THEN
+        ALTER TABLE cpt_tasks ADD CONSTRAINT cpt_tasks_priority_sort_order_check CHECK (priority_sort_order >= 0);
+    END IF;
 
-ALTER TABLE cpt_tasks
-    ADD CONSTRAINT cpt_tasks_phase_sort_order_check
-        CHECK (phase_sort_order >= 0);
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'cpt_tasks'::regclass AND conname = 'cpt_tasks_phase_sort_order_check'
+    ) THEN
+        ALTER TABLE cpt_tasks ADD CONSTRAINT cpt_tasks_phase_sort_order_check CHECK (phase_sort_order >= 0);
+    END IF;
+END $$;
 
 -- 4. Create indexes for performance optimization
 CREATE INDEX IF NOT EXISTS idx_cpt_tasks_status_sort_order

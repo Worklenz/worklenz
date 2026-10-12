@@ -6,16 +6,19 @@ import {
   Button,
   Typography,
   Popover,
+  Tooltip,
   LeftOutlined,
   RightOutlined,
 } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAuthService } from '@/hooks/useAuth';
 import {
   useGetTasksByDateRangeQuery,
   useGetProjectsByTeamQuery,
   useGetClientsLookupQuery,
 } from '@/api/home-page/home-page.api.service';
+import { useFetchTimeOffQuery, TimeOffEntry } from '@/api/schedule/scheduleApi';
 import { setHomeTasksConfig } from '@/features/home-page/home-page.slice';
 import {
   setSelectedTaskId,
@@ -37,9 +40,14 @@ type CalendarViewType = 'month' | 'week' | 'year';
 // todo/doing/done counts read consistently with the rest of the Home page.
 const STATUS_CATEGORY_COLORS = { todo: '#faad14', doing: '#1677ff', done: '#52c41a' };
 
-const HomeCalendar = () => {
+interface HomeCalendarProps {
+  onTimeOffClick?: (entry: TimeOffEntry) => void;
+}
+
+const HomeCalendar: React.FC<HomeCalendarProps> = ({ onTimeOffClick }) => {
   const { t } = useTranslation('home');
   const dispatch = useAppDispatch();
+  const currentSession = useAuthService().getCurrentSession();
   const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
@@ -101,6 +109,33 @@ const HomeCalendar = () => {
   );
 
   const allTasks = tasksData?.body || [];
+
+  const { data: timeOffData } = useFetchTimeOffQuery(
+    {
+      teamMemberId: currentSession?.team_member_id || '',
+      startDate: rangeStart.format('YYYY-MM-DD'),
+      endDate: rangeEnd.format('YYYY-MM-DD'),
+    },
+    { skip: !currentSession?.team_member_id, refetchOnMountOrArgChange: true }
+  );
+
+  const timeOffEntries = useMemo(() => timeOffData?.body || [], [timeOffData]);
+
+  const timeOffByDate = useMemo(() => {
+    const map = new Map<string, TimeOffEntry[]>();
+    timeOffEntries.forEach(entry => {
+      let cur = dayjs(entry.start_date);
+      const end = dayjs(entry.end_date);
+      while (cur.isBefore(end) || cur.isSame(end, 'day')) {
+        const key = cur.format('YYYY-MM-DD');
+        const list = map.get(key) || [];
+        list.push(entry);
+        map.set(key, list);
+        cur = cur.add(1, 'day');
+      }
+    });
+    return map;
+  }, [timeOffEntries]);
 
   // Team-scoped project list — independent of which tasks are currently
   // loaded, so projects with no due tasks in the visible range still show up.
@@ -313,6 +348,45 @@ const HomeCalendar = () => {
     [openTaskDrawer, t]
   );
 
+  const renderTimeOffPill = useCallback(
+    (date: Dayjs) => {
+      const dateKey = date.format('YYYY-MM-DD');
+      const entries = timeOffByDate.get(dateKey);
+      if (!entries || entries.length === 0) return null;
+
+      return (
+        <div className="home-calendar__indicators" onClick={e => e.stopPropagation()}>
+          {entries.map(entry => {
+            const typeLabel = entry.type ? t(`timeOff.types.${entry.type}`, { defaultValue: entry.type }) : '';
+            const text =
+              entry.is_full_day === false && entry.hours_off
+                ? `${entry.hours_off}h ${t('timeOff.off', { defaultValue: 'off' })}`
+                : t('timeOff.timeOff', { defaultValue: 'Time Off' });
+            const fullLabel = typeLabel ? `${text} (${typeLabel})` : text;
+
+            return (
+              <Tooltip
+                key={entry.id}
+                title={entry.reason ? `${fullLabel}: ${entry.reason}` : fullLabel}
+              >
+                <span
+                  className="home-calendar__time-off-pill"
+                  onClick={e => {
+                    e.stopPropagation();
+                    onTimeOffClick?.(entry);
+                  }}
+                >
+                  {fullLabel}
+                </span>
+              </Tooltip>
+            );
+          })}
+        </div>
+      );
+    },
+    [timeOffByDate, onTimeOffClick, t]
+  );
+
   const navTitle =
     calView === 'year'
       ? cursor.format('YYYY')
@@ -369,6 +443,7 @@ const HomeCalendar = () => {
                         {t('homeCalendar.addHint', { defaultValue: '+ Add' })}
                       </span>
                     </div>
+                    {renderTimeOffPill(date)}
                     <div className="home-calendar-day-tasks">{renderDaySummary(dayTasks, date)}</div>
                   </div>
                 );
@@ -399,6 +474,7 @@ const HomeCalendar = () => {
                 >
                   {date.date()}
                 </span>
+                {renderTimeOffPill(date)}
               </div>
               <div
                 className="home-calendar-week-col-body"

@@ -331,6 +331,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                 SELECT active_team FROM users WHERE id = $1
             )
             AND team_members.active = TRUE
+            AND team_members.is_guest = FALSE
             ORDER BY users.email ASC, users.name ASC;
         `;
 

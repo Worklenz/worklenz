@@ -31,6 +31,7 @@ import {
   sendWeeklyEndSummary,
 } from "../shared/email-notifications";
 import DigestPreferencesController from "../controllers/digest-preferences-controller";
+import { isSuccessfulDigestSend, shouldSkipEmptyDigest, skipDailyForMondayConflict } from "../services/digest-send-policy";
 
 const SCHEDULE = "* * * * *"; // every minute
 const LOCK_KEY = "worklenz-digest-scheduler";
@@ -52,7 +53,7 @@ interface DigestUser {
   weekly_end_send_time: string;
 }
 
-async function hasSentToday(userId: string, emailType: string, tz: string): Promise<boolean> {
+export async function hasSentToday(userId: string, emailType: string, tz: string): Promise<boolean> {
   const result = await db.query(
     `SELECT EXISTS (
        SELECT 1 FROM digest_send_log
@@ -102,7 +103,7 @@ async function processDaily(user: DigestUser, now: moment.Moment): Promise<void>
   const hasPersonalTasks =
     dueToday.totalCount > 0 || upcoming.totalCount > 0 || overdue.totalCount > 0;
 
-  if (!hasPersonalTasks && !isAdmin) {
+  if (shouldSkipEmptyDigest(hasPersonalTasks, isAdmin)) {
     await logSend(user.id, "daily", workspaceCount, 0, true, "empty_sections", user.timezone_missing);
     return;
   }
@@ -126,7 +127,7 @@ async function processDaily(user: DigestUser, now: moment.Moment): Promise<void>
   if (assignedByMeOverdue.totalCount > 0) sectionCount++;
   if (adminOverview.length > 0) sectionCount++;
 
-  await sendDailyTaskReminder(user.email, {
+  const sendResult = await sendDailyTaskReminder(user.email, {
     userName: user.name,
     dueToday,
     upcoming,
@@ -137,9 +138,14 @@ async function processDaily(user: DigestUser, now: moment.Moment): Promise<void>
     workspaceCount,
     unsubscribeUrl: DigestPreferencesController.buildUnsubscribeUrl(unsubToken),
     managePreferencesUrl: DigestPreferencesController.buildManagePreferencesUrl(),
+    viewAllTasksUrl: DigestPreferencesController.buildViewAllTasksUrl(),
   });
 
-  await logSend(user.id, "daily", workspaceCount, sectionCount, false, undefined, user.timezone_missing);
+  if (isSuccessfulDigestSend(sendResult)) {
+    await logSend(user.id, "daily", workspaceCount, sectionCount, false, undefined, user.timezone_missing);
+  } else {
+    await logSend(user.id, "daily", workspaceCount, sectionCount, true, "send_failed", user.timezone_missing);
+  }
 }
 
 async function processWeeklyStart(user: DigestUser, now: moment.Moment): Promise<void> {
@@ -163,7 +169,7 @@ async function processWeeklyStart(user: DigestUser, now: moment.Moment): Promise
   const hasPersonalTasks =
     dueToday.totalCount > 0 || dueThisWeek.totalCount > 0 || overdue.totalCount > 0;
 
-  if (!hasPersonalTasks && !isAdmin) {
+  if (shouldSkipEmptyDigest(hasPersonalTasks, isAdmin)) {
     await logSend(user.id, "weekly_start", workspaceCount, 0, true, "empty_sections", user.timezone_missing);
     return;
   }
@@ -193,7 +199,7 @@ async function processWeeklyStart(user: DigestUser, now: moment.Moment): Promise
   if (assignedByMeOverdue.totalCount > 0) sectionCount++;
   if (adminOverview.length > 0) sectionCount++;
 
-  await sendWeeklyStartSummary(user.email, {
+  const sendResult = await sendWeeklyStartSummary(user.email, {
     userName: user.name,
     dueToday,
     dueThisWeek,
@@ -205,9 +211,14 @@ async function processWeeklyStart(user: DigestUser, now: moment.Moment): Promise
     workspaceCount,
     unsubscribeUrl: DigestPreferencesController.buildUnsubscribeUrl(unsubToken),
     managePreferencesUrl: DigestPreferencesController.buildManagePreferencesUrl(),
+    viewAllTasksUrl: DigestPreferencesController.buildViewAllTasksUrl(),
   });
 
-  await logSend(user.id, "weekly_start", workspaceCount, sectionCount, false, undefined, user.timezone_missing);
+  if (isSuccessfulDigestSend(sendResult)) {
+    await logSend(user.id, "weekly_start", workspaceCount, sectionCount, false, undefined, user.timezone_missing);
+  } else {
+    await logSend(user.id, "weekly_start", workspaceCount, sectionCount, true, "send_failed", user.timezone_missing);
+  }
 }
 
 async function processWeeklyEnd(user: DigestUser, now: moment.Moment): Promise<void> {
@@ -235,7 +246,7 @@ async function processWeeklyEnd(user: DigestUser, now: moment.Moment): Promise<v
     becameOverdue.totalCount > 0 ||
     allTimeOverdueCount > 0;
 
-  if (!hasPersonalData && !isAdmin) {
+  if (shouldSkipEmptyDigest(hasPersonalData, isAdmin)) {
     await logSend(user.id, "weekly_end", workspaceCount, 0, true, "empty_sections", user.timezone_missing);
     return;
   }
@@ -262,7 +273,7 @@ async function processWeeklyEnd(user: DigestUser, now: moment.Moment): Promise<v
   if (assignedByMeBecameOverdue.totalCount > 0) sectionCount++;
   if (adminOverview.length > 0) sectionCount++;
 
-  await sendWeeklyEndSummary(user.email, {
+  const sendResult = await sendWeeklyEndSummary(user.email, {
     userName: user.name,
     completed,
     stillDue,
@@ -274,9 +285,14 @@ async function processWeeklyEnd(user: DigestUser, now: moment.Moment): Promise<v
     workspaceCount,
     unsubscribeUrl: DigestPreferencesController.buildUnsubscribeUrl(unsubToken),
     managePreferencesUrl: DigestPreferencesController.buildManagePreferencesUrl(),
+    viewAllTasksUrl: DigestPreferencesController.buildViewAllTasksUrl(),
   });
 
-  await logSend(user.id, "weekly_end", workspaceCount, sectionCount, false, undefined, user.timezone_missing);
+  if (isSuccessfulDigestSend(sendResult)) {
+    await logSend(user.id, "weekly_end", workspaceCount, sectionCount, false, undefined, user.timezone_missing);
+  } else {
+    await logSend(user.id, "weekly_end", workspaceCount, sectionCount, true, "send_failed", user.timezone_missing);
+  }
 }
 
 export async function onDigestSchedulerTick(): Promise<void> {
@@ -334,11 +350,16 @@ export async function onDigestSchedulerTick(): Promise<void> {
           processed++;
         }
 
-        const skipDailyForMondayConflict =
-          now.day() === 1 &&
-          user.weekly_start_enabled &&
-          user.weekly_start_send_time === user.daily_send_time;
-        if (user.daily_enabled && currentTime === user.daily_send_time && !skipDailyForMondayConflict) {
+        if (
+          user.daily_enabled &&
+          currentTime === user.daily_send_time &&
+          !skipDailyForMondayConflict(
+            now.day(),
+            user.weekly_start_enabled,
+            user.weekly_start_send_time,
+            user.daily_send_time
+          )
+        ) {
           await processDaily(user, now);
           processed++;
         }

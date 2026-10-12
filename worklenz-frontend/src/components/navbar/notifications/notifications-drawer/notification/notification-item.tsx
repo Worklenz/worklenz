@@ -4,6 +4,7 @@ import { Button, Tag, Typography, theme } from '@/shared/antd-imports';
 import DOMPurify from 'dompurify';
 import React, { useState } from 'react';
 import { fromNow } from '@/utils/dateUtils';
+import { renderNotificationMessage } from '@/utils/notification-message-renderer';
 import { useTranslation } from 'react-i18next';
 import './notification-item.css';
 
@@ -24,6 +25,7 @@ const NotificationItem = ({
 }: NotificationItemProps) => {
   const { token } = theme.useToken();
   const { t } = useTranslation('navbar');
+  const { t: tNotifications } = useTranslation('notifications');
   const [loading, setLoading] = useState(false);
   const isDarkMode =
     token.colorBgContainer === '#141414' ||
@@ -50,6 +52,12 @@ const NotificationItem = ({
   const createSafeHtml = (html: string) => {
     return { __html: DOMPurify.sanitize(html) };
   };
+
+  const notificationMessage = renderNotificationMessage(notification, tNotifications);
+
+  // What's New release notifications are app-wide, not team-scoped, even though
+  // the row stores the user's current team_id.
+  const showTeamName = Boolean(notification.team) && !notification.release_id;
 
   const getTagBackground = (color?: string) => {
     if (!color) return {};
@@ -78,7 +86,7 @@ const NotificationItem = ({
       style={{
         width: 'auto',
         border: notification.color ? `2px solid ${notification.color}4d` : undefined,
-        cursor: notification.url ? 'pointer' : 'default',
+        cursor: notification.url || notification.release_id ? 'pointer' : 'default',
       }}
       onClick={handleNotificationClick}
       className="ant-notification-notice worklenz-notification rounded-4"
@@ -86,14 +94,16 @@ const NotificationItem = ({
       <div className="ant-notification-notice-content">
         <div className="ant-notification-notice-description">
           {/* Team name */}
-          <div className="mb-1">
-            <Text type="secondary">
-              <BankOutlined /> {notification.team}
-            </Text>
-          </div>
+          {showTeamName && (
+            <div className="mb-1">
+              <Text type="secondary">
+                <BankOutlined /> {notification.team}
+              </Text>
+            </div>
+          )}
 
           {/* Message with HTML content */}
-          <div className="mb-1" dangerouslySetInnerHTML={createSafeHtml(notification.message)} />
+          <div className="mb-1" dangerouslySetInnerHTML={createSafeHtml(notificationMessage)} />
 
           {/* Project tag */}
           {notification.project && (

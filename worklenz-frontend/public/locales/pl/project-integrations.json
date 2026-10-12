@@ -1,0 +1,51 @@
+{
+  "title": "Integracje",
+  "tooltip": "Zarządzaj integracjami projektów",
+  "upgradeRequired": "Integracje dostępne w planie Biznes",
+  "manageAll": "Zarządzaj wszystkimi integracjami",
+  "comingSoon": "Już wkrótce",
+  "cancel": "Anuluj",
+  "slack": {
+    "title": "Luz",
+    "description": "Wysyłaj powiadomienia do kanałów Slack",
+    "notConnected": "Najpierw połącz swój obszar roboczy Slack w Ustawieniach",
+    "quickAddTitle": "Dodaj Slacka do projektu",
+    "currentProject": "Projekt",
+    "selectChannel": "Slackowy kanał",
+    "selectChannelPlaceholder": "Wybierz kanał Slack...",
+    "selectNotifications": "Typy powiadomień",
+    "selectNotificationsPlaceholder": "Wybierz typy powiadomień...",
+    "refresh": "Odśwież",
+    "addButton": "Dodaj integrację",
+    "inviteBotTip": "Wskazówka: pamiętaj, aby najpierw zaprosić bota @Worklenz na swój kanał Slack!"
+  },
+  "teams": {
+    "title": "Zespoły Microsoftu",
+    "description": "Wysyłaj powiadomienia do kanałów Teams"
+  },
+  "github": {
+    "title": "GitHub",
+    "description": "Synchronizuj zadania z problemami z GitHubem"
+  },
+  "notificationTypes": {
+    "taskCreated": "Zadanie utworzone",
+    "taskAssigned": "Zadanie przydzielone",
+    "statusChanged": "Stan zmieniony",
+    "taskCompleted": "Zadanie ukończone",
+    "commentAdded": "Komentarz dodano",
+    "dueDateChanged": "Zmieniono termin płatności"
+  },
+  "validation": {
+    "selectChannel": "Wybierz kanał Slack",
+    "selectNotifications": "Proszę wybrać przynajmniej jeden typ powiadomienia"
+  },
+  "messages": {
+    "integrationAdded": "Integracja ze Slackiem została pomyślnie dodana!",
+    "channelsRefreshed": "Kanały zostały odświeżone pomyślnie"
+  },
+  "errors": {
+    "loadChannelsFailed": "Nie udało się załadować kanałów",
+    "refreshChannelsFailed": "Nie udało się odświeżyć kanałów",
+    "addIntegrationFailed": "Nie udało się dodać integracji"
+  }
+}

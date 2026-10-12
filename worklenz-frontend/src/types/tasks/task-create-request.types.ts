@@ -1,12 +1,13 @@
 import { ITask } from './task.types';
+import { ITaskLabel } from '../label.type';
 
-export interface ITaskCreateRequest extends ITask {
+export type ITaskCreateRequest = Omit<Partial<ITask>, 'labels'> & {
   status_id?: string;
   project_id?: string;
   task_index?: number;
   attachments?: string[];
-  labels?: string[];
-  parent_task_id?: string;
+  labels?: string[] | ITaskLabel[];
+  parent_task_id?: string | null;
   reporter_id?: string;
   team_id?: string;
   priority_id?: string;
@@ -15,11 +16,12 @@ export interface ITaskCreateRequest extends ITask {
   offset?: number;
   width?: number;
   is_dragged?: boolean;
-}
+};
 
-export interface IHomeTaskCreateRequest extends ITask {
+export type IHomeTaskCreateRequest = Partial<ITask> & {
   name: string;
   project_id?: string;
   reporter_id?: string;
   team_id?: string;
-}
+};
+

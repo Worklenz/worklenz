@@ -1,18 +1,21 @@
-import { Badge, Flex, Select } from '@/shared/antd-imports';
+import { Badge, Dropdown, Flex } from '@/shared/antd-imports';
+import type { MenuProps } from '@/shared/antd-imports';
 import './home-tasks-status-dropdown.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import { ITaskStatus } from '@/types/status.types';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
+import { TruncatedColoredTag } from '@/components/common/truncated-colored-tag/TruncatedColoredTag';
+import { toSolidTagColor } from '@/utils/colorUtils';
 
-type HomeTasksStatusDropdownProps = {
+interface HomeTasksStatusDropdownProps {
   task: IProjectTask;
   teamId: string;
-};
+}
 
 const HomeTasksStatusDropdown = ({ task, teamId }: HomeTasksStatusDropdownProps) => {
   const { t } = useTranslation('task-list-table');
@@ -21,104 +24,145 @@ const HomeTasksStatusDropdown = ({ task, teamId }: HomeTasksStatusDropdownProps)
 
   const [selectedStatus, setSelectedStatus] = useState<ITaskStatus | undefined>(undefined);
 
-  const handleStatusChange = (statusId: string) => {
-    if (!task.id || !statusId) return;
+  const getTaskProgress = useCallback(
+    (taskId: string) => {
+      socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), taskId);
+    },
+    [socket]
+  );
 
-    socket?.emit(
-      SocketEvents.TASK_STATUS_CHANGE.toString(),
-      JSON.stringify({
-        task_id: task.id,
-        status_id: statusId,
-        parent_task: task.parent_task_id || null,
-        team_id: teamId,
-      })
-    );
-    getTaskProgress(task.id);
-  };
+  const handleStatusChange = useCallback(
+    (statusId: string) => {
+      if (!task.id || !statusId) return;
 
-  const handleTaskStatusChange = (response: ITaskListStatusChangeResponse) => {
-    if (response && response.id === task.id) {
-      const updatedTask = {
-        ...task,
-        status_color: response.color_code,
-        complete_ratio: +response.complete_ratio || 0,
-        status_id: response.status_id,
-        status_category: response.statusCategory,
-      };
-      setSelectedStatus(updatedTask);
-    }
-  };
+      socket?.emit(
+        SocketEvents.TASK_STATUS_CHANGE.toString(),
+        JSON.stringify({
+          task_id: task.id,
+          status_id: statusId,
+          parent_task: task.parent_task_id || null,
+          team_id: teamId,
+        })
+      );
+      getTaskProgress(task.id);
+    },
+    [socket, task.id, task.parent_task_id, teamId, getTaskProgress]
+  );
 
-  const getTaskProgress = (taskId: string) => {
-    socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), taskId);
-  };
+  const handleTaskStatusChange = useCallback(
+    (response: ITaskListStatusChangeResponse) => {
+      if (!response || response.id !== task.id) return;
+
+      const found = task.project_statuses?.find(status => status.id === response.status_id);
+      if (found) {
+        setSelectedStatus(found);
+        return;
+      }
+
+      setSelectedStatus({
+        id: response.status_id,
+        name: response.status_name,
+        color_code: response.color_code,
+        color_code_dark: response.color_code_dark,
+      });
+    },
+    [task.id, task.project_statuses]
+  );
 
   useEffect(() => {
     const foundStatus = task.project_statuses?.find(status => status.id === task.status_id);
-    setSelectedStatus(foundStatus);
-  }, [task.status_id, task.project_statuses]);
+    if (foundStatus) {
+      setSelectedStatus(foundStatus);
+      return;
+    }
+
+    // Fallback when project_statuses aren't loaded — use fields on the task itself
+    if (task.status_id || task.status_name) {
+      setSelectedStatus({
+        id: task.status_id,
+        name: task.status_name,
+        color_code: task.status_color,
+        color_code_dark: task.status_color_dark,
+      });
+      return;
+    }
+
+    setSelectedStatus(undefined);
+  }, [
+    task.status_id,
+    task.status_name,
+    task.status_color,
+    task.status_color_dark,
+    task.project_statuses,
+  ]);
 
   useEffect(() => {
+    if (!connected) return;
+
     socket?.on(SocketEvents.TASK_STATUS_CHANGE.toString(), handleTaskStatusChange);
 
     return () => {
       socket?.removeListener(SocketEvents.TASK_STATUS_CHANGE.toString(), handleTaskStatusChange);
     };
-  }, [connected]);
+  }, [connected, socket, handleTaskStatusChange]);
 
-  const options = useMemo(
+  const menuItems: MenuProps['items'] = useMemo(
     () =>
       task.project_statuses?.map(status => ({
-        value: status.id,
+        key: status.id || '',
         label: (
           <Flex gap={8} align="center">
             <Badge color={status.color_code} text={status.name} />
           </Flex>
         ),
+        onClick: () => {
+          if (status.id) handleStatusChange(status.id);
+        },
       })),
-    [task.project_statuses]
+    [task.project_statuses, handleStatusChange]
   );
 
-  // Solid status color, same convention as the Priority cell's badge —
-  // matches its color_code/color_code_dark + borderRadius: 4 pairing instead
-  // of a diluted alpha-blended pill.
-  const statusColor =
+  const statusColor = toSolidTagColor(
     (themeMode === 'dark' ? selectedStatus?.color_code_dark : selectedStatus?.color_code) ??
-    selectedStatus?.color_code;
+      selectedStatus?.color_code
+  );
+
+  const statusLabel = selectedStatus?.name;
+  if (!statusLabel) return null;
+
+  const hasMenu = (menuItems?.length ?? 0) > 0;
+
+  // Same TruncatedColoredTag pill as Home > Log Time Status column
+  const statusTag = (
+    <TruncatedColoredTag label={statusLabel} color={statusColor} />
+  );
+
+  if (!hasMenu) return statusTag;
 
   return (
-    <>
-      {
-        <Select
-          variant="borderless"
-          value={task.status_id}
-          onChange={handleStatusChange}
-          className="home-status-select"
-          styles={{
-            popup: {
-              root: { borderRadius: 8, minWidth: 150, maxWidth: 200 },
-            },
-          }}
-          style={
-            {
-              // A CSS var, not `backgroundColor` directly — antd's dark theme
-              // paints its own opaque fill on the inner `.ant-select-selector`
-              // (not the outer node this `style` prop targets), which sat on
-              // top of and hid this color in dark mode. See the matching
-              // `.home-status-select .ant-select-selector` rule in the CSS file.
-              '--status-color': statusColor,
-              borderRadius: 4,
-              height: 22,
-            } as React.CSSProperties
+    <Dropdown
+      menu={{ items: menuItems }}
+      trigger={['click']}
+      placement="bottomLeft"
+      overlayClassName="home-status-dropdown"
+    >
+      <button
+        type="button"
+        className="home-status-tag-trigger"
+        aria-label={t('changeStatus', {
+          defaultValue: 'Change status: {{status}}',
+          status: statusLabel,
+        })}
+        onClick={e => e.stopPropagation()}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.stopPropagation();
           }
-          labelRender={value => {
-            const status = task.project_statuses?.find(status => status.id === value.value);
-            return status ? <span style={{ fontSize: 12, color: '#fff' }}>{status.name}</span> : '';
-          }}
-          options={options}
-        />
-      }
-    </>
+        }}
+      >
+        {statusTag}
+      </button>
+    </Dropdown>
   );
 };
 

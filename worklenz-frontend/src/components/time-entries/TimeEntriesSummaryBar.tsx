@@ -2,14 +2,8 @@ import React from 'react';
 import { theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { IMySummary } from '@/api/tasks/task-time-logs.api.service';
+import { formatLoggedDuration } from './time-entries-format';
 import '@/pages/time-entries/time-entries.css';
-
-const formatSeconds = (seconds: number): string => {
-  const total = Math.max(0, Math.round(seconds || 0));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  return `${h}:${String(m).padStart(2, '0')}`;
-};
 
 const STAT_DEFS: { key: keyof IMySummary; label: string; color: string }[] = [
   { key: 'today_total', label: 'Today Total', color: '#1677ff' },
@@ -44,7 +38,7 @@ export const TimeEntriesSummaryBar: React.FC<TimeEntriesSummaryBarProps> = ({ su
             {t(`summary.${stat.key}`, { defaultValue: stat.label })}
           </div>
           <div style={{ fontSize: 20, fontWeight: 700, color: stat.color }}>
-            {loading ? '—' : formatSeconds((summary?.[stat.key] as number) || 0)}
+            {loading ? '—' : formatLoggedDuration(summary?.[stat.key])}
           </div>
         </div>
       ))}

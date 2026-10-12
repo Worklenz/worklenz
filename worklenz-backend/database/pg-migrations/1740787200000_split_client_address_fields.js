@@ -5,14 +5,13 @@ exports.shorthands = undefined;
 
 /** @param {import('node-pg-migrate').MigrationBuilder} pgm */
 exports.up = async pgm => {
-  pgm.sql(`
-    ALTER TABLE clients
-      ADD COLUMN IF NOT EXISTS address_line_1 TEXT,
-      ADD COLUMN IF NOT EXISTS city TEXT,
-      ADD COLUMN IF NOT EXISTS state TEXT,
-      ADD COLUMN IF NOT EXISTS zip_code TEXT,
-      ADD COLUMN IF NOT EXISTS country TEXT;
-  `);
+  pgm.addColumns('clients', {
+    address_line_1: { type: 'text' },
+    city:           { type: 'text' },
+    state:          { type: 'text' },
+    zip_code:       { type: 'text' },
+    country:        { type: 'text' },
+  }, { ifNotExists: true });
 };
 
 /** @param {import('node-pg-migrate').MigrationBuilder} pgm */

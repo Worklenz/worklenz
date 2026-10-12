@@ -11,6 +11,15 @@ import { TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "..
 import { getColor } from "../../shared/utils";
 import WLTasksControllerBase, { GroupBy, IWLTaskGroup } from "./workload-gannt-base";
 
+/**
+ * Project Workload Gantt.
+ *
+ * TVR-18 / TVR-1: intentionally does NOT apply `restrict_tasks_to_assignee`
+ * filtering. Reports / Workload / dashboards are out of scope for this pass.
+ * See `ASSIGNEE_SCOPE_EXCLUDED_SURFACES` in shared/assignee-task-scope.ts.
+ * Opening a specific task from this view still goes through TVR-11 access checks.
+ */
+
 interface IWorkloadTask {
   id: string;
   name: string;
@@ -244,12 +253,21 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                       TRUE AS project_member,
                       
                       -- Organization working settings
-                      (SELECT working_hours FROM organizations WHERE id = (SELECT organization_id FROM teams WHERE id = (SELECT team_id FROM team_members WHERE id = tmiv.team_member_id))) AS org_working_hours,
+                      (SELECT hours_per_day FROM organizations WHERE id = (SELECT organization_id FROM teams WHERE id = (SELECT team_id FROM team_members WHERE id = tmiv.team_member_id))) AS org_working_hours,
                       (SELECT ROW_TO_JSON(wd) FROM (
                         SELECT monday, tuesday, wednesday, thursday, friday, saturday, sunday
-                        FROM organization_working_days 
+                        FROM organization_working_days
                         WHERE organization_id = (SELECT organization_id FROM teams WHERE id = (SELECT team_id FROM team_members WHERE id = tmiv.team_member_id))
                       ) wd) AS org_working_days,
+
+                      -- Whether this member has ANY task assigned in this project, ignoring
+                      -- the selected date range entirely - lets the UI tell "nothing in this
+                      -- period" apart from "never assigned anything" when tasks comes back [].
+                      EXISTS (SELECT 1 FROM tasks
+                                        INNER JOIN tasks_assignees ta ON tasks.id = ta.task_id
+                              WHERE tasks.archived IS FALSE
+                                AND tasks.project_id = pm.project_id
+                                AND ta.team_member_id = tmiv.team_member_id) AS has_any_assignment,
 
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT MIN(LEAST(start_date, end_date)) AS min_date,
@@ -259,7 +277,7 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                             WHERE archived IS FALSE
                               AND project_id = $1
                               AND ta.team_member_id = tmiv.team_member_id
-                              ${WorkloadGanntController.getTaskDateRangeFilter(startDate, endDate)}) rec) AS duration,
+                              ${WorkloadGanntController.getTaskDateRangeFilter()}) rec) AS duration,
 
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT  MIN(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS min_date,
@@ -269,7 +287,7 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                                           INNER JOIN tasks t ON twl.task_id = t.id AND t.archived IS FALSE
                                   WHERE t.project_id = $1
                                     AND twl.user_id = tmiv.user_id
-                                    ${WorkloadGanntController.getLogDateRangeFilter(startDate, endDate)}) rec) AS logs_date_union,
+                                    ${WorkloadGanntController.getLogDateRangeFilter()}) rec) AS logs_date_union,
 
                       (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                       FROM (
@@ -289,7 +307,7 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                             WHERE archived IS FALSE
                               AND project_id = pm.project_id
                               AND ta.team_member_id = tmiv.team_member_id
-                              ${WorkloadGanntController.getTaskDateRangeFilter(startDate, endDate)}
+                              ${WorkloadGanntController.getTaskDateRangeFilter()}
 
                             UNION ALL
 
@@ -307,13 +325,37 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                                    'time_log' AS entry_type
                             FROM task_work_log twl
                                       INNER JOIN tasks t ON twl.task_id = t.id
-                                      INNER JOIN tasks_assignees ta ON t.id = ta.task_id
                             WHERE t.archived IS FALSE
                               AND t.project_id = pm.project_id
-                              AND ta.team_member_id = tmiv.team_member_id
                               AND twl.user_id = tmiv.user_id
-                              ${startDate ? `AND twl.created_at::date >= '${startDate}'` : ''}
-                              ${endDate ? `AND twl.created_at::date <= '${endDate}'` : ''}
+                              ${WorkloadGanntController.getLogDateRangeFilter()}
+
+                            UNION ALL
+
+                            -- Tasks assigned but with no start/end date and no logged time
+                            -- in the selected range (would otherwise be silently dropped by
+                            -- the two filters above). Scoped to the same date range as the
+                            -- time-log branch above so a task with a log outside the selected
+                            -- range doesn't stay permanently excluded from every other week.
+                            SELECT tasks.id AS task_id,
+                                   tasks.name AS task_name,
+                                   tasks.start_date,
+                                   tasks.end_date,
+                                   (SELECT name FROM task_statuses WHERE id = tasks.status_id) AS status_name,
+                                   (SELECT color_code FROM sys_task_status_categories WHERE id = (SELECT category_id FROM task_statuses WHERE id = tasks.status_id)) AS status_color,
+                                   (SELECT name FROM task_priorities WHERE id = tasks.priority_id) AS priority_name,
+                                   (SELECT color_code FROM task_priorities WHERE id = tasks.priority_id) AS priority_color,
+                                   NULL::NUMERIC AS logged_hours,
+                                   'task' AS entry_type
+                            FROM tasks
+                                      INNER JOIN tasks_assignees ta ON tasks.id = ta.task_id
+                            WHERE tasks.archived IS FALSE
+                              AND tasks.project_id = pm.project_id
+                              AND ta.team_member_id = tmiv.team_member_id
+                              AND (tasks.start_date IS NULL OR tasks.end_date IS NULL)
+                              AND NOT EXISTS (SELECT 1 FROM task_work_log twl
+                                              WHERE twl.task_id = tasks.id AND twl.user_id = tmiv.user_id
+                                              ${WorkloadGanntController.getLogDateRangeFilter()})
 
                             ORDER BY start_date ASC
                       ) rec) AS tasks
@@ -327,7 +369,7 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                           AND t.project_id = $1
                           AND ta.team_member_id = tmiv.team_member_id) ASC NULLS LAST`;
 
-    const result = await db.query(q, [req.params.id]);
+    const result = await db.query(q, [req.params.id, startDate || null, endDate || null]);
 
     for (const member of result.rows) {
       member.color_code = getColor(member.TaskName);
@@ -466,28 +508,16 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
     };
   }
 
-  private static getTaskDateRangeFilter(startDate?: string, endDate?: string): string {
-    if (!startDate && !endDate) return "";
-    const conditions: string[] = [];
-    if (startDate) {
-      conditions.push(`start_date >= '${startDate}'`);
-    }
-    if (endDate) {
-      conditions.push(`end_date <= '${endDate}'`);
-    }
-    return conditions.length > 0 ? `AND ${conditions.join(" AND ")}` : "";
+  // startDate/endDate are always bound as query parameters $2/$3 by the sole
+  // caller (getMembers), which passes null when a date isn't supplied - the
+  // IS NULL guards below make the filter a no-op in that case while keeping
+  // $2/$3 present in every query so the bound parameter count never changes.
+  private static getTaskDateRangeFilter(): string {
+    return `AND ($2::date IS NULL OR start_date >= $2::date) AND ($3::date IS NULL OR end_date <= $3::date)`;
   }
 
-  private static getLogDateRangeFilter(startDate?: string, endDate?: string): string {
-    if (!startDate && !endDate) return "";
-    const conditions: string[] = [];
-    if (startDate) {
-      conditions.push(`twl.created_at::date >= '${startDate}'`);
-    }
-    if (endDate) {
-      conditions.push(`twl.created_at::date <= '${endDate}'`);
-    }
-    return conditions.length > 0 ? `AND ${conditions.join(" AND ")}` : "";
+  private static getLogDateRangeFilter(): string {
+    return `AND ($2::date IS NULL OR twl.created_at::date >= $2::date) AND ($3::date IS NULL OR twl.created_at::date <= $3::date)`;
   }
 
   private static getFilterByDatesWhereClosure(dateChecker?: string): string {

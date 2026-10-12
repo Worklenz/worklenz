@@ -10,7 +10,7 @@ import {
   Result,
   theme,
 } from "@/shared/antd-imports";
-import { App } from "antd";
+import App from "antd/es/app";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 

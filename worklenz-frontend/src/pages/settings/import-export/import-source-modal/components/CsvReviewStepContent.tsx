@@ -7,10 +7,11 @@ import {
   UnorderedListOutlined,
   Typography,
 } from '@/shared/antd-imports';
+import type { TranslateFn, ThemeToken } from '../types';
 
 interface CsvReviewStepContentProps {
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
-  themeToken: any;
+  t: TranslateFn;
+  themeToken: ThemeToken;
   spaceName: string;
   providerKey: string;
   sourceLabel: string;
@@ -20,7 +21,7 @@ interface CsvReviewStepContentProps {
   csvUserRows: string[];
   userEmails: Record<string, string>;
   addUsers: boolean;
-  csvRows: Record<string, any>[];
+  csvRows: Record<string, unknown>[];
 }
 
 export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({

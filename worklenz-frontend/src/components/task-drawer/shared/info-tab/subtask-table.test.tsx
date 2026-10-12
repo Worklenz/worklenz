@@ -108,4 +108,32 @@ describe('SubTaskTable', () => {
       })
     );
   });
+
+  it('disables the add sub task button when task creation is restricted', () => {
+    render(
+      <SubTaskTable
+        subTasks={[]}
+        loadingSubTasks={false}
+        refreshSubTasks={vi.fn()}
+        canCreateTask={false}
+        t={(key: string, opts?: any) => opts?.defaultValue ?? key}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /add new sub task/i })).toBeDisabled();
+  });
+
+  it('shows the add sub task button when task creation is allowed', () => {
+    render(
+      <SubTaskTable
+        subTasks={[]}
+        loadingSubTasks={false}
+        refreshSubTasks={vi.fn()}
+        canCreateTask={true}
+        t={(key: string, opts?: any) => opts?.defaultValue ?? key}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /add new sub task/i })).toBeEnabled();
+  });
 });

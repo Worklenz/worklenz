@@ -1,0 +1,10 @@
+{
+  "title": "{{items}} Servicios",
+  "requestButton": "hacer una solicitud",
+  "modal": {
+    "title": "hacer una solicitud",
+    "submitButton": "Enviar"
+  },
+  "uploadLogoText": "Haga clic o arrastre el archivo a esta área para cargar",
+  "uploadLogoAltText": "Soporte para una carga única o masiva. Prohibir estrictamente cargar datos de la empresa u otros archivos de la banda."
+}

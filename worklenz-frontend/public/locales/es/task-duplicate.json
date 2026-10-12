@@ -12,5 +12,31 @@
     "subscribers": "Suscriptores"
   },
   "duplicate": "Duplicar",
-  "cancel": "Cancelar"
+  "cancel": "Cancelar",
+  "copyToProject": {
+    "title": "Copiar tarea al proyecto",
+    "selectProject": "Selecciona un proyecto de destino",
+    "confirm": "Copiar tarea",
+    "copyTask": "Copiar tarea",
+    "checkDifferences": "Comprobar diferencias",
+    "check": "Comprobar diferencias",
+    "checking": "Comprobando diferencias...",
+    "confirmDifferences": "Añadir y copiar tarea",
+    "differencesFound": "Estas columnas faltan en el proyecto de destino.",
+    "missingPhasesFound": "Estas fases faltan en el proyecto de destino.",
+    "statusMissing": "El estado \"{{sourceStatus}}\" no está en el proyecto de destino. La tarea se asignará al estado principal \"{{destinationStatus}}\".",
+    "createMissingItems": "Crear columnas y fases faltantes",
+    "createMissingColumns": "Crear columnas faltantes",
+    "cancel": "Cancelar",
+    "cancelDifferences": "Cancelar copia",
+    "success": "Tarea copiada correctamente",
+    "openTask": "Abrir tarea",
+    "loadError": "No se pueden cargar los proyectos accesibles.",
+    "noProjects": "No se encontraron otros proyectos accesibles.",
+    "noDifferencesFound": "El proyecto de destino tiene todas las columnas y fases requeridas.",
+    "copyDependencies": "Copiar tareas de dependencia",
+    "copyDependenciesDescription": "Incluya todas las tareas dependientes al copiar esta tarea al proyecto de destino.",
+    "dependenciesInfo": "Esta tarea tiene dependencias. Las tareas dependientes también se copiarán en el proyecto de destino.",
+    "error": "No se pudo copiar la tarea"
+  }
 }

@@ -137,7 +137,7 @@ export async function sendResetEmail(toEmail: string, user_id: string, hash: str
 
   await sendEmail({
     to: [toEmail],
-    subject: "Reset your password on Worklenz.",
+    subject: "Set or reset your password on Worklenz.",
     html: content
   });
 }
@@ -149,7 +149,7 @@ export function sendResetSuccessEmail(toEmail: string) {
 
   sendEmail({
     to: [toEmail],
-    subject: "Your password was reset.",
+    subject: "Your Worklenz password was updated.",
     html: content
   });
 }

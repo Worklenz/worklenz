@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs/promises";
 import {
   CopyObjectCommand,
   CopyObjectCommandInput,
@@ -30,6 +31,7 @@ import {
   BUCKET,
   S3_ENDPOINT,
   S3_URL,
+  STORAGE_LOCAL_URL,
   STORAGE_PROVIDER,
 } from "./constants";
 import {presignS3Client, s3Client} from "./s3-client";
@@ -58,13 +60,11 @@ if (STORAGE_PROVIDER === "azure") {
         sharedKeyCredential,
       );
 
-      const containerName = AZURE_STORAGE_CONTAINER || "ifinitycdn";
+      const containerName = AZURE_STORAGE_CONTAINER || "worklenz";
       azureContainerClient =
         azureBlobServiceClient.getContainerClient(containerName);
 
-      console.log(
-        `Azure Blob Storage initialized with account: ${AZURE_STORAGE_ACCOUNT_NAME}, container: ${containerName}`,
-      );
+      console.log("Azure Blob Storage initialized");
     }
   } catch (error) {
     console.error("Failed to initialize Azure Blob Storage:", error);
@@ -158,6 +158,50 @@ export function getProjectCommentAttachmentKey(
   return keyPath;
 }
 
+/**
+ * Object key for async task-export artifacts (ZIP/CSV) stored for download.
+ */
+export function getTaskExportStorageKey(
+  teamId: string,
+  projectId: string,
+  jobId: string,
+  extension: string,
+) {
+  const safeExt = (extension || "zip").replace(/^\./, "");
+  const keyPath = path
+    .join(
+      getRootDir(),
+      teamId,
+      "projects",
+      projectId,
+      "task-exports",
+      `${jobId}.${safeExt}`,
+    )
+    .replace(/\\/g, "/");
+
+  return keyPath;
+}
+
+/**
+ * Object key for async Audit Log CSV export artifacts (Audit log spec, task 5.2) -
+ * mirrors getTaskExportStorageKey's shape, scoped by organization instead of project since
+ * the Audit Log itself is organization-wide (see the scope note in
+ * database/pg-migrations/1791193625587_create-audit-events-table.js).
+ */
+export function getAuditLogExportStorageKey(organizationId: string, jobId: string) {
+  const keyPath = path
+    .join(
+      getRootDir(),
+      "organizations",
+      organizationId,
+      "audit-log-exports",
+      `${jobId}.csv`,
+    )
+    .replace(/\\/g, "/");
+
+  return keyPath;
+}
+
 export function getAvatarKey(userId: string, type: string) {
   const keyPath = path
     .join("avatars", getRootDir(), `${userId}.${type}`)
@@ -205,6 +249,7 @@ export function getEnvironmentPrefix(): string {
  */
 export type ClientPortalStoragePurpose =
   | "request-attachments"
+  | "ticket-attachments"
   | "chat-files"
   | "avatars"
   | "service-images"
@@ -329,8 +374,39 @@ async function uploadBufferToAzure(
     });
 
     // Format URL with container name in the path
-    const containerName = AZURE_STORAGE_CONTAINER || "ifinitycdn";
+    const containerName = AZURE_STORAGE_CONTAINER || "worklenz";
     return `${AZURE_STORAGE_URL}/${containerName}/${location}`;
+  } catch (error) {
+    log_error(error);
+    return null;
+  }
+}
+
+async function uploadBufferToLocal(
+  buffer: Buffer,
+  type: string,
+  location: string,
+): Promise<string | null> {
+  try {
+    const storageDir = path.resolve(process.cwd(), "storage");
+    const filePath = path.resolve(storageDir, location);
+
+    // `location` is derived from client-supplied fields (file id/extension). Make
+    // sure a crafted value with "../" segments cannot escape the storage dir and
+    // turn this into an arbitrary filesystem write.
+    const relative = path.relative(storageDir, filePath);
+    if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+      log_error(
+        `Rejected local storage write outside storage dir: ${location} (type: ${type})`,
+      );
+      return null;
+    }
+
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+
+    await fs.writeFile(filePath, buffer);
+
+    return getPublicUrl(location);
   } catch (error) {
     log_error(error);
     return null;
@@ -342,12 +418,16 @@ export async function uploadBuffer(
   type: string,
   location: string,
 ): Promise<string | null> {
+  if (STORAGE_PROVIDER === "local") {
+    return uploadBufferToLocal(buffer, type, location);
+  }
+
   if (STORAGE_PROVIDER === "azure") {
     return uploadBufferToAzure(buffer, type, location);
   }
+
   return uploadBufferToS3(buffer, type, location);
 }
-
 /**
  * Resolves a stored object key to a public URL, mirroring the URL shape
  * uploadBufferToS3/uploadBufferToAzure already produce at upload time. Lets
@@ -355,8 +435,12 @@ export async function uploadBuffer(
  * bucket/endpoint/provider change doesn't strand previously stored rows.
  */
 export function getPublicUrl(key: string): string {
+  if (STORAGE_PROVIDER === "local") {
+    return `${STORAGE_LOCAL_URL}/storage/${key}`;
+  }
+
   if (STORAGE_PROVIDER === "azure") {
-    const containerName = AZURE_STORAGE_CONTAINER || "ifinitycdn";
+    const containerName = AZURE_STORAGE_CONTAINER || "worklenz";
     return `${AZURE_STORAGE_URL}/${containerName}/${key}`;
   }
 
@@ -375,6 +459,26 @@ export async function uploadBase64(base64Data: string, location: string) {
 
     return await uploadBuffer(buffer, type, location);
   } catch (error) {
+    log_error(error);
+    return null;
+  }
+}
+
+async function deleteObjectFromLocal(key: string) {
+  try {
+    const storageDir = path.resolve(process.cwd(), "storage");
+    const filePath = path.resolve(storageDir, key);
+    const relative = path.relative(storageDir, filePath);
+    if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+      log_error(`Rejected local storage delete outside storage dir: ${key}`);
+      return null;
+    }
+    await fs.unlink(filePath);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
+      return true;
+    }
     log_error(error);
     return null;
   }
@@ -408,6 +512,9 @@ async function deleteObjectFromAzure(key: string) {
 }
 
 export async function deleteObject(key: string) {
+  if (STORAGE_PROVIDER === "local") {
+    return deleteObjectFromLocal(key);
+  }
   if (STORAGE_PROVIDER === "azure") {
     return deleteObjectFromAzure(key);
   }
@@ -554,7 +661,7 @@ async function createPresignedUrlWithAzureClient(key: string, file: string) {
 
     const fileExtension = path.extname(key).toLowerCase();
     const contentType = mimeTypes.lookup(fileExtension);
-    const containerName = AZURE_STORAGE_CONTAINER || "ifinitycdn";
+    const containerName = AZURE_STORAGE_CONTAINER || "worklenz";
 
     const sasOptions = {
       containerName,
@@ -629,7 +736,7 @@ async function createPresignedUploadUrlAzure(
       AZURE_STORAGE_ACCOUNT_KEY,
     );
 
-    const containerName = AZURE_STORAGE_CONTAINER || "ifinitycdn";
+    const containerName = AZURE_STORAGE_CONTAINER || "worklenz";
     const expiresOn = new Date(Date.now() + 15 * 60 * 1000); // 15 min
 
     const sasOptions = {
@@ -686,6 +793,17 @@ export async function objectExists(key: string): Promise<boolean> {
  */
 export async function getObjectSize(key: string): Promise<number | null> {
   try {
+    if (STORAGE_PROVIDER === "local") {
+      const storageDir = path.resolve(process.cwd(), "storage");
+      const filePath = path.resolve(storageDir, key);
+      const relative = path.relative(storageDir, filePath);
+      if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+        return null;
+      }
+      const stat = await fs.stat(filePath);
+      return stat.size;
+    }
+
     if (STORAGE_PROVIDER === "azure") {
       if (!azureContainerClient) return null;
       const blobClient = azureContainerClient.getBlockBlobClient(key);
@@ -699,6 +817,47 @@ export async function getObjectSize(key: string): Promise<number | null> {
     );
     return head.ContentLength ?? null;
   } catch {
+    return null;
+  }
+}
+
+/**
+ * Downloads an object as a Buffer (used by task-export ZIP bundling).
+ * Returns null if the object is missing or cannot be read.
+ */
+export async function getObjectBuffer(key: string): Promise<Buffer | null> {
+  try {
+    if (STORAGE_PROVIDER === "local") {
+      const storageDir = path.resolve(process.cwd(), "storage");
+      const filePath = path.resolve(storageDir, key);
+      const relative = path.relative(storageDir, filePath);
+      if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+        log_error(`Rejected local storage read outside storage dir: ${key}`);
+        return null;
+      }
+      return await fs.readFile(filePath);
+    }
+
+    if (STORAGE_PROVIDER === "azure") {
+      if (!azureContainerClient) return null;
+      const blobClient = azureContainerClient.getBlockBlobClient(key);
+      return await blobClient.downloadToBuffer();
+    }
+
+    const response = await s3Client.send(
+      new GetObjectCommand({ Bucket: BUCKET, Key: key }),
+    );
+    const body = response.Body;
+    if (!body) return null;
+
+    // AWS SDK v3 Body is AsyncIterable / Readable
+    const chunks: Buffer[] = [];
+    for await (const chunk of body as AsyncIterable<Uint8Array>) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks);
+  } catch (error) {
+    log_error(error);
     return null;
   }
 }

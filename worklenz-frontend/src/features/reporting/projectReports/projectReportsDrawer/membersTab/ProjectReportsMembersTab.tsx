@@ -18,7 +18,9 @@ const ProjectReportsMembersTab = ({ projectId = null }: ProjectReportsMembersTab
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const filteredMembersData = useMemo(() => {
-    return membersData.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    return membersData.filter(item =>
+      String(item?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
   }, [searchQuery, membersData]);
 
   const fetchMembersData = async () => {

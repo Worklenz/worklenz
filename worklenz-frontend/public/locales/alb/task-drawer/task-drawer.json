@@ -17,15 +17,38 @@
     "back": "Kthehu",
     "backToParent": "Kthehu te detyra kryesore",
     "toParentTask": "te detyra kryesore",
-    "loadingHierarchy": "Duke ngarkuar hierarkinë..."
+    "loadingHierarchy": "Duke ngarkuar hierarkinë...",
+    "previousTask": "Detyra e mëparshme",
+    "nextTask": "Detyra tjetër"
+  },
+  "issueHeader": {
+    "copyKey": "Kopjo çelësin e problemit",
+    "keyCopied": "E kopjuar"
   },
   "taskInfoTab": {
     "title": "Informacioni",
     "details": {
       "title": "Detajet",
+      "storyPoints": "Pikat e tregimit",
+      "noEstimate": "Asnjë vlerësim",
+      "status": "Status",
+      "epic": "Epik",
+      "release": "Lirimi",
+      "noRelease": "Asnjë lirim",
+      "releasedSuffix": "{{name}} (lëshuar)",
+      "releaseLocked": "Versionet e lëshuara janë vetëm për lexim",
+      "releaseAssignError": "Lëshimi nuk mund të ndryshohej. Ju lutemi provoni përsëri.",
+      "blocked": "E bllokuar",
+      "flagAsBlocked": "Flamuro si të bllokuar",
       "task-key": "Çelësi i detyrës",
+      "issue-key": "Çelësi i çështjes",
       "phase": "Faza",
+      "phasePlaceholder": "Zgjidhni Fazën",
+      "sprint": "Sprint",
+      "sprintPlaceholder": "Mbështetja",
       "assignees": "Të caktuarit",
+      "assignee": "I ngarkuari",
+      "unassigned": "E pacaktuar",
       "due-date": "Data e përfundimit",
       "time-estimation": "Vlerësimi i kohës",
       "priority": "Prioriteti",
@@ -49,7 +72,23 @@
       "taskWeightTooltip": "Vendos peshën e kësaj nëndetyre (përqindje)",
       "taskWeightRequired": "Ju lutemi vendosni një peshë detyre",
       "taskWeightRange": "Pesha duhet të jetë midis 0 dhe 100",
+      "customFields": {
+        "empty": "Bosh",
+        "enterNumber": "Vendos numrin",
+        "selectDate": "Zgjidh datën",
+        "selectOption": "Zgjidh opsionin",
+        "selectPeople": "Zgjidh personat",
+        "updateError": "Përditësimi i fushës së personalizuar dështoi"
+      },
       "recurring": "Përsëritëse"
+    },
+    "customFields": {
+      "title": "Fusha të personalizuara",
+      "autoSaveHint": "Ndryshimet ruhen automatikisht kur largoheni nga një fushë.",
+      "addCustomField": "Shto një fushë të personalizuar",
+      "addCustomColumn": "Shto kolonë të personalizuar",
+      "showMoreFields": "Shfaq {{count}} fusha të tjera",
+      "hideFields": "Fshih fushat"
     },
     "labels": {
       "labelInputPlaceholder": "Kërko ose krijo",
@@ -87,13 +126,18 @@
       "chooseOrDropFileToUpload": "Zgjidh ose lësho skedarin për ta ngarkuar",
       "uploading": "Duke ngarkuar...",
       "maxFileSizeText": "Madhësia maksimale e skedarit: {{maxSize}}MB",
-      "upgradeLinkText": "Të duhen ngarkime më të mëdha? Bëj upgrade"
+      "pasteHint": "Mund të ngjitni edhe një skedar me Ctrl+V",
+      "filesTooLarge": "Këta skedarë tejkalojnë kufirin prej {{maxSize}}MB dhe nuk u shtuan: {{names}}",
+      "upgradeLinkText": "Të duhen ngarkime më të mëdha? Bëj upgrade",
+      "downloadFailed": "Shkarkimi i skedarit dështoi",
+      "deleteFailed": "Nuk mund të fshihej bashkëngjitja"
     },
     "comments": {
       "title": "Komentet",
       "addComment": "+ Shto koment të ri",
       "noComments": "Ende pa komente. Bëhu i pari që komentoni!",
       "edit": "Redakto",
+      "save": "Ruaj",
       "delete": "Fshi",
       "confirmDeleteComment": "Jeni i sigurt që dëshironi ta fshini këtë koment?",
       "edited": "(redaktuar)",
@@ -107,6 +151,8 @@
       "maxFilesError": "Mund të ngarkoni maksimumi {{count}} skedarë",
       "processFilesError": "Dështoi në përpunimin e skedarëve",
       "addCommentError": "Ju lutemi shtoni një koment ose bashkëngjitni skedarë",
+      "commentTooLong": "Komenti është shumë i gjatë. Ju lutemi shkurtojeni nën {{max}} karaktere.",
+      "saveCommentError": "Dështoi ruajtja e komentit. Ju lutemi provoni përsëri.",
       "enterHint": "Enter për të dërguar  ·  Shift+Enter për rresht të ri",
       "fileTooLargeToSend": "Skedarët mbi 25MB në komente kërkojnë planin Business. Hiqeni këtë skedar ose bëni upgrade për të vazhduar.",
       "historyLockedBoundary": "Komentet janë të kufizuara në 90 ditët e fundit në këtë plan",
@@ -114,7 +160,11 @@
       "historyLockedBody": "Komentet më të vjetra se 90 ditë janë të disponueshme në planin Business.",
       "viewFullComments": "Shiko historikun e komenteve",
       "createdBy": "Krijuar {{time}} nga {{user}}",
-      "updatedTime": "Përditësuar {{time}}"
+      "createdTime": "Krijuar {{time}}",
+      "updatedTime": "Përditësuar {{time}}",
+      "copyLink": "Kopjo lidhjen",
+      "linkCopied": "Lidhja e komentit u kopjua",
+      "linkCopyFailed": "Kopjimi i lidhjes dështoi"
     },
     "searchInputPlaceholder": "Kërko sipas emrit",
     "pendingInvitation": "Ftesë në pritje"
@@ -126,6 +176,11 @@
     "subtasksLogged": "Nëndetyrat e regjistruara",
     "exportToExcel": "Eksporto në Excel",
     "noTimeLogsFound": "Nuk u gjetën regjistrime kohe",
+    "edit": "Ndrysho",
+    "delete": "Fshi",
+    "confirmDelete": "Jeni i sigurt që dëshironi të fshini këtë regjistrim kohe?",
+    "confirmDeleteYes": "Po",
+    "confirmDeleteNo": "Jo",
     "historyLockedBoundary": "Regjistrat e kohës janë të kufizuar në 90 ditët e fundit në këtë plan",
     "historyLockedTitle": "Historiku i regjistrit të kohës i bllokuar",
     "historyLockedBody": "Regjistrat e kohës më të vjetër se 90 ditë janë të disponueshëm në planin Business.",
@@ -143,6 +198,7 @@
       "descriptionPlaceholder": "Shto një përshkrim",
       "logTime": "Regjistro kohën",
       "updateTime": "Përditëso",
+      "cancel": "Anulo",
       "durationHelper": "Regjistro kohën totale me orë dhe minuta.",
       "timeRangeHelper": "Regjistro kohën duke zgjedhur orën e fillimit dhe përfundimit.",
       "selectDateError": "Ju lutemi zgjidhni një datë",
@@ -160,7 +216,8 @@
       "selectTask": "Zgjidh detyrën...",
       "backdateLimitError": "Regjistrimet e kohës nuk mund të datohen më shumë se {{days}} ditë prapa. Data më e hershme që mund të regjistroni është {{earliestDate}}.",
       "saveError": "Regjistrimi i kohës nuk mund të ruhej. Ju lutemi provoni përsëri."
-    }
+    },
+    "rollupLoggedTooltip": "Shuma e kohës së regjistruar në nën-detyrat"
   },
   "taskActivityLogTab": {
     "title": "Regjistri i aktivitetit",
@@ -169,6 +226,27 @@
     "none": "Asnjë",
     "weight": "Pesha",
     "createdTask": "krijoi detyrën.",
+    "updatedThe": "përditësoi ",
+    "addedA": "shtoi ",
+    "removedA": "hoqi ",
+    "periodSuffix": ".",
+    "attributes": {
+      "status": "statusin",
+      "priority": "prioritetin",
+      "phase": "fazën",
+      "progress": "progresin",
+      "weight": "peshën",
+      "name": "emrin",
+      "startDate": "datën e fillimit",
+      "endDate": "datën e përfundimit",
+      "estimation": "vlerësimin e kohës",
+      "label": "etiketën",
+      "description": "përshkrimin",
+      "attachment": "bashkëngjitjen",
+      "comment": "komentin",
+      "assignee": "të caktuarin",
+      "archive": "arkivin"
+    },
     "historyLockedBoundary": "Aktiviteti është i kufizuar në 90 ditët e fundit në këtë plan",
     "historyLockedTitle": "Historiku i aktivitetit i bllokuar",
     "historyLockedBody": "Aktivitetet e detyrës më të vjetra se 90 ditë janë të disponueshme në planin Business.",
@@ -179,5 +257,16 @@
     "confirmMarkAsDone": "Po, shënoje si të përfunduar",
     "cancelMarkAsDone": "Jo, mbaj gjendjen aktuale",
     "markAsDoneDescription": "Keni vendosur progresin në 100%. Dëshironi ta përditësoni gjendjen e detyrës në \"Përfunduar\"?"
-  }
+  },
+  "taskAccessDenied": {
+    "title": "Nuk ka qasje",
+    "subtitle": "Mund të hapni vetëm detyrat e caktuara për ju në këtë projekt. Kërkojini një menaxheri projekti t'ju caktojë nëse ju nevojitet qasje.",
+    "close": "Mbyll"
+  },
+  "assigneeScopeReadonly": {
+    "title": "Vetëm shikim",
+    "description": "Ju jeni caktuar në një nëndetyrë të kësaj detyre. Mund ta shihni prindin për kontekst, por nuk mund ta përpunoni."
+  },
+  "today": "Sot",
+  "yesterday": "Dje"
 }

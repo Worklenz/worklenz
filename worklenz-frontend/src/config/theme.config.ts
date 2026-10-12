@@ -4,7 +4,10 @@ import type { ThemeConfig } from 'antd';
 export const getThemeConfig = (currentTheme: 'light' | 'dark'): ThemeConfig => ({
   algorithm: currentTheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
   token: {
-    colorPrimary: '#1890ff',
+    // #1890ff (light) / #177ddc (dark) is Ant Design's own light/dark primary
+    // blue pairing - #1890ff reads correctly on light backgrounds but loses
+    // contrast on dark ones, so dark mode uses the deeper shade instead.
+    colorPrimary: currentTheme === 'dark' ? '#177ddc' : '#1890ff',
     borderRadius: 6,
     fontFamily:
       "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
@@ -29,9 +32,9 @@ export const getThemeConfig = (currentTheme: 'light' | 'dark'): ThemeConfig => (
     Menu: {
       colorBgContainer: 'transparent',
       itemBg: 'transparent',
-      itemSelectedBg: currentTheme === 'dark' ? 'rgba(24, 144, 255, 0.15)' : '#e6f4ff',
+      itemSelectedBg: currentTheme === 'dark' ? 'rgba(23, 125, 220, 0.15)' : '#e6f4ff',
       itemHoverBg: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-      itemSelectedColor: '#1890ff',
+      itemSelectedColor: currentTheme === 'dark' ? '#177ddc' : '#1890ff',
       itemColor: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)',
       itemMarginBlock: 4,
       itemMarginInline: 8,

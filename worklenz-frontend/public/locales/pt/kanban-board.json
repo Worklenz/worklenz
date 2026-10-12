@@ -1,39 +1,41 @@
 {
+  "storyPointsTooltip_one": "{{count}} ponto da história",
+  "storyPointsTooltip_other": "{{count}} pontos da história",
+  "noEstimateTooltip": "Sem estimativa",
+  "priorityTooltip": "Prioridade: {{level}}",
+  "blockedFlag": "Bloqueado",
+  "blockedTooltip": "Este problema foi sinalizado como bloqueado",
   "rename": "Renomear",
   "renameStatus": "Renomear Status",
+  "renamePhase": "Renomear Fase",
   "delete": "Excluir",
   "addTask": "Adicionar Tarefa",
   "addSectionButton": "Adicionar Seção",
   "changeCategory": "Alterar categoria",
-
   "deleteTooltip": "Excluir",
   "deleteConfirmationTitle": "Tem certeza?",
   "deleteConfirmationOk": "Sim",
   "deleteConfirmationCancel": "Cancelar",
-
   "deleteTaskTitle": "Excluir Tarefa",
   "deleteTaskContent": "Tem certeza de que deseja excluir esta tarefa? Esta ação não pode ser desfeita.",
   "deleteTaskConfirm": "Excluir",
   "deleteTaskCancel": "Cancelar",
-
   "deleteStatusTitle": "Excluir Status",
   "deleteStatusContent": "Tem certeza de que deseja excluir este status? Esta ação não pode ser desfeita.",
-
   "deletePhaseTitle": "Excluir Fase",
   "deletePhaseContent": "Tem certeza de que deseja excluir esta fase? Esta ação não pode ser desfeita.",
-
   "dueDate": "Data de vencimento",
   "cancel": "Cancelar",
-
   "today": "Hoje",
   "tomorrow": "Amanhã",
   "assignToMe": "Atribuir a mim",
   "archive": "Arquivar",
-
   "newTaskNamePlaceholder": "Escreva um nome de tarefa",
   "newSubtaskNamePlaceholder": "Escreva um nome de subtarefa",
   "untitledSection": "Seção sem título",
   "unmapped": "Não mapeado",
+  "backlogGroupName": "Pendências",
+  "unassignedGroupName": "Não atribuído",
   "clickToChangeDate": "Clique para alterar a data",
   "noDueDate": "Sem data de vencimento",
   "save": "Salvar",
@@ -42,16 +44,17 @@
   "noSubtasks": "Sem subtarefas",
   "showSubtasks": "Mostrar subtarefas",
   "hideSubtasks": "Ocultar subtarefas",
-
   "exampleTasks": {
     "prefix": "ex.",
     "task1": "Definir o escopo do projeto",
     "task2": "Revisar com as partes interessadas",
     "task3": "Agendar kickoff"
   },
-
   "errorLoadingTasks": "Erro ao carregar tarefas",
   "noTasksFound": "Nenhuma tarefa encontrada",
+  "noIssuesFound": "Nenhum problema encontrado",
+  "createIssue": "Criar problema",
+  "newIssueNamePlaceholder": "Escreva um título de problema",
   "loadingFilters": "Carregando filtros...",
   "failedToUpdateColumnOrder": "Falha ao atualizar a ordem das colunas",
   "failedToUpdatePhaseOrder": "Falha ao atualizar a ordem das fases",

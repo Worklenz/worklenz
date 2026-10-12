@@ -19,12 +19,9 @@ export interface FinanceFeaturePreview {
 
 const NAMESPACES = ['upgrade-preview', 'finance-overview', 'finance-sidebar'];
 
-// Content for Finance's per-page previews — shared between the rail-level
-// locked state (shown to non-business users, with the "Upgrade Now" CTA) and
-// the per-route "not built yet" placeholders in main-routes.tsx (shown to
-// business-plan users once they're past the rail gate, with the CTA hidden
-// since nothing exists to unlock for them). One source of truth per page, so
-// the two contexts can't drift apart.
+// Content for Finance's per-page previews — used by the rail-level locked
+// state shown to non-business users (with the "Upgrade Now" CTA). One source
+// of truth per page so gated previews stay aligned with the live report pages.
 export const useFinanceFeaturePreviews = (): Record<string, FinanceFeaturePreview> => {
   const { t } = useTranslation(NAMESPACES);
 

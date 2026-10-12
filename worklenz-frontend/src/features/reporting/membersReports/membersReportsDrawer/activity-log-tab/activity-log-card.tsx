@@ -45,8 +45,8 @@ const ActivityLogCard = ({ data }: ActivityLogCardProps) => {
     attribute.replace('_', ' ').replace(/\b\w/g, char => char.toUpperCase());
 
   // this function render the colord tag
-  const renderStyledTag = (value: TaskStatus | null) => {
-    if (!value) return <Tag>None</Tag>;
+  const renderStyledTag = (value?: { name?: string; color_code?: string } | null) => {
+    if (!value || !value.name) return <Tag>None</Tag>;
     return (
       <Tag style={{ color: colors.darkGray, borderRadius: 48 }} color={value.color_code}>
         {value.name}

@@ -6,6 +6,8 @@
   "priority": "Prioridad",
   "tasksProgress": "Progreso de Tareas",
   "updated_at": "Última Actualización",
+  "endDate": "Fecha de finalización del proyecto",
+  "favorite": "Favorito",
   "setting": "Configuración",
   "settingsDisabledForGuest": "Configuración deshabilitada para invitado",
   "settingsTooltip": "Abrir configuración del proyecto",
@@ -37,16 +39,16 @@
     "clients": "clientes"
   },
   "noPermission": "No tienes permiso para realizar esta acción",
-  "favorite": "Favorito",
   "fieldsText": "Campos",
   "fieldsWithCount": "Campos: {{count}}",
-  "projectFields": "Campos del Proyecto",
+  "showFields": "Mostrar campos",
   "noOptionsFound": "No se encontraron opciones",
-  "required": "Requerido",
   "activeFiltersCount": "Filtros: {{count}}",
   "filter": {
     "noClient": "Sin Cliente",
     "noPriority": "Sin Prioridad",
     "noCategory": "Sin Categoría"
-  }
+  },
+  "projectFields": "Campos del Proyecto",
+  "required": "Requerido"
 }

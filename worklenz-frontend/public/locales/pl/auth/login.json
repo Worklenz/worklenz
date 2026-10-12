@@ -1,0 +1,38 @@
+{
+  "headline": "Witamy z powrotem",
+  "headerDescription": "Zaloguj się do swojej przestrzeni roboczej Worklenz.",
+  "signInWithLabel": "Zaloguj się za pomocą",
+  "orText": "lub",
+  "emailLabel": "E-mail",
+  "emailPlaceholder": "ty@firma.com",
+  "emailRequired": "Proszę podać swój e-mail!",
+  "nextButton": "Następny",
+  "changeEmailLink": "Zmień",
+  "passwordLabel": "Hasło",
+  "passwordPlaceholder": "Wpisz swoje hasło",
+  "passwordRequired": "Proszę podać swoje hasło!",
+  "loginButton": "Zaloguj się",
+  "signupButton": "Zarejestruj się",
+  "forgotPasswordButton": "Zapomniałeś hasła?",
+  "signInWithGoogleButton": "Google",
+  "signInWithGoogleAriaLabel": "Zaloguj się za pomocą Google",
+  "signInWithAppleButton": "Jabłko",
+  "signInWithAppleAriaLabel": "Zaloguj się za pomocą Apple",
+  "dontHaveAccountText": "Nie masz konta?",
+  "bySigningInText": "Logując się, rozumiesz i zgadzasz się z naszymi",
+  "andText": "i",
+  "termsOfServiceLink": "Warunki świadczenia usług",
+  "privacyPolicyLink": "Polityka prywatności",
+  "successMessage": "Pomyślnie się zalogowałeś!",
+  "loginError": "Logowanie nie powiodło się",
+  "googleLoginError": "Logowanie do Google nie powiodło się",
+  "appleLoginError": "Logowanie Apple nie powiodło się",
+  "validationMessages": {
+    "email": "Proszę podać prawidłowy adres e-mail",
+    "password": "Hasło musi mieć co najmniej 8 znaków"
+  },
+  "errorMessages": {
+    "loginErrorTitle": "Logowanie nie powiodło się",
+    "loginErrorMessage": "Sprawdź swój adres e-mail i hasło, a następnie spróbuj ponownie"
+  }
+}

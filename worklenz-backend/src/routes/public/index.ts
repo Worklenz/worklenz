@@ -1,6 +1,6 @@
 import express from "express";
 import ClientsController from "../../controllers/clients-controller";
-import SlackController from "../../ee/controllers/slack-controller";
+import SlackController from "../../controllers/slack-controller";
 import DigestPreferencesController from "../../controllers/digest-preferences-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
 

@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { reportingProjectsApiService } from '@/api/reporting/reporting-projects.api.service';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { DEFAULT_PAGE_SIZE, FILTER_INDEX_KEY } from '@/shared/constants';
@@ -14,6 +15,7 @@ import {
 } from '@/types/reporting/reporting.types';
 import { getFromLocalStorage } from '@/utils/localStorageFunctions';
 import { createAsyncThunk, createSlice, createAction, PayloadAction } from '@reduxjs/toolkit';
+import dayjs from 'dayjs';
 
 const filterIndex = () => {
   return +(getFromLocalStorage(FILTER_INDEX_KEY.toString()) || 0);
@@ -180,12 +182,12 @@ export const fetchMoreProjectsForGroupedView = createAsyncThunk(
 export const fetchGroupedProjects = createAsyncThunk(
   'projectReports/fetchGroupedProjects',
   async (_, { getState, rejectWithValue }) => {
-    const state = (getState() as any).projectReportsReducer;
+    const state = (getState() as { projectReportsReducer: ProjectReportsState }).projectReportsReducer;
     const teams = selectedTeams(state);
 
     // If teams have been loaded but none are selected, return empty result immediately
     if (state.teams.length > 0 && teams.length === 0) {
-      return { groups: [], total_groups: 0 };
+      return { groups: [], total_groups: 0, total: 0 };
     }
 
     const params = {
@@ -226,16 +228,21 @@ export const fetchGroupedProjects = createAsyncThunk(
     try {
       const response = await reportingProjectsApiService.getProjectsGrouped(params);
       // Ensure we return a valid structure even if response.body is null
-      return response.body || { groups: [], total_groups: 0 };
-    } catch (error: any) {
+      return response.body || { groups: [], total_groups: 0, total: 0 };
+    } catch (error: unknown) {
       // ── Fix: Return a rejected value with a user-friendly message instead of
       // letting the raw axios timeout error bubble up and crash the component.
       // The rejected case in extraReducers sets isLoading = false so the UI
       // recovers cleanly (shows empty state instead of a frozen spinner).
-      const message =
-        error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')
-          ? 'Search request timed out. Please try a more specific name.'
-          : error?.message || 'Failed to fetch grouped projects';
+      let message = 'Failed to fetch grouped projects';
+      if (axios.isAxiosError(error)) {
+        message =
+          error.code === 'ECONNABORTED' || error.message?.includes('timeout')
+            ? 'Search request timed out. Please try a more specific name.'
+            : error.message || message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
       return rejectWithValue(message);
     }
   }
@@ -246,7 +253,7 @@ export const fetchGroupedProjects = createAsyncThunk(
 export const fetchProjectDataForCurrentView = createAsyncThunk(
   'projectReports/fetchProjectDataForCurrentView',
   async (_, { getState, dispatch }) => {
-    const state = (getState() as any).projectReportsReducer;
+    const state = (getState() as { projectReportsReducer: ProjectReportsState }).projectReportsReducer;
 
     if (state.viewMode === 'grouped') {
       return dispatch(fetchGroupedProjects());
@@ -409,12 +416,32 @@ const projectReportsSlice = createSlice({
       }
     },
     setProjectStatus: (state, action) => {
-      const status = action.payload;
-      const project = state.projectList.find(p => p.id === status.id);
+      const payload = action.payload;
+      const projectId = payload.projectId || payload.id;
+      const statusObj =
+        payload.status && typeof payload.status === 'object' ? payload.status : payload;
+      const statusId =
+        payload.status && typeof payload.status === 'string'
+          ? payload.status
+          : statusObj.id || statusObj.status_id || statusObj.status;
+      const statusName = statusObj.name || statusObj.status_name;
+      const statusColor = statusObj.color_code || statusObj.status_color;
+
+      const project = state.projectList.find(p => p.id === projectId);
       if (project) {
-        project.status_id = status.id;
-        project.status_name = status.name;
-        project.status_color = status.color_code;
+        if (statusId) project.status_id = statusId;
+        if (statusName) project.status_name = statusName;
+        if (statusColor) project.status_color = statusColor;
+      }
+      if (state.groupedProjects?.length) {
+        for (const group of state.groupedProjects) {
+          const gp = group.projects?.find(p => p.id === projectId);
+          if (gp) {
+            if (statusId) gp.status_id = statusId;
+            if (statusName) gp.status_name = statusName;
+            if (statusColor) gp.status_color = statusColor;
+          }
+        }
       }
     },
     setProjectStartDate: (state, action) => {
@@ -422,11 +449,54 @@ const projectReportsSlice = createSlice({
       if (project) {
         project.start_date = action.payload.start_date;
       }
+      if (state.groupedProjects?.length) {
+        for (const group of state.groupedProjects) {
+          const gp = group.projects?.find(p => p.id === action.payload.id);
+          if (gp) {
+            gp.start_date = action.payload.start_date;
+          }
+        }
+      }
     },
     setProjectEndDate: (state, action) => {
+      const updateProjectDates = (project: IRPTProject) => {
+        project.end_date = action.payload.end_date;
+        if (!action.payload.end_date) {
+          project.days_left = null;
+          project.is_overdue = false;
+          project.is_today = false;
+        } else {
+          const today = dayjs().startOf('day');
+          const end = dayjs(action.payload.end_date).startOf('day');
+          const diff = end.diff(today, 'day');
+
+          if (diff < 0) {
+            project.is_overdue = true;
+            project.is_today = false;
+            project.days_left = Math.abs(diff);
+          } else if (diff === 0) {
+            project.is_overdue = false;
+            project.is_today = true;
+            project.days_left = 0;
+          } else {
+            project.is_overdue = false;
+            project.is_today = false;
+            project.days_left = diff;
+          }
+        }
+      };
+
       const project = state.projectList.find(p => p.id === action.payload.id);
       if (project) {
-        project.end_date = action.payload.end_date;
+        updateProjectDates(project);
+      }
+      if (state.groupedProjects?.length) {
+        for (const group of state.groupedProjects) {
+          const gp = group.projects?.find(p => p.id === action.payload.id);
+          if (gp) {
+            updateProjectDates(gp);
+          }
+        }
       }
     },
     setSelectedMember: (state, action) => {
@@ -597,7 +667,7 @@ const projectReportsSlice = createSlice({
         state.groupedProjects = action.payload?.groups || [];
         state.totalGroups = action.payload?.total_groups || 0;
         // Use total project count from backend (accurate with filters applied)
-        state.total = action.payload?.total_groups || 0;
+        state.total = action.payload?.total || 0;
       })
       // ── Fix: handle both rejectWithValue (our friendly message) and unexpected
       // runtime errors so isLoading is always cleared and the UI can recover.

@@ -1,5 +1,6 @@
 import {
   CaretDownFilled,
+  Badge,
   Card,
   Flex,
   Input,

@@ -10,5 +10,7 @@
   "passwordRequired": "Por favor ingresa tu nueva contraseña",
   "returnToLoginButton": "Volver al inicio de sesión",
   "confirmPasswordRequired": "Por favor confirma tu nueva contraseña",
-  "passwordMismatch": "Las contraseñas no coinciden"
+  "passwordMismatch": "Las contraseñas no coinciden",
+  "successTitle": "Contraseña restablecida con éxito",
+  "successMessage": "Tu contraseña ha sido actualizada. Ahora puedes iniciar sesión con tu nueva contraseña."
 }

@@ -87,9 +87,9 @@ export const logout = createAsyncThunk('secure/logout', async (_, { rejectWithVa
 
 export const verifyAuthentication = createAsyncThunk(
   'secure/verify',
-  async (silent: boolean = false, { dispatch }) => {
-    const authorizeResponse = await authApiService.verify(silent);
-    const userLang = (authorizeResponse.user as any)?.language;
+  async (silent: boolean | void = false, { dispatch }) => {
+    const authorizeResponse = await authApiService.verify(Boolean(silent));
+    const userLang = (authorizeResponse.user as { language?: string } | undefined)?.language;
     if (userLang && Object.values(Language).includes(userLang as Language)) {
       dispatch(setLanguage(userLang as ILanguageType));
     }

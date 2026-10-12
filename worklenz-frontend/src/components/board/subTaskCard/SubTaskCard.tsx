@@ -104,7 +104,7 @@ const SubTaskCard: React.FC<SubTaskProps> = ({ subtask }) => {
             format={value => formatDate(value)}
           />
           <div>
-            <StatusDropdown currentStatus={subtask.status} />
+            <StatusDropdown currentStatus={subtask.status || ''} />
           </div>
         </Flex>
       </Col>

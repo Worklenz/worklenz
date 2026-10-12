@@ -23,14 +23,13 @@ CREATE INDEX IF NOT EXISTS idx_client_portal_message_reads_user_id ON client_por
 CREATE INDEX IF NOT EXISTS idx_client_portal_message_reads_read_at ON client_portal_message_reads(read_at);
 
 -- Grant permissions
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'worklenz_user') THEN
-    GRANT SELECT, INSERT, UPDATE, DELETE ON client_portal_message_reads TO worklenz_user;
-  END IF;
-  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'worklenz_client') THEN
-    GRANT SELECT ON client_portal_message_reads TO worklenz_client;
-  END IF;
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'worklenz_user') THEN
+        GRANT SELECT, INSERT, UPDATE, DELETE ON client_portal_message_reads TO worklenz_user;
+    END IF;
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'worklenz_client') THEN
+        GRANT SELECT ON client_portal_message_reads TO worklenz_client;
+    END IF;
 END $$;
 
 -- Add comments

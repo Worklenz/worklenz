@@ -60,7 +60,6 @@ import logger from '@/utils/errorLogger';
 import ConvertToSubtaskDrawer from '@/components/task-list-common/convert-to-subtask-drawer/convert-to-subtask-drawer';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { useAuthService } from '@/hooks/useAuth';
-import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import alertService from '@/services/alerts/alertService';
 
@@ -621,7 +620,6 @@ const TaskListBulkActionsBar = () => {
           'create-task-template'
         )}
         {createPortal(<ConvertToSubtaskDrawer />, document.body, 'convert-to-subtask-modal')}
-        {createPortal(<CustomColumnModal />, document.body, 'custom-column-modal')}
       </Flex>
     </div>
   );

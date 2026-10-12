@@ -1,8 +1,0 @@
-BEGIN;
-
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
-ALTER TABLE import_jobs
-  ALTER COLUMN id SET DEFAULT uuid_generate_v4();
-
-COMMIT;

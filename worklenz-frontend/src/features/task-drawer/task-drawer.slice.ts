@@ -11,8 +11,10 @@ import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import { ITaskStatus } from '@/types/tasks/taskStatus.types';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 
+import { Task } from '@/types/task-management.types';
+
 const normalizeAssigneeNames = (
-  assignees?: IProjectTask['assignees'],
+  assignees?: IProjectTask['assignees'] | string[] | null,
   names?: InlineMember[] | string[] | null
 ): InlineMember[] => {
   if (names?.length) {
@@ -22,23 +24,40 @@ const normalizeAssigneeNames = (
         name,
         avatar_url: '',
         email: '',
-      } as InlineMember));
+      }));
     }
 
     return names as InlineMember[];
   }
 
   if (assignees?.length) {
-    return assignees.map(assignee => ({
-      team_member_id: assignee.team_member_id,
-      name: assignee.name || '',
-      avatar_url: (assignee as any).avatar_url || '',
-      email: (assignee as any).email || '',
-    } as InlineMember));
+    return assignees.map(assignee => {
+      if (typeof assignee === 'string') {
+        return {
+          team_member_id: assignee,
+          name: '',
+          avatar_url: '',
+        };
+      }
+      const withExtra = assignee as {
+        team_member_id?: string;
+        name?: string;
+        avatar_url?: string | null;
+        email?: string;
+      };
+      return {
+        team_member_id: withExtra.team_member_id || '',
+        name: withExtra.name || '',
+        avatar_url: withExtra.avatar_url || '',
+        email: withExtra.email || '',
+      };
+    });
   }
 
   return [];
 };
+
+export type TaskDrawerTabKey = 'info' | 'timeLog' | 'activityLog';
 
 interface ITaskDrawerState {
   selectedTaskId: string | null;
@@ -46,7 +65,15 @@ interface ITaskDrawerState {
   taskFormViewModel: ITaskFormViewModel | null;
   subscribers: InlineMember[];
   loadingTask: boolean;
+  /** Set when /tasks/info returns assignee-scope 403 (TVR-11) */
+  taskAccessDenied: boolean;
+  /** Deep-link signal for notification/mention single-task exception (TVR-12) */
+  taskAccessFrom: 'notification' | 'mention' | null;
   targetCommentId: string | null;
+  /** When set, TaskDrawer opens on this tab then clears the value. */
+  targetDrawerTab: TaskDrawerTabKey | null;
+  /** Id of the most recent task deleted from the drawer, for views that keep local task state. */
+  lastDeletedTaskId: string | null;
   timeLogEditing: {
     isEditing: boolean;
     logBeingEdited: ITaskLogViewModel | null;
@@ -66,7 +93,11 @@ const initialState: ITaskDrawerState = {
   taskFormViewModel: null,
   subscribers: [],
   loadingTask: false,
+  taskAccessDenied: false,
+  taskAccessFrom: null,
   targetCommentId: null,
+  targetDrawerTab: null,
+  lastDeletedTaskId: null,
   timeLogEditing: {
 
     isEditing: false,
@@ -75,57 +106,83 @@ const initialState: ITaskDrawerState = {
   navigationContext: null,
 };
 
+export const TASK_ASSIGNEE_RESTRICTED_CODE = 'TASK_ASSIGNEE_RESTRICTED';
+
+const isTaskAssigneeRestrictedError = (error: unknown): boolean => {
+  const response = (error as { response?: { status?: number; data?: { body?: { code?: string }; message?: string } } })
+    ?.response;
+  if (response?.status !== 403) return false;
+  // Only the coded TVR-11 response — the same message text is also used for
+  // team-mismatch 403s, which must not show the "assigned to you only" UI.
+  return response.data?.body?.code === TASK_ASSIGNEE_RESTRICTED_CODE;
+};
+
 export const fetchTask = createAsyncThunk(
   'tasks/fetchTask',
   async (
-    { taskId, projectId }: { taskId: string; projectId: string },
+    {
+      taskId,
+      projectId,
+      from,
+    }: { taskId: string; projectId: string; from?: 'notification' | 'mention' | null },
     { rejectWithValue, getState }
   ) => {
-    const response = await tasksApiService.getFormViewModel(taskId, projectId);
-    if (!response.body) return rejectWithValue('No data');
+    try {
+      const state = getState() as { taskDrawerReducer: ITaskDrawerState };
+      const accessFrom = from ?? state.taskDrawerReducer.taskAccessFrom;
+      const response = await tasksApiService.getFormViewModel(taskId, projectId, {
+        from: accessFrom,
+      });
+      if (!response.body) return rejectWithValue('No data');
 
-    // The API may return a stale name if the user renamed the task locally
-    // (inline edit or drawer) before the socket round-trip persisted to the DB.
-    // Prefer the name already held in the task-management slice.
-    const state = getState() as {
-      taskManagement: { entities: Record<string, { title?: string; name?: string } | undefined> };
-    };
-    const localTask = state.taskManagement.entities[taskId];
-    const localName = decodeHtmlEntities(localTask?.title || localTask?.name);
-    if (localName && response.body.task && response.body.task.name !== localName) {
-      response.body.task.name = localName;
-    } else if (response.body.task?.name) {
-      response.body.task.name = decodeHtmlEntities(response.body.task.name);
-    }
-
-    if (response.body.task) {
-      const currentTask = state.taskManagement.entities[taskId];
-      const normalizedNames = normalizeAssigneeNames(
-        response.body.task.assignees,
-        response.body.task.assignee_names || response.body.task.names
-      );
-
-      if (normalizedNames.length) {
-        response.body.task.assignee_names = normalizedNames;
-        response.body.task.names = normalizedNames as unknown as string[];
+      // The API may return a stale name if the user renamed the task locally
+      // (inline edit or drawer) before the socket round-trip persisted to the DB.
+      // Prefer the name already held in the task-management slice.
+      const fullState = getState() as {
+        taskManagement: { entities: Record<string, Task | undefined> };
+      };
+      const localTask = fullState.taskManagement.entities[taskId];
+      const localName = decodeHtmlEntities(localTask?.title || localTask?.name);
+      if (localName && response.body.task && response.body.task.name !== localName) {
+        response.body.task.name = localName;
+      } else if (response.body.task?.name) {
+        response.body.task.name = decodeHtmlEntities(response.body.task.name);
       }
 
-      if (currentTask) {
-        if (!response.body.task.assignees?.length && currentTask.assignees?.length) {
-          response.body.task.assignees = currentTask.assignees as any;
+      if (response.body.task) {
+        const currentTask = fullState.taskManagement.entities[taskId];
+        const normalizedNames = normalizeAssigneeNames(
+          response.body.task.assignees,
+          response.body.task.assignee_names || response.body.task.names
+        );
+
+        if (normalizedNames.length) {
+          response.body.task.assignee_names = normalizedNames;
+          response.body.task.names = normalizedNames.map(m => m.name);
         }
 
-        if (!response.body.task.assignee_names?.length && currentTask.assignee_names?.length) {
-          response.body.task.assignee_names = currentTask.assignee_names as InlineMember[];
-        }
+        if (currentTask) {
+          if (!response.body.task.assignees?.length && currentTask.assignees?.length) {
+            response.body.task.assignees = currentTask.assignees;
+          }
 
-        if (!response.body.task.names?.length && currentTask.assignee_names?.length) {
-          response.body.task.names = currentTask.assignee_names as unknown as string[];
+          if (!response.body.task.assignee_names?.length && currentTask.assignee_names?.length) {
+            response.body.task.assignee_names = currentTask.assignee_names;
+          }
+
+          if (!response.body.task.names?.length && currentTask.assignee_names?.length) {
+            response.body.task.names = currentTask.assignee_names.map(m => m.name);
+          }
         }
       }
-    }
 
-    return response.body;
+      return response.body;
+    } catch (error) {
+      if (isTaskAssigneeRestrictedError(error)) {
+        return rejectWithValue({ code: TASK_ASSIGNEE_RESTRICTED_CODE });
+      }
+      throw error;
+    }
   }
 );
 
@@ -141,6 +198,9 @@ const taskDrawerSlice = createSlice({
     setSelectedTaskId: (state, action) => {
       state.selectedTaskId = action.payload;
       state.timeLogEditing = resetTimeLogEditing; // ← reset when switching tasks
+      state.taskAccessDenied = false;
+      // Reset deep-link exception; callers that need it re-set via setTaskAccessFrom
+      state.taskAccessFrom = null;
 
       if (action.payload) {
         state.taskFormViewModel = state.taskFormViewModel?.task?.id === action.payload
@@ -157,6 +217,10 @@ const taskDrawerSlice = createSlice({
     },
     setShowTaskDrawer: (state, action) => {
       state.showTaskDrawer = action.payload;
+      if (!action.payload) {
+        state.taskAccessDenied = false;
+        state.taskAccessFrom = null;
+      }
     },
     setTaskFormViewModel: (state, action) => {
       state.taskFormViewModel = action.payload;
@@ -166,6 +230,21 @@ const taskDrawerSlice = createSlice({
     },
     setTargetCommentId: (state, action: PayloadAction<string | null>) => {
       state.targetCommentId = action.payload;
+    },
+    setTargetDrawerTab: (state, action: PayloadAction<TaskDrawerTabKey | null>) => {
+      state.targetDrawerTab = action.payload;
+    },
+    setTaskAccessFrom: (
+      state,
+      action: PayloadAction<'notification' | 'mention' | null>
+    ) => {
+      state.taskAccessFrom = action.payload;
+    },
+    clearTaskAccessDenied: state => {
+      state.taskAccessDenied = false;
+    },
+    setLastDeletedTaskId: (state, action: PayloadAction<string | null>) => {
+      state.lastDeletedTaskId = action.payload;
     },
 
     setTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
@@ -231,6 +310,33 @@ const taskDrawerSlice = createSlice({
       const { phase_id, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         (state.taskFormViewModel.task as any).phase_id = phase_id;
+      }
+    },
+    setTaskStoryPoints: (
+      state,
+      action: PayloadAction<{ id: string; story_points: number | null }>
+    ) => {
+      const { story_points, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.story_points = story_points;
+      }
+    },
+    setTaskEpic: (state, action: PayloadAction<{ id: string; epic_id: string | null }>) => {
+      const { epic_id, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.epic_id = epic_id;
+      }
+    },
+    setTaskRelease: (state, action: PayloadAction<{ id: string; release_id: string | null }>) => {
+      const { release_id, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.release_id = release_id;
+      }
+    },
+    setTaskBlocked: (state, action: PayloadAction<{ id: string; is_blocked: boolean }>) => {
+      const { is_blocked, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.is_blocked = is_blocked;
       }
     },
     setTaskLabels: (state, action: PayloadAction<ILabelsChangeResponse>) => {
@@ -385,11 +491,21 @@ const taskDrawerSlice = createSlice({
     },
   },
   extraReducers: builder => {
-    (builder.addCase(fetchTask.pending, state => {
+    (builder.addCase(fetchTask.pending, (state, action) => {
+      if (action.meta.arg.taskId !== state.selectedTaskId) {
+        return;
+      }
       state.loadingTask = true;
+      state.taskAccessDenied = false;
     }),
       builder.addCase(fetchTask.fulfilled, (state, action) => {
+        // Ignore outdated responses when the user already opened another task
+        if (action.meta.arg.taskId !== state.selectedTaskId) {
+          return;
+        }
+
         state.loadingTask = false;
+        state.taskAccessDenied = false;
         if (!action.payload) return;
 
         const existingTask = state.taskFormViewModel?.task;
@@ -434,7 +550,21 @@ const taskDrawerSlice = createSlice({
         }
       }),
       builder.addCase(fetchTask.rejected, (state, action) => {
+        // A slower 403 from a previous team's deep-link must not overwrite a
+        // newer successful (or in-flight) open after team switch.
+        if (action.meta.arg.taskId !== state.selectedTaskId) {
+          return;
+        }
+
         state.loadingTask = false;
+        const payload = action.payload as { code?: string } | string | undefined;
+        if (
+          typeof payload === 'object' &&
+          payload?.code === TASK_ASSIGNEE_RESTRICTED_CODE
+        ) {
+          state.taskAccessDenied = true;
+          state.taskFormViewModel = null;
+        }
       }));
   },
 });
@@ -445,6 +575,10 @@ export const {
   setTaskFormViewModel,
   setLoadingTask,
   setTargetCommentId,
+  setTargetDrawerTab,
+  setTaskAccessFrom,
+  clearTaskAccessDenied,
+  setLastDeletedTaskId,
   setTaskStatus,
   setStartDate,
   setTaskEndDate,
@@ -452,6 +586,10 @@ export const {
   setTaskAssignee,
   setTaskPriority,
   setTaskPhase,
+  setTaskStoryPoints,
+  setTaskEpic,
+  setTaskRelease,
+  setTaskBlocked,
   setTaskLabels,
   setTaskSubscribers,
   setTimeLogEditing,

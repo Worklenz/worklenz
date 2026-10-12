@@ -54,6 +54,7 @@
     "title": "Connect Your Slack Workspace",
     "description": "Integrate Slack with your Worklenz team to receive real-time notifications, create tasks from Slack, and keep your team synchronized across both platforms."
   },
+  "upgradeRequired": "Upgrade to Business Plan",
   "features": {
     "notifications": {
       "title": "Real-time Notifications",
@@ -72,12 +73,17 @@
     "project": "Project",
     "slackChannel": "Slack Channel",
     "notifications": "Notifications",
+    "status": "Status",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
     "active": "Active",
     "actions": "Actions",
     "channelConfigs": "Slack Channel Configurations",
     "toggleStatus": "Toggle status for {{channel}}",
     "editConfig": "Edit configuration for {{channel}}",
-    "deleteConfig": "Delete configuration for {{channel}}"
+    "deleteConfig": "Delete configuration for {{channel}}",
+    "reactivate": "Reactivate",
+    "reactivateConfig": "Reactivate {{channel}}"
   },
   "modal": {
     "configureChannel": "Configure Slack Channel",
@@ -89,6 +95,7 @@
     "notificationTypes": "Notification Types",
     "selectNotificationTypes": "Select notification types",
     "refreshChannels": "Refresh",
+    "scrollForMore": "Scroll for more...",
     "notificationOptions": {
       "taskCreated": "Task Created",
       "taskUpdated": "Task Updated",

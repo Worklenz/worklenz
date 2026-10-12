@@ -1,4 +1,8 @@
-import React from 'react';
+import type { TFunction } from 'i18next';
+import type { theme } from 'antd';
+
+export type TranslateFn = TFunction;
+export type ThemeToken = ReturnType<typeof theme.useToken>['token'];
 
 export interface ImportSource {
   key: string;
@@ -29,3 +33,4 @@ export interface ClickupTeam {
     lists: Array<{ id: string; name: string }>;
   }>;
 }
+

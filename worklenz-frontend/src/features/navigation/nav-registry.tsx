@@ -28,9 +28,11 @@ import {
   FileTextOutlined,
   CompassOutlined,
   TagOutlined,
+  LineChartOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import type { NavSurface, SurfaceKey } from './nav-registry.types';
-import type { TempChatsType } from '@/ee/pages/client-portal/chats/chat-container/chat-box/chat-box-wrapper';
+import type { TempChatsType } from '@/pages/client-portal/chats/chat-container/chat-box/chat-box-wrapper';
 
 // ─── Home ───────────────────────────────────────────────────────────────────
 // Ported 1:1 from the NAV_ITEMS previously hardcoded in HomeLeftSidebar.tsx.
@@ -82,6 +84,7 @@ export const HOME_NAV_SURFACE: NavSurface = {
           key: 'add-client',
           label: { i18nNs: 'home-sidebar', i18nKey: 'addClient', defaultValue: 'Add\nClient' },
           icon: <UserAddOutlined />,
+          adminOnly: true, // Owner/Admin only — Members must not manage clients
         },
       ],
     },
@@ -150,6 +153,15 @@ export const REPORTING_NAV_SURFACE: NavSurface = {
           label: { i18nNs: 'reporting-sidebar', i18nKey: 'allTasks', defaultValue: 'Tasks' },
           icon: <UnorderedListOutlined />,
         },
+        {
+          key: 'progress-tracking',
+          label: {
+            i18nNs: 'reporting-sidebar',
+            i18nKey: 'progressTracking',
+            defaultValue: 'Progress Tracking',
+          },
+          icon: <RiseOutlined />,
+        },
       ],
     },
     {
@@ -211,6 +223,16 @@ export const CLIENT_PORTAL_NAV_SURFACE: NavSurface = {
           icon: <AppstoreOutlined />,
         },
         {
+          key: 'quotes',
+          label: { i18nNs: 'client-portal-common', i18nKey: 'quotes', defaultValue: 'Quotes' },
+          icon: <FileTextOutlined />,
+        },
+        {
+          key: 'invoices',
+          label: { i18nNs: 'client-portal-common', i18nKey: 'invoices', defaultValue: 'Invoices' },
+          icon: <FileDoneOutlined />,
+        },
+        {
           key: 'chats',
           label: { i18nNs: 'client-portal-common', i18nKey: 'chats', defaultValue: 'Chats' },
           icon: <CommentOutlined />,
@@ -220,20 +242,29 @@ export const CLIENT_PORTAL_NAV_SURFACE: NavSurface = {
             ).length,
         },
         {
-          key: 'invoices',
-          label: { i18nNs: 'client-portal-common', i18nKey: 'invoices', defaultValue: 'Invoices' },
-          icon: <FileDoneOutlined />,
-        },
-        // No real feature behind this yet — visually tagged "Soon" (matches
-        // the design reference) but, unlike other `soon` items, still
-        // navigates to its Coming Soon route (see client-portal-routes.tsx)
-        // via `soonClickable`, so it isn't a dead end.
-        {
           key: 'ticketing',
           label: { i18nNs: 'client-portal-common', i18nKey: 'ticketing', defaultValue: 'Ticketing' },
           icon: <TagOutlined />,
+        },
+        {
+          key: 'client-analytics',
+          label: {
+            i18nNs: 'client-portal-common',
+            i18nKey: 'clientAnalytics',
+            defaultValue: 'Client Analytics',
+          },
+          icon: <LineChartOutlined />,
           soon: true,
-          soonClickable: true,
+        },
+        {
+          key: 'view-as-client',
+          label: {
+            i18nNs: 'client-portal-common',
+            i18nKey: 'viewAsClient',
+            defaultValue: 'View as client',
+          },
+          icon: <EyeOutlined />,
+          soon: true,
         },
         {
           key: 'settings',
@@ -298,6 +329,7 @@ export const PROJECTS_NAV_SURFACE: NavSurface = {
           label: { i18nNs: 'projects-sidebar', i18nKey: 'templates', defaultValue: 'Templates' },
           icon: <BlockOutlined />,
           guestExcluded: true, // Hide from guest users
+          adminOnly: true, // Only Owner/Admin may create projects from templates
         },
         // {
         //   key: 'archived',
@@ -310,25 +342,18 @@ export const PROJECTS_NAV_SURFACE: NavSurface = {
 };
 
 // Route segments nested under /worklenz/projects/ that the rail itself
-// covers (every item except the index 'all-projects') — derived from the
-// surface definition above so MainLayout/AppShellLayout's width/background
-// matching for these pages can't silently drift out of sync with the rail's
-// actual routes the way a hardcoded path list already has once.
+// covers — derived from the surface definition above so MainLayout/AppShellLayout's
+// width/background matching for these pages can't silently drift out of sync with
+// the rail's actual routes the way a hardcoded path list already has once.
 export const PROJECTS_RAIL_SUB_ROUTES: ReadonlySet<string> = new Set(
-  PROJECTS_NAV_SURFACE.groups
-    .flatMap(group => group.items.map(item => item.key))
-    .filter(key => key !== PROJECTS_NAV_SURFACE.defaultItemKey)
+  PROJECTS_NAV_SURFACE.groups.flatMap(group => group.items.map(item => item.key))
 );
 
 // ─── Finance ────────────────────────────────────────────────────────────────
-// All items route to the shared "Coming soon" placeholder for now (see
-// FinancePage/ComingSoonPage) — same non-`soon` treatment as Projects: real,
-// navigable routes, just not built out yet. Labels use a dedicated
-// 'finance-sidebar' namespace (public/locales/*/finance-sidebar.json).
-// Invoices intentionally has no badgeSelector yet — no real invoice-count
-// data exists behind this placeholder, and per the sidebar personalization
-// spec (docs/sidebar-personalization-build-spec.md §3.5) badges must resolve
-// from a live selector, never a hardcoded number.
+// Overview and Expenses already shipped; the remaining rail items are the
+// portfolio report pages (Profitability, Budgets, Invoices, Billable Time,
+// Utilization, Forecasts). Labels use a dedicated 'finance-sidebar' namespace
+// (public/locales/*/finance-sidebar.json).
 export const FINANCE_NAV_SURFACE: NavSurface = {
   key: 'finance',
   defaultItemKey: 'overview',
@@ -381,13 +406,11 @@ export const FINANCE_NAV_SURFACE: NavSurface = {
   ],
 };
 
-// Mirrors PROJECTS_RAIL_SUB_ROUTES above — every Finance item except the
-// index ('overview') so MainLayout/AppShellLayout can detect Finance's own
-// SimpleRailLayout sub-routes the same way.
+// Mirrors PROJECTS_RAIL_SUB_ROUTES above — every Finance rail sub-route so
+// MainLayout/AppShellLayout can detect Finance's own SimpleRailLayout
+// sub-routes the same way.
 export const FINANCE_RAIL_SUB_ROUTES: ReadonlySet<string> = new Set(
-  FINANCE_NAV_SURFACE.groups
-    .flatMap(group => group.items.map(item => item.key))
-    .filter(key => key !== FINANCE_NAV_SURFACE.defaultItemKey)
+  FINANCE_NAV_SURFACE.groups.flatMap(group => group.items.map(item => item.key))
 );
 
 // ─── Team Lead Reports ──────────────────────────────────────────────────────

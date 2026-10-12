@@ -185,6 +185,7 @@ export const COLUMN_KEYS = {
   PROGRESS: 'PROGRESS',
   ASSIGNEES: 'ASSIGNEES',
   LABELS: 'LABELS',
+  ATTACHMENTS: 'ATTACHMENTS',
   STATUS: 'STATUS',
   PRIORITY: 'PRIORITY',
   TIME_TRACKING: 'TIME_TRACKING',
@@ -197,6 +198,7 @@ export const COLUMN_KEYS = {
   LAST_UPDATED: 'LAST_UPDATED',
   REPORTER: 'REPORTER',
   PHASE: 'PHASE',
+  COMMENTS: 'COMMENTS',
 } as const;
 
 export const COLUMN_KEYS_LIST = Object.values(COLUMN_KEYS).map(key => ({
@@ -627,6 +629,20 @@ const taskSlice = createSlice({
         // created tasks appear at the end, matching the server sort order.
         group.tasks.push(decodedTask);
       }
+    },
+
+    addTaskToTop: (
+      state,
+      action: PayloadAction<{
+        task: IProjectTask;
+        groupId: string;
+      }>
+    ) => {
+      const { task, groupId } = action.payload;
+      const decodedTask = decodeTaskName(task);
+      const group = state.taskGroups.find(g => g.id === groupId);
+      if (!group || !task.id) return;
+      group.tasks.unshift(decodedTask);
     },
 
     deleteTask: (
@@ -1417,6 +1433,7 @@ const taskSlice = createSlice({
 export const {
   setGroup,
   addTask,
+  addTaskToTop,
   deleteTask,
   updateTaskName,
   updateTaskProgress,

@@ -1,7 +1,11 @@
 import { Socket } from "socket.io";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
-import { log_error } from "../util";
+import { log_error, emitToTaskVisibleProjectMembers, getLoggedInUserIdFromSocket } from "../util";
+import { logUnauthorizedSocketAccess } from "../authorization";
+import { canUserEditTask } from "../../shared/assignee-task-scope";
+import { ISocketSession } from "../../interfaces/socket-session";
+import { IPassportSession } from "../../interfaces/passport-session";
 
 interface IScheduleTaskDragData {
     task_id: string;
@@ -13,12 +17,36 @@ interface IScheduleTaskDragData {
 /**
  * Handle task drag events from the schedule timeline view
  * Updates task dates and broadcasts to all users in the project room
+ * 
+ * Access control: User must be able to edit the task (assignee or exempt role).
+ * Broadcast is filtered to only users who can view the task.
  */
 export async function on_schedule_task_drag_change(io: any, socket: Socket, data: IScheduleTaskDragData) {
     try {
         const { task_id, project_id, start_date, end_date } = data;
 
         if (!task_id || !project_id) {
+            return;
+        }
+
+        // ── Access control ────────────────────────────────────────────────────────
+        // User must be able to edit this task (not just view it)
+        const userId = getLoggedInUserIdFromSocket(socket);
+        const { session } = socket.request as ISocketSession;
+        const sessionUser = session?.passport?.user as IPassportSession | undefined;
+
+        if (!userId) {
+            return;
+        }
+
+        const mayEdit = await canUserEditTask(userId, task_id, sessionUser);
+        if (!mayEdit) {
+            logUnauthorizedSocketAccess(socket, "SCHEDULE_TASK_DRAG_CHANGE", "task", task_id);
+            socket.emit(SocketEvents.SCHEDULE_TASK_UPDATE.toString(), {
+                success: false,
+                error: "You do not have permission to edit this task",
+                task_id
+            });
             return;
         }
 
@@ -59,29 +87,45 @@ export async function on_schedule_task_drag_change(io: any, socket: Socket, data
 
         const updatedTask = result.rows[0];
 
-        // Broadcast to all users in the project room
-        io.to(project_id).emit(SocketEvents.SCHEDULE_TASK_UPDATE.toString(), {
-            success: true,
-            task_id: updatedTask.id,
-            task_name: updatedTask.name,
-            start_date: updatedTask.start_date,
-            end_date: updatedTask.end_date,
-            project_id: updatedTask.project_id
-        });
+        // Broadcast to project members who can see this task
+        await emitToTaskVisibleProjectMembers(
+            io,
+            project_id,
+            task_id,
+            SocketEvents.SCHEDULE_TASK_UPDATE.toString(),
+            {
+                success: true,
+                task_id: updatedTask.id,
+                task_name: updatedTask.name,
+                start_date: updatedTask.start_date,
+                end_date: updatedTask.end_date,
+                project_id: updatedTask.project_id
+            }
+        );
 
-        // Also emit the standard task date change events for consistency
-        io.to(project_id).emit(SocketEvents.TASK_START_DATE_CHANGE.toString(), {
-            id: task_id,
-            start_date: start_date,
-            parent_task: null
-        });
+        await emitToTaskVisibleProjectMembers(
+            io,
+            project_id,
+            task_id,
+            SocketEvents.TASK_START_DATE_CHANGE.toString(),
+            {
+                id: task_id,
+                start_date: start_date,
+                parent_task: null
+            }
+        );
 
-        io.to(project_id).emit(SocketEvents.TASK_END_DATE_CHANGE.toString(), {
-            id: task_id,
-            end_date: end_date,
-            parent_task: null
-        });
-
+        await emitToTaskVisibleProjectMembers(
+            io,
+            project_id,
+            task_id,
+            SocketEvents.TASK_END_DATE_CHANGE.toString(),
+            {
+                id: task_id,
+                end_date: end_date,
+                parent_task: null
+            }
+        );
     } catch (error) {
         log_error(error);
         socket.emit(SocketEvents.SCHEDULE_TASK_UPDATE.toString(), {

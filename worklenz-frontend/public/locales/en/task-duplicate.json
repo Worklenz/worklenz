@@ -12,5 +12,31 @@
     "subscribers": "Subscribers"
   },
   "duplicate": "Duplicate",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "copyToProject": {
+    "title": "Copy task to project",
+    "selectProject": "Select a destination project",
+    "confirm": "Copy task",
+    "copyTask": "Copy task",
+    "checkDifferences": "Check Differences",
+    "check": "Check differences",
+    "checking": "Checking differences...",
+    "confirmDifferences": "Add and copy task",
+    "differencesFound": "These columns are missing from the destination project.",
+    "missingPhasesFound": "These phases will be created in the destination project.",
+    "statusMissing": "Status \"{{sourceStatus}}\" is not in the destination project. The task will be assigned to the main \"{{destinationStatus}}\" status.",
+    "createMissingItems": "Create missing columns and phases",
+    "createMissingColumns": "Create missing columns",
+    "cancel": "Cancel",
+    "cancelDifferences": "Cancel copy",
+    "success": "Task copied successfully",
+    "openTask": "Open task",
+    "loadError": "Unable to load accessible projects.",
+    "noProjects": "No other accessible projects found.",
+    "noDifferencesFound": "The destination project has all required columns and phases.",
+    "copyDependencies": "Copy dependency tasks",
+    "copyDependenciesDescription": "Include all dependent tasks when copying this task to the destination project.",
+    "dependenciesInfo": "This task has dependencies. The dependent tasks will also be copied to the destination project.",
+    "error": "Failed to copy task"
+  }
 }

@@ -11,7 +11,8 @@ import {
   theme,
 } from '@/shared/antd-imports';
 import { PlusOutlined } from '@ant-design/icons';
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, type KeyboardEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LogTimeModal } from '@/components/time-entries/LogTimeModal';
 import { useTranslation } from 'react-i18next';
 import {
@@ -25,6 +26,9 @@ import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import NavbarTimer from './NavbarTimer';
 import { useTooltipTheme } from '@/hooks/useTooltipTheme';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { setTargetDrawerTab, setSelectedTaskId, setShowTaskDrawer, fetchTask } from '@/features/task-drawer/task-drawer.slice';
+import { setProjectId } from '@/features/project/project.slice';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 import '../navbar-icon-hover.css';
 
@@ -36,6 +40,7 @@ interface RecentTimeLogItemProps {
   isRunning: boolean;
   startTime?: string;
   onTimerChange: () => void;
+  onOpenTimeLog: (log: IRecentTimeLog) => void;
   token: ReturnType<typeof useToken>['token'];
   t: (key: string, options?: Record<string, unknown>) => string;
 }
@@ -45,10 +50,12 @@ const RecentTimeLogItem = ({
   isRunning,
   startTime,
   onTimerChange,
+  onOpenTimeLog,
   token,
   t,
 }: RecentTimeLogItemProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const formatTimeSpent = (seconds: number | undefined): string => {
     if (!seconds || seconds === 0) return '0m 0s';
@@ -61,15 +68,49 @@ const RecentTimeLogItem = ({
     return `${h} ${m} ${s}`.trim();
   };
 
+  const handleOpenTimeLog = () => {
+    onOpenTimeLog(log);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleOpenTimeLog();
+    }
+  };
+
+  const handleFocus = () => {
+    setIsFocused(true);
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+  };
+
+  // Show timer control when hovered OR focused (for keyboard users)
+  const showTimerControl = isHovered || isFocused;
+
   return (
     <List.Item
       style={{
         padding: '12px 16px',
         borderBottom: `1px solid ${token.colorBorderSecondary}`,
-        backgroundColor: 'transparent',
+        backgroundColor: isHovered ? token.colorFillTertiary : 'transparent',
+        cursor: 'pointer',
+        transition: 'background-color 0.15s ease',
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleOpenTimeLog}
+      onKeyDown={handleKeyDown}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      role="button"
+      tabIndex={0}
+      aria-label={t('timerButton.openTimeLogPanel', {
+        defaultValue: 'Open time log for {{taskName}}',
+        taskName: log.task_name || t('timerButton.unnamedTask'),
+      })}
     >
       <div style={{ width: '100%' }}>
         <Space direction="vertical" size={4} style={{ width: '100%' }}>
@@ -132,13 +173,18 @@ const RecentTimeLogItem = ({
             <Text type="secondary" style={{ fontSize: 11 }}>
               {formatDistanceToNow(parseISO(log.created_at), { addSuffix: true })}
             </Text>
-            {isHovered ? (
-              <NavbarTimer
-                taskId={log.task_id}
-                isRunning={isRunning}
-                startTime={startTime}
-                onTimerChange={onTimerChange}
-              />
+            {showTimerControl ? (
+              <div
+                onClick={event => event.stopPropagation()}
+                onKeyDown={event => event.stopPropagation()}
+              >
+                <NavbarTimer
+                  taskId={log.task_id}
+                  isRunning={isRunning}
+                  startTime={startTime}
+                  onTimerChange={onTimerChange}
+                />
+              </div>
             ) : (
               <Text
                 style={{
@@ -169,6 +215,9 @@ const TimerButton = () => {
   const { token } = useToken();
   const { socket, connected } = useSocket();
   const { tooltipProps } = useTooltipTheme();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const currentProjectId = useAppSelector(state => state.projectReducer.projectId);
 
   // Store original task names to restore if drawer closes without saving
   const originalTaskNamesRef = useRef<Map<string, string>>(new Map());
@@ -178,6 +227,31 @@ const TimerButton = () => {
     console.error(`[TimerButton] ${message}`, error);
     setError(message);
   };
+
+  const handleOpenTimeLogPanel = useCallback(
+    (log: IRecentTimeLog) => {
+      if (!log.task_id || !log.project_id) return;
+
+      setDropdownOpen(false);
+
+      // Prefer Redux so the Time Log tab opens even when already on this project
+      // (URL sync alone skips drawer_tab while the drawer is open).
+      dispatch(setProjectId(log.project_id));
+      dispatch(setTargetDrawerTab('timeLog'));
+
+      if (currentProjectId === log.project_id) {
+        dispatch(setSelectedTaskId(log.task_id));
+        dispatch(fetchTask({ taskId: log.task_id, projectId: log.project_id }));
+        dispatch(setShowTaskDrawer(true));
+      }
+
+      navigate(
+        `/worklenz/projects/${log.project_id}?tab=tasks-list&pinned_tab=tasks-list&task=${log.task_id}&drawer_tab=timeLog`,
+        { replace: true }
+      );
+    },
+    [currentProjectId, dispatch, navigate]
+  );
 
   const fetchTimerData = useCallback(async () => {
     try {
@@ -617,6 +691,7 @@ const TimerButton = () => {
                       isRunning={isRunning}
                       startTime={startTime}
                       onTimerChange={fetchTimerData}
+                      onOpenTimeLog={handleOpenTimeLogPanel}
                       token={token}
                       t={t}
                     />

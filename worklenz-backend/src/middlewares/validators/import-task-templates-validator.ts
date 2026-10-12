@@ -8,6 +8,9 @@ export default function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: Ne
   if (!req.params.id)
     return res.status(400).send(new ServerResponse(false, null));
 
+  if (!req.query.templateId)
+    return res.status(400).send(new ServerResponse(false, null, "Template id is required!"));
+
   if (!req.body.length)
     return res.status(400).send(new ServerResponse(false, null, "Tasks are required!"));
 

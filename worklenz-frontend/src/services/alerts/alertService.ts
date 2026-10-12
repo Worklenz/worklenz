@@ -21,13 +21,25 @@ class AlertService {
     });
   }
 
-  private show(type: AlertType, title: string, message: string, duration?: number): void {
-    if (this.activeAlerts.has(message)) return;
+  private show(
+    type: AlertType,
+    title: string,
+    message: string,
+    duration?: number,
+    dedupeKey?: string
+  ): void {
+    // Defaults to the message text (existing behavior everywhere that doesn't
+    // pass one): dedupes identical alerts. Callers whose message text is
+    // shared across genuinely distinct events (e.g. the same generic failure
+    // text for two different background jobs) should pass an explicit
+    // per-event dedupeKey so one doesn't silently swallow the other.
+    const key = dedupeKey ?? message;
+    if (this.activeAlerts.has(key)) return;
 
     const safeTitle = this.sanitizeHtml(title);
     const safeMessage = this.sanitizeHtml(message);
 
-    this.activeAlerts.add(message);
+    this.activeAlerts.add(key);
 
     notification[type]({
       message: safeTitle,
@@ -36,25 +48,25 @@ class AlertService {
       placement: 'topRight',
       style: { borderRadius: '4px' },
       onClose: () => {
-        this.activeAlerts.delete(message);
+        this.activeAlerts.delete(key);
       },
     });
   }
 
-  public success(title: string, message: string, duration?: number): void {
-    this.show('success', title, message, duration);
+  public success(title: string, message: string, duration?: number, dedupeKey?: string): void {
+    this.show('success', title, message, duration, dedupeKey);
   }
 
-  public error(title: string, message: string, duration?: number): void {
-    this.show('error', title, message, duration);
+  public error(title: string, message: string, duration?: number, dedupeKey?: string): void {
+    this.show('error', title, message, duration, dedupeKey);
   }
 
-  public info(title: string, message: string, duration?: number): void {
-    this.show('info', title, message, duration);
+  public info(title: string, message: string, duration?: number, dedupeKey?: string): void {
+    this.show('info', title, message, duration, dedupeKey);
   }
 
-  public warning(title: string, message: string, duration?: number): void {
-    this.show('warning', title, message, duration);
+  public warning(title: string, message: string, duration?: number, dedupeKey?: string): void {
+    this.show('warning', title, message, duration, dedupeKey);
   }
 
   public clearAll(): void {

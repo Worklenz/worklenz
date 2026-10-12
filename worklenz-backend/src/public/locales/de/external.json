@@ -1,0 +1,64 @@
+{
+  "slack": {
+    "task_created": {
+      "title": "Aufgabe erstellt"
+    },
+    "task_assigned": {
+      "title": "Aufgabe zugewiesen"
+    },
+    "task_completed": {
+      "title": "Aufgabe abgeschlossen"
+    },
+    "comment_added": {
+      "title": "Kommentar hinzugefügt"
+    },
+    "priority_changed": {
+      "title": "Priorität geändert"
+    },
+    "due_date_changed": {
+      "title": "Fälligkeitsdatum geändert"
+    },
+    "task_updated": {
+      "title": "Aufgabe aktualisiert"
+    },
+    "task_status_changed": {
+      "title": "Aufgabenstatus geändert"
+    },
+    "viewTask": "Aufgabe anzeigen",
+    "assignedTo": "👥 Zugewiesen an",
+    "assignedBy": "👤 Zugewiesen von",
+    "statusChange": "📊 Statusänderung",
+    "changedBy": "👤 Geändert von",
+    "createdBy": "👤 Erstellt von",
+    "commentedBy": "💬 Kommentiert von",
+    "updatedBy": "👤 Aktualisiert von",
+    "status": "📊 Status",
+    "currentStatus": "📊 Aktueller Status",
+    "priority": "Priorität",
+    "dueDate": "Fälligkeitsdatum",
+    "assignees": "👥 Zugewiesene",
+    "comment": "Kommentar",
+    "priorityChanged": "🔺 Priorität geändert",
+    "dueDateChanged": "📅 Fälligkeitsdatum geändert",
+    "updatedByWithUser": "Aktualisiert von {{user}}"
+  },
+  "teams": {
+    "task": "Aufgabe",
+    "project": "Projekt",
+    "assignees": "Zugewiesene",
+    "assignedBy": "Zugewiesen von",
+    "createdBy": "Erstellt von",
+    "commentedBy": "Kommentiert von",
+    "updatedBy": "Aktualisiert von",
+    "status": "Status",
+    "priority": "Priorität",
+    "dueDate": "Fälligkeitsdatum",
+    "previousStatus": "Vorheriger Status",
+    "newStatus": "Neuer Status",
+    "previousPriority": "Vorherige Priorität",
+    "newPriority": "Neue Priorität",
+    "statusChange": "Statusänderung",
+    "changedBy": "Geändert von",
+    "viewTask": "Aufgabe anzeigen"
+  }
+}

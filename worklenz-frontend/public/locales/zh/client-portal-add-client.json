@@ -1,0 +1,191 @@
+{
+  "retry": "重试",
+  "upgrade": {
+    "title": "客户",
+    "description": "为客户提供一个品牌门户来跟踪项目进度。可在商业计划中使用。"
+  },
+  "title": {
+    "method": "您想如何添加该客户端？",
+    "company": "告诉我们有关客户的信息",
+    "user": "选择公司，然���选择新用户",
+    "existing": "选择邀请对象",
+    "csv": "上传您的 CSV 文件",
+    "review": "查看并发送"
+  },
+  "steps": {
+    "method": "方法",
+    "details": "Details",
+    "file": "文件",
+    "review": "评论"
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "back": "返回",
+    "continue": "继续",
+    "done": "完成",
+    "import": "Import",
+    "addClient": "添加客户端",
+    "addClientAndInvite": "添加客户并发送邀请",
+    "addUser": "添加客户端用户",
+    "addUserAndInvite": "添加用户并发送邀请",
+    "sendInvite": "发送邀请"
+  },
+  "method": {
+    "helper": "每条路都以同样的方式结束。选择适合您已知的内容。",
+    "groupLabel": "您想如何添加该客户端？",
+    "company": {
+      "name": "新客户",
+      "description": "一起创建公司记录和第一次联系。"
+    },
+    "user": {
+      "name": "添加客户端用户",
+      "description": "将另一个联系人添加到已存在的公司。"
+    },
+    "existing": {
+      "name": "邀请现有联系人",
+      "description": "已经是潜在客户或客户？只需发送门户访问权限。"
+    },
+    "csv": {
+      "name": "从 CSV 导入",
+      "description": "从电子表格批量添加客户。"
+    }
+  },
+  "fields": {
+    "firstName": "名",
+    "firstNamePlaceholder": "张三",
+    "lastName": "姓氏",
+    "lastNamePlaceholder": "李四",
+    "email": "电子邮件地址",
+    "emailPlaceholder": "jane@company.com",
+    "jobTitle": "职称",
+    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "phone": "电话（可选）",
+    "phonePlaceholder": "+1 415 555 0142"
+  },
+  "errors": {
+    "firstNameRequired": "输入名字。",
+    "emailRequired": "输入电子邮件地址。",
+    "emailInvalid": "输入有效的电子邮件地址。"
+  },
+  "newClient": {
+    "companyName": "公司名称",
+    "companyNameHint": "留空以按照下面的人的名字命名客户。",
+    "companyNamePlaceholder": "例如灯塔物流",
+    "setupTitle": "设置他们的门户",
+    "welcomeMessage": "发送欢迎信息",
+    "welcomeMessageHint": "已发布到“消息”，因此在他们登录时正在等待他们。",
+    "welcomeMessageText": "您好 {{name}}，欢迎来到您的客户门户。随时在这里给我们留言。"
+  },
+  "companyUser": {
+    "chooseCompany": "选择公司",
+    "searchCompanies": "搜寻公司...",
+    "companiesLabel": "公司",
+    "companiesError": "无法加载公司。",
+    "noMatches": "没有公司匹配“{{query}}”。",
+    "noCompanies": "还没有公司。首先添加一个新客户。",
+    "existingUsers_one": "{{count}} 现有用户",
+    "existingUsers_other": "{{count}} 现有用户",
+    "changeCompany": "改变",
+    "makePoc": "使该用户成为 POC",
+    "makePocHint": "公司可以拥有任意数量的 POC，也可以没有。这与其他用户的 POC 状态无关。",
+    "projectAccess": "项目接入",
+    "templateNone": "稍后手动设置。尚未分配项目",
+    "templateNoProjects": "{{company}} 还没有项目，因此没有可以应用模板的内容。",
+    "templateTooManyProjects": "{{company}} 的项目数量超出此处列出的项目数量。之后为每个项目分配访问权限。",
+    "templateApplied": "授予 {{template}} 访问 {{company}} 当前项目的所有 {{count}} 的权限。之后您可以从行菜单中对每个项目进行微调。",
+    "templateHint": "选择一个模板以立即授予对每个当前项目的访问权限，或者保持原样，然后单独分配项目。"
+  },
+  "existing": {
+    "helper": "没有主动门户访问权限的联系人。",
+    "search": "按姓名或电子邮件搜索...",
+    "loadError": "无法加载联系人。",
+    "noMatches": "没有“{{query}}”的匹配项。",
+    "everyoneHasAccess": "每个人都已经拥有活跃的门户访问权限。",
+    "groupLabel": "邀请联系人"
+  },
+  "review": {
+    "name": "Name",
+    "company": "Company",
+    "companyFromName": "以人的名字命名",
+    "email": "Email",
+    "emailMissing": "未提供",
+    "role": "Role",
+    "rolePocDefault": "POC（新公司默认）",
+    "rolePoc": "POC",
+    "roleMember": "客户端用户",
+    "projectAccess": "项目接入",
+    "projectAccessTemplate": "所有 {{count}} 当前项目的 {{template}}",
+    "projectAccessNone": "还没有。之后分配项目。",
+    "authentication": "认证",
+    "portalAccess": "门户访问",
+    "authInvitation": "邀请链接。他们在第一次登录时设置了密码。",
+    "notInvited": "还没有被邀请。稍后邀请他们离开餐桌。",
+    "sendNow": "立即发送门户邀请",
+    "sendNowHint": "不选中以添加记录而不发送任何内容。稍后邀请他们离开餐桌。",
+    "deliverVia": "交付方式",
+    "deliveryEmail": "电子邮件邀请链接",
+    "deliveryLink": "复制邀请链接"
+  },
+  "csv": {
+    "helper": "上传包含标题行和以下列的 CSV：公司、名字、姓氏、电子邮件。名字和电子邮件是必需的。",
+    "dropzone": "单击以选择 CSV 文件，或将其拖至此处",
+    "dropzoneHint": "最多 {{max}} 行。",
+    "dropzoneLabel": "选择 CSV 文件",
+    "checking": "正在检查您的文件...",
+    "chooseAnother": "选择另一个文件",
+    "problemsLabel": "有问题的行",
+    "columnNames": {
+      "firstName": "名",
+      "email": "Email"
+    },
+    "columns": {
+      "row": "行",
+      "person": "人员",
+      "problem": "问题"
+    },
+    "summary": {
+      "noneReady": "无法导入任何行。",
+      "ready": "{{valid}} 行（共 {{total}} 行）已准备好导入。",
+      "detail": "将创建 {{newCompanies}} 新公司，{{existingCompanies}} 现有公司将获得更多用户。有问题的行将被跳过。没有人收到电子邮件。之后从列表中邀请他们。"
+    },
+    "result": {
+      "title": "导入完成",
+      "detail": "创建了 {{companies}} 个公司，添加了 {{users}} 个用户，跳过了 {{skipped}} 行。在您从列表中邀请他们之前，不会邀请所有人。"
+    },
+    "error": {
+      "notCsv": "选择 .csv 文件。",
+      "tooLarge": "该文件太大了。限制为 {{size}} MB。",
+      "empty": "该文件没有要导入的行。",
+      "unreadable": "无法读取该文件。检查它是否是有效的 CSV，然后重试。",
+      "missingColumns": "该文件需要一个包含以下列的标题行：{{columns}}。",
+      "tooManyRows": "该文件有 {{count}} 行。一次导入最多可以有 {{max}}。",
+      "requestFailed": "无法检查该文件。请再试一次。"
+    },
+    "errors": {
+      "missing_first_name": "名字缺失",
+      "missing_email": "电子邮件丢失",
+      "invalid_email": "电子邮件无效",
+      "duplicate_in_file": "电子邮件出现在文件的前面",
+      "email_in_use": "电子邮件已属于客户端用户",
+      "company_name_too_long": "公司名称超过60个字符",
+      "client_name_taken": "同名的客户端已存在",
+      "import_failed": "无法导入"
+    }
+  },
+  "messages": {
+    "linkCopied": "邀请链接已复制。",
+    "linkCopyError": "无法复制链接。",
+    "saveError": "无法保存。请再试一次。",
+    "importError": "导入失败。请再试一次。",
+    "clientAddedInvited": "添加客户端，默认使用 {{name}} 作为 POC。邀请已发送至 {{email}}。",
+    "clientAddedLink": "客户补充道。复制邀请链接以与 {{name}} 共享。",
+    "clientAddedNotInvited": "添加客户端，默认使用 {{name}} 作为 POC。还没有被邀请。",
+    "userAddedInvited": "{{name}} 已添加到 {{company}} 中。邀请已发送至 {{email}}。",
+    "userAddedLink": "{{name}} 已添加到 {{company}} 中。复制邀请���接进行分享。",
+    "userAddedNotInvited": "{{name}} 已添加到 {{company}} 中。还没有被邀请。",
+    "inviteSent": "邀请已发送至 {{email}}。",
+    "inviteLinkReady": "邀请链接已准备好复制。",
+    "inviteFailed": "{{name}} 已保存，但无法发送邀请 ({{error}})。您可以从列表中发送它。",
+    "emailNotSent": "{{name}} 已保存，但无法发送电子邮件。而是分享链接。"
+  }
+}

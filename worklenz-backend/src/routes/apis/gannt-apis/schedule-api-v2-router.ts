@@ -1,6 +1,7 @@
 import express from "express";
 
 import idParamValidator from "../../../middlewares/validators/id-param-validator";
+import { validateUuidParam } from "../../../middlewares/validators/query-param-validator";
 import safeControllerFunction from "../../../shared/safe-controller-function";
 import ScheduleControllerV2 from "../../../controllers/schedule-v2/schedule-controller";
 import TaskTimelineController from "../../../controllers/schedule-v2/task-timeline-controller";
@@ -8,8 +9,14 @@ import ProjectTimelineController from "../../../controllers/schedule-v2/project-
 import TimeOffController from "../../../controllers/schedule-v2/time-off-controller";
 import CapacityController from "../../../controllers/schedule-v2/capacity-controller";
 import WorkloadController from "../../../controllers/schedule-v2/workload-controller";
+import { verifyNonGuestProjectAccess } from "../../../middlewares/verify-project-access";
+import verifyTaskAccess, { verifyNonGuestTaskAccess } from "../../../middlewares/verify-task-access";
+import verifyNonGuestPlannerAccess from "../../../middlewares/verify-non-guest-planner-access";
 
 const scheduleApiRouter = express.Router();
+
+// Guests do not have access to the Planner (Schedule/Timeline/Workload) at all.
+scheduleApiRouter.use(verifyNonGuestPlannerAccess);
 
 // ============================================
 // Existing Schedule Endpoints (Project View)
@@ -40,11 +47,21 @@ scheduleApiRouter.get("/capacity/conflicts", safeControllerFunction(CapacityCont
 // Get tasks for timeline view with filters
 scheduleApiRouter.get("/tasks", safeControllerFunction(TaskTimelineController.getTasksForTimeline));
 
-// Update task dates (drag-drop)
-scheduleApiRouter.put("/tasks/:taskId/dates", idParamValidator, safeControllerFunction(TaskTimelineController.updateTaskDates));
+// Update task dates (drag-drop) — MUTATION, requires non-guest access to the task's team/project
+scheduleApiRouter.put(
+  "/tasks/:taskId/dates",
+  validateUuidParam("taskId", "params"),
+  verifyNonGuestTaskAccess('params', 'taskId'),
+  safeControllerFunction(TaskTimelineController.updateTaskDates)
+);
 
-// Get scheduling conflicts for a task
-scheduleApiRouter.get("/tasks/:taskId/conflicts", idParamValidator, safeControllerFunction(TaskTimelineController.getTaskConflicts));
+// Get scheduling conflicts for a task — requires access to the task's team/project
+scheduleApiRouter.get(
+  "/tasks/:taskId/conflicts",
+  validateUuidParam("taskId", "params"),
+  verifyTaskAccess('params', 'taskId'),
+  safeControllerFunction(TaskTimelineController.getTaskConflicts)
+);
 
 // ============================================
 // Project Timeline Endpoints (Portfolio View)
@@ -79,11 +96,11 @@ scheduleApiRouter.delete("/time-off/:id", idParamValidator, safeControllerFuncti
 // Get member workload data
 scheduleApiRouter.get("/workload", safeControllerFunction(WorkloadController.getMemberWorkload));
 
-// Update resource allocation
-scheduleApiRouter.put("/allocation", safeControllerFunction(WorkloadController.updateResourceAllocation));
+// Update resource allocation (MUTATION — Requires non-guest access)
+scheduleApiRouter.put("/allocation", verifyNonGuestProjectAccess('body', 'project_id'), safeControllerFunction(WorkloadController.updateResourceAllocation));
 
-// Rebalance workload
-scheduleApiRouter.post("/rebalance", safeControllerFunction(WorkloadController.rebalanceWorkload));
+// Rebalance workload (MUTATION — Requires non-guest access)
+scheduleApiRouter.post("/rebalance", verifyNonGuestProjectAccess('body', 'project_id'), safeControllerFunction(WorkloadController.rebalanceWorkload));
 
 // Get resource conflicts
 scheduleApiRouter.get("/conflicts", safeControllerFunction(WorkloadController.getResourceConflicts));

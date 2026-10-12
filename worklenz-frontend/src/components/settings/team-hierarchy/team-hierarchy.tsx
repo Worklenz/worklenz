@@ -423,13 +423,6 @@ const TeamHierarchy = () => {
           >
             {badgeLabel}
           </Tag>
-
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {t('teamHierarchyLevelLabel', {
-              defaultValue: 'Level {{level}}',
-              level: member.level,
-            })}
-          </Text>
         </Flex>
       </Flex>
     </Card>

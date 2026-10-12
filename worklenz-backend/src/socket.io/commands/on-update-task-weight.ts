@@ -1,9 +1,13 @@
 import { Socket } from "socket.io";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
-import { log, log_error, notifyProjectUpdates } from "../util";
+import { log, log_error, notifyProjectUpdates, emitToTaskVisibleProjectMembers, getLoggedInUserIdFromSocket } from "../util";
 import { logWeightChange } from "../../services/activity-logs/activity-logs.service";
+import { logUnauthorizedSocketAccess } from "../authorization";
+import { canUserEditTask } from "../../shared/assignee-task-scope";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
+import { ISocketSession } from "../../interfaces/socket-session";
+import { IPassportSession } from "../../interfaces/passport-session";
 
 interface UpdateTaskWeightData {
   task_id: string;
@@ -18,6 +22,22 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
     const { task_id, weight, parent_task_id } = parsedData;
     
     if (!task_id || weight === undefined) {
+      return;
+    }
+
+    // ── Access control ────────────────────────────────────────────────────────
+    // User must be able to edit this task (not just view it)
+    const userId = getLoggedInUserIdFromSocket(socket);
+    const { session } = socket.request as ISocketSession;
+    const sessionUser = session?.passport?.user as IPassportSession | undefined;
+
+    if (!userId) {
+      return;
+    }
+
+    const mayEdit = await canUserEditTask(userId, task_id, sessionUser);
+    if (!mayEdit) {
+      logUnauthorizedSocketAccess(socket, "UPDATE_TASK_WEIGHT", "task", task_id);
       return;
     }
     
@@ -42,8 +62,11 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
     });
     
     if (projectId) {
-      // Broadcast the weight update to all clients in the project room
-      io.to(projectId).emit(
+      // Broadcast the weight update to clients who can see this task
+      await emitToTaskVisibleProjectMembers(
+        io,
+        projectId,
+        task_id,
         SocketEvents.TASK_PROGRESS_UPDATED.toString(),
         {
           task_id,
@@ -62,8 +85,10 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
           [parent_task_id]
         );
         
-        // Broadcast the parent task's updated progress to all clients
-        io.to(projectId).emit(
+        await emitToTaskVisibleProjectMembers(
+          io,
+          projectId,
+          parent_task_id,
           SocketEvents.TASK_PROGRESS_UPDATED.toString(),
           {
             task_id: parent_task_id,
@@ -82,13 +107,15 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
         if (grandparentId) {
           await TasksControllerV2.updateTaskProgress(grandparentId);
           
-          // Broadcast the grandparent's updated progress to all clients
           const grandparentProgressRatio = await db.query(
             "SELECT get_task_complete_ratio($1) as ratio",
             [grandparentId]
           );
           
-          io.to(projectId).emit(
+          await emitToTaskVisibleProjectMembers(
+            io,
+            projectId,
+            grandparentId,
             SocketEvents.TASK_PROGRESS_UPDATED.toString(),
             {
               task_id: grandparentId,

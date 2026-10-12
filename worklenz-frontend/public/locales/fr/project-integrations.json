@@ -1,0 +1,51 @@
+{
+  "title": "Intégrations",
+  "tooltip": "Gérer les intégrations de projets",
+  "upgradeRequired": "Intégrations disponibles sur le plan Business",
+  "manageAll": "Gérer toutes les intégrations",
+  "comingSoon": "Bientôt disponible",
+  "cancel": "Annuler",
+  "slack": {
+    "title": "Mou",
+    "description": "Envoyer des notifications aux chaînes Slack",
+    "notConnected": "Veuillez d'abord connecter votre espace de travail Slack dans Paramètres",
+    "quickAddTitle": "Ajouter Slack au projet",
+    "currentProject": "Projet",
+    "selectChannel": "Chaîne Slack",
+    "selectChannelPlaceholder": "Sélectionnez une chaîne Slack...",
+    "selectNotifications": "Types de notifications",
+    "selectNotificationsPlaceholder": "Sélectionnez les types de notifications...",
+    "refresh": "Actualiser",
+    "addButton": "Ajouter une intégration",
+    "inviteBotTip": "Astuce : assurez-vous d’abord d’inviter le bot @Worklenz sur votre chaîne Slack !"
+  },
+  "teams": {
+    "title": "Équipes Microsoft",
+    "description": "Envoyer des notifications aux canaux Teams"
+  },
+  "github": {
+    "title": "GitHub",
+    "description": "Synchroniser les tâches avec les problèmes GitHub"
+  },
+  "notificationTypes": {
+    "taskCreated": "Tâche créée",
+    "taskAssigned": "Tâche assignée",
+    "statusChanged": "Statut modifié",
+    "taskCompleted": "Tâche terminée",
+    "commentAdded": "Commentaire ajouté",
+    "dueDateChanged": "Date d'échéance modifiée"
+  },
+  "validation": {
+    "selectChannel": "Veuillez sélectionner une chaîne Slack",
+    "selectNotifications": "Veuillez sélectionner au moins un type de notification"
+  },
+  "messages": {
+    "integrationAdded": "Intégration Slack ajoutée avec succès !",
+    "channelsRefreshed": "Les chaînes ont été actualisées avec succès"
+  },
+  "errors": {
+    "loadChannelsFailed": "Échec du chargement des chaînes",
+    "refreshChannelsFailed": "Échec de l'actualisation des chaînes",
+    "addIntegrationFailed": "Échec de l'ajout de l'intégration"
+  }
+}

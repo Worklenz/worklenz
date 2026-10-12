@@ -31,5 +31,10 @@
   "intervalDays": "Intervall (Tage)",
   "intervalWeeks": "Intervall (Wochen)",
   "intervalMonths": "Intervall (Monate)",
-  "saveChanges": "Änderungen speichern"
+  "saveChanges": "Änderungen speichern",
+  "recurringMode": "Wiederkehrender Modus",
+  "createNewTask": "Neue Aufgabe erstellen",
+  "changeTaskStatus": "Aufgabenstatus ändern",
+  "targetStatus": "Zielstatus",
+  "selectStatus": "Wählen Sie Status aus"
 }

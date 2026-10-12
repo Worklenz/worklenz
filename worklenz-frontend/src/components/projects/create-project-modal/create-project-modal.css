@@ -242,12 +242,7 @@
 }
 
 .create-project-config-note {
-  display: flex;
-  gap: 6px;
-  align-items: flex-start;
   margin-top: auto;
-  font-size: 12px;
-  line-height: 1.35;
 }
 
 .create-project-template-empty {

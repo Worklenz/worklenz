@@ -1,5 +1,13 @@
 {
   "title": "Unauthorized!",
   "subtitle": "You are not authorized to access this page",
+  "commentAccessTitle": "You need access to view this comment",
+  "commentAccessContactAdmin": "You are not invited to this project. Please contact your admin or project owner to request access.",
+  "commentAccessDenied": "You are not invited to this project. Please contact your admin or project owner to request access.",
+  "invalidCommentLink": "This comment link is invalid.",
+  "commentNotFound": "This comment could not be found.",
+  "commentLinkOpenFailed": "Unable to open this comment link. Please try again or open the comment from the task.",
+  "unableToOpenComment": "Unable to open comment",
+  "openingComment": "Opening comment...",
   "button": "Go to Home"
 }

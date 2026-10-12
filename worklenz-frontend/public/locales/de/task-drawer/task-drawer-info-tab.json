@@ -6,7 +6,7 @@
     "due-date": "Fälligkeitsdatum",
     "time-estimation": "Zeitschätzung",
     "priority": "Priorität",
-    "labels": "Labels",
+    "labels": "Bezeichnungen",
     "billable": "Abrechenbar",
     "notify": "Benachrichtigen",
     "when-done-notify": "Bei Fertigstellung benachrichtigen",
@@ -15,7 +15,8 @@
     "hide-start-date": "Startdatum ausblenden",
     "show-start-date": "Startdatum anzeigen",
     "hours": "Stunden",
-    "minutes": "Minuten"
+    "minutes": "Minuten",
+    "recurring": "Wiederkehrend"
   },
   "description": {
     "title": "Beschreibung",

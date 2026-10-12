@@ -4,9 +4,21 @@
   "guestCountPlural": "Guest Members",
   "nameColumn": "Name",
   "emailColumn": "Email",
-  "projectColumn": "Project",
+  "projectsColumn": "Projects",
   "jobTitleColumn": "Job Title",
   "jobTitleEmpty": "Not set",
+  "teamAccessEmpty": "Guest Access",
+  "teamAccessValue": "{{access}} Access",
+  "teamAccessColumn": "Team Access",
+  "accessLevels": {
+    "GUEST": "Guest",
+    "MEMBER": "Member",
+    "PROJECT_MANAGER": "Project Manager",
+    "ADMIN": "Admin",
+    "OWNER": "Owner",
+    "TEAM_LEAD": "Team Lead"
+  },
+  "fetchFailed": "Failed to fetch guest members",
   "deactivatedText": "Deactivated",
   "deactivateTooltip": "Deactivate",
   "activateTooltip": "Activate",
@@ -18,7 +30,7 @@
   "confirmDeleteDescription": "This action cannot be undone.",
   "okText": "OK",
   "cancelText": "Cancel",
-  "totalText": "Total {count} items",
+  "totalText": "Total {{count}} items",
   "noneText": "None",
   "guestDeactivatedSuccess": "Guest member deactivated successfully",
   "guestActivatedSuccess": "Guest member activated successfully",
@@ -26,4 +38,3 @@
   "actionFailed": "Action failed",
   "errorOccurred": "An error occurred"
 }
-

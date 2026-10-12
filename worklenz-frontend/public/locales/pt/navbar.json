@@ -3,10 +3,12 @@
   "home": "Início",
   "projects": "Projetos",
   "planner": "Planejador",
+  "reporting": "Relatórios da Minha Equipe",
   "my-team-reports": "Relatórios da Minha Equipe",
-  "clients": "Clientes",
   "finance": "Finanças",
   "client-portal": "Clientes",
+  "closePopover": "Fechar popover",
+  "clients": "Clientes",
   "teams": "Equipes",
   "labels": "Rótulos",
   "jobTitles": "Títulos de Emprego",
@@ -15,6 +17,8 @@
   "invite": "Convidar",
   "inviteTooltip": "Convidar membros da equipe a se juntar",
   "switchTeamTooltip": "Trocar equipe",
+  "searchTeams": "Pesquisar equipes...",
+  "noTeamsFound": "Nenhuma equipe encontrada",
   "help": "Ajuda",
   "notificationTooltip": "Ver notificações",
   "profileTooltip": "Ver perfil",
@@ -32,7 +36,11 @@
     "readAndJoin": "Ler e participar",
     "accept": "Aceitar",
     "acceptAndJoin": "Aceitar e participar",
-    "noNotifications": "Sem notificações"
+    "noNotifications": "Sem notificações",
+    "invitationMessage": "Foi convidado a trabalhar com <1>{{teamName}}</1>.",
+    "teamInvitation": "Foi convidado a juntar-se a {{teamName}}",
+    "loading": "A carregar...",
+    "markAllAsRead": "Marcar tudo como lido"
   },
   "searchAnything": "Pesquisar qualquer coisa",
   "globalSearchPlaceholder": "Pesquisar tarefas, projetos, clientes, membros…",
@@ -43,6 +51,7 @@
     "new": "Novo",
     "task": "Tarefa",
     "logTime": "Registrar tempo",
+    "markTimeOff": "Marcar ausência / licença",
     "project": "Projeto",
     "client": "Cliente",
     "addExpense": "Adicionar Despesa",
@@ -69,14 +78,22 @@
     "conflictTitle": "Conflito de Temporizador",
     "conflictMessage": "Outro temporizador está em execução para \"{{taskName}}\" no projeto \"{{projectName}}\". Você deseja pará-lo e iniciar este temporizador?",
     "stopAndStart": "Parar e Iniciar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "logTime": "Registrar tempo",
+    "openTimeLogPanel": "Registro de horário aberto para {{taskName}}"
   },
-  "reporting": "Reports",
-  "closePopover": "Fechar popover",
   "ownerRole": "Proprietário",
   "adminRole": "Administrador",
   "teamLeadRole": "Líder de Equipe",
   "memberRole": "Membro",
   "themeToggleOn": "Sim",
-  "themeToggleOff": "Não"
+  "themeToggleOff": "Não",
+  "whatsNew": {
+    "tag": "Novidades",
+    "tooltip": "Veja o que mudou nesta versão",
+    "newBadge": "Novo",
+    "modalHeading": "Novidades — {{title}}",
+    "readFullChangelog": "Ver changelog completo →",
+    "releaseUnavailable": "Esta atualização não está mais disponível."
+  }
 }

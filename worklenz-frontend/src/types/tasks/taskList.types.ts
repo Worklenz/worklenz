@@ -102,11 +102,15 @@ export interface IMembersFilterChange {
 
 export interface ITaskListColumn {
   id?: string;
+  uuid?: string;
   name?: string;
   key?: string;
   index?: number;
   pinned?: boolean;
   project_id?: string;
   custom_column?: boolean;
-  custom_column_obj?: any;
+  custom_column_obj?: Record<string, unknown>;
+  width?: number | string;
+  configuration?: Record<string, unknown>;
+  isEditingHeader?: boolean;
 }

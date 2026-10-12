@@ -15,6 +15,7 @@ import {
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { handleNewTaskReceived as handleTaskReceived } from '@/utils/taskHandlers';
 import logger from '@/utils/errorLogger';
+import type { IDuplicateOptions } from '@/types/tasks/task-duplicate.types';
 
 const { Title, Text } = Typography;
 
@@ -40,7 +41,7 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
   const currentGroupingV3 = useAppSelector(selectCurrentGroupingV3);
 
   // Exactly your 8 options – change defaults if you want
-  const [options, setOptions] = useState<Record<string, boolean>>({
+  const [options, setOptions] = useState<IDuplicateOptions>({
     subtasks: true,
     attachments: false,
     dates: true,
@@ -53,7 +54,7 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
 
   const [loading, setLoading] = useState(false);
 
-  const toggle = (key: string) => {
+  const toggle = (key: keyof IDuplicateOptions) => {
     setOptions(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
@@ -144,7 +145,10 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
       </Text>
 
       <div className="mt-6">
-        <Checkbox.Group value={Object.keys(options).filter(k => options[k])} className="w-full">
+        <Checkbox.Group
+          value={(Object.keys(options) as Array<keyof IDuplicateOptions>).filter(k => options[k])}
+          className="w-full"
+        >
           <Space direction="vertical" size={12} className="w-full">
             {checkboxItems.map(item => (
               <Checkbox

@@ -1,7 +1,10 @@
 {
   "importTasks": "Importo detyrat",
   "importTask": "Importo detyrën",
+  "importTasksFromCsv": "Importo detyra nga CSV",
   "createTask": "Krijo detyrë",
+  "createIssue": "Krijo çështje",
+  "createIssueTooltip": "Krijo një çështje të re",
   "settings": "Cilësimet",
   "subscribe": "Abonohu",
   "unsubscribe": "Çabonohu",
@@ -23,6 +26,7 @@
   "inviteTooltip": "Fto anëtarët e ekipit në këtë projekt",
   "createTaskTooltip": "Krijo një detyrë të re",
   "importTaskTooltip": "Importo detyrë nga shablloni",
+  "importTasksFromCsvTooltip": "Importo detyra nga një skedar CSV",
   "navigateBackTooltip": "Kthehu në listën e projekteve",
   "projectStatusTooltip": "Statusi i projektit",
   "projectDatesInfo": "Informacioni i afateve të projektit",

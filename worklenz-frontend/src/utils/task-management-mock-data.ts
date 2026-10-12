@@ -115,12 +115,14 @@ export function generateMockTask(index: number): Task {
     phase: getRandomElement(phases),
     progress: getRandomProgress(),
     assignees: getRandomElements(mockUsers, 0, 3).map(user => user.id), // 0-3 assignees
-    labels: getRandomElements(mockLabels, 0, 4).map(label => label.id), // 0-4 labels
+    labels: getRandomElements(mockLabels, 0, 4), // 0-4 labels
     dueDate: getRandomDueDate(),
     timeTracking: getRandomTimeTracking(),
-    customFields: {},
+    custom_column_values: {},
     createdAt: createdAt.toISOString(),
     updatedAt: createdAt.toISOString(),
+    created_at: createdAt.toISOString(),
+    updated_at: createdAt.toISOString(),
     order: index,
   };
 }

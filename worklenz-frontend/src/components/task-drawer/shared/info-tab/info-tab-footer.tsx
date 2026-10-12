@@ -13,12 +13,12 @@ import logger from '@/utils/errorLogger';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMember } from '@/types/teamMembers/teamMember.types';
-import { fromNow } from '@/utils/dateUtils';
+import { fromNow, formatDate } from '@/utils/dateUtils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import CustomMentionsInput, { MentionOption } from './comments/custom-mentions-input';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import './info-tab-footer.css';
 
@@ -42,9 +42,10 @@ const formatFileSize = (bytes: number): string => {
 };
 
 const COMMENT_ATTACHMENT_SIZE_LIMIT_BYTES = 25 * 1024 * 1024;
+const MAX_COMMENT_LENGTH = 5000;
 
 const InfoTabFooter = () => {
-  const { t } = useTranslation('task-drawer/task-drawer');
+  const { t, i18n } = useTranslation('task-drawer/task-drawer');
   const MAXIMUM_FILE_COUNT = 5;
 
   const [characterLength, setCharacterLength] = useState<number>(0);
@@ -77,25 +78,45 @@ const InfoTabFooter = () => {
 
   const createdFromNow = useMemo(() => {
     const createdAt = taskFormViewModel?.task?.created_at;
-    if (!createdAt) return 'N/A';
+    if (!createdAt) return '';
     try {
-      return fromNow(createdAt);
+      return fromNow(createdAt, i18n.language);
     } catch (error) {
       console.error('Error formatting created_at:', error, createdAt);
-      return 'N/A';
+      return '';
     }
-  }, [taskFormViewModel?.task?.created_at]);
+  }, [taskFormViewModel?.task?.created_at, i18n.language]);
 
   const updatedFromNow = useMemo(() => {
     const updatedAt = taskFormViewModel?.task?.updated_at;
-    if (!updatedAt) return 'N/A';
+    if (!updatedAt) return '';
     try {
-      return fromNow(updatedAt);
+      return fromNow(updatedAt, i18n.language);
     } catch (error) {
       console.error('Error formatting updated_at:', error, updatedAt);
-      return 'N/A';
+      return '';
     }
-  }, [taskFormViewModel?.task?.updated_at]);
+  }, [taskFormViewModel?.task?.updated_at, i18n.language]);
+
+  const createdTooltip = useMemo(() => {
+    const createdAt = taskFormViewModel?.task?.created_at;
+    if (!createdAt) return undefined;
+    try {
+      return formatDate(createdAt, 'LLL', i18n.language);
+    } catch {
+      return undefined;
+    }
+  }, [taskFormViewModel?.task?.created_at, i18n.language]);
+
+  const updatedTooltip = useMemo(() => {
+    const updatedAt = taskFormViewModel?.task?.updated_at;
+    if (!updatedAt) return undefined;
+    try {
+      return formatDate(updatedAt, 'LLL', i18n.language);
+    } catch {
+      return undefined;
+    }
+  }, [taskFormViewModel?.task?.updated_at, i18n.language]);
 
   const handleCancel = () => {
     form.resetFields(['comment']);
@@ -173,6 +194,16 @@ const InfoTabFooter = () => {
       return;
     }
 
+    if (commentValue.length > MAX_COMMENT_LENGTH) {
+      message.error(
+        t('taskInfoTab.comments.commentTooLong', {
+          max: MAX_COMMENT_LENGTH,
+          defaultValue: `Comment is too long. Please shorten it below ${MAX_COMMENT_LENGTH} characters.`,
+        })
+      );
+      return;
+    }
+
     try {
       const hasOversizedAttachment = selectedFiles.some(
         file => Number(file.size || 0) > COMMENT_ATTACHMENT_SIZE_LIMIT_BYTES
@@ -218,9 +249,21 @@ const InfoTabFooter = () => {
             detail: { taskId: selectedTaskId },
           })
         );
+      } else {
+        message.error(
+          res.message ||
+            t('taskInfoTab.comments.saveCommentError', {
+              defaultValue: 'Failed to save comment. Please try again.',
+            })
+        );
       }
     } catch (error) {
       logger.error('Failed to create comment:', error);
+      message.error(
+        t('taskInfoTab.comments.saveCommentError', {
+          defaultValue: 'Failed to save comment. Please try again.',
+        })
+      );
     } finally {
       setUploading(false);
     }
@@ -543,23 +586,32 @@ const InfoTabFooter = () => {
       )}
 
       <Flex align="center" justify="space-between" style={{ width: '100%', marginTop: 8 }}>
-        <Tooltip title={createdFromNow !== 'N/A' ? `Created ${createdFromNow}` : 'N/A'}>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('taskInfoTab.comments.createdBy', {
-              defaultValue: 'Created {time} by {user}',
-              time: createdFromNow,
-              user: taskFormViewModel?.task?.reporter || '',
-            })}
-          </Typography.Text>
-        </Tooltip>
-        <Tooltip title={updatedFromNow !== 'N/A' ? `Updated ${updatedFromNow}` : 'N/A'}>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('taskInfoTab.comments.updatedTimes', {
-              defaultValue: 'Updated {{time}}',
-              time: updatedFromNow,
-            })}
-          </Typography.Text>
-        </Tooltip>
+        {taskFormViewModel?.task?.created_at && (
+          <Tooltip title={createdTooltip}>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              {taskFormViewModel.task.reporter
+                ? t('taskInfoTab.comments.createdBy', {
+                    defaultValue: 'Created {{time}} by {{user}}',
+                    time: createdFromNow,
+                    user: taskFormViewModel.task.reporter,
+                  })
+                : t('taskInfoTab.comments.createdTime', {
+                    defaultValue: 'Created {{time}}',
+                    time: createdFromNow,
+                  })}
+            </Typography.Text>
+          </Tooltip>
+        )}
+        {taskFormViewModel?.task?.updated_at && (
+          <Tooltip title={updatedTooltip}>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              {t('taskInfoTab.comments.updatedTime', {
+                defaultValue: 'Updated {{time}}',
+                time: updatedFromNow,
+              })}
+            </Typography.Text>
+          </Tooltip>
+        )}
       </Flex>
     </Flex>
   );

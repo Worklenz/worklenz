@@ -5,7 +5,7 @@ import sanitizeHtml from "sanitize-html";
 
 import { customAlphabet } from "nanoid";
 import { AvatarNamesMap, NumbersColorMap, WorklenzColorCodes } from "./constants";
-import { send_to_slack } from "../ee/shared/slack";
+import { send_to_slack } from "../shared/slack";
 import { IActivityLogChangeType } from "../services/activity-logs/interfaces";
 import { IRecurringSchedule } from "../interfaces/recurring-tasks";
 

@@ -20,6 +20,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { createStatus } from '@/features/taskAttributes/taskStatusSlice';
 import { stepErrorSet } from '@/features/imports/importWizardSlice';
 import logger from '@/utils/errorLogger';
+import type { TranslateFn } from '../types';
 
 interface UseImportFinishHandlerArgs {
   integrationType: 'direct' | 'csv';
@@ -30,7 +31,7 @@ interface UseImportFinishHandlerArgs {
   setIsImporting: React.Dispatch<React.SetStateAction<boolean>>;
   setShowCompletion: React.Dispatch<React.SetStateAction<boolean>>;
   onClose: () => void;
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
+  t: TranslateFn;
   tt: (key: string, defaultValue: string, options?: Record<string, unknown>) => string;
   spaceName: string;
   spaceType: string;

@@ -103,7 +103,9 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     dateRange: string[] = [],
     includeArchived: boolean,
     userId: string,
-    req?: any
+    req?: any,
+    practiceIds: string[] = [],
+    departmentIds: string[] = []
   ) {
     const pagingClause = (size !== null && offset !== null) ? `LIMIT ${size} OFFSET ${offset}` : "";
     const archivedClause = includeArchived
@@ -161,6 +163,48 @@ export default class ReportingMembersController extends ReportingControllerBaseW
           memberFilterClause = "AND FALSE";
         }
       }
+    }
+
+    const NO_PRACTICE_FILTER_ID = "__no_practice__";
+    let practicesFilterClause = "";
+    let practiceFilterParams: any[] = [];
+    const includeNoPractice = practiceIds.includes(NO_PRACTICE_FILTER_ID);
+    const selectedPracticeIds = practiceIds.filter(id => id !== NO_PRACTICE_FILTER_ID);
+    if (selectedPracticeIds.length > 0 || includeNoPractice) {
+      let practicesCondition = "";
+      if (selectedPracticeIds.length > 0) {
+        const { clause, params } = SqlHelper.buildInClause(selectedPracticeIds, paramOffset);
+        practiceFilterParams = params;
+        practicesCondition = `tm.practice_id IN (${clause})`;
+        paramOffset += practiceFilterParams.length;
+      }
+      if (includeNoPractice) {
+        practicesCondition = practicesCondition
+          ? `(${practicesCondition} OR tm.practice_id IS NULL)`
+          : "tm.practice_id IS NULL";
+      }
+      practicesFilterClause = `AND tmiv.team_member_id IN (SELECT tm.id FROM team_members tm WHERE ${practicesCondition})`;
+    }
+
+    const NO_DEPARTMENT_FILTER_ID = "__no_department__";
+    let departmentsFilterClause = "";
+    let departmentFilterParams: any[] = [];
+    const includeNoDepartment = departmentIds.includes(NO_DEPARTMENT_FILTER_ID);
+    const selectedDepartmentIds = departmentIds.filter(id => id !== NO_DEPARTMENT_FILTER_ID);
+    if (selectedDepartmentIds.length > 0 || includeNoDepartment) {
+      let departmentsCondition = "";
+      if (selectedDepartmentIds.length > 0) {
+        const { clause, params } = SqlHelper.buildInClause(selectedDepartmentIds, paramOffset);
+        departmentFilterParams = params;
+        departmentsCondition = `tm.department_id IN (${clause})`;
+        paramOffset += departmentFilterParams.length;
+      }
+      if (includeNoDepartment) {
+        departmentsCondition = departmentsCondition
+          ? `(${departmentsCondition} OR tm.department_id IS NULL)`
+          : "tm.department_id IS NULL";
+      }
+      departmentsFilterClause = `AND tmiv.team_member_id IN (SELECT tm.id FROM team_members tm WHERE ${departmentsCondition})`;
     }
 
     const q = `SELECT COUNT(DISTINCT email) AS total,
@@ -251,17 +295,17 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                                       ${timeLogDateRangeClause}
                                       ${includeArchived ? "" : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`}) AS non_billable_time
                       FROM team_member_info_view tmiv
-                      WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause}
+                      WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause} ${practicesFilterClause} ${departmentsFilterClause}
                           ${searchQuery}
                       GROUP BY email, name, avatar_url, team_member_id, tmiv.team_id
                       ORDER BY last_user_activity DESC NULLS LAST
 
                       ${pagingClause}) t) AS members
                   FROM team_member_info_view tmiv
-                  WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause}
+                  WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause} ${practicesFilterClause} ${departmentsFilterClause}
                   ${searchQuery}`;
     // Pass all parameters - searchParams come after teamId, then teamIdsParams, then other filter params
-    const queryParams = [teamId, ...searchParams, ...teamIdsParams, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams];
+    const queryParams = [teamId, ...searchParams, ...teamIdsParams, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams, ...practiceFilterParams, ...departmentFilterParams];
     const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
@@ -569,8 +613,15 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       teamIdsParams = teamIds;
     }
 
+    const practiceIds = req.query.practices
+      ? (req.query.practices as string).split(",").filter(id => id.trim())
+      : [];
+    const departmentIds = req.query.departments
+      ? (req.query.departments as string).split(",").filter(id => id.trim())
+      : [];
+
     const teamId = this.getCurrentTeamId(req);
-    const result = await this.getMembers(teamId as string, searchQuery, searchParams, size, offset, teamsClause, teamIdsParams, duration as string, dateRange, archived, req.user?.id as string, req);
+    const result = await this.getMembers(teamId as string, searchQuery, searchParams, size, offset, teamsClause, teamIdsParams, duration as string, dateRange, archived, req.user?.id as string, req, practiceIds, departmentIds);
     const body = {
       total: result.total,
       members: result.members,

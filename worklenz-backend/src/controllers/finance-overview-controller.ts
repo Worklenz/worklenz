@@ -5,36 +5,42 @@ import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { getColor } from "../shared/utils";
+import { buildRateSql } from "../shared/finance-rate";
 import Excel from "exceljs";
 
+// Org-level finance settings. $1 = team id.
+const ORG_FINANCE_SETTINGS_SQL = `
+  SELECT o.calculation_method, o.hours_per_day
+  FROM teams t
+  JOIN organizations o ON t.organization_id = o.id
+  WHERE t.id = $1
+`;
 
-export default class FinanceOverviewController extends WorklenzControllerBase {
+export async function getOrgFinanceSettings(
+  teamId: string
+): Promise<{ calcMethod: string; hoursPerDay: number }> {
+  const orgResult = await db.query(ORG_FINANCE_SETTINGS_SQL, [teamId]);
+  return {
+    calcMethod: orgResult.rows[0]?.calculation_method || "hourly",
+    hoursPerDay: Number(orgResult.rows[0]?.hours_per_day) || 8,
+  };
+}
 
-  @HandleExceptions()
-  public static async getPortfolioFinance(
-    req: IWorkLenzRequest,
-    res: IWorkLenzResponse
-  ): Promise<IWorkLenzResponse> {
-    const teamId = req.user?.team_id;
-    const userId = req.user?.id;
-
-    if (!teamId) {
-      return res.status(400).send(new ServerResponse(false, null, "Missing team context"));
-    }
-
-    /**
-     * One row per project visible to this team.
-     *
-     * fixed_cost    = SUM of tasks.fixed_cost          (manual fixed costs)
-     * time_based_cost = SUM of task_work_log.time_spent × member hourly rate
-     *                   (actual cost from time logs via rate card)
-     * actual_cost   = fixed_cost + time_based_cost
-     * estimated_hours = SUM of tasks.total_minutes / 60
-     *
-     * These are the exact same fields the per-project Finance tab aggregates,
-     * so numbers always reconcile between Overview and the per-project tab.
-     */
-    const q = `
+/**
+ * Per-project portfolio finance rollup — one row per non-archived project in the
+ * team. Shared verbatim by getPortfolioFinance and its Excel export so the two
+ * can never drift.
+ *
+ * Params: $1 = team id, $2 = user id (archived-projects filter).
+ * calcMethod/hoursPerDay are embedded via buildRateSql (shared/finance-rate.ts)
+ * rather than bound as query params — see that module for why.
+ *
+ * time_based_cost mirrors the per-project Finance tab exactly
+ * (project-finance-controller.ts): task_work_log -> users -> team_members
+ * (scoped to the project's team) -> project_members -> assigned rate card role,
+ * honoring the man_days calculation method. Keep in sync with that controller.
+ */
+const buildPortfolioFinanceSql = (calcMethod: string, hoursPerDay: number): string => `
   SELECT
     p.id,
     p.name,
@@ -53,24 +59,23 @@ export default class FinanceOverviewController extends WorklenzControllerBase {
       ), 0
     )::FLOAT AS fixed_cost,
 
-    -- Time-based cost: actual cost from logged hours × member rate
+    -- Time-based cost: actual cost from logged hours × member rate.
     COALESCE(
       (
         SELECT SUM(
-          (COALESCE(wl.time_spent, 0)::FLOAT / 3600.0)
-          * COALESCE(fprr.rate, 0)::FLOAT
+          (wl.time_spent / 3600.0) * ${buildRateSql(calcMethod, hoursPerDay)}
         )
         FROM tasks t
         JOIN task_work_log wl ON wl.task_id = t.id
-        LEFT JOIN project_members pm
-          ON pm.project_id = t.project_id
-         AND pm.team_member_id = wl.user_id
+        LEFT JOIN users u ON wl.user_id = u.id
         LEFT JOIN team_members tm
-          ON tm.id = wl.user_id
+          ON tm.user_id = u.id
          AND tm.team_id = p.team_id
+        LEFT JOIN project_members pm
+          ON pm.team_member_id = tm.id
+         AND pm.project_id = t.project_id
         LEFT JOIN finance_project_rate_card_roles fprr
-          ON fprr.project_id = t.project_id
-         AND fprr.job_title_id = tm.job_title_id
+          ON fprr.id = pm.project_rate_card_role_id
         WHERE t.project_id = p.id
           AND t.archived = false
       ), 0
@@ -98,8 +103,25 @@ export default class FinanceOverviewController extends WorklenzControllerBase {
   ORDER BY p.name ASC;
 `;
 
+export default class FinanceOverviewController extends WorklenzControllerBase {
 
-    const result = await db.query(q, [teamId, userId]);
+  @HandleExceptions()
+  public static async getPortfolioFinance(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+
+    if (!teamId) {
+      return res.status(400).send(new ServerResponse(false, null, "Missing team context"));
+    }
+
+    // Resolve the organization's finance calculation method so the Overview
+    // reconciles exactly with the per-project Finance tab.
+    const { calcMethod, hoursPerDay } = await getOrgFinanceSettings(teamId);
+
+    const result = await db.query(buildPortfolioFinanceSql(calcMethod, hoursPerDay), [teamId, userId]);
 
     // Compute actual_cost on the backend so the frontend never has to
     const projects = result.rows.map((row: any) => ({
@@ -121,42 +143,10 @@ export default class FinanceOverviewController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "Missing team context"));
     }
 
-    // Reuse the same query as getPortfolioFinance
-    const q = `
-    SELECT
-      p.id, p.name,
-      COALESCE(p.color_code, '#1890ff') AS color_code,
-      c.name AS client_name,
-      COALESCE(p.budget, 0)::FLOAT AS budget,
-      COALESCE(p.currency, 'USD') AS currency,
-      COALESCE((
-        SELECT SUM(COALESCE(t.fixed_cost, 0))
-        FROM tasks t WHERE t.project_id = p.id AND t.archived = false
-      ), 0)::FLOAT AS fixed_cost,
-      COALESCE((
-        SELECT SUM(
-          (COALESCE(wl.time_spent, 0)::FLOAT / 3600.0)
-          * COALESCE(fprr.rate, 0)::FLOAT
-        )
-        FROM tasks t
-        JOIN task_work_log wl ON wl.task_id = t.id
-        LEFT JOIN team_members tm ON tm.id = wl.user_id AND tm.team_id = p.team_id
-        LEFT JOIN finance_project_rate_card_roles fprr
-          ON fprr.project_id = t.project_id AND fprr.job_title_id = tm.job_title_id
-        WHERE t.project_id = p.id AND t.archived = false
-      ), 0)::FLOAT AS time_based_cost,
-      COALESCE((
-        SELECT SUM(COALESCE(t.total_minutes, 0))::FLOAT / 60.0
-        FROM tasks t WHERE t.project_id = p.id AND t.archived = false AND t.parent_task_id IS NULL
-      ), 0)::FLOAT AS estimated_hours
-    FROM projects p
-    LEFT JOIN clients c ON c.id = p.client_id
-    WHERE p.team_id = $1
-      AND NOT EXISTS (SELECT 1 FROM archived_projects ap WHERE ap.project_id = p.id AND ap.user_id = $2)
-    ORDER BY p.name ASC;
-  `;
+    // Same rollup as getPortfolioFinance so the export matches the table exactly.
+    const { calcMethod, hoursPerDay } = await getOrgFinanceSettings(teamId);
 
-    const result = await db.query(q, [teamId, userId]);
+    const result = await db.query(buildPortfolioFinanceSql(calcMethod, hoursPerDay), [teamId, userId]);
 
     const workbook = new Excel.Workbook();
     const sheet = workbook.addWorksheet("Finance Overview");

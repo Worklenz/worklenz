@@ -8,6 +8,7 @@ import {verifyNonGuestTaskAccess} from "../../middlewares/verify-task-access";
 
 const taskDuplicateApiRouter = express.Router();
 
+taskDuplicateApiRouter.post("/compare", verifyNonGuestTaskAccess('body', 'task_id'), safeControllerFunction(TaskDuplicateController.compare));
 taskDuplicateApiRouter.post("/duplicate", taskDuplicateBodyValidator, verifyNonGuestTaskAccess('body', 'task_id'), safeControllerFunction(TaskDuplicateController.duplicate));
 
 export default taskDuplicateApiRouter;

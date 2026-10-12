@@ -4,9 +4,10 @@ import ManageStatusContent from '@/components/task-management/ManageStatusConten
 
 interface StatusesSettingsSectionProps {
   projectId?: string | null;
+  disabled?: boolean;
 }
 
-const StatusesSettingsSection = ({ projectId }: StatusesSettingsSectionProps) => {
+const StatusesSettingsSection = ({ projectId, disabled = false }: StatusesSettingsSectionProps) => {
   const { t } = useTranslation('project-drawer');
 
   return (
@@ -22,7 +23,7 @@ const StatusesSettingsSection = ({ projectId }: StatusesSettingsSectionProps) =>
         </Typography.Paragraph>
       </div>
 
-      <ManageStatusContent projectId={projectId || undefined} />
+      <ManageStatusContent projectId={projectId || undefined} disabled={disabled} />
     </Flex>
   );
 };

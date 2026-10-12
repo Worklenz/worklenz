@@ -98,6 +98,7 @@ const ImportTaskTemplate = () => {
 
   const [templates, setTemplates] = useState<ITaskTemplatesGetResponse[]>([]);
   const [tasks, setTasks] = useState<ITaskTemplateTask[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -105,6 +106,7 @@ const ImportTaskTemplate = () => {
   const handleClose = () => {
     form.resetFields();
     setTasks([]);
+    setSelectedTemplateId(null);
     dispatch(setImportTaskTemplateDrawerOpen(false));
   };
 
@@ -138,6 +140,7 @@ const ImportTaskTemplate = () => {
 
   const handleTemplateSelect = (value: string) => {
     if (!value) return;
+    setSelectedTemplateId(value);
     fetchTasks(value);
   };
 
@@ -148,10 +151,14 @@ const ImportTaskTemplate = () => {
   };
 
   const handleImport = async () => {
-    if (!projectId || tasks.length === 0) return;
+    if (!projectId || !selectedTemplateId || tasks.length === 0) return;
     try {
       setImporting(true);
-      const res = await taskTemplatesApiService.importTemplate(projectId, tasks);
+      const res = await taskTemplatesApiService.importTemplate(
+        projectId,
+        selectedTemplateId,
+        tasks
+      );
       if (res.done) {
         if (tab === 'board') {
           dispatch(fetchEnhancedKanbanGroups(projectId));

@@ -69,6 +69,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     customColumnId,
     customColumnModalType,
     currentColumnData,
+    canChangeColumnType,
     decimals,
     label,
     labelPosition,
@@ -89,8 +90,13 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   );
 
   const openedColumn = currentColumnData;
+  const isEditMode = customColumnModalType === 'edit';
+  const isTypeChangeAllowed = !isEditMode || canChangeColumnType;
+  const originalFieldType =
+    (openedColumn?.custom_column_obj?.fieldType as CustomFieldsTypes | undefined) || customFieldType;
   const { isHidden, toggleVisibility } = useCustomColumnVisibility();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFieldTypeDropdownOpen, setIsFieldTypeDropdownOpen] = useState(isTypeChangeAllowed);
 
   const resetModalData = () => {
     mainForm.resetFields();
@@ -101,7 +107,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   // Prefill form + redux field-type state when opened for editing (mirrors the
   // Modal's previous afterOpenChange behavior, but runs on mount instead).
   useEffect(() => {
-    if (customColumnModalType === 'edit' && openedColumn) {
+    if (isEditMode && openedColumn) {
       dispatch(setCustomFieldType(openedColumn.custom_column_obj?.fieldType || 'people'));
 
       if (openedColumn.custom_column_obj?.fieldType === 'number') {
@@ -139,7 +145,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       resetModalData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [customColumnModalType, customColumnId, openedColumn?.key]);
 
   const handleDeleteColumn = async () => {
     const columnUUID =
@@ -294,7 +300,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
           message.error(t('customColumns.modal.createErrorMessage'));
           setIsSubmitting(false);
         }
-      } else if (customColumnModalType === 'edit' && customColumnId) {
+      } else if (isEditMode && customColumnId) {
         const updateColumnUUID =
           customColumnId ||
           openedColumn?.uuid ||
@@ -304,9 +310,10 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
 
         if (updateColumnUUID) {
           try {
+            const resolvedFieldType = canChangeColumnType ? value.fieldType : originalFieldType;
             const configuration = {
               field_title: value.fieldTitle,
-              field_type: value.fieldType,
+              field_type: resolvedFieldType,
               number_type: value.numberType,
               decimals: value.decimals,
               label: value.label,
@@ -316,7 +323,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
               first_numeric_column_key: value.firstNumericColumn?.key,
               second_numeric_column_key: value.secondNumericColumn?.key,
               selections_list:
-                value.fieldType === 'selection'
+                resolvedFieldType === 'selection'
                   ? selectionsList.map((selection, index) => ({
                       selection_id: selection.selection_id,
                       selection_name: selection.selection_name,
@@ -325,7 +332,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                     }))
                   : [],
               labels_list:
-                value.fieldType === 'labels'
+                resolvedFieldType === 'labels'
                   ? labelsList.map((label, index) => ({
                       label_id: label.label_id,
                       label_name: label.label_name,
@@ -337,10 +344,11 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
 
             await tasksCustomColumnsService.updateCustomColumn(updateColumnUUID, {
               name: value.fieldTitle,
-              field_type: value.fieldType,
+              field_type: resolvedFieldType,
               width: 150,
               is_visible: true,
               configuration,
+              lock_field_type: true,
             });
 
             resetModalData();
@@ -420,13 +428,34 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
             label={<Typography.Text>{t('customColumns.modal.type')}</Typography.Text>}
             layout="vertical"
             style={{ width: 180, flexShrink: 0 }}
+            extra={
+              isEditMode && !canChangeColumnType ? (
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {t('customColumns.modal.typeCannotBeChanged', {
+                    defaultValue: 'Column type cannot be changed after creation.',
+                  })}
+                </Typography.Text>
+              ) : undefined
+            }
           >
-            <Select
-              options={fieldTypesOptions}
-              defaultValue={fieldType}
-              value={fieldType}
-              onChange={value => dispatch(setCustomFieldType(value))}
-            />
+            {isEditMode && !canChangeColumnType ? (
+              <Typography.Text aria-readonly="true">
+                {t(`customColumns.fieldTypes.${originalFieldType}`, {
+                  defaultValue: originalFieldType,
+                })}
+              </Typography.Text>
+            ) : (
+              <Select
+                options={fieldTypesOptions}
+                value={fieldType}
+                onChange={selectedType => {
+                  dispatch(setCustomFieldType(selectedType));
+                  mainForm.setFieldValue('fieldType', selectedType);
+                }}
+                open={isFieldTypeDropdownOpen}
+                onOpenChange={setIsFieldTypeDropdownOpen}
+              />
+            )}
           </Form.Item>
         </Flex>
 

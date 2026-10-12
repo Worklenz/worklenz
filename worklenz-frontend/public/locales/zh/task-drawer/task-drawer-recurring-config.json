@@ -31,5 +31,10 @@
   "intervalDays": "间隔（天）",
   "intervalWeeks": "间隔（周）",
   "intervalMonths": "间隔（月）",
-  "saveChanges": "保存更改"
+  "saveChanges": "保存更改",
+  "recurringMode": "循环模式",
+  "createNewTask": "创建新任务",
+  "changeTaskStatus": "更改任务状态",
+  "targetStatus": "目标状态",
+  "selectStatus": "选择状态"
 }

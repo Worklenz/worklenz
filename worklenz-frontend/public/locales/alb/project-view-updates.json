@@ -46,5 +46,10 @@
   "convertToTaskError": "Dështoi krijimi i detyrës",
   "convertToTaskEmpty": "Mesazhi nuk ka tekst për t’u përdorur si emër detyre",
   "attachFile": "Bashkëngjit skedar",
-  "attachmentUploadError": "Ngarkimi i bashkëngjitjes dështoi"
+  "attachmentUploadError": "Ngarkimi i bashkëngjitjes dështoi",
+  "edited": "(e modifikuar)",
+  "editedTooltip": "Modifikuar {{time}} nga {{author}}",
+  "unknown": "E panjohur",
+  "you": "Ti",
+  "attachment": "Bashkëngjitje"
 }

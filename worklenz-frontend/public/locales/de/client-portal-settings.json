@@ -8,6 +8,14 @@
   "addressLine1Placeholder": "Straße, Postfach",
   "addressLine2Label": "Adresszeile 2",
   "addressLine2Placeholder": "Stadt, Bundesland, PLZ, Land",
+  "cityLabel": "Stadt",
+  "cityPlaceholder": "Stadt",
+  "stateLabel": "Bundesland / Provinz",
+  "statePlaceholder": "Bundesland / Provinz",
+  "zipCodeLabel": "Postleitzahl",
+  "zipCodePlaceholder": "Postleitzahl",
+  "countryLabel": "Land",
+  "countryPlaceholder": "Land",
   "contactEmailLabel": "Kontakt-E-Mail",
   "contactEmailPlaceholder": "Kontakt-E-Mail eingeben",
   "contactPhoneLabel": "Kontakttelefon",
@@ -43,6 +51,7 @@
   "newLogoText": "Neues Logo (ausstehend)",
   "logoUploadedText": "Logo erfolgreich ausgewählt",
   "settingsSavedText": "Einstellungen erfolgreich gespeichert",
+  "settingsSaveFailedError": "Einstellungen konnten nicht gespeichert werden.",
   "logoRemovedText": "Logo entfernt",
   "savingText": "Speichern...",
   "selectFileButton": "Logo auswählen",
@@ -72,5 +81,120 @@
   "logoAlt": "Logo",
   "pendingUploadTag": "Ausstehender Upload",
   "pendingRemovalTag": "Ausstehende Entfernung",
-  "organizationLogoWillBeUsedText": "Organisationslogo wird verwendet"
+  "organizationLogoWillBeUsedText": "Organisationslogo wird verwendet",
+  "navCompanyDetails": "Firmendetails",
+  "navBranding": "Branding",
+  "navInvoiceTemplate": "Rechnungsvorlage",
+  "navVisibility": "Sichtbarkeit für Kunden",
+  "navNotifications": "Benachrichtigungen",
+  "navClientUsers": "Kundenbenutzerverwaltung",
+  "navTemplates": "Berechtigungsvorlagen",
+  "navTicketing": "Ticket-Konfiguration",
+  "invalidLogoFileTypeError": "Bitte wählen Sie eine Bilddatei aus.",
+  "logoFileTooLargeError": "Das Logo darf höchstens 2 MB groß sein.",
+  "logoUploadFailedError": "Logo konnte nicht hochgeladen werden.",
+  "portalLogoLabel": "Portal-Logo",
+  "portalTitleLabel": "Portal-Titel",
+  "portalTitlePlaceholder": "z.B. Acme Kunden-Hub",
+  "brandColorLabel": "Markenfarbe",
+  "recommendedColorsLabel": "Empfohlen",
+  "portalThemeLabel": "Design",
+  "lightPortalButton": "Helles Portal",
+  "darkPortalButton": "Dunkles Portal",
+  "defaultPortalTitlePreview": "Kundenportal",
+  "previewWelcomeText": "Willkommen zurück",
+  "previewLatestInvoiceText": "Letzte Rechnung",
+  "previewInvoiceSampleText": "USD 2.500,00 · fällig in 6 Tagen",
+  "previewViewTasksButton": "Meine Aufgaben anzeigen",
+  "brandingTitle": "Branding",
+  "invoiceTemplateTitle": "Rechnungsvorlage",
+  "invoiceTemplateDescription": "Legen Sie fest, wie Rechnungen beim Herunterladen oder in der Vorschau für Ihr Team und Ihre Kunden aussehen.",
+  "invoiceMoreCustomizationTitle": "Weitere Anpassungen folgen in Kürze",
+  "invoiceMoreCustomizationDescription": "Weitere Layout- und Design-Optionen für Ihre Rechnungsvorlage sind in Vorbereitung.",
+  "invoiceAccentColorLabel": "Akzentfarbe",
+  "invoiceAccentColorHint": "Verwendet Ihre Markenfarbe aus Branding.",
+  "invoiceShowLogoLabel": "Firmenlogo auf Rechnung anzeigen",
+  "invoiceShowLogoDescription": "Zeigt Ihr Portal-Logo im Rechnungskopf an.",
+  "invoicePreviewLabel": "Vorschau",
+  "visibilityTitle": "Sichtbarkeit für Kunden",
+  "visibilityDescription": "Wählen Sie, welche Bereiche im Kundenportal angezeigt werden.",
+  "visibility": {
+    "projectPlan": {
+      "label": "Projektplan (Aufgaben)",
+      "description": "Zeigt den Bereich Projekte im Kundenportal an."
+    },
+    "ganttTimeline": {
+      "label": "Gantt / Zeitachse",
+      "description": "Vorbereitet für eine künftige Gantt-/Zeitachsenansicht im Kundenportal – derzeit ohne Wirkung."
+    },
+    "filesDocuments": {
+      "label": "Dateien & Dokumente",
+      "description": "Vorbereitet für einen künftigen eigenständigen Dateibereich im Kundenportal – derzeit ohne Wirkung."
+    },
+    "invoices": {
+      "label": "Rechnungen",
+      "description": "Zeigt den Bereich Rechnungen im Kundenportal an."
+    },
+    "feedbackForms": {
+      "label": "Feedback-Formulare",
+      "description": "Vorbereitet für künftige Feedback-Formulare im Kundenportal – derzeit ohne Wirkung."
+    },
+    "teamMembers": {
+      "label": "Teammitglieder",
+      "description": "Vorbereitet für eine künftige kundenseitige Teammitglieder-Seite – derzeit ohne Wirkung."
+    },
+    "projectUpdates": {
+      "label": "Projekt-Updates",
+      "description": "Vorbereitet für künftige Projekt-Updates im Kundenportal – derzeit ohne Wirkung."
+    },
+    "chat": {
+      "label": "Chatten",
+      "description": "Zeigt den Bereich Chats im Kundenportal an."
+    }
+  },
+  "notificationsTitle": "Benachrichtigungen",
+  "notificationsDescription": "Legen Sie fest, worüber Ihr Team bei Kundenaktivitäten benachrichtigt wird.",
+  "notifications": {
+    "newMessage": {
+      "label": "Neue Nachricht",
+      "description": "Benachrichtigt das Team, wenn ein Kunde eine neue Nachricht sendet."
+    },
+    "taskStatusChange": {
+      "label": "Statusänderung einer Aufgabe",
+      "description": "Benachrichtigt das Team, wenn sich der Status einer kundensichtbaren Aufgabe ändert."
+    },
+    "fileUploaded": {
+      "label": "Datei hochgeladen",
+      "description": "Benachrichtigt das Team, wenn ein Kunde eine Datei hochlädt."
+    }
+  },
+  "clientUsers": {
+    "bannerTitle": "Noch nicht durchgesetzt",
+    "bannerDescription": "Diese Einstellungen legen fest, was der Ansprechpartner (POC) eines Unternehmens tun darf, sobald das kundenseitige Portal dies unterstützt. Derzeit ist POC nur eine Bezeichnung im Verzeichnis – hier ist noch nichts durchgesetzt.",
+    "selfManagementTitle": "POC-Selbstverwaltung",
+    "selfManagementDescription": "Lassen Sie den Ansprechpartner eines Unternehmens selbst verwalten, wer aus seinem Unternehmen Portalzugriff hat, statt jede Hinzufügung/Entfernung über Ihr Team laufen zu lassen.",
+    "canAdd": {
+      "label": "POCs dürfen Firmenbenutzer hinzufügen",
+      "description": "Ein POC kann einen neuen Kollegen aus dem eigenen Unternehmen ins Kundenportal einladen."
+    },
+    "canRemove": {
+      "label": "POCs dürfen Firmenbenutzer entfernen",
+      "description": "Ein POC kann einem anderen Benutzer des eigenen Unternehmens den Portalzugriff entziehen."
+    },
+    "guardrailsTitle": "Immer gültig, unabhängig von den obigen Umschaltern",
+    "guardrail1": "Ein Ansprechpartner sieht und verwaltet ausschließlich die Benutzer des eigenen Unternehmens – niemals die eines anderen Kunden.",
+    "guardrail2": "Ein Ansprechpartner sieht niemals Ihr internes Team-Verzeichnis und erhält keinen Organisations-Admin-Zugriff.",
+    "guardrail3": "Das Entfernen des einzigen Ansprechpartners eines Unternehmens löscht niemals das Unternehmen oder dessen andere Benutzer – es bleibt lediglich ohne Ansprechpartner."
+  },
+  "permissionTemplates": {
+    "bannerTitle": "Nur lesend",
+    "bannerDescription": "Die Auswahl einer Vorlage legt mit einem Klick diese Berechtigungsstufe für alle aktuellen Projekte des Unternehmens fest – Admins können den Zugriff danach weiterhin projektweise anpassen. Verfügbar beim Hinzufügen eines Firmenbenutzers oder über „Projekte zuweisen“ bei einem bestehenden Benutzer."
+  },
+  "ticketingConfig": {
+    "title": "Ticket-Status",
+    "description": "Offen, In Bearbeitung und Gelöst existieren immer und können nicht entfernt werden. Fügen Sie teamdefinierte Status für Ihre eigenen Arbeitsabläufe hinzu — sie erscheinen sowohl in der Listen- als auch in der Board-Ansicht von Ticketing.",
+    "defaultStatusesLabel": "Standardstatus",
+    "defaultStatusesHint": "Diese existieren immer und können nicht entfernt werden.",
+    "customStatusesLabel": "Benutzerdefinierte Status"
+  }
 }

@@ -1,5 +1,13 @@
 {
   "title": "Unbefugt!",
   "subtitle": "Sie sind nicht berechtigt, auf diese Seite zuzugreifen",
+  "commentAccessTitle": "Sie benötigen Zugriff, um diesen Kommentar anzuzeigen",
+  "commentAccessContactAdmin": "Sie sind zu diesem Projekt nicht eingeladen. Bitte wenden Sie sich an Ihren Administrator oder Projekteigentümer, um Zugriff anzufordern.",
+  "commentAccessDenied": "Sie sind zu diesem Projekt nicht eingeladen. Bitte wenden Sie sich an Ihren Administrator oder Projekteigentümer, um Zugriff anzufordern.",
+  "invalidCommentLink": "Dieser Kommentarlink ist ungültig.",
+  "commentNotFound": "Dieser Kommentar konnte nicht gefunden werden.",
+  "commentLinkOpenFailed": "Dieser Kommentarlink kann nicht geöffnet werden. Bitte versuchen Sie es erneut oder öffnen Sie den Kommentar aus der Aufgabe.",
+  "unableToOpenComment": "Kommentar kann nicht geöffnet werden",
+  "openingComment": "Eröffnungskommentar...",
   "button": "Zur Startseite"
 }

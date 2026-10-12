@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { selectTaskById } from '@/features/task-management/task-management.slice';
 import { selectIsTaskSelected } from '@/features/task-management/selection.slice';
+import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
 import { useTaskRowState } from './hooks/useTaskRowState';
 import { useTaskRowActions } from './hooks/useTaskRowActions';
 import { useTaskRowColumns } from './hooks/useTaskRowColumns';
@@ -73,6 +74,11 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       [task, taskId]
     );
 
+    // TVR-13: parent-context rows are view-only (reuse guest edit gating)
+    const isRowReadOnly = isGuest || !!safeTask.assignee_scope_readonly;
+    // Assignee groups can list the same issue several times, so rows are not draggable there.
+    const isGroupedByAssignee = useAppSelector(selectCurrentGrouping) === 'assignee';
+
     // Use extracted hooks for state management
     const {
       activeDatePicker,
@@ -101,7 +107,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(
     // Drag and drop functionality
     // Subtasks: disabled in the global DnD context, but enabled when placed inside
     // a subtask-scoped DndContext (enableSubtaskDnd=true).
-    // Guest access: drag and drop is disabled for guests
+    // Guest / assignee-scope read-only: drag and drop is disabled
     const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } =
       useSortable({
         id: safeTask.id || taskId,
@@ -109,7 +115,8 @@ const TaskRow: React.FC<TaskRowProps> = memo(
           type: 'task',
           task: safeTask,
         },
-        disabled: (isSubtask && !enableSubtaskDnd) || !task || isGuest,
+        disabled:
+          (isSubtask && !enableSubtaskDnd) || !task || isRowReadOnly || isGroupedByAssignee,
       });
 
     const { renderColumn } = useTaskRowColumns({
@@ -139,8 +146,8 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       attributes,
       listeners,
       depth,
-      canCreateTask: canCreateTask && !isGuest,
-      isGuest,
+      canCreateTask: canCreateTask && !isRowReadOnly,
+      isGuest: isRowReadOnly,
     });
 
     // Render null only after all hooks are called to keep hook ordering stable

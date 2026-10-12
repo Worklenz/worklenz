@@ -17,6 +17,8 @@
   "invite": "Invite",
   "inviteTooltip": "Invite team members to join",
   "switchTeamTooltip": "Switch team",
+  "searchTeams": "Search teams...",
+  "noTeamsFound": "No teams found",
   "help": "Help",
   "notificationTooltip": "View notifications",
   "profileTooltip": "View profile",
@@ -34,7 +36,11 @@
     "readAndJoin": "Read & Join",
     "accept": "Accept",
     "acceptAndJoin": "Accept & Join",
-    "noNotifications": "No notifications"
+    "noNotifications": "No notifications",
+    "invitationMessage": "You have been invited to work with <1>{{teamName}}</1>.",
+    "teamInvitation": "You have been invited to join {{teamName}}",
+    "loading": "Loading...",
+    "markAllAsRead": "Mark all as read"
   },
   "searchAnything": "Search anything",
   "globalSearchPlaceholder": "Search tasks, projects, clients, members…",
@@ -42,8 +48,10 @@
   "timeEntries": "Time Entries",
   "new": "New",
   "quickActions": {
+    "new": "New",
     "task": "Task",
     "logTime": "Log Time",
+    "markTimeOff": "Mark Time Off",
     "project": "Project",
     "client": "Client",
     "addExpense": "Add Expense",
@@ -71,24 +79,21 @@
     "conflictMessage": "Another timer is running for \"{{taskName}}\" in project \"{{projectName}}\". Do you want to stop it and start this timer?",
     "stopAndStart": "Stop and Start",
     "cancel": "Cancel",
-    "logTime": "Log time"
+    "logTime": "Log time",
+    "openTimeLogPanel": "Open time log for {{taskName}}"
   },
-  "account": "Account",
-  "billing": "Billing",
   "ownerRole": "Owner",
   "adminRole": "Admin",
   "teamLeadRole": "Team Lead",
   "memberRole": "Member",
   "themeToggleOn": "On",
   "themeToggleOff": "Off",
-  "quickActions": {
-    "new": "New",
-    "task": "Task",
-    "logTime": "Log Time",
-    "project": "Project",
-    "client": "Client",
-    "addExpense": "Add Expense",
-    "addGuest": "Add Guest",
-    "inviteMember": "Invite Member"
+  "whatsNew": {
+    "tag": "What's New",
+    "tooltip": "See what changed in this release",
+    "newBadge": "New",
+    "modalHeading": "What's New — {{title}}",
+    "readFullChangelog": "Read full changelog →",
+    "releaseUnavailable": "This update is no longer available."
   }
 }

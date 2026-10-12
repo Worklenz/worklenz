@@ -1,0 +1,60 @@
+{
+  "pageTitle": "Przegląd finansów",
+  "pageSubTitle": "Budżet, koszt rzeczywisty i odchylenia są sumowane we wszystkich projektach. Kliknij projekt, aby wyświetlić jego pełną kartę Finanse.",
+  "noBudgetSet": "Nie ustalono budżetu",
+  "emptyValue": "—",
+  "viewFinanceButton": "Zobacz Finanse",
+  "viewButton": "Zobacz",
+  "exportButton": "Eksportuj jako Excel",
+  "exportSuccess": "Wyeksportowano pomyślnie.",
+  "exportFailed": "Eksport nie powiódł się.",
+  "kpiCard": {
+    "totalManualBudget": "Całkowity budżet ręczny",
+    "totalActualCost": "Całkowity koszt rzeczywisty",
+    "totalVariance": "Całkowita rozbieżność",
+    "budgetUtilization": "Wykorzystanie budżetu",
+    "estimatedHours": "Szacowane godziny",
+    "mixedCurrencyWarning": "W projektach używane są różne waluty. Suma ta nie jest przeliczana na walutę.",
+    "mixedCurrencyNote": "Wyświetlanie {{dominant}} dla {{count}} z {{total}} projektów. Obejmuje również: {{others}}.",
+    "prevCurrency": "Poprzednia waluta",
+    "nextCurrency": "Następna waluta"
+  },
+  "attention": {
+    "title": "Projekty wymagające uwagi",
+    "emptyState": "Wszystkie projekty mieszczą się w budżecie.",
+    "overBudget": "Ponad budżet",
+    "watch": "Oglądaj",
+    "ofBudgetSpent": "wydanego budżetu"
+  },
+  "distribution": {
+    "title": "Dystrybucja stanu budżetu",
+    "onTrack": "Na dobrej drodze (≤65% wydatków)",
+    "watch": "Obejrzyj (wydano 65–100%)",
+    "overBudget": "Przekroczenie budżetu (wydane> 100%)",
+    "projects": "projekty",
+    "total": "Razem",
+    "breakdown": "Rzeczywisty podział kosztów: {{fixed}} stały · {{timeBased}} czasowy"
+  },
+  "tableCard": {
+    "title": "Projekt Kondycja finansowa"
+  },
+  "currencyNote": {
+    "convertedPrefix": "Sumy KPI przeliczone na",
+    "convertedSuffix": "przy użyciu bieżących kursów wymiany. Stawki zaktualizowano {{time}}.",
+    "changeCurrency": "Zmień walutę",
+    "unavailable": "Kursy wymiany są niedostępne — sum KPI nie można przeliczyć.",
+    "checkSettings": "Sprawdź ustawienia waluty",
+    "fetchUnavailable": "Usługa kursu wymiany walut jest niedostępna.",
+    "fetchFailed": "Nie udało się pobrać kursów wymiany."
+  },
+  "table": {
+    "project": "Projekt",
+    "client": "Klient",
+    "manualBudget": "Ręczny budżet",
+    "actualCost": "Rzeczywisty koszt",
+    "variance": "Wariancja",
+    "budgetUtilization": "Wykorzystanie budżetu",
+    "estHours": "Szac. Godziny",
+    "searchPlaceholder": "Wyszukaj projekty"
+  }
+}

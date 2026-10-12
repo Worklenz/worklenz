@@ -7,5 +7,7 @@
   "templates": "Plantillas",
   "remove": "Eliminar",
   "cancel": "Cancelar",
-  "import": "Importar"
+  "import": "Importar",
+  "subtasksLabel": "subtarea(s)",
+  "subtaskCountTooltip": "Se importarán {{count}} subtareas"
 }

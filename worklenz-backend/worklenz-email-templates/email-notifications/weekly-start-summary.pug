@@ -52,7 +52,7 @@ html(lang='en')
                                       |  · #{task.priorityName} Priority
                           if dueToday.totalCount > dueToday.tasks.length
                             p.task-meta + #{dueToday.totalCount - dueToday.tasks.length} more.&nbsp;
-                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+                              a(href=viewAllTasksUrl style='color:#1890ff') View all in Worklenz.
 
                     //- Due This Week (Tue-Fri), grouped by day
                     if dueThisWeek && dueThisWeek.tasks && dueThisWeek.tasks.length
@@ -61,7 +61,7 @@ html(lang='en')
                           h4.section-header ASSIGNED TO ME — DUE THIS WEEK
                           - var currentDay = null
                           each task in dueThisWeek.tasks
-                            - var day = task.weekday_label ? task.weekday_label.trim() : ''
+                            - var day = task.weekdayLabel ? task.weekdayLabel : ''
                             if day !== currentDay
                               - currentDay = day
                               p.day-label= day
@@ -77,7 +77,7 @@ html(lang='en')
                           if dueThisWeek.totalCount > dueThisWeek.tasks.length
                             p.task-meta
                               | + #{dueThisWeek.totalCount - dueThisWeek.tasks.length} more.&nbsp;
-                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+                              a(href=viewAllTasksUrl style='color:#1890ff') View all in Worklenz.
 
                     //- Assigned to me — Overdue
                     if overdue && overdue.tasks && overdue.tasks.length
@@ -99,7 +99,7 @@ html(lang='en')
                           if overdue.totalCount > overdue.tasks.length
                             p.task-meta
                               | + #{overdue.totalCount - overdue.tasks.length} more.&nbsp;
-                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+                              a(href=viewAllTasksUrl style='color:#1890ff') View all in Worklenz.
 
                     //- Assigned by me — Due Today
                     if assignedByMeDueToday && assignedByMeDueToday.tasks && assignedByMeDueToday.tasks.length
@@ -121,7 +121,7 @@ html(lang='en')
                           if assignedByMeDueToday.totalCount > assignedByMeDueToday.tasks.length
                             p.task-meta
                               | + #{assignedByMeDueToday.totalCount - assignedByMeDueToday.tasks.length} more.&nbsp;
-                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+                              a(href=viewAllTasksUrl style='color:#1890ff') View all in Worklenz.
 
                     //- Assigned by me — Due This Week
                     if assignedByMeDueThisWeek && assignedByMeDueThisWeek.tasks && assignedByMeDueThisWeek.tasks.length
@@ -130,7 +130,7 @@ html(lang='en')
                           h4.section-header ASSIGNED BY ME — DUE THIS WEEK
                           - var currentDay2 = null
                           each task in assignedByMeDueThisWeek.tasks
-                            - var day2 = task.weekday_label ? task.weekday_label.trim() : ''
+                            - var day2 = task.weekdayLabel ? task.weekdayLabel : ''
                             if day2 !== currentDay2
                               - currentDay2 = day2
                               p.day-label= day2
@@ -148,7 +148,7 @@ html(lang='en')
                           if assignedByMeDueThisWeek.totalCount > assignedByMeDueThisWeek.tasks.length
                             p.task-meta
                               | + #{assignedByMeDueThisWeek.totalCount - assignedByMeDueThisWeek.tasks.length} more.&nbsp;
-                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+                              a(href=viewAllTasksUrl style='color:#1890ff') View all in Worklenz.
 
                     //- Assigned by me — Overdue
                     if assignedByMeOverdue && assignedByMeOverdue.tasks && assignedByMeOverdue.tasks.length
@@ -172,7 +172,7 @@ html(lang='en')
                           if assignedByMeOverdue.totalCount > assignedByMeOverdue.tasks.length
                             p.task-meta
                               | + #{assignedByMeOverdue.totalCount - assignedByMeOverdue.tasks.length} more.&nbsp;
-                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+                              a(href=viewAllTasksUrl style='color:#1890ff') View all in Worklenz.
 
                     //- Admin team overview table
                     if adminOverview && adminOverview.length
@@ -206,7 +206,7 @@ html(lang='en')
 
                     tr
                       td(style='padding-top:20px')
-                        a(href=managePreferencesUrl style='display:inline-block;background:#1890ff;color:#fff;padding:8px 20px;border-radius:4px;text-decoration:none;font-size:14px;') View my full task list in Worklenz
+                        a(href=viewAllTasksUrl style='display:inline-block;background:#1890ff;color:#fff;padding:8px 20px;border-radius:4px;text-decoration:none;font-size:14px;') View my full task list in Worklenz
 
             tr
               td

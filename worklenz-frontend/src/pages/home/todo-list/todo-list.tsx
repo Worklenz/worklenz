@@ -70,7 +70,7 @@ const TodoList = () => {
       done: false,
       is_task: false,
       color_code: '#000',
-      manual_progress: 0,
+      manual_progress: false,
     };
 
     const res = await createPersonalTask(newTodo);

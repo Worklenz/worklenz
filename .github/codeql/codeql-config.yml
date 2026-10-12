@@ -1,0 +1,9 @@
+name: Worklenz CodeQL config
+
+# Vendored / built assets served by the backend (TinyMCE, compiled frontend
+# bundles). They are not first-party source and produce the bulk of the noise.
+paths-ignore:
+  - worklenz-backend/src/public/**
+  - '**/node_modules/**'
+  - '**/dist/**'
+  - '**/build/**'

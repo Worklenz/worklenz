@@ -33,12 +33,32 @@ const DEFAULT_FIELDS: TaskListField[] = [
   { key: 'CREATED_DATE', label: 'Created Date', visible: false, order: 15 },
   { key: 'LAST_UPDATED', label: 'Last Updated', visible: false, order: 16 },
   { key: 'REPORTER', label: 'Reporter', visible: false, order: 17 },
+  { key: 'ATTACHMENTS', label: 'Attachments', visible: false, order: 18 },
+  { key: 'COMMENTS', label: 'Latest Comment', visible: false, order: 19 },
 ];
 
 const getLocalStorageKey = (projectId: string | null) => {
   if (!projectId) return 'worklenz.taskManagement.fields.default';
   return `worklenz.taskManagement.fields.${projectId}`;
 };
+
+/**
+ * Merge stored fields with any newly introduced defaults so that fields added
+ * after a user's preferences were saved (e.g. ATTACHMENTS and COMMENTS) still appear in the
+ * Fields panel. New fields always start hidden.
+ */
+function mergeWithDefaultFields(fields: TaskListField[]): TaskListField[] {
+  const merged = fields.map(field => ({ ...field }));
+  const knownKeys = new Set(merged.map(field => field.key));
+
+  DEFAULT_FIELDS.forEach(defaultField => {
+    if (!knownKeys.has(defaultField.key)) {
+      merged.push({ ...defaultField });
+    }
+  });
+
+  return merged;
+}
 
 function loadFields(projectId: string | null): TaskListField[] {
   const storageKey = getLocalStorageKey(projectId);
@@ -47,13 +67,15 @@ function loadFields(projectId: string | null): TaskListField[] {
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
-      return parsed;
+      if (Array.isArray(parsed)) {
+        return mergeWithDefaultFields(parsed);
+      }
     } catch (error) {
       logger.error('Failed to parse stored fields, using defaults:', error);
     }
   }
 
-  return DEFAULT_FIELDS;
+  return mergeWithDefaultFields(DEFAULT_FIELDS);
 }
 
 function saveFields(fields: TaskListField[], projectId: string | null) {

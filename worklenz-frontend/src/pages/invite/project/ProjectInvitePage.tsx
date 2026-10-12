@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Card,
   Spin,
   Result,
   Button,
@@ -11,13 +10,9 @@ import {
   message,
   Tag,
   Tooltip,
+  theme,
 } from '@/shared/antd-imports';
-import {
-  CheckCircleOutlined,
-  LoadingOutlined,
-  ProjectOutlined,
-  CloseOutlined,
-} from '@ant-design/icons';
+import { CheckCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -26,6 +21,12 @@ import { invitationRedirectService } from '@/services/invitation-redirect.servic
 import { useTranslation } from 'react-i18next';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 import { setUser } from '@/features/user/userSlice';
+import { AUTH_PRIMARY_BUTTON_COLOR } from '@/shared/constants';
+import logo from '@/assets/images/worklenz-light-mode.png';
+import logoDark from '@/assets/images/worklenz-dark-mode.png';
+import InviteFooterUtils from '../InviteFooterUtils';
+
+import '../invite.css';
 
 const { Title, Paragraph } = Typography;
 
@@ -34,14 +35,19 @@ interface FormValues {
   email: string;
 }
 
+const formatAccessLevel = (level?: string) =>
+  level ? level.charAt(0).toUpperCase() + level.slice(1).toLowerCase() : '';
+
 const ProjectInvitePage: React.FC = () => {
   const navigate = useNavigate();
   const { token } = useParams<{ token: string }>();
   const authService = useAuthService();
   const currentUser = authService.getCurrentSession();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const isDarkMode = themeMode === 'dark';
   const dispatch = useAppDispatch();
   const { t } = useTranslation('invitation');
+  const { token: antdToken } = theme.useToken();
 
   const [status, setStatus] = useState<'loading' | 'form' | 'success' | 'error' | 'invalid'>(
     'loading'
@@ -137,6 +143,14 @@ const ProjectInvitePage: React.FC = () => {
     navigate('/auth/authenticating');
   };
 
+  const handleJoinClick = () => {
+    if (currentUser) {
+      handleSubmit({ name: currentUser.name || '', email: currentUser.email || '' });
+    } else {
+      form.submit();
+    }
+  };
+
   const renderContent = () => {
     switch (status) {
       case 'loading':
@@ -150,85 +164,27 @@ const ProjectInvitePage: React.FC = () => {
 
       case 'form':
         return (
-          <div style={{ textAlign: 'center' }}>
-            <ProjectOutlined style={{ fontSize: 48, color: '#1890ff', marginBottom: 16 }} />
-            <Title level={3}>{t('joinProject')}</Title>
-            <div style={{ marginBottom: 24 }}>
-              <Paragraph type="secondary">{t('invitedToProject')}</Paragraph>
-              <div style={{ margin: '16px 0' }}>
-                <Tag
-                  color={projectInfo?.project?.color_code || '#1890ff'}
-                  style={{
-                    fontSize: '16px',
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  {projectInfo?.project?.name}
-                </Tag>
-              </div>
-              <Paragraph type="secondary">
-                {t('in')} <strong>{projectInfo?.project?.team_name}</strong> {t('invitedBy')}{' '}
-                {projectInfo?.project?.owner_name}
-              </Paragraph>
-              <Paragraph type="secondary" style={{ fontSize: '12px' }}>
-                {t('accessLevel')}: <strong>{projectInfo?.invitation?.access_level}</strong>
-              </Paragraph>
-            </div>
+          <div>
+            <Title level={3} style={{ marginBottom: 16 }}>
+              {t('invitedToProject')}
+              <br />
+              {projectInfo?.project?.name}
+            </Title>
+            <Paragraph type="secondary" style={{ marginBottom: 24 }}>
+              {t('in')} <Tag>{projectInfo?.project?.team_name}</Tag>{' '}
+              {t('invitedBy')} <Tag>{projectInfo?.project?.owner_name}</Tag>{' '}
+              {t('asRolePrefix')}{' '}
+              <Tag>{formatAccessLevel(projectInfo?.invitation?.access_level)}</Tag>
+              {t('asRoleSuffix')}
+            </Paragraph>
 
-            {currentUser ? (
-              // Logged in user - show confirmation UI without form fields
-              <div style={{ maxWidth: 400, margin: '0 auto' }}>
-                <div
-                  style={{
-                    marginBottom: 24,
-                    padding: '16px',
-                    backgroundColor: themeMode === 'dark' ? '#1c3a5e' : '#e6f7ff',
-                    border: `1px solid ${themeMode === 'dark' ? '#2a5a8a' : '#91d5ff'}`,
-                    borderRadius: '8px',
-                  }}
-                >
-                  <Typography.Text
-                    style={{
-                      fontSize: '14px',
-                      color: themeMode === 'dark' ? '#91d5ff' : '#1890ff',
-                    }}
-                  >
-                    {t('joiningAs', { name: currentUser.name, email: currentUser.email })}
-                  </Typography.Text>
-                </div>
-
-                <div style={{ marginTop: 24 }}>
-                  <Button
-                    type="primary"
-                    onClick={() =>
-                      handleSubmit({ name: currentUser.name || '', email: currentUser.email || '' })
-                    }
-                    loading={submitting}
-                    size="large"
-                    style={{ minWidth: 120, marginRight: 8 }}
-                  >
-                    {t('joinProjectButton')}
-                  </Button>
-                  <Tooltip title={t('skipInvitationTooltip')}>
-                    <Button onClick={handleSkipInvitation} size="large" style={{ minWidth: 120 }}>
-                      {t('skipInvitation')}
-                    </Button>
-                  </Tooltip>
-                </div>
-
-                <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 16 }}>
-                  {t('projectTermsAgreement')}
-                </Paragraph>
-              </div>
-            ) : (
-              // Not logged in - show form for guest users
+            {!currentUser && (
+              // Not logged in - show form for guest users (submitted via the footer Join button)
               <Form
                 form={form}
                 onFinish={handleSubmit}
                 layout="vertical"
-                style={{ textAlign: 'left', maxWidth: 400, margin: '0 auto' }}
+                style={{ textAlign: 'left', maxWidth: 380, margin: '0 auto' }}
               >
                 <Form.Item
                   name="name"
@@ -251,29 +207,30 @@ const ProjectInvitePage: React.FC = () => {
                 >
                   <Input placeholder={t('emailPlaceholder')} />
                 </Form.Item>
-
-                <Form.Item style={{ marginTop: 24, textAlign: 'center' }}>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    loading={submitting}
-                    size="large"
-                    style={{ minWidth: 120, marginRight: 8 }}
-                  >
-                    {t('joinProjectButton')}
-                  </Button>
-                  <Tooltip title={t('skipInvitationTooltip')}>
-                    <Button onClick={handleSkipInvitation} size="large" style={{ minWidth: 120 }}>
-                      {t('skipInvitation')}
-                    </Button>
-                  </Tooltip>
-                </Form.Item>
-
-                <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 16 }}>
-                  {t('projectTermsAgreement')}
-                </Paragraph>
               </Form>
             )}
+
+            <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 20 }}>
+              {t('byJoiningTermsText')}{' '}
+              <a
+                href="https://worklenz.com/terms/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="invite-terms-link"
+              >
+                {t('termsOfServiceLink')}
+              </a>{' '}
+              {t('andText')}{' '}
+              <a
+                href="https://worklenz.com/privacy/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="invite-terms-link"
+              >
+                {t('privacyPolicyLink')}
+              </a>
+              .
+            </Paragraph>
           </div>
         );
 
@@ -324,45 +281,66 @@ const ProjectInvitePage: React.FC = () => {
 
   return (
     <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: themeMode === 'dark' ? '#141414' : '#f5f5f5',
-        padding: '20px',
-      }}
+      className="invite-shell"
+      style={{ backgroundColor: antdToken.colorBgLayout, color: antdToken.colorText }}
     >
-      <Card
-        style={{
-          maxWidth: 500,
-          width: '100%',
-          boxShadow:
-            themeMode === 'dark' ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)',
-          backgroundColor: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
-          border: themeMode === 'dark' ? '1px solid #303030' : undefined,
-          position: 'relative',
-        }}
-        extra={
-          status === 'form' && (
+      <div className="invite-header">
+        <div className="invite-logo">
+          <img src={isDarkMode ? logoDark : logo} alt="Worklenz" style={{ height: 26 }} />
+        </div>
+      </div>
+
+      <div className="invite-body">
+        <div className="invite-page-wrap invite-body-inner">{renderContent()}</div>
+
+        {status === 'form' && currentUser && (
+          <div className="invite-page-wrap invite-joining-as">
+            <Paragraph type="secondary" italic style={{ fontSize: 12, marginBottom: 0 }}>
+              {t('joiningAs', { name: currentUser.name, email: currentUser.email })}
+            </Paragraph>
+          </div>
+        )}
+      </div>
+
+      {status === 'form' && (
+        <div className="invite-footer" style={{ borderTop: `1px solid ${antdToken.colorBorder}` }}>
+          <div className="invite-page-wrap invite-footer-inner">
             <Tooltip title={t('skipInvitationTooltip')}>
               <Button
                 type="text"
-                icon={<CloseOutlined />}
                 onClick={handleSkipInvitation}
                 style={{
-                  position: 'absolute',
-                  top: 16,
-                  right: 16,
-                  zIndex: 1,
+                  color: AUTH_PRIMARY_BUTTON_COLOR,
+                  fontSize: 12,
+                  paddingInline: 12,
+                  marginLeft: -12,
                 }}
-              />
+              >
+                {t('skipInvitation')}
+              </Button>
             </Tooltip>
-          )
-        }
-      >
-        {renderContent()}
-      </Card>
+            <Button
+              type="primary"
+              loading={submitting}
+              onClick={handleJoinClick}
+              style={{
+                fontSize: 12,
+                padding: '0 20px',
+                backgroundColor: AUTH_PRIMARY_BUTTON_COLOR,
+                borderColor: AUTH_PRIMARY_BUTTON_COLOR,
+              }}
+            >
+              {t('joinProjectButton')}
+            </Button>
+          </div>
+
+          <InviteFooterUtils
+            isDarkMode={isDarkMode}
+            userTimezone={currentUser?.timezone}
+            isAuthenticated={!!currentUser}
+          />
+        </div>
+      )}
     </div>
   );
 };

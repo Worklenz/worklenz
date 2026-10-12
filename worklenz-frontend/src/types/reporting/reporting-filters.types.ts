@@ -20,3 +20,15 @@ export interface ISelectableTeam extends ITeam {
 export interface ISelectableCategory extends IProjectCategory {
   selected?: boolean;
 }
+
+export interface ISelectableDepartment {
+  id?: string;
+  name?: string;
+  selected?: boolean;
+}
+
+export interface ISelectablePractice {
+  id?: string;
+  name?: string;
+  selected?: boolean;
+}

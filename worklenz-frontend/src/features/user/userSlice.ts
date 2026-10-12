@@ -9,6 +9,10 @@ const initialState: ILocalSession = {
   name: sessionData?.name || '',
   email: sessionData?.email || '',
   avatar_url: sessionData?.avatar_url || '',
+  is_guest: sessionData?.is_guest === true,
+  owner: sessionData?.owner === true,
+  is_admin: sessionData?.is_admin === true,
+  role_name: sessionData?.role_name,
 };
 
 const userSlice = createSlice({
@@ -19,12 +23,9 @@ const userSlice = createSlice({
       state.name = action.payload;
     },
     setUser: (state, action: PayloadAction<ILocalSession>) => {
-      // Update state properties individually to ensure mutation
-      state.id = action.payload.id;
-      state.name = action.payload.name;
-      state.email = action.payload.email;
-      state.avatar_url = action.payload.avatar_url;
-      // Add other properties as needed
+      // Keep Redux user state aligned with the authenticated session so
+      // guest/role UI (profile label, etc.) does not fall back to Member.
+      Object.assign(state, action.payload);
     },
   },
 });

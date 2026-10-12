@@ -190,31 +190,22 @@ export class HolidayDataProvider {
   }
 
   /**
-   * Update organization holidays for a specific year
-   * This can be called periodically to ensure holiday data is up to date
+   * Ensure Sri Lankan country_holidays are populated for a year.
+   * Official holidays are read from country_holidays — do not copy into organization_holidays.
    */
   public static async updateOrganizationHolidays(organizationId: string, countryCode: string, year: number): Promise<void> {
     if (countryCode !== "LK") return;
-    
+
     const holidays = await this.getSriLankanHolidays(year);
-    
-    // Get default holiday type
-    const typeQuery = `SELECT id FROM holiday_types WHERE name = 'Public Holiday' LIMIT 1`;
-    const typeResult = await db.query(typeQuery);
-    const holidayTypeId = typeResult.rows[0]?.id;
-    
-    if (!holidayTypeId) return;
-    
-    // Insert holidays into organization_holidays
+
     for (const holiday of holidays) {
       const query = `
-        INSERT INTO organization_holidays (organization_id, holiday_type_id, name, description, date, is_recurring)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (organization_id, date) DO NOTHING
+        INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (country_code, name, date) DO NOTHING
       `;
       await db.query(query, [
-        organizationId,
-        holidayTypeId,
+        "LK",
         holiday.name,
         holiday.description,
         holiday.date,

@@ -3,6 +3,7 @@ import { createImportJob, updateImportSource } from '@/api/imports';
 import type { ImportJob } from '@/api/imports';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import type { IProjectStatus } from '@/types/project/projectStatus.types';
+import type { TranslateFn } from '../types';
 
 interface UseImportJobHelpersArgs {
   integrationType: 'direct' | 'csv';
@@ -14,7 +15,7 @@ interface UseImportJobHelpersArgs {
   worklenzStatuses: IProjectStatus[];
   setWorklenzStatuses: React.Dispatch<React.SetStateAction<IProjectStatus[]>>;
   defaultWorkTypes: IProjectStatus[];
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
+  t: TranslateFn;
 }
 
 export const useImportJobHelpers = ({

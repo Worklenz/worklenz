@@ -28,8 +28,7 @@ CREATE TABLE IF NOT EXISTS client_portal_services (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Client Relationships (for dual actor support). This table must precede
--- client_portal_requests because requests reference it.
+-- Client Relationships (for dual actor support)
 CREATE TABLE IF NOT EXISTS client_relationships (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

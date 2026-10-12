@@ -1,0 +1,12 @@
+{
+  "title": "{{items}} 项目",
+  "table": {
+    "header": {
+      "name": "名称",
+      "status": "状态",
+      "taskProgress": "任务进度",
+      "lastUpdates": "最近更新",
+      "members": "成员"
+    }
+  }
+}

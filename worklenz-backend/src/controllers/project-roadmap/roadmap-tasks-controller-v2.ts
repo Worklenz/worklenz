@@ -7,6 +7,12 @@ import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import { TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../../shared/constants";
 import { getColor } from "../../shared/utils";
+import {
+  AssigneeTaskScope,
+  buildAssigneeScopeFilter,
+  buildAssigneeVisibleTasksClause,
+  resolveAssigneeTaskScope,
+} from "../../shared/assignee-task-scope";
 import RoadmapTasksControllerV2Base, { GroupBy, IRMTaskGroup } from "./roadmap-tasks-contoller-v2-base";
 import moment, { Moment } from "moment";
 import momentTime from "moment-timezone";
@@ -140,7 +146,11 @@ export default class RoadmapTasksControllerV2 extends RoadmapTasksControllerV2Ba
   }
 
 
-  private static getQuery(userId: string, options: ParsedQs) {
+  private static getQuery(
+    userId: string,
+    options: ParsedQs,
+    assigneeScope?: AssigneeTaskScope
+  ) {
     const searchField = options.search ? "t.name" : "sort_order";
     const { searchQuery } = RoadmapTasksControllerV2.toPaginationOptions(options, searchField);
 
@@ -156,12 +166,34 @@ export default class RoadmapTasksControllerV2 extends RoadmapTasksControllerV2Ba
       subTasksFilter = isSubTasks ? "parent_task_id = $2" : "parent_task_id IS NULL";
     }
 
+    const scopeFilter = buildAssigneeScopeFilter(
+      assigneeScope || { applyFilter: false, teamMemberId: null },
+      "t.id",
+      isSubTasks ? 3 : 2
+    );
+    const scopeParamIndex = isSubTasks ? 3 : 2;
+    // TVR-15: subtask counts must not include tasks outside the assignee-visible subset
+    const visibleSubtaskPredicate = !scopeFilter.clause
+      ? ""
+      : scopeFilter.params.length > 0
+        ? `AND ${buildAssigneeVisibleTasksClause("id", scopeParamIndex)}`
+        : "AND 1 = 0";
+    const visibleCompletedSubtaskPredicate = !scopeFilter.clause
+      ? ""
+      : scopeFilter.params.length > 0
+        ? `AND ${buildAssigneeVisibleTasksClause("tt.task_id", scopeParamIndex)}`
+        : "AND 1 = 0";
+
     const filters = [
       subTasksFilter,
       (isSubTasks ? "1 = 1" : archivedFilter),
+      scopeFilter.clause,
     ].filter(i => !!i).join(" AND ");
 
-    return `
+    const params: unknown[] = [options.id || options.project_id];
+    // Note: actual params are assembled by callers; this returns SQL + scope params separately
+    return {
+      sql: `
       SELECT id,
              name,
              t.project_id AS project_id,
@@ -169,7 +201,8 @@ export default class RoadmapTasksControllerV2 extends RoadmapTasksControllerV2Ba
              t.parent_task_id IS NOT NULL AS is_sub_task,
              (SELECT COUNT(*)
               FROM tasks
-              WHERE parent_task_id = t.id)::INT AS sub_tasks_count,
+              WHERE parent_task_id = t.id
+                ${visibleSubtaskPredicate})::INT AS sub_tasks_count,
 
              t.status_id AS status,
              t.archived,
@@ -191,13 +224,14 @@ export default class RoadmapTasksControllerV2 extends RoadmapTasksControllerV2Ba
              (SELECT COUNT(*)
               FROM tasks_with_status_view tt
               WHERE tt.parent_task_id = t.id
-                AND tt.is_done IS TRUE)::INT
+                AND tt.is_done IS TRUE
+                ${visibleCompletedSubtaskPredicate})::INT
                AS completed_sub_tasks,
 
              (SELECT id FROM task_priorities WHERE id = t.priority_id) AS priority,
              (SELECT value FROM task_priorities WHERE id = t.priority_id) AS priority_value,
              start_date,
-             end_date
+             end_date,
              (SELECT COALESCE(
            jsonb_agg(
              jsonb_build_object(
@@ -214,7 +248,9 @@ export default class RoadmapTasksControllerV2 extends RoadmapTasksControllerV2Ba
          ) AS assignees
       FROM tasks t
       WHERE ${filters} ${searchQuery} AND project_id = $1
-      ORDER BY t.start_date ASC NULLS LAST`;
+      ORDER BY t.start_date ASC NULLS LAST`,
+      scopeParams: scopeFilter.params,
+    };
   }
 
   public static async getGroups(groupBy: string, projectId: string): Promise<IRMTaskGroup[]> {
@@ -273,8 +309,19 @@ export default class RoadmapTasksControllerV2 extends RoadmapTasksControllerV2Ba
     const isSubTasks = !!req.query.parent_task;
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
 
-    const q = RoadmapTasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
+    const assigneeScope = await resolveAssigneeTaskScope(
+      req.user?.id,
+      req.params.id,
+      req.user
+    );
+    const { sql: q, scopeParams } = RoadmapTasksControllerV2.getQuery(
+      req.user?.id as string,
+      req.query,
+      assigneeScope
+    );
+    const params = isSubTasks
+      ? [req.params.id || null, req.query.parent_task, ...scopeParams]
+      : [req.params.id || null, ...scopeParams];
 
     const result = await db.query(q, params);
     const tasks = [...result.rows];
@@ -345,8 +392,19 @@ export default class RoadmapTasksControllerV2 extends RoadmapTasksControllerV2Ba
   @HandleExceptions()
   public static async getTasksOnly(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const isSubTasks = !!req.query.parent_task;
-    const q = RoadmapTasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
+    const assigneeScope = await resolveAssigneeTaskScope(
+      req.user?.id,
+      req.params.id,
+      req.user
+    );
+    const { sql: q, scopeParams } = RoadmapTasksControllerV2.getQuery(
+      req.user?.id as string,
+      req.query,
+      assigneeScope
+    );
+    const params = isSubTasks
+      ? [req.params.id || null, req.query.parent_task, ...scopeParams]
+      : [req.params.id || null, ...scopeParams];
     const result = await db.query(q, params);
 
     let data: any[] = [];

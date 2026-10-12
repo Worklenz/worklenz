@@ -20,7 +20,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { nanoid } from '@reduxjs/toolkit';
 import { addLabel } from '@features/settings/label/labelSlice';
 import { useTranslation } from 'react-i18next';
-import { ITaskLabel } from '@/types/label.type';
+import { ITaskLabel, LabelType } from '@/types/label.type';
 
 interface LabelsSelectorProps {
   taskId: string | null;
@@ -30,10 +30,11 @@ interface LabelsSelectorProps {
 const LabelsSelector = ({ taskId, labels }: LabelsSelectorProps) => {
   const labelInputRef = useRef<InputRef>(null);
   // this is for get the current string that type on search bar
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [open, setOpen] = useState(false);
 
   // localization
-  const { t } = useTranslation('task-list-table');
+  const { t } = useTranslation('task-list');
 
   const dispatch = useAppDispatch();
 
@@ -49,10 +50,10 @@ const LabelsSelector = ({ taskId, labels }: LabelsSelectorProps) => {
 
   const handleCreateLabel = (name: string) => {
     if (name.length > 0) {
-      const newLabel: ITaskLabel = {
-        id: nanoid(),
-        name,
-        color_code: '#1E90FF',
+      const newLabel: LabelType = {
+        labelId: nanoid(),
+        labelName: name,
+        labelColor: '#1E90FF',
       };
 
       dispatch(addLabel(newLabel));

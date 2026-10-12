@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckOutlined, DownOutlined, EyeOutlined } from '@/shared/antd-imports';
+import { CheckOutlined, EyeOutlined } from '@/shared/antd-imports';
 import { RootState } from '@/app/store';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -44,7 +44,10 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
         PROGRESS: 'progressColumn',
         ASSIGNEES: 'assigneesColumn',
         LABELS: 'labelsColumn',
+        ATTACHMENTS: 'attachmentsColumn',
         PHASE: 'phaseColumn',
+
+        COMMENTS: 'commentsColumn',
         STATUS: 'statusColumn',
         PRIORITY: 'priorityColumn',
         TIME_TRACKING: 'timeTrackingColumn',
@@ -58,8 +61,33 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
         REPORTER: 'reporterColumn',
       };
 
+      const defaultLabels: Record<string, string> = {
+        KEY: 'Key',
+        DESCRIPTION: 'Description',
+        PROGRESS: 'Progress',
+        ASSIGNEES: 'Assignees',
+        LABELS: 'Labels',
+        ATTACHMENTS: 'Attachments',
+        PHASE: 'Phase',
+
+        COMMENTS: 'Latest Comment',
+        STATUS: 'Status',
+        PRIORITY: 'Priority',
+        TIME_TRACKING: 'Time Tracking',
+        ESTIMATION: 'Estimation',
+        START_DATE: 'Start Date',
+        DUE_DATE: 'Due Date',
+        DUE_TIME: 'Due Time',
+        COMPLETED_DATE: 'Completed Date',
+        CREATED_DATE: 'Created Date',
+        LAST_UPDATED: 'Last Updated',
+        REPORTER: 'Reporter',
+      };
+
       const translationKey = keyMappings[fieldKey];
-      return translationKey ? tTable(translationKey) : fieldKey;
+      return translationKey
+        ? tTable(translationKey, { defaultValue: defaultLabels[fieldKey] || fieldKey })
+        : fieldKey;
     },
     [tTable]
   );
@@ -195,14 +223,11 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
             {visibleCount}
           </span>
         )}
-        <DownOutlined
-          className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-        />
       </button>
 
       {open && (
         <div
-          className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
+          className={`absolute top-full right-[-8px] z-50 mt-1 w-56 max-w-[calc(100vw-16px)] ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
         >
           <div className="max-h-48 overflow-y-auto">
             {sortedFields.length === 0 ? (

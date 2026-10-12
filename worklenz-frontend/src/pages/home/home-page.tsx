@@ -32,6 +32,8 @@ const HomePage = memo(() => {
   const dispatch = useAppDispatch();
   const isDesktop = useMediaQuery({ query: `(min-width: ${DESKTOP_MIN_WIDTH}px)` });
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
+  const canCreateFromTemplates = useAuthService().canCreateProjectsFromTemplates();
+  const canOpenCreateProject = isOwnerOrAdmin || canCreateFromTemplates;
 
   useDocumentTitle('Home');
 
@@ -86,7 +88,7 @@ const HomePage = memo(() => {
 
   // Memoize components to prevent unnecessary re-renders
   const CreateProjectButtonComponent = useMemo(() => {
-    if (!isOwnerOrAdmin) return null;
+    if (!canOpenCreateProject) return null;
 
     return isDesktop ? (
       <div className="absolute right-0 top-1/2 -translate-y-1/2">
@@ -95,7 +97,7 @@ const HomePage = memo(() => {
     ) : (
       <CreateProjectButton />
     );
-  }, [isDesktop, isOwnerOrAdmin]);
+  }, [isDesktop, canOpenCreateProject]);
 
   const MainContent = useMemo(() => {
     return isDesktop ? (

@@ -43,7 +43,11 @@ tasksApiRouter.get("/project/selected-tasks/:id", idParamValidator, verifyProjec
 tasksApiRouter.get("/project/unselected-tasks/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TasksController.getUnselectedTasksByProject));
 tasksApiRouter.get("/team", safeControllerFunction(TasksController.getProjectTasksByTeam));
 tasksApiRouter.get("/quick-search", safeControllerFunction(TasksController.quickSearch));
-tasksApiRouter.get("/info", verifyTaskAccess('query', 'task_id'), safeControllerFunction(TasksController.getById));
+tasksApiRouter.get(
+  "/info",
+  verifyTaskAccess("query", "task_id", { requireNotificationLink: true }),
+  safeControllerFunction(TasksController.getById)
+);
 tasksApiRouter.post("/convert", verifyTaskAccess('body', 'id'), safeControllerFunction(TasksControllerV2.convertToTask));
 
 // Allowed views for guests - kanban board
@@ -75,6 +79,8 @@ tasksApiRouter.put("/bulk/due-date", verifyBulkTaskAccessMiddleware(), mapTasksT
 tasksApiRouter.put("/bulk/start-date", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksDueDateValidator, safeControllerFunction(TasksController.bulkChangeStartDate));
 tasksApiRouter.put("/duration/:id", verifyNonGuestTaskAccess('params', 'id'), safeControllerFunction(TasksController.updateDuration));
 tasksApiRouter.put("/status/:status_id/:task_id", kanbanStatusUpdateValidator, verifyNonGuestTaskAccess('params', 'task_id'), safeControllerFunction(TasksController.updateStatus));
+// Group update endpoint (for drag-drop phase/status/priority changes) - must come before generic /:id
+tasksApiRouter.put("/:id/group", idParamValidator, verifyNonGuestTaskAccess('params', 'id'), safeControllerFunction(TasksController.updateTaskGroup));
 tasksApiRouter.put("/:id", idParamValidator, tasksBodyValidator, verifyNonGuestTaskAccess('params', 'id'), safeControllerFunction(TasksController.update));
 tasksApiRouter.delete("/:id", verifyNonGuestTaskAccess('params', 'id'), safeControllerFunction(TasksController.deleteById));
 tasksApiRouter.post("/quick-task", quickTaskBodyValidator, verifyNonGuestProjectAccess('body', 'project_id'), safeControllerFunction(TasksController.createQuickTask));

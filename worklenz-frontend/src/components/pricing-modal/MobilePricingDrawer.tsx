@@ -112,7 +112,7 @@ const MobilePricingDrawer: React.FC<MobilePricingDrawerProps> = ({
                 label: (
                   <Space>
                     <span>Yearly</span>
-                    <Tag color="green" size="small">
+                    <Tag color="green">
                       Save 30%
                     </Tag>
                   </Space>

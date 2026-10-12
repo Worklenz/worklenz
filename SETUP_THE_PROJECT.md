@@ -54,7 +54,7 @@ Getting started with development is a breeze! Follow these steps and you'll be c
 
 3. **Configure Environment Variables:**
 
-   - Create a copy of the `.env.example` file and name it `.env`.
+   - Create a copy of the `.env.template` file and name it `.env`.
    - Update the required fields in `.env` with your specific configuration.
 
 4. **Set up Database**

@@ -1,5 +1,25 @@
 {
   "noTasksInGroup": "此组中没有任务",
+  "backlogGroupName": "积压",
+  "unassignedGroupName": "未分配",
+  "sprintStatusActive": "活跃",
+  "sprintStatusPlanned": "计划中",
+  "sprintStatusCompleted": "已完成",
+  "currentSprintName": "当前冲刺 · {{name}}",
+  "sprintCompletedCount": "{{done}}/{{total}} 已完成",
+  "sprintCompletedPoints": "已完成 {{done}}/{{total}} 分",
+  "sprintPointsTotal": "共 {{total}} 点",
+  "sprintScopeAdded": "+{{count}} 范围",
+  "sprintScopeAddedTooltip": "冲刺开始后添加的问题",
+  "sprintItemCount_one": "{{count}} 项",
+  "sprintItemCount_other": "{{count}} 项",
+  "backlogSectionGoal": "未来工作的优先顺序",
+  "selectAllInGroup": "选择 {{name}} 中的所有内容",
+  "sprintActionsFor": "{{name}} 的操作",
+  "viewOnBoard": "机上查看",
+  "completeSprint": "完成冲刺",
+  "startSprint": "开始冲刺",
+  "editSprint": "编辑冲刺",
   "noTasksInGroupDescription": "添加任务开始使用",
   "addFirstTask": "添加你的第一个任务",
   "openTask": "打开",
@@ -22,7 +42,6 @@
   "inProgress": "进行中",
   "done": "已完成",
   "defaultTaskName": "无标题任务",
-
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} 个子任务",

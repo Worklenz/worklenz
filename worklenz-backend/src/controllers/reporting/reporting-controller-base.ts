@@ -6,6 +6,13 @@ import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../shared/constants";
 import { formatDuration, formatLogText, getColor, int } from "../../shared/utils";
 import { isTeamLead } from "../../shared/team-permissions";
 
+/**
+ * Workspace reporting base.
+ *
+ * TVR-18 / TVR-1: reporting aggregates intentionally do NOT apply
+ * `restrict_tasks_to_assignee`. Out of scope this pass — see
+ * `ASSIGNEE_SCOPE_EXCLUDED_SURFACES` in shared/assignee-task-scope.ts.
+ */
 export default abstract class ReportingControllerBase extends WorklenzControllerBase {
   protected static getPercentage(n: number, total: number) {
     return +(n ? (n / total) * 100 : 0).toFixed();
@@ -25,6 +32,26 @@ export default abstract class ReportingControllerBase extends WorklenzController
       FROM project_members pm
       JOIN team_members tm ON pm.team_member_id = tm.id
       WHERE tm.user_id = $1::UUID AND tm.team_id = $2::UUID
+    `;
+    const result = await db.query(q, [userId, teamId]);
+    return result.rows.map(r => r.project_id);
+  }
+
+  /**
+   * Get projects where the user holds the project-level "Project Manager"
+   * access level. Inverse of ProjectsController.getProjectManager (which goes
+   * project -> PM); this goes user -> PM projects. Used by the Time Entries
+   * visibility resolver alongside getTeamLeadProjects.
+   */
+  public static async getPmProjectIds(userId: string, teamId: string): Promise<string[]> {
+    if (!userId || !teamId) return [];
+    const q = `
+      SELECT DISTINCT pm.project_id
+      FROM project_members pm
+      JOIN team_members tm ON pm.team_member_id = tm.id
+      WHERE tm.user_id = $1::UUID
+        AND tm.team_id = $2::UUID
+        AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')
     `;
     const result = await db.query(q, [userId, teamId]);
     return result.rows.map(r => r.project_id);

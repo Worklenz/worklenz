@@ -28,6 +28,12 @@ interface TimeLogFormProps {
   taskId?: string;
   projectId?: string;
   allowReassign?: boolean;  // Allow the form to reassign the log to a different task/project in edit mode
+  /** Save edits through the Time Entries endpoint (owners/admins may edit other members' entries).
+   * Only the Time Entries page sets this; the task drawer leaves it off and keeps its author-only route. */
+  asTimeEntry?: boolean;
+  /** Rendered inside a dialog: drops the divider/top padding that separate the inline form from the
+   * content above it, uses regular-size controls, and right-aligns the buttons like a modal footer. */
+  inModal?: boolean;
 
 
 }
@@ -51,13 +57,20 @@ const TimeLogForm = ({
   taskId: taskIdProp,
   projectId: projectIdProp,
   allowReassign = false,
+  asTimeEntry = false,
+  inModal = false,
 
 }: TimeLogFormProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
+  const controlSize = inModal ? 'middle' : 'small';
   const currentSession = useAuthService().getCurrentSession();
   const { socket, connected } = useSocket();
   const [form] = Form.useForm();
-  const [inputMode, setInputMode] = React.useState<TimeLogInputMode>('duration');
+  // Edit opens in time-range so the saved start/end are visible immediately.
+  // Duration mode unmounts those fields; switching back was falling back to "now".
+  const [inputMode, setInputMode] = React.useState<TimeLogInputMode>(
+    mode === 'edit' ? 'timeRange' : 'duration'
+  );
   // Tracks whether the "auto-clear minutes from 30→0 on first hours entry" has
   // already fired for the current form session. Reset whenever the form resets.
   const minutesAutoClearedRef = React.useRef(false);
@@ -170,39 +183,35 @@ const TimeLogForm = ({
   React.useEffect(() => {
     if (initialValues && mode === 'edit') {
       const createdAt = dayjs(initialValues.created_at);
-
       const startTime = dayjs(initialValues.start_time || initialValues.created_at);
 
-      let endTime;
-      if (initialValues.time_spent) {
+      let endTime: Dayjs;
+      if (initialValues.end_time) {
+        endTime = dayjs(initialValues.end_time);
+      } else if (initialValues.time_spent) {
         endTime = dayjs(startTime).add(initialValues.time_spent, 'second');
       } else {
-        endTime = dayjs(initialValues.end_time || initialValues.created_at);
+        endTime = dayjs(initialValues.created_at);
       }
 
       const { hours, minutes } = getDurationFromRange(startTime, endTime);
-
-      form.setFieldsValue({
+      const nextValues: TimeLogFormValues = {
         date: createdAt,
-        startTime: startTime,
-        endTime: endTime,
+        startTime,
+        endTime,
         hours,
         minutes,
         description: initialValues.description || '',
-      });
+      };
 
-      setFormValues({
-        date: createdAt,
-        startTime: startTime,
-        endTime: endTime,
-        hours,
-        minutes,
-        description: initialValues.description || '',
-      });
+      setInputMode('timeRange');
+      form.setFieldsValue(nextValues);
+      setFormValues(nextValues);
     } else if (mode === 'create') {
       minutesAutoClearedRef.current = false;
       const now = getNowRoundedToMinute();
       const nextHalfHour = now.add(30, 'minute');
+      setInputMode('duration');
       form.setFieldsValue({
         date: dayjs(),
         startTime: now,
@@ -299,11 +308,23 @@ const TimeLogForm = ({
   const handleModeChange = (nextMode: TimeLogInputMode) => {
     if (nextMode === inputMode) return;
 
-    const currentDate = form.getFieldValue('date') as Dayjs | null;
-    const currentStartTime = form.getFieldValue('startTime') as Dayjs | null;
-    const currentEndTime = form.getFieldValue('endTime') as Dayjs | null;
-    const currentHours = form.getFieldValue('hours') as number | null;
-    const currentMinutes = form.getFieldValue('minutes') as number | null;
+    // Prefer form store, then React state, then the log being edited.
+    // Duration mode unmounts start/end fields; getFieldValue alone can be empty
+    // and getRangeFromDuration would incorrectly fall back to the current clock.
+    const currentDate =
+      (form.getFieldValue('date') as Dayjs | null) || formValues.date;
+    const currentStartTime =
+      (form.getFieldValue('startTime') as Dayjs | null) ||
+      formValues.startTime ||
+      (initialValues?.start_time ? dayjs(initialValues.start_time) : null);
+    const currentEndTime =
+      (form.getFieldValue('endTime') as Dayjs | null) ||
+      formValues.endTime ||
+      (initialValues?.end_time ? dayjs(initialValues.end_time) : null);
+    const currentHours =
+      (form.getFieldValue('hours') as number | null) ?? formValues.hours;
+    const currentMinutes =
+      (form.getFieldValue('minutes') as number | null) ?? formValues.minutes;
 
     if (nextMode === 'duration') {
       const { hours, minutes } = getDurationFromRange(currentStartTime, currentEndTime);
@@ -465,7 +486,9 @@ const TimeLogForm = ({
     setSubmitting(true);
     try {
       if (mode === 'edit' && initialValues?.id) {
-        await taskTimeLogsApiService.update(initialValues.id, requestBody);
+        await (asTimeEntry
+          ? taskTimeLogsApiService.updateEntry(initialValues.id, requestBody)
+          : taskTimeLogsApiService.update(initialValues.id, requestBody));
       } else {
         await taskTimeLogsApiService.create(requestBody);
       }
@@ -519,21 +542,23 @@ const TimeLogForm = ({
         position: 'relative',
         height: 'fit-content',
         justifySelf: 'flex-end',
-        paddingTop: 16,
+        paddingTop: inModal ? 0 : 16,
         paddingBottom: 0,
         overflow: 'visible',
       }}
     >
-      <div
-        style={{
-          marginBlockEnd: 0,
-          height: 1,
-          position: 'absolute',
-          top: 0,
-          width: '100%',
-          backgroundColor: themeWiseColor('#ebebeb', '#3a3a3a', themeMode),
-        }}
-      />
+      {!inModal && (
+        <div
+          style={{
+            marginBlockEnd: 0,
+            height: 1,
+            position: 'absolute',
+            top: 0,
+            width: '100%',
+            backgroundColor: themeWiseColor('#ebebeb', '#3a3a3a', themeMode),
+          }}
+        />
+      )}
 
       <Form
         form={form}
@@ -569,7 +594,7 @@ const TimeLogForm = ({
           style={{ marginBlockEnd: 6 }}
         >
           <Segmented
-            size="small"
+            size={controlSize}
             value={inputMode}
             onChange={value => handleModeChange(value as TimeLogInputMode)}
             options={[
@@ -601,7 +626,7 @@ const TimeLogForm = ({
                 style={{ flex: 1.4, minWidth: 170, marginBlockEnd: 0 }}
               >
                 <DatePicker
-                  size="small"
+                  size={controlSize}
                   style={{ width: '100%' }}
                   disabledDate={isDateDisabled}
                 />
@@ -621,7 +646,7 @@ const TimeLogForm = ({
                 ]}
                 style={{ flex: 1, minWidth: 120, marginBlockEnd: 0 }}
               >
-                <InputNumber size="small" min={0} precision={0} style={{ width: '100%' }} />
+                <InputNumber size={controlSize} min={0} precision={0} style={{ width: '100%' }} />
               </Form.Item>
 
               <Form.Item
@@ -639,7 +664,7 @@ const TimeLogForm = ({
                 ]}
                 style={{ flex: 1, minWidth: 120, marginBlockEnd: 0 }}
               >
-                <InputNumber size="small" min={0} max={59} precision={0} style={{ width: '100%' }} />
+                <InputNumber size={controlSize} min={0} max={59} precision={0} style={{ width: '100%' }} />
               </Form.Item>
             </Flex>
           </Form.Item>
@@ -656,7 +681,7 @@ const TimeLogForm = ({
               ]}
             >
               <DatePicker
-                size="small"
+                size={controlSize}
                 style={{ width: '100%' }}
                 disabledDate={isDateDisabled}
               />
@@ -675,7 +700,7 @@ const TimeLogForm = ({
                   ]}
                   style={{ flex: 1, minWidth: 140, marginBlockEnd: 0 }}
                 >
-                  <TimePicker size="small" format="HH:mm" style={{ width: '100%' }} />
+                  <TimePicker size={controlSize} format="HH:mm" style={{ width: '100%' }} />
                 </Form.Item>
 
                 <Form.Item
@@ -689,7 +714,7 @@ const TimeLogForm = ({
                   ]}
                   style={{ flex: 1, minWidth: 140, marginBlockEnd: 0 }}
                 >
-                  <TimePicker size="small" format="HH:mm" style={{ width: '100%' }} />
+                  <TimePicker size={controlSize} format="HH:mm" style={{ width: '100%' }} />
                 </Form.Item>
               </Flex>
             </Form.Item>
@@ -742,7 +767,7 @@ const TimeLogForm = ({
                   setSelectedReassignTaskId(null);
                   setReassignTasks([]);
                 }}
-                size="small"
+                size={controlSize}
                 style={{ width: '100%' }}
                 notFoundContent={reassignProjectLoading ? <Spin size="small" /> : null}
                 options={reassignProjectSearchResults.map(p => ({ value: p.id, label: p.name }))}
@@ -773,7 +798,7 @@ const TimeLogForm = ({
                   loading={reassignTaskLoading}
                   onSearch={val => setReassignTaskSearch(val)}
                   onChange={(val: string | undefined) => setSelectedReassignTaskId(val || null)}
-                  size="small"
+                  size={controlSize}
                   style={{ width: '100%' }}
                   notFoundContent={reassignTaskLoading ? <Spin size="small" /> : null}
                   options={reassignTasks.map(task => ({ value: task.id, label: task.name }))}
@@ -798,7 +823,7 @@ const TimeLogForm = ({
         </Form.Item>
 
         <Form.Item style={{ marginBlockEnd: 0 }}>
-          <Flex gap={8}>
+          <Flex gap={8} justify={inModal ? 'flex-end' : undefined}>
             <Button onClick={onCancel}>{t('taskTimeLogTab.timeLogForm.cancel')}</Button>
             <Button
               type="primary"

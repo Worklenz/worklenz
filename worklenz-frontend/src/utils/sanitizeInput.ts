@@ -58,18 +58,16 @@ export const sanitizeHtml = (input: string): string => {
 
   return DOMPurify.sanitize(input, {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'span'],
-    ALLOWED_ATTR: {
-      a: ['href', 'target', 'rel'],
-      span: ['class'],
-    },
+    // NOTE: Array form required - DOMPurify ignores the object form (tag-specific ALLOWED_ATTR)
+    // which silently allows ALL attributes including style="javascript:..."
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+    // Restricts URI schemes to http(s)/mailto
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
-    // Remove dangerous protocols
-    ALLOWED_PROTOCOLS: ['http', 'https', 'mailto'],
     // Ensure all links have proper security attributes
     ADD_ATTR: ['target', 'rel'],
     // Remove any script tags, event handlers, and dangerous attributes
     FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
-    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'style'],
     // Enforce HTML boundary
     KEEP_CONTENT: true,
     RETURN_DOM: false,
@@ -92,13 +90,11 @@ export const sanitizeCommentContent = (input: string): string => {
   return DOMPurify.sanitize(input, {
     // Only allow safe formatting tags - NO links to prevent open redirect attacks
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'p', 'br', 'span'],
-    ALLOWED_ATTR: {
-      // Only allow class attribute on span for mentions
-      span: ['class'],
-    },
+    // NOTE: Array form required - DOMPurify ignores the object form (tag-specific ALLOWED_ATTR)
+    // which silently allows ALL attributes including style="javascript:..."
+    ALLOWED_ATTR: ['class'],
     // No URL schemes allowed since we're not allowing links
     ALLOWED_URI_REGEXP: /^$/,
-    ALLOWED_PROTOCOLS: [],
     // Remove any script tags, event handlers, and dangerous attributes
     FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'a', 'link'],
     FORBID_ATTR: [
@@ -110,6 +106,7 @@ export const sanitizeCommentContent = (input: string): string => {
       'onblur',
       'href',
       'src',
+      'style',
     ],
     // Enforce HTML boundary
     KEEP_CONTENT: true,
