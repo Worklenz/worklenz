@@ -63,10 +63,11 @@ export const useSprintActions = (projectId?: string | null) => {
       if (!projectId) return;
       const sprintName = phaseList.find(phase => phase.id === phaseId)?.name ?? '';
 
-      const plannedSprints = phaseList.filter(
-        phase => phase.id !== phaseId && phase.sprint_status === 'planned'
-      );
-      let destination: string | null = null;
+      const plannedSprints = phaseList
+        .filter(phase => phase.id !== phaseId && phase.sprint_status === 'planned')
+        .sort(compareByStartDate);
+      // Unfinished work carries over to the next planned sprint; Backlog only when there is none.
+      let destination: string | null = plannedSprints[0]?.id ?? null;
 
       modal.confirm({
         title: sprintName
@@ -106,7 +107,7 @@ export const useSprintActions = (projectId?: string | null) => {
                 {t('moveIncompleteTo', { defaultValue: 'Move incomplete work to' })}
               </Typography.Text>
               <Select
-                defaultValue={BACKLOG_DESTINATION}
+                defaultValue={destination ?? BACKLOG_DESTINATION}
                 className="w-full"
                 aria-label={t('moveIncompleteTo', { defaultValue: 'Move incomplete work to' })}
                 onChange={value => {
@@ -203,3 +204,10 @@ const getErrorMessage = (error: unknown): string | undefined =>
   (error as { message?: string } | undefined)?.message;
 
 const BACKLOG_DESTINATION = 'backlog';
+
+const compareByStartDate = (a: ITaskPhase, b: ITaskPhase): number => {
+  if (a.start_date && b.start_date) return dayjs(a.start_date).valueOf() - dayjs(b.start_date).valueOf();
+  if (a.start_date) return -1;
+  if (b.start_date) return 1;
+  return (a.sort_index ?? 0) - (b.sort_index ?? 0);
+};

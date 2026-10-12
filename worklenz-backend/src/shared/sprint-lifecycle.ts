@@ -1,3 +1,5 @@
+import {PoolClient} from "pg";
+
 import db from "../config/db";
 
 export const SPRINT_RETURNING_COLUMNS =
@@ -102,6 +104,56 @@ export async function startNextSprintNow(
   return started.ok ? started.data : null;
 }
 
+/**
+ * Sprint issues that must leave a completing sprint: every issue that is not Done, every issue
+ * with an unfinished (non-archived) subtask at any depth — even when the issue itself is Done —
+ * and the in-sprint subtasks of all of those, so a parent and its subtasks move together.
+ */
+async function getCarryOverTaskIds(client: PoolClient, projectId: string, phaseId: string): Promise<string[]> {
+  const result = await client.query(
+    `WITH RECURSIVE
+       sprint_tasks AS (
+         SELECT t.id, t.parent_task_id, cat.is_done
+         FROM task_phase tp
+         INNER JOIN tasks t ON t.id = tp.task_id AND t.project_id = $1
+         LEFT JOIN task_statuses ts ON ts.id = t.status_id
+         LEFT JOIN sys_task_status_categories cat ON cat.id = ts.category_id
+         WHERE tp.phase_id = $2
+       ),
+       -- Unfinished subtasks and all of their ancestors
+       open_lineage AS (
+         SELECT t.parent_task_id AS id
+         FROM tasks t
+         INNER JOIN task_statuses ts ON ts.id = t.status_id
+         INNER JOIN sys_task_status_categories cat ON cat.id = ts.category_id
+         WHERE t.project_id = $1
+           AND t.parent_task_id IS NOT NULL
+           AND t.archived IS FALSE
+           AND cat.is_done IS NOT TRUE
+         UNION
+         SELECT parent.parent_task_id
+         FROM tasks parent
+         INNER JOIN open_lineage ol ON parent.id = ol.id
+         WHERE parent.parent_task_id IS NOT NULL
+       ),
+       carry AS (
+         SELECT st.id
+         FROM sprint_tasks st
+         WHERE st.is_done IS NOT TRUE
+            OR st.id IN (SELECT id FROM open_lineage)
+         UNION
+         SELECT child.id
+         FROM tasks child
+         INNER JOIN carry ON child.parent_task_id = carry.id
+       )
+     SELECT st.id
+     FROM sprint_tasks st
+     WHERE st.id IN (SELECT id FROM carry);`,
+    [projectId, phaseId]
+  );
+  return result.rows.map((row: { id: string }) => row.id);
+}
+
 /** Length in days of a sprint with both dates (inclusive), or the 2-week default. */
 export function getSprintLengthDays(phase: { start_date?: string | Date | null; end_date?: string | Date | null }): number {
   if (!phase.start_date || !phase.end_date) return DEFAULT_SPRINT_LENGTH_DAYS;
@@ -168,32 +220,20 @@ export async function completeSprintRecord(
       return { ok: false, error: "Sprint not found or already completed" };
     }
 
-    // Move incomplete (not Done-category) issues out of the sprint
+    const carryOverIds = await getCarryOverTaskIds(client, projectId, phaseId);
     const movedResult = destinationPhaseId
       ? await client.query(
-          `UPDATE task_phase tp
+          `UPDATE task_phase
            SET phase_id = $1
-           FROM tasks t
-           INNER JOIN task_statuses ts ON t.status_id = ts.id
-           INNER JOIN sys_task_status_categories cat ON ts.category_id = cat.id
-           WHERE tp.task_id = t.id
-             AND tp.phase_id = $2
-             AND t.project_id = $3
-             AND cat.is_done IS NOT TRUE
-           RETURNING tp.task_id`,
-          [destinationPhaseId, phaseId, projectId]
+           WHERE phase_id = $2 AND task_id = ANY($3::UUID[])
+           RETURNING task_id`,
+          [destinationPhaseId, phaseId, carryOverIds]
         )
       : await client.query(
-          `DELETE FROM task_phase tp
-           USING tasks t
-           INNER JOIN task_statuses ts ON t.status_id = ts.id
-           INNER JOIN sys_task_status_categories cat ON ts.category_id = cat.id
-           WHERE tp.task_id = t.id
-             AND tp.phase_id = $1
-             AND t.project_id = $2
-             AND cat.is_done IS NOT TRUE
-           RETURNING tp.task_id`,
-          [phaseId, projectId]
+          `DELETE FROM task_phase
+           WHERE phase_id = $1 AND task_id = ANY($2::UUID[])
+           RETURNING task_id`,
+          [phaseId, carryOverIds]
         );
 
     const settings = await client.query(
