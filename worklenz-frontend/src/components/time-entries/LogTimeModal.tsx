@@ -21,8 +21,7 @@ import {
   IRecentProject,
   ITaskInProject,
 } from '@/api/tasks/task-time-logs.api.service';
-import apiClient from '@/api/api-client';
-import { API_BASE_URL } from '@/shared/constants';
+import { projectsApiService } from '@/api/projects/projects.api.service';
 
 const { TextArea } = Input;
 
@@ -39,9 +38,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
   const [form] = Form.useForm();
   const minutesAutoClearedRef = React.useRef(false);
 
-  const [recentProjects, setRecentProjects] = React.useState<IRecentProject[]>([]);
-  const [projectSearchResults, setProjectSearchResults] = React.useState<IRecentProject[]>([]);
-  const [projectSearchTerm, setProjectSearchTerm] = React.useState('');
+  const [projects, setProjects] = React.useState<IRecentProject[]>([]);
   const [projectLoading, setProjectLoading] = React.useState(false);
   const [selectedProject, setSelectedProject] = React.useState<IRecentProject | null>(null);
 
@@ -60,7 +57,6 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     endTime?: Dayjs;
   }>({});
 
-  const projectSearchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const taskSearchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => {
@@ -79,72 +75,81 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     setSelectedProject(null);
     setSelectedTaskId(null);
     setTasks([]);
-    setProjectSearchTerm('');
     setTaskSearchTerm('');
     setInputMode('duration');
-    taskTimeLogsApiService.getMyRecentProjects().then(res => {
-      if (res.done) setRecentProjects(res.body as IRecentProject[]);
-    });
+
+    setProjectLoading(true);
+    projectsApiService
+      .getMyProjectsToTasks()
+      .then(res => {
+        if (res.done && Array.isArray(res.body)) {
+          setProjects(
+            res.body
+              .filter(p => Boolean(p.id && p.name))
+              .map(p => ({
+                id: p.id!,
+                name: p.name!,
+                color_code: p.color_code || '',
+              }))
+          );
+        } else {
+          setProjects([]);
+        }
+      })
+      .catch(() => {
+        setProjects([]);
+      })
+      .finally(() => {
+        setProjectLoading(false);
+      });
   }, [open, form]);
 
   React.useEffect(() => {
-    if (projectSearchTimerRef.current) clearTimeout(projectSearchTimerRef.current);
-    if (!projectSearchTerm.trim()) {
-      setProjectSearchResults([]);
+    if (!selectedProject) {
+      setTasks([]);
       return;
     }
-    projectSearchTimerRef.current = setTimeout(async () => {
-      setProjectLoading(true);
-      try {
-        const res = await apiClient.get(`${API_BASE_URL}/projects/my-task-projects`);
-        const list: any[] = res.data?.body || [];
-        const q = projectSearchTerm.toLowerCase();
-        setProjectSearchResults(
-          list
-            .filter((p: any) => p.name?.toLowerCase().includes(q))
-            .map((p: any) => ({ id: p.id, name: p.name, color_code: p.color_code }))
-        );
-      } catch {
-        setProjectSearchResults([]);
-      } finally {
-        setProjectLoading(false);
-      }
-    }, 300);
-  }, [projectSearchTerm]);
-
-  React.useEffect(() => {
-    if (!selectedProject) return;
     if (taskSearchTimerRef.current) clearTimeout(taskSearchTimerRef.current);
-    taskSearchTimerRef.current = setTimeout(async () => {
+
+    const fetchTasks = async () => {
       setTaskLoading(true);
       try {
-        const res = await taskTimeLogsApiService.getMyTasksInProject(selectedProject.id, taskSearchTerm || undefined);
+        const res = await taskTimeLogsApiService.getMyTasksInProject(
+          selectedProject.id,
+          taskSearchTerm || undefined
+        );
         if (res.done) setTasks(res.body as ITaskInProject[]);
       } catch {
         setTasks([]);
       } finally {
         setTaskLoading(false);
       }
-    }, 200);
+    };
+
+    if (!taskSearchTerm) {
+      fetchTasks();
+    } else {
+      taskSearchTimerRef.current = setTimeout(fetchTasks, 200);
+    }
   }, [selectedProject, taskSearchTerm]);
 
   React.useEffect(() => () => {
-    if (projectSearchTimerRef.current) clearTimeout(projectSearchTimerRef.current);
     if (taskSearchTimerRef.current) clearTimeout(taskSearchTimerRef.current);
   }, []);
 
-  const projectOptions = (projectSearchTerm.trim() ? projectSearchResults : recentProjects).map(p => ({
-    value: p.id,
-    label: p.name,
-  }));
+  const projectOptions = React.useMemo(
+    () =>
+      projects.map(p => ({
+        value: p.id,
+        label: p.name,
+      })),
+    [projects]
+  );
 
   const taskOptions = tasks.map(task => ({ value: task.id, label: task.name }));
 
   const handleProjectChange = (projectId: string | undefined) => {
-    const found =
-      projectSearchResults.find(p => p.id === projectId) ||
-      recentProjects.find(p => p.id === projectId) ||
-      null;
+    const found = projects.find(p => p.id === projectId) || null;
     setSelectedProject(found);
     setSelectedTaskId(null);
     setTasks([]);
@@ -255,15 +260,18 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
       >
         <Form.Item label={t('projectLabel', { defaultValue: 'Project' })} style={{ marginBottom: 16 }}>
           <Select
+            aria-label={t('projectLabel', { defaultValue: 'Project' })}
             showSearch
             allowClear
-            filterOption={false}
+            optionFilterProp="label"
+            filterOption={(input, option) =>
+              String(option?.label ?? '').toLowerCase().includes(input.toLowerCase().trim())
+            }
             placeholder={t('selectProjectPlaceholder', { defaultValue: 'Select project...' })}
             value={selectedProject?.id}
             options={projectOptions}
             loading={projectLoading}
             notFoundContent={projectLoading ? <Spin size="small" /> : null}
-            onSearch={setProjectSearchTerm}
             onChange={handleProjectChange}
             style={{ width: '100%' }}
           />
