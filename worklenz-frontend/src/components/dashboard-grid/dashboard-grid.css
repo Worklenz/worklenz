@@ -1,0 +1,23 @@
+/* react-grid-layout ships a red placeholder and fixed-colour resize handle; tie both to the antd
+   theme so the grid matches both light and dark mode. */
+.wl-dashboard-grid .react-grid-item.react-grid-placeholder {
+  background: var(--ant-color-primary, #1890ff);
+  opacity: 0.25;
+  border-radius: 8px;
+}
+
+.wl-dashboard-grid .react-grid-item > .react-resizable-handle::after {
+  border-color: var(--ant-color-text-secondary, currentColor);
+  opacity: 0.55;
+}
+
+.wl-dashboard-grid .react-grid-item > .react-resizable-handle {
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-dashboard-grid .react-grid-item,
+  .wl-dashboard-grid {
+    transition: none;
+  }
+}

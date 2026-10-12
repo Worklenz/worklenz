@@ -1,7 +1,6 @@
 {
   "overviewTitle": "Visão Geral",
   "includeArchivedButton": "Incluir Projetos Arquivados",
-
   "teamCount": "Equipe",
   "teamCountPlural": "Equipes",
   "projectCount": "Projeto",
@@ -16,10 +15,40 @@
   "unassignedMemberCountPlural": "Membros Não Atribuídos",
   "memberWithOverdueTaskCount": "Membro Com Tarefa Atrasada",
   "memberWithOverdueTaskCountPlural": "Membros Com Tarefas Atrasadas",
-
   "teamsText": "Equipes",
-
   "nameColumn": "Nome",
   "projectsColumn": "Projetos",
-  "membersColumn": "Membros"
+  "membersColumn": "Membros",
+  "dashboardGrid": {
+    "customize": "Personalizar",
+    "addWidget": "Adicionar widget",
+    "addGadget": "Adicionar gadget",
+    "reset": "Redefinir",
+    "resetConfirm": "Redefinir para o layout padrão?",
+    "resetConfirmHelp": "Seu arranjo salvo e as configurações dos widgets serão removidos.",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "saved": "Layout salvo",
+    "saveFailed": "Não foi possível salvar suas alterações. Tente novamente.",
+    "resetDone": "Layout redefinido para o padrão",
+    "resetFailed": "Não foi possível redefinir. Tente novamente.",
+    "widgetSettings": "Configurações de {{name}}",
+    "settingsFor": "Configurações para {{name}}",
+    "hideWidget": "Ocultar {{name}}",
+    "removeWidget": "Remover {{name}}",
+    "width": "Largura",
+    "widthQuarter": "Um quarto de largura",
+    "widthThird": "Um terço",
+    "widthHalf": "Meia largura",
+    "widthTwoThirds": "Dois terços",
+    "widthThreeQuarters": "Três quartos",
+    "widthFull": "Largura total",
+    "widthCustom": "Largura personalizada",
+    "moveEarlier": "Mover para antes",
+    "moveLater": "Mover para depois",
+    "leaveTitle": "Sair sem salvar?",
+    "leaveBody": "Suas alterações não foram salvas e serão perdidas.",
+    "leave": "Sair",
+    "stay": "Permanecer"
+  }
 }

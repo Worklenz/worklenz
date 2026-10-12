@@ -97,6 +97,7 @@ import groupingReducer from '@/features/task-management/grouping.slice';
 import selectionReducer from '@/features/task-management/selection.slice';
 import homePageApiService from '@/api/home-page/home-page.api.service';
 import personalOverviewApi from '@/api/personal-overview/personal-overview.api.service';
+import overviewLayoutApi from '@/api/reporting/overview-layout.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
 import { userActivityApiService } from '@/api/home-page/user-activity.api.service';
 import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
@@ -143,6 +144,7 @@ const coreReducers = {
   homePageReducer: homePageReducer,
   [homePageApiService.reducerPath]: homePageApiService.reducer,
   [personalOverviewApi.reducerPath]: personalOverviewApi.reducer,
+  [overviewLayoutApi.reducerPath]: overviewLayoutApi.reducer,
   [projectsApi.reducerPath]: projectsApi.reducer,
   [clientPortalApi.reducerPath]: clientPortalApi.reducer,
   [roadmapApi.reducerPath]: roadmapApi.reducer,
@@ -278,6 +280,7 @@ export const store = configureStore({
     }).concat(
       homePageApiService.middleware,
       personalOverviewApi.middleware,
+      overviewLayoutApi.middleware,
       projectsApi.middleware,
       clientPortalApi.middleware,
       userActivityApiService.middleware,

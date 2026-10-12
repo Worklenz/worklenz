@@ -5,7 +5,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 interface InsightCardProps {
   icon: React.ReactNode;
   title: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   loading?: boolean;
 }
 

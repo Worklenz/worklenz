@@ -33,6 +33,11 @@ reportingApiRouter.get("/info", teamOwnerOrAdminValidator, safeControllerFunctio
 reportingApiRouter.get("/overview/statistics", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getStatistics));
 reportingApiRouter.get("/overview/teams", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getTeams));
 
+// Overview layout - this user's saved widget arrangement for the Overview page.
+reportingApiRouter.get("/overview/layout", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getLayout));
+reportingApiRouter.put("/overview/layout", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.saveLayout));
+reportingApiRouter.delete("/overview/layout", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.resetLayout));
+
 // Overview projects - accepts team as query parameter (for pagination and filtering)
 reportingApiRouter.get("/overview/projects",
   teamOwnerOrAdminValidator,

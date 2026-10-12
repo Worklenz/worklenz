@@ -1,7 +1,6 @@
 {
   "overviewTitle": "Përmbledhje",
   "includeArchivedButton": "Përfshij Projektet e Arkivuara",
-
   "teamCount": "Ekip",
   "teamCountPlural": "Ekipe",
   "projectCount": "Projekt",
@@ -16,10 +15,40 @@
   "unassignedMemberCountPlural": "Anëtarë të Pacaktuar",
   "memberWithOverdueTaskCount": "Anëtar me Detyrë të Vonuar",
   "memberWithOverdueTaskCountPlural": "Anëtarë me Detyra të Vonuara",
-
   "teamsText": "Ekipet",
-
   "nameColumn": "Emri",
   "projectsColumn": "Projektet",
-  "membersColumn": "Anëtarët"
+  "membersColumn": "Anëtarët",
+  "dashboardGrid": {
+    "customize": "Personalizo",
+    "addWidget": "Shto widget",
+    "addGadget": "Shto gaxhet",
+    "reset": "Rivendos",
+    "resetConfirm": "Rivendos në skemën e paracaktuar?",
+    "resetConfirmHelp": "Renditja e ruajtur dhe cilësimet e widget-it do të hiqen.",
+    "cancel": "Anulo",
+    "save": "Ruaj",
+    "saved": "Skema u ruajt",
+    "saveFailed": "Ndryshimet nuk mund të ruheshin. Provo përsëri.",
+    "resetDone": "U rivendos në skemën e paracaktuar",
+    "resetFailed": "Rivendosja dështoi. Provo përsëri.",
+    "widgetSettings": "Cilësimet e {{name}}",
+    "settingsFor": "Cilësimet për {{name}}",
+    "hideWidget": "Fshih {{name}}",
+    "removeWidget": "Hiq {{name}}",
+    "width": "Gjerësia",
+    "widthQuarter": "Një e katërta e gjerësisë",
+    "widthThird": "Një e treta",
+    "widthHalf": "Gjysma e gjerësisë",
+    "widthTwoThirds": "Dy të tretat",
+    "widthThreeQuarters": "Tre të katërtat",
+    "widthFull": "Gjerësia e plotë",
+    "widthCustom": "Gjerësi e personalizuar",
+    "moveEarlier": "Zhvendos më herët",
+    "moveLater": "Zhvendos më vonë",
+    "leaveTitle": "Të dalësh pa ruajtur?",
+    "leaveBody": "Ndryshimet tuaja nuk janë ruajtur dhe do të humbasin.",
+    "leave": "Largohu",
+    "stay": "Qëndro"
+  }
 }

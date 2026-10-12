@@ -1,7 +1,6 @@
 {
   "overviewTitle": "Overview",
   "includeArchivedButton": "Include Archived Projects",
-
   "teamCount": "Team",
   "teamCountPlural": "Teams",
   "projectCount": "Project",
@@ -16,10 +15,40 @@
   "unassignedMemberCountPlural": "Unassigned Members",
   "memberWithOverdueTaskCount": "Member With Overdue Task",
   "memberWithOverdueTaskCountPlural": "Member With Overdue Tasks",
-
   "teamsText": "Teams",
-
   "nameColumn": "Name",
   "projectsColumn": "Projects",
-  "membersColumn": "Members"
+  "membersColumn": "Members",
+  "dashboardGrid": {
+    "customize": "Customize",
+    "addWidget": "Add widget",
+    "addGadget": "Add gadget",
+    "reset": "Reset",
+    "resetConfirm": "Reset to the default layout?",
+    "resetConfirmHelp": "Your saved arrangement and widget settings will be removed.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saved": "Layout saved",
+    "saveFailed": "Could not save your changes. Try again.",
+    "resetDone": "Reset to the default layout",
+    "resetFailed": "Could not reset. Try again.",
+    "widgetSettings": "{{name}} settings",
+    "settingsFor": "Settings for {{name}}",
+    "hideWidget": "Hide {{name}}",
+    "removeWidget": "Remove {{name}}",
+    "width": "Width",
+    "widthQuarter": "Quarter width",
+    "widthThird": "One third",
+    "widthHalf": "Half width",
+    "widthTwoThirds": "Two thirds",
+    "widthThreeQuarters": "Three quarters",
+    "widthFull": "Full width",
+    "widthCustom": "Custom width",
+    "moveEarlier": "Move earlier",
+    "moveLater": "Move later",
+    "leaveTitle": "Leave without saving?",
+    "leaveBody": "Your changes have not been saved and will be lost.",
+    "leave": "Leave",
+    "stay": "Stay"
+  }
 }

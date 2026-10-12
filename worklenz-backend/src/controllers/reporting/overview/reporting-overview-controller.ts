@@ -11,6 +11,12 @@ import { TASK_PRIORITY_COLOR_ALPHA } from "../../../shared/constants";
 import { ReportingExportModel } from "../../../models/reporting-export";
 import moment from "moment";
 import ReportingControllerBase from "../reporting-controller-base";
+import {
+  getOverviewLayout,
+  InvalidOverviewLayoutError,
+  resetOverviewLayout,
+  saveOverviewLayout,
+} from "../../../services/reporting-overview-layout.service";
 
 export default class ReportingOverviewController extends ReportingOverviewBase {
   @HandleExceptions()
@@ -519,5 +525,38 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
 
   }
 
+  /** GET /reporting/overview/layout - this user's saved Reports > Overview widget layout, or null if never customised. */
+  @HandleExceptions()
+  public static async getLayout(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = this.getCurrentTeamId(req) as string;
+    const userId = req.user?.id as string;
+    const body = await getOverviewLayout(teamId, userId);
+    return res.status(200).send(new ServerResponse(true, body));
+  }
+
+  /** PUT /reporting/overview/layout - body: { layout: { version, widgets: [{ key, x, y, w, h, hidden }] } } */
+  @HandleExceptions()
+  public static async saveLayout(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = this.getCurrentTeamId(req) as string;
+    const userId = req.user?.id as string;
+    try {
+      const body = await saveOverviewLayout(teamId, userId, req.body?.layout);
+      return res.status(200).send(new ServerResponse(true, body, "Layout saved"));
+    } catch (error) {
+      if (error instanceof InvalidOverviewLayoutError) {
+        return res.status(400).send(new ServerResponse(false, null, error.message));
+      }
+      throw error;
+    }
+  }
+
+  /** DELETE /reporting/overview/layout - back to the default layout. */
+  @HandleExceptions()
+  public static async resetLayout(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = this.getCurrentTeamId(req) as string;
+    const userId = req.user?.id as string;
+    const body = await resetOverviewLayout(teamId, userId);
+    return res.status(200).send(new ServerResponse(true, body));
+  }
 
 }
