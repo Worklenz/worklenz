@@ -27,6 +27,7 @@
   "eventProjectDeleted": "项目已删除",
   "eventProjectRestored": "项目已恢复",
   "eventWorkspaceRenamed": "工作区已重命名",
+  "eventTeamDeleted": "团队已删除",
   "eventWorkspaceDeleted": "工作区已删除",
   "eventMemberUpdated": "成员信息已更改",
   "eventMemberActivated": "成员已激活",

@@ -10,7 +10,16 @@ import { IO } from "../shared/io";
 import { getColor } from "../shared/utils";
 import SqlHelper from "../shared/sql-helpers";
 import { DEFAULT_PAGE_SIZE } from "../shared/constants";
-import { buildTaskFilterClauses, buildTaskOrderClause, buildTabClause } from "../shared/home-task-query-builder";
+import {
+  buildPinnedJoin,
+  buildTaskFilterClauses,
+  buildTaskOrderClause,
+  buildTabClause,
+  PINNED_SELECT_COLUMNS,
+} from "../shared/home-task-query-builder";
+import { buildPinLimitReachedBody, isPinLimitReached } from "../shared/home-pins";
+import { toMentionExcerpt, IMentionedName } from "../shared/home-mentions";
+import { isValidUuid } from "../shared/validation-helpers";
 import {
   buildMultiProjectAssigneeScopeClause,
   isAssigneeScopeSessionExempt,
@@ -27,10 +36,13 @@ export default class HomePageController extends WorklenzControllerBase {
   private static readonly OVERDUE_TAB = "Overdue";
   private static readonly NO_DUE_DATE_TAB = "NoDueDate";
   private static readonly UPCOMING_NOW_ON_TAB = "UpcomingNowOn";
+  private static readonly PINNED_TAB = "Pinned";
   // Ceiling on the My Tasks filter dropdowns (projects/statuses/assignees) —
   // these are DISTINCT scans over the caller's full task set with no natural
   // bound otherwise.
   private static readonly FILTER_OPTIONS_LIMIT = 500;
+  private static readonly MENTIONS_DEFAULT_LIMIT = 10;
+  private static readonly MENTIONS_MAX_LIMIT = 50;
 
   // Positional param convention shared by getTasks/getUnassignedTasks and
   // everything they call: $1 team, $2 user, $3 time_zone, filters/pagination
@@ -62,8 +74,24 @@ export default class HomePageController extends WorklenzControllerBase {
       || currentView === this.UPCOMING_TAB
       || currentView === this.OVERDUE_TAB
       || currentView === this.NO_DUE_DATE_TAB
-      || currentView === this.UPCOMING_NOW_ON_TAB;
+      || currentView === this.UPCOMING_NOW_ON_TAB
+      || currentView === this.PINNED_TAB;
   }
+
+  // What makes a task show up in a user's Home lists at all ($1 team, $2 user): live, in the team,
+  // not done, and not in a project this user archived. The list, its counts and the pin endpoints
+  // all build on this, so "visible" can't mean one thing for listing and another for pinning.
+  private static readonly VISIBLE_TASK_BASE_WHERE = `t.archived IS FALSE
+        AND p.team_id = $1
+        AND t.status_id NOT IN (SELECT id
+                                FROM task_statuses
+                                WHERE category_id NOT IN (SELECT id
+                                                          FROM sys_task_status_categories
+                                                          WHERE is_done IS FALSE))
+        AND NOT EXISTS(SELECT project_id
+                       FROM archived_projects
+                       WHERE project_id = p.id
+                         AND user_id = $2)`;
 
   @HandleExceptions()
   public static async createPersonalTask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
@@ -203,21 +231,13 @@ export default class HomePageController extends WorklenzControllerBase {
     assigneeScopeClause = ""
   ): Promise<{ end_date?: string }[]> {
     const q = `
-      SELECT ${this.getTaskSelectColumns(tzParamIndex)}
+      SELECT ${this.getTaskSelectColumns(tzParamIndex)},
+             ${PINNED_SELECT_COLUMNS}
       FROM tasks t
              JOIN projects p ON t.project_id = p.id
              ${this.getTaskJoins()}
-      WHERE t.archived IS FALSE
-        AND p.team_id = $1
-        AND t.status_id NOT IN (SELECT id
-                                FROM task_statuses
-                                WHERE category_id NOT IN (SELECT id
-                                                          FROM sys_task_status_categories
-                                                          WHERE is_done IS FALSE))
-        AND NOT EXISTS(SELECT project_id
-                       FROM archived_projects
-                       WHERE project_id = p.id
-                         AND user_id = $2)
+             ${buildPinnedJoin(2)}
+      WHERE ${this.VISIBLE_TASK_BASE_WHERE}
         ${groupByClosure}
         ${currentTabClosure}
         ${assigneeScopeClause}
@@ -585,7 +605,8 @@ export default class HomePageController extends WorklenzControllerBase {
     timeZone: string,
     filterClause = "",
     filterParams: unknown[] = [],
-    tabClosure = ""
+    tabClosure = "",
+    assigneeScopeClause = ""
   ) {
     const q = `SELECT COUNT(*) AS total,
                       COUNT(CASE WHEN (t.end_date AT TIME ZONE $3)::DATE = (NOW() AT TIME ZONE $3)::DATE THEN 1 END) AS today,
@@ -596,19 +617,11 @@ export default class HomePageController extends WorklenzControllerBase {
                FROM tasks t
                       JOIN projects p ON t.project_id = p.id
                       LEFT JOIN task_statuses ts ON ts.id = t.status_id
-               WHERE t.archived IS FALSE
-                 AND p.team_id = $1
-                 AND t.status_id NOT IN (SELECT id
-                                         FROM task_statuses
-                                         WHERE category_id NOT IN (SELECT id
-                                                                   FROM sys_task_status_categories
-                                                                   WHERE is_done IS FALSE))
-                 AND NOT EXISTS(SELECT project_id
-                                FROM archived_projects
-                                WHERE project_id = p.id
-                                  AND user_id = $2)
+                      ${buildPinnedJoin(2)}
+               WHERE ${this.VISIBLE_TASK_BASE_WHERE}
                  ${groupByClosure}
                  ${tabClosure}
+                 ${assigneeScopeClause}
                  ${filterClause}`;
 
     const result = await db.query(q, [teamId, userId, timeZone, ...filterParams]);
@@ -672,16 +685,23 @@ export default class HomePageController extends WorklenzControllerBase {
       // that collide with the LIMIT/OFFSET placeholders below.
       const values: unknown[] = [];
       const filterClause = buildTaskFilterClauses(req.query, values, this.BASE_PARAM_OFFSET, this.TZ_PARAM_INDEX);
-      const orderClause = buildTaskOrderClause(req.query);
+      // Pinned tasks only float to the top for callers that show pins (Today's Priorities sends
+      // pin_first=true); other callers of this endpoint, like My Tasks, keep their plain order. The
+      // Pinned tab is always ordered by pin.
+      const showsPins = currentTab === this.PINNED_TAB || req.query.pin_first === "true";
+      const orderClause = buildTaskOrderClause(req.query, showsPins ? (currentTab as string) : undefined);
 
       const size = Math.max(1, +(req.query.size as string) || DEFAULT_PAGE_SIZE);
       const index = Math.max(1, +(req.query.index as string) || 1);
       const offset = (index - 1) * size;
       const { clause: limitClause, params: limitParams } = SqlHelper.buildPaginationClause(size, offset, values.length + this.BASE_PARAM_OFFSET + 1);
 
+      // The counts get the same assignee-scope clause as the rows, so `total` (which drives the
+      // pagination) can't count tasks the list will never show - most visibly pins on tasks the
+      // user has since lost access to.
       const [tasks, counts] = await Promise.all([
         this.getTasksResult(groupByClosure, currentTabClosure, [teamId, userId, timeZone, ...values, ...limitParams], this.TZ_PARAM_INDEX, filterClause, orderClause, limitClause, assigneeScopeClause),
-        this.getCountsResult(groupByClosure, teamId, userId, timeZone, filterClause, values, currentTabClosure),
+        this.getCountsResult(groupByClosure, teamId, userId, timeZone, filterClause, values, currentTabClosure, assigneeScopeClause),
       ]);
 
       res.set("Cache-Control", "no-store");
@@ -718,10 +738,111 @@ export default class HomePageController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, data));
   }
 
-  private static async groupByDate(currentTab: string, tasks: { end_date?: string }[], timeZone: string, today: Date) {
+  // Pins a task for the current user. Idempotent: pinning an already-pinned task changes nothing.
+  // Refuses (404) a task the user couldn't see in their own list, and (409) once they hold
+  // HOME_PIN_LIMIT visible pins. Pins on tasks that have since become invisible (unassigned, archived
+  // project, other team) are not counted, so they can't use up the limit.
+  @HandleExceptions()
+  public static async pinTask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id as string;
+    const userId = req.user?.id as string;
+    const taskId = req.params.taskId;
+
+    if (!isValidUuid(taskId)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid task id"));
+    }
+
+    const visibleTaskWhere = `${this.VISIBLE_TASK_BASE_WHERE}
+        ${this.getTasksByGroupClosure(this.GROUP_BY_ALL)}
+        ${this.getAssigneeScopeClauseForUser(req.user)}`;
+
+    const client = await db.pool.connect();
+    try {
+      await client.query("BEGIN");
+      // Serialises one user's pin requests, so two quick clicks can't both pass the limit check.
+      await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`home-pins:${userId}`]);
+
+      const visible = await client.query(
+        `SELECT t.id
+         FROM tasks t
+                JOIN projects p ON t.project_id = p.id
+         WHERE t.id = $3
+           AND ${visibleTaskWhere}
+         FOR SHARE OF t`,
+        [teamId, userId, taskId]
+      );
+      // FOR SHARE keeps the task row from being completed until we commit, so the
+      // unpin-on-complete trigger can't run between this check and the insert and leave a stale pin.
+      if (!visible.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(404).send(new ServerResponse(false, null, "Task not found"));
+      }
+
+      const existing = await client.query(
+        `SELECT pinned_at FROM user_pinned_tasks WHERE user_id = $1 AND task_id = $2`,
+        [userId, taskId]
+      );
+      if (existing.rows.length) {
+        await client.query("COMMIT");
+        return res.status(200).send(new ServerResponse(true, { task_id: taskId, is_pinned: true, pinned_at: existing.rows[0].pinned_at }));
+      }
+
+      const count = await client.query(
+        `SELECT COUNT(*)::INT AS count
+         FROM user_pinned_tasks upt
+                JOIN tasks t ON t.id = upt.task_id
+                JOIN projects p ON t.project_id = p.id
+         WHERE upt.user_id = $2
+           AND ${visibleTaskWhere}`,
+        [teamId, userId]
+      );
+      if (isPinLimitReached(count.rows[0].count)) {
+        await client.query("ROLLBACK");
+        return res.status(409).send(new ServerResponse(false, buildPinLimitReachedBody(), "Pin limit reached"));
+      }
+
+      const inserted = await client.query(
+        `INSERT INTO user_pinned_tasks (user_id, task_id)
+         VALUES ($1, $2)
+         RETURNING pinned_at`,
+        [userId, taskId]
+      );
+      await client.query("COMMIT");
+
+      return res.status(200).send(new ServerResponse(true, { task_id: taskId, is_pinned: true, pinned_at: inserted.rows[0].pinned_at }));
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => void 0);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  // Idempotent, and deliberately not gated on visibility: a user must always be able to drop a pin,
+  // even one on a task they can no longer see.
+  @HandleExceptions()
+  public static async unpinTask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const userId = req.user?.id as string;
+    const taskId = req.params.taskId;
+
+    if (!isValidUuid(taskId)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid task id"));
+    }
+
+    await db.query(`DELETE FROM user_pinned_tasks WHERE user_id = $1 AND task_id = $2`, [userId, taskId]);
+    return res.status(200).send(new ServerResponse(true, { task_id: taskId, is_pinned: false }));
+  }
+
+  private static async groupByDate(currentTab: string, tasks: { end_date?: string; is_pinned?: boolean }[], timeZone: string, today: Date) {
     const formatToday = momentTime(today).format("YYYY-MM-DD");
 
     const tasksReturn = [];
+
+    if (currentTab === this.PINNED_TAB) {
+      for (const task of tasks) {
+        if (task.is_pinned) tasksReturn.push(task);
+      }
+    }
 
     if (currentTab === this.ALL_TAB) {
       for (const task of tasks) {
@@ -1055,6 +1176,70 @@ export default class HomePageController extends WorklenzControllerBase {
     `;
     const result = await db.query(q, queryParams);
     return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  /**
+   * Recent task comments that @mention the requester, newest first. Backs the "Comments mentioning
+   * me" widget on the Home overview. Only projects the requester can open and has not archived are
+   * included, so a mention never leaks a comment from a project they can't see.
+   */
+  @HandleExceptions()
+  public static async getMentions(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+    const limit = Math.max(1, Math.min(this.MENTIONS_MAX_LIMIT, +(req.query.limit as string) || this.MENTIONS_DEFAULT_LIMIT));
+
+    const q = `SELECT tc.id,
+                      tc.task_id,
+                      t.name AS task_name,
+                      t.project_id,
+                      p.name AS project_name,
+                      p.color_code AS project_color,
+                      tc.team_member_id AS author_team_member_id,
+                      author.name AS author_name,
+                      author.avatar_url AS author_avatar_url,
+                      (SELECT text_content
+                       FROM task_comment_contents
+                       WHERE comment_id = tc.id
+                       ORDER BY index
+                       LIMIT 1) AS content,
+                      (SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT('index', m.mentioned_index, 'name', tmiv.name)
+                                                ORDER BY m.mentioned_index), '[]'::JSON)
+                       FROM task_comment_mentions m
+                                JOIN team_member_info_view tmiv ON tmiv.team_member_id = m.informed_by
+                       WHERE m.comment_id = tc.id) AS mentions,
+                      tc.created_at
+               FROM task_comments tc
+                        JOIN tasks t ON t.id = tc.task_id
+                        JOIN projects p ON p.id = t.project_id
+                        JOIN users author ON author.id = tc.user_id
+               WHERE tc.is_deleted IS NOT TRUE
+                 AND t.archived IS FALSE
+                 AND p.team_id = $1
+                 AND EXISTS(SELECT 1
+                            FROM task_comment_mentions m
+                            WHERE m.comment_id = tc.id
+                              AND m.informed_by = (SELECT id FROM team_members WHERE user_id = $2 AND team_id = $1))
+                 AND NOT EXISTS(SELECT 1
+                                FROM archived_projects
+                                WHERE project_id = p.id
+                                  AND user_id = $2)
+                 AND ($4 OR is_member_of_project(p.id, $2, $1))
+               ORDER BY tc.created_at DESC
+               LIMIT $3`;
+
+    // Owners and admins can open every project of the team (as everywhere else in the app), and a
+    // teammate can @mention anyone on the team in any project, so only a regular member's mentions
+    // are limited to the projects they belong to.
+    const canSeeAllProjects = Boolean(req.user?.owner || req.user?.is_admin);
+    const result = await db.query(q, [teamId, userId, limit, canSeeAllProjects]);
+
+    const mentions = result.rows.map(({ content, mentions: mentionedNames, ...row }) => ({
+      ...row,
+      excerpt: toMentionExcerpt(content, mentionedNames as IMentionedName[]),
+    }));
+
+    return res.status(200).send(new ServerResponse(true, mentions));
   }
 
   @HandleExceptions()

@@ -1424,8 +1424,8 @@ export default class AdminCenterController extends WorklenzControllerBase {
         organizationId: req.user.organization_id,
         teamId: null,
         actor: actorFromSessionUser(req.user),
-        eventType: AUDIT_EVENT_TYPE.WORKSPACE_DELETED.id,
-        description: `Deleted workspace team "${teamName || id}"`,
+        eventType: AUDIT_EVENT_TYPE.TEAM_DELETED.id,
+        description: `Deleted team "${teamName || id}"`,
       });
     }
 

@@ -200,7 +200,11 @@ export const fetchTasks = createAsyncThunk(
             priority: priorityIdToNameMap[task.priority] || 'medium',
             phase: task.phase_name || 'Development',
             progress: typeof task.complete_ratio === 'number' ? task.complete_ratio : 0,
-            assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
+            // Handle both string-ID arrays (REST) and object arrays (socket acks)
+            // to avoid producing `[undefined, ...]` which breaks downstream filters.
+            assignees: (Array.isArray(task.assignees) ? task.assignees : [])
+              .map((a: any) => (typeof a === 'string' ? a : a?.team_member_id))
+              .filter((id: unknown): id is string => Boolean(id)),
             assignee_names: task.assignee_names || task.names || [],
             labels:
               task.labels?.map((l: any) => ({
@@ -340,7 +344,14 @@ export const fetchTasksV3 = createAsyncThunk(
           progress: calculatedProgress, // Use recalculated progress
           complete_ratio: calculatedProgress, // Update complete_ratio as well
           progress_value: calculatedProgress, // Update progress_value as well
-          assignees: task.assignees?.map((a: { team_member_id: string }) => a.team_member_id) || [],
+          // getTasksV3 already returns `assignees` as an array of team-member ID
+          // strings. Handle both that shape and the object shape (socket acks) so
+          // we never produce `[undefined, ...]` — which would make `length > 0`
+          // while every entry is invalid, silently blocking the assignee_names
+          // fallback in AssigneesColumn / useTaskRowState.
+          assignees: (Array.isArray(task.assignees) ? task.assignees : [])
+            .map((a: any) => (typeof a === 'string' ? a : a?.team_member_id))
+            .filter((id: unknown): id is string => Boolean(id)),
           assignee_names: task.assignee_names || task.names || [],
           labels:
             task.labels?.map(

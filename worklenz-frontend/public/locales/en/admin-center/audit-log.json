@@ -26,6 +26,7 @@
   "eventProjectDeleted": "Project deleted",
   "eventProjectRestored": "Project restored",
   "eventWorkspaceRenamed": "Workspace renamed",
+  "eventTeamDeleted": "Team deleted",
   "eventWorkspaceDeleted": "Workspace deleted",
   "eventMemberUpdated": "Member details changed",
   "eventMemberActivated": "Member activated",

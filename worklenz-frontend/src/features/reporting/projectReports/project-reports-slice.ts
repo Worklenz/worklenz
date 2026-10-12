@@ -416,12 +416,32 @@ const projectReportsSlice = createSlice({
       }
     },
     setProjectStatus: (state, action) => {
-      const status = action.payload;
-      const project = state.projectList.find(p => p.id === status.id);
+      const payload = action.payload;
+      const projectId = payload.projectId || payload.id;
+      const statusObj =
+        payload.status && typeof payload.status === 'object' ? payload.status : payload;
+      const statusId =
+        payload.status && typeof payload.status === 'string'
+          ? payload.status
+          : statusObj.id || statusObj.status_id || statusObj.status;
+      const statusName = statusObj.name || statusObj.status_name;
+      const statusColor = statusObj.color_code || statusObj.status_color;
+
+      const project = state.projectList.find(p => p.id === projectId);
       if (project) {
-        project.status_id = status.id;
-        project.status_name = status.name;
-        project.status_color = status.color_code;
+        if (statusId) project.status_id = statusId;
+        if (statusName) project.status_name = statusName;
+        if (statusColor) project.status_color = statusColor;
+      }
+      if (state.groupedProjects?.length) {
+        for (const group of state.groupedProjects) {
+          const gp = group.projects?.find(p => p.id === projectId);
+          if (gp) {
+            if (statusId) gp.status_id = statusId;
+            if (statusName) gp.status_name = statusName;
+            if (statusColor) gp.status_color = statusColor;
+          }
+        }
       }
     },
     setProjectStartDate: (state, action) => {

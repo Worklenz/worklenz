@@ -15,7 +15,9 @@ exports.up = (pgm) => {
     CREATE TABLE IF NOT EXISTS audit_log_export_jobs (
       id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
       organization_id UUID                                                NOT NULL,
-      created_by      UUID                                                NOT NULL,
+      -- Keep the export-job record when its creator is deleted. This column must remain
+      -- nullable for the ON DELETE SET NULL foreign-key action below to succeed.
+      created_by      UUID,
       status          TEXT                     DEFAULT 'queued'           NOT NULL
                            CHECK (status IN ('queued', 'processing', 'ready', 'failed', 'expired')),
       -- Applied list filters at request time: { start_date, end_date, categories[],

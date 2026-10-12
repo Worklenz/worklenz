@@ -5654,7 +5654,7 @@ BEGIN
             WHERE team_id = (_body ->> 'team')::UUID
               AND team_member_id = (_body ->> 'member_id')::UUID;
 
-            UPDATE users SET active_team = (_body ->> 'team')::UUID WHERE id = _user_id;
+            UPDATE users SET active_team = (_body ->> 'team')::UUID, setup_completed = TRUE WHERE id = _user_id;
         END IF;
     END IF;
 
@@ -5721,7 +5721,7 @@ BEGIN
         THEN
             RAISE 'ERROR_INVALID_JOINING_EMAIL';
         END IF;
-        UPDATE users SET active_team = (_body ->> 'invited_team_id')::UUID WHERE id = _user_id;
+        UPDATE users SET active_team = (_body ->> 'invited_team_id')::UUID, setup_completed = TRUE WHERE id = _user_id;
     END IF;
 
     -- insert default roles

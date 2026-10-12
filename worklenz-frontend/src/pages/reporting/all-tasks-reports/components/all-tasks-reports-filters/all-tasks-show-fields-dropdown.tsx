@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Button, Card, Checkbox, Dropdown, Flex } from '@/shared/antd-imports';
-import { CaretDownFilled } from '@/shared/antd-imports';
+import { EyeOutlined, Tooltip } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -62,12 +62,13 @@ const AllTasksShowFieldsDropdown = () => {
       trigger={['click']}
       placement="bottomRight"
     >
-      <Button style={{ height: 30, fontSize: 12, borderRadius: 7, paddingInline: 12 }}>
-        <Flex align="center" gap={4}>
-          {t('showFields', { defaultValue: 'Show Fields' })}
-          <CaretDownFilled />
-        </Flex>
-      </Button>
+      <Tooltip title={t('showFields', { defaultValue: 'Show Fields' })}>
+        <Button
+          aria-label={t('showFields', { defaultValue: 'Show Fields' })}
+          icon={<EyeOutlined />}
+          style={{ height: 30, width: 30, padding: 0, fontSize: 14, borderRadius: 7 }}
+        />
+      </Tooltip>
     </Dropdown>
   );
 };

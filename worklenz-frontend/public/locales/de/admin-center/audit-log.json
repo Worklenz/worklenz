@@ -27,6 +27,7 @@
   "eventProjectDeleted": "Projekt gelöscht",
   "eventProjectRestored": "Projekt wiederhergestellt",
   "eventWorkspaceRenamed": "Arbeitsbereich umbenannt",
+  "eventTeamDeleted": "Team gelöscht",
   "eventWorkspaceDeleted": "Arbeitsbereich gelöscht",
   "eventMemberUpdated": "Mitgliedsdetails geändert",
   "eventMemberActivated": "Mitglied aktiviert",
