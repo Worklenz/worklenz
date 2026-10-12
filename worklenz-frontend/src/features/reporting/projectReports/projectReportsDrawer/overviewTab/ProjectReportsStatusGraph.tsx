@@ -16,13 +16,24 @@ const ProjectReportsStatusGraph = ({
 }) => {
   const { t } = useTranslation('reporting-projects-drawer');
 
+  const getStatusLabel = (name: string): string => {
+    switch (name.trim().toLowerCase()) {
+      case 'todo':
+        return t('todoText', { defaultValue: 'To Do' });
+      case 'doing':
+        return t('doingText', { defaultValue: 'Doing' });
+      case 'done':
+        return t('doneText', { defaultValue: 'Done' });
+      default:
+        return t(`${name.toLowerCase()}Text`, { defaultValue: name });
+    }
+  };
+
   const chartData = {
-    labels: values.chart.map(item =>
-      item.name.trim().toLowerCase() === 'todo' ? 'To Do' : item.name
-    ),
+    labels: values.chart.map(item => getStatusLabel(item.name)),
     datasets: [
       {
-        label: t('tasksText'),
+        label: t('tasksText', { defaultValue: 'Tasks' }),
         data: values.chart.map(item => item.y),
         backgroundColor: values.chart.map(item => item.color),
       },
@@ -47,7 +58,7 @@ const ProjectReportsStatusGraph = ({
       loading={loading}
       title={
         <Typography.Text style={{ fontSize: 16, fontWeight: 500 }}>
-          {t('tasksByStatusText')}
+          {t('tasksByStatusText', { defaultValue: 'Tasks By Status' })}
         </Typography.Text>
       }
     >
@@ -63,7 +74,7 @@ const ProjectReportsStatusGraph = ({
           <Flex gap={4} align="center">
             <Badge color="#000" />
             <Typography.Text ellipsis>
-              {t('allText')} ({values.all})
+              {t('allText', { defaultValue: 'All' })} ({values.all})
             </Typography.Text>
           </Flex>
 
@@ -72,7 +83,7 @@ const ProjectReportsStatusGraph = ({
             <Flex key={item.name} gap={4} align="center">
               <Badge color={item.color} />
               <Typography.Text ellipsis>
-                {item.name.trim().toLowerCase() === 'todo' ? 'To Do' : item.name} ({item.y})
+                {getStatusLabel(item.name)} ({item.y})
               </Typography.Text>
             </Flex>
           ))}
