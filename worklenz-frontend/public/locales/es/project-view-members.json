@@ -28,6 +28,8 @@
   "Invite": "Invitar",
   "removeSuccess": "{{name}} eliminado del proyecto",
   "removeError": "Error al eliminar miembro",
+  "assignFailedTitle": "La tarea falló",
+  "assignFailedMessage": "No se pudieron actualizar los asignados a la tarea. Por favor inténtalo de nuevo.",
   "memberNotFound": "No se encontró la información del miembro del equipo",
   "manageTimeOff": "Gestionar tiempo libre",
   "seatLimitReached": "Límite de asientos alcanzado",

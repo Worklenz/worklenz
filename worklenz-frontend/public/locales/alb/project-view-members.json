@@ -28,6 +28,8 @@
   "Invite": "Fto",
   "removeSuccess": "{{name}} u hoq nga projekti",
   "removeError": "Dështoi në heqjen e anëtarit",
+  "assignFailedTitle": "Caktimi dështoi",
+  "assignFailedMessage": "Nuk mund të përditësoheshin të ngarkuarit e detyrave. Ju lutemi provoni përsëri.",
   "memberNotFound": "Informacioni i anëtarit të ekipit nuk u gjet",
   "manageTimeOff": "Menaxho pushimet",
   "seatLimitReached": "U arrit kufiri i vendeve",
