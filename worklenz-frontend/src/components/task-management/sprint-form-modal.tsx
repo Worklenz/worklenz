@@ -1,11 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import dayjs, { Dayjs } from 'dayjs';
-import { DatePicker, Form, Input, Modal, Tag, Typography, message, theme } from '@/shared/antd-imports';
+import {
+  Button,
+  DatePicker,
+  DeleteOutlined,
+  Form,
+  Input,
+  Modal,
+  Tag,
+  Typography,
+  message,
+  theme,
+} from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSprintActions } from '@/hooks/useSprintActions';
-import { updateSprintDetails } from '@/features/projects/singleProject/phase/phases.slice';
+import {
+  deletePhaseOption,
+  updateSprintDetails,
+} from '@/features/projects/singleProject/phase/phases.slice';
+import { getSoftwareProjectLabels } from '@/lib/project/software-project';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 
 export type SprintFormMode = 'edit' | 'start';
@@ -37,9 +53,12 @@ export const SprintFormModal = ({
 }: SprintFormModalProps) => {
   const { t } = useTranslation('phases-drawer');
   const dispatch = useAppDispatch();
-  const { startSprint } = useSprintActions(projectId);
+  const { startSprint, refreshSprintData } = useSprintActions(projectId);
+  const [confirmModal, confirmModalContextHolder] = Modal.useModal();
+  const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
   const [form] = Form.useForm<SprintFormValues>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const isStartMode = mode === 'start';
 
   useEffect(() => {
@@ -91,6 +110,45 @@ export const SprintFormModal = ({
     }
   };
 
+  const handleDelete = () => {
+    if (!sprint) return;
+    const backlogLabel = getSoftwareProjectLabels(projectType).unmapped;
+    confirmModal.confirm({
+      title: t('deleteSprintTitle', { defaultValue: 'Delete {{name}}?', name: sprint.name }),
+      content:
+        issueCount > 0
+          ? t('deleteSprintContentWithItems', {
+              defaultValue:
+                '{{count}} work item(s) in this sprint will move to {{backlog}}. This cannot be undone.',
+              count: issueCount,
+              backlog: backlogLabel,
+            })
+          : t('deleteSprintContent', { defaultValue: 'This cannot be undone.' }),
+      okText: t('deleteSprint', { defaultValue: 'Delete sprint' }),
+      okButtonProps: { danger: true },
+      cancelText: t('cancel', { defaultValue: 'Cancel' }),
+      onOk: async () => {
+        setIsDeleting(true);
+        try {
+          const response = await dispatch(
+            deletePhaseOption({ phaseOptionId: sprint.id, projectId })
+          ).unwrap();
+          if (!response?.done) throw new Error(response?.message);
+          message.success(t('sprintDeleted', { defaultValue: 'Sprint deleted' }));
+          onClose();
+          await refreshSprintData();
+        } catch (error: unknown) {
+          message.error(
+            (error as { message?: string } | undefined)?.message ||
+              t('sprintDeleteError', { defaultValue: 'Could not delete sprint' })
+          );
+        } finally {
+          setIsDeleting(false);
+        }
+      },
+    });
+  };
+
   const validateDateRange = (_: unknown, dates: SprintFormValues['dates']) => {
     const [startDate, endDate] = dates ?? [null, null];
     if (isStartMode && (!startDate || !endDate)) {
@@ -131,7 +189,26 @@ export const SprintFormModal = ({
       onOk={handleSubmit}
       onCancel={onClose}
       destroyOnClose
+      footer={(originalFooter: ReactNode) =>
+        isStartMode ? (
+          originalFooter
+        ) : (
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              loading={isDeleting}
+              disabled={isSubmitting}
+              onClick={handleDelete}
+            >
+              {t('deleteSprint', { defaultValue: 'Delete sprint' })}
+            </Button>
+            <div className="flex items-center gap-2">{originalFooter}</div>
+          </div>
+        )
+      }
     >
+      {confirmModalContextHolder}
       {isStartMode && (
         <>
           {sprint?.sprint_goal && (
