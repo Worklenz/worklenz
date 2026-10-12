@@ -59,17 +59,20 @@ export default class ProjectInsightsController extends WorklenzControllerBase {
 
     const countQ = `SELECT COUNT(*) FROM tasks WHERE project_id = $1 AND CASE WHEN ($2 IS TRUE) THEN project_id IS NOT NULL ELSE archived IS FALSE END;`;
     const countResult = await db.query(countQ, [req.params.id, includeArchived]);
-    const total = parseInt(countResult.rows[0].count);
+    const total = parseInt(countResult.rows[0]?.count || "0", 10);
 
     const q = `SELECT get_last_updated_tasks_by_project($1, $2, $3, $4) AS last_updated;`;
     const result = await db.query(q, [req.params.id, limit, offset, includeArchived]);
     const [data] = result.rows;
 
-    for (const task of data.last_updated) {
+    const tasks = Array.isArray(data?.last_updated) ? data.last_updated : [];
+    for (const task of tasks) {
       task.status_color = task.status_color + TASK_STATUS_COLOR_ALPHA;
+      task.status_name = task.status_name || task.status;
+      task.status = task.status || task.status_name;
     }
 
-    return res.status(200).send(new ServerResponse(true, { tasks: data.last_updated, total }));
+    return res.status(200).send(new ServerResponse(true, { tasks, total }));
   }
 
 
@@ -286,14 +289,20 @@ export default class ProjectInsightsController extends WorklenzControllerBase {
     const result = await db.query(q, [req.params.id || null, archived === "true"]);
     const [data] = result.rows;
 
-    for (const task of data.get_project_deadline_tasks.tasks) {
-      task.status_color = task.status_color + TASK_STATUS_COLOR_ALPHA;
+    const deadline = data?.get_project_deadline_tasks ?? {};
+
+    if (Array.isArray(deadline.tasks)) {
+      for (const task of deadline.tasks) {
+        task.status_color = task.status_color + TASK_STATUS_COLOR_ALPHA;
+        task.status_name = task.status_name || task.status;
+        task.status = task.status || task.status_name;
+      }
     }
 
-    const logged_hours = data.get_project_deadline_tasks.deadline_logged_hours || 0; // in seconds
-    data.get_project_deadline_tasks.deadline_logged_hours_string = formatDuration(moment.duration(logged_hours, "seconds"));
+    const logged_hours = deadline.deadline_logged_hours || 0; // in seconds
+    deadline.deadline_logged_hours_string = formatDuration(moment.duration(logged_hours, "seconds"));
 
-    return res.status(200).send(new ServerResponse(true, data.get_project_deadline_tasks || {}));
+    return res.status(200).send(new ServerResponse(true, deadline));
   }
 
 
