@@ -13,7 +13,9 @@ import {
   UserAddOutlined,
   UserOutlined,
 } from '@/shared/antd-imports';
+import { WORKLENZ_STATUS_DOCS_URL } from '@/shared/help-links-constants';
 import type { TranslateFn, ThemeToken } from '../types';
+import { MappingStatusesInfoModal } from './MappingStatusesInfoModal';
 
 const MOVE_USERS_ROW_HEIGHT = 52;
 const MOVE_USERS_MAX_LIST_HEIGHT = 420;
@@ -347,6 +349,8 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
   addUsers,
   setAddUsers,
 }) => {
+  const [statusInfoModalOpen, setStatusInfoModalOpen] = React.useState(false);
+
   const defaultCategoryId = React.useMemo(() => {
     const todoCategory = statusCategories.find(cat => /to.?do/i.test(cat.name || ''));
     return todoCategory?.id || statusCategories[0]?.id || '';
@@ -622,12 +626,16 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
             'Build more structure into your space by mapping values in your Status column to Worklenz statuses.'
           )}{' '}
           <a
-            href="https://worklenz.com/blog/"
+            href={WORKLENZ_STATUS_DOCS_URL}
+            onClick={e => {
+              e.preventDefault();
+              setStatusInfoModalOpen(true);
+            }}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: palette.primary }}
+            style={{ color: palette.primary, cursor: 'pointer' }}
           >
-            {t('importStep.mapValuesDocs', 'Read about mapping statuses')}
+            {t('importStep.mapValuesDocs', { defaultValue: 'Read about mapping statuses' })}
           </a>
         </Typography.Paragraph>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
@@ -699,6 +707,12 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
             />
           ))
         )}
+        <MappingStatusesInfoModal
+          open={statusInfoModalOpen}
+          onClose={() => setStatusInfoModalOpen(false)}
+          t={t}
+          themeToken={themeToken}
+        />
       </div>
     );
   }
