@@ -362,3 +362,19 @@ export const shouldShowAppSumoPromo = (
 export const shouldRestrictBillableFeature = (session: ILocalSession | null): boolean => {
   return !hasBusinessFeatureAccess(session);
 };
+
+/**
+ * Has the team used every purchased seat? Per-user (Paddle Billing) plans are capped by what was
+ * bought on every tier, Business included. Other plans keep the older rule where Business is not
+ * blocked by the client-side count (the backend still enforces).
+ */
+export const hasReachedSeatLimit = (
+  session: ILocalSession | null,
+  billing: { total_used?: number | null; total_seats?: number | null; billing_provider?: string | null } | null | undefined
+): boolean => {
+  const seats = billing?.total_seats ?? 0;
+  if (!(seats > 0)) return false;
+  if ((billing?.total_used ?? 0) < seats) return false;
+  if (billing?.billing_provider === 'paddle_billing') return true;
+  return !hasBusinessFeatureAccess(session);
+};

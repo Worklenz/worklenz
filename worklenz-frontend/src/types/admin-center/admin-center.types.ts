@@ -92,6 +92,8 @@ export interface IBillingAccountInfo {
   redeemed_codes_count?: number;
   appsumo_business_eligible?: boolean;
   total_seats?: number;
+  /** 'paddle_billing' for per-user plans, 'paddle_classic' for grandfathered ones. */
+  billing_provider?: string | null;
   total_used?: number;
   is_lkr_billing?: boolean;
   subscription_type?: ISUBSCRIPTION_TYPE;

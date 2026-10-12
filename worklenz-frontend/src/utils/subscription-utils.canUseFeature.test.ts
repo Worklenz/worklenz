@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canUseFeature } from './subscription-utils';
+import { canUseFeature, hasReachedSeatLimit } from './subscription-utils';
 import type { ILocalSession } from '@/types/auth/local-session.types';
 
 const session = (overrides: Partial<ILocalSession>) => overrides as ILocalSession;
@@ -70,5 +70,26 @@ describe('canUseFeature', () => {
       },
     });
     expect(canUseFeature(enforced, 'recurring_tasks', legacy)).toBe(false);
+  });
+});
+
+describe('hasReachedSeatLimit', () => {
+  const business = session({ subscription_type: 'PADDLE', plan_name: 'Business Plan' });
+  const pro = session({ subscription_type: 'PADDLE', plan_name: 'Pro' });
+
+  it('is false until every seat is used, or when seats are unknown', () => {
+    expect(hasReachedSeatLimit(pro, { total_used: 4, total_seats: 5 })).toBe(false);
+    expect(hasReachedSeatLimit(pro, { total_used: 5, total_seats: 0 })).toBe(false);
+  });
+
+  it('blocks non-Business plans at the limit; legacy Business is left to the backend', () => {
+    expect(hasReachedSeatLimit(pro, { total_used: 5, total_seats: 5 })).toBe(true);
+    expect(hasReachedSeatLimit(business, { total_used: 5, total_seats: 5 })).toBe(false);
+  });
+
+  it('blocks per-user Business plans too: the purchased seats are the cap', () => {
+    expect(
+      hasReachedSeatLimit(business, { total_used: 5, total_seats: 5, billing_provider: 'paddle_billing' })
+    ).toBe(true);
   });
 });
