@@ -23,6 +23,7 @@ import {
 } from '@/features/projects/singleProject/phase/phases.slice';
 import { getSoftwareProjectLabels } from '@/lib/project/software-project';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
+import { isAnnouncedApiError } from '@/utils/api-errors';
 
 export type SprintFormMode = 'edit' | 'start';
 
@@ -101,6 +102,7 @@ export const SprintFormModal = ({
       }
       onClose();
     } catch (error: unknown) {
+      if (isAnnouncedApiError(error)) return;
       message.error(
         (error as { message?: string } | undefined)?.message ||
           t('sprintUpdateError', { defaultValue: 'Could not update sprint' })
@@ -138,6 +140,7 @@ export const SprintFormModal = ({
           onClose();
           await refreshSprintData();
         } catch (error: unknown) {
+          if (isAnnouncedApiError(error)) return;
           message.error(
             (error as { message?: string } | undefined)?.message ||
               t('sprintDeleteError', { defaultValue: 'Could not delete sprint' })

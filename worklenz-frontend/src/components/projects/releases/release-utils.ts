@@ -1,4 +1,3 @@
-import axios from 'axios';
 import dayjs from 'dayjs';
 
 import { IProjectRelease, ReleaseConfidence } from '@/types/project/projectRelease.types';
@@ -34,9 +33,7 @@ export const getReleaseConfidence = (release: IProjectRelease): ReleaseConfidenc
 export const formatReleaseDate = (date: string | null): string | null =>
   date ? dayjs(date).format('MMM D, YYYY') : null;
 
-/** Error responses from the API are already announced by the api-client interceptor. */
-export const isAnnouncedApiError = (error: unknown): boolean =>
-  axios.isAxiosError(error) && !!error.response;
+export { isAnnouncedApiError } from '@/utils/api-errors';
 
 /** Suggests the next minor version (v2.1.0 → v2.2.0) based on existing release names. */
 export const suggestNextReleaseName = (releases: IProjectRelease[]): string => {

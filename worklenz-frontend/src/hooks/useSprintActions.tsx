@@ -15,6 +15,7 @@ import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { getSoftwareProjectLabels } from '@/lib/project/software-project';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
+import { isAnnouncedApiError } from '@/utils/api-errors';
 
 /**
  * Sprint lifecycle actions (create, start, complete) shared by the Backlog sprint
@@ -49,9 +50,7 @@ export const useSprintActions = (projectId?: string | null) => {
         await refreshSprintData();
         return true;
       } catch (error: unknown) {
-        message.error(
-          getErrorMessage(error) || t('sprintStartError', { defaultValue: 'Could not start sprint' })
-        );
+        notifyError(error, t('sprintStartError', { defaultValue: 'Could not start sprint' }));
         return false;
       }
     },
@@ -166,10 +165,7 @@ export const useSprintActions = (projectId?: string | null) => {
             message.success(summaryParts.join('. '));
             await refreshSprintData();
           } catch (error: unknown) {
-            message.error(
-              getErrorMessage(error) ||
-                t('sprintCompleteError', { defaultValue: 'Could not complete sprint' })
-            );
+            notifyError(error, t('sprintCompleteError', { defaultValue: 'Could not complete sprint' }));
             throw error;
           }
         },
@@ -190,9 +186,7 @@ export const useSprintActions = (projectId?: string | null) => {
       await refreshSprintData();
       return response?.body ?? null;
     } catch (error: unknown) {
-      message.error(
-        getErrorMessage(error) || t('sprintCreateError', { defaultValue: 'Could not create sprint' })
-      );
+      notifyError(error, t('sprintCreateError', { defaultValue: 'Could not create sprint' }));
       return null;
     }
   }, [dispatch, phaseList.length, projectId, refreshSprintData, t]);
@@ -202,6 +196,12 @@ export const useSprintActions = (projectId?: string | null) => {
 
 const getErrorMessage = (error: unknown): string | undefined =>
   (error as { message?: string } | undefined)?.message;
+
+/** Shows an error toast unless the api-client interceptor already announced the server's message. */
+const notifyError = (error: unknown, fallback: string) => {
+  if (isAnnouncedApiError(error)) return;
+  message.error(getErrorMessage(error) || fallback);
+};
 
 const BACKLOG_DESTINATION = 'backlog';
 

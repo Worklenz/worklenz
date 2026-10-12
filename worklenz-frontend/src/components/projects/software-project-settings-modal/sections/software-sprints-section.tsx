@@ -45,6 +45,7 @@ import {
 } from '@/features/projects/singleProject/phase/phases.slice';
 import { SprintFormModal } from '@/components/task-management/sprint-form-modal';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
+import { isAnnouncedApiError } from '@/utils/api-errors';
 import logger from '@/utils/errorLogger';
 import SettingsCard from '../../project-settings-modal/components/settings-card';
 import { SectionHeader } from '../components/section-header';
@@ -133,7 +134,9 @@ export const SoftwareSprintsSection = ({ projectId, disabled }: SoftwareSprintsS
       await sprintActions.refreshSprintData();
     } catch (error) {
       logger.error('Error adding sprint', error);
-      message.error(t('softwareSettings.sprintAddError', { defaultValue: 'Could not add sprint' }));
+      if (!isAnnouncedApiError(error)) {
+        message.error(t('softwareSettings.sprintAddError', { defaultValue: 'Could not add sprint' }));
+      }
     } finally {
       setIsAdding(false);
     }
@@ -175,6 +178,7 @@ export const SoftwareSprintsSection = ({ projectId, disabled }: SoftwareSprintsS
           await sprintActions.refreshSprintData();
         } catch (error) {
           logger.error('Error deleting sprint', error);
+          if (isAnnouncedApiError(error)) return;
           message.error(
             t('softwareSettings.sprintDeleteError', { defaultValue: 'Could not delete sprint' })
           );
@@ -192,9 +196,11 @@ export const SoftwareSprintsSection = ({ projectId, disabled }: SoftwareSprintsS
       dispatch(mergeProject({ [setting]: checked }));
     } catch (error) {
       logger.error('Error updating sprint settings', error);
-      message.error(
-        t('softwareSettings.sprintSettingsError', { defaultValue: 'Could not update sprint settings' })
-      );
+      if (!isAnnouncedApiError(error)) {
+        message.error(
+          t('softwareSettings.sprintSettingsError', { defaultValue: 'Could not update sprint settings' })
+        );
+      }
     } finally {
       setSavingSetting(null);
     }
