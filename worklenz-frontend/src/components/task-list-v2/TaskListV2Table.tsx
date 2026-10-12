@@ -2487,7 +2487,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           }
 
           .tasklist-backlog .epic-inline-select .ant-select-selection-item {
-            color: ${themeToken.purple};
+            color: ${themeToken.colorText};
             font-size: 11px;
           }
 
