@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import dayjs from 'dayjs';
 import { Modal, Select, Typography, message } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -28,6 +29,7 @@ export const useSprintActions = (projectId?: string | null) => {
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
   const softwareLabels = getSoftwareProjectLabels(project?.project_type);
   const autoArchiveDone = project?.auto_archive_on_sprint_complete !== false;
+  const autoStartNext = project?.auto_start_complete_sprints === true;
 
   const refreshSprintData = useCallback(async () => {
     if (!projectId) return;
@@ -91,6 +93,14 @@ export const useSprintActions = (projectId?: string | null) => {
                       'Incomplete issues will move to the destination you choose. Done issues stay in this sprint.',
                   })}
             </Typography.Text>
+            {autoStartNext && plannedSprints.length > 0 && (
+              <Typography.Text type="secondary">
+                {t('completeSprintAutoStartHint', {
+                  defaultValue:
+                    'The next planned sprint will start today and keep its planned length.',
+                })}
+              </Typography.Text>
+            )}
             <div>
               <Typography.Text className="block mb-1.5 text-xs">
                 {t('moveIncompleteTo', { defaultValue: 'Move incomplete work to' })}
@@ -141,6 +151,17 @@ export const useSprintActions = (projectId?: string | null) => {
                 })
               );
             }
+            const startedSprint = result?.body?.started_sprint;
+            if (startedSprint) {
+              summaryParts.push(
+                t('nextSprintStarted', {
+                  defaultValue: '{{name}} started ({{start}} – {{end}})',
+                  name: startedSprint.name,
+                  start: startedSprint.start_date ? dayjs(startedSprint.start_date).format('MMM D') : '?',
+                  end: startedSprint.end_date ? dayjs(startedSprint.end_date).format('MMM D') : '?',
+                })
+              );
+            }
             message.success(summaryParts.join('. '));
             await refreshSprintData();
           } catch (error: unknown) {
@@ -153,7 +174,7 @@ export const useSprintActions = (projectId?: string | null) => {
         },
       });
     },
-    [autoArchiveDone, dispatch, modal, phaseList, projectId, refreshSprintData, softwareLabels.unmapped, t]
+    [autoArchiveDone, autoStartNext, dispatch, modal, phaseList, projectId, refreshSprintData, softwareLabels.unmapped, t]
   );
 
   const createSprint = useCallback(async (): Promise<ITaskPhase | null> => {

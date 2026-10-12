@@ -132,6 +132,8 @@ export const phasesApiService = {
           archived_count?: number;
           moved_count?: number;
           destination_phase_id?: string | null;
+          /** Next sprint started right away when the project auto-starts sprints. */
+          started_sprint?: ITaskPhase | null;
         }
       >
     >(`${rootUrl}/${phaseId}/complete${q}`, {

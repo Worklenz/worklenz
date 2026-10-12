@@ -7,7 +7,12 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import {TASK_STATUS_COLOR_ALPHA} from "../shared/constants";
 import {isValidUuid} from "../shared/validation-helpers";
-import {completeSprintRecord, startSprintRecord} from "../shared/sprint-lifecycle";
+import {
+  completeSprintRecord,
+  getSprintLengthDays,
+  startNextSprintNow,
+  startSprintRecord,
+} from "../shared/sprint-lifecycle";
 
 export default class TaskPhasesController extends WorklenzControllerBase {
   private static readonly DEFAULT_PHASE_COLOR = "#fbc84c";
@@ -450,6 +455,16 @@ export default class TaskPhasesController extends WorklenzControllerBase {
     }
 
     const {phase, archivedCount, movedCount} = result.data;
+
+    const settings = await db.query(
+      `SELECT auto_start_complete_sprints FROM projects WHERE id = $1 AND project_type = 'software'`,
+      [projectId]
+    );
+    const startedSprint = settings.rows[0]?.auto_start_complete_sprints === true
+      ? await startNextSprintNow(projectId, destinationPhaseId, getSprintLengthDays(phase))
+      : null;
+    if (startedSprint) startedSprint.color_code = startedSprint.color_code + TASK_STATUS_COLOR_ALPHA;
+
     phase.color_code = phase.color_code + TASK_STATUS_COLOR_ALPHA;
     return res.status(200).send(
       new ServerResponse(true, {
@@ -457,6 +472,7 @@ export default class TaskPhasesController extends WorklenzControllerBase {
         archived_count: archivedCount,
         moved_count: movedCount,
         destination_phase_id: destinationPhaseId,
+        started_sprint: startedSprint,
       })
     );
   }

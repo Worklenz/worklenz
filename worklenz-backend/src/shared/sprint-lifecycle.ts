@@ -55,6 +55,65 @@ export async function startSprintRecord(
 }
 
 /**
+ * Starts the next planned sprint today, keeping its planned length. Picks `preferredPhaseId`
+ * when it is a planned sprint, otherwise the earliest planned one. Dated sprints are shifted by
+ * whole days so their local day boundaries are kept; undated sprints get `fallbackLengthDays`.
+ *
+ * @returns the started sprint, or null when there is no planned sprint
+ */
+export async function startNextSprintNow(
+  projectId: string,
+  preferredPhaseId: string | null,
+  fallbackLengthDays: number
+): Promise<Record<string, any> | null> {
+  const next = await db.query(
+    `SELECT id
+     FROM project_phases
+     WHERE project_id = $1 AND sprint_status = 'planned'
+     ORDER BY (id = $2::UUID) DESC, start_date ASC NULLS LAST, sort_index ASC
+     LIMIT 1;`,
+    [projectId, preferredPhaseId]
+  );
+  const nextId: string | undefined = next.rows[0]?.id;
+  if (!nextId) return null;
+
+  await db.query(
+    `UPDATE project_phases
+     SET start_date = CASE
+           WHEN start_date IS NOT NULL AND end_date IS NOT NULL
+             THEN start_date + shift.days * INTERVAL '1 day'
+           ELSE CURRENT_TIMESTAMP
+         END,
+         end_date = CASE
+           WHEN start_date IS NOT NULL AND end_date IS NOT NULL
+             THEN end_date + shift.days * INTERVAL '1 day'
+           ELSE CURRENT_TIMESTAMP + ($3::INT - 1) * INTERVAL '1 day'
+         END
+     FROM (
+       SELECT FLOOR(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - start_date)) / 86400)::INT AS days
+       FROM project_phases
+       WHERE id = $1
+     ) shift
+     WHERE id = $1 AND project_id = $2;`,
+    [nextId, projectId, Math.max(1, Math.round(fallbackLengthDays))]
+  );
+
+  const started = await startSprintRecord(projectId, nextId);
+  return started.ok ? started.data : null;
+}
+
+/** Length in days of a sprint with both dates (inclusive), or the 2-week default. */
+export function getSprintLengthDays(phase: { start_date?: string | Date | null; end_date?: string | Date | null }): number {
+  if (!phase.start_date || !phase.end_date) return DEFAULT_SPRINT_LENGTH_DAYS;
+  const days = Math.round(
+    (new Date(phase.end_date).getTime() - new Date(phase.start_date).getTime()) / 86_400_000
+  );
+  return days > 0 ? days : DEFAULT_SPRINT_LENGTH_DAYS;
+}
+
+const DEFAULT_SPRINT_LENGTH_DAYS = 14;
+
+/**
  * Completes a sprint: records its outcome, moves unfinished issues to `destinationPhaseId`
  * (a planned sprint) or the backlog (null), and archives Done issues when the project opts in.
  */
