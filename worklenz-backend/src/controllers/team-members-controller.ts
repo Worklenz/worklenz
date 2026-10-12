@@ -1939,6 +1939,17 @@ export default class TeamMembersController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ) {
+    const teamId = req.user?.team_id;
+    // Reactivation checks the free seats and then flips the member; hold the team's lock across
+    // both so it cannot race with an invite taking the last seat.
+    if (!teamId || req.query.active !== "true") return this.toggleMemberActive(req, res);
+    return withTeamSeatLock(teamId, () => this.toggleMemberActive(req, res));
+  }
+
+  private static async toggleMemberActive(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ) {
     const targetManagementError = await this.ensureManageableTarget(
       req,
       req.params.id,
@@ -2764,6 +2775,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
       const teamId = validation.team_id;
 
+      // Seat check and insert run under the team's lock so concurrent joins cannot both take the last seat.
+      return await withTeamSeatLock(teamId, async () => {
+
       // Get team owner ID for checking user existence
       const ownerQuery = `
         SELECT u.id, u.name, t.name as team_name, t.user_id as owner_id
@@ -3027,6 +3041,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
             "Successfully joined the team!",
           ),
         );
+      });
     } catch (error) {
       console.error("Error accepting team invitation:", error);
       return res
