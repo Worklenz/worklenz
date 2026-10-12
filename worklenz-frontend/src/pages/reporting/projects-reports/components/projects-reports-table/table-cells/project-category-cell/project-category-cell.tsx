@@ -88,6 +88,7 @@ const ProjectCategoryCell = memo(({ id, name, color_code, projectId }: ProjectCa
         JSON.stringify({
           project_id: projectId,
           category_id: newCategory.id,
+          is_update: true,
         })
       );
     }
@@ -117,6 +118,7 @@ const ProjectCategoryCell = memo(({ id, name, color_code, projectId }: ProjectCa
             JSON.stringify({
               project_id: projectId,
               category_id: res.body.id,
+              is_update: true,
             })
           );
         }

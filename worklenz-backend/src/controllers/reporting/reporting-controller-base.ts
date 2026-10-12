@@ -662,7 +662,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                                                        avatar_url
                                                  FROM team_member_info_view tmiv
                                                  WHERE tmiv.team_member_id = pm.team_member_id
-                                                   AND tmiv.team_id = (SELECT team_id FROM projects WHERE id = p.id)) pmi) AS project_manager_info,
+                                                   AND tmiv.team_id = p.team_id) pmi) AS project_manager_info,
                                          EXISTS(SELECT email
                                                  FROM email_invitations
                                                  WHERE team_member_id = pm.team_member_id
@@ -736,22 +736,18 @@ export default abstract class ReportingControllerBase extends WorklenzController
                                           WHEN (attribute_type = 'priority')
                                               THEN (SELECT name FROM task_priorities WHERE id = new_value::UUID)
                                           ELSE (new_value) END)                                                      AS current,
-                                     (SELECT name
-                                      FROM users
-                                      WHERE id = (SELECT reporter_id FROM tasks WHERE id = tal.task_id)),
-                                     (SELECT ROW_TO_JSON(rec)
-                                      FROM (SELECT (SELECT name FROM users WHERE users.id = tal.user_id),
-                                                   (SELECT avatar_url FROM users WHERE users.id = tal.user_id)) rec) AS done_by,
-                                     (CASE
-                                          WHEN (attribute_type = 'assignee')
-                                              THEN (SELECT ROW_TO_JSON(rec)
-                                                    FROM (SELECT (CASE
-                                                                      WHEN (new_value IS NOT NULL)
-                                                                          THEN (SELECT name FROM users WHERE users.id = new_value::UUID)
-                                                                      ELSE (next_string) END) AS name,
-                                                                 (SELECT avatar_url FROM users WHERE users.id = new_value::UUID)) rec)
-                                          ELSE (NULL) END)                                                           AS assigned_user,
-                                     (SELECT name FROM tasks WHERE tasks.id = tal.task_id)
+                                     (SELECT name FROM tasks WHERE tasks.id = tal.task_id) AS name,
+                                      (SELECT ROW_TO_JSON(rec)
+                                       FROM (SELECT name, avatar_url FROM users WHERE users.id = tal.user_id) rec) AS done_by,
+                                      (CASE
+                                           WHEN (attribute_type = 'assignee')
+                                               THEN (SELECT ROW_TO_JSON(rec)
+                                                     FROM (SELECT (CASE
+                                                                       WHEN (new_value IS NOT NULL)
+                                                                           THEN (SELECT name FROM users WHERE users.id = new_value::UUID)
+                                                                       ELSE (next_string) END) AS name,
+                                                                  (SELECT avatar_url FROM users WHERE users.id = new_value::UUID)) rec)
+                                           ELSE (NULL) END)                                                           AS assigned_user
                               FROM task_activity_logs tal
                               WHERE task_id IN (SELECT id FROM tasks t WHERE t.project_id = p.id)
                               ORDER BY tal.created_at DESC

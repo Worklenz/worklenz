@@ -115,13 +115,22 @@ const ProjectsReportsTable = () => {
     (data: any) => {
       try {
         const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
-        if (parsedData?.project_id) {
-          const socketCategory = parsedData.category;
+        const projectId = parsedData?.id || parsedData?.project_id;
+        if (projectId) {
+          const categoryId = parsedData.category_id ?? parsedData.category?.id ?? null;
+          const categoryName = parsedData.category_name ?? parsedData.category?.name ?? '';
+          const categoryColor = parsedData.category_color ?? parsedData.category?.color_code ?? '';
+
           const fullCategory =
-            projectCategories.find(c => c.id === socketCategory?.id) || socketCategory;
+            (categoryId ? projectCategories.find(c => c.id === categoryId) : null) || {
+              id: categoryId,
+              name: categoryName,
+              color_code: categoryColor,
+            };
+
           dispatch(
             updateProjectCategory({
-              projectId: parsedData.project_id,
+              projectId,
               category: fullCategory,
             })
           );
