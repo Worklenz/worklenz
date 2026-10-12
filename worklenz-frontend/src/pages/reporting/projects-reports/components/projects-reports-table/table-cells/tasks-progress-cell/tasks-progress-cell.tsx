@@ -1,3 +1,4 @@
+import React, { memo } from 'react';
 import { Flex, Tooltip, Typography, theme } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +7,7 @@ type TasksProgressCellProps = {
   tasksStat: { todo: number; doing: number; done: number } | null;
 };
 
-const TasksProgressCell = ({ tasksStat }: TasksProgressCellProps) => {
+const TasksProgressCell = memo(({ tasksStat }: TasksProgressCellProps) => {
   // localization
   const { t } = useTranslation('reporting-projects');
   const { token } = theme.useToken();
@@ -80,6 +81,6 @@ const TasksProgressCell = ({ tasksStat }: TasksProgressCellProps) => {
       </Flex>
     </Tooltip>
   );
-};
+});
 
 export default TasksProgressCell;

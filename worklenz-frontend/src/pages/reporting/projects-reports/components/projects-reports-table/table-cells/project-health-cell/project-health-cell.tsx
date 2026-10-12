@@ -1,5 +1,5 @@
 import { Badge, Card, Dropdown, Flex, Menu, MenuProps, Typography } from '@/shared/antd-imports';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { DownOutlined } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import './project-health-cell.css';
@@ -16,7 +16,7 @@ interface HealthStatusDataType {
   projectId: string;
 }
 
-const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataType) => {
+const ProjectHealthCell = memo(({ value, label, color, projectId }: HealthStatusDataType) => {
   const { t } = useTranslation('reporting-projects');
   const { socket } = useSocket();
   const { projectHealths, loading } = useAppSelector(state => state.projectHealthReducer);
@@ -28,39 +28,49 @@ const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataT
     name: label,
   };
 
-  const healthOptions = projectHealths.map(status => ({
-    key: status.id,
-    value: status.id,
-    label: (
-      <Typography.Text style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <Badge color={status.color_code} /> {t(`${status.name}`)}
-      </Typography.Text>
-    ),
-  }));
+  const onClick: MenuProps['onClick'] = useCallback(
+    (e: { key: string }) => {
+      if (!e.key || !projectId) return;
 
-  const onClick: MenuProps['onClick'] = e => {
-    if (!e.key || !projectId) return;
+      socket?.emit(
+        SocketEvents.PROJECT_HEALTH_CHANGE.toString(),
+        JSON.stringify({
+          project_id: projectId,
+          health_id: e.key,
+        })
+      );
+    },
+    [socket, projectId]
+  );
 
-    socket?.emit(
-      SocketEvents.PROJECT_HEALTH_CHANGE.toString(),
-      JSON.stringify({
-        project_id: projectId,
-        health_id: e.key,
-      })
-    );
-  };
+  const healthOptions = useMemo(
+    () =>
+      projectHealths.map(status => ({
+        key: status.id,
+        value: status.id,
+        label: (
+          <Typography.Text style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Badge color={status.color_code} /> {t(`${status.name}`, { defaultValue: status.name })}
+          </Typography.Text>
+        ),
+      })),
+    [projectHealths, t]
+  );
 
   // dropdown items
-  const projectHealthCellItems: MenuProps['items'] = [
-    {
-      key: '1',
-      label: (
-        <Card className="project-health-dropdown-card" bordered={false}>
-          <Menu className="project-health-menu" items={healthOptions} onClick={onClick} />
-        </Card>
-      ),
-    },
-  ];
+  const projectHealthCellItems: MenuProps['items'] = useMemo(
+    () => [
+      {
+        key: '1',
+        label: (
+          <Card className="project-health-dropdown-card" bordered={false}>
+            <Menu className="project-health-menu" items={healthOptions} onClick={onClick} />
+          </Card>
+        ),
+      },
+    ],
+    [healthOptions, onClick]
+  );
   if (loading || projectHealths.length === 0) {
     return (
       <Flex
@@ -124,6 +134,6 @@ const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataT
       </Flex>
     </Dropdown>
   );
-};
+});
 
 export default ProjectHealthCell;

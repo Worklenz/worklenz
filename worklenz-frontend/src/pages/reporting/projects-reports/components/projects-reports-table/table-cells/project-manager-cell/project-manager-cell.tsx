@@ -1,3 +1,4 @@
+import React, { memo } from 'react';
 import { Avatar, Flex, Typography } from '@/shared/antd-imports';
 import CustomAvatar from '@components/CustomAvatar';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
@@ -7,7 +8,7 @@ type ProjectMangerCellProps = {
   manager: ITeamMemberViewModel;
 };
 
-const ProjectManagerCell = ({ manager }: ProjectMangerCellProps) => {
+const ProjectManagerCell = memo(({ manager }: ProjectMangerCellProps) => {
   return (
     <div>
       {manager ? (
@@ -21,6 +22,6 @@ const ProjectManagerCell = ({ manager }: ProjectMangerCellProps) => {
       )}
     </div>
   );
-};
+});
 
 export default ProjectManagerCell;

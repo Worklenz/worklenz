@@ -1,8 +1,8 @@
 import { Tag } from '@/shared/antd-imports';
-import React from 'react';
+import React, { memo } from 'react';
 import { colors } from '@/styles/colors';
 
-const ProjectTeamCell = ({ team }: { team: string }) => {
+const ProjectTeamCell = memo(({ team }: { team: string }) => {
   return (
     <Tag
       color={colors.paleBlue}
@@ -15,6 +15,6 @@ const ProjectTeamCell = ({ team }: { team: string }) => {
       {team}
     </Tag>
   );
-};
+});
 
 export default ProjectTeamCell;

@@ -1,4 +1,4 @@
-import pgModule, { PoolClient, QueryResult } from "pg";
+import pgModule, { PoolClient, QueryResult, QueryConfig } from "pg";
 import dbConfig from "./db-config";
 
 const pg =
@@ -22,7 +22,7 @@ pool.on("error", (err: Error) => {
 
 export default {
   pool,
-  query: (text: string, params?: unknown[]) =>
-    pool.query(text, params) as Promise<QueryResult<any>>,
+  query: (queryTextOrConfig: string | QueryConfig, params?: unknown[]) =>
+    pool.query(queryTextOrConfig as any, params as any) as Promise<QueryResult<any>>,
   connect: (): Promise<PoolClient> => pool.connect(),
 };

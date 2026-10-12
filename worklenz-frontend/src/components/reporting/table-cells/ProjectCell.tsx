@@ -1,5 +1,5 @@
 import { Badge, Flex, Space, Tooltip, Typography } from '@/shared/antd-imports';
-import React from 'react';
+import React, { memo } from 'react';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 
 type ProjectCellProps = {
@@ -8,7 +8,7 @@ type ProjectCellProps = {
   projectColor: string;
 };
 
-const ProjectCell = ({ project, projectColor }: ProjectCellProps) => {
+const ProjectCell = memo(({ project, projectColor }: ProjectCellProps) => {
   const decodedProject = decodeHtmlEntities(project);
   return (
     <Tooltip title={decodedProject}>
@@ -26,6 +26,6 @@ const ProjectCell = ({ project, projectColor }: ProjectCellProps) => {
       </Flex>
     </Tooltip>
   );
-};
+});
 
 export default ProjectCell;

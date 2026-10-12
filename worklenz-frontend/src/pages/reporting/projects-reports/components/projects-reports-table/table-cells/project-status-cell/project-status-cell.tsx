@@ -3,7 +3,7 @@ import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { getStatusIcon } from '@/utils/projectUtils';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, memo } from 'react';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -15,7 +15,7 @@ interface ProjectStatusCellProps {
   projectId: string;
 }
 
-const ProjectStatusCell = ({ currentStatus, projectId }: ProjectStatusCellProps) => {
+const ProjectStatusCell = memo(({ currentStatus, projectId }: ProjectStatusCellProps) => {
   const { t } = useTranslation('reporting-projects');
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
@@ -25,18 +25,22 @@ const ProjectStatusCell = ({ currentStatus, projectId }: ProjectStatusCellProps)
   // Find current status object
   const currentStatusObject = projectStatuses.find(status => status.id === selectedStatus);
 
-  const statusOptions = projectStatuses.map(status => ({
-    value: status.id,
-    label: (
-      <Typography.Text
-        style={{ display: 'flex', alignItems: 'center', gap: 4 }}
-        className="group-hover:text-[#1890ff]"
-      >
-        {getStatusIcon(status.icon || '', status.color_code || '')}
-        {t(`${status.name}`)}
-      </Typography.Text>
-    ),
-  }));
+  const statusOptions = useMemo(
+    () =>
+      projectStatuses.map(status => ({
+        value: status.id,
+        label: (
+          <Typography.Text
+            style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+            className="group-hover:text-[#1890ff]"
+          >
+            {getStatusIcon(status.icon || '', status.color_code || '')}
+            {t(`${status.name}`, { defaultValue: status.name })}
+          </Typography.Text>
+        ),
+      })),
+    [projectStatuses, t]
+  );
 
   const handleStatusChange = (value: string) => {
     try {
@@ -91,6 +95,6 @@ const ProjectStatusCell = ({ currentStatus, projectId }: ProjectStatusCellProps)
       />
     </ConfigProvider>
   );
-};
+});
 
 export default ProjectStatusCell;

@@ -11,7 +11,7 @@ import {
   MenuProps,
   Typography,
 } from '@/shared/antd-imports';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, memo } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';
 import './project-category-cell.css';
@@ -35,7 +35,7 @@ interface ProjectCategoryCellProps {
   projectId: string;
 }
 
-const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategoryCellProps) => {
+const ProjectCategoryCell = memo(({ id, name, color_code, projectId }: ProjectCategoryCellProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
   const categoryInputRef = useRef<InputRef>(null);
@@ -45,6 +45,10 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
     name,
     color_code,
   });
+
+  useEffect(() => {
+    setSelectedCategory({ id, name, color_code });
+  }, [id, name, color_code]);
 
   const { projectCategories, loading: categoriesLoading } = useAppSelector(
     state => state.projectCategoriesReducer
@@ -163,21 +167,6 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
     },
   ];
 
-  const handleCategoryChangeResponse = (data: any) => {
-    try {
-      const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
-      if (parsedData && parsedData.project_id === projectId) {
-        const socketCategory = parsedData.category;
-        const fullCategory =
-          projectCategories.find(c => c.id === socketCategory?.id) || socketCategory;
-        setSelectedCategory(fullCategory);
-        dispatch(updateProjectCategory({ projectId: parsedData.project_id, category: fullCategory }));
-      }
-    } catch (error) {
-      console.error('Error handling category change response:', error);
-    }
-  };
-
   const handleCategoryDropdownOpen = (open: boolean) => {
     if (open) {
       if (projectCategories.length === 0 && !categoriesLoading) {
@@ -186,15 +175,6 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
       setTimeout(() => categoryInputRef.current?.focus(), 0);
     }
   };
-
-  useEffect(() => {
-    if (connected && socket) {
-      socket.on(SocketEvents.PROJECT_CATEGORY_CHANGE.toString(), handleCategoryChangeResponse);
-      return () => {
-        socket.off(SocketEvents.PROJECT_CATEGORY_CHANGE.toString(), handleCategoryChangeResponse);
-      };
-    }
-  }, [connected, socket, projectCategories]);
 
   // Compute pill colors
   const bgColor = selectedCategory.id
@@ -231,11 +211,6 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
       </div>
     </Dropdown>
   );
-};
-
-const updateProjectCategory = (payload: { projectId: string; category: IProjectCategory }) => ({
-  type: 'projects/updateCategory',
-  payload,
 });
 
 export default ProjectCategoryCell;

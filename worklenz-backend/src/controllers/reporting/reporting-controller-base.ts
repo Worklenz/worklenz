@@ -6,6 +6,32 @@ import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../shared/constants";
 import { formatDuration, formatLogText, getColor, int } from "../../shared/utils";
 import { isTeamLead } from "../../shared/team-permissions";
 
+export interface IGetReportingProjectsParams {
+  teamId: string;
+  size: number | string | null;
+  offset: number | string | null;
+  sortField?: string;
+  sortOrder?: string;
+  searchQuery?: string | null;
+  archivedUserId?: string | null;
+  statusIds?: string[] | null;
+  healthIds?: string[] | null;
+  filterCategories?: boolean;
+  categoryIds?: string[] | null;
+  includeNoCategory?: boolean;
+  filterClients?: boolean;
+  clientIds?: string[] | null;
+  includeNoClient?: boolean;
+  filterPriorities?: boolean;
+  priorityIds?: string[] | null;
+  includeNoPriority?: boolean;
+  managerUserIds?: string[] | null;
+  singleTeamId?: string | null;
+  teamIds?: string[] | null;
+  isTeamLeadFilter?: boolean;
+  assignedProjectIds?: string[] | null;
+}
+
 /**
  * Workspace reporting base.
  *
@@ -105,6 +131,68 @@ export default abstract class ReportingControllerBase extends WorklenzController
     }
 
     return "";
+  }
+
+  /**
+   * Get team lead filter parameters as structured data for prepared statements
+   */
+  public static async getTeamLeadFilter(req: IWorkLenzRequest): Promise<{ isTeamLead: boolean; assignedProjectIds: string[] | null }> {
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+
+    if (!userId || !teamId) return { isTeamLead: false, assignedProjectIds: null };
+
+    const isUserTeamLead = await isTeamLead(userId, teamId);
+    const isOwner = req.user?.owner;
+    const isAdmin = req.user?.is_admin && !isUserTeamLead;
+
+    if (isOwner || isAdmin || !isUserTeamLead) {
+      return { isTeamLead: false, assignedProjectIds: null };
+    }
+
+    const assignedProjects = await this.getTeamLeadProjects(userId, teamId);
+    return {
+      isTeamLead: true,
+      assignedProjectIds: assignedProjects,
+    };
+  }
+
+  /**
+   * Whitelist the columns the reporting projects tables may be sorted by.
+   *
+   * `field` arrives straight from the request and ends up interpolated in the
+   * ORDER BY clause, so it must never be used as-is: an arbitrary value is both
+   * an injection vector and an unbounded source of prepared-statement names.
+   * Anything unrecognised falls back to the project name.
+   */
+  protected static normalizeReportingProjectsSortField(sortField: string | string[] | null | undefined): string {
+    const raw = Array.isArray(sortField) ? sortField[0] : sortField;
+    const key = String(raw ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/^(p|ps|projects)\./, "");
+
+    switch (key) {
+      case "name":
+        return "name";
+      // status_name is the status column dataIndex; status_id/status are aliases.
+      case "status_name":
+      case "status_id":
+      case "status":
+        return "status";
+      case "project_health":
+        return "project_health";
+      case "category_name":
+        return "category_name";
+      case "client":
+        return "client";
+      case "team_name":
+        return "team_name";
+      case "priority_name":
+        return "priority_name";
+      default:
+        return "name";
+    }
   }
 
   protected static async getTotalTasksCount(projectId: string | null) {
@@ -492,19 +580,19 @@ export default abstract class ReportingControllerBase extends WorklenzController
 
 
   public static async getProjectsByTeam(
-    teamId: string,
-    size: string | number | null,
-    offset: string | number | null,
-    searchQuery: string | null,
-    sortField: string,
-    sortOrder: string,
-    statusClause: string,
-    healthClause: string,
-    categoryClause: string,
+    paramsOrTeamId: string | IGetReportingProjectsParams,
+    size?: string | number | null,
+    offset?: string | number | null,
+    searchQuery?: string | null,
+    sortField?: string,
+    sortOrder?: string,
+    statusClause?: string,
+    healthClause?: string,
+    categoryClause?: string,
     archivedClause = "",
-    teamFilterClause: string,
-    projectManagersClause: string,
-    queryParams: any[] = []) {
+    teamFilterClause?: string,
+    projectManagersClause?: string,
+    queryParams: any[] = []): Promise<any> {
 
     const getStatusRank = (statusName: string) => `CASE LOWER(${statusName})
            WHEN 'proposed' THEN 1
@@ -516,17 +604,253 @@ export default abstract class ReportingControllerBase extends WorklenzController
            WHEN 'cancelled' THEN 7
            ELSE 8
          END`;
-    // `status_name` sorts by the custom project-status workflow order defined above.
-    // Project name (then id) is the tie-breaker so the order is deterministic and
-    // LIMIT/OFFSET pages stay stable; using the status name itself would be a no-op
-    // because it is identical for every row inside a status group.
-    // `status_id` (the status column dataIndex of the other reporting tables)
-    // and `status` are accepted as aliases so every caller gets this order;
-    // sorting on the raw UUID leaves the status groups in a random order.
-    const isStatusSort = ["status_name", "status_id", "status"].includes(sortField);
+
+    // Phase 1: Named prepared statement with stable bind parameters
+    if (typeof paramsOrTeamId === "object" && paramsOrTeamId !== null) {
+      const opts = paramsOrTeamId;
+      const actualSortField = ReportingControllerBase.normalizeReportingProjectsSortField(opts.sortField);
+      const actualSortOrder = (opts.sortOrder || "asc").toLowerCase().startsWith("desc") ? "desc" : "asc";
+
+      const isStatusSort = actualSortField === "status";
+      const orderBy = isStatusSort
+        ? `${getStatusRank("ps.name")} ${actualSortOrder}, LOWER(p.name) ${actualSortOrder}, p.id`
+        : `${actualSortField} ${actualSortOrder}`;
+      const aggregateOrderBy = isStatusSort
+        ? `ORDER BY ${getStatusRank("t.status_name")} ${actualSortOrder}, LOWER(t.name) ${actualSortOrder}, t.id`
+        : "";
+
+      const q = `SELECT COUNT(*) AS total,
+               (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t) ${aggregateOrderBy})), '[]'::JSON)
+                FROM (SELECT p.id,
+                             p.name,
+                             p.color_code,
+
+                             p.health_id AS project_health,
+                             (SELECT color_code
+                              FROM sys_project_healths
+                              WHERE sys_project_healths.id = p.health_id) AS health_color,
+                              (SELECT name
+                              FROM sys_project_healths
+                              WHERE sys_project_healths.id = p.health_id) AS health_name,
+
+                             pc.id AS category_id,
+                             pc.name AS category_name,
+                             pc.color_code AS category_color,
+
+                             (SELECT name FROM clients WHERE id = p.client_id) AS client,
+
+                             p.team_id,
+                             (SELECT name FROM teams WHERE id = p.team_id) AS team_name,
+
+                             ps.id AS status_id,
+                             ps.name AS status_name,
+                             ps.color_code AS status_color,
+                             ps.icon AS status_icon,
+
+                             p.priority_id,
+                             (SELECT name FROM sys_project_priorities WHERE id = p.priority_id) AS priority_name,
+                             (SELECT color_code FROM sys_project_priorities WHERE id = p.priority_id) AS priority_color,
+
+                             TO_CHAR(p.start_date::DATE, 'YYYY-MM-DD') AS start_date,
+                             TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
+
+                             (SELECT COALESCE(ROW_TO_JSON(pm), '{}'::JSON)
+                             FROM (SELECT team_member_id AS id,
+                                         (SELECT COALESCE(ROW_TO_JSON(pmi), '{}'::JSON)
+                                           FROM (SELECT name,
+                                                       email,
+                                                       avatar_url
+                                                 FROM team_member_info_view tmiv
+                                                 WHERE tmiv.team_member_id = pm.team_member_id
+                                                   AND tmiv.team_id = (SELECT team_id FROM projects WHERE id = p.id)) pmi) AS project_manager_info,
+                                         EXISTS(SELECT email
+                                                 FROM email_invitations
+                                                 WHERE team_member_id = pm.team_member_id
+                                                   AND email_invitations.team_id = (SELECT team_id
+                                                                                   FROM team_member_info_view
+                                                                                   WHERE team_member_id = pm.team_member_id)) AS pending_invitation,
+                                         (SELECT active FROM team_members WHERE id = pm.team_member_id)
+                                                  FROM project_members pm
+                                                  WHERE project_id =p.id
+                                                    AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')) pm) AS project_manager,
+
+                             (SELECT COALESCE(SUM(total_minutes), 0)
+                              FROM tasks
+                              WHERE project_id = p.id) AS estimated_time,
+
+                             (SELECT SUM((SELECT COALESCE(SUM(time_spent), 0)
+                                          FROM task_work_log
+                                          WHERE task_id = tasks.id))
+                              FROM tasks
+                              WHERE project_id = p.id) AS actual_time,
+
+                             (SELECT ROW_TO_JSON(rec)
+                              -- Resolve the status category with a join instead of calling
+                              -- is_completed()/is_doing()/is_todo() per task: those are plpgsql
+                              -- functions, so they are re-planned and re-executed (two extra
+                              -- lookups each) for every task and dominated the query. The join
+                              -- below is the exact same predicate, evaluated set-based.
+                              FROM (SELECT COUNT(ta.id) AS total,
+                                           COUNT(CASE WHEN status_category.is_done IS TRUE THEN 1 END) AS done,
+                                           COUNT(CASE WHEN status_category.is_doing IS TRUE THEN 1 END) AS doing,
+                                           COUNT(CASE WHEN status_category.is_todo IS TRUE THEN 1 END) AS todo
+                                    FROM tasks ta
+                                             LEFT JOIN task_statuses task_status
+                                                       ON task_status.id = ta.status_id
+                                                           AND task_status.project_id = ta.project_id
+                                             LEFT JOIN sys_task_status_categories status_category
+                                                       ON status_category.id = task_status.category_id
+                                    WHERE ta.project_id = p.id AND ta.archived IS FALSE) rec) AS tasks_stat,
+
+                             (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
+                              FROM (SELECT pu.content AS content,
+                                           (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
+                                            FROM (SELECT u.name AS user_name,
+                                                         u.email AS user_email
+                                                  FROM project_comment_mentions pcm
+                                                           LEFT JOIN users u ON pcm.informed_by = u.id
+                                                  WHERE pcm.comment_id = pu.id) rec) AS mentions,
+                                           pu.updated_at
+                                    FROM project_comments pu
+                                    WHERE pu.project_id = p.id
+                                    ORDER BY pu.updated_at DESC
+                                    LIMIT 1) AS rec) AS update,
+
+                       (SELECT ROW_TO_JSON(rec)
+                        FROM (SELECT attribute_type,
+                                     log_type,
+                                     (CASE
+                                          WHEN (attribute_type = 'status')
+                                              THEN (SELECT name FROM task_statuses WHERE id = old_value::UUID)
+                                          WHEN (attribute_type = 'priority')
+                                              THEN (SELECT name FROM task_priorities WHERE id = old_value::UUID)
+                                          ELSE (old_value) END)                                                      AS previous,
+
+                                     (CASE
+                                          WHEN (attribute_type = 'assignee')
+                                              THEN (SELECT name FROM users WHERE id = new_value::UUID)
+                                          WHEN (attribute_type = 'label')
+                                              THEN (SELECT name FROM team_labels WHERE id = new_value::UUID)
+                                          WHEN (attribute_type = 'status')
+                                              THEN (SELECT name FROM task_statuses WHERE id = new_value::UUID)
+                                          WHEN (attribute_type = 'priority')
+                                              THEN (SELECT name FROM task_priorities WHERE id = new_value::UUID)
+                                          ELSE (new_value) END)                                                      AS current,
+                                     (SELECT name
+                                      FROM users
+                                      WHERE id = (SELECT reporter_id FROM tasks WHERE id = tal.task_id)),
+                                     (SELECT ROW_TO_JSON(rec)
+                                      FROM (SELECT (SELECT name FROM users WHERE users.id = tal.user_id),
+                                                   (SELECT avatar_url FROM users WHERE users.id = tal.user_id)) rec) AS done_by,
+                                     (CASE
+                                          WHEN (attribute_type = 'assignee')
+                                              THEN (SELECT ROW_TO_JSON(rec)
+                                                    FROM (SELECT (CASE
+                                                                      WHEN (new_value IS NOT NULL)
+                                                                          THEN (SELECT name FROM users WHERE users.id = new_value::UUID)
+                                                                      ELSE (next_string) END) AS name,
+                                                                 (SELECT avatar_url FROM users WHERE users.id = new_value::UUID)) rec)
+                                          ELSE (NULL) END)                                                           AS assigned_user,
+                                     (SELECT name FROM tasks WHERE tasks.id = tal.task_id)
+                              FROM task_activity_logs tal
+                              WHERE task_id IN (SELECT id FROM tasks t WHERE t.project_id = p.id)
+                              ORDER BY tal.created_at DESC
+                              LIMIT 1) rec) AS last_activity
+                      FROM projects p
+                               LEFT JOIN project_categories pc ON pc.id = p.category_id
+                               LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
+                      WHERE in_organization(p.team_id, $1)
+                        AND ($4::TEXT IS NULL OR p.name ILIKE $4)
+                        AND ($5::UUID IS NULL OR p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $5))
+                        AND ($6::UUID[] IS NULL OR p.status_id = ANY($6))
+                        AND ($7::UUID[] IS NULL OR p.health_id = ANY($7))
+                        AND ($8::BOOLEAN IS FALSE OR (p.category_id = ANY($9::UUID[]) OR ($10::BOOLEAN IS TRUE AND p.category_id IS NULL)))
+                        AND ($11::BOOLEAN IS FALSE OR (p.client_id = ANY($12::UUID[]) OR ($13::BOOLEAN IS TRUE AND p.client_id IS NULL)))
+                        AND ($14::BOOLEAN IS FALSE OR (p.priority_id = ANY($15::UUID[]) OR ($16::BOOLEAN IS TRUE AND p.priority_id IS NULL)))
+                        AND ($17::UUID[] IS NULL OR p.id IN (
+                          SELECT pm.project_id
+                          FROM project_members pm
+                          WHERE pm.team_member_id IN (SELECT tm.id FROM team_members tm WHERE tm.user_id = ANY($17))
+                            AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')
+                        ))
+                        AND ($18::UUID IS NULL OR p.team_id = $18)
+                        AND ($19::UUID[] IS NULL OR p.team_id = ANY($19))
+                        AND ($20::BOOLEAN IS FALSE OR p.id = ANY($21::UUID[]))
+                      ORDER BY ${orderBy}
+                      LIMIT $2 OFFSET $3) t) AS projects
+        FROM projects p
+                 LEFT JOIN project_categories pc ON pc.id = p.category_id
+                 LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
+        WHERE in_organization(p.team_id, $1)
+          AND ($4::TEXT IS NULL OR p.name ILIKE $4)
+          AND ($5::UUID IS NULL OR p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $5))
+          AND ($6::UUID[] IS NULL OR p.status_id = ANY($6))
+          AND ($7::UUID[] IS NULL OR p.health_id = ANY($7))
+          AND ($8::BOOLEAN IS FALSE OR (p.category_id = ANY($9::UUID[]) OR ($10::BOOLEAN IS TRUE AND p.category_id IS NULL)))
+          AND ($11::BOOLEAN IS FALSE OR (p.client_id = ANY($12::UUID[]) OR ($13::BOOLEAN IS TRUE AND p.client_id IS NULL)))
+          AND ($14::BOOLEAN IS FALSE OR (p.priority_id = ANY($15::UUID[]) OR ($16::BOOLEAN IS TRUE AND p.priority_id IS NULL)))
+          AND ($17::UUID[] IS NULL OR p.id IN (
+            SELECT pm.project_id
+            FROM project_members pm
+            WHERE pm.team_member_id IN (SELECT tm.id FROM team_members tm WHERE tm.user_id = ANY($17))
+              AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')
+          ))
+          AND ($18::UUID IS NULL OR p.team_id = $18)
+          AND ($19::UUID[] IS NULL OR p.team_id = ANY($19))
+          AND ($20::BOOLEAN IS FALSE OR p.id = ANY($21::UUID[]));`;
+
+      const params = [
+        opts.teamId,
+        opts.size,
+        opts.offset,
+        opts.searchQuery ?? null,
+        opts.archivedUserId ?? null,
+        opts.statusIds ?? null,
+        opts.healthIds ?? null,
+        opts.filterCategories ?? false,
+        opts.categoryIds ?? null,
+        opts.includeNoCategory ?? false,
+        opts.filterClients ?? false,
+        opts.clientIds ?? null,
+        opts.includeNoClient ?? false,
+        opts.filterPriorities ?? false,
+        opts.priorityIds ?? null,
+        opts.includeNoPriority ?? false,
+        opts.managerUserIds ?? null,
+        opts.singleTeamId ?? null,
+        opts.teamIds ?? null,
+        opts.isTeamLeadFilter ?? false,
+        opts.assignedProjectIds ?? null,
+      ];
+
+      // The field is normalised above, so this is a small fixed set of names.
+      const stmtName = `rpt_proj_${actualSortField}_${actualSortOrder}`;
+
+      const result = await db.query({
+        name: stmtName,
+        text: q,
+        values: params,
+      });
+      const [data] = result.rows;
+
+      for (const project of data.projects) {
+        if (project.project_manager) {
+          project.project_manager.name = project.project_manager.project_manager_info.name;
+          project.project_manager.avatar_url = project.project_manager.project_manager_info.avatar_url;
+          project.project_manager.color_code = getColor(project.project_manager.name);
+        }
+      }
+
+      return data;
+    }
+
+    // Legacy positional fallback
+    const teamId = paramsOrTeamId as string;
+    const legacySortField = ReportingControllerBase.normalizeReportingProjectsSortField(sortField);
+    const isStatusSort = legacySortField === "status";
     const orderBy = isStatusSort
       ? `${getStatusRank("ps.name")} ${sortOrder}, LOWER(p.name) ${sortOrder}, p.id`
-      : `${sortField} ${sortOrder}`;
+      : `${legacySortField} ${sortOrder}`;
     const aggregateOrderBy = isStatusSort
       ? `ORDER BY ${getStatusRank("t.status_name")} ${sortOrder}, LOWER(t.name) ${sortOrder}, t.id`
       : "";
@@ -597,12 +921,22 @@ export default abstract class ReportingControllerBase extends WorklenzController
                             WHERE project_id = p.id) AS actual_time,
 
                            (SELECT ROW_TO_JSON(rec)
+                            -- Resolve the status category with a join instead of calling
+                            -- is_completed()/is_doing()/is_todo() per task: those are plpgsql
+                            -- functions, so they are re-planned and re-executed (two extra
+                            -- lookups each) for every task and dominated the query. The join
+                            -- below is the exact same predicate, evaluated set-based.
                             FROM (SELECT COUNT(ta.id) AS total,
-                                         COUNT(CASE WHEN is_completed(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS done,
-                                         COUNT(CASE WHEN is_doing(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS doing,
-                                         COUNT(CASE WHEN is_todo(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS todo
+                                         COUNT(CASE WHEN status_category.is_done IS TRUE THEN 1 END) AS done,
+                                         COUNT(CASE WHEN status_category.is_doing IS TRUE THEN 1 END) AS doing,
+                                         COUNT(CASE WHEN status_category.is_todo IS TRUE THEN 1 END) AS todo
                                   FROM tasks ta
-                                  WHERE project_id = p.id AND ta.archived IS FALSE) rec) AS tasks_stat,
+                                           LEFT JOIN task_statuses task_status
+                                                     ON task_status.id = ta.status_id
+                                                         AND task_status.project_id = ta.project_id
+                                           LEFT JOIN sys_task_status_categories status_category
+                                                     ON status_category.id = task_status.category_id
+                                  WHERE ta.project_id = p.id AND ta.archived IS FALSE) rec) AS tasks_stat,
 
                            (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                             FROM (SELECT pu.content AS content,
@@ -723,11 +1057,16 @@ TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
                         WHERE project_id = p.id) AS actual_time,
                        (SELECT ROW_TO_JSON(rec)
                         FROM (SELECT COUNT(ta.id) AS total,
-                                     COUNT(CASE WHEN is_completed(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS done,
-                                     COUNT(CASE WHEN is_doing(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS doing,
-                                     COUNT(CASE WHEN is_todo(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS todo
+                                     COUNT(CASE WHEN status_category.is_done IS TRUE THEN 1 END) AS done,
+                                     COUNT(CASE WHEN status_category.is_doing IS TRUE THEN 1 END) AS doing,
+                                     COUNT(CASE WHEN status_category.is_todo IS TRUE THEN 1 END) AS todo
                               FROM tasks ta
-                              WHERE project_id = p.id AND ta.archived IS FALSE) rec) AS tasks_stat,
+                                       LEFT JOIN task_statuses task_status
+                                                 ON task_status.id = ta.status_id
+                                                     AND task_status.project_id = ta.project_id
+                                       LEFT JOIN sys_task_status_categories status_category
+                                                 ON status_category.id = task_status.category_id
+                              WHERE ta.project_id = p.id AND ta.archived IS FALSE) rec) AS tasks_stat,
                        (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                         FROM (SELECT pu.content AS content,
                                      (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
@@ -863,11 +1202,16 @@ TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
                         WHERE project_id = p.id) AS actual_time,
                        (SELECT ROW_TO_JSON(rec)
                         FROM (SELECT COUNT(ta.id) AS total,
-                                     COUNT(CASE WHEN is_completed(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS done,
-                                     COUNT(CASE WHEN is_doing(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS doing,
-                                     COUNT(CASE WHEN is_todo(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS todo
+                                     COUNT(CASE WHEN status_category.is_done IS TRUE THEN 1 END) AS done,
+                                     COUNT(CASE WHEN status_category.is_doing IS TRUE THEN 1 END) AS doing,
+                                     COUNT(CASE WHEN status_category.is_todo IS TRUE THEN 1 END) AS todo
                               FROM tasks ta
-                              WHERE project_id = p.id AND ta.archived IS FALSE) rec) AS tasks_stat,
+                                       LEFT JOIN task_statuses task_status
+                                                 ON task_status.id = ta.status_id
+                                                     AND task_status.project_id = ta.project_id
+                                       LEFT JOIN sys_task_status_categories status_category
+                                                 ON status_category.id = task_status.category_id
+                              WHERE ta.project_id = p.id AND ta.archived IS FALSE) rec) AS tasks_stat,
                        (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                         FROM (SELECT pu.content AS content,
                                      (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)

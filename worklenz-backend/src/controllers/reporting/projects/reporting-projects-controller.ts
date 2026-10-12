@@ -6,7 +6,7 @@ import ReportingProjectsBase from "./reporting-projects-base";
 import ReportingControllerBase from "../reporting-controller-base";
 import moment from "moment";
 import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../../shared/constants";
-import { getColor, int, formatDuration, formatLogText } from "../../../shared/utils";
+import { getColor, int, formatDuration, formatLogText, escapeHtmlEntities } from "../../../shared/utils";
 import { SqlHelper } from "../../../shared/sql-helpers";
 import db from "../../../config/db";
 
@@ -16,127 +16,88 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    // teamId is $1, size is $2, offset is $3, so search params start at $4
-    const { searchQuery, searchParams, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 4);
+    const { sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 4);
     const archived = req.query.archived === "true";
-
     const teamId = this.getCurrentTeamId(req);
 
-    // Note: teamId is $1, size is $2, offset is $3, search params are $4+, then filter params continue after
-    const filterParams: any[] = [...searchParams];
-    let paramOffset = 4 + searchParams.length; // Start after teamId, size, offset, and search params
+    const search = (req.query.search as string || "").trim();
+    const searchQuery = search ? `%${escapeHtmlEntities(search)}%` : null;
 
-    let statusesClause = "";
-    if (req.query.statuses) {
-      const statusIds = (req.query.statuses as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(statusIds, paramOffset);
-      statusesClause = `AND p.status_id IN (${clause})`;
-      filterParams.push(...statusIds);
-      paramOffset += statusIds.length;
-    }
+    const statusIds = req.query.statuses
+      ? (req.query.statuses as string).split(",").map(id => id.trim()).filter(Boolean)
+      : null;
 
-    let healthsClause = "";
-    if (req.query.healths) {
-      const healthIds = (req.query.healths as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(healthIds, paramOffset);
-      healthsClause = `AND p.health_id IN (${clause})`;
-      filterParams.push(...healthIds);
-      paramOffset += healthIds.length;
-    }
+    const healthIds = req.query.healths
+      ? (req.query.healths as string).split(",").map(id => id.trim()).filter(Boolean)
+      : null;
 
-    let categoriesClause = "";
+    let filterCategories = false;
+    let categoryIds: string[] | null = null;
+    let includeNoCategory = false;
     if (req.query.categories) {
-      const categoryIds = (req.query.categories as string).split(",").filter(id => id.trim());
-      const realIds = categoryIds.filter(id => id !== "__no_category__");
-      const includeNoCategory = categoryIds.includes("__no_category__");
-      
-      if (includeNoCategory && realIds.length > 0) {
-        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
-        categoriesClause = `AND (p.category_id IS NULL OR p.category_id IN (${clause}))`;
-        filterParams.push(...realIds);
-        paramOffset += realIds.length;
-      } else if (includeNoCategory) {
-        categoriesClause = `AND p.category_id IS NULL`;
-      } else if (realIds.length > 0) {
-        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
-        categoriesClause = `AND p.category_id IN (${clause})`;
-        filterParams.push(...realIds);
-        paramOffset += realIds.length;
-      }
+      filterCategories = true;
+      const rawCategories = (req.query.categories as string).split(",").map(id => id.trim()).filter(Boolean);
+      includeNoCategory = rawCategories.includes("__no_category__");
+      const realCategoryIds = rawCategories.filter(id => id !== "__no_category__");
+      categoryIds = realCategoryIds.length > 0 ? realCategoryIds : null;
     }
 
-    let projectManagersClause = "";
-    if (req.query.project_managers) {
-      const managerIds = (req.query.project_managers as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(managerIds, paramOffset);
-      projectManagersClause = `AND p.id IN(SELECT project_id FROM project_members WHERE team_member_id IN(SELECT id FROM team_members WHERE user_id IN (${clause})) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`;
-      filterParams.push(...managerIds);
-      paramOffset += managerIds.length;
-    }
-
-    let teamsClause = "";
-    if (req.query.teams) {
-      const teamIds = (req.query.teams as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(teamIds, paramOffset);
-      teamsClause = `AND p.team_id IN (${clause})`;
-      filterParams.push(...teamIds);
-      paramOffset += teamIds.length;
-    }
-
-    // Client filter (new)
-    let clientsClause = "";
+    let filterClients = false;
+    let clientIds: string[] | null = null;
+    let includeNoClient = false;
     if (req.query.clients) {
-      const clientIds = (req.query.clients as string).split(",").filter(id => id.trim());
-      const realIds = clientIds.filter(id => id !== "__no_client__");
-      const includeNoClient = clientIds.includes("__no_client__");
-      if (includeNoClient && realIds.length > 0) {
-        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
-        clientsClause = `AND (p.client_id IS NULL OR p.client_id IN (${clause}))`;
-        filterParams.push(...realIds);
-        paramOffset += realIds.length;
-      } else if (includeNoClient) {
-        clientsClause = `AND p.client_id IS NULL`;
-      } else if (realIds.length > 0) {
-        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
-        clientsClause = `AND p.client_id IN (${clause})`;
-        filterParams.push(...realIds);
-        paramOffset += realIds.length;
-      }
+      filterClients = true;
+      const rawClients = (req.query.clients as string).split(",").map(id => id.trim()).filter(Boolean);
+      includeNoClient = rawClients.includes("__no_client__");
+      const realClientIds = rawClients.filter(id => id !== "__no_client__");
+      clientIds = realClientIds.length > 0 ? realClientIds : null;
     }
 
-    // Priority filter (new)
-    let prioritiesClause = "";
+    let filterPriorities = false;
+    let priorityIds: string[] | null = null;
+    let includeNoPriority = false;
     if (req.query.priorities) {
-      const priorityIds = (req.query.priorities as string).split(",").filter(id => id.trim());
-      const realIds = priorityIds.filter(id => id !== "__no_priority__");
-      const includeNoPriority = priorityIds.includes("__no_priority__");
-      if (includeNoPriority && realIds.length > 0) {
-        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
-        prioritiesClause = `AND (p.priority_id IS NULL OR p.priority_id IN (${clause}))`;
-        filterParams.push(...realIds);
-        paramOffset += realIds.length;
-      } else if (includeNoPriority) {
-        prioritiesClause = `AND p.priority_id IS NULL`;
-      } else if (realIds.length > 0) {
-        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
-        prioritiesClause = `AND p.priority_id IN (${clause})`;
-        filterParams.push(...realIds);
-        paramOffset += realIds.length;
-      }
+      filterPriorities = true;
+      const rawPriorities = (req.query.priorities as string).split(",").map(id => id.trim()).filter(Boolean);
+      includeNoPriority = rawPriorities.includes("__no_priority__");
+      const realPriorityIds = rawPriorities.filter(id => id !== "__no_priority__");
+      priorityIds = realPriorityIds.length > 0 ? realPriorityIds : null;
     }
 
-    let archivedClause = "";
-    if (!archived) {
-      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffset})`;
-      filterParams.push(req.user?.id);
-      paramOffset++;
-    }
+    const managerUserIds = req.query.project_managers
+      ? (req.query.project_managers as string).split(",").map(id => id.trim()).filter(Boolean)
+      : null;
 
-    // Add project filtering for Team Leads
-    const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
-    const teamFilterClause = `in_organization(p.team_id, $1) ${projectFilterClause} ${teamsClause} ${clientsClause} ${prioritiesClause}`;
+    const teamIds = req.query.teams
+      ? (req.query.teams as string).split(",").map(id => id.trim()).filter(Boolean)
+      : null;
 
-    const result = await ReportingControllerBase.getProjectsByTeam(teamId as string, size, offset, searchQuery, sortField, sortOrder, statusesClause, healthsClause, categoriesClause, archivedClause, teamFilterClause, projectManagersClause, filterParams);
+    const teamLeadFilter = await this.getTeamLeadFilter(req);
+
+    const result = await ReportingControllerBase.getProjectsByTeam({
+      teamId: teamId as string,
+      size,
+      offset,
+      sortField: sortField as string,
+      sortOrder,
+      searchQuery,
+      archivedUserId: archived ? null : (req.user?.id ?? null),
+      statusIds: statusIds && statusIds.length > 0 ? statusIds : null,
+      healthIds: healthIds && healthIds.length > 0 ? healthIds : null,
+      filterCategories,
+      categoryIds,
+      includeNoCategory,
+      filterClients,
+      clientIds,
+      includeNoClient,
+      filterPriorities,
+      priorityIds,
+      includeNoPriority,
+      managerUserIds: managerUserIds && managerUserIds.length > 0 ? managerUserIds : null,
+      teamIds: teamIds && teamIds.length > 0 ? teamIds : null,
+      isTeamLeadFilter: teamLeadFilter.isTeamLead,
+      assignedProjectIds: teamLeadFilter.assignedProjectIds,
+    });
 
     for (const project of result.projects) {
       project.team_color = getColor(project.team_name) + TASK_PRIORITY_COLOR_ALPHA;

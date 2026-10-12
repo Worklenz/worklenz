@@ -1,3 +1,4 @@
+import React, { memo } from 'react';
 import { Tooltip } from '@/shared/antd-imports';
 import { sanitizeHtml, stripHtmlTags } from '@/utils/sanitizeInput';
 
@@ -5,7 +6,7 @@ type ProjectUpdateCellProps = {
   updates: string;
 };
 
-const ProjectUpdateCell = ({ updates }: ProjectUpdateCellProps) => {
+const ProjectUpdateCell = memo(({ updates }: ProjectUpdateCellProps) => {
   // Sanitize content to prevent XSS attacks
   const sanitizedContent = sanitizeHtml(updates || '');
 
@@ -28,6 +29,6 @@ const ProjectUpdateCell = ({ updates }: ProjectUpdateCellProps) => {
       </div>
     </Tooltip>
   );
-};
+});
 
 export default ProjectUpdateCell;

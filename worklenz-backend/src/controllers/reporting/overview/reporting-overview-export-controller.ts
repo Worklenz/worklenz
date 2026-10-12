@@ -3,7 +3,7 @@ import { IWorkLenzRequest } from "../../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../../interfaces/worklenz-response";
 import ReportingOverviewBase from "./reporting-overview-base";
 import { ReportingExportModel } from "../../../models/reporting-export";
-import { formatDuration, formatLogText, getColor, int } from "../../../shared/utils";
+import { formatDuration, formatLogText, getColor, int, escapeHtmlEntities } from "../../../shared/utils";
 import moment from "moment";
 import Excel from "exceljs";
 import ReportingControllerBase from "../reporting-controller-base";
@@ -14,19 +14,27 @@ export default class ReportingOverviewExportController extends ReportingOverview
 
   @HandleExceptions()
   public static async getProjects(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    // teamId is $1, size is $2, offset is $3, so search params start at $4
-    const { searchQuery, searchParams, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 4);
+    const { sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 4);
     const archived = req.query.archived === "true";
 
     const teamId = req.query.team as string;
+    const search = (req.query.search as string || "").trim();
+    const searchQuery = search ? `%${escapeHtmlEntities(search)}%` : null;
 
-    const archivedClause = archived
-      ? ""
-      : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
+    const teamLeadFilter = await this.getTeamLeadFilter(req);
 
-    const teamFilterClause = `p.team_id = $1`;
-
-    const result = await ReportingControllerBase.getProjectsByTeam(teamId, size, offset, searchQuery, sortField, sortOrder, "", "", "", archivedClause, teamFilterClause, "", searchParams);
+    const result = await ReportingControllerBase.getProjectsByTeam({
+      teamId,
+      singleTeamId: teamId,
+      size,
+      offset,
+      sortField: sortField as string,
+      sortOrder,
+      searchQuery,
+      archivedUserId: archived ? null : (req.user?.id ?? null),
+      isTeamLeadFilter: teamLeadFilter.isTeamLead,
+      assignedProjectIds: teamLeadFilter.assignedProjectIds,
+    });
 
     for (const project of result.projects) {
       project.team_color = getColor(project.team_name) + TASK_PRIORITY_COLOR_ALPHA;

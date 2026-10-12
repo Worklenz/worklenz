@@ -39,6 +39,7 @@ import {
   setProjectHealth,
   setProjectStartDate,
   toggleProjectReportsDrawer,
+  updateProjectCategory,
 } from '@/features/reporting/projectReports/project-reports-slice';
 import { colors } from '@/styles/colors';
 import CustomTableTitle from '@/components/CustomTableTitle';
@@ -59,6 +60,7 @@ const ProjectsReportsTable = () => {
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
     state => state.projectStatusesReducer
   );
+  const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
 
   const {
     projectList,
@@ -109,17 +111,47 @@ const ProjectsReportsTable = () => {
     [dispatch]
   );
 
+  const handleCategoryChangeResponse = useCallback(
+    (data: any) => {
+      try {
+        const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+        if (parsedData?.project_id) {
+          const socketCategory = parsedData.category;
+          const fullCategory =
+            projectCategories.find(c => c.id === socketCategory?.id) || socketCategory;
+          dispatch(
+            updateProjectCategory({
+              projectId: parsedData.project_id,
+              category: fullCategory,
+            })
+          );
+        }
+      } catch (error) {
+        // ignore malformed socket payload
+      }
+    },
+    [dispatch, projectCategories]
+  );
+
   useEffect(() => {
     if (!socket) return;
     socket.on(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
     socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
     socket.on(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
+    socket.on(SocketEvents.PROJECT_CATEGORY_CHANGE.toString(), handleCategoryChangeResponse);
     return () => {
       socket.off(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
       socket.off(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
       socket.off(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
+      socket.off(SocketEvents.PROJECT_CATEGORY_CHANGE.toString(), handleCategoryChangeResponse);
     };
-  }, [socket, handleHealthChangeResponse, handleEndDateChangeResponse, handleStartDateChangeResponse]);
+  }, [
+    socket,
+    handleHealthChangeResponse,
+    handleEndDateChangeResponse,
+    handleStartDateChangeResponse,
+    handleCategoryChangeResponse,
+  ]);
 
   const handleDrawerOpen = useCallback(
     (record: IRPTProject) => {
@@ -339,9 +371,16 @@ const ProjectsReportsTable = () => {
   );
 
   const handleTableChange = useCallback(
-    (pagination: PaginationProps, filters: any, sorter: any) => {
-      if (sorter.order) dispatch(setOrder(sorter.order));
-      if (sorter.field) dispatch(setField(sorter.field));
+    (pagination: PaginationProps, filters: any, sorter: any, extra: { action: string }) => {
+      if (extra.action === 'sort') {
+        // A third click clears the sort; fall back to the default (project name, A-Z)
+        // instead of ignoring it, which would leave the controlled `sortOrder`
+        // stuck on the previous column/direction and make the header unresponsive.
+        dispatch(setOrder(sorter.order ?? 'asc'));
+        dispatch(setField(sorter.order ? sorter.field || 'name' : 'name'));
+        dispatch(setIndex(1));
+        return;
+      }
       dispatch(setIndex(pagination.current));
       dispatch(setPageSize(pagination.pageSize));
     },
@@ -396,12 +435,13 @@ const ProjectsReportsTable = () => {
   const paginationConfig = useMemo(
     () => ({
       showSizeChanger: true,
+      pageSize: pageSize,
       defaultPageSize: 10,
       total: total,
       current: index,
       pageSizeOptions: PAGE_SIZE_OPTIONS,
     }),
-    [total, index]
+    [total, index, pageSize]
   );
 
   const scrollConfig = useMemo(() => ({ x: 'max-content' }), []);

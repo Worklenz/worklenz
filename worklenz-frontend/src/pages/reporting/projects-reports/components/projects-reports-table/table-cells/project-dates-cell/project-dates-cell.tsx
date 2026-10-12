@@ -22,7 +22,7 @@ type ProjectDatesCellProps = {
 const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCellProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
-  const { socket, connected } = useSocket();
+  const { socket } = useSocket();
 
   // Optimistic local state
   const [localStartDate, setLocalStartDate] = useState<Dayjs | null>(() =>
@@ -64,43 +64,7 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
     [localStartDate]
   );
 
-  const handleStartDateChangeResponse = useCallback(
-    (data: { project_id: string; start_date: string }) => {
-      try {
-        if (data.project_id === projectId) {
-          setLocalStartDate(data.start_date ? dayjs(data.start_date) : null);
-        }
-        dispatch(
-          setProjectStartDate({
-            id: data.project_id,
-            start_date: data.start_date,
-          })
-        );
-      } catch (error) {
-        logger.error('Error updating start date:', error);
-      }
-    },
-    [dispatch, projectId]
-  );
 
-  const handleEndDateChangeResponse = useCallback(
-    (data: { project_id: string; end_date: string }) => {
-      try {
-        if (data.project_id === projectId) {
-          setLocalEndDate(data.end_date ? dayjs(data.end_date) : null);
-        }
-        dispatch(
-          setProjectEndDate({
-            id: data.project_id,
-            end_date: data.end_date,
-          })
-        );
-      } catch (error) {
-        logger.error('Error updating end date:', error);
-      }
-    },
-    [dispatch, projectId]
-  );
 
   const handleStartDateChange = useCallback(
     (date: Dayjs | null) => {
@@ -199,23 +163,7 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
     setActiveDatePicker('end');
   }, []);
 
-  useEffect(() => {
-    if (connected && socket) {
-      socket.on(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
-      socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
 
-      return () => {
-        socket.off(
-          SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
-          handleStartDateChangeResponse
-        );
-        socket.off(
-          SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
-          handleEndDateChangeResponse
-        );
-      };
-    }
-  }, [connected, socket, handleStartDateChangeResponse, handleEndDateChangeResponse]);
 
   return (
     <Flex gap={4} align="center">

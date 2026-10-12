@@ -1,7 +1,7 @@
 import { Tooltip, Typography } from '@/shared/antd-imports';
-import React from 'react';
+import React, { memo } from 'react';
 
-const LastActivityCell = ({ activity }: { activity: string }) => {
+const LastActivityCell = memo(({ activity }: { activity: string }) => {
   return (
     <Tooltip title={activity?.length > 0 && activity}>
       <Typography.Text
@@ -13,6 +13,6 @@ const LastActivityCell = ({ activity }: { activity: string }) => {
       </Typography.Text>
     </Tooltip>
   );
-};
+});
 
 export default LastActivityCell;
