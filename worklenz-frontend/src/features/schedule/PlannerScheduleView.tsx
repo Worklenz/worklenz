@@ -1472,6 +1472,7 @@ const PlannerScheduleView: React.FC = () => {
               size="small"
               shape="circle"
               icon={<SyncOutlined spin={isRefreshing} />}
+              disabled={isRefreshing}
               onClick={handleRefresh}
               aria-label={t('refreshSchedule', { defaultValue: 'Refresh Schedule' })}
             />
