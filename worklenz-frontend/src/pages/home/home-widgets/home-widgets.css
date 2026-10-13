@@ -60,14 +60,13 @@
 .home-widget__grip {
   position: absolute;
   top: 3px;
-  left: 50%;
+  right: 12px;
   z-index: 2;
   display: flex;
   padding: 2px 8px;
   border-radius: 4px;
   color: var(--home-widget-grip);
   opacity: 0;
-  transform: translateX(-50%);
   transition: opacity 150ms ease-in-out;
   pointer-events: none;
 }
