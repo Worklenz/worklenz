@@ -9,6 +9,12 @@ Run `npm run prebuild` to validate JSON, check source usage, compare all languag
 and detect copied English text. These checks and the locale regression tests run
 before builds and fail on errors.
 Run `npm run locales:test` for the localization checker and reported-key regressions.
+Frontend resource checks always run, including in frontend-only checkouts and
+Docker builds. The regression tests also validate sibling backend locale copies
+when `worklenz-backend/src/public/locales` exists; when it is absent, they report
+that only frontend resources are being checked. Missing files within a present
+backend locale directory still fail validation. Pull request CI builds the
+frontend Dockerfile using only `worklenz-frontend` as its context.
 
 The source usage check resolves literal calls bound to `useTranslation`, aliases,
 namespace constants, explicit namespace overrides, and key prefixes. It also

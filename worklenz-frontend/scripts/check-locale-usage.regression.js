@@ -2,6 +2,15 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { collectTranslationCalls, hasTranslation } = require('./check-locale-usage');
 
+// Docker and standalone frontend checkouts do not include sibling services.
+// If backend resources are present, missing or invalid files must still fail.
+const getLocaleDirectories = (front, back, context) => {
+  const fs = require('node:fs');
+  if (fs.existsSync(back)) return [front, back];
+  context.diagnostic('Backend locales unavailable; validating all frontend resources only.');
+  return [front];
+};
+
 test('detects source keys missing from every locale, even with a fallback', () => {
   const calls = collectTranslationCalls(`
     const { t } = useTranslation('settings/import-export');
@@ -46,12 +55,13 @@ test('recognizes plural variants and reports missing namespaces', () => {
   assert.equal(hasTranslation(undefined, 'endDate'), false);
 });
 
-test('import previews and project end dates are translated in frontend and backend resources', () => {
+test('import previews and project end dates are translated in available locale resources', context => {
   const fs = require('fs');
   const path = require('path');
   const languages = ['en', 'alb', 'de', 'es', 'fr', 'pl', 'pt', 'zh'];
   const front = path.join(__dirname, '../public/locales');
   const back = path.join(__dirname, '../../worklenz-backend/src/public/locales');
+  const directories = getLocaleDirectories(front, back, context);
   const keys = {
     'settings/import-export': [
       'steps.previewCsv', 'importStep.previewCsvTitle', 'importStep.previewCsvHelp',
@@ -64,7 +74,7 @@ test('import previews and project end dates are translated in frontend and backe
   for (const [namespace, namespaceKeys] of Object.entries(keys)) {
     const english = JSON.parse(fs.readFileSync(path.join(front, 'en', `${namespace}.json`), 'utf8'));
     for (const language of languages) {
-      for (const directory of [front, back]) {
+      for (const directory of directories) {
         const file = path.join(directory, language, `${namespace}.json`);
         const data = JSON.parse(fs.readFileSync(file, 'utf8'));
         for (const key of namespaceKeys) {
@@ -79,11 +89,12 @@ test('import previews and project end dates are translated in frontend and backe
   }
 });
 
-test('reported import, template, and team-member namespaces are complete in every locale copy', () => {
+test('reported import, template, and team-member namespaces are complete in every available locale copy', context => {
   const fs = require('fs');
   const path = require('path');
   const front = path.join(__dirname, '../public/locales');
   const back = path.join(__dirname, '../../worklenz-backend/src/public/locales');
+  const directories = getLocaleDirectories(front, back, context);
   const languages = ['en', 'alb', 'de', 'es', 'fr', 'pl', 'pt', 'zh'];
   const reportedKeys = {
     'settings/import-export': ['common.previous'],
@@ -104,7 +115,7 @@ test('reported import, template, and team-member namespaces are complete in ever
   for (const [namespace, keys] of Object.entries(reportedKeys)) {
     for (const language of languages) {
       const source = read(front, language, namespace);
-      for (const directory of [front, back]) {
+      for (const directory of directories) {
         const locale = read(directory, language, namespace);
         // Check whole namespaces so additional dynamic role keys are covered too.
         for (const key of new Set([...keys, ...stringKeys(source)])) {
