@@ -166,7 +166,7 @@
     "mappingInfoCreateTitle": "3. Krijo statuse të reja të personalizuara",
     "mappingInfoCreateDesc": "Nëse skedari CSV përmban një status që nuk ekziston ende në Worklenz, shkruani emrin e ri në kutinë e kërkimit për ta krijuar, pastaj zgjidhni kategorinë (Për të bërë, Në progres ose Përfunduar) së cilës i përket.",
     "mappingInfoUnmappedTitle": "4. Statuset e pahartëzuara",
-    "mappingInfoUnmappedDesc": "Çdo vlerë statusi nga CSV e lënë e pahartëzuar do t'i caktohet automatikisht statusit të paracaktuar të projektit gjatë importit, në mënyrë që të mos humbasë asnjë detyrë.",
+    "mappingInfoUnmappedDesc": "Çdo vlerë statusi nga CSV e lënë e pahartëzuar përputhet fillimisht me statuset ekzistuese të projektit, dhe vetëm vlerat e papërputhura i caktohen statusit të paracaktuar të projektit gjatë importit në mënyrë që të mos humbasë asnjë detyrë.",
     "mappingDocsButton": "Lexoni dokumentacionin e statusit",
     "mappingGotItButton": "E kuptova",
     "searchValues": "Kërko vlera",

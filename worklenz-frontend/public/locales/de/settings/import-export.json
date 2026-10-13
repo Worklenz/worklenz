@@ -166,7 +166,7 @@
     "mappingInfoCreateTitle": "3. Neue benutzerdefinierte Status erstellen",
     "mappingInfoCreateDesc": "Wenn Ihre CSV-Datei einen Status enthält, der in Worklenz noch nicht existiert, geben Sie den neuen Namen in das Suchfeld ein, um ihn zu erstellen, und wählen Sie die zugehörige Kategorie (Zu erledigen, In Bearbeitung oder Erledigt).",
     "mappingInfoUnmappedTitle": "4. Nicht zugeordnete Status",
-    "mappingInfoUnmappedDesc": "Jeder nicht zugeordnete CSV-Statuswert wird beim Import automatisch dem Standardstatus des Projekts zugewiesen, sodass keine Aufgaben verloren gehen.",
+    "mappingInfoUnmappedDesc": "Jeder nicht zugeordnete CSV-Statuswert wird zuerst mit bestehenden Projektstatus abgeglichen, und nur nicht übereinstimmende Werte werden beim Import dem Standardstatus des Projekts zugewiesen, sodass keine Aufgaben verloren gehen.",
     "mappingDocsButton": "Status-Dokumentation lesen",
     "mappingGotItButton": "Verstanden",
     "searchValues": "Werte suchen",

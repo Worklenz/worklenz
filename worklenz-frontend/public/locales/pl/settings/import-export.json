@@ -166,7 +166,7 @@
     "mappingInfoCreateTitle": "3. Twórz nowe statusy niestandardowe",
     "mappingInfoCreateDesc": "Jeśli plik CSV zawiera status, którego jeszcze nie ma w Worklenz, wpisz jego nazwę w polu wyszukiwania, aby go utworzyć, a następnie wybierz kategorię (Do zrobienia, W toku lub Gotowe), do której należy.",
     "mappingInfoUnmappedTitle": "4. Niezamapowane statusy",
-    "mappingInfoUnmappedDesc": "Każda niezamapowana wartość statusu z pliku CSV zostanie automatycznie przypisana do domyślnego statusu projektu podczas importu, dzięki czemu żadne zadanie nie zostanie utracone.",
+    "mappingInfoUnmappedDesc": "Każda niezamapowana wartość statusu z pliku CSV jest najpierw dopasowywana do istniejących statusów projektu, a tylko niedopasowane wartości są przypisywane do domyślnego statusu projektu podczas importu, dzięki czemu żadne zadanie nie zostanie utracone.",
     "mappingDocsButton": "Przeczytaj dokumentację statusów",
     "mappingGotItButton": "Rozumiem",
     "searchValues": "Wyszukaj wartości",

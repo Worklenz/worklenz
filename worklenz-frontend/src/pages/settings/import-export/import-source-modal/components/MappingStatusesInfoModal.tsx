@@ -195,7 +195,7 @@ export const MappingStatusesInfoModal: React.FC<MappingStatusesInfoModalProps> =
           >
             {t('importStep.mappingInfoUnmappedDesc', {
               defaultValue:
-                'Any CSV status value left unmapped will automatically be assigned to the project\'s default status upon import so no tasks are lost.',
+                'Any CSV status value left unmapped is matched against existing project statuses first, and only unmatched values are assigned to the project\'s default status upon import so no tasks are lost.',
             })}
           </Typography.Paragraph>
         </div>

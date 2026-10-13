@@ -166,7 +166,7 @@
     "mappingInfoCreateTitle": "3. 创建新的自定义状态",
     "mappingInfoCreateDesc": "如果 CSV 中包含 Worklenz 尚不存在的状态，请在搜索框中键入新状态名称以进行创建，然后选择其所属类别（待办、进行中或已完成）。",
     "mappingInfoUnmappedTitle": "4. 未映射的状态",
-    "mappingInfoUnmappedDesc": "任何保留未映射的 CSV 状态值在导入时都将自动分配给项目的默认状态，确保不会遗漏任何任务。",
+    "mappingInfoUnmappedDesc": "任何未映射的 CSV 状态值都会首先与现有的项目状态进行名称匹配，只有未匹配的值在导入时才会分配给项目的默认状态，确保不会遗漏任何任务。",
     "mappingDocsButton": "阅读状态文档",
     "mappingGotItButton": "知道了",
     "searchValues": "搜索值",

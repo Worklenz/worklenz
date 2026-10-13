@@ -1,27 +1,19 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import i18n from 'i18next';
+import { theme } from 'antd';
 import { CsvMappingStepsContent } from './CsvMappingStepsContent';
 import { WORKLENZ_STATUS_DOCS_URL } from '@/shared/help-links-constants';
+import type { ThemeToken, TranslateFn } from '../types';
 
 describe('CsvMappingStepsContent - Step 3 (Map statuses)', () => {
-  const mockTranslate = vi.fn(
-    (key: string, options?: { defaultValue?: string } | string) => {
-      if (typeof options === 'string') return options;
-      return options?.defaultValue ?? key;
-    }
-  );
-
-  const mockThemeToken = {
-    colorText: '#000000',
-    colorTextSecondary: '#666666',
-    colorTextTertiary: '#999999',
-    colorPrimary: '#1890ff',
-    colorBgContainer: '#ffffff',
-    colorBgElevated: '#f5f5f5',
-    colorBorder: '#d9d9d9',
-    colorBorderSecondary: '#f0f0f0',
-    colorSuccess: '#52c41a',
-  } as any;
+  const testI18n = i18n.createInstance();
+  testI18n.init({
+    lng: 'en',
+    resources: {},
+  });
+  const mockTranslate: TranslateFn = testI18n.t;
+  const mockThemeToken: ThemeToken = theme.getDesignToken();
 
   const defaultProps = {
     step: 3,

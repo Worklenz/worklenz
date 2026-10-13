@@ -166,7 +166,7 @@
     "mappingInfoCreateTitle": "3. Créer de nouveaux statuts personnalisés",
     "mappingInfoCreateDesc": "Si votre CSV contient un statut qui n'existe pas encore dans Worklenz, saisissez son nom dans la zone de recherche pour le créer, puis choisissez sa catégorie (À faire, En cours ou Terminé).",
     "mappingInfoUnmappedTitle": "4. Statuts non mappés",
-    "mappingInfoUnmappedDesc": "Toute valeur de statut CSV laissée non mappée sera automatiquement attribuée au statut par défaut du projet lors de l'importation afin qu'aucune tâche ne soit perdue.",
+    "mappingInfoUnmappedDesc": "Toute valeur de statut CSV laissée non mappée est d'abord mise en correspondance avec les statuts existants du projet, et seules les valeurs sans correspondance sont attribuées au statut par défaut du projet lors de l'importation afin qu'aucune tâche ne soit perdue.",
     "mappingDocsButton": "Lire la documentation des statuts",
     "mappingGotItButton": "Compris",
     "searchValues": "Rechercher des valeurs",
