@@ -614,10 +614,10 @@ export default abstract class ReportingControllerBase extends WorklenzController
       const isStatusSort = actualSortField === "status";
       const orderBy = isStatusSort
         ? `${getStatusRank("ps.name")} ${actualSortOrder}, LOWER(p.name) ${actualSortOrder}, p.id`
-        : `${actualSortField} ${actualSortOrder}`;
+        : `${actualSortField} ${actualSortOrder}, p.id`;
       const aggregateOrderBy = isStatusSort
         ? `ORDER BY ${getStatusRank("t.status_name")} ${actualSortOrder}, LOWER(t.name) ${actualSortOrder}, t.id`
-        : "";
+        : `ORDER BY t.${actualSortField} ${actualSortOrder}, t.id`;
 
       const q = `SELECT COUNT(*) AS total,
                (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t) ${aggregateOrderBy})), '[]'::JSON)
@@ -843,13 +843,14 @@ export default abstract class ReportingControllerBase extends WorklenzController
     // Legacy positional fallback
     const teamId = paramsOrTeamId as string;
     const legacySortField = ReportingControllerBase.normalizeReportingProjectsSortField(sortField);
+    const actualSortOrder = (sortOrder || "asc").toLowerCase().startsWith("desc") ? "desc" : "asc";
     const isStatusSort = legacySortField === "status";
     const orderBy = isStatusSort
-      ? `${getStatusRank("ps.name")} ${sortOrder}, LOWER(p.name) ${sortOrder}, p.id`
-      : `${legacySortField} ${sortOrder}`;
+      ? `${getStatusRank("ps.name")} ${actualSortOrder}, LOWER(p.name) ${actualSortOrder}, p.id`
+      : `${legacySortField} ${actualSortOrder}, p.id`;
     const aggregateOrderBy = isStatusSort
-      ? `ORDER BY ${getStatusRank("t.status_name")} ${sortOrder}, LOWER(t.name) ${sortOrder}, t.id`
-      : "";
+      ? `ORDER BY ${getStatusRank("t.status_name")} ${actualSortOrder}, LOWER(t.name) ${actualSortOrder}, t.id`
+      : `ORDER BY t.${legacySortField} ${actualSortOrder}, t.id`;
 
     const q = `SELECT COUNT(*) AS total,
              (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t) ${aggregateOrderBy})), '[]'::JSON)

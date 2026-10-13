@@ -39,6 +39,7 @@ import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import './projects-reports-table.css';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
+import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import logger from '@/utils/errorLogger';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { useSocket } from '@/socket/socketContext';
@@ -59,6 +60,9 @@ const ReportingOverviewProjectsTable = ({
   const { socket } = useSocket();
 
   const { includeArchivedProjects } = useAppSelector(state => state.reportingReducer);
+  const { projectCategories, loading: projectCategoriesLoading } = useAppSelector(
+    state => state.projectCategoriesReducer
+  );
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [projectList, setProjectList] = useState<IRPTProject[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -167,17 +171,56 @@ const ReportingOverviewProjectsTable = ({
     []
   );
 
+  const handleCategoryChangeResponse = useCallback(
+    (data: any) => {
+      try {
+        const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+        const projectId = parsedData?.id || parsedData?.project_id;
+        if (projectId) {
+          const categoryId = parsedData.category_id ?? parsedData.category?.id ?? null;
+          const categoryName = parsedData.category_name ?? parsedData.category?.name ?? '';
+          const categoryColor = parsedData.category_color ?? parsedData.category?.color_code ?? '';
+
+          const fullCategory =
+            (categoryId ? projectCategories.find(c => c.id === categoryId) : null) || {
+              id: categoryId,
+              name: categoryName,
+              color_code: categoryColor,
+            };
+
+          setProjectList(prev =>
+            prev.map(project =>
+              project.id === projectId
+                ? {
+                    ...project,
+                    category_id: fullCategory.id ?? null,
+                    category_name: fullCategory.name ?? '',
+                    category_color: fullCategory.color_code ?? '',
+                  }
+                : project
+            )
+          );
+        }
+      } catch (error) {
+        // ignore malformed socket payload
+      }
+    },
+    [projectCategories]
+  );
+
   useEffect(() => {
     if (!socket) return;
     socket.on(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
     socket.on(SocketEvents.PROJECT_STATUS_CHANGE.toString(), handleStatusChangeResponse);
     socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
     socket.on(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
+    socket.on(SocketEvents.PROJECT_CATEGORY_CHANGE.toString(), handleCategoryChangeResponse);
     return () => {
       socket.off(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
       socket.off(SocketEvents.PROJECT_STATUS_CHANGE.toString(), handleStatusChangeResponse);
       socket.off(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
       socket.off(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
+      socket.off(SocketEvents.PROJECT_CATEGORY_CHANGE.toString(), handleCategoryChangeResponse);
     };
   }, [
     socket,
@@ -185,6 +228,7 @@ const ReportingOverviewProjectsTable = ({
     handleStatusChangeResponse,
     handleEndDateChangeResponse,
     handleStartDateChangeResponse,
+    handleCategoryChangeResponse,
   ]);
 
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
@@ -401,6 +445,9 @@ const ReportingOverviewProjectsTable = ({
     }
     if (projectHealths.length === 0 && !projectHealthsLoading) {
       void dispatch(fetchProjectHealth());
+    }
+    if (projectCategories.length === 0 && !projectCategoriesLoading) {
+      void dispatch(fetchProjectCategories());
     }
   }, []);
 
