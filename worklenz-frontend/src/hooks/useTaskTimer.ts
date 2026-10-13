@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import dayjs from 'dayjs';
 import { message } from '@/shared/antd-imports';
 import { buildTimeString } from '@/utils/timeUtils';
 import { useSocket } from '@/socket/socketContext';
@@ -10,7 +9,6 @@ import { updateTaskTimeTracking } from '@/features/tasks/tasks.slice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { selectTaskById, updateTask } from '@/features/task-management/task-management.slice';
 import { store } from '@/app/store';
-import { Task } from '@/types/task-management.types';
 
 export const useTaskTimer = (taskId: string, initialStartTime: number | null) => {
   const dispatch = useAppDispatch();
@@ -18,6 +16,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
   const DEFAULT_TIME_LEFT = buildTimeString(0, 0, 0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasInitialized = useRef(false); // Track if we've initialized
+  const isPendingStart = useRef(false);
 
   const activeTimers = useAppSelector(state => state.taskReducer.activeTimers);
   const task = useAppSelector(state => selectTaskById(state, taskId));
@@ -110,35 +109,15 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
   const handleStartTimer = useCallback(() => {
     if (started || !taskId) return;
 
-    // Check if task's project has a scheduled start date in the future
-    const state = store.getState();
-    const currentProject = state.projectReducer.project;
-    const drawerTask = state.taskDrawerReducer.taskFormViewModel?.task;
-    const projectStartDate =
-      (currentProject?.id && (!drawerTask?.project_id || drawerTask.project_id === currentProject.id)
-        ? currentProject.start_date
-        : null) ||
-      drawerTask?.project_start_date;
-
-    if (
-      projectStartDate &&
-      dayjs(projectStartDate).startOf('day').isAfter(dayjs().startOf('day'), 'day')
-    ) {
-      const formattedDate = dayjs(projectStartDate).format('MMM DD, YYYY');
-      message.warning({
-        content: `Time cannot be logged before the project start date (${formattedDate}).`,
-        key: `timer-error-${taskId}`,
-      });
-      return;
-    }
-
     try {
       const now = Date.now();
+      isPendingStart.current = true;
 
       dispatch(updateTaskTimeTracking({ taskId, timeTracking: now }));
       setLocalStarted(true);
       socket?.emit(SocketEvents.TASK_TIMER_START.toString(), JSON.stringify({ task_id: taskId }));
     } catch (error) {
+      isPendingStart.current = false;
       logger.error('Error starting timer:', error);
     }
   }, [taskId, started, socket, dispatch]);
@@ -146,6 +125,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
   const handleStopTimer = useCallback(() => {
     if (!taskId) return;
 
+    isPendingStart.current = false;
     resetTimer();
     socket?.emit(SocketEvents.TASK_TIMER_STOP.toString(), JSON.stringify({ task_id: taskId }));
     clearReduxTimer(taskId);
@@ -161,6 +141,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
         const parsed = typeof data === 'string' ? JSON.parse(data) : data;
         const targetId = parsed?.task_id || parsed?.id;
         if (targetId === taskId) {
+          isPendingStart.current = false;
           resetTimer();
           clearReduxTimer(taskId);
         }
@@ -173,8 +154,11 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
       try {
         if (!data) {
           // If start was rejected or failed on the backend, ensure local timer rolls back
-          resetTimer();
-          clearReduxTimer(taskId);
+          if (isPendingStart.current) {
+            isPendingStart.current = false;
+            resetTimer();
+            clearReduxTimer(taskId);
+          }
           return;
         }
         const parsed = typeof data === 'string' ? JSON.parse(data) : data;
@@ -182,6 +166,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
 
         if (parsed?.error || parsed?.message) {
           if (!targetId || targetId === taskId) {
+            isPendingStart.current = false;
             resetTimer();
             clearReduxTimer(taskId);
             message.warning({
@@ -194,6 +179,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
 
         const startTimeVal = parsed?.start_time || parsed?.timer_start_time;
         if (targetId === taskId && startTimeVal) {
+          isPendingStart.current = false;
           const time = typeof startTimeVal === 'number' ? startTimeVal : parseInt(startTimeVal);
 
           dispatch(updateTaskTimeTracking({ taskId, timeTracking: time }));
@@ -209,6 +195,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
         const parsed = typeof data === 'string' ? JSON.parse(data) : data;
         const targetId = parsed?.task_id || parsed?.id;
         if (!targetId || targetId === taskId) {
+          isPendingStart.current = false;
           resetTimer();
           clearReduxTimer(taskId);
           const warnMsg = parsed?.message || parsed?.error;

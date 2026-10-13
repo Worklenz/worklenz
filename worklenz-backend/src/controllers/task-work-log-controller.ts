@@ -1253,6 +1253,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
         pr.id AS project_id,
         pr.name AS project_name,
         pr.color_code AS project_color,
+        pr.start_date AS project_start_date,
         t1.parent_task_id,
         t2.name AS parent_task_name,
         ts.name AS status_name,
@@ -1274,7 +1275,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       WHERE ${conditions.join(" AND ")}
       GROUP BY
         t1.id, t1.name, t1.billable, t1.end_date, t1.parent_task_id,
-        pr.id, pr.name, pr.color_code,
+        pr.id, pr.name, pr.color_code, pr.start_date,
         t2.name,
         ts.name, ts.color_code,
         tsc.color_code, tsc.color_code_dark, tsc.is_done,
@@ -1457,6 +1458,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
         COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
           'id', fl.id, 'task_id', fl.task_id, 'task_name', fl.task_name,
           'project_id', fl.project_id, 'project_name', fl.project_name, 'project_color', fl.project_color,
+          'project_start_date', fl.project_start_date,
           'billable', fl.billable, 'time_spent', fl.time_spent, 'description', fl.description,
           'due_date', fl.due_date, 'created_at', fl.created_at, 'logged_by_timer', fl.logged_by_timer,
           'user_id', fl.user_id, 'user_name', fl.user_name, 'avatar_url', fl.avatar_url,

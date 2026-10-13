@@ -11,6 +11,11 @@ export async function on_task_timer_start(_io: Server, socket: Socket, data?: st
     const body = JSON.parse(data as string);
     const userId = getLoggedInUserIdFromSocket(socket);
 
+    if (!userId) {
+      socket.emit(SocketEvents.TASK_TIMER_START.toString(), null);
+      return;
+    }
+
     if (!body?.task_id) {
       socket.emit(SocketEvents.TASK_TIMER_START.toString(), null);
       return;
