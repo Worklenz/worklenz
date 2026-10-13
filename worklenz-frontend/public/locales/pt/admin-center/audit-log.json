@@ -27,6 +27,7 @@
   "eventProjectDeleted": "Projeto excluído",
   "eventProjectRestored": "Projeto restaurado",
   "eventWorkspaceRenamed": "Espaço de trabalho renomeado",
+  "eventTeamDeleted": "Equipe excluída",
   "eventWorkspaceDeleted": "Espaço de trabalho excluído",
   "eventMemberUpdated": "Dados do membro alterados",
   "eventMemberActivated": "Membro ativado",

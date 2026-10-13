@@ -43,6 +43,7 @@ import logger from '@/utils/errorLogger';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
 
 interface ReportingOverviewProjectsTableProps {
   searchQuery: string;
@@ -61,6 +62,13 @@ const ReportingOverviewProjectsTable = ({
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [projectList, setProjectList] = useState<IRPTProject[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const projectIds = useMemo(
+    () => new Set(projectList.map(p => p.id).filter((id): id is string => Boolean(id))),
+    [projectList]
+  );
+  useProjectRoomSync(projectIds);
+
   const [pagination, setPagination] = useState<PaginationProps>({
     current: 1,
     pageSize: DEFAULT_PAGE_SIZE,
@@ -85,6 +93,24 @@ const ReportingOverviewProjectsTable = ({
                 project_health: data.health_id,
                 health_name: data.name,
                 health_color: data.color_code,
+              }
+            : project
+        )
+      );
+    },
+    []
+  );
+
+  const handleStatusChangeResponse = useCallback(
+    (data: { id: string; status: string; status_name: string; status_color: string }) => {
+      setProjectList(prev =>
+        prev.map(project =>
+          project.id === data.id
+            ? {
+                ...project,
+                status_id: data.status,
+                status_name: data.status_name,
+                status_color: data.status_color,
               }
             : project
         )
@@ -144,14 +170,22 @@ const ReportingOverviewProjectsTable = ({
   useEffect(() => {
     if (!socket) return;
     socket.on(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+    socket.on(SocketEvents.PROJECT_STATUS_CHANGE.toString(), handleStatusChangeResponse);
     socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
     socket.on(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
     return () => {
       socket.off(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+      socket.off(SocketEvents.PROJECT_STATUS_CHANGE.toString(), handleStatusChangeResponse);
       socket.off(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
       socket.off(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
     };
-  }, [socket, handleHealthChangeResponse, handleEndDateChangeResponse, handleStartDateChangeResponse]);
+  }, [
+    socket,
+    handleHealthChangeResponse,
+    handleStatusChangeResponse,
+    handleEndDateChangeResponse,
+    handleStartDateChangeResponse,
+  ]);
 
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(

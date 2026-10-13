@@ -103,7 +103,15 @@
     "assignees": "Destinataires",
     "searchMembers": "Rechercher par nom ou par email…",
     "noMembersFound": "Aucun membre trouvé",
-    "time": "Temps"
+    "time": "Temps",
+    "pinned": "Épinglées",
+    "tabsLabel": "Filtrer les tâches",
+    "pinTask": "Épingler la tâche",
+    "unpinTask": "Désépingler la tâche",
+    "pinLimitReached": "Vous pouvez épingler jusqu'à {{limit}} tâches. Désépinglez-en une pour en épingler une autre.",
+    "noPinnedTasks": "Aucune tâche épinglée pour le moment. Survolez une tâche et cliquez sur l'icône d'épingle pour la garder ici.",
+    "pinFailed": "Impossible de mettre à jour l'épingle. Veuillez réessayer.",
+    "viewAll": "Tout voir ({{total}})"
   },
   "homeCalendar": {
     "todayButton": "Aujourd'hui",
@@ -373,7 +381,8 @@
     "tasks": "Tâches",
     "activity": "Activité",
     "timeLogged": "Temps enregistré",
-    "title": "Continuez là où vous vous êtes arrêté"
+    "title": "Continuez là où vous vous êtes arrêté",
+    "showTabs": "Afficher les onglets"
   },
   "focusTime": {
     "title": "Concentration et temps",
@@ -391,5 +400,131 @@
       "personal": "Personnel",
       "other": "Autre"
     }
+  },
+  "customize": {
+    "button": "Personnaliser",
+    "title": "Personnaliser l'accueil",
+    "description": "Faites glisser les sections pour les réorganiser, ou utilisez les boutons fléchés. Désactivez une section pour la masquer de votre page d'accueil.",
+    "mainColumn": "Zone principale",
+    "sideColumn": "Panneau latéral",
+    "emptyColumn": "Déposez une section ici",
+    "dragHandle": "Réorganiser {{name}}. Appuyez sur la barre d'espace pour la saisir, puis utilisez les flèches.",
+    "moveUp": "Monter",
+    "moveDown": "Descendre",
+    "moveUpNamed": "Monter {{name}}",
+    "moveDownNamed": "Descendre {{name}}",
+    "moveToSide": "Déplacer vers le panneau latéral",
+    "moveToMain": "Déplacer vers la zone principale",
+    "cannotHide": "Cette section ne peut pas être masquée.",
+    "showNamed": "Afficher {{name}}",
+    "reset": "Rétablir par défaut",
+    "resetConfirm": "Rétablir les paramètres par défaut de l'accueil ?",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "widgets": {
+      "statCards": "Cartes de synthèse",
+      "priorities": "Priorités des tâches",
+      "progressDonut": "Ma progression",
+      "continue": "Reprendre là où vous vous êtes arrêté",
+      "greeting": "Bannière d'accueil",
+      "teamMembers": "Membres de l'équipe",
+      "assignedByMe": "Tâches attribuées par moi",
+      "mentions": "Commentaires me mentionnant",
+      "todo": "Ma liste de tâches"
+    },
+    "tabs": {
+      "layout": "Disposition",
+      "taskTabs": "Onglets des tâches",
+      "sorting": "Tri",
+      "sidebar": "Barre latérale gauche",
+      "defaultView": "Vue par défaut"
+    },
+    "topSection": "Haut de la page",
+    "tabsDescription": "Choisissez les onglets affichés au-dessus du tableau des tâches et leur ordre. Au moins un onglet doit rester activé.",
+    "cannotHideLastTab": "Au moins un onglet doit rester visible.",
+    "sortDescription": "Choisissez l'ordre des tâches dans le tableau. Les tâches épinglées restent toujours en haut.",
+    "sortField": "Trier par",
+    "sortOrder": "Sens",
+    "sortDefault": "Ordre par défaut (date d'échéance, la plus proche d'abord)",
+    "sortAsc": "Croissant",
+    "sortDesc": "Décroissant",
+    "sortPinnedNote": "L'onglet Épinglées affiche toujours en premier la tâche épinglée le plus récemment.",
+    "sidebarDescription": "Réorganisez les éléments de la barre latérale gauche et choisissez ceux qui s'affichent. Épinglez-en un pour qu'il soit la page qui s'ouvre en premier sur l'accueil.",
+    "pinSidebarItem": "Épingler {{name}} comme page à ouvrir en premier",
+    "unpinSidebarItem": "Désépingler {{name}}",
+    "assignedDefault": "Ouvrir le tableau sur",
+    "assignedLastUsed": "Celle utilisée en dernier",
+    "cannotHideLanding": "L'accueil s'ouvre sur cette page. Épinglez une autre page pour la masquer.",
+    "cannotHideLastItem": "Au moins un élément doit rester visible.",
+    "tableTitle": "Personnaliser le tableau des tâches",
+    "tableResetConfirm": "Rétablir les paramètres par défaut du tableau des tâches ?",
+    "done": "Terminé"
+  },
+  "widgets": {
+    "menu": {
+      "options": "Options de {{name}}",
+      "showPeriod": "Afficher",
+      "remove": "Supprimer le widget"
+    },
+    "add": {
+      "button": "Ajouter un widget",
+      "hint": "Appuyez sur Ajouter, ou faites glisser un widget sur votre page.",
+      "addAction": "Ajouter",
+      "addNamed": "Ajouter {{name}}",
+      "empty": "Tous les widgets sont déjà sur votre page d'accueil."
+    },
+    "descriptions": {
+      "greeting": "Un message d'accueil avec la date du jour et ce qui demande votre attention.",
+      "statCards": "Les tâches du jour, celles en retard, celles terminées et votre temps de concentration.",
+      "priorities": "Vos tâches du jour ou de la semaine, prêtes à être traitées.",
+      "progressDonut": "La part de votre travail attribué qui est terminée, en cours ou à faire.",
+      "continue": "Retrouvez vos projets, tâches, activités et temps enregistré récents.",
+      "teamMembers": "Voyez qui fait partie de votre équipe et ouvrez la page complète de l'équipe.",
+      "assignedByMe": "Les tâches que vous avez confiées à vos collègues, pour en assurer le suivi.",
+      "mentions": "Commentaires récents sur des tâches où un collègue vous a @mentionné.",
+      "todo": "Notez vos tâches personnelles et cochez-les au fur et à mesure."
+    },
+    "drag": {
+      "pickedUp": "{{name}} saisi.",
+      "dropped": "{{name}} déposé.",
+      "cancelled": "Le déplacement de {{name}} a été annulé."
+    },
+    "dropHere": "Déposez un widget ici",
+    "state": {
+      "error": "Impossible de charger ce widget.",
+      "retry": "Réessayer"
+    },
+    "empty": {
+      "title": "Glissez-déposez de nouveaux widgets",
+      "titleNoDrag": "Ajoutez des widgets à votre page d'accueil",
+      "button": "Ajouter des widgets"
+    }
+  },
+  "teamMembers": {
+    "empty": "Aucun membre dans l'équipe pour le moment.",
+    "viewTeam": "Voir l'équipe"
+  },
+  "assignedByMe": {
+    "empty": "Vous n'avez attribué aucune tâche ouverte.",
+    "assignNewTask": "Attribuer une nouvelle tâche",
+    "viewAll": "Voir toutes les tâches attribuées ({{total}})"
+  },
+  "mentions": {
+    "empty": "Personne ne vous a encore mentionné dans un commentaire.",
+    "reply": "Répondre",
+    "replyPlaceholder": "Écrivez une réponse…",
+    "replyHint": "Publié comme commentaire sur « {{task}} ».",
+    "replySent": "Réponse ajoutée à « {{task}} ».",
+    "replyFailed": "Impossible de publier votre réponse. Veuillez réessayer.",
+    "replyLabel": "Répondre à {{name}}"
+  },
+  "todoWidget": {
+    "addPlaceholder": "Ajoutez une tâche et appuyez sur Entrée",
+    "addLabel": "Nouvelle tâche",
+    "empty": "Vous êtes à jour.",
+    "viewAll": "Ouvrir ma liste de tâches",
+    "viewAllMore": "Tout voir ({{remaining}} de plus)",
+    "addFailed": "Impossible d'ajouter cette tâche. Veuillez réessayer.",
+    "completeFailed": "Impossible de mettre à jour cette tâche. Veuillez réessayer."
   }
 }

@@ -13,6 +13,7 @@ import { log_error } from "../shared/utils";
 import {
   actorFromSessionUser,
   logAuditEvent,
+  resolveOrganizationIdForUserId,
 } from "../services/audit-log.service";
 import { AUDIT_EVENT_TYPE } from "../shared/audit-log-constants";
 
@@ -209,6 +210,26 @@ describe("audit-log.service", () => {
     it("maps a missing id to null", () => {
       const actor = actorFromSessionUser({ name: "No Id User" } as any);
       expect(actor.userId).toBeNull();
+    });
+  });
+
+  describe("resolveOrganizationIdForUserId", () => {
+    it("only resolves a preferred team when the user owns it or belongs to it", async () => {
+      mockedDb.query.mockResolvedValue({
+        rows: [{ organization_id: "org-1", team_id: "team-1" }],
+      });
+
+      await expect(resolveOrganizationIdForUserId("user-1", "team-1")).resolves.toEqual({
+        organizationId: "org-1",
+        teamId: "team-1",
+      });
+
+      const [sql, params] = mockedDb.query.mock.calls[0];
+      expect(sql).toContain("t.user_id = u.id");
+      expect(sql).toContain("FROM team_members tm");
+      expect(sql).toContain("tm.team_id = t.id");
+      expect(sql).toContain("tm.user_id = u.id");
+      expect(params).toEqual(["user-1", "team-1"]);
     });
   });
 });

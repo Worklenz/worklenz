@@ -1,10 +1,11 @@
-import React, { memo, useState, useEffect, useCallback, useRef } from 'react';
+import React, { memo, useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { CheckCircleOutlined, HolderOutlined, InputNumber, Popover, Button, Flex, Typography, Tooltip, message } from '@/shared/antd-imports';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useTranslation } from 'react-i18next';
 import { Checkbox } from '@/shared/antd-imports';
 import { Task } from '@/types/task-management.types';
+import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import AssigneeSelector from '@/components/AssigneeSelector';
 import { format } from 'date-fns';
 import AvatarGroup from '../../AvatarGroup';
@@ -433,12 +434,54 @@ interface AssigneesColumnProps {
 
 export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
   ({ width, task, convertedTask, isDarkMode, canCreateTask = true, isGuest = false }) => {
-    const hasAssignees = (task.assignee_names || []).length > 0;
+    // `task.assignee_names` is truncated by the backend (createTagList caps it at
+    // 4 real members + a synthetic "+N" placeholder), so using it directly makes
+    // the AvatarGroup overflow badge ("+N") stick at the wrong number once a task
+    // has 5+ assignees. Build the avatar member list from the full, untruncated
+    // `task.assignees` ID list instead, enriching each entry with the display data
+    // (name/avatar/color) carried by `assignee_names` where available. This keeps
+    // the total count — and therefore the "+N" badge — accurate.
+    const assigneeMembers = useMemo(() => {
+      const namesById = new Map<string, InlineMember>();
+      (task.assignee_names || []).forEach(member => {
+        const id = member.team_member_id;
+        if (id) namesById.set(id, member);
+      });
+
+      // Prefer `task.assignees`, but check the FILTERED result, not the raw
+      // length. A stale/legacy state may hold `[undefined, ...]` (length > 0
+      // but every entry invalid) — in that case fall back to `assignee_names`.
+      const fromAssignees: string[] = Array.isArray(task.assignees)
+        ? task.assignees
+            .map((a: any) => (typeof a === 'string' ? a : a?.team_member_id))
+            .filter((id: unknown): id is string => Boolean(id))
+        : [];
+
+      const ids: string[] =
+        fromAssignees.length > 0
+          ? fromAssignees
+          : (task.assignee_names || [])
+              .map(member => member.team_member_id)
+              .filter((id): id is string => Boolean(id));
+
+      return ids.map(id => {
+        const info = namesById.get(id);
+        return {
+          team_member_id: id,
+          id,
+          name: info?.name || '',
+          avatar_url: info?.avatar_url,
+          color_code: info?.color_code,
+        };
+      });
+    }, [task.assignees, task.assignee_names]);
+
+    const hasAssignees = assigneeMembers.length > 0;
 
     return (
       <div
         className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
-        style={{ 
+        style={{
           width,
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
@@ -457,7 +500,7 @@ export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
               disabled={isGuest || !canCreateTask}
               triggerElement={
                 <AvatarGroup
-                  members={task.assignee_names || []}
+                  members={assigneeMembers}
                   maxCount={3}
                   isDarkMode={isDarkMode}
                   size={24}

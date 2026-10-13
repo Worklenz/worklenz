@@ -74,6 +74,18 @@
     gap: 12px;
   }
 
+  /* The header stacks here, so the widget's "..." menu is pinned to its corner instead of
+     stretching across the row with the toggle. The title leaves room for it. */
+  .task-list-card .task-list-menu {
+    position: absolute;
+    top: -4px;
+    right: 0;
+  }
+
+  .task-list-card .task-list-title {
+    padding-right: 32px;
+  }
+
   .task-list-mobile-header {
     flex-direction: column;
     gap: 8px;
@@ -143,5 +155,26 @@
 
   .task-list-card .ant-table {
     min-width: 600px;
+  }
+}
+
+/* Pin button, placed before the task name. It always occupies its space (so names stay aligned and
+   rows don't shift) but is only visible while the name cell is hovered, or the button has keyboard
+   focus. A pinned row keeps it visible as the persistent indicator. */
+.row-pin-button {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.task-name-cell:hover .row-pin-button,
+.row-pin-button:focus-within,
+.row-pin-button--active {
+  opacity: 1;
+}
+
+/* No hover on touch screens — keep the pin reachable. */
+@media (hover: none) {
+  .row-pin-button {
+    opacity: 1;
   }
 }

@@ -71,6 +71,7 @@
   border-radius: 0;
   border: none;
   box-shadow: none;
+  background-color: transparent !important;
   max-height: none !important;
   overflow: visible !important;
 }
@@ -79,6 +80,7 @@
   padding: 0 !important;
   height: auto !important;
   line-height: normal !important;
+  background-color: transparent !important;
 }
 
 .navbar-switch-team-dropdown
@@ -95,16 +97,47 @@
   .switch-team-card {
   width: 100% !important;
   margin: 0;
+  background-color: transparent !important;
   transition: background-color 0.2s ease;
-}
-
-.navbar-switch-team-dropdown
-  .switch-team-menu
-  .ant-dropdown-menu-item:hover
-  .switch-team-card {
-  background-color: rgba(22, 119, 255, 0.08);
 }
 
 .switch-team-card .ant-card-body {
   padding: 0 !important;
+  background-color: transparent !important;
+}
+/* 2. Light Mode Hover (covers entire item) */
+.navbar-switch-team-dropdown
+  .switch-team-menu
+  .ant-dropdown-menu-item:hover
+  .switch-team-card,
+.navbar-switch-team-dropdown.theme-light
+  .switch-team-menu
+  .ant-dropdown-menu-item:hover
+  .switch-team-card {
+  background-color: rgba(22, 119, 255, 0.15) !important;
+}
+
+/* 3. Dark Mode Hover (covers entire item with visible translucent light tint) */
+[data-theme='dark']
+  .navbar-switch-team-dropdown
+  .switch-team-menu
+  .ant-dropdown-menu-item:hover
+  .switch-team-card,
+.navbar-switch-team-dropdown.theme-dark
+  .switch-team-menu
+  .ant-dropdown-menu-item:hover
+  .switch-team-card {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Dark mode panel background override for the portal */
+.navbar-switch-team-dropdown.theme-dark .switch-team-dropdown-panel {
+  background-color: #1f1f1f;
+}
+
+.navbar-switch-team-dropdown.theme-dark .switch-team-search {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+.switch-team-trigger {
+  transition: background-color 0.2s ease;
 }

@@ -1,5 +1,6 @@
 import AuditLogController from "../controllers/audit-log-controller";
 import db from "../config/db";
+import { DEFAULT_PAGE_SIZE } from "../shared/constants";
 import { createMockRequest, createMockResponse } from "./utils/express-mock";
 
 jest.mock("../config/db", () => ({
@@ -99,6 +100,19 @@ describe("AuditLogController.getAuditEvents", () => {
     expect(params).toContain(200);
   });
 
+  it("falls back to safe defaults for malformed pagination values", async () => {
+    const req = createMockRequest({
+      user: { id: "user-1", organization_id: "org-1" },
+      query: { index: "1.5", size: "not-a-number" },
+    });
+    const res = createMockResponse();
+
+    await AuditLogController.getAuditEvents(req, res);
+
+    const [, params] = (db.query as jest.Mock).mock.calls[0];
+    expect(params).toEqual(expect.arrayContaining([DEFAULT_PAGE_SIZE, 0]));
+  });
+
   it("adds a date-range condition only for the params actually provided", async () => {
     const req = createMockRequest({
       user: { id: "user-1", organization_id: "org-1" },
@@ -144,7 +158,7 @@ describe("AuditLogController.getAuditEvents", () => {
   it("filters by a comma-separated multi-actor list", async () => {
     const req = createMockRequest({
       user: { id: "user-1", organization_id: "org-1" },
-      query: { actor_user_id: "user-1,user-2" },
+      query: { actor_user_id: "550e8400-e29b-41d4-a716-446655440000,550e8400-e29b-41d4-a716-446655440001" },
     });
     const res = createMockResponse();
 
@@ -152,7 +166,7 @@ describe("AuditLogController.getAuditEvents", () => {
 
     const [sql, params] = (db.query as jest.Mock).mock.calls[0];
     expect(sql).toContain("actor_user_id = ANY($2::UUID[])");
-    expect(params[1]).toEqual(["user-1", "user-2"]);
+    expect(params[1]).toEqual(["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001"]);
   });
 
   it("searches description and actor_name with a wildcard ILIKE pattern", async () => {
@@ -205,7 +219,7 @@ describe("AuditLogController.getAuditEvents", () => {
         start_date: "2026-09-01",
         end_date: "2026-09-30",
         category: "lifecycle",
-        actor_user_id: "user-1",
+        actor_user_id: "550e8400-e29b-41d4-a716-446655440000",
         search: "fraud",
       },
     });
@@ -288,7 +302,7 @@ describe("AuditLogController.getSummary", () => {
     (db.query as jest.Mock).mockResolvedValue({ rows: [] });
     const req = createMockRequest({
       user: { id: "user-1", organization_id: "org-1" },
-      query: { start_date: "2026-09-01", category: "access", actor_user_id: "user-9", search: "role" },
+      query: { start_date: "2026-09-01", category: "access", actor_user_id: "550e8400-e29b-41d4-a716-446655440000", search: "role" },
     });
     const res = createMockResponse();
 

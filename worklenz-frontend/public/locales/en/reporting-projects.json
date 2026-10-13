@@ -20,6 +20,8 @@
   "projectManagerColumn": "Project Manager",
   "openButton": "Open",
   "setStartDate": "Set Start Date",
+  "startDateSaveFailed": "Failed to save the start date. Please try again.",
+  "endDateSaveFailed": "Failed to save the end date. Please try again.",
   "setEndDate": "Set End Date",
   "clearStartDate": "Clear start date",
   "clearEndDate": "Clear end date",

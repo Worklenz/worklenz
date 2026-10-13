@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { MoreOutlined } from '@/shared/antd-imports';
-import { Button, Card, Checkbox, Dropdown, List, Space } from '@/shared/antd-imports';
+import { EyeOutlined, Tooltip } from '@/shared/antd-imports';
+import { Button, Checkbox, Dropdown, Space } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleColumnHidden } from '@/features/reporting/projectReports/project-reports-table-column-slice/project-reports-table-column-slice';
@@ -36,16 +36,17 @@ const ProjectTableShowFieldsDropdown = () => {
 
   return (
     <Dropdown menu={menuItems} trigger={['click']} onOpenChange={open => setIsDropdownOpen(open)}>
-      <Button
-        icon={<MoreOutlined />}
-        className={`transition-colors duration-300 ${
-          isDropdownOpen
-            ? 'border-[#1890ff] text-[#1890ff]'
-            : 'hover:text-[#1890ff hover:border-[#1890ff]'
-        }`}
-      >
-        {t('showFieldsText')}
-      </Button>
+      <Tooltip title={t('showFieldsText')}>
+        <Button
+          aria-label={t('showFieldsText')}
+          icon={<EyeOutlined />}
+          className={`transition-colors duration-300 ${isDropdownOpen
+              ? 'border-[#1890ff] text-[#1890ff]'
+              : 'hover:text-[#1890ff] hover:border-[#1890ff]'
+            }`}
+          style={{ width: 30, height: 30, padding: 0, fontSize: 14, borderRadius: 7 }}
+        />
+      </Tooltip>
     </Dropdown>
   );
 };

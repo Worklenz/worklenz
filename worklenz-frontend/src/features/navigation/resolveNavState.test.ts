@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CLIENT_PORTAL_NAV_SURFACE, PROJECTS_NAV_SURFACE } from './nav-registry';
+import { CLIENT_PORTAL_NAV_SURFACE, HOME_NAV_SURFACE, PROJECTS_NAV_SURFACE } from './nav-registry';
 import { resolveNavState } from './resolveNavState';
 import { applyOrderResets } from './navPreferences.slice';
 import type { NavPreferencesState } from './navPreferences.slice';
@@ -80,5 +80,37 @@ describe('client portal navigation', () => {
 
     expect(changed).toBe(false);
     expect(keys(state).slice(0, 2)).toEqual(['invoices', 'clients']);
+  });
+});
+
+describe('hidden navigation items', () => {
+  const home = (prefs: Partial<NavPreferencesState>, includeHidden = false) =>
+    resolveNavState(HOME_NAV_SURFACE, { ...preferences, ...prefs }, false, true, includeHidden);
+  const keys = (state: ReturnType<typeof resolveNavState>) =>
+    state.groups.flatMap(group => group.items.map(item => item.key));
+
+  it('drops hidden items from the rail', () => {
+    expect(keys(home({ hidden: { home: ['calendar', 'inbox'] } }))).not.toContain('calendar');
+    expect(keys(home({ hidden: { home: ['calendar', 'inbox'] } }))).not.toContain('inbox');
+  });
+
+  it('keeps hidden items when asked to include them, in their saved place', () => {
+    const state = home({ hidden: { home: ['calendar'] }, order: { home: { '': ['calendar', 'overview'] } } }, true);
+    expect(keys(state).slice(0, 2)).toEqual(['calendar', 'overview']);
+  });
+
+  it('opens on the first item still shown when the default page is hidden', () => {
+    const state = home({ hidden: { home: ['overview'] } });
+    expect(state.activeDefaultKey).toBe('my-tasks');
+  });
+
+  it('opens on the pinned page even though the default page is hidden', () => {
+    const state = home({ hidden: { home: ['overview'] }, pinnedDefaults: { home: 'calendar' } });
+    expect(state.activeDefaultKey).toBe('calendar');
+  });
+
+  it('ignores a hidden list that would empty the rail', () => {
+    const all = HOME_NAV_SURFACE.groups.flatMap(group => group.items.map(item => item.key));
+    expect(keys(home({ hidden: { home: all } })).length).toBeGreaterThan(0);
   });
 });

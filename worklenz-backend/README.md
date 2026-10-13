@@ -11,6 +11,29 @@ Follow these steps to set up the backend for development:
    - Create a copy of the `.env.template` file and name it `.env`.
    - Update the required fields in `.env` with your specific configuration.
 
+   The OSS backend always runs as self-hosted. Leave the following setting in
+   place to enable Planner, Finance, and Client Portal for every organization:
+
+   ```env
+   WORKLENZ_DEPLOYMENT_MODE=self_hosted
+   ```
+
+   Configure SMTP before creating email invitations:
+
+   ```env
+   EMAIL_PROVIDER=smtp
+   EMAIL_FROM="Worklenz <noreply@your-domain.com>"
+   SMTP_HOST=smtp.your-provider.com
+   SMTP_PORT=587
+   SMTP_SECURE=false
+   SMTP_USER=your-smtp-username
+   SMTP_PASSWORD=your-smtp-password
+   CLIENT_PORTAL_HOSTNAME=client.your-domain.com
+   ```
+
+   Set `SMTP_SECURE=true` when the SMTP service uses implicit TLS (usually port
+   465). Port 587 normally uses STARTTLS with `SMTP_SECURE=false`.
+
 2. **Set up Database:**
    - Create a new database named `worklenz_db` on your local PostgreSQL server.
    - Update the database connection details in your `.env` file.

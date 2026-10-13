@@ -54,6 +54,7 @@
   },
   "common": {
     "seeAll": "Shiko të gjitha",
+    "paginationRange": "{{from}}–{{to}} of {{total}}",
     "totalLoggedHours": "Orët totale të regjistruara",
     "totalEstimation": "Vlerësimi total",
     "completedTasks": "Detyrat e përfunduara",

@@ -53,6 +53,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import { FieldsDropdown } from './fields-dropdown';
 import { FilterDropdown } from './filter-dropdown';
+import { Filters } from './filters-panel';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { SearchFilter } from './search-filter';
 import { SoftwareQuickFilterChips } from './software-quick-filter-chips';
@@ -438,6 +439,14 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     return filterSectionsData.filter(section => section.id !== 'phase' && section.id !== 'groupBy');
   }, [filterSectionsData, mode]);
   const isDataLoaded = useMemo(() => visibleFilterSections.length > 0, [visibleFilterSections]);
+  const attributeFilterSections = useMemo(
+    () => visibleFilterSections.filter(section => section.id !== 'groupBy'),
+    [visibleFilterSections]
+  );
+  const groupBySection = useMemo(
+    () => visibleFilterSections.find(section => section.id === 'groupBy'),
+    [visibleFilterSections]
+  );
   const memoizedFilterSections = useMemo(() => visibleFilterSections, [visibleFilterSections]);
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');
   const isRestoringFilters = useAppSelector((state: RootState) => state.taskReducer.isRestoringFilters);
@@ -466,6 +475,16 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     }
     dispatch(fetchTasksV3(projectId));
   }, [dispatch, position, projectId]);
+
+  /** Number of applied filter values, shown on the "Filters" button. */
+  const appliedFilterCount = useMemo(
+    () =>
+      attributeFilterSections.reduce(
+        (total, section) => total + section.selectedValues.length,
+        0
+      ),
+    [attributeFilterSections]
+  );
 
   useEffect(() => {
     const handleResize = () => {
@@ -631,6 +650,10 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
 
   const handleDropdownToggle = useCallback((sectionId: string) => {
     setOpenDropdown(current => (current === sectionId ? null : sectionId));
+  }, []);
+
+  const handleDropdownClose = useCallback(() => {
+    setOpenDropdown(null);
   }, []);
 
   const handleSelectionChange = useCallback(
@@ -860,6 +883,82 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     clearCompactToolbarFilters,
   ]);
 
+  const clearAttributeFilters = useCallback(async () => {
+    if (!projectId || clearingFilters) return;
+
+    setClearingFilters(true);
+
+    try {
+      debouncedFilterChangeRef.current?.cancel();
+
+      setFilterSections(prev =>
+        prev.map(section => ({
+          ...section,
+          selectedValues: section.id === 'groupBy' ? section.selectedValues : [],
+        }))
+      );
+
+      if (position === 'board') {
+        const currentLabels = kanbanState.labels || [];
+        currentLabels.forEach((label: any) => {
+          if (label.selected) {
+            dispatch(setLabelSelection({ id: label.id, selected: false }));
+          }
+        });
+        const currentAssignees = kanbanState.taskAssignees || [];
+        currentAssignees.forEach((assignee: any) => {
+          if (assignee.selected) {
+            dispatch(setTaskAssigneeSelection({ id: assignee.id, selected: false }));
+          }
+        });
+        dispatch(setKanbanPriorities([]));
+        dispatch(setKanbanStatuses([]));
+        dispatch(setKanbanPhases([]));
+      } else {
+        const clearedLabels = currentTaskLabels.map(label => ({
+          ...label,
+          selected: false,
+        }));
+        dispatch(setLabels(clearedLabels));
+
+        const clearedAssignees = currentTaskAssignees.map(member => ({
+          ...member,
+          selected: false,
+        }));
+        dispatch(setMembers(clearedAssignees));
+        dispatch(setPriorities([]));
+        dispatch(setStatuses([]));
+        dispatch(setPhases([]));
+      }
+
+      if (!isRestoringFilters) {
+        dispatch(persistFilters());
+      }
+
+      setTimeout(() => {
+        if (position === 'board') {
+          dispatch(fetchEnhancedKanbanGroups(projectId));
+        } else {
+          dispatch(fetchTasksV3(projectId));
+        }
+        setTimeout(() => setClearingFilters(false), 100);
+      }, 0);
+    } catch (error) {
+      console.error('Error clearing attribute filters:', error);
+      setClearingFilters(false);
+    }
+  }, [
+    projectId,
+    clearingFilters,
+    position,
+    kanbanState.labels,
+    kanbanState.taskAssignees,
+    currentTaskLabels,
+    currentTaskAssignees,
+    isRestoringFilters,
+    dispatch,
+  ]);
+
   const toggleArchived = useCallback(() => {
     if (position === 'board') {
       dispatch(setKanbanArchived(!showArchived));
@@ -934,21 +1033,38 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
           )}
 
           {isCompactToolbar ? null : isDataLoaded ? (
-            visibleFilterSections.map(section =>
-              section.id === 'groupBy' && showOverflowMenu ? null : (
-                <FilterDropdown
-                  key={section.id}
-                  section={section}
+            <>
+              {attributeFilterSections.length > 0 && (
+                <Filters
+                  allSections={attributeFilterSections}
+                  appliedFilterCount={appliedFilterCount}
+                  openDropdown={openDropdown}
+                  onDropdownToggle={handleDropdownToggle}
+                  onDropdownClose={handleDropdownClose}
                   onSelectionChange={handleSelectionChange}
-                  isOpen={openDropdown === section.id}
-                  onToggle={() => handleDropdownToggle(section.id)}
+                  themeClasses={themeClasses}
+                  isDarkMode={isDarkMode}
+                  onClearAttributeFilters={clearAttributeFilters}
+                  onManageStatus={() => setShowManageStatusModal(true)}
+                  onManagePhase={() => setShowManagePhaseModal(true)}
+                />
+              )}
+
+              {groupBySection && !showOverflowMenu && (
+                <FilterDropdown
+                  key={groupBySection.id}
+                  section={groupBySection}
+                  onSelectionChange={handleSelectionChange}
+                  isOpen={openDropdown === groupBySection.id}
+                  onToggle={() => handleDropdownToggle(groupBySection.id)}
+                  onClose={handleDropdownClose}
                   themeClasses={themeClasses}
                   isDarkMode={isDarkMode}
                   onManageStatus={() => setShowManageStatusModal(true)}
                   onManagePhase={() => setShowManagePhaseModal(true)}
                 />
-              )
-            )
+              )}
+            </>
           ) : (
             <div
               className={`flex items-center gap-2 px-2.5 py-1.5 text-xs ${themeClasses.secondaryText}`}

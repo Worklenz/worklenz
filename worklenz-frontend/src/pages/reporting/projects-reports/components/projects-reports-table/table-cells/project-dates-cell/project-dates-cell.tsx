@@ -1,6 +1,6 @@
-import { DatePicker, Flex, Typography } from '@/shared/antd-imports';
+import { DatePicker, Flex, Typography, message } from '@/shared/antd-imports';
 import { CloseOutlined } from '@/shared/antd-imports';
-import { useEffect, useState, useCallback, memo } from 'react';
+import { useEffect, useState, useCallback, useRef, memo } from 'react';
 import { colors } from '@/styles/colors';
 import dayjs, { Dayjs } from 'dayjs';
 import { useSocket } from '@/socket/socketContext';
@@ -12,6 +12,19 @@ import {
 } from '@/features/reporting/projectReports/project-reports-slice';
 import logger from '@/utils/errorLogger';
 import { useTranslation } from 'react-i18next';
+
+type DateChangeAck = { success: boolean; error?: string };
+const ACK_TIMEOUT_MS = 8000;
+
+// Per-date save tracking so a late failure of an older edit can never overwrite a newer one.
+type SaveState = {
+  pending: number; // requests awaiting an ack
+  confirmed: string | null; // last value the server acknowledged (or the loaded value)
+  optimistic: string | null; // latest value the user chose
+};
+
+const toDateString = (value: string | Date | null): string | null =>
+  value ? dayjs(value).format('YYYY-MM-DD') : null;
 
 type ProjectDatesCellProps = {
   projectId: string;
@@ -32,12 +45,26 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
     endDate ? dayjs(endDate) : null
   );
 
+  const saveStateRef = useRef<Record<'start' | 'end', SaveState>>({
+    start: { pending: 0, confirmed: toDateString(startDate), optimistic: toDateString(startDate) },
+    end: { pending: 0, confirmed: toDateString(endDate), optimistic: toDateString(endDate) },
+  });
+
   useEffect(() => {
     setLocalStartDate(startDate ? dayjs(startDate) : null);
+    // Props echo our own optimistic dispatches, so only treat them as server truth when idle.
+    const state = saveStateRef.current.start;
+    if (state.pending === 0) {
+      state.confirmed = state.optimistic = toDateString(startDate);
+    }
   }, [startDate]);
 
   useEffect(() => {
     setLocalEndDate(endDate ? dayjs(endDate) : null);
+    const state = saveStateRef.current.end;
+    if (state.pending === 0) {
+      state.confirmed = state.optimistic = toDateString(endDate);
+    }
   }, [endDate]);
 
   // Active date picker state
@@ -66,74 +93,79 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
 
 
 
-  const handleStartDateChange = useCallback(
-    (date: Dayjs | null) => {
+  const saveDate = useCallback(
+    (kind: 'start' | 'end', date: Dayjs | null) => {
       try {
         if (!socket) {
           throw new Error('Socket connection not available');
         }
 
+        const isStart = kind === 'start';
+        const state = saveStateRef.current[kind];
         const formattedDate = date ? date.format('YYYY-MM-DD') : null;
-        setLocalStartDate(date);
+        const setLocal = isStart ? setLocalStartDate : setLocalEndDate;
+        const setRedux = (value: string | null) =>
+          dispatch(
+            isStart
+              ? setProjectStartDate({ id: projectId, start_date: value })
+              : setProjectEndDate({ id: projectId, end_date: value })
+          );
 
-        // Optimistically update Redux
-        dispatch(
-          setProjectStartDate({
-            id: projectId,
-            start_date: formattedDate,
-          })
-        );
+        state.pending += 1;
+        state.optimistic = formattedDate;
+        setLocal(date);
+        // Optimistically update Redux so dependent columns (e.g. Days Left) update in real-time
+        setRedux(formattedDate);
 
-        socket.emit(
-          SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
+        socket.timeout(ACK_TIMEOUT_MS).emit(
+          (isStart
+            ? SocketEvents.PROJECT_START_DATE_CHANGE
+            : SocketEvents.PROJECT_END_DATE_CHANGE
+          ).toString(),
           JSON.stringify({
             project_id: projectId,
-            start_date: formattedDate,
+            [isStart ? 'start_date' : 'end_date']: formattedDate,
             time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          })
+          }),
+          (err: Error | null, response?: DateChangeAck) => {
+            state.pending -= 1;
+            const saved = !err && !!response?.success;
+            if (saved) {
+              state.confirmed = formattedDate;
+            }
+            // Only settle once every in-flight edit has answered, and only roll back when the
+            // latest chosen value was never confirmed. An older edit failing after a newer one
+            // succeeded therefore leaves the newer value untouched.
+            if (state.pending === 0 && state.optimistic !== state.confirmed) {
+              state.optimistic = state.confirmed;
+              setLocal(state.confirmed ? dayjs(state.confirmed) : null);
+              setRedux(state.confirmed);
+              message.error(
+                response?.error ||
+                  t(isStart ? 'startDateSaveFailed' : 'endDateSaveFailed', {
+                    defaultValue: `Failed to save the ${kind} date. Please try again.`,
+                  })
+              );
+            }
+          }
         );
 
         setActiveDatePicker(null);
       } catch (error) {
-        logger.error('Error sending start date change:', error);
+        logger.error(`Error sending ${kind} date change:`, error);
       }
     },
-    [socket, projectId, dispatch]
+    [socket, projectId, dispatch, t]
+  );
+
+  const handleStartDateChange = useCallback(
+    (date: Dayjs | null) => saveDate('start', date),
+    [saveDate]
   );
 
   const handleEndDateChange = useCallback(
-    (date: Dayjs | null) => {
-      try {
-        if (!socket) {
-          throw new Error('Socket connection not available');
-        }
-
-        const formattedDate = date ? date.format('YYYY-MM-DD') : null;
-        setLocalEndDate(date);
-
-        // Optimistically update Redux so Days Left / Overdue column updates in real-time
-        dispatch(
-          setProjectEndDate({
-            id: projectId,
-            end_date: formattedDate,
-          })
-        );
-
-        socket.emit(
-          SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
-          JSON.stringify({
-            project_id: projectId,
-            end_date: formattedDate,
-            time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          })
-        );
-
-        setActiveDatePicker(null);
-      } catch (error) {
-        logger.error('Error sending end date change:', error);
-      }
-    },
-    [socket, projectId, dispatch]
+    (date: Dayjs | null) => saveDate('end', date),
+    [saveDate]
   );
 
   // Handle clear date on mousedown so it fires before blur/unmount
