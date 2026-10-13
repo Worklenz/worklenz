@@ -44,6 +44,8 @@ export const OVERVIEW_WIDGET_KEYS = [
   "incomplete_tasks_by_project",
   "upcoming_tasks",
   "overdue_tasks",
+  "burndown_chart",
+  "burnup_chart",
 ] as const;
 export type OverviewWidgetKey = (typeof OVERVIEW_WIDGET_KEYS)[number];
 
@@ -66,10 +68,15 @@ export const REPEATABLE_OVERVIEW_WIDGET_KEYS = new Set<OverviewWidgetKey>([
   "incomplete_tasks_by_project",
   "upcoming_tasks",
   "overdue_tasks",
+  "burndown_chart",
+  "burnup_chart",
 ]);
 
 const CHART_TYPES = ["bar", "stacked", "line", "donut", "number"] as const;
 const GROUP_BY_VALUES = ["assignee", "project"] as const;
+const PROGRESS_SCOPE_VALUES = ["team", "project"] as const;
+const PROGRESS_SOURCE_VALUES = ["range", "sprint"] as const;
+const PROGRESS_METRIC_VALUES = ["story_points", "issue_count", "estimated_hours"] as const;
 
 /** Per-widget filter selection for the stats widgets below. All fields optional: an unset field
  *  falls back to the page-level default (see reporting-project-widgets-stats.service.ts). */
@@ -85,6 +92,18 @@ export interface OverviewWidgetConfig {
   hideDataLabels?: boolean;
   /** Per-series bar/line color overrides (hex strings), in series order. */
   colors?: string[];
+  /** Burnup / Burndown widgets only: "team" = the active team's projects, "project" = one project. */
+  progressScope?: (typeof PROGRESS_SCOPE_VALUES)[number];
+  /** Burnup / Burndown, project scope: the project, and optionally one of its sprints. */
+  projectId?: string;
+  progressSource?: (typeof PROGRESS_SOURCE_VALUES)[number];
+  sprintId?: string;
+  /** Burnup / Burndown: what is counted. */
+  progressMetric?: (typeof PROGRESS_METRIC_VALUES)[number];
+  /** Burnup / Burndown: count sub-tasks too (off by default, as in Jira). */
+  includeSubtasks?: boolean;
+  showIdealLine?: boolean;
+  showForecast?: boolean;
 }
 
 export interface OverviewWidgetInstance {
@@ -130,6 +149,7 @@ const isHexColorArray = (value: unknown): value is string[] =>
 
 const BILLABLE_VALUES = ["all", "billable", "nonBillable"];
 const ID_PATTERN = /^[A-Za-z0-9_-]{1,100}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** chartType values retired when the chart-type picker was unified to bar/stacked/line/donut/number.
  *  A layout saved under the old scheme is migrated here rather than rejected, so re-saving an
  *  untouched widget doesn't 400 forever just because its last-saved config predates the change. */
@@ -180,6 +200,35 @@ function sanitizeConfig(raw: unknown): OverviewWidgetConfig | undefined {
   if (input.colors !== undefined) {
     if (!isHexColorArray(input.colors)) throw new InvalidOverviewLayoutError("widget config.colors must be a list of hex colors");
     config.colors = input.colors as string[];
+  }
+
+  if (input.progressScope !== undefined) {
+    if (!PROGRESS_SCOPE_VALUES.includes(input.progressScope as any)) throw new InvalidOverviewLayoutError("widget config.progressScope is invalid");
+    config.progressScope = input.progressScope as OverviewWidgetConfig["progressScope"];
+  }
+
+  if (input.progressSource !== undefined) {
+    if (!PROGRESS_SOURCE_VALUES.includes(input.progressSource as any)) throw new InvalidOverviewLayoutError("widget config.progressSource is invalid");
+    config.progressSource = input.progressSource as OverviewWidgetConfig["progressSource"];
+  }
+
+  if (input.progressMetric !== undefined) {
+    if (!PROGRESS_METRIC_VALUES.includes(input.progressMetric as any)) throw new InvalidOverviewLayoutError("widget config.progressMetric is invalid");
+    config.progressMetric = input.progressMetric as OverviewWidgetConfig["progressMetric"];
+  }
+
+  for (const key of ["projectId", "sprintId"] as const) {
+    if (input[key] !== undefined) {
+      if (typeof input[key] !== "string" || !UUID_PATTERN.test(input[key] as string)) throw new InvalidOverviewLayoutError(`widget config.${key} must be an id`);
+      config[key] = input[key] as string;
+    }
+  }
+
+  for (const key of ["includeSubtasks", "showIdealLine", "showForecast"] as const) {
+    if (input[key] !== undefined) {
+      if (typeof input[key] !== "boolean") throw new InvalidOverviewLayoutError(`widget config.${key} must be a boolean`);
+      config[key] = input[key] as boolean;
+    }
   }
 
   if (Buffer.byteLength(JSON.stringify(config), "utf8") > MAX_CONFIG_BYTES) {

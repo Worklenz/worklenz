@@ -14,16 +14,18 @@ Chart.register(ArcElement, BarElement, CategoryScale, LinearScale, LineElement, 
 
 const DOUGHNUT_COLORS = ['#7a84df', '#c191cc', '#4caf50', '#ff9800', '#ef5350', '#29b6f6', '#8d6e63', '#78909c'];
 
-const WidgetFrame: React.FC<{
+export const WidgetFrame: React.FC<{
   title: string;
   loading: boolean;
   empty: boolean;
+  /** Shown instead of the default empty illustration (e.g. "pick a project"). */
+  emptyContent?: React.ReactNode;
   /** What the chart/table is showing (the widget's catalogue description), shown first in the tooltip. */
   description?: string;
   /** Active filters for this instance (teams, billable, archived), shown below the description. */
   filtersSummary?: string[];
   children: React.ReactNode;
-}> = ({ title, loading, empty, description, filtersSummary, children }) => {
+}> = ({ title, loading, empty, emptyContent, description, filtersSummary, children }) => {
   const [viewLarger, setViewLarger] = useState(false);
   const hasTooltip = Boolean(description) || Boolean(filtersSummary?.length);
   const titleNode = hasTooltip ? (
@@ -51,7 +53,7 @@ const WidgetFrame: React.FC<{
       <WorklenzLogoLoader scale={0.6} />
     </Flex>
   ) : empty ? (
-    <Empty />
+    (emptyContent ?? <Empty />)
   ) : (
     children
   );
@@ -98,7 +100,7 @@ interface ChartSeries {
 /** A container's rendered size, tracked live via ResizeObserver - so chart chrome (legend
  *  placement) can react to the widget's actual on-screen size (drag-resize, breakpoint changes)
  *  instead of a fixed assumption. */
-const useElementSize = <T extends HTMLElement>() => {
+export const useElementSize = <T extends HTMLElement>() => {
   const ref = useRef<T>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   useEffect(() => {

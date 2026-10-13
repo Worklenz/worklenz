@@ -20,6 +20,16 @@ import {
   ProjectWidgetFilters,
   TaskGroupBy,
 } from "../../../services/reporting-project-widgets-stats.service";
+import {
+  getProgressChart,
+  getProgressChartOptions,
+  PROGRESS_METRICS,
+  PROGRESS_SCOPES,
+  PROGRESS_SOURCES,
+  ProgressChartError,
+  ProgressChartFilters,
+} from "../../../services/reporting-progress-chart.service";
+import { isValidUuid } from "../../../shared/validation-helpers";
 
 const WIDGET_TYPES = [
   "project_stats_by_status",
@@ -46,6 +56,13 @@ const splitIds = (value: unknown): string[] | undefined => {
 };
 
 const BILLABLE_VALUES = ["all", "billable", "nonBillable"];
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+const parseIsoDate = (value: unknown): string | undefined | null => {
+  if (value === undefined || value === "") return undefined;
+  if (typeof value !== "string" || !ISO_DATE_PATTERN.test(value) || !moment.utc(value, "YYYY-MM-DD", true).isValid()) return null;
+  return value;
+};
 
 export default class ReportingProjectWidgetsController extends WorklenzControllerBase {
   /**
@@ -120,5 +137,60 @@ export default class ReportingProjectWidgetsController extends WorklenzControlle
     ]);
 
     return res.status(200).send(new ServerResponse(true, body));
+  }
+
+  /**
+   * GET /reporting/projects/widgets/progress-chart - burnup / burndown series for one widget.
+   * Scope is the viewer's active team ("team") or one of its projects ("project", optionally one
+   * sprint). Stateless: the widget's own config is sent as query params.
+   */
+  @HandleExceptions()
+  public static async getProgressChart(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const scope = (req.query.scope as string) || "team";
+    const source = (req.query.source as string) || "range";
+    const metric = (req.query.metric as string) || "story_points";
+    const projectId = req.query.projectId as string | undefined;
+    const sprintId = req.query.sprintId as string | undefined;
+    const dateFrom = parseIsoDate(req.query.dateFrom);
+    const dateTo = parseIsoDate(req.query.dateTo);
+
+    if (!(PROGRESS_SCOPES as readonly string[]).includes(scope)) return res.status(400).send(new ServerResponse(false, null, "Invalid scope"));
+    if (!(PROGRESS_SOURCES as readonly string[]).includes(source)) return res.status(400).send(new ServerResponse(false, null, "Invalid source"));
+    if (!(PROGRESS_METRICS as readonly string[]).includes(metric)) return res.status(400).send(new ServerResponse(false, null, "Invalid metric"));
+    if (dateFrom === null || dateTo === null) return res.status(400).send(new ServerResponse(false, null, "Dates must be YYYY-MM-DD"));
+    if ((projectId && !isValidUuid(projectId)) || (sprintId && !isValidUuid(sprintId))) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid id"));
+    }
+
+    const filters: ProgressChartFilters = {
+      teamId: req.user?.team_id as string,
+      userId: req.user?.id as string,
+      scope: scope as ProgressChartFilters["scope"],
+      source: scope === "project" ? (source as ProgressChartFilters["source"]) : "range",
+      metric: metric as ProgressChartFilters["metric"],
+      projectId,
+      sprintId,
+      includeSubtasks: req.query.includeSubtasks === "true",
+      includeArchived: req.query.archived === "true",
+      dateFrom,
+      dateTo,
+      forecast: req.query.forecast !== "false",
+    };
+
+    try {
+      return res.status(200).send(new ServerResponse(true, await getProgressChart(filters)));
+    } catch (error) {
+      if (error instanceof ProgressChartError) return res.status(error.status).send(new ServerResponse(false, null, error.message));
+      throw error;
+    }
+  }
+
+  /** GET /reporting/projects/widgets/progress-chart/options - project + sprint pickers for the widget settings. */
+  @HandleExceptions()
+  public static async getProgressChartOptions(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const projectId = req.query.projectId as string | undefined;
+    if (projectId && !isValidUuid(projectId)) return res.status(400).send(new ServerResponse(false, null, "Invalid id"));
+    const options = await getProgressChartOptions(req.user?.team_id as string, req.user?.id as string, projectId);
+    return res.status(200).send(new ServerResponse(true, options));
   }
 }

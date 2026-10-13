@@ -209,6 +209,26 @@ const plainText: ConfigFieldValidator = (value, label) => {
   return value;
 };
 
+const enumOf =
+  (allowed: readonly string[]): ConfigFieldValidator =>
+  (value, label) => {
+    if (typeof value !== "string" || !allowed.includes(value)) throw new InvalidDashboardError(`${label} is not supported`);
+    return value;
+  };
+
+const flag: ConfigFieldValidator = (value, label) => {
+  if (typeof value !== "boolean") throw new InvalidDashboardError(`${label} must be true or false`);
+  return value;
+};
+
+const progressChartFields = {
+  project_id: projectId,
+  sprint_id: projectId,
+  metric: enumOf(["story_points", "issue_count", "estimated_hours"]),
+  include_subtasks: flag,
+  date_range: dateRange,
+} as const;
+
 /**
  * Known gadget types and the config fields each accepts. Kept on the backend (not imported from
  * the frontend) so validation does not depend on what the frontend currently ships; add a type
@@ -222,6 +242,8 @@ export const GADGET_REGISTRY: Readonly<Record<string, Readonly<Record<string, Co
   cumulative_flow: { project_id: projectId, date_range: dateRange },
   sla_tracking: { project_id: projectId, date_range: dateRange },
   time_in_status: { project_id: projectId, date_range: dateRange },
+  burndown_chart: progressChartFields,
+  burnup_chart: progressChartFields,
   project_summary: { project_id: projectId },
   text: { text: plainText },
 };

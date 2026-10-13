@@ -89,6 +89,13 @@ describe("validateGadgets", () => {
     });
     expect(() => validateGadgets([gadget({ type: "velocity_chart", config: { project_id: "x" } })])).toThrow(InvalidDashboardError);
     expect(() => validateGadgets([gadget({ type: "velocity_chart", config: { sprint_count: 99 } })])).toThrow(InvalidDashboardError);
+  });
+
+  it("validates burndown / burnup gadget config", () => {
+    const config = { project_id: PROJECT_ID, metric: "issue_count", include_subtasks: true };
+    expect(validateGadgets([gadget({ type: "burndown_chart", config })])[0].config).toEqual(config);
+    expect(() => validateGadgets([gadget({ type: "burnup_chart", config: { metric: "hours" } })])).toThrow(InvalidDashboardError);
+    expect(() => validateGadgets([gadget({ type: "burnup_chart", config: { include_subtasks: "yes" } })])).toThrow(InvalidDashboardError);
     expect(() => validateGadgets([gadget({ type: "text", config: { url: "http://evil" } })])).toThrow(/unknown field/);
   });
 

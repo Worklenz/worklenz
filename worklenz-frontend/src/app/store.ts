@@ -99,6 +99,7 @@ import homePageApiService from '@/api/home-page/home-page.api.service';
 import personalOverviewApi from '@/api/personal-overview/personal-overview.api.service';
 import overviewLayoutApi from '@/api/reporting/overview-layout.api.service';
 import overviewWidgetsStatsApi from '@/api/reporting/overview-widgets-stats.api.service';
+import progressChartApi from '@/api/reporting/progress-chart.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
 import { userActivityApiService } from '@/api/home-page/user-activity.api.service';
 import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
@@ -147,6 +148,7 @@ const coreReducers = {
   [personalOverviewApi.reducerPath]: personalOverviewApi.reducer,
   [overviewLayoutApi.reducerPath]: overviewLayoutApi.reducer,
   [overviewWidgetsStatsApi.reducerPath]: overviewWidgetsStatsApi.reducer,
+  [progressChartApi.reducerPath]: progressChartApi.reducer,
   [projectsApi.reducerPath]: projectsApi.reducer,
   [clientPortalApi.reducerPath]: clientPortalApi.reducer,
   [roadmapApi.reducerPath]: roadmapApi.reducer,
@@ -284,6 +286,7 @@ export const store = configureStore({
       personalOverviewApi.middleware,
       overviewLayoutApi.middleware,
       overviewWidgetsStatsApi.middleware,
+      progressChartApi.middleware,
       projectsApi.middleware,
       clientPortalApi.middleware,
       userActivityApiService.middleware,

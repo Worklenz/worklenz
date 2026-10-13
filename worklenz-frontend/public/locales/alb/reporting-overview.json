@@ -63,7 +63,9 @@
     "teamUtilization": "Shfrytëzimi i Ekipit",
     "billableTasks": "Detyra të Faturueshme kundrejt Jo-Faturueshme",
     "billableTimeLogs": "Regjistrimet e Kohës së Faturueshme kundrejt Jo-Faturueshme",
-    "clientStats": "Statistikat e Klientit"
+    "clientStats": "Statistikat e Klientit",
+    "burndownChart": "Burndown Chart",
+    "burnupChart": "Burnup Chart"
   },
   "widgetFilters": {
     "teams": "Ekipet",
@@ -75,7 +77,26 @@
     "nonBillableOnly": "Jo e faturueshme",
     "includeArchived": "Përfshij projektet e arkivuara",
     "barColor": "Ngjyra e shtyllës",
-    "barColors": "Ngjyrat e shtyllave"
+    "barColors": "Ngjyrat e shtyllave",
+    "progressScope": "Level",
+    "scopeTeam": "Active team",
+    "scopeProject": "Project",
+    "project": "Project",
+    "selectProject": "Select a project",
+    "progressSource": "Period",
+    "sourceRange": "Date range",
+    "sourceSprint": "Sprint",
+    "sprint": "Sprint",
+    "selectSprint": "Select a sprint",
+    "noSprints": "No started sprints in this project",
+    "sprintActive": "active",
+    "metric": "Measure",
+    "metricStoryPoints": "Story points",
+    "metricIssueCount": "Issues",
+    "metricEstimatedHours": "Estimated hours",
+    "includeSubtasks": "Include sub-tasks",
+    "showIdealLine": "Show guideline",
+    "showForecast": "Show forecast"
   },
   "widgetStats": {
     "todoText": "Për të Bërë",
@@ -90,7 +111,23 @@
     "clientText": "Klienti",
     "noClientText": "Pa klient",
     "tasksText": "Detyra",
-    "loggedHoursText": "Orë të regjistruara"
+    "loggedHoursText": "Orë të regjistruara",
+    "scopeText": "Scope",
+    "completedText": "Completed",
+    "remainingText": "Remaining",
+    "guidelineText": "Guideline",
+    "forecastText": "Forecast",
+    "scopeChange": "Scope change",
+    "onTrack": "On track",
+    "behindSchedule": "Behind schedule",
+    "projectedFinish": "Projected finish: {{date}}",
+    "pickProject": "Choose a project in this widget’s settings",
+    "pickSprint": "Choose a sprint in this widget’s settings",
+    "loadFailed": "Could not load this chart",
+    "retry": "Retry",
+    "noProgressWork": "No work found for this selection",
+    "estimatedHistory": "Earlier history is estimated from task dates; changes are tracked exactly from now on.",
+    "progressAriaLabel": "{{title}}: {{completed}} of {{scope}} {{metric}} completed, {{remaining}} remaining"
   },
   "widgetDescriptions": {
     "kpiTeams": "Numri i ekipeve në hapësirën tuaj të punës",
@@ -108,6 +145,8 @@
     "teamUtilization": "Orët e regjistruara si përqindje e kapacitetit të pritshëm të secilit anëtar",
     "billableTasks": "Sa detyra janë të shënuara si të faturueshme kundrejt jo-faturueshme",
     "billableTimeLogs": "Orët e regjistruara të ndara mes kohës së faturueshme dhe jo-faturueshme",
-    "clientStats": "Projektet, detyrat dhe orët e regjistruara të grupuara sipas klientit"
+    "clientStats": "Projektet, detyrat dhe orët e regjistruara të grupuara sipas klientit",
+    "burndownChart": "Work remaining over time for your active team or a single project/sprint, against a guideline",
+    "burnupChart": "Completed work against total scope over time, so scope changes are visible"
   }
 }

@@ -67,7 +67,9 @@
     "projectHealthStats": "Projects by Health",
     "incompleteTasksByProject": "Incomplete Tasks by Project",
     "upcomingTasks": "Upcoming Tasks",
-    "overdueTasks": "Overdue Tasks"
+    "overdueTasks": "Overdue Tasks",
+    "burndownChart": "Burndown Chart",
+    "burnupChart": "Burnup Chart"
   },
   "dateRangeFilter": {
     "today": "Today",
@@ -100,7 +102,26 @@
     "barColors": "Bar colors",
     "groupBy": "Group by",
     "groupByAssignee": "Assignee",
-    "groupByProject": "Project"
+    "groupByProject": "Project",
+    "progressScope": "Level",
+    "scopeTeam": "Active team",
+    "scopeProject": "Project",
+    "project": "Project",
+    "selectProject": "Select a project",
+    "progressSource": "Period",
+    "sourceRange": "Date range",
+    "sourceSprint": "Sprint",
+    "sprint": "Sprint",
+    "selectSprint": "Select a sprint",
+    "noSprints": "No started sprints in this project",
+    "sprintActive": "active",
+    "metric": "Measure",
+    "metricStoryPoints": "Story points",
+    "metricIssueCount": "Issues",
+    "metricEstimatedHours": "Estimated hours",
+    "includeSubtasks": "Include sub-tasks",
+    "showIdealLine": "Show guideline",
+    "showForecast": "Show forecast"
   },
   "widgetStats": {
     "todoText": "To do",
@@ -120,7 +141,23 @@
     "upcomingTasks": "Upcoming tasks",
     "overdueTasks": "Overdue tasks",
     "unassignedText": "Unassigned",
-    "projectsText": "Projects"
+    "projectsText": "Projects",
+    "scopeText": "Scope",
+    "completedText": "Completed",
+    "remainingText": "Remaining",
+    "guidelineText": "Guideline",
+    "forecastText": "Forecast",
+    "scopeChange": "Scope change",
+    "onTrack": "On track",
+    "behindSchedule": "Behind schedule",
+    "projectedFinish": "Projected finish: {{date}}",
+    "pickProject": "Choose a project in this widget’s settings",
+    "pickSprint": "Choose a sprint in this widget’s settings",
+    "loadFailed": "Could not load this chart",
+    "retry": "Retry",
+    "noProgressWork": "No work found for this selection",
+    "estimatedHistory": "Earlier history is estimated from task dates; changes are tracked exactly from now on.",
+    "progressAriaLabel": "{{title}}: {{completed}} of {{scope}} {{metric}} completed, {{remaining}} remaining"
   },
   "widgetDescriptions": {
     "kpiTeams": "Number of teams in your workspace",
@@ -142,6 +179,8 @@
     "projectHealthStats": "How many projects are at each health status (e.g. Good, At Risk, Needs Attention)",
     "incompleteTasksByProject": "How many not-yet-done tasks each project has",
     "upcomingTasks": "Not-yet-done tasks with a future due date, by assignee or project",
-    "overdueTasks": "Tasks past their due date and not done, by project or assignee"
+    "overdueTasks": "Tasks past their due date and not done, by project or assignee",
+    "burndownChart": "Work remaining over time for your active team or a single project/sprint, against a guideline",
+    "burnupChart": "Completed work against total scope over time, so scope changes are visible"
   }
 }

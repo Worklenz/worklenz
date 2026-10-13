@@ -152,6 +152,23 @@ reportingApiRouter.get("/projects/widgets/stats",
   safeControllerFunction(ReportingProjectWidgetsController.getStats)
 );
 
+// Burnup / burndown widgets. Scope is the active team (or one of its projects); see the
+// 1791770400003 migration for the event ledger these read.
+reportingApiRouter.get("/projects/widgets/progress-chart",
+  teamOwnerOrAdminValidator,
+  validateEnumParam("scope", ["team", "project"]),
+  validateEnumParam("source", ["range", "sprint"]),
+  validateEnumParam("metric", ["story_points", "issue_count", "estimated_hours"]),
+  validateEnumParam("includeSubtasks", ["true", "false"]),
+  validateEnumParam("archived", ["true", "false"]),
+  validateEnumParam("forecast", ["true", "false"]),
+  safeControllerFunction(ReportingProjectWidgetsController.getProgressChart)
+);
+reportingApiRouter.get("/projects/widgets/progress-chart/options",
+  teamOwnerOrAdminValidator,
+  safeControllerFunction(ReportingProjectWidgetsController.getProgressChartOptions)
+);
+
 // members
 reportingApiRouter.get("/members",
   teamOwnerOrAdminValidator,

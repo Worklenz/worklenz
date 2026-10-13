@@ -63,7 +63,9 @@
     "teamUtilization": "Utilização da Equipe",
     "billableTasks": "Tarefas Faturáveis vs Não Faturáveis",
     "billableTimeLogs": "Registros de Tempo Faturáveis vs Não Faturáveis",
-    "clientStats": "Estatísticas de Clientes"
+    "clientStats": "Estatísticas de Clientes",
+    "burndownChart": "Burndown Chart",
+    "burnupChart": "Burnup Chart"
   },
   "widgetFilters": {
     "teams": "Equipes",
@@ -75,7 +77,26 @@
     "nonBillableOnly": "Não faturável",
     "includeArchived": "Incluir projetos arquivados",
     "barColor": "Cor da barra",
-    "barColors": "Cores das barras"
+    "barColors": "Cores das barras",
+    "progressScope": "Level",
+    "scopeTeam": "Active team",
+    "scopeProject": "Project",
+    "project": "Project",
+    "selectProject": "Select a project",
+    "progressSource": "Period",
+    "sourceRange": "Date range",
+    "sourceSprint": "Sprint",
+    "sprint": "Sprint",
+    "selectSprint": "Select a sprint",
+    "noSprints": "No started sprints in this project",
+    "sprintActive": "active",
+    "metric": "Measure",
+    "metricStoryPoints": "Story points",
+    "metricIssueCount": "Issues",
+    "metricEstimatedHours": "Estimated hours",
+    "includeSubtasks": "Include sub-tasks",
+    "showIdealLine": "Show guideline",
+    "showForecast": "Show forecast"
   },
   "widgetStats": {
     "todoText": "A fazer",
@@ -90,7 +111,23 @@
     "clientText": "Cliente",
     "noClientText": "Sem cliente",
     "tasksText": "Tarefas",
-    "loggedHoursText": "Horas registradas"
+    "loggedHoursText": "Horas registradas",
+    "scopeText": "Scope",
+    "completedText": "Completed",
+    "remainingText": "Remaining",
+    "guidelineText": "Guideline",
+    "forecastText": "Forecast",
+    "scopeChange": "Scope change",
+    "onTrack": "On track",
+    "behindSchedule": "Behind schedule",
+    "projectedFinish": "Projected finish: {{date}}",
+    "pickProject": "Choose a project in this widget’s settings",
+    "pickSprint": "Choose a sprint in this widget’s settings",
+    "loadFailed": "Could not load this chart",
+    "retry": "Retry",
+    "noProgressWork": "No work found for this selection",
+    "estimatedHistory": "Earlier history is estimated from task dates; changes are tracked exactly from now on.",
+    "progressAriaLabel": "{{title}}: {{completed}} of {{scope}} {{metric}} completed, {{remaining}} remaining"
   },
   "widgetDescriptions": {
     "kpiTeams": "Número de equipes no seu workspace",
@@ -108,6 +145,8 @@
     "teamUtilization": "Horas registradas como porcentagem da capacidade esperada de cada membro",
     "billableTasks": "Quantas tarefas estão marcadas como faturáveis ou não faturáveis",
     "billableTimeLogs": "Horas registradas divididas entre tempo faturável e não faturável",
-    "clientStats": "Projetos, tarefas e horas registradas agrupadas por cliente"
+    "clientStats": "Projetos, tarefas e horas registradas agrupadas por cliente",
+    "burndownChart": "Work remaining over time for your active team or a single project/sprint, against a guideline",
+    "burnupChart": "Completed work against total scope over time, so scope changes are visible"
   }
 }

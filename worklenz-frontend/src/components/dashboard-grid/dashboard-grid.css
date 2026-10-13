@@ -41,3 +41,9 @@
     transition: none;
   }
 }
+
+/* Adding a widget grows the page and can make a vertical scrollbar appear, which narrows the
+   viewport, re-measures the grid and visibly shifts every widget. Reserve the gutter up front. */
+html {
+  scrollbar-gutter: stable;
+}

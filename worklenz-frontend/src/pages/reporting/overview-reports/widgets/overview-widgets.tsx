@@ -7,6 +7,7 @@ import type { OverviewWidgetConfig, OverviewWidgetKey } from '@/api/reporting/ov
 import OverviewStatCard from '../components/overview-stat-card';
 import OverviewReportsTable from '../components/overview-table/overview-reports-table';
 import { useOverviewData } from './OverviewDataContext';
+import { BurndownChartWidget, BurnupChartWidget } from './overview-progress-widgets';
 import {
   BillableTasksWidget,
   BillableTimeLogsWidget,
@@ -196,6 +197,22 @@ export const OVERVIEW_WIDGETS: WidgetDefinition<OverviewWidgetKey>[] = [
     defaultDescription: 'Tasks past their due date and not done, by project or assignee',
     ...STATS_WIDGET_WIDE,
   },
+  {
+    type: 'burndown_chart',
+    titleKey: 'reporting-overview:widgets.burndownChart',
+    defaultTitle: 'Burndown Chart',
+    descriptionKey: 'reporting-overview:widgetDescriptions.burndownChart',
+    defaultDescription: 'Work remaining over time for your active team or a single project/sprint, against a guideline',
+    ...STATS_WIDGET_WIDE,
+  },
+  {
+    type: 'burnup_chart',
+    titleKey: 'reporting-overview:widgets.burnupChart',
+    defaultTitle: 'Burnup Chart',
+    descriptionKey: 'reporting-overview:widgetDescriptions.burnupChart',
+    defaultDescription: 'Completed work against total scope over time, so scope changes are visible',
+    ...STATS_WIDGET_WIDE,
+  },
 ];
 
 export const titleOf = (type: OverviewWidgetKey, t: (key: string, options?: Record<string, unknown>) => string): string => {
@@ -352,6 +369,10 @@ export const OverviewWidgetByKey: React.FC<{ widgetKey: OverviewWidgetKey; confi
       return <UpcomingTasksWidget title={titleOf(widgetKey, t)} description={descriptionOf(widgetKey, t)} config={config} />;
     case 'overdue_tasks':
       return <OverdueTasksWidget title={titleOf(widgetKey, t)} description={descriptionOf(widgetKey, t)} config={config} />;
+    case 'burndown_chart':
+      return <BurndownChartWidget title={titleOf(widgetKey, t)} description={descriptionOf(widgetKey, t)} config={config} />;
+    case 'burnup_chart':
+      return <BurnupChartWidget title={titleOf(widgetKey, t)} description={descriptionOf(widgetKey, t)} config={config} />;
     default:
       return null;
   }

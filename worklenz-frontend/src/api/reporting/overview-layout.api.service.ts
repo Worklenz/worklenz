@@ -28,7 +28,13 @@ export type OverviewWidgetKey =
   | 'project_health_stats'
   | 'incomplete_tasks_by_project'
   | 'upcoming_tasks'
-  | 'overdue_tasks';
+  | 'overdue_tasks'
+  | 'burndown_chart'
+  | 'burnup_chart';
+
+export type ProgressScope = 'team' | 'project';
+export type ProgressSource = 'range' | 'sprint';
+export type ProgressMetric = 'story_points' | 'issue_count' | 'estimated_hours';
 
 /** Per-widget filter selection for the stats widgets. All fields optional: an unset field falls
  *  back to the page-level default (the "Include Archived Projects" checkbox etc). */
@@ -48,6 +54,17 @@ export interface OverviewWidgetConfig {
    *  chartType is bar/stacked/line; an unset or short-of-series-count entry falls back to the
    *  widget's own default color for that series. */
   colors?: string[];
+  /** Burnup / Burndown widgets only. "team" = the active team's projects, "project" = one project. */
+  progressScope?: ProgressScope;
+  /** Project scope: the project, and (for the sprint source) one of its sprints. */
+  projectId?: string;
+  progressSource?: ProgressSource;
+  sprintId?: string;
+  progressMetric?: ProgressMetric;
+  /** Count sub-tasks too. Off by default (Jira parity). */
+  includeSubtasks?: boolean;
+  showIdealLine?: boolean;
+  showForecast?: boolean;
 }
 
 export type OverviewLayout = GridLayout<OverviewWidgetKey, OverviewWidgetConfig>;

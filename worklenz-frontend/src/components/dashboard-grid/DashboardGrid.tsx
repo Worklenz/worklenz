@@ -3,9 +3,8 @@ import { Responsive, WidthProvider } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 import './dashboard-grid.css';
 import { Col, Row } from '@/shared/antd-imports';
-import { computeEmptySlots, GRID_COLS, type GridWidgetInstance, type WidgetDefinition } from './layout-model';
+import { GRID_COLS, type GridWidgetInstance, type WidgetDefinition } from './layout-model';
 import { WidgetEditFrame } from './WidgetEditFrame';
-import { AddWidgetPlaceholder } from './AddWidgetPlaceholder';
 import { useIsDesktop } from './useIsDesktop';
 import type { DashboardLayoutApi } from './useDashboardLayoutDraft';
 
@@ -50,7 +49,6 @@ export function DashboardGrid<TType extends string, TConfig = unknown>({
   layout,
   catalogue,
   titleOf,
-  descriptionOf,
   renderWidget,
   mode,
   extraSettingsFor,
@@ -69,10 +67,16 @@ export function DashboardGrid<TType extends string, TConfig = unknown>({
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     const settle = window.setTimeout(() => {
       const element = document.querySelector<HTMLElement>(`[data-widget-id="${lastAdded.id}"]`);
-      element?.scrollIntoView?.({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
-      element?.focus({ preventScroll: true });
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const isOffScreen = rect.top < 0 || rect.bottom > window.innerHeight;
+        // 'nearest' moves the page the minimum distance (and not at all if already visible), so
+        // adding a widget doesn't make the whole screen jump.
+        if (isOffScreen) element.scrollIntoView?.({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
+        element.focus({ preventScroll: true });
+      }
       setFlashing(lastAdded.id);
-    }, 350);
+    }, 450);
     const clear = window.setTimeout(() => setFlashing(null), 2200);
     return () => {
       window.clearTimeout(settle);
@@ -93,11 +97,6 @@ export function DashboardGrid<TType extends string, TConfig = unknown>({
             <div style={{ height: (metaOf(widget.type)?.size.h ?? widget.h) * ROW_HEIGHT }}>{renderWidget(widget)}</div>
           </Col>
         ))}
-        <Col xs={24} sm={24}>
-          <div style={{ height: 120 }}>
-            <AddWidgetPlaceholder layout={layout} catalogue={catalogue} titleOf={titleOf} descriptionOf={descriptionOf} i18nNamespace={i18nNamespace} />
-          </div>
-        </Col>
       </Row>
     );
   }
@@ -112,25 +111,10 @@ export function DashboardGrid<TType extends string, TConfig = unknown>({
     minH: metaOf(widget.type)?.min.h ?? 1,
   }));
 
-  // Empty cells left over in already-placed rows, plus one placeholder after the last row, so
-  // there is always a visible, click-to-add tile instead of bare empty grid space.
-  const emptySlots = computeEmptySlots(items, GRID_COLS);
-  const emptySlotItems = emptySlots.map(slot => ({
-    i: slot.id,
-    x: slot.x,
-    y: slot.y,
-    w: slot.w,
-    h: slot.h,
-    static: true,
-    isDraggable: false,
-    isResizable: false,
-  }));
-  const allItems = [...items, ...emptySlotItems];
-
   return (
     <ResponsiveGrid
       className="wl-dashboard-grid"
-      layouts={{ lg: allItems, md: allItems }}
+      layouts={{ lg: items, md: items }}
       breakpoints={BREAKPOINTS}
       cols={COLS}
       rowHeight={ROW_HEIGHT}
@@ -166,11 +150,6 @@ export function DashboardGrid<TType extends string, TConfig = unknown>({
           </div>
         );
       })}
-      {emptySlots.map(slot => (
-        <div key={slot.id}>
-          <AddWidgetPlaceholder layout={layout} catalogue={catalogue} titleOf={titleOf} descriptionOf={descriptionOf} i18nNamespace={i18nNamespace} />
-        </div>
-      ))}
     </ResponsiveGrid>
   );
 }
