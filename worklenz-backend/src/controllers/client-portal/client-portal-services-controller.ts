@@ -5,6 +5,17 @@ import { ServerResponse } from "../../models/server-response";
 import db from "../../config/db";
 import { uploadBase64, deleteObject, getClientPortalStorageKey } from "../../shared/storage";
 
+const SERVICE_SORT_COLUMNS: Record<string, string> = {
+  name: "s.name",
+  description: "s.description",
+  status: "s.status",
+  is_public: "s.is_public",
+  created_at: "s.created_at",
+  updated_at: "s.updated_at",
+  created_by_name: "u.name",
+  requests_count: "requests_count",
+};
+
 export default class ClientPortalServicesController extends ClientPortalControllerBase {
   
   // Helper function to validate and process service_key
@@ -233,6 +244,10 @@ export default class ClientPortalServicesController extends ClientPortalControll
         queryParams.push(`%${search}%`);
       }
 
+      // Sanitize sorting column and order to prevent SQL injection
+      const sortColumn = SERVICE_SORT_COLUMNS[String(sortBy)] ?? SERVICE_SORT_COLUMNS.name;
+      const direction = String(sortOrder).toLowerCase() === "desc" ? "DESC" : "ASC";
+
       // Build main query
       const query = `
         SELECT
@@ -251,7 +266,7 @@ export default class ClientPortalServicesController extends ClientPortalControll
         LEFT JOIN client_portal_requests r ON s.id = r.service_id
         ${whereClause}
         GROUP BY s.id, u.name
-        ORDER BY ${sortBy} ${String(sortOrder).toUpperCase()}
+        ORDER BY ${sortColumn} ${direction}
         LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
       `;
 
