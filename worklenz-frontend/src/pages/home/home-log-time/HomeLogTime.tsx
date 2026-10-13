@@ -517,9 +517,8 @@ const HomeLogTime: React.FC = () => {
       setEndTime(null);
       setNotes('');
       refreshData();
-    } catch (error: any) {
-      const serverMessage = error?.response?.data?.message;
-      notification.error({ message: serverMessage || t('logTime.failedToLogTime', { defaultValue: 'Failed to log time' }) });
+     } catch {
+      // The API client interceptor already toasted the error message via alertService.
     } finally {
       setSubmitting(false);
     }
