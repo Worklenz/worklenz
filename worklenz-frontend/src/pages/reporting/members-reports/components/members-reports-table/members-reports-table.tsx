@@ -8,12 +8,15 @@ import TasksProgressCell from './tablesCells/tasksProgressCell/TasksProgressCell
 import MemberCell from './tablesCells/memberCell/MemberCell';
 import {
   fetchMembersData,
+  setField,
+  setOrder,
   setPagination,
   toggleMembersReportsDrawer,
 } from '@/features/reporting/membersReports/membersReportsSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import MembersReportsDrawer from '@/features/reporting/membersReports/membersReportsDrawer/members-reports-drawer';
-import { PaginationConfig } from 'antd/es/pagination';
+import type { TableProps } from 'antd';
+import type { IRPTMember } from '@/types/reporting/reporting.types';
 
 const MembersReportsTable = () => {
   const { t } = useTranslation('reporting-members');
@@ -21,9 +24,17 @@ const MembersReportsTable = () => {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
-  const { membersList, isLoading, total, archived, searchQuery, index, pageSize } = useAppSelector(
-    state => state.membersReportsReducer
-  );
+  const {
+  membersList,
+  isLoading,
+  total,
+  archived,
+  searchQuery,
+  index,
+  pageSize,
+  field,
+  order,
+} = useAppSelector(state => state.membersReportsReducer);
 
   // function to handle drawer toggle
   const handleDrawerOpen = (id: string) => {
@@ -31,21 +42,64 @@ const MembersReportsTable = () => {
     dispatch(toggleMembersReportsDrawer());
   };
 
-  const handleOnChange = (pagination: any, filters: any, sorter: any, extra: any) => {
-    dispatch(setPagination({ index: pagination.current, pageSize: pagination.pageSize }));
+  const handleOnChange: NonNullable<TableProps<IRPTMember>['onChange']> = (
+    pagination,
+    _filters,
+    sorter,
+    extra
+  ) => {
+    if (isLoading) return;
+
+    if (extra.action === 'sort') {
+      const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+
+      dispatch(setField('name'));
+      dispatch(
+        setOrder(activeSorter?.order === 'descend' ? 'desc' : 'asc')
+      );
+      dispatch(
+        setPagination({
+          index: 1,
+          pageSize: pagination.pageSize ?? pageSize,
+        })
+      );
+
+      return;
+    }
+
+    if (extra.action === 'paginate') {
+      dispatch(
+        setPagination({
+          index: pagination.current ?? 1,
+          pageSize: pagination.pageSize ?? pageSize,
+        })
+      );
+    }
   };
 
   const columns: TableColumnsType = [
     {
       key: 'member',
-      title: <CustomTableTitle title={t('memberColumn')} />,
+      title: (
+        <CustomTableTitle
+          title={t('memberColumn', { defaultValue: 'Member' })}
+        />
+      ),
+      sorter: true,
+      sortOrder:
+        field === 'name'
+          ? order === 'desc'
+            ? 'descend'
+            : 'ascend'
+          : null,
+      sortDirections: ['ascend', 'descend', 'ascend'],
       onCell: record => {
         return {
           onClick: () => handleDrawerOpen(record.id),
         };
       },
       render: record => <MemberCell member={record} />,
-    },
+  },
     {
       key: 'tasksProgress',
       title: <CustomTableTitle title={t('tasksProgressColumn')} />,
@@ -105,8 +159,18 @@ const MembersReportsTable = () => {
   ];
 
   useEffect(() => {
-    if (!isLoading) dispatch(fetchMembersData({ duration, dateRange }));
-  }, [dispatch, archived, searchQuery, dateRange, index, pageSize]);
+    dispatch(fetchMembersData({ duration, dateRange }));
+  }, [
+    dispatch,
+    archived,
+    searchQuery,
+    duration,
+    dateRange,
+    index,
+    pageSize,
+    field,
+    order,
+  ]);
 
   return (
     <ConfigProvider
@@ -119,14 +183,17 @@ const MembersReportsTable = () => {
         },
       }}
     >
-      <Table
+      <Table<IRPTMember>
         columns={columns}
         dataSource={membersList}
         rowKey={record => record.id}
-        pagination={{ showSizeChanger: true, defaultPageSize: 10, total: total }}
-        onChange={(pagination, filters, sorter, extra) =>
-          handleOnChange(pagination, filters, sorter, extra)
-        }
+        pagination={{
+          current: index,
+          pageSize,
+          showSizeChanger: true,
+          total,
+        }}
+        onChange={handleOnChange}
         scroll={{ x: 'max-content' }}
         loading={isLoading}
         onRow={record => {

@@ -107,6 +107,13 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     practiceIds: string[] = [],
     departmentIds: string[] = []
   ) {
+
+    const sortDirection = req?.query?.order === "desc" ? "DESC" : "ASC";
+
+    const orderByClause =
+      req?.query?.field === "name"
+        ? `LOWER(BTRIM(tmiv.name)) ${sortDirection} NULLS LAST, tmiv.team_member_id ASC`
+        : "last_user_activity DESC NULLS LAST, tmiv.team_member_id ASC";
     const pagingClause = (size !== null && offset !== null) ? `LIMIT ${size} OFFSET ${offset}` : "";
     const archivedClause = includeArchived
     ? ""
@@ -298,7 +305,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                       WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause} ${practicesFilterClause} ${departmentsFilterClause}
                           ${searchQuery}
                       GROUP BY email, name, avatar_url, team_member_id, tmiv.team_id
-                      ORDER BY last_user_activity DESC NULLS LAST
+                      ORDER BY ${orderByClause}
 
                       ${pagingClause}) t) AS members
                   FROM team_member_info_view tmiv
