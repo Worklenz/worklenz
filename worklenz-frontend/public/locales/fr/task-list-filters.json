@@ -110,5 +110,12 @@
   "currentSort": "Tri actuel : {{field}} {{order}}",
   "apply": "Postuler",
   "showingYourTasksOnly": "Afficher uniquement vos tâches",
-  "showingYourTasksOnlyTooltip": "Ce projet affiche uniquement les tâches qui vous sont assignées. Les décomptes et les progrès reflètent ce sous-ensemble."
+  "showingYourTasksOnlyTooltip": "Ce projet affiche uniquement les tâches qui vous sont assignées. Les décomptes et les progrès reflètent ce sous-ensemble.",
+  "filters": "Filters",
+  "addFilter": "Add a filter",
+  "allFiltersApplied": "All filter options applied",
+  "removeFilter": "Remove filter",
+  "selectAll": "Select all",
+  "clear": "Clear",
+  "noFiltersAvailable": "No filters available"
 }

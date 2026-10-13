@@ -28,6 +28,8 @@
   "Invite": "Zaproś",
   "removeSuccess": "{{name}} usunięty z projektu",
   "removeError": "Nie udało się usunąć członka",
+  "assignFailedTitle": "Assignment failed",
+  "assignFailedMessage": "Could not update the task assignees. Please try again.",
   "memberNotFound": "Nie znaleziono informacji o członku zespołu",
   "manageTimeOff": "Zarządzaj urlopem",
   "seatLimitReached": "Osiągnięto limit miejsc",

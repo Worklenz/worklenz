@@ -110,5 +110,12 @@
   "currentSort": "Bieżące sortowanie: {{field}} {{order}}",
   "apply": "Zastosuj",
   "showingYourTasksOnly": "Wyświetlanie tylko Twoich zadań",
-  "showingYourTasksOnlyTooltip": "Ten projekt pokazuje tylko zadania przydzielone Tobie. Liczba i postęp odzwierciedlają ten podzbiór."
+  "showingYourTasksOnlyTooltip": "Ten projekt pokazuje tylko zadania przydzielone Tobie. Liczba i postęp odzwierciedlają ten podzbiór.",
+  "filters": "Filters",
+  "addFilter": "Add a filter",
+  "allFiltersApplied": "All filter options applied",
+  "removeFilter": "Remove filter",
+  "selectAll": "Select all",
+  "clear": "Clear",
+  "noFiltersAvailable": "No filters available"
 }

@@ -58,7 +58,7 @@ export const MobileAppBanner = () => {
         <Alert
           message={
             <Space size="middle" style={{ width: '100%', justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: 500 }}>{t('bannerText')}</span>
+              <span style={{ fontWeight: 500 }}>{t('bannerText', { defaultValue: 'Worklenz is on iOS and Android.' })}</span>
               <Space>
                 <Button type="link" size="small" onClick={handleViewQRCodes} style={{ padding: 0 }}>
                   {t('bannerCta')}
