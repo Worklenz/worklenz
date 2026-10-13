@@ -108,7 +108,8 @@
       "high": "Sobrealocado",
       "watch": "Acompanhar",
       "ok": "OK"
-    }
+    },
+    "overallocatedCount": "{{count}} membros"
   },
   "profitability": {
     "pageTitle": "Rentabilidade",

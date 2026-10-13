@@ -677,10 +677,11 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
               {t('importStep.projectHierarchy', { defaultValue: 'Project hierarchy' })}
             </Typography.Title>
             <Typography.Paragraph style={{ marginBottom: 16, color: themeToken.colorTextSecondary }}>
-              {t(
-                'importStep.hierarchyIntro',
-                `How we've mapped your ${source.label} data to Worklenz. More about project hierarchy in Worklenz.`
-              )}
+              {t('importStep.hierarchyIntro', {
+                defaultValue:
+                  "How we've mapped your {{source}} data to Worklenz. More about project hierarchy in Worklenz.",
+                source: source.label,
+              })}
             </Typography.Paragraph>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>

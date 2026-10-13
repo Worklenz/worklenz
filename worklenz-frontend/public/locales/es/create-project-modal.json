@@ -46,5 +46,6 @@
   "continueToCsvImport": "Continuar con la importación CSV",
   "customizeNo": "No",
   "customizeYes": "Sí, personalizar",
-  "customizeFooterQuestion": "¿Quieres personalizar antes de crear?"
+  "customizeFooterQuestion": "¿Quieres personalizar antes de crear?",
+  "templateRequired": "Seleccione una plantilla para crear un proyecto."
 }

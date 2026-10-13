@@ -49,5 +49,14 @@
     "noClient": "Brak Klienta",
     "noPriority": "Brak priorytetu",
     "noCategory": "Brak kategorii"
-  }
+  },
+  "errors": {
+    "loadFailed": "Nie udało się załadować projektów. Spróbuj ponownie.",
+    "refreshFailed": "Nie udało się odświeżyć projektów. Spróbuj ponownie."
+  },
+  "rowsPerPage": "Wierszy na stronę:",
+  "groups": "grupy",
+  "retry": "Spróbuj ponownie",
+  "searchProjects": "Wyszukaj według nazwy projektu",
+  "members": "Członkowie"
 }

@@ -29,7 +29,36 @@
   "groupView": "Vista de Grupo",
   "groupBy": {
     "category": "Categoría",
-    "client": "Cliente"
+    "client": "Cliente",
+    "priorities": "prioridades",
+    "priority": "Prioridad",
+    "categories": "categorías",
+    "clients": "clientes"
   },
-  "noPermission": "No tienes permiso para realizar esta acción"
+  "noPermission": "No tienes permiso para realizar esta acción",
+  "fieldsText": "Campos",
+  "noOptionsFound": "No se encontraron opciones",
+  "showFields": "Mostrar campos",
+  "retry": "Reintentar",
+  "searchProjects": "Buscar por nombre de proyecto",
+  "favorite": "Favorito",
+  "filter": {
+    "noCategory": "Sin Categoría",
+    "noPriority": "Sin Prioridad",
+    "noClient": "Sin Cliente"
+  },
+  "activeFiltersCount": "Filtros: {{count}}",
+  "settingsDisabledForGuest": "Configuración deshabilitada para invitado",
+  "rowsPerPage": "Filas por página:",
+  "errors": {
+    "refreshFailed": "No se pudieron actualizar los proyectos. Por favor inténtalo de nuevo.",
+    "loadFailed": "No se pudieron cargar los proyectos. Por favor inténtalo de nuevo."
+  },
+  "projectFields": "Campos del Proyecto",
+  "fieldsWithCount": "Campos: {{count}}",
+  "groups": "grupos",
+  "endDate": "Fecha de finalización del proyecto",
+  "settingsTooltip": "Abrir configuración del proyecto",
+  "required": "Requerido",
+  "priority": "Prioridad"
 }

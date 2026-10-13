@@ -32,5 +32,6 @@
   "online": "Online",
   "offline": "Offline",
   "away": "Away",
-  "busy": "Busy"
+  "busy": "Busy",
+  "status": "Status"
 }

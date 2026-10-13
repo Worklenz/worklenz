@@ -49,5 +49,14 @@
     "noClient": "Aucun client",
     "noPriority": "Aucune priorité",
     "noCategory": "Aucune catégorie"
-  }
+  },
+  "errors": {
+    "loadFailed": "Échec du chargement des projets. Veuillez réessayer.",
+    "refreshFailed": "Échec de l'actualisation des projets. Veuillez réessayer."
+  },
+  "rowsPerPage": "Lignes par page :",
+  "groups": "groupes",
+  "retry": "Réessayer",
+  "searchProjects": "Rechercher par nom de projet",
+  "members": "Membres"
 }

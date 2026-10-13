@@ -4,12 +4,10 @@
   "activityLogsButton": "Registros de Actividad",
   "tasksButton": "Tareas",
   "searchByNameInputPlaceholder": "Buscar por nombre",
-
   "overviewTab": "Resumen",
   "timeLogsTab": "Registros de Tiempo",
   "activityLogsTab": "Registros de Actividad",
   "tasksTab": "Tareas",
-
   "projectsText": "Proyectos",
   "totalTasksText": "Total de Tareas",
   "assignedTasksText": "Tareas Asignadas",
@@ -17,14 +15,11 @@
   "ongoingTasksText": "Tareas en Curso",
   "overdueTasksText": "Tareas Atrasadas",
   "loggedHoursText": "Horas Registradas",
-
   "tasksText": "Tareas",
   "allText": "Todo",
-
   "tasksByProjectsText": "Tareas por Proyectos",
   "tasksByStatusText": "Tareas por Estado",
   "tasksByPriorityText": "Tareas por Prioridad",
-
   "todoText": "Por Hacer",
   "doingText": "Haciendo",
   "doneText": "Hecho",
@@ -32,11 +27,9 @@
   "mediumText": "Media",
   "highText": "Alta",
   "criticalText": "Crítica",
-
   "billableButton": "Facturable",
   "billableText": "Facturable",
   "nonBillableText": "No Facturable",
-
   "timeLogsEmptyPlaceholder": "No hay registros de tiempo para mostrar",
   "loggedText": "Registrado",
   "forText": "para",
@@ -45,12 +38,9 @@
   "fromText": "Desde",
   "toText": "hasta",
   "withinText": "dentro de",
-
   "activityLogsEmptyPlaceholder": "No hay registros de actividad para mostrar",
-
   "filterByText": "Filtrar por:",
   "selectProjectPlaceholder": "Seleccionar Proyecto",
-
   "taskColumn": "Tarea",
   "nameColumn": "Nombre",
   "projectColumn": "Proyecto",
@@ -68,10 +58,8 @@
   "projectHealthColumn": "Salud del Proyecto",
   "categoryColumn": "Categoría",
   "projectManagerColumn": "Gerente de Proyecto",
-
   "tasksStatsOverviewDrawerTitle": "Tareas de",
   "projectsStatsOverviewDrawerTitle": "Proyectos de",
-
   "cancelledText": "Cancelado",
   "blockedText": "Bloqueado",
   "onHoldText": "En Espera",
@@ -80,12 +68,14 @@
   "inProgressText": "En Progreso",
   "completedText": "Completado",
   "continuousText": "Continuo",
-
   "daysLeftText": "días restantes",
   "daysOverdueText": "días de retraso",
-
   "notSetText": "No Establecido",
   "needsAttentionText": "Necesita Atención",
   "atRiskText": "En Riesgo",
-  "goodText": "Bien"
+  "goodText": "Bien",
+  "noTasksText": "Sin tareas",
+  "phaseColumn": "Fase",
+  "completedOnColumn": "Completado El",
+  "daysOverdueColumn": "Días de Retraso"
 }

@@ -4,18 +4,14 @@
   "Export Excel": "Export Excel",
   "Export CSV": "Export CSV",
   "timeSheet": "Time Sheet",
-
   "searchByName": "Search by name",
   "selectAll": "Select All",
   "clearAll": "Clear All",
   "teams": "Teams",
-
   "searchByProject": "Search by project name",
   "projects": "Projects",
-
   "searchByCategory": "Search by category name",
   "categories": "Categories",
-
   "Date": "Date",
   "Member": "Member",
   "Project": "Project",
@@ -32,17 +28,12 @@
   "nonBillable": "Non Billable",
   "allBillableTypes": "All Billable Types",
   "filterByBillableStatus": "Filter by billable status",
-
   "total": "Total",
-
   "projectsTimeSheet": "Projects Time Sheet",
-
   "loggedTime": "Logged Time(hours)",
-
   "exportToExcel": "Export to Excel",
   "logged": "logged",
   "for": "for",
-
   "membersTimeSheet": "Members Time Sheet",
   "member": "Member",
   "members": "Members",
@@ -65,20 +56,17 @@
   "noMembersFound": "No members found",
   "noMembersAvailable": "No members available",
   "utilization": "Utilization",
-
   "estimatedVsActual": "Estimated vs Actual",
   "workingDays": "Working Days",
   "manDays": "Man Days",
   "days": "Days",
   "estimatedDays": "Estimated Days",
   "actualDays": "Actual Days",
-
   "noCategories": "No categories found",
   "noCategory": "No Category",
   "noProjects": "No projects found",
   "noTeams": "No teams found",
   "noData": "No data found",
-
   "groupBy": "Group by",
   "groupByCategory": "Category",
   "groupByTeam": "Team",
@@ -91,7 +79,6 @@
   "expandAll": "Expand All",
   "collapseAll": "Collapse All",
   "ungrouped": "Ungrouped",
-
   "totalTimeLogged": "Total Time Logged",
   "acrossAllTeamMembers": "Across all team members",
   "expectedCapacity": "Expected Capacity",
@@ -105,24 +92,20 @@
   "capacityAvailableForNewProjects": "Capacity available for new projects",
   "optimal": "Optimal",
   "noDataAvailable": "No Data Available",
-
   "teamMembersFor": "{{name}}'s Team Members",
   "allTeamMembersFor": "All {{name}}'s Team Members",
   "allUtilization": "All Utilization",
   "allProjects": "All Projects",
   "allCategories": "All Categories",
   "allTeams": "All Teams",
-
   "underUtilized": "Under-utilized (Under 90%)",
   "optimalUtilized": "Optimal-utilized (90%-110%)",
   "overUtilized": "Over-utilized (Over 110%)",
-
   "noTeamLeadsFound": "No Team Leads found",
   "noTeamLeadsFoundError": "No Team Leads found in your organization",
   "unableToLoadTeamLeadData": "Unable to load Team Lead data",
   "failedToLoadTeamLeadData": "Failed to load Team Lead data. Please try again.",
   "retry": "Retry",
-
   "showUtilization": "Show Utilization",
   "hideUtilization": "Hide Utilization",
   "loadingText": "Loading...",
@@ -133,7 +116,6 @@
   "totalLogged": "Total Logged",
   "varianceUnder": "(under)",
   "varianceOver": "(over)",
-
   "timeLogsFilterButton": "Filter",
   "timeLogsFiltersTitle": "Filters",
   "timeLogsFilterApply": "Apply",
@@ -207,5 +189,17 @@
   "timeLogsGroupEntriesShowing": "Showing {{shown}} of {{total}} entries",
   "timeLogsGroupLoadMore": "Load more",
   "timeLogsViewFlatTooltip": "Every time entry on its own row, as it was logged.",
-  "timeLogsViewByTaskTooltip": "One row per task, with the time of all its entries added up."
+  "timeLogsViewByTaskTooltip": "One row per task, with the time of all its entries added up.",
+  "noDepartmentOption": "No Department",
+  "departmentFilterLabel": "Department",
+  "searchByDepartment": "Search department",
+  "noDepartments": "No departments found",
+  "noPracticeOption": "No Practice",
+  "practiceFilterLabel": "Practice",
+  "searchByPractice": "Search practice",
+  "noPractices": "No practices found",
+  "noDataMatchingFilters": "No data matching the selected filters",
+  "holidaysExcluded": "Holidays excluded",
+  "reportSettings": "Report Settings",
+  "Members Time Sheet": "Members Time Sheet"
 }

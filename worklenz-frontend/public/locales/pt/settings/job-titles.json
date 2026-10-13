@@ -19,5 +19,7 @@
   "updateJobTitleErrorMessage": "Falha ao atualizar título de emprego!",
   "paginationTotal": "{{start}}-{{end}} de {{total}} itens",
   "editTooltip": "Editar",
-  "deleteTooltip": "Excluir"
+  "deleteTooltip": "Excluir",
+  "fetchJobTitleErrorMessage": "Falha ao buscar o cargo. Por favor, tente novamente.",
+  "pageTitle": "Gerenciar cargos"
 }

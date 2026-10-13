@@ -38,6 +38,8 @@ const ALLOWED_SOURCE_VALUES = new Set([
   'Google Calendar',
   'Twitter',
   'Worklenz',
+  // Technical Jira hostname placeholder; keep the valid domain in every language.
+  'yourcompany.atlassian.net',
   'Deutsch',
   'Español',
   'Português',
@@ -186,6 +188,8 @@ const isAllowableValue = value => {
 };
 
 const ENGLISH_MARKERS = /\b(projected|revenue|profit|forecast|this month|next month|billable|invoice|budget|utilization|project|member|client|search|retry)\b/gi;
+// These words have identical English and French spellings.
+const LANGUAGE_SOURCE_VALUES = { fr: new Set(['Urgent', 'Description']) };
 const namespaceArgument = process.argv.find(argument => argument.startsWith('--namespace='));
 const namespaceFilter = namespaceArgument?.split('=', 2)[1];
 const strict = process.argv.includes('--strict');
@@ -245,6 +249,9 @@ for (const language of languages) {
       .filter(([keyPath, englishValue]) => {
         if (isAllowableValue(englishValue)) return false;
         const localeValue = getByPath(locale, keyPath);
+        if (localeValue === englishValue && LANGUAGE_SOURCE_VALUES[language]?.has(englishValue)) {
+          return false;
+        }
         return localeValue === englishValue || hasLikelyEnglishText(localeValue);
       })
       .map(([keyPath]) => keyPath);

@@ -19,5 +19,7 @@
   "updateJobTitleErrorMessage": "Aktualisierung des Jobtitels fehlgeschlagen!",
   "paginationTotal": "{{start}}-{{end}} von {{total}} Einträgen",
   "editTooltip": "Bearbeiten",
-  "deleteTooltip": "Löschen"
+  "deleteTooltip": "Löschen",
+  "fetchJobTitleErrorMessage": "Berufsbezeichnung konnte nicht abgerufen werden. Bitte versuchen Sie es erneut.",
+  "pageTitle": "Berufsbezeichnungen verwalten"
 }

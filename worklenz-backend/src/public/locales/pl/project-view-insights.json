@@ -67,7 +67,8 @@
     "status": "Stan",
     "dueDate": "Termin",
     "lastUpdated": "Ostatnia aktualizacja",
-    "na": "Nie dotyczy"
+    "na": "Nie dotyczy",
+    "paginationRange": "{{from}}–{{to}} z {{total}}"
   },
   "justNow": "Właśnie teraz",
   "tasksTable": {

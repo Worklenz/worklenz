@@ -19,5 +19,7 @@
   "updateJobTitleErrorMessage": "Update job title failed!",
   "paginationTotal": "{{start}}-{{end}} of {{total}} items",
   "editTooltip": "Edit",
-  "deleteTooltip": "Delete"
+  "deleteTooltip": "Delete",
+  "fetchJobTitleErrorMessage": "Failed to fetch job title. Please try again.",
+  "pageTitle": "Manage Job Titles"
 }

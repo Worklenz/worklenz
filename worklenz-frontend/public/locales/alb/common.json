@@ -119,5 +119,21 @@
   "contact-support": "Kontaktoni me mbështetjen",
   "view-pricing": "shikoni çmimin",
   "justNow": "Sapo",
-  "save": "Ruaj"
+  "save": "Ruaj",
+  "business-trial-then-plan": "do të vazhdosh në {{plan}} pas kësaj",
+  "error": {
+    "unknownError": "Ndodhi një gabim i panjohur",
+    "somethingWentWrong": "Diçka shkoi keq",
+    "description": "Kemi hasur në një gabim të papritur. Ju lutemi provoni përsëri ose kthehuni në faqen kryesore.",
+    "retry": "Provo përsëri",
+    "goHome": "Shkoni në shtëpi",
+    "viewDetails": "Shikoni detajet e gabimit",
+    "errorMessage": "Mesazh gabimi",
+    "stackTrace": "Gjurmimi i stivës",
+    "title": "Gabim"
+  },
+  "refreshingData": "Të dhënat po rifreskohen...",
+  "loadingData": "Duke ngarkuar të dhënat...",
+  "noDataAvailable": "Nuk ka të dhëna të disponueshme",
+  "licennse-expired-contacting-support": "Po kontakton me mbështetjen..."
 }

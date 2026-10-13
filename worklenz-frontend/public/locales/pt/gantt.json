@@ -37,7 +37,8 @@
     "failedToRemoveDependency": "Falha ao remover dependência.",
     "taskAddedToRoadmap": "Tarefa adicionada à linha do tempo para os próximos 5 dias.",
     "failedToAddTaskToRoadmap": "Falha ao adicionar a tarefa à linha do tempo.",
-    "unscheduledTaskNotFound": "Não foi possível encontrar a tarefa selecionada."
+    "unscheduledTaskNotFound": "Não foi possível encontrar a tarefa selecionada.",
+    "undatedTaskReadOnly": "Tarefa sem datas (somente leitura para convidados)"
   },
   "common": {
     "noStart": "Sem início",

@@ -1,0 +1,11 @@
+{
+  "title": "Pulpit nawigacyjny",
+  "totalRequests": "Łączna liczba żądań",
+  "pendingRequests": "Oczekujące żądania",
+  "activeProjects": "Aktywne projekty",
+  "unpaidInvoices": "Niezapłacone faktury",
+  "recentRequests": "Ostatnie prośby",
+  "noRecentRequests": "Brak ostatnich próśb",
+  "recentMessages": "Najnowsze wiadomości",
+  "noRecentMessages": "Brak ostatnich wiadomości"
+}

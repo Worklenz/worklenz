@@ -1,0 +1,10 @@
+{
+  "modal": {
+    "title": "请求服务",
+    "submitButton": "提交请求"
+  },
+  "uploadLogoText": "单击或拖动要上传的文件",
+  "uploadLogoAltText": "上传文件",
+  "title": "服务",
+  "requestButton": "提出请求"
+}

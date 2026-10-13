@@ -251,5 +251,15 @@
     "saved": "Projekteinstellungen gespeichert",
     "saveError": "Projekteinstellungen konnten nicht gespeichert werden",
     "deleted": "„{{name}}“ wurde dauerhaft gelöscht."
-  }
+  },
+  "clearProjectManager": "Klarer Projektmanager",
+  "securityTokenValidationFailed": "Die Validierung des Sicherheitstokens ist fehlgeschlagen. Bitte versuchen Sie es erneut.",
+  "deleteProjectError": "Das Projekt konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+  "financeAccessLabel": "Finanzzugang",
+  "financeAccessHelp": "Wenn diese Option aktiviert ist, kann dieser Projektmanager die Registerkarte „Finanzen“, das Budget und die Preisliste anzeigen und bearbeiten.",
+  "loadSettingsFailedTitle": "Die Projekteinstellungen konnten nicht geladen werden",
+  "loadSettingsFailedDescription": "Das Projekt wurde erstellt, seine aktuellen Einstellungen konnten jedoch nicht geladen werden. Bis dies gelingt, ist das Speichern deaktiviert, um ein Überschreiben des Projekts mit leeren Feldern zu vermeiden.",
+  "retry": "Erneut versuchen",
+  "upgrade-plan": "Upgrade-Plan",
+  "taskExportPollFailedMessage": "Der Exportstatus konnte nicht überprüft werden. Öffnen Sie Projekteinstellungen → Aufgabenexport oder versuchen Sie es erneut."
 }

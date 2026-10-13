@@ -119,5 +119,9 @@
     "week_total": "本周总计",
     "week_billable": "本周可计费",
     "week_non_billable": "本周不可计费"
-  }
+  },
+  "minutesRangeError": "0 – 59",
+  "hoursLabel": "小时",
+  "hoursMinError": "小时必须为 0 或更大",
+  "minutesLabel": "分钟"
 }

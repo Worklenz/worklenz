@@ -1,7 +1,6 @@
 {
   "title": "Reports",
   "subtitle": "Time tracking and performance insights for your team members",
-
   "dateRange": {
     "label": "Date Range",
     "showing": "Showing",
@@ -17,7 +16,6 @@
     "custom": "Custom Range",
     "apply": "Apply"
   },
-
   "summary": {
     "totalMembers": "Total Members",
     "totalMembersTooltip": "Total number of team members who have logged time during the selected date range.",
@@ -28,7 +26,6 @@
     "avgCompletionRate": "Avg Completion Rate",
     "hours": "hours"
   },
-
   "timeTracking": {
     "title": "Time Tracking Summary",
     "chartTitle": "Team Time Tracking Chart",
@@ -51,7 +48,6 @@
     "projectsTooltip": "Number of distinct projects this member logged time on during the selected date range.",
     "activeDaysTooltip": "Number of distinct days this member logged time during the selected date range."
   },
-
   "performance": {
     "title": "Team Performance",
     "member": "Member",
@@ -70,7 +66,6 @@
     "projectsInvolved": "Projects Involved",
     "noData": "No performance data available"
   },
-
   "detailedLogs": {
     "title": "Detailed Time Logs",
     "for": "for",
@@ -86,20 +81,18 @@
     "timer": "Timer",
     "noLogs": "No detailed logs found",
     "close": "Close",
-    "timeLogsRange": "time logs"
+    "timeLogsRange": "time logs",
+    "of": "of"
   },
-
   "errors": {
     "failedToLoad": "Failed to load team reports",
     "tryAgain": "Please try again",
     "noTeamMembers": "No team members found",
     "loadingError": "Error loading data"
   },
-
   "loading": {
     "fetchingData": "Loading team reports...",
     "fetchingLogs": "Loading detailed logs..."
   },
-
   "export": "Export"
 }

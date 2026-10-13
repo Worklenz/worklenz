@@ -20,5 +20,7 @@
   "projectStatusUpdatedDesc": "Status projektu został zaktualizowany.",
   "projectDatesUpdatedDesc": "Zaktualizowano daty projektów.",
   "projectCategoryUpdatedDesc": "Kategoria projektu została zaktualizowana.",
-  "permissionLostDesc": "Twoje uprawnienia w tym projekcie zostały zaktualizowane. Ponowne ładowanie widoku."
+  "permissionLostDesc": "Twoje uprawnienia w tym projekcie zostały zaktualizowane. Ponowne ładowanie widoku.",
+  "You do not have permission to access this project": "Nie masz uprawnień dostępu do tego projektu",
+  "Failed to load project": "Nie udało się załadować projektu"
 }

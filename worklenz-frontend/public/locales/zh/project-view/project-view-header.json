@@ -31,5 +31,8 @@
   "projectStatusTooltip": "项目状态",
   "projectDatesInfo": "项目时间线信息",
   "projectCategoryTooltip": "项目类别",
-  "defaultTaskName": "无标题任务"
+  "defaultTaskName": "无标题任务",
+  "softwareProjectTooltip": "软件项目——问题、待办事项和冲刺",
+  "softwareProjectTag": "软件",
+  "settingsDisabledForGuest": "访客用户无法访问项目设置"
 }

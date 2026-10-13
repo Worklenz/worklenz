@@ -306,5 +306,7 @@
       "utilColumn": "UTIL",
       "teamTotalRow": "Team gesamt"
     }
-  }
+  },
+  "paginationText": "{{from}}-{{to}} von {{total}}",
+  "perPageText": "{{count}} / Seite"
 }

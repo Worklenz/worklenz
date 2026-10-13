@@ -330,5 +330,7 @@
   "bulkDeactivateConfirmationDescription_other": "确定停用所选的 {{count}} 位客户吗？他们将失去门户访问权限，但所有数据都会保留。",
   "statsErrorMessage": "无法加载客户统计数据。",
   "unansweredMessagesLabel": "未回复的消息",
-  "unansweredMessagesHint": "等待您团队回复的客户消息"
+  "unansweredMessagesHint": "等待您团队回复的客户消息",
+  "tryAgainMessage": "请再试一次。",
+  "viewToggleLabel": "客户查看"
 }

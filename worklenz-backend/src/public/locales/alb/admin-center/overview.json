@@ -4,5 +4,12 @@
   "owner": "Pronari i Organizatës",
   "admins": "Administruesit e Organizatës",
   "contactNumber": "Shto Numrin e Kontaktit",
-  "edit": "Redakto"
+  "edit": "Redakto",
+  "fileSizeUpgradeModalHeadline": "Ngarkoni skedarë të çdo madhësie",
+  "fileSizeUpgradeModalBenefitFileSize": "Ngarkimet e skedarëve deri në 250 MB",
+  "fileSizeUpgradeModalBenefitFileTypes": "Të gjitha llojet e skedarëve të mbështetur",
+  "nextMonth": "Muajin tjetër",
+  "fileSizeUpgradeModalBenefitStorage": "Hapësira ruajtëse totale e zgjeruar",
+  "previousMonth": "Muajin e kaluar",
+  "fileSizeUpgradeModalSubCopy": "Plani juaj aktual mbështet skedarë deri në 25 MB. Përmirësoje në Business për të ngarkuar skedarë deri në 250 MB dhe për të mbajtur asete të mëdha afër punës së projektit."
 }

@@ -95,5 +95,6 @@
     "modalHeading": "Novedades — {{title}}",
     "readFullChangelog": "Ver registro de cambios completo →",
     "releaseUnavailable": "Esta actualización ya no está disponible."
-  }
+  },
+  "guestRole": "Invitado"
 }

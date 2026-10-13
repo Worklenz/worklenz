@@ -4,12 +4,10 @@
   "activityLogsButton": "Activity Logs",
   "tasksButton": "Tasks",
   "searchByNameInputPlaceholder": "Search by name",
-
   "overviewTab": "Overview",
   "timeLogsTab": "Time Logs",
   "activityLogsTab": "Activity Logs",
   "tasksTab": "Tasks",
-
   "projectsText": "Projects",
   "totalTasksText": "Total Tasks",
   "assignedTasksText": "Assigned Tasks",
@@ -17,25 +15,20 @@
   "ongoingTasksText": "Ongoing Tasks",
   "overdueTasksText": "Overdue Tasks",
   "loggedHoursText": "Logged Hours",
-
   "tasksText": "Tasks",
   "allText": "All",
-
   "tasksByProjectsText": "Tasks By Projects",
   "tasksByStatusText": "Tasks By Status",
   "tasksByPriorityText": "Tasks By Priority",
-
   "todoText": "To Do",
   "doingText": "Doing",
   "doneText": "Done",
   "lowText": "Low",
   "mediumText": "Medium",
   "highText": "High",
-
   "billableButton": "Billable",
   "billableText": "Billable",
   "nonBillableText": "Non Billable",
-
   "timeLogsEmptyPlaceholder": "No time logs to show",
   "loggedText": "Logged",
   "forText": "for",
@@ -44,12 +37,9 @@
   "fromText": "From",
   "toText": "to",
   "withinText": "within",
-
   "activityLogsEmptyPlaceholder": "No activity logs to show",
-
   "filterByText": "Filter by:",
   "selectProjectPlaceholder": "Select Project",
-
   "taskColumn": "Task",
   "nameColumn": "Name",
   "projectColumn": "Project",
@@ -67,10 +57,8 @@
   "projectHealthColumn": "Project Health",
   "categoryColumn": "Category",
   "projectManagerColumn": "Project Manager",
-
   "tasksStatsOverviewDrawerTitle": "'s Tasks",
   "projectsStatsOverviewDrawerTitle": "'s Projects",
-
   "cancelledText": "Cancelled",
   "blockedText": "Blocked",
   "onHoldText": "On Hold",
@@ -79,12 +67,14 @@
   "inProgressText": "In Progress",
   "completedText": "Completed",
   "continuousText": "Continuous",
-
   "daysLeftText": "days left",
   "daysOverdueText": "days overdue",
-
   "notSetText": "NotSet",
   "needsAttentionText": "Needs Attention",
   "atRiskText": "At Risk",
-  "goodText": "Good"
+  "goodText": "Good",
+  "completedOnColumn": "Completed On",
+  "noTasksText": "No tasks",
+  "daysOverdueColumn": "Days overdue",
+  "phaseColumn": "Phase"
 }

@@ -35,7 +35,7 @@ interface DataType {
 const avatarColors = ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae', '#87d068'];
 
 const TableColumns = (): ColumnsType<DataType> => {
-  const { t } = useTranslation('allProjectList'); // Use translation hook if you're using i18next
+  const { t } = useTranslation('all-project-list'); // Use translation hook if you're using i18next
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -193,7 +193,7 @@ const TableColumns = (): ColumnsType<DataType> => {
       },
     },
     {
-      title: t('lastUpdated'),
+      title: t('updated_at', { defaultValue: 'Last Updated' }),
       key: 'lastUpdated',
       dataIndex: 'lastUpdated',
       width: 160,

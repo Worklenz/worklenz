@@ -20,7 +20,8 @@
     "showDone": "Erledigte anzeigen",
     "created": "Erstellt",
     "finished": "Beendet",
-    "tasks": "Aufgaben"
+    "tasks": "Aufgaben",
+    "loading": "Laden..."
   },
   "projects": {
     "title": "Projekte",
@@ -136,7 +137,9 @@
     "weekdayMiniThu": "D",
     "weekdayMiniFri": "F",
     "weekdayMiniSat": "S",
-    "weekdayMiniSun": "S"
+    "weekdayMiniSun": "S",
+    "clientsSearchPlaceholder": "Kunden suchen...",
+    "projectsSearchPlaceholder": "Projekte suchen..."
   },
   "activityLogs": {
     "title": "Letzte Aktivitäten",
@@ -245,7 +248,9 @@
     "weekdayThu": "Do",
     "weekdayFri": "Fr",
     "weekdaySat": "Sa",
-    "weekdaySun": "So"
+    "weekdaySun": "So",
+    "createdTimeColumn": "Erstellte Zeit",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "Noch keine Ausgaben erfasst",
@@ -259,7 +264,8 @@
     "columnAssignee": "Zugewiesen an",
     "columnDate": "Datum",
     "openTask": "Aufgabe öffnen",
-    "rowsPerPage": "Zeilen pro Seite:"
+    "rowsPerPage": "Zeilen pro Seite:",
+    "addExpense": "Ausgabe hinzufügen"
   },
   "addExpense": {
     "modalTitle": "Ausgabe hinzufügen",
@@ -433,7 +439,7 @@
       "todo": "Meine Aufgabenliste"
     },
     "tabs": {
-      "layout": "Layout",
+      "layout": "Anordnung",
       "taskTabs": "Aufgaben-Tabs",
       "sorting": "Sortierung",
       "sidebar": "Linke Seitenleiste",
@@ -526,5 +532,7 @@
     "viewAllMore": "Alle anzeigen ({{remaining}} weitere)",
     "addFailed": "Die Aufgabe konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.",
     "completeFailed": "Die Aufgabe konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut."
-  }
+  },
+  "projectsAtRisk": "Gefährdete Projekte",
+  "flagged": "markiert"
 }

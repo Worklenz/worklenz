@@ -70,5 +70,9 @@
   "sprintGoal": "Sprintziel",
   "sprintGoalPlaceholder": "Was soll dieser Sprint erreichen?",
   "sprintDatesRequired": "Legen Sie Start- und Enddaten fest, um den Sprint zu starten",
-  "sprintEndBeforeStart": "Das Enddatum muss nach dem Startdatum liegen"
+  "sprintEndBeforeStart": "Das Enddatum muss nach dem Startdatum liegen",
+  "start": "Starten",
+  "completeSprint": "Kompletter Sprint",
+  "manageAssignee": "Beauftragten verwalten",
+  "assignMember": "Mitglied zuweisen"
 }

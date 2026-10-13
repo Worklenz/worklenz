@@ -28,8 +28,8 @@
   "Invite": "Einladen",
   "removeSuccess": "{{name}} aus Projekt entfernt",
   "removeError": "Mitglied konnte nicht entfernt werden",
-  "assignFailedTitle": "Assignment failed",
-  "assignFailedMessage": "Could not update the task assignees. Please try again.",
+  "assignFailedTitle": "Zuweisung fehlgeschlagen",
+  "assignFailedMessage": "Die Aufgabenverantwortlichen konnten nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
   "memberNotFound": "Teammitgliedsinformationen nicht gefunden",
   "manageTimeOff": "Abwesenheit verwalten",
   "seatLimitReached": "Sitzplatzlimit erreicht",
@@ -42,5 +42,6 @@
   "moreOptions": "Weitere Optionen",
   "changeMemberStatusConfirmation": "Möchten Sie den Status dieses Mitglieds wirklich ändern?",
   "yesProceed": "Ja, fortfahren",
-  "cancel": "Abbrechen"
+  "cancel": "Abbrechen",
+  "removeFromProject": "Aus Projekt entfernen"
 }

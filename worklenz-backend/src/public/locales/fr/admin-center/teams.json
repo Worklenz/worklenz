@@ -31,5 +31,6 @@
   "admin": "Administrateur",
   "member": "Membre",
   "cannotChangeOwnerRole": "Le rôle du propriétaire ne peut pas être modifié",
-  "pendingInvitation": "Invitation en attente"
+  "pendingInvitation": "Invitation en attente",
+  "clickToEditName": "Cliquez pour modifier le nom"
 }

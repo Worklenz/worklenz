@@ -105,5 +105,12 @@
   "emailAddress": "E-Mail-Adresse",
   "enterOrganizationName": "Geben Sie den Namen der Organisation ein",
   "ownerSuffix": "(Besitzer)",
-  "closePopover": "Popover schließen"
+  "closePopover": "Popover schließen",
+  "fileSizeUpgradeModalHeadline": "Laden Sie Dateien beliebiger Größe hoch",
+  "fileSizeUpgradeModalSubCopy": "Ihr aktueller Plan unterstützt Dateien bis zu 25 MB. Führen Sie ein Upgrade auf Business durch, um Dateien mit einer Größe von bis zu 250 MB hochzuladen und große Assets in der Nähe Ihrer Projektarbeit zu halten.",
+  "fileSizeUpgradeModalBenefitFileSize": "Datei-Uploads bis zu 250 MB",
+  "fileSizeUpgradeModalBenefitStorage": "Erweiterter Gesamtspeicher",
+  "fileSizeUpgradeModalBenefitFileTypes": "Alle Dateitypen werden unterstützt",
+  "previousMonth": "Vorheriger Monat",
+  "nextMonth": "Nächsten Monat"
 }

@@ -31,5 +31,8 @@
   "projectStatusTooltip": "Estado del proyecto",
   "projectDatesInfo": "Información de la cronología del proyecto",
   "projectCategoryTooltip": "Categoría del proyecto",
-  "defaultTaskName": "Tarea Sin Título"
+  "defaultTaskName": "Tarea Sin Título",
+  "softwareProjectTooltip": "Proyecto de software: problemas, trabajos pendientes y sprints",
+  "softwareProjectTag": "programas",
+  "settingsDisabledForGuest": "La configuración del proyecto no es accesible para los usuarios invitados"
 }

@@ -44,5 +44,8 @@
   "DUE_DATE_UPDATED": "Termin został pomyślnie zaktualizowany",
   "DUE_DATE_CLEARED": "Termin płatności został pomyślnie usunięty",
   "archiveSuccessTitle": "Aktualizacja zbiorcza została ukończona",
-  "archiveSuccessMessage": "{{parentCount}} zadania i {{subtaskCount}} podzadania {{action}}d."
+  "archiveSuccessMessage": "{{parentCount}} zadania i {{subtaskCount}} podzadania {{action}}d.",
+  "SET_START_DATE": "Ustaw datę rozpoczęcia",
+  "Unarchive": "Cofnij archiwizację",
+  "Archive": "Archiwum"
 }

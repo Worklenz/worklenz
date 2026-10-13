@@ -20,7 +20,8 @@
     "showDone": "Mostrar Completadas",
     "created": "Creada",
     "finished": "Finalizada",
-    "tasks": "tareas"
+    "tasks": "tareas",
+    "loading": "Cargando..."
   },
   "projects": {
     "title": "Proyectos",
@@ -136,7 +137,9 @@
     "weekdayMiniThu": "J",
     "weekdayMiniFri": "V",
     "weekdayMiniSat": "S",
-    "weekdayMiniSun": "D"
+    "weekdayMiniSun": "D",
+    "clientsSearchPlaceholder": "Buscar clientes...",
+    "projectsSearchPlaceholder": "Buscar proyectos..."
   },
   "activityLogs": {
     "title": "Actividad Reciente",
@@ -245,7 +248,9 @@
     "weekdayThu": "Jue",
     "weekdayFri": "Vie",
     "weekdaySat": "Sáb",
-    "weekdaySun": "Dom"
+    "weekdaySun": "Dom",
+    "createdTimeColumn": "Hora de creación",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "Aún no hay gastos registrados",
@@ -259,7 +264,8 @@
     "columnAssignee": "Asignado",
     "columnDate": "Fecha",
     "openTask": "Abrir la tarea",
-    "rowsPerPage": "Filas por página:"
+    "rowsPerPage": "Filas por página:",
+    "addExpense": "Agregar gasto"
   },
   "addExpense": {
     "modalTitle": "Agregar gasto",
@@ -526,5 +532,7 @@
     "viewAllMore": "Ver todas ({{remaining}} más)",
     "addFailed": "No se pudo agregar esa tarea. Inténtalo de nuevo.",
     "completeFailed": "No se pudo actualizar esa tarea. Inténtalo de nuevo."
-  }
+  },
+  "projectsAtRisk": "Proyectos en riesgo",
+  "flagged": "marcado"
 }

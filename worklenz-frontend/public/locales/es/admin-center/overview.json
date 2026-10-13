@@ -105,5 +105,12 @@
   "emailAddress": "Correo electrónico",
   "enterOrganizationName": "Introduzca el nombre de la organización",
   "ownerSuffix": "(Propietario)",
-  "closePopover": "Cerrar ventana emergente"
+  "closePopover": "Cerrar ventana emergente",
+  "fileSizeUpgradeModalHeadline": "Sube archivos de cualquier tamaño",
+  "fileSizeUpgradeModalSubCopy": "Su plan actual admite archivos de hasta 25 MB. Actualice a Business para cargar archivos de hasta 250 MB y mantener grandes activos cerca del trabajo de su proyecto.",
+  "fileSizeUpgradeModalBenefitFileSize": "Carga de archivos de hasta 250 MB",
+  "fileSizeUpgradeModalBenefitStorage": "Almacenamiento total ampliado",
+  "fileSizeUpgradeModalBenefitFileTypes": "Todos los tipos de archivos compatibles",
+  "previousMonth": "Mes anterior",
+  "nextMonth": "El próximo mes"
 }

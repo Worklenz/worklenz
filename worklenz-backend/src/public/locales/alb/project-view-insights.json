@@ -36,6 +36,7 @@
     "overdueTasksTooltip": "Detyrat që kanë kaluar afatin e tyre",
     "totalLoggedHoursTooltip": "Vlerësimi dhe koha e regjistruar për detyrat.",
     "includeArchivedTasks": "Përfshi Detyrat e Arkivuara",
-    "export": "Eksporto"
+    "export": "Eksporto",
+    "paginationRange": "{{from}}–{{to}} nga {{total}}"
   }
 }

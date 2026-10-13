@@ -119,5 +119,21 @@
   "contact-support": "Contactar con soporte",
   "view-pricing": "ver precios",
   "justNow": "Justo ahora",
-  "save": "Guardar"
+  "save": "Guardar",
+  "business-trial-then-plan": "continuarás en {{plan}} después de eso",
+  "error": {
+    "unknownError": "Se produjo un error desconocido",
+    "somethingWentWrong": "algo salió mal",
+    "description": "Encontramos un error inesperado. Inténtelo de nuevo o regrese a la página de inicio.",
+    "retry": "Intentar de nuevo",
+    "goHome": "Ir a casa",
+    "viewDetails": "Ver detalles del error",
+    "errorMessage": "Mensaje de error",
+    "stackTrace": "Seguimiento de pila",
+    "title": "error"
+  },
+  "refreshingData": "Actualizando datos...",
+  "loadingData": "Cargando datos...",
+  "noDataAvailable": "No hay datos disponibles",
+  "licennse-expired-contacting-support": "Contactando con soporte..."
 }

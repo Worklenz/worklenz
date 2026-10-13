@@ -2,7 +2,6 @@
   "today": "Hoje",
   "week": "Semana",
   "month": "Mês",
-
   "settings": "Configurações",
   "workingDays": "Dias de Trabalho",
   "monday": "Segunda-feira",
@@ -15,7 +14,6 @@
   "workingHours": "Horas de Trabalho",
   "hours": "horas",
   "saveButton": "Salvar",
-
   "totalAllocation": "Alocação Total",
   "timeLogged": "Tempo Registrado",
   "remainingTime": "Tempo Restante",
@@ -24,16 +22,35 @@
   "tasks": "tarefas",
   "startDate": "Data de Início",
   "endDate": "Data de Fim",
-
   "hoursPerDay": "Horas Por Dia",
   "totalHours": "Horas Totais",
   "deleteButton": "Excluir",
   "cancelButton": "Cancelar",
-
   "tabTitle": "Tarefa sem Data de Início & Fim",
-
   "allocatedTime": "Tempo Alocado",
   "totalLogged": "Total Registrado",
   "loggedBillable": "Registrado Faturável",
-  "loggedNonBillable": "Registrado Não Faturável"
+  "loggedNonBillable": "Registrado Não Faturável",
+  "timelineError": "Falha ao carregar a linha do tempo",
+  "noProjects": "Nenhum projeto atribuído",
+  "capacityConflicts": "Conflitos de capacidade detectados",
+  "taskDatesError": "Falha ao atualizar as datas da tarefa",
+  "manageTimeOff": "Gerenciar folga",
+  "noTasksInDateRange": "Nenhuma tarefa encontrada neste período",
+  "key": "Chave",
+  "filterByStatus": "Estado",
+  "selectMemberToViewTasks": "Selecione um membro para visualizar as tarefas",
+  "retry": "Tentar novamente",
+  "loadingTimeline": "Carregando linha do tempo...",
+  "open": "Abrir",
+  "loggedTime": "Registrado",
+  "filterByMember": "Membro da equipa",
+  "filterByProject": "Projeto",
+  "estimation": "Estimativa",
+  "noTasksScheduled": "Nenhuma tarefa agendada",
+  "taskDatesUpdated": "Datas das tarefas atualizadas",
+  "noTasksInGroup": "Nenhuma tarefa neste grupo",
+  "filterByPriority": "Prioridade",
+  "priority": "Prioridade",
+  "selectProjectToViewTasks": "Selecione um projeto para visualizar as tarefas"
 }

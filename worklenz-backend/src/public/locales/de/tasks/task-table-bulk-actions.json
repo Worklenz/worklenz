@@ -37,5 +37,8 @@
   "TASKS_SELECTED_plural": "{{count}} Aufgaben ausgewählt",
   "DELETE_TASKS_CONFIRM": "{{count}} Aufgabe löschen?",
   "DELETE_TASKS_CONFIRM_plural": "{{count}} Aufgaben löschen?",
-  "DELETE_TASKS_WARNING": "Diese Aktion kann nicht rückgängig gemacht werden."
+  "DELETE_TASKS_WARNING": "Diese Aktion kann nicht rückgängig gemacht werden.",
+  "SET_START_DATE": "Startdatum festlegen",
+  "Unarchive": "Dearchivieren",
+  "Archive": "Archivieren"
 }

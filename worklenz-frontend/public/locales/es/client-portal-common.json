@@ -32,5 +32,6 @@
   "online": "En Línea",
   "offline": "Desconectado",
   "away": "Ausente",
-  "busy": "Ocupado"
+  "busy": "Ocupado",
+  "status": "Estado"
 }

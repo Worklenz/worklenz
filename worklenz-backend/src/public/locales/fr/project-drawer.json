@@ -189,5 +189,15 @@
   "current": "Actuel",
   "priority": "Priorité",
   "budgetSettingsTab": "Paramètres budgétaires",
-  "justNow": "Juste maintenant"
+  "justNow": "Juste maintenant",
+  "loadSettingsFailedTitle": "Impossible de charger les paramètres du projet",
+  "retry": "Réessayer",
+  "taskExportPollFailedMessage": "Impossible de vérifier le statut de l'exportation. Ouvrez Paramètres du projet → Exportation de tâches ou réessayez.",
+  "securityTokenValidationFailed": "La validation du jeton de sécurité a échoué. Veuillez réessayer.",
+  "financeAccessHelp": "Lorsque cette option est activée, ce chef de projet peut afficher et modifier l'onglet Finances, le budget et le tableau des tarifs.",
+  "financeAccessLabel": "Accès au financement",
+  "clearProjectManager": "Chef de projet clair",
+  "upgrade-plan": "Plan de mise à niveau",
+  "loadSettingsFailedDescription": "Le projet a été créé, mais ses paramètres actuels n'ont pas pu être chargés. L'enregistrement est désactivé jusqu'à ce que l'opération réussisse, pour éviter d'écraser le projet avec des champs vides.",
+  "deleteProjectError": "Échec de la suppression du projet. Veuillez réessayer."
 }

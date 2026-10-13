@@ -28,8 +28,8 @@
   "Invite": "Inviter",
   "removeSuccess": "{{name}} supprimé du projet",
   "removeError": "Échec de la suppression du membre",
-  "assignFailedTitle": "Assignment failed",
-  "assignFailedMessage": "Could not update the task assignees. Please try again.",
+  "assignFailedTitle": "Échec de l'affectation",
+  "assignFailedMessage": "Impossible de mettre à jour les responsables de la tâche. Veuillez réessayer.",
   "memberNotFound": "Informations sur le membre de l'équipe introuvables",
   "manageTimeOff": "Gérer les congés",
   "seatLimitReached": "Limite de sièges atteinte",
@@ -42,5 +42,6 @@
   "moreOptions": "Plus d'options",
   "changeMemberStatusConfirmation": "Voulez-vous vraiment modifier le statut de ce membre ?",
   "yesProceed": "Oui, continuer",
-  "cancel": "Annuler"
+  "cancel": "Annuler",
+  "removeFromProject": "Supprimer du projet"
 }

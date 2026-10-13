@@ -1,7 +1,7 @@
 {
   "configurePhases": "Configurar fases",
   "phaseLabel": "Etiqueta de fase",
-  "enterPhaseName": "Digite um nome para o rótulo da fase",
+  "enterPhaseName": "Digite o nome da fase",
   "addOption": "Adicionar Opção",
   "phaseOptions": "Opções de Fase:",
   "dragToReorderPhases": "Arraste as fases para reordená-las. Cada fase pode ter uma cor diferente.",
@@ -12,8 +12,11 @@
   "deletePhaseConfirm": "Tem certeza de que deseja excluir esta fase? Esta ação não pode ser desfeita.",
   "rename": "Renomear",
   "delete": "Excluir",
-  "enterPhaseName": "Digite o nome da fase",
   "selectColor": "Selecionar cor",
   "managePhases": "Gerenciar Fases",
-  "close": "Fechar"
+  "close": "Fechar",
+  "manageAssignee": "Gerenciar responsável",
+  "start": "Começar",
+  "assignMember": "Atribuir membro",
+  "completeSprint": "Sprint completo"
 }

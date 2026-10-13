@@ -29,7 +29,36 @@
   "groupView": "Pamja e Grupit",
   "groupBy": {
     "category": "Kategoria",
-    "client": "Klienti"
+    "client": "Klienti",
+    "priorities": "prioritetet",
+    "priority": "Prioriteti",
+    "categories": "kategoritë",
+    "clients": "klientët"
   },
-  "noPermission": "Nuk keni leje për të kryer këtë veprim"
+  "noPermission": "Nuk keni leje për të kryer këtë veprim",
+  "fieldsText": "Fushat",
+  "noOptionsFound": "Nuk u gjetën opsione",
+  "showFields": "Shfaq fushat",
+  "retry": "Provo përsëri",
+  "searchProjects": "Kërkoni sipas emrit të projektit",
+  "favorite": "E preferuar",
+  "filter": {
+    "noCategory": "Pa Kategori",
+    "noPriority": "Pa Prioritet",
+    "noClient": "Pa Klient"
+  },
+  "activeFiltersCount": "Filtrat: {{count}}",
+  "settingsDisabledForGuest": "Cilësimet e paaktivizuara për mysafirëve",
+  "rowsPerPage": "Rreshta për faqe:",
+  "errors": {
+    "refreshFailed": "Rifreskimi i projekteve dështoi. Ju lutemi provoni përsëri.",
+    "loadFailed": "Ngarkimi i projekteve dështoi. Ju lutemi provoni përsëri."
+  },
+  "projectFields": "Fushat e Projektit",
+  "fieldsWithCount": "Fushat: {{count}}",
+  "groups": "grupe",
+  "endDate": "Data e përfundimit të projektit",
+  "settingsTooltip": "Hapehu cilësimet e projektit",
+  "required": "I kërkuar",
+  "priority": "Prioriteti"
 }

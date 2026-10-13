@@ -60,5 +60,13 @@
   "failedToUpdatePhaseOrder": "更新阶段顺序失败",
   "pleaseTryAgain": "请重试",
   "taskNotCompleted": "任务未完成",
-  "completeTaskDependencies": "请先完成任务依赖项，然后再继续"
+  "completeTaskDependencies": "请先完成任务依赖项，然后再继续",
+  "expand": "展开",
+  "collapse": "折叠",
+  "low": "低",
+  "medium": "中",
+  "high": "高",
+  "critical": "紧急",
+  "unarchive": "取消归档",
+  "addSubtask": "添加子任务"
 }

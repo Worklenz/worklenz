@@ -49,5 +49,14 @@
     "noClient": "No Client",
     "noPriority": "No Priority",
     "noCategory": "No Category"
-  }
+  },
+  "errors": {
+    "loadFailed": "Failed to load projects. Please try again.",
+    "refreshFailed": "Failed to refresh projects. Please try again."
+  },
+  "rowsPerPage": "Rows per page:",
+  "groups": "groups",
+  "retry": "Retry",
+  "searchProjects": "Search by project name",
+  "members": "Members"
 }

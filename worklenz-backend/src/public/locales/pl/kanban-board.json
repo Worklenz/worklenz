@@ -49,5 +49,13 @@
   "failedToUpdatePhaseOrder": "Nie udało się zaktualizować kolejności faz",
   "pleaseTryAgain": "Spróbuj ponownie",
   "taskNotCompleted": "Zadanie nie zostało ukończone",
-  "completeTaskDependencies": "Przed kontynuowaniem uzupełnij zależności zadań"
+  "completeTaskDependencies": "Przed kontynuowaniem uzupełnij zależności zadań",
+  "critical": "Krytyczny",
+  "high": "Wysoka",
+  "expand": "Rozwiń",
+  "medium": "Średni",
+  "addSubtask": "Dodaj podzadanie",
+  "collapse": "Zwiń",
+  "unarchive": "Cofnij archiwizację",
+  "low": "Niski"
 }

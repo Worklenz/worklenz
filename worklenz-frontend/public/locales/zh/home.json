@@ -20,7 +20,8 @@
     "showDone": "显示已完成",
     "created": "创建于",
     "finished": "完成于",
-    "tasks": "任务"
+    "tasks": "任务",
+    "loading": "加载中..."
   },
   "projects": {
     "title": "项目",
@@ -136,7 +137,9 @@
     "weekdayMiniThu": "四",
     "weekdayMiniFri": "五",
     "weekdayMiniSat": "六",
-    "weekdayMiniSun": "日"
+    "weekdayMiniSun": "日",
+    "clientsSearchPlaceholder": "搜索客户...",
+    "projectsSearchPlaceholder": "搜索项目..."
   },
   "activityLogs": {
     "title": "最近活动",
@@ -245,7 +248,9 @@
     "weekdayThu": "周四",
     "weekdayFri": "周五",
     "weekdaySat": "周六",
-    "weekdaySun": "周日"
+    "weekdaySun": "周日",
+    "createdTimeColumn": "创建时间",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "暂无费用记录",
@@ -259,7 +264,8 @@
     "columnAssignee": "负责人",
     "columnDate": "日期",
     "openTask": "打开任务",
-    "rowsPerPage": "每页行数："
+    "rowsPerPage": "每页行数：",
+    "addExpense": "添加费用"
   },
   "addExpense": {
     "modalTitle": "添加费用",
@@ -526,5 +532,7 @@
     "viewAllMore": "查看全部（还有 {{remaining}} 项）",
     "addFailed": "无法添加该待办事项，请重试。",
     "completeFailed": "无法更新该待办事项，请重试。"
-  }
+  },
+  "projectsAtRisk": "面临风险的项目",
+  "flagged": "标记的"
 }

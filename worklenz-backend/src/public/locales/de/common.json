@@ -7,5 +7,21 @@
   "update-banner-description": "Laden Sie neu, wenn Sie bereit sind, die neuesten Verbesserungen zu erhalten.",
   "reconnecting": "Vom Server getrennt.",
   "connection-lost": "Verbindung zum Server fehlgeschlagen. Bitte überprüfen Sie Ihre Internetverbindung.",
-  "connection-restored": "Erfolgreich mit dem Server verbunden"
+  "connection-restored": "Erfolgreich mit dem Server verbunden",
+  "error": {
+    "title": "Fehler",
+    "unknownError": "Es ist ein unbekannter Fehler aufgetreten",
+    "description": "Es ist ein unerwarteter Fehler aufgetreten. Bitte versuchen Sie es erneut oder kehren Sie zur Startseite zurück.",
+    "somethingWentWrong": "Etwas ist schief gelaufen",
+    "goHome": "Geh nach Hause",
+    "viewDetails": "Fehlerdetails anzeigen",
+    "errorMessage": "Fehlermeldung",
+    "retry": "Erneut versuchen",
+    "stackTrace": "Stack-Trace"
+  },
+  "noDataAvailable": "Keine Daten verfügbar",
+  "business-trial-then-plan": "Danach fahren Sie mit {{plan}} fort",
+  "licennse-expired-contacting-support": "Support kontaktieren...",
+  "loadingData": "Daten werden geladen...",
+  "refreshingData": "Daten werden aktualisiert..."
 }

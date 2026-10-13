@@ -89,5 +89,6 @@
   "customStatusRemovedSuccess": "Benutzerdefinierter Status entfernt",
   "customStatusRemovedError": "Der benutzerdefinierte Status konnte nicht entfernt werden",
   "closeButton": "Schließen",
-  "loadingText": "Laden..."
+  "loadingText": "Laden...",
+  "selectStatus": "Status auswählen"
 }

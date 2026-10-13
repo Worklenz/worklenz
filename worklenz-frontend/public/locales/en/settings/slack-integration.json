@@ -139,5 +139,10 @@
     "updateStatusFailed": "Failed to update channel status",
     "removeConfigFailed": "Failed to remove channel configuration",
     "refreshChannelsFailed": "Failed to refresh channels"
+  },
+  "connection": {
+    "success": "Slack workspace connected successfully!",
+    "error": "Failed to connect Slack workspace",
+    "cancelled": "Slack installation cancelled"
   }
 }

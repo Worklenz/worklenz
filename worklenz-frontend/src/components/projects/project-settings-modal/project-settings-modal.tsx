@@ -547,7 +547,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
 
       if (!csrfToken) {
         notification.error({
-          message: tCommon('error'),
+          message: tCommon('error.title', { defaultValue: 'Error' }),
           description: t('securityTokenValidationFailed', {
             defaultValue: 'Security token validation failed. Please try again.',
           }),

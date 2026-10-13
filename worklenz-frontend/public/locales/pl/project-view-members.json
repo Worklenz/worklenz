@@ -28,8 +28,8 @@
   "Invite": "Zaproś",
   "removeSuccess": "{{name}} usunięty z projektu",
   "removeError": "Nie udało się usunąć członka",
-  "assignFailedTitle": "Assignment failed",
-  "assignFailedMessage": "Could not update the task assignees. Please try again.",
+  "assignFailedTitle": "Przypisanie nie powiodło się",
+  "assignFailedMessage": "Nie można zaktualizować przypisanych zadań. Spróbuj ponownie.",
   "memberNotFound": "Nie znaleziono informacji o członku zespołu",
   "manageTimeOff": "Zarządzaj urlopem",
   "seatLimitReached": "Osiągnięto limit miejsc",
@@ -42,5 +42,6 @@
   "moreOptions": "Więcej opcji",
   "changeMemberStatusConfirmation": "Czy na pewno chcesz zmienić status tego członka?",
   "yesProceed": "Tak, kontynuuj",
-  "cancel": "Anuluj"
+  "cancel": "Anuluj",
+  "removeFromProject": "Usuń z projektu"
 }

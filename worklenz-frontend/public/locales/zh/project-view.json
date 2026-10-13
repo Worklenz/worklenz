@@ -437,5 +437,7 @@
   "releaseAddSelected": "添加选定的",
   "releaseItemsAdded_one": "添加了 {{count}} 工作项",
   "releaseItemsAdded_other": "添加了 {{count}} 工作项",
-  "releaseItemsAddError": "无法添加工作项"
+  "releaseItemsAddError": "无法添加工作项",
+  "You do not have permission to access this project": "您没有访问该项目的权限",
+  "Failed to load project": "无法加载项目"
 }
