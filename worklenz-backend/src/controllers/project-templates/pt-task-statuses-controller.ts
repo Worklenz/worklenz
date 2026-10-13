@@ -120,25 +120,30 @@ export default class PtTaskStatusesController extends WorklenzControllerBase {
     }
   })
   public static async updateName(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `DO
-              $$
-              BEGIN
-                  -- check whether the status name is already in
-                  IF EXISTS(SELECT name
-                            FROM cpt_task_statuses
-                            WHERE name = '${req.body.name}'::TEXT
-                              AND template_id = '${req.body.template_id}'::UUID)
-                  THEN
-                      RAISE 'STATUS_EXISTS_ERROR:%', ('${req.body.name}')::TEXT;
-                  END IF;
+    const { name, template_id } = req.body;
+    const { id } = req.params;
 
-                  UPDATE cpt_task_statuses
-                  SET name = '${req.body.name}'::TEXT
-                  WHERE id = '${req.params.id}'::UUID
-                    AND template_id = '${req.body.template_id}'::UUID;
-              END
-              $$;`;
-    const result = await db.query(q, []);
+    // Check whether the status name already exists in this template for another status
+    const checkQuery = `
+      SELECT id
+      FROM cpt_task_statuses
+      WHERE name = $1
+        AND template_id = $2
+        AND id != $3;
+    `;
+    const checkResult = await db.query(checkQuery, [name, template_id, id]);
+    if (checkResult.rows.length > 0) {
+      throw new Error(`STATUS_EXISTS_ERROR:${name}`);
+    }
+
+    const updateQuery = `
+      UPDATE cpt_task_statuses
+      SET name = $1
+      WHERE id = $2
+        AND template_id = $3
+      RETURNING *;
+    `;
+    const result = await db.query(updateQuery, [name, id, template_id]);
     const [data] = result.rows;
     return res.status(200).send(new ServerResponse(true, data));
   }
