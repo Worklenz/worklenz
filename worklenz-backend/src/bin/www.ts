@@ -22,6 +22,8 @@ import FileConstants from "../shared/file-constants";
 import {initRedis} from "../redis/client";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
 import { initializeI18n } from "../config/i18n";
+import { getEmailConfigurationErrors } from "../shared/email";
+import { getDeploymentMode } from "../shared/deployment-mode";
 
 function normalizePort(val?: string) {
   const p = parseInt(val || "0", 10);
@@ -31,6 +33,11 @@ function normalizePort(val?: string) {
 }
 
 const port = normalizePort(process.env.PORT);
+console.info(`Worklenz deployment mode: ${getDeploymentMode()}`);
+const emailConfigurationErrors = getEmailConfigurationErrors();
+if (emailConfigurationErrors.length) {
+  console.warn(`Email delivery is not configured: ${emailConfigurationErrors.join("; ")}`);
+}
 app.set("port", port);
 
 const server = http.createServer(app);

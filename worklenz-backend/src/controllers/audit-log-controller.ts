@@ -9,6 +9,16 @@ import { DEFAULT_PAGE_SIZE } from "../shared/constants";
 import { buildAuditEventsWhereClause, parseAuditLogFilters } from "../shared/audit-log-query";
 import { AUDIT_EVENT_CATEGORY, AUDIT_EVENT_TYPE } from "../shared/audit-log-constants";
 
+const parsePositiveInteger = (value: unknown, fallback: number, maximum: number): number => {
+  const parsed = typeof value === "string" || typeof value === "number" ? Number(value) : NaN;
+  if (!Number.isSafeInteger(parsed) || parsed < 1) return fallback;
+  return Math.min(parsed, maximum);
+};
+
+// The offset is index × size; cap the index so that multiplication stays a safe JS integer
+// even at the API's maximum page size.
+const MAX_AUDIT_LOG_PAGE_INDEX = Math.floor(Number.MAX_SAFE_INTEGER / 200);
+
 /**
  * Read path for the workspace-wide Audit Log (Admin Center > Security > Audit Log).
  * Audit log spec, task 4.
@@ -50,8 +60,8 @@ export default class AuditLogController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(false, null, "Organization not found"));
     }
 
-    const index = Math.max(1, +(req.query.index || 1));
-    const size = Math.max(1, Math.min(+(req.query.size || DEFAULT_PAGE_SIZE), 200));
+    const index = parsePositiveInteger(req.query.index, 1, MAX_AUDIT_LOG_PAGE_INDEX);
+    const size = parsePositiveInteger(req.query.size, DEFAULT_PAGE_SIZE, 200);
     const offset = (index - 1) * size;
 
     const filters = parseAuditLogFilters(req.query as Record<string, unknown>, req.user?.timezone_name);

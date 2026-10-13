@@ -32,5 +32,6 @@
   "online": "在线",
   "offline": "离线",
   "away": "离开",
-  "busy": "忙碌"
+  "busy": "忙碌",
+  "status": "状态"
 }

@@ -20,7 +20,8 @@
     "showDone": "Shfaq të Përfunduarat",
     "created": "Krijuar",
     "finished": "Përfunduar",
-    "tasks": "detyra"
+    "tasks": "detyra",
+    "loading": "Duke ngarkuar..."
   },
   "projects": {
     "title": "Projektet",
@@ -103,7 +104,15 @@
     "searchMembers": "Kërko sipas emrit ose email-it…",
     "noMembersFound": "Nuk u gjetën anëtarë",
     "time": "Koha",
-    "markTimeOff": "Shëno Pushim / Leje"
+    "markTimeOff": "Shëno Pushim / Leje",
+    "pinned": "Të fiksuara",
+    "tabsLabel": "Filtro detyrat",
+    "pinTask": "Fikso detyrën",
+    "unpinTask": "Hiq fiksimin e detyrës",
+    "pinLimitReached": "Mund të fiksosh deri në {{limit}} detyra. Hiq fiksimin e një detyre për të fiksuar një tjetër.",
+    "noPinnedTasks": "Ende nuk ka detyra të fiksuara. Vendos kursorin mbi çdo detyrë dhe kliko ikonën e gjilpërës për ta mbajtur këtu.",
+    "pinFailed": "Fiksimi nuk u përditësua. Provo përsëri.",
+    "viewAll": "Shiko të gjitha ({{total}})"
   },
   "homeCalendar": {
     "todayButton": "Sot",
@@ -128,7 +137,9 @@
     "weekdayMiniThu": "E",
     "weekdayMiniFri": "P",
     "weekdayMiniSat": "Sh",
-    "weekdayMiniSun": "D"
+    "weekdayMiniSun": "D",
+    "clientsSearchPlaceholder": "Kërko klientë...",
+    "projectsSearchPlaceholder": "Kërko projekte..."
   },
   "activityLogs": {
     "title": "Aktiviteti i Fundit",
@@ -237,7 +248,9 @@
     "weekdayThu": "Enj",
     "weekdayFri": "Pre",
     "weekdaySat": "Sht",
-    "weekdaySun": "Die"
+    "weekdaySun": "Die",
+    "createdTimeColumn": "Koha e krijuar",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "Ende pa shpenzime të regjistruara",
@@ -251,7 +264,8 @@
     "columnAssignee": "I Caktuari",
     "columnDate": "Data",
     "openTask": "Hap detyrën",
-    "rowsPerPage": "Rreshta për faqe:"
+    "rowsPerPage": "Rreshta për faqe:",
+    "addExpense": "Shto Shpenzim"
   },
   "addExpense": {
     "modalTitle": "Shto Shpenzim",
@@ -373,7 +387,8 @@
     "tasks": "Detyrat",
     "activity": "Aktiviteti",
     "timeLogged": "Koha e regjistruar",
-    "title": "Vazhdoni ku mbetët"
+    "title": "Vazhdoni ku mbetët",
+    "showTabs": "Shfaq skedat"
   },
   "focusTime": {
     "title": "Fokusi dhe Koha",
@@ -391,5 +406,133 @@
       "personal": "Personale",
       "other": "Tjetër"
     }
-  }
+  },
+  "customize": {
+    "button": "Personalizo",
+    "title": "Personalizo faqen kryesore",
+    "description": "Zvarrit seksionet për t'i rirenditur ose përdor butonat e shigjetave. Çaktivizo një seksion për ta fshehur nga faqja jote kryesore.",
+    "mainColumn": "Zona kryesore",
+    "sideColumn": "Paneli anësor",
+    "emptyColumn": "Lësho një seksion këtu",
+    "dragHandle": "Rendit {{name}}. Shtyp hapësirën për ta kapur, pastaj përdor shigjetat.",
+    "moveUp": "Lëviz lart",
+    "moveDown": "Lëviz poshtë",
+    "moveUpNamed": "Lëviz {{name}} lart",
+    "moveDownNamed": "Lëviz {{name}} poshtë",
+    "moveToSide": "Lëviz te paneli anësor",
+    "moveToMain": "Lëviz te zona kryesore",
+    "cannotHide": "Ky seksion nuk mund të fshihet.",
+    "showNamed": "Shfaq {{name}}",
+    "reset": "Rivendos parazgjedhjen",
+    "resetConfirm": "Të rivendosen cilësimet e parazgjedhura të faqes kryesore?",
+    "cancel": "Anulo",
+    "save": "Ruaj",
+    "widgets": {
+      "statCards": "Kartat përmbledhëse",
+      "priorities": "Përparësitë e detyrave",
+      "progressDonut": "Progresi im",
+      "continue": "Vazhdo aty ku e le",
+      "greeting": "Banderola e përshëndetjes",
+      "teamMembers": "Anëtarët e ekipit",
+      "assignedByMe": "Detyrat e caktuara nga unë",
+      "mentions": "Komente që më përmendin",
+      "todo": "Lista ime e detyrave"
+    },
+    "tabs": {
+      "layout": "Paraqitja",
+      "taskTabs": "Skedat e detyrave",
+      "sorting": "Renditja",
+      "sidebar": "Shiriti anësor majtas",
+      "defaultView": "Pamja e parazgjedhur"
+    },
+    "topSection": "Maja e faqes",
+    "tabsDescription": "Zgjidh cilat skeda shfaqen mbi tabelën e detyrave dhe në çfarë rendi. Të paktën një skedë duhet të mbetet e aktivizuar.",
+    "cannotHideLastTab": "Të paktën një skedë duhet të mbetet e dukshme.",
+    "sortDescription": "Zgjidh si renditen detyrat në tabelë. Detyrat e fiksuara qëndrojnë gjithmonë në krye.",
+    "sortField": "Rendit sipas",
+    "sortOrder": "Drejtimi",
+    "sortDefault": "Renditja e parazgjedhur (afati, më i afërti së pari)",
+    "sortAsc": "Rritës",
+    "sortDesc": "Zbritës",
+    "sortPinnedNote": "Skeda e të fiksuarave shfaq gjithmonë së pari detyrën e fiksuar së fundmi.",
+    "sidebarDescription": "Rendit elementet e shiritit anësor majtas dhe zgjidh cilat shfaqen. Fikso një që të jetë faqja që hapet e para kur hyn te faqja kryesore.",
+    "pinSidebarItem": "Fikso {{name}} si faqen që hapet e para",
+    "unpinSidebarItem": "Hiq fiksimin e {{name}}",
+    "assignedDefault": "Hap tabelën te",
+    "assignedLastUsed": "Cilado që kam përdorur së fundmi",
+    "cannotHideLanding": "Faqja kryesore hapet në këtë faqe. Fikso një faqe tjetër për ta fshehur.",
+    "cannotHideLastItem": "Të paktën një element duhet të mbetet i dukshëm.",
+    "tableTitle": "Personalizo tabelën e detyrave",
+    "tableResetConfirm": "Të rivendosen cilësimet e parazgjedhura të tabelës së detyrave?",
+    "done": "Gati"
+  },
+  "widgets": {
+    "menu": {
+      "options": "Opsionet e {{name}}",
+      "showPeriod": "Shfaq",
+      "remove": "Hiq widget-in"
+    },
+    "add": {
+      "button": "Shto widget",
+      "hint": "Shtypni Shto, ose tërhiqni një widget në faqen tuaj.",
+      "addAction": "Shto",
+      "addNamed": "Shto {{name}}",
+      "empty": "Të gjitha widget-et janë tashmë në faqen tuaj kryesore."
+    },
+    "descriptions": {
+      "greeting": "Një përshëndetje me datën e sotme dhe çfarë kërkon vëmendjen tuaj.",
+      "statCards": "Detyrat e sotme, ato me vonesë, ato të përfunduara dhe koha juaj e fokusit.",
+      "priorities": "Detyrat tuaja për sot ose këtë javë, gati për t'u kryer.",
+      "progressDonut": "Sa nga puna juaj e caktuar është e kryer, në progres ose ende pa nisur.",
+      "continue": "Kthehuni te projektet, detyrat, aktiviteti dhe koha e regjistruar së fundmi.",
+      "teamMembers": "Shihni kush është në ekipin tuaj dhe hapni faqen e plotë të ekipit.",
+      "assignedByMe": "Detyra që u keni caktuar kolegëve, që t'i ndiqni më lehtë.",
+      "mentions": "Komentet e fundit në detyra ku një koleg ju ka përmendur me @.",
+      "todo": "Shënoni detyra personale dhe shënojini si të kryera."
+    },
+    "drag": {
+      "pickedUp": "U mor {{name}}.",
+      "dropped": "U lëshua {{name}}.",
+      "cancelled": "Zhvendosja e {{name}} u anulua."
+    },
+    "dropHere": "Lëshoni një widget këtu",
+    "state": {
+      "error": "Ky widget nuk u ngarkua.",
+      "retry": "Provo përsëri"
+    },
+    "empty": {
+      "title": "Tërhiqni dhe lëshoni widget-e të reja",
+      "titleNoDrag": "Shtoni widget-e në faqen tuaj kryesore",
+      "button": "Shto widget-e"
+    }
+  },
+  "teamMembers": {
+    "empty": "Ende nuk ka anëtarë në ekip.",
+    "viewTeam": "Shiko ekipin"
+  },
+  "assignedByMe": {
+    "empty": "Nuk keni caktuar asnjë detyrë të hapur.",
+    "assignNewTask": "Cakto detyrë të re",
+    "viewAll": "Shiko të gjitha detyrat e caktuara ({{total}})"
+  },
+  "mentions": {
+    "empty": "Askush nuk ju ka përmendur ende në një koment.",
+    "reply": "Përgjigju",
+    "replyPlaceholder": "Shkruani një përgjigje…",
+    "replyHint": "Postohet si koment te “{{task}}”.",
+    "replySent": "Përgjigjja u shtua te “{{task}}”.",
+    "replyFailed": "Përgjigjja juaj nuk u postua. Ju lutemi provoni përsëri.",
+    "replyLabel": "Përgjigju {{name}}"
+  },
+  "todoWidget": {
+    "addPlaceholder": "Shtoni një detyrë dhe shtypni Enter",
+    "addLabel": "Detyrë e re",
+    "empty": "Keni përfunduar gjithçka.",
+    "viewAll": "Hap listën time të detyrave",
+    "viewAllMore": "Shiko të gjitha ({{remaining}} të tjera)",
+    "addFailed": "Detyra nuk u shtua. Ju lutemi provoni përsëri.",
+    "completeFailed": "Detyra nuk u përditësua. Ju lutemi provoni përsëri."
+  },
+  "projectsAtRisk": "Projektet në rrezik",
+  "flagged": "me flamur"
 }

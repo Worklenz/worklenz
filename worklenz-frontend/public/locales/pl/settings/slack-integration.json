@@ -139,5 +139,10 @@
     "updateStatusFailed": "Nie udało się zaktualizować statusu kanału",
     "removeConfigFailed": "Nie udało się usunąć konfiguracji kanału",
     "refreshChannelsFailed": "Nie udało się odświeżyć kanałów"
+  },
+  "connection": {
+    "success": "Pomyślnie połączono obszar roboczy Slack!",
+    "error": "Nie udało się połączyć obszaru roboczego Slack",
+    "cancelled": "Instalacja Slacka została anulowana"
   }
 }

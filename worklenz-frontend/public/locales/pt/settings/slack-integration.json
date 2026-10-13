@@ -139,5 +139,10 @@
     "updateStatusFailed": "Falha ao atualizar status do canal",
     "removeConfigFailed": "Falha ao remover configuração do canal",
     "refreshChannelsFailed": "Falha ao atualizar canais"
+  },
+  "connection": {
+    "success": "Espaço de trabalho do Slack conectado com sucesso!",
+    "error": "Falha ao conectar espaço de trabalho do Slack",
+    "cancelled": "Instalação do Slack cancelada"
   }
 }

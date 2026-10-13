@@ -17,7 +17,7 @@ import {
   setNotificationType,
   toggleDrawer,
   fetchUnreadCount,
-} from '../../../../../features/navbar/notificationSlice';
+} from '@/features/navbar/notificationSlice';
 import { setTargetCommentId } from '@/features/task-drawer/task-drawer.slice';
 
 import { NOTIFICATION_OPTION_READ, NOTIFICATION_OPTION_UNREAD } from '@/shared/constants';

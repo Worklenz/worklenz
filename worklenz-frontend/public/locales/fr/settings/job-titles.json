@@ -19,5 +19,7 @@
   "updateJobTitleErrorMessage": "Échec de la mise à jour du titre du poste !",
   "paginationTotal": "{{start}}-{{end}} sur {{total}} éléments",
   "editTooltip": "Modifier",
-  "deleteTooltip": "Supprimer"
+  "deleteTooltip": "Supprimer",
+  "fetchJobTitleErrorMessage": "Échec de la récupération du titre du poste. Veuillez réessayer.",
+  "pageTitle": "Gérer les titres de poste"
 }

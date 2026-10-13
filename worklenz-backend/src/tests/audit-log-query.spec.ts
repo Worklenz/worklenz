@@ -23,7 +23,7 @@ describe("audit-log-query", () => {
       expect(parseAuditLogFilters({}, null).timezone).toBe("");
     });
 
-    it("trims date and search values", () => {
+    it("keeps strict calendar dates and trims the search value", () => {
       const filters = parseAuditLogFilters({
         start_date: "  2026-09-01  ",
         end_date: "  2026-09-30  ",
@@ -34,14 +34,34 @@ describe("audit-log-query", () => {
       expect(filters.search).toBe("fraud");
     });
 
+    it("drops malformed or impossible dates before they reach the SQL DATE casts", () => {
+      const filters = parseAuditLogFilters({
+        start_date: "not-a-date",
+        end_date: "2026-02-30",
+      });
+
+      expect(filters.startDate).toBe("");
+      expect(filters.endDate).toBe("");
+    });
+
+    it("treats non-string search parameters as empty instead of throwing", () => {
+      expect(parseAuditLogFilters({ search: ["unexpected"] })).toMatchObject({ search: "" });
+      expect(parseAuditLogFilters({ search: { value: "unexpected" } })).toMatchObject({ search: "" });
+    });
+
     it("splits comma-separated categories and drops invalid ones", () => {
       const filters = parseAuditLogFilters({ category: "access, user ,bogus" });
       expect(filters.categories).toEqual(["access", "user"]);
     });
 
-    it("splits comma-separated actor ids verbatim (no validation beyond non-empty)", () => {
-      const filters = parseAuditLogFilters({ actor_user_id: "user-1, user-2 ," });
-      expect(filters.actorUserIds).toEqual(["user-1", "user-2"]);
+    it("keeps only valid UUID actor ids so the UUID[] SQL cast cannot fail", () => {
+      const filters = parseAuditLogFilters({
+        actor_user_id: "550e8400-e29b-41d4-a716-446655440000, not-a-uuid, 550e8400-e29b-41d4-a716-446655440001",
+      });
+      expect(filters.actorUserIds).toEqual([
+        "550e8400-e29b-41d4-a716-446655440000",
+        "550e8400-e29b-41d4-a716-446655440001",
+      ]);
     });
   });
 
@@ -121,10 +141,10 @@ describe("audit-log-query", () => {
     it("adds an actor ANY() condition for multi-select actors", () => {
       const { whereClause, params } = buildAuditEventsWhereClause("org-1", {
         ...emptyFilters,
-        actorUserIds: ["user-1", "user-2"],
+        actorUserIds: ["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001"],
       });
       expect(whereClause).toBe("organization_id = $1 AND actor_user_id = ANY($2::UUID[])");
-      expect(params[1]).toEqual(["user-1", "user-2"]);
+      expect(params[1]).toEqual(["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001"]);
     });
 
     it("adds a search condition against description and actor_name", () => {
@@ -152,7 +172,7 @@ describe("audit-log-query", () => {
         startDate: "2026-09-01",
         endDate: "2026-09-30",
         categories: ["lifecycle"],
-        actorUserIds: ["user-1"],
+        actorUserIds: ["550e8400-e29b-41d4-a716-446655440000"],
         search: "fraud",
       });
       expect(whereClause).toBe(

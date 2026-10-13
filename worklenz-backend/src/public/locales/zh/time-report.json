@@ -47,7 +47,6 @@
   "searchByMember": "按成员搜索",
   "members": "成员",
   "utilization": "利用率",
-
   "totalTimeLogged": "总记录时间",
   "acrossAllTeamMembers": "跨所有团队成员",
   "expectedCapacity": "预期容量",
@@ -61,5 +60,17 @@
   "capacityAvailableForNewProjects": "可用于新项目的容量",
   "optimal": "最佳",
   "underUtilized": "利用率不足",
-  "overUtilized": "过度利用"
+  "overUtilized": "过度利用",
+  "practiceFilterLabel": "实践",
+  "holidaysExcluded": "节假日除外",
+  "noPracticeOption": "没有练习",
+  "noDepartments": "没有找到部门",
+  "departmentFilterLabel": "部门",
+  "searchByPractice": "搜索练习",
+  "noDepartmentOption": "无部门",
+  "noDataMatchingFilters": "没有与所选过滤器匹配的数据",
+  "noPractices": "没有找到实践",
+  "reportSettings": "报告设置",
+  "Members Time Sheet": "成员时间表",
+  "searchByDepartment": "搜寻部门"
 }

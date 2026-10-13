@@ -2,7 +2,6 @@
   "today": "Heute",
   "week": "Woche",
   "month": "Monat",
-
   "settings": "Einstellungen",
   "workingDays": "Arbeitstage",
   "monday": "Montag",
@@ -15,7 +14,6 @@
   "workingHours": "Arbeitsstunden",
   "hours": "Stunden",
   "saveButton": "Speichern",
-
   "totalAllocation": "Gesamtzuteilung",
   "timeLogged": "Zeiterfassung",
   "remainingTime": "Verbleibende Zeit",
@@ -24,16 +22,35 @@
   "tasks": "Aufgaben",
   "startDate": "Startdatum",
   "endDate": "Enddatum",
-
   "hoursPerDay": "Stunden pro Tag",
   "totalHours": "Gesamtstunden",
   "deleteButton": "Löschen",
   "cancelButton": "Abbrechen",
-
   "tabTitle": "Aufgaben ohne Start- & Enddatum",
-
   "allocatedTime": "Zugewiesene Zeit",
   "totalLogged": "Gesamterfasst",
   "loggedBillable": "Abrechenbar erfasst",
-  "loggedNonBillable": "Nicht abrechenbar erfasst"
+  "loggedNonBillable": "Nicht abrechenbar erfasst",
+  "timelineError": "Zeitleiste konnte nicht geladen werden",
+  "noProjects": "Keine Projekte zugewiesen",
+  "capacityConflicts": "Kapazitätskonflikte erkannt",
+  "taskDatesError": "Aktualisierung der Aufgabendaten fehlgeschlagen",
+  "manageTimeOff": "Verwalten Sie die Abwesenheit",
+  "noTasksInDateRange": "In diesem Datumsbereich wurden keine Aufgaben gefunden",
+  "key": "Schlüssel",
+  "filterByStatus": "Alle Status",
+  "selectMemberToViewTasks": "Wählen Sie ein Mitglied aus, um Aufgaben anzuzeigen",
+  "retry": "Erneut versuchen",
+  "loadingTimeline": "Zeitleiste wird geladen...",
+  "open": "Öffnen",
+  "loggedTime": "Erfasst",
+  "filterByMember": "Teammitglied",
+  "filterByProject": "Projekt",
+  "estimation": "Schätzung",
+  "noTasksScheduled": "Keine Aufgaben geplant",
+  "taskDatesUpdated": "Aufgabentermine aktualisiert",
+  "noTasksInGroup": "Keine Aufgaben in dieser Gruppe",
+  "filterByPriority": "Priorität",
+  "priority": "Priorität",
+  "selectProjectToViewTasks": "Wählen Sie ein Projekt aus, um Aufgaben anzuzeigen"
 }

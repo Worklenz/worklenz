@@ -29,5 +29,6 @@
   "role": "角色",
   "owner": "所有者",
   "admin": "管理员",
-  "member": "成员"
+  "member": "成员",
+  "clickToEditName": "点击编辑姓名"
 }

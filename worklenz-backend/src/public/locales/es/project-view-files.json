@@ -10,5 +10,9 @@
   "deleteConfirmationOk": "Sí",
   "deleteConfirmationCancel": "Cancelar",
   "segmentedTooltip": "¡Próximamente! Cambiar entre vista de lista y vista de miniaturas.",
-  "emptyText": "No hay archivos adjuntos en el proyecto."
+  "emptyText": "No hay archivos adjuntos en el proyecto.",
+  "uploadExpired": "La sesión de carga expiró. Por favor inténtalo de nuevo.",
+  "fileTooLargePopoverBody": "Los archivos de más de 25 MB requieren el plan Business. Este archivo tiene {{sizeMb}} MB. Actualice para cargar archivos más grandes.",
+  "linksPaginationSummary": "{{start}}–{{end}} de {{count}} enlaces",
+  "fileTooLargePopoverTitle": "Archivo demasiado grande"
 }

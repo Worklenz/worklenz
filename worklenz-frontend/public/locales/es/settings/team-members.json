@@ -235,5 +235,10 @@
   "selectProjectFirst": "Seleccione un proyecto primero",
   "manageTimeOff": "Gestionar Ausencias",
   "createFromTemplatesLabel": "Crear proyectos desde plantillas",
-  "createFromTemplatesHint": "Permite a este miembro crear proyectos desde plantillas. Se convierten en Gerente de Proyecto del nuevo proyecto sin acceso financiero. No permite crear proyectos en blanco."
+  "createFromTemplatesHint": "Permite a este miembro crear proyectos desde plantillas. Se convierten en Gerente de Proyecto del nuevo proyecto sin acceso financiero. No permite crear proyectos en blanco.",
+  "inviteLinkGeneratedCopyFailed": "Se generó el enlace de invitación, pero no se pudo copiar automáticamente. Cópielo manualmente.",
+  "noManagedProjectsFound": "No hay proyectos en los que seas Project Manager",
+  "projectInvite_guestLimitExceeded": "Se superó el límite de invitados para este plan. Actualice para agregar más invitados.",
+  "license-expired-subtitle": "Su suscripción de Worklenz ha terminado. Por favor renueve para continuar disfrutando de todas las funciones.",
+  "Failed to fetch job titles": "Error al obtener los cargos"
 }

@@ -37,7 +37,8 @@
     "failedToRemoveDependency": "Nie udało się usunąć zależności.",
     "taskAddedToRoadmap": "Zadanie dodane do planu działania na najbliższe 5 dni.",
     "failedToAddTaskToRoadmap": "Nie udało się dodać zadania do planu działania.",
-    "unscheduledTaskNotFound": "Nie można znaleźć wybranego zadania."
+    "unscheduledTaskNotFound": "Nie można znaleźć wybranego zadania.",
+    "undatedTaskReadOnly": "Zadanie bez dat (tylko do odczytu dla gości)"
   },
   "common": {
     "noStart": "Bez początku",

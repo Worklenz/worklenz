@@ -3,12 +3,10 @@
   "pageSubtitle": "覆盖整个工作区、仅可追加的管理员操作、权限变更和访问事件记录——独立于每个任务的活动日志。专为 ISMS / PCI DSS 合规取证而设计，而非日常任务历史。",
   "footnoteTitle": "此日志的工作方式——",
   "footnoteBody": "此处的每一行均为仅追加：此界面中没有任何编辑或删除入口，只有上方的保留期限，会按时间自动清除旧条目。此日志独立于每个任务抽屉中的活动日志——后者为协作者记录任务编辑，而此日志为合规目的记录管理员、权限和访问事件。两者永不合并。",
-
   "categoryAccess": "访问与身份验证",
   "categoryUser": "用户与角色管理",
   "categoryPermission": "权限与设置变更",
   "categoryLifecycle": "项目与工作区生命周期",
-
   "eventLoginSuccess": "登录成功",
   "eventLoginFailed": "登录失败",
   "eventLogout": "已退出登录",
@@ -27,6 +25,7 @@
   "eventProjectDeleted": "项目已删除",
   "eventProjectRestored": "项目已恢复",
   "eventWorkspaceRenamed": "工作区已重命名",
+  "eventTeamDeleted": "团队已删除",
   "eventWorkspaceDeleted": "工作区已删除",
   "eventMemberUpdated": "成员信息已更改",
   "eventMemberActivated": "成员已激活",
@@ -39,12 +38,10 @@
   "eventProjectMemberRemoved": "已从项目中移除",
   "eventProjectSettingChanged": "项目设置已更改",
   "eventMemberPermissionChanged": "成员权限已更改",
-
   "statEvents": "事件（{{range}}）",
   "statFailedLogins": "登录失败次数",
   "statPermissionChanges": "权限变更",
   "statRetention": "保留期限",
-
   "searchPlaceholder": "搜索操作者或事件…",
   "actorFilterLabel": "操作者",
   "actorSearchPlaceholder": "搜索工作区用户",
@@ -56,7 +53,6 @@
   "chipPermission": "权限",
   "chipLifecycle": "生命周期",
   "clearFilters": "清除筛选",
-
   "columnTimestamp": "时间戳",
   "columnActor": "操作者",
   "columnCategory": "类别",
@@ -78,7 +74,6 @@
   "emptyFilteredHint": "请尝试扩大日期范围或清除部分筛选条件。",
   "loadError": "无法加载审计日志",
   "retry": "重试",
-
   "exportCsv": "导出为 CSV",
   "exportDownloaded": "审计日志已导出为 CSV。",
   "exportQueued": "此导出数据量较大，正在后台准备。下载链接将显示在此处。",
@@ -94,7 +89,6 @@
   "exportFailedTitle": "导出未能完成。",
   "exportTryAgain": "重试",
   "exportExpired": "此导出已过期。请开始新的导出以获取最新文件。",
-
   "retentionLabel": "保留期限：",
   "retentionMonths_one": "{{count}} 个月",
   "retentionMonths_other": "{{count}} 个月",

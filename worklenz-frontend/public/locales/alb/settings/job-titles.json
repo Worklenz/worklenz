@@ -19,5 +19,7 @@
   "updateJobTitleErrorMessage": "Përditësimi i titullit të punës dështoi!",
   "paginationTotal": "{{start}}-{{end}} nga {{total}} artikuj",
   "editTooltip": "Modifiko",
-  "deleteTooltip": "Fshi"
+  "deleteTooltip": "Fshi",
+  "fetchJobTitleErrorMessage": "Marrja e titullit të punës dështoi. Ju lutemi provoni përsëri.",
+  "pageTitle": "Menaxho titujt e punës"
 }

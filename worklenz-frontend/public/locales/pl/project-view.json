@@ -437,5 +437,11 @@
   "releaseAddSelected": "Dodaj wybrane",
   "releaseItemsAdded_one": "Dodano {{count}} element pracy",
   "releaseItemsAdded_other": "Dodano {{count}} elementy pracy",
-  "releaseItemsAddError": "Nie można dodać elementów pracy"
+  "releaseItemsAddError": "Nie można dodać elementów pracy",
+  "You do not have permission to access this project": "Nie masz uprawnień dostępu do tego projektu",
+  "Failed to load project": "Nie udało się załadować projektu",
+  "issueTypeSaveError": "Nie udało się zmienić typu elementu. Spróbuj ponownie.",
+  "changeIssueType": "Zmień typ elementu",
+  "unpinTabFromHeader": "Usuń z nagłówka",
+  "pinTabToHeader": "Pokaż w nagłówku"
 }

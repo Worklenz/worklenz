@@ -89,5 +89,6 @@
   "customStatusRemovedSuccess": "Statusi i personalizuar u hoq",
   "customStatusRemovedError": "Heqja e statusit të personalizuar dështoi",
   "closeButton": "Mbylle",
-  "loadingText": "Po ngarkohet..."
+  "loadingText": "Po ngarkohet...",
+  "selectStatus": "Zgjidhni statusin"
 }

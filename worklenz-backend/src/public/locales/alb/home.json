@@ -6,7 +6,8 @@
     "noTasks": "Asnjë detyrë",
     "pressEnter": "Shtyp",
     "toCreate": "për të krijuar.",
-    "markAsDone": "Shëno si të përfunduar"
+    "markAsDone": "Shëno si të përfunduar",
+    "loading": "Duke ngarkuar..."
   },
   "projects": {
     "title": "Projektet",
@@ -42,5 +43,23 @@
     "calendar": "Kalendar",
     "tasks": "Detyrat",
     "refresh": "Rifresko"
-  }
+  },
+  "projectsAtRisk": "Projektet në rrezik",
+  "logTime": {
+    "minutesPlaceholder": "0",
+    "createdTimeColumn": "Koha e krijuar"
+  },
+  "customize": {
+    "tabs": {
+      "layout": "Paraqitja"
+    }
+  },
+  "expenses": {
+    "addExpense": "Shto Shpenzim"
+  },
+  "homeCalendar": {
+    "clientsSearchPlaceholder": "Kërko klientë...",
+    "projectsSearchPlaceholder": "Kërko projekte..."
+  },
+  "flagged": "me flamur"
 }

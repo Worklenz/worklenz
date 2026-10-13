@@ -27,5 +27,8 @@
   "invite": "Inviter",
   "Invite": "Inviter",
   "removeSuccess": "{{name}} supprimé du projet",
-  "removeError": "Échec de la suppression du membre"
+  "removeError": "Échec de la suppression du membre",
+  "removeFromProject": "Supprimer du projet",
+  "assignFailedMessage": "Impossible de mettre à jour les responsables de la tâche. Veuillez réessayer.",
+  "assignFailedTitle": "Échec de l'affectation"
 }

@@ -114,6 +114,9 @@ const formatSeconds = (seconds: number): string => {
 
 const HomeLogTime: React.FC = () => {
   const { token } = theme.useToken();
+  const quickEntryDropdownStyle = {
+    '--rc-virtual-list-scrollbar-bg': token.colorTextSecondary,
+  } as React.CSSProperties;
   const navigate = useNavigate();
   const { t } = useTranslation('home');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -775,6 +778,8 @@ const HomeLogTime: React.FC = () => {
           <div style={{ marginBottom: 14 }}>
             <label style={fldLbl}>{t('logTime.projectLabel', { defaultValue: 'Project' })}</label>
             <Select
+              classNames={{ popup: { root: 'quick-entry-dropdown' } }}
+              styles={{ popup: { root: quickEntryDropdownStyle } }}
               showSearch
               style={{ width: '100%' }}
               placeholder={t('logTime.projectPlaceholder', { defaultValue: 'Select project' })}
@@ -789,6 +794,11 @@ const HomeLogTime: React.FC = () => {
             <label style={fldLbl}>{t('logTime.taskLabel', { defaultValue: 'Task' })}</label>
             <Select
               showSearch
+              styles={{
+                popup: {
+                  root: quickEntryDropdownStyle,
+                },
+              }}
               style={{ width: '100%' }}
               placeholder={selProjectId ? t('logTime.taskPlaceholder', { defaultValue: 'Select task' }) : t('logTime.taskDisabledPlaceholder', { defaultValue: 'Select a project first' })}
               disabled={!selProjectId}
@@ -799,7 +809,7 @@ const HomeLogTime: React.FC = () => {
               value={selTaskId}
               onChange={setSelTaskId}
               notFoundContent={tasksLoading ? t('logTime.taskSearching', { defaultValue: 'Searching...' }) : t('logTime.noTasksFound', { defaultValue: 'No tasks found' })}
-              dropdownRender={menu => (
+              popupRender={menu => (
                 <>
                   {menu}
                   <div

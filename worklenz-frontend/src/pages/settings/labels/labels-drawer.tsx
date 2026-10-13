@@ -377,7 +377,7 @@ const LabelsDrawer = ({
     onChange?: (color: string) => void;
   }) => (
     <Dropdown
-      dropdownRender={() => (
+      popupRender={() => (
         <div
           style={{
             padding: 16,
@@ -465,7 +465,7 @@ const LabelsDrawer = ({
       }
       open={drawerOpen}
       onClose={handleClose}
-      destroyOnClose
+      destroyOnHidden
       width={400}
     >
       <Form form={form} layout="vertical" onFinish={handleFormSubmit}>

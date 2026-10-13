@@ -36,6 +36,7 @@
     "overdueTasksTooltip": "Aufgaben, deren Fälligkeitsdatum überschritten wurde",
     "totalLoggedHoursTooltip": "Zeitschätzung und erfasste Zeit für Aufgaben.",
     "includeArchivedTasks": "Archivierte Aufgaben einbeziehen",
-    "export": "Exportieren"
+    "export": "Exportieren",
+    "paginationRange": "{{from}}–{{to}} von {{total}}"
   }
 }

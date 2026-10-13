@@ -224,7 +224,21 @@
       "labels": "Étiquettes",
       "addLabel": "+ Ajouter une étiquette",
       "keyLabelPlaceholder": "ex : MK"
-    }
+    },
+    "newColumn": "Nouvelle colonne",
+    "projectNotFound": "Projet non trouvé",
+    "columnCreated": "Colonne créée. Cliquez sur l'en-tête pour modifier.",
+    "columnCreationFailed": "Échec de la création de la colonne",
+    "guestCannotAddColumn": "Les invités ne peuvent pas ajouter de colonnes personnalisées",
+    "columnNameRequired": "Le nom de la colonne est requis",
+    "columnNotFound": "Colonne non trouvée",
+    "columnIdNotFound": "ID de colonne non trouvé - veuillez actualiser et réessayer",
+    "columnUpdated": "Nom de colonne mis à jour",
+    "updateFailed": "Échec de la mise à jour du nom de colonne",
+    "enterColumnName": "Entrez le nom de la colonne",
+    "clickToEdit": "Cliquez pour modifier le nom de la colonne",
+    "columnSettings": "Paramètres de la colonne",
+    "textPlaceholder": "Entrez du texte"
   },
   "indicators": {
     "tooltips": {
@@ -249,5 +263,16 @@
     "completeTaskDependencies": "Veuillez compléter les dépendances des tâches avant de continuer",
     "incompleteDependencies": "Dépendances incomplètes !",
     "someDependenciesNotCompleted": "Certaines tâches n'ont pas été mises à jour. Veuillez vous assurer que toutes les tâches dépendantes sont terminées avant de continuer."
-  }
+  },
+  "insertTaskText": "Insérer une tâche",
+  "insertTaskAtBottomText": "Insérer une tâche en bas",
+  "untitledTaskName": "Tâche sans titre",
+  "openTask": "Ouvrir la tâche",
+  "descriptionPlaceholder": "Ajouter une description…",
+  "descriptionDisabledTooltip": "Affichage uniquement - modification impossible",
+  "descriptionRichTooltip": "Contient une mise en forme enrichie — cliquez pour modifier dans le panneau de tâche",
+  "setDueTime": "Définir l'heure d'échéance",
+  "save": "Enregistrer",
+  "cancel": "Annuler",
+  "changeStatus": "Changer de statut : {{status}}"
 }

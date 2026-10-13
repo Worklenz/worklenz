@@ -3,12 +3,10 @@
   "pageSubtitle": "Um registro somente de inclusão, em todo o espaço de trabalho, de ações administrativas, alterações de permissões e eventos de acesso — separado do Log de atividades de cada tarefa. Criado como evidência para ISMS / PCI DSS, não para o histórico diário de tarefas.",
   "footnoteTitle": "Como este log funciona —",
   "footnoteBody": "Cada linha aqui é somente de inclusão: não há opção de editar ou excluir em nenhum lugar desta interface, apenas o período de retenção acima, que remove as entradas automaticamente conforme a idade. Este log é separado do Log de atividades de cada tarefa — aquele acompanha as edições de tarefas para os colaboradores; este acompanha eventos administrativos, de permissões e de acesso para conformidade. Os dois nunca são mesclados.",
-
   "categoryAccess": "Acesso e autenticação",
   "categoryUser": "Gerenciamento de usuários e funções",
   "categoryPermission": "Alterações de permissões e configurações",
   "categoryLifecycle": "Ciclo de vida de projetos e do espaço de trabalho",
-
   "eventLoginSuccess": "Login bem-sucedido",
   "eventLoginFailed": "Falha no login",
   "eventLogout": "Sessão encerrada",
@@ -27,6 +25,7 @@
   "eventProjectDeleted": "Projeto excluído",
   "eventProjectRestored": "Projeto restaurado",
   "eventWorkspaceRenamed": "Espaço de trabalho renomeado",
+  "eventTeamDeleted": "Equipe excluída",
   "eventWorkspaceDeleted": "Espaço de trabalho excluído",
   "eventMemberUpdated": "Dados do membro alterados",
   "eventMemberActivated": "Membro ativado",
@@ -39,12 +38,10 @@
   "eventProjectMemberRemoved": "Removido do projeto",
   "eventProjectSettingChanged": "Configuração do projeto alterada",
   "eventMemberPermissionChanged": "Permissão do membro alterada",
-
   "statEvents": "Eventos ({{range}})",
   "statFailedLogins": "Logins com falha",
   "statPermissionChanges": "Alterações de permissões",
   "statRetention": "Período de retenção",
-
   "searchPlaceholder": "Pesquisar ator ou evento…",
   "actorFilterLabel": "Atores",
   "actorSearchPlaceholder": "Pesquisar usuários do espaço de trabalho",
@@ -56,7 +53,6 @@
   "chipPermission": "Permissões",
   "chipLifecycle": "Ciclo de vida",
   "clearFilters": "Limpar filtros",
-
   "columnTimestamp": "Data e hora",
   "columnActor": "Ator",
   "columnCategory": "Categoria",
@@ -78,7 +74,6 @@
   "emptyFilteredHint": "Tente um intervalo de datas maior ou limpe alguns filtros.",
   "loadError": "Não foi possível carregar o log de auditoria",
   "retry": "Tentar novamente",
-
   "exportCsv": "Exportar para CSV",
   "exportDownloaded": "Log de auditoria exportado para CSV.",
   "exportQueued": "Esta exportação é grande, por isso está sendo preparada em segundo plano. O link de download aparecerá aqui.",
@@ -94,7 +89,6 @@
   "exportFailedTitle": "Não foi possível concluir a exportação.",
   "exportTryAgain": "Tentar novamente",
   "exportExpired": "Esta exportação expirou. Inicie uma nova exportação para obter um arquivo atualizado.",
-
   "retentionLabel": "Retenção:",
   "retentionMonths_one": "{{count}} mês",
   "retentionMonths_other": "{{count}} meses",

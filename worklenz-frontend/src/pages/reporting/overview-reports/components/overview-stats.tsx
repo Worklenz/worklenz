@@ -9,6 +9,7 @@ import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { useReportingRoomSync } from '@/hooks/useReportingRoomSync';
 
 const OverviewStats = () => {
   const [stats, setStats] = useState<IRPTOverviewStatistics>({});
@@ -16,6 +17,7 @@ const OverviewStats = () => {
   const { t } = useTranslation('reporting-overview');
   const { token } = theme.useToken();
   const { socket } = useSocket();
+  useReportingRoomSync();
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const includeArchivedProjects = useAppSelector(

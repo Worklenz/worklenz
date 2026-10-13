@@ -221,7 +221,7 @@ const ProjectClientFilterDropdown = () => {
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => dropdownContent}
+      popupRender={() => dropdownContent}
       onOpenChange={handleDropdownOpen}
     >
       <Button

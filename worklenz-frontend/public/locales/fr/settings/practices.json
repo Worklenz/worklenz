@@ -18,5 +18,7 @@
   "fetchPracticeErrorMessage": "Échec de la récupération de la pratique",
   "createPracticeErrorMessage": "Échec de la création d'une pratique",
   "updatePracticeErrorMessage": "Échec de la mise à jour de la pratique",
-  "pinTooltip": "Épingler à la barre de navigation"
+  "pinTooltip": "Épingler à la barre de navigation",
+  "rowsPerPage": "Lignes par page :",
+  "paginationSummary": "{{range}} sur {{total}}"
 }

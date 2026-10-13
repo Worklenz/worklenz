@@ -148,5 +148,9 @@
   "noPhases": "Keine Phasen gefunden",
   "todoStatus": "Zu erledigen",
   "doingStatus": "In Arbeit",
-  "doneStatus": "Erledigt"
+  "doneStatus": "Erledigt",
+  "clientFilter": "Kunde",
+  "searchLabels": "Labels suchen...",
+  "noLabels": "Keine Labels gefunden",
+  "labelFilter": "Bezeichnungen"
 }

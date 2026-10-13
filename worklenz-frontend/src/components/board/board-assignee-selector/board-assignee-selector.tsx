@@ -194,7 +194,7 @@ const BoardAssigneeSelector = ({ task, groupId = null }: BoardAssigneeSelectorPr
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => membersDropdownContent}
+      popupRender={() => membersDropdownContent}
       onOpenChange={handleMembersDropdownOpen}
     >
       <Button

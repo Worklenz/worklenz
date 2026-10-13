@@ -81,7 +81,8 @@
     "timer": "Minuterie",
     "noLogs": "Aucun journal détaillé trouvé",
     "close": "Fermer",
-    "timeLogsRange": "journaux de temps"
+    "timeLogsRange": "journaux de temps",
+    "of": "de"
   },
   "errors": {
     "failedToLoad": "Échec du chargement des rapports d'équipe",

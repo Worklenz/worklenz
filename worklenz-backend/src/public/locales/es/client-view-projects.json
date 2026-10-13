@@ -1,0 +1,21 @@
+{
+  "projectNotFound": "Proyecto no encontrado",
+  "backToProjects": "Volver a proyectos",
+  "projectOverview": "Resumen del proyecto",
+  "status": "Estado",
+  "progress": "Progreso",
+  "totalTasks": "Total de tareas",
+  "completedTasks": "Completado",
+  "lastUpdated": "Última actualización",
+  "projectDescription": "Descripción del proyecto",
+  "noDescription": "Sin descripción",
+  "recentActivity": "Actividad reciente",
+  "noRecentActivity": "No hay actividad reciente",
+  "projectTeam": "equipo de proyecto",
+  "projectTimeline": "Cronograma del proyecto",
+  "startDate": "Fecha de inicio",
+  "notSet": "No establecido",
+  "endDate": "Fecha de fin",
+  "projectFiles": "Archivos de proyecto",
+  "noFiles": "Sin archivos"
+}

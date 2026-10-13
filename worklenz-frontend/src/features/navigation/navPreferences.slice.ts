@@ -9,6 +9,21 @@ import type { SurfaceKey } from './nav-registry.types';
 // localStorage['navRoutes']) — device/browser-scoped, not cross-device.
 const LOCAL_STORAGE_KEY = 'worklenz.navPreferences';
 
+/**
+ * An unsaved edit of one surface's order and default page, shown live while a customize dialog is
+ * open. It is never written to localStorage: it is either committed (becoming the saved order and
+ * pin) or cleared (rolling the surface back to what was saved).
+ */
+export interface NavPreview {
+  surfaceKey: SurfaceKey;
+  /** groupKey -> ordered item keys, same shape as one surface's entry in `order`. */
+  groupOrder: Record<string, string[]>;
+  /** null = no pinned default page. */
+  pinnedDefault: string | null;
+  /** Item keys hidden from the surface. */
+  hiddenItems: string[];
+}
+
 export interface NavPreferencesState {
   // One flag shared by every rail — expanding/collapsing on any page expands/
   // collapses all of them, rather than remembering a state per surface.
@@ -24,7 +39,30 @@ export interface NavPreferencesState {
   order: Partial<Record<SurfaceKey, Record<string, string[]>>>;
   // surfaceKey -> the ORDER_VERSIONS value this user's saved order was last reset at.
   orderVersions?: Partial<Record<SurfaceKey, number>>;
+  // surfaceKey -> item keys the user has hidden from that rail. Only the Home customize dialog
+  // sets this today.
+  hidden?: Partial<Record<SurfaceKey, string[]>>;
+  // Transient — see NavPreview. Stripped before saving.
+  preview?: NavPreview | null;
 }
+
+/** The preferences to render with: the saved ones, with any live preview laid over them. */
+export const applyNavPreview = (
+  prefs: NavPreferencesState,
+  surfaceKey: SurfaceKey
+): NavPreferencesState => {
+  const preview = prefs.preview;
+  if (!preview || preview.surfaceKey !== surfaceKey) return prefs;
+  const pinnedDefaults = { ...prefs.pinnedDefaults };
+  if (preview.pinnedDefault) pinnedDefaults[surfaceKey] = preview.pinnedDefault;
+  else delete pinnedDefaults[surfaceKey];
+  return {
+    ...prefs,
+    order: { ...prefs.order, [surfaceKey]: preview.groupOrder },
+    pinnedDefaults,
+    hidden: { ...prefs.hidden, [surfaceKey]: preview.hiddenItems },
+  };
+};
 
 // A saved order always wins over the registry's default order, so changing a surface's default
 // order would never reach anyone who had dragged its items once. Bumping a surface's version
@@ -57,6 +95,8 @@ const EMPTY_STATE: NavPreferencesState = {
   pinnedDefaults: {},
   order: {},
   orderVersions: {},
+  hidden: {},
+  preview: null,
 };
 
 const loadFromLocalStorage = (): NavPreferencesState => {
@@ -90,7 +130,8 @@ const loadFromLocalStorage = (): NavPreferencesState => {
 
 const saveToLocalStorage = (state: NavPreferencesState): void => {
   try {
-    saveJSONToLocalStorage(LOCAL_STORAGE_KEY, state);
+    const { preview: _preview, ...persisted } = state;
+    saveJSONToLocalStorage(LOCAL_STORAGE_KEY, persisted);
   } catch (error) {
     console.warn('Failed to save nav preferences to localStorage:', error);
   }
@@ -98,7 +139,7 @@ const saveToLocalStorage = (state: NavPreferencesState): void => {
 
 const loaded = applyOrderResets(loadFromLocalStorage());
 if (loaded.changed) saveToLocalStorage(loaded.state);
-const initialState: NavPreferencesState = loaded.state;
+const initialState: NavPreferencesState = { ...loaded.state, preview: null };
 
 const navPreferencesSlice = createSlice({
   name: 'navPreferencesReducer',
@@ -137,9 +178,35 @@ const navPreferencesSlice = createSlice({
       state.order[surfaceKey]![groupKey] = order;
       saveToLocalStorage(state);
     },
+    setNavPreview: (state, action: PayloadAction<NavPreview>) => {
+      state.preview = action.payload;
+    },
+    clearNavPreview: state => {
+      state.preview = null;
+    },
+    commitNavPreview: state => {
+      const preview = state.preview;
+      if (!preview) return;
+      state.order[preview.surfaceKey] = preview.groupOrder;
+      if (preview.pinnedDefault) state.pinnedDefaults[preview.surfaceKey] = preview.pinnedDefault;
+      else delete state.pinnedDefaults[preview.surfaceKey];
+      if (!state.hidden) state.hidden = {};
+      if (preview.hiddenItems.length > 0) state.hidden[preview.surfaceKey] = preview.hiddenItems;
+      else delete state.hidden[preview.surfaceKey];
+      state.preview = null;
+      saveToLocalStorage(state);
+    },
   },
 });
 
-export const { setCollapsed, toggleCollapsed, setPinnedDefault, clearPinnedDefault, setGroupOrder } =
-  navPreferencesSlice.actions;
+export const {
+  setCollapsed,
+  toggleCollapsed,
+  setPinnedDefault,
+  clearPinnedDefault,
+  setGroupOrder,
+  setNavPreview,
+  clearNavPreview,
+  commitNavPreview,
+} = navPreferencesSlice.actions;
 export default navPreferencesSlice.reducer;

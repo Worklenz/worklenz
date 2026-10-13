@@ -96,7 +96,7 @@ const ProjectReportsDrawer = ({ selectedProject }: ProjectReportsDrawerProps) =>
       open={isDrawerOpen}
       onClose={handleClose}
       afterOpenChange={handleAfterOpenChange}
-      destroyOnClose
+      destroyOnHidden
       width={900}
       title={
         <Flex align="center" justify="space-between">

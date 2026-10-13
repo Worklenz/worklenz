@@ -43,5 +43,8 @@
   "DUE_DATE_UPDATED": "Date d'échéance mise à jour avec succès",
   "DUE_DATE_CLEARED": "Date d'échéance effacée avec succès",
   "archiveSuccessTitle": "Mise à jour groupée terminée",
-  "archiveSuccessMessage": "{{parentCount}} tâches et {{subtaskCount}} sous-tâches {{action}}d."
+  "archiveSuccessMessage": "{{parentCount}} tâches et {{subtaskCount}} sous-tâches {{action}}d.",
+  "SET_START_DATE": "Définir la date de début",
+  "Unarchive": "Désarchiver",
+  "Archive": "Archiver"
 }

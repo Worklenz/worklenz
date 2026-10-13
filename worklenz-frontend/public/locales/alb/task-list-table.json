@@ -224,7 +224,21 @@
       "labels": "Etiketat",
       "addLabel": "+ Shto një etiketë",
       "keyLabelPlaceholder": "p.sh.: MK"
-    }
+    },
+    "newColumn": "Kolonë e re",
+    "projectNotFound": "Projekti nuk u gjet",
+    "columnCreated": "Kolona u krijua. Klikoni në kokë për ta modifikuar.",
+    "columnCreationFailed": "Dështoi krijimi i kolonës",
+    "guestCannotAddColumn": "Përdoruesit mysafirë nuk mund të shtojnë kolona të personalizuara",
+    "columnNameRequired": "Emri i kolonës është i detyrueshëm",
+    "columnNotFound": "Kolona nuk u gjet",
+    "columnIdNotFound": "ID e kolonës nuk u gjet - ju lutemi rifreskoni dhe provoni përsëri",
+    "columnUpdated": "Emri i kolonës u përditësua",
+    "updateFailed": "Dështoi përditësimi i emrit të kolonës",
+    "enterColumnName": "Vendosni emrin e kolonës",
+    "clickToEdit": "Klikoni për të modifikuar emrin e kolonës",
+    "columnSettings": "Cilësimet e kolonës",
+    "textPlaceholder": "Shkruani tekst"
   },
   "indicators": {
     "tooltips": {
@@ -249,5 +263,16 @@
     "completeTaskDependencies": "Ju lutemi përfundoni varësitë e detyrës para se të vazhdoni",
     "incompleteDependencies": "Varësi të paplota!",
     "someDependenciesNotCompleted": "Disa detyra nuk u përditësuan. Ju lutemi sigurohuni që të gjitha detyrat e varura të jenë përfunduar përpara se të vazhdoni."
-  }
+  },
+  "insertTaskText": "Fut detyrën",
+  "insertTaskAtBottomText": "Fut detyrën në fund",
+  "untitledTaskName": "Detyrë pa titull",
+  "openTask": "Hap detyrën",
+  "descriptionPlaceholder": "Shto përshkrim…",
+  "descriptionDisabledTooltip": "Vetëm për shikim - nuk mund të modifikohet",
+  "descriptionRichTooltip": "Përmban formatim të pasur — klikoni për të modifikuar në sirtarin e detyrës",
+  "setDueTime": "Cakto kohën e skadimit",
+  "save": "Ruaj",
+  "cancel": "Anulo",
+  "changeStatus": "Ndrysho statusin: {{status}}"
 }

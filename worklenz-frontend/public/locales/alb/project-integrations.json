@@ -47,5 +47,6 @@
     "loadChannelsFailed": "Dështoi ngarkimi i kanaleve",
     "refreshChannelsFailed": "Dështoi rifreskimi i kanaleve",
     "addIntegrationFailed": "Dështoi shtimi i integrimit"
-  }
+  },
+  "businessPlan": "Biznes"
 }

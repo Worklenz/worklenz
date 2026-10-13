@@ -93,7 +93,8 @@
     "templateNoProjects": "{{company}} ainda não tem projetos, então não há nada para aplicar um modelo.",
     "templateTooManyProjects": "{{company}} tem mais projetos do que podem ser listados aqui. Atribua acesso por projeto posteriormente.",
     "templateApplied": "Concede acesso a {{template}} a todos os {{count}} projetos atuais de {{company}}. Você pode fazer o ajuste fino por projeto posteriormente no menu da linha.",
-    "templateHint": "Escolha um modelo para conceder acesso a todos os projetos atuais de uma só vez ou deixe como está e atribua os projetos individualmente depois."
+    "templateHint": "Escolha um modelo para conceder acesso a todos os projetos atuais de uma só vez ou deixe como está e atribua os projetos individualmente depois.",
+    "existingUsers": "Usuários existentes"
   },
   "existing": {
     "helper": "Contatos sem acesso ativo ao portal.",

@@ -72,5 +72,9 @@
   "notSetText": "未设置",
   "needsAttentionText": "需要关注",
   "atRiskText": "有风险",
-  "goodText": "良好"
+  "goodText": "良好",
+  "completedOnColumn": "完成于",
+  "noTasksText": "无任务",
+  "daysOverdueColumn": "逾期天数",
+  "phaseColumn": "阶段"
 }

@@ -37,5 +37,8 @@
   "TASKS_SELECTED_plural": "{{count}} tareas seleccionadas",
   "DELETE_TASKS_CONFIRM": "¿Eliminar {{count}} tarea?",
   "DELETE_TASKS_CONFIRM_plural": "¿Eliminar {{count}} tareas?",
-  "DELETE_TASKS_WARNING": "Esta acción no se puede deshacer."
+  "DELETE_TASKS_WARNING": "Esta acción no se puede deshacer.",
+  "SET_START_DATE": "Establecer Fecha de Inicio",
+  "Unarchive": "Desarchivar",
+  "Archive": "Archivar"
 }

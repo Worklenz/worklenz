@@ -141,5 +141,7 @@
     "totalBudgetManDays": "Całkowity koszt budżetowy, w tym koszt szacunkowy (osobodni × stawki dzienne) + koszty stałe.",
     "totalActual": "Całkowity koszt rzeczywisty, w tym koszt czasowy + koszty stałe.",
     "variance": "Odchylenie kosztów: Całkowite koszty budżetowe - Całkowity koszt rzeczywisty. Wartości dodatnie wskazują na niedostateczny budżet, wartości ujemne wskazują na nadmierny budżet."
-  }
+  },
+  "import": "Importuj",
+  "noTaskSelected": "Nie wybrano zadania"
 }

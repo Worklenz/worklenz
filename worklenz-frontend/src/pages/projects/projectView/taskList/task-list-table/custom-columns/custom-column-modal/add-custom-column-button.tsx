@@ -16,10 +16,12 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
 import { useState } from 'react';
+import { CUSTOM_COLUMN_DEFAULT_WIDTH } from '@/utils/column-width-validation';
 
 const AddCustomColumnButton = () => {
   const dispatch = useAppDispatch();
-  const { t } = useTranslation('common');
+  const { t } = useTranslation('task-list-table');
+  const { t: tCommon } = useTranslation('common');
   const { projectId } = useParams();
   const { socket } = useSocket();
   const authService = useAuthService();
@@ -42,7 +44,7 @@ const AddCustomColumnButton = () => {
 
     try {
       const columnKey = nanoid();
-      const defaultFieldTitle = t('newColumn', { defaultValue: 'New Column' });
+      const defaultFieldTitle = t('customColumns.newColumn', { defaultValue: 'New Column' });
 
       const configuration = {
         field_title: defaultFieldTitle,
@@ -64,7 +66,7 @@ const AddCustomColumnButton = () => {
         name: defaultFieldTitle,
         key: columnKey,
         field_type: 'text',
-        width: 180,
+        width: CUSTOM_COLUMN_DEFAULT_WIDTH,
         is_visible: true,
         configuration,
       });
@@ -74,7 +76,7 @@ const AddCustomColumnButton = () => {
           key: columnKey,
           name: defaultFieldTitle,
           columnHeader: null, // Will be rendered dynamically
-          width: 180,
+          width: CUSTOM_COLUMN_DEFAULT_WIDTH,
           isVisible: true,
           custom_column: true,
           custom_column_obj: {
@@ -92,21 +94,21 @@ const AddCustomColumnButton = () => {
         dispatch(addCustomColumn(newColumn));
         socket?.emit(SocketEvents.CUSTOM_COLUMN_CREATED.toString(), JSON.stringify({ project_id: projectId }));
         
-        message.success(t('columnCreated', { defaultValue: 'Column created. Click on the header to edit.' }));
+        message.success(t('customColumns.columnCreated', { defaultValue: 'Column created. Click on the header to edit.' }));
       }
     } catch (error) {
       logger.error('Error creating custom column:', error);
-      message.error(t('columnCreationFailed', { defaultValue: 'Failed to create column' }));
+      message.error(t('customColumns.columnCreationFailed', { defaultValue: 'Failed to create column' }));
     } finally {
       setIsCreating(false);
     }
   };
 
   const tooltipTitle = hasReachedCustomFieldLimit
-    ? t('customFieldLimitReached', { defaultValue: 'Custom field limit reached. Upgrade to add more.' })
+    ? tCommon('customFieldLimitReached', { defaultValue: 'Custom field limit reached. Upgrade to add more.' })
     : isFree
-      ? t('upgrade-plan', { defaultValue: 'Upgrade plan' })
-      : t('addCustomColumn', { defaultValue: 'Add a custom column' });
+      ? tCommon('upgrade-plan', { defaultValue: 'Upgrade plan' })
+      : t('customColumns.addCustomColumn', { defaultValue: 'Add a custom column' });
 
   return (
     <>

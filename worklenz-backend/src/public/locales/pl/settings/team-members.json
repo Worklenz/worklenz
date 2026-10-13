@@ -234,5 +234,11 @@
   "guestInviteFailed": "Nie udało się zaprosić gości: {{emails}}",
   "guestInviteError": "Wystąpił błąd podczas zapraszania gości",
   "partialSuccess": "{{count}} goście zostali zaproszeni. Niepowodzenie: {{emails}}",
-  "selectProjectFirst": "Najpierw wybierz projekt"
+  "selectProjectFirst": "Najpierw wybierz projekt",
+  "inviteLinkGeneratedCopyFailed": "Wygenerowano link z zaproszeniem, ale nie można go skopiować automatycznie. Skopiuj go ręcznie.",
+  "projectInvite_guestLimitExceeded": "Przekroczono limit gości w tym planie. Uaktualnij, aby dodać więcej gości.",
+  "assign_team_lead": "Przypisz lidera zespołu",
+  "Failed to fetch job titles": "Nie udało się pobrać tytułów stanowisk",
+  "license-expired-subtitle": "Twoja subskrypcja Worklenz dobiegła końca. Odnów subskrypcję, aby móc nadal korzystać ze wszystkich funkcji.",
+  "noManagedProjectsFound": "Brak projektów, w których jesteś kierownikiem projektu"
 }

@@ -116,7 +116,6 @@
   "totalLogged": "Totali i regjistruar",
   "varianceUnder": "(nën)",
   "varianceOver": "(mbi)",
-
   "timeLogsFilterButton": "Filtro",
   "timeLogsFiltersTitle": "Filtrat",
   "timeLogsFilterApply": "Apliko",
@@ -190,5 +189,17 @@
   "timeLogsGroupEntriesShowing": "Po shfaqen {{shown}} nga {{total}} regjistrime",
   "timeLogsGroupLoadMore": "Ngarko më shumë",
   "timeLogsViewFlatTooltip": "Çdo regjistrim kohe në rreshtin e vet, ashtu siç u regjistrua.",
-  "timeLogsViewByTaskTooltip": "Një rresht për detyrë, me kohën e të gjitha regjistrimeve të mbledhur së bashku."
+  "timeLogsViewByTaskTooltip": "Një rresht për detyrë, me kohën e të gjitha regjistrimeve të mbledhur së bashku.",
+  "noDepartmentOption": "Asnjë departament",
+  "departmentFilterLabel": "Departamenti",
+  "searchByDepartment": "Departamenti i kërkimit",
+  "noDepartments": "Nuk u gjet asnjë departament",
+  "noPracticeOption": "Asnjë praktikë",
+  "practiceFilterLabel": "Praktika",
+  "searchByPractice": "Praktika e kërkimit",
+  "noPractices": "Nuk u gjetën praktika",
+  "noDataMatchingFilters": "Nuk ka të dhëna që përputhen me filtrat e zgjedhur",
+  "holidaysExcluded": "Pushimet përjashtohen",
+  "reportSettings": "Cilësimet e raportit",
+  "Members Time Sheet": "Fleta e kohës së anëtarëve"
 }

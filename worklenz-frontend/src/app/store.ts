@@ -7,6 +7,7 @@ import userReducer from '@features/user/userSlice';
 
 // Home Page
 import homePageReducer from '@features/home-page/home-page.slice';
+import homePreferencesReducer from '@features/home-page/homePreferences.slice';
 import userActivityReducer from '@features/home-page/user-activity.slice';
 
 // Account Setup
@@ -141,6 +142,7 @@ const coreReducers = {
 
   // Home Page
   homePageReducer: homePageReducer,
+  homePreferencesReducer: homePreferencesReducer,
   [homePageApiService.reducerPath]: homePageApiService.reducer,
   [personalOverviewApi.reducerPath]: personalOverviewApi.reducer,
   [projectsApi.reducerPath]: projectsApi.reducer,
@@ -275,6 +277,7 @@ export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: false,
+      immutableCheck: false,
     }).concat(
       homePageApiService.middleware,
       personalOverviewApi.middleware,

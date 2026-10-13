@@ -93,7 +93,8 @@
     "templateNoProjects": "{{company}} nuk ka ende projekte, kështu që nuk ka asgjë për të aplikuar një shabllon.",
     "templateTooManyProjects": "{{company}} ka më shumë projekte sesa mund të renditen këtu. Cakto akses për projekt më pas.",
     "templateApplied": "I jep {{template}} qasje në të gjitha {{count}} nga projektet aktuale të {{company}}. Ju mund të rregulloni mirë për projekt më pas nga menyja e rreshtave.",
-    "templateHint": "Zgjidh një shabllon për t'i dhënë qasje çdo projekti aktual menjëherë, ose lëre siç është dhe cakto projektet individualisht më pas."
+    "templateHint": "Zgjidh një shabllon për t'i dhënë qasje çdo projekti aktual menjëherë, ose lëre siç është dhe cakto projektet individualisht më pas.",
+    "existingUsers": "Përdoruesit ekzistues"
   },
   "existing": {
     "helper": "Kontaktet pa qasje aktive në portal.",

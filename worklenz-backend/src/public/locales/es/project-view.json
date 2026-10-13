@@ -10,5 +10,11 @@
   "error": "Error al cargar el proyecto",
   "pinnedTab": "Fijado como pestaña predeterminada",
   "pinTab": "Fijar como pestaña predeterminada",
-  "unpinTab": "Desfijar pestaña predeterminada"
-} 
+  "unpinTab": "Desfijar pestaña predeterminada",
+  "You do not have permission to access this project": "No tienes permiso para acceder a este proyecto.",
+  "Failed to load project": "No se pudo cargar el proyecto",
+  "issueTypeSaveError": "No se pudo cambiar el tipo de elemento. Inténtalo de nuevo.",
+  "changeIssueType": "Cambiar tipo de elemento",
+  "unpinTabFromHeader": "Quitar de la cabecera",
+  "pinTabToHeader": "Mostrar en la cabecera"
+}

@@ -12,5 +12,12 @@
   "confirmPasswordRequired": "Ju lutemi konfirmoni fjalëkalimin e ri",
   "passwordMismatch": "Fjalëkalimet nuk përputhen",
   "successTitle": "Fjalëkalimi u rivendos me sukses",
-  "successMessage": "Fjalëkalimi juaj u përditësua. Tani mund të identifikoheni me fjalëkalimin e ri."
+  "successMessage": "Fjalëkalimi juaj u përditësua. Tani mund të identifikoheni me fjalëkalimin e ri.",
+  "passwordChecklist": {
+    "minLength": "Së paku 8 karaktere",
+    "uppercase": "Një shkronjë e madhe",
+    "lowercase": "Një shkronjë e vogël",
+    "number": "Një numër",
+    "special": "Një simbol"
+  }
 }

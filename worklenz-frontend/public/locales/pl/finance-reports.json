@@ -108,7 +108,8 @@
       "high": "Nadmierna alokacja",
       "watch": "Oglądaj",
       "ok": "OK"
-    }
+    },
+    "overallocatedCount": "{{count}} członków"
   },
   "profitability": {
     "pageTitle": "Rentowność",

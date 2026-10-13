@@ -141,5 +141,7 @@
     "totalBudgetManDays": "Costo total presupuestado, incluido el costo estimado (días hombre × tarifas diarias) + costos fijos.",
     "totalActual": "Costo real total, incluido el costo basado en el tiempo + costos fijos.",
     "variance": "Variación de costos: Costos totales presupuestados - Costo real total. Los valores positivos indican subpresupuesto, los valores negativos indican sobrepresupuesto."
-  }
+  },
+  "import": "Importar",
+  "noTaskSelected": "Ninguna tarea seleccionada"
 }

@@ -191,7 +191,7 @@ export const SprintFormModal = ({
       confirmLoading={isSubmitting}
       onOk={handleSubmit}
       onCancel={onClose}
-      destroyOnClose
+      destroyOnHidden
       footer={(originalFooter: ReactNode) =>
         isStartMode ? (
           originalFooter

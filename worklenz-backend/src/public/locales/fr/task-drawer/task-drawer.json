@@ -57,7 +57,8 @@
         "selectDate": "Sélectionnez une date",
         "selectOption": "Sélectionnez une option",
         "selectPeople": "Sélectionnez des personnes",
-        "updateError": "Échec de la mise à jour du champ personnalisé"
+        "updateError": "Échec de la mise à jour du champ personnalisé",
+        "enterText": "Entrez du texte"
       },
       "recurring": "Récurrent"
     },

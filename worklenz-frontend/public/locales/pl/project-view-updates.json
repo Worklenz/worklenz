@@ -51,5 +51,10 @@
   "editedTooltip": "Edytowane {{time}} przez {{author}}",
   "unknown": "Nieznany",
   "you": "Ty",
-  "attachment": "Załącznik"
+  "attachment": "Załącznik",
+  "commentError": "Nie udało się wysłać komentarza",
+  "deleteSuccess": "Komentarz został pomyślnie usunięty",
+  "deleteError": "Nie udało się usunąć komentarza",
+  "editSuccess": "Komentarz został pomyślnie zaktualizowany",
+  "editError": "Nie udało się edytować komentarza"
 }

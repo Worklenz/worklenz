@@ -37,6 +37,7 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-disabled}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-disabled}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://localhost/api/auth/google/verify}
+      WORKLENZ_DEPLOYMENT_MODE: ${WORKLENZ_DEPLOYMENT_MODE:-self_hosted}
     networks:
       - worklenz
 

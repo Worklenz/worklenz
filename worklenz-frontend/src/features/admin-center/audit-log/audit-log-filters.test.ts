@@ -23,9 +23,9 @@ const withFilters = (overrides: Partial<IAuditLogFilterState>): IAuditLogFilterS
 });
 
 describe('toAuditLogQueryParams', () => {
-  it('sends the default "last 30 days" range and nothing else', () => {
+  it('sends the default "last 7 days" range and nothing else', () => {
     expect(toAuditLogQueryParams(DEFAULT_AUDIT_LOG_FILTERS, {}, NOW)).toEqual({
-      start_date: '2026-09-06',
+      start_date: '2026-09-29',
       end_date: '2026-10-05',
     });
   });

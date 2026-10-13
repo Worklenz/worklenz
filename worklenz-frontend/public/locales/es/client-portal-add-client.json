@@ -93,7 +93,8 @@
     "templateNoProjects": "{{company}} aún no tiene proyectos, por lo que no hay nada a lo que aplicar una plantilla.",
     "templateTooManyProjects": "{{company}} tiene más proyectos de los que se pueden enumerar aquí. Asigne acceso por proyecto posteriormente.",
     "templateApplied": "Otorga a {{template}} acceso a todos los {{count}} de los proyectos actuales de {{company}}. Puede realizar ajustes por proyecto posteriormente desde el menú de filas.",
-    "templateHint": "Elija una plantilla para otorgar acceso a todos los proyectos actuales a la vez, o déjela como está y asigne proyectos individualmente después."
+    "templateHint": "Elija una plantilla para otorgar acceso a todos los proyectos actuales a la vez, o déjela como está y asigne proyectos individualmente después.",
+    "existingUsers": "Usuarios existentes"
   },
   "existing": {
     "helper": "Contactos sin acceso activo al portal.",

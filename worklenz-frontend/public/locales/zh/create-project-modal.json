@@ -46,5 +46,6 @@
   "continueToCsvImport": "继续 CSV 导入",
   "customizeNo": "否",
   "customizeYes": "是，自定义",
-  "customizeFooterQuestion": "创建前要自定义吗？"
+  "customizeFooterQuestion": "创建前要自定义吗？",
+  "templateRequired": "选择一个模板来创建项目。"
 }

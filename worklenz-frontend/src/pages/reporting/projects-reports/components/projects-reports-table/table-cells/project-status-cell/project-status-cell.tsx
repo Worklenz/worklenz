@@ -84,7 +84,7 @@ const ProjectStatusCell = ({ currentStatus, projectId }: ProjectStatusCellProps)
       }}
     >
       <Select
-        variant="borderless"
+        variant="outlined"
         options={statusOptions}
         value={selectedStatus}
         onChange={handleStatusChange}

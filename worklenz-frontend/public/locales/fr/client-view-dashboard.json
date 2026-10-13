@@ -1,0 +1,11 @@
+{
+  "title": "Tableau de bord",
+  "totalRequests": "Total des demandes",
+  "pendingRequests": "Demandes en attente",
+  "activeProjects": "Projets actifs",
+  "unpaidInvoices": "Factures impayées",
+  "recentRequests": "Demandes récentes",
+  "noRecentRequests": "Aucune demande récente",
+  "recentMessages": "Messages récents",
+  "noRecentMessages": "Aucun message récent"
+}
