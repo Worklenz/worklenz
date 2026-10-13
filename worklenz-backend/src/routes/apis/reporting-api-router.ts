@@ -7,6 +7,7 @@ import ReportingOverviewController from "../../controllers/reporting/overview/re
 import ReportingInfoController from "../../controllers/reporting/reporting-info-controller";
 import ReportingAllocationController from "../../controllers/reporting/reporting-allocation-controller";
 import ReportingProjectsController from "../../controllers/reporting/projects/reporting-projects-controller";
+import ReportingProjectWidgetsController from "../../controllers/reporting/projects/reporting-project-widgets-controller";
 import ReportingMembersController from "../../controllers/reporting/reporting-members-controller";
 import ReportingTimeLogsController from "../../controllers/reporting/reporting-time-logs-controller";
 import ReportingAllTasksController from "../../controllers/reporting/reporting-all-tasks-controller";
@@ -135,6 +136,21 @@ reportingApiRouter.get("/projects/grouped",
   safeControllerFunction(ReportingProjectsController.getGrouped)
 );
 reportingApiRouter.post("/project-timelogs", teamOwnerOrAdminValidator, safeControllerFunction(ReportingProjectsController.getProjectTimeLogs));
+
+// Data for the extra Reports > Overview widgets (project/task/time/billable/client stats). Layout
+// and per-widget filter config for these widgets live with the rest of the Overview grid.
+reportingApiRouter.get("/projects/widgets/stats",
+  teamOwnerOrAdminValidator,
+  validateUuidArrayParam("projects", ","),
+  validateUuidArrayParam("teams", ","),
+  validateUuidArrayParam("clients", ","),
+  validateUuidArrayParam("categories", ","),
+  validateUuidArrayParam("members", ","),
+  validateEnumParam("archived", ["true", "false"]),
+  validateEnumParam("billable", ["all", "billable", "nonBillable"]),
+  validateEnumParam("groupBy", ["assignee", "project"]),
+  safeControllerFunction(ReportingProjectWidgetsController.getStats)
+);
 
 // members
 reportingApiRouter.get("/members",

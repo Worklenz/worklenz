@@ -2,10 +2,15 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { IRPTOverviewStatistics } from '@/types/reporting/reporting.types';
 import { useOverviewStatistics } from './use-overview-statistics';
 
+type OverviewDateRange = { from: string; to: string } | null | undefined;
+
 interface OverviewDataValue {
   stats: IRPTOverviewStatistics;
   loading: boolean;
   includeArchivedProjects: boolean;
+  /** The toolbar's date range filter, for the stats widgets. Not applied to the KPI tiles, which
+   *  are current-state snapshots (counts), not windowed metrics. */
+  dateRange: OverviewDateRange;
 }
 
 const OverviewDataContext = createContext<OverviewDataValue | null>(null);
@@ -15,12 +20,16 @@ const OverviewDataContext = createContext<OverviewDataValue | null>(null);
  * showing/hiding widgets never changes how many requests the page makes (all the KPIs come from
  * the same one), and every KPI refreshes together on the same socket events.
  */
-export const OverviewDataProvider: React.FC<{ includeArchivedProjects: boolean; children: React.ReactNode }> = ({
-  includeArchivedProjects,
-  children,
-}) => {
+export const OverviewDataProvider: React.FC<{
+  includeArchivedProjects: boolean;
+  dateRange?: OverviewDateRange;
+  children: React.ReactNode;
+}> = ({ includeArchivedProjects, dateRange, children }) => {
   const { stats, loading } = useOverviewStatistics(includeArchivedProjects);
-  const value = useMemo(() => ({ stats, loading, includeArchivedProjects }), [stats, loading, includeArchivedProjects]);
+  const value = useMemo(
+    () => ({ stats, loading, includeArchivedProjects, dateRange }),
+    [stats, loading, includeArchivedProjects, dateRange]
+  );
   return <OverviewDataContext.Provider value={value}>{children}</OverviewDataContext.Provider>;
 };
 

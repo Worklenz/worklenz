@@ -29,7 +29,12 @@ function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
 function ease(t: number) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
 function clamp01(t: number) { return Math.max(0, Math.min(1, t)); }
 
-export const WorklenzLogoLoader = memo(() => {
+interface WorklenzLogoLoaderProps {
+  /** Scales the loader down for tighter spaces (e.g. a widget card). 1 = full 120x70 size. */
+  scale?: number;
+}
+
+export const WorklenzLogoLoader = memo(({ scale = 1 }: WorklenzLogoLoaderProps) => {
   const spinnerRef = useRef<HTMLDivElement>(null);
   const bar1Ref = useRef<HTMLDivElement>(null);
   const bar2Ref = useRef<HTMLDivElement>(null);
@@ -100,33 +105,41 @@ export const WorklenzLogoLoader = memo(() => {
   };
 
   return (
-    <div
-      role="status"
-      style={{ position: 'relative', width: '120px', height: '70px' }}
-    >
+    <div style={{ width: `${120 * scale}px`, height: `${70 * scale}px` }}>
       <div
-        ref={spinnerRef}
-        style={{ position: 'absolute', top: '35px', left: '60px', width: 0, height: 0 }}
-      >
-        <div ref={bar1Ref} style={{ ...barStyle, background: BAR_COLORS[0] }} />
-        <div ref={bar2Ref} style={{ ...barStyle, background: BAR_COLORS[1] }} />
-        <div ref={bar3Ref} style={{ ...barStyle, background: BAR_COLORS[2] }} />
-      </div>
-      <span
+        role="status"
         style={{
-          position: 'absolute',
-          width: '1px',
-          height: '1px',
-          padding: 0,
-          margin: '-1px',
-          overflow: 'hidden',
-          clip: 'rect(0,0,0,0)',
-          whiteSpace: 'nowrap',
-          borderWidth: 0,
+          position: 'relative',
+          width: '120px',
+          height: '70px',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
         }}
       >
-        Loading...
-      </span>
+        <div
+          ref={spinnerRef}
+          style={{ position: 'absolute', top: '35px', left: '60px', width: 0, height: 0 }}
+        >
+          <div ref={bar1Ref} style={{ ...barStyle, background: BAR_COLORS[0] }} />
+          <div ref={bar2Ref} style={{ ...barStyle, background: BAR_COLORS[1] }} />
+          <div ref={bar3Ref} style={{ ...barStyle, background: BAR_COLORS[2] }} />
+        </div>
+        <span
+          style={{
+            position: 'absolute',
+            width: '1px',
+            height: '1px',
+            padding: 0,
+            margin: '-1px',
+            overflow: 'hidden',
+            clip: 'rect(0,0,0,0)',
+            whiteSpace: 'nowrap',
+            borderWidth: 0,
+          }}
+        >
+          Loading...
+        </span>
+      </div>
     </div>
   );
 });

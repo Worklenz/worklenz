@@ -5,3 +5,6 @@ export * from './useUnsavedChangesGuard';
 export * from './DashboardGrid';
 export * from './WidgetEditFrame';
 export * from './DashboardToolbar';
+export * from './WidgetViewLargerModal';
+export * from './AddWidgetPlaceholder';
+export * from './useAddWidgetMenu';

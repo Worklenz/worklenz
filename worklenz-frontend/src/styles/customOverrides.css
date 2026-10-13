@@ -81,24 +81,18 @@
 
 /* Enhanced overview stat card styles */
 .overview-stat-card {
-  border-radius: 0 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .overview-stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Light mode stat cards */
 .overview-stat-card.light-mode {
   background-color: #ffffff;
   border: 1px solid #f0f0f0;
-}
-
-.overview-stat-card.light-mode:hover {
-  border-color: #1890ff;
-  box-shadow: 0 4px 16px rgba(24, 144, 255, 0.15);
 }
 
 .overview-stat-card.light-mode .ant-card {
@@ -114,12 +108,11 @@
 .overview-stat-card.dark-mode {
   background-color: #1f1f1f;
   border: 1px solid #303030;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .overview-stat-card.dark-mode:hover {
-  border-color: #1890ff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .overview-stat-card.dark-mode .ant-card {
@@ -131,10 +124,18 @@
   background-color: transparent !important;
 }
 
-/* Ensure no border radius on card components */
+/* Match the card's rounded corners on inner Ant Card components */
 .overview-stat-card .ant-card,
 .overview-stat-card .ant-card-body {
-  border-radius: 0 !important;
+  border-radius: 8px !important;
+}
+
+/* "View larger" icon on KPI tiles: hover/focus revealed, pinned to the top-right corner */
+.overview-stat-card-view-larger {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 1;
 }
 
 /* reporting sidebar  */

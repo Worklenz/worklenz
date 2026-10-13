@@ -30,6 +30,8 @@ declare module 'react-grid-layout/legacy' {
     [breakpoint: string]: Layout[];
   }
 
+  export type ResizeHandleAxis = 's' | 'w' | 'e' | 'n' | 'sw' | 'nw' | 'se' | 'ne';
+
   export interface ResponsiveReactGridLayoutProps {
     /** Container width in pixels; normally supplied by `WidthProvider`, not passed directly. */
     width: number;
@@ -43,6 +45,8 @@ declare module 'react-grid-layout/legacy' {
     compactType?: CompactType;
     isDraggable?: boolean;
     isResizable?: boolean;
+    /** Which corners/edges show a resize handle; defaults to `['se']` upstream. */
+    resizeHandles?: ResizeHandleAxis[];
     draggableHandle?: string;
     draggableCancel?: string;
     onBreakpointChange?: (newBreakpoint: string, newCols: number) => void;

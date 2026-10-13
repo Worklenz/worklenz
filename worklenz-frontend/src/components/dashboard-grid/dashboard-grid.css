@@ -21,3 +21,23 @@
     transition: none;
   }
 }
+
+/* "View larger" icon on a widget's title/top area: hidden until the widget is hovered or one of
+   its controls has focus (keyboard users get it via :focus-within without needing a mouse hover). */
+.wl-widget-view-larger {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.ant-card:hover .wl-widget-view-larger,
+.ant-card:focus-within .wl-widget-view-larger,
+.overview-stat-card:hover .wl-widget-view-larger,
+.overview-stat-card:focus-within .wl-widget-view-larger {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-widget-view-larger {
+    transition: none;
+  }
+}

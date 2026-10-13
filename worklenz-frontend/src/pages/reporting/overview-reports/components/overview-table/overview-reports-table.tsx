@@ -10,6 +10,7 @@ import logger from '@/utils/errorLogger';
 import Avatars from '@/components/avatars/avatars';
 import OverviewTeamInfoDrawer from '@/components/reporting/drawers/overview-team-info/overview-team-info-drawer';
 import { toggleOverViewTeamDrawer } from '@/features/reporting/reporting.slice';
+import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader';
 
 const OverviewReportsTable = memo(() => {
   const { t } = useTranslation('reporting-overview');
@@ -104,7 +105,7 @@ const OverviewReportsTable = memo(() => {
         dataSource={teams}
         scroll={{ x: 'max-content' }}
         rowKey={record => record.id}
-        loading={loading}
+        loading={{ spinning: loading, indicator: <WorklenzLogoLoader scale={0.5} /> }}
         onRow={getRowProps}
       />
 

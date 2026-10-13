@@ -19,11 +19,22 @@ export interface WidgetDefinition<TType extends string = string> {
   type: TType;
   titleKey: string;
   defaultTitle: string;
+  /** One-line "what is this" shown next to the title in the "Add widget" list. */
+  descriptionKey?: string;
+  defaultDescription?: string;
   /** Default size on the 12-column grid when first added. */
   size: { w: number; h: number };
   min: { w: number; h: number };
   /** Singleton-mode widgets kept out of the default layout until the user adds them. */
   hiddenByDefault?: boolean;
+  /**
+   * Lets this one widget type have several instances even on an otherwise-singleton page (e.g.
+   * Reports > Overview's chart widgets, so the same chart can appear twice with different
+   * filters/views). Ignored when the page is already in full `multiInstance` mode. A repeatable
+   * type has no default instance: the user adds each one explicitly, so it's never part of the
+   * default layout and is never auto-filled in as a hidden placeholder.
+   */
+  repeatable?: boolean;
 }
 
 /** One widget placed on the grid. */
@@ -110,11 +121,17 @@ export function reconcileLayout<TType extends string, TConfig = unknown>(
 ): GridLayout<TType, TConfig> {
   const { widgets: defs, isEligible = () => true, normalizeConfig, multiInstance = false, maxInstances = 100 } = options;
 
+  const byType = new Map(defs.map(def => [def.type, def]));
+  // Full multi-instance mode treats every type as repeatable; otherwise only types the catalogue
+  // marks `repeatable` get multiple instances (e.g. Overview's chart widgets), everything else
+  // stays singleton (`id === type`).
+  const isRepeatable = (type: TType): boolean => multiInstance || Boolean(byType.get(type)?.repeatable);
+
   const defaultLayout = (): GridLayout<TType, TConfig> => ({
     version: 1,
     widgets: pack(
       defs
-        .filter(def => isEligible(def.type))
+        .filter(def => isEligible(def.type) && !isRepeatable(def.type))
         .map(def => ({
           id: def.type,
           type: def.type,
@@ -131,21 +148,23 @@ export function reconcileLayout<TType extends string, TConfig = unknown>(
     return multiInstance ? { version: 1, widgets: [] } : defaultLayout();
   }
 
-  const byType = new Map(defs.map(def => [def.type, def]));
   const seenTypes = new Set<TType>();
   const seenIds = new Set<string>();
+  const instanceCountByType = new Map<TType, number>();
   const widgets: GridWidgetInstance<TType, TConfig>[] = [];
 
   for (const item of saved.widgets) {
     if (!item || typeof item !== 'object') continue;
     if (!isWidgetType(defs, item.type) || !isEligible(item.type)) continue;
-    if (!multiInstance && seenTypes.has(item.type)) continue;
-    const id = multiInstance && typeof item.id === 'string' && item.id ? item.id : item.type;
+    const repeatable = isRepeatable(item.type);
+    if (!repeatable && seenTypes.has(item.type)) continue;
+    const id = repeatable && typeof item.id === 'string' && item.id ? item.id : item.type;
     if (seenIds.has(id)) continue;
-    if (multiInstance && widgets.length >= maxInstances) break;
+    if (repeatable && (instanceCountByType.get(item.type) ?? 0) >= maxInstances) continue;
 
     seenTypes.add(item.type);
     seenIds.add(id);
+    if (repeatable) instanceCountByType.set(item.type, (instanceCountByType.get(item.type) ?? 0) + 1);
     const meta = byType.get(item.type)!;
     const w = clamp(item.w, meta.min.w, GRID_COLS);
     const config = normalizeConfig ? normalizeConfig(item.type, item.config) : (item.config as TConfig | undefined);
@@ -162,11 +181,12 @@ export function reconcileLayout<TType extends string, TConfig = unknown>(
   }
 
   if (!multiInstance) {
-    // Singleton mode only: a widget released since this layout was saved is appended hidden so it
-    // never rearranges what the user already has, but still becomes available from "Add widget".
+    // Singleton (non-repeatable) types only: a widget released since this layout was saved is
+    // appended hidden so it never rearranges what the user already has, but still becomes
+    // available from "Add widget". Repeatable types have no such placeholder: the user adds them.
     const lastY = widgets.reduce((max, item) => Math.max(max, item.y + item.h), 0);
     for (const def of defs) {
-      if (seenTypes.has(def.type) || !isEligible(def.type)) continue;
+      if (isRepeatable(def.type) || seenTypes.has(def.type) || !isEligible(def.type)) continue;
       widgets.push({ id: def.type, type: def.type, x: 0, y: lastY, w: def.size.w, h: def.size.h, hidden: true });
     }
   }
@@ -282,6 +302,71 @@ export function updateConfig<TType extends string, TConfig>(
   patch: (config: TConfig | undefined) => TConfig
 ): GridWidgetInstance<TType, TConfig>[] {
   return widgets.map(item => (item.id === id ? { ...item, config: patch(item.config) } : item));
+}
+
+/** A rectangular region of free grid cells, offered to the user as an "Add widget" tile. */
+export interface EmptyGridSlot {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * Finds the empty rectangular gaps left in an otherwise-packed grid (e.g. a row where a widget
+ * didn't fill the full width), plus one placeholder appended right after the lowest occupied row,
+ * so there is always a visible, click-to-add tile even when the existing rows have no gaps.
+ * Gaps smaller than 2x2 cells are skipped as too small to usefully hold a widget.
+ */
+export function computeEmptySlots(
+  occupied: ReadonlyArray<{ x: number; y: number; w: number; h: number }>,
+  cols = GRID_COLS,
+  bottomSlot: { w: number; h: number } = { w: 4, h: 6 }
+): EmptyGridSlot[] {
+  const maxY = occupied.reduce((max, item) => Math.max(max, item.y + item.h), 0);
+  const slots: EmptyGridSlot[] = [];
+
+  if (maxY > 0) {
+    const grid: boolean[][] = Array.from({ length: maxY }, () => new Array(cols).fill(false));
+    for (const item of occupied) {
+      for (let y = item.y; y < item.y + item.h && y < maxY; y++) {
+        for (let x = item.x; x < item.x + item.w && x < cols; x++) {
+          grid[y][x] = true;
+        }
+      }
+    }
+
+    for (let y = 0; y < maxY; y++) {
+      for (let x = 0; x < cols; x++) {
+        if (grid[y][x]) continue;
+
+        let w = 1;
+        while (x + w < cols && !grid[y][x + w]) w++;
+
+        let h = 1;
+        rowScan: while (y + h < maxY) {
+          for (let xi = x; xi < x + w; xi++) {
+            if (grid[y + h][xi]) break rowScan;
+          }
+          h++;
+        }
+
+        for (let yi = y; yi < y + h; yi++) {
+          for (let xi = x; xi < x + w; xi++) {
+            grid[yi][xi] = true;
+          }
+        }
+
+        if (w >= 2 && h >= 2) {
+          slots.push({ id: `empty-slot-${y}-${x}`, x, y, w, h });
+        }
+      }
+    }
+  }
+
+  slots.push({ id: 'add-widget-slot', x: 0, y: maxY, w: Math.min(bottomSlot.w, cols), h: bottomSlot.h });
+  return slots;
 }
 
 /** Server-side-shaped validation of a geometry triple, shared with backend validators' expectations (see docs). */

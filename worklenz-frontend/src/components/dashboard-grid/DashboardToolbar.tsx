@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { UndoOutlined } from '@ant-design/icons';
 import { Button, Dropdown, EditOutlined, Flex, PlusOutlined, Popconfirm } from '@/shared/antd-imports';
 import { useIsDesktop } from './useIsDesktop';
+import { useAddWidgetMenu } from './useAddWidgetMenu';
 import type { DashboardLayoutApi } from './useDashboardLayoutDraft';
 import type { WidgetDefinition } from './layout-model';
 
@@ -11,6 +12,8 @@ export interface DashboardToolbarProps<TType extends string, TConfig = unknown> 
   /** The catalogue of widgets available to add, in catalogue order. */
   catalogue: WidgetDefinition<TType>[];
   titleOf: (type: TType) => string;
+  /** One-line "what is this" shown under each title in the "Add widget" list. */
+  descriptionOf?: (type: TType) => string | undefined;
   i18nNamespace?: string;
   /**
    * Singleton mode (Reports > Overview, default): "Add widget" lists hidden instances and unhides
@@ -25,12 +28,13 @@ export function DashboardToolbar<TType extends string, TConfig = unknown>({
   layout,
   catalogue,
   titleOf,
+  descriptionOf,
   i18nNamespace,
   onAddGadget,
 }: DashboardToolbarProps<TType, TConfig>) {
   const { t } = useTranslation(i18nNamespace);
   const canCustomize = useIsDesktop();
-  const hidden = layout.widgets.filter(widget => widget.hidden);
+  const { canAdd, menu } = useAddWidgetMenu({ layout, catalogue, titleOf, descriptionOf });
 
   if (!layout.isEditing) {
     if (!canCustomize) return null;
@@ -48,18 +52,8 @@ export function DashboardToolbar<TType extends string, TConfig = unknown>({
           {t('dashboardGrid.addGadget', { defaultValue: 'Add gadget' })}
         </Button>
       ) : (
-        <Dropdown
-          trigger={['click']}
-          disabled={hidden.length === 0}
-          menu={{
-            items: hidden.map(widget => ({ key: widget.id, label: titleOf(widget.type) })),
-            onClick: ({ key }) => {
-              const def = catalogue.find(item => item.type === key);
-              if (def) layout.show(def.type, def);
-            },
-          }}
-        >
-          <Button icon={<PlusOutlined />} disabled={hidden.length === 0}>
+        <Dropdown trigger={['click']} disabled={!canAdd} menu={menu}>
+          <Button icon={<PlusOutlined />} disabled={!canAdd}>
             {t('dashboardGrid.addWidget', { defaultValue: 'Add widget' })}
           </Button>
         </Dropdown>

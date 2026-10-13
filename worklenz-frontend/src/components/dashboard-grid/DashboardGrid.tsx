@@ -3,8 +3,9 @@ import { Responsive, WidthProvider } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 import './dashboard-grid.css';
 import { Col, Row } from '@/shared/antd-imports';
-import { GRID_COLS, WIDTH_OPTIONS, type GridWidgetInstance, type WidgetDefinition } from './layout-model';
+import { computeEmptySlots, GRID_COLS, type GridWidgetInstance, type WidgetDefinition } from './layout-model';
 import { WidgetEditFrame } from './WidgetEditFrame';
+import { AddWidgetPlaceholder } from './AddWidgetPlaceholder';
 import { useIsDesktop } from './useIsDesktop';
 import type { DashboardLayoutApi } from './useDashboardLayoutDraft';
 
@@ -27,8 +28,14 @@ export interface DashboardGridProps<TType extends string, TConfig = unknown> {
   layout: DashboardLayoutApi<TType, TConfig>;
   catalogue: WidgetDefinition<TType>[];
   titleOf: (type: TType) => string;
+  /** One-line "what is this" shown under each title in the empty-slot "Add widget" picker. */
+  descriptionOf?: (type: TType) => string | undefined;
   renderWidget: (widget: GridWidgetInstance<TType, TConfig>) => React.ReactNode;
-  /** Mode determines whether the edit frame offers "hide" (singleton) or "remove" (multi-instance). */
+  /**
+   * Page-level default for whether the edit frame offers "hide" (singleton) or "remove"
+   * (multi-instance). A catalogue entry's own `repeatable: true` overrides this per widget type,
+   * so a mostly-singleton page (Reports > Overview) can still let a few widget types repeat.
+   */
   mode: 'singleton' | 'multi';
   extraSettingsFor?: (widget: GridWidgetInstance<TType, TConfig>) => React.ReactNode;
   i18nNamespace?: string;
@@ -43,6 +50,7 @@ export function DashboardGrid<TType extends string, TConfig = unknown>({
   layout,
   catalogue,
   titleOf,
+  descriptionOf,
   renderWidget,
   mode,
   extraSettingsFor,
@@ -85,6 +93,11 @@ export function DashboardGrid<TType extends string, TConfig = unknown>({
             <div style={{ height: (metaOf(widget.type)?.size.h ?? widget.h) * ROW_HEIGHT }}>{renderWidget(widget)}</div>
           </Col>
         ))}
+        <Col xs={24} sm={24}>
+          <div style={{ height: 120 }}>
+            <AddWidgetPlaceholder layout={layout} catalogue={catalogue} titleOf={titleOf} descriptionOf={descriptionOf} i18nNamespace={i18nNamespace} />
+          </div>
+        </Col>
       </Row>
     );
   }
@@ -99,10 +112,25 @@ export function DashboardGrid<TType extends string, TConfig = unknown>({
     minH: metaOf(widget.type)?.min.h ?? 1,
   }));
 
+  // Empty cells left over in already-placed rows, plus one placeholder after the last row, so
+  // there is always a visible, click-to-add tile instead of bare empty grid space.
+  const emptySlots = computeEmptySlots(items, GRID_COLS);
+  const emptySlotItems = emptySlots.map(slot => ({
+    i: slot.id,
+    x: slot.x,
+    y: slot.y,
+    w: slot.w,
+    h: slot.h,
+    static: true,
+    isDraggable: false,
+    isResizable: false,
+  }));
+  const allItems = [...items, ...emptySlotItems];
+
   return (
     <ResponsiveGrid
       className="wl-dashboard-grid"
-      layouts={{ lg: items, md: items }}
+      layouts={{ lg: allItems, md: allItems }}
       breakpoints={BREAKPOINTS}
       cols={COLS}
       rowHeight={ROW_HEIGHT}
@@ -110,6 +138,7 @@ export function DashboardGrid<TType extends string, TConfig = unknown>({
       containerPadding={[0, 0]}
       isDraggable={canArrange}
       isResizable={canArrange}
+      resizeHandles={['se', 'sw', 'ne', 'nw']}
       draggableHandle=".wl-dashboard-drag-handle"
       draggableCancel=".wl-dashboard-no-drag"
       onBreakpointChange={(next: string) => setBreakpoint(next)}
@@ -120,20 +149,15 @@ export function DashboardGrid<TType extends string, TConfig = unknown>({
       {visible.map(widget => {
         const meta = metaOf(widget.type);
         const title = titleOf(widget.type);
-        const widthOptions = WIDTH_OPTIONS.filter(w => w >= (meta?.min.w ?? 1));
+        const isMulti = mode === 'multi' || Boolean(meta?.repeatable);
         return (
           <div key={widget.id} data-widget-id={widget.id} tabIndex={-1} style={{ outline: 'none' }}>
             <WidgetEditFrame
               title={title}
               isEditing={layout.isEditing}
               isFlashing={flashing === widget.id}
-              widthOptions={widthOptions}
-              width={widget.w}
-              onResize={w => meta && layout.resize(widget.id, { w }, meta.min)}
-              onMoveEarlier={() => layout.move(widget.id, -1)}
-              onMoveLater={() => layout.move(widget.id, 1)}
-              onHide={mode === 'singleton' ? () => layout.hide(widget.id) : undefined}
-              onRemove={mode === 'multi' ? () => layout.remove(widget.id) : undefined}
+              onHide={!isMulti ? () => layout.hide(widget.id) : undefined}
+              onRemove={isMulti ? () => layout.remove(widget.id) : undefined}
               extraSettings={extraSettingsFor?.(widget)}
               i18nNamespace={i18nNamespace}
             >
@@ -142,6 +166,11 @@ export function DashboardGrid<TType extends string, TConfig = unknown>({
           </div>
         );
       })}
+      {emptySlots.map(slot => (
+        <div key={slot.id}>
+          <AddWidgetPlaceholder layout={layout} catalogue={catalogue} titleOf={titleOf} descriptionOf={descriptionOf} i18nNamespace={i18nNamespace} />
+        </div>
+      ))}
     </ResponsiveGrid>
   );
 }

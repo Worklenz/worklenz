@@ -138,3 +138,42 @@ describe('reconcileLayout (multi-instance mode)', () => {
     expect(widgets).toHaveLength(2);
   });
 });
+
+describe('reconcileLayout (per-type repeatable, otherwise singleton)', () => {
+  const REPEATABLE_DEFS: WidgetDefinition<Type>[] = [
+    ...DEFS.slice(0, 3),
+    { ...DEFS[3], repeatable: true, hiddenByDefault: undefined },
+  ];
+
+  it('has no default instance of a repeatable type, but still defaults the singleton ones', () => {
+    const { widgets } = reconcileLayout(null, { widgets: REPEATABLE_DEFS });
+    expect(widgets.map(item => item.type).sort()).toEqual(['kpi_a', 'kpi_b', 'list_c']);
+  });
+
+  it('keeps several saved instances of a repeatable type without colliding ids', () => {
+    const saved: GridLayout<Type, { note: string }> = {
+      version: 1,
+      widgets: [
+        { id: 'chart_d-1', type: 'chart_d', x: 0, y: 0, w: 6, h: 8, hidden: false, config: { note: 'first' } },
+        { id: 'chart_d-2', type: 'chart_d', x: 6, y: 0, w: 6, h: 8, hidden: false, config: { note: 'second' } },
+      ],
+    };
+    const { widgets } = reconcileLayout(saved, { widgets: REPEATABLE_DEFS });
+    expect(widgets.filter(item => item.type === 'chart_d')).toHaveLength(2);
+    expect(widgets.filter(item => item.type === 'chart_d').map(item => item.config?.note)).toEqual(['first', 'second']);
+    // Singleton types still get their usual hidden placeholders alongside the repeatable instances.
+    expect(widgets.filter(item => item.type === 'kpi_a' || item.type === 'kpi_b' || item.type === 'list_c')).toHaveLength(3);
+  });
+
+  it('still forbids duplicates of a non-repeatable type', () => {
+    const saved = {
+      version: 1,
+      widgets: [
+        { id: 'list_c', type: 'list_c', x: 0, y: 0, w: 6, h: 9, hidden: false },
+        { id: 'list_c-dup', type: 'list_c', x: 6, y: 0, w: 6, h: 9, hidden: false },
+      ],
+    } as unknown as GridLayout<Type>;
+    const { widgets } = reconcileLayout(saved, { widgets: REPEATABLE_DEFS });
+    expect(widgets.filter(item => item.type === 'list_c')).toHaveLength(1);
+  });
+});
