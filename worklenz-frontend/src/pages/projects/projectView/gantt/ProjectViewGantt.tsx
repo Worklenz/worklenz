@@ -674,14 +674,22 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
   // where the two panels' scrollable heights aren't pixel-identical.
   const isSyncingScrollRef = useRef(false);
 
+  // The header's 'scroll' event for a scrollLeft we pushed onto it arrives a frame later,
+  // after isSyncingScrollRef has already been reset. Writing that (by then stale) value
+  // back onto the chart cancels the chart's in-progress smooth scroll, which is what
+  // stopped the "Today" button after a single frame. Remember the value we pushed so
+  // handleTimelineScroll can recognise and drop that echo.
+  const syncedTimelineLeftRef = useRef<number | null>(null);
+
   const handleChartScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     if (isSyncingScrollRef.current) return;
     isSyncingScrollRef.current = true;
 
     const target = e.target as HTMLDivElement;
 
-    if (timelineRef.current) {
+    if (timelineRef.current && timelineRef.current.scrollLeft !== target.scrollLeft) {
       timelineRef.current.scrollLeft = target.scrollLeft;
+      syncedTimelineLeftRef.current = timelineRef.current.scrollLeft;
     }
 
     if (taskListRef.current) {
@@ -718,7 +726,11 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
 
     const target = e.target as HTMLDivElement;
 
-    if (chartRef.current) {
+    const isEcho =
+      syncedTimelineLeftRef.current !== null &&
+      Math.abs(target.scrollLeft - syncedTimelineLeftRef.current) < 1;
+
+    if (!isEcho && chartRef.current && chartRef.current.scrollLeft !== target.scrollLeft) {
       chartRef.current.scrollLeft = target.scrollLeft;
     }
 
