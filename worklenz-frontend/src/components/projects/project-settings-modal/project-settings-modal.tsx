@@ -547,7 +547,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
 
       if (!csrfToken) {
         notification.error({
-          message: tCommon('error'),
+          message: tCommon('error.title', { defaultValue: 'Error' }),
           description: t('securityTokenValidationFailed', {
             defaultValue: 'Security token validation failed. Please try again.',
           }),
@@ -1533,7 +1533,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
       style={{ top: 24 }}
       open={isProjectSettingsModalOpen}
       onCancel={handleModalClose}
-      destroyOnClose
+      destroyOnHidden
       afterOpenChange={handleVisibilityChange}
       styles={{
         content: { padding: 0, borderRadius: 12, overflow: 'hidden' },

@@ -46,5 +46,6 @@
   "continueToCsvImport": "Weiter zum CSV-Import",
   "customizeNo": "Nein",
   "customizeYes": "Ja, anpassen",
-  "customizeFooterQuestion": "Vor dem Erstellen anpassen?"
+  "customizeFooterQuestion": "Vor dem Erstellen anpassen?",
+  "templateRequired": "Wählen Sie eine Vorlage aus, um ein Projekt zu erstellen."
 }

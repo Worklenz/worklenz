@@ -333,5 +333,7 @@
       "utilColumn": "UTIL",
       "teamTotalRow": "Total de l'équipe"
     }
-  }
+  },
+  "paginationText": "{{from}}-{{to}} sur {{total}}",
+  "perPageText": "{{count}} / page"
 }

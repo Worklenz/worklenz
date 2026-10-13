@@ -10,5 +10,8 @@
   "refreshButtonTooltip": "Rifresko anëtarët",
   "memberCount": "Anëtar",
   "membersCountPlural": "Anëtarë",
-  "emptyText": "Nuk ka bashkëngjitje në projekt."
+  "emptyText": "Nuk ka bashkëngjitje në projekt.",
+  "removeFromProject": "Hiq nga Projekti",
+  "assignFailedMessage": "Nuk mund të përditësoheshin të ngarkuarit e detyrave. Ju lutemi provoni përsëri.",
+  "assignFailedTitle": "Caktimi dështoi"
 }

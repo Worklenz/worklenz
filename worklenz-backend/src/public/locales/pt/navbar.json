@@ -27,5 +27,6 @@
     "accept": "Aceitar",
     "acceptAndJoin": "Aceitar e participar",
     "noNotifications": "Sem notificações"
-  }
+  },
+  "guestRole": "Convidado"
 }

@@ -3,5 +3,6 @@
   "searchLabel": "Adicionar membros inserindo nome ou e-mail",
   "searchPlaceholder": "Digite nome ou e-mail",
   "inviteAsAMember": "Convidar como membro",
-  "inviteNewMemberByEmail": "Convidar novo membro por e-mail"
+  "inviteNewMemberByEmail": "Convidar novo membro por e-mail",
+  "search": "Pesquisar"
 }

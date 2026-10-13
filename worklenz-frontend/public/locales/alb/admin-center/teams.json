@@ -31,5 +31,6 @@
   "admin": "Administruesi",
   "member": "Anëtari",
   "cannotChangeOwnerRole": "Roli i pronarit nuk mund të ndryshohet",
-  "pendingInvitation": "Ftesë në pritje"
+  "pendingInvitation": "Ftesë në pritje",
+  "clickToEditName": "Kliko për të modifikuar emrin"
 }

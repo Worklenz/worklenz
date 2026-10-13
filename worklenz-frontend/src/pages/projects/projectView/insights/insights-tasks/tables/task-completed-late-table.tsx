@@ -1,7 +1,6 @@
-import { Flex, Table, Typography } from '@/shared/antd-imports';
+import { Flex, Table, Typography, TableProps } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { colors } from '@/styles/colors';
-import { TableProps } from 'antd/lib';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import { IInsightTasks } from '@/types/project/projectInsights.types';
 import logger from '@/utils/errorLogger';

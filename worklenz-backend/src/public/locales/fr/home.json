@@ -20,7 +20,8 @@
     "showDone": "Afficher terminé",
     "created": "Créé",
     "finished": "Terminé",
-    "tasks": "tâches"
+    "tasks": "tâches",
+    "loading": "Chargement..."
   },
   "projects": {
     "title": "Projets",
@@ -128,7 +129,9 @@
     "weekdayMiniThu": "T",
     "weekdayMiniFri": "F",
     "weekdayMiniSat": "S",
-    "weekdayMiniSun": "S"
+    "weekdayMiniSun": "S",
+    "clientsSearchPlaceholder": "Rechercher des clients...",
+    "projectsSearchPlaceholder": "Rechercher des projets..."
   },
   "activityLogs": {
     "title": "Activité récente",
@@ -237,7 +240,9 @@
     "weekdayThu": "jeu.",
     "weekdayFri": "vendredi",
     "weekdaySat": "Samedi",
-    "weekdaySun": "Soleil"
+    "weekdaySun": "Soleil",
+    "minutesPlaceholder": "0",
+    "createdTimeColumn": "Temps de création"
   },
   "expenses": {
     "emptyTitle": "Aucune dépense enregistrée pour l'instant",
@@ -251,7 +256,8 @@
     "columnAssignee": "Cessionnaire",
     "columnDate": "Date",
     "openTask": "Ouvrir la tâche",
-    "rowsPerPage": "Lignes par page :"
+    "rowsPerPage": "Lignes par page :",
+    "addExpense": "Ajouter une dépense"
   },
   "addExpense": {
     "modalTitle": "Ajouter une dépense",
@@ -391,5 +397,12 @@
       "personal": "Personnel",
       "other": "Autre"
     }
-  }
+  },
+  "projectsAtRisk": "Projets à risque",
+  "customize": {
+    "tabs": {
+      "layout": "Disposition"
+    }
+  },
+  "flagged": "signalé"
 }

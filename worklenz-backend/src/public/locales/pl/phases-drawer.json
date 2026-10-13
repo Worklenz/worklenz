@@ -32,5 +32,9 @@
   "noMembersFound": "Nie znaleziono żadnych członków",
   "continue": "Kontynuuj",
   "pendingMemberLabel": "(w oczekiwaniu)",
-  "inviteMember": "Zaproś członka"
+  "inviteMember": "Zaproś członka",
+  "manageAssignee": "Zarządzaj cesjonariuszem",
+  "start": "Zacznij",
+  "assignMember": "Przypisz członka",
+  "completeSprint": "Kompletny sprint"
 }

@@ -141,5 +141,7 @@
     "totalBudgetManDays": "Custo total orçado incluindo custo estimado (Dias-Homem × Taxas Diárias) + Custos Fixos.",
     "totalActual": "Custo total real incluindo custo baseado em tempo + Custos Fixos.",
     "variance": "Variação de custo: Custos Totais Orçados - Custo Total Real. Valores positivos indicam abaixo do orçamento, valores negativos indicam acima do orçamento."
-  }
+  },
+  "import": "Importar",
+  "noTaskSelected": "Nenhuma tarefa selecionada"
 }

@@ -7,5 +7,21 @@
   "update-banner-description": "Recarregue quando estiver pronto para obter as melhorias mais recentes.",
   "reconnecting": "Reconectando ao servidor...",
   "connection-lost": "Conexão perdida. Tentando reconectar...",
-  "connection-restored": "Conexão restaurada. Reconectando ao servidor..."
+  "connection-restored": "Conexão restaurada. Reconectando ao servidor...",
+  "error": {
+    "title": "Erro",
+    "unknownError": "Ocorreu um erro desconhecido",
+    "description": "Encontramos um erro inesperado. Por favor, tente novamente ou retorne à página inicial.",
+    "somethingWentWrong": "Algo deu errado",
+    "goHome": "Vá para casa",
+    "viewDetails": "Ver detalhes do erro",
+    "errorMessage": "Mensagem de erro",
+    "retry": "Tentar novamente",
+    "stackTrace": "Rastreamento de pilha"
+  },
+  "noDataAvailable": "Sem dados disponíveis",
+  "business-trial-then-plan": "você continuará em {{plan}} depois disso",
+  "licennse-expired-contacting-support": "Entrando em contato com o suporte...",
+  "loadingData": "A carregar dados...",
+  "refreshingData": "Atualizando dados..."
 }

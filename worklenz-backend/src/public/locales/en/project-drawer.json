@@ -48,5 +48,15 @@
   "weightedProgressTooltip": "Calculate progress based on subtask weights",
   "timeProgress": "Time-based Progress",
   "timeProgressTooltip": "Calculate progress based on estimated time",
-  "enterProjectKey": "Enter project key"
+  "enterProjectKey": "Enter project key",
+  "loadSettingsFailedTitle": "Could not load project settings",
+  "retry": "Retry",
+  "taskExportPollFailedMessage": "Could not check export status. Open Project Settings → Task Export, or try again.",
+  "securityTokenValidationFailed": "Security token validation failed. Please try again.",
+  "financeAccessHelp": "When on, this project manager can view and edit the Finance tab, budget, and rate card.",
+  "financeAccessLabel": "Finance access",
+  "clearProjectManager": "Clear project manager",
+  "upgrade-plan": "Upgrade plan",
+  "loadSettingsFailedDescription": "The project was created, but its current settings could not be loaded. Saving is disabled until this succeeds, to avoid overwriting the project with blank fields.",
+  "deleteProjectError": "Failed to delete project. Please try again."
 }

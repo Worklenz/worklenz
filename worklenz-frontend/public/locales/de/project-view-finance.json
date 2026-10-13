@@ -141,5 +141,7 @@
     "totalBudgetManDays": "Gesamte budgetierte Kosten einschließlich geschätzter Kosten (Personentage × Tagessätze) + Fixkosten.",
     "totalActual": "Tatsächliche Gesamtkosten einschließlich zeitbasierter Kosten + Fixkosten.",
     "variance": "Kostenabweichung: Planierte Gesamtkosten – Ist-Gesamtkosten. Positive Werte weisen auf eine Unterschreitung des Budgets hin, negative Werte auf eine Überschreitung des Budgets."
-  }
+  },
+  "import": "Importieren",
+  "noTaskSelected": "Keine Aufgabe ausgewählt"
 }

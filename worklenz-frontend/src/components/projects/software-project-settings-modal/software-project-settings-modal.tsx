@@ -427,7 +427,7 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
       open={isOpen}
       onCancel={handleClose}
       width={1080}
-      destroyOnClose
+      destroyOnHidden
       title={
         <Flex align="center" gap={12} className="min-w-0">
           <span

@@ -34,5 +34,6 @@
   "errorMessages": {
     "loginErrorTitle": "登录失败",
     "loginErrorMessage": "请检查您的电子邮件和密码并重试"
-  }
+  },
+  "rememberMe": "记住我"
 }

@@ -306,5 +306,7 @@
       "utilColumn": "UTIL",
       "teamTotalRow": "Totali i ekipit"
     }
-  }
+  },
+  "paginationText": "{{from}}-{{to}} nga {{total}}",
+  "perPageText": "{{count}} / faqe"
 }

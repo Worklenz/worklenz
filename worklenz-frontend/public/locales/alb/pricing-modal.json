@@ -26,7 +26,8 @@
     "user": "përdorues",
     "users": "përdorues",
     "helpDescription": "Shkruani numrin e përdoruesve në ekipin tuaj (1-500)",
-    "placeholder": "Zgjidhni madhësinë e ekipit"
+    "placeholder": "Zgjidhni madhësinë e ekipit",
+    "aria": "Madhësia e ekipit"
   },
   "plans": {
     "free": {
@@ -70,7 +71,8 @@
       "payPerUser": "Pagesa për përdorues (1-5 përdorues)",
       "usersIncluded": "{{count}} Përdoruesit e përfshirë",
       "maxUsers": "Deri në {{count}} Përdoruesit Max",
-      "maxUsersAppSumo": "Maksimumi deri në 50 përdorues (AppSumo Special)"
+      "maxUsersAppSumo": "Maksimumi deri në 50 përdorues (AppSumo Special)",
+      "namePromo": "Biznes (AppSumo Special)"
     },
     "proSmall": {
       "name": "Pro i Vogël",
@@ -130,7 +132,8 @@
         "Menaxheri i llogarisë së dedikuar",
         "Vendosja on-premises"
       ]
-    }
+    },
+    "additionalUsersCharged": "Përdorues shtesë përtej përfshirjes: {{price}} $/përdorues/muaj"
   },
   "badges": {
     "mostPopular": "Më i Popullarizuar",
@@ -325,7 +328,8 @@
     "billedMonthly": "(faturohet çdo muaj)",
     "perYear": "/year",
     "perMonth": "/month",
-    "forUsers": "për {{count}} përdorues{{s}}"
+    "forUsers": "për {{count}} përdorues{{s}}",
+    "annualSavingsShortOff": "Deri në {{percent}}% ulje"
   },
   "ribbon": {
     "recommended": "I Rekomanduar",

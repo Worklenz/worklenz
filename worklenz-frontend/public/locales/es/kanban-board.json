@@ -60,5 +60,13 @@
   "failedToUpdatePhaseOrder": "Error al actualizar el orden de las fases",
   "pleaseTryAgain": "Por favor, inténtalo de nuevo",
   "taskNotCompleted": "La tarea no está completada",
-  "completeTaskDependencies": "Por favor, completa las dependencias de la tarea antes de continuar"
+  "completeTaskDependencies": "Por favor, completa las dependencias de la tarea antes de continuar",
+  "expand": "Expandir",
+  "collapse": "Contraer",
+  "low": "Baja",
+  "medium": "Media",
+  "high": "Alta",
+  "critical": "Crítica",
+  "unarchive": "Desarchivar",
+  "addSubtask": "Agregar Subtarea"
 }

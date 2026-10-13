@@ -26,6 +26,7 @@
   "clickToFilter": "Click to filter by",
   "noProjects": "No projects found",
   "addToFavourites": "Add to favourites",
+  "removeFromFavourites": "Remove from favourites",
   "list": "List",
   "group": "Group",
   "listView": "List View",
@@ -48,5 +49,14 @@
     "noClient": "No Client",
     "noPriority": "No Priority",
     "noCategory": "No Category"
-  }
+  },
+  "errors": {
+    "loadFailed": "Failed to load projects. Please try again.",
+    "refreshFailed": "Failed to refresh projects. Please try again."
+  },
+  "rowsPerPage": "Rows per page:",
+  "groups": "groups",
+  "retry": "Retry",
+  "searchProjects": "Search by project name",
+  "members": "Members"
 }

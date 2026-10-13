@@ -5,7 +5,7 @@ import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 
 const ColorChangedLabel = ({ label }: { label: ITaskLabel | null }) => {
   // localization
-  const { t } = useTranslation('labelsSettings');
+  const { t } = useTranslation('settings/labels');
 
   // color options for the labels
   const colorsOptions = PhaseColorCodes.map(color => ({

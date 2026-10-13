@@ -251,5 +251,15 @@
     "saved": "Cilësimet e projektit u ruajtën",
     "saveError": "Cilësimet e projektit nuk mund të ruheshin",
     "deleted": "\"{{name}}\" është fshirë përgjithmonë."
-  }
+  },
+  "clearProjectManager": "Menaxher i qartë i projektit",
+  "securityTokenValidationFailed": "Vleresimi i kodit të sigurisë dështoi. Ju lutemi provoni përsëri.",
+  "deleteProjectError": "Fshirja e projektit dështoi. Ju lutemi provoni përsëri.",
+  "financeAccessLabel": "Akses në financa",
+  "financeAccessHelp": "Kur është aktiv, ky menaxher projekti mund të shikojë dhe modifikojë skedën Financa, buxhetin dhe kartën e tarifave.",
+  "loadSettingsFailedTitle": "Cilësimet e projektit nuk mund të ngarkoheshin",
+  "loadSettingsFailedDescription": "Projekti u krijua, por cilësimet e tij aktuale nuk mund të ngarkoheshin. Ruajtja çaktivizohet derisa kjo të ketë sukses, për të shmangur mbishkrimin e projektit me fusha bosh.",
+  "retry": "Provo përsëri",
+  "upgrade-plan": "Plani i përmirësimit",
+  "taskExportPollFailedMessage": "Nuk mund të kontrollohej statusi i eksportit. Hapni Cilësimet e projektit → Eksporti i detyrave ose provoni përsëri."
 }

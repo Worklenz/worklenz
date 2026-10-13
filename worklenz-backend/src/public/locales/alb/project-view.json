@@ -10,5 +10,7 @@
   "error": "Gabim në ngarkimin e projektit",
   "pinnedTab": "E fiksuar si tab i parazgjedhur",
   "pinTab": "Fikso si tab i parazgjedhur",
-  "unpinTab": "Hiqe fiksimin e tab-it të parazgjedhur"
-} 
+  "unpinTab": "Hiqe fiksimin e tab-it të parazgjedhur",
+  "You do not have permission to access this project": "Ju nuk keni leje për të hyrë në këtë projekt",
+  "Failed to load project": "Ngarkimi i projektit dështoi"
+}

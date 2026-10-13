@@ -235,5 +235,10 @@
   "selectProjectFirst": "Zgjidhni një projekt së pari",
   "manageTimeOff": "Menaxho Pushimet",
   "createFromTemplatesLabel": "Krijo projekte nga shabllone",
-  "createFromTemplatesHint": "Lejon këtë anëtar të krijojë projekte nga shabllone. Ata bëhen Menaxher i Projektit të projektit të ri pa akses financiar. Nuk lejon krijimin e projekteve bosh."
+  "createFromTemplatesHint": "Lejon këtë anëtar të krijojë projekte nga shabllone. Ata bëhen Menaxher i Projektit të projektit të ri pa akses financiar. Nuk lejon krijimin e projekteve bosh.",
+  "inviteLinkGeneratedCopyFailed": "Lidhja e ftesës u krijua, por nuk mund të kopjohej automatikisht. Ju lutemi kopjoni atë me dorë.",
+  "noManagedProjectsFound": "Nuk ka projekte ku ju jeni Menaxher i Projektit",
+  "projectInvite_guestLimitExceeded": "Kufiri i vizitorëve u tejkalua për këtë plan. Përmirësoje për të shtuar më shumë të ftuar.",
+  "license-expired-subtitle": "Periudhja juaj e provës në Worklenz ka përfunduar. Ju lutemi përditesohuni për të vazhduar të shijoni të gjitha veçoritë.",
+  "Failed to fetch job titles": "Dështoi marrja e titujve të punës"
 }

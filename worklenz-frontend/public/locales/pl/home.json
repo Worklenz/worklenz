@@ -20,7 +20,8 @@
     "showDone": "Pokaż gotowe",
     "created": "Utworzono",
     "finished": "Skończone",
-    "tasks": "zadania"
+    "tasks": "zadania",
+    "loading": "Ładowanie..."
   },
   "projects": {
     "title": "Projekty",
@@ -136,7 +137,9 @@
     "weekdayMiniThu": "T",
     "weekdayMiniFri": "F",
     "weekdayMiniSat": "S",
-    "weekdayMiniSun": "S"
+    "weekdayMiniSun": "S",
+    "clientsSearchPlaceholder": "Wyszukaj klientów...",
+    "projectsSearchPlaceholder": "Wyszukaj projekty..."
   },
   "activityLogs": {
     "title": "Ostatnia aktywność",
@@ -245,7 +248,9 @@
     "weekdayThu": "czw",
     "weekdayFri": "piątek",
     "weekdaySat": "sob",
-    "weekdaySun": "niedziela"
+    "weekdaySun": "niedziela",
+    "createdTimeColumn": "Stworzony czas",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "Nie zarejestrowano jeszcze żadnych wydatków",
@@ -259,7 +264,8 @@
     "columnAssignee": "Osoba przypisana",
     "columnDate": "Data",
     "openTask": "Otwórz zadanie",
-    "rowsPerPage": "Wiersze na stronę:"
+    "rowsPerPage": "Wiersze na stronę:",
+    "addExpense": "Dodaj wydatek"
   },
   "addExpense": {
     "modalTitle": "Dodaj wydatek",
@@ -526,5 +532,7 @@
     "viewAllMore": "Zobacz wszystkie (jeszcze {{remaining}})",
     "addFailed": "Nie można dodać zadania. Spróbuj ponownie.",
     "completeFailed": "Nie można zaktualizować zadania. Spróbuj ponownie."
-  }
+  },
+  "projectsAtRisk": "Projekty zagrożone",
+  "flagged": "oflagowany"
 }

@@ -75,5 +75,10 @@
   "convertToTaskError": "创建任务失败",
   "convertToTaskSuccess": "已根据消息创建任务",
   "noClientProject": "该客户没有分配任何项目",
-  "createTask": "创建任务"
+  "createTask": "创建任务",
+  "errorSendingMessage": "消息发送失败",
+  "comingSoon": "可以在项目聊天中找到反应",
+  "actions": {
+    "reply": "回复"
+  }
 }

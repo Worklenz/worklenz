@@ -251,5 +251,15 @@
     "saved": "Configurações do projeto salvas",
     "saveError": "Não foi possível salvar as configurações do projeto",
     "deleted": "\"{{name}}\" foi excluído permanentemente."
-  }
+  },
+  "clearProjectManager": "Gerente de projeto claro",
+  "securityTokenValidationFailed": "Falha na validação do token de segurança. Por favor, tente novamente.",
+  "deleteProjectError": "Falha ao excluir projeto. Por favor, tente novamente.",
+  "financeAccessLabel": "Acesso financeiro",
+  "financeAccessHelp": "Quando ativado, esse gerente de projeto pode visualizar e editar a guia Finanças, o orçamento e a tabela de preços.",
+  "loadSettingsFailedTitle": "Não foi possível carregar as configurações do projeto",
+  "loadSettingsFailedDescription": "O projeto foi criado, mas não foi possível carregar suas configurações atuais. O salvamento fica desabilitado até que isso seja bem-sucedido, para evitar a substituição do projeto com campos em branco.",
+  "retry": "Tentar novamente",
+  "upgrade-plan": "Plano de atualização",
+  "taskExportPollFailedMessage": "Não foi possível verificar o status da exportação. Abra Configurações do projeto → Exportação de tarefas ou tente novamente."
 }

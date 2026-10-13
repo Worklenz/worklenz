@@ -34,7 +34,7 @@ const LabelsSelector = ({ taskId, labels }: LabelsSelectorProps) => {
   const [open, setOpen] = useState(false);
 
   // localization
-  const { t } = useTranslation('task-list');
+  const { t } = useTranslation('task-list-table');
 
   const dispatch = useAppDispatch();
 
@@ -121,7 +121,7 @@ const LabelsSelector = ({ taskId, labels }: LabelsSelectorProps) => {
               style={{ color: colors.lightGray }}
               onClick={() => handleCreateLabel(searchQuery)}
             >
-              {t('labelSelectorInputTip')}
+              {t('labelsSelectorInputTip', { defaultValue: 'Hit enter to create!' })}
             </Typography.Text>
           )}
         </List>
@@ -151,7 +151,7 @@ const LabelsSelector = ({ taskId, labels }: LabelsSelectorProps) => {
   return (
     <Dropdown
       trigger={['click']}
-      dropdownRender={() => labelDropdownContent}
+      popupRender={() => labelDropdownContent}
       onOpenChange={handleLabelDropdownOpen}
     >
       <Button

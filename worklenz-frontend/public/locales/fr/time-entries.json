@@ -119,5 +119,9 @@
     "week_total": "Total de cette semaine",
     "week_billable": "Semaine facturable",
     "week_non_billable": "Semaine non facturable"
-  }
+  },
+  "minutesRangeError": "0 – 59",
+  "hoursLabel": "Horaires",
+  "hoursMinError": "Les heures doivent être égales ou supérieures à 0",
+  "minutesLabel": "Procès-verbal"
 }

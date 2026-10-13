@@ -95,5 +95,6 @@
     "modalHeading": "新功能 — {{title}}",
     "readFullChangelog": "查看完整更新日志 →",
     "releaseUnavailable": "此更新已不可用。"
-  }
+  },
+  "guestRole": "访客"
 }

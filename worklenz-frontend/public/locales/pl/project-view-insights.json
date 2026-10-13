@@ -54,6 +54,7 @@
   },
   "common": {
     "seeAll": "Zobacz wszystko",
+    "paginationRange": "{{from}}–{{to}} z {{total}}",
     "totalLoggedHours": "Całkowita liczba zarejestrowanych godzin",
     "totalEstimation": "Całkowita ocena",
     "completedTasks": "Wykonane zadania",

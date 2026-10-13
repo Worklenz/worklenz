@@ -119,5 +119,9 @@
     "week_total": "Diese Woche Gesamt",
     "week_billable": "Woche abrechenbar",
     "week_non_billable": "Woche nicht abrechenbar"
-  }
+  },
+  "minutesRangeError": "0 – 59",
+  "hoursLabel": "Stunden",
+  "hoursMinError": "Stunden müssen 0 oder größer sein",
+  "minutesLabel": "Minuten"
 }

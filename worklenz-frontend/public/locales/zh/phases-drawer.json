@@ -70,5 +70,9 @@
   "sprintGoal": "冲刺目标",
   "sprintGoalPlaceholder": "这次冲刺应该实现什么目标？",
   "sprintDatesRequired": "设置开始和结束日期以开始冲刺",
-  "sprintEndBeforeStart": "结束日期必须晚于开始日期"
+  "sprintEndBeforeStart": "结束日期必须晚于开始日期",
+  "start": "开始",
+  "completeSprint": "完成冲刺",
+  "manageAssignee": "管理受让人",
+  "assignMember": "指定成员"
 }

@@ -1,11 +1,9 @@
 {
   "retry": "Retry",
-
   "upgrade": {
     "title": "Clients",
     "description": "Give clients a branded portal to track project progress. Available on the Business plan."
   },
-
   "title": {
     "method": "How do you want to add this client?",
     "company": "Tell us about the client",
@@ -14,14 +12,12 @@
     "csv": "Upload your CSV file",
     "review": "Review & send"
   },
-
   "steps": {
     "method": "Method",
     "details": "Details",
     "file": "File",
     "review": "Review"
   },
-
   "actions": {
     "cancel": "Cancel",
     "back": "Back",
@@ -34,7 +30,6 @@
     "addUserAndInvite": "Add User & Send Invite",
     "sendInvite": "Send Invite"
   },
-
   "method": {
     "helper": "Every path ends the same way. Pick whichever fits what you already know.",
     "groupLabel": "How do you want to add this client?",
@@ -55,7 +50,6 @@
       "description": "Bulk add clients from a spreadsheet."
     }
   },
-
   "fields": {
     "firstName": "First name",
     "firstNamePlaceholder": "Jane",
@@ -68,13 +62,11 @@
     "phone": "Phone (optional)",
     "phonePlaceholder": "+1 415 555 0142"
   },
-
   "errors": {
     "firstNameRequired": "Enter a first name.",
     "emailRequired": "Enter an email address.",
     "emailInvalid": "Enter a valid email address."
   },
-
   "newClient": {
     "companyName": "Company name",
     "companyNameHint": "Leave empty to name the client after the person below.",
@@ -84,7 +76,6 @@
     "welcomeMessageHint": "Posted to Messages, so it is waiting for them when they sign in.",
     "welcomeMessageText": "Hi {{name}}, welcome to your client portal. Send us a message here any time."
   },
-
   "companyUser": {
     "chooseCompany": "Choose the company",
     "searchCompanies": "Search companies...",
@@ -102,9 +93,9 @@
     "templateNoProjects": "{{company}} has no projects yet, so there is nothing to apply a template to.",
     "templateTooManyProjects": "{{company}} has more projects than can be listed here. Assign access per project afterwards.",
     "templateApplied": "Grants {{template}} access to all {{count}} of {{company}}’s current projects. You can fine-tune per project afterwards from the row menu.",
-    "templateHint": "Pick a template to grant access to every current project at once, or leave as is and assign projects individually afterwards."
+    "templateHint": "Pick a template to grant access to every current project at once, or leave as is and assign projects individually afterwards.",
+    "existingUsers": "Existing users"
   },
-
   "existing": {
     "helper": "Contacts without active portal access.",
     "search": "Search by name or email...",
@@ -113,7 +104,6 @@
     "everyoneHasAccess": "Everyone already has active portal access.",
     "groupLabel": "Contacts to invite"
   },
-
   "review": {
     "name": "Name",
     "company": "Company",
@@ -137,7 +127,6 @@
     "deliveryEmail": "Email invitation link",
     "deliveryLink": "Copy invitation link"
   },
-
   "csv": {
     "helper": "Upload a CSV with a header row and these columns: Company, First name, Last name, Email. First name and Email are required.",
     "dropzone": "Click to choose a CSV file, or drag it here",
@@ -184,7 +173,6 @@
       "import_failed": "Could not be imported"
     }
   },
-
   "messages": {
     "linkCopied": "Invitation link copied.",
     "linkCopyError": "Could not copy the link.",

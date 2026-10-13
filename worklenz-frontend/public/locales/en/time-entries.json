@@ -123,5 +123,9 @@
     "week_total": "This Week Total",
     "week_billable": "Week Billable",
     "week_non_billable": "Week Non-Billable"
-  }
+  },
+  "minutesRangeError": "0 – 59",
+  "hoursLabel": "Hours",
+  "hoursMinError": "Hours must be 0 or greater",
+  "minutesLabel": "Minutes"
 }

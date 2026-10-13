@@ -48,5 +48,15 @@
   "weightedProgressTooltip": "Calcular o progresso com base nos pesos das subtarefas",
   "timeProgress": "Progresso Baseado em Tempo",
   "timeProgressTooltip": "Calcular o progresso com base no tempo estimado",
-  "enterProjectKey": "Insira a chave do projeto"
+  "enterProjectKey": "Insira a chave do projeto",
+  "loadSettingsFailedTitle": "Não foi possível carregar as configurações do projeto",
+  "retry": "Tentar novamente",
+  "taskExportPollFailedMessage": "Não foi possível verificar o status da exportação. Abra Configurações do projeto → Exportação de tarefas ou tente novamente.",
+  "securityTokenValidationFailed": "Falha na validação do token de segurança. Por favor, tente novamente.",
+  "financeAccessHelp": "Quando ativado, esse gerente de projeto pode visualizar e editar a guia Finanças, o orçamento e a tabela de preços.",
+  "financeAccessLabel": "Acesso financeiro",
+  "clearProjectManager": "Gerente de projeto claro",
+  "upgrade-plan": "Plano de atualização",
+  "loadSettingsFailedDescription": "O projeto foi criado, mas não foi possível carregar suas configurações atuais. O salvamento fica desabilitado até que isso seja bem-sucedido, para evitar a substituição do projeto com campos em branco.",
+  "deleteProjectError": "Falha ao excluir projeto. Por favor, tente novamente."
 }
