@@ -37,6 +37,8 @@ import {
   phasesApiService,
   type SprintSettings,
 } from '@/api/taskAttributes/phases/phases.api.service';
+import { store } from '@/app/store';
+import { mergeProjectData } from '@/features/project/project-drawer.slice';
 import { mergeProject } from '@/features/project/project.slice';
 import {
   addPhaseWithDates,
@@ -66,7 +68,7 @@ export const SoftwareSprintsSection = ({ projectId, disabled }: SoftwareSprintsS
   const sprintActions = useSprintActions(projectId);
   const [modal, modalContextHolder] = Modal.useModal();
   const { phaseList, loadingPhases } = useAppSelector(state => state.phaseReducer);
-  const project = useAppSelector(state => state.projectReducer.project);
+  const project = useAppSelector(state => state.projectDrawerReducer.project);
 
   const [view, setView] = useState<SprintView>('active');
   const [isAdding, setIsAdding] = useState(false);
@@ -193,7 +195,11 @@ export const SoftwareSprintsSection = ({ projectId, disabled }: SoftwareSprintsS
     try {
       const response = await phasesApiService.updateSprintSettings(projectId, { [setting]: checked });
       if (!response.done) throw new Error(response.message);
-      dispatch(mergeProject({ [setting]: checked }));
+      const changes = { [setting]: checked };
+      dispatch(mergeProjectData({ projectId, changes }));
+      if (store.getState().projectReducer.project?.id === projectId) {
+        dispatch(mergeProject(changes));
+      }
     } catch (error) {
       logger.error('Error updating sprint settings', error);
       if (!isAnnouncedApiError(error)) {

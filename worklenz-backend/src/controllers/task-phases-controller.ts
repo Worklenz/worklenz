@@ -10,8 +10,8 @@ import {isValidUuid} from "../shared/validation-helpers";
 import {
   completeSprintRecord,
   getSprintLengthDays,
-  startNextSprintNow,
   startSprintRecord,
+  tryStartNextSprintAfterCompletion,
 } from "../shared/sprint-lifecycle";
 
 export default class TaskPhasesController extends WorklenzControllerBase {
@@ -456,13 +456,9 @@ export default class TaskPhasesController extends WorklenzControllerBase {
 
     const {phase, archivedCount, movedCount} = result.data;
 
-    const settings = await db.query(
-      `SELECT auto_start_complete_sprints FROM projects WHERE id = $1 AND project_type = 'software'`,
-      [projectId]
+    const startedSprint = await tryStartNextSprintAfterCompletion(
+      projectId, destinationPhaseId, getSprintLengthDays(phase)
     );
-    const startedSprint = settings.rows[0]?.auto_start_complete_sprints === true
-      ? await startNextSprintNow(projectId, destinationPhaseId, getSprintLengthDays(phase))
-      : null;
     if (startedSprint) startedSprint.color_code = startedSprint.color_code + TASK_STATUS_COLOR_ALPHA;
 
     phase.color_code = phase.color_code + TASK_STATUS_COLOR_ALPHA;

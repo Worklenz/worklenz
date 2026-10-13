@@ -1,6 +1,7 @@
 import {PoolClient} from "pg";
 
 import db from "../config/db";
+import { log_error } from "./utils";
 
 export const SPRINT_RETURNING_COLUMNS =
   "id, name, color_code, start_date, end_date, sprint_status, sprint_goal, sort_index";
@@ -102,6 +103,25 @@ export async function startNextSprintNow(
 
   const started = await startSprintRecord(projectId, nextId);
   return started.ok ? started.data : null;
+}
+
+/** Completion is already committed; an optional next-sprint failure must not hide it. */
+export async function tryStartNextSprintAfterCompletion(
+  projectId: string,
+  destinationPhaseId: string | null,
+  lengthDays: number
+): Promise<Record<string, unknown> | null> {
+  try {
+    const settings = await db.query(
+      "SELECT auto_start_complete_sprints FROM projects WHERE id = $1 AND project_type = 'software'",
+      [projectId]
+    );
+    if (settings.rows[0]?.auto_start_complete_sprints !== true) return null;
+    return await startNextSprintNow(projectId, destinationPhaseId, lengthDays);
+  } catch (error) {
+    log_error(error);
+    return null;
+  }
 }
 
 /**
