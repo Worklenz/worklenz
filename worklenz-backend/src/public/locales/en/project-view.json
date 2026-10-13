@@ -10,5 +10,7 @@
   "error": "Error loading project",
   "pinnedTab": "Pinned as default tab",
   "pinTab": "Pin as default tab",
-  "unpinTab": "Unpin default tab"
-} 
+  "unpinTab": "Unpin default tab",
+  "You do not have permission to access this project": "You do not have permission to access this project",
+  "Failed to load project": "Failed to load project"
+}

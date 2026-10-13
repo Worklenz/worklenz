@@ -3,12 +3,10 @@
   "pageSubtitle": "Ein arbeitsbereichsweites, nur erweiterbares Protokoll von Admin-Aktionen, Berechtigungsänderungen und Zugriffsereignissen – getrennt vom Aktivitätsprotokoll einzelner Aufgaben. Entwickelt als Nachweis für ISMS / PCI DSS, nicht für den täglichen Aufgabenverlauf.",
   "footnoteTitle": "So funktioniert dieses Protokoll –",
   "footnoteBody": "Jeder Eintrag hier kann nur hinzugefügt werden: In dieser Oberfläche gibt es keine Möglichkeit zum Bearbeiten oder Löschen, nur das obige Aufbewahrungsfenster, das Einträge automatisch altersbedingt entfernt. Dieses Protokoll ist vom Aktivitätsprotokoll in jeder Aufgabenansicht getrennt – jenes erfasst Aufgabenänderungen für Mitarbeitende, dieses erfasst Admin-, Berechtigungs- und Zugriffsereignisse für die Compliance. Die beiden werden nie zusammengeführt.",
-
   "categoryAccess": "Zugriff & Authentifizierung",
   "categoryUser": "Benutzer- & Rollenverwaltung",
   "categoryPermission": "Berechtigungs- & Einstellungsänderungen",
   "categoryLifecycle": "Projekt- & Arbeitsbereich-Lebenszyklus",
-
   "eventLoginSuccess": "Anmeldung erfolgreich",
   "eventLoginFailed": "Anmeldung fehlgeschlagen",
   "eventLogout": "Abgemeldet",
@@ -40,12 +38,10 @@
   "eventProjectMemberRemoved": "Aus dem Projekt entfernt",
   "eventProjectSettingChanged": "Projekteinstellung geändert",
   "eventMemberPermissionChanged": "Mitgliedsberechtigung geändert",
-
   "statEvents": "Ereignisse ({{range}})",
   "statFailedLogins": "Fehlgeschlagene Anmeldungen",
   "statPermissionChanges": "Berechtigungsänderungen",
   "statRetention": "Aufbewahrungsfenster",
-
   "searchPlaceholder": "Akteur oder Ereignis suchen…",
   "actorFilterLabel": "Akteure",
   "actorSearchPlaceholder": "Benutzer im Arbeitsbereich suchen",
@@ -57,7 +53,6 @@
   "chipPermission": "Berechtigungen",
   "chipLifecycle": "Lebenszyklus",
   "clearFilters": "Filter zurücksetzen",
-
   "columnTimestamp": "Zeitstempel",
   "columnActor": "Akteur",
   "columnCategory": "Kategorie",
@@ -79,7 +74,6 @@
   "emptyFilteredHint": "Wählen Sie einen größeren Zeitraum oder setzen Sie einige Filter zurück.",
   "loadError": "Das Audit-Protokoll konnte nicht geladen werden",
   "retry": "Erneut versuchen",
-
   "exportCsv": "Als CSV exportieren",
   "exportDownloaded": "Audit-Protokoll als CSV exportiert.",
   "exportQueued": "Dieser Export ist umfangreich und wird daher im Hintergrund vorbereitet. Der Download-Link erscheint hier.",
@@ -95,7 +89,6 @@
   "exportFailedTitle": "Der Export konnte nicht abgeschlossen werden.",
   "exportTryAgain": "Erneut versuchen",
   "exportExpired": "Dieser Export ist abgelaufen. Starten Sie einen neuen Export, um eine aktuelle Datei zu erhalten.",
-
   "retentionLabel": "Aufbewahrung:",
   "retentionMonths_one": "{{count}} Monat",
   "retentionMonths_other": "{{count}} Monate",

@@ -189,5 +189,15 @@
   "current": "Aktualny",
   "priority": "Priorytet",
   "budgetSettingsTab": "Ustawienia budżetu",
-  "justNow": "Właśnie teraz"
+  "justNow": "Właśnie teraz",
+  "loadSettingsFailedTitle": "Nie udało się wczytać ustawień projektu",
+  "retry": "Spróbuj ponownie",
+  "taskExportPollFailedMessage": "Nie można sprawdzić statusu eksportu. Otwórz Ustawienia projektu → Eksport zadań lub spróbuj ponownie.",
+  "securityTokenValidationFailed": "Weryfikacja tokenu zabezpieczającego nie powiodła się. Spróbuj ponownie.",
+  "financeAccessHelp": "Gdy ta opcja jest włączona, ten menedżer projektu może wyświetlać i edytować kartę Finanse, budżet i arkusz stawek.",
+  "financeAccessLabel": "Dostęp do finansów",
+  "clearProjectManager": "Przejrzysty menadżer projektu",
+  "upgrade-plan": "Plan aktualizacji",
+  "loadSettingsFailedDescription": "Projekt został utworzony, ale nie udało się wczytać jego bieżących ustawień. Zapisywanie jest wyłączone, dopóki się to nie powiedzie, aby uniknąć nadpisania projektu pustymi polami.",
+  "deleteProjectError": "Nie udało się usunąć projektu. Spróbuj ponownie."
 }

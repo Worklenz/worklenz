@@ -10,5 +10,12 @@
   "passwordRequired": "Please enter your new password",
   "returnToLoginButton": "Return to Login",
   "confirmPasswordRequired": "Please confirm your new password",
-  "passwordMismatch": "The two passwords do not match"
+  "passwordMismatch": "The two passwords do not match",
+  "passwordChecklist": {
+    "lowercase": "One lowercase letter",
+    "number": "One number",
+    "uppercase": "One uppercase letter",
+    "minLength": "At least 8 characters",
+    "special": "One special character"
+  }
 }

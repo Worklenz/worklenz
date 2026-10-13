@@ -67,7 +67,8 @@
     "status": "Statut",
     "dueDate": "Date d'échéance",
     "lastUpdated": "Dernière mise à jour",
-    "na": "N/D"
+    "na": "N/D",
+    "paginationRange": "{{from}}–{{to}} sur {{total}}"
   },
   "justNow": "Juste maintenant",
   "tasksTable": {

@@ -51,5 +51,10 @@
   "editedTooltip": "Editado {{time}} por {{author}}",
   "unknown": "Desconocido",
   "you": "Tú",
-  "attachment": "Archivo adjunto"
+  "attachment": "Archivo adjunto",
+  "commentError": "No se pudo enviar el comentario",
+  "deleteSuccess": "Comentario eliminado con éxito",
+  "deleteError": "No se pudo eliminar el comentario",
+  "editSuccess": "Comentario actualizado exitosamente",
+  "editError": "No se pudo editar el comentario"
 }

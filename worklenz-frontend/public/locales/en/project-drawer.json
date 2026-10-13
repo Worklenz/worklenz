@@ -251,5 +251,15 @@
     "saved": "Project settings saved",
     "saveError": "Could not save project settings",
     "deleted": "\"{{name}}\" has been permanently deleted."
-  }
+  },
+  "clearProjectManager": "Clear project manager",
+  "securityTokenValidationFailed": "Security token validation failed. Please try again.",
+  "deleteProjectError": "Failed to delete project. Please try again.",
+  "financeAccessLabel": "Finance access",
+  "financeAccessHelp": "When on, this project manager can view and edit the Finance tab, budget, and rate card.",
+  "loadSettingsFailedTitle": "Could not load project settings",
+  "loadSettingsFailedDescription": "The project was created, but its current settings could not be loaded. Saving is disabled until this succeeds, to avoid overwriting the project with blank fields.",
+  "retry": "Retry",
+  "upgrade-plan": "Upgrade plan",
+  "taskExportPollFailedMessage": "Could not check export status. Open Project Settings → Task Export, or try again."
 }

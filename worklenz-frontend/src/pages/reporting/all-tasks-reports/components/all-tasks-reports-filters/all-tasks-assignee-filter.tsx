@@ -107,7 +107,7 @@ const AllTasksAssigneeFilter = () => {
   return (
     <Dropdown
       overlayClassName="custom-dropdown"
-      dropdownRender={() => dropdownContent}
+      popupRender={() => dropdownContent}
       trigger={['click']}
       placement="bottomLeft"
     >

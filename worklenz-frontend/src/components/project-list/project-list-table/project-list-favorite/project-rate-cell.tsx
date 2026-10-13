@@ -45,17 +45,15 @@ export const ProjectRateCell: React.FC<{
   );
 
   const starColor = useMemo(() => (isFavorite ? colors.yellow : colors.lightGray), [isFavorite]);
+  const favoriteActionLabel = isFavorite
+    ? t('removeFromFavourites', { defaultValue: 'Remove from favourites' })
+    : t('addToFavourites', { defaultValue: 'Add to favourites' });
 
   return (
     <ConfigProvider wave={{ disabled: true }}>
-      <Tooltip
-        title={
-          isFavorite
-            ? t('removeFromFavorites', 'Remove from favorites')
-            : t('addToFavorites', 'Add to favourites')
-        }
-      >
+      <Tooltip title={favoriteActionLabel}>
         <Button
+          aria-label={favoriteActionLabel}
           type="text"
           className="borderless-icon-btn"
           style={{

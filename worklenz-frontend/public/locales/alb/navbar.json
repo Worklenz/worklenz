@@ -95,5 +95,6 @@
     "modalHeading": "Të Rejat — {{title}}",
     "readFullChangelog": "Shiko regjistrin e plotë të ndryshimeve →",
     "releaseUnavailable": "Ky përditësim nuk është më i disponueshëm."
-  }
+  },
+  "guestRole": "Mysafirit"
 }

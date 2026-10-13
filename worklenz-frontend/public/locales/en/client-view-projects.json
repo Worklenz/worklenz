@@ -1,0 +1,21 @@
+{
+  "projectNotFound": "Project not found",
+  "backToProjects": "Back to projects",
+  "projectOverview": "Project overview",
+  "status": "Status",
+  "progress": "Progress",
+  "totalTasks": "Total tasks",
+  "completedTasks": "Completed",
+  "lastUpdated": "Last updated",
+  "projectDescription": "Project description",
+  "noDescription": "No description",
+  "recentActivity": "Recent activity",
+  "noRecentActivity": "No recent activity",
+  "projectTeam": "Project team",
+  "projectTimeline": "Project timeline",
+  "startDate": "Start date",
+  "notSet": "Not set",
+  "endDate": "End date",
+  "projectFiles": "Project files",
+  "noFiles": "No files"
+}

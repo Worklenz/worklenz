@@ -12,5 +12,12 @@
   "confirmPasswordRequired": "Potwierdź swoje nowe hasło",
   "passwordMismatch": "Obydwa hasła nie pasują do siebie",
   "successTitle": "Resetowanie hasła powiodło się",
-  "successMessage": "Twoje hasło zostało zaktualizowane. Możesz teraz zalogować się przy użyciu nowego hasła."
+  "successMessage": "Twoje hasło zostało zaktualizowane. Możesz teraz zalogować się przy użyciu nowego hasła.",
+  "passwordChecklist": {
+    "minLength": "Co najmniej 8 znaków",
+    "uppercase": "Jedna wielka litera",
+    "lowercase": "Jedna mała litera",
+    "number": "Jeden numer",
+    "special": "Jeden znak specjalny"
+  }
 }

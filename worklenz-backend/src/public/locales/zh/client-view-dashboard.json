@@ -1,0 +1,11 @@
+{
+  "title": "仪表盘",
+  "totalRequests": "请求总数",
+  "pendingRequests": "待处理的请求",
+  "activeProjects": "活跃项目",
+  "unpaidInvoices": "未付发票",
+  "recentRequests": "最近的请求",
+  "noRecentRequests": "最近没有请求",
+  "recentMessages": "最近消息",
+  "noRecentMessages": "没有最近的消息"
+}

@@ -10,5 +10,8 @@
   "refreshButtonTooltip": "刷新成员",
   "memberCount": "成员",
   "membersCountPlural": "成员",
-  "emptyText": "项目中没有附件。"
+  "emptyText": "项目中没有附件。",
+  "removeFromProject": "从项目中删除",
+  "assignFailedMessage": "无法更新任务受让人。请再试一次。",
+  "assignFailedTitle": "分配失败"
 }

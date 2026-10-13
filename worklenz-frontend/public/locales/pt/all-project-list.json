@@ -26,6 +26,7 @@
   "clickToFilter": "Clique para filtrar por",
   "noProjects": "Nenhum projeto encontrado",
   "addToFavourites": "Adicionar aos favoritos",
+  "removeFromFavourites": "Remover dos favoritos",
   "list": "Lista",
   "group": "Grupo",
   "listView": "Visualização em Lista",
@@ -50,5 +51,14 @@
     "noCategory": "Sem Categoria"
   },
   "projectFields": "Campos do Projeto",
-  "required": "Obrigatório"
+  "required": "Obrigatório",
+  "errors": {
+    "loadFailed": "Falha ao carregar projetos. Por favor, tente novamente.",
+    "refreshFailed": "Falha ao atualizar projetos. Por favor, tente novamente."
+  },
+  "rowsPerPage": "Linhas por página:",
+  "groups": "grupos",
+  "retry": "Tentar novamente",
+  "searchProjects": "Pesquisar por nome do projeto",
+  "members": "Membros"
 }

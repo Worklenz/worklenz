@@ -70,5 +70,9 @@
   "sprintGoal": "Objetivo do sprint",
   "sprintGoalPlaceholder": "O que esse sprint deve alcançar?",
   "sprintDatesRequired": "Defina datas de início e término para iniciar o sprint",
-  "sprintEndBeforeStart": "A data de término deve ser posterior à data de início"
+  "sprintEndBeforeStart": "A data de término deve ser posterior à data de início",
+  "start": "Começar",
+  "completeSprint": "Sprint completo",
+  "manageAssignee": "Gerenciar responsável",
+  "assignMember": "Atribuir membro"
 }

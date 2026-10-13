@@ -281,7 +281,7 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
           setIsSettingDrawerOpen(false);
         }, 100);
       }}
-      destroyOnClose
+      destroyOnHidden
       afterOpenChange={open => {
         if (open) {
           form.resetFields();

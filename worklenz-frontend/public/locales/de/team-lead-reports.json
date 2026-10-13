@@ -1,7 +1,6 @@
 {
   "title": "Meine Team-Berichte",
   "subtitle": "Zeiterfassung und Leistungseinblicke für Ihre Teammitglieder",
-
   "dateRange": {
     "label": "Zeitraum",
     "showing": "Anzeigen",
@@ -17,7 +16,6 @@
     "custom": "Benutzerdefinierter Zeitraum",
     "apply": "Anwenden"
   },
-
   "summary": {
     "totalMembers": "Gesamte Mitglieder",
     "totalMembersTooltip": "Gesamtanzahl der Teammitglieder, die während des ausgewählten Zeitraums Zeit protokolliert haben.",
@@ -28,7 +26,6 @@
     "avgCompletionRate": "Durchschnittliche Abschlussrate",
     "hours": "Stunden"
   },
-
   "timeTracking": {
     "title": "Zeiterfassungszusammenfassung",
     "chartTitle": "Team-Zeiterfassungsdiagramm",
@@ -51,7 +48,6 @@
     "projectsTooltip": "Anzahl der verschiedenen Projekte, zu denen dieses Mitglied während des ausgewählten Zeitraums Zeit protokolliert hat.",
     "activeDaysTooltip": "Anzahl der verschiedenen Tage, an denen dieses Mitglied während des ausgewählten Zeitraums Zeit protokolliert hat."
   },
-
   "performance": {
     "title": "Team-Leistung",
     "member": "Mitglied",
@@ -70,7 +66,6 @@
     "projectsInvolved": "Beteiligte Projekte",
     "noData": "Keine Leistungsdaten verfügbar"
   },
-
   "detailedLogs": {
     "title": "Detaillierte Zeitprotokolle",
     "for": "für",
@@ -86,20 +81,18 @@
     "timer": "Timer",
     "noLogs": "Keine detaillierten Protokolle gefunden",
     "close": "Schließen",
-    "timeLogsRange": "Zeitprotokolle"
+    "timeLogsRange": "Zeitprotokolle",
+    "of": "von"
   },
-
   "errors": {
     "failedToLoad": "Fehler beim Laden der Team-Berichte",
     "tryAgain": "Bitte versuchen Sie es erneut",
     "noTeamMembers": "Keine Teammitglieder gefunden",
     "loadingError": "Fehler beim Laden der Daten"
   },
-
   "loading": {
     "fetchingData": "Team-Berichte werden geladen...",
     "fetchingLogs": "Detaillierte Protokolle werden geladen..."
   },
-
   "export": "Exportieren"
 }

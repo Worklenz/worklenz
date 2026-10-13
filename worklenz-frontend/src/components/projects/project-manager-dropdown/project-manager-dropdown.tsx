@@ -136,7 +136,7 @@ const ProjectManagerDropdown: React.FC<ProjectManagerDropdownProps> = ({
         },
       }}
       trigger={['click']}
-      dropdownRender={projectManagerOptionsDropdownRender}
+      popupRender={projectManagerOptionsDropdownRender}
       disabled={disabled}
     >
       <div

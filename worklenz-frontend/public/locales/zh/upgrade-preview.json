@@ -306,5 +306,7 @@
       "utilColumn": "UTIL",
       "teamTotalRow": "团队总计"
     }
-  }
+  },
+  "paginationText": "{{total}} 的 {{from}}-{{to}}",
+  "perPageText": "{{count}} / 页"
 }

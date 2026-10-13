@@ -81,7 +81,8 @@
     "timer": "Temporizador",
     "noLogs": "Nenhum registro detalhado encontrado",
     "close": "Fechar",
-    "timeLogsRange": "registros de tempo"
+    "timeLogsRange": "registros de tempo",
+    "of": "de"
   },
   "errors": {
     "failedToLoad": "Falha ao carregar relatórios da equipe",

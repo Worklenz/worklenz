@@ -4,20 +4,16 @@
   "addTask": "Add Task",
   "addSectionButton": "Add Section",
   "changeCategory": "Change category",
-
   "deleteTooltip": "Delete",
   "deleteConfirmationTitle": "Are you sure?",
   "deleteConfirmationOk": "Yes",
   "deleteConfirmationCancel": "Cancel",
-
   "dueDate": "Due date",
   "cancel": "Cancel",
-
   "today": "Today",
   "tomorrow": "Tomorrow",
   "assignToMe": "Assign to me",
   "archive": "Archive",
-
   "newTaskNamePlaceholder": "Write a task Name",
   "newSubtaskNamePlaceholder": "Write a subtask Name",
   "untitledSection": "Untitled section",
@@ -29,5 +25,13 @@
   "nextWeek": "Next week",
   "noSubtasks": "No subtasks",
   "showSubtasks": "Show subtasks",
-  "hideSubtasks": "Hide subtasks"
+  "hideSubtasks": "Hide subtasks",
+  "critical": "Critical",
+  "high": "High",
+  "expand": "Expand",
+  "medium": "Medium",
+  "addSubtask": "Add Subtask",
+  "collapse": "Collapse",
+  "unarchive": "Unarchive",
+  "low": "Low"
 }

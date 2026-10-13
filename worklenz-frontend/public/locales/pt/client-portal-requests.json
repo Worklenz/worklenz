@@ -89,5 +89,6 @@
   "customStatusRemovedSuccess": "Status personalizado removido",
   "customStatusRemovedError": "Falha ao remover o status personalizado",
   "closeButton": "Fechar",
-  "loadingText": "Carregando..."
+  "loadingText": "Carregando...",
+  "selectStatus": "Selecionar status"
 }

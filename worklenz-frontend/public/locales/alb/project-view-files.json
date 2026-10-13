@@ -63,5 +63,9 @@
   "deleteLink": "Fshi lidhjen",
   "openTask": "Hap detyrën",
   "fromTask": "Nga: {{taskName}}",
-  "noLinks": "Ende nuk ka lidhje. Klikoni \"Shto Lidhje\" për të shtuar lidhjen tuaj të parë."
+  "noLinks": "Ende nuk ka lidhje. Klikoni \"Shto Lidhje\" për të shtuar lidhjen tuaj të parë.",
+  "linksPaginationSummary": "{{start}}–{{end}} nga lidhjet {{count}}",
+  "uploadExpired": "Sesioni i ngarkimit skadoi. Ju lutemi provoni përsëri.",
+  "fileTooLargePopoverTitle": "Skedari shumë i madh",
+  "fileTooLargePopoverBody": "Skedarët më të mëdhenj se 25 MB kërkojnë planin e biznesit. Ky skedar është {{sizeMb}} MB. Përmirëso për të ngarkuar skedarë më të mëdhenj."
 }

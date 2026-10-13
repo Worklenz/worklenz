@@ -38,5 +38,15 @@
   "createClient": "Krijo klient",
   "searchInputPlaceholder": "Kërko sipas emrit ose emailit",
   "hoursPerDayValidationMessage": "Orët në ditë duhet të jenë një numër midis 1 dhe 24",
-  "noPermission": "Nuk ka leje"
+  "noPermission": "Nuk ka leje",
+  "loadSettingsFailedTitle": "Cilësimet e projektit nuk mund të ngarkoheshin",
+  "retry": "Provo përsëri",
+  "taskExportPollFailedMessage": "Nuk mund të kontrollohej statusi i eksportit. Hapni Cilësimet e projektit → Eksporti i detyrave ose provoni përsëri.",
+  "securityTokenValidationFailed": "Vleresimi i kodit të sigurisë dështoi. Ju lutemi provoni përsëri.",
+  "financeAccessHelp": "Kur është aktiv, ky menaxher projekti mund të shikojë dhe modifikojë skedën Financa, buxhetin dhe kartën e tarifave.",
+  "financeAccessLabel": "Akses në financa",
+  "clearProjectManager": "Menaxher i qartë i projektit",
+  "upgrade-plan": "Plani i përmirësimit",
+  "loadSettingsFailedDescription": "Projekti u krijua, por cilësimet e tij aktuale nuk mund të ngarkoheshin. Ruajtja çaktivizohet derisa kjo të ketë sukses, për të shmangur mbishkrimin e projektit me fusha bosh.",
+  "deleteProjectError": "Fshirja e projektit dështoi. Ju lutemi provoni përsëri."
 }

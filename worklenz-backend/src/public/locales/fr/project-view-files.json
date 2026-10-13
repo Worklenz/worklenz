@@ -63,5 +63,9 @@
   "deleteLink": "Supprimer le lien",
   "openTask": "Tâche ouverte",
   "fromTask": "De : {{taskName}}",
-  "noLinks": "Pas encore de liens. Cliquez sur \"Ajouter un lien\" pour ajouter votre premier lien."
+  "noLinks": "Pas encore de liens. Cliquez sur \"Ajouter un lien\" pour ajouter votre premier lien.",
+  "uploadExpired": "La session de téléchargement a expiré. Veuillez réessayer.",
+  "fileTooLargePopoverBody": "Les fichiers de plus de 25 Mo nécessitent le forfait Business. Ce fichier fait {{sizeMb}} Mo. Mettez à niveau pour télécharger des fichiers plus volumineux.",
+  "linksPaginationSummary": "{{start}}–{{end}} sur {{count}} liens",
+  "fileTooLargePopoverTitle": "Fichier trop volumineux"
 }

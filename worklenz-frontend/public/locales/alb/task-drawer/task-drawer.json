@@ -78,7 +78,8 @@
         "selectDate": "Zgjidh datën",
         "selectOption": "Zgjidh opsionin",
         "selectPeople": "Zgjidh personat",
-        "updateError": "Përditësimi i fushës së personalizuar dështoi"
+        "updateError": "Përditësimi i fushës së personalizuar dështoi",
+        "enterText": "Shkruani tekst"
       },
       "recurring": "Përsëritëse"
     },

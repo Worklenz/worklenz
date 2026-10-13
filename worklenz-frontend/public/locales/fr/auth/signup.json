@@ -35,5 +35,7 @@
     "lowercase": "Une lettre minuscule",
     "number": "Un numéro",
     "special": "Un personnage spécial"
-  }
+  },
+  "strongPasswordPlaceholder": "Entrez un mot de passe fort",
+  "passwordValidationAltText": "Exigences de mot de passe"
 }

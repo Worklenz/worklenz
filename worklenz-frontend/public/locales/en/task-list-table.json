@@ -63,14 +63,11 @@
   "todoSelectorText": "To Do",
   "doingSelectorText": "Doing",
   "doneSelectorText": "Done",
-
   "lowSelectorText": "Low",
   "mediumSelectorText": "Medium",
   "highSelectorText": "High",
-
   "selectText": "Select",
   "labelsSelectorInputTip": "Hit enter to create!",
-
   "addTaskText": "Add Task",
   "createIssueText": "Create Issue",
   "createWorkItemText": "Create work item",
@@ -81,10 +78,8 @@
   "addSubTaskInputPlaceholder": "Type subtask name and press Enter to save",
   "noTasksInGroup": "No tasks in this group",
   "dropTaskHere": "Drop task here",
-
   "openButton": "Open",
   "okButton": "Ok",
-
   "noLabelsFound": "No labels found",
   "searchInputPlaceholder": "Search or create",
   "assigneeSelectorInviteButton": "Invite a new member by email",
@@ -92,9 +87,7 @@
   "searchLabelsPlaceholder": "Search labels...",
   "createLabelButton": "Create \"{{name}}\"",
   "manageLabelsPath": "Settings → Labels",
-
   "pendingInvitation": "Pending Invitation",
-
   "contextMenu": {
     "duplicateTask": "Duplicate task",
     "assignToMe": "Assign to me",
@@ -121,7 +114,6 @@
   "clearStartDate": "Clear start date",
   "dueDatePlaceholder": "Due Date",
   "startDatePlaceholder": "Start Date",
-
   "exampleTasks": {
     "prefix": "e.g.",
     "task1": "Define project scope and objectives",
@@ -133,14 +125,12 @@
     "issue2": "Add API rate limiting",
     "issue3": "Set up CI pipeline"
   },
-
   "emptyStates": {
     "noTaskGroups": "No task groups found",
     "noTaskGroupsDescription": "Tasks will appear here when they are created or when filters are applied.",
     "errorPrefix": "Error:",
     "dragTaskFallback": "Task"
   },
-
   "customColumns": {
     "addCustomColumn": "Add a custom column",
     "customColumnHeader": "Custom Column",
@@ -162,7 +152,6 @@
       "noMembersFound": "No members found",
       "inviteMember": "Invite member"
     },
-
     "limitPopover": {
       "title": "Custom Field Limit Reached",
       "body": "You have used all {{limit}} custom fields available on your plan. Upgrade to add unlimited custom fields to your projects.",
@@ -170,7 +159,6 @@
       "appSumoBody": "Adding custom fields beyond your current plan limit requires a Business plan.",
       "cta": "Upgrade Now"
     },
-
     "modal": {
       "addFieldTitle": "Add field",
       "editFieldTitle": "Edit field",
@@ -195,7 +183,6 @@
       "updateErrorMessage": "Failed to update custom column",
       "typeCannotBeChanged": "Column type cannot be changed after creation."
     },
-
     "fieldTypes": {
       "people": "People",
       "text": "Text",
@@ -207,7 +194,6 @@
       "key": "Key",
       "formula": "Formula"
     },
-
     "fieldTypeForms": {
       "numberType": "Number Type",
       "numberTypeOptions": {
@@ -238,9 +224,22 @@
       "labels": "Labels",
       "addLabel": "+ Add a label",
       "keyLabelPlaceholder": "ex: MK"
-    }
+    },
+    "newColumn": "New Column",
+    "projectNotFound": "Project not found",
+    "columnCreated": "Column created. Click on the header to edit.",
+    "columnCreationFailed": "Failed to create column",
+    "guestCannotAddColumn": "Guest users cannot add custom columns",
+    "columnNameRequired": "Column name is required",
+    "columnNotFound": "Column not found",
+    "columnIdNotFound": "Column ID not found - please refresh and try again",
+    "columnUpdated": "Column name updated",
+    "updateFailed": "Failed to update column name",
+    "enterColumnName": "Enter column name",
+    "clickToEdit": "Click to edit column name",
+    "columnSettings": "Column settings",
+    "textPlaceholder": "Enter text"
   },
-
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} subtask",
@@ -254,17 +253,26 @@
       "recurring": "Recurring task"
     }
   },
-
   "timer": {
     "conflictTitle": "Timer Already Running",
     "conflictMessage": "You have a timer running for \"{{taskName}}\" in project \"{{projectName}}\". Would you like to stop that timer and start a new one for this task?",
     "stopAndStart": "Stop & Start New Timer"
   },
-
   "errors": {
     "taskNotCompleted": "Task is not completed",
     "completeTaskDependencies": "Please complete the task dependencies before proceeding",
     "incompleteDependencies": "Incomplete Dependencies!",
     "someDependenciesNotCompleted": "Some tasks were not updated. Please ensure all dependent tasks are completed before proceeding."
-  }
+  },
+  "insertTaskText": "Insert Task",
+  "insertTaskAtBottomText": "Insert Task at Bottom",
+  "untitledTaskName": "Untitled Task",
+  "openTask": "Open task",
+  "descriptionPlaceholder": "Add description…",
+  "descriptionDisabledTooltip": "View only - cannot edit",
+  "descriptionRichTooltip": "Contains rich formatting — click to edit in task drawer",
+  "setDueTime": "Set due time",
+  "save": "Save",
+  "cancel": "Cancel",
+  "changeStatus": "Change status: {{status}}"
 }

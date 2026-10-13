@@ -325,5 +325,7 @@
   "bulkDeactivateConfirmationDescription_other": "Wyłączyć {{count}} wybranych klientów? Stracą oni dostęp do portalu, ale wszystkie dane zostaną zachowane.",
   "statsErrorMessage": "Nie udało się załadować statystyk klientów.",
   "unansweredMessagesLabel": "Wiadomości bez odpowiedzi",
-  "unansweredMessagesHint": "Wiadomości od klientów oczekujące na odpowiedź Twojego zespołu"
+  "unansweredMessagesHint": "Wiadomości od klientów oczekujące na odpowiedź Twojego zespołu",
+  "tryAgainMessage": "Spróbuj ponownie.",
+  "viewToggleLabel": "Widok klientów"
 }

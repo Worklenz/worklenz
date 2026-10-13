@@ -1,0 +1,21 @@
+{
+  "projectNotFound": "未找到项目",
+  "backToProjects": "返回项目",
+  "projectOverview": "项目概况",
+  "status": "状态",
+  "progress": "进度",
+  "totalTasks": "任务总数",
+  "completedTasks": "已完成",
+  "lastUpdated": "最后更新",
+  "projectDescription": "项目描述",
+  "noDescription": "无描述",
+  "recentActivity": "最近的活动",
+  "noRecentActivity": "暂无最近活动",
+  "projectTeam": "项目团队",
+  "projectTimeline": "项目时间表",
+  "startDate": "开始日期",
+  "notSet": "未设置",
+  "endDate": "结束日期",
+  "projectFiles": "项目文件",
+  "noFiles": "没有文件"
+}

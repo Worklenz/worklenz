@@ -510,7 +510,7 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
       open={open}
       onClose={onClose}
       width={720}
-      destroyOnClose
+      destroyOnHidden
       rootClassName="task-drawer-root"
       getContainer={() => document.body}
       title={

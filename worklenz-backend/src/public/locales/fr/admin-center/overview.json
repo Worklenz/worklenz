@@ -105,5 +105,12 @@
   "customLogoUpgradeModalSubCopy": "Passez à Business pour télécharger le logo de votre organisation. Votre logo remplacera le logo Worklenz partout dans l'application et dans tous les e-mails système envoyés à votre équipe et à vos clients.",
   "customLogoUpgradeModalBenefitApp": "Logo personnalisé sur toute l'application",
   "customLogoUpgradeModalBenefitEmails": "E-mails de marque à l'équipe et aux clients",
-  "customLogoUpgradeModalBenefitProfessional": "Look professionnel pour votre organisation"
+  "customLogoUpgradeModalBenefitProfessional": "Look professionnel pour votre organisation",
+  "fileSizeUpgradeModalHeadline": "Téléchargez des fichiers de n'importe quelle taille",
+  "fileSizeUpgradeModalBenefitFileSize": "Téléchargements de fichiers jusqu'à 250 Mo",
+  "fileSizeUpgradeModalBenefitFileTypes": "Tous les types de fichiers pris en charge",
+  "nextMonth": "Le mois prochain",
+  "fileSizeUpgradeModalBenefitStorage": "Stockage total étendu",
+  "previousMonth": "Mois précédent",
+  "fileSizeUpgradeModalSubCopy": "Votre forfait actuel prend en charge les fichiers jusqu'à 25 Mo. Passez à Business pour télécharger des fichiers jusqu'à 250 Mo et conserver les ressources volumineuses à proximité de votre travail de projet."
 }

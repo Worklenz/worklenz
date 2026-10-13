@@ -235,5 +235,10 @@
   "selectProjectFirst": "Selecione um projeto primeiro",
   "manageTimeOff": "Gerenciar Ausências",
   "createFromTemplatesLabel": "Criar projetos a partir de modelos",
-  "createFromTemplatesHint": "Permite que este membro crie projetos a partir de modelos. Eles se tornam Gerente de Projeto do novo projeto sem acesso financeiro. Não permite criar projetos em branco."
+  "createFromTemplatesHint": "Permite que este membro crie projetos a partir de modelos. Eles se tornam Gerente de Projeto do novo projeto sem acesso financeiro. Não permite criar projetos em branco.",
+  "inviteLinkGeneratedCopyFailed": "Link de convite gerado, mas não pôde ser copiado automaticamente. Por favor, copie-o manualmente.",
+  "noManagedProjectsFound": "Nenhum projeto onde você é Gerente de Projeto",
+  "projectInvite_guestLimitExceeded": "Limite de convidados excedido para este plano. Faça upgrade para adicionar mais hóspedes.",
+  "license-expired-subtitle": "Seu período de teste do Worklenz terminou. Por favor, atualize para continuar aproveitando todos os recursos.",
+  "Failed to fetch job titles": "Falha ao buscar cargos"
 }

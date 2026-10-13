@@ -126,7 +126,7 @@ export const TemplatePreviewDrawer = ({
       open={open}
       onCancel={onClose}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
       width={780}
       styles={{
         body:    { padding: 0 },

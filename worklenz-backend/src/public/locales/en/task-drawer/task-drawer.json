@@ -37,7 +37,8 @@
         "selectDate": "Select date",
         "selectOption": "Select option",
         "selectPeople": "Select people",
-        "updateError": "Failed to update custom field"
+        "updateError": "Failed to update custom field",
+        "enterText": "Enter text"
       },
       "recurring": "Recurring"
     },

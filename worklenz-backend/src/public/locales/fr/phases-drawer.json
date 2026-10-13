@@ -32,5 +32,9 @@
   "noMembersFound": "Aucun membre trouvé",
   "continue": "Continuer",
   "pendingMemberLabel": "(En attente)",
-  "inviteMember": "Inviter un membre"
+  "inviteMember": "Inviter un membre",
+  "manageAssignee": "Gérer le responsable",
+  "start": "Commencer",
+  "assignMember": "Attribuer un membre",
+  "completeSprint": "Sprint complet"
 }

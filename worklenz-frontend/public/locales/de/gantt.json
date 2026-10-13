@@ -37,7 +37,8 @@
     "failedToRemoveDependency": "Fehler beim Entfernen der Abhängigkeit.",
     "taskAddedToRoadmap": "Aufgabe wurde für die nächsten 5 Tage zur Roadmap hinzugefügt.",
     "failedToAddTaskToRoadmap": "Fehler beim Hinzufügen der Aufgabe zur Roadmap.",
-    "unscheduledTaskNotFound": "Ausgewählte Aufgabe konnte nicht gefunden werden."
+    "unscheduledTaskNotFound": "Ausgewählte Aufgabe konnte nicht gefunden werden.",
+    "undatedTaskReadOnly": "Aufgabe ohne Datum (nur für Gäste lesbar)"
   },
   "common": {
     "noStart": "Kein Start",

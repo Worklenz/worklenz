@@ -38,5 +38,15 @@
   "createClient": "创建客户",
   "searchInputPlaceholder": "按名称或电子邮件搜索",
   "hoursPerDayValidationMessage": "每天小时数必须是1到24之间的数字",
-  "noPermission": "无权限"
+  "noPermission": "无权限",
+  "loadSettingsFailedTitle": "无法加载项目设置",
+  "retry": "重试",
+  "taskExportPollFailedMessage": "无法检查导出状态。打开项目设置 → 任务导出，或重试。",
+  "securityTokenValidationFailed": "安全令牌验证失败。请再试一次。",
+  "financeAccessHelp": "启用后，该项目经理可以查看和编辑“财务”选项卡、预算和价目表。",
+  "financeAccessLabel": "财务准入",
+  "clearProjectManager": "明确项目经理",
+  "upgrade-plan": "升级计划",
+  "loadSettingsFailedDescription": "项目已创建，但无法加载其当前设置。在成功之前，保存将被禁用，以避免用空白字段覆盖项目。",
+  "deleteProjectError": "删除项目失败。请再试一次。"
 }

@@ -26,7 +26,8 @@
     "user": "Benutzer",
     "users": "Benutzer",
     "helpDescription": "Geben Sie die Anzahl der Benutzer in Ihrem Team ein (1-500)",
-    "placeholder": "Teamgröße auswählen"
+    "placeholder": "Teamgröße auswählen",
+    "aria": "Teamgröße"
   },
   "plans": {
     "free": {
@@ -70,7 +71,8 @@
       "payPerUser": "Bezahlung pro Benutzer (1–5 Benutzer)",
       "usersIncluded": "{{count}} Benutzer enthalten",
       "maxUsers": "Bis zu {{count}} Benutzer max",
-      "maxUsersAppSumo": "Bis zu 50 Benutzer max. (AppSumo Special)"
+      "maxUsersAppSumo": "Bis zu 50 Benutzer max. (AppSumo Special)",
+      "namePromo": "Geschäft (AppSumo Special)"
     },
     "proSmall": {
       "name": "Pro Klein",
@@ -130,7 +132,8 @@
         "Dedicated Account Manager",
         "On-Premises-Bereitstellung"
       ]
-    }
+    },
+    "additionalUsersCharged": "Zusätzliche Benutzer darüber hinaus: ${{price}}/Benutzer/Monat"
   },
   "badges": {
     "mostPopular": "Am beliebtesten",
@@ -325,7 +328,8 @@
     "billedMonthly": "(monatlich abgerechnet)",
     "perYear": "/Jahr",
     "perMonth": "/Monat",
-    "forUsers": " für {{count}} Benutzer{{s}}"
+    "forUsers": " für {{count}} Benutzer{{s}}",
+    "annualSavingsShortOff": "Bis zu {{percent}} % Rabatt"
   },
   "ribbon": {
     "recommended": "Empfohlen",

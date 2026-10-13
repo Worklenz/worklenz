@@ -89,5 +89,6 @@
   "customStatusRemovedSuccess": "自定义状态已删除",
   "customStatusRemovedError": "无法删除自定义状态",
   "closeButton": "关闭",
-  "loadingText": "正在加载..."
+  "loadingText": "正在加载...",
+  "selectStatus": "选择状态"
 }

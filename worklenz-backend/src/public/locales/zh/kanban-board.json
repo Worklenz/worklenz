@@ -25,5 +25,13 @@
   "nextWeek": "下周",
   "noSubtasks": "无子任务",
   "showSubtasks": "显示子任务",
-  "hideSubtasks": "隐藏子任务"
+  "hideSubtasks": "隐藏子任务",
+  "critical": "紧急",
+  "high": "高",
+  "expand": "展开",
+  "medium": "中",
+  "addSubtask": "添加子任务",
+  "collapse": "折叠",
+  "unarchive": "取消归档",
+  "low": "低"
 }

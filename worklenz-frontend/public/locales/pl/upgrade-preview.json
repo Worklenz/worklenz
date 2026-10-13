@@ -333,5 +333,7 @@
       "utilColumn": "UTIL",
       "teamTotalRow": "Zespół Razem"
     }
-  }
+  },
+  "paginationText": "{{from}}-{{to}} z {{total}}",
+  "perPageText": "{{count}} / stronę"
 }

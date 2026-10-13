@@ -437,5 +437,7 @@
   "releaseAddSelected": "Ajouter la sélection",
   "releaseItemsAdded_one": "{{count}} élément de travail ajouté",
   "releaseItemsAdded_other": "{{count}} éléments de travail ajoutés",
-  "releaseItemsAddError": "Impossible d'ajouter les éléments de travail"
+  "releaseItemsAddError": "Impossible d'ajouter les éléments de travail",
+  "You do not have permission to access this project": "Vous n'êtes pas autorisé à accéder à ce projet",
+  "Failed to load project": "Échec du chargement du projet"
 }

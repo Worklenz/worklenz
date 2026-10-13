@@ -116,7 +116,6 @@
   "totalLogged": "Total enregistré",
   "varianceUnder": "(sous)",
   "varianceOver": "(terminé)",
-
   "timeLogsFilterButton": "Filtrer",
   "timeLogsFiltersTitle": "Filtres",
   "timeLogsFilterApply": "Appliquer",
@@ -190,5 +189,17 @@
   "timeLogsGroupEntriesShowing": "{{shown}} entrées affichées sur {{total}}",
   "timeLogsGroupLoadMore": "Charger plus",
   "timeLogsViewFlatTooltip": "Chaque entrée de temps sur sa propre ligne, telle qu'elle a été saisie.",
-  "timeLogsViewByTaskTooltip": "Une ligne par tâche, avec le temps de toutes ses entrées additionné."
+  "timeLogsViewByTaskTooltip": "Une ligne par tâche, avec le temps de toutes ses entrées additionné.",
+  "noDepartmentOption": "Aucun département",
+  "departmentFilterLabel": "Département",
+  "searchByDepartment": "Département de recherche",
+  "noDepartments": "Aucun département trouvé",
+  "noPracticeOption": "Aucune pratique",
+  "practiceFilterLabel": "Pratique",
+  "searchByPractice": "Pratique de recherche",
+  "noPractices": "Aucune pratique trouvée",
+  "noDataMatchingFilters": "Aucune donnée correspondant aux filtres sélectionnés",
+  "holidaysExcluded": "Jours fériés exclus",
+  "reportSettings": "Paramètres du rapport",
+  "Members Time Sheet": "Feuille de temps des membres"
 }

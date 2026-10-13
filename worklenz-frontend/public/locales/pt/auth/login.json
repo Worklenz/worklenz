@@ -34,5 +34,6 @@
   "errorMessages": {
     "loginErrorTitle": "Login falhou",
     "loginErrorMessage": "Por favor, verifique seu e-mail e senha e tente novamente"
-  }
+  },
+  "rememberMe": "Lembre-se de mim"
 }

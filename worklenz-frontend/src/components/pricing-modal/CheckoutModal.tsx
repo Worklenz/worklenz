@@ -452,7 +452,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       footer={null}
       width={600}
       centered
-      destroyOnClose
+      destroyOnHidden
       closable={checkoutState.step !== 'processing'}
       maskClosable={checkoutState.step !== 'processing'}
     >

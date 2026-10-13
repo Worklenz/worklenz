@@ -251,5 +251,15 @@
     "saved": "Configuración del proyecto guardada",
     "saveError": "No se pudo guardar la configuración del proyecto",
     "deleted": "\"{{name}}\" se ha eliminado permanentemente."
-  }
+  },
+  "clearProjectManager": "Gerente de proyecto claro",
+  "securityTokenValidationFailed": "Error de validación del token de seguridad. Por favor inténtalo de nuevo.",
+  "deleteProjectError": "No se pudo eliminar el proyecto. Por favor inténtalo de nuevo.",
+  "financeAccessLabel": "Acceso a financiación",
+  "financeAccessHelp": "Cuando está activado, este director de proyecto puede ver y editar la pestaña Finanzas, el presupuesto y la hoja de tarifas.",
+  "loadSettingsFailedTitle": "No se pudo cargar la configuración del proyecto",
+  "loadSettingsFailedDescription": "El proyecto fue creado, pero no se pudo cargar su configuración actual. El guardado está deshabilitado hasta que se realice correctamente, para evitar sobrescribir el proyecto con campos en blanco.",
+  "retry": "Reintentar",
+  "upgrade-plan": "Plan de actualización",
+  "taskExportPollFailedMessage": "No se pudo verificar el estado de la exportación. Abra Configuración del proyecto → Exportación de tareas o inténtelo de nuevo."
 }

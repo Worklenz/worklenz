@@ -251,5 +251,15 @@
     "saved": "Ustawienia projektu zostały zapisane",
     "saveError": "Nie udało się zapisać ustawień projektu",
     "deleted": "„{{name}}” został trwale usunięty."
-  }
+  },
+  "clearProjectManager": "Przejrzysty menadżer projektu",
+  "securityTokenValidationFailed": "Weryfikacja tokenu zabezpieczającego nie powiodła się. Spróbuj ponownie.",
+  "deleteProjectError": "Nie udało się usunąć projektu. Spróbuj ponownie.",
+  "financeAccessLabel": "Dostęp do finansów",
+  "financeAccessHelp": "Gdy ta opcja jest włączona, ten menedżer projektu może wyświetlać i edytować kartę Finanse, budżet i arkusz stawek.",
+  "loadSettingsFailedTitle": "Nie udało się wczytać ustawień projektu",
+  "loadSettingsFailedDescription": "Projekt został utworzony, ale nie udało się wczytać jego bieżących ustawień. Zapisywanie jest wyłączone, dopóki się to nie powiedzie, aby uniknąć nadpisania projektu pustymi polami.",
+  "retry": "Spróbuj ponownie",
+  "upgrade-plan": "Plan aktualizacji",
+  "taskExportPollFailedMessage": "Nie można sprawdzić statusu eksportu. Otwórz Ustawienia projektu → Eksport zadań lub spróbuj ponownie."
 }

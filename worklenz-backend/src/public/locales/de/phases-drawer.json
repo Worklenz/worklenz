@@ -1,7 +1,7 @@
 {
   "configurePhases": "Phasen konfigurieren",
   "phaseLabel": "Phasenbezeichnung",
-  "enterPhaseName": "Namen für Phasenbezeichnung eingeben",
+  "enterPhaseName": "Phasennamen eingeben",
   "addOption": "Option hinzufügen",
   "phaseOptions": "Phasenoptionen:",
   "dragToReorderPhases": "Ziehen Sie Phasen, um sie neu zu ordnen. Jede Phase kann eine andere Farbe haben.",
@@ -12,8 +12,11 @@
   "deletePhaseConfirm": "Sind Sie sicher, dass Sie diese Phase löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
   "rename": "Umbenennen",
   "delete": "Löschen",
-  "enterPhaseName": "Phasennamen eingeben",
   "selectColor": "Farbe auswählen",
   "managePhases": "Phasen verwalten",
-  "close": "Schließen"
+  "close": "Schließen",
+  "manageAssignee": "Beauftragten verwalten",
+  "start": "Starten",
+  "assignMember": "Mitglied zuweisen",
+  "completeSprint": "Kompletter Sprint"
 }

@@ -31,5 +31,6 @@
   "admin": "管理员",
   "member": "成员",
   "cannotChangeOwnerRole": "所有者角色无法更改",
-  "pendingInvitation": "待处理邀请"
+  "pendingInvitation": "待处理邀请",
+  "clickToEditName": "点击编辑姓名"
 }

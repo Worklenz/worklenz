@@ -325,5 +325,7 @@
   "bulkDeactivateConfirmationDescription_other": "Deactivate the {{count}} selected clients? They will lose access to the portal, but all data will be preserved.",
   "statsErrorMessage": "Could not load client statistics.",
   "unansweredMessagesLabel": "Unanswered messages",
-  "unansweredMessagesHint": "Client messages waiting for a reply from your team"
+  "unansweredMessagesHint": "Client messages waiting for a reply from your team",
+  "tryAgainMessage": "Please try again.",
+  "viewToggleLabel": "Clients view"
 }

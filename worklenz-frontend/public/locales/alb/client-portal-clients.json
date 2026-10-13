@@ -325,5 +325,7 @@
   "bulkDeactivateConfirmationDescription_other": "Të çaktivizohen {{count}} klientët e zgjedhur? Ata do të humbasin qasjen në portal, por të gjitha të dhënat do të ruhen.",
   "statsErrorMessage": "Statistikat e klientëve nuk mund të ngarkoheshin.",
   "unansweredMessagesLabel": "Mesazhe pa përgjigje",
-  "unansweredMessagesHint": "Mesazhe nga klientët që presin përgjigje nga ekipi juaj"
+  "unansweredMessagesHint": "Mesazhe nga klientët që presin përgjigje nga ekipi juaj",
+  "tryAgainMessage": "Ju lutemi provoni përsëri.",
+  "viewToggleLabel": "Pamja e klientëve"
 }

@@ -44,5 +44,8 @@
   "DUE_DATE_UPDATED": "Data de vencimento atualizada com sucesso",
   "DUE_DATE_CLEARED": "Data de vencimento limpa com sucesso",
   "archiveSuccessTitle": "Atualização em massa concluída",
-  "archiveSuccessMessage": "{{parentCount}} tarefas e {{subtaskCount}} subtarefas foram {{action}}das."
+  "archiveSuccessMessage": "{{parentCount}} tarefas e {{subtaskCount}} subtarefas foram {{action}}das.",
+  "SET_START_DATE": "Definir Data de Início",
+  "Unarchive": "Desarquivar",
+  "Archive": "Arquivar"
 }

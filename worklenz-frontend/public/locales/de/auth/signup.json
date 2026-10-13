@@ -35,5 +35,7 @@
     "lowercase": "Ein Kleinbuchstabe",
     "number": "Eine Zahl",
     "special": "Ein Sonderzeichen"
-  }
+  },
+  "strongPasswordPlaceholder": "Geben Sie ein sicheres Passwort ein",
+  "passwordValidationAltText": "Passwortanforderungen"
 }

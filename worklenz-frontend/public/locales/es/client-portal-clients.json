@@ -325,5 +325,7 @@
   "bulkDeactivateConfirmationDescription_other": "¿Desactivar los {{count}} clientes seleccionados? Perderán el acceso al portal, pero todos los datos se conservarán.",
   "statsErrorMessage": "No se pudieron cargar las estadísticas de clientes.",
   "unansweredMessagesLabel": "Mensajes sin responder",
-  "unansweredMessagesHint": "Mensajes de clientes a la espera de una respuesta de su equipo"
+  "unansweredMessagesHint": "Mensajes de clientes a la espera de una respuesta de su equipo",
+  "tryAgainMessage": "Por favor inténtalo de nuevo.",
+  "viewToggleLabel": "Vista de clientes"
 }

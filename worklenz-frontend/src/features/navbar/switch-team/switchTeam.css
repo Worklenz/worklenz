@@ -51,7 +51,7 @@
 }
 
 /*
- * NOTE: A `Menu` rendered inside an antd `Dropdown` popup (via `dropdownRender`)
+ * NOTE: A `Menu` rendered inside an antd `Dropdown` popup (via `popupRender`)
  * does NOT use the `ant-menu` prefix. antd's internal `OverrideProvider` forces
  * the Dropdown prefix + vertical mode, so the root <ul> actually renders as
  * `.ant-dropdown-menu.ant-dropdown-menu-root.ant-dropdown-menu-vertical`.

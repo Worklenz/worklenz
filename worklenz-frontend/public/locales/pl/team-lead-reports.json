@@ -81,7 +81,8 @@
     "timer": "Timer",
     "noLogs": "Nie znaleziono szczegółowych logów",
     "close": "Zamknij",
-    "timeLogsRange": "dzienniki czasu"
+    "timeLogsRange": "dzienniki czasu",
+    "of": "z"
   },
   "errors": {
     "failedToLoad": "Nie udało się załadować raportów zespołu",

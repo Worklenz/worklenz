@@ -148,5 +148,9 @@
   "noPhases": "Aucune phase trouvée",
   "todoStatus": "À faire",
   "doingStatus": "Faire",
-  "doneStatus": "Terminé"
+  "doneStatus": "Terminé",
+  "clientFilter": "Clientèle",
+  "searchLabels": "Rechercher des étiquettes...",
+  "noLabels": "Aucune étiquette trouvée",
+  "labelFilter": "Étiquettes"
 }

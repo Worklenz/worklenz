@@ -70,5 +70,9 @@
   "sprintGoal": "Objektivi i sprintit",
   "sprintGoalPlaceholder": "Çfarë duhet të arrijë ky sprint?",
   "sprintDatesRequired": "Vendosni datat e fillimit dhe të mbarimit për të filluar sprintin",
-  "sprintEndBeforeStart": "Data e përfundimit duhet të jetë pas datës së fillimit"
+  "sprintEndBeforeStart": "Data e përfundimit duhet të jetë pas datës së fillimit",
+  "start": "Filloni",
+  "completeSprint": "Sprint i plotë",
+  "manageAssignee": "Menaxhoni të ngarkuarin",
+  "assignMember": "Cakto një anëtar"
 }

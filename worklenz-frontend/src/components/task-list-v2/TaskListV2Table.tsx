@@ -2681,7 +2681,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                               key="insert-divider-bottom"
                               isVisible={true}
                               isNearGroupHeader={false}
-                              title={t('insertTaskText', { defaultValue: 'Insert Task at Bottom' })}
+                              title={t('insertTaskAtBottomText', { defaultValue: 'Insert Task at Bottom' })}
                               onInsert={() => {
                                 setInsertAnchor({
                                   groupId: group.id,

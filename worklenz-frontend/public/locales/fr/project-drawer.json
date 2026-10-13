@@ -251,5 +251,15 @@
     "saved": "Paramètres du projet enregistrés",
     "saveError": "Impossible d'enregistrer les paramètres du projet",
     "deleted": "\"{{name}}\" a été définitivement supprimé."
-  }
+  },
+  "clearProjectManager": "Chef de projet clair",
+  "securityTokenValidationFailed": "La validation du jeton de sécurité a échoué. Veuillez réessayer.",
+  "deleteProjectError": "Échec de la suppression du projet. Veuillez réessayer.",
+  "financeAccessLabel": "Accès au financement",
+  "financeAccessHelp": "Lorsque cette option est activée, ce chef de projet peut afficher et modifier l'onglet Finances, le budget et le tableau des tarifs.",
+  "loadSettingsFailedTitle": "Impossible de charger les paramètres du projet",
+  "loadSettingsFailedDescription": "Le projet a été créé, mais ses paramètres actuels n'ont pas pu être chargés. L'enregistrement est désactivé jusqu'à ce que l'opération réussisse, pour éviter d'écraser le projet avec des champs vides.",
+  "retry": "Réessayer",
+  "upgrade-plan": "Plan de mise à niveau",
+  "taskExportPollFailedMessage": "Impossible de vérifier le statut de l'exportation. Ouvrez Paramètres du projet → Exportation de tâches ou réessayez."
 }

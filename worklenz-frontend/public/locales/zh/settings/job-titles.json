@@ -19,5 +19,7 @@
   "updateJobTitleErrorMessage": "职位更新失败！",
   "paginationTotal": "第 {{start}}-{{end}} 条，共 {{total}} 条",
   "editTooltip": "编辑",
-  "deleteTooltip": "删除"
+  "deleteTooltip": "删除",
+  "fetchJobTitleErrorMessage": "无法获取职位名称。请再试一次。",
+  "pageTitle": "管理职称"
 }

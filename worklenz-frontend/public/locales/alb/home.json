@@ -20,7 +20,8 @@
     "showDone": "Shfaq të Përfunduarat",
     "created": "Krijuar",
     "finished": "Përfunduar",
-    "tasks": "detyra"
+    "tasks": "detyra",
+    "loading": "Duke ngarkuar..."
   },
   "projects": {
     "title": "Projektet",
@@ -136,7 +137,9 @@
     "weekdayMiniThu": "E",
     "weekdayMiniFri": "P",
     "weekdayMiniSat": "Sh",
-    "weekdayMiniSun": "D"
+    "weekdayMiniSun": "D",
+    "clientsSearchPlaceholder": "Kërko klientë...",
+    "projectsSearchPlaceholder": "Kërko projekte..."
   },
   "activityLogs": {
     "title": "Aktiviteti i Fundit",
@@ -245,7 +248,9 @@
     "weekdayThu": "Enj",
     "weekdayFri": "Pre",
     "weekdaySat": "Sht",
-    "weekdaySun": "Die"
+    "weekdaySun": "Die",
+    "createdTimeColumn": "Koha e krijuar",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "Ende pa shpenzime të regjistruara",
@@ -259,7 +264,8 @@
     "columnAssignee": "I Caktuari",
     "columnDate": "Data",
     "openTask": "Hap detyrën",
-    "rowsPerPage": "Rreshta për faqe:"
+    "rowsPerPage": "Rreshta për faqe:",
+    "addExpense": "Shto Shpenzim"
   },
   "addExpense": {
     "modalTitle": "Shto Shpenzim",
@@ -526,5 +532,7 @@
     "viewAllMore": "Shiko të gjitha ({{remaining}} të tjera)",
     "addFailed": "Detyra nuk u shtua. Ju lutemi provoni përsëri.",
     "completeFailed": "Detyra nuk u përditësua. Ju lutemi provoni përsëri."
-  }
+  },
+  "projectsAtRisk": "Projektet në rrezik",
+  "flagged": "me flamur"
 }
