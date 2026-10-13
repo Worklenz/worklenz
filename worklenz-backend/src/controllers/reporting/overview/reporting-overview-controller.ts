@@ -18,10 +18,13 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
     const teamId = this.getCurrentTeamId(req);
     const includeArchived = req.query.archived === "true";
 
+    const queryParams: any[] = [teamId];
     // Build archived filter using 'p' alias (matches filtered_projects CTE)
-    const archivedClause = includeArchived
-      ? ""
-      : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}')`;
+    let archivedClause = "";
+    if (!includeArchived && req.user?.id) {
+      queryParams.push(req.user.id);
+      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${queryParams.length})`;
+    }
 
     // Compute once — avoids two separate isTeamLead() DB lookups
     const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
@@ -86,7 +89,7 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
       ) AS stats;
     `;
 
-    const result = await db.query(q, [teamId]);
+    const result = await db.query(q, queryParams);
     const s = result.rows[0]?.stats;
 
     const projectCount = int(s?.project_count);
@@ -118,9 +121,12 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
     const teamId = this.getCurrentTeamId(req);
     const includeArchived = req.query.archived === "true";
 
-    const archivedClause = includeArchived
-      ? ""
-      : `AND id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND archived_projects.user_id = '${req.user?.id}')`;
+    const queryParams: any[] = [teamId];
+    let archivedClause = "";
+    if (!includeArchived && req.user?.id) {
+      queryParams.push(req.user.id);
+      archivedClause = `AND id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND archived_projects.user_id = $${queryParams.length})`;
+    }
 
     const q = `
       SELECT id,
@@ -142,7 +148,7 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
       WHERE in_organization(id, $1)
       ORDER BY name;
     `;
-    const result = await db.query(q, [teamId]);
+    const result = await db.query(q, queryParams);
 
     for (const team of result.rows) {
       // Don't apply createTagList here - let the frontend Avatars component handle display logic
@@ -290,8 +296,15 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
     const teamId = req.params.team_id?.trim() || null;
     const archived = req.query.archived === "true";
 
-    const pmArchivedClause = archived ? `` : `AND project_members.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = project_members.project_id AND user_id = '${req.user?.id}')`;
-    const taArchivedClause = archived ? `` : `AND (SELECT tasks.project_id FROM tasks WHERE tasks.id = tasks_assignees.task_id) NOT IN (SELECT project_id FROM archived_projects WHERE project_id = (SELECT tasks.project_id FROM tasks WHERE tasks.id = tasks_assignees.task_id) AND user_id = '${req.user?.id}')`;
+    const queryParams: any[] = [teamId];
+    let pmArchivedClause = "";
+    let taArchivedClause = "";
+    if (!archived) {
+      queryParams.push(req.user?.id);
+      const userPlaceholder = `$${queryParams.length}`;
+      pmArchivedClause = `AND project_members.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = project_members.project_id AND user_id = ${userPlaceholder})`;
+      taArchivedClause = `AND (SELECT tasks.project_id FROM tasks WHERE tasks.id = tasks_assignees.task_id) NOT IN (SELECT project_id FROM archived_projects WHERE project_id = (SELECT tasks.project_id FROM tasks WHERE tasks.id = tasks_assignees.task_id) AND user_id = ${userPlaceholder})`;
+    }
 
     const q = `
       SELECT team_member_id AS id,
@@ -330,7 +343,7 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
       ORDER BY name;
     `;
 
-    const result = await db.query(q, [teamId]);
+    const result = await db.query(q, queryParams);
 
     for (const member of result.rows) {
       member.projects = int(member.projects);

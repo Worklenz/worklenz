@@ -259,11 +259,11 @@ export default class ProjectsController extends WorklenzControllerBase {
                                  name,
                                  EXISTS(SELECT user_id
                                         FROM favorite_projects
-                                        WHERE user_id = '${req.user?.id}'
+                                        WHERE user_id = $${userIdParam}
                                           AND project_id = projects.id) AS favorite,
                                  EXISTS(SELECT user_id
                                         FROM archived_projects
-                                        WHERE user_id = '${req.user?.id}'
+                                        WHERE user_id = $${userIdParam}
                                           AND project_id = projects.id) AS archived,
                                  color_code,
                                  to_jsonb(projects)->>'worklenz_id' AS worklenz_id,
@@ -525,8 +525,9 @@ export default class ProjectsController extends WorklenzControllerBase {
     // each pushing its own copy or, worse, interpolating the value into the
     // SQL text directly.
     const userId = req.user?.id;
-    const queryParams: any[] = [req.user?.team_id || null, userId];
-    let paramOffset = 3;
+    const teamMemberId = req.user?.team_member_id || null;
+    const queryParams: any[] = [req.user?.team_id || null, userId, teamMemberId];
+    let paramOffset = 4;
 
     let filterByMember = "";
     let isFavorites = "";
@@ -655,13 +656,13 @@ export default class ProjectsController extends WorklenzControllerBase {
                                   (SELECT default_view
                                     FROM project_members prm
                                     WHERE prm.project_id = projects.id
-                                      AND team_member_id = '${req.user?.team_member_id}') AS team_member_default_view,
+                                      AND team_member_id = $3) AS team_member_default_view,
 
                                   EXISTS(
                                     SELECT 1
                                     FROM project_members pm
                                     WHERE pm.project_id = projects.id
-                                      AND pm.team_member_id = '${req.user?.team_member_id}'
+                                      AND pm.team_member_id = $3
                                       AND pm.project_access_level_id = (
                                         SELECT id FROM project_access_levels WHERE key = 'GUEST'
                                       )

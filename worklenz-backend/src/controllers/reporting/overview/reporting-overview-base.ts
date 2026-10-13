@@ -300,18 +300,19 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
   // Team Member Overview
 
   protected static async getProjectCountOfTeamMember(teamMemberId: string | null, includeArchived: boolean, userId: string) {
-
-    const archivedClause = includeArchived
-    ? ""
-    : `AND pm.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = pm.project_id AND archived_projects.user_id = '${userId}')`;
-
+    const params: any[] = [teamMemberId];
+    let archivedClause = "";
+    if (!includeArchived && userId) {
+      params.push(userId);
+      archivedClause = `AND pm.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = pm.project_id AND archived_projects.user_id = $${params.length})`;
+    }
 
     const q = `
       SELECT COUNT(*)
       FROM project_members pm
       WHERE team_member_id = $1 ${archivedClause};
     `;
-    const result = await db.query(q, [teamMemberId]);
+    const result = await db.query(q, params);
     const [data] = result.rows;
     return int(data.count);
   }
@@ -476,10 +477,12 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
   }
 
   protected static async getTeamMemberStats(teamMemberId: string | null, includeArchived: boolean, userId: string) {
-
-    const archivedClause = includeArchived
-    ? ""
-    : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`;
+    const params: any[] = [teamMemberId];
+    let archivedClause = "";
+    if (!includeArchived && userId) {
+      params.push(userId);
+      archivedClause = `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = $${params.length})`;
+    }
 
     const q = `SELECT JSON_BUILD_OBJECT(
 
@@ -510,7 +513,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
                     WHERE ta.team_member_id = $1)
                 ) AS counts;`;
 
-    const res = await db.query(q, [teamMemberId]);
+    const res = await db.query(q, params);
     const [data] = res.rows;
 
     return {
@@ -525,10 +528,12 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
   }
 
   protected static async getMemberStats(teamMemberId: string | null, key: string, dateRange: string[] | [], includeArchived: boolean, userId: string) {
-
-    const archivedClause = includeArchived
-    ? ""
-    : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`;
+    const params: any[] = [teamMemberId];
+    let archivedClause = "";
+    if (!includeArchived && userId) {
+      params.push(userId);
+      archivedClause = `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = $${params.length})`;
+    }
 
     const durationFilter = this.memberTasksDurationFilter(key, dateRange);
     const workLogDurationFilter = this.taskWorklogDurationFilter(key, dateRange);
@@ -567,7 +572,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
                     WHERE ta.team_member_id = $1)
                 ) AS counts;`;
 
-    const res = await db.query(q, [teamMemberId]);
+    const res = await db.query(q, params);
     const [data] = res.rows;
 
     return {
@@ -583,10 +588,12 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
   }
 
   protected static async getTasksByProjectOfTeamMemberOverview(teamMemberId: string | null, includeArchived: boolean, userId: string) {
-
-    const archivedClause = includeArchived
-    ? ""
-    : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND archived_projects.user_id = '${userId}')`;
+    const params: any[] = [teamMemberId];
+    let archivedClause = "";
+    if (!includeArchived && userId) {
+      params.push(userId);
+      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND archived_projects.user_id = $${params.length})`;
+    }
 
     const q = `
       SELECT p.id,
@@ -602,7 +609,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
         OR is_completed(t.status_id, t.project_id)) ${archivedClause}
         GROUP BY p.id, p.name;
     `;
-    const result = await db.query(q, [teamMemberId]);
+    const result = await db.query(q, params);
 
     const chart: Highcharts.PointOptionsObject[] = [];
 
@@ -619,10 +626,12 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
   }
 
   protected static async getTasksByProjectOfTeamMember(teamMemberId: string | null, key: string, dateRange: string[] | [], includeArchived: boolean, userId: string) {
-
-    const archivedClause = includeArchived
-    ? ""
-    : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND archived_projects.user_id = '${userId}')`;
+    const params: any[] = [teamMemberId];
+    let archivedClause = "";
+    if (!includeArchived && userId) {
+      params.push(userId);
+      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND archived_projects.user_id = $${params.length})`;
+    }
 
     const durationFilter = this.memberTasksDurationFilter(key, dateRange);
     const activityLogDateFilter = this.getActivityLogsCreationClause(key, dateRange);
@@ -656,7 +665,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
         OR ${completedDatebetweenClause}) ${archivedClause}
         GROUP BY p.id, p.name;
     `;
-    const result = await db.query(q, [teamMemberId]);
+    const result = await db.query(q, params);
 
     const chart: Highcharts.PointOptionsObject[] = [];
 
@@ -673,11 +682,12 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
   }
 
   protected static async getTasksByPriorityOfTeamMemberOverview(teamMemberId: string | null, includeArchived: boolean, userId: string) {
-
-    const archivedClause = includeArchived
-    ? ""
-    : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`;
-
+    const params: any[] = [teamMemberId];
+    let archivedClause = "";
+    if (!includeArchived && userId) {
+      params.push(userId);
+      archivedClause = `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = $${params.length})`;
+    }
 
     const q = `
       SELECT COUNT(CASE WHEN tp.value = 0 THEN 1 END) AS low,
@@ -692,7 +702,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
                                     OR is_completed(t.status_id, t.project_id)) ${archivedClause};
     `;
 
-    const result = await db.query(q, [teamMemberId]);
+    const result = await db.query(q, params);
     const [d] = result.rows;
 
     const total = int(d.low) + int(d.medium) + int(d.high) + int(d.critical);
@@ -715,11 +725,12 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
   }
 
   protected static async getTasksByPriorityOfTeamMember(teamMemberId: string | null, key: string, dateRange: string[] | [], includeArchived: boolean, userId: string) {
-
-    const archivedClause = includeArchived
-    ? ""
-    : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`;
-
+    const params: any[] = [teamMemberId];
+    let archivedClause = "";
+    if (!includeArchived && userId) {
+      params.push(userId);
+      archivedClause = `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = $${params.length})`;
+    }
 
     const durationFilter = this.memberTasksDurationFilter(key, dateRange);
     const activityLogDateFilter = this.getActivityLogsCreationClause(key, dateRange);
@@ -752,7 +763,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
                                     OR ${completedDatebetweenClause}) ${archivedClause};
     `;
 
-    const result = await db.query(q, [teamMemberId]);
+    const result = await db.query(q, params);
     const [d] = result.rows;
 
     const total = int(d.low) + int(d.medium) + int(d.high) + int(d.critical);
@@ -792,11 +803,12 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
   }
 
   protected static async getTasksByStatusOfTeamMemberOverview(teamMemberId: string | null, includeArchived: boolean, userId: string) {
-
-    const archivedClause = includeArchived
-    ? ""
-    : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`;
-
+    const params: any[] = [teamMemberId];
+    let archivedClause = "";
+    if (!includeArchived && userId) {
+      params.push(userId);
+      archivedClause = `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = $${params.length})`;
+    }
 
     const q = `
       SELECT COUNT(ta.task_id) AS total,
@@ -808,7 +820,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
       WHERE ta.team_member_id = $1 ${archivedClause};
     `;
 
-    const res = await db.query(q, [teamMemberId]);
+    const res = await db.query(q, params);
     const [d] = res.rows;
 
     const total = int(d.total);
@@ -830,11 +842,12 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
   }
 
   protected static async getTasksByStatusOfTeamMember(teamMemberId: string | null, key: string, dateRange: string[] | [], includeArchived: boolean, userId: string) {
-
-    const archivedClause = includeArchived
-    ? ""
-    : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`;
-
+    const params: any[] = [teamMemberId];
+    let archivedClause = "";
+    if (!includeArchived && userId) {
+      params.push(userId);
+      archivedClause = `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = $${params.length})`;
+    }
 
     const durationFilter = this.memberTasksDurationFilter(key, dateRange);
     const completedBetweenFilter = this.getCompletedBetweenClause(key, dateRange);
@@ -850,7 +863,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
       WHERE ta.team_member_id = $1 ${archivedClause};
     `;
 
-    const res = await db.query(q, [teamMemberId]);
+    const res = await db.query(q, params);
     const [d] = res.rows;
 
     const total = int(d.todo) + int(d.doing) + int(d.done);

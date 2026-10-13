@@ -51,6 +51,34 @@ export class SqlHelper {
    * ];
    * const { where, params } = SqlHelper.buildWhereClause(conditions);
    */
+  private static readonly ALLOWED_OPERATORS = new Set([
+    "=", "!=", "<>", "<", "<=", ">", ">=",
+    "LIKE", "ILIKE", "NOT LIKE", "NOT ILIKE",
+    "IN", "NOT IN", "IS NULL", "IS NOT NULL"
+  ]);
+
+  private static readonly ALLOWED_CONJUNCTIONS = new Set(["AND", "OR"]);
+
+  /**
+   * Check whether a string is a valid SQL identifier (single name or table.column)
+   */
+  static isValidIdentifier(identifier: string): boolean {
+    if (!identifier || typeof identifier !== "string") {
+      return false;
+    }
+    return identifier.split(".").every(part => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(part));
+  }
+
+  /**
+   * Build a safe WHERE clause with multiple conditions
+   * 
+   * @example
+   * const conditions = [
+   *   { field: 'status', operator: '=', value: 'active' },
+   *   { field: 'priority', operator: 'IN', value: ['high', 'medium'] }
+   * ];
+   * const { where, params } = SqlHelper.buildWhereClause(conditions);
+   */
   static buildWhereClause(
     conditions: Array<{
       field: string;
@@ -69,18 +97,31 @@ export class SqlHelper {
     let currentParam = paramOffset;
 
     conditions.forEach((condition, index) => {
-      const conjunction = index === 0 ? "" : ` ${condition.conjunction || "AND"} `;
+      const rawConjunction = (condition.conjunction || "AND").trim().toUpperCase();
+      if (!this.ALLOWED_CONJUNCTIONS.has(rawConjunction)) {
+        throw new Error(`Invalid SQL conjunction: ${condition.conjunction}`);
+      }
+      const conjunction = index === 0 ? "" : ` ${rawConjunction} `;
+
+      const operator = condition.operator.trim().toUpperCase();
+      if (!this.ALLOWED_OPERATORS.has(operator)) {
+        throw new Error(`Invalid SQL operator: ${condition.operator}`);
+      }
+
+      const safeField = this.isValidIdentifier(condition.field)
+        ? this.escapeIdentifier(condition.field)
+        : condition.field;
       
-      if (condition.operator.toUpperCase() === "IN") {
+      if (operator === "IN" || operator === "NOT IN") {
         const values = Array.isArray(condition.value) ? condition.value : [condition.value];
         const { clause, params: inParams } = this.buildInClause(values, currentParam);
-        clauses.push(`${conjunction}${condition.field} IN (${clause})`);
+        clauses.push(`${conjunction}${safeField} ${operator} (${clause})`);
         params.push(...inParams);
         currentParam += inParams.length;
-      } else if (condition.operator.toUpperCase() === "IS NULL" || condition.operator.toUpperCase() === "IS NOT NULL") {
-        clauses.push(`${conjunction}${condition.field} ${condition.operator}`);
+      } else if (operator === "IS NULL" || operator === "IS NOT NULL") {
+        clauses.push(`${conjunction}${safeField} ${operator}`);
       } else {
-        clauses.push(`${conjunction}${condition.field} ${condition.operator} $${currentParam}`);
+        clauses.push(`${conjunction}${safeField} ${operator} $${currentParam}`);
         params.push(condition.value);
         currentParam++;
       }
@@ -180,16 +221,23 @@ export class SqlHelper {
   }
 
   /**
-   * Escape identifier (table/column name) for secure query building
+   * Escape identifier (table/column name) for secure query building.
+   * Supports both simple identifiers ("column") and qualified names ("table"."column").
    */
   static escapeIdentifier(identifier: string): string {
-    const cleaned = identifier.replace(/"/g, "");
-    
-    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(cleaned)) {
+    if (!identifier || typeof identifier !== "string") {
       throw new Error(`Invalid identifier: ${identifier}`);
     }
-    
-    return `"${cleaned}"`;
+
+    const parts = identifier.split(".");
+    for (const part of parts) {
+      const cleaned = part.replace(/"/g, "");
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(cleaned)) {
+        throw new Error(`Invalid identifier: ${identifier}`);
+      }
+    }
+
+    return parts.map(part => `"${part.replace(/"/g, "")}"`).join(".");
   }
 
   /**
@@ -207,15 +255,18 @@ export class SqlHelper {
       throw new Error("UPDATE query must have at least one field to set");
     }
 
+    const safeTable = this.isValidIdentifier(table) ? this.escapeIdentifier(table) : table;
+
     const params: any[] = [];
     let paramOffset = 1;
 
     const setClauses = setEntries.map(([field, value]) => {
       params.push(value);
-      return `${field} = $${paramOffset++}`;
+      const safeField = this.isValidIdentifier(field) ? this.escapeIdentifier(field) : field;
+      return `${safeField} = $${paramOffset++}`;
     });
 
-    let query = `UPDATE ${table} SET ${setClauses.join(", ")}`;
+    let query = `UPDATE ${safeTable} SET ${setClauses.join(", ")}`;
 
     if (where.length > 0) {
       const { where: whereClause, params: whereParams } = this.buildWhereClause(where, paramOffset);
@@ -237,7 +288,8 @@ export function flatString(text: string): string {
   console.warn("flatString() is deprecated and unsafe. Use SqlHelper.buildInClause() instead.");
   return (text || "")
     .split(" ")
-    .map((s) => `'${s}'`)
+    .filter((s) => s.trim().length > 0)
+    .map((s) => `'${s.replace(/'/g, "''")}'`)
     .join(",");
 }
 

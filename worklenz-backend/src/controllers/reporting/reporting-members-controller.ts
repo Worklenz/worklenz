@@ -108,13 +108,19 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     departmentIds: string[] = []
   ) {
     const pagingClause = (size !== null && offset !== null) ? `LIMIT ${size} OFFSET ${offset}` : "";
-    const archivedClause = includeArchived
-    ? ""
-    : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`;
 
     // Use parameterized queries
-    // Note: $1 is teamId, searchParams use $2+, so other parameters start after searchParams
-    let paramOffset = 2 + searchParams.length;
+    // Note: $1 is teamId, searchParams use $2+, teamIdsParams follow, then archivedParams and other filter parameters
+    let paramOffset = 2 + searchParams.length + teamIdsParams.length;
+
+    let archivedClause = "";
+    const archivedParams: any[] = [];
+    if (!includeArchived && userId) {
+      archivedParams.push(userId);
+      archivedClause = `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = $${paramOffset})`;
+      paramOffset++;
+    }
+
     const assignClauseResult = this.memberAssignDurationFilter(key, dateRange, paramOffset);
     const assignClause = assignClauseResult.clause;
     const assignParams = assignClauseResult.params;
@@ -284,7 +290,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                                       AND t.billable IS TRUE
                                       AND t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
                                       ${timeLogDateRangeClause}
-                                      ${includeArchived ? "" : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`}) AS billable_time,
+                                      ${archivedClause}) AS billable_time,
 
                               (SELECT COALESCE(SUM(twl.time_spent), 0)
                                   FROM task_work_log twl
@@ -293,7 +299,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                                       AND t.billable IS FALSE
                                       AND t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
                                       ${timeLogDateRangeClause}
-                                      ${includeArchived ? "" : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`}) AS non_billable_time
+                                      ${archivedClause}) AS non_billable_time
                       FROM team_member_info_view tmiv
                       WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause} ${practicesFilterClause} ${departmentsFilterClause}
                           ${searchQuery}
@@ -304,8 +310,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                   FROM team_member_info_view tmiv
                   WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause} ${practicesFilterClause} ${departmentsFilterClause}
                   ${searchQuery}`;
-    // Pass all parameters - searchParams come after teamId, then teamIdsParams, then other filter params
-    const queryParams = [teamId, ...searchParams, ...teamIdsParams, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams, ...practiceFilterParams, ...departmentFilterParams];
+    // Pass all parameters - searchParams come after teamId, then teamIdsParams, then archivedParams, then other filter params
+    const queryParams = [teamId, ...searchParams, ...teamIdsParams, ...archivedParams, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams, ...practiceFilterParams, ...departmentFilterParams];
     const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
@@ -1009,16 +1015,30 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
 
   public static async getMemberProjectsData(teamId: string, teamMemberId: string, searchQuery: string, searchParams: string[] = [], archived: boolean, userId: string, req?: any) {
+    const queryParams: any[] = [...searchParams];
+    let paramOffset = searchParams.length + 1;
 
-    const teamClause = teamId
-      ? `team_member_id = '${teamMemberId as string}'`
-      : `team_member_id IN (SELECT team_member_id
+    let teamClause = "";
+    if (teamId) {
+      queryParams.push(teamMemberId);
+      teamClause = `team_member_id = $${paramOffset}`;
+      paramOffset++;
+    } else {
+      queryParams.push(teamMemberId);
+      teamClause = `team_member_id IN (SELECT team_member_id
             FROM team_member_info_view tmiv
             WHERE LOWER(email) = LOWER((SELECT email
                         FROM team_member_info_view tmiv2
-                        WHERE tmiv2.team_member_id = '${teamMemberId}' AND in_organization(p.team_id, tmiv2.team_id))))`;
+                        WHERE tmiv2.team_member_id = $${paramOffset} AND in_organization(p.team_id, tmiv2.team_id))))`;
+      paramOffset++;
+    }
 
-    const archivedClause = archived ? `` : ` AND pm.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = pm.project_id AND user_id = '${userId}')`;
+    let archivedClause = "";
+    if (!archived && userId) {
+      queryParams.push(userId);
+      archivedClause = ` AND pm.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = pm.project_id AND user_id = $${paramOffset})`;
+      paramOffset++;
+    }
 
     // Add project filtering for Team Leads
     let projectFilterClause = "";
@@ -1066,7 +1086,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                       LEFT JOIN projects p ON p.id = pm.project_id
               WHERE ${teamClause} ${searchQuery} ${archivedClause} ${projectFilterClause}
               ORDER BY name;`;
-    const result = await db.query(q, searchParams);
+    const result = await db.query(q, queryParams);
 
     for (const project of result.rows) {
       project.time_logged = formatDuration(moment.duration(project.time_logged, "seconds"));
@@ -1227,9 +1247,12 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     params: any[] = []
   ) {
 
-    const archivedClause = includeArchived
-    ? ""
-    : `AND project_id NOT IN (SELECT project_id FROM archived_projects WHERE archived_projects.user_id = '${userId}')`;
+    let archivedClause = "";
+    let archivedParams: any[] = [];
+    if (!includeArchived && userId) {
+      archivedClause = `AND project_id NOT IN (SELECT project_id FROM archived_projects WHERE archived_projects.user_id = $${params.length + 3})`;
+      archivedParams = [userId];
+    }
 
     const q = `
                 SELECT user_id,
@@ -1255,7 +1278,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                 AND tmiv.team_member_id = $2
       `;
 
-    const queryParams = [team_id, team_member_id, ...params];
+    const queryParams = [team_id, team_member_id, ...params, ...archivedParams];
     const result = await db.query(q, queryParams);
 
     let logGroups: any[] = [];
@@ -1456,17 +1479,20 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       dateRange = date_range.split(",");
     }
 
-    const archivedClause = includeArchived
-    ? ""
-    : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${req.user?.id}')`;
-
+    let archivedClause = "";
+    const archivedParams: any[] = [];
+    if (!includeArchived && req.user?.id) {
+      archivedParams.push(req.user.id);
+      archivedClause = `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = $2)`;
+    }
 
     // Use parameterized queries
-    // Note: $1 is used for team_member_id, so parameter offsets start from 2
-    const assignClauseResult = this.memberAssignDurationFilter(duration as string, dateRange, 2);
+    // Note: $1 is used for team_member_id, archivedParams use $2 (if present), so parameter offsets start from 2 + archivedParams.length
+    let paramOffset = 2 + archivedParams.length;
+    const assignClauseResult = this.memberAssignDurationFilter(duration as string, dateRange, paramOffset);
     const assignClause = assignClauseResult.clause;
     const assignParams = assignClauseResult.params;
-    let paramOffset = 2 + assignParams.length;
+    paramOffset += assignParams.length;
     
     const completedDurationResult = this.completedDurationFilter(duration as string, dateRange, paramOffset);
     const completedDurationClasue = completedDurationResult.clause;
@@ -1525,7 +1551,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     `;
 
     // Pass all parameters
-    const queryParams = [team_member_id, ...assignParams, ...completedParams, ...overdueParams, ...durationParams];
+    const queryParams = [team_member_id, ...archivedParams, ...assignParams, ...completedParams, ...overdueParams, ...durationParams];
     const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
@@ -1943,9 +1969,12 @@ public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLen
   const { team_member_id } = req.query;
   const includeArchived = req.query.archived === "true";
 
-  const archivedClause = includeArchived
-    ? ""
-    : `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND archived_projects.user_id = '${req.user?.id}')`;
+  const queryParams: any[] = [team_member_id];
+  let archivedClause = "";
+  if (!includeArchived && req.user?.id) {
+    queryParams.push(req.user.id);
+    archivedClause = `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND archived_projects.user_id = $${queryParams.length})`;
+  }
 
   const q = `SELECT id,
                     name,
@@ -1998,7 +2027,7 @@ public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLen
               FROM projects
               WHERE projects.id IN (SELECT project_id FROM project_members WHERE team_member_id = $1) ${archivedClause};`;
 
-  const result = await db.query(q, [team_member_id]);
+  const result = await db.query(q, queryParams);
   const data = result.rows;
 
   for (const row of data) {

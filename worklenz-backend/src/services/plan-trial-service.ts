@@ -319,10 +319,10 @@ export class PlanTrialService {
         JOIN licensing_plan_tiers lpt ON lpt.id = pt.plan_tier_id
         WHERE pt.is_active = TRUE
           AND pt.trial_end_date > NOW()
-          AND pt.trial_end_date <= NOW() + INTERVAL '${hoursBeforeExpiry} hours'
+          AND pt.trial_end_date <= NOW() + ($1 * INTERVAL '1 hour')
           AND NOT pt.converted_to_paid
           AND u.is_deleted IS NOT TRUE`,
-        []
+        [hoursBeforeExpiry]
       );
 
       return result.rows;

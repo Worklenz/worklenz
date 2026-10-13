@@ -1552,11 +1552,56 @@ export default class ReportingController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
-  public static async getTeamMemberInsightData(team_id: string | undefined, projects: string, status: string, search: string, duration: string, userId: string | undefined) {
-    // Use parameterized query for full-text search
-    // Use $3 since team_id is $1 and userId is $2
-    const searchQuery = search ? `AND TO_TSVECTOR(tmiv.name || ' ' || tmiv.email || ' ' || u.name) @@ TO_TSQUERY($3)` : "";
-    const searchParam = search ? `${search}:*` : null;
+  public static async getTeamMemberInsightData(
+    team_id: string | undefined,
+    projects: string[] | string,
+    status: string[] | string,
+    search: string,
+    duration: string | { clause: string; params: any[] },
+    userId: string | undefined
+  ) {
+    const projectArray = Array.isArray(projects)
+      ? projects
+      : (typeof projects === "string" ? projects.split(",").map(p => p.replace(/'/g, "").trim()).filter(Boolean) : []);
+
+    const statusArray = Array.isArray(status)
+      ? status
+      : (typeof status === "string" ? status.split(",").map(s => s.replace(/'/g, "").trim()).filter(Boolean) : []);
+
+    if (projectArray.length === 0 || statusArray.length === 0) {
+      return { total: 0, team_members: [] };
+    }
+
+    const params: any[] = [team_id, userId];
+    let paramOffset = 3;
+
+    // Use SqlHelper.buildInClause for safe IN clauses
+    const { clause: projectIdsClause, params: projectParams } = SqlHelper.buildInClause(projectArray, paramOffset);
+    paramOffset += projectParams.length;
+    params.push(...projectParams);
+
+    const { clause: statusIdsClause, params: statusParams } = SqlHelper.buildInClause(statusArray, paramOffset);
+    paramOffset += statusParams.length;
+    params.push(...statusParams);
+
+    let searchQuery = "";
+    if (search && typeof search === "string" && !search.includes("ILIKE")) {
+      searchQuery = `AND TO_TSVECTOR(tmiv.name || ' ' || tmiv.email || ' ' || u.name) @@ TO_TSQUERY($${paramOffset})`;
+      params.push(`${search}:*`);
+      paramOffset += 1;
+    }
+
+    let durationClause = "";
+    if (typeof duration === "object" && duration !== null && "clause" in duration) {
+      durationClause = duration.clause;
+      if (duration.params?.length) {
+        params.push(...duration.params);
+      }
+    } else if (typeof duration === "string") {
+      durationClause = duration;
+    }
+
+    const durationCondition = durationClause ? `AND ${durationClause}` : "";
 
     const q = `SELECT ROW_TO_JSON(rec) AS team_members
                FROM (SELECT COUNT(*) AS total,
@@ -1571,31 +1616,31 @@ export default class ReportingController extends WorklenzControllerBase {
                                            FROM tasks
                                            WHERE id IN (SELECT task_id
                                                         FROM task_work_log
-                                                        WHERE ${duration}
-                                                          AND task_work_log.user_id = tmiv.user_id
+                                                        WHERE task_work_log.user_id = tmiv.user_id
+                                                          ${durationCondition}
                                                           AND task_id IN (SELECT id
                                                                           FROM tasks
-                                                                          WHERE project_id IN (${projects})
+                                                                          WHERE project_id IN (${projectIdsClause})
                                                                             AND project_id IN (SELECT id
                                                                                                FROM projects
                                                                                                WHERE team_id = $1)))) AS projects_count,
                                           (SELECT COUNT(DISTINCT task_id)
                                            FROM task_work_log
-                                           WHERE ${duration}
-                                             AND task_work_log.user_id = tmiv.user_id
+                                           WHERE task_work_log.user_id = tmiv.user_id
+                                             ${durationCondition}
                                              AND task_id IN (SELECT id
                                                              FROM tasks
-                                                             WHERE project_id IN (${projects})
+                                                             WHERE project_id IN (${projectIdsClause})
                                                                AND project_id IN (SELECT id
                                                                                   FROM projects
                                                                                   WHERE team_id = $1))) AS task_count,
                                           (SELECT SUM(time_spent)
                                            FROM task_work_log
-                                           WHERE ${duration}
-                                             AND task_work_log.user_id = tmiv.user_id
+                                           WHERE task_work_log.user_id = tmiv.user_id
+                                             ${durationCondition}
                                              AND task_id IN (SELECT id
                                                              FROM tasks
-                                                             WHERE project_id IN (${projects})
+                                                             WHERE project_id IN (${projectIdsClause})
                                                                AND project_id IN (SELECT id
                                                                                   FROM projects
                                                                                   WHERE team_id = $1))) AS total_logged_time_seconds,
@@ -1634,58 +1679,54 @@ export default class ReportingController extends WorklenzControllerBase {
                                    WHERE team_members.team_id = $1
                                      ${searchQuery}
                                      AND team_members.id IN
-                                         (SELECT team_member_id FROM project_members WHERE project_id IN (${projects}))
+                                         (SELECT team_member_id FROM project_members WHERE project_id IN (${projectIdsClause}))
                                      AND team_members.id IN (SELECT team_member_id
                                                              FROM project_members
                                                              WHERE project_id IN (SELECT id
                                                                                   FROM projects
                                                                                   WHERE projects.team_id = $1
-                                                                                    AND status_id IN (${status})))
+                                                                                    AND status_id IN (${statusIdsClause})))
                                      AND EXISTS(SELECT id
                                                 FROM task_work_log
-                                                WHERE ${duration}
-                                                  AND task_work_log.user_id = u.id
+                                                WHERE task_work_log.user_id = u.id
+                                                  ${durationCondition}
                                                   AND EXISTS(SELECT 1
                                                              FROM tasks
                                                              WHERE task_id = tasks.id
-                                                               AND tasks.project_id IN (${projects})
+                                                               AND tasks.project_id IN (${projectIdsClause})
                                                                AND tasks.project_id IN (SELECT id
                                                                                         FROM projects
                                                                                         WHERE projects.team_id = $1
                                                                                           AND status_id IN
-                                                                                              (${status}))))
+                                                                                              (${statusIdsClause}))))
                                    ORDER BY tmiv.name, tmiv.email, u.name ASC) t) AS team_members
-                     FROM team_members
-                            LEFT JOIN users u ON team_members.user_id = u.id
-                            LEFT JOIN team_member_info_view tmiv ON team_members.id = tmiv.team_member_id
-                     WHERE team_members.team_id = $1
-                       ${searchQuery}
-                       AND team_members.id IN
-                           (SELECT team_member_id FROM project_members WHERE project_id IN (${projects}))
-                       AND team_members.id IN (SELECT team_member_id
-                                               FROM project_members
-                                               WHERE project_id IN (SELECT id
-                                                                    FROM projects
-                                                                    WHERE projects.team_id = $1
-                                                                      AND status_id IN (${status})))
-                       AND EXISTS(SELECT id
-                                  FROM task_work_log
-                                  WHERE ${duration}
-                                    AND task_work_log.user_id = u.id
-                                    AND EXISTS(SELECT 1
-                                               FROM tasks
-                                               WHERE task_id = tasks.id
-                                                 AND tasks.project_id IN (${projects})
-                                                 AND tasks.project_id IN (SELECT id
-                                                                          FROM projects
-                                                                          WHERE projects.team_id = $1
-                                                                            AND status_id IN
-                                                                                (${status}))))) rec;`;
-    // Build parameters array: team_id, userId, and optionally search
-    const params: any[] = [team_id, userId];
-    if (search && searchParam) {
-      params.push(searchParam);
-    }
+                    FROM team_members
+                           LEFT JOIN users u ON team_members.user_id = u.id
+                           LEFT JOIN team_member_info_view tmiv ON team_members.id = tmiv.team_member_id
+                    WHERE team_members.team_id = $1
+                      ${searchQuery}
+                      AND team_members.id IN
+                          (SELECT team_member_id FROM project_members WHERE project_id IN (${projectIdsClause}))
+                      AND team_members.id IN (SELECT team_member_id
+                                              FROM project_members
+                                              WHERE project_id IN (SELECT id
+                                                                   FROM projects
+                                                                   WHERE projects.team_id = $1
+                                                                     AND status_id IN (${statusIdsClause})))
+                      AND EXISTS(SELECT id
+                                 FROM task_work_log
+                                 WHERE task_work_log.user_id = u.id
+                                   ${durationCondition}
+                                   AND EXISTS(SELECT 1
+                                              FROM tasks
+                                              WHERE task_id = tasks.id
+                                                AND tasks.project_id IN (${projectIdsClause})
+                                                AND tasks.project_id IN (SELECT id
+                                                                         FROM projects
+                                                                         WHERE projects.team_id = $1
+                                                                           AND status_id IN
+                                                                               (${statusIdsClause}))))) rec;`;
+
     const result = await db.query(q, params);
 
     const [data] = result.rows;
@@ -1701,17 +1742,10 @@ export default class ReportingController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(true, { total: 0, data: [] }));
     }
 
-    // Use SqlHelper.buildInClause for safe IN clauses
-    // Note: getTeamMemberInsightData still expects strings, so we'll need to refactor it
-    // For now, we'll pass the arrays and let the method handle parameterization
-    const projectIds = projects.join(",");
-    const statusIds = status.join(",");
+    const paramOffset = 3 + projects.length + status.length + (search ? 1 : 0);
+    const dateRangeClause = ReportingController.getDateRangeClause(duration || LAST_WEEK, dateRange, paramOffset);
 
-    // Note: getDateRangeClause now returns { clause, params } but getTeamMemberInsightData expects a string
-    // This needs to be refactored - for now we'll use the clause string
-    const { clause: dateRangeClause } = ReportingController.getDateRangeClause(duration || LAST_WEEK, dateRange, 1);
-
-    const result = await this.getTeamMemberInsightData(teamId, projectIds, statusIds, search, dateRangeClause || "", req.user?.id);
+    const result = await this.getTeamMemberInsightData(teamId, projects, status, search, dateRangeClause, req.user?.id);
 
     result.team_members.map((a: any) => {
       a.color_code = getColor(a.name);
@@ -1786,19 +1820,19 @@ export default class ReportingController extends WorklenzControllerBase {
 
     const { searchQuery } = this.toPaginationOptions(req.query, "name");
 
-    const projects = (req.query.projects as string)?.split(",");
-    const status = (req.query.status as string)?.split(",");
-    const projectIds = projects.map((p: any) => `'${p}'`).join(",");
-    const statusIds = status.map((u: any) => `'${u}'`).join(",");
+    const projects = ((req.query.projects as string) || "").split(",").filter(Boolean);
+    const status = ((req.query.status as string) || "").split(",").filter(Boolean);
+    const search = (req.query.search as string) || "";
 
     const dateRange: string[] = [];
     if (start && end) {
       dateRange.push(start as string, end as string);
     }
 
-    const { clause: dateRangeClause } = ReportingController.getDateRangeClause(duration as string || LAST_WEEK, dateRange, 1);
+    const paramOffset = 3 + projects.length + status.length + (search ? 1 : 0);
+    const dateRangeClause = ReportingController.getDateRangeClause((duration as string) || LAST_WEEK, dateRange, paramOffset);
 
-    const data = await this.getTeamMemberInsightData(team as string, projectIds, statusIds, searchQuery, dateRangeClause || "", req.user?.id);
+    const data = await this.getTeamMemberInsightData(team as string, projects, status, search, dateRangeClause, req.user?.id);
 
     const dateRangeClauseObj = ReportingController.getDateRangeClause(duration as string || LAST_WEEK, dateRange, 1);
     for (const teamMember of data.team_members) {
