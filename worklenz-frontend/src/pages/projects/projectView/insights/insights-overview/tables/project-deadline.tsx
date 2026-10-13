@@ -1,7 +1,6 @@
-import { Card, Flex, Skeleton, Table, Typography } from '@/shared/antd-imports';
+import { Card, Flex, Skeleton, Table, Typography, TableProps } from '@/shared/antd-imports';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { colors } from '@/styles/colors';
-import { TableProps } from 'antd/lib';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import logger from '@/utils/errorLogger';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';

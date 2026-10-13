@@ -9,13 +9,13 @@ import {
   Select,
   Typography,
   Upload,
+  UploadProps,
 } from '@/shared/antd-imports';
 import React from 'react';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import { toggleRequestFormModal } from '../client-view-services';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
-import { UploadProps } from 'antd/lib';
 import { InboxOutlined } from '@ant-design/icons';
 import { nanoid } from '@reduxjs/toolkit';
 

@@ -1,5 +1,4 @@
-import { Flex, Typography } from '@/shared/antd-imports';
-import Button from 'antd/lib/button';
+import { Flex, Typography, Button } from '@/shared/antd-imports';
 
 import { useTranslation } from 'react-i18next';
 import InvoicesTable from './Invoices-table/invoices-table';
