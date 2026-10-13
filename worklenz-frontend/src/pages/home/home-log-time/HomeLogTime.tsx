@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
+  Alert,
   Select,
   DatePicker,
   TimePicker,
@@ -432,11 +433,26 @@ const HomeLogTime: React.FC = () => {
     return diff > 0 ? diff : 0;
   }, [inputMode, timeHours, timeMinutes, startTime, endTime]);
 
+  const selectedProject = useMemo(() => projects.find(p => p.id === selProjectId), [projects, selProjectId]);
+
+  const isDateDisabled = useCallback(
+    (current: Dayjs) => {
+      if (!current) return false;
+      if (current.toDate() > new Date()) return true;
+      if (selectedProject?.start_date && current.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')) {
+        return true;
+      }
+      return false;
+    },
+    [selectedProject]
+  );
+
   const isFormValid = useMemo(() => {
     if (!selProjectId || !selTaskId || !date || loggedSeconds <= 0) return false;
+    if (selectedProject?.start_date && date.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')) return false;
     if (inputMode === 'Time Range' && (!startTime || !endTime)) return false;
     return true;
-  }, [selProjectId, selTaskId, date, loggedSeconds, inputMode, startTime, endTime]);
+  }, [selProjectId, selTaskId, date, loggedSeconds, inputMode, startTime, endTime, selectedProject]);
 
   const handleProjectChange = (projectId: string) => {
     setSelProjectId(projectId);
@@ -446,6 +462,20 @@ const HomeLogTime: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!isFormValid) return;
+
+    if (
+      selectedProject?.start_date &&
+      date.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')
+    ) {
+      notification.warning({
+        key: 'home-log-time-project-start-date',
+        message: t('logTime.projectStartDateError', {
+          date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+          defaultValue: 'Time cannot be logged before the project start date ({{date}})',
+        }),
+      });
+      return;
+    }
     setSubmitting(true);
     try {
       // Persist the actual start clock time — backend stores formatted_start as
@@ -484,8 +514,9 @@ const HomeLogTime: React.FC = () => {
       setEndTime(null);
       setNotes('');
       refreshData();
-    } catch {
-      notification.error({ message: t('logTime.failedToLogTime', { defaultValue: 'Failed to log time' }) });
+    } catch (error: any) {
+      const serverMessage = error?.response?.data?.message;
+      notification.error({ message: serverMessage || t('logTime.failedToLogTime', { defaultValue: 'Failed to log time' }) });
     } finally {
       setSubmitting(false);
     }
@@ -770,9 +801,22 @@ const HomeLogTime: React.FC = () => {
             alignSelf: isDesktop ? 'flex-start' : 'stretch',
           }}
         >
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>{t('logTime.quickEntryTitle', { defaultValue: 'Quick Time Entry' })}</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>{t('logTime.quickEntryTitle', { defaultValue: 'Quick Time Entry' })}</div>
 
-          <div style={{ marginBottom: 14 }}>
+          {selectedProject?.start_date && dayjs(selectedProject.start_date).isAfter(dayjs(), 'day') && (
+            <Alert
+              type="warning"
+              showIcon
+              message={t('logTime.projectNotStartedWarningDesc', {
+                date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+                defaultValue:
+                  'This project is scheduled to start on {{date}}. Time cannot be logged before the project start date.',
+              })}
+              style={{ marginBottom: 10 }}
+            />
+          )}
+
+          <div style={{ marginBottom: 10 }}>
             <label style={fldLbl}>{t('logTime.projectLabel', { defaultValue: 'Project' })}</label>
             <Select
               showSearch
@@ -785,7 +829,7 @@ const HomeLogTime: React.FC = () => {
             />
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom: 10 }}>
             <label style={fldLbl}>{t('logTime.taskLabel', { defaultValue: 'Task' })}</label>
             <Select
               showSearch
@@ -820,7 +864,7 @@ const HomeLogTime: React.FC = () => {
             />
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom: 10 }}>
             <label style={fldLbl}>{t('logTime.inputModeLabel', { defaultValue: 'Input Mode' })}</label>
             <Segmented
               block
@@ -834,15 +878,23 @@ const HomeLogTime: React.FC = () => {
           </div>
 
           {inputMode === 'Duration' ? (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
                <div style={{ flex: 1.4, minWidth: 160 }}>
                  <label style={fldLbl}>{t('logTime.dateLabel', { defaultValue: 'Date' })}</label>
                  <DatePicker
                   style={{ width: '100%' }}
                   value={date}
                   onChange={d => d && setDate(d)}
-                  disabledDate={current => current && current.toDate() > new Date()}
+                  disabledDate={isDateDisabled}
                 />
+                {selectedProject?.start_date && (
+                  <div style={{ fontSize: 11, color: token.colorTextDescription, marginTop: 4 }}>
+                    {t('logTime.projectStartDateHint', {
+                      date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+                      defaultValue: 'Project start date: {{date}}',
+                    })}
+                  </div>
+                )}
               </div>
               <div style={{ flex: 1, minWidth: 72 }}>
                  <label style={fldLbl}>{t('logTime.hoursLabel', { defaultValue: 'Hours' })}</label>
@@ -880,16 +932,24 @@ const HomeLogTime: React.FC = () => {
             </div>
           ) : (
             <>
-              <div style={{ marginBottom: 14 }}>
+              <div style={{ marginBottom: 10 }}>
                 <label style={fldLbl}><span style={{ color: token.colorError }}>*</span> {t('logTime.dateLabel', { defaultValue: 'Date' })}</label>
                 <DatePicker
                   style={{ width: '100%' }}
                   value={date}
                   onChange={d => d && setDate(d)}
-                  disabledDate={current => current && current.toDate() > new Date()}
+                  disabledDate={isDateDisabled}
                 />
+                {selectedProject?.start_date && (
+                  <div style={{ fontSize: 11, color: token.colorTextDescription, marginTop: 4 }}>
+                    {t('logTime.projectStartDateHint', {
+                      date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+                      defaultValue: 'Project start date: {{date}}',
+                    })}
+                  </div>
+                )}
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
                 <div style={{ flex: 1, minWidth: 140 }}>
                   <label style={fldLbl}><span style={{ color: token.colorError }}>*</span> {t('logTime.requiredStartTime', { defaultValue: 'Start Time' })}</label>
                   <TimePicker
@@ -912,7 +972,7 @@ const HomeLogTime: React.FC = () => {
             </>
           )}
 
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 12 }}>
             <label style={fldLbl}>{t('logTime.workDescriptionLabel', { defaultValue: 'Description' })}</label>
             <Input
               placeholder={t('logTime.workDescriptionPlaceholder', { defaultValue: 'What did you work on?' })}

@@ -1166,7 +1166,7 @@ export default class HomePageController extends WorklenzControllerBase {
       filterByMember = " AND is_member_of_project(projects.id, $2, $1) ";
     }
     const q = `
-      SELECT id, name, color_code
+      SELECT id, name, color_code, start_date, end_date
       FROM projects
       WHERE team_id = $1
         AND NOT EXISTS (SELECT 1 FROM archived_projects

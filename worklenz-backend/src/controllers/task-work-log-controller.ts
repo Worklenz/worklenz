@@ -938,7 +938,9 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       SELECT DISTINCT ON (p.id)
         p.id,
         p.name,
-        p.color_code
+        p.color_code,
+        p.start_date,
+        p.end_date
       FROM task_work_log twl
       JOIN tasks t ON twl.task_id = t.id
       JOIN projects p ON t.project_id = p.id
@@ -1009,6 +1011,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
         pr.id AS project_id,
         pr.name AS project_name,
         pr.color_code AS project_color,
+        pr.start_date AS project_start_date,
         t1.parent_task_id,
         t2.name AS parent_task_name,
         ts.name AS status_name,
@@ -1201,6 +1204,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
         pr.id AS project_id,
         pr.name AS project_name,
         pr.color_code AS project_color,
+        pr.start_date AS project_start_date,
         t1.parent_task_id,
         t2.name AS parent_task_name,
         ts.name AS status_name,
@@ -1401,6 +1405,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
           twl.user_id, u.name AS user_name, u.avatar_url,
           t1.id AS task_id, t1.name AS task_name, t1.billable, t1.end_date AS due_date,
           pr.id AS project_id, pr.name AS project_name, pr.color_code AS project_color,
+          pr.start_date AS project_start_date,
           pr.client_id, c.name AS client_name,
           ts.name AS status_name,
           COALESCE(ts.color_code, tsc.color_code) AS status_color,

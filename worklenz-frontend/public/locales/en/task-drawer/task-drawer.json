@@ -215,6 +215,10 @@
       "moveToTaskTooltip": "Reassign this time log to a different task.",
       "selectTask": "Select task...",
       "backdateLimitError": "Time logs cannot be backdated more than {{days}} days. The earliest date you can log against is {{earliestDate}}.",
+      "projectStartDateError": "Time cannot be logged before the project start date ({{date}}).",
+      "projectStartDateHint": "Project start date: {{date}}",
+      "projectNotStartedWarningTitle": "Project has not started yet",
+      "projectNotStartedWarningDesc": "This project is scheduled to start on {{date}}. Time cannot be logged before the project start date.",
       "saveError": "Could not save the time log. Please try again."
     },
     "rollupLoggedTooltip": "Sum of time logged on subtasks"
