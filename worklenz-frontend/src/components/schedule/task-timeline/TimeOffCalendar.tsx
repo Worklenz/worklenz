@@ -312,7 +312,7 @@ const TimeOffCalendar: React.FC<TimeOffCalendarProps> = ({
       width="min(960px, 92vw)"
       styles={{ body: { overflowX: 'auto' } }}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
     >
       {/* Add Time-Off Button */}
       {!isFormVisible && (

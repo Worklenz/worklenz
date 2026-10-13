@@ -1533,7 +1533,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
       style={{ top: 24 }}
       open={isProjectSettingsModalOpen}
       onCancel={handleModalClose}
-      destroyOnClose
+      destroyOnHidden
       afterOpenChange={handleVisibilityChange}
       styles={{
         content: { padding: 0, borderRadius: 12, overflow: 'hidden' },

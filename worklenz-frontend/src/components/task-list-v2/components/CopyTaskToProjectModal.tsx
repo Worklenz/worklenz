@@ -158,7 +158,7 @@ const CopyTaskToProjectModal = ({
       open={open}
       title={t('copyToProject.title', { defaultValue: 'Copy task to project' })}
       onCancel={onClose}
-      destroyOnClose
+      destroyOnHidden
       footer={[
         <Button
           key="cancel"

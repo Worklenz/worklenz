@@ -58,7 +58,7 @@ const PlannerMultiFilterDropdown: React.FC<PlannerMultiFilterDropdownProps> = ({
       trigger={['click']}
       open={open}
       onOpenChange={handleOpenChange}
-      dropdownRender={() => (
+      popupRender={() => (
         <Card size="small" styles={{ body: { padding: 8, width: 220 } }}>
           {showSearch && (
             <Input

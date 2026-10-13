@@ -385,7 +385,7 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
       okText={createMode === 'unassigned' ? t('assignTask', { defaultValue: 'Assign Task' }) : t('createTask', { defaultValue: 'Create Task' })}
       onOk={() => form.submit()}
       okButtonProps={{ loading: submitting, disabled: createMode === 'unassigned' && !selectedUnassignedTask }}
-      destroyOnClose
+      destroyOnHidden
     >
       {/* Same tab-pill format/color as the Days/Weeks/Months zoom toggle in
           PlannerScheduleView.tsx (active = token.colorPrimary fill), so the modal's

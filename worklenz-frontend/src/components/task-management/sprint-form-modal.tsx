@@ -130,7 +130,7 @@ export const SprintFormModal = ({
       confirmLoading={isSubmitting}
       onOk={handleSubmit}
       onCancel={onClose}
-      destroyOnClose
+      destroyOnHidden
     >
       {isStartMode && (
         <>
