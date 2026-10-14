@@ -8,6 +8,7 @@ import db from "../config/db";
 import { GithubAppService } from "../services/github/github-app.service";
 import { getProjectAccessForRequest } from "../shared/project-access";
 import { log_error } from "../shared/utils";
+import { isValidUuid } from "../shared/validation-helpers";
 import { isValidBranchName } from "../services/github/github-branch-name";
 import {
   buildDefaultStatusMap,
@@ -67,6 +68,14 @@ async function syncRepositories(integrationId: string, installationId: number): 
     [integrationId, ids],
   );
   return repos.length;
+}
+
+async function getTeamOwnerName(teamId: string): Promise<string | null> {
+  const result = await db.query(
+    `SELECT u.name FROM teams t JOIN users u ON u.id = t.user_id WHERE t.id = $1`,
+    [teamId],
+  );
+  return result.rows[0]?.name ?? null;
 }
 
 async function getProjectStatuses(projectId: string): Promise<IProjectStatusOption[]> {
@@ -131,8 +140,19 @@ export default class GithubController extends WorklenzControllerBase {
     const secret = getStateSecret();
     if (!secret) return res.status(500).send(new ServerResponse(false, null, "Server is missing a signing secret"));
 
+    // Optional: send the user back to this project's settings after installing.
+    let projectId: string | null = null;
+    const requestedProject = req.query.project_id;
+    if (typeof requestedProject === "string" && isValidUuid(requestedProject)) {
+      const owned = await db.query(
+        `SELECT 1 FROM projects WHERE id = $1 AND team_id = $2 AND project_type = 'software'`,
+        [requestedProject, req.user?.team_id],
+      );
+      if (owned.rowCount) projectId = requestedProject;
+    }
+
     const state = jwt.sign(
-      { purpose: STATE_PURPOSE, team_id: req.user?.team_id, user_id: req.user?.id },
+      { purpose: STATE_PURPOSE, team_id: req.user?.team_id, user_id: req.user?.id, project_id: projectId },
       secret,
       { expiresIn: STATE_TTL },
     );
@@ -142,8 +162,18 @@ export default class GithubController extends WorklenzControllerBase {
 
   /** Redirect target after the GitHub App install (browser navigation, session cookie present). */
   public static async installCallback(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    // Where to land afterwards; set once the signed state is verified (never taken from the query).
+    let returnProjectId: string | null = null;
     const back = (status: string, reason?: string) => {
-      const target = new URL(`${getFrontendOrigin()}/worklenz/settings/integrations`);
+      const target = new URL(
+        returnProjectId
+          ? `${getFrontendOrigin()}/worklenz/projects/${returnProjectId}`
+          : `${getFrontendOrigin()}/worklenz/settings/integrations`,
+      );
+      if (returnProjectId) {
+        target.searchParams.set("open_settings", "1");
+        target.searchParams.set("settings_section", "integrations");
+      }
       target.searchParams.set("github", status);
       if (reason) target.searchParams.set("reason", reason);
       return res.redirect(target.toString());
@@ -173,7 +203,7 @@ export default class GithubController extends WorklenzControllerBase {
       }
 
       const secret = getStateSecret();
-      let claims: { purpose?: string; team_id?: string; user_id?: string };
+      let claims: { purpose?: string; team_id?: string; user_id?: string; project_id?: string | null };
       try {
         claims = jwt.verify(state || "", secret) as typeof claims;
       } catch {
@@ -188,6 +218,8 @@ export default class GithubController extends WorklenzControllerBase {
       ) {
         return back("error", "forbidden");
       }
+
+      if (claims.project_id && isValidUuid(claims.project_id)) returnProjectId = claims.project_id;
 
       const installationId = parseInt(installation_id || "", 10);
       if (!Number.isSafeInteger(installationId) || !code) return back("error", "invalid_request");
@@ -304,6 +336,8 @@ export default class GithubController extends WorklenzControllerBase {
         linked: linked.rows,
         available: available.rows,
         statuses: await getProjectStatuses(projectId),
+        can_connect: canManageTeam(req),
+        owner_name: integration ? null : await getTeamOwnerName(req.user?.team_id as string),
       }),
     );
   }

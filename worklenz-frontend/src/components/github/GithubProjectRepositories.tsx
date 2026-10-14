@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   Button,
@@ -23,6 +22,7 @@ import {
   IGithubProjectRepositories,
 } from '@/api/github/github.api.service';
 import { GithubStatusAutomation } from './GithubStatusAutomation';
+import { useGithubInstallResult } from './useGithubInstallResult';
 import logger from '@/utils/errorLogger';
 
 interface GithubProjectRepositoriesProps {
@@ -31,7 +31,6 @@ interface GithubProjectRepositoriesProps {
   projectKey?: string | null;
   /** False for members without project settings permission (read-only). */
   canManage: boolean;
-  onNavigate?: () => void;
 }
 
 /** Repository links for a software project (Project Settings > Integrations). */
@@ -39,11 +38,9 @@ export const GithubProjectRepositories = ({
   projectId,
   projectKey,
   canManage,
-  onNavigate,
 }: GithubProjectRepositoriesProps) => {
   const { t } = useTranslation('github-integration');
   const { token } = theme.useToken();
-  const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage();
 
   const [data, setData] = useState<IGithubProjectRepositories | null>(null);
@@ -51,6 +48,7 @@ export const GithubProjectRepositories = ({
   const [loadFailed, setLoadFailed] = useState(false);
   const [selectedRepositoryId, setSelectedRepositoryId] = useState<string | null>(null);
   const [isLinking, setIsLinking] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -69,6 +67,30 @@ export const GithubProjectRepositories = ({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Back from the GitHub install: toast the result (the list reloads on mount).
+  useGithubInstallResult(messageApi);
+
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    try {
+      const response = await githubApiService.getInstallUrl(projectId);
+      if (response.done && response.body?.url) {
+        window.location.assign(response.body.url);
+        return;
+      }
+      messageApi.error(
+        t('errors.connectFailed', { defaultValue: 'Could not connect GitHub. Please try again.' })
+      );
+    } catch (error) {
+      logger.error('Failed to start GitHub install', error);
+      messageApi.error(
+        t('errors.connectFailed', { defaultValue: 'Could not connect GitHub. Please try again.' })
+      );
+    } finally {
+      setIsConnecting(false);
+    }
+  };
 
   const repositoryOptions = useMemo(
     () =>
@@ -161,11 +183,6 @@ export const GithubProjectRepositories = ({
     }
   };
 
-  const goToIntegrations = () => {
-    onNavigate?.();
-    navigate('/worklenz/settings/integrations');
-  };
-
   const header = (
     <Flex align="center" gap={10}>
       <GithubOutlined style={{ fontSize: 20 }} aria-hidden />
@@ -218,12 +235,32 @@ export const GithubProjectRepositories = ({
       return (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={t('project.notConnected', {
-            defaultValue: 'Connect your GitHub account in team settings before linking repositories.',
-          })}
+          description={
+            data.can_connect
+              ? t('project.connectPrompt', {
+                  defaultValue:
+                    'Connect your GitHub account once for the whole team, then link repositories to this project.',
+                })
+              : data.owner_name
+                ? t('project.askOwnerNamed', {
+                    defaultValue:
+                      'GitHub isn’t connected yet. Ask {{name}} or another team admin to connect it.',
+                    name: data.owner_name,
+                  })
+                : t('project.askOwner', {
+                    defaultValue:
+                      'GitHub isn’t connected yet. Ask a team owner or admin to connect it.',
+                  })
+          }
         >
-          <Button type="primary" onClick={goToIntegrations}>
-            {t('project.openIntegrations', { defaultValue: 'Go to Integrations' })}
+          <Button
+            type="primary"
+            icon={<GithubOutlined />}
+            loading={isConnecting}
+            disabled={!data.can_connect}
+            onClick={() => void handleConnect()}
+          >
+            {t('connect.button', { defaultValue: 'Connect GitHub' })}
           </Button>
         </Empty>
       );
@@ -286,77 +323,79 @@ export const GithubProjectRepositories = ({
                   background: token.colorBgContainer,
                 }}
               >
-              <Flex align="center" justify="space-between" gap={12} wrap>
-                <Flex vertical style={{ minWidth: 0, flex: 1 }}>
-                  <Flex align="center" gap={6} wrap>
-                    <Typography.Text strong ellipsis>
-                      {link.full_name}
+                <Flex align="center" justify="space-between" gap={12} wrap>
+                  <Flex vertical style={{ minWidth: 0, flex: 1 }}>
+                    <Flex align="center" gap={6} wrap>
+                      <Typography.Text strong ellipsis>
+                        {link.full_name}
+                      </Typography.Text>
+                      {link.is_private && (
+                        <Tag icon={<LockOutlined />} style={{ margin: 0 }}>
+                          {t('project.private', { defaultValue: 'Private' })}
+                        </Tag>
+                      )}
+                      {!link.is_available && (
+                        <Tag color="warning" style={{ margin: 0 }}>
+                          {t('project.unavailable', { defaultValue: 'No longer accessible' })}
+                        </Tag>
+                      )}
+                    </Flex>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {t('project.baseBranch', { defaultValue: 'Base branch' })}:{' '}
+                      {canManage ? (
+                        <Typography.Text
+                          style={{ fontSize: 12 }}
+                          code
+                          editable={{
+                            onChange: value => void handleBaseBranchChange(link.id, value),
+                            tooltip: t('project.editBaseBranch', {
+                              defaultValue: 'Edit base branch',
+                            }),
+                          }}
+                        >
+                          {link.default_base_branch}
+                        </Typography.Text>
+                      ) : (
+                        <Typography.Text style={{ fontSize: 12 }} code>
+                          {link.default_base_branch}
+                        </Typography.Text>
+                      )}
                     </Typography.Text>
-                    {link.is_private && (
-                      <Tag icon={<LockOutlined />} style={{ margin: 0 }}>
-                        {t('project.private', { defaultValue: 'Private' })}
-                      </Tag>
-                    )}
-                    {!link.is_available && (
-                      <Tag color="warning" style={{ margin: 0 }}>
-                        {t('project.unavailable', { defaultValue: 'No longer accessible' })}
-                      </Tag>
-                    )}
                   </Flex>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {t('project.baseBranch', { defaultValue: 'Base branch' })}:{' '}
-                    {canManage ? (
-                      <Typography.Text
-                        style={{ fontSize: 12 }}
-                        code
-                        editable={{
-                          onChange: value => void handleBaseBranchChange(link.id, value),
-                          tooltip: t('project.editBaseBranch', {
-                            defaultValue: 'Edit base branch',
-                          }),
-                        }}
-                      >
-                        {link.default_base_branch}
-                      </Typography.Text>
-                    ) : (
-                      <Typography.Text style={{ fontSize: 12 }} code>
-                        {link.default_base_branch}
-                      </Typography.Text>
-                    )}
-                  </Typography.Text>
+                  {canManage && (
+                    <Popconfirm
+                      title={t('project.unlinkTitle', { defaultValue: 'Unlink this repository?' })}
+                      description={t('project.unlinkDescription', {
+                        defaultValue:
+                          'Existing links on issues stay, but new activity will no longer be tracked.',
+                      })}
+                      okText={t('project.unlink', { defaultValue: 'Unlink' })}
+                      cancelText={t('actions.cancel', { defaultValue: 'Cancel' })}
+                      okButtonProps={{ danger: true }}
+                      onConfirm={() => handleUnlink(link.id)}
+                    >
+                      <Tooltip title={t('project.unlink', { defaultValue: 'Unlink' })}>
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          aria-label={t('project.unlinkAria', {
+                            defaultValue: 'Unlink {{name}}',
+                            name: link.full_name,
+                          })}
+                        />
+                      </Tooltip>
+                    </Popconfirm>
+                  )}
                 </Flex>
-                {canManage && (
-                  <Popconfirm
-                    title={t('project.unlinkTitle', { defaultValue: 'Unlink this repository?' })}
-                    description={t('project.unlinkDescription', {
-                      defaultValue:
-                        'Existing links on issues stay, but new activity will no longer be tracked.',
-                    })}
-                    okText={t('project.unlink', { defaultValue: 'Unlink' })}
-                    cancelText={t('actions.cancel', { defaultValue: 'Cancel' })}
-                    okButtonProps={{ danger: true }}
-                    onConfirm={() => handleUnlink(link.id)}
-                  >
-                    <Tooltip title={t('project.unlink', { defaultValue: 'Unlink' })}>
-                      <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        aria-label={t('project.unlinkAria', {
-                          defaultValue: 'Unlink {{name}}',
-                          name: link.full_name,
-                        })}
-                      />
-                    </Tooltip>
-                  </Popconfirm>
-                )}
-              </Flex>
-              <GithubStatusAutomation
-                statuses={data.statuses}
-                value={link.settings?.status_map || {}}
-                disabled={!canManage}
-                onChange={(event, statusId) => void handleStatusMapChange(link.id, event, statusId)}
-              />
+                <GithubStatusAutomation
+                  statuses={data.statuses}
+                  value={link.settings?.status_map || {}}
+                  disabled={!canManage}
+                  onChange={(event, statusId) =>
+                    void handleStatusMapChange(link.id, event, statusId)
+                  }
+                />
               </div>
             ))}
           </Flex>

@@ -109,7 +109,9 @@ export const CreateBranchModal = ({
         onCreated();
       } else {
         setErrorText(
-          t('development.createBranch.errors.generic', { defaultValue: 'Could not create the branch.' })
+          t('development.createBranch.errors.generic', {
+            defaultValue: 'Could not create the branch.',
+          })
         );
       }
     } catch (error) {
@@ -142,7 +144,9 @@ export const CreateBranchModal = ({
     if (!created) return;
     try {
       await navigator.clipboard.writeText(created.checkout_command);
-      messageApi.success(t('development.createBranch.copied', { defaultValue: 'Copied to clipboard.' }));
+      messageApi.success(
+        t('development.createBranch.copied', { defaultValue: 'Copied to clipboard.' })
+      );
     } catch (error) {
       logger.error('Failed to copy checkout command', error);
     }
@@ -176,7 +180,10 @@ export const CreateBranchModal = ({
         {created ? (
           <Flex vertical gap={12}>
             <Flex align="center" gap={8}>
-              <CheckCircleFilled style={{ color: 'var(--ant-color-success, #52c41a)' }} aria-hidden />
+              <CheckCircleFilled
+                style={{ color: 'var(--ant-color-success, #52c41a)' }}
+                aria-hidden
+              />
               <Typography.Text strong>
                 {t('development.createBranch.created', { defaultValue: 'Branch created.' })}
               </Typography.Text>

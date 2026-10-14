@@ -63,3 +63,4 @@ Legend: `[x]` done, `[ ]` pending, `[~]` in progress.
 - [ ] Add `GITHUB_*` vars to docker env templates / SELF_HOSTING.md
 - [ ] Real-time socket push so the drawer refreshes when a webhook lands (Phase 2 with transitions)
 - [ ] Backend tests for event processor and controller (need DB fixture)
+- [x] Connect GitHub inline from project settings (install returns to the project's Integrations section; non-admins see who to ask)

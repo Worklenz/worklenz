@@ -75,7 +75,10 @@
       "prMerged": "Pull request u bashkua",
       "noChange": "Mos ndrysho statusin",
       "saveFailed": "Automatizimi nuk mund të përditësohej."
-    }
+    },
+    "connectPrompt": "Lidhni llogarinë tuaj GitHub një herë për gjithë ekipin, pastaj lidhni depo me këtë projekt.",
+    "askOwnerNamed": "GitHub nuk është lidhur ende. Kërkojini {{name}} ose një administratori tjetër të ekipit ta lidhë.",
+    "askOwner": "GitHub nuk është lidhur ende. Kërkojini një pronari ose administratori të ekipit ta lidhë."
   },
   "development": {
     "pr": {

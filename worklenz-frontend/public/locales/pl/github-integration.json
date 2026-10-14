@@ -75,7 +75,10 @@
       "prMerged": "Scalono pull request",
       "noChange": "Nie zmieniaj statusu",
       "saveFailed": "Nie udało się zaktualizować automatyzacji."
-    }
+    },
+    "connectPrompt": "Połącz konto GitHub raz dla całego zespołu, a potem łącz repozytoria z tym projektem.",
+    "askOwnerNamed": "GitHub nie jest jeszcze połączony. Poproś {{name}} lub innego administratora zespołu o jego połączenie.",
+    "askOwner": "GitHub nie jest jeszcze połączony. Poproś właściciela lub administratora zespołu o jego połączenie."
   },
   "development": {
     "pr": {

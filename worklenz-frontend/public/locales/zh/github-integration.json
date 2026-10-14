@@ -75,7 +75,10 @@
       "prMerged": "合并拉取请求",
       "noChange": "不更改状态",
       "saveFailed": "无法更新自动化设置。"
-    }
+    },
+    "connectPrompt": "为整个团队连接一次 GitHub 账号，然后将仓库关联到此项目。",
+    "askOwnerNamed": "GitHub 尚未连接。请让 {{name}} 或其他团队管理员进行连接。",
+    "askOwner": "GitHub 尚未连接。请让团队所有者或管理员进行连接。"
   },
   "development": {
     "pr": {

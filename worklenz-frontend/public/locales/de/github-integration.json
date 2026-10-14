@@ -75,7 +75,10 @@
       "prMerged": "Pull Request zusammengeführt",
       "noChange": "Status nicht ändern",
       "saveFailed": "Automatisierung konnte nicht aktualisiert werden."
-    }
+    },
+    "connectPrompt": "Verbinden Sie Ihr GitHub-Konto einmal für das ganze Team und verknüpfen Sie dann Repositories mit diesem Projekt.",
+    "askOwnerNamed": "GitHub ist noch nicht verbunden. Bitten Sie {{name}} oder einen anderen Team-Admin, es zu verbinden.",
+    "askOwner": "GitHub ist noch nicht verbunden. Bitten Sie einen Team-Inhaber oder Admin, es zu verbinden."
   },
   "development": {
     "pr": {

@@ -16,7 +16,11 @@ interface GithubStatusAutomationProps {
 }
 
 const EVENTS: Array<{ event: GithubTransitionEvent; key: string; defaultValue: string }> = [
-  { event: 'branch_created', key: 'project.automation.branchCreated', defaultValue: 'Branch created' },
+  {
+    event: 'branch_created',
+    key: 'project.automation.branchCreated',
+    defaultValue: 'Branch created',
+  },
   { event: 'pr_opened', key: 'project.automation.prOpened', defaultValue: 'Pull request opened' },
   { event: 'pr_merged', key: 'project.automation.prMerged', defaultValue: 'Pull request merged' },
 ];

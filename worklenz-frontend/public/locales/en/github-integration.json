@@ -75,7 +75,10 @@
       "prMerged": "Pull request merged",
       "noChange": "Don’t change status",
       "saveFailed": "Could not update automation."
-    }
+    },
+    "connectPrompt": "Connect your GitHub account once for the whole team, then link repositories to this project.",
+    "askOwnerNamed": "GitHub isn’t connected yet. Ask {{name}} or another team admin to connect it.",
+    "askOwner": "GitHub isn’t connected yet. Ask a team owner or admin to connect it."
   },
   "development": {
     "pr": {

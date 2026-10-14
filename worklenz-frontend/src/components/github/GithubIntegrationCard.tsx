@@ -23,25 +23,7 @@ import {
 } from '@ant-design/icons';
 import { githubApiService, IGithubStatus } from '@/api/github/github.api.service';
 import logger from '@/utils/errorLogger';
-
-const REASON_MESSAGES: Record<string, { key: string; defaultValue: string }> = {
-  invalid_state: {
-    key: 'errors.invalidState',
-    defaultValue: 'The connection request expired. Please try connecting again.',
-  },
-  forbidden: {
-    key: 'errors.forbidden',
-    defaultValue: 'You need access to this GitHub installation and must be a team owner or admin.',
-  },
-  already_connected: {
-    key: 'errors.alreadyConnected',
-    defaultValue: 'This GitHub account is already connected to another Worklenz team.',
-  },
-  team_already_connected: {
-    key: 'errors.teamAlreadyConnected',
-    defaultValue: 'This team is already connected to a different GitHub account. Disconnect it first.',
-  },
-};
+import { useGithubInstallResult } from './useGithubInstallResult';
 
 /** Team-level GitHub connection card for Settings > Integrations. */
 export const GithubIntegrationCard = () => {
@@ -70,38 +52,7 @@ export const GithubIntegrationCard = () => {
     }
   }, []);
 
-  // Surface the result of the GitHub install redirect, then clean the URL.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const result = params.get('github');
-    if (!result) return;
-
-    const reason = params.get('reason') || '';
-    if (result === 'success') {
-      messageApi.success(
-        t('messages.connected', { defaultValue: 'GitHub connected successfully.' })
-      );
-    } else if (result === 'requested') {
-      messageApi.info(
-        t('messages.requested', {
-          defaultValue: 'Installation was requested. An organization owner needs to approve it.',
-        })
-      );
-    } else {
-      const known = REASON_MESSAGES[reason];
-      messageApi.error(
-        known
-          ? t(known.key, { defaultValue: known.defaultValue })
-          : t('errors.connectFailed', {
-              defaultValue: 'Could not connect GitHub. Please try again.',
-            })
-      );
-    }
-    params.delete('github');
-    params.delete('reason');
-    const query = params.toString();
-    window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
-  }, [messageApi, t]);
+  useGithubInstallResult(messageApi);
 
   useEffect(() => {
     void loadStatus();
@@ -133,9 +84,7 @@ export const GithubIntegrationCard = () => {
     try {
       await githubApiService.refreshRepositories();
       await loadStatus();
-      messageApi.success(
-        t('messages.refreshed', { defaultValue: 'Repository list updated.' })
-      );
+      messageApi.success(t('messages.refreshed', { defaultValue: 'Repository list updated.' }));
     } catch (error) {
       logger.error('Failed to refresh GitHub repositories', error);
       messageApi.error(

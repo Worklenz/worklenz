@@ -56,6 +56,9 @@ export interface IGithubProjectRepositories {
   linked: IGithubLinkedRepository[];
   available: IGithubAvailableRepository[];
   statuses: IGithubProjectStatus[];
+  /** True for team owners/admins, who can connect GitHub for the team. */
+  can_connect: boolean;
+  owner_name: string | null;
 }
 
 export type GithubReviewState = 'approved' | 'changes_requested' | 'review_required' | null;
@@ -127,8 +130,12 @@ export const githubApiService = {
     return response.data;
   },
 
-  getInstallUrl: async () => {
-    const response = await apiClient.get<IServerResponse<{ url: string }>>(`${rootUrl}/install-url`);
+  /** Pass a software project id to return to its settings after installing. */
+  getInstallUrl: async (projectId?: string) => {
+    const query = projectId ? `?project_id=${encodeURIComponent(projectId)}` : '';
+    const response = await apiClient.get<IServerResponse<{ url: string }>>(
+      `${rootUrl}/install-url${query}`
+    );
     return response.data;
   },
 

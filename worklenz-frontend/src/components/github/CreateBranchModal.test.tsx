@@ -7,7 +7,9 @@ describe('slugifyForBranch', () => {
   });
 
   it('trims separators and limits length without a trailing dash', () => {
-    const slug = slugifyForBranch('  --Fix: the very long title that keeps going and going forever--  ');
+    const slug = slugifyForBranch(
+      '  --Fix: the very long title that keeps going and going forever--  '
+    );
     expect(slug.length).toBeLessThanOrEqual(40);
     expect(slug.startsWith('-')).toBe(false);
     expect(slug.endsWith('-')).toBe(false);
