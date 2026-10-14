@@ -153,6 +153,25 @@ export default class GithubController extends WorklenzControllerBase {
       const { installation_id, code, state, setup_action } = req.query as Record<string, string | undefined>;
       if (setup_action === "request") return back("requested");
 
+      // "Redirect on update" (repositories added/removed) comes back without our signed state.
+      // Accept it only to re-sync an installation this team has already connected.
+      if (!state) {
+        const updatedId = parseInt(installation_id || "", 10);
+        if (setup_action !== "update" || !code || !Number.isSafeInteger(updatedId) || !canManageTeam(req)) {
+          return back("error", "invalid_state");
+        }
+        const existing = await db.query(
+          `SELECT id FROM github_integrations
+           WHERE team_id = $1 AND installation_id = $2 AND status <> 'disconnected'`,
+          [req.user?.team_id, updatedId],
+        );
+        if (!existing.rowCount || !(await GithubAppService.userCanAccessInstallation(code, updatedId))) {
+          return back("error", "forbidden");
+        }
+        await syncRepositories(existing.rows[0].id, updatedId);
+        return back("success");
+      }
+
       const secret = getStateSecret();
       let claims: { purpose?: string; team_id?: string; user_id?: string };
       try {
