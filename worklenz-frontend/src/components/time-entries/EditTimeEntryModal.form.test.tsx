@@ -136,4 +136,47 @@ describe('TimeLogForm used by the task drawer (no inModal)', () => {
     expect(document.querySelector('.ant-picker-small')).not.toBeNull();
     expect(submit.parentElement?.className).not.toContain('ant-flex-justify-flex-end');
   });
+
+  it('supports overnight time entries where end date is on the next day', async () => {
+    const user = userEvent.setup();
+    const OVERNIGHT_ENTRY: EditableTimeEntry = {
+      id: 'log-overnight',
+      task_id: 'task-1',
+      project_id: 'project-1',
+      user_id: 'u-me',
+      time_spent: '16200', // 4.5 hours
+      description: 'Overnight deploy',
+      created_at: '2026-09-24T22:00:00.000Z',
+    };
+
+    render(
+      <TimeLogForm
+        mode="edit"
+        initialValues={{
+          id: OVERNIGHT_ENTRY.id,
+          project_id: OVERNIGHT_ENTRY.project_id,
+          created_at: '2026-09-24T22:00:00.000Z',
+          start_time: '2026-09-24T22:00:00.000Z',
+          end_time: '2026-09-25T02:30:00.000Z',
+          description: OVERNIGHT_ENTRY.description,
+        }}
+        onCancel={vi.fn()}
+      />
+    );
+
+    const updateBtn = await screen.findByRole('button', { name: /Update/i });
+    await waitFor(() => expect(updateBtn).toBeEnabled());
+    await user.click(updateBtn);
+
+    await waitFor(() => expect(mocks.update).toHaveBeenCalledTimes(1));
+    expect(mocks.update).toHaveBeenCalledWith(
+      'log-overnight',
+      expect.objectContaining({
+        id: 'log-overnight',
+        project_id: 'project-1',
+        seconds_spent: 16200, // 4 hours 30 minutes across midnight
+        description: 'Overnight deploy',
+      })
+    );
+  });
 });
