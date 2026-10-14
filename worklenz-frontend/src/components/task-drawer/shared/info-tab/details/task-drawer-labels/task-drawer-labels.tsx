@@ -261,7 +261,7 @@ const TaskDrawerLabels = ({ task, t, isGuest = false }: TaskDrawerLabelsProps) =
         {!isGuest && (
           <Dropdown
             trigger={['click']}
-            dropdownRender={() => labelDropdownContent}
+            popupRender={() => labelDropdownContent}
             onOpenChange={handleLabelDropdownOpen}
           >
             <Button

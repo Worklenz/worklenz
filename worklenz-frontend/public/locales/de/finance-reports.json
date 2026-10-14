@@ -108,7 +108,8 @@
       "high": "Überlastet",
       "watch": "Beobachten",
       "ok": "OK"
-    }
+    },
+    "overallocatedCount": "{{count}} Mitglieder"
   },
   "profitability": {
     "pageTitle": "Rentabilität",

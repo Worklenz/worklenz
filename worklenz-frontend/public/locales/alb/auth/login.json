@@ -34,5 +34,6 @@
   "errorMessages": {
     "loginErrorTitle": "Hyrja dështoi",
     "loginErrorMessage": "Ju lutemi kontrolloni email-in dhe fjalëkalimin dhe provoni përsëri"
-  }
+  },
+  "rememberMe": "Më kujto mua"
 }

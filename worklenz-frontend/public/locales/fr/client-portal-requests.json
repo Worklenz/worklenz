@@ -89,5 +89,6 @@
   "customStatusRemovedSuccess": "Statut personnalisé supprimé",
   "customStatusRemovedError": "Échec de la suppression du statut personnalisé",
   "closeButton": "Fermer",
-  "loadingText": "Chargement..."
+  "loadingText": "Chargement...",
+  "selectStatus": "Sélectionnez le statut"
 }

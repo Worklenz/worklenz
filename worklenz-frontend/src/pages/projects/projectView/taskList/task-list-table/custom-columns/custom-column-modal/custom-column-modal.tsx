@@ -89,7 +89,7 @@ const CustomColumnModal = ({ projectId: projectIdProp }: CustomColumnModalProps)
         header: { position: 'relative' },
         footer: { display: 'none' },
       }}
-      destroyOnClose
+      destroyOnHidden
     >
       {isCustomColumnModalOpen && (
         <CustomColumnFormContent projectId={projectId} onDone={handleClose} />

@@ -6,8 +6,8 @@ import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import coverImg from '../../../../assets/images/client-view-service-sample-cover.png';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
-import { toggleRequestFormModal } from '../../../../features/client-view/services/client-view-services';
-import RequestFormModal from '../../../../features/client-view/services/request-form-modal/request-form-modal';
+import { toggleRequestFormModal } from '@/features/client-view/services/client-view-services';
+import RequestFormModal from '@/features/client-view/services/request-form-modal/request-form-modal';
 
 const ClientViewServiceDetails = () => {
   // localization

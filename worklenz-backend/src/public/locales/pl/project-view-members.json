@@ -27,5 +27,8 @@
   "invite": "Zaproś",
   "Invite": "Zaproś",
   "removeSuccess": "{{name}} usunięty z projektu",
-  "removeError": "Nie udało się usunąć członka"
+  "removeError": "Nie udało się usunąć członka",
+  "removeFromProject": "Usuń z projektu",
+  "assignFailedMessage": "Nie można zaktualizować przypisanych zadań. Spróbuj ponownie.",
+  "assignFailedTitle": "Przypisanie nie powiodło się"
 }

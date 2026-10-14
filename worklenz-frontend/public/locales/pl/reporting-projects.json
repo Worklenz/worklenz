@@ -21,6 +21,8 @@
   "openButton": "Otwórz",
   "setStartDate": "Ustaw datę rozpoczęcia",
   "setEndDate": "Ustaw datę końcową",
+  "startDateSaveFailed": "Nie udało się zapisać daty rozpoczęcia. Spróbuj ponownie.",
+  "endDateSaveFailed": "Nie udało się zapisać daty końcowej. Spróbuj ponownie.",
   "clearStartDate": "Wyczyść datę rozpoczęcia",
   "clearEndDate": "Wyczyść datę zakończenia",
   "estimatedText": "Szacowany",

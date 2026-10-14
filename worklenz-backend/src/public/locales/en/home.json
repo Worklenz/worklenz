@@ -6,7 +6,8 @@
     "noTasks": "No tasks",
     "pressEnter": "Press",
     "toCreate": "to create.",
-    "markAsDone": "Mark as done"
+    "markAsDone": "Mark as done",
+    "loading": "Loading..."
   },
   "projects": {
     "title": "Projects",
@@ -42,5 +43,23 @@
     "calendar": "Calendar",
     "tasks": "Tasks",
     "refresh": "Refresh"
-  }
+  },
+  "projectsAtRisk": "Projects at Risk",
+  "logTime": {
+    "minutesPlaceholder": "0",
+    "createdTimeColumn": "Created Time"
+  },
+  "customize": {
+    "tabs": {
+      "layout": "Layout"
+    }
+  },
+  "expenses": {
+    "addExpense": "Add Expense"
+  },
+  "homeCalendar": {
+    "clientsSearchPlaceholder": "Search clients...",
+    "projectsSearchPlaceholder": "Search projects..."
+  },
+  "flagged": "flagged"
 }

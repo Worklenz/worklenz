@@ -6,7 +6,8 @@
     "noTasks": "没有任务",
     "pressEnter": "按",
     "toCreate": "创建。",
-    "markAsDone": "标记为完成"
+    "markAsDone": "标记为完成",
+    "loading": "加载中..."
   },
   "projects": {
     "title": "项目",
@@ -42,5 +43,23 @@
     "calendar": "日历",
     "tasks": "任务",
     "refresh": "刷新"
-  }
+  },
+  "projectsAtRisk": "面临风险的项目",
+  "logTime": {
+    "minutesPlaceholder": "0",
+    "createdTimeColumn": "创建时间"
+  },
+  "customize": {
+    "tabs": {
+      "layout": "布局"
+    }
+  },
+  "expenses": {
+    "addExpense": "添加费用"
+  },
+  "homeCalendar": {
+    "clientsSearchPlaceholder": "搜索客户...",
+    "projectsSearchPlaceholder": "搜索项目..."
+  },
+  "flagged": "标记的"
 }

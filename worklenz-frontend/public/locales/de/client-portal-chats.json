@@ -75,5 +75,10 @@
   "convertToTaskError": "Aufgabe konnte nicht erstellt werden",
   "convertToTaskSuccess": "Aufgabe aus Nachricht erstellt",
   "noClientProject": "Diesem Kunden ist kein Projekt zugewiesen",
-  "createTask": "Aufgabe erstellen"
+  "createTask": "Aufgabe erstellen",
+  "errorSendingMessage": "Nachricht konnte nicht gesendet werden",
+  "comingSoon": "Reaktionen sind im Projektchat verfügbar",
+  "actions": {
+    "reply": "Antworten"
+  }
 }

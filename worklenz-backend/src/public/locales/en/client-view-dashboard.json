@@ -1,0 +1,11 @@
+{
+  "title": "Dashboard",
+  "totalRequests": "Total requests",
+  "pendingRequests": "Pending requests",
+  "activeProjects": "Active projects",
+  "unpaidInvoices": "Unpaid invoices",
+  "recentRequests": "Recent requests",
+  "noRecentRequests": "No recent requests",
+  "recentMessages": "Recent messages",
+  "noRecentMessages": "No recent messages"
+}

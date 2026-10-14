@@ -46,5 +46,10 @@
   "convertToTaskError": "Échec de la création de la tâche",
   "convertToTaskEmpty": "Le message ne contient aucun texte à utiliser comme nom de tâche",
   "attachFile": "Joindre un fichier",
-  "attachmentUploadError": "Échec du téléchargement de la pièce jointe"
+  "attachmentUploadError": "Échec du téléchargement de la pièce jointe",
+  "deleteSuccess": "Commentaire supprimé avec succès",
+  "editSuccess": "Commentaire mis à jour avec succès",
+  "deleteError": "Échec de la suppression du commentaire",
+  "editError": "Échec de la modification du commentaire",
+  "commentError": "Échec de l'envoi du commentaire"
 }

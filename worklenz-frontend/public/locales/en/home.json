@@ -20,7 +20,8 @@
     "showDone": "Show Done",
     "created": "Created",
     "finished": "Finished",
-    "tasks": "tasks"
+    "tasks": "tasks",
+    "loading": "Loading..."
   },
   "projects": {
     "title": "Projects",
@@ -103,7 +104,15 @@
     "assignees": "Assignees",
     "searchMembers": "Search by name or email…",
     "noMembersFound": "No members found",
-    "time": "Time"
+    "time": "Time",
+    "pinned": "Pinned",
+    "tabsLabel": "Filter tasks",
+    "pinTask": "Pin task",
+    "unpinTask": "Unpin task",
+    "pinLimitReached": "You can pin up to {{limit}} tasks. Unpin one to pin another.",
+    "noPinnedTasks": "No pinned tasks yet. Hover over any task and click the pin icon to keep it here.",
+    "pinFailed": "Couldn't update the pin. Please try again.",
+    "viewAll": "View all ({{total}})"
   },
   "homeCalendar": {
     "todayButton": "Today",
@@ -128,7 +137,9 @@
     "weekdayMiniThu": "T",
     "weekdayMiniFri": "F",
     "weekdayMiniSat": "S",
-    "weekdayMiniSun": "S"
+    "weekdayMiniSun": "S",
+    "clientsSearchPlaceholder": "Search clients...",
+    "projectsSearchPlaceholder": "Search projects..."
   },
   "activityLogs": {
     "title": "Recent Activity",
@@ -237,7 +248,9 @@
     "weekdayThu": "Thu",
     "weekdayFri": "Fri",
     "weekdaySat": "Sat",
-    "weekdaySun": "Sun"
+    "weekdaySun": "Sun",
+    "createdTimeColumn": "Created Time",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "No expenses logged yet",
@@ -251,7 +264,8 @@
     "columnAssignee": "Assignee",
     "columnDate": "Date",
     "openTask": "Open the task",
-    "rowsPerPage": "Rows per page:"
+    "rowsPerPage": "Rows per page:",
+    "addExpense": "Add Expense"
   },
   "addExpense": {
     "modalTitle": "Add Expense",
@@ -373,7 +387,8 @@
     "tasks": "Tasks",
     "activity": "Activity",
     "timeLogged": "Time Logged",
-    "title": "Continue where you left off"
+    "title": "Continue where you left off",
+    "showTabs": "Show tabs"
   },
   "focusTime": {
     "title": "Focus & Time",
@@ -391,5 +406,133 @@
       "personal": "Personal",
       "other": "Other"
     }
-  }
+  },
+  "customize": {
+    "button": "Customize",
+    "title": "Customize Home",
+    "description": "Drag sections to reorder them, or use the arrow buttons. Turn a section off to hide it from your Home page.",
+    "mainColumn": "Main area",
+    "sideColumn": "Side panel",
+    "emptyColumn": "Drop a section here",
+    "dragHandle": "Reorder {{name}}. Press space to pick up, then use the arrow keys.",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "moveUpNamed": "Move {{name}} up",
+    "moveDownNamed": "Move {{name}} down",
+    "moveToSide": "Move to side panel",
+    "moveToMain": "Move to main area",
+    "cannotHide": "This section can't be hidden.",
+    "showNamed": "Show {{name}}",
+    "reset": "Reset to default",
+    "resetConfirm": "Reset Home to its default settings?",
+    "cancel": "Cancel",
+    "save": "Save",
+    "widgets": {
+      "statCards": "Summary cards",
+      "priorities": "Task priorities",
+      "progressDonut": "My progress",
+      "continue": "Continue where you left off",
+      "greeting": "Greeting banner",
+      "teamMembers": "Team members",
+      "assignedByMe": "Tasks assigned by me",
+      "mentions": "Comments mentioning me",
+      "todo": "My todo list"
+    },
+    "tabs": {
+      "layout": "Layout",
+      "taskTabs": "Task tabs",
+      "sorting": "Sorting",
+      "sidebar": "Left sidebar",
+      "defaultView": "Default view"
+    },
+    "topSection": "Top of page",
+    "tabsDescription": "Choose which tabs appear above the task table and the order they appear in. At least one tab must stay on.",
+    "cannotHideLastTab": "At least one tab must stay visible.",
+    "sortDescription": "Choose how tasks are ordered in the table. Pinned tasks always stay on top.",
+    "sortField": "Sort by",
+    "sortOrder": "Direction",
+    "sortDefault": "Default order (due date, soonest first)",
+    "sortAsc": "Ascending",
+    "sortDesc": "Descending",
+    "sortPinnedNote": "The Pinned tab always lists the most recently pinned task first.",
+    "sidebarDescription": "Reorder the items in the left sidebar and choose which ones show. Pin one to make it the page that opens when you go to Home.",
+    "pinSidebarItem": "Pin {{name}} as the page that opens first",
+    "unpinSidebarItem": "Unpin {{name}}",
+    "assignedDefault": "Open the table on",
+    "assignedLastUsed": "Whichever I used last",
+    "cannotHideLanding": "Home opens on this page. Pin another page to hide it.",
+    "cannotHideLastItem": "At least one item must stay visible.",
+    "tableTitle": "Customize task table",
+    "tableResetConfirm": "Reset the task table to its default settings?",
+    "done": "Done"
+  },
+  "widgets": {
+    "menu": {
+      "options": "{{name}} options",
+      "showPeriod": "Show",
+      "remove": "Remove widget"
+    },
+    "add": {
+      "button": "Add widget",
+      "hint": "Press Add, or drag a widget onto your page.",
+      "addAction": "Add",
+      "addNamed": "Add {{name}}",
+      "empty": "Every widget is already on your Home page."
+    },
+    "descriptions": {
+      "greeting": "A hello with today's date and what needs your attention.",
+      "statCards": "Today's tasks, what is overdue, what you completed and your focus time.",
+      "priorities": "Your tasks for today or this week, ready to work through.",
+      "progressDonut": "How much of your assigned work is done, in progress or still to do.",
+      "continue": "Jump back into recent projects, tasks, activity and logged time.",
+      "teamMembers": "See who is on your team and open the full team page.",
+      "assignedByMe": "Tasks you've handed to teammates, so you can follow up on them.",
+      "mentions": "Recent task comments where a teammate @mentioned you.",
+      "todo": "Jot down personal to-dos and tick them off as you go."
+    },
+    "drag": {
+      "pickedUp": "Picked up {{name}}.",
+      "dropped": "Dropped {{name}}.",
+      "cancelled": "Moving {{name}} was cancelled."
+    },
+    "dropHere": "Drop a widget here",
+    "state": {
+      "error": "Couldn't load this widget.",
+      "retry": "Retry"
+    },
+    "empty": {
+      "title": "Drag and drop new widgets",
+      "titleNoDrag": "Add widgets to your Home page",
+      "button": "Add widgets"
+    }
+  },
+  "teamMembers": {
+    "empty": "No team members yet.",
+    "viewTeam": "View team"
+  },
+  "assignedByMe": {
+    "empty": "You haven't assigned any open tasks.",
+    "assignNewTask": "Assign new task",
+    "viewAll": "View all assigned tasks ({{total}})"
+  },
+  "mentions": {
+    "empty": "No one has mentioned you in a comment yet.",
+    "reply": "Reply",
+    "replyPlaceholder": "Write a reply…",
+    "replyHint": "Posted as a comment on “{{task}}”.",
+    "replySent": "Reply added to “{{task}}”.",
+    "replyFailed": "Couldn't post your reply. Please try again.",
+    "replyLabel": "Reply to {{name}}"
+  },
+  "todoWidget": {
+    "addPlaceholder": "Add a to-do and press Enter",
+    "addLabel": "New to-do",
+    "empty": "You're all caught up.",
+    "viewAll": "Open my todo list",
+    "viewAllMore": "View all ({{remaining}} more)",
+    "addFailed": "Couldn't add that to-do. Please try again.",
+    "completeFailed": "Couldn't update that to-do. Please try again."
+  },
+  "projectsAtRisk": "Projects at Risk",
+  "flagged": "flagged"
 }

@@ -32,5 +32,6 @@
   "viewAsClient": "Voir en tant que client",
   "ticketStatusOpen": "Ouvert",
   "ticketStatusResolved": "Résolu",
-  "inactive": "Inactif"
+  "inactive": "Inactif",
+  "status": "Statut"
 }

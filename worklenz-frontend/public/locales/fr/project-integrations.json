@@ -47,5 +47,6 @@
     "loadChannelsFailed": "Échec du chargement des chaînes",
     "refreshChannelsFailed": "Échec de l'actualisation des chaînes",
     "addIntegrationFailed": "Échec de l'ajout de l'intégration"
-  }
+  },
+  "businessPlan": "Affaires"
 }

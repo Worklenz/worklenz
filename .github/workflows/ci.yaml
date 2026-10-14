@@ -64,6 +64,16 @@ jobs:
       - name: Build Frontend
         run: npm run build
 
+  frontend-container-check:
+    name: Frontend Container Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build frontend image from standalone context
+        run: docker build --tag worklenz-frontend:ci ./worklenz-frontend
+
   client-portal-check:
     name: Client Portal Build Check
     runs-on: ubuntu-latest

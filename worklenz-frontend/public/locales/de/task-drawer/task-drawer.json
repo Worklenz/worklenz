@@ -78,7 +78,8 @@
         "selectDate": "Datum auswählen",
         "selectOption": "Option auswählen",
         "selectPeople": "Personen auswählen",
-        "updateError": "Benutzerdefiniertes Feld konnte nicht aktualisiert werden"
+        "updateError": "Benutzerdefiniertes Feld konnte nicht aktualisiert werden",
+        "enterText": "Text eingeben"
       },
       "recurring": "Wiederkehrend"
     },

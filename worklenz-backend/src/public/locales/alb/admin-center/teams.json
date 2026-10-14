@@ -29,5 +29,6 @@
   "role": "Roli",
   "owner": "Pronari",
   "admin": "Administruesi",
-  "member": "Anëtari"
+  "member": "Anëtari",
+  "clickToEditName": "Kliko për të modifikuar emrin"
 }

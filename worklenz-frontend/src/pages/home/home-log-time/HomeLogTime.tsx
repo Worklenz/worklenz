@@ -114,6 +114,9 @@ const formatSeconds = (seconds: number): string => {
 
 const HomeLogTime: React.FC = () => {
   const { token } = theme.useToken();
+  const quickEntryDropdownStyle = {
+    '--rc-virtual-list-scrollbar-bg': token.colorTextSecondary,
+  } as React.CSSProperties;
   const navigate = useNavigate();
   const { t } = useTranslation('home');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -529,12 +532,14 @@ const HomeLogTime: React.FC = () => {
 
   const renderLogSortableTitle = useCallback(
     (label: string, field: LogSortField) => (
-      <span
+        <span
         onClick={() => handleLogSortClick(field)}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', cursor: 'pointer', userSelect: 'none' }}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', minWidth: 0, cursor: 'pointer', userSelect: 'none' }}
       >
-        <span>{label}</span>
-        <SortArrows active={logSortField === field ? logSortOrder : null} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{label}</span>
+        <span style={{ flexShrink: 0 }}>
+          <SortArrows active={logSortField === field ? logSortOrder : null} />
+        </span>
       </span>
     ),
     [logSortField, logSortOrder, handleLogSortClick]
@@ -653,6 +658,7 @@ const HomeLogTime: React.FC = () => {
         key: 'priority',
         title: renderLogSortableTitle(t('logTime.priorityColumn', { defaultValue: 'Priority' }), 'priority_name'),
         width: '12%',
+        ellipsis: true,
         filters: logPriorityFilterOptions,
         filteredValue: selectedLogPriorityNames,
         onFilter: (value, record) => record.priority_name === value,
@@ -666,10 +672,13 @@ const HomeLogTime: React.FC = () => {
             </Tag>
           ) : null,
       },
-      {
+            {
         key: 'billable',
         title: t('logTime.billableColumn', { defaultValue: 'Billable' }),
+        // Fixed pixel width (not %) so the header text and filter icon always fit.
         width: '10%',
+        ellipsis: true,
+        onHeaderCell: () => ({ style: { whiteSpace: 'nowrap' } }),
         filters: logBillableFilterOptions,
         filteredValue: selectedLogBillable,
         onFilter: (value, record) => (record.billable ? 'yes' : 'no') === value,
@@ -696,12 +705,14 @@ const HomeLogTime: React.FC = () => {
         key: 'date',
         title: renderLogSortableTitle(t('logTime.dateColumn', { defaultValue: 'Date' }), 'created_at'),
         width: '10%',
+        ellipsis: true,
         render: (_, record) => <span style={{ opacity: 0.5, fontSize: 11 }}>{formatLogDate(record.created_at)}</span>,
       },
       {
         key: 'createdTime',
         title: t('logTime.createdTimeColumn', { defaultValue: 'Created Time' }),
         width: '10%',
+         ellipsis: true,
         render: (_, record) => {
           if (!record.created_at) {
             return <span style={{ opacity: 0.5, fontSize: 11 }}>-</span>;
@@ -775,6 +786,8 @@ const HomeLogTime: React.FC = () => {
           <div style={{ marginBottom: 14 }}>
             <label style={fldLbl}>{t('logTime.projectLabel', { defaultValue: 'Project' })}</label>
             <Select
+              classNames={{ popup: { root: 'quick-entry-dropdown' } }}
+              styles={{ popup: { root: quickEntryDropdownStyle } }}
               showSearch
               style={{ width: '100%' }}
               placeholder={t('logTime.projectPlaceholder', { defaultValue: 'Select project' })}
@@ -789,6 +802,11 @@ const HomeLogTime: React.FC = () => {
             <label style={fldLbl}>{t('logTime.taskLabel', { defaultValue: 'Task' })}</label>
             <Select
               showSearch
+              styles={{
+                popup: {
+                  root: quickEntryDropdownStyle,
+                },
+              }}
               style={{ width: '100%' }}
               placeholder={selProjectId ? t('logTime.taskPlaceholder', { defaultValue: 'Select task' }) : t('logTime.taskDisabledPlaceholder', { defaultValue: 'Select a project first' })}
               disabled={!selProjectId}
@@ -799,7 +817,7 @@ const HomeLogTime: React.FC = () => {
               value={selTaskId}
               onChange={setSelTaskId}
               notFoundContent={tasksLoading ? t('logTime.taskSearching', { defaultValue: 'Searching...' }) : t('logTime.noTasksFound', { defaultValue: 'No tasks found' })}
-              dropdownRender={menu => (
+              popupRender={menu => (
                 <>
                   {menu}
                   <div

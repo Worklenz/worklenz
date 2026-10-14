@@ -2,7 +2,6 @@
   "today": "Today",
   "week": "Week",
   "month": "Month",
-
   "settings": "Settings",
   "workingDays": "Working days",
   "monday": "Monday",
@@ -15,7 +14,6 @@
   "workingHours": "Working hours",
   "hours": "hours",
   "saveButton": "Save",
-
   "totalAllocation": "Total Allocation",
   "timeLogged": "Time Logged",
   "remainingTime": "Remaining Time",
@@ -24,16 +22,35 @@
   "tasks": "tasks",
   "startDate": "Start Date",
   "endDate": "End Date",
-
   "hoursPerDay": "Hours Per Day",
   "totalHours": "Total Hours",
   "deleteButton": "Delete",
   "cancelButton": "Cancel",
-
   "tabTitle": "Task without Start & End dates",
-
   "allocatedTime": "Allocated time",
   "totalLogged": "Total Logged",
   "loggedBillable": "Logged Billable",
-  "loggedNonBillable": "Logged Non Billable"
+  "loggedNonBillable": "Logged Non Billable",
+  "timelineError": "Failed to load timeline",
+  "noProjects": "No projects assigned",
+  "capacityConflicts": "Capacity Conflicts Detected",
+  "taskDatesError": "Failed to update task dates",
+  "manageTimeOff": "Manage Time-Off",
+  "noTasksInDateRange": "No tasks found in this date range",
+  "key": "Key",
+  "filterByStatus": "Status",
+  "selectMemberToViewTasks": "Select a member to view tasks",
+  "retry": "Retry",
+  "loadingTimeline": "Loading timeline...",
+  "open": "Open",
+  "loggedTime": "Logged",
+  "filterByMember": "Team Member",
+  "filterByProject": "Project",
+  "estimation": "Estimation",
+  "noTasksScheduled": "No tasks scheduled",
+  "taskDatesUpdated": "Task dates updated",
+  "noTasksInGroup": "No tasks in this group",
+  "filterByPriority": "Priority",
+  "priority": "Priority",
+  "selectProjectToViewTasks": "Select a project to view tasks"
 }

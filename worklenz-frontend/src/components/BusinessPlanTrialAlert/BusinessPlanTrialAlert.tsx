@@ -318,7 +318,7 @@ export const BusinessPlanTrialAlert = () => {
 
       return `${base} — ${t('business-trial-then-plan', {
         plan: postTrialPlanName,
-        defaultValue: `you'll continue on ${postTrialPlanName} after that`,
+        defaultValue: "you'll continue on {{plan}} after that",
       })}`;
     };
 

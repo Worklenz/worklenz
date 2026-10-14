@@ -119,5 +119,9 @@
     "week_total": "Łącznie w tym tygodniu",
     "week_billable": "Tydzień płatny",
     "week_non_billable": "Tydzień niepodlegający rozliczeniu"
-  }
+  },
+  "minutesRangeError": "0 – 59",
+  "hoursLabel": "Godziny",
+  "hoursMinError": "Godziny muszą wynosić 0 lub więcej",
+  "minutesLabel": "Minuty"
 }

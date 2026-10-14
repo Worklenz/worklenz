@@ -3,12 +3,10 @@
   "pageSubtitle": "Një regjistër vetëm për shtim, për të gjithë hapësirën e punës, i veprimeve administrative, ndryshimeve të lejeve dhe ngjarjeve të aksesit — i ndarë nga Regjistri i aktivitetit për çdo detyrë. I krijuar si provë për ISMS / PCI DSS, jo për historikun e përditshëm të detyrave.",
   "footnoteTitle": "Si funksionon ky regjistër —",
   "footnoteBody": "Çdo rresht këtu është vetëm për shtim: në këtë ndërfaqe nuk ka asnjë mundësi për modifikim ose fshirje, vetëm periudha e ruajtjes më sipër, e cila heq automatikisht hyrjet sipas vjetërsisë. Ky regjistër është i ndarë nga Regjistri i aktivitetit në panelin e çdo detyre — ai ndjek ndryshimet e detyrave për bashkëpunëtorët; ky ndjek ngjarjet administrative, të lejeve dhe të aksesit për përputhshmërinë. Të dy nuk bashkohen kurrë.",
-
   "categoryAccess": "Aksesi dhe autentikimi",
   "categoryUser": "Menaxhimi i përdoruesve dhe roleve",
   "categoryPermission": "Ndryshimet e lejeve dhe cilësimeve",
   "categoryLifecycle": "Cikli jetësor i projekteve dhe hapësirës së punës",
-
   "eventLoginSuccess": "Hyrja u krye me sukses",
   "eventLoginFailed": "Hyrja dështoi",
   "eventLogout": "Doli nga llogaria",
@@ -27,6 +25,7 @@
   "eventProjectDeleted": "Projekti u fshi",
   "eventProjectRestored": "Projekti u rikthye",
   "eventWorkspaceRenamed": "Hapësira e punës u riemërtua",
+  "eventTeamDeleted": "Ekipi u fshi",
   "eventWorkspaceDeleted": "Hapësira e punës u fshi",
   "eventMemberUpdated": "Të dhënat e anëtarit u ndryshuan",
   "eventMemberActivated": "Anëtari u aktivizua",
@@ -39,12 +38,10 @@
   "eventProjectMemberRemoved": "U hoq nga projekti",
   "eventProjectSettingChanged": "Cilësimi i projektit u ndryshua",
   "eventMemberPermissionChanged": "Leja e anëtarit u ndryshua",
-
   "statEvents": "Ngjarjet ({{range}})",
   "statFailedLogins": "Hyrje të dështuara",
   "statPermissionChanges": "Ndryshime të lejeve",
   "statRetention": "Periudha e ruajtjes",
-
   "searchPlaceholder": "Kërko aktorin ose ngjarjen…",
   "actorFilterLabel": "Aktorët",
   "actorSearchPlaceholder": "Kërko përdoruesit e hapësirës së punës",
@@ -56,7 +53,6 @@
   "chipPermission": "Lejet",
   "chipLifecycle": "Cikli jetësor",
   "clearFilters": "Pastro filtrat",
-
   "columnTimestamp": "Data dhe ora",
   "columnActor": "Aktori",
   "columnCategory": "Kategoria",
@@ -78,7 +74,6 @@
   "emptyFilteredHint": "Provoni një interval më të gjerë datash ose pastroni disa filtra.",
   "loadError": "Regjistri i auditimit nuk mund të ngarkohej",
   "retry": "Riprovo",
-
   "exportCsv": "Eksporto në CSV",
   "exportDownloaded": "Regjistri i auditimit u eksportua në CSV.",
   "exportQueued": "Ky eksport është i madh, prandaj po përgatitet në sfond. Lidhja e shkarkimit do të shfaqet këtu.",
@@ -94,7 +89,6 @@
   "exportFailedTitle": "Eksporti nuk mund të përfundohej.",
   "exportTryAgain": "Provo përsëri",
   "exportExpired": "Ky eksport ka skaduar. Filloni një eksport të ri për të marrë një skedar të përditësuar.",
-
   "retentionLabel": "Ruajtja:",
   "retentionMonths_one": "{{count}} muaj",
   "retentionMonths_other": "{{count}} muaj",

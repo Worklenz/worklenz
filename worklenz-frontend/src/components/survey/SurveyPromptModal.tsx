@@ -40,7 +40,8 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [surveyInfo, setSurveyInfo] = useState<{ id: string; questions: any[] } | null>(null);
   const [dontShowAgain, setDontShowAgain] = useState(false);
-  const { hasCompletedSurvey, loading, refetch } = useSurveyStatus();
+  const { hasCompletedSurvey, isNewUser, joinedViaInvitation, loading, refetch } =
+    useSurveyStatus();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const surveyData = useAppSelector(state => state.accountSetupReducer.surveyData);
   const surveySubStep = useAppSelector(state => state.accountSetupReducer.surveySubStep);
@@ -114,6 +115,12 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({
       return;
     }
 
+    // Users who signed up through a team invitation are never prompted; fresh sign-ups wait out the grace period
+    if (joinedViaInvitation || isNewUser) {
+      setVisible(false);
+      return;
+    }
+
     // Only show if survey hasn't been completed
     if (!loading && hasCompletedSurvey === false) {
       dispatch(resetSurveyData());
@@ -130,7 +137,7 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({
 
       return () => clearTimeout(timer);
     }
-  }, [loading, hasCompletedSurvey, dispatch, forceShow, fetchSurveyInfo, shouldShowSurvey]);
+  }, [loading, hasCompletedSurvey, isNewUser, joinedViaInvitation, dispatch, forceShow, fetchSurveyInfo, shouldShowSurvey]);
 
   const handleComplete = async () => {
     try {

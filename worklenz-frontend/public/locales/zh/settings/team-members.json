@@ -235,5 +235,10 @@
   "selectProjectFirst": "请先选择一个项目",
   "manageTimeOff": "管理请假",
   "createFromTemplatesLabel": "从模板创建项目",
-  "createFromTemplatesHint": "允许此成员从模板创建项目。他们将成为新项目的项目经理，但无财务访问权限。不允许创建空白项目。"
+  "createFromTemplatesHint": "允许此成员从模板创建项目。他们将成为新项目的项目经理，但无财务访问权限。不允许创建空白项目。",
+  "inviteLinkGeneratedCopyFailed": "已生成邀请链接，但无法自动复制。请手动复制。",
+  "noManagedProjectsFound": "没有您担任项目经理的项目",
+  "projectInvite_guestLimitExceeded": "超出了该计划的宾客限制。请升级以添加更多客人。",
+  "license-expired-subtitle": "您的 Worklenz 试用期已结束。请升级以继续享受所有功能。",
+  "Failed to fetch job titles": "获取职位失败"
 }

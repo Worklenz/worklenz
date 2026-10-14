@@ -1,0 +1,181 @@
+/*
+ * Draggable Home widgets. Structure and motion live here; colors come from CSS variables that
+ * HomeWidgetShell sets from the active antd theme, so light and dark mode both work.
+ */
+
+.home-widget {
+  position: relative;
+  border-radius: 10px;
+}
+
+/* A widget that fills the height left in its column: its card stretches to the shell, and scrolls
+   inside itself when its content is taller. The column's height comes from a minimum height (so it
+   can also grow), which percentage heights can't see, hence flex rather than `height: 100%`. */
+.home-widget--fill {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-widget--fill > :not(.home-widget__grip):not(.home-widget__drop) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The pointer is over the header or whitespace, so the whole widget can be grabbed from here. Over
+   data (rows, numbers, buttons) this class is off and those keep their own cursor. */
+.home-widget.is-surface {
+  cursor: grab;
+}
+
+.home-widget.is-surface:active {
+  cursor: grabbing;
+}
+
+/* The widget being dragged stays where it was, dimmed, while a ghost follows the pointer. */
+.home-widget.is-dragging {
+  opacity: 0.45;
+  outline: 2px dashed var(--home-widget-accent);
+  outline-offset: 3px;
+}
+
+/* A widget the user has just added: a ring that fades out, so it is easy to spot. */
+.home-widget.is-just-added {
+  animation: home-widget-flash 1.8s ease-out;
+}
+
+@keyframes home-widget-flash {
+  0% {
+    box-shadow: 0 0 0 4px var(--home-widget-accent-soft);
+  }
+  60% {
+    box-shadow: 0 0 0 4px var(--home-widget-accent-soft);
+  }
+  100% {
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+
+/* Six dots at the top edge, shown only while the pointer is on the drag surface. Decorative: the
+   surface itself is the handle. */
+.home-widget__grip {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--home-widget-grip);
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 150ms ease-in-out;
+  pointer-events: none;
+}
+
+.home-widget.is-surface .home-widget__grip {
+  opacity: 1;
+}
+
+/* Where the dragged widget will land. */
+.home-widget__drop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--home-widget-accent);
+  pointer-events: none;
+}
+
+.home-widget__drop--before {
+  top: -8px;
+}
+
+.home-widget__drop--after {
+  bottom: -8px;
+}
+
+/* A column's own landing line, for dropping into an empty column. */
+.home-widget-column__drop {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--home-widget-accent);
+}
+
+/* The "..." button of a widget with no header to hold it floats in the top-right corner, and only
+   while the widget is hovered or focused. Always visible where there is no hover. */
+.home-widget__menu--floating {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 150ms ease-in-out;
+}
+
+.home-widget:hover .home-widget__menu--floating,
+.home-widget:focus-within .home-widget__menu--floating,
+.home-widget__menu--floating.ant-dropdown-open {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .home-widget__menu--floating {
+    opacity: 1;
+  }
+}
+
+/* A clickable row inside a widget's list (a task, a comment, a person). A real button, so it works
+   from the keyboard; it bleeds 8px past the card padding so its hover background reads as a row. */
+.home-widget-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: calc(100% + 16px);
+  margin: 0 -8px;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 150ms ease-in-out;
+}
+
+.home-widget-row:hover {
+  background: var(--home-widget-row-hover);
+}
+
+.home-widget-row:focus-visible {
+  outline: 2px solid var(--home-widget-accent);
+  outline-offset: -2px;
+}
+
+/* While a widget is being dragged: grabbing cursor everywhere, and no hover effects, tooltips or
+   grips inside the widgets under the pointer. */
+body.home-widget-dragging,
+body.home-widget-dragging * {
+  cursor: grabbing !important;
+}
+
+.home-board.is-dragging .home-widget > :not(.home-widget__grip):not(.home-widget__drop) {
+  pointer-events: none;
+}
+
+.home-board.is-dragging .home-widget__grip {
+  opacity: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-widget__grip,
+  .home-widget__menu--floating {
+    transition: none;
+  }
+
+  .home-widget.is-just-added {
+    animation: none;
+  }
+}

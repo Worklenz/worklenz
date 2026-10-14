@@ -37,7 +37,8 @@
     "failedToRemoveDependency": "Failed to remove dependency.",
     "taskAddedToRoadmap": "Task added to the roadmap for the next 5 days.",
     "failedToAddTaskToRoadmap": "Failed to add the task to the roadmap.",
-    "unscheduledTaskNotFound": "Unable to find the selected task."
+    "unscheduledTaskNotFound": "Unable to find the selected task.",
+    "undatedTaskReadOnly": "Task without dates (read-only for guests)"
   },
   "common": {
     "noStart": "No start",

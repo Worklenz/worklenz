@@ -117,4 +117,7 @@ export enum SocketEvents {
   // Task attachments changed (created/deleted) so open task lists can refresh
   // without a manual reload. Appended last to keep existing numeric values.
   TASK_ATTACHMENTS_UPDATED,
+
+  // Owner/admin reporting overview room (org-scoped). Appended last to keep numeric values.
+  JOIN_OR_LEAVE_REPORTING_ROOM,
 }

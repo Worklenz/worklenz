@@ -93,7 +93,8 @@
     "templateNoProjects": "{{company}} 还没有项目，因此没有可以应用模板的内容。",
     "templateTooManyProjects": "{{company}} 的项目数量超出此处列出的项目数量。之后为每个项目分配访问权限。",
     "templateApplied": "授予 {{template}} 访问 {{company}} 当前项目的所有 {{count}} 的权限。之后您可以从行菜单中对每个项目进行微调。",
-    "templateHint": "选择一个模板以立即授予对每个当前项目的访问权限，或者保持原样，然后单独分配项目。"
+    "templateHint": "选择一个模板以立即授予对每个当前项目的访问权限，或者保持原样，然后单独分配项目。",
+    "existingUsers": "现有用户"
   },
   "existing": {
     "helper": "没有主动门户访问权限的联系人。",

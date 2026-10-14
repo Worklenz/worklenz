@@ -57,7 +57,8 @@
         "selectDate": "Wybierz datę",
         "selectOption": "Wybierz opcję",
         "selectPeople": "Wybierz osoby",
-        "updateError": "Nie udało się zaktualizować pola niestandardowego"
+        "updateError": "Nie udało się zaktualizować pola niestandardowego",
+        "enterText": "Wpisz tekst"
       },
       "recurring": "Cykliczne"
     },

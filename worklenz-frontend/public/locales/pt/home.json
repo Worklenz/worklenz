@@ -20,7 +20,8 @@
     "showDone": "Mostrar Concluídas",
     "created": "Criada",
     "finished": "Finalizada",
-    "tasks": "tarefas"
+    "tasks": "tarefas",
+    "loading": "Carregando..."
   },
   "projects": {
     "title": "Projetos",
@@ -103,7 +104,15 @@
     "searchMembers": "Buscar por nome ou e-mail…",
     "noMembersFound": "Nenhum membro encontrado",
     "time": "Tempo",
-    "markTimeOff": "Marcar Ausência / Licença"
+    "markTimeOff": "Marcar Ausência / Licença",
+    "pinned": "Fixadas",
+    "tabsLabel": "Filtrar tarefas",
+    "pinTask": "Fixar tarefa",
+    "unpinTask": "Desafixar tarefa",
+    "pinLimitReached": "Você pode fixar até {{limit}} tarefas. Desafixe uma para fixar outra.",
+    "noPinnedTasks": "Nenhuma tarefa fixada ainda. Passe o cursor sobre qualquer tarefa e clique no ícone de alfinete para mantê-la aqui.",
+    "pinFailed": "Não foi possível atualizar a fixação. Tente novamente.",
+    "viewAll": "Ver todas ({{total}})"
   },
   "homeCalendar": {
     "todayButton": "Hoje",
@@ -128,7 +137,9 @@
     "weekdayMiniThu": "Q",
     "weekdayMiniFri": "S",
     "weekdayMiniSat": "S",
-    "weekdayMiniSun": "D"
+    "weekdayMiniSun": "D",
+    "clientsSearchPlaceholder": "Pesquisar clientes...",
+    "projectsSearchPlaceholder": "Pesquisar projetos..."
   },
   "activityLogs": {
     "title": "Atividade Recente",
@@ -237,7 +248,9 @@
     "weekdayThu": "Qui",
     "weekdayFri": "Sex",
     "weekdaySat": "Sáb",
-    "weekdaySun": "Dom"
+    "weekdaySun": "Dom",
+    "createdTimeColumn": "Hora de criação",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "Ainda não há despesas registradas",
@@ -251,7 +264,8 @@
     "columnAssignee": "Responsável",
     "columnDate": "Data",
     "openTask": "Abrir a tarefa",
-    "rowsPerPage": "Linhas por página:"
+    "rowsPerPage": "Linhas por página:",
+    "addExpense": "Adicionar despesa"
   },
   "addExpense": {
     "modalTitle": "Adicionar despesa",
@@ -373,7 +387,8 @@
     "tasks": "Tarefas",
     "activity": "Atividade",
     "timeLogged": "Tempo registrado",
-    "title": "Continue de onde você parou"
+    "title": "Continue de onde você parou",
+    "showTabs": "Mostrar abas"
   },
   "focusTime": {
     "title": "Foco e Tempo",
@@ -391,5 +406,133 @@
       "personal": "Pessoal",
       "other": "Outro"
     }
-  }
+  },
+  "customize": {
+    "button": "Personalizar",
+    "title": "Personalizar Início",
+    "description": "Arraste as seções para reordená-las ou use os botões de seta. Desative uma seção para ocultá-la da sua página inicial.",
+    "mainColumn": "Área principal",
+    "sideColumn": "Painel lateral",
+    "emptyColumn": "Solte uma seção aqui",
+    "dragHandle": "Reordenar {{name}}. Pressione espaço para pegar e use as setas do teclado.",
+    "moveUp": "Mover para cima",
+    "moveDown": "Mover para baixo",
+    "moveUpNamed": "Mover {{name}} para cima",
+    "moveDownNamed": "Mover {{name}} para baixo",
+    "moveToSide": "Mover para o painel lateral",
+    "moveToMain": "Mover para a área principal",
+    "cannotHide": "Esta seção não pode ser ocultada.",
+    "showNamed": "Mostrar {{name}}",
+    "reset": "Restaurar padrão",
+    "resetConfirm": "Restaurar as configurações padrão do Início?",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "widgets": {
+      "statCards": "Cartões de resumo",
+      "priorities": "Prioridades das tarefas",
+      "progressDonut": "Meu progresso",
+      "continue": "Continue de onde parou",
+      "greeting": "Banner de boas-vindas",
+      "teamMembers": "Membros da equipe",
+      "assignedByMe": "Tarefas atribuídas por mim",
+      "mentions": "Comentários que me mencionam",
+      "todo": "Minha lista de tarefas"
+    },
+    "tabs": {
+      "layout": "Disposição",
+      "taskTabs": "Abas de tarefas",
+      "sorting": "Ordenação",
+      "sidebar": "Barra lateral esquerda",
+      "defaultView": "Visualização padrão"
+    },
+    "topSection": "Topo da página",
+    "tabsDescription": "Escolha quais abas aparecem acima da tabela de tarefas e em que ordem. Pelo menos uma aba deve permanecer ativa.",
+    "cannotHideLastTab": "Pelo menos uma aba deve permanecer visível.",
+    "sortDescription": "Escolha como as tarefas são ordenadas na tabela. As tarefas fixadas ficam sempre no topo.",
+    "sortField": "Ordenar por",
+    "sortOrder": "Direção",
+    "sortDefault": "Ordem padrão (data de vencimento, mais próxima primeiro)",
+    "sortAsc": "Crescente",
+    "sortDesc": "Decrescente",
+    "sortPinnedNote": "A aba Fixadas sempre mostra primeiro a tarefa fixada mais recentemente.",
+    "sidebarDescription": "Reordene os itens da barra lateral esquerda e escolha quais aparecem. Fixe um para que seja a página aberta primeiro ao entrar no Início.",
+    "pinSidebarItem": "Fixar {{name}} como a página que abre primeiro",
+    "unpinSidebarItem": "Desafixar {{name}}",
+    "assignedDefault": "Abrir a tabela em",
+    "assignedLastUsed": "A que usei por último",
+    "cannotHideLanding": "O Início abre nesta página. Fixe outra página para ocultá-la.",
+    "cannotHideLastItem": "Pelo menos um item deve permanecer visível.",
+    "tableTitle": "Personalizar a tabela de tarefas",
+    "tableResetConfirm": "Redefinir a tabela de tarefas para as configurações padrão?",
+    "done": "Concluído"
+  },
+  "widgets": {
+    "menu": {
+      "options": "Opções de {{name}}",
+      "showPeriod": "Mostrar",
+      "remove": "Remover widget"
+    },
+    "add": {
+      "button": "Adicionar widget",
+      "hint": "Pressione Adicionar ou arraste um widget para a sua página.",
+      "addAction": "Adicionar",
+      "addNamed": "Adicionar {{name}}",
+      "empty": "Todos os widgets já estão na sua página inicial."
+    },
+    "descriptions": {
+      "greeting": "Uma saudação com a data de hoje e o que precisa da sua atenção.",
+      "statCards": "Tarefas de hoje, atrasadas, concluídas e seu tempo de foco.",
+      "priorities": "Suas tarefas de hoje ou desta semana, prontas para serem feitas.",
+      "progressDonut": "Quanto do seu trabalho atribuído está concluído, em andamento ou pendente.",
+      "continue": "Volte aos projetos, tarefas, atividades e tempo registrado recentes.",
+      "teamMembers": "Veja quem está na sua equipe e abra a página completa da equipe.",
+      "assignedByMe": "Tarefas que você atribuiu a colegas, para acompanhar o andamento.",
+      "mentions": "Comentários recentes em tarefas em que um colega @mencionou você.",
+      "todo": "Anote tarefas pessoais e marque-as como concluídas."
+    },
+    "drag": {
+      "pickedUp": "{{name}} selecionado.",
+      "dropped": "{{name}} solto.",
+      "cancelled": "A movimentação de {{name}} foi cancelada."
+    },
+    "dropHere": "Solte um widget aqui",
+    "state": {
+      "error": "Não foi possível carregar este widget.",
+      "retry": "Tentar novamente"
+    },
+    "empty": {
+      "title": "Arraste e solte novos widgets",
+      "titleNoDrag": "Adicione widgets à sua página inicial",
+      "button": "Adicionar widgets"
+    }
+  },
+  "teamMembers": {
+    "empty": "Ainda não há membros na equipe.",
+    "viewTeam": "Ver equipe"
+  },
+  "assignedByMe": {
+    "empty": "Você não atribuiu nenhuma tarefa em aberto.",
+    "assignNewTask": "Atribuir nova tarefa",
+    "viewAll": "Ver todas as tarefas atribuídas ({{total}})"
+  },
+  "mentions": {
+    "empty": "Ninguém mencionou você em um comentário ainda.",
+    "reply": "Responder",
+    "replyPlaceholder": "Escreva uma resposta…",
+    "replyHint": "Publicado como comentário em “{{task}}”.",
+    "replySent": "Resposta adicionada a “{{task}}”.",
+    "replyFailed": "Não foi possível publicar sua resposta. Tente novamente.",
+    "replyLabel": "Responder a {{name}}"
+  },
+  "todoWidget": {
+    "addPlaceholder": "Adicione uma tarefa e pressione Enter",
+    "addLabel": "Nova tarefa",
+    "empty": "Tudo em dia.",
+    "viewAll": "Abrir minha lista de tarefas",
+    "viewAllMore": "Ver todas (mais {{remaining}})",
+    "addFailed": "Não foi possível adicionar a tarefa. Tente novamente.",
+    "completeFailed": "Não foi possível atualizar a tarefa. Tente novamente."
+  },
+  "projectsAtRisk": "Projetos em risco",
+  "flagged": "sinalizado"
 }

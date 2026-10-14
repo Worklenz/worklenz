@@ -47,5 +47,6 @@
     "loadChannelsFailed": "Laden der Kanäle fehlgeschlagen",
     "refreshChannelsFailed": "Aktualisierung der Kanäle fehlgeschlagen",
     "addIntegrationFailed": "Hinzufügen der Integration fehlgeschlagen"
-  }
+  },
+  "businessPlan": "Geschäft"
 }

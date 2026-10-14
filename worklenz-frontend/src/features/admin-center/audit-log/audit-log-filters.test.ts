@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import {
   DEFAULT_AUDIT_LOG_FILTERS,
   IAuditLogFilterState,
+  getAuditLogNow,
   hasActiveAuditLogFilters,
   toAuditLogQueryParams,
 } from './audit-log-filters';
@@ -23,9 +24,16 @@ const withFilters = (overrides: Partial<IAuditLogFilterState>): IAuditLogFilterS
 });
 
 describe('toAuditLogQueryParams', () => {
-  it('sends the default "last 30 days" range and nothing else', () => {
+  it('sends the default "today" range and nothing else', () => {
     expect(toAuditLogQueryParams(DEFAULT_AUDIT_LOG_FILTERS, {}, NOW)).toEqual({
-      start_date: '2026-09-06',
+      start_date: '2026-10-06',
+      end_date: '2026-10-06',
+    });
+  });
+
+  it('sends the "last 7 days" range when picked', () => {
+    expect(toAuditLogQueryParams(withFilters({ datePreset: 'last_7_days' }), {}, NOW)).toEqual({
+      start_date: '2026-09-29',
       end_date: '2026-10-05',
     });
   });
@@ -71,13 +79,36 @@ describe('toAuditLogQueryParams', () => {
   });
 });
 
+describe('getAuditLogNow', () => {
+  // 2026-10-13 20:00 UTC is already Oct 14 in Colombo (UTC+5:30) but still Oct 13 in New York.
+  const INSTANT = new Date('2026-10-13T20:00:00Z');
+
+  it("uses the profile timezone's calendar date for today", () => {
+    expect(getAuditLogNow('Asia/Colombo', INSTANT).format('YYYY-MM-DD')).toBe('2026-10-14');
+    expect(getAuditLogNow('America/New_York', INSTANT).format('YYYY-MM-DD')).toBe('2026-10-13');
+  });
+
+  it('sends that date as the "today" range', () => {
+    expect(toAuditLogQueryParams(DEFAULT_AUDIT_LOG_FILTERS, {}, getAuditLogNow('Asia/Colombo', INSTANT))).toEqual({
+      start_date: '2026-10-14',
+      end_date: '2026-10-14',
+    });
+  });
+
+  it('falls back to the browser clock for a missing or unknown zone', () => {
+    const local = dayjs(INSTANT).format('YYYY-MM-DD');
+    expect(getAuditLogNow(undefined, INSTANT).format('YYYY-MM-DD')).toBe(local);
+    expect(getAuditLogNow('Mars/Olympus_Mons', INSTANT).format('YYYY-MM-DD')).toBe(local);
+  });
+});
+
 describe('hasActiveAuditLogFilters', () => {
   it('is false for the defaults', () => {
     expect(hasActiveAuditLogFilters(DEFAULT_AUDIT_LOG_FILTERS)).toBe(false);
   });
 
   it.each([
-    ['a different date preset', { datePreset: 'today' as const }],
+    ['a different date preset', { datePreset: 'last_7_days' as const }],
     ['a category', { categories: ['lifecycle' as const] }],
     ['an actor', { actorUserIds: ['u1'] }],
     ['a search', { search: 'login' }],

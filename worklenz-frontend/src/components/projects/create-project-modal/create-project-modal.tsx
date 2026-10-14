@@ -802,7 +802,7 @@ export const CreateProjectModal = ({
         open={open && !isCsvImportOpen}
         onCancel={onClose}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
         width={880}
         className="create-project-modal"
         title={

@@ -10,5 +10,12 @@
   "passwordRequired": "请输入您的新密码",
   "returnToLoginButton": "返回登录",
   "confirmPasswordRequired": "请确认您的新密码",
-  "passwordMismatch": "两次输入的密码不匹配"
+  "passwordMismatch": "两次输入的密码不匹配",
+  "passwordChecklist": {
+    "lowercase": "一个小写字母",
+    "number": "一个数字",
+    "uppercase": "一个大写字母",
+    "minLength": "至少8个字符",
+    "special": "一个特殊字符"
+  }
 }

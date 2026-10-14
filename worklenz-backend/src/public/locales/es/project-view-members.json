@@ -10,5 +10,8 @@
   "refreshButtonTooltip": "Actualizar miembros",
   "memberCount": "Miembro",
   "membersCountPlural": "Miembros",
-  "emptyText": "No hay archivos adjuntos en el proyecto."
+  "emptyText": "No hay archivos adjuntos en el proyecto.",
+  "removeFromProject": "Eliminar del proyecto",
+  "assignFailedMessage": "No se pudieron actualizar los asignados a la tarea. Por favor inténtalo de nuevo.",
+  "assignFailedTitle": "La tarea falló"
 }

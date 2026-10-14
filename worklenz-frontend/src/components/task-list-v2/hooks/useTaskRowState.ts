@@ -36,23 +36,59 @@ export const useTaskRowState = (task: Task) => {
 
   // Memoize converted task for AssigneeSelector to prevent recreation
   const convertedTask = useMemo(
-    () => ({
-      id: task.id,
-      name: taskDisplayName,
-      task_key: task.task_key || taskDisplayName,
-      assignees:
-        task.assignee_names?.map((assignee: InlineMember, index: number) => ({
-          team_member_id: assignee.team_member_id || `assignee-${index}`,
-          id: assignee.team_member_id || `assignee-${index}`,
-          project_member_id: assignee.team_member_id || `assignee-${index}`,
-          name: assignee.name || '',
-        })) || [],
-      parent_task_id: task.parent_task_id,
-      status_id: undefined,
-      project_id: undefined,
-      manual_progress: undefined,
-    }),
-    [task.id, taskDisplayName, task.task_key, task.assignee_names, task.parent_task_id]
+    () => {
+      // `assignee_names` is truncated by the backend (WorklenzControllerBase.createTagList
+      // caps it at 4 real members + a synthetic "+N" placeholder), so it must NOT be used
+      // as the source of truth for WHO is assigned. `task.assignees` is the full,
+      // untruncated list of assigned member IDs returned by getTasksV3 / the assign
+      // socket ack — prefer it, and use `assignee_names` only to enrich the display
+      // name of the members it happens to include. Without this, the 5th+ assignee
+      // (collapsed into the "+N" placeholder) shows as unchecked in the picker and
+      // can't be removed. Mirrors the fix already applied in all-tasks-reports-table.tsx.
+      const namesById = new Map<string, InlineMember>();
+      (task.assignee_names || []).forEach(assignee => {
+        const id = assignee.team_member_id;
+        if (id) namesById.set(id, assignee);
+      });
+
+      // Prefer `task.assignees`, but check the FILTERED result, not the raw
+      // length. A stale/legacy state may hold `[undefined, ...]` (length > 0
+      // but every entry invalid) — in that case fall back to `assignee_names`.
+      const fromAssignees: string[] = Array.isArray(task.assignees)
+        ? task.assignees
+            .map((assignee: any) =>
+              typeof assignee === 'string' ? assignee : assignee?.team_member_id
+            )
+            .filter((id: unknown): id is string => Boolean(id))
+        : [];
+
+      const assigneeIds: string[] =
+        fromAssignees.length > 0
+          ? fromAssignees
+          : (task.assignee_names || [])
+              .map(assignee => assignee.team_member_id)
+              .filter((id): id is string => Boolean(id));
+
+      return {
+        id: task.id,
+        name: taskDisplayName,
+        task_key: task.task_key || taskDisplayName,
+        assignees: assigneeIds.map(id => {
+          const info = namesById.get(id);
+          return {
+            team_member_id: id,
+            id,
+            project_member_id: id,
+            name: info?.name || '',
+          };
+        }),
+        parent_task_id: task.parent_task_id,
+        status_id: undefined,
+        project_id: undefined,
+        manual_progress: undefined,
+      };
+    },
+    [task.id, taskDisplayName, task.task_key, task.assignees, task.assignee_names, task.parent_task_id]
   );
 
   // Memoize formatted dates

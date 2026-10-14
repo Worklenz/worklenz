@@ -10,5 +10,11 @@
   "error": "加载项目时出错",
   "pinnedTab": "已固定为默认标签页",
   "pinTab": "固定为默认标签页",
-  "unpinTab": "取消固定默认标签页"
-} 
+  "unpinTab": "取消固定默认标签页",
+  "You do not have permission to access this project": "您没有访问该项目的权限",
+  "Failed to load project": "无法加载项目",
+  "issueTypeSaveError": "无法更改工作项类型。请重试。",
+  "changeIssueType": "更改工作项类型",
+  "unpinTabFromHeader": "从页眉移除",
+  "pinTabToHeader": "在页眉显示"
+}

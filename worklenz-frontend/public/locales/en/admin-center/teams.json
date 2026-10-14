@@ -31,5 +31,6 @@
   "admin": "Admin",
   "member": "Member",
   "cannotChangeOwnerRole": "Owner role cannot be changed",
-  "pendingInvitation": "Pending invitation"
+  "pendingInvitation": "Pending invitation",
+  "clickToEditName": "Click to edit name"
 }

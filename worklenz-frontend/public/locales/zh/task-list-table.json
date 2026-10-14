@@ -224,7 +224,21 @@
       "labels": "标签",
       "addLabel": "+ 添加标签",
       "keyLabelPlaceholder": "例如：MK"
-    }
+    },
+    "newColumn": "新列",
+    "projectNotFound": "未找到项目",
+    "columnCreated": "列已创建。点击表头进行编辑。",
+    "columnCreationFailed": "创建列失败",
+    "guestCannotAddColumn": "访客用户无法添加自定义列",
+    "columnNameRequired": "列名必填",
+    "columnNotFound": "未找到列",
+    "columnIdNotFound": "未找到列 ID - 请刷新后重试",
+    "columnUpdated": "列名已更新",
+    "updateFailed": "更新列名失败",
+    "enterColumnName": "输入列名",
+    "clickToEdit": "点击编辑列名",
+    "columnSettings": "列设置",
+    "textPlaceholder": "输入文本"
   },
   "indicators": {
     "tooltips": {
@@ -249,5 +263,16 @@
     "completeTaskDependencies": "请先完成任务依赖项，然后再继续",
     "incompleteDependencies": "不完整的依赖关系！",
     "someDependenciesNotCompleted": "部分任务未更新。请确保所有相关任务均已完成，然后再继续。"
-  }
+  },
+  "insertTaskText": "插入任务",
+  "insertTaskAtBottomText": "在底部插入任务",
+  "untitledTaskName": "未命名任务",
+  "openTask": "打开任务",
+  "descriptionPlaceholder": "添加描述…",
+  "descriptionDisabledTooltip": "仅查看 - 无法编辑",
+  "descriptionRichTooltip": "包含富文本格式 — 点击在任务抽屉中编辑",
+  "setDueTime": "设置截止时间",
+  "save": "保存",
+  "cancel": "取消",
+  "changeStatus": "更改状态: {{status}}"
 }

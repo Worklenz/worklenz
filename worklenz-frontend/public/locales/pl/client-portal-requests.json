@@ -89,5 +89,6 @@
   "customStatusRemovedSuccess": "Usunięto niestandardowy status",
   "customStatusRemovedError": "Nie udało się usunąć niestandardowego statusu",
   "closeButton": "Zamknij",
-  "loadingText": "Ładowanie..."
+  "loadingText": "Ładowanie...",
+  "selectStatus": "Wybierz stan"
 }

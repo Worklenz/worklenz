@@ -1,5 +1,4 @@
-import { Card, Table, Typography } from '@/shared/antd-imports';
-import { TableProps } from 'antd/lib';
+import { Card, Table, Typography, TableProps } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../hooks/useAppSelector';
 // import { toggleRequestModal } from '../../../features/clients-portal/requests/requests-slice';

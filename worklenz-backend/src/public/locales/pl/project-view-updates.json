@@ -46,5 +46,10 @@
   "convertToTaskError": "Nie udało się utworzyć zadania",
   "convertToTaskEmpty": "Wiadomość nie zawiera tekstu, który mógłby zostać użyty jako nazwa zadania",
   "attachFile": "Załącz plik",
-  "attachmentUploadError": "Nie udało się przesłać załącznika"
+  "attachmentUploadError": "Nie udało się przesłać załącznika",
+  "deleteSuccess": "Komentarz został pomyślnie usunięty",
+  "editSuccess": "Komentarz został pomyślnie zaktualizowany",
+  "deleteError": "Nie udało się usunąć komentarza",
+  "editError": "Nie udało się edytować komentarza",
+  "commentError": "Nie udało się wysłać komentarza"
 }

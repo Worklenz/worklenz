@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DownOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@/shared/antd-imports';
+import { SortAscendingOutlined, SortDescendingOutlined } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchTasksV3, setSort } from '@/features/task-management/task-management.slice';
@@ -134,9 +134,6 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({ themeClasses, isDark
             {currentFieldLabel}
           </span>
         )}
-        <DownOutlined
-          className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-        />
       </button>
 
       {open && (

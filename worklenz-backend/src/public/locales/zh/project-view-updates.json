@@ -2,5 +2,10 @@
   "inputPlaceholder": "添加评论",
   "addButton": "添加",
   "cancelButton": "取消",
-  "deleteButton": "删除"
+  "deleteButton": "删除",
+  "deleteSuccess": "评论删除成功",
+  "editSuccess": "评论更新成功",
+  "deleteError": "删除评论失败",
+  "editError": "无法编辑评论",
+  "commentError": "无法发送评论"
 }

@@ -44,5 +44,8 @@
   "DUE_DATE_UPDATED": "Due date updated successfully",
   "DUE_DATE_CLEARED": "Due date cleared successfully",
   "archiveSuccessTitle": "Bulk update complete",
-  "archiveSuccessMessage": "{{parentCount}} tasks and {{subtaskCount}} subtasks {{action}}d."
+  "archiveSuccessMessage": "{{parentCount}} tasks and {{subtaskCount}} subtasks {{action}}d.",
+  "SET_START_DATE": "Set Start Date",
+  "Unarchive": "Unarchive",
+  "Archive": "Archive"
 }

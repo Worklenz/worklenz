@@ -1,5 +1,12 @@
 import { format } from 'date-fns';
-import { enUS, es, pt, de, zhCN, sq, pl, fr } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale/en-US';
+import { es } from 'date-fns/locale/es';
+import { pt } from 'date-fns/locale/pt';
+import { de } from 'date-fns/locale/de';
+import { zhCN } from 'date-fns/locale/zh-CN';
+import { sq } from 'date-fns/locale/sq';
+import { pl } from 'date-fns/locale/pl';
+import { fr } from 'date-fns/locale/fr';
 import i18n from '@/i18n';
 import { getLanguageFromLocalStorage } from './language-utils';
 

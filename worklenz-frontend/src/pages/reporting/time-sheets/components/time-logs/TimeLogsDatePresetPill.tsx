@@ -11,6 +11,8 @@ import {
   ITimeLogsFilterState,
   TIME_LOGS_DATE_PRESETS,
   TimeLogsDatePreset,
+  formatResolvedRange,
+  resolveDateRange,
 } from './time-logs-filters';
 
 interface TimeLogsDatePresetPillProps {
@@ -22,6 +24,8 @@ interface TimeLogsDatePresetPillProps {
   ) => void;
   /** When provided, only these presets are shown in the dropdown. Defaults to TIME_LOGS_DATE_PRESETS. */
   allowedPresets?: TimeLogsDatePreset[];
+  /** Whether to show the resolved date range next to the preset label (e.g. "Sep 1 – Sep 17"). Defaults to true unless allowedPresets is provided. */
+  showResolvedRange?: boolean;
 }
 
 /** Default text per preset, keyed to the `time-report` locale keys. */
@@ -45,6 +49,7 @@ export const TimeLogsDatePresetPill: React.FC<TimeLogsDatePresetPillProps> = ({
   customRange,
   onChange,
   allowedPresets,
+  showResolvedRange,
 }) => {
   const { t } = useTranslation('time-report');
   const { token } = theme.useToken();
@@ -53,6 +58,7 @@ export const TimeLogsDatePresetPill: React.FC<TimeLogsDatePresetPillProps> = ({
   const [dateError, setDateError] = React.useState<string | null>(null);
 
   const presetsToShow = allowedPresets ?? TIME_LOGS_DATE_PRESETS;
+  const shouldShowRange = showResolvedRange ?? !allowedPresets;
 
   const labelOf = (preset: TimeLogsDatePreset) =>
     t(PRESET_LABELS[preset].key, { defaultValue: PRESET_LABELS[preset].defaultValue });
@@ -85,16 +91,27 @@ export const TimeLogsDatePresetPill: React.FC<TimeLogsDatePresetPillProps> = ({
     if (preset !== 'custom') setOpen(false);
   };
 
+  // Compact presets are used when showResolvedRange is false, but full width is kept when showing date ranges or the custom range picker.
+  const dropdownWidth =
+    datePreset === 'custom' || shouldShowRange
+      ? 'min(300px, calc(100vw - 32px))'
+      : 'min(160px, calc(100vw - 32px))';
+
   const dropdownContent = (
     <Card
       className="custom-card"
-      style={{ width: 'min(160px, calc(100vw - 32px))' }}
+      style={{ width: dropdownWidth }}
       styles={{ body: { padding: 0 } }}
     >
       <div role="listbox" aria-label={t('timeLogsFiltersTitle', { defaultValue: 'Filters' })}>
         <List style={{ padding: 0 }}>
           {presetsToShow.map(preset => {
             const selected = datePreset === preset;
+            const rangeText =
+              !shouldShowRange || preset === 'custom'
+                ? null
+                : formatResolvedRange(resolveDateRange({ datePreset: preset, customRange: null }));
+
             return (
               <List.Item
                 className={`custom-list-item ${themeMode === 'dark' ? 'dark' : ''}`}
@@ -117,7 +134,20 @@ export const TimeLogsDatePresetPill: React.FC<TimeLogsDatePresetPillProps> = ({
                   color: selected ? token.colorPrimary : undefined,
                 }}
               >
-                <span>{labelOf(preset)}</span>
+                <Flex justify="space-between" align="baseline" gap={12} style={{ width: '100%' }}>
+                  <span>{labelOf(preset)}</span>
+                  {rangeText && (
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: token.colorTextSecondary,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {rangeText}
+                    </span>
+                  )}
+                </Flex>
               </List.Item>
             );
           })}

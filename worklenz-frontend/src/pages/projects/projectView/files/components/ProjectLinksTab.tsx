@@ -52,7 +52,7 @@ const EditLinkModal: React.FC<EditLinkModalProps> = ({ link, open, loading, onSu
       onOk={handleOk}
       onCancel={onCancel}
       confirmLoading={loading}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" requiredMark={false}>
         <Form.Item

@@ -22,13 +22,41 @@
   "clickToFilter": "Click to filter by",
   "noProjects": "No projects found",
   "addToFavourites": "Add to favourites",
+  "removeFromFavourites": "Remove from favourites",
   "list": "List",
   "group": "Group",
   "listView": "List View",
   "groupView": "Group View",
   "groupBy": {
     "category": "Category",
-    "client": "Client"
+    "client": "Client",
+    "priorities": "priorities",
+    "priority": "Priority",
+    "categories": "categories",
+    "clients": "clients"
   },
-  "noPermission": "You don't have permission to perform this action"
+  "noPermission": "You don't have permission to perform this action",
+  "fieldsText": "Fields",
+  "noOptionsFound": "No Options Found",
+  "showFields": "Show Fields",
+  "retry": "Retry",
+  "searchProjects": "Search by project name",
+  "favorite": "Favorite",
+  "filter": {
+    "noCategory": "No Category",
+    "noPriority": "No Priority",
+    "noClient": "No Client"
+  },
+  "activeFiltersCount": "Filters: {{count}}",
+  "settingsDisabledForGuest": "Settings Disabled For Guest",
+  "rowsPerPage": "Rows per page:",
+  "errors": {
+    "refreshFailed": "Failed to refresh projects. Please try again.",
+    "loadFailed": "Failed to load projects. Please try again."
+  },
+  "fieldsWithCount": "Fields: {{count}}",
+  "groups": "groups",
+  "endDate": "Project End Date",
+  "settingsTooltip": "Open project settings",
+  "priority": "Priority"
 }
