@@ -77,7 +77,7 @@ const MembersReportsTable = () => {
     }
   };
 
-  const columns: TableColumnsType = [
+  const columns: TableColumnsType<IRPTMember> = [
     {
       key: 'member',
       title: (
