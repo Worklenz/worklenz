@@ -532,12 +532,14 @@ const HomeLogTime: React.FC = () => {
 
   const renderLogSortableTitle = useCallback(
     (label: string, field: LogSortField) => (
-      <span
+        <span
         onClick={() => handleLogSortClick(field)}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', cursor: 'pointer', userSelect: 'none' }}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', minWidth: 0, cursor: 'pointer', userSelect: 'none' }}
       >
-        <span>{label}</span>
-        <SortArrows active={logSortField === field ? logSortOrder : null} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{label}</span>
+        <span style={{ flexShrink: 0 }}>
+          <SortArrows active={logSortField === field ? logSortOrder : null} />
+        </span>
       </span>
     ),
     [logSortField, logSortOrder, handleLogSortClick]
@@ -656,6 +658,7 @@ const HomeLogTime: React.FC = () => {
         key: 'priority',
         title: renderLogSortableTitle(t('logTime.priorityColumn', { defaultValue: 'Priority' }), 'priority_name'),
         width: '12%',
+        ellipsis: true,
         filters: logPriorityFilterOptions,
         filteredValue: selectedLogPriorityNames,
         onFilter: (value, record) => record.priority_name === value,
@@ -669,10 +672,13 @@ const HomeLogTime: React.FC = () => {
             </Tag>
           ) : null,
       },
-      {
+            {
         key: 'billable',
         title: t('logTime.billableColumn', { defaultValue: 'Billable' }),
+        // Fixed pixel width (not %) so the header text and filter icon always fit.
         width: '10%',
+        ellipsis: true,
+        onHeaderCell: () => ({ style: { whiteSpace: 'nowrap' } }),
         filters: logBillableFilterOptions,
         filteredValue: selectedLogBillable,
         onFilter: (value, record) => (record.billable ? 'yes' : 'no') === value,
@@ -699,12 +705,14 @@ const HomeLogTime: React.FC = () => {
         key: 'date',
         title: renderLogSortableTitle(t('logTime.dateColumn', { defaultValue: 'Date' }), 'created_at'),
         width: '10%',
+        ellipsis: true,
         render: (_, record) => <span style={{ opacity: 0.5, fontSize: 11 }}>{formatLogDate(record.created_at)}</span>,
       },
       {
         key: 'createdTime',
         title: t('logTime.createdTimeColumn', { defaultValue: 'Created Time' }),
         width: '10%',
+         ellipsis: true,
         render: (_, record) => {
           if (!record.created_at) {
             return <span style={{ opacity: 0.5, fontSize: 11 }}>-</span>;
