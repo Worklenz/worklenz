@@ -1,0 +1,90 @@
+{
+  "title": "GitHub",
+  "description": "将 GitHub 仓库关联到软件项目，即可在问题上查看分支、拉取请求和提交。",
+  "viewOnly": "仅查看",
+  "connectedHint": "打开软件项目，然后前往“设置 > 集成”来关联仓库。",
+  "repositoryCount_one": "{{count}} 个可用仓库",
+  "repositoryCount_other": "{{count}} 个可用仓库",
+  "connect": {
+    "button": "连接 GitHub",
+    "adminOnly": "只有团队所有者和管理员可以连接 GitHub。"
+  },
+  "status": {
+    "connected": "已连接",
+    "suspended": "已暂停"
+  },
+  "notConfigured": {
+    "title": "未配置",
+    "description": "此 Worklenz 部署尚未设置 GitHub 应用。请联系管理员进行配置。"
+  },
+  "actions": {
+    "retry": "重试",
+    "refresh": "刷新仓库",
+    "cancel": "取消"
+  },
+  "disconnect": {
+    "title": "断开 GitHub 连接？",
+    "description": "同步将暂停。现有关联和历史记录会保留，重新连接后继续使用。",
+    "confirm": "断开连接",
+    "button": "断开连接"
+  },
+  "messages": {
+    "connected": "GitHub 连接成功。",
+    "requested": "已提交安装请求，需要组织所有者批准。",
+    "refreshed": "仓库列表已更新。",
+    "disconnected": "GitHub 已断开连接。"
+  },
+  "errors": {
+    "invalidState": "连接请求已过期，请重试。",
+    "forbidden": "您需要拥有此 GitHub 安装的访问权限，并且是团队所有者或管理员。",
+    "alreadyConnected": "此 GitHub 账号已连接到另一个 Worklenz 团队。",
+    "teamAlreadyConnected": "此团队已连接到其他 GitHub 账号，请先断开连接。",
+    "connectFailed": "无法连接 GitHub，请重试。",
+    "loadFailed": "无法加载 GitHub 状态。",
+    "refreshFailed": "无法刷新仓库。",
+    "disconnectFailed": "无法断开 GitHub 连接。"
+  },
+  "project": {
+    "subtitle": "在此项目的问题上查看分支、拉取请求和提交。",
+    "linked": "仓库已关联。",
+    "linkFailed": "无法关联仓库。",
+    "unlinked": "仓库已取消关联。",
+    "unlinkFailed": "无法取消关联仓库。",
+    "updateFailed": "无法更新基础分支。",
+    "notConnected": "请先在团队设置中连接 GitHub 账号，然后再关联仓库。",
+    "openIntegrations": "前往集成",
+    "selectPlaceholder": "选择要关联的仓库",
+    "noRepositories": "没有更多可用仓库",
+    "link": "关联",
+    "emptyManage": "尚未关联任何仓库。请在上方选择一个开始。",
+    "empty": "此项目尚未关联仓库。",
+    "private": "私有",
+    "unavailable": "已无法访问",
+    "baseBranch": "基础分支",
+    "editBaseBranch": "编辑基础分支",
+    "unlinkTitle": "取消关联此仓库？",
+    "unlinkDescription": "问题上已有的关联会保留，但不再跟踪新的活动。",
+    "unlink": "取消关联",
+    "unlinkAria": "取消关联 {{name}}",
+    "howItWorks": "在分支名称、提交信息或拉取请求标题中包含问题编号（如 {{example}}），即可将其关联到该问题。"
+  },
+  "development": {
+    "pr": {
+      "merged": "已合并",
+      "closed": "已关闭",
+      "draft": "草稿",
+      "approved": "已批准",
+      "changesRequested": "需要修改",
+      "open": "打开"
+    },
+    "loadFailed": "无法加载 GitHub 活动。",
+    "empty": "暂无 GitHub 活动。在分支名称、提交或拉取请求标题中包含 {{key}} 即可在此关联。",
+    "noRepositories": "此项目尚未关联仓库。请在“项目设置 > 集成”中关联。",
+    "pullRequests": "拉取请求",
+    "branches": "分支",
+    "commits": "提交",
+    "branchDeleted": "已删除",
+    "showFewer": "收起",
+    "showAll": "显示全部 {{count}} 个提交"
+  }
+}

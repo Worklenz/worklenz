@@ -1,0 +1,90 @@
+{
+  "title": "GitHub",
+  "description": "Link GitHub repositories to software projects to see branches, pull requests and commits on your issues.",
+  "viewOnly": "View only",
+  "connectedHint": "Open a software project, then go to Settings > Integrations to link repositories.",
+  "repositoryCount_one": "{{count}} repository available",
+  "repositoryCount_other": "{{count}} repositories available",
+  "connect": {
+    "button": "Connect GitHub",
+    "adminOnly": "Only team owners and admins can connect GitHub."
+  },
+  "status": {
+    "connected": "Connected",
+    "suspended": "Suspended"
+  },
+  "notConfigured": {
+    "title": "Not configured",
+    "description": "The GitHub App has not been set up for this Worklenz installation. Ask your administrator to configure it."
+  },
+  "actions": {
+    "retry": "Retry",
+    "refresh": "Refresh repositories",
+    "cancel": "Cancel"
+  },
+  "disconnect": {
+    "title": "Disconnect GitHub?",
+    "description": "Syncing will pause. Existing links and history are kept and resume if you reconnect.",
+    "confirm": "Disconnect",
+    "button": "Disconnect"
+  },
+  "messages": {
+    "connected": "GitHub connected successfully.",
+    "requested": "Installation was requested. An organization owner needs to approve it.",
+    "refreshed": "Repository list updated.",
+    "disconnected": "GitHub disconnected."
+  },
+  "errors": {
+    "invalidState": "The connection request expired. Please try connecting again.",
+    "forbidden": "You need access to this GitHub installation and must be a team owner or admin.",
+    "alreadyConnected": "This GitHub account is already connected to another Worklenz team.",
+    "teamAlreadyConnected": "This team is already connected to a different GitHub account. Disconnect it first.",
+    "connectFailed": "Could not connect GitHub. Please try again.",
+    "loadFailed": "Could not load GitHub status.",
+    "refreshFailed": "Could not refresh repositories.",
+    "disconnectFailed": "Could not disconnect GitHub."
+  },
+  "project": {
+    "subtitle": "See branches, pull requests and commits on this project’s issues.",
+    "linked": "Repository linked.",
+    "linkFailed": "Could not link repository.",
+    "unlinked": "Repository unlinked.",
+    "unlinkFailed": "Could not unlink repository.",
+    "updateFailed": "Could not update the base branch.",
+    "notConnected": "Connect your GitHub account in team settings before linking repositories.",
+    "openIntegrations": "Go to Integrations",
+    "selectPlaceholder": "Select a repository to link",
+    "noRepositories": "No more repositories available",
+    "link": "Link",
+    "emptyManage": "No repositories linked yet. Pick one above to get started.",
+    "empty": "No repositories linked to this project.",
+    "private": "Private",
+    "unavailable": "No longer accessible",
+    "baseBranch": "Base branch",
+    "editBaseBranch": "Edit base branch",
+    "unlinkTitle": "Unlink this repository?",
+    "unlinkDescription": "Existing links on issues stay, but new activity will no longer be tracked.",
+    "unlink": "Unlink",
+    "unlinkAria": "Unlink {{name}}",
+    "howItWorks": "Include an issue key such as {{example}} in a branch name, commit message or pull request title to link it to that issue."
+  },
+  "development": {
+    "pr": {
+      "merged": "Merged",
+      "closed": "Closed",
+      "draft": "Draft",
+      "approved": "Approved",
+      "changesRequested": "Changes requested",
+      "open": "Open"
+    },
+    "loadFailed": "Could not load GitHub activity.",
+    "empty": "No GitHub activity yet. Include {{key}} in a branch name, commit or pull request title to link it here.",
+    "noRepositories": "No repository is linked to this project. Link one in Project Settings > Integrations.",
+    "pullRequests": "Pull requests",
+    "branches": "Branches",
+    "commits": "Commits",
+    "branchDeleted": "Deleted",
+    "showFewer": "Show fewer",
+    "showAll": "Show all {{count}} commits"
+  }
+}

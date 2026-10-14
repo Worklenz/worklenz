@@ -1,0 +1,90 @@
+{
+  "title": "GitHub",
+  "description": "Vincula repositorios de GitHub a proyectos de software para ver ramas, pull requests y commits en tus incidencias.",
+  "viewOnly": "Solo lectura",
+  "connectedHint": "Abre un proyecto de software y ve a Ajustes > Integraciones para vincular repositorios.",
+  "repositoryCount_one": "{{count}} repositorio disponible",
+  "repositoryCount_other": "{{count}} repositorios disponibles",
+  "connect": {
+    "button": "Conectar GitHub",
+    "adminOnly": "Solo los propietarios y administradores del equipo pueden conectar GitHub."
+  },
+  "status": {
+    "connected": "Conectado",
+    "suspended": "Suspendido"
+  },
+  "notConfigured": {
+    "title": "No configurado",
+    "description": "La aplicación de GitHub no se ha configurado para esta instalación de Worklenz. Pide a tu administrador que la configure."
+  },
+  "actions": {
+    "retry": "Reintentar",
+    "refresh": "Actualizar repositorios",
+    "cancel": "Cancelar"
+  },
+  "disconnect": {
+    "title": "¿Desconectar GitHub?",
+    "description": "La sincronización se pausará. Los vínculos y el historial existentes se conservan y se reanudan si vuelves a conectar.",
+    "confirm": "Desconectar",
+    "button": "Desconectar"
+  },
+  "messages": {
+    "connected": "GitHub conectado correctamente.",
+    "requested": "Se solicitó la instalación. Un propietario de la organización debe aprobarla.",
+    "refreshed": "Lista de repositorios actualizada.",
+    "disconnected": "GitHub desconectado."
+  },
+  "errors": {
+    "invalidState": "La solicitud de conexión expiró. Inténtalo de nuevo.",
+    "forbidden": "Necesitas acceso a esta instalación de GitHub y ser propietario o administrador del equipo.",
+    "alreadyConnected": "Esta cuenta de GitHub ya está conectada a otro equipo de Worklenz.",
+    "teamAlreadyConnected": "Este equipo ya está conectado a otra cuenta de GitHub. Desconéctala primero.",
+    "connectFailed": "No se pudo conectar GitHub. Inténtalo de nuevo.",
+    "loadFailed": "No se pudo cargar el estado de GitHub.",
+    "refreshFailed": "No se pudieron actualizar los repositorios.",
+    "disconnectFailed": "No se pudo desconectar GitHub."
+  },
+  "project": {
+    "subtitle": "Consulta ramas, pull requests y commits en las incidencias de este proyecto.",
+    "linked": "Repositorio vinculado.",
+    "linkFailed": "No se pudo vincular el repositorio.",
+    "unlinked": "Repositorio desvinculado.",
+    "unlinkFailed": "No se pudo desvincular el repositorio.",
+    "updateFailed": "No se pudo actualizar la rama base.",
+    "notConnected": "Conecta tu cuenta de GitHub en los ajustes del equipo antes de vincular repositorios.",
+    "openIntegrations": "Ir a Integraciones",
+    "selectPlaceholder": "Selecciona un repositorio para vincular",
+    "noRepositories": "No hay más repositorios disponibles",
+    "link": "Vincular",
+    "emptyManage": "Aún no hay repositorios vinculados. Elige uno arriba para empezar.",
+    "empty": "No hay repositorios vinculados a este proyecto.",
+    "private": "Privado",
+    "unavailable": "Ya no accesible",
+    "baseBranch": "Rama base",
+    "editBaseBranch": "Editar rama base",
+    "unlinkTitle": "¿Desvincular este repositorio?",
+    "unlinkDescription": "Los vínculos existentes en las incidencias se conservan, pero la nueva actividad ya no se registrará.",
+    "unlink": "Desvincular",
+    "unlinkAria": "Desvincular {{name}}",
+    "howItWorks": "Incluye una clave de incidencia como {{example}} en el nombre de una rama, un mensaje de commit o el título de un pull request para vincularlo a esa incidencia."
+  },
+  "development": {
+    "pr": {
+      "merged": "Fusionado",
+      "closed": "Cerrado",
+      "draft": "Borrador",
+      "approved": "Aprobado",
+      "changesRequested": "Cambios solicitados",
+      "open": "Abierto"
+    },
+    "loadFailed": "No se pudo cargar la actividad de GitHub.",
+    "empty": "Aún no hay actividad de GitHub. Incluye {{key}} en el nombre de una rama, un commit o el título de un pull request para vincularla aquí.",
+    "noRepositories": "No hay ningún repositorio vinculado a este proyecto. Vincula uno en Ajustes del proyecto > Integraciones.",
+    "pullRequests": "Pull requests",
+    "branches": "Ramas",
+    "commits": "Commits",
+    "branchDeleted": "Eliminada",
+    "showFewer": "Mostrar menos",
+    "showAll": "Mostrar los {{count}} commits"
+  }
+}

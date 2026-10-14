@@ -1,0 +1,90 @@
+{
+  "title": "GitHub",
+  "description": "Połącz repozytoria GitHub z projektami programistycznymi, aby widzieć gałęzie, pull requesty i commity przy zgłoszeniach.",
+  "viewOnly": "Tylko podgląd",
+  "connectedHint": "Otwórz projekt programistyczny, a następnie przejdź do Ustawienia > Integracje, aby połączyć repozytoria.",
+  "repositoryCount_one": "{{count}} dostępne repozytorium",
+  "repositoryCount_other": "{{count}} dostępnych repozytoriów",
+  "connect": {
+    "button": "Połącz GitHub",
+    "adminOnly": "Tylko właściciele i administratorzy zespołu mogą połączyć GitHub."
+  },
+  "status": {
+    "connected": "Połączono",
+    "suspended": "Zawieszono"
+  },
+  "notConfigured": {
+    "title": "Nie skonfigurowano",
+    "description": "Aplikacja GitHub nie została skonfigurowana dla tej instalacji Worklenz. Poproś administratora o jej konfigurację."
+  },
+  "actions": {
+    "retry": "Spróbuj ponownie",
+    "refresh": "Odśwież repozytoria",
+    "cancel": "Anuluj"
+  },
+  "disconnect": {
+    "title": "Odłączyć GitHub?",
+    "description": "Synchronizacja zostanie wstrzymana. Istniejące powiązania i historia zostaną zachowane i wznowione po ponownym połączeniu.",
+    "confirm": "Odłącz",
+    "button": "Odłącz"
+  },
+  "messages": {
+    "connected": "GitHub został połączony.",
+    "requested": "Zażądano instalacji. Właściciel organizacji musi ją zatwierdzić.",
+    "refreshed": "Lista repozytoriów została zaktualizowana.",
+    "disconnected": "GitHub został odłączony."
+  },
+  "errors": {
+    "invalidState": "Żądanie połączenia wygasło. Spróbuj ponownie.",
+    "forbidden": "Potrzebujesz dostępu do tej instalacji GitHub i musisz być właścicielem lub administratorem zespołu.",
+    "alreadyConnected": "To konto GitHub jest już połączone z innym zespołem Worklenz.",
+    "teamAlreadyConnected": "Ten zespół jest już połączony z innym kontem GitHub. Najpierw je odłącz.",
+    "connectFailed": "Nie udało się połączyć z GitHub. Spróbuj ponownie.",
+    "loadFailed": "Nie udało się wczytać statusu GitHub.",
+    "refreshFailed": "Nie udało się odświeżyć repozytoriów.",
+    "disconnectFailed": "Nie udało się odłączyć GitHub."
+  },
+  "project": {
+    "subtitle": "Zobacz gałęzie, pull requesty i commity przy zgłoszeniach tego projektu.",
+    "linked": "Repozytorium połączono.",
+    "linkFailed": "Nie udało się połączyć repozytorium.",
+    "unlinked": "Repozytorium odłączono.",
+    "unlinkFailed": "Nie udało się odłączyć repozytorium.",
+    "updateFailed": "Nie udało się zaktualizować gałęzi bazowej.",
+    "notConnected": "Połącz konto GitHub w ustawieniach zespołu przed łączeniem repozytoriów.",
+    "openIntegrations": "Przejdź do integracji",
+    "selectPlaceholder": "Wybierz repozytorium do połączenia",
+    "noRepositories": "Brak kolejnych dostępnych repozytoriów",
+    "link": "Połącz",
+    "emptyManage": "Nie połączono jeszcze żadnych repozytoriów. Wybierz jedno powyżej.",
+    "empty": "Z tym projektem nie połączono żadnych repozytoriów.",
+    "private": "Prywatne",
+    "unavailable": "Brak dostępu",
+    "baseBranch": "Gałąź bazowa",
+    "editBaseBranch": "Edytuj gałąź bazową",
+    "unlinkTitle": "Odłączyć to repozytorium?",
+    "unlinkDescription": "Istniejące powiązania ze zgłoszeniami zostaną zachowane, ale nowa aktywność nie będzie już śledzona.",
+    "unlink": "Odłącz",
+    "unlinkAria": "Odłącz {{name}}",
+    "howItWorks": "Dodaj klucz zgłoszenia, np. {{example}}, do nazwy gałęzi, komunikatu commita lub tytułu pull requesta, aby powiązać go ze zgłoszeniem."
+  },
+  "development": {
+    "pr": {
+      "merged": "Scalony",
+      "closed": "Zamknięty",
+      "draft": "Wersja robocza",
+      "approved": "Zatwierdzony",
+      "changesRequested": "Wymagane zmiany",
+      "open": "Otwarty"
+    },
+    "loadFailed": "Nie udało się wczytać aktywności GitHub.",
+    "empty": "Brak aktywności GitHub. Dodaj {{key}} do nazwy gałęzi, commita lub tytułu pull requesta, aby powiązać ją tutaj.",
+    "noRepositories": "Z tym projektem nie połączono żadnego repozytorium. Połącz je w Ustawienia projektu > Integracje.",
+    "pullRequests": "Pull requesty",
+    "branches": "Gałęzie",
+    "commits": "Commity",
+    "branchDeleted": "Usunięta",
+    "showFewer": "Pokaż mniej",
+    "showAll": "Pokaż wszystkie commity ({{count}})"
+  }
+}

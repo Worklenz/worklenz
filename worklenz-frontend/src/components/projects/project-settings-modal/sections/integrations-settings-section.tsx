@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flex, Typography, TeamOutlined, theme, message } from '@/shared/antd-imports';
-import { GithubOutlined } from '@ant-design/icons';
+import { GithubProjectRepositories } from '@/components/github/GithubProjectRepositories';
+import { useProjectPermissions } from '@/hooks/useProjectPermissions';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { IntegrationItem } from '@/components/projects/integrations/IntegrationItem';
 import { SlackIcon } from '@/components/settings/integrations/IntegrationIcons';
 import { SlackProjectQuickAddModal } from '@/components/projects/integrations/SlackProjectQuickAddModal';
@@ -27,6 +30,11 @@ const IntegrationsSettingsSection = ({
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const hasBusinessAccess = useMemo(() => hasBusinessFeatureAccess(currentSession), [currentSession]);
+
+  const projectType = useAppSelector(state => state.projectDrawerReducer.project?.project_type);
+  const projectKey = useAppSelector(state => state.projectDrawerReducer.project?.key);
+  const { permissions } = useProjectPermissions(projectId ?? null);
+  const isSoftwareProject = isSoftwareProjectType(projectType);
 
   const [integrationStatus, setIntegrationStatus] = useState<ProjectIntegrationStatus | null>(null);
   const [slackModalOpen, setSlackModalOpen] = useState(false);
@@ -135,13 +143,15 @@ const IntegrationsSettingsSection = ({
           })}
           comingSoon
         />
-        <IntegrationItem
-          icon={<GithubOutlined style={{ color: '#24292e' }} />}
-          title={t('githubTitle', { defaultValue: 'GitHub' })}
-          description={t('githubDescription', { defaultValue: 'Sync tasks with GitHub issues' })}
-          comingSoon
-        />
       </div>
+
+      {projectId && isSoftwareProject && (
+        <GithubProjectRepositories
+          projectId={projectId}
+          projectKey={projectKey}
+          canManage={permissions.settings}
+        />
+      )}
 
       {projectId && (
         <SlackProjectQuickAddModal

@@ -1,0 +1,90 @@
+{
+  "title": "GitHub",
+  "description": "Verknüpfen Sie GitHub-Repositories mit Softwareprojekten, um Branches, Pull Requests und Commits an Ihren Vorgängen zu sehen.",
+  "viewOnly": "Nur Ansicht",
+  "connectedHint": "Öffnen Sie ein Softwareprojekt und gehen Sie zu Einstellungen > Integrationen, um Repositories zu verknüpfen.",
+  "repositoryCount_one": "{{count}} Repository verfügbar",
+  "repositoryCount_other": "{{count}} Repositories verfügbar",
+  "connect": {
+    "button": "GitHub verbinden",
+    "adminOnly": "Nur Team-Inhaber und Admins können GitHub verbinden."
+  },
+  "status": {
+    "connected": "Verbunden",
+    "suspended": "Gesperrt"
+  },
+  "notConfigured": {
+    "title": "Nicht konfiguriert",
+    "description": "Die GitHub-App wurde für diese Worklenz-Installation nicht eingerichtet. Bitten Sie Ihren Administrator, sie zu konfigurieren."
+  },
+  "actions": {
+    "retry": "Erneut versuchen",
+    "refresh": "Repositories aktualisieren",
+    "cancel": "Abbrechen"
+  },
+  "disconnect": {
+    "title": "GitHub trennen?",
+    "description": "Die Synchronisierung wird pausiert. Bestehende Verknüpfungen und der Verlauf bleiben erhalten und werden bei erneuter Verbindung fortgesetzt.",
+    "confirm": "Trennen",
+    "button": "Trennen"
+  },
+  "messages": {
+    "connected": "GitHub erfolgreich verbunden.",
+    "requested": "Die Installation wurde angefragt. Ein Organisationsinhaber muss sie genehmigen.",
+    "refreshed": "Repository-Liste aktualisiert.",
+    "disconnected": "GitHub getrennt."
+  },
+  "errors": {
+    "invalidState": "Die Verbindungsanfrage ist abgelaufen. Bitte versuchen Sie es erneut.",
+    "forbidden": "Sie benötigen Zugriff auf diese GitHub-Installation und müssen Team-Inhaber oder Admin sein.",
+    "alreadyConnected": "Dieses GitHub-Konto ist bereits mit einem anderen Worklenz-Team verbunden.",
+    "teamAlreadyConnected": "Dieses Team ist bereits mit einem anderen GitHub-Konto verbunden. Trennen Sie es zuerst.",
+    "connectFailed": "GitHub konnte nicht verbunden werden. Bitte versuchen Sie es erneut.",
+    "loadFailed": "GitHub-Status konnte nicht geladen werden.",
+    "refreshFailed": "Repositories konnten nicht aktualisiert werden.",
+    "disconnectFailed": "GitHub konnte nicht getrennt werden."
+  },
+  "project": {
+    "subtitle": "Sehen Sie Branches, Pull Requests und Commits an den Vorgängen dieses Projekts.",
+    "linked": "Repository verknüpft.",
+    "linkFailed": "Repository konnte nicht verknüpft werden.",
+    "unlinked": "Repository getrennt.",
+    "unlinkFailed": "Repository konnte nicht getrennt werden.",
+    "updateFailed": "Basis-Branch konnte nicht aktualisiert werden.",
+    "notConnected": "Verbinden Sie Ihr GitHub-Konto in den Team-Einstellungen, bevor Sie Repositories verknüpfen.",
+    "openIntegrations": "Zu Integrationen",
+    "selectPlaceholder": "Repository zum Verknüpfen auswählen",
+    "noRepositories": "Keine weiteren Repositories verfügbar",
+    "link": "Verknüpfen",
+    "emptyManage": "Noch keine Repositories verknüpft. Wählen Sie oben eines aus.",
+    "empty": "Diesem Projekt sind keine Repositories zugeordnet.",
+    "private": "Privat",
+    "unavailable": "Nicht mehr zugänglich",
+    "baseBranch": "Basis-Branch",
+    "editBaseBranch": "Basis-Branch bearbeiten",
+    "unlinkTitle": "Dieses Repository trennen?",
+    "unlinkDescription": "Bestehende Verknüpfungen an Vorgängen bleiben, neue Aktivitäten werden jedoch nicht mehr erfasst.",
+    "unlink": "Trennen",
+    "unlinkAria": "{{name}} trennen",
+    "howItWorks": "Fügen Sie einen Vorgangsschlüssel wie {{example}} in einen Branch-Namen, eine Commit-Nachricht oder einen Pull-Request-Titel ein, um ihn mit dem Vorgang zu verknüpfen."
+  },
+  "development": {
+    "pr": {
+      "merged": "Zusammengeführt",
+      "closed": "Geschlossen",
+      "draft": "Entwurf",
+      "approved": "Genehmigt",
+      "changesRequested": "Änderungen angefordert",
+      "open": "Offen"
+    },
+    "loadFailed": "GitHub-Aktivität konnte nicht geladen werden.",
+    "empty": "Noch keine GitHub-Aktivität. Fügen Sie {{key}} in einen Branch-Namen, Commit oder Pull-Request-Titel ein, um sie hier zu verknüpfen.",
+    "noRepositories": "Diesem Projekt ist kein Repository zugeordnet. Verknüpfen Sie eines unter Projekteinstellungen > Integrationen.",
+    "pullRequests": "Pull Requests",
+    "branches": "Branches",
+    "commits": "Commits",
+    "branchDeleted": "Gelöscht",
+    "showFewer": "Weniger anzeigen",
+    "showAll": "Alle {{count}} Commits anzeigen"
+  }
+}

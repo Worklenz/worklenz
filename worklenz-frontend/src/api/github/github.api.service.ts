@@ -1,0 +1,155 @@
+import apiClient from '@api/api-client';
+import { API_BASE_URL } from '@/shared/constants';
+import { IServerResponse } from '@/types/common.types';
+
+const rootUrl = `${API_BASE_URL}/github`;
+
+export interface IGithubIntegrationInfo {
+  account_login: string;
+  account_type: string;
+  account_avatar_url: string | null;
+  status: 'active' | 'suspended';
+  connected_at: string;
+  repository_count: number;
+}
+
+export interface IGithubStatus {
+  /** False when the deployment has no GitHub App configured. */
+  configured: boolean;
+  connected: boolean;
+  can_manage: boolean;
+  integration: IGithubIntegrationInfo | null;
+}
+
+export interface IGithubLinkedRepository {
+  id: string;
+  repository_id: string;
+  full_name: string;
+  is_private: boolean;
+  is_available: boolean;
+  default_branch: string;
+  default_base_branch: string;
+}
+
+export interface IGithubAvailableRepository {
+  id: string;
+  full_name: string;
+  is_private: boolean;
+  default_branch: string;
+}
+
+export interface IGithubProjectRepositories {
+  configured: boolean;
+  connected: boolean;
+  linked: IGithubLinkedRepository[];
+  available: IGithubAvailableRepository[];
+}
+
+export type GithubReviewState = 'approved' | 'changes_requested' | 'review_required' | null;
+
+export interface IGithubBranch {
+  id: string;
+  name: string;
+  repository: string;
+  is_deleted: boolean;
+  html_url: string;
+}
+
+export interface IGithubPullRequest {
+  id: string;
+  number: number;
+  title: string;
+  state: 'open' | 'closed';
+  is_draft: boolean;
+  merged: boolean;
+  review_state: GithubReviewState;
+  head_branch: string | null;
+  base_branch: string | null;
+  author_login: string | null;
+  author_avatar_url: string | null;
+  html_url: string;
+  opened_at: string | null;
+  merged_at: string | null;
+  closed_at: string | null;
+  closes: boolean;
+  repository: string;
+}
+
+export interface IGithubCommit {
+  id: string;
+  sha: string;
+  message: string;
+  author_name: string | null;
+  author_login: string | null;
+  html_url: string | null;
+  committed_at: string | null;
+  repository: string;
+}
+
+export interface IGithubTaskDevelopment {
+  has_linked_repositories: boolean;
+  branches: IGithubBranch[];
+  pull_requests: IGithubPullRequest[];
+  commits: IGithubCommit[];
+}
+
+export const githubApiService = {
+  getStatus: async () => {
+    const response = await apiClient.get<IServerResponse<IGithubStatus>>(`${rootUrl}/status`);
+    return response.data;
+  },
+
+  getInstallUrl: async () => {
+    const response = await apiClient.get<IServerResponse<{ url: string }>>(`${rootUrl}/install-url`);
+    return response.data;
+  },
+
+  disconnect: async () => {
+    const response = await apiClient.delete<IServerResponse<null>>(`${rootUrl}/disconnect`);
+    return response.data;
+  },
+
+  refreshRepositories: async () => {
+    const response = await apiClient.post<IServerResponse<{ repository_count: number }>>(
+      `${rootUrl}/repositories/refresh`
+    );
+    return response.data;
+  },
+
+  getProjectRepositories: async (projectId: string) => {
+    const response = await apiClient.get<IServerResponse<IGithubProjectRepositories>>(
+      `${rootUrl}/projects/${projectId}/repositories`
+    );
+    return response.data;
+  },
+
+  linkRepository: async (projectId: string, repositoryId: string, defaultBaseBranch?: string) => {
+    const response = await apiClient.post<IServerResponse<{ id: string | null }>>(
+      `${rootUrl}/projects/${projectId}/repositories`,
+      { repository_id: repositoryId, default_base_branch: defaultBaseBranch || undefined }
+    );
+    return response.data;
+  },
+
+  updateRepositoryLink: async (projectId: string, linkId: string, defaultBaseBranch: string | null) => {
+    const response = await apiClient.put<IServerResponse<null>>(
+      `${rootUrl}/projects/${projectId}/repositories/${linkId}`,
+      { default_base_branch: defaultBaseBranch }
+    );
+    return response.data;
+  },
+
+  unlinkRepository: async (projectId: string, linkId: string) => {
+    const response = await apiClient.delete<IServerResponse<null>>(
+      `${rootUrl}/projects/${projectId}/repositories/${linkId}`
+    );
+    return response.data;
+  },
+
+  getTaskDevelopment: async (taskId: string) => {
+    const response = await apiClient.get<IServerResponse<IGithubTaskDevelopment>>(
+      `${rootUrl}/tasks/${taskId}/development`
+    );
+    return response.data;
+  },
+};

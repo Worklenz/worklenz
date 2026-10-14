@@ -1,0 +1,90 @@
+{
+  "title": "GitHub",
+  "description": "Associez des dépôts GitHub aux projets logiciels pour voir les branches, pull requests et commits sur vos tickets.",
+  "viewOnly": "Lecture seule",
+  "connectedHint": "Ouvrez un projet logiciel, puis allez dans Paramètres > Intégrations pour associer des dépôts.",
+  "repositoryCount_one": "{{count}} dépôt disponible",
+  "repositoryCount_other": "{{count}} dépôts disponibles",
+  "connect": {
+    "button": "Connecter GitHub",
+    "adminOnly": "Seuls les propriétaires et administrateurs de l’équipe peuvent connecter GitHub."
+  },
+  "status": {
+    "connected": "Connecté",
+    "suspended": "Suspendu"
+  },
+  "notConfigured": {
+    "title": "Non configuré",
+    "description": "L’application GitHub n’a pas été configurée pour cette installation de Worklenz. Demandez à votre administrateur de la configurer."
+  },
+  "actions": {
+    "retry": "Réessayer",
+    "refresh": "Actualiser les dépôts",
+    "cancel": "Annuler"
+  },
+  "disconnect": {
+    "title": "Déconnecter GitHub ?",
+    "description": "La synchronisation sera suspendue. Les liens et l’historique existants sont conservés et reprennent si vous vous reconnectez.",
+    "confirm": "Déconnecter",
+    "button": "Déconnecter"
+  },
+  "messages": {
+    "connected": "GitHub connecté avec succès.",
+    "requested": "L’installation a été demandée. Un propriétaire de l’organisation doit l’approuver.",
+    "refreshed": "Liste des dépôts mise à jour.",
+    "disconnected": "GitHub déconnecté."
+  },
+  "errors": {
+    "invalidState": "La demande de connexion a expiré. Veuillez réessayer.",
+    "forbidden": "Vous devez avoir accès à cette installation GitHub et être propriétaire ou administrateur de l’équipe.",
+    "alreadyConnected": "Ce compte GitHub est déjà connecté à une autre équipe Worklenz.",
+    "teamAlreadyConnected": "Cette équipe est déjà connectée à un autre compte GitHub. Déconnectez-le d’abord.",
+    "connectFailed": "Impossible de connecter GitHub. Veuillez réessayer.",
+    "loadFailed": "Impossible de charger l’état de GitHub.",
+    "refreshFailed": "Impossible d’actualiser les dépôts.",
+    "disconnectFailed": "Impossible de déconnecter GitHub."
+  },
+  "project": {
+    "subtitle": "Voyez les branches, pull requests et commits sur les tickets de ce projet.",
+    "linked": "Dépôt associé.",
+    "linkFailed": "Impossible d’associer le dépôt.",
+    "unlinked": "Dépôt dissocié.",
+    "unlinkFailed": "Impossible de dissocier le dépôt.",
+    "updateFailed": "Impossible de mettre à jour la branche de base.",
+    "notConnected": "Connectez votre compte GitHub dans les paramètres de l’équipe avant d’associer des dépôts.",
+    "openIntegrations": "Aller aux intégrations",
+    "selectPlaceholder": "Sélectionnez un dépôt à associer",
+    "noRepositories": "Aucun autre dépôt disponible",
+    "link": "Associer",
+    "emptyManage": "Aucun dépôt associé pour le moment. Choisissez-en un ci-dessus pour commencer.",
+    "empty": "Aucun dépôt n’est associé à ce projet.",
+    "private": "Privé",
+    "unavailable": "N’est plus accessible",
+    "baseBranch": "Branche de base",
+    "editBaseBranch": "Modifier la branche de base",
+    "unlinkTitle": "Dissocier ce dépôt ?",
+    "unlinkDescription": "Les liens existants sur les tickets sont conservés, mais la nouvelle activité ne sera plus suivie.",
+    "unlink": "Dissocier",
+    "unlinkAria": "Dissocier {{name}}",
+    "howItWorks": "Incluez une clé de ticket comme {{example}} dans un nom de branche, un message de commit ou un titre de pull request pour la lier à ce ticket."
+  },
+  "development": {
+    "pr": {
+      "merged": "Fusionnée",
+      "closed": "Fermée",
+      "draft": "Brouillon",
+      "approved": "Approuvée",
+      "changesRequested": "Modifications demandées",
+      "open": "Ouverte"
+    },
+    "loadFailed": "Impossible de charger l’activité GitHub.",
+    "empty": "Aucune activité GitHub pour le moment. Incluez {{key}} dans un nom de branche, un commit ou un titre de pull request pour la lier ici.",
+    "noRepositories": "Aucun dépôt n’est associé à ce projet. Associez-en un dans Paramètres du projet > Intégrations.",
+    "pullRequests": "Pull requests",
+    "branches": "Branches",
+    "commits": "Commits",
+    "branchDeleted": "Supprimée",
+    "showFewer": "Afficher moins",
+    "showAll": "Afficher les {{count}} commits"
+  }
+}

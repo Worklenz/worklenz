@@ -1,0 +1,90 @@
+{
+  "title": "GitHub",
+  "description": "Lidhni depot e GitHub me projektet softuerike për të parë degët, pull requests dhe commit-et te çështjet tuaja.",
+  "viewOnly": "Vetëm shikim",
+  "connectedHint": "Hapni një projekt softuerik, pastaj shkoni te Cilësimet > Integrimet për të lidhur depot.",
+  "repositoryCount_one": "{{count}} depo e disponueshme",
+  "repositoryCount_other": "{{count}} depo të disponueshme",
+  "connect": {
+    "button": "Lidh GitHub",
+    "adminOnly": "Vetëm pronarët dhe administratorët e ekipit mund të lidhin GitHub."
+  },
+  "status": {
+    "connected": "I lidhur",
+    "suspended": "I pezulluar"
+  },
+  "notConfigured": {
+    "title": "Nuk është konfiguruar",
+    "description": "Aplikacioni GitHub nuk është konfiguruar për këtë instalim të Worklenz. Kërkojini administratorit ta konfigurojë."
+  },
+  "actions": {
+    "retry": "Provo përsëri",
+    "refresh": "Rifresko depot",
+    "cancel": "Anulo"
+  },
+  "disconnect": {
+    "title": "Të shkëputet GitHub?",
+    "description": "Sinkronizimi do të pezullohet. Lidhjet dhe historiku ekzistues ruhen dhe rifillojnë nëse lidheni përsëri.",
+    "confirm": "Shkëput",
+    "button": "Shkëput"
+  },
+  "messages": {
+    "connected": "GitHub u lidh me sukses.",
+    "requested": "Instalimi u kërkua. Një pronar i organizatës duhet ta miratojë.",
+    "refreshed": "Lista e depove u përditësua.",
+    "disconnected": "GitHub u shkëput."
+  },
+  "errors": {
+    "invalidState": "Kërkesa për lidhje ka skaduar. Provoni përsëri.",
+    "forbidden": "Ju duhet qasje në këtë instalim të GitHub dhe të jeni pronar ose administrator i ekipit.",
+    "alreadyConnected": "Kjo llogari GitHub është tashmë e lidhur me një ekip tjetër Worklenz.",
+    "teamAlreadyConnected": "Ky ekip është tashmë i lidhur me një llogari tjetër GitHub. Shkëputeni së pari.",
+    "connectFailed": "GitHub nuk mund të lidhej. Provoni përsëri.",
+    "loadFailed": "Statusi i GitHub nuk mund të ngarkohej.",
+    "refreshFailed": "Depot nuk mund të rifreskoheshin.",
+    "disconnectFailed": "GitHub nuk mund të shkëputej."
+  },
+  "project": {
+    "subtitle": "Shihni degët, pull requests dhe commit-et te çështjet e këtij projekti.",
+    "linked": "Depoja u lidh.",
+    "linkFailed": "Depoja nuk mund të lidhej.",
+    "unlinked": "Depoja u shkëput.",
+    "unlinkFailed": "Depoja nuk mund të shkëputej.",
+    "updateFailed": "Dega bazë nuk mund të përditësohej.",
+    "notConnected": "Lidhni llogarinë tuaj GitHub në cilësimet e ekipit përpara se të lidhni depo.",
+    "openIntegrations": "Shko te Integrimet",
+    "selectPlaceholder": "Zgjidhni një depo për ta lidhur",
+    "noRepositories": "Nuk ka më depo të disponueshme",
+    "link": "Lidh",
+    "emptyManage": "Nuk ka ende depo të lidhura. Zgjidhni një më lart për të filluar.",
+    "empty": "Nuk ka depo të lidhura me këtë projekt.",
+    "private": "Private",
+    "unavailable": "Nuk është më e arritshme",
+    "baseBranch": "Dega bazë",
+    "editBaseBranch": "Ndrysho degën bazë",
+    "unlinkTitle": "Të shkëputet kjo depo?",
+    "unlinkDescription": "Lidhjet ekzistuese te çështjet ruhen, por aktiviteti i ri nuk do të ndiqet më.",
+    "unlink": "Shkëput",
+    "unlinkAria": "Shkëput {{name}}",
+    "howItWorks": "Përfshini një çelës çështjeje si {{example}} në emrin e degës, mesazhin e commit-it ose titullin e pull request-it për ta lidhur me atë çështje."
+  },
+  "development": {
+    "pr": {
+      "merged": "E bashkuar",
+      "closed": "E mbyllur",
+      "draft": "Draft",
+      "approved": "E miratuar",
+      "changesRequested": "Kërkohen ndryshime",
+      "open": "E hapur"
+    },
+    "loadFailed": "Aktiviteti i GitHub nuk mund të ngarkohej.",
+    "empty": "Ende pa aktivitet GitHub. Përfshini {{key}} në emrin e degës, commit-it ose titullin e pull request-it për ta lidhur këtu.",
+    "noRepositories": "Asnjë depo nuk është e lidhur me këtë projekt. Lidhni një te Cilësimet e projektit > Integrimet.",
+    "pullRequests": "Pull requests",
+    "branches": "Degët",
+    "commits": "Commit-et",
+    "branchDeleted": "E fshirë",
+    "showFewer": "Shfaq më pak",
+    "showAll": "Shfaq të gjitha {{count}} commit-et"
+  }
+}
