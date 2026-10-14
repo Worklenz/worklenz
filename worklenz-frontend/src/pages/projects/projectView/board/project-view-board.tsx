@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 
@@ -44,6 +45,8 @@ import {
 } from '@/shared/worklenz-analytics-events';
 import { ITaskStatusCreateRequest } from '@/types/tasks/task-status-create-request';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
+import { useParams } from 'react-router-dom';
+import { setProjectId } from '@/features/project/project.slice';
 import logger from '@/utils/errorLogger';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import debounce from 'lodash-es/debounce';
@@ -64,15 +67,24 @@ interface ActiveDragItem {
 }
 
 const ProjectViewBoard = () => {
+  const { t } = useTranslation('kanban-board');
   const dispatch = useAppDispatch();
-  const { projectView } = useTabSearchParam();
-  const { socket } = useSocket();
-  const authService = useAuthService();
-  const currentSession = authService.getCurrentSession();
-  const { trackMixpanelEvent } = useMixpanelTracking();
-  const [currentTaskIndex, setCurrentTaskIndex] = useState(-1);
-  // Add local loading state to immediately show skeleton
-  const [isLoading, setIsLoading] = useState(true);
+const { projectView } = useTabSearchParam();
+const { socket } = useSocket();
+const authService = useAuthService();
+const { projectId: routeProjectId } = useParams<{ projectId: string }>();
+// Sync route projectId into Redux store
+useEffect(() => {
+  if (routeProjectId) {
+    dispatch(setProjectId(routeProjectId));
+  }
+}, [routeProjectId, dispatch]);
+
+const currentSession = authService.getCurrentSession();
+const { trackMixpanelEvent } = useMixpanelTracking();
+const [currentTaskIndex, setCurrentTaskIndex] = useState(-1);
+// Add local loading state to immediately show skeleton
+const [isLoading, setIsLoading] = useState(true);
 
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { taskGroups, groupBy, loadingGroups, search, archived } = useAppSelector(
@@ -215,7 +227,7 @@ const ProjectViewBoard = () => {
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     isDraggingRef.current = true;
-    setActiveItem(active.data.current);
+    setActiveItem((active.data.current as ActiveDragItem) ?? null);
     setCurrentTaskIndex(active.data.current?.sortable.index);
     if (active.data.current?.type === 'task') {
       originalSourceGroupIdRef.current = active.data.current.sectionId;
@@ -487,19 +499,32 @@ const ProjectViewBoard = () => {
         const columnOrder = reorderedGroups.map(group => group.id);
 
         // Call API to update status order
+        const effectiveProjectId = projectId ?? routeProjectId;
+        if (!effectiveProjectId) {
+          alertService.error(
+            t('projectIdRequired', { defaultValue: 'Project ID is required' }),
+            t('failedToUpdateColumnOrder', { defaultValue: 'Failed to update column order' })
+          );
+          setActiveItem(null);
+          originalSourceGroupIdRef.current = null;
+          return;
+        }
         try {
           // Use the correct API endpoint based on the Angular code
           const requestBody: ITaskStatusCreateRequest = {
             status_order: columnOrder,
           };
 
-          const response = await statusApiService.updateStatusOrder(requestBody, projectId);
+          const response = await statusApiService.updateStatusOrder(requestBody, effectiveProjectId);
           if (!response.done) {
             const revertedGroups = [...reorderedGroups];
             const [movedBackGroup] = revertedGroups.splice(toIndex, 1);
             revertedGroups.splice(fromIndex, 0, movedBackGroup);
             dispatch(reorderTaskGroups(revertedGroups));
-            alertService.error('Failed to update column order', 'Please try again');
+            alertService.error(
+              t('failedToUpdateColumnOrder', { defaultValue: 'Failed to update column order' }),
+              t('pleaseTryAgain', { defaultValue: 'Please try again' })
+            );
           }
         } catch (error) {
           // Revert the change if API call fails
@@ -507,7 +532,10 @@ const ProjectViewBoard = () => {
           const [movedBackGroup] = revertedGroups.splice(toIndex, 1);
           revertedGroups.splice(fromIndex, 0, movedBackGroup);
           dispatch(reorderTaskGroups(revertedGroups));
-          alertService.error('Failed to update column order', 'Please try again');
+          alertService.error(
+            t('failedToUpdateColumnOrder', { defaultValue: 'Failed to update column order' }),
+            t('pleaseTryAgain', { defaultValue: 'Please try again' })
+          );
         }
       }
     }
@@ -574,7 +602,7 @@ const ProjectViewBoard = () => {
             group={groupBy as 'status' | 'priority' | 'phases'}
           />
           <DragOverlay>
-            {activeItem?.type === 'task' && (
+            {activeItem?.type === 'task' && activeItem.task && activeItem.sectionId && (
               <BoardViewTaskCard task={activeItem.task} sectionId={activeItem.sectionId} />
             )}
           </DragOverlay>

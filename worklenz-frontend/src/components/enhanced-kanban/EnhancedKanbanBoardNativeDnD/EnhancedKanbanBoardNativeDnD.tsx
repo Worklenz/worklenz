@@ -279,6 +279,14 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
         }
       } catch (err) {
         logger.error('Failed to update column order', err);
+        if (groupBy === 'status') {
+          const revertedGroups = [...reorderedGroups];
+          const [movedBack] = revertedGroups.splice(toIdx, 1);
+          revertedGroups.splice(fromIdx, 0, movedBack);
+          dispatch(
+            reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups })
+          );
+        }
       }
     },
     [taskGroups, groupBy, phaseList, projectId, dispatch, t]
