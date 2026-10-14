@@ -82,6 +82,9 @@ function IntegrationsSettings() {
           <SlackIntegration />
         </IntegrationCard>
 
+        {/* GitHub Integration - Active (software projects) */}
+        <GithubIntegrationCard />
+
         {/* MS Teams Integration - Coming Soon */}
         <IntegrationCard
           icon={<MSTeamsIcon />}
@@ -92,9 +95,6 @@ function IntegrationsSettings() {
           })}
           available={false}
         />
-
-        {/* GitHub Integration - Active (software projects) */}
-        <GithubIntegrationCard />
 
         {/* Google Drive Integration - Coming Soon */}
         <IntegrationCard

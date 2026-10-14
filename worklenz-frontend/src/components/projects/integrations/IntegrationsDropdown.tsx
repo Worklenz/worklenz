@@ -110,6 +110,36 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
     textAlign: 'center' as const,
   };
 
+  const githubItem = (
+    <IntegrationItem
+      icon={<GithubOutlined style={{ color: token.colorText }} />}
+      title={t('github.title', { defaultValue: 'GitHub' })}
+      description={
+        isSoftwareProject
+          ? t('github.softwareDescription', {
+              defaultValue: 'Link repositories to see branches, pull requests and commits',
+            })
+          : t('github.softwareOnly', {
+              defaultValue: 'Available for software projects',
+            })
+      }
+      badge={status?.github?.repositoryCount}
+      comingSoon={!isSoftwareProject}
+      onClick={isSoftwareProject ? handleOpenGithubSettings : undefined}
+    />
+  );
+
+  const teamsItem = (
+    <IntegrationItem
+      icon={<TeamOutlined style={{ color: '#6264A7' }} />}
+      title={t('teams.title', { defaultValue: 'Microsoft Teams' })}
+      description={t('teams.description', {
+        defaultValue: 'Send notifications to Teams channels',
+      })}
+      comingSoon
+    />
+  );
+
   return (
     <div className="integrations-dropdown" style={dropdownStyles}>
       {/* Header */}
@@ -140,33 +170,10 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
           />
         )}
 
-        {/* Microsoft Teams - Coming Soon */}
-        <IntegrationItem
-          icon={<TeamOutlined style={{ color: '#6264A7' }} />}
-          title={t('teams.title', { defaultValue: 'Microsoft Teams' })}
-          description={t('teams.description', {
-            defaultValue: 'Send notifications to Teams channels',
-          })}
-          comingSoon
-        />
-
-        {/* GitHub - available on software projects */}
-        <IntegrationItem
-          icon={<GithubOutlined style={{ color: token.colorText }} />}
-          title={t('github.title', { defaultValue: 'GitHub' })}
-          description={
-            isSoftwareProject
-              ? t('github.softwareDescription', {
-                  defaultValue: 'Link repositories to see branches, pull requests and commits',
-                })
-              : t('github.softwareOnly', {
-                  defaultValue: 'Available for software projects',
-                })
-          }
-          badge={status?.github?.repositoryCount}
-          comingSoon={!isSoftwareProject}
-          onClick={isSoftwareProject ? handleOpenGithubSettings : undefined}
-        />
+        {/* Enabled integrations first, coming soon last */}
+        {isSoftwareProject && githubItem}
+        {teamsItem}
+        {!isSoftwareProject && githubItem}
       </div>
 
       {/* Footer */}

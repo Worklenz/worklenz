@@ -29,7 +29,10 @@ const IntegrationsSettingsSection = ({
   const dispatch = useAppDispatch();
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
-  const hasBusinessAccess = useMemo(() => hasBusinessFeatureAccess(currentSession), [currentSession]);
+  const hasBusinessAccess = useMemo(
+    () => hasBusinessFeatureAccess(currentSession),
+    [currentSession]
+  );
 
   const projectType = useAppSelector(state => state.projectDrawerReducer.project?.project_type);
   const projectKey = useAppSelector(state => state.projectDrawerReducer.project?.key);
@@ -135,14 +138,6 @@ const IntegrationsSettingsSection = ({
           locked={!hasBusinessAccess}
           onClick={handleSlackClick}
         />
-        <IntegrationItem
-          icon={<TeamOutlined style={{ color: '#6264A7' }} />}
-          title={t('teamsTitle', { defaultValue: 'Microsoft Teams' })}
-          description={t('teamsDescription', {
-            defaultValue: 'Send notifications to Teams channels',
-          })}
-          comingSoon
-        />
       </div>
 
       {projectId && isSoftwareProject && (
@@ -152,6 +147,24 @@ const IntegrationsSettingsSection = ({
           canManage={permissions.settings}
         />
       )}
+
+      {/* Coming soon integrations stay at the bottom */}
+      <div
+        style={{
+          borderRadius: 10,
+          border: `1px solid ${token.colorBorderSecondary}`,
+          overflow: 'hidden',
+        }}
+      >
+        <IntegrationItem
+          icon={<TeamOutlined style={{ color: '#6264A7' }} />}
+          title={t('teamsTitle', { defaultValue: 'Microsoft Teams' })}
+          description={t('teamsDescription', {
+            defaultValue: 'Send notifications to Teams channels',
+          })}
+          comingSoon
+        />
+      </div>
 
       {projectId && (
         <SlackProjectQuickAddModal
