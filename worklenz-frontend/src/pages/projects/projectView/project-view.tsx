@@ -95,6 +95,19 @@ import { setProjectMemberDefaultView } from '@/features/projects/projectsSlice';
 import TaskDrawer from '@components/task-drawer/task-drawer';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { fetchTaskListColumns } from '@/features/task-management/task-management.slice';
+import TaskListV2 from '@/components/task-list-v2/TaskListV2';
+import { SavedViewTabLabel } from '@/components/projects/saved-views/saved-view-tab-label';
+import {
+  enterSavedView,
+  exitSavedView,
+  fetchSavedViews,
+  resetSavedViews,
+  selectSavedViews,
+} from '@/features/projects/singleProject/saved-views/saved-views.slice';
+import {
+  parseSavedViewTabKey,
+  toSavedViewTabKey,
+} from '@/features/projects/singleProject/saved-views/saved-view-config';
 
 // Lazy load non-critical components with better error handling
 const DeleteStatusDrawer = React.lazy(
@@ -120,6 +133,9 @@ const ProjectView = React.memo(() => {
   const selectedProject = useAppSelector(state => state.projectReducer.project);
   const projectLoading = useAppSelector(state => state.projectReducer.projectLoading);
   const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
+  const savedViews = useAppSelector(selectSavedViews);
+  const savedViewsLoaded = useAppSelector(state => state.savedViewsReducer.loaded);
+  const activeSavedViewId = useAppSelector(state => state.savedViewsReducer.activeViewId);
 
   // State to track translation loading
   const [translationsReady, setTranslationsReady] = useState(false);
@@ -236,8 +252,29 @@ const ProjectView = React.memo(() => {
     // loaded before redirecting away from an unavailable tab — otherwise the requested
     // tab renders briefly and then jumps, producing a visible URL/tab flash on load.
     const projectReady = !!selectedProject;
+    const requestedSavedViewId = parseSavedViewTabKey(urlParams.tab);
 
-    if (projectReady && !requestedTab) {
+    if (requestedSavedViewId) {
+      const isUnavailable =
+        projectReady &&
+        savedViewsLoaded &&
+        (isSoftwareProjectType(selectedProject?.project_type) ||
+          !savedViews.some(view => view.id === requestedSavedViewId));
+      if (!isUnavailable) {
+        setActiveTab(urlParams.tab);
+      } else {
+        // The saved view was deleted (or never existed): fall back to the plain List tab.
+        const fallbackTab =
+          filteredTabItems.find(item => item.key === 'tasks-list' && !item.disabled) ??
+          filteredTabItems.find(item => !item.disabled);
+        if (fallbackTab) {
+          setActiveTab(fallbackTab.key);
+          const nextParams = new URLSearchParams(searchParams);
+          nextParams.set('tab', fallbackTab.key);
+          navigate({ pathname: location.pathname, search: nextParams.toString() }, { replace: true });
+        }
+      }
+    } else if (projectReady && !requestedTab) {
       // Tab isn't available to this user at all — fall back to the first available tab.
       const firstAvailableTab = filteredTabItems.find(item => !item.disabled);
       if (firstAvailableTab) {
@@ -272,7 +309,17 @@ const ProjectView = React.memo(() => {
     }
 
     setTaskId(urlParams.taskId);
-  }, [urlParams, currentSession, selectedProject, dispatch, searchParams, navigate, location.pathname]);
+  }, [
+    urlParams,
+    currentSession,
+    selectedProject,
+    dispatch,
+    searchParams,
+    navigate,
+    location.pathname,
+    savedViews,
+    savedViewsLoaded,
+  ]);
 
   // Remove translation preloading since we're using simple load-as-you-go approach
   useEffect(() => {
@@ -301,6 +348,7 @@ const ProjectView = React.memo(() => {
     dispatch(resetEnhancedKanbanState());
     dispatch(resetSoftwareQuickFilters());
     dispatch(resetReleases());
+    dispatch(resetSavedViews());
 
     // Reset project insights
     dispatch(setInsightsProjectId(''));
@@ -354,6 +402,7 @@ const ProjectView = React.memo(() => {
           dispatch(resetEnhancedKanbanState());
           dispatch(resetSoftwareQuickFilters());
           dispatch(resetReleases());
+          dispatch(resetSavedViews());
           dispatch(deselectAll());
 
           // Load new project data
@@ -362,10 +411,13 @@ const ProjectView = React.memo(() => {
 
           // Set project context for field visibility
           dispatch(setProjectContext(projectId));
+          dispatch(fetchSavedViews(projectId));
 
           const requestedTab = searchParams.get('tab') || 'tasks-list';
           const shouldPreloadTaskList =
-            requestedTab === 'tasks-list' || requestedTab === 'backlog';
+            requestedTab === 'tasks-list' ||
+            requestedTab === 'backlog' ||
+            !!parseSavedViewTabKey(requestedTab);
 
           // Block filter persistence until the new project's saved filters are restored,
           // otherwise useFilterPersistence can write the previous project's filters under
@@ -575,9 +627,12 @@ const ProjectView = React.memo(() => {
     (key: string) => {
       // Find the tab item to check if it's disabled
       const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, canCreateTask);
-      const tabItem = filteredTabItems.find(item => item.key === key);
+      const targetSavedViewId = parseSavedViewTabKey(key);
+      const tabItem = targetSavedViewId
+        ? filteredTabItems.find(item => item.key === 'tasks-list')
+        : filteredTabItems.find(item => item.key === key);
 
-      if (!tabItem) {
+      if (!tabItem || (targetSavedViewId && !savedViews.some(view => view.id === targetSavedViewId))) {
         return;
       }
 
@@ -614,7 +669,10 @@ const ProjectView = React.memo(() => {
         dispatch(setShowTaskDrawer(false));
       }
 
-      if (key === 'tasks-list' && activeTab !== 'tasks-list' && projectId) {
+      // Restore the List tab's own filters before it fetches, so it never loads with a view's filters.
+      if (activeSavedViewId && !targetSavedViewId && projectId) {
+        dispatch(exitSavedView({ projectId, refetch: key === 'tasks-list' }));
+      } else if (key === 'tasks-list' && activeTab !== 'tasks-list' && projectId) {
         dispatch(fetchTasksV3(projectId));
       }
 
@@ -645,7 +703,29 @@ const ProjectView = React.memo(() => {
       canCreateTask,
       showTaskDrawer,
       activeTab,
+      savedViews,
+      activeSavedViewId,
     ]
+  );
+
+  // Keep the applied filters in step with the open tab, including tabs opened from a URL.
+  useEffect(() => {
+    if (!isInitialized || !projectId) return;
+    const viewId = parseSavedViewTabKey(activeTab);
+    if (viewId) {
+      if (viewId !== activeSavedViewId && savedViews.some(view => view.id === viewId)) {
+        dispatch(enterSavedView({ projectId, viewId }));
+      }
+    } else if (activeSavedViewId) {
+      dispatch(exitSavedView({ projectId, refetch: activeTab === 'tasks-list' }));
+    }
+  }, [activeTab, activeSavedViewId, savedViews, isInitialized, projectId, dispatch]);
+
+  const handleSavedViewDeleted = useCallback(
+    (viewId: string) => {
+      if (activeTab === toSavedViewTabKey(viewId)) handleTabChange('tasks-list');
+    },
+    [activeTab, handleTabChange]
   );
 
   const isSoftwareProject = isSoftwareProjectType(selectedProject?.project_type);
@@ -761,8 +841,35 @@ const ProjectView = React.memo(() => {
       };
     });
 
-    return menuItems;
+    const listTab = filteredTabItems.find(item => item.key === 'tasks-list');
+    if (isSoftwareProject || !projectId || !listTab || listTab.disabled) {
+      return menuItems;
+    }
+
+    const canEditSavedViews = selectedProject?.is_guest !== true;
+    const savedViewItems = savedViews.map(view => {
+      const key = toSavedViewTabKey(view.id);
+      return {
+        key,
+        disabled: false,
+        label: (
+          <SavedViewTabLabel
+            view={view}
+            projectId={projectId}
+            isActive={activeTab === key}
+            canEdit={canEditSavedViews}
+            onDeleted={handleSavedViewDeleted}
+          />
+        ),
+        children: <TaskListV2 />,
+      };
+    });
+
+    return [...menuItems, ...savedViewItems];
   }, [
+    savedViews,
+    projectId,
+    handleSavedViewDeleted,
     pinnedTab,
     pinToDefaultTab,
     t,
