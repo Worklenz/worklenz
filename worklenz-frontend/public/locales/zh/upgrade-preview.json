@@ -147,36 +147,6 @@
           "无限的客户帐户"
         ]
       },
-      "requests": {
-        "title": "请求",
-        "description": "让客户无需离开门户即可提交和跟踪服务请求。",
-        "features": [
-          "客户提交的服务请求",
-          "在一处接受、拒绝或跟进",
-          "从提交到完成的状态跟踪",
-          "直接链接到所请求的服务"
-        ]
-      },
-      "services": {
-        "title": "服务",
-        "description": "发布客户可以请求的服务，并控制他们可以看到的内容。",
-        "features": [
-          "可请求服务的目录",
-          "每个服务的可见性控制",
-          "每项服务的请求量",
-          "在您的团队中分配一名服务所有者"
-        ]
-      },
-      "chats": {
-        "title": "消息",
-        "description": "直接从客户用于处理其他事务的同一个门户向客户发送消息。",
-        "features": [
-          "与客户直接消息传递",
-          "每个客户端一个对话线程",
-          "可搜索的对话历史记录",
-          "客户回复时的通知"
-        ]
-      },
       "invoices": {
         "title": "发票",
         "description": "无需离开 Worklenz 即可创建、发送和跟踪客户发票。",
@@ -195,6 +165,66 @@
           "门户网站上的品牌标题",
           "为客户提供一致的视觉识别",
           "客户可查看公司详情"
+        ]
+      },
+      "projects": {
+        "title": "Portal Projects",
+        "description": "Choose which projects clients can see and what is shared inside each one.",
+        "features": [
+          "Switch the Client Portal on per project",
+          "Share tasks, files and milestones one by one",
+          "Everything stays Internal Only until you share it",
+          "Client-facing status, phase and progress"
+        ]
+      },
+      "approvals": {
+        "title": "Approvals",
+        "description": "Get formal, recorded sign-off from clients on exact file versions.",
+        "features": [
+          "Ask a Client Admin to approve a file, milestone or task",
+          "The exact version or revision is recorded",
+          "Every decision is kept, with a full history",
+          "Overdue and awaiting approvals at a glance"
+        ]
+      },
+      "changeRequests": {
+        "title": "Change Requests",
+        "description": "Review, estimate and decide on scope changes, then turn approved ones into work.",
+        "features": [
+          "Clients submit scope changes from their portal",
+          "Estimate, approve, reject or ask for more information",
+          "Convert approved requests into tasks",
+          "Create quotes and invoices from a request"
+        ]
+      },
+      "discussions": {
+        "title": "Discussions",
+        "description": "Talk to clients about the exact task, file or approval, with internal comments kept private.",
+        "features": [
+          "Conversations attached to the work they are about",
+          "Client-visible replies and private internal comments",
+          "Mention client users, never by accident in internal notes",
+          "Unread tracking across your team"
+        ]
+      },
+      "auditLog": {
+        "title": "Audit Log",
+        "description": "A tamper-proof record of client and team activity.",
+        "features": [
+          "Access, sharing, file, approval and change request events",
+          "Every entry is timestamped and attributed",
+          "Filter by client, event type or who acted",
+          "Export the filtered view as CSV"
+        ]
+      },
+      "preview": {
+        "title": "Client Portal",
+        "description": "See exactly what a client sees before you share anything.",
+        "features": [
+          "Preview as any active client user",
+          "Built from the same rules the portal enforces",
+          "See what is hidden from that user",
+          "Check what each role can do"
         ]
       }
     }

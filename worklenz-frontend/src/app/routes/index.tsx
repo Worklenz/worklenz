@@ -34,7 +34,6 @@ const withCodeSplitting = (Component: React.LazyExoticComponent<React.ComponentT
 
 // Memoized guard components with defensive programming
 import { useAuthStatus } from '@/hooks/useAuthStatus';
-import clientViewRoutes from '../../app/routes/client-view-routes';
 
 export const AuthGuard = memo(({ children }: GuardProps) => {
   const { isAuthenticated, location } = useAuthStatus();
@@ -233,6 +232,7 @@ const withLicenseExpiryCheck = (routes: RouteObject[]): RouteObject[] => {
 
 const licenseCheckedMainRoutes = withLicenseExpiryCheck(protectedMainRoutes);
 const licenseCheckedAdminRoutes = withLicenseExpiryCheck(adminRoutes);
+const licenseCheckedClientPortalRoutes = withLicenseExpiryCheck(adminclientPortalRoutes);
 
 // Create optimized router with future flags for better performance
 const router = createBrowserRouter(
@@ -256,7 +256,7 @@ const router = createBrowserRouter(
           children: [
             ...licenseCheckedMainRoutes,
             ...licenseCheckedAdminRoutes,
-            ...adminclientPortalRoutes,
+            ...licenseCheckedClientPortalRoutes,
           ],
         },
         ...setupRoutes,

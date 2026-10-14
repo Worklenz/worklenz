@@ -1,0 +1,110 @@
+{
+  "approvals": {
+    "canDecide": "You can decide this",
+    "noLongerShared": "The linked item is no longer shared",
+    "none": "No approvals on this user’s projects. Drafts are never shown.",
+    "viewOnly": "View only for you"
+  },
+  "can": {
+    "allowed": "Allowed",
+    "notAllowed": "Not allowed",
+    "title": "{{role}} can",
+    "titleNoRole": "This role can"
+  },
+  "capability": {
+    "approve": "Approve items or request changes",
+    "comment": "Comment and reply in client-visible discussions",
+    "manageUsers": "Manage users in their own organization",
+    "manageUsersOff": "Manage organization users (currently off in Settings)",
+    "submitChangeRequest": "Submit and follow change requests",
+    "upload": "Upload files (where the project allows it)",
+    "view": "View assigned projects, milestones, client-visible tasks and files"
+  },
+  "changeRequests": {
+    "estimate": "Estimate: {{value}}",
+    "hours": "{{value}} h",
+    "infoNeeded": "Info needed",
+    "noEstimate": "No estimate shown",
+    "none": "No change requests yet."
+  },
+  "dashboard": {
+    "activeProjects": "Active projects",
+    "approve": "Approve",
+    "infoNeeded": "Info needed",
+    "needsAction": "Needs your action",
+    "nextMilestones": "Next milestones",
+    "noProjects": "No projects are assigned to this user. They see a friendly empty state, never your workspace.",
+    "nothingToDo": "Nothing needs this user’s action.",
+    "nothingToDoViewer": "Nothing needs this user’s action. Only Client Admins can approve.",
+    "pendingActions": "Pending actions",
+    "projects": "Projects",
+    "upcomingMilestones": "Upcoming milestones"
+  },
+  "description": "A read-only preview of what one client user sees, built from the same visibility rules the portal enforces.",
+  "error": {
+    "title": "The preview could not be loaded"
+  },
+  "frame": {
+    "defaultTitle": "Client Portal"
+  },
+  "hidden": {
+    "description": "This panel is never shown to the client. They cannot infer these counts from anything in the portal.",
+    "drafts": "Draft approvals",
+    "files": "Internal-only files",
+    "milestones": "Internal-only milestones",
+    "staffOnly": "Staff only",
+    "tasks": "Internal-only tasks",
+    "title": "Hidden from this view"
+  },
+  "noUsers": "No active client users with a project yet. Invite a user and assign a project to preview the portal.",
+  "openPortal": "Open the client portal",
+  "previewAs": "Preview as",
+  "project": {
+    "back": "← Projects",
+    "dateMoved": "The date has moved",
+    "expectedCompletion": "Expected completion",
+    "fileVersion": "v{{version}}",
+    "files": "Files",
+    "latestUpdate": "Latest update · {{date}}",
+    "loadFailed": "The project could not be previewed.",
+    "milestones": "Milestones",
+    "noFiles": "No files are shared yet.",
+    "noMilestones": "No milestones are shared yet.",
+    "noTasks": "No tasks are shared yet.",
+    "notSet": "Not set",
+    "phase": "Phase",
+    "primaryContact": "Primary contact",
+    "progress": "Progress",
+    "start": "Start",
+    "tasks": "Tasks"
+  },
+  "projects": {
+    "expected": "Not set",
+    "none": "No assigned projects."
+  },
+  "status": {
+    "approved": "Approved",
+    "atRisk": "At risk",
+    "awaitingApproval": "Awaiting approval",
+    "cancelled": "Cancelled",
+    "changesRequested": "Changes requested",
+    "completed": "Completed",
+    "delayed": "Delayed",
+    "done": "Done",
+    "inProgress": "In progress",
+    "notStarted": "Not started",
+    "onHold": "On hold",
+    "onTrack": "On track",
+    "upcoming": "Upcoming"
+  },
+  "tabs": {
+    "approvals": "Approvals",
+    "changeRequests": "Change Requests",
+    "dashboard": "Dashboard",
+    "projects": "Projects"
+  },
+  "title": "Client Portal",
+  "userOption": "{{name}} · {{organization}} · {{role}}",
+  "usersFailed": "The client users could not be loaded.",
+  "retry": "Retry"
+}

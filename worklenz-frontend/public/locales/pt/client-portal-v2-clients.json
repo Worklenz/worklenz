@@ -1,0 +1,290 @@
+{
+  "actions": {
+    "createLinkFailed": "The sign-in link could not be created.",
+    "deactivateFailed": "The user could not be deactivated.",
+    "deactivated": "{{name}} was deactivated. Portal and API access is revoked immediately.",
+    "reactivateFailed": "The user could not be reactivated.",
+    "reactivated": "{{name}} can sign in again. Their previous status was restored.",
+    "removeFailed": "The user could not be removed.",
+    "removed": "{{name}} was removed from the portal.",
+    "resendFailed": "The invitation could not be resent.",
+    "resent": "Invitation resent to {{email}}. The link is valid for 7 days."
+  },
+  "assign": {
+    "description": "A user only ever sees projects assigned here, even though they belong to {{organization}}. What they can do inside each project depends on their role:",
+    "failed": "The project access could not be updated.",
+    "loadFailed": "The projects could not be loaded.",
+    "noProjects": "{{organization}} has no projects yet.",
+    "portalOff": "Client Portal is off for this project. Turn it on first.",
+    "save": "Save",
+    "saved": "Project access updated for {{name}}.",
+    "savedWithRemoval": "Project access updated for {{name}}. Removed access applies immediately.",
+    "title": "Assign projects · {{name}}"
+  },
+  "deactivate": {
+    "body": "{{name}} loses access right away. If they have a session open, their next request fails and they are signed out. You can reactivate them later and their previous status is restored.",
+    "confirm": "Deactivate",
+    "title": "Deactivate this client user?"
+  },
+  "edit": {
+    "failed": "The user could not be updated.",
+    "roleNotice": "Role changes take effect on the user’s next authorization check, not only after a new sign-in.",
+    "save": "Save",
+    "title": "Edit user · {{organization}}",
+    "updated": "{{name}} updated."
+  },
+  "fields": {
+    "email": "Email (login address)",
+    "emailInvalid": "Enter a valid email address.",
+    "emailRequired": "Enter the user’s email address.",
+    "jobTitle": "Job title",
+    "name": "Full name",
+    "nameRequired": "Enter the user’s name.",
+    "phone": "Phone (optional)",
+    "role": "Role"
+  },
+  "lastAdmin": {
+    "confirm": "Continue anyway",
+    "title": "This is the last Client Admin"
+  },
+  "menu": {
+    "assign": "Assign projects",
+    "createLink": "Create sign-in link",
+    "deactivate": "Deactivate user",
+    "edit": "Edit user & role",
+    "reactivate": "Reactivate user",
+    "remove": "Remove user",
+    "resend": "Resend invitation",
+    "resendShort": "Resend",
+    "view": "View profile"
+  },
+  "organizations": {
+    "awaitingApprovals_one": "{{count}} approval",
+    "awaitingApprovals_other": "{{count}} approvals",
+    "awaitingChangeRequests_one": "{{count}} change request",
+    "awaitingChangeRequests_other": "{{count}} change requests",
+    "columns": {
+      "access": "Portal access",
+      "actions": "Actions",
+      "awaiting": "Awaiting client",
+      "client": "Client",
+      "contact": "Primary contact",
+      "projects": "Portal projects",
+      "users": "Users"
+    },
+    "empty": "No client organizations yet. Use Add Client to create the first one.",
+    "emptySearch": "No clients match this search.",
+    "menu": {
+      "edit": "Edit client",
+      "open": "Open workspace",
+      "projects": "Manage projects",
+      "users": "Manage users & access"
+    },
+    "rowActions": "Actions for {{name}}",
+    "search": "Search organizations…",
+    "searchLabel": "Search client organizations",
+    "tableLabel": "Client organizations",
+    "usersSummary": "{{active}} active · {{total}} total",
+    "waiting": "{{count}} waiting",
+    "waiting_one": "{{count}} waiting",
+    "waiting_other": "{{count}} waiting"
+  },
+  "overview": {
+    "attention": {
+      "approvalAwaiting": "the client",
+      "changeRequestReview": "“{{title}}” needs your review",
+      "empty": "Nothing is waiting on you for {{name}}.",
+      "inviteExpired": "{{name}}’s invitation expired",
+      "inviteExpiredAsked": "{{name}}’s invitation expired and they asked for a new link",
+      "title": "Needs attention",
+      "unreadMessage": "Unread client message"
+    },
+    "recent": {
+      "empty": "No activity yet.",
+      "error": "Recent activity could not be loaded.",
+      "title": "Recent activity"
+    },
+    "stats": {
+      "awaiting": "Awaiting client action",
+      "awaitingSub": "Approvals and info requests",
+      "openChangeRequests": "Open change requests",
+      "portalProjects": "Portal projects"
+    }
+  },
+  "page": {
+    "addClient": "Add Client",
+    "description": "Client organizations, the people who can sign in to their portal, and what each of them is waiting on.",
+    "organizationsTab": "Organizations",
+    "title": "Clients",
+    "usersTab": "Client Users",
+    "viewToggle": "Clients view"
+  },
+  "profile": {
+    "assignedProjects_one": "Assigned projects ({{count}})",
+    "assignedProjects_other": "Assigned projects ({{count}})",
+    "lastAccess": "Last access",
+    "neverAccessed": "Never",
+    "noJobTitle": "No job title on file",
+    "noProjects": "No projects assigned yet. This user signs in to an empty portal.",
+    "phone": "Phone",
+    "title": "Client user"
+  },
+  "remove": {
+    "body": "{{name}} and their project assignments are removed. Comments and approvals they made stay in the history.",
+    "confirm": "Remove user",
+    "title": "Remove this client user?"
+  },
+  "retry": "Retry",
+  "roleAdminDescription": "Views assigned projects, comments, uploads permitted files, submits change requests, approves items and can manage client users if enabled.",
+  "roleMemberDescription": "Views assigned projects, comments, uploads permitted files and submits change requests. Cannot approve or manage users.",
+  "roleViewerDescription": "Read-only: project information, milestones, client-visible tasks and files. Cannot comment, upload, approve or submit change requests.",
+  "rowsPerPage": "Rows per page:",
+  "stats": {
+    "activeUsers": "Active users",
+    "awaiting": "Awaiting client action",
+    "awaitingSub": "Approvals and info requests",
+    "expired": "{{count}} expired",
+    "expired_one": "{{count}} expired",
+    "expired_other": "{{count}} expired",
+    "invited": "Invited",
+    "organizations": "Client organizations"
+  },
+  "users": {
+    "allRoles": "All roles",
+    "allStatuses": "All statuses",
+    "columns": {
+      "actions": "Actions",
+      "lastAccess": "Last access",
+      "organization": "Organization",
+      "projects": "Projects",
+      "role": "Role",
+      "status": "Status",
+      "user": "User"
+    },
+    "empty": "No client users yet. Use Add Client to invite the first one.",
+    "emptyFiltered": "No client users match these filters.",
+    "invitedAgo": "Invited {{when}}",
+    "neverAccessed": "Never",
+    "noProjects": "None assigned",
+    "projectCount": "{{count}} projects",
+    "projectCount_one": "{{count}} project",
+    "projectCount_other": "{{count}} projects",
+    "roleFilter": "Filter by role",
+    "rowActions": "Actions for {{name}}",
+    "search": "Search users, emails or organizations…",
+    "searchInOrganization": "Search users or emails…",
+    "searchLabel": "Search client users",
+    "statusFilter": "Filter by status",
+    "tableLabel": "Client users"
+  },
+  "workspace": {
+    "activity": {
+      "empty": "No activity for {{name}} yet.",
+      "error": "The activity could not be loaded.",
+      "openFullLog": "Open full audit log",
+      "sideClient": "Client",
+      "sideInternal": "Internal",
+      "title": "Audit trail for {{name}}"
+    },
+    "approvals": {
+      "columns": {
+        "due": "Due",
+        "id": "ID",
+        "linked": "Linked item",
+        "status": "Status",
+        "title": "Title"
+      },
+      "empty": "No approvals for {{name}} yet.",
+      "request": "Request approval",
+      "tableLabel": "Approvals for this client"
+    },
+    "billing": {
+      "createInvoice": "Create invoice",
+      "manageUsers": "Manage users",
+      "title": "Invoices",
+      "warningDescription": "None of their users has accepted an invitation, so they can’t view or pay invoices in their portal. You can still create invoices. Invite a user first if they should see them.",
+      "warningTitle": "{{name}} can’t use their portal yet"
+    },
+    "changeRequests": {
+      "columns": {
+        "id": "ID",
+        "priority": "Priority",
+        "status": "Status",
+        "submitted": "Submitted",
+        "title": "Title"
+      },
+      "empty": "No change requests from {{name}} yet.",
+      "tableLabel": "Change requests from this client"
+    },
+    "errors": {
+      "backToClients": "Back to clients",
+      "loadDescription": "Please try again.",
+      "loadTitle": "Could not load this client",
+      "notFoundDescription": "It may have been removed, or the link is wrong.",
+      "notFoundTitle": "Client not found"
+    },
+    "header": {
+      "actionsLabel": "Client actions",
+      "edit": "Edit client"
+    },
+    "projects": {
+      "assign": {
+        "button": "Assign project",
+        "cancel": "Cancel",
+        "confirm": "Assign",
+        "description": "Choose workspace projects that do not belong to a client yet. The Client Portal stays off for them until you switch it on.",
+        "done_one": "{{count}} project assigned to {{name}}. Switch the Client Portal on to share it.",
+        "done_other": "{{count}} projects assigned to {{name}}. Switch the Client Portal on to share them.",
+        "failed": "Some projects could not be assigned: {{details}}",
+        "loadFailed": "The projects could not be loaded.",
+        "none": "Every workspace project already belongs to a client.",
+        "placeholder": "Search projects…",
+        "retry": "Retry",
+        "title": "Assign projects to {{name}}"
+      },
+      "columns": {
+        "phase": "Phase",
+        "portal": "Portal",
+        "progress": "Progress",
+        "project": "Project",
+        "status": "Client-facing status",
+        "users": "Users"
+      },
+      "empty": "No projects for {{name}} yet. Link a workspace project to this client from Portal Projects.",
+      "emptyShort": "No projects for {{name}} yet.",
+      "manage": "Manage",
+      "progressLabel": "Progress of {{name}}",
+      "tableLabel": "Projects of this client",
+      "title": "Projects"
+    },
+    "rail": {
+      "active": "Active",
+      "balance": "Balance",
+      "billing": "Billing",
+      "deactivated": "Deactivated",
+      "email": "Email",
+      "hint": "A client user sees only the projects assigned to them.",
+      "inviteUser": "Invite a user",
+      "invited": "Invited",
+      "organization": "Organization",
+      "portalAccess": "Portal access",
+      "portalProjects": "Portal projects",
+      "primaryContact": "Primary contact",
+      "quickActions": "Quick actions",
+      "requestApproval": "Request approval"
+    },
+    "tabs": {
+      "activity": "Activity",
+      "approvals": "Approvals",
+      "billing": "Billing",
+      "changeRequests": "Change Requests",
+      "overview": "Overview",
+      "projects": "Projects",
+      "users": "Users & Access"
+    },
+    "users": {
+      "description": "People at {{name}} who can sign in. Each sees only the projects assigned to them.",
+      "invite": "Invite user"
+    }
+  }
+}

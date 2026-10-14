@@ -1,0 +1,36 @@
+{
+  "allClients": "All clients",
+  "allSides": "Client and internal",
+  "allTypes": "All event types",
+  "clientActions": "Client actions",
+  "clientFilter": "Filter by client",
+  "columns": {
+    "actor": "Actor",
+    "client": "Client",
+    "event": "Event",
+    "target": "Target",
+    "when": "When"
+  },
+  "description": "Every important client and internal action, timestamped and attributed to a user.",
+  "empty": "No events yet. Client and team actions appear here as they happen.",
+  "emptyFiltered": "No events match these filters.",
+  "exportCsv": "Export CSV",
+  "footnote": "The log cannot be edited or deleted. It never stores comment text or internal notes, and client sign-ins are not logged.",
+  "internalActions": "Internal actions",
+  "search": "Search actor, event or target…",
+  "searchLabel": "Search the audit log",
+  "sideClient": "Client",
+  "sideFilter": "Filter by who acted",
+  "sideInternal": "Internal",
+  "tableLabel": "Audit events",
+  "title": "Audit Log",
+  "typeFilter": "Filter by event type",
+  "types": {
+    "access": "Access",
+    "approvals": "Approvals",
+    "changeRequests": "Change requests",
+    "comments": "Comments",
+    "files": "Files",
+    "visibility": "Visibility"
+  }
+}

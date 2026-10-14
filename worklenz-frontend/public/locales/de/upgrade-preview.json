@@ -147,36 +147,6 @@
           "Unbegrenzte Kundenkonten"
         ]
       },
-      "requests": {
-        "title": "Anfragen",
-        "description": "Ermöglichen Sie Kunden, Serviceanfragen einzureichen und zu verfolgen, ohne ihr Portal zu verlassen.",
-        "features": [
-          "Vom Kunden übermittelte Serviceanfragen",
-          "Akzeptieren, ablehnen oder nachverfolgen an einer Stelle",
-          "Statusverfolgung von der Einreichung bis zur Fertigstellung",
-          "Direkter Link zum angeforderten Dienst"
-        ]
-      },
-      "services": {
-        "title": "Dienstleistungen",
-        "description": "Veröffentlichen Sie die Dienste, die Kunden anfordern können, und steuern Sie, was sie sehen können.",
-        "features": [
-          "Ein Katalog der anforderbaren Dienstleistungen",
-          "Sichtbarkeitskontrollen pro Dienst",
-          "Anforderungsvolumen pro Dienst",
-          "Weisen Sie Ihrem Team einen Service-Inhaber zu"
-        ]
-      },
-      "chats": {
-        "title": "Nachrichten",
-        "description": "Benachrichtigen Sie Kunden direkt über dasselbe Portal, das sie für alles andere verwenden.",
-        "features": [
-          "Direkte Nachrichtenübermittlung an Kunden",
-          "Ein Konversationsthread pro Kunde",
-          "Durchsuchbarer Gesprächsverlauf",
-          "Benachrichtigungen, wenn ein Kunde antwortet"
-        ]
-      },
       "invoices": {
         "title": "Rechnungen",
         "description": "Erstellen, versenden und verfolgen Sie Kundenrechnungen, ohne Worklenz zu verlassen.",
@@ -195,6 +165,66 @@
           "Marken-Header im gesamten Portal",
           "Konsistente visuelle Identität für Kunden",
           "Firmendetails, die Kunden sehen können"
+        ]
+      },
+      "projects": {
+        "title": "Portal Projects",
+        "description": "Choose which projects clients can see and what is shared inside each one.",
+        "features": [
+          "Switch the Client Portal on per project",
+          "Share tasks, files and milestones one by one",
+          "Everything stays Internal Only until you share it",
+          "Client-facing status, phase and progress"
+        ]
+      },
+      "approvals": {
+        "title": "Approvals",
+        "description": "Get formal, recorded sign-off from clients on exact file versions.",
+        "features": [
+          "Ask a Client Admin to approve a file, milestone or task",
+          "The exact version or revision is recorded",
+          "Every decision is kept, with a full history",
+          "Overdue and awaiting approvals at a glance"
+        ]
+      },
+      "changeRequests": {
+        "title": "Change Requests",
+        "description": "Review, estimate and decide on scope changes, then turn approved ones into work.",
+        "features": [
+          "Clients submit scope changes from their portal",
+          "Estimate, approve, reject or ask for more information",
+          "Convert approved requests into tasks",
+          "Create quotes and invoices from a request"
+        ]
+      },
+      "discussions": {
+        "title": "Discussions",
+        "description": "Talk to clients about the exact task, file or approval, with internal comments kept private.",
+        "features": [
+          "Conversations attached to the work they are about",
+          "Client-visible replies and private internal comments",
+          "Mention client users, never by accident in internal notes",
+          "Unread tracking across your team"
+        ]
+      },
+      "auditLog": {
+        "title": "Audit Log",
+        "description": "A tamper-proof record of client and team activity.",
+        "features": [
+          "Access, sharing, file, approval and change request events",
+          "Every entry is timestamped and attributed",
+          "Filter by client, event type or who acted",
+          "Export the filtered view as CSV"
+        ]
+      },
+      "preview": {
+        "title": "Client Portal",
+        "description": "See exactly what a client sees before you share anything.",
+        "features": [
+          "Preview as any active client user",
+          "Built from the same rules the portal enforces",
+          "See what is hidden from that user",
+          "Check what each role can do"
         ]
       }
     }
