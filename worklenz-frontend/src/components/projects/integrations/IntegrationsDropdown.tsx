@@ -116,9 +116,13 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
       title={t('github.title', { defaultValue: 'GitHub' })}
       description={
         isSoftwareProject
-          ? t('github.softwareDescription', {
-              defaultValue: 'Link repositories to see branches, pull requests and commits',
-            })
+          ? status?.github?.connected
+            ? t('github.softwareDescription', {
+                defaultValue: 'Link repositories to see branches, pull requests and commits',
+              })
+            : t('github.connectDescription', {
+                defaultValue: 'Connect GitHub to link repositories to this project',
+              })
           : t('github.softwareOnly', {
               defaultValue: 'Available for software projects',
             })
