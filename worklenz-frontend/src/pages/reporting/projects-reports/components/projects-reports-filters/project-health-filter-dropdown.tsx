@@ -13,7 +13,13 @@ import debounce from 'lodash/debounce';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const ProjectHealthFilterDropdown = () => {
+interface ProjectHealthFilterDropdownProps {
+  inline?: boolean;
+}
+
+const ProjectHealthFilterDropdown = ({
+  inline = false,
+}: ProjectHealthFilterDropdownProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects-filters');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -90,6 +96,9 @@ const ProjectHealthFilterDropdown = () => {
       </List>
     </Card>
   );
+  if (inline) {
+  return projectHealthDropdownContent;
+}
 
   return (
     <Dropdown
