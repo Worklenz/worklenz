@@ -163,6 +163,19 @@ export class GithubAppService {
     return repos;
   }
 
+  /** Repository default branch plus up to 100 branch names (alphabetical). */
+  public static async listBranches(
+    installationId: number,
+    fullName: string,
+  ): Promise<{ default_branch: string; branches: string[] }> {
+    const token = await this.getInstallationToken(installationId);
+    const [repo, branches] = await Promise.all([
+      this.request<{ default_branch: string }>(`/repos/${fullName}`, token),
+      this.request<Array<{ name: string }>>(`/repos/${fullName}/branches?per_page=100`, token),
+    ]);
+    return { default_branch: repo.default_branch, branches: branches.map(b => b.name) };
+  }
+
   /** Head SHA of a branch, used as the starting point for a new branch. */
   public static async getBranchSha(
     installationId: number,

@@ -39,6 +39,12 @@ githubApiRouter.delete(
 // Task development info
 githubApiRouter.get("/tasks/:id/development", idParamValidator, safeControllerFunction(GithubController.getTaskDevelopment));
 
+githubApiRouter.get(
+  "/tasks/:id/branches",
+  idParamValidator,
+  safeControllerFunction(GithubController.listRepositoryBranches),
+);
+
 githubApiRouter.post(
   "/tasks/:id/branches",
   idParamValidator,

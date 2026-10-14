@@ -116,7 +116,10 @@
         "exists": "Ya existe una rama con este nombre.",
         "baseMissing": "No se encontró la rama base en este repositorio.",
         "permission": "La aplicación de GitHub no puede crear ramas. Pide a un administrador que le conceda acceso de escritura a Contenido."
-      }
+      },
+      "branchesFailed": "No se pudieron cargar las ramas. Aún puedes escribir la rama base.",
+      "loadingBranches": "Cargando ramas…",
+      "selectBranch": "Selecciona o escribe una rama"
     }
   }
 }

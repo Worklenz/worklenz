@@ -116,7 +116,10 @@
         "exists": "Ein Branch mit diesem Namen existiert bereits.",
         "baseMissing": "Der Basis-Branch wurde in diesem Repository nicht gefunden.",
         "permission": "Die GitHub-App darf keine Branches erstellen. Bitten Sie einen Admin, ihr Schreibzugriff auf Inhalte zu geben."
-      }
+      },
+      "branchesFailed": "Branches konnten nicht geladen werden. Sie können den Basis-Branch trotzdem eingeben.",
+      "loadingBranches": "Branches werden geladen …",
+      "selectBranch": "Branch auswählen oder eingeben"
     }
   }
 }

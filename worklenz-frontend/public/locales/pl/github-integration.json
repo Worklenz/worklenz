@@ -116,7 +116,10 @@
         "exists": "Gałąź o tej nazwie już istnieje.",
         "baseMissing": "Nie znaleziono gałęzi bazowej w tym repozytorium.",
         "permission": "Aplikacja GitHub nie może tworzyć gałęzi. Poproś administratora o nadanie jej uprawnień zapisu do zawartości."
-      }
+      },
+      "branchesFailed": "Nie udało się wczytać gałęzi. Nadal możesz wpisać gałąź bazową.",
+      "loadingBranches": "Wczytywanie gałęzi…",
+      "selectBranch": "Wybierz lub wpisz gałąź"
     }
   }
 }

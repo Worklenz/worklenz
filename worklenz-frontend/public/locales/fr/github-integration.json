@@ -116,7 +116,10 @@
         "exists": "Une branche portant ce nom existe déjà.",
         "baseMissing": "La branche de base est introuvable dans ce dépôt.",
         "permission": "L’application GitHub n’est pas autorisée à créer des branches. Demandez à un administrateur de lui accorder l’accès en écriture au contenu."
-      }
+      },
+      "branchesFailed": "Impossible de charger les branches. Vous pouvez quand même saisir la branche de base.",
+      "loadingBranches": "Chargement des branches…",
+      "selectBranch": "Sélectionnez ou saisissez une branche"
     }
   }
 }

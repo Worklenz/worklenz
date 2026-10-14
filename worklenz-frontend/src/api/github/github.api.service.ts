@@ -114,6 +114,11 @@ export interface IGithubCreatedBranch {
   checkout_command: string;
 }
 
+export interface IGithubRepositoryBranches {
+  default_branch: string;
+  branches: string[];
+}
+
 export interface IGithubTaskDevelopment {
   has_linked_repositories: boolean;
   repositories: IGithubTaskRepository[];
@@ -181,6 +186,13 @@ export const githubApiService = {
   unlinkRepository: async (projectId: string, linkId: string) => {
     const response = await apiClient.delete<IServerResponse<null>>(
       `${rootUrl}/projects/${projectId}/repositories/${linkId}`
+    );
+    return response.data;
+  },
+
+  getRepositoryBranches: async (taskId: string, repositoryId: string) => {
+    const response = await apiClient.get<IServerResponse<IGithubRepositoryBranches>>(
+      `${rootUrl}/tasks/${taskId}/branches?repository_id=${encodeURIComponent(repositoryId)}`
     );
     return response.data;
   },

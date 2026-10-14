@@ -116,7 +116,10 @@
         "exists": "已存在同名分支。",
         "baseMissing": "在此仓库中找不到基础分支。",
         "permission": "GitHub 应用无权创建分支。请让管理员授予其内容写入权限。"
-      }
+      },
+      "branchesFailed": "无法加载分支。你仍然可以手动输入基础分支。",
+      "loadingBranches": "正在加载分支…",
+      "selectBranch": "选择或输入分支"
     }
   }
 }

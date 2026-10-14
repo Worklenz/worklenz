@@ -116,7 +116,10 @@
         "exists": "Já existe uma branch com este nome.",
         "baseMissing": "A branch base não foi encontrada neste repositório.",
         "permission": "O aplicativo do GitHub não pode criar branches. Peça a um administrador para conceder acesso de gravação ao conteúdo."
-      }
+      },
+      "branchesFailed": "Não foi possível carregar as branches. Você ainda pode digitar a branch base.",
+      "loadingBranches": "Carregando branches…",
+      "selectBranch": "Selecione ou digite uma branch"
     }
   }
 }

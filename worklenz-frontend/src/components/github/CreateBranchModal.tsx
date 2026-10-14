@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
+  AutoComplete,
   Button,
   Flex,
   Form,
@@ -69,28 +70,67 @@ export const CreateBranchModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [created, setCreated] = useState<IGithubCreatedBranch | null>(null);
+  const [branches, setBranches] = useState<string[]>([]);
+  const [isLoadingBranches, setIsLoadingBranches] = useState(false);
+  const [branchesFailed, setBranchesFailed] = useState(false);
 
   const defaultName = useMemo(
     () => [taskKey, slugifyForBranch(taskName)].filter(Boolean).join('-'),
     [taskKey, taskName]
   );
 
+  const initialValues = useMemo<CreateBranchFormValues>(
+    () => ({
+      repositoryId: repositories[0]?.repository_id ?? '',
+      prefix: BRANCH_PREFIXES[0],
+      name: defaultName,
+      baseBranch: repositories[0]?.default_base_branch ?? '',
+    }),
+    [repositories, defaultName]
+  );
+
   useEffect(() => {
     if (!open) return;
     setCreated(null);
     setErrorText(null);
-    const first = repositories[0];
-    form.setFieldsValue({
-      repositoryId: first?.repository_id,
-      prefix: BRANCH_PREFIXES[0],
-      name: defaultName,
-      baseBranch: first?.default_base_branch,
-    });
-  }, [open, repositories, defaultName, form]);
+  }, [open]);
+
+  // Load real branches for the selected repository; also repairs an empty base branch.
+  const loadBranches = useCallback(
+    async (repositoryId: string) => {
+      if (!repositoryId) return;
+      setIsLoadingBranches(true);
+      setBranchesFailed(false);
+      try {
+        const response = await githubApiService.getRepositoryBranches(taskId, repositoryId);
+        if (!response.done) throw new Error('branch lookup failed');
+        setBranches(response.body.branches);
+        if (!form.getFieldValue('baseBranch')) {
+          const configured = repositories.find(
+            repo => repo.repository_id === repositoryId
+          )?.default_base_branch;
+          form.setFieldValue('baseBranch', configured || response.body.default_branch);
+        }
+      } catch (error) {
+        logger.error('Failed to load GitHub branches', error);
+        setBranches([]);
+        setBranchesFailed(true);
+      } finally {
+        setIsLoadingBranches(false);
+      }
+    },
+    [taskId, repositories, form]
+  );
+
+  useEffect(() => {
+    if (open && !created) void loadBranches(initialValues.repositoryId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialValues.repositoryId]);
 
   const handleRepositoryChange = (repositoryId: string) => {
     const repository = repositories.find(item => item.repository_id === repositoryId);
-    if (repository) form.setFieldValue('baseBranch', repository.default_base_branch);
+    form.setFieldValue('baseBranch', repository?.default_base_branch ?? '');
+    void loadBranches(repositoryId);
   };
 
   const handleSubmit = async () => {
@@ -208,7 +248,7 @@ export const CreateBranchModal = ({
             </Flex>
           </Flex>
         ) : (
-          <Form form={form} layout="vertical" requiredMark={false}>
+          <Form form={form} layout="vertical" requiredMark={false} initialValues={initialValues}>
             {errorText && (
               <Alert type="error" showIcon message={errorText} style={{ marginBottom: 16 }} />
             )}
@@ -262,8 +302,32 @@ export const CreateBranchModal = ({
               label={t('development.createBranch.baseBranch', { defaultValue: 'Base branch' })}
               rules={[{ required: true, pattern: BRANCH_NAME_PATTERN }]}
               style={{ marginTop: 16 }}
+              extra={
+                branchesFailed
+                  ? t('development.createBranch.branchesFailed', {
+                      defaultValue: 'Could not load branches. You can still type the base branch.',
+                    })
+                  : undefined
+              }
             >
-              <Input />
+              <AutoComplete
+                options={branches.map(branch => ({ value: branch }))}
+                filterOption={(input, option) =>
+                  (option?.value ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+                placeholder={
+                  isLoadingBranches
+                    ? t('development.createBranch.loadingBranches', {
+                        defaultValue: 'Loading branches…',
+                      })
+                    : t('development.createBranch.selectBranch', {
+                        defaultValue: 'Select or type a branch',
+                      })
+                }
+                aria-label={t('development.createBranch.baseBranch', {
+                  defaultValue: 'Base branch',
+                })}
+              />
             </Form.Item>
           </Form>
         )}

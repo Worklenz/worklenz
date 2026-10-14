@@ -116,7 +116,10 @@
         "exists": "Ekziston tashmë një degë me këtë emër.",
         "baseMissing": "Dega bazë nuk u gjet në këtë depo.",
         "permission": "Aplikacioni GitHub nuk lejohet të krijojë degë. Kërkojini një administratori t’i japë qasje shkrimi te Contents."
-      }
+      },
+      "branchesFailed": "Degët nuk mund të ngarkoheshin. Mund ta shkruani ende degën bazë.",
+      "loadingBranches": "Po ngarkohen degët…",
+      "selectBranch": "Zgjidhni ose shkruani një degë"
     }
   }
 }

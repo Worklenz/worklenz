@@ -93,6 +93,48 @@ async function getProjectStatuses(projectId: string): Promise<IProjectStatusOpti
   return result.rows;
 }
 
+/**
+ * Shared checks for task-scoped branch endpoints: software task in the caller's team, caller can
+ * work on tasks, and the repository is linked to the task's project with an active installation.
+ * Sends the error response itself and returns null when a check fails.
+ */
+async function resolveTaskRepository(
+  req: IWorkLenzRequest,
+  res: IWorkLenzResponse,
+  taskId: string,
+  repositoryId: string,
+): Promise<{ fullName: string; installationId: number } | null> {
+  const task = await db.query(
+    `SELECT t.project_id FROM tasks t JOIN projects p ON p.id = t.project_id
+     WHERE t.id = $1 AND p.team_id = $2 AND p.project_type = 'software'`,
+    [taskId, req.user?.team_id],
+  );
+  if (!task.rowCount) {
+    res.status(404).send(new ServerResponse(false, null, "Task not found"));
+    return null;
+  }
+
+  const access = await getProjectAccessForRequest(req, task.rows[0].project_id);
+  if (!access.permissions.tasks) {
+    res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
+    return null;
+  }
+
+  const repo = await db.query(
+    `SELECT r.full_name, i.installation_id
+     FROM github_project_repositories pr
+     JOIN github_repositories r ON r.id = pr.repository_id
+     JOIN github_integrations i ON i.id = r.integration_id
+     WHERE pr.project_id = $1 AND r.id = $2 AND i.status = 'active' AND r.is_available = TRUE`,
+    [task.rows[0].project_id, repositoryId],
+  );
+  if (!repo.rowCount) {
+    res.status(404).send(new ServerResponse(false, null, "Repository not found"));
+    return null;
+  }
+  return { fullName: repo.rows[0].full_name, installationId: Number(repo.rows[0].installation_id) };
+}
+
 export default class GithubController extends WorklenzControllerBase {
   /** Connection state for the team (Settings > Integrations). */
   @HandleExceptions()
@@ -522,33 +564,13 @@ export default class GithubController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "A valid repository, branch name and base branch are required"));
     }
 
-    const task = await db.query(
-      `SELECT t.project_id FROM tasks t JOIN projects p ON p.id = t.project_id
-       WHERE t.id = $1 AND p.team_id = $2 AND p.project_type = 'software'`,
-      [taskId, req.user?.team_id],
-    );
-    if (!task.rowCount) return res.status(404).send(new ServerResponse(false, null, "Task not found"));
-
-    const access = await getProjectAccessForRequest(req, task.rows[0].project_id);
-    if (!access.permissions.tasks) {
-      return res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
-    }
-
-    // Repository must be linked to this task's project and its installation active.
-    const repo = await db.query(
-      `SELECT r.id, r.full_name, i.installation_id
-       FROM github_project_repositories pr
-       JOIN github_repositories r ON r.id = pr.repository_id
-       JOIN github_integrations i ON i.id = r.integration_id
-       WHERE pr.project_id = $1 AND r.id = $2 AND i.status = 'active' AND r.is_available = TRUE`,
-      [task.rows[0].project_id, repository_id],
-    );
-    if (!repo.rowCount) return res.status(404).send(new ServerResponse(false, null, "Repository not found"));
-    const { full_name: fullName, installation_id: installationId } = repo.rows[0];
+    const target = await resolveTaskRepository(req, res, taskId, repository_id);
+    if (!target) return res;
+    const { fullName, installationId } = target;
 
     try {
-      const sha = await GithubAppService.getBranchSha(Number(installationId), fullName, base_branch);
-      await GithubAppService.createBranch(Number(installationId), fullName, name, sha);
+      const sha = await GithubAppService.getBranchSha(installationId, fullName, base_branch);
+      await GithubAppService.createBranch(installationId, fullName, name, sha);
     } catch (error) {
       if (error instanceof GithubApiError) {
         if (error.status === 422) {
@@ -590,5 +612,21 @@ export default class GithubController extends WorklenzControllerBase {
         checkout_command: `git fetch origin && git checkout -b ${name} origin/${name}`,
       }),
     );
+  }
+
+  /** Branches of a linked repository, for the Create Branch base-branch picker. */
+  @HandleExceptions()
+  public static async listRepositoryBranches(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const taskId = req.params.id;
+    const repositoryId = req.query.repository_id;
+    if (typeof repositoryId !== "string" || !isValidUuid(repositoryId)) {
+      return res.status(400).send(new ServerResponse(false, null, "repository_id is required"));
+    }
+
+    const target = await resolveTaskRepository(req, res, taskId, repositoryId);
+    if (!target) return res;
+
+    const result = await GithubAppService.listBranches(target.installationId, target.fullName);
+    return res.status(200).send(new ServerResponse(true, result));
   }
 }
