@@ -347,8 +347,10 @@ const [isLoading, setIsLoading] = useState(true);
         const canContinue = await checkTaskDependencyStatus(task.id, targetGroupId);
         if (!canContinue) {
           alertService.error(
-            'Task is not completed',
-            'Please complete the task dependencies before proceeding'
+            t('taskNotCompleted', { defaultValue: 'Task is not completed' }),
+            t('completeTaskDependencies', {
+              defaultValue: 'Please complete the task dependencies before proceeding',
+            })
           );
           dispatch(
             moveTaskBetweenGroups({
