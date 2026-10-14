@@ -2,7 +2,7 @@
   "create": {
     "approver": "Approver",
     "approverHint": "Only Client Admins can make an approval decision.",
-    "approverOption": "{{name}} · {{email}}",
+    "approverOption": "{{name}} · {{email}} · {{role}}",
     "approverPlaceholder": "Select an approver…",
     "drafted": "{{ref}} 保存为草稿。客户端还看不到它。",
     "dueDate": "截止日期（可选）",

@@ -266,7 +266,7 @@
     "fields": "Champs",
     "filter": "Filter"
   },
-  "userOption": "{{name}} · {{organization}} · {{role}}",
+  "userOption": "{{name}} · {{role}}",
   "usersFailed": "Les utilisateurs clients n'ont pas pu être chargés.",
   "openPortal": "Open the client portal"
 }

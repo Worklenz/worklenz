@@ -266,7 +266,7 @@
     "fields": "Campos",
     "filter": "Filter"
   },
-  "userOption": "{{name}} · {{organization}} · {{role}}",
+  "userOption": "{{name}} · {{role}}",
   "usersFailed": "No se pudieron cargar los usuarios del cliente.",
   "openPortal": "Open the client portal"
 }

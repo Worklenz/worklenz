@@ -134,7 +134,7 @@
   "viewPdf": "Afficher le PDF",
   "viewFile": "Afficher le fichier",
   "download": "Télécharger",
-  "existingInvoicesWarning": "⚠️ Cette demande comporte déjà des factures :",
+  "existingInvoicesWarning": "Cette demande a déjà {{count}} facture(s). Vous pouvez créer des factures supplémentaires pour des jalons ou des travaux additionnels.",
   "multipleInvoicesAllowed": "Vous pouvez créer des factures supplémentaires pour cette demande (par exemple, pour des étapes ou des travaux supplémentaires).",
   "noCurrenciesFound": "Aucune devise trouvée",
   "editInvoiceTitle": "Modifier la facture",

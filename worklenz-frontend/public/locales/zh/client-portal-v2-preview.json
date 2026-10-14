@@ -266,7 +266,7 @@
     "fields": "字段",
     "filter": "Filter"
   },
-  "userOption": "{{name}} · {{organization}} · {{role}}",
+  "userOption": "{{name}} · {{role}}",
   "usersFailed": "无法加载客户端用户。",
   "openPortal": "Open the client portal"
 }

@@ -134,7 +134,7 @@
   "viewPdf": "Zobacz PDF",
   "viewFile": "Wyświetl plik",
   "download": "Pobierz",
-  "existingInvoicesWarning": "⚠️ To żądanie ma już faktury:",
+  "existingInvoicesWarning": "To żądanie ma już {{count}} faktur(y). Możesz utworzyć dodatkowe faktury dla kamieni milowych lub dodatkowej pracy.",
   "multipleInvoicesAllowed": "Na to żądanie możesz wystawić dodatkowe faktury (np. za kamienie milowe lub dodatkową pracę).",
   "noCurrenciesFound": "Nie znaleziono walut",
   "editInvoiceTitle": "Edytuj fakturę",
