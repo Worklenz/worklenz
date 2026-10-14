@@ -44,8 +44,9 @@ export interface ProgressChartResponse {
 }
 
 export interface ProgressChartOptionsResponse {
-  projects: { id: string; name: string; project_type: string }[];
+  projects: { id: string; name: string; project_type: string; has_sprints: boolean }[];
   sprints: { id: string; name: string; sprint_status: string }[];
+  members: { id: string; name: string }[];
 }
 
 export interface GetProgressChartArgs {
@@ -73,6 +74,101 @@ const buildParams = ({ config: widgetConfig, includeArchived, dateRange }: GetPr
     params.dateFrom = dateRange.from;
     params.dateTo = dateRange.to;
   }
+  return params;
+};
+
+export interface VelocitySprint {
+  sprint_id: string;
+  name: string;
+  sprint_status: 'active' | 'completed';
+  committed: number | null;
+  completed: number;
+  start_date: string | null;
+  end_date: string | null;
+  completion_rate: number | null;
+}
+
+export interface VelocityResponse {
+  metric: 'story_points' | 'issue_count';
+  sprints: VelocitySprint[];
+  average_velocity: number | null;
+  completed_sprint_count: number;
+  best_sprint: { name: string; completed: number } | null;
+  worst_sprint: { name: string; completed: number } | null;
+  commitment_accuracy: number | null;
+}
+
+export interface FlowBand {
+  id: string;
+  name: string;
+  color: string;
+  category: 'todo' | 'doing' | 'done';
+}
+
+export interface CumulativeFlowResponse {
+  scope: ProgressScope;
+  start_date: string;
+  end_date: string;
+  bands: FlowBand[];
+  /** counts is null for days that have not happened yet. */
+  series: { date: string; counts: Record<string, number> | null }[];
+  summary: { total: number; in_progress: number; done: number; throughput_per_day: number; added: number; avg_cycle_days: number | null };
+}
+
+export interface TimeInStatusTask {
+  id: string;
+  name: string;
+  task_key: string | null;
+  project_id: string;
+  project_name: string;
+  status_name: string;
+  status_color: string;
+  hours_in_status: number;
+  hours_overdue: number | null;
+  assignees: string[];
+  updated_at: string;
+}
+
+export interface TimeInStatusResponse {
+  scope: ProgressScope;
+  start_date: string;
+  end_date: string;
+  rows: { band: FlowBand; task_count: number; avg_hours: number; median_hours: number; total_hours: number }[];
+  avg_hours_overall: number;
+  tasks: TimeInStatusTask[];
+}
+
+export interface GetFlowArgs {
+  config?: OverviewWidgetConfig;
+  includeArchived?: boolean;
+  dateRange?: { from: string; to: string } | null;
+  /** Time in Status: only tasks assigned to this team member. */
+  assigneeId?: string;
+}
+
+const buildFlowParams = ({ config: widgetConfig, includeArchived, dateRange, assigneeId }: GetFlowArgs): Record<string, string> => {
+  const scope = widgetConfig?.progressScope ?? 'team';
+  const params: Record<string, string> = {
+    scope,
+    includeSubtasks: String(widgetConfig?.includeSubtasks ?? false),
+    archived: String(widgetConfig?.includeArchived ?? includeArchived ?? false),
+  };
+  if (scope === 'project' && widgetConfig?.projectId) params.projectId = widgetConfig.projectId;
+  if (assigneeId) params.assigneeId = assigneeId;
+  if (dateRange) {
+    params.dateFrom = dateRange.from;
+    params.dateTo = dateRange.to;
+  }
+  return params;
+};
+
+const buildVelocityParams = (widgetConfig?: OverviewWidgetConfig): Record<string, string> => {
+  const params: Record<string, string> = {
+    metric: widgetConfig?.progressMetric === 'issue_count' ? 'issue_count' : 'story_points',
+    includeSubtasks: String(widgetConfig?.includeSubtasks ?? false),
+  };
+  if (widgetConfig?.projectId) params.projectId = widgetConfig.projectId;
+  if (widgetConfig?.sprintCount) params.sprintCount = String(widgetConfig.sprintCount);
   return params;
 };
 
@@ -104,9 +200,24 @@ const progressChartApi = createApi({
         params: projectId ? { projectId } : undefined,
       }),
     }),
+    getVelocity: builder.query<IServerResponse<VelocityResponse>, { config?: OverviewWidgetConfig }>({
+      query: ({ config: widgetConfig }) => ({ url: '/reporting/projects/widgets/velocity', params: buildVelocityParams(widgetConfig) }),
+    }),
+    getCumulativeFlow: builder.query<IServerResponse<CumulativeFlowResponse>, GetFlowArgs>({
+      query: args => ({ url: '/reporting/projects/widgets/cumulative-flow', params: buildFlowParams(args) }),
+    }),
+    getTimeInStatus: builder.query<IServerResponse<TimeInStatusResponse>, GetFlowArgs>({
+      query: args => ({ url: '/reporting/projects/widgets/time-in-status', params: buildFlowParams(args) }),
+    }),
   }),
 });
 
-export const { useGetProgressChartQuery, useGetProgressChartOptionsQuery } = progressChartApi;
+export const {
+  useGetProgressChartQuery,
+  useGetProgressChartOptionsQuery,
+  useGetVelocityQuery,
+  useGetCumulativeFlowQuery,
+  useGetTimeInStatusQuery,
+} = progressChartApi;
 
 export default progressChartApi;

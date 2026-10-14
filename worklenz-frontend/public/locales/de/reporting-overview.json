@@ -65,7 +65,10 @@
     "billableTimeLogs": "Abrechenbare vs. Nicht abrechenbare Zeiterfassungen",
     "clientStats": "Kundenstatistik",
     "burndownChart": "Burndown Chart",
-    "burnupChart": "Burnup Chart"
+    "burnupChart": "Burnup Chart",
+    "velocityChart": "Velocity-Diagramm",
+    "cumulativeFlow": "Kumulatives Flussdiagramm",
+    "timeInStatus": "Zeit im Status"
   },
   "widgetFilters": {
     "teams": "Teams",
@@ -96,7 +99,8 @@
     "metricEstimatedHours": "Estimated hours",
     "includeSubtasks": "Include sub-tasks",
     "showIdealLine": "Show guideline",
-    "showForecast": "Show forecast"
+    "showForecast": "Show forecast",
+    "sprintCount": "Anzuzeigende Sprints"
   },
   "widgetStats": {
     "todoText": "Zu erledigen",
@@ -127,7 +131,28 @@
     "retry": "Retry",
     "noProgressWork": "No work found for this selection",
     "estimatedHistory": "Earlier history is estimated from task dates; changes are tracked exactly from now on.",
-    "progressAriaLabel": "{{title}}: {{completed}} of {{scope}} {{metric}} completed, {{remaining}} remaining"
+    "progressAriaLabel": "{{title}}: {{completed}} of {{scope}} {{metric}} completed, {{remaining}} remaining",
+    "committedText": "Geplant",
+    "averageVelocity": "Durchschnittliche Velocity",
+    "latestSprint": "Letzter Sprint",
+    "completionRate": "{{rate}} % erreicht",
+    "noSprintsStarted": "In diesem Projekt wurden noch keine Sprints gestartet",
+    "velocityAriaLabel": "{{title}}: durchschnittliche Velocity {{average}} {{metric}} pro Sprint über {{count}} Sprints",
+    "flowAriaLabel": "{{title}}: {{total}} Aufgaben, {{inProgress}} in Bearbeitung, {{done}} erledigt",
+    "noFlowWork": "Für diese Auswahl wurden keine Aufgaben gefunden",
+    "totalTasks": "Aufgaben gesamt",
+    "inProgress": "In Bearbeitung",
+    "throughputPerDay": "Durchsatz / Tag",
+    "tasksAdded": "Hinzugefügte Aufgaben",
+    "averageTimePerTask": "Durchschnittliche Zeit pro Aufgabe",
+    "averageOverall": "Durchschnitt pro Aufgabe",
+    "slowestStatus": "Längste Wartezeit",
+    "averageTooltip": "Durchschnitt: {{value}}",
+    "medianTooltip": "Median: {{value}}",
+    "tasksTooltip": "Aufgaben: {{count}}",
+    "timeInStatusAriaLabel": "{{title}}: {{count}} Status, durchschnittlich {{average}} pro Aufgabe",
+    "hoursShort": "{{value}} Std.",
+    "daysShort": "{{value}} T."
   },
   "widgetDescriptions": {
     "kpiTeams": "Anzahl der Teams in Ihrem Arbeitsbereich",
@@ -147,6 +172,9 @@
     "billableTimeLogs": "Erfasste Stunden aufgeteilt in abrechenbare und nicht abrechenbare Zeit",
     "clientStats": "Projekte, Aufgaben und erfasste Stunden gruppiert nach Kunde",
     "burndownChart": "Work remaining over time for your active team or a single project/sprint, against a guideline",
-    "burnupChart": "Completed work against total scope over time, so scope changes are visible"
+    "burnupChart": "Completed work against total scope over time, so scope changes are visible",
+    "velocityChart": "Geplante vs. abgeschlossene Arbeit der letzten Sprints eines Projekts mit durchschnittlicher Velocity",
+    "cumulativeFlow": "Wie viele Aufgaben sich im Zeitverlauf in jedem Status befinden, um Engpässe und wachsende laufende Arbeit zu erkennen",
+    "timeInStatus": "Wie lange Aufgaben in jedem Status verbleiben, bevor sie weiterwandern"
   }
 }

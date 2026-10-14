@@ -293,14 +293,17 @@ export async function getProgressChart(filters: ProgressChartFilters): Promise<P
 }
 
 export interface ProgressChartOptions {
-  projects: { id: string; name: string; project_type: string }[];
+  projects: { id: string; name: string; project_type: string; has_sprints: boolean }[];
   sprints: { id: string; name: string; sprint_status: string }[];
+  /** Active-team members, for the Time in Status assignee filter. */
+  members: { id: string; name: string }[];
 }
 
 /** Pickers for the widget's settings: the active team's projects and (for a project) its sprints. */
 export async function getProgressChartOptions(teamId: string, userId: string, projectId?: string): Promise<ProgressChartOptions> {
   const projects = await db.query(
-    `SELECT p.id, p.name, p.project_type
+    `SELECT p.id, p.name, p.project_type,
+            EXISTS(SELECT 1 FROM project_phases pp WHERE pp.project_id = p.id AND pp.sprint_status IN ('active', 'completed')) AS has_sprints
      FROM projects p
      WHERE p.team_id = $1
        AND p.id NOT IN (SELECT ap.project_id FROM archived_projects ap WHERE ap.user_id = $2)
@@ -321,5 +324,12 @@ export async function getProgressChartOptions(teamId: string, userId: string, pr
     );
     sprints = result.rows;
   }
-  return { projects: projects.rows, sprints };
+  const members = await db.query(
+    `SELECT tmi.team_member_id AS id, tmi.name
+     FROM team_member_info_view tmi
+     WHERE tmi.team_id = $1 AND tmi.active IS TRUE AND tmi.name IS NOT NULL
+     ORDER BY tmi.name`,
+    [teamId]
+  );
+  return { projects: projects.rows, sprints, members: members.rows };
 }

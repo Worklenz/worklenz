@@ -9,5 +9,9 @@
   "allTasks": "任务",
   "progressTracking": "进度跟踪",
   "portfolio": "项目组合",
-  "currentOrganizationTooltip": "当前的组织"
+  "currentOrganizationTooltip": "当前的组织",
+  "reportingAnalytics": "报告与分析",
+  "velocityCharts": "速度图",
+  "cumulativeFlow": "累积流图",
+  "timeInStatus": "状态停留时间"
 }

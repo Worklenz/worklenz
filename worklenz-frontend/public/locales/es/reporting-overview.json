@@ -65,7 +65,10 @@
     "billableTimeLogs": "Registros de Tiempo Facturables vs No Facturables",
     "clientStats": "Estadísticas de Clientes",
     "burndownChart": "Burndown Chart",
-    "burnupChart": "Burnup Chart"
+    "burnupChart": "Burnup Chart",
+    "velocityChart": "Gráfico de velocidad",
+    "cumulativeFlow": "Diagrama de flujo acumulado",
+    "timeInStatus": "Tiempo en estado"
   },
   "widgetFilters": {
     "teams": "Equipos",
@@ -96,7 +99,8 @@
     "metricEstimatedHours": "Estimated hours",
     "includeSubtasks": "Include sub-tasks",
     "showIdealLine": "Show guideline",
-    "showForecast": "Show forecast"
+    "showForecast": "Show forecast",
+    "sprintCount": "Sprints a mostrar"
   },
   "widgetStats": {
     "todoText": "Por hacer",
@@ -127,7 +131,28 @@
     "retry": "Retry",
     "noProgressWork": "No work found for this selection",
     "estimatedHistory": "Earlier history is estimated from task dates; changes are tracked exactly from now on.",
-    "progressAriaLabel": "{{title}}: {{completed}} of {{scope}} {{metric}} completed, {{remaining}} remaining"
+    "progressAriaLabel": "{{title}}: {{completed}} of {{scope}} {{metric}} completed, {{remaining}} remaining",
+    "committedText": "Comprometido",
+    "averageVelocity": "Velocidad media",
+    "latestSprint": "Último sprint",
+    "completionRate": "{{rate}} % entregado",
+    "noSprintsStarted": "Aún no hay sprints iniciados en este proyecto",
+    "velocityAriaLabel": "{{title}}: velocidad media de {{average}} {{metric}} por sprint en {{count}} sprints",
+    "flowAriaLabel": "{{title}}: {{total}} tareas, {{inProgress}} en curso, {{done}} hechas",
+    "noFlowWork": "No se encontraron tareas para esta selección",
+    "totalTasks": "Tareas totales",
+    "inProgress": "En curso",
+    "throughputPerDay": "Rendimiento / día",
+    "tasksAdded": "Tareas añadidas",
+    "averageTimePerTask": "Tiempo medio por tarea",
+    "averageOverall": "Media por tarea",
+    "slowestStatus": "Mayor espera",
+    "averageTooltip": "Media: {{value}}",
+    "medianTooltip": "Mediana: {{value}}",
+    "tasksTooltip": "Tareas: {{count}}",
+    "timeInStatusAriaLabel": "{{title}}: {{count}} estados, media de {{average}} por tarea",
+    "hoursShort": "{{value}} h",
+    "daysShort": "{{value}} d"
   },
   "widgetDescriptions": {
     "kpiTeams": "Número de equipos en tu espacio de trabajo",
@@ -147,6 +172,9 @@
     "billableTimeLogs": "Horas registradas divididas entre tiempo facturable y no facturable",
     "clientStats": "Proyectos, tareas y horas registradas agrupadas por cliente",
     "burndownChart": "Work remaining over time for your active team or a single project/sprint, against a guideline",
-    "burnupChart": "Completed work against total scope over time, so scope changes are visible"
+    "burnupChart": "Completed work against total scope over time, so scope changes are visible",
+    "velocityChart": "Trabajo comprometido frente al completado en los últimos sprints de un proyecto, con su velocidad media",
+    "cumulativeFlow": "Cuántas tareas hay en cada estado a lo largo del tiempo, para detectar cuellos de botella y trabajo en curso creciente",
+    "timeInStatus": "Cuánto tiempo pasan las tareas en cada estado antes de avanzar"
   }
 }

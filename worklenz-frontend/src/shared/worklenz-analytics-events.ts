@@ -176,6 +176,9 @@ export const evt_reporting_projects_overview = 'reporting_projects_overview_visi
 export const evt_reporting_projects_custom = 'reporting_projects_custom_visit';
 export const evt_reporting_progress_tracking = 'reporting_progress_tracking_visit';
 export const evt_reporting_portfolio = 'reporting_portfolio_visit';
+export const evt_reporting_velocity = 'reporting_velocity_visit';
+export const evt_reporting_cumulative_flow = 'reporting_cumulative_flow_visit';
+export const evt_reporting_time_in_status = 'reporting_time_in_status_visit';
 
 // Billing & Subscription
 export const evt_billing_current_bill = 'billing_current_bill';

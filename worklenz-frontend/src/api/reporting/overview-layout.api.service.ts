@@ -30,7 +30,10 @@ export type OverviewWidgetKey =
   | 'upcoming_tasks'
   | 'overdue_tasks'
   | 'burndown_chart'
-  | 'burnup_chart';
+  | 'burnup_chart'
+  | 'velocity_chart'
+  | 'cumulative_flow'
+  | 'time_in_status';
 
 export type ProgressScope = 'team' | 'project';
 export type ProgressSource = 'range' | 'sprint';
@@ -65,6 +68,8 @@ export interface OverviewWidgetConfig {
   includeSubtasks?: boolean;
   showIdealLine?: boolean;
   showForecast?: boolean;
+  /** Velocity widget: how many recent sprints to plot (3-12). */
+  sprintCount?: number;
 }
 
 export type OverviewLayout = GridLayout<OverviewWidgetKey, OverviewWidgetConfig>;

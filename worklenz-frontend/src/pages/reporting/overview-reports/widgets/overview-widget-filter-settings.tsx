@@ -78,10 +78,16 @@ export const DEFAULT_CHART_TYPE: Record<OverviewWidgetKey, OverviewWidgetConfig[
   overdue_tasks: 'bar',
   burndown_chart: undefined,
   burnup_chart: undefined,
+  velocity_chart: undefined,
+  cumulative_flow: undefined,
+  time_in_status: undefined,
 };
 
 /** Burnup / Burndown widgets: they have their own settings section and always plot lines. */
 const PROGRESS_WIDGETS: OverviewWidgetKey[] = ['burndown_chart', 'burnup_chart'];
+
+/** Velocity, Cumulative Flow and Time in Status: project/team pickers, no chart type. */
+const FLOW_WIDGETS: OverviewWidgetKey[] = ['velocity_chart', 'cumulative_flow', 'time_in_status'];
 
 /** Resolves a widget's effective chart type: its own config, else the widget's default. */
 export const resolveChartType = (type: OverviewWidgetKey, config: OverviewWidgetConfig | undefined) =>
@@ -156,11 +162,12 @@ export const OverviewWidgetFilterSettings: React.FC<OverviewWidgetFilterSettings
   const set = (patch: Partial<OverviewWidgetConfig>) => onChange(current => ({ ...current, ...patch }));
 
   const isProgress = PROGRESS_WIDGETS.includes(widget.type);
+  const isFlow = FLOW_WIDGETS.includes(widget.type);
   const progressScope = config.progressScope ?? 'team';
   const progressSource = progressScope === 'project' ? (config.progressSource ?? 'range') : 'range';
   const { data: optionsData, isFetching: isOptionsFetching } = useGetProgressChartOptionsQuery(
     { projectId: progressScope === 'project' ? config.projectId : undefined },
-    { skip: !isProgress || progressScope !== 'project' }
+    { skip: !(isProgress || isFlow) || (widget.type !== 'velocity_chart' && progressScope !== 'project') }
   );
   const projectOptions = useMemo(
     () => (optionsData?.body?.projects ?? []).map(project => ({ value: project.id, label: project.name })),
@@ -191,6 +198,80 @@ export const OverviewWidgetFilterSettings: React.FC<OverviewWidgetFilterSettings
     colors[index] = hex;
     set({ colors });
   };
+
+  if (isFlow) {
+    const isVelocity = widget.type === 'velocity_chart';
+    const flowScope = isVelocity ? 'project' : progressScope;
+    return (
+      <Flex vertical gap={10}>
+        {!isVelocity && (
+          <Flex vertical gap={4}>
+            <Typography.Text strong>{t('widgetFilters.progressScope', { defaultValue: 'Level' })}</Typography.Text>
+            <Radio.Group
+              value={flowScope}
+              onChange={e =>
+                set({
+                  progressScope: e.target.value,
+                  ...(e.target.value === 'team' ? { projectId: undefined } : {}),
+                })
+              }
+            >
+              <Radio.Button value="team">{t('widgetFilters.scopeTeam', { defaultValue: 'Active team' })}</Radio.Button>
+              <Radio.Button value="project">{t('widgetFilters.scopeProject', { defaultValue: 'Project' })}</Radio.Button>
+            </Radio.Group>
+          </Flex>
+        )}
+        {flowScope === 'project' && (
+          <Flex vertical gap={4}>
+            <Typography.Text strong>{t('widgetFilters.project', { defaultValue: 'Project' })}</Typography.Text>
+            <Select
+              showSearch
+              optionFilterProp="label"
+              loading={isOptionsFetching}
+              style={{ width: '100%' }}
+              placeholder={t('widgetFilters.selectProject', { defaultValue: 'Select a project' })}
+              value={config.projectId}
+              options={projectOptions}
+              onChange={value => set({ projectId: value })}
+            />
+          </Flex>
+        )}
+        {isVelocity && (
+          <>
+            <Flex vertical gap={4}>
+              <Typography.Text strong>{t('widgetFilters.metric', { defaultValue: 'Measure' })}</Typography.Text>
+              <Select
+                style={{ width: '100%' }}
+                value={config.progressMetric === 'issue_count' ? 'issue_count' : 'story_points'}
+                onChange={value => set({ progressMetric: value as OverviewWidgetConfig['progressMetric'] })}
+                options={[
+                  { value: 'story_points', label: t('widgetFilters.metricStoryPoints', { defaultValue: 'Story points' }) },
+                  { value: 'issue_count', label: t('widgetFilters.metricIssueCount', { defaultValue: 'Issues' }) },
+                ]}
+              />
+            </Flex>
+            <Flex vertical gap={4}>
+              <Typography.Text strong>{t('widgetFilters.sprintCount', { defaultValue: 'Sprints to show' })}</Typography.Text>
+              <Select
+                style={{ width: '100%' }}
+                value={config.sprintCount ?? 6}
+                onChange={value => set({ sprintCount: value })}
+                options={Array.from({ length: 10 }, (_, index) => ({ value: index + 3, label: String(index + 3) }))}
+              />
+            </Flex>
+          </>
+        )}
+        <Checkbox checked={config.includeSubtasks ?? false} onChange={e => set({ includeSubtasks: e.target.checked })}>
+          {t('widgetFilters.includeSubtasks', { defaultValue: 'Include sub-tasks' })}
+        </Checkbox>
+        {!isVelocity && flowScope === 'team' && (
+          <Checkbox checked={config.includeArchived ?? false} onChange={e => set({ includeArchived: e.target.checked || undefined })}>
+            {t('widgetFilters.includeArchived', { defaultValue: 'Include archived projects' })}
+          </Checkbox>
+        )}
+      </Flex>
+    );
+  }
 
   if (isProgress) {
     return (
@@ -406,6 +487,26 @@ export const useOverviewWidgetFilterSummary = (type: OverviewWidgetKey, config: 
       lines.push(`${t('widgetFilters.metric', { defaultValue: 'Measure' })}: ${metricLabels[config?.progressMetric ?? 'story_points']}`);
       if (config?.includeSubtasks) lines.push(t('widgetFilters.includeSubtasks', { defaultValue: 'Include sub-tasks' }));
       if (config?.includeArchived) lines.push(t('widgetFilters.includeArchived', { defaultValue: 'Include archived projects' }));
+      return lines;
+    }
+    if (FLOW_WIDGETS.includes(type)) {
+      const scope = type === 'velocity_chart' ? 'project' : (config?.progressScope ?? 'team');
+      lines.push(
+        scope === 'project'
+          ? t('widgetFilters.scopeProject', { defaultValue: 'Project' })
+          : t('widgetFilters.scopeTeam', { defaultValue: 'Active team' })
+      );
+      if (type === 'velocity_chart') {
+        lines.push(
+          `${t('widgetFilters.metric', { defaultValue: 'Measure' })}: ${
+            config?.progressMetric === 'issue_count'
+              ? t('widgetFilters.metricIssueCount', { defaultValue: 'Issues' })
+              : t('widgetFilters.metricStoryPoints', { defaultValue: 'Story points' })
+          }`
+        );
+      }
+      if (config?.includeSubtasks) lines.push(t('widgetFilters.includeSubtasks', { defaultValue: 'Include sub-tasks' }));
+      if (config?.includeArchived && type !== 'velocity_chart') lines.push(t('widgetFilters.includeArchived', { defaultValue: 'Include archived projects' }));
       return lines;
     }
     const groupBy = resolveGroupBy(type, config);

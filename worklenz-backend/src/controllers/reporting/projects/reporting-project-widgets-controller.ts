@@ -29,6 +29,20 @@ import {
   ProgressChartError,
   ProgressChartFilters,
 } from "../../../services/reporting-progress-chart.service";
+import {
+  DEFAULT_SPRINT_COUNT,
+  getVelocity,
+  VELOCITY_METRICS,
+  VelocityError,
+  VelocityFilters,
+} from "../../../services/reporting-velocity.service";
+import {
+  FLOW_SCOPES,
+  FlowError,
+  FlowFilters,
+  getCumulativeFlow,
+  getTimeInStatus,
+} from "../../../services/reporting-flow.service";
 import { isValidUuid } from "../../../shared/validation-helpers";
 
 const WIDGET_TYPES = [
@@ -192,5 +206,90 @@ export default class ReportingProjectWidgetsController extends WorklenzControlle
     if (projectId && !isValidUuid(projectId)) return res.status(400).send(new ServerResponse(false, null, "Invalid id"));
     const options = await getProgressChartOptions(req.user?.team_id as string, req.user?.id as string, projectId);
     return res.status(200).send(new ServerResponse(true, options));
+  }
+
+  /**
+   * GET /reporting/projects/widgets/velocity - committed vs completed work for a project's recent
+   * sprints. Velocity is a per-project measure, so a project is required.
+   */
+  @HandleExceptions()
+  public static async getVelocity(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const metric = (req.query.metric as string) || "story_points";
+    const projectId = req.query.projectId as string | undefined;
+    const sprintCount = req.query.sprintCount === undefined ? DEFAULT_SPRINT_COUNT : Number(req.query.sprintCount);
+
+    if (!(VELOCITY_METRICS as readonly string[]).includes(metric)) return res.status(400).send(new ServerResponse(false, null, "Invalid metric"));
+    if (!projectId || !isValidUuid(projectId)) return res.status(400).send(new ServerResponse(false, null, "A valid project is required"));
+    if (!Number.isInteger(sprintCount)) return res.status(400).send(new ServerResponse(false, null, "Invalid sprint count"));
+
+    const filters: VelocityFilters = {
+      teamId: req.user?.team_id as string,
+      projectId,
+      metric: metric as VelocityFilters["metric"],
+      includeSubtasks: req.query.includeSubtasks === "true",
+      sprintCount,
+    };
+
+    try {
+      return res.status(200).send(new ServerResponse(true, await getVelocity(filters)));
+    } catch (error) {
+      if (error instanceof VelocityError) return res.status(error.status).send(new ServerResponse(false, null, error.message));
+      throw error;
+    }
+  }
+
+  /** Parses the query shared by the cumulative flow and time in status endpoints; null means a 400 was sent. */
+  private static parseFlowFilters(req: IWorkLenzRequest, res: IWorkLenzResponse): FlowFilters | null {
+    const scope = (req.query.scope as string) || "team";
+    const projectId = req.query.projectId as string | undefined;
+    const dateFrom = parseIsoDate(req.query.dateFrom);
+    const dateTo = parseIsoDate(req.query.dateTo);
+    const assigneeId = (req.query.assigneeId as string | undefined) || undefined;
+
+    const fail = (message: string): null => {
+      res.status(400).send(new ServerResponse(false, null, message));
+      return null;
+    };
+    if (!(FLOW_SCOPES as readonly string[]).includes(scope)) return fail("Invalid scope");
+    if (dateFrom === null || dateTo === null) return fail("Dates must be YYYY-MM-DD");
+    if ((projectId && !isValidUuid(projectId)) || (assigneeId && !isValidUuid(assigneeId))) return fail("Invalid id");
+
+    return {
+      teamId: req.user?.team_id as string,
+      userId: req.user?.id as string,
+      scope: scope as FlowFilters["scope"],
+      projectId,
+      includeSubtasks: req.query.includeSubtasks === "true",
+      includeArchived: req.query.archived === "true",
+      assigneeId,
+      dateFrom,
+      dateTo,
+    };
+  }
+
+  /** GET /reporting/projects/widgets/cumulative-flow - tasks per status (project) or status category (team) per day. */
+  @HandleExceptions()
+  public static async getCumulativeFlow(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse | void> {
+    const filters = ReportingProjectWidgetsController.parseFlowFilters(req, res);
+    if (!filters) return;
+    try {
+      return res.status(200).send(new ServerResponse(true, await getCumulativeFlow(filters)));
+    } catch (error) {
+      if (error instanceof FlowError) return res.status(error.status).send(new ServerResponse(false, null, error.message));
+      throw error;
+    }
+  }
+
+  /** GET /reporting/projects/widgets/time-in-status - how long tasks spent in each open status within the window. */
+  @HandleExceptions()
+  public static async getTimeInStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse | void> {
+    const filters = ReportingProjectWidgetsController.parseFlowFilters(req, res);
+    if (!filters) return;
+    try {
+      return res.status(200).send(new ServerResponse(true, await getTimeInStatus(filters)));
+    } catch (error) {
+      if (error instanceof FlowError) return res.status(error.status).send(new ServerResponse(false, null, error.message));
+      throw error;
+    }
   }
 }

@@ -238,10 +238,10 @@ const progressChartFields = {
  * the viewer's projects server-side).
  */
 export const GADGET_REGISTRY: Readonly<Record<string, Readonly<Record<string, ConfigFieldValidator>>>> = {
-  velocity_chart: { project_id: projectId, sprint_count: sprintCount },
-  cumulative_flow: { project_id: projectId, date_range: dateRange },
+  velocity_chart: { project_id: projectId, sprint_count: sprintCount, metric: enumOf(["story_points", "issue_count"]), include_subtasks: flag },
+  cumulative_flow: { project_id: projectId, date_range: dateRange, include_subtasks: flag },
   sla_tracking: { project_id: projectId, date_range: dateRange },
-  time_in_status: { project_id: projectId, date_range: dateRange },
+  time_in_status: { project_id: projectId, date_range: dateRange, include_subtasks: flag },
   burndown_chart: progressChartFields,
   burnup_chart: progressChartFields,
   project_summary: { project_id: projectId },

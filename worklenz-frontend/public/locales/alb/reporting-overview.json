@@ -65,7 +65,10 @@
     "billableTimeLogs": "Regjistrimet e Kohës së Faturueshme kundrejt Jo-Faturueshme",
     "clientStats": "Statistikat e Klientit",
     "burndownChart": "Burndown Chart",
-    "burnupChart": "Burnup Chart"
+    "burnupChart": "Burnup Chart",
+    "velocityChart": "Grafiku i shpejtësisë",
+    "cumulativeFlow": "Diagrami i rrjedhës kumulative",
+    "timeInStatus": "Koha në status"
   },
   "widgetFilters": {
     "teams": "Ekipet",
@@ -96,7 +99,8 @@
     "metricEstimatedHours": "Estimated hours",
     "includeSubtasks": "Include sub-tasks",
     "showIdealLine": "Show guideline",
-    "showForecast": "Show forecast"
+    "showForecast": "Show forecast",
+    "sprintCount": "Sprintet për t’u shfaqur"
   },
   "widgetStats": {
     "todoText": "Për të Bërë",
@@ -127,7 +131,28 @@
     "retry": "Retry",
     "noProgressWork": "No work found for this selection",
     "estimatedHistory": "Earlier history is estimated from task dates; changes are tracked exactly from now on.",
-    "progressAriaLabel": "{{title}}: {{completed}} of {{scope}} {{metric}} completed, {{remaining}} remaining"
+    "progressAriaLabel": "{{title}}: {{completed}} of {{scope}} {{metric}} completed, {{remaining}} remaining",
+    "committedText": "E angazhuar",
+    "averageVelocity": "Shpejtësia mesatare",
+    "latestSprint": "Sprinti i fundit",
+    "completionRate": "{{rate}}% e dorëzuar",
+    "noSprintsStarted": "Ende nuk ka sprinte të nisura në këtë projekt",
+    "velocityAriaLabel": "{{title}}: shpejtësia mesatare {{average}} {{metric}} për sprint në {{count}} sprinte",
+    "flowAriaLabel": "{{title}}: {{total}} detyra, {{inProgress}} në progres, {{done}} të kryera",
+    "noFlowWork": "Nuk u gjetën detyra për këtë përzgjedhje",
+    "totalTasks": "Detyrat gjithsej",
+    "inProgress": "Në progres",
+    "throughputPerDay": "Kalueshmëria / ditë",
+    "tasksAdded": "Detyra të shtuara",
+    "averageTimePerTask": "Koha mesatare për detyrë",
+    "averageOverall": "Mesatarja për detyrë",
+    "slowestStatus": "Pritja më e gjatë",
+    "averageTooltip": "Mesatarja: {{value}}",
+    "medianTooltip": "Mediana: {{value}}",
+    "tasksTooltip": "Detyra: {{count}}",
+    "timeInStatusAriaLabel": "{{title}}: {{count}} statuse, mesatarisht {{average}} për detyrë",
+    "hoursShort": "{{value}} orë",
+    "daysShort": "{{value}} ditë"
   },
   "widgetDescriptions": {
     "kpiTeams": "Numri i ekipeve në hapësirën tuaj të punës",
@@ -147,6 +172,9 @@
     "billableTimeLogs": "Orët e regjistruara të ndara mes kohës së faturueshme dhe jo-faturueshme",
     "clientStats": "Projektet, detyrat dhe orët e regjistruara të grupuara sipas klientit",
     "burndownChart": "Work remaining over time for your active team or a single project/sprint, against a guideline",
-    "burnupChart": "Completed work against total scope over time, so scope changes are visible"
+    "burnupChart": "Completed work against total scope over time, so scope changes are visible",
+    "velocityChart": "Puna e angazhuar kundrejt asaj të përfunduar në sprintet e fundit të një projekti, me shpejtësinë mesatare",
+    "cumulativeFlow": "Sa detyra ndodhen në çdo status me kalimin e kohës, për të dalluar pengesat dhe punën në vazhdim që rritet",
+    "timeInStatus": "Sa kohë qëndrojnë detyrat në çdo status përpara se të kalojnë më tej"
   }
 }

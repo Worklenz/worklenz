@@ -7,6 +7,7 @@ import type { OverviewWidgetConfig, OverviewWidgetKey } from '@/api/reporting/ov
 import OverviewStatCard from '../components/overview-stat-card';
 import OverviewReportsTable from '../components/overview-table/overview-reports-table';
 import { useOverviewData } from './OverviewDataContext';
+import { CumulativeFlowWidget, TimeInStatusWidget, VelocityChartWidget } from './overview-flow-widgets';
 import { BurndownChartWidget, BurnupChartWidget } from './overview-progress-widgets';
 import {
   BillableTasksWidget,
@@ -213,6 +214,30 @@ export const OVERVIEW_WIDGETS: WidgetDefinition<OverviewWidgetKey>[] = [
     defaultDescription: 'Completed work against total scope over time, so scope changes are visible',
     ...STATS_WIDGET_WIDE,
   },
+  {
+    type: 'velocity_chart',
+    titleKey: 'reporting-overview:widgets.velocityChart',
+    defaultTitle: 'Velocity Chart',
+    descriptionKey: 'reporting-overview:widgetDescriptions.velocityChart',
+    defaultDescription: 'Committed vs completed work for a project’s recent sprints, with its average velocity',
+    ...STATS_WIDGET_WIDE,
+  },
+  {
+    type: 'cumulative_flow',
+    titleKey: 'reporting-overview:widgets.cumulativeFlow',
+    defaultTitle: 'Cumulative Flow Diagram',
+    descriptionKey: 'reporting-overview:widgetDescriptions.cumulativeFlow',
+    defaultDescription: 'How many tasks sit in each status over time, to spot bottlenecks and growing work in progress',
+    ...STATS_WIDGET_WIDE,
+  },
+  {
+    type: 'time_in_status',
+    titleKey: 'reporting-overview:widgets.timeInStatus',
+    defaultTitle: 'Time in Status',
+    descriptionKey: 'reporting-overview:widgetDescriptions.timeInStatus',
+    defaultDescription: 'How long tasks spend in each status before moving on',
+    ...STATS_WIDGET_WIDE,
+  },
 ];
 
 export const titleOf = (type: OverviewWidgetKey, t: (key: string, options?: Record<string, unknown>) => string): string => {
@@ -373,6 +398,12 @@ export const OverviewWidgetByKey: React.FC<{ widgetKey: OverviewWidgetKey; confi
       return <BurndownChartWidget title={titleOf(widgetKey, t)} description={descriptionOf(widgetKey, t)} config={config} />;
     case 'burnup_chart':
       return <BurnupChartWidget title={titleOf(widgetKey, t)} description={descriptionOf(widgetKey, t)} config={config} />;
+    case 'velocity_chart':
+      return <VelocityChartWidget title={titleOf(widgetKey, t)} description={descriptionOf(widgetKey, t)} config={config} />;
+    case 'cumulative_flow':
+      return <CumulativeFlowWidget title={titleOf(widgetKey, t)} description={descriptionOf(widgetKey, t)} config={config} />;
+    case 'time_in_status':
+      return <TimeInStatusWidget title={titleOf(widgetKey, t)} description={descriptionOf(widgetKey, t)} config={config} />;
     default:
       return null;
   }

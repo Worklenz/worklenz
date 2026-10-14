@@ -69,7 +69,10 @@
     "upcomingTasks": "Upcoming Tasks",
     "overdueTasks": "Overdue Tasks",
     "burndownChart": "Burndown Chart",
-    "burnupChart": "Burnup Chart"
+    "burnupChart": "Burnup Chart",
+    "velocityChart": "Velocity Chart",
+    "cumulativeFlow": "Cumulative Flow Diagram",
+    "timeInStatus": "Time in Status"
   },
   "dateRangeFilter": {
     "today": "Today",
@@ -121,7 +124,8 @@
     "metricEstimatedHours": "Estimated hours",
     "includeSubtasks": "Include sub-tasks",
     "showIdealLine": "Show guideline",
-    "showForecast": "Show forecast"
+    "showForecast": "Show forecast",
+    "sprintCount": "Sprints to show"
   },
   "widgetStats": {
     "todoText": "To do",
@@ -157,7 +161,28 @@
     "retry": "Retry",
     "noProgressWork": "No work found for this selection",
     "estimatedHistory": "Earlier history is estimated from task dates; changes are tracked exactly from now on.",
-    "progressAriaLabel": "{{title}}: {{completed}} of {{scope}} {{metric}} completed, {{remaining}} remaining"
+    "progressAriaLabel": "{{title}}: {{completed}} of {{scope}} {{metric}} completed, {{remaining}} remaining",
+    "committedText": "Committed",
+    "averageVelocity": "Average velocity",
+    "latestSprint": "Latest sprint",
+    "completionRate": "{{rate}}% delivered",
+    "noSprintsStarted": "No started sprints in this project yet",
+    "velocityAriaLabel": "{{title}}: average velocity {{average}} {{metric}} per sprint over {{count}} sprints",
+    "flowAriaLabel": "{{title}}: {{total}} tasks, {{inProgress}} in progress, {{done}} done",
+    "noFlowWork": "No tasks found for this selection",
+    "totalTasks": "Total tasks",
+    "inProgress": "In progress",
+    "throughputPerDay": "Throughput / day",
+    "tasksAdded": "Tasks added",
+    "averageTimePerTask": "Average time per task",
+    "averageOverall": "Average per task",
+    "slowestStatus": "Longest wait",
+    "averageTooltip": "Average: {{value}}",
+    "medianTooltip": "Median: {{value}}",
+    "tasksTooltip": "Tasks: {{count}}",
+    "timeInStatusAriaLabel": "{{title}}: {{count}} statuses, average {{average}} per task",
+    "hoursShort": "{{value}} h",
+    "daysShort": "{{value}} d"
   },
   "widgetDescriptions": {
     "kpiTeams": "Number of teams in your workspace",
@@ -181,6 +206,9 @@
     "upcomingTasks": "Not-yet-done tasks with a future due date, by assignee or project",
     "overdueTasks": "Tasks past their due date and not done, by project or assignee",
     "burndownChart": "Work remaining over time for your active team or a single project/sprint, against a guideline",
-    "burnupChart": "Completed work against total scope over time, so scope changes are visible"
+    "burnupChart": "Completed work against total scope over time, so scope changes are visible",
+    "velocityChart": "Committed vs completed work for a project’s recent sprints, with its average velocity",
+    "cumulativeFlow": "How many tasks sit in each status over time, to spot bottlenecks and growing work in progress",
+    "timeInStatus": "How long tasks spend in each status before moving on"
   }
 }

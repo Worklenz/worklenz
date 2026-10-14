@@ -9,5 +9,9 @@
   "allTasks": "Detyrat",
   "progressTracking": "Ndjekja e progresit",
   "portfolio": "Portofoli",
-  "currentOrganizationTooltip": "Organizata aktuale"
+  "currentOrganizationTooltip": "Organizata aktuale",
+  "reportingAnalytics": "Raportime dhe analiza",
+  "velocityCharts": "Grafikët e shpejtësisë",
+  "cumulativeFlow": "Diagrami i rrjedhës kumulative",
+  "timeInStatus": "Koha në status"
 }

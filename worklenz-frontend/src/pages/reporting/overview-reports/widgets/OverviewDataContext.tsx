@@ -38,3 +38,7 @@ export const useOverviewData = (): OverviewDataValue => {
   if (!ctx) throw new Error('useOverviewData must be used within OverviewDataProvider');
   return ctx;
 };
+
+/** Like useOverviewData, but null outside the Overview page: the standalone flow report pages
+ *  render the same chart widgets and pass their own filters instead. */
+export const useOptionalOverviewData = (): OverviewDataValue | null => useContext(OverviewDataContext);

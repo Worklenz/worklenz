@@ -46,6 +46,9 @@ export const OVERVIEW_WIDGET_KEYS = [
   "overdue_tasks",
   "burndown_chart",
   "burnup_chart",
+  "velocity_chart",
+  "cumulative_flow",
+  "time_in_status",
 ] as const;
 export type OverviewWidgetKey = (typeof OVERVIEW_WIDGET_KEYS)[number];
 
@@ -70,6 +73,9 @@ export const REPEATABLE_OVERVIEW_WIDGET_KEYS = new Set<OverviewWidgetKey>([
   "overdue_tasks",
   "burndown_chart",
   "burnup_chart",
+  "velocity_chart",
+  "cumulative_flow",
+  "time_in_status",
 ]);
 
 const CHART_TYPES = ["bar", "stacked", "line", "donut", "number"] as const;
@@ -104,6 +110,8 @@ export interface OverviewWidgetConfig {
   includeSubtasks?: boolean;
   showIdealLine?: boolean;
   showForecast?: boolean;
+  /** Velocity widget: how many recent sprints to plot (3-12). */
+  sprintCount?: number;
 }
 
 export interface OverviewWidgetInstance {
@@ -215,6 +223,11 @@ function sanitizeConfig(raw: unknown): OverviewWidgetConfig | undefined {
   if (input.progressMetric !== undefined) {
     if (!PROGRESS_METRIC_VALUES.includes(input.progressMetric as any)) throw new InvalidOverviewLayoutError("widget config.progressMetric is invalid");
     config.progressMetric = input.progressMetric as OverviewWidgetConfig["progressMetric"];
+  }
+
+  if (input.sprintCount !== undefined) {
+    if (!isIntegerInRange(input.sprintCount, 3, 12)) throw new InvalidOverviewLayoutError("widget config.sprintCount must be between 3 and 12");
+    config.sprintCount = input.sprintCount;
   }
 
   for (const key of ["projectId", "sprintId"] as const) {

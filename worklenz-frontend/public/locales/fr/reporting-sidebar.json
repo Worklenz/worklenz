@@ -9,5 +9,9 @@
   "allTasks": "Tâches",
   "progressTracking": "Suivi des progrès",
   "portfolio": "Portefeuille",
-  "currentOrganizationTooltip": "Organisation actuelle"
+  "currentOrganizationTooltip": "Organisation actuelle",
+  "reportingAnalytics": "Rapports et analyses",
+  "velocityCharts": "Graphiques de vélocité",
+  "cumulativeFlow": "Diagramme de flux cumulatif",
+  "timeInStatus": "Temps par statut"
 }

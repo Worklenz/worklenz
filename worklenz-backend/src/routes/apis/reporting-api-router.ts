@@ -177,6 +177,29 @@ reportingApiRouter.get("/projects/widgets/progress-chart/options",
   safeControllerFunction(ReportingProjectWidgetsController.getProgressChartOptions)
 );
 
+// Velocity, cumulative flow and time in status widgets. They read data that already exists
+// (sprint snapshots and the task status activity log), so they need no extra storage.
+reportingApiRouter.get("/projects/widgets/velocity",
+  teamOwnerOrAdminValidator,
+  validateEnumParam("metric", ["story_points", "issue_count"]),
+  validateEnumParam("includeSubtasks", ["true", "false"]),
+  safeControllerFunction(ReportingProjectWidgetsController.getVelocity)
+);
+reportingApiRouter.get("/projects/widgets/cumulative-flow",
+  teamOwnerOrAdminValidator,
+  validateEnumParam("scope", ["team", "project"]),
+  validateEnumParam("includeSubtasks", ["true", "false"]),
+  validateEnumParam("archived", ["true", "false"]),
+  safeControllerFunction(ReportingProjectWidgetsController.getCumulativeFlow)
+);
+reportingApiRouter.get("/projects/widgets/time-in-status",
+  teamOwnerOrAdminValidator,
+  validateEnumParam("scope", ["team", "project"]),
+  validateEnumParam("includeSubtasks", ["true", "false"]),
+  validateEnumParam("archived", ["true", "false"]),
+  safeControllerFunction(ReportingProjectWidgetsController.getTimeInStatus)
+);
+
 // members
 reportingApiRouter.get("/members",
   teamOwnerOrAdminValidator,

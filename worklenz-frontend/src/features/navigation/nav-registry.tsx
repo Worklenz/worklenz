@@ -30,6 +30,8 @@ import {
   TagOutlined,
   LineChartOutlined,
   EyeOutlined,
+  AreaChartOutlined,
+  FieldTimeOutlined,
 } from '@ant-design/icons';
 import type { NavSurface, SurfaceKey } from './nav-registry.types';
 import type { TempChatsType } from '@/pages/client-portal/chats/chat-container/chat-box/chat-box-wrapper';
@@ -166,6 +168,27 @@ export const REPORTING_NAV_SURFACE: NavSurface = {
           key: 'project-portfolio',
           label: { i18nNs: 'reporting-sidebar', i18nKey: 'portfolio', defaultValue: 'Portfolio' },
           icon: <PieChartOutlined />,
+        },
+      ],
+    },
+    {
+      key: 'reporting-analytics',
+      label: { i18nNs: 'reporting-sidebar', i18nKey: 'reportingAnalytics', defaultValue: 'Reporting & Analytics' },
+      items: [
+        {
+          key: 'velocity-charts',
+          label: { i18nNs: 'reporting-sidebar', i18nKey: 'velocityCharts', defaultValue: 'Velocity Charts' },
+          icon: <BarChartOutlined />,
+        },
+        {
+          key: 'cumulative-flow',
+          label: { i18nNs: 'reporting-sidebar', i18nKey: 'cumulativeFlow', defaultValue: 'Cumulative Flow Diagram' },
+          icon: <AreaChartOutlined />,
+        },
+        {
+          key: 'time-in-status',
+          label: { i18nNs: 'reporting-sidebar', i18nKey: 'timeInStatus', defaultValue: 'Time in Status' },
+          icon: <FieldTimeOutlined />,
         },
       ],
     },

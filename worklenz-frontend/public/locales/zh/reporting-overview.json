@@ -65,7 +65,10 @@
     "billableTimeLogs": "计费与非计费工时记录",
     "clientStats": "客户统计",
     "burndownChart": "Burndown Chart",
-    "burnupChart": "Burnup Chart"
+    "burnupChart": "Burnup Chart",
+    "velocityChart": "速度图",
+    "cumulativeFlow": "累积流图",
+    "timeInStatus": "状态停留时间"
   },
   "widgetFilters": {
     "teams": "团队",
@@ -96,7 +99,8 @@
     "metricEstimatedHours": "Estimated hours",
     "includeSubtasks": "Include sub-tasks",
     "showIdealLine": "Show guideline",
-    "showForecast": "Show forecast"
+    "showForecast": "Show forecast",
+    "sprintCount": "显示的冲刺数"
   },
   "widgetStats": {
     "todoText": "待办",
@@ -127,7 +131,28 @@
     "retry": "Retry",
     "noProgressWork": "No work found for this selection",
     "estimatedHistory": "Earlier history is estimated from task dates; changes are tracked exactly from now on.",
-    "progressAriaLabel": "{{title}}: {{completed}} of {{scope}} {{metric}} completed, {{remaining}} remaining"
+    "progressAriaLabel": "{{title}}: {{completed}} of {{scope}} {{metric}} completed, {{remaining}} remaining",
+    "committedText": "承诺",
+    "averageVelocity": "平均速度",
+    "latestSprint": "最近冲刺",
+    "completionRate": "已交付 {{rate}}%",
+    "noSprintsStarted": "此项目尚无已开始的冲刺",
+    "velocityAriaLabel": "{{title}}：{{count}} 个冲刺中平均每个冲刺速度为 {{average}}（{{metric}}）",
+    "flowAriaLabel": "{{title}}：共 {{total}} 个任务，{{inProgress}} 个进行中，{{done}} 个已完成",
+    "noFlowWork": "此选择下未找到任务",
+    "totalTasks": "任务总数",
+    "inProgress": "进行中",
+    "throughputPerDay": "吞吐量 / 天",
+    "tasksAdded": "新增任务",
+    "averageTimePerTask": "每个任务的平均时间",
+    "averageOverall": "每个任务平均",
+    "slowestStatus": "最长等待",
+    "averageTooltip": "平均：{{value}}",
+    "medianTooltip": "中位数：{{value}}",
+    "tasksTooltip": "任务：{{count}}",
+    "timeInStatusAriaLabel": "{{title}}：{{count}} 个状态，每个任务平均 {{average}}",
+    "hoursShort": "{{value}} 小时",
+    "daysShort": "{{value}} 天"
   },
   "widgetDescriptions": {
     "kpiTeams": "您工作区中的团队数量",
@@ -147,6 +172,9 @@
     "billableTimeLogs": "已记录工时在计费与非计费之间的划分",
     "clientStats": "按客户分组的项目、任务和已记录工时",
     "burndownChart": "Work remaining over time for your active team or a single project/sprint, against a guideline",
-    "burnupChart": "Completed work against total scope over time, so scope changes are visible"
+    "burnupChart": "Completed work against total scope over time, so scope changes are visible",
+    "velocityChart": "项目最近冲刺的承诺工作量与完成工作量对比，并显示平均速度",
+    "cumulativeFlow": "各状态下任务数量随时间的变化，用于发现瓶颈和在制品增长",
+    "timeInStatus": "任务在各状态停留多久后才进入下一步"
   }
 }

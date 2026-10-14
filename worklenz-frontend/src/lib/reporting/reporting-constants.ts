@@ -11,7 +11,7 @@ import {
   FileOutlined,
   RiseOutlined,
 } from '@/shared/antd-imports';
-import { PieChartOutlined } from '@ant-design/icons';
+import { AreaChartOutlined, FieldTimeOutlined, LineChartOutlined, PieChartOutlined, BarChartOutlined as AnalyticsBarChartOutlined } from '@ant-design/icons';
 
 const OverviewReports = lazy(() => import('@/pages/reporting/overview-reports/overview-reports'));
 const ProjectsReports = lazy(() => import('@/pages/reporting/projects-reports/projects-reports'));
@@ -31,6 +31,9 @@ const TimeLogsReports = lazy(() => import('@/pages/reporting/time-sheets/time-lo
 const ProgressTrackingPage = lazy(
   () => import('@/pages/reporting/progress-tracking/progress-tracking-page')
 );
+const VelocityReportPage = lazy(() => import('@/pages/reporting/flow-analytics/velocity-report-page'));
+const CumulativeFlowReportPage = lazy(() => import('@/pages/reporting/flow-analytics/cumulative-flow-report-page'));
+const TimeInStatusReportPage = lazy(() => import('@/pages/reporting/flow-analytics/time-in-status-report-page'));
 const PortfolioDashboard = lazy(
   () => import('@/pages/reporting/portfolio/portfolio-dashboard')
 );
@@ -95,6 +98,40 @@ export const reportingsItems: ReportingMenuItems[] = [
     endpoint: 'project-portfolio',
     element: React.createElement(PortfolioDashboard),
     icon: React.createElement(PieChartOutlined),
+  },
+  {
+    key: 'reporting-analytics',
+    name: 'reportingAnalytics',
+    defaultValue: 'Reporting & Analytics',
+    endpoint: 'reporting-analytics',
+    element: null,
+    icon: React.createElement(LineChartOutlined),
+    children: [
+      {
+        key: 'velocity-charts',
+        name: 'velocityCharts',
+        defaultValue: 'Velocity Charts',
+        endpoint: 'velocity-charts',
+        element: React.createElement(VelocityReportPage),
+        icon: React.createElement(AnalyticsBarChartOutlined),
+      },
+      {
+        key: 'cumulative-flow',
+        name: 'cumulativeFlow',
+        defaultValue: 'Cumulative Flow Diagram',
+        endpoint: 'cumulative-flow',
+        element: React.createElement(CumulativeFlowReportPage),
+        icon: React.createElement(AreaChartOutlined),
+      },
+      {
+        key: 'time-in-status',
+        name: 'timeInStatus',
+        defaultValue: 'Time in Status',
+        endpoint: 'time-in-status',
+        element: React.createElement(TimeInStatusReportPage),
+        icon: React.createElement(FieldTimeOutlined),
+      },
+    ],
   },
   {
     key: 'time-sheet',
