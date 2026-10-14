@@ -15,7 +15,10 @@ import {
   AuditEventCategoryId,
 } from '@/shared/audit-log-constants';
 import { IAuditLogActorOption, IAuditLogSummary } from '@/types/admin-center/audit-log.types';
-import { IAuditLogFilterState } from '@/features/admin-center/audit-log/audit-log-filters';
+import {
+  AUDIT_LOG_DATE_PRESETS,
+  IAuditLogFilterState,
+} from '@/features/admin-center/audit-log/audit-log-filters';
 import { getCategoryChipLabel, getCategoryTokenColor } from './audit-log-display';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -54,7 +57,7 @@ export const AuditLogToolbar: React.FC<AuditLogToolbarProps> = ({
           datePreset={filters.datePreset}
           customRange={filters.customRange}
           onChange={onDateChange}
-          allowedPresets={['last_7_days', 'last_30_days', 'last_90_days', 'all_time']}
+          allowedPresets={AUDIT_LOG_DATE_PRESETS}
         />
         <AuditLogActorFilter value={filters.actorUserIds} onChange={onActorsChange} />
         <Button
