@@ -675,7 +675,6 @@ const HomeLogTime: React.FC = () => {
             {
         key: 'billable',
         title: t('logTime.billableColumn', { defaultValue: 'Billable' }),
-        // Fixed pixel width (not %) so the header text and filter icon always fit.
         width: '10%',
         ellipsis: true,
         onHeaderCell: () => ({ style: { whiteSpace: 'nowrap' } }),
