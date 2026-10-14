@@ -82,9 +82,11 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
   const { projectId, projectLoading, project } = useAppSelector(
     state => state.projectDrawerReducer
   );
-  const { isOpen, navigateToProjectOnUpdate } = useAppSelector(
-    state => state.projectSettingsModalReducer
-  );
+  const {
+    isOpen,
+    navigateToProjectOnUpdate,
+    activeSection: requestedSection,
+  } = useAppSelector(state => state.projectSettingsModalReducer);
   const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
   const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
@@ -126,6 +128,11 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
     form.setFieldsValue(buildFormValues(project));
     setSelectedProjectLead(projectLead);
   }, [isOpen, project, projectLoading, form]);
+
+  // Deep link (e.g. GitHub from the integrations overlay) asks for a specific section.
+  useEffect(() => {
+    if (isOpen && requestedSection === 'integrations') setActiveSection('integrations');
+  }, [isOpen, requestedSection]);
 
   const handleUpgrade = useCallback(() => dispatch(toggleUpgradeModal()), [dispatch]);
 

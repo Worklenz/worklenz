@@ -25,7 +25,9 @@
   },
   "github": {
     "title": "GitHub",
-    "description": "Sync tasks with GitHub issues"
+    "description": "Sync tasks with GitHub issues",
+    "softwareDescription": "Link repositories to see branches, pull requests and commits",
+    "softwareOnly": "Available for software projects"
   },
   "notificationTypes": {
     "taskCreated": "Task Created",

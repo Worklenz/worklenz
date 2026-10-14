@@ -59,7 +59,7 @@ Legend: `[x]` done, `[ ]` pending, `[~]` in progress.
 - [ ] Push-back, milestone/release sync, admin metrics
 
 ## Follow-ups noticed during Phase 1
-- [ ] Project integrations quick dropdown (`IntegrationsDropdown.tsx`) still shows GitHub as "Coming soon"; point it at the project settings section
+- [x] Project integrations quick dropdown: GitHub enabled for software projects (opens project settings > Integrations); button no longer Business-gated on software projects, Slack shows locked inside
 - [ ] Add `GITHUB_*` vars to docker env templates / SELF_HOSTING.md
 - [ ] Real-time socket push so the drawer refreshes when a webhook lands (Phase 2 with transitions)
 - [ ] Backend tests for event processor and controller (need DB fixture)

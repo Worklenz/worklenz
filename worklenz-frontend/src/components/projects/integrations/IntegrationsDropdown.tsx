@@ -4,12 +4,27 @@ import { Button, ApiOutlined, SettingOutlined, TeamOutlined, theme } from '@/sha
 import { GithubOutlined } from '@ant-design/icons';
 import { SlackProjectIntegration } from '../../../components/projects/integrations/SlackProjectIntegration';
 import { IntegrationItem } from './IntegrationItem';
+import { SlackIcon } from '@/components/settings/integrations/IntegrationIcons';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
+import {
+  fetchProjectData,
+  setProjectId as setDrawerProjectId,
+  setProjectData,
+} from '@/features/project/project-drawer.slice';
+import {
+  openProjectSettingsModal,
+  setActiveSettingsSection,
+} from '@/features/project/project-settings-modal.slice';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import type { ProjectIntegrationStatus } from './integrations.types';
 
 interface IntegrationsDropdownProps {
   projectId: string;
   projectName?: string;
   status: ProjectIntegrationStatus | null;
+  hasBusinessAccess: boolean;
+  isSoftwareProject: boolean;
   onClose: () => void;
   onRefresh?: () => void;
 }
@@ -18,12 +33,16 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
   projectId,
   projectName,
   status,
+  hasBusinessAccess,
+  isSoftwareProject,
   onClose,
   onRefresh,
 }) => {
   const { t } = useTranslation('project-integrations');
   const navigate = useNavigate();
   const { token } = theme.useToken();
+  const dispatch = useAppDispatch();
+  const selectedProject = useAppSelector(state => state.projectReducer.project);
 
   // Better dark mode detection using multiple token properties
   const isDarkMode =
@@ -32,6 +51,30 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
     token.colorBgElevated === '#1f1f1f' ||
     document.documentElement.getAttribute('data-theme') === 'dark' ||
     document.body.classList.contains('dark');
+
+  const handleUpgradeClick = () => {
+    dispatch(
+      showUpgradePrompt({
+        title: 'Integrations',
+        description:
+          'Connect Slack, Teams, and GitHub to your projects. Available on the Business plan.',
+      })
+    );
+    onClose();
+  };
+
+  // Open the project's settings modal on its Integrations section (GitHub repositories live there).
+  const handleOpenGithubSettings = () => {
+    onClose();
+    dispatch(setActiveSettingsSection('integrations'));
+    dispatch(setDrawerProjectId(projectId));
+    dispatch(fetchProjectData(projectId))
+      .unwrap()
+      .catch(() => {
+        if (selectedProject) dispatch(setProjectData(selectedProject));
+      })
+      .finally(() => dispatch(openProjectSettingsModal()));
+  };
 
   const handleManageAll = () => {
     navigate('/worklenz/settings/integrations');
@@ -77,13 +120,25 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
       {/* Content */}
       <div style={{ maxHeight: 400, overflowY: 'auto' }}>
         {/* Slack - Active */}
-        <SlackProjectIntegration
-          projectId={projectId}
-          projectName={projectName}
-          status={status?.slack || null}
-          onClose={onClose}
-          onRefresh={onRefresh}
-        />
+        {hasBusinessAccess ? (
+          <SlackProjectIntegration
+            projectId={projectId}
+            projectName={projectName}
+            status={status?.slack || null}
+            onClose={onClose}
+            onRefresh={onRefresh}
+          />
+        ) : (
+          <IntegrationItem
+            icon={<SlackIcon />}
+            title={t('slack.title', { defaultValue: 'Slack' })}
+            description={t('slack.description', {
+              defaultValue: 'Send notifications to Slack channels',
+            })}
+            locked
+            onClick={handleUpgradeClick}
+          />
+        )}
 
         {/* Microsoft Teams - Coming Soon */}
         <IntegrationItem
@@ -95,12 +150,22 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
           comingSoon
         />
 
-        {/* GitHub - Coming Soon */}
+        {/* GitHub - available on software projects */}
         <IntegrationItem
-          icon={<GithubOutlined style={{ color: '#24292e' }} />}
+          icon={<GithubOutlined style={{ color: token.colorText }} />}
           title={t('github.title', { defaultValue: 'GitHub' })}
-          description={t('github.description', { defaultValue: 'Sync tasks with GitHub issues' })}
-          comingSoon
+          description={
+            isSoftwareProject
+              ? t('github.softwareDescription', {
+                  defaultValue: 'Link repositories to see branches, pull requests and commits',
+                })
+              : t('github.softwareOnly', {
+                  defaultValue: 'Available for software projects',
+                })
+          }
+          badge={status?.github?.repositoryCount}
+          comingSoon={!isSoftwareProject}
+          onClick={isSoftwareProject ? handleOpenGithubSettings : undefined}
         />
       </div>
 
