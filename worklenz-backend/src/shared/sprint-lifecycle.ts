@@ -18,9 +18,11 @@ export interface ICompletedSprint {
 /** Marks a planned sprint active and snapshots its committed scope. Only one sprint may be active per project. */
 export async function startSprintRecord(
   projectId: string,
-  phaseId: string
+  phaseId: string,
+  client?: PoolClient
 ): Promise<SprintLifecycleResult<Record<string, any>>> {
-  const activeCheck = await db.query(
+  const executor = client ?? db;
+  const activeCheck = await executor.query(
     `SELECT id, name FROM project_phases
      WHERE project_id = $1 AND sprint_status = 'active' AND id <> $2
      LIMIT 1`,
@@ -33,7 +35,7 @@ export async function startSprintRecord(
     };
   }
 
-  const result = await db.query(
+  const result = await executor.query(
     `UPDATE project_phases
      SET sprint_status = 'active',
          start_date = COALESCE(start_date, CURRENT_TIMESTAMP),
@@ -61,6 +63,7 @@ export async function startSprintRecord(
  * Starts the next planned sprint today, keeping its planned length. Picks `preferredPhaseId`
  * when it is a planned sprint, otherwise the earliest planned one. Dated sprints are shifted by
  * whole days so their local day boundaries are kept; undated sprints get `fallbackLengthDays`.
+ * Locks the candidate and commits its date shift only when the start succeeds.
  *
  * @returns the started sprint, or null when there is no planned sprint
  */
@@ -69,40 +72,57 @@ export async function startNextSprintNow(
   preferredPhaseId: string | null,
   fallbackLengthDays: number
 ): Promise<Record<string, any> | null> {
-  const next = await db.query(
-    `SELECT id
-     FROM project_phases
-     WHERE project_id = $1 AND sprint_status = 'planned'
-     ORDER BY (id = $2::UUID) DESC, start_date ASC NULLS LAST, sort_index ASC
-     LIMIT 1;`,
-    [projectId, preferredPhaseId]
-  );
-  const nextId: string | undefined = next.rows[0]?.id;
-  if (!nextId) return null;
-
-  await db.query(
-    `UPDATE project_phases
-     SET start_date = CASE
-           WHEN start_date IS NOT NULL AND end_date IS NOT NULL
-             THEN start_date + shift.days * INTERVAL '1 day'
-           ELSE CURRENT_TIMESTAMP
-         END,
-         end_date = CASE
-           WHEN start_date IS NOT NULL AND end_date IS NOT NULL
-             THEN end_date + shift.days * INTERVAL '1 day'
-           ELSE CURRENT_TIMESTAMP + ($3::INT - 1) * INTERVAL '1 day'
-         END
-     FROM (
-       SELECT FLOOR(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - start_date)) / 86400)::INT AS days
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    const next = await client.query(
+      `SELECT id
        FROM project_phases
-       WHERE id = $1
-     ) shift
-     WHERE id = $1 AND project_id = $2;`,
-    [nextId, projectId, Math.max(1, Math.round(fallbackLengthDays))]
-  );
+       WHERE project_id = $1 AND sprint_status = 'planned'
+       ORDER BY (id = $2::UUID) DESC, start_date ASC NULLS LAST, sort_index ASC
+       LIMIT 1 FOR UPDATE;`,
+      [projectId, preferredPhaseId]
+    );
+    const nextId: string | undefined = next.rows[0]?.id;
+    if (!nextId) {
+      await client.query("ROLLBACK");
+      return null;
+    }
 
-  const started = await startSprintRecord(projectId, nextId);
-  return started.ok ? started.data : null;
+    await client.query(
+      `UPDATE project_phases
+       SET start_date = CASE
+             WHEN start_date IS NOT NULL AND end_date IS NOT NULL
+               THEN start_date + shift.days * INTERVAL '1 day'
+             ELSE CURRENT_TIMESTAMP
+           END,
+           end_date = CASE
+             WHEN start_date IS NOT NULL AND end_date IS NOT NULL
+               THEN end_date + shift.days * INTERVAL '1 day'
+             ELSE CURRENT_TIMESTAMP + ($3::INT - 1) * INTERVAL '1 day'
+           END
+       FROM (
+         SELECT FLOOR(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - start_date)) / 86400)::INT AS days
+         FROM project_phases
+         WHERE id = $1
+       ) shift
+       WHERE id = $1 AND project_id = $2;`,
+      [nextId, projectId, Math.max(1, Math.round(fallbackLengthDays))]
+    );
+
+    const started = await startSprintRecord(projectId, nextId, client);
+    if (!started.ok) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+    await client.query("COMMIT");
+    return started.data;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 /** Completion is already committed; an optional next-sprint failure must not hide it. */
