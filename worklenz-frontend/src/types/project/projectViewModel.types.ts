@@ -43,6 +43,8 @@ export interface IProjectViewModel extends IProject {
   project_type?: ProjectType;
   /** Software projects: archive Done issues when a sprint is completed. */
   auto_archive_on_sprint_complete?: boolean;
+  /** Software projects: start / complete sprints automatically on their dates. */
+  auto_start_complete_sprints?: boolean;
   /** Software projects: allowed story point values. */
   story_point_scale?: number[];
   category_name?: string;

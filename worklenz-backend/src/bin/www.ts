@@ -14,6 +14,7 @@ import {getLoggedInUserIdFromSocket} from "../socket.io/util";
 import {startCronJobs} from "../cron_jobs";
 import {startRecurringTasksJob} from "../cron_jobs/recurring-tasks";
 import {startProjectFilesCleanupJob} from "../cron_jobs/project-files-cleanup-job";
+import {startSprintAutoScheduleJob} from "../cron_jobs/sprint-auto-schedule-job";
 import {startTaskExportCleanupJob} from "../cron_jobs/task-export-cleanup-job";
 import {startAuditLogExportCleanupJob} from "../cron_jobs/audit-log-export-cleanup-job";
 import {startAuditLogRetentionJob} from "../cron_jobs/audit-log-retention-job";
@@ -122,6 +123,7 @@ function onListening() {
   startBackgroundWorkers();
   process.env.ENABLE_RECURRING_JOBS === "true" && startRecurringTasksJob();
   startProjectFilesCleanupJob();
+  startSprintAutoScheduleJob();
   startTaskExportCleanupJob();
   startAuditLogExportCleanupJob();
   startAuditLogRetentionJob();
