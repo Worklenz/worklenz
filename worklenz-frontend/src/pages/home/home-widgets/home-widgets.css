@@ -70,6 +70,14 @@
   transition: opacity 150ms ease-in-out;
   pointer-events: none;
 }
+/* Summary cards has no header, so its "..." menu floats in the top-right corner and would sit on
+   top of a right-aligned grip. For widgets with a floating menu only, keep the grip centred over
+   the gap between tiles, where it is not covered by the menu and can start a drag. */
+.home-widget:has(.home-widget__menu--floating) .home-widget__grip {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
 
 .home-widget.is-surface .home-widget__grip {
   opacity: 1;
