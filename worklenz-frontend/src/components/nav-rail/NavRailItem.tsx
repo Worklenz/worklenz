@@ -242,11 +242,12 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
               aria-label={`Reorder ${typeof label === 'string' ? label : item.key}`}
               style={{
                 position: 'absolute',
-                bottom: 2,
+                top: 2,
                 right: 2,
                 fontSize: 14,
                 color: token.colorPrimary,
-                background: token.colorBgContainer,
+                background: isDark ? token.colorBgContainer : token.colorPrimaryBg,
+                border: `1px solid ${token.colorBorder}`,
                 borderRadius: token.borderRadiusSM,
                 padding: '2px',
                 cursor: 'grab',
