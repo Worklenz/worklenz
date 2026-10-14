@@ -92,6 +92,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
   const { project } = useAppSelector(state => state.projectReducer);
   const kanbanPhases = useSelector((state: RootState) => state.enhancedKanbanReducer.phases);
   const activeSprintFilterAppliedRef = useRef(false);
+  const statusReorderVersionRef = useRef(0);
 
   useEffect(() => {
     if (projectId && loadedProjectId !== projectId) {
@@ -247,6 +248,8 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
       );
       dragStateRef.current = initialDragState;
 
+      const reorderVersion = groupBy === 'status' ? ++statusReorderVersionRef.current : 0;
+
       try {
         if (groupBy === 'status') {
           const response = await statusApiService.updateStatusOrder(
@@ -254,12 +257,14 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
             projectId
           );
           if (!response.done) {
-            const revertedGroups = [...reorderedGroups];
-            const [movedBack] = revertedGroups.splice(toIdx, 1);
-            revertedGroups.splice(fromIdx, 0, movedBack);
-            dispatch(
-              reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups })
-            );
+            if (statusReorderVersionRef.current === reorderVersion) {
+              const revertedGroups = [...reorderedGroups];
+              const [movedBack] = revertedGroups.splice(toIdx, 1);
+              revertedGroups.splice(fromIdx, 0, movedBack);
+              dispatch(
+                reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups })
+              );
+            }
             alertService.error(t('failedToUpdateColumnOrder'), t('pleaseTryAgain'));
           }
         } else if (groupBy === 'phase') {
@@ -279,7 +284,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
         }
       } catch (err) {
         logger.error('Failed to update column order', err);
-        if (groupBy === 'status') {
+        if (groupBy === 'status' && statusReorderVersionRef.current === reorderVersion) {
           const revertedGroups = [...reorderedGroups];
           const [movedBack] = revertedGroups.splice(toIdx, 1);
           revertedGroups.splice(fromIdx, 0, movedBack);
