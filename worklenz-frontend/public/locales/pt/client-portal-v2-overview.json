@@ -1,126 +1,126 @@
 {
   "page": {
     "title": "Overview",
-    "description": "What needs your attention across clients, projects and discussions.",
+    "description": "O que precisa de sua atenção em clientes, projetos e discussões.",
     "editingHint": "Drag widgets to reorder them, change their size, or hide the ones you do not need.",
-    "loadFailed": "The overview could not be loaded."
+    "loadFailed": "A visão geral não pôde ser carregada."
   },
   "widget": {
-    "viewAll": "View all",
-    "retry": "Retry",
-    "error": "This widget could not be loaded."
+    "viewAll": "Ver tudo",
+    "retry": "Tentar novamente",
+    "error": "Este widget não pôde ser carregado."
   },
   "edit": {
-    "customize": "Customize",
-    "done": "Done",
+    "customize": "Personalizar",
+    "done": "Concluído",
     "cancel": "Cancel",
     "reset": "Reset to default",
-    "resetConfirm": "Restore the default layout?",
-    "saveFailed": "Could not save the layout.",
-    "resetFailed": "Could not reset the layout.",
-    "drag": "Drag to reorder {{title}}",
-    "size": "Size of {{title}}",
+    "resetConfirm": "Restaurar o layout padrão?",
+    "saveFailed": "Não foi possível salvar o layout.",
+    "resetFailed": "Não foi possível redefinir o layout.",
+    "drag": "Arraste para reordenar {{title}}",
+    "size": "Tamanho de {{title}}",
     "size_s": "S",
     "size_m": "M",
     "size_l": "L",
-    "hide": "Hide widget",
-    "show": "Show widget",
-    "hideNamed": "Hide {{title}}",
-    "showNamed": "Show {{title}}",
-    "save": "Save",
-    "saved": "Overview saved",
-    "resetDone": "Overview reset to the default layout",
-    "resetConfirmHelp": "Your saved arrangement will be removed.",
-    "addWidget": "Add widget",
-    "emptyTitle": "No widgets on your overview",
-    "emptyHelp": "Choose Customize, then Add widget to bring some back.",
-    "widgetSettings": "{{name}} settings",
-    "settingsFor": "Settings for {{name}}",
-    "width": "Width",
-    "widthQuarter": "Quarter width",
-    "widthThird": "One third",
-    "widthHalf": "Half width",
-    "widthTwoThirds": "Two thirds",
-    "widthThreeQuarters": "Three quarters",
-    "widthFull": "Full width",
-    "moveEarlier": "Move earlier",
-    "moveLater": "Move later",
-    "leaveTitle": "Leave without saving?",
-    "leaveBody": "Your changes to the overview have not been saved and will be lost.",
-    "leave": "Leave",
-    "stay": "Stay"
+    "hide": "Ocultar widget",
+    "show": "Mostrar widget",
+    "hideNamed": "Ocultar {{title}}",
+    "showNamed": "Mostrar {{title}}",
+    "save": "Guardar",
+    "saved": "Visão geral salva",
+    "resetDone": "Visão geral redefinida para o layout padrão",
+    "resetConfirmHelp": "Seu arranjo salvo será removido.",
+    "addWidget": "Adicionar widget",
+    "emptyTitle": "Nenhum widget na sua visão geral",
+    "emptyHelp": "Escolha Personalizar e Adicionar widget para trazer alguns de volta.",
+    "widgetSettings": "{{name}} configurações",
+    "settingsFor": "Configurações para {{name}}",
+    "width": "Largura",
+    "widthQuarter": "Largura do quarto",
+    "widthThird": "Um terço",
+    "widthHalf": "Meia largura",
+    "widthTwoThirds": "Dois terços",
+    "widthThreeQuarters": "Três quartos",
+    "widthFull": "Largura total",
+    "moveEarlier": "Mova-se mais cedo",
+    "moveLater": "Mover mais tarde",
+    "leaveTitle": "Sair sem salvar?",
+    "leaveBody": "Suas alterações na visão geral não foram salvas e serão perdidas.",
+    "leave": "Sair",
+    "stay": "Fique"
   },
   "status": {
-    "awaiting": "Awaiting",
-    "approved": "Approved",
-    "changes_requested": "Changes requested",
-    "cr_submitted": "Submitted",
-    "cr_under_review": "Under review",
-    "cr_more_info": "More info",
-    "cr_approved": "Approved",
-    "cr_in_progress": "In progress",
-    "cr_completed": "Completed",
-    "cr_rejected": "Rejected",
-    "cr_cancelled": "Cancelled"
+    "awaiting": "Aguardando",
+    "approved": "Aprovado",
+    "changes_requested": "Alterações solicitadas",
+    "cr_submitted": "Enviado",
+    "cr_under_review": "Em revisão",
+    "cr_more_info": "Mais informações",
+    "cr_approved": "Aprovado",
+    "cr_in_progress": "Em andamento",
+    "cr_completed": "Concluído",
+    "cr_rejected": "Rejeitado",
+    "cr_cancelled": "Cancelado"
   },
   "widgets": {
     "kpi_awaiting_approvals": {
-      "title": "Pending approvals",
-      "sub": "{{count}} overdue"
+      "title": "Aprovações pendentes",
+      "sub": "{{count}} atrasado"
     },
     "kpi_open_change_requests": {
-      "title": "Change requests to review",
-      "sub": "{{count}} waiting on client"
+      "title": "Solicitações de alteração para revisão",
+      "sub": "{{count}} aguardando cliente"
     },
     "kpi_delayed_milestones": {
-      "title": "Delayed milestones",
-      "sub": "Across portal projects"
+      "title": "Marcos atrasados",
+      "sub": "Em projetos de portal"
     },
     "kpi_unread_discussions": {
-      "title": "Unread discussions",
-      "sub": "With new client messages"
+      "title": "Discussões não lidas",
+      "sub": "Com novas mensagens de clientes"
     },
     "kpi_overdue_invoices": {
-      "title": "Overdue invoices",
-      "none": "Nothing overdue"
+      "title": "Faturas vencidas",
+      "none": "Nada atrasado"
     },
     "pending_approvals": {
-      "title": "Pending approvals",
-      "empty": "No approvals are waiting on a client.",
-      "overdue": "Overdue · {{date}}",
-      "due": "Due {{date}}"
+      "title": "Aprovações pendentes",
+      "empty": "Nenhuma aprovação está aguardando um cliente.",
+      "overdue": "Atrasado · {{date}}",
+      "due": "Vencimento {{date}}"
     },
     "change_requests": {
-      "title": "Change requests to review",
-      "empty": "No change requests need review."
+      "title": "Solicitações de alteração para revisão",
+      "empty": "Nenhuma solicitação de mudança precisa de revisão."
     },
     "upcoming_milestones": {
-      "title": "Upcoming milestones",
-      "empty": "No open milestones on portal projects."
+      "title": "Próximos marcos",
+      "empty": "Não há marcos abertos em projetos de portal."
     },
     "latest_discussions": {
-      "title": "Latest discussions",
-      "empty": "No discussions yet."
+      "title": "Últimas discussões",
+      "empty": "Nenhuma discussão ainda."
     },
     "mentions_me": {
-      "title": "Mentions of me",
-      "empty": "Nobody has mentioned you in a discussion.",
-      "row": "{{name}} in {{project}}"
+      "title": "Menções sobre mim",
+      "empty": "Ninguém mencionou você em uma discussão.",
+      "row": "{{name}} em {{project}}"
     },
     "approvals_by_status": {
-      "title": "Approvals by status",
-      "empty": "No approvals have been sent yet."
+      "title": "Aprovações por status",
+      "empty": "Nenhuma aprovação foi enviada ainda."
     },
     "cr_by_status": {
-      "title": "Change request pipeline",
-      "empty": "No change requests yet."
+      "title": "Pipeline de solicitação de alteração",
+      "empty": "Ainda não há solicitações de alteração."
     },
     "needs_attention": {
-      "title": "Needs attention",
-      "empty": "Nothing needs attention. Nice work.",
-      "approval_overdue": "Overdue approval",
-      "change_request_review": "High-priority request to review",
-      "milestone_late": "Late milestone"
+      "title": "Precisa de atenção",
+      "empty": "Nada precisa de atenção. Bom trabalho.",
+      "approval_overdue": "Aprovação atrasada",
+      "change_request_review": "Solicitação de alta prioridade para revisão",
+      "milestone_late": "Marco tardio"
     }
   }
 }

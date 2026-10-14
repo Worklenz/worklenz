@@ -198,6 +198,6 @@
   "paidOfTotal": "Zapłacono {{paid}} z {{total}}",
   "noPaymentProof": "Nie przesłano potwierdzenia płatności.",
   "closeButton": "Zamknij",
-  "linkedChangeRequest": "Linked Change Request",
-  "openChangeRequest": "Open change request"
+  "linkedChangeRequest": "Połączone żądanie zmiany",
+  "openChangeRequest": "Otwórz żądanie zmiany"
 }

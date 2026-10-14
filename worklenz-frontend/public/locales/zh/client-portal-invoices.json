@@ -198,7 +198,7 @@
   "paidOfTotal": "已付 {{paid}}，共 {{total}}",
   "noPaymentProof": "尚未上传付款凭证。",
   "closeButton": "关闭",
-  "linkedChangeRequest": "Linked Change Request",
-  "openChangeRequest": "Open change request",
+  "linkedChangeRequest": "链接的变更请求",
+  "openChangeRequest": "打开变更请求",
   "projectColumn": "项目"
 }

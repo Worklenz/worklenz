@@ -198,6 +198,6 @@
   "paidOfTotal": "{{paid}} payé sur {{total}}",
   "noPaymentProof": "Aucun justificatif de paiement téléversé.",
   "closeButton": "Fermer",
-  "linkedChangeRequest": "Linked Change Request",
-  "openChangeRequest": "Open change request"
+  "linkedChangeRequest": "Demande de modification liée",
+  "openChangeRequest": "Demande de modification ouverte"
 }

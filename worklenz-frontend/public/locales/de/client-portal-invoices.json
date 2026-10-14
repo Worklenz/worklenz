@@ -198,7 +198,7 @@
   "paidOfTotal": "{{paid}} von {{total}} bezahlt",
   "noPaymentProof": "Kein Zahlungsnachweis hochgeladen.",
   "closeButton": "Schließen",
-  "linkedChangeRequest": "Linked Change Request",
-  "openChangeRequest": "Open change request",
+  "linkedChangeRequest": "Verknüpfter Änderungsantrag",
+  "openChangeRequest": "Offene Änderungsanfrage",
   "projectColumn": "Projekt"
 }

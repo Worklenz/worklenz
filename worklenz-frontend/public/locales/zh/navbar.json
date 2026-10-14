@@ -41,7 +41,7 @@
     "teamInvitation": "您已被邀请加入 {{teamName}}",
     "loading": "加载中...",
     "markAllAsRead": "全部标记为已读",
-    "clientActivity": "Client activity"
+    "clientActivity": "客户活动"
   },
   "searchAnything": "搜索任何内容",
   "globalSearchPlaceholder": "搜索任务、项目、客户、成员…",

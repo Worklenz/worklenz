@@ -306,7 +306,7 @@
   "showFieldsButton": "Mostrar campos",
   "lastActivityColumn": "Última actividad",
   "phoneColumn": "Teléfono",
-  "pocColumn": "POC",
+  "pocColumn": "POS",
   "companyColumn": "Empresa",
   "projectsColumn": "Proyectos",
   "lastActivityInvited": "Invitado {{time}}",

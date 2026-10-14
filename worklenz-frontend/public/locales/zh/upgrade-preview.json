@@ -168,8 +168,8 @@
         ]
       },
       "projects": {
-        "title": "Portal Projects",
-        "description": "Choose which projects clients can see and what is shared inside each one.",
+        "title": "门户项目",
+        "description": "选择客户可以查看哪些项目以及每个项目内共享的内容。",
         "features": [
           "Switch the Client Portal on per project",
           "Share tasks, files and milestones one by one",
@@ -178,8 +178,8 @@
         ]
       },
       "approvals": {
-        "title": "Approvals",
-        "description": "Get formal, recorded sign-off from clients on exact file versions.",
+        "title": "批准",
+        "description": "获得客户对准确文件版本的正式、记录签字。",
         "features": [
           "Ask a Client Admin to approve a file, milestone or task",
           "The exact version or revision is recorded",
@@ -188,8 +188,8 @@
         ]
       },
       "changeRequests": {
-        "title": "Change Requests",
-        "description": "Review, estimate and decide on scope changes, then turn approved ones into work.",
+        "title": "变更请求",
+        "description": "审查、评估并决定范围变更，然后将批准的变更付诸实施。",
         "features": [
           "Clients submit scope changes from their portal",
           "Estimate, approve, reject or ask for more information",
@@ -198,8 +198,8 @@
         ]
       },
       "discussions": {
-        "title": "Discussions",
-        "description": "Talk to clients about the exact task, file or approval, with internal comments kept private.",
+        "title": "讨论",
+        "description": "与客户讨论确切的任务、文件或批准，内部评论保密。",
         "features": [
           "Conversations attached to the work they are about",
           "Client-visible replies and private internal comments",
@@ -208,8 +208,8 @@
         ]
       },
       "auditLog": {
-        "title": "Audit Log",
-        "description": "A tamper-proof record of client and team activity.",
+        "title": "审计日志",
+        "description": "客户和团队活动的防篡改记录。",
         "features": [
           "Access, sharing, file, approval and change request events",
           "Every entry is timestamped and attributed",
@@ -218,8 +218,8 @@
         ]
       },
       "preview": {
-        "title": "Client Portal",
-        "description": "See exactly what a client sees before you share anything.",
+        "title": "客户门户",
+        "description": "在分享任何内容之前，先准确了解客户所看到的内容。",
         "features": [
           "Preview as any active client user",
           "Built from the same rules the portal enforces",

@@ -1,84 +1,84 @@
 {
   "access": {
-    "introExisting": "Pick the projects this user can open. If the Client Portal is off for a project you pick, it is switched on.",
-    "introNew": "Pick the projects this client should see. Projects without a client are linked to the new organization, and the Client Portal is switched on for each one you pick.",
-    "loadFailed": "The projects could not be loaded.",
-    "noClientYet": "No client yet",
-    "noProjectsExisting": "This organization has no projects yet. The user can be assigned projects later.",
-    "noProjectsNew": "Every workspace project already has a client. Link one later from Portal Projects.",
-    "portalOff": "Portal off, will be switched on",
-    "search": "Search projects…",
-    "title": "Project access"
+    "introExisting": "Elija los proyectos que este usuario puede abrir. Si el Portal del cliente está desactivado para un proyecto que elija, estará activado.",
+    "introNew": "Elija los proyectos que este cliente debería ver. Los proyectos sin cliente se vinculan a la nueva organización y el Portal del Cliente se activa para cada uno que elija.",
+    "loadFailed": "No se pudieron cargar los proyectos.",
+    "noClientYet": "Ningún cliente todavía",
+    "noProjectsExisting": "Esta organización aún no tiene proyectos. Al usuario se le pueden asignar proyectos más adelante.",
+    "noProjectsNew": "Cada proyecto de espacio de trabajo ya tiene un cliente. Enlace uno más tarde desde Portal Projects.",
+    "portalOff": "Portal apagado, se encenderá",
+    "search": "Buscar proyectos…",
+    "title": "Acceso al proyecto"
   },
   "details": {
-    "email": "Email address",
-    "emailHint": "This is the login and invitation address. It must be unique.",
-    "emailInvalid": "Enter a valid email address.",
-    "firstName": "First name",
-    "firstNamePlaceholder": "Jane",
-    "firstUserNotice": "The first user of a new organization is a Client Admin. They can approve items and, if you enable it in Portal Settings, manage their own colleagues. Like every client user, they sign in with a one-time code emailed to this address.",
-    "jobTitle": "Job title",
-    "jobTitlePlaceholder": "e.g. Marketing Manager",
-    "lastName": "Last name",
-    "lastNamePlaceholder": "Doe",
-    "noOrganizations": "No organizations found.",
-    "organization": "Organization",
-    "organizationName": "Organization name",
-    "organizationNamePlaceholder": "e.g. Beacon Logistics",
-    "phone": "Phone (optional)",
+    "email": "Dirección de correo electrónico",
+    "emailHint": "Esta es la dirección de inicio de sesión y de invitación. Debe ser único.",
+    "emailInvalid": "Ingrese una dirección de correo electrónico válida.",
+    "firstName": "Nombre de pila",
+    "firstNamePlaceholder": "Ana",
+    "firstUserNotice": "El primer usuario de una nueva organización es un administrador de clientes. Pueden aprobar elementos y, si lo habilita en la Configuración del portal, administrar a sus propios colegas. Como todos los usuarios clientes, inician sesión con un código único enviado por correo electrónico a esta dirección.",
+    "jobTitle": "Título del trabajo",
+    "jobTitlePlaceholder": "por ej. Gerente de Mercadeo",
+    "lastName": "apellido",
+    "lastNamePlaceholder": "García",
+    "noOrganizations": "No se encontraron organizaciones.",
+    "organization": "Organización",
+    "organizationName": "Nombre de la organización",
+    "organizationNamePlaceholder": "p.ej. Logística de baliza",
+    "phone": "Teléfono (opcional)",
     "role": "Role",
-    "selectOrganization": "Select an organization…"
+    "selectOrganization": "Seleccione una organización..."
   },
   "footer": {
-    "addUser": "Add user",
-    "back": "Back",
-    "continue": "Continue",
-    "sendInvitation": "Send invitation"
+    "addUser": "Agregar usuario",
+    "back": "Volver",
+    "continue": "Continuar",
+    "sendInvitation": "Enviar invitación"
   },
   "method": {
     "existingOrganization": {
-      "description": "Invite another person to an organization that already has portal access.",
-      "name": "Add a user to an existing organization"
+      "description": "Invite a otra persona a una organización que ya tenga acceso al portal.",
+      "name": "Agregar un usuario a una organización existente"
     },
-    "groupLabel": "How to add this client",
-    "intro": "Every client user belongs to an organization, and sees only the projects you assign to them.",
+    "groupLabel": "Cómo agregar este cliente",
+    "intro": "Cada usuario cliente pertenece a una organización y solo ve los proyectos que usted le asigna.",
     "newOrganization": {
-      "description": "Create the organization and invite its first user as Client Admin.",
-      "name": "New client organization"
+      "description": "Cree la organización e invite a su primer usuario como administrador del cliente.",
+      "name": "Nueva organización de clientes"
     }
   },
   "result": {
-    "activationHint": "They open the link in the email and sign in with a 6-digit code sent to their address. There is no password.",
-    "addedNoInvite": "{{name}} was added as {{role}}. No invitation was sent yet.",
-    "emailNotSent": "{{name}} was saved, but the invitation email could not be sent. Share the link instead.",
-    "failed": "The client could not be added.",
-    "invited": "Invitation sent to {{email}}.",
-    "portalsSwitchedOn": "Client Portal switched on for {{count}} project(s).",
-    "portalsSwitchedOn_one": "Client Portal switched on for {{count}} project.",
-    "portalsSwitchedOn_other": "Client Portal switched on for {{count}} projects."
+    "activationHint": "Abren el enlace en el correo electrónico e inician sesión con un código de 6 dígitos enviado a su dirección. No hay contraseña.",
+    "addedNoInvite": "{{name}} se agregó como {{role}}. Aún no se ha enviado ninguna invitación.",
+    "emailNotSent": "{{name}} se guardó, pero no se pudo enviar el correo electrónico de invitación. Comparte el enlace en su lugar.",
+    "failed": "No se pudo agregar el cliente.",
+    "invited": "Invitación enviada a {{email}}.",
+    "portalsSwitchedOn": "Portal del cliente activado para {{count}} proyecto(s).",
+    "portalsSwitchedOn_one": "Portal del cliente activado para el proyecto {{count}}.",
+    "portalsSwitchedOn_other": "Portal del cliente activado para {{count}} proyectos."
   },
   "review": {
     "email": "Email",
     "name": "Name",
-    "organization": "Organization",
-    "projects": "Projects",
-    "projectsAssigned": "{{count}} assigned",
-    "projectsAssigned_one": "{{count}} assigned",
-    "projectsAssigned_other": "{{count}} assigned",
-    "projectsNone": "None yet",
+    "organization": "Organización",
+    "projects": "Proyectos",
+    "projectsAssigned": "{{count}} asignado",
+    "projectsAssigned_one": "{{count}} asignado",
+    "projectsAssigned_other": "{{count}} asignado",
+    "projectsNone": "Ninguno todavía",
     "role": "Role",
-    "sendInvitation": "Send the invitation now",
-    "sendInvitationHint": "The link carries their email address; opening it sends them a 6-digit code, so there is no password to set. The link expires after 7 days. If it expires, resend it from the Users list, or they can sign in by entering their email."
+    "sendInvitation": "Envía la invitación ahora",
+    "sendInvitationHint": "El enlace lleva su dirección de correo electrónico; Al abrirlo, se les envía un código de 6 dígitos, por lo que no es necesario establecer una contraseña. El enlace caduca después de 7 días. Si caduca, reenvíelo desde la lista de Usuarios o pueden iniciar sesión ingresando su correo electrónico."
   },
   "steps": {
-    "access": "Access",
+    "access": "Acceso",
     "details": "Details",
-    "method": "Method"
+    "method": "Método"
   },
   "title": {
-    "access": "Access & review",
-    "detailsExisting": "Choose the organization and the user",
-    "detailsNew": "Tell us about the organization",
-    "method": "How do you want to add this client?"
+    "access": "Acceso y revisión",
+    "detailsExisting": "Elige la organización y el usuario",
+    "detailsNew": "Cuéntanos sobre la organización.",
+    "method": "¿Cómo desea agregar este cliente?"
   }
 }

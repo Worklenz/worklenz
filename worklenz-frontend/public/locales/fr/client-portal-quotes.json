@@ -112,6 +112,6 @@
   "deleteConfirmationOk": "Supprimer",
   "deleteQuoteSuccess": "Devis supprimé avec succès",
   "deleteQuoteError": "Échec de la suppression du devis",
-  "linkedChangeRequest": "Linked Change Request",
-  "openChangeRequest": "Open change request"
+  "linkedChangeRequest": "Demande de modification liée",
+  "openChangeRequest": "Demande de modification ouverte"
 }

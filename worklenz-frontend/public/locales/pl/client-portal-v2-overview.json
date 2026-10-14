@@ -1,126 +1,126 @@
 {
   "page": {
     "title": "Overview",
-    "description": "What needs your attention across clients, projects and discussions.",
+    "description": "Co wymaga Twojej uwagi wśród klientów, projektów i dyskusji.",
     "editingHint": "Drag widgets to reorder them, change their size, or hide the ones you do not need.",
-    "loadFailed": "The overview could not be loaded."
+    "loadFailed": "Nie można załadować przeglądu."
   },
   "widget": {
-    "viewAll": "View all",
-    "retry": "Retry",
-    "error": "This widget could not be loaded."
+    "viewAll": "Zobacz wszystkie",
+    "retry": "Spróbuj ponownie",
+    "error": "Nie można załadować tego widgetu."
   },
   "edit": {
-    "customize": "Customize",
-    "done": "Done",
+    "customize": "Dostosuj",
+    "done": "Gotowe",
     "cancel": "Cancel",
     "reset": "Reset to default",
-    "resetConfirm": "Restore the default layout?",
-    "saveFailed": "Could not save the layout.",
-    "resetFailed": "Could not reset the layout.",
-    "drag": "Drag to reorder {{title}}",
-    "size": "Size of {{title}}",
+    "resetConfirm": "Przywrócić domyślny układ?",
+    "saveFailed": "Nie można zapisać układu.",
+    "resetFailed": "Nie udało się zresetować układu.",
+    "drag": "Przeciągnij, aby zmienić kolejność {{title}}",
+    "size": "Rozmiar {{title}}",
     "size_s": "S",
     "size_m": "M",
     "size_l": "L",
-    "hide": "Hide widget",
-    "show": "Show widget",
-    "hideNamed": "Hide {{title}}",
-    "showNamed": "Show {{title}}",
-    "save": "Save",
-    "saved": "Overview saved",
-    "resetDone": "Overview reset to the default layout",
-    "resetConfirmHelp": "Your saved arrangement will be removed.",
-    "addWidget": "Add widget",
-    "emptyTitle": "No widgets on your overview",
-    "emptyHelp": "Choose Customize, then Add widget to bring some back.",
-    "widgetSettings": "{{name}} settings",
-    "settingsFor": "Settings for {{name}}",
-    "width": "Width",
-    "widthQuarter": "Quarter width",
-    "widthThird": "One third",
-    "widthHalf": "Half width",
-    "widthTwoThirds": "Two thirds",
-    "widthThreeQuarters": "Three quarters",
-    "widthFull": "Full width",
-    "moveEarlier": "Move earlier",
-    "moveLater": "Move later",
-    "leaveTitle": "Leave without saving?",
-    "leaveBody": "Your changes to the overview have not been saved and will be lost.",
-    "leave": "Leave",
-    "stay": "Stay"
+    "hide": "Ukryj widżet",
+    "show": "Pokaż widżet",
+    "hideNamed": "Ukryj {{title}}",
+    "showNamed": "Pokaż {{title}}",
+    "save": "Zapisz",
+    "saved": "Przegląd został zapisany",
+    "resetDone": "Przegląd zresetowany do układu domyślnego",
+    "resetConfirmHelp": "Zapisana aranżacja zostanie usunięta.",
+    "addWidget": "Dodaj widżet",
+    "emptyTitle": "Brak widżetów w Twoim przeglądzie",
+    "emptyHelp": "Wybierz Dostosuj, a następnie Dodaj widżet, aby go przywrócić.",
+    "widgetSettings": "Ustawienia {{name}}",
+    "settingsFor": "Ustawienia dla {{name}}",
+    "width": "Szerokość",
+    "widthQuarter": "Szerokość ćwiartkowa",
+    "widthThird": "Jedna trzecia",
+    "widthHalf": "Połowa szerokości",
+    "widthTwoThirds": "Dwie trzecie",
+    "widthThreeQuarters": "Trzy czwarte",
+    "widthFull": "Pełna szerokość",
+    "moveEarlier": "Przenieś się wcześniej",
+    "moveLater": "Przenieś później",
+    "leaveTitle": "Wyjść bez zapisywania?",
+    "leaveBody": "Twoje zmiany w przeglądzie nie zostały zapisane i zostaną utracone.",
+    "leave": "Wyjdź",
+    "stay": "Zostań"
   },
   "status": {
-    "awaiting": "Awaiting",
-    "approved": "Approved",
-    "changes_requested": "Changes requested",
-    "cr_submitted": "Submitted",
-    "cr_under_review": "Under review",
-    "cr_more_info": "More info",
-    "cr_approved": "Approved",
-    "cr_in_progress": "In progress",
-    "cr_completed": "Completed",
-    "cr_rejected": "Rejected",
-    "cr_cancelled": "Cancelled"
+    "awaiting": "Oczekiwanie",
+    "approved": "Zatwierdzone",
+    "changes_requested": "Zażądano zmian",
+    "cr_submitted": "Przesłane",
+    "cr_under_review": "W trakcie przeglądu",
+    "cr_more_info": "Więcej informacji",
+    "cr_approved": "Zatwierdzone",
+    "cr_in_progress": "W toku",
+    "cr_completed": "Ukończono",
+    "cr_rejected": "Odrzucony",
+    "cr_cancelled": "Anulowano"
   },
   "widgets": {
     "kpi_awaiting_approvals": {
-      "title": "Pending approvals",
-      "sub": "{{count}} overdue"
+      "title": "Oczekujące zatwierdzenia",
+      "sub": "{{count}} spóźniony"
     },
     "kpi_open_change_requests": {
-      "title": "Change requests to review",
-      "sub": "{{count}} waiting on client"
+      "title": "Zmień prośby o sprawdzenie",
+      "sub": "{{count}} czeka na klienta"
     },
     "kpi_delayed_milestones": {
-      "title": "Delayed milestones",
-      "sub": "Across portal projects"
+      "title": "Opóźnione kamienie milowe",
+      "sub": "W projektach portalowych"
     },
     "kpi_unread_discussions": {
-      "title": "Unread discussions",
-      "sub": "With new client messages"
+      "title": "Nieprzeczytane dyskusje",
+      "sub": "Z nowymi wiadomościami od klientów"
     },
     "kpi_overdue_invoices": {
-      "title": "Overdue invoices",
-      "none": "Nothing overdue"
+      "title": "Zaległe faktury",
+      "none": "Nic nie jest przeterminowane"
     },
     "pending_approvals": {
-      "title": "Pending approvals",
-      "empty": "No approvals are waiting on a client.",
-      "overdue": "Overdue · {{date}}",
-      "due": "Due {{date}}"
+      "title": "Oczekujące zatwierdzenia",
+      "empty": "Żadne zatwierdzenia nie czekają na klienta.",
+      "overdue": "Zaległe · {{date}}",
+      "due": "Termin {{date}}"
     },
     "change_requests": {
-      "title": "Change requests to review",
-      "empty": "No change requests need review."
+      "title": "Zmień prośby o sprawdzenie",
+      "empty": "Żadne prośby o zmiany nie wymagają sprawdzenia."
     },
     "upcoming_milestones": {
-      "title": "Upcoming milestones",
-      "empty": "No open milestones on portal projects."
+      "title": "Nadchodzące kamienie milowe",
+      "empty": "Brak otwartych kamieni milowych w projektach portalowych."
     },
     "latest_discussions": {
-      "title": "Latest discussions",
-      "empty": "No discussions yet."
+      "title": "Najnowsze dyskusje",
+      "empty": "Nie ma jeszcze dyskusji."
     },
     "mentions_me": {
-      "title": "Mentions of me",
-      "empty": "Nobody has mentioned you in a discussion.",
-      "row": "{{name}} in {{project}}"
+      "title": "Wzmianki o mnie",
+      "empty": "Nikt nie wspomniał o Tobie w dyskusji.",
+      "row": "{{name}} w {{project}}"
     },
     "approvals_by_status": {
-      "title": "Approvals by status",
-      "empty": "No approvals have been sent yet."
+      "title": "Zatwierdzenia według statusu",
+      "empty": "Żadne zatwierdzenia nie zostały jeszcze przesłane."
     },
     "cr_by_status": {
-      "title": "Change request pipeline",
-      "empty": "No change requests yet."
+      "title": "Zmień potok żądań",
+      "empty": "Nie ma jeszcze żadnych próśb o zmianę."
     },
     "needs_attention": {
-      "title": "Needs attention",
-      "empty": "Nothing needs attention. Nice work.",
-      "approval_overdue": "Overdue approval",
-      "change_request_review": "High-priority request to review",
-      "milestone_late": "Late milestone"
+      "title": "Potrzebuje uwagi",
+      "empty": "Nic nie wymaga uwagi. Niezła robota.",
+      "approval_overdue": "Spóźniona akceptacja",
+      "change_request_review": "Żądanie o wysokim priorytecie do sprawdzenia",
+      "milestone_late": "Późny kamień milowy"
     }
   }
 }

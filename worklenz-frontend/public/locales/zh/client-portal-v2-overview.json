@@ -1,126 +1,126 @@
 {
   "page": {
     "title": "Overview",
-    "description": "What needs your attention across clients, projects and discussions.",
+    "description": "在客户、项目和讨论中需要注意什么。",
     "editingHint": "Drag widgets to reorder them, change their size, or hide the ones you do not need.",
-    "loadFailed": "The overview could not be loaded."
+    "loadFailed": "无法加载概述。"
   },
   "widget": {
-    "viewAll": "View all",
-    "retry": "Retry",
-    "error": "This widget could not be loaded."
+    "viewAll": "查看全部",
+    "retry": "重试",
+    "error": "无法加载此小部件。"
   },
   "edit": {
-    "customize": "Customize",
-    "done": "Done",
+    "customize": "自定义",
+    "done": "已完成",
     "cancel": "Cancel",
     "reset": "Reset to default",
-    "resetConfirm": "Restore the default layout?",
-    "saveFailed": "Could not save the layout.",
-    "resetFailed": "Could not reset the layout.",
-    "drag": "Drag to reorder {{title}}",
-    "size": "Size of {{title}}",
+    "resetConfirm": "恢复默认布局？",
+    "saveFailed": "无法保存布局。",
+    "resetFailed": "无法重置布局。",
+    "drag": "拖动以重新排序 {{title}}",
+    "size": "{{title}} 的大小",
     "size_s": "S",
     "size_m": "M",
     "size_l": "L",
-    "hide": "Hide widget",
-    "show": "Show widget",
-    "hideNamed": "Hide {{title}}",
-    "showNamed": "Show {{title}}",
-    "save": "Save",
-    "saved": "Overview saved",
-    "resetDone": "Overview reset to the default layout",
-    "resetConfirmHelp": "Your saved arrangement will be removed.",
-    "addWidget": "Add widget",
-    "emptyTitle": "No widgets on your overview",
-    "emptyHelp": "Choose Customize, then Add widget to bring some back.",
-    "widgetSettings": "{{name}} settings",
-    "settingsFor": "Settings for {{name}}",
-    "width": "Width",
-    "widthQuarter": "Quarter width",
-    "widthThird": "One third",
-    "widthHalf": "Half width",
-    "widthTwoThirds": "Two thirds",
-    "widthThreeQuarters": "Three quarters",
-    "widthFull": "Full width",
-    "moveEarlier": "Move earlier",
-    "moveLater": "Move later",
-    "leaveTitle": "Leave without saving?",
-    "leaveBody": "Your changes to the overview have not been saved and will be lost.",
-    "leave": "Leave",
-    "stay": "Stay"
+    "hide": "隐藏小部件",
+    "show": "显示小部件",
+    "hideNamed": "隐藏 {{title}}",
+    "showNamed": "显示 {{title}}",
+    "save": "保存",
+    "saved": "概览已保存",
+    "resetDone": "概览重置为默认布局",
+    "resetConfirmHelp": "您保存的安排将被删除。",
+    "addWidget": "添加小组件",
+    "emptyTitle": "您的概览中没有小部件",
+    "emptyHelp": "选择“自定义”，然后选择“添加小部件”以恢复一些。",
+    "widgetSettings": "{{name}} 设置",
+    "settingsFor": "{{name}} 的设置",
+    "width": "宽度",
+    "widthQuarter": "四分之一宽度",
+    "widthThird": "三分之一",
+    "widthHalf": "半宽",
+    "widthTwoThirds": "三分之二",
+    "widthThreeQuarters": "四分之三",
+    "widthFull": "全宽",
+    "moveEarlier": "提前移动",
+    "moveLater": "稍后移动",
+    "leaveTitle": "不保存就离开？",
+    "leaveBody": "您对概览所做的更改尚未保存，将会丢失。",
+    "leave": "离开",
+    "stay": "住宿"
   },
   "status": {
-    "awaiting": "Awaiting",
-    "approved": "Approved",
-    "changes_requested": "Changes requested",
-    "cr_submitted": "Submitted",
-    "cr_under_review": "Under review",
-    "cr_more_info": "More info",
-    "cr_approved": "Approved",
-    "cr_in_progress": "In progress",
-    "cr_completed": "Completed",
-    "cr_rejected": "Rejected",
-    "cr_cancelled": "Cancelled"
+    "awaiting": "等待中",
+    "approved": "已批准",
+    "changes_requested": "要求更改",
+    "cr_submitted": "已提交",
+    "cr_under_review": "审核中",
+    "cr_more_info": "更多信息",
+    "cr_approved": "已批准",
+    "cr_in_progress": "进行中",
+    "cr_completed": "已完成",
+    "cr_rejected": "已拒绝",
+    "cr_cancelled": "已取消"
   },
   "widgets": {
     "kpi_awaiting_approvals": {
-      "title": "Pending approvals",
-      "sub": "{{count}} overdue"
+      "title": "待批准",
+      "sub": "{{count}} 逾期"
     },
     "kpi_open_change_requests": {
-      "title": "Change requests to review",
-      "sub": "{{count}} waiting on client"
+      "title": "变更请求审核",
+      "sub": "{{count}} 正在等待客户端"
     },
     "kpi_delayed_milestones": {
-      "title": "Delayed milestones",
-      "sub": "Across portal projects"
+      "title": "延迟的里程碑",
+      "sub": "跨门户项目"
     },
     "kpi_unread_discussions": {
-      "title": "Unread discussions",
-      "sub": "With new client messages"
+      "title": "未读讨论",
+      "sub": "有新客户消息"
     },
     "kpi_overdue_invoices": {
-      "title": "Overdue invoices",
-      "none": "Nothing overdue"
+      "title": "逾期发票",
+      "none": "没有逾期"
     },
     "pending_approvals": {
-      "title": "Pending approvals",
-      "empty": "No approvals are waiting on a client.",
-      "overdue": "Overdue · {{date}}",
-      "due": "Due {{date}}"
+      "title": "待批准",
+      "empty": "没有等待客户的批准。",
+      "overdue": "逾期 · {{date}}",
+      "due": "由于 {{date}}"
     },
     "change_requests": {
-      "title": "Change requests to review",
-      "empty": "No change requests need review."
+      "title": "变更请求审核",
+      "empty": "没有变更请求需要审核。"
     },
     "upcoming_milestones": {
-      "title": "Upcoming milestones",
-      "empty": "No open milestones on portal projects."
+      "title": "即将到来的里程碑",
+      "empty": "门户项目没有开放的里程碑。"
     },
     "latest_discussions": {
-      "title": "Latest discussions",
-      "empty": "No discussions yet."
+      "title": "最新讨论",
+      "empty": "还没有讨论。"
     },
     "mentions_me": {
-      "title": "Mentions of me",
-      "empty": "Nobody has mentioned you in a discussion.",
-      "row": "{{name}} in {{project}}"
+      "title": "提及我的",
+      "empty": "没有人在讨论中提到你。",
+      "row": "{{project}} 中的 {{name}}"
     },
     "approvals_by_status": {
-      "title": "Approvals by status",
-      "empty": "No approvals have been sent yet."
+      "title": "按状态批准",
+      "empty": "尚未发送任何批准。"
     },
     "cr_by_status": {
-      "title": "Change request pipeline",
-      "empty": "No change requests yet."
+      "title": "变更请求管道",
+      "empty": "尚无变更请求。"
     },
     "needs_attention": {
-      "title": "Needs attention",
-      "empty": "Nothing needs attention. Nice work.",
-      "approval_overdue": "Overdue approval",
-      "change_request_review": "High-priority request to review",
-      "milestone_late": "Late milestone"
+      "title": "需要注意",
+      "empty": "没有什么需要注意的。干得好。",
+      "approval_overdue": "逾期审批",
+      "change_request_review": "高优先级审查请求",
+      "milestone_late": "后期里程碑"
     }
   }
 }

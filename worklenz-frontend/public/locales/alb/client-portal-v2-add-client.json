@@ -1,84 +1,84 @@
 {
   "access": {
-    "introExisting": "Pick the projects this user can open. If the Client Portal is off for a project you pick, it is switched on.",
-    "introNew": "Pick the projects this client should see. Projects without a client are linked to the new organization, and the Client Portal is switched on for each one you pick.",
-    "loadFailed": "The projects could not be loaded.",
-    "noClientYet": "No client yet",
-    "noProjectsExisting": "This organization has no projects yet. The user can be assigned projects later.",
-    "noProjectsNew": "Every workspace project already has a client. Link one later from Portal Projects.",
-    "portalOff": "Portal off, will be switched on",
-    "search": "Search projects…",
-    "title": "Project access"
+    "introExisting": "Zgjidh projektet që mund të hapë ky përdorues. Nëse Portali i Klientit është i fikur për një projekt që ju zgjidhni, ai ndizet.",
+    "introNew": "Zgjidh projektet që ky klient duhet të shohë. Projektet pa klient janë të lidhura me organizatën e re dhe Portali i Klientit është i ndezur për secilën që zgjidhni.",
+    "loadFailed": "Projektet nuk mund të ngarkoheshin.",
+    "noClientYet": "Ende nuk ka klient",
+    "noProjectsExisting": "Kjo organizatë nuk ka ende projekte. Përdoruesit mund t'i caktohen projekte më vonë.",
+    "noProjectsNew": "Çdo projekt i hapësirës së punës tashmë ka një klient. Lidhni një më vonë nga Projektet e Portalit.",
+    "portalOff": "Portali fikur, do të ndizet",
+    "search": "Kërko projekte…",
+    "title": "Akses në projekt"
   },
   "details": {
-    "email": "Email address",
-    "emailHint": "This is the login and invitation address. It must be unique.",
-    "emailInvalid": "Enter a valid email address.",
-    "firstName": "First name",
-    "firstNamePlaceholder": "Jane",
-    "firstUserNotice": "The first user of a new organization is a Client Admin. They can approve items and, if you enable it in Portal Settings, manage their own colleagues. Like every client user, they sign in with a one-time code emailed to this address.",
-    "jobTitle": "Job title",
-    "jobTitlePlaceholder": "e.g. Marketing Manager",
-    "lastName": "Last name",
-    "lastNamePlaceholder": "Doe",
-    "noOrganizations": "No organizations found.",
-    "organization": "Organization",
-    "organizationName": "Organization name",
-    "organizationNamePlaceholder": "e.g. Beacon Logistics",
-    "phone": "Phone (optional)",
+    "email": "Adresa e emailit",
+    "emailHint": "Kjo është adresa e hyrjes dhe e ftesës. Duhet të jetë unik.",
+    "emailInvalid": "Fut një adresë të vlefshme emaili.",
+    "firstName": "Emri i parë",
+    "firstNamePlaceholder": "Zanë",
+    "firstUserNotice": "Përdoruesi i parë i një organizate të re është administratori i klientit. Ata mund të miratojnë artikuj dhe, nëse e aktivizoni në Cilësimet e portalit, të menaxhojnë vetë kolegët e tyre. Ashtu si çdo përdorues klienti, ata identifikohen me një kod një herë të dërguar me email në këtë adresë.",
+    "jobTitle": "Titulli i punës",
+    "jobTitlePlaceholder": "p.sh. Menaxher marketingu",
+    "lastName": "Mbiemri",
+    "lastNamePlaceholder": "Duka",
+    "noOrganizations": "Nuk u gjet asnjë organizatë.",
+    "organization": "Organizata",
+    "organizationName": "Emri i organizatës",
+    "organizationNamePlaceholder": "p.sh. Beacon Logistics",
+    "phone": "Telefoni (opsionale)",
     "role": "Role",
-    "selectOrganization": "Select an organization…"
+    "selectOrganization": "Zgjidhni një organizatë…"
   },
   "footer": {
-    "addUser": "Add user",
-    "back": "Back",
-    "continue": "Continue",
-    "sendInvitation": "Send invitation"
+    "addUser": "Shto përdorues",
+    "back": "Kthehu",
+    "continue": "Vazhdo",
+    "sendInvitation": "Dërgo ftesë"
   },
   "method": {
     "existingOrganization": {
-      "description": "Invite another person to an organization that already has portal access.",
-      "name": "Add a user to an existing organization"
+      "description": "Fto një person tjetër në një organizatë që tashmë ka akses në portal.",
+      "name": "Shtoni një përdorues në një organizatë ekzistuese"
     },
-    "groupLabel": "How to add this client",
-    "intro": "Every client user belongs to an organization, and sees only the projects you assign to them.",
+    "groupLabel": "Si të shtoni këtë klient",
+    "intro": "Çdo përdorues klienti i përket një organizate dhe sheh vetëm projektet që ju i caktoni atij.",
     "newOrganization": {
-      "description": "Create the organization and invite its first user as Client Admin.",
-      "name": "New client organization"
+      "description": "Krijo organizatën dhe fto përdoruesin e saj të parë si Administrator i Klientit.",
+      "name": "Organizata e re e klientit"
     }
   },
   "result": {
-    "activationHint": "They open the link in the email and sign in with a 6-digit code sent to their address. There is no password.",
-    "addedNoInvite": "{{name}} was added as {{role}}. No invitation was sent yet.",
-    "emailNotSent": "{{name}} was saved, but the invitation email could not be sent. Share the link instead.",
-    "failed": "The client could not be added.",
-    "invited": "Invitation sent to {{email}}.",
-    "portalsSwitchedOn": "Client Portal switched on for {{count}} project(s).",
-    "portalsSwitchedOn_one": "Client Portal switched on for {{count}} project.",
-    "portalsSwitchedOn_other": "Client Portal switched on for {{count}} projects."
+    "activationHint": "Ata hapin lidhjen në email dhe regjistrohen me një kod 6-shifror të dërguar në adresën e tyre. Nuk ka asnjë fjalëkalim.",
+    "addedNoInvite": "{{name}} u shtua si {{role}}. Nuk është dërguar ende asnjë ftesë.",
+    "emailNotSent": "{{name}} u ruajt, por emaili i ftesës nuk mund të dërgohej. Ndani lidhjen në vend.",
+    "failed": "Klienti nuk mund të shtohej.",
+    "invited": "Ftesa u dërgua te {{email}}.",
+    "portalsSwitchedOn": "Portali i klientit u aktivizua për projekt(et) {{count}}.",
+    "portalsSwitchedOn_one": "Portali i klientit u aktivizua për projektin {{count}}.",
+    "portalsSwitchedOn_other": "Portali i klientit u aktivizua për projektet {{count}}."
   },
   "review": {
     "email": "Email",
     "name": "Name",
-    "organization": "Organization",
-    "projects": "Projects",
-    "projectsAssigned": "{{count}} assigned",
-    "projectsAssigned_one": "{{count}} assigned",
-    "projectsAssigned_other": "{{count}} assigned",
-    "projectsNone": "None yet",
+    "organization": "Organizata",
+    "projects": "Projektet",
+    "projectsAssigned": "{{count}} caktuar",
+    "projectsAssigned_one": "{{count}} caktuar",
+    "projectsAssigned_other": "{{count}} caktuar",
+    "projectsNone": "Asnjë ende",
     "role": "Role",
-    "sendInvitation": "Send the invitation now",
-    "sendInvitationHint": "The link carries their email address; opening it sends them a 6-digit code, so there is no password to set. The link expires after 7 days. If it expires, resend it from the Users list, or they can sign in by entering their email."
+    "sendInvitation": "Dërgo ftesën tani",
+    "sendInvitationHint": "Lidhja përmban adresën e tyre të emailit; hapja e tij u dërgon atyre një kod 6-shifror, kështu që nuk ka fjalëkalim për të vendosur. Lidhja skadon pas 7 ditësh. Nëse skadon, ridërgojeni nga lista e përdoruesve, ose ata mund të identifikohen duke futur emailin e tyre."
   },
   "steps": {
-    "access": "Access",
+    "access": "Qasja",
     "details": "Details",
-    "method": "Method"
+    "method": "Metoda"
   },
   "title": {
-    "access": "Access & review",
-    "detailsExisting": "Choose the organization and the user",
-    "detailsNew": "Tell us about the organization",
-    "method": "How do you want to add this client?"
+    "access": "Qasja dhe rishikimi",
+    "detailsExisting": "Zgjidhni organizatën dhe përdoruesin",
+    "detailsNew": "Na tregoni për organizatën",
+    "method": "Si dëshironi ta shtoni këtë klient?"
   }
 }

@@ -1,337 +1,337 @@
 {
   "actions": {
-    "createLinkFailed": "The sign-in link could not be created.",
-    "deactivateFailed": "The user could not be deactivated.",
-    "deactivated": "{{name}} was deactivated. Portal and API access is revoked immediately.",
-    "messageNoProjects": "{{name}} has no projects yet. Assign a project first, then start a discussion.",
-    "reactivateFailed": "The user could not be reactivated.",
-    "reactivated": "{{name}} can sign in again. Their previous status was restored.",
-    "removeFailed": "The user could not be removed.",
-    "removed": "{{name}} was removed from the portal.",
-    "resendFailed": "The invitation could not be resent.",
-    "resent": "Invitation resent to {{email}}. The link is valid for 7 days."
+    "createLinkFailed": "无法创建登录链接。",
+    "deactivateFailed": "无法停用该用户。",
+    "deactivated": "{{name}} 已停用。门户和 API 访问权限将立即撤销。",
+    "messageNoProjects": "{{name}} 还没有项目。先分配一个项目，然后开始讨论。",
+    "reactivateFailed": "无法重新激活用户。",
+    "reactivated": "{{name}} 可以再次登录。他们的状态又恢复了。",
+    "removeFailed": "无法删除该用户。",
+    "removed": "{{name}} 已从门户中删除。",
+    "resendFailed": "无法重新发送邀请。",
+    "resent": "邀请已重新发送至 {{email}}。该链接的有效期为 7 天。"
   },
   "assign": {
-    "description": "A user only ever sees projects assigned here, even though they belong to {{organization}}. What they can do inside each project depends on their role:",
-    "failed": "The project access could not be updated.",
-    "loadFailed": "The projects could not be loaded.",
-    "noProjects": "{{organization}} has no projects yet.",
-    "portalOff": "Client Portal is off for this project. Turn it on first.",
-    "save": "Save",
-    "saved": "Project access updated for {{name}}.",
-    "savedWithRemoval": "Project access updated for {{name}}. Removed access applies immediately.",
-    "title": "Assign projects · {{name}}"
+    "description": "用户只能看到此处分配的项目，即使它们属于 {{organization}}。他们在每个项目中可以做什么取决于他们的角色：",
+    "failed": "无法更新项目访问权限。",
+    "loadFailed": "无法加载项目。",
+    "noProjects": "{{organization}} 还没有项目。",
+    "portalOff": "该项目的客户端已关闭。首先将其打开。",
+    "save": "保存",
+    "saved": "已更新 {{name}} 的项目访问权限。",
+    "savedWithRemoval": "已更新 {{name}} 的项目访问权限。删除的访问权限会立即生效。",
+    "title": "分配项目 · {{name}}"
   },
   "deactivate": {
-    "body": "{{name}} loses access right away. If they have a session open, their next request fails and they are signed out. You can reactivate them later and their previous status is restored.",
-    "confirm": "Deactivate",
-    "title": "Deactivate this client user?"
+    "body": "{{name}} 立即失去访问权限。如果他们打开了会话，则他们的下一个请求将失败并且他们将被注销。您可以稍后重新激活它们，它们将恢复之前的状态。",
+    "confirm": "停用",
+    "title": "停用该客户端用户？"
   },
   "edit": {
-    "failed": "The user could not be updated.",
-    "roleChanged": "{{name}} is now a {{role}}. It applies on their next request, not only after a new sign-in.",
-    "roleNotice": "Role changes take effect on the user’s next authorization check, not only after a new sign-in.",
-    "save": "Save",
-    "title": "Edit user · {{organization}}",
-    "updated": "{{name}} updated."
+    "failed": "无法更新用户。",
+    "roleChanged": "{{name}} 现在是 {{role}}。它适用于他们的下一个请求，而不仅仅是在新登录后。",
+    "roleNotice": "角色更改会在用户下一次授权检查时生效，而不仅仅是在新登录后生效。",
+    "save": "保存",
+    "title": "编辑用户 · {{organization}}",
+    "updated": "{{name}} 已更新。"
   },
   "fields": {
-    "email": "Email (login address)",
-    "emailInvalid": "Enter a valid email address.",
-    "emailRequired": "Enter the user’s email address.",
-    "jobTitle": "Job title",
-    "name": "Full name",
-    "nameRequired": "Enter the user’s name.",
-    "phone": "Phone (optional)",
+    "email": "电子邮件（登录地址）",
+    "emailInvalid": "输入有效的电子邮件地址。",
+    "emailRequired": "输入用户的电子邮件地址。",
+    "jobTitle": "职位名称",
+    "name": "全名",
+    "nameRequired": "输入用户名。",
+    "phone": "电话（可选）",
     "role": "Role"
   },
   "lastAdmin": {
-    "confirm": "Continue anyway",
-    "title": "This is the last Client Admin"
+    "confirm": "仍然继续",
+    "title": "这是最后一个客户端管理员"
   },
   "menu": {
-    "assign": "Assign projects",
-    "createLink": "Create sign-in link",
-    "deactivate": "Deactivate user",
-    "edit": "Edit user & role",
+    "assign": "分配项目",
+    "createLink": "创建登录链接",
+    "deactivate": "停用用户",
+    "edit": "编辑用户和角色",
     "message": "Message",
-    "reactivate": "Reactivate user",
-    "remove": "Remove user",
-    "resend": "Resend invitation",
-    "resendShort": "Resend",
-    "view": "View profile"
+    "reactivate": "重新激活用户",
+    "remove": "删除用户",
+    "resend": "重新发送邀请",
+    "resendShort": "重新发送",
+    "view": "查看个人资料"
   },
   "organizations": {
     "accessFilter": {
-      "active": "Active",
-      "deactivated": "Deactivated",
-      "invited": "Invited",
-      "none": "No users"
+      "active": "活跃",
+      "deactivated": "已停用",
+      "invited": "受邀",
+      "none": "无用户"
     },
-    "awaitingApprovals_one": "{{count}} approval",
-    "awaitingApprovals_other": "{{count}} approvals",
-    "awaitingChangeRequests_one": "{{count}} change request",
-    "awaitingChangeRequests_other": "{{count}} change requests",
+    "awaitingApprovals_one": "{{count}} 批准",
+    "awaitingApprovals_other": "{{count}} 批准",
+    "awaitingChangeRequests_one": "{{count}} 变更请求",
+    "awaitingChangeRequests_other": "{{count}} 变更请求",
     "columns": {
-      "access": "Portal access",
+      "access": "门户访问",
       "actions": "Actions",
-      "awaiting": "Awaiting client",
+      "awaiting": "等待客户",
       "client": "Client",
-      "contactEmail": "Contact email",
-      "contactName": "Primary contact",
-      "projects": "Portal projects",
-      "users": "Users",
+      "contactEmail": "联系邮箱",
+      "contactName": "主要联系人",
+      "projects": "门户项目",
+      "users": "用户",
       "contact": "Primary contact"
     },
     "empty": "No client organizations yet. Use Add Client to create the first one.",
     "emptySearch": "No clients match this search.",
-    "createLinkFailed": "The invitation link could not be created.",
+    "createLinkFailed": "无法创建邀请链接。",
     "menu": {
-      "copyInvite": "Copy invitation link",
-      "edit": "Edit client",
-      "message": "Message client",
+      "copyInvite": "复制邀请链接",
+      "edit": "编辑客户",
+      "message": "消息客户端",
       "open": "Open workspace",
-      "projects": "Manage projects",
-      "users": "Manage users & access"
+      "projects": "管理项目",
+      "users": "管理用户和访问"
     },
-    "rowActions": "Actions for {{name}}",
+    "rowActions": "{{name}} 的操作",
     "search": "Search organizations…",
-    "searchLabel": "Search client organizations",
-    "tableLabel": "Client organizations",
-    "usersSummary": "{{active}} active · {{total}} total",
-    "waiting": "{{count}} waiting",
-    "waiting_one": "{{count}} waiting",
-    "waiting_other": "{{count}} waiting",
+    "searchLabel": "搜索客户组织",
+    "tableLabel": "客户组织",
+    "usersSummary": "{{active}} 活跃 · {{total}} 总计",
+    "waiting": "{{count}} 等待",
+    "waiting_one": "{{count}} 等待",
+    "waiting_other": "{{count}} 等待",
     "columnHelp": {
-      "access": "Active if any user can sign in, otherwise Invited, Deactivated or No users.",
-      "awaiting": "Approvals and information requests waiting on the client.",
-      "client": "The client organization.",
-      "contactEmail": "Email address of the primary contact.",
-      "contactName": "The first active portal admin of this client.",
-      "projects": "Projects shared with this client in the portal.",
-      "users": "Users who have signed in, out of all users for this client."
+      "access": "如果任何用户都可以登录，则处于活动状态，否则处于受邀状态、停用状态或无用户状态。",
+      "awaiting": "等待客户的批准和信息请求。",
+      "client": "客户组织。",
+      "contactEmail": "主要联系人的电子邮件地址。",
+      "contactName": "该客户端的第一个活跃门户管理员。",
+      "projects": "在门户中与该客户共享的项目。",
+      "users": "该客户端的所有用户中已登录的用户。"
     }
   },
   "overview": {
     "attention": {
-      "approvalAwaiting": "the client",
-      "changeRequestReview": "“{{title}}” needs your review",
-      "empty": "Nothing is waiting on you for {{name}}.",
-      "inviteExpired": "{{name}}’s invitation expired",
-      "inviteExpiredAsked": "{{name}}’s invitation expired and they asked for a new link",
-      "theClient": "the client",
-      "title": "Needs attention",
-      "unreadMessage": "Unread client message"
+      "approvalAwaiting": "客户",
+      "changeRequestReview": "“{{title}}”需要您的审核",
+      "empty": "{{name}} 没有什么在等你。",
+      "inviteExpired": "{{name}} 的邀请已过期",
+      "inviteExpiredAsked": "{{name}} 的邀请已过期，他们要求提供新链接",
+      "theClient": "客户",
+      "title": "需要注意",
+      "unreadMessage": "未读客户消息"
     },
     "recent": {
-      "empty": "No activity yet.",
-      "error": "Recent activity could not be loaded.",
-      "title": "Recent activity"
+      "empty": "还没有活动。",
+      "error": "无法加载最近的活动。",
+      "title": "最近的活动"
     },
     "stats": {
-      "awaiting": "Awaiting client action",
-      "awaitingSub": "Approvals and info requests",
-      "openChangeRequests": "Open change requests",
-      "portalProjects": "Portal projects"
+      "awaiting": "等待客户操作",
+      "awaitingSub": "批准和信息请求",
+      "openChangeRequests": "打开变更请求",
+      "portalProjects": "门户项目"
     }
   },
   "page": {
     "addClient": "Add Client",
-    "description": "Client organizations, the people who can sign in to their portal, and what each of them is waiting on.",
+    "description": "客户组织、可以登录其门户的人员以及他们每个人正在等待的内容。",
     "organizationsTab": "Organizations",
-    "title": "Clients",
-    "usersTab": "Client Users",
-    "viewToggle": "Clients view"
+    "title": "客户",
+    "usersTab": "客户端用户",
+    "viewToggle": "客户查看"
   },
   "profile": {
-    "assignedProjects_one": "Assigned projects ({{count}})",
-    "assignedProjects_other": "Assigned projects ({{count}})",
-    "lastAccess": "Last access",
-    "neverAccessed": "Never",
-    "noJobTitle": "No job title on file",
-    "noProjects": "No projects assigned yet. This user signs in to an empty portal.",
-    "phone": "Phone",
-    "title": "Client user"
+    "assignedProjects_one": "分配的项目 ({{count}})",
+    "assignedProjects_other": "分配的项目 ({{count}})",
+    "lastAccess": "上次访问时间",
+    "neverAccessed": "从来没有",
+    "noJobTitle": "文件中没有职位名称",
+    "noProjects": "尚未分配项目。该用户登录到一个空门户。",
+    "phone": "电话",
+    "title": "客户端用户"
   },
   "remove": {
-    "body": "{{name}} and their project assignments are removed. Comments and approvals they made stay in the history.",
-    "confirm": "Remove user",
-    "title": "Remove this client user?"
+    "body": "{{name}} 及其项目分配已被删除。他们的评论和认可将被载入史册。",
+    "confirm": "删除用户",
+    "title": "删除该客户端用户吗？"
   },
-  "retry": "Retry",
-  "roleAdminDescription": "Views assigned projects, comments, uploads permitted files, submits change requests, approves items and can manage client users if enabled.",
-  "roleMemberDescription": "Views assigned projects, comments, uploads permitted files and submits change requests. Cannot approve or manage users.",
-  "roleViewerDescription": "Read-only: project information, milestones, client-visible tasks and files. Cannot comment, upload, approve or submit change requests.",
-  "rowsPerPage": "Rows per page:",
+  "retry": "重试",
+  "roleAdminDescription": "查看分配的项目、评论、上传允许的文件、提交更改请求、批准项目并可以管理客户端用户（如果启用）。",
+  "roleMemberDescription": "查看分配的项目、评论、上传允许的文件并提交变更请求。无法批准或管理用户。",
+  "roleViewerDescription": "只读：项目信息、里程碑、客户可见的任务和文件。无法评论、上传、批准或提交更改请求。",
+  "rowsPerPage": "每页行数：",
   "stats": {
-    "activeUsers": "Active users",
-    "awaiting": "Awaiting client action",
-    "awaitingSub": "Approvals and info requests",
-    "expired": "{{count}} expired",
-    "expired_one": "{{count}} expired",
-    "expired_other": "{{count}} expired",
-    "invited": "Invited",
-    "organizations": "Client organizations"
+    "activeUsers": "活跃用户",
+    "awaiting": "等待客户操作",
+    "awaitingSub": "批准和信息请求",
+    "expired": "{{count}} 已过期",
+    "expired_one": "{{count}} 已过期",
+    "expired_other": "{{count}} 已过期",
+    "invited": "受邀",
+    "organizations": "客户组织"
   },
   "users": {
-    "allRoles": "All roles",
-    "allStatuses": "All statuses",
+    "allRoles": "所有角色",
+    "allStatuses": "所有状态",
     "columns": {
       "actions": "Actions",
       "email": "Email",
-      "jobTitle": "Job title",
-      "lastAccess": "Last access",
+      "jobTitle": "职位名称",
+      "lastAccess": "上次访问时间",
       "name": "Name",
       "organization": "Organization",
-      "phone": "Phone number",
-      "projects": "Projects",
+      "phone": "电话号码",
+      "projects": "项目",
       "role": "Role",
       "status": "Status",
-      "user": "User"
+      "user": "用户"
     },
     "empty": "No client users yet. Use Add Client to invite the first one.",
-    "emptyFiltered": "No client users match these filters.",
+    "emptyFiltered": "没有客户端用户匹配这些过滤器。",
     "groupBy": {
-      "client": "Group",
-      "label": "Group client users",
-      "count_one": "{{count}} user",
-      "count_other": "{{count}} users"
+      "client": "分组",
+      "label": "群组客户端用户",
+      "count_one": "{{count}} 用户",
+      "count_other": "{{count}} 个用户"
     },
-    "invitedAgo": "Invited {{when}}",
-    "neverAccessed": "Never",
-    "noProjects": "None assigned",
-    "projectCount": "{{count}} projects",
-    "projectCount_one": "{{count}} project",
-    "projectCount_other": "{{count}} projects",
-    "roleFilter": "Filter by role",
-    "rowActions": "Actions for {{name}}",
+    "invitedAgo": "已邀请 {{when}}",
+    "neverAccessed": "从来没有",
+    "noProjects": "未分配",
+    "projectCount": "{{count}} 项目",
+    "projectCount_one": "{{count}} 项目",
+    "projectCount_other": "{{count}} 项目",
+    "roleFilter": "按角色过滤",
+    "rowActions": "{{name}} 的操作",
     "search": "Search users, emails or organizations…",
     "searchInOrganization": "Search users or emails…",
-    "searchLabel": "Search client users",
-    "statusFilter": "Filter by status",
-    "tableLabel": "Client users",
+    "searchLabel": "搜索客户端用户",
+    "statusFilter": "按状态筛选",
+    "tableLabel": "客户端用户",
     "columnHelp": {
-      "email": "The address this user signs in with.",
-      "jobTitle": "Their role within the client’s company.",
-      "lastAccess": "When the user last signed in to the portal.",
-      "name": "The client user’s full name.",
-      "organization": "The client this user belongs to.",
-      "phone": "Contact phone number, if provided.",
-      "projects": "Number of portal projects this user can open.",
-      "role": "What the user can do in the portal: Admin, Member or Viewer.",
-      "status": "Whether the user has signed in, is invited, or is deactivated."
+      "email": "该用户登录时使用的地址。",
+      "jobTitle": "他们在客户公司中的角色。",
+      "lastAccess": "用户上次登录门户的时间。",
+      "name": "客户端用户的全名。",
+      "organization": "该用户所属的客户端。",
+      "phone": "联系电话号码（如果提供）。",
+      "projects": "该用户可以打开的门户项目的数量。",
+      "role": "用户可以在门户中执行哪些操作：管理员、成员或查看者。",
+      "status": "用户是否已登录、被邀请或被停用。"
     },
-    "searchClients": "Search clients…"
+    "searchClients": "搜索客户..."
   },
   "workspace": {
     "activity": {
-      "empty": "No activity for {{name}} yet.",
-      "error": "The activity could not be loaded.",
-      "openFullLog": "Open full audit log",
+      "empty": "{{name}} 尚无活动。",
+      "error": "无法加载该活动。",
+      "openFullLog": "打开完整的审核日志",
       "sideClient": "Client",
-      "sideInternal": "Internal",
-      "title": "Audit trail for {{name}}"
+      "sideInternal": "内部",
+      "title": "{{name}} 的审计跟踪"
     },
     "approvals": {
       "columns": {
-        "due": "Due",
+        "due": "截止日期",
         "id": "ID",
-        "linked": "Linked item",
+        "linked": "链接项目",
         "status": "Status",
-        "title": "Title"
+        "title": "标题"
       },
-      "empty": "No approvals for {{name}} yet.",
-      "request": "Request approval",
-      "tableLabel": "Approvals for this client"
+      "empty": "尚未批准 {{name}}。",
+      "request": "请求批准",
+      "tableLabel": "对该客户的批准"
     },
     "billing": {
-      "createInvoice": "Create invoice",
-      "manageUsers": "Manage users",
-      "title": "Invoices",
-      "warningDescription": "None of their users has accepted an invitation, so they can’t view or pay invoices in their portal. You can still create invoices. Invite a user first if they should see them.",
-      "warningTitle": "{{name}} can’t use their portal yet"
+      "createInvoice": "创建发票",
+      "manageUsers": "管理用户",
+      "title": "发票",
+      "warningDescription": "他们的用户都没有接受邀请，因此他们无法在门户中查看或支付发票。您仍然可以创建发票。如果用户应该看到他们，请先邀请他们。",
+      "warningTitle": "{{name}} 还无法使用他们的门户"
     },
     "changeRequests": {
       "columns": {
         "id": "ID",
-        "priority": "Priority",
+        "priority": "优先级",
         "status": "Status",
-        "submitted": "Submitted",
-        "title": "Title"
+        "submitted": "已提交",
+        "title": "标题"
       },
-      "empty": "No change requests from {{name}} yet.",
-      "tableLabel": "Change requests from this client"
+      "empty": "尚未收到来自 {{name}} 的更改请求。",
+      "tableLabel": "来自该客户的变更请求"
     },
     "errors": {
-      "backToClients": "Back to clients",
-      "loadDescription": "Please try again.",
-      "loadTitle": "Could not load this client",
-      "notFoundDescription": "It may have been removed, or the link is wrong.",
-      "notFoundTitle": "Client not found"
+      "backToClients": "返回客户",
+      "loadDescription": "请再试一次。",
+      "loadTitle": "无法加载此客户端",
+      "notFoundDescription": "可能已被删除，或者链接有误。",
+      "notFoundTitle": "找不到客户端"
     },
     "header": {
-      "actionsLabel": "Client actions",
-      "edit": "Edit client",
+      "actionsLabel": "客户操作",
+      "edit": "编辑客户",
       "message": "Message"
     },
     "projects": {
       "assign": {
-        "button": "Assign project",
+        "button": "分配项目",
         "cancel": "Cancel",
-        "confirm": "Assign",
-        "description": "Choose workspace projects that do not belong to a client yet. The Client Portal stays off for them until you switch it on.",
-        "done_one": "{{count}} project assigned to {{name}}. Switch the Client Portal on to share it.",
-        "done_other": "{{count}} projects assigned to {{name}}. Switch the Client Portal on to share them.",
-        "failed": "Some projects could not be assigned: {{details}}",
-        "loadFailed": "The projects could not be loaded.",
-        "none": "Every workspace project already belongs to a client.",
-        "placeholder": "Search projects…",
-        "retry": "Retry",
-        "title": "Assign projects to {{name}}"
+        "confirm": "分配",
+        "description": "选择尚不属于客户的工作区项目。客户门户将保持关闭状态，直到您将其打开。",
+        "done_one": "{{count}} 项目分配给 {{name}}。打开客户端门户以共享它。",
+        "done_other": "{{count}} 项目分配给 {{name}}。打开客户端门户以共享它们。",
+        "failed": "无法分配某些项目：{{details}}",
+        "loadFailed": "无法加载项目。",
+        "none": "每个工作区项目都已经属于一个客户。",
+        "placeholder": "搜索项目...",
+        "retry": "重试",
+        "title": "将项目分配给 {{name}}"
       },
       "columns": {
         "phase": "Phase",
-        "portal": "Portal",
-        "progress": "Progress",
-        "project": "Project",
-        "status": "Client-facing status",
-        "users": "Users"
+        "portal": "门户网站",
+        "progress": "进度",
+        "project": "项目",
+        "status": "面向客户的状态",
+        "users": "用户"
       },
-      "empty": "No projects for {{name}} yet. Link a workspace project to this client from Portal Projects.",
-      "emptyShort": "No projects for {{name}} yet.",
-      "manage": "Manage",
-      "progressLabel": "Progress of {{name}}",
-      "tableLabel": "Projects of this client",
-      "title": "Projects"
+      "empty": "{{name}} 还没有项目。将工作区项目从门户项目链接到该客户端。",
+      "emptyShort": "{{name}} 还没有项目。",
+      "manage": "管理",
+      "progressLabel": "{{name}} 的进度",
+      "tableLabel": "该客户的项目",
+      "title": "项目"
     },
     "rail": {
-      "active": "Active",
-      "balance": "Balance",
-      "billing": "Billing",
-      "deactivated": "Deactivated",
+      "active": "活跃",
+      "balance": "平衡",
+      "billing": "账单",
+      "deactivated": "已停用",
       "email": "Email",
-      "hint": "A client user sees only the projects assigned to them.",
-      "inviteUser": "Invite a user",
-      "invited": "Invited",
-      "organization": "Organization",
-      "portalAccess": "Portal access",
-      "portalProjects": "Portal projects",
-      "primaryContact": "Primary contact",
-      "quickActions": "Quick actions",
-      "requestApproval": "Request approval"
+      "hint": "客户端用户只能看到分配给他们的项目。",
+      "inviteUser": "邀请用户",
+      "invited": "受邀",
+      "organization": "组织",
+      "portalAccess": "门户访问",
+      "portalProjects": "门户项目",
+      "primaryContact": "主要联系人",
+      "quickActions": "快速行动",
+      "requestApproval": "请求批准"
     },
     "tabs": {
-      "activity": "Activity",
-      "approvals": "Approvals",
-      "billing": "Billing",
-      "changeRequests": "Change Requests",
+      "activity": "动态",
+      "approvals": "批准",
+      "billing": "账单",
+      "changeRequests": "变更请求",
       "overview": "Overview",
-      "projects": "Projects",
-      "users": "Users & Access"
+      "projects": "项目",
+      "users": "用户和访问"
     },
     "users": {
-      "description": "People at {{name}} who can sign in. Each sees only the projects assigned to them.",
-      "invite": "Invite user"
+      "description": "{{name}} 中可以登录的人员。每个人只能看到分配给他们的项目。",
+      "invite": "邀请用户"
     }
   }
 }

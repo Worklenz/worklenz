@@ -1,122 +1,122 @@
 {
-  "auditRecorded": "Permission change recorded in the audit log.",
-  "loadEmpty": "No portal settings were returned.",
-  "loadFailed": "The portal settings could not be loaded.",
+  "auditRecorded": "Alteração de permissão registrada no log de auditoria.",
+  "loadEmpty": "Nenhuma configuração do portal foi retornada.",
+  "loadFailed": "Não foi possível carregar as configurações do portal.",
   "nav": {
     "notifications": "Notifications",
-    "roles": "Client Roles",
-    "sharing": "Sharing & Visibility"
+    "roles": "Funções do cliente",
+    "sharing": "Compartilhamento e visibilidade"
   },
   "notifications": {
-    "banner": "Notifications sent to clients never contain internal-only content in the title or body. In-app alerts are always on. Email is optional per event.",
+    "banner": "As notificações enviadas aos clientes nunca contêm conteúdo apenas interno no título ou no corpo. Os alertas no aplicativo estão sempre ativados. O e-mail é opcional por evento.",
     "client": {
-      "accessChanges": "Access changes",
-      "accessChangesDescription": "Invitation, role change or project assignment.",
-      "approvalRequest": "New approval request",
-      "approvalRequestDescription": "A client approver is asked to approve an item.",
-      "changeRequestUpdate": "Change request update",
-      "changeRequestUpdateDescription": "Status, response or estimate changes on a request.",
-      "commentOrReply": "Comment or reply",
-      "commentOrReplyDescription": "Someone replies in a client-visible discussion.",
-      "fileShared": "File shared",
-      "fileSharedDescription": "A file is marked Client Visible or a new version is uploaded.",
-      "milestoneChange": "Milestone change",
-      "milestoneChangeDescription": "A client-visible milestone changes status or date.",
-      "projectUpdate": "Project update",
-      "projectUpdateDescription": "Project status changes or an update is published.",
-      "title": "Notifications to clients"
+      "accessChanges": "Alterações de acesso",
+      "accessChangesDescription": "Convite, mudança de função ou atribuição de projeto.",
+      "approvalRequest": "Nova solicitação de aprovação",
+      "approvalRequestDescription": "Um aprovador do cliente é solicitado a aprovar um item.",
+      "changeRequestUpdate": "Atualização da solicitação de alteração",
+      "changeRequestUpdateDescription": "Mudanças de status, resposta ou estimativa em uma solicitação.",
+      "commentOrReply": "Comente ou responda",
+      "commentOrReplyDescription": "Alguém responde em uma discussão visível para o cliente.",
+      "fileShared": "Arquivo compartilhado",
+      "fileSharedDescription": "Um arquivo é marcado como Visível para Cliente ou uma nova versão é carregada.",
+      "milestoneChange": "Mudança de marco",
+      "milestoneChangeDescription": "Um marco visível para o cliente altera o status ou a data.",
+      "projectUpdate": "Atualização do projeto",
+      "projectUpdateDescription": "O status do projeto muda ou uma atualização é publicada.",
+      "title": "Notificações aos clientes"
     },
     "emailColumn": "Email",
-    "emailLabel": "Email: {{event}}",
-    "eventColumn": "Event",
-    "inAppColumn": "In-app",
-    "inAppLabel": "In-app: {{event}} (always on)",
+    "emailLabel": "E-mail: {{event}}",
+    "eventColumn": "Evento",
+    "inAppColumn": "No aplicativo",
+    "inAppLabel": "No aplicativo: {{event}} (sempre ativado)",
     "team": {
-      "approvalDecision": "Client approval decision",
-      "approvalDecisionDescription": "A client approves or requests changes.",
-      "changeRequest": "New change request or follow-up",
-      "changeRequestDescription": "A client submits a request or replies to a question.",
-      "clientComment": "New client comment",
-      "clientCommentDescription": "A client comments in a discussion.",
-      "clientFileUpload": "Client file upload",
-      "clientFileUploadDescription": "A client uploads a file to a project.",
-      "title": "Notifications to your team"
+      "approvalDecision": "Decisão de aprovação do cliente",
+      "approvalDecisionDescription": "Um cliente aprova ou solicita alterações.",
+      "changeRequest": "Nova solicitação ou acompanhamento de mudança",
+      "changeRequestDescription": "Um cliente envia uma solicitação ou responde a uma pergunta.",
+      "clientComment": "Comentário do novo cliente",
+      "clientCommentDescription": "Um cliente comenta em uma discussão.",
+      "clientFileUpload": "Upload de arquivo do cliente",
+      "clientFileUploadDescription": "Um cliente carrega um arquivo para um projeto.",
+      "title": "Notificações para sua equipe"
     }
   },
-  "retry": "Retry",
+  "retry": "Tentar novamente",
   "roles": {
-    "allowed": "Allowed",
+    "allowed": "Permitido",
     "alwaysTrue": {
-      "nextRequest": "Deactivating a user, or removing a project assignment, takes effect on their next request, not at their next sign-in.",
-      "noTeamDirectory": "A client user never sees your internal team directory and can never become an admin of your workspace.",
-      "oneOrganization": "A client user belongs to exactly one organization and sees only the projects assigned to them.",
-      "ownOrganizationOnly": "A Client Admin can only see and manage users in their own organization, never another client's.",
-      "title": "Always true"
+      "nextRequest": "A desativação de um usuário ou a remoção de uma atribuição de projeto entrará em vigor na próxima solicitação, e não no próximo login.",
+      "noTeamDirectory": "Um usuário cliente nunca vê o diretório interno da equipe e nunca pode se tornar um administrador do seu espaço de trabalho.",
+      "oneOrganization": "Um usuário cliente pertence exatamente a uma organização e vê apenas os projetos atribuídos a ele.",
+      "ownOrganizationOnly": "Um administrador de cliente só pode ver e gerenciar usuários em sua própria organização, nunca na de outro cliente.",
+      "title": "Sempre verdadeiro"
     },
     "capability": {
-      "approve": "Approve items or request changes",
-      "comment": "Comment and reply in client-visible discussions",
-      "manageUsers": "Manage users in their own organization (if enabled below)",
-      "submitChangeRequest": "Submit and follow change requests",
-      "upload": "Upload files (where the project allows it)",
-      "view": "View assigned projects, milestones, client-visible tasks and files"
+      "approve": "Aprovar itens ou solicitar alterações",
+      "comment": "Comente e responda em discussões visíveis ao cliente",
+      "manageUsers": "Gerenciar usuários em sua própria organização (se habilitado abaixo)",
+      "submitChangeRequest": "Envie e siga solicitações de mudança",
+      "upload": "Fazer upload de arquivos (onde o projeto permitir)",
+      "view": "Visualize projetos atribuídos, marcos, tarefas e arquivos visíveis ao cliente"
     },
-    "capabilityColumn": "Capability",
-    "matrixDescription": "Three roles, no permission builder. A role applies to every project the user is assigned to.",
-    "matrixError": "The role permissions could not be loaded.",
-    "matrixTitle": "What each role can do",
-    "notAllowed": "Not allowed",
+    "capabilityColumn": "Capacidade",
+    "matrixDescription": "Três funções, sem construtor de permissão. Uma função se aplica a cada projeto ao qual o usuário está atribuído.",
+    "matrixError": "As permissões de função não puderam ser carregadas.",
+    "matrixTitle": "O que cada função pode fazer",
+    "notAllowed": "Não permitido",
     "selfManagement": {
-      "description": "Let a Client Admin manage who from their own organization has portal access, instead of routing every change through your team.",
+      "description": "Deixe que um administrador de cliente gerencie quem de sua própria organização tem acesso ao portal, em vez de encaminhar todas as alterações por meio de sua equipe.",
       "invite": {
-        "description": "A Client Admin can invite a colleague from their own organization.",
-        "label": "Let Client Admins invite users"
+        "description": "Um administrador de cliente pode convidar um colega da sua própria organização.",
+        "label": "Permitir que os administradores do cliente convidem usuários"
       },
       "remove": {
-        "description": "A Client Admin can remove another user from their own organization.",
-        "label": "Let Client Admins remove users"
+        "description": "Um administrador de cliente pode remover outro usuário de sua própria organização.",
+        "label": "Permitir que os administradores do cliente removam usuários"
       },
-      "title": "Client Admin self-management"
+      "title": "Autogerenciamento do administrador do cliente"
     },
     "signIn": {
-      "addedOnly": "Only an address that you, or a Client Admin you allow, has added can receive a code. Anyone else gets nothing.",
-      "code": "There are no passwords. A client signs in with a 6-digit code sent to their email address. It works once and expires after 10 minutes.",
-      "description": "Nothing to configure. Every client signs in the same way.",
-      "direct": "Clients can also open the portal, type their address and receive a code, without the link.",
-      "link": "An invitation email carries a sign-in link with the address built in. Opening it sends the code straight away. Links expire after 7 days and can be resent from Users.",
-      "title": "How clients sign in"
+      "addedOnly": "Somente um endereço adicionado por você ou por um administrador de cliente que você permitiu pode receber um código. Qualquer outra pessoa não ganha nada.",
+      "code": "Não há senhas. Um cliente faz login com um código de 6 dígitos enviado para seu endereço de e-mail. Funciona uma vez e expira após 10 minutos.",
+      "description": "Nada para configurar. Cada cliente assina da mesma forma.",
+      "direct": "O cliente também pode abrir o portal, digitar seu endereço e receber um código, sem o link.",
+      "link": "Um e-mail de convite traz um link de login com o endereço integrado. Abri-lo envia o código imediatamente. Os links expiram após 7 dias e podem ser reenviados pelos Usuários.",
+      "title": "Como os clientes fazem login"
     }
   },
-  "saveFailed": "The portal settings could not be saved.",
+  "saveFailed": "As configurações do portal não puderam ser salvas.",
   "sharing": {
     "defaults": {
       "clientUploads": {
-        "description": "Client Admins and Client Members can add files. Client Viewers never can. You can override this per project.",
-        "label": "Allow client uploads on new portal projects"
+        "description": "Administradores de clientes e membros de clientes podem adicionar arquivos. Os visualizadores de clientes nunca podem. Você pode substituir isso por projeto.",
+        "label": "Permitir uploads de clientes em novos projetos de portal"
       },
       "showInvoices": {
-        "description": "Adds an Invoices page for clients. Hidden by default.",
-        "label": "Show Invoices in the client portal"
+        "description": "Adiciona uma página de faturas para clientes. Oculto por padrão.",
+        "label": "Mostrar faturas no portal do cliente"
       },
-      "title": "Sections and defaults"
+      "title": "Seções e padrões"
     },
     "rules": {
-      "defaultInternal": "Tasks, files, milestones and comments are Internal Only by default, for existing and new items.",
-      "explicitShare": "Nothing reaches the portal until an authorized team member marks it Client Visible.",
-      "fixedTag": "Fixed rules",
-      "neverExposed": "Internal comments, time logs, estimates, costs and dependencies are never exposed, whatever you share.",
-      "noHints": "A hidden item is never counted or hinted at in dashboards, lists or notifications.",
-      "revertImmediate": "Turning an item back to Internal Only removes it from the portal immediately and keeps its internal history.",
-      "title": "How sharing works"
+      "defaultInternal": "Tarefas, arquivos, marcos e comentários são somente internos por padrão, para itens novos e existentes.",
+      "explicitShare": "Nada chega ao portal até que um membro autorizado da equipe o marque como Cliente Visível.",
+      "fixedTag": "Regras fixas",
+      "neverExposed": "Comentários internos, registros de tempo, estimativas, custos e dependências nunca são expostos, independentemente do que você compartilhe.",
+      "noHints": "Um item oculto nunca é contado ou sugerido em painéis, listas ou notificações.",
+      "revertImmediate": "Voltar um item para Somente Interno remove-o imediatamente do portal e mantém seu histórico interno.",
+      "title": "Como funciona o compartilhamento"
     },
     "shared": {
-      "count": "{{shared}} of {{total}} client visible",
-      "description": "Counted over projects that have the Client Portal turned on.",
-      "files": "Files",
-      "milestones": "Milestones",
-      "tasks": "Tasks",
-      "title": "Currently shared across portal projects"
+      "count": "{{shared}} do cliente {{total}} visível",
+      "description": "Contados sobre projetos que possuem o Portal do Cliente ativado.",
+      "files": "Arquivos",
+      "milestones": "Marcos",
+      "tasks": "Tarefas",
+      "title": "Atualmente compartilhado entre projetos de portal"
     }
   },
-  "subtitle": "Branding, what is shared by default, roles and notifications for your client portal."
+  "subtitle": "Branding, o que é compartilhado por padrão, funções e notificações para o portal do seu cliente."
 }

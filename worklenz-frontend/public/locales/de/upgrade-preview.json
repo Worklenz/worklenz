@@ -168,8 +168,8 @@
         ]
       },
       "projects": {
-        "title": "Portal Projects",
-        "description": "Choose which projects clients can see and what is shared inside each one.",
+        "title": "Portalprojekte",
+        "description": "Wählen Sie aus, welche Projekte Kunden sehen können und was darin geteilt wird.",
         "features": [
           "Switch the Client Portal on per project",
           "Share tasks, files and milestones one by one",
@@ -178,8 +178,8 @@
         ]
       },
       "approvals": {
-        "title": "Approvals",
-        "description": "Get formal, recorded sign-off from clients on exact file versions.",
+        "title": "Zulassungen",
+        "description": "Erhalten Sie von Kunden eine formelle, aufgezeichnete Freigabe der genauen Dateiversionen.",
         "features": [
           "Ask a Client Admin to approve a file, milestone or task",
           "The exact version or revision is recorded",
@@ -188,8 +188,8 @@
         ]
       },
       "changeRequests": {
-        "title": "Change Requests",
-        "description": "Review, estimate and decide on scope changes, then turn approved ones into work.",
+        "title": "Änderungswünsche",
+        "description": "Überprüfen, schätzen und entscheiden Sie über Umfangsänderungen und setzen Sie die genehmigten Änderungen dann in die Tat um.",
         "features": [
           "Clients submit scope changes from their portal",
           "Estimate, approve, reject or ask for more information",
@@ -198,8 +198,8 @@
         ]
       },
       "discussions": {
-        "title": "Discussions",
-        "description": "Talk to clients about the exact task, file or approval, with internal comments kept private.",
+        "title": "Diskussionen",
+        "description": "Sprechen Sie mit Kunden über die genaue Aufgabe, Datei oder Genehmigung, wobei interne Kommentare vertraulich bleiben.",
         "features": [
           "Conversations attached to the work they are about",
           "Client-visible replies and private internal comments",
@@ -208,8 +208,8 @@
         ]
       },
       "auditLog": {
-        "title": "Audit Log",
-        "description": "A tamper-proof record of client and team activity.",
+        "title": "Audit-Protokoll",
+        "description": "Eine manipulationssichere Aufzeichnung der Kunden- und Teamaktivitäten.",
         "features": [
           "Access, sharing, file, approval and change request events",
           "Every entry is timestamped and attributed",
@@ -218,8 +218,8 @@
         ]
       },
       "preview": {
-        "title": "Client Portal",
-        "description": "See exactly what a client sees before you share anything.",
+        "title": "Kundenportal",
+        "description": "Sehen Sie genau, was ein Kunde sieht, bevor Sie etwas teilen.",
         "features": [
           "Preview as any active client user",
           "Built from the same rules the portal enforces",

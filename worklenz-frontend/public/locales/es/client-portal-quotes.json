@@ -112,6 +112,6 @@
   "deleteConfirmationOk": "Eliminar",
   "deleteQuoteSuccess": "Presupuesto eliminado correctamente",
   "deleteQuoteError": "No se pudo eliminar el presupuesto",
-  "linkedChangeRequest": "Linked Change Request",
-  "openChangeRequest": "Open change request"
+  "linkedChangeRequest": "Solicitud de cambio vinculada",
+  "openChangeRequest": "Abrir solicitud de cambio"
 }

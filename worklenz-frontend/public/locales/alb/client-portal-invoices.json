@@ -198,7 +198,7 @@
   "paidOfTotal": "{{paid}} të paguara nga {{total}}",
   "noPaymentProof": "Nuk është ngarkuar dëshmi pagese.",
   "closeButton": "Mbyll",
-  "linkedChangeRequest": "Linked Change Request",
-  "openChangeRequest": "Open change request",
+  "linkedChangeRequest": "Kërkesë e lidhur për ndryshim",
+  "openChangeRequest": "Hap kërkesën për ndryshim",
   "projectColumn": "Projekti"
 }

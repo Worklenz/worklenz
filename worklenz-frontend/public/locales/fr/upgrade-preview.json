@@ -168,8 +168,8 @@
         ]
       },
       "projects": {
-        "title": "Portal Projects",
-        "description": "Choose which projects clients can see and what is shared inside each one.",
+        "title": "Projets de portail",
+        "description": "Choisissez les projets que les clients peuvent voir et ce qui est partagé dans chacun d'eux.",
         "features": [
           "Switch the Client Portal on per project",
           "Share tasks, files and milestones one by one",
@@ -178,8 +178,8 @@
         ]
       },
       "approvals": {
-        "title": "Approvals",
-        "description": "Get formal, recorded sign-off from clients on exact file versions.",
+        "title": "Approbations",
+        "description": "Obtenez l’approbation formelle et enregistrée des clients sur les versions exactes des fichiers.",
         "features": [
           "Ask a Client Admin to approve a file, milestone or task",
           "The exact version or revision is recorded",
@@ -188,8 +188,8 @@
         ]
       },
       "changeRequests": {
-        "title": "Change Requests",
-        "description": "Review, estimate and decide on scope changes, then turn approved ones into work.",
+        "title": "Demandes de changement",
+        "description": "Examinez, estimez et décidez des modifications de portée, puis transformez celles approuvées en travail.",
         "features": [
           "Clients submit scope changes from their portal",
           "Estimate, approve, reject or ask for more information",
@@ -199,7 +199,7 @@
       },
       "discussions": {
         "title": "Discussions",
-        "description": "Talk to clients about the exact task, file or approval, with internal comments kept private.",
+        "description": "Parlez aux clients de la tâche, du dossier ou de l’approbation exacts, les commentaires internes restant confidentiels.",
         "features": [
           "Conversations attached to the work they are about",
           "Client-visible replies and private internal comments",
@@ -208,8 +208,8 @@
         ]
       },
       "auditLog": {
-        "title": "Audit Log",
-        "description": "A tamper-proof record of client and team activity.",
+        "title": "Journal d'audit",
+        "description": "Un enregistrement infalsifiable de l’activité des clients et de l’équipe.",
         "features": [
           "Access, sharing, file, approval and change request events",
           "Every entry is timestamped and attributed",
@@ -218,8 +218,8 @@
         ]
       },
       "preview": {
-        "title": "Client Portal",
-        "description": "See exactly what a client sees before you share anything.",
+        "title": "Portail client",
+        "description": "Voyez exactement ce qu'un client voit avant de partager quoi que ce soit.",
         "features": [
           "Preview as any active client user",
           "Built from the same rules the portal enforces",

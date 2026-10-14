@@ -112,6 +112,6 @@
   "deleteConfirmationOk": "Usuń",
   "deleteQuoteSuccess": "Oferta została usunięta",
   "deleteQuoteError": "Nie udało się usunąć oferty",
-  "linkedChangeRequest": "Linked Change Request",
-  "openChangeRequest": "Open change request"
+  "linkedChangeRequest": "Połączone żądanie zmiany",
+  "openChangeRequest": "Otwórz żądanie zmiany"
 }

@@ -198,7 +198,7 @@
   "paidOfTotal": "{{paid}} pagados de {{total}}",
   "noPaymentProof": "No se ha subido ningún comprobante de pago.",
   "closeButton": "Cerrar",
-  "linkedChangeRequest": "Linked Change Request",
-  "openChangeRequest": "Open change request",
+  "linkedChangeRequest": "Solicitud de cambio vinculada",
+  "openChangeRequest": "Abrir solicitud de cambio",
   "projectColumn": "Proyecto"
 }

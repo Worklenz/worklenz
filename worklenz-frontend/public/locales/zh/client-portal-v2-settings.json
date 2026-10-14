@@ -1,122 +1,122 @@
 {
-  "auditRecorded": "Permission change recorded in the audit log.",
-  "loadEmpty": "No portal settings were returned.",
-  "loadFailed": "The portal settings could not be loaded.",
+  "auditRecorded": "权限变更记录在审核日志中。",
+  "loadEmpty": "没有返回门户设置。",
+  "loadFailed": "无法加载门户设置。",
   "nav": {
     "notifications": "Notifications",
-    "roles": "Client Roles",
-    "sharing": "Sharing & Visibility"
+    "roles": "客户角色",
+    "sharing": "共享和可见性"
   },
   "notifications": {
-    "banner": "Notifications sent to clients never contain internal-only content in the title or body. In-app alerts are always on. Email is optional per event.",
+    "banner": "发送给客户端的通知的标题或正文中绝不会包含仅供内部使用的内容。应用内警报始终开启。每个活动的电子邮件都是可选的。",
     "client": {
-      "accessChanges": "Access changes",
-      "accessChangesDescription": "Invitation, role change or project assignment.",
-      "approvalRequest": "New approval request",
-      "approvalRequestDescription": "A client approver is asked to approve an item.",
-      "changeRequestUpdate": "Change request update",
-      "changeRequestUpdateDescription": "Status, response or estimate changes on a request.",
-      "commentOrReply": "Comment or reply",
-      "commentOrReplyDescription": "Someone replies in a client-visible discussion.",
-      "fileShared": "File shared",
-      "fileSharedDescription": "A file is marked Client Visible or a new version is uploaded.",
-      "milestoneChange": "Milestone change",
-      "milestoneChangeDescription": "A client-visible milestone changes status or date.",
-      "projectUpdate": "Project update",
-      "projectUpdateDescription": "Project status changes or an update is published.",
-      "title": "Notifications to clients"
+      "accessChanges": "访问权限变更",
+      "accessChangesDescription": "邀请、角色变更或项目分配。",
+      "approvalRequest": "新的批准请求",
+      "approvalRequestDescription": "要求客户审批者批准项目。",
+      "changeRequestUpdate": "变更请求更新",
+      "changeRequestUpdateDescription": "请求的状态、响应或估计变化。",
+      "commentOrReply": "评论或回复",
+      "commentOrReplyDescription": "有人在客户可见的讨论中回复。",
+      "fileShared": "文件共享",
+      "fileSharedDescription": "文件被标记为客户端可见或上传了新版本。",
+      "milestoneChange": "里程碑式的变化",
+      "milestoneChangeDescription": "客户可见的里程碑更改状态或日期。",
+      "projectUpdate": "项目更新",
+      "projectUpdateDescription": "项目状态发生变化或发布更新。",
+      "title": "给客户的通知"
     },
     "emailColumn": "Email",
-    "emailLabel": "Email: {{event}}",
-    "eventColumn": "Event",
-    "inAppColumn": "In-app",
-    "inAppLabel": "In-app: {{event}} (always on)",
+    "emailLabel": "电子邮件：{{event}}",
+    "eventColumn": "事件",
+    "inAppColumn": "应用内",
+    "inAppLabel": "应用内：{{event}}（始终开启）",
     "team": {
-      "approvalDecision": "Client approval decision",
-      "approvalDecisionDescription": "A client approves or requests changes.",
-      "changeRequest": "New change request or follow-up",
-      "changeRequestDescription": "A client submits a request or replies to a question.",
-      "clientComment": "New client comment",
-      "clientCommentDescription": "A client comments in a discussion.",
-      "clientFileUpload": "Client file upload",
-      "clientFileUploadDescription": "A client uploads a file to a project.",
-      "title": "Notifications to your team"
+      "approvalDecision": "客户批准决定",
+      "approvalDecisionDescription": "客户批准或请求更改。",
+      "changeRequest": "新的变更请求或后续行动",
+      "changeRequestDescription": "客户提交请求或回复问题。",
+      "clientComment": "新客户评论",
+      "clientCommentDescription": "客户在讨论中发表评论。",
+      "clientFileUpload": "客户端文件上传",
+      "clientFileUploadDescription": "客户端将文件上传到项目。",
+      "title": "给您的团队的通知"
     }
   },
-  "retry": "Retry",
+  "retry": "重试",
   "roles": {
-    "allowed": "Allowed",
+    "allowed": "允许",
     "alwaysTrue": {
-      "nextRequest": "Deactivating a user, or removing a project assignment, takes effect on their next request, not at their next sign-in.",
-      "noTeamDirectory": "A client user never sees your internal team directory and can never become an admin of your workspace.",
-      "oneOrganization": "A client user belongs to exactly one organization and sees only the projects assigned to them.",
-      "ownOrganizationOnly": "A Client Admin can only see and manage users in their own organization, never another client's.",
-      "title": "Always true"
+      "nextRequest": "停用用户或删除项目分配会在他们的下一次请求时生效，而不是在他们下次登录时生效。",
+      "noTeamDirectory": "客户端用户永远不会看到您的内部团队目录，也永远无法成为您工作区的管理员。",
+      "oneOrganization": "客户端用户只属于一个组织，并且只能看到分配给他们的项目。",
+      "ownOrganizationOnly": "客户管理员只能查看和管理自己组织中的用户，而不能查看和管理其他客户的用户。",
+      "title": "永远真实"
     },
     "capability": {
-      "approve": "Approve items or request changes",
-      "comment": "Comment and reply in client-visible discussions",
-      "manageUsers": "Manage users in their own organization (if enabled below)",
-      "submitChangeRequest": "Submit and follow change requests",
-      "upload": "Upload files (where the project allows it)",
-      "view": "View assigned projects, milestones, client-visible tasks and files"
+      "approve": "批准项目或请求更改",
+      "comment": "在客户可见的讨论中发表评论和回复",
+      "manageUsers": "管理自己组织中的用户（如果在下面启用）",
+      "submitChangeRequest": "提交并遵循变更请求",
+      "upload": "上传文件（项目允许的情况下）",
+      "view": "查看分配的项目、里程碑、客户可见的任务和文件"
     },
-    "capabilityColumn": "Capability",
-    "matrixDescription": "Three roles, no permission builder. A role applies to every project the user is assigned to.",
-    "matrixError": "The role permissions could not be loaded.",
-    "matrixTitle": "What each role can do",
-    "notAllowed": "Not allowed",
+    "capabilityColumn": "能力",
+    "matrixDescription": "三个角色，没有权限生成器。角色适用于用户分配到的每个项目。",
+    "matrixError": "无法加载角色权限。",
+    "matrixTitle": "每个角色可以做什么",
+    "notAllowed": "不允许",
     "selfManagement": {
-      "description": "Let a Client Admin manage who from their own organization has portal access, instead of routing every change through your team.",
+      "description": "让客户管理员管理自己组织中的哪些人具有门户访问权限，而不是通过您的团队路由每个更改。",
       "invite": {
-        "description": "A Client Admin can invite a colleague from their own organization.",
-        "label": "Let Client Admins invite users"
+        "description": "客户管理员可以邀请自己组织的同事。",
+        "label": "让客户端管理员邀请用户"
       },
       "remove": {
-        "description": "A Client Admin can remove another user from their own organization.",
-        "label": "Let Client Admins remove users"
+        "description": "客户端管理员可以从自己的组织中删除其他用户。",
+        "label": "让客户端管理员删除用户"
       },
-      "title": "Client Admin self-management"
+      "title": "客户管理员自我管理"
     },
     "signIn": {
-      "addedOnly": "Only an address that you, or a Client Admin you allow, has added can receive a code. Anyone else gets nothing.",
-      "code": "There are no passwords. A client signs in with a 6-digit code sent to their email address. It works once and expires after 10 minutes.",
-      "description": "Nothing to configure. Every client signs in the same way.",
-      "direct": "Clients can also open the portal, type their address and receive a code, without the link.",
-      "link": "An invitation email carries a sign-in link with the address built in. Opening it sends the code straight away. Links expire after 7 days and can be resent from Users.",
-      "title": "How clients sign in"
+      "addedOnly": "只有您或您允许的客户管理员添加的地址才能接收代码。别人什么也得不到。",
+      "code": "没有密码。客户使用发送到其电子邮件地址的 6 位数代码登录。有效一次，10 分钟后失效。",
+      "description": "没有什么可配置的。每个客户都以相同的方式签名。",
+      "direct": "客户还可以打开门户，输入地址并接收代码（无需链接）。",
+      "link": "邀请电子邮件带有内置地址的登录链接。打开它会立即发送代码。链接将在 7 天后过期，用户可以重新发送。",
+      "title": "客户如何登录"
     }
   },
-  "saveFailed": "The portal settings could not be saved.",
+  "saveFailed": "无法保存门户设置。",
   "sharing": {
     "defaults": {
       "clientUploads": {
-        "description": "Client Admins and Client Members can add files. Client Viewers never can. You can override this per project.",
-        "label": "Allow client uploads on new portal projects"
+        "description": "客户管理员和客户成员可以添加文件。客户观众永远做不到。您可以针对每个项目覆盖此设置。",
+        "label": "允许客户端上传新的门户项目"
       },
       "showInvoices": {
-        "description": "Adds an Invoices page for clients. Hidden by default.",
-        "label": "Show Invoices in the client portal"
+        "description": "为客户添加发票页面。默认隐藏。",
+        "label": "在客户门户中显示发票"
       },
-      "title": "Sections and defaults"
+      "title": "部分和默认值"
     },
     "rules": {
-      "defaultInternal": "Tasks, files, milestones and comments are Internal Only by default, for existing and new items.",
-      "explicitShare": "Nothing reaches the portal until an authorized team member marks it Client Visible.",
-      "fixedTag": "Fixed rules",
-      "neverExposed": "Internal comments, time logs, estimates, costs and dependencies are never exposed, whatever you share.",
-      "noHints": "A hidden item is never counted or hinted at in dashboards, lists or notifications.",
-      "revertImmediate": "Turning an item back to Internal Only removes it from the portal immediately and keeps its internal history.",
-      "title": "How sharing works"
+      "defaultInternal": "默认情况下，对于现有项目和新项目，任务、文件、里程碑和评论仅供内部使用。",
+      "explicitShare": "在授权团队成员将其标记为“客户端可见”之前，不会有任何内容到达门户。",
+      "fixedTag": "固定规则",
+      "neverExposed": "无论您分享什么，内部评论、时间日志、估计、成本和依赖关系都不会暴露。",
+      "noHints": "隐藏的项目永远不会在仪表板、列表或通知中被计数或暗示。",
+      "revertImmediate": "将项目恢复为仅限内部会立即将其从门户中删除并保留其内部历史记录。",
+      "title": "共享如何运作"
     },
     "shared": {
-      "count": "{{shared}} of {{total}} client visible",
-      "description": "Counted over projects that have the Client Portal turned on.",
-      "files": "Files",
-      "milestones": "Milestones",
-      "tasks": "Tasks",
-      "title": "Currently shared across portal projects"
+      "count": "{{total}} 的 {{shared}} 客户端可见",
+      "description": "对已打开客户端门户的项目进行计数。",
+      "files": "文件",
+      "milestones": "里程碑",
+      "tasks": "任务",
+      "title": "目前在门户项目中共享"
     }
   },
-  "subtitle": "Branding, what is shared by default, roles and notifications for your client portal."
+  "subtitle": "品牌、默认共享的内容、客户门户的角色和通知。"
 }

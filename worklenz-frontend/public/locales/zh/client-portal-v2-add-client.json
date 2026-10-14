@@ -1,84 +1,84 @@
 {
   "access": {
-    "introExisting": "Pick the projects this user can open. If the Client Portal is off for a project you pick, it is switched on.",
-    "introNew": "Pick the projects this client should see. Projects without a client are linked to the new organization, and the Client Portal is switched on for each one you pick.",
-    "loadFailed": "The projects could not be loaded.",
-    "noClientYet": "No client yet",
-    "noProjectsExisting": "This organization has no projects yet. The user can be assigned projects later.",
-    "noProjectsNew": "Every workspace project already has a client. Link one later from Portal Projects.",
-    "portalOff": "Portal off, will be switched on",
-    "search": "Search projects…",
-    "title": "Project access"
+    "introExisting": "选择该用户可以打开的项目。如果您选择的项目的客户端门户关闭，它将打开。",
+    "introNew": "选择该客户应该看到的项目。没有客户的项目将链接到新组织，并且为您选择的每个项目打开客户门户。",
+    "loadFailed": "无法加载项目。",
+    "noClientYet": "还没有客户",
+    "noProjectsExisting": "该组织还没有项目。稍后可以为用户分配项目。",
+    "noProjectsNew": "每个工作区项目都已经有一个客户。稍后从 Portal Projects 链接一个。",
+    "portalOff": "门户关闭，将打开",
+    "search": "搜索项目...",
+    "title": "项目接入"
   },
   "details": {
-    "email": "Email address",
-    "emailHint": "This is the login and invitation address. It must be unique.",
-    "emailInvalid": "Enter a valid email address.",
-    "firstName": "First name",
-    "firstNamePlaceholder": "Jane",
-    "firstUserNotice": "The first user of a new organization is a Client Admin. They can approve items and, if you enable it in Portal Settings, manage their own colleagues. Like every client user, they sign in with a one-time code emailed to this address.",
-    "jobTitle": "Job title",
-    "jobTitlePlaceholder": "e.g. Marketing Manager",
-    "lastName": "Last name",
-    "lastNamePlaceholder": "Doe",
-    "noOrganizations": "No organizations found.",
-    "organization": "Organization",
-    "organizationName": "Organization name",
-    "organizationNamePlaceholder": "e.g. Beacon Logistics",
-    "phone": "Phone (optional)",
+    "email": "电子邮件地址",
+    "emailHint": "这是登录地址和邀请地址。它必须是独一无二的。",
+    "emailInvalid": "输入有效的电子邮件地址。",
+    "firstName": "名",
+    "firstNamePlaceholder": "张三",
+    "firstUserNotice": "新组织的第一个用户是客户端管理员。他们可以批准项目，如果您在门户设置中启用它，还可以管理他们自己的同事。与每个客户端用户一样，他们使用通过电子邮件发送到此地址的一次性代码进行登录。",
+    "jobTitle": "职位名称",
+    "jobTitlePlaceholder": "例如营销经理",
+    "lastName": "姓氏",
+    "lastNamePlaceholder": "李四",
+    "noOrganizations": "没有找到组织。",
+    "organization": "组织",
+    "organizationName": "组织名称",
+    "organizationNamePlaceholder": "例如灯塔物流",
+    "phone": "电话（可选）",
     "role": "Role",
-    "selectOrganization": "Select an organization…"
+    "selectOrganization": "选择一个组织..."
   },
   "footer": {
-    "addUser": "Add user",
-    "back": "Back",
-    "continue": "Continue",
-    "sendInvitation": "Send invitation"
+    "addUser": "添加用户",
+    "back": "返回",
+    "continue": "继续",
+    "sendInvitation": "发送邀请"
   },
   "method": {
     "existingOrganization": {
-      "description": "Invite another person to an organization that already has portal access.",
-      "name": "Add a user to an existing organization"
+      "description": "邀请其他人加入已具有门户访问权限的组织。",
+      "name": "将用户添加到现有组织"
     },
-    "groupLabel": "How to add this client",
-    "intro": "Every client user belongs to an organization, and sees only the projects you assign to them.",
+    "groupLabel": "如何添加该客户端",
+    "intro": "每个客户端用户都属于一个组织，并且只能看到您分配给他们的项目。",
     "newOrganization": {
-      "description": "Create the organization and invite its first user as Client Admin.",
-      "name": "New client organization"
+      "description": "创建组织并邀请其第一个用户作为客户端管理员。",
+      "name": "新客户组织"
     }
   },
   "result": {
-    "activationHint": "They open the link in the email and sign in with a 6-digit code sent to their address. There is no password.",
-    "addedNoInvite": "{{name}} was added as {{role}}. No invitation was sent yet.",
-    "emailNotSent": "{{name}} was saved, but the invitation email could not be sent. Share the link instead.",
-    "failed": "The client could not be added.",
-    "invited": "Invitation sent to {{email}}.",
-    "portalsSwitchedOn": "Client Portal switched on for {{count}} project(s).",
-    "portalsSwitchedOn_one": "Client Portal switched on for {{count}} project.",
-    "portalsSwitchedOn_other": "Client Portal switched on for {{count}} projects."
+    "activationHint": "他们打开电子邮件中的链接，并使用发送到其地址的 6 位数代码登录。没有密码。",
+    "addedNoInvite": "{{name}} 添加为 {{role}}。尚未发送邀请。",
+    "emailNotSent": "{{name}} 已保存，但无法发送邀请电子邮件。而是分享链接。",
+    "failed": "无法添加客户端。",
+    "invited": "邀请已发送至 {{email}}。",
+    "portalsSwitchedOn": "为 {{count}} 项目启用了客户端。",
+    "portalsSwitchedOn_one": "{{count}} 项目的客户端已打开。",
+    "portalsSwitchedOn_other": "为 {{count}} 项目打开了客户端。"
   },
   "review": {
     "email": "Email",
     "name": "Name",
-    "organization": "Organization",
-    "projects": "Projects",
-    "projectsAssigned": "{{count}} assigned",
-    "projectsAssigned_one": "{{count}} assigned",
-    "projectsAssigned_other": "{{count}} assigned",
-    "projectsNone": "None yet",
+    "organization": "组织",
+    "projects": "项目",
+    "projectsAssigned": "已分配 {{count}}",
+    "projectsAssigned_one": "已分配 {{count}}",
+    "projectsAssigned_other": "已分配 {{count}}",
+    "projectsNone": "还没有",
     "role": "Role",
-    "sendInvitation": "Send the invitation now",
-    "sendInvitationHint": "The link carries their email address; opening it sends them a 6-digit code, so there is no password to set. The link expires after 7 days. If it expires, resend it from the Users list, or they can sign in by entering their email."
+    "sendInvitation": "立即发送邀请",
+    "sendInvitationHint": "该链接带有他们的电子邮件地址；打开它会向他们发送一个 6 位代码，因此无需设置密码。该链接将在 7 天后过期。如果过期，请从用户列表中重新发送，或者他们可以通过输入电子邮件登录。"
   },
   "steps": {
-    "access": "Access",
+    "access": "访问权限",
     "details": "Details",
-    "method": "Method"
+    "method": "方法"
   },
   "title": {
-    "access": "Access & review",
-    "detailsExisting": "Choose the organization and the user",
-    "detailsNew": "Tell us about the organization",
-    "method": "How do you want to add this client?"
+    "access": "访问和审查",
+    "detailsExisting": "选择组织和用户",
+    "detailsNew": "告诉我们有关该组织的信息",
+    "method": "您想如何添加该客户端？"
   }
 }
