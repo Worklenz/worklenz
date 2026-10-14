@@ -18,5 +18,13 @@
   "manageAssignee": "Beauftragten verwalten",
   "start": "Starten",
   "assignMember": "Mitglied zuweisen",
-  "completeSprint": "Kompletter Sprint"
+  "completeSprint": "Kompletter Sprint",
+  "deleteSprintTitle": "{{name}} löschen?",
+  "deleteSprintContentWithItems": "{{count}} Arbeitselement(e) in diesem Sprint werden nach {{backlog}} verschoben. Dies kann nicht rückgängig gemacht werden.",
+  "deleteSprintContent": "Dies kann nicht rückgängig gemacht werden.",
+  "deleteSprint": "Sprint löschen",
+  "sprintDeleted": "Sprint gelöscht",
+  "sprintDeleteError": "Sprint konnte nicht gelöscht werden",
+  "completeSprintAutoStartHint": "Der nächste geplante Sprint startet heute und behält seine geplante Dauer.",
+  "nextSprintStarted": "{{name}} gestartet ({{start}} – {{end}})"
 }

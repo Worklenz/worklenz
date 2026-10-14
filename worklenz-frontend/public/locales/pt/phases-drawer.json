@@ -74,5 +74,13 @@
   "start": "Começar",
   "completeSprint": "Sprint completo",
   "manageAssignee": "Gerenciar responsável",
-  "assignMember": "Atribuir membro"
+  "assignMember": "Atribuir membro",
+  "deleteSprintTitle": "Excluir {{name}}?",
+  "deleteSprintContentWithItems": "{{count}} itens de trabalho deste sprint serão movidos para {{backlog}}. Esta ação não pode ser desfeita.",
+  "deleteSprintContent": "Esta ação não pode ser desfeita.",
+  "deleteSprint": "Excluir sprint",
+  "sprintDeleted": "Sprint excluído",
+  "sprintDeleteError": "Não foi possível excluir o sprint",
+  "completeSprintAutoStartHint": "O próximo sprint planejado começará hoje e manterá sua duração prevista.",
+  "nextSprintStarted": "{{name}} iniciado ({{start}} – {{end}})"
 }

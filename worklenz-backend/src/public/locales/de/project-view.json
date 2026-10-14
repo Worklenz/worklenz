@@ -12,5 +12,9 @@
   "pinTab": "Als Standard-Registerkarte festsetzen",
   "unpinTab": "Standard-Registerkarte lösen",
   "You do not have permission to access this project": "Sie haben keine Berechtigung, auf dieses Projekt zuzugreifen",
-  "Failed to load project": "Projekt konnte nicht geladen werden"
+  "Failed to load project": "Projekt konnte nicht geladen werden",
+  "issueTypeSaveError": "Vorgangstyp konnte nicht geändert werden. Bitte versuchen Sie es erneut.",
+  "changeIssueType": "Vorgangstyp ändern",
+  "unpinTabFromHeader": "Aus der Kopfzeile entfernen",
+  "pinTabToHeader": "In der Kopfzeile anzeigen"
 }

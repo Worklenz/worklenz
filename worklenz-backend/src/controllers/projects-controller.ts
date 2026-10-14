@@ -804,6 +804,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.phase_label,
              projects.project_type,
              projects.auto_archive_on_sprint_complete,
+             projects.auto_start_complete_sprints,
              projects.story_point_scale,
              projects.category_id,
              projects.currency,

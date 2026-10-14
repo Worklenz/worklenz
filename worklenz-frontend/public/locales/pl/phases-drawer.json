@@ -74,5 +74,13 @@
   "start": "Zacznij",
   "completeSprint": "Kompletny sprint",
   "manageAssignee": "Zarządzaj cesjonariuszem",
-  "assignMember": "Przypisz członka"
+  "assignMember": "Przypisz członka",
+  "deleteSprintTitle": "Usunąć {{name}}?",
+  "deleteSprintContentWithItems": "{{count}} elementów pracy z tego sprintu zostanie przeniesionych do {{backlog}}. Tej operacji nie można cofnąć.",
+  "deleteSprintContent": "Tej operacji nie można cofnąć.",
+  "deleteSprint": "Usuń sprint",
+  "sprintDeleted": "Sprint usunięty",
+  "sprintDeleteError": "Nie udało się usunąć sprintu",
+  "completeSprintAutoStartHint": "Następny zaplanowany sprint rozpocznie się dzisiaj i zachowa planowany czas trwania.",
+  "nextSprintStarted": "Rozpoczęto {{name}} ({{start}} – {{end}})"
 }

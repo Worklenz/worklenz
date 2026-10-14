@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 // Centralized Ant Design imports
 import {
   Button,
+  Checkbox,
   ConfigProvider,
   DownOutlined,
   Dropdown,
@@ -649,6 +650,27 @@ const ProjectView = React.memo(() => {
 
   const isSoftwareProject = isSoftwareProjectType(selectedProject?.project_type);
 
+  // Overflow ("More") tabs the user chose to show in the header, remembered per project.
+  const [headerPinnedTabs, setHeaderPinnedTabs] = useState<string[]>([]);
+
+  useEffect(() => {
+    setHeaderPinnedTabs(projectId ? readHeaderPinnedTabs(projectId) : []);
+  }, [projectId]);
+
+  const toggleHeaderPinnedTab = useCallback(
+    (key: string, pinned: boolean) => {
+      if (!projectId) return;
+      setHeaderPinnedTabs(previous => {
+        const next = pinned
+          ? Array.from(new Set([...previous, key]))
+          : previous.filter(tabKey => tabKey !== key);
+        writeHeaderPinnedTabs(projectId, next);
+        return next;
+      });
+    },
+    [projectId]
+  );
+
   // Memoized tab menu items with enhanced styling
   const tabMenuItems = useMemo(() => {
     // Only render tabs when translations are ready
@@ -659,7 +681,10 @@ const ProjectView = React.memo(() => {
     const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, canCreateTask);
     const visibleTabItems = isSoftwareProject
       ? filteredTabItems.filter(
-          item => SOFTWARE_PRIMARY_TABS.includes(item.key) || item.key === activeTab
+          item =>
+            SOFTWARE_PRIMARY_TABS.includes(item.key) ||
+            headerPinnedTabs.includes(item.key) ||
+            item.key === activeTab
         )
       : filteredTabItems;
 
@@ -747,6 +772,7 @@ const ProjectView = React.memo(() => {
     canCreateTask,
     isSoftwareProject,
     activeTab,
+    headerPinnedTabs,
   ]);
 
   const handleOpenProjectSettings = useCallback(() => {
@@ -765,15 +791,34 @@ const ProjectView = React.memo(() => {
       item => !SOFTWARE_PRIMARY_TABS.includes(item.key)
     );
     const isGuest = selectedProject?.is_guest === true;
-    const items: MenuProps['items'] = overflowTabs.map(item => ({
-      key: item.key,
-      label: (
-        <Flex align="center" gap={6}>
-          {item.label}
-          {item.disabled && <CrownOutlined style={{ fontSize: 12, color: '#faad14' }} />}
-        </Flex>
-      ),
-    }));
+    const items: MenuProps['items'] = overflowTabs.map(item => {
+      const isPinnedToHeader = headerPinnedTabs.includes(item.key);
+      return {
+        key: item.key,
+        label: (
+          <Flex align="center" gap={8}>
+            <Tooltip
+              title={
+                isPinnedToHeader
+                  ? t('unpinTabFromHeader', { defaultValue: 'Remove from header' })
+                  : t('pinTabToHeader', { defaultValue: 'Show in header' })
+              }
+              placement="left"
+            >
+              {/* Toggling the checkbox must not also navigate to the tab or close the menu */}
+              <span onClick={e => e.stopPropagation()}>
+                <Checkbox
+                  checked={isPinnedToHeader}
+                  onChange={e => toggleHeaderPinnedTab(item.key, e.target.checked)}
+                />
+              </span>
+            </Tooltip>
+            {item.label}
+            {item.disabled && <CrownOutlined style={{ fontSize: 12, color: '#faad14' }} />}
+          </Flex>
+        ),
+      };
+    });
     if (!isGuest) {
       if (items.length) items.push({ type: 'divider' });
       items.push({
@@ -801,9 +846,11 @@ const ProjectView = React.memo(() => {
     currentSession,
     handleOpenProjectSettings,
     handleTabChange,
+    headerPinnedTabs,
     isSoftwareProject,
     selectedProject,
     t,
+    toggleHeaderPinnedTab,
     translationsReady,
   ]);
 
@@ -938,5 +985,24 @@ const ProjectView = React.memo(() => {
 ProjectView.displayName = 'ProjectView';
 
 const PROJECT_SETTINGS_MENU_KEY = '__project_settings__';
+
+const headerPinnedTabsStorageKey = (projectId: string) => `worklenz.headerPinnedTabs.${projectId}`;
+
+const readHeaderPinnedTabs = (projectId: string): string[] => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(headerPinnedTabsStorageKey(projectId)) || '[]');
+    return Array.isArray(stored) ? stored.filter(key => typeof key === 'string') : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeHeaderPinnedTabs = (projectId: string, tabKeys: string[]) => {
+  try {
+    localStorage.setItem(headerPinnedTabsStorageKey(projectId), JSON.stringify(tabKeys));
+  } catch {
+    // Storage can be unavailable (private mode / quota); pinning then lasts for this session only.
+  }
+};
 
 export default ProjectView;

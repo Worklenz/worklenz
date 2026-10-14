@@ -1,8 +1,13 @@
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { cacheProjectAccess } from '@/features/project/project.slice';
 import { extractProjectAccess } from '@/utils/project-access.utils';
+
+interface MergeProjectDataPayload {
+  projectId: string;
+  changes: Partial<IProjectViewModel>;
+}
 
 interface IProjectDrawerState {
   projectId: string | null;
@@ -59,6 +64,11 @@ const projectDrawerSlice = createSlice({
     setProjectId: (state, action) => {
       state.projectId = action.payload;
     },
+    mergeProjectData: (state, action: PayloadAction<MergeProjectDataPayload>) => {
+      if (state.project?.id === action.payload.projectId) {
+        Object.assign(state.project, action.payload.changes);
+      }
+    },
     setProjectData: (state, action) => {
       state.project = action.payload;
     },
@@ -80,5 +90,5 @@ const projectDrawerSlice = createSlice({
   },
 });
 
-export const { setProjectId, setProjectData } = projectDrawerSlice.actions;
+export const { setProjectId, setProjectData, mergeProjectData } = projectDrawerSlice.actions;
 export default projectDrawerSlice.reducer;
