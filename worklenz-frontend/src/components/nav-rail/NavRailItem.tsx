@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useRef } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Tooltip, theme } from '@/shared/antd-imports';
@@ -20,9 +20,7 @@ interface NavRailItemProps {
 }
 
 // Fires `action` on Enter/Space, mirroring a native <button>'s keyboard
-// behavior for the plain <span role="button"> affordances below (real
-// <button> elements can't nest inside the outer item, which is itself
-// interactive — nested buttons are invalid HTML).
+// behavior for the plain <span role="button"> affordances below.
 const activateOnKey = (action: () => void) => (e: React.KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
@@ -47,10 +45,6 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
     id: item.key,
     disabled: !draggable,
   });
-
-  // Track whether we're interacting with the pin so we can suppress the
-  // item's own click/drag when the user intends to click the pin.
-  const pinInteracting = useRef(false);
 
   const clickDisabled = item.soon && !item.soonClickable;
 
@@ -146,15 +140,28 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
   }, [clickDisabled, onSelect]);
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => activateOnKey(handleSelect)(e),
-    [handleSelect],
+    (e: React.KeyboardEvent) => {
+      // First invoke dnd-kit's onKeyDown listener if present
+      listeners?.onKeyDown?.(e);
+
+      // If dnd-kit handled the key (e.g. Space to initiate keyboard drag), don't trigger selection
+      if (e.isDefaultPrevented() || e.defaultPrevented) {
+        return;
+      }
+
+      // Keyboard activation for selection on Enter or Space
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleSelect();
+      }
+    },
+    [listeners, handleSelect],
   );
 
-  // Pin click: stop propagation so the item click / DnD listeners don't fire.
+  // Pin click: stop propagation so surrounding elements don't trigger.
   const handlePinClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      pinInteracting.current = false;
       onTogglePin();
     },
     [onTogglePin],
@@ -171,11 +178,31 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
   // Intercept DnD pointer events on the pin so they don't start a drag.
   const handlePinPointerDown = useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
-    pinInteracting.current = true;
   }, []);
 
   return (
     <div ref={setNodeRef} style={wrapperStyle} className="nav-rail-item-wrapper">
+      {/* ── Pin affordance (top-left, visible when active/pinned or hovered) ──
+          Positioned as a sibling outside the interactive sortable item to avoid
+          nested interactive controls while remaining independently keyboard-accessible. */}
+      <span
+        role="button"
+        tabIndex={0}
+        aria-label={isPinned ? 'Unpin this view' : 'Pin as default view'}
+        title={isPinned ? 'Pinned as default' : 'Pin as default view'}
+        className={`nav-rail-pin-affordance ${active || isPinned ? 'nav-rail-pin-visible' : ''}`}
+        onClick={handlePinClick}
+        onKeyDown={handlePinKeyDown}
+        onPointerDown={handlePinPointerDown}
+        style={pinWrapperStyle}
+      >
+        {isPinned ? (
+          <PushpinFilled style={pinIconStyle} />
+        ) : (
+          <PushpinOutlined style={pinIconStyle} />
+        )}
+      </span>
+
       <Tooltip
         title={tooltipTitle}
         placement="right"
@@ -192,25 +219,6 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
           onKeyDown={handleKeyDown}
           style={buttonStyle}
         >
-          {/* ── Pin affordance (top-left, visible when active/pinned or hovered) ── */}
-          <span
-            role="button"
-            tabIndex={0}
-            aria-label={isPinned ? 'Unpin this view' : 'Pin as default view'}
-            title={isPinned ? 'Pinned as default' : 'Pin as default view'}
-            className={`nav-rail-pin-affordance ${active || isPinned ? 'nav-rail-pin-visible' : ''}`}
-            onClick={handlePinClick}
-            onKeyDown={handlePinKeyDown}
-            onPointerDown={handlePinPointerDown}
-            style={pinWrapperStyle}
-          >
-            {isPinned ? (
-              <PushpinFilled style={pinIconStyle} />
-            ) : (
-              <PushpinOutlined style={pinIconStyle} />
-            )}
-          </span>
-
           {/* ── Unread badge ───────────────────────────────────────────────── */}
           {typeof badgeValue === 'number' && badgeValue > 0 && (
             <span
