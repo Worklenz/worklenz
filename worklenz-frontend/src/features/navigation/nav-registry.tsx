@@ -162,6 +162,11 @@ export const REPORTING_NAV_SURFACE: NavSurface = {
           },
           icon: <RiseOutlined />,
         },
+        {
+          key: 'project-portfolio',
+          label: { i18nNs: 'reporting-sidebar', i18nKey: 'portfolio', defaultValue: 'Portfolio' },
+          icon: <PieChartOutlined />,
+        },
       ],
     },
     {

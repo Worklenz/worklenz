@@ -11,6 +11,7 @@ import {
   FileOutlined,
   RiseOutlined,
 } from '@/shared/antd-imports';
+import { PieChartOutlined } from '@ant-design/icons';
 
 const OverviewReports = lazy(() => import('@/pages/reporting/overview-reports/overview-reports'));
 const ProjectsReports = lazy(() => import('@/pages/reporting/projects-reports/projects-reports'));
@@ -29,6 +30,9 @@ const EstimatedVsActualTimeReports = lazy(
 const TimeLogsReports = lazy(() => import('@/pages/reporting/time-sheets/time-logs'));
 const ProgressTrackingPage = lazy(
   () => import('@/pages/reporting/progress-tracking/progress-tracking-page')
+);
+const PortfolioDashboard = lazy(
+  () => import('@/pages/reporting/portfolio/portfolio-dashboard')
 );
 
 // Type definition for a menu item
@@ -83,6 +87,14 @@ export const reportingsItems: ReportingMenuItems[] = [
     endpoint: 'progress-tracking',
     element: React.createElement(ProgressTrackingPage),
     icon: React.createElement(RiseOutlined),
+  },
+  {
+    key: 'project-portfolio',
+    name: 'portfolio',
+    defaultValue: 'Portfolio',
+    endpoint: 'project-portfolio',
+    element: React.createElement(PortfolioDashboard),
+    icon: React.createElement(PieChartOutlined),
   },
   {
     key: 'time-sheet',

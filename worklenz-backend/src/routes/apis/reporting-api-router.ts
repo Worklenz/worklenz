@@ -7,6 +7,7 @@ import ReportingOverviewController from "../../controllers/reporting/overview/re
 import ReportingInfoController from "../../controllers/reporting/reporting-info-controller";
 import ReportingAllocationController from "../../controllers/reporting/reporting-allocation-controller";
 import ReportingProjectsController from "../../controllers/reporting/projects/reporting-projects-controller";
+import ReportingPortfolioController from "../../controllers/reporting/projects/reporting-portfolio-controller";
 import ReportingProjectWidgetsController from "../../controllers/reporting/projects/reporting-project-widgets-controller";
 import ReportingMembersController from "../../controllers/reporting/reporting-members-controller";
 import ReportingTimeLogsController from "../../controllers/reporting/reporting-time-logs-controller";
@@ -136,6 +137,13 @@ reportingApiRouter.get("/projects/grouped",
   safeControllerFunction(ReportingProjectsController.getGrouped)
 );
 reportingApiRouter.post("/project-timelogs", teamOwnerOrAdminValidator, safeControllerFunction(ReportingProjectsController.getProjectTimeLogs));
+
+// Project Portfolio - KPI cards and per-category breakdown for a yearly/quarterly/monthly period.
+reportingApiRouter.get("/portfolio",
+  teamOwnerOrAdminValidator,
+  validateEnumParam("period", ["yearly", "quarterly", "monthly"]),
+  safeControllerFunction(ReportingPortfolioController.get)
+);
 
 // Data for the extra Reports > Overview widgets (project/task/time/billable/client stats). Layout
 // and per-widget filter config for these widgets live with the rest of the Overview grid.

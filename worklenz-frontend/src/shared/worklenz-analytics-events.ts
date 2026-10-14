@@ -175,6 +175,7 @@ export const evt_reporting_allocation = 'reporting_allocation_visit';
 export const evt_reporting_projects_overview = 'reporting_projects_overview_visit';
 export const evt_reporting_projects_custom = 'reporting_projects_custom_visit';
 export const evt_reporting_progress_tracking = 'reporting_progress_tracking_visit';
+export const evt_reporting_portfolio = 'reporting_portfolio_visit';
 
 // Billing & Subscription
 export const evt_billing_current_bill = 'billing_current_bill';
