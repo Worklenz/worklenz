@@ -66,7 +66,16 @@
     "unlinkDescription": "Los vínculos existentes en las incidencias se conservan, pero la nueva actividad ya no se registrará.",
     "unlink": "Desvincular",
     "unlinkAria": "Desvincular {{name}}",
-    "howItWorks": "Incluye una clave de incidencia como {{example}} en el nombre de una rama, un mensaje de commit o el título de un pull request para vincularlo a esa incidencia."
+    "howItWorks": "Incluye una clave de incidencia como {{example}} en el nombre de una rama, un mensaje de commit o el título de un pull request para vincularlo a esa incidencia.",
+    "automation": {
+      "title": "Automatización de estados",
+      "description": "Mueve las incidencias automáticamente cuando hay actividad en GitHub. Las incidencias nunca retroceden ni salen de un estado finalizado.",
+      "branchCreated": "Rama creada",
+      "prOpened": "Pull request abierto",
+      "prMerged": "Pull request fusionado",
+      "noChange": "No cambiar el estado",
+      "saveFailed": "No se pudo actualizar la automatización."
+    }
   },
   "development": {
     "pr": {
@@ -85,6 +94,26 @@
     "commits": "Commits",
     "branchDeleted": "Eliminada",
     "showFewer": "Mostrar menos",
-    "showAll": "Mostrar los {{count}} commits"
+    "showAll": "Mostrar los {{count}} commits",
+    "createBranch": {
+      "button": "Crear rama",
+      "title": "Crear rama",
+      "repository": "Repositorio",
+      "name": "Nombre de la rama",
+      "type": "Tipo",
+      "baseBranch": "Rama base",
+      "invalidName": "Usa letras, números, puntos, guiones, guiones bajos o barras.",
+      "created": "Rama creada.",
+      "checkoutHint": "Ejecuta esto para empezar a trabajar en local:",
+      "copy": "Copiar comando",
+      "copied": "Copiado al portapapeles.",
+      "done": "Listo",
+      "errors": {
+        "generic": "No se pudo crear la rama.",
+        "exists": "Ya existe una rama con este nombre.",
+        "baseMissing": "No se encontró la rama base en este repositorio.",
+        "permission": "La aplicación de GitHub no puede crear ramas. Pide a un administrador que le conceda acceso de escritura a Contenido."
+      }
+    }
   }
 }

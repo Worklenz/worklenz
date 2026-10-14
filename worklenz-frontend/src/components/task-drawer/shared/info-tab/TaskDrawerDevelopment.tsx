@@ -7,6 +7,7 @@ import {
   GithubOutlined,
   PullRequestOutlined,
 } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import {
@@ -15,28 +16,39 @@ import {
   IGithubTaskDevelopment,
 } from '@/api/github/github.api.service';
 import logger from '@/utils/errorLogger';
+import { CreateBranchModal } from '@/components/github/CreateBranchModal';
 
 dayjs.extend(relativeTime);
 
 interface TaskDrawerDevelopmentProps {
   taskId: string;
   taskKey?: string | null;
+  /** Bump to re-fetch (e.g. when a GitHub webhook lands for this task). */
+  refreshToken?: number;
+  canCreateBranch?: boolean;
 }
 
 const MAX_COMMITS_SHOWN = 5;
 
 /** GitHub activity (branches, pull requests, commits) linked to a software issue. */
-export const TaskDrawerDevelopment = ({ taskId, taskKey }: TaskDrawerDevelopmentProps) => {
+export const TaskDrawerDevelopment = ({
+  taskId,
+  taskKey,
+  refreshToken = 0,
+  canCreateBranch = false,
+}: TaskDrawerDevelopmentProps) => {
   const { t } = useTranslation('github-integration');
   const { token } = theme.useToken();
   const [data, setData] = useState<IGithubTaskDevelopment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [showAllCommits, setShowAllCommits] = useState(false);
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(
+    async (silent = false) => {
     if (!taskId) return;
-    setIsLoading(true);
+    if (!silent) setIsLoading(true);
     setLoadFailed(false);
     try {
       const response = await githubApiService.getTaskDevelopment(taskId);
@@ -47,12 +59,21 @@ export const TaskDrawerDevelopment = ({ taskId, taskKey }: TaskDrawerDevelopment
     } finally {
       setIsLoading(false);
     }
-  }, [taskId]);
+    },
+    [taskId]
+  );
 
   useEffect(() => {
     setShowAllCommits(false);
     void load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskId]);
+
+  // Silent refresh keeps the list on screen while new activity is fetched.
+  useEffect(() => {
+    if (refreshToken > 0) void load(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshToken]);
 
   const renderPullRequestStatus = (pr: IGithubPullRequest) => {
     if (pr.merged) {
@@ -86,7 +107,7 @@ export const TaskDrawerDevelopment = ({ taskId, taskKey }: TaskDrawerDevelopment
         showIcon
         message={t('development.loadFailed', { defaultValue: 'Could not load GitHub activity.' })}
         action={
-          <Button size="small" onClick={load}>
+          <Button size="small" onClick={() => void load()}>
             {t('actions.retry', { defaultValue: 'Retry' })}
           </Button>
         }
@@ -97,8 +118,31 @@ export const TaskDrawerDevelopment = ({ taskId, taskKey }: TaskDrawerDevelopment
   const isEmpty =
     data.pull_requests.length === 0 && data.branches.length === 0 && data.commits.length === 0;
 
+  const canShowCreateBranch = canCreateBranch && data.repositories.length > 0;
+  const createBranchControl = canShowCreateBranch ? (
+    <>
+      <Button
+        icon={<PlusOutlined />}
+        size="small"
+        onClick={() => setIsBranchModalOpen(true)}
+      >
+        {t('development.createBranch.button', { defaultValue: 'Create branch' })}
+      </Button>
+      <CreateBranchModal
+        open={isBranchModalOpen}
+        taskId={taskId}
+        taskKey={data.task_key || taskKey || ''}
+        taskName={data.task_name}
+        repositories={data.repositories}
+        onClose={() => setIsBranchModalOpen(false)}
+        onCreated={() => void load(true)}
+      />
+    </>
+  ) : null;
+
   if (isEmpty) {
     return (
+      <Flex vertical gap={12} align="center">
       <Empty
         image={<GithubOutlined style={{ fontSize: 32, color: token.colorTextTertiary }} />}
         styles={{ image: { height: 40 } }}
@@ -117,6 +161,8 @@ export const TaskDrawerDevelopment = ({ taskId, taskKey }: TaskDrawerDevelopment
           </Typography.Text>
         }
       />
+      {createBranchControl}
+      </Flex>
     );
   }
 
@@ -130,6 +176,7 @@ export const TaskDrawerDevelopment = ({ taskId, taskKey }: TaskDrawerDevelopment
 
   return (
     <Flex vertical gap={16}>
+      {createBranchControl && <Flex justify="flex-end">{createBranchControl}</Flex>}
       {data.pull_requests.length > 0 && (
         <Flex vertical gap={6}>
           <Typography.Text strong style={groupTitleStyle}>

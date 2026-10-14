@@ -163,6 +163,33 @@ export class GithubAppService {
     return repos;
   }
 
+  /** Head SHA of a branch, used as the starting point for a new branch. */
+  public static async getBranchSha(
+    installationId: number,
+    fullName: string,
+    branch: string,
+  ): Promise<string> {
+    const token = await this.getInstallationToken(installationId);
+    const ref = await this.request<{ object: { sha: string } }>(
+      `/repos/${fullName}/git/ref/heads/${branch.split("/").map(encodeURIComponent).join("/")}`,
+      token,
+    );
+    return ref.object.sha;
+  }
+
+  public static async createBranch(
+    installationId: number,
+    fullName: string,
+    name: string,
+    sha: string,
+  ): Promise<void> {
+    const token = await this.getInstallationToken(installationId);
+    await this.request(`/repos/${fullName}/git/refs`, token, {
+      method: "POST",
+      body: { ref: `refs/heads/${name}`, sha },
+    });
+  }
+
   /**
    * Exchange the OAuth `code` from the install redirect and confirm the signed-in GitHub
    * user can really access `installationId`. Prevents attaching someone else's installation.

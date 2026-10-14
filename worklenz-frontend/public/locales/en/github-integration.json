@@ -66,7 +66,16 @@
     "unlinkDescription": "Existing links on issues stay, but new activity will no longer be tracked.",
     "unlink": "Unlink",
     "unlinkAria": "Unlink {{name}}",
-    "howItWorks": "Include an issue key such as {{example}} in a branch name, commit message or pull request title to link it to that issue."
+    "howItWorks": "Include an issue key such as {{example}} in a branch name, commit message or pull request title to link it to that issue.",
+    "automation": {
+      "title": "Status automation",
+      "description": "Move issues automatically as GitHub activity happens. Issues never move backwards or out of a done status.",
+      "branchCreated": "Branch created",
+      "prOpened": "Pull request opened",
+      "prMerged": "Pull request merged",
+      "noChange": "Don’t change status",
+      "saveFailed": "Could not update automation."
+    }
   },
   "development": {
     "pr": {
@@ -85,6 +94,26 @@
     "commits": "Commits",
     "branchDeleted": "Deleted",
     "showFewer": "Show fewer",
-    "showAll": "Show all {{count}} commits"
+    "showAll": "Show all {{count}} commits",
+    "createBranch": {
+      "button": "Create branch",
+      "title": "Create branch",
+      "repository": "Repository",
+      "name": "Branch name",
+      "type": "Type",
+      "baseBranch": "Base branch",
+      "invalidName": "Use letters, numbers, dots, dashes, underscores or slashes.",
+      "created": "Branch created.",
+      "checkoutHint": "Run this to start working on it locally:",
+      "copy": "Copy command",
+      "copied": "Copied to clipboard.",
+      "done": "Done",
+      "errors": {
+        "generic": "Could not create the branch.",
+        "exists": "A branch with this name already exists.",
+        "baseMissing": "The base branch was not found in this repository.",
+        "permission": "The GitHub App is not allowed to create branches. Ask an admin to grant it Contents write access."
+      }
+    }
   }
 }

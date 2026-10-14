@@ -8,10 +8,18 @@ import db from "../config/db";
 import { GithubAppService } from "../services/github/github-app.service";
 import { getProjectAccessForRequest } from "../shared/project-access";
 import { log_error } from "../shared/utils";
+import { isValidBranchName } from "../services/github/github-branch-name";
+import {
+  buildDefaultStatusMap,
+  GITHUB_TRANSITION_EVENTS,
+  GithubStatusMap,
+  IProjectStatusOption,
+} from "../services/github/github-transition-rules";
+import { GithubApiError } from "../services/github/github-app.service";
+import { notifyGithubActivity, reconcileTasks } from "../services/github/github-automation.service";
 
 const STATE_PURPOSE = "github-install";
 const STATE_TTL = "15m";
-const BRANCH_NAME_PATTERN = /^[A-Za-z0-9._/-]{1,255}$/;
 
 const getStateSecret = (): string =>
   process.env.COOKIE_SECRET || process.env.SESSION_SECRET || process.env.ENCRYPTION_KEY || "";
@@ -59,6 +67,21 @@ async function syncRepositories(integrationId: string, installationId: number): 
     [integrationId, ids],
   );
   return repos.length;
+}
+
+async function getProjectStatuses(projectId: string): Promise<IProjectStatusOption[]> {
+  const result = await db.query(
+    `SELECT s.id, s.name,
+            COALESCE(c.is_todo, FALSE) AS is_todo,
+            COALESCE(c.is_doing, FALSE) AS is_doing,
+            COALESCE(c.is_done, FALSE) AS is_done
+     FROM task_statuses s
+     LEFT JOIN sys_task_status_categories c ON c.id = s.category_id
+     WHERE s.project_id = $1
+     ORDER BY s.sort_order`,
+    [projectId],
+  );
+  return result.rows;
 }
 
 export default class GithubController extends WorklenzControllerBase {
@@ -261,6 +284,7 @@ export default class GithubController extends WorklenzControllerBase {
         configured: GithubAppService.isConfigured(),
         linked: linked.rows,
         available: available.rows,
+        statuses: await getProjectStatuses(projectId),
       }),
     );
   }
@@ -270,7 +294,7 @@ export default class GithubController extends WorklenzControllerBase {
     const { projectId } = req.params;
     const { repository_id, default_base_branch } = req.body as { repository_id?: string; default_base_branch?: string };
     if (!repository_id) return res.status(400).send(new ServerResponse(false, null, "repository_id is required"));
-    if (default_base_branch && !BRANCH_NAME_PATTERN.test(default_base_branch)) {
+    if (default_base_branch && !isValidBranchName(default_base_branch)) {
       return res.status(400).send(new ServerResponse(false, null, "Invalid branch name"));
     }
 
@@ -291,12 +315,19 @@ export default class GithubController extends WorklenzControllerBase {
     );
     if (!repo.rowCount) return res.status(404).send(new ServerResponse(false, null, "Repository not found"));
 
+    const defaultStatusMap = buildDefaultStatusMap(await getProjectStatuses(projectId));
     const result = await db.query(
-      `INSERT INTO github_project_repositories (project_id, repository_id, default_base_branch, linked_by)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO github_project_repositories (project_id, repository_id, default_base_branch, linked_by, settings)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (project_id, repository_id) DO NOTHING
        RETURNING id`,
-      [projectId, repository_id, default_base_branch || null, req.user?.id],
+      [
+        projectId,
+        repository_id,
+        default_base_branch || null,
+        req.user?.id,
+        JSON.stringify({ status_map: defaultStatusMap }),
+      ],
     );
     return res.status(200).send(new ServerResponse(true, { id: result.rows[0]?.id ?? null }));
   }
@@ -304,16 +335,43 @@ export default class GithubController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async updateRepositoryLink(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { projectId, linkId } = req.params;
-    const { default_base_branch } = req.body as { default_base_branch?: string | null };
-    if (default_base_branch && !BRANCH_NAME_PATTERN.test(default_base_branch)) {
-      return res.status(400).send(new ServerResponse(false, null, "Invalid branch name"));
+    const body = req.body as { default_base_branch?: string | null; status_map?: Record<string, string | null> };
+
+    const updates: string[] = [];
+    const values: unknown[] = [linkId, projectId];
+
+    if ("default_base_branch" in body) {
+      const branch = body.default_base_branch || null;
+      if (branch && !isValidBranchName(branch)) {
+        return res.status(400).send(new ServerResponse(false, null, "Invalid branch name"));
+      }
+      values.push(branch);
+      updates.push(`default_base_branch = $${values.length}`);
     }
+
+    if (body.status_map) {
+      const statuses = await getProjectStatuses(projectId);
+      const validIds = new Set(statuses.map(s => s.id));
+      const statusMap: GithubStatusMap = {};
+      for (const event of GITHUB_TRANSITION_EVENTS) {
+        const value = body.status_map[event];
+        if (value && !validIds.has(value)) {
+          return res.status(400).send(new ServerResponse(false, null, `Invalid status for ${event}`));
+        }
+        statusMap[event] = value || null;
+      }
+      values.push(JSON.stringify(statusMap));
+      updates.push(`settings = jsonb_set(settings, '{status_map}', $${values.length}::JSONB, TRUE)`);
+    }
+
+    if (!updates.length) return res.status(400).send(new ServerResponse(false, null, "Nothing to update"));
+
     const result = await db.query(
       `UPDATE github_project_repositories
-       SET default_base_branch = $3, updated_at = NOW()
+       SET ${updates.join(", ")}, updated_at = NOW()
        WHERE id = $1 AND project_id = $2
        RETURNING id`,
-      [linkId, projectId, default_base_branch || null],
+      values,
     );
     if (!result.rowCount) return res.status(404).send(new ServerResponse(false, null, "Link not found"));
     return res.status(200).send(new ServerResponse(true, null));
@@ -332,7 +390,7 @@ export default class GithubController extends WorklenzControllerBase {
     const taskId = req.params.id;
 
     const task = await db.query(
-      `SELECT t.project_id, p.project_type
+      `SELECT t.project_id, t.name, p.project_type, CONCAT(p.key, '-', t.task_no) AS task_key
        FROM tasks t JOIN projects p ON p.id = t.project_id
        WHERE t.id = $1 AND p.team_id = $2`,
       [taskId, req.user?.team_id],
@@ -374,17 +432,109 @@ export default class GithubController extends WorklenzControllerBase {
         [taskId],
       ),
       db.query(
-        `SELECT COUNT(*)::INT AS count FROM github_project_repositories WHERE project_id = $1`,
+        `SELECT pr.repository_id, r.full_name,
+                COALESCE(pr.default_base_branch, r.default_branch) AS default_base_branch
+         FROM github_project_repositories pr
+         JOIN github_repositories r ON r.id = pr.repository_id
+         WHERE pr.project_id = $1 AND r.is_available = TRUE
+         ORDER BY r.full_name`,
         [task.rows[0].project_id],
       ),
     ]);
 
     return res.status(200).send(
       new ServerResponse(true, {
-        has_linked_repositories: repos.rows[0].count > 0,
+        has_linked_repositories: repos.rowCount! > 0,
+        repositories: repos.rows,
+        task_key: task.rows[0].task_key,
+        task_name: task.rows[0].name,
         branches: branches.rows,
         pull_requests: pullRequests.rows,
         commits: commits.rows,
+      }),
+    );
+  }
+
+  /** Create a branch on GitHub from the issue and link it. */
+  @HandleExceptions()
+  public static async createBranch(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const taskId = req.params.id;
+    const { repository_id, name, base_branch } = req.body as {
+      repository_id?: string;
+      name?: string;
+      base_branch?: string;
+    };
+
+    if (!repository_id || !isValidBranchName(name) || !isValidBranchName(base_branch)) {
+      return res.status(400).send(new ServerResponse(false, null, "A valid repository, branch name and base branch are required"));
+    }
+
+    const task = await db.query(
+      `SELECT t.project_id FROM tasks t JOIN projects p ON p.id = t.project_id
+       WHERE t.id = $1 AND p.team_id = $2 AND p.project_type = 'software'`,
+      [taskId, req.user?.team_id],
+    );
+    if (!task.rowCount) return res.status(404).send(new ServerResponse(false, null, "Task not found"));
+
+    const access = await getProjectAccessForRequest(req, task.rows[0].project_id);
+    if (!access.permissions.tasks) {
+      return res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
+    }
+
+    // Repository must be linked to this task's project and its installation active.
+    const repo = await db.query(
+      `SELECT r.id, r.full_name, i.installation_id
+       FROM github_project_repositories pr
+       JOIN github_repositories r ON r.id = pr.repository_id
+       JOIN github_integrations i ON i.id = r.integration_id
+       WHERE pr.project_id = $1 AND r.id = $2 AND i.status = 'active' AND r.is_available = TRUE`,
+      [task.rows[0].project_id, repository_id],
+    );
+    if (!repo.rowCount) return res.status(404).send(new ServerResponse(false, null, "Repository not found"));
+    const { full_name: fullName, installation_id: installationId } = repo.rows[0];
+
+    try {
+      const sha = await GithubAppService.getBranchSha(Number(installationId), fullName, base_branch);
+      await GithubAppService.createBranch(Number(installationId), fullName, name, sha);
+    } catch (error) {
+      if (error instanceof GithubApiError) {
+        if (error.status === 422) {
+          return res.status(409).send(new ServerResponse(false, null, "A branch with this name already exists"));
+        }
+        if (error.status === 404) {
+          return res.status(404).send(new ServerResponse(false, null, "Base branch not found"));
+        }
+        if (error.status === 403) {
+          return res.status(403).send(
+            new ServerResponse(false, null, "The GitHub App needs Contents write permission to create branches"),
+          );
+        }
+      }
+      throw error;
+    }
+
+    const branch = await db.query(
+      `INSERT INTO github_branches (repository_id, name)
+       VALUES ($1, $2)
+       ON CONFLICT (repository_id, name) DO UPDATE SET is_deleted = FALSE, updated_at = NOW()
+       RETURNING id`,
+      [repository_id, name],
+    );
+    await db.query(
+      `INSERT INTO github_task_links (task_id, link_type, branch_id)
+       VALUES ($1, 'branch', $2)
+       ON CONFLICT (task_id, branch_id) WHERE branch_id IS NOT NULL DO NOTHING`,
+      [taskId, branch.rows[0].id],
+    );
+
+    await reconcileTasks([taskId], repository_id);
+    await notifyGithubActivity([taskId]);
+
+    return res.status(200).send(
+      new ServerResponse(true, {
+        name,
+        html_url: `https://github.com/${fullName}/tree/${name}`,
+        checkout_command: `git fetch origin && git checkout -b ${name} origin/${name}`,
       }),
     );
   }

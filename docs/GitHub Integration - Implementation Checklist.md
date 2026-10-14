@@ -36,11 +36,19 @@ Legend: `[x]` done, `[ ]` pending, `[~]` in progress.
 - [x] Migration applies and reverts cleanly
 - [ ] Manual smoke test with a dev GitHub App (needs user's App credentials)
 
-## Phase 2: Automation (not started)
-- [ ] Per-repo status mapping and automated transitions via the task status path
-- [ ] Activity log entries + socket updates
-- [ ] Create Branch modal and API
-- [ ] GitHub identity link for members
+## Phase 2: Automation
+- [x] Per-repo status mapping (stored in `settings.status_map`, defaults derived from status categories on link)
+- [x] Transition rules: forward-only, never reopens done, state-reconciling across all linked PRs/branches (+ unit tests)
+- [x] Automated transitions via the same DB function as manual status changes (progress, completed_at, activity log, project room emit)
+- [x] Dependency check before moving to a done status
+- [x] `GITHUB_TASK_ACTIVITY` socket event; drawer refreshes live
+- [x] Create Branch API + modal (validated name, base SHA lookup, links branch, copyable checkout command)
+- [x] Project settings UI: status automation selects per linked repository
+- [x] i18n for all locales
+- [ ] GitHub identity link for members (OAuth user flow). Until built, the actor for automated changes is the PR author when a link exists, otherwise the user who linked the repository
+- [ ] Task activity log text mentions the PR (log currently shows the standard status change attributed to the actor)
+- [ ] Notifications to assignees on automated transitions (deliberately skipped to avoid noise; decide)
+- [ ] Event processor / automation integration tests against a DB fixture
 
 ## Phase 3: Issue import (not started)
 - [ ] Import modal and one-way import

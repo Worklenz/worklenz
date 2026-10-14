@@ -66,7 +66,16 @@
     "unlinkDescription": "Istniejące powiązania ze zgłoszeniami zostaną zachowane, ale nowa aktywność nie będzie już śledzona.",
     "unlink": "Odłącz",
     "unlinkAria": "Odłącz {{name}}",
-    "howItWorks": "Dodaj klucz zgłoszenia, np. {{example}}, do nazwy gałęzi, komunikatu commita lub tytułu pull requesta, aby powiązać go ze zgłoszeniem."
+    "howItWorks": "Dodaj klucz zgłoszenia, np. {{example}}, do nazwy gałęzi, komunikatu commita lub tytułu pull requesta, aby powiązać go ze zgłoszeniem.",
+    "automation": {
+      "title": "Automatyzacja statusów",
+      "description": "Automatycznie przenoś zgłoszenia, gdy pojawia się aktywność w GitHub. Zgłoszenia nigdy nie cofają się ani nie opuszczają statusu ukończonego.",
+      "branchCreated": "Utworzono gałąź",
+      "prOpened": "Otwarto pull request",
+      "prMerged": "Scalono pull request",
+      "noChange": "Nie zmieniaj statusu",
+      "saveFailed": "Nie udało się zaktualizować automatyzacji."
+    }
   },
   "development": {
     "pr": {
@@ -85,6 +94,26 @@
     "commits": "Commity",
     "branchDeleted": "Usunięta",
     "showFewer": "Pokaż mniej",
-    "showAll": "Pokaż wszystkie commity ({{count}})"
+    "showAll": "Pokaż wszystkie commity ({{count}})",
+    "createBranch": {
+      "button": "Utwórz gałąź",
+      "title": "Utwórz gałąź",
+      "repository": "Repozytorium",
+      "name": "Nazwa gałęzi",
+      "type": "Typ",
+      "baseBranch": "Gałąź bazowa",
+      "invalidName": "Użyj liter, cyfr, kropek, myślników, podkreśleń lub ukośników.",
+      "created": "Gałąź została utworzona.",
+      "checkoutHint": "Uruchom to, aby zacząć pracę lokalnie:",
+      "copy": "Kopiuj polecenie",
+      "copied": "Skopiowano do schowka.",
+      "done": "Gotowe",
+      "errors": {
+        "generic": "Nie udało się utworzyć gałęzi.",
+        "exists": "Gałąź o tej nazwie już istnieje.",
+        "baseMissing": "Nie znaleziono gałęzi bazowej w tym repozytorium.",
+        "permission": "Aplikacja GitHub nie może tworzyć gałęzi. Poproś administratora o nadanie jej uprawnień zapisu do zawartości."
+      }
+    }
   }
 }

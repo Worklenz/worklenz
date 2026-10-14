@@ -21,6 +21,17 @@ export interface IGithubStatus {
   integration: IGithubIntegrationInfo | null;
 }
 
+export type GithubTransitionEvent = 'branch_created' | 'pr_opened' | 'pr_merged';
+export type IGithubStatusMap = Partial<Record<GithubTransitionEvent, string | null>>;
+
+export interface IGithubProjectStatus {
+  id: string;
+  name: string;
+  is_todo: boolean;
+  is_doing: boolean;
+  is_done: boolean;
+}
+
 export interface IGithubLinkedRepository {
   id: string;
   repository_id: string;
@@ -29,6 +40,7 @@ export interface IGithubLinkedRepository {
   is_available: boolean;
   default_branch: string;
   default_base_branch: string;
+  settings: { status_map?: IGithubStatusMap } | null;
 }
 
 export interface IGithubAvailableRepository {
@@ -43,6 +55,7 @@ export interface IGithubProjectRepositories {
   connected: boolean;
   linked: IGithubLinkedRepository[];
   available: IGithubAvailableRepository[];
+  statuses: IGithubProjectStatus[];
 }
 
 export type GithubReviewState = 'approved' | 'changes_requested' | 'review_required' | null;
@@ -86,8 +99,23 @@ export interface IGithubCommit {
   repository: string;
 }
 
+export interface IGithubTaskRepository {
+  repository_id: string;
+  full_name: string;
+  default_base_branch: string;
+}
+
+export interface IGithubCreatedBranch {
+  name: string;
+  html_url: string;
+  checkout_command: string;
+}
+
 export interface IGithubTaskDevelopment {
   has_linked_repositories: boolean;
+  repositories: IGithubTaskRepository[];
+  task_key: string;
+  task_name: string;
   branches: IGithubBranch[];
   pull_requests: IGithubPullRequest[];
   commits: IGithubCommit[];
@@ -131,10 +159,14 @@ export const githubApiService = {
     return response.data;
   },
 
-  updateRepositoryLink: async (projectId: string, linkId: string, defaultBaseBranch: string | null) => {
+  updateRepositoryLink: async (
+    projectId: string,
+    linkId: string,
+    changes: { default_base_branch?: string | null; status_map?: IGithubStatusMap }
+  ) => {
     const response = await apiClient.put<IServerResponse<null>>(
       `${rootUrl}/projects/${projectId}/repositories/${linkId}`,
-      { default_base_branch: defaultBaseBranch }
+      changes
     );
     return response.data;
   },
@@ -142,6 +174,17 @@ export const githubApiService = {
   unlinkRepository: async (projectId: string, linkId: string) => {
     const response = await apiClient.delete<IServerResponse<null>>(
       `${rootUrl}/projects/${projectId}/repositories/${linkId}`
+    );
+    return response.data;
+  },
+
+  createBranch: async (
+    taskId: string,
+    body: { repository_id: string; name: string; base_branch: string }
+  ) => {
+    const response = await apiClient.post<IServerResponse<IGithubCreatedBranch>>(
+      `${rootUrl}/tasks/${taskId}/branches`,
+      body
     );
     return response.data;
   },

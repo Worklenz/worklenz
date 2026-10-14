@@ -81,7 +81,7 @@ Capabilities:
 - **FR-3.2**: **Create Branch** action:
   - Pick repository (only linked repos), base branch, prefix (`feature/`, `bugfix/`, `hotfix/`, `chore/`) and name (default `<issue-key>-<slug>`, sanitized and length-limited to valid git ref rules).
   - Creates the ref through the GitHub API and links it to the issue.
-  - Offers a one-click copy of `git checkout -b <name>`.
+  - Offers a one-click copy of the checkout command. Because the branch already exists on GitHub, the command is `git fetch origin && git checkout -b <name> origin/<name>`.
   - Requires the Contents write permission (section 6.2).
 
 #### 4.1.4 Issue key detection

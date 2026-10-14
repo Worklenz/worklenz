@@ -66,7 +66,16 @@
     "unlinkDescription": "问题上已有的关联会保留，但不再跟踪新的活动。",
     "unlink": "取消关联",
     "unlinkAria": "取消关联 {{name}}",
-    "howItWorks": "在分支名称、提交信息或拉取请求标题中包含问题编号（如 {{example}}），即可将其关联到该问题。"
+    "howItWorks": "在分支名称、提交信息或拉取请求标题中包含问题编号（如 {{example}}），即可将其关联到该问题。",
+    "automation": {
+      "title": "状态自动化",
+      "description": "根据 GitHub 活动自动移动问题。问题不会后退，也不会移出已完成状态。",
+      "branchCreated": "创建分支",
+      "prOpened": "打开拉取请求",
+      "prMerged": "合并拉取请求",
+      "noChange": "不更改状态",
+      "saveFailed": "无法更新自动化设置。"
+    }
   },
   "development": {
     "pr": {
@@ -85,6 +94,26 @@
     "commits": "提交",
     "branchDeleted": "已删除",
     "showFewer": "收起",
-    "showAll": "显示全部 {{count}} 个提交"
+    "showAll": "显示全部 {{count}} 个提交",
+    "createBranch": {
+      "button": "创建分支",
+      "title": "创建分支",
+      "repository": "仓库",
+      "name": "分支名称",
+      "type": "类型",
+      "baseBranch": "基础分支",
+      "invalidName": "请使用字母、数字、点、短横线、下划线或斜杠。",
+      "created": "分支已创建。",
+      "checkoutHint": "运行以下命令即可在本地开始工作：",
+      "copy": "复制命令",
+      "copied": "已复制到剪贴板。",
+      "done": "完成",
+      "errors": {
+        "generic": "无法创建分支。",
+        "exists": "已存在同名分支。",
+        "baseMissing": "在此仓库中找不到基础分支。",
+        "permission": "GitHub 应用无权创建分支。请让管理员授予其内容写入权限。"
+      }
+    }
   }
 }

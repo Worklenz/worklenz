@@ -19,8 +19,10 @@ import {
 import { DeleteOutlined, GithubOutlined, LockOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   githubApiService,
+  GithubTransitionEvent,
   IGithubProjectRepositories,
 } from '@/api/github/github.api.service';
+import { GithubStatusAutomation } from './GithubStatusAutomation';
 import logger from '@/utils/errorLogger';
 
 interface GithubProjectRepositoriesProps {
@@ -113,12 +115,48 @@ export const GithubProjectRepositories = ({
   const handleBaseBranchChange = async (linkId: string, value: string) => {
     const branch = value.trim();
     try {
-      await githubApiService.updateRepositoryLink(projectId, linkId, branch || null);
+      await githubApiService.updateRepositoryLink(projectId, linkId, {
+        default_base_branch: branch || null,
+      });
       await load();
     } catch (error) {
       logger.error('Failed to update base branch', error);
       messageApi.error(
         t('project.updateFailed', { defaultValue: 'Could not update the base branch.' })
+      );
+    }
+  };
+
+  const handleStatusMapChange = async (
+    linkId: string,
+    event: GithubTransitionEvent,
+    statusId: string | null
+  ) => {
+    const link = data?.linked.find(item => item.id === linkId);
+    if (!link) return;
+    const nextMap = { ...(link.settings?.status_map || {}), [event]: statusId };
+
+    // Optimistic update; roll back if the server rejects it.
+    const previous = data;
+    setData(current =>
+      current
+        ? {
+            ...current,
+            linked: current.linked.map(item =>
+              item.id === linkId
+                ? { ...item, settings: { ...(item.settings || {}), status_map: nextMap } }
+                : item
+            ),
+          }
+        : current
+    );
+    try {
+      await githubApiService.updateRepositoryLink(projectId, linkId, { status_map: nextMap });
+    } catch (error) {
+      logger.error('Failed to update GitHub status automation', error);
+      setData(previous);
+      messageApi.error(
+        t('project.automation.saveFailed', { defaultValue: 'Could not update automation.' })
       );
     }
   };
@@ -239,12 +277,8 @@ export const GithubProjectRepositories = ({
         ) : (
           <Flex vertical gap={8}>
             {data.linked.map(link => (
-              <Flex
+              <div
                 key={link.id}
-                align="center"
-                justify="space-between"
-                gap={12}
-                wrap
                 style={{
                   padding: '10px 12px',
                   borderRadius: token.borderRadiusLG,
@@ -252,6 +286,7 @@ export const GithubProjectRepositories = ({
                   background: token.colorBgContainer,
                 }}
               >
+              <Flex align="center" justify="space-between" gap={12} wrap>
                 <Flex vertical style={{ minWidth: 0, flex: 1 }}>
                   <Flex align="center" gap={6} wrap>
                     <Typography.Text strong ellipsis>
@@ -316,6 +351,13 @@ export const GithubProjectRepositories = ({
                   </Popconfirm>
                 )}
               </Flex>
+              <GithubStatusAutomation
+                statuses={data.statuses}
+                value={link.settings?.status_map || {}}
+                disabled={!canManage}
+                onChange={(event, statusId) => void handleStatusMapChange(link.id, event, statusId)}
+              />
+              </div>
             ))}
           </Flex>
         )}

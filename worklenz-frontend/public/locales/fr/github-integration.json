@@ -66,7 +66,16 @@
     "unlinkDescription": "Les liens existants sur les tickets sont conservés, mais la nouvelle activité ne sera plus suivie.",
     "unlink": "Dissocier",
     "unlinkAria": "Dissocier {{name}}",
-    "howItWorks": "Incluez une clé de ticket comme {{example}} dans un nom de branche, un message de commit ou un titre de pull request pour la lier à ce ticket."
+    "howItWorks": "Incluez une clé de ticket comme {{example}} dans un nom de branche, un message de commit ou un titre de pull request pour la lier à ce ticket.",
+    "automation": {
+      "title": "Automatisation des statuts",
+      "description": "Déplacez automatiquement les tickets selon l’activité GitHub. Les tickets ne reculent jamais et ne quittent jamais un statut terminé.",
+      "branchCreated": "Branche créée",
+      "prOpened": "Pull request ouverte",
+      "prMerged": "Pull request fusionnée",
+      "noChange": "Ne pas modifier le statut",
+      "saveFailed": "Impossible de mettre à jour l’automatisation."
+    }
   },
   "development": {
     "pr": {
@@ -85,6 +94,26 @@
     "commits": "Commits",
     "branchDeleted": "Supprimée",
     "showFewer": "Afficher moins",
-    "showAll": "Afficher les {{count}} commits"
+    "showAll": "Afficher les {{count}} commits",
+    "createBranch": {
+      "button": "Créer une branche",
+      "title": "Créer une branche",
+      "repository": "Dépôt",
+      "name": "Nom de la branche",
+      "type": "Type",
+      "baseBranch": "Branche de base",
+      "invalidName": "Utilisez des lettres, chiffres, points, tirets, tirets bas ou barres obliques.",
+      "created": "Branche créée.",
+      "checkoutHint": "Exécutez ceci pour commencer à travailler en local :",
+      "copy": "Copier la commande",
+      "copied": "Copié dans le presse-papiers.",
+      "done": "Terminé",
+      "errors": {
+        "generic": "Impossible de créer la branche.",
+        "exists": "Une branche portant ce nom existe déjà.",
+        "baseMissing": "La branche de base est introuvable dans ce dépôt.",
+        "permission": "L’application GitHub n’est pas autorisée à créer des branches. Demandez à un administrateur de lui accorder l’accès en écriture au contenu."
+      }
+    }
   }
 }

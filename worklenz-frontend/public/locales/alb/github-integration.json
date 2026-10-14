@@ -66,7 +66,16 @@
     "unlinkDescription": "Lidhjet ekzistuese te çështjet ruhen, por aktiviteti i ri nuk do të ndiqet më.",
     "unlink": "Shkëput",
     "unlinkAria": "Shkëput {{name}}",
-    "howItWorks": "Përfshini një çelës çështjeje si {{example}} në emrin e degës, mesazhin e commit-it ose titullin e pull request-it për ta lidhur me atë çështje."
+    "howItWorks": "Përfshini një çelës çështjeje si {{example}} në emrin e degës, mesazhin e commit-it ose titullin e pull request-it për ta lidhur me atë çështje.",
+    "automation": {
+      "title": "Automatizimi i statusit",
+      "description": "Zhvendosni çështjet automatikisht kur ndodh aktivitet në GitHub. Çështjet nuk kthehen kurrë mbrapa dhe nuk dalin nga statusi i përfunduar.",
+      "branchCreated": "Dega u krijua",
+      "prOpened": "Pull request u hap",
+      "prMerged": "Pull request u bashkua",
+      "noChange": "Mos ndrysho statusin",
+      "saveFailed": "Automatizimi nuk mund të përditësohej."
+    }
   },
   "development": {
     "pr": {
@@ -85,6 +94,26 @@
     "commits": "Commit-et",
     "branchDeleted": "E fshirë",
     "showFewer": "Shfaq më pak",
-    "showAll": "Shfaq të gjitha {{count}} commit-et"
+    "showAll": "Shfaq të gjitha {{count}} commit-et",
+    "createBranch": {
+      "button": "Krijo degë",
+      "title": "Krijo degë",
+      "repository": "Depo",
+      "name": "Emri i degës",
+      "type": "Lloji",
+      "baseBranch": "Dega bazë",
+      "invalidName": "Përdorni shkronja, numra, pika, vija, nënvija ose vija të pjerrëta.",
+      "created": "Dega u krijua.",
+      "checkoutHint": "Ekzekutoni këtë për të filluar punën lokalisht:",
+      "copy": "Kopjo komandën",
+      "copied": "U kopjua në clipboard.",
+      "done": "U krye",
+      "errors": {
+        "generic": "Dega nuk mund të krijohej.",
+        "exists": "Ekziston tashmë një degë me këtë emër.",
+        "baseMissing": "Dega bazë nuk u gjet në këtë depo.",
+        "permission": "Aplikacioni GitHub nuk lejohet të krijojë degë. Kërkojini një administratori t’i japë qasje shkrimi te Contents."
+      }
+    }
   }
 }

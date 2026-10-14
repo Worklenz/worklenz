@@ -66,7 +66,16 @@
     "unlinkDescription": "Os vínculos existentes nas issues são mantidos, mas novas atividades deixarão de ser rastreadas.",
     "unlink": "Desvincular",
     "unlinkAria": "Desvincular {{name}}",
-    "howItWorks": "Inclua uma chave de issue como {{example}} em um nome de branch, mensagem de commit ou título de pull request para vinculá-la a essa issue."
+    "howItWorks": "Inclua uma chave de issue como {{example}} em um nome de branch, mensagem de commit ou título de pull request para vinculá-la a essa issue.",
+    "automation": {
+      "title": "Automação de status",
+      "description": "Mova as issues automaticamente conforme a atividade no GitHub. As issues nunca retrocedem nem saem de um status concluído.",
+      "branchCreated": "Branch criada",
+      "prOpened": "Pull request aberto",
+      "prMerged": "Pull request mesclado",
+      "noChange": "Não alterar o status",
+      "saveFailed": "Não foi possível atualizar a automação."
+    }
   },
   "development": {
     "pr": {
@@ -85,6 +94,26 @@
     "commits": "Commits",
     "branchDeleted": "Excluída",
     "showFewer": "Mostrar menos",
-    "showAll": "Mostrar todos os {{count}} commits"
+    "showAll": "Mostrar todos os {{count}} commits",
+    "createBranch": {
+      "button": "Criar branch",
+      "title": "Criar branch",
+      "repository": "Repositório",
+      "name": "Nome da branch",
+      "type": "Tipo",
+      "baseBranch": "Branch base",
+      "invalidName": "Use letras, números, pontos, hífens, sublinhados ou barras.",
+      "created": "Branch criada.",
+      "checkoutHint": "Execute isto para começar a trabalhar localmente:",
+      "copy": "Copiar comando",
+      "copied": "Copiado para a área de transferência.",
+      "done": "Concluído",
+      "errors": {
+        "generic": "Não foi possível criar a branch.",
+        "exists": "Já existe uma branch com este nome.",
+        "baseMissing": "A branch base não foi encontrada neste repositório.",
+        "permission": "O aplicativo do GitHub não pode criar branches. Peça a um administrador para conceder acesso de gravação ao conteúdo."
+      }
+    }
   }
 }

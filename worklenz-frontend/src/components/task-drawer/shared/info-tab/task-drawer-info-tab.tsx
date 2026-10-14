@@ -354,6 +354,23 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     };
   }, [socket, selectedTaskId, fetchSubTasks]);
 
+  // GitHub activity (new PR/commit/branch or automated status change) for this task.
+  const [githubRefreshToken, setGithubRefreshToken] = useState(0);
+  useEffect(() => {
+    if (!socket || !selectedTaskId || !isSoftwareProject) return;
+
+    const handleGithubActivity = (payload: { task_ids?: string[] }) => {
+      if (payload?.task_ids?.includes(selectedTaskId)) {
+        setGithubRefreshToken(previous => previous + 1);
+      }
+    };
+
+    socket.on(SocketEvents.GITHUB_TASK_ACTIVITY.toString(), handleGithubActivity);
+    return () => {
+      socket.off(SocketEvents.GITHUB_TASK_ACTIVITY.toString(), handleGithubActivity);
+    };
+  }, [socket, selectedTaskId, isSoftwareProject]);
+
   const fetchTaskDependencies = useCallback(async () => {
     if (!selectedTaskId) return;
     try {
@@ -565,6 +582,8 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
         <TaskDrawerDevelopment
           taskId={selectedTaskId || ''}
           taskKey={(taskFormViewModel?.task as ITaskViewModel | undefined)?.task_key}
+          refreshToken={githubRefreshToken}
+          canCreateBranch={canCreateTask && !isGuest}
         />
       ),
       style: panelStyle,

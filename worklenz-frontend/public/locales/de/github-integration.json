@@ -66,7 +66,16 @@
     "unlinkDescription": "Bestehende Verknüpfungen an Vorgängen bleiben, neue Aktivitäten werden jedoch nicht mehr erfasst.",
     "unlink": "Trennen",
     "unlinkAria": "{{name}} trennen",
-    "howItWorks": "Fügen Sie einen Vorgangsschlüssel wie {{example}} in einen Branch-Namen, eine Commit-Nachricht oder einen Pull-Request-Titel ein, um ihn mit dem Vorgang zu verknüpfen."
+    "howItWorks": "Fügen Sie einen Vorgangsschlüssel wie {{example}} in einen Branch-Namen, eine Commit-Nachricht oder einen Pull-Request-Titel ein, um ihn mit dem Vorgang zu verknüpfen.",
+    "automation": {
+      "title": "Status-Automatisierung",
+      "description": "Vorgänge automatisch verschieben, wenn GitHub-Aktivität eintritt. Vorgänge gehen nie zurück oder aus einem erledigten Status heraus.",
+      "branchCreated": "Branch erstellt",
+      "prOpened": "Pull Request geöffnet",
+      "prMerged": "Pull Request zusammengeführt",
+      "noChange": "Status nicht ändern",
+      "saveFailed": "Automatisierung konnte nicht aktualisiert werden."
+    }
   },
   "development": {
     "pr": {
@@ -85,6 +94,26 @@
     "commits": "Commits",
     "branchDeleted": "Gelöscht",
     "showFewer": "Weniger anzeigen",
-    "showAll": "Alle {{count}} Commits anzeigen"
+    "showAll": "Alle {{count}} Commits anzeigen",
+    "createBranch": {
+      "button": "Branch erstellen",
+      "title": "Branch erstellen",
+      "repository": "Repository",
+      "name": "Branch-Name",
+      "type": "Typ",
+      "baseBranch": "Basis-Branch",
+      "invalidName": "Verwenden Sie Buchstaben, Zahlen, Punkte, Bindestriche, Unterstriche oder Schrägstriche.",
+      "created": "Branch erstellt.",
+      "checkoutHint": "Führen Sie dies aus, um lokal daran zu arbeiten:",
+      "copy": "Befehl kopieren",
+      "copied": "In die Zwischenablage kopiert.",
+      "done": "Fertig",
+      "errors": {
+        "generic": "Der Branch konnte nicht erstellt werden.",
+        "exists": "Ein Branch mit diesem Namen existiert bereits.",
+        "baseMissing": "Der Basis-Branch wurde in diesem Repository nicht gefunden.",
+        "permission": "Die GitHub-App darf keine Branches erstellen. Bitten Sie einen Admin, ihr Schreibzugriff auf Inhalte zu geben."
+      }
+    }
   }
 }

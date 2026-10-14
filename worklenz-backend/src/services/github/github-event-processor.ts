@@ -1,5 +1,6 @@
 import db from "../../config/db";
 import { parseIssueKeys } from "./github-issue-key-parser";
+import { notifyGithubActivity, reconcileTasks } from "./github-automation.service";
 
 type Json = Record<string, any>;
 
@@ -9,6 +10,32 @@ interface ILinkedProject {
 }
 
 const MAX_COMMITS_PER_PUSH = 100;
+
+async function tasksLinkedToBranch(repositoryId: string, branchName: string): Promise<string[]> {
+  const result = await db.query(
+    `SELECT l.task_id FROM github_task_links l
+     JOIN github_branches b ON b.id = l.branch_id
+     WHERE b.repository_id = $1 AND b.name = $2`,
+    [repositoryId, branchName],
+  );
+  return result.rows.map(r => r.task_id);
+}
+
+async function tasksLinkedToPullRequest(repositoryId: string, number: number): Promise<string[]> {
+  const result = await db.query(
+    `SELECT l.task_id FROM github_task_links l
+     JOIN github_pull_requests p ON p.id = l.pull_request_id
+     WHERE p.repository_id = $1 AND p.number = $2`,
+    [repositoryId, number],
+  );
+  return result.rows.map(r => r.task_id);
+}
+
+async function applyAutomation(taskIds: string[], repositoryId: string, authorLogin?: string | null) {
+  if (!taskIds.length) return;
+  await reconcileTasks(taskIds, repositoryId, authorLogin);
+  await notifyGithubActivity(taskIds);
+}
 
 /** Repository row for a webhook payload; created on first sight when the integration is known. */
 async function resolveRepository(payload: Json): Promise<{ id: string; integration_id: string } | null> {
@@ -115,12 +142,16 @@ async function handlePush(payload: Json): Promise<void> {
   const projects = await getLinkedProjects(repository.id);
   if (!projects.length) return;
 
+  const pusher: string | null = payload.pusher?.name || payload.sender?.login || null;
+  const affected: string[] = [];
+
   if (branchName && payload.deleted) {
     await db.query(
       `UPDATE github_branches SET is_deleted = TRUE, updated_at = NOW()
        WHERE repository_id = $1 AND name = $2`,
       [repository.id, branchName],
     );
+    await applyAutomation(await tasksLinkedToBranch(repository.id, branchName), repository.id, pusher);
     return;
   }
 
@@ -129,6 +160,7 @@ async function handlePush(payload: Json): Promise<void> {
     if (branchTasks.length) {
       const branchId = await upsertBranch(repository.id, branchName, payload.after);
       await linkTasks(branchTasks, { type: "branch", id: branchId });
+      affected.push(...branchTasks.map(t => t.taskId));
     }
   }
 
@@ -152,7 +184,10 @@ async function handlePush(payload: Json): Promise<void> {
       ],
     );
     await linkTasks(tasks, { type: "commit", id: stored.rows[0].id });
+    affected.push(...tasks.map(t => t.taskId));
   }
+
+  await applyAutomation(affected, repository.id, pusher);
 }
 
 async function handleBranchCreateDelete(eventType: string, payload: Json): Promise<void> {
@@ -166,6 +201,11 @@ async function handleBranchCreateDelete(eventType: string, payload: Json): Promi
        WHERE repository_id = $1 AND name = $2`,
       [repository.id, payload.ref],
     );
+    await applyAutomation(
+      await tasksLinkedToBranch(repository.id, payload.ref),
+      repository.id,
+      payload.sender?.login,
+    );
     return;
   }
 
@@ -174,6 +214,7 @@ async function handleBranchCreateDelete(eventType: string, payload: Json): Promi
   if (!tasks.length) return;
   const branchId = await upsertBranch(repository.id, payload.ref);
   await linkTasks(tasks, { type: "branch", id: branchId });
+  await applyAutomation(tasks.map(t => t.taskId), repository.id, payload.sender?.login);
 }
 
 async function handlePullRequest(payload: Json): Promise<void> {
@@ -228,6 +269,10 @@ async function handlePullRequest(payload: Json): Promise<void> {
 
   const prId = result.rows[0]?.id ?? existing.rows[0]?.id;
   if (prId && tasks.length) await linkTasks(tasks, { type: "pull_request", id: prId });
+
+  // Reconcile every issue tied to this PR, including links made by earlier events.
+  const linked = await tasksLinkedToPullRequest(repository.id, pr.number);
+  await applyAutomation(linked, repository.id, pr.merged ? pr.merged_by?.login || pr.user?.login : pr.user?.login);
 }
 
 async function handlePullRequestReview(payload: Json): Promise<void> {
@@ -241,12 +286,16 @@ async function handlePullRequestReview(payload: Json): Promise<void> {
     state === "approved" ? "approved" : state === "changes_requested" ? "changes_requested" : null;
   if (!reviewState && state !== "dismissed") return;
 
-  await db.query(
+  const updated = await db.query(
     `UPDATE github_pull_requests p SET review_state = $3
      FROM github_repositories r
-     WHERE p.repository_id = r.id AND r.github_repo_id = $1 AND p.number = $2`,
+     WHERE p.repository_id = r.id AND r.github_repo_id = $1 AND p.number = $2
+     RETURNING p.repository_id`,
     [repo.id, pr.number, reviewState],
   );
+  if (updated.rowCount) {
+    await notifyGithubActivity(await tasksLinkedToPullRequest(updated.rows[0].repository_id, pr.number));
+  }
 }
 
 async function handleInstallation(payload: Json): Promise<void> {
