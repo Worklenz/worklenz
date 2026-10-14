@@ -1,4 +1,5 @@
 import type { RichTextChange } from '@/components/v2/RichTextEditor';
+import { richTextToPlain } from '@/components/v2/richTextUtils';
 
 interface StubProps {
   value: string;
@@ -16,7 +17,7 @@ const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '
  * editor and emits what it holds as one paragraph, the way the real editor does.
  */
 export const RichTextEditorStub = ({ value, onChange, onSubmit, placeholder, ariaLabel, disabled }: StubProps) => {
-  const text = value.replace(/<[^>]*>/g, '');
+  const text = richTextToPlain(value);
   return (
     <textarea
       aria-label={ariaLabel}

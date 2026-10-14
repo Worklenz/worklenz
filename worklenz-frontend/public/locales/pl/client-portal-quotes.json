@@ -111,5 +111,7 @@
   "deleteConfirmationDescription": "Czy na pewno chcesz usunąć {{number}}? Tej operacji nie można cofnąć.",
   "deleteConfirmationOk": "Usuń",
   "deleteQuoteSuccess": "Oferta została usunięta",
-  "deleteQuoteError": "Nie udało się usunąć oferty"
+  "deleteQuoteError": "Nie udało się usunąć oferty",
+  "linkedChangeRequest": "Linked Change Request",
+  "openChangeRequest": "Open change request"
 }

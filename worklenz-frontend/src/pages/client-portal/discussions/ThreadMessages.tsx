@@ -6,6 +6,7 @@ import { PortalAvatar, StatusTag, formatPortalDateTime } from '@/components/clie
 import type { ThreadMessage } from '@/types/client-portal/v2';
 import { MessageAttachments } from './MessageAttachments';
 import { RichMessageContent } from './RichMessageContent';
+import { isRichTextEmpty } from '../shared/rich-text/richText';
 
 interface ThreadMessagesProps {
   messages: ThreadMessage[];
@@ -60,7 +61,7 @@ export const ThreadMessages = ({ messages }: ThreadMessagesProps) => {
             ? token.colorPrimary
             : token.colorFillQuaternary;
         // A message of only files carries an empty paragraph; it should not leave a blank line above them.
-        const hasBody = message.text.replace(/<[^>]*>/g, '').trim() !== '' || (message.attachments ?? []).length === 0;
+        const hasBody = !isRichTextEmpty(message.text) || (message.attachments ?? []).length === 0;
         const bubbleColor =isInternalComment ? token.colorText : isTeam ? token.colorTextLightSolid : token.colorText;
 
         return (

@@ -35,6 +35,7 @@
     "removeAttachment": "移除 {{name}}",
     "send": "Send",
     "sendHint": "按 Ctrl+Enter 发送",
+    "attachSharedNote": "Attached files are shared with the client (the attached version only) and appear in the project Files.",
     "sent": "Reply sent.",
     "sentNotified": "Reply sent. {{names}} notified.",
     "tooLong": "一条消息最多 {{max}} 个字符。",

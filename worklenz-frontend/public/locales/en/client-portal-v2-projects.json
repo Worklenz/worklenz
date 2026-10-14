@@ -157,6 +157,7 @@
       "visible": "Client visible"
     },
     "complete": "Mark complete",
+    "completeBody": "{{name}} will keep its target date ({{date}}) and record today as the completion date.",
     "completeFailed": "The milestone could not be completed.",
     "completeTitle": "Mark milestone complete",
     "completedInternal": "“{{name}}” marked complete. It is Internal Only, so the client is not notified.",
@@ -251,6 +252,11 @@
     "summaryHint": "Written for the client. Keep internal context in the private notes."
   },
   "tasks": {
+    "clientStatus": {
+      "done": "Done",
+      "inProgress": "In progress",
+      "notStarted": "Not started"
+    },
     "columns": {
       "assignee": "Assignee",
       "clientSees": "Client sees",
@@ -289,10 +295,18 @@
       "visibility": "Visibility"
     },
     "empty": "No tasks in this view.",
+    "filterAll": "All ({{count}})",
+    "filterClient": "Client visible ({{count}})",
+    "filterInternal": "Internal only ({{count}})",
     "filterLabel": "Filter tasks by visibility",
     "hidden": "Hidden",
     "intro": "Tasks are managed in WorkLenz as usual. Every task is Internal Only until you share it.",
     "search": "Search tasks…",
+    "status": {
+      "done": "Done",
+      "inProgress": "In progress",
+      "todo": "To do"
+    },
     "tableLabel": "Tasks",
     "visibilityFailed": "The visibility could not be changed."
   },

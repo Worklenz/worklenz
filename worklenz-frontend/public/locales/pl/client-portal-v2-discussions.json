@@ -35,6 +35,7 @@
     "removeAttachment": "Usuń {{name}}",
     "send": "Send",
     "sendHint": "Naciśnij Ctrl+Enter, aby wysłać",
+    "attachSharedNote": "Attached files are shared with the client (the attached version only) and appear in the project Files.",
     "sent": "Reply sent.",
     "sentNotified": "Reply sent. {{names}} notified.",
     "tooLong": "Wiadomość może mieć maksymalnie {{max}} znaków.",

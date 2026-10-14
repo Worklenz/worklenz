@@ -290,7 +290,7 @@ export async function getOverview(
       try {
         return [key, { data: await WIDGETS[key](ctx) }];
       } catch (error) {
-        console.error(`Overview widget ${key} failed`, error);
+        console.error("Overview widget failed", { key, error });
         return [key, { error: "Failed to load this widget" }];
       }
     })

@@ -78,6 +78,12 @@
   "visibilityClient": "Client visible",
   "visibilityInternal": "Internal only",
   "visibilitySwitchLabel": "Client visible: {{item}}",
+  "visibilityToast": {
+    "sharedFile": "“{{name}}” is now shared with the client. Client users on the project are notified.",
+    "sharedMilestone": "“{{name}}” is now visible to the client.",
+    "sharedTask": "“{{name}}” is now visible to the client.",
+    "withdrawn": "“{{name}}” is now Internal Only. Client access is removed immediately."
+  },
   "signInLinkDescription": "Opening this link emails a 6-digit code to {{email}}, and entering it signs them in. There is no password. The link works for 7 days and replaces any earlier link.",
   "signInLinkTitle": "Sign-in link",
   "toolbarFilter": "Filter",

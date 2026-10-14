@@ -49,6 +49,7 @@
   },
   "result": {
     "activationHint": "They open the link in the email and sign in with a 6-digit code sent to their address. There is no password.",
+    "addedNoInvite": "{{name}} was added as {{role}}. No invitation was sent yet.",
     "emailNotSent": "{{name}} was saved, but the invitation email could not be sent. Share the link instead.",
     "failed": "The client could not be added.",
     "invited": "Invitation sent to {{email}}.",

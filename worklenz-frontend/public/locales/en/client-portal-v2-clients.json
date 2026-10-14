@@ -29,6 +29,7 @@
   },
   "edit": {
     "failed": "The user could not be updated.",
+    "roleChanged": "{{name}} is now a {{role}}. It applies on their next request, not only after a new sign-in.",
     "roleNotice": "Role changes take effect on the user’s next authorization check, not only after a new sign-in.",
     "save": "Save",
     "title": "Edit user · {{organization}}",
@@ -117,6 +118,7 @@
       "empty": "Nothing is waiting on you for {{name}}.",
       "inviteExpired": "{{name}}’s invitation expired",
       "inviteExpiredAsked": "{{name}}’s invitation expired and they asked for a new link",
+      "theClient": "the client",
       "title": "Needs attention",
       "unreadMessage": "Unread client message"
     },

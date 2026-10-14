@@ -3,6 +3,7 @@
     "createLinkFailed": "The sign-in link could not be created.",
     "deactivateFailed": "The user could not be deactivated.",
     "deactivated": "{{name}} was deactivated. Portal and API access is revoked immediately.",
+    "messageNoProjects": "{{name}} has no projects yet. Assign a project first, then start a discussion.",
     "reactivateFailed": "The user could not be reactivated.",
     "reactivated": "{{name}} can sign in again. Their previous status was restored.",
     "removeFailed": "The user could not be removed.",
@@ -28,6 +29,7 @@
   },
   "edit": {
     "failed": "The user could not be updated.",
+    "roleChanged": "{{name}} is now a {{role}}. It applies on their next request, not only after a new sign-in.",
     "roleNotice": "Role changes take effect on the user’s next authorization check, not only after a new sign-in.",
     "save": "Save",
     "title": "Edit user · {{organization}}",
@@ -52,6 +54,7 @@
     "createLink": "Create sign-in link",
     "deactivate": "Deactivate user",
     "edit": "Edit user & role",
+    "message": "Message",
     "reactivate": "Reactivate user",
     "remove": "Remove user",
     "resend": "Resend invitation",
@@ -59,6 +62,12 @@
     "view": "View profile"
   },
   "organizations": {
+    "accessFilter": {
+      "active": "Active",
+      "deactivated": "Deactivated",
+      "invited": "Invited",
+      "none": "No users"
+    },
     "awaitingApprovals_one": "{{count}} approval",
     "awaitingApprovals_other": "{{count}} approvals",
     "awaitingChangeRequests_one": "{{count}} change request",
@@ -68,14 +77,19 @@
       "actions": "Actions",
       "awaiting": "Awaiting client",
       "client": "Client",
-      "contact": "Primary contact",
+      "contactEmail": "Contact email",
+      "contactName": "Primary contact",
       "projects": "Portal projects",
-      "users": "Users"
+      "users": "Users",
+      "contact": "Primary contact"
     },
     "empty": "No client organizations yet. Use Add Client to create the first one.",
     "emptySearch": "No clients match this search.",
+    "createLinkFailed": "The invitation link could not be created.",
     "menu": {
+      "copyInvite": "Copy invitation link",
       "edit": "Edit client",
+      "message": "Message client",
       "open": "Open workspace",
       "projects": "Manage projects",
       "users": "Manage users & access"
@@ -87,7 +101,16 @@
     "usersSummary": "{{active}} active · {{total}} total",
     "waiting": "{{count}} waiting",
     "waiting_one": "{{count}} waiting",
-    "waiting_other": "{{count}} waiting"
+    "waiting_other": "{{count}} waiting",
+    "columnHelp": {
+      "access": "Active if any user can sign in, otherwise Invited, Deactivated or No users.",
+      "awaiting": "Approvals and information requests waiting on the client.",
+      "client": "The client organization.",
+      "contactEmail": "Email address of the primary contact.",
+      "contactName": "The first active portal admin of this client.",
+      "projects": "Projects shared with this client in the portal.",
+      "users": "Users who have signed in, out of all users for this client."
+    }
   },
   "overview": {
     "attention": {
@@ -96,6 +119,7 @@
       "empty": "Nothing is waiting on you for {{name}}.",
       "inviteExpired": "{{name}}’s invitation expired",
       "inviteExpiredAsked": "{{name}}’s invitation expired and they asked for a new link",
+      "theClient": "the client",
       "title": "Needs attention",
       "unreadMessage": "Unread client message"
     },
@@ -154,8 +178,12 @@
     "allStatuses": "All statuses",
     "columns": {
       "actions": "Actions",
+      "email": "Email",
+      "jobTitle": "Job title",
       "lastAccess": "Last access",
+      "name": "Name",
       "organization": "Organization",
+      "phone": "Phone number",
       "projects": "Projects",
       "role": "Role",
       "status": "Status",
@@ -163,6 +191,12 @@
     },
     "empty": "No client users yet. Use Add Client to invite the first one.",
     "emptyFiltered": "No client users match these filters.",
+    "groupBy": {
+      "client": "Group",
+      "label": "Group client users",
+      "count_one": "{{count}} user",
+      "count_other": "{{count}} users"
+    },
     "invitedAgo": "Invited {{when}}",
     "neverAccessed": "Never",
     "noProjects": "None assigned",
@@ -175,7 +209,19 @@
     "searchInOrganization": "Search users or emails…",
     "searchLabel": "Search client users",
     "statusFilter": "Filter by status",
-    "tableLabel": "Client users"
+    "tableLabel": "Client users",
+    "columnHelp": {
+      "email": "The address this user signs in with.",
+      "jobTitle": "Their role within the client’s company.",
+      "lastAccess": "When the user last signed in to the portal.",
+      "name": "The client user’s full name.",
+      "organization": "The client this user belongs to.",
+      "phone": "Contact phone number, if provided.",
+      "projects": "Number of portal projects this user can open.",
+      "role": "What the user can do in the portal: Admin, Member or Viewer.",
+      "status": "Whether the user has signed in, is invited, or is deactivated."
+    },
+    "searchClients": "Search clients…"
   },
   "workspace": {
     "activity": {
@@ -225,7 +271,8 @@
     },
     "header": {
       "actionsLabel": "Client actions",
-      "edit": "Edit client"
+      "edit": "Edit client",
+      "message": "Message"
     },
     "projects": {
       "assign": {

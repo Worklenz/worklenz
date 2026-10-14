@@ -70,9 +70,19 @@
   },
   "list": {
     "activeUsers": "{{count}} active",
-    "allClients": "All clients",
-    "clientFilter": "Filter by client",
+    "columnHelp": {
+      "client": "The client organization this project belongs to.",
+      "nextMilestone": "The next client-visible milestone that is not yet complete.",
+      "phase": "The delivery phase shown to clients.",
+      "portal": "Whether this project is visible in the Client Portal.",
+      "progress": "How much of the project is complete.",
+      "project": "The workspace project.",
+      "status": "The status clients see in the portal.",
+      "users": "Client users who have signed in and can open this project."
+    },
     "columns": {
+      "actions": "Actions",
+      "client": "Client",
       "nextMilestone": "Next milestone",
       "phase": "Phase",
       "portal": "Portal",
@@ -83,14 +93,17 @@
     },
     "description": "Choose which projects are visible in the Client Portal and what is shared inside each one. Everything starts as Internal Only.",
     "empty": "No projects yet. Create a project in your workspace, then link it to a client.",
+    "fieldSaveFailed": "The project could not be updated.",
+    "fieldSaved": "{{name}} updated.",
     "emptyFiltered": "No projects match these filters.",
-    "manage": "Manage",
     "noClient": "No client",
-    "portalAny": "Portal on or off",
-    "portalFilter": "Filter by portal setting",
+    "phaseLabel": "Phase of {{name}}",
+    "phaseNone": "Not set",
+    "statusLabel": "Client-facing status of {{name}}",
     "portalOff": "Portal off",
     "portalOn": "Portal on",
     "progressLabel": "Progress of {{name}}",
+    "rowActions": "Actions for {{name}}",
     "search": "Search projects…",
     "searchLabel": "Search portal projects",
     "stats": {
@@ -100,10 +113,42 @@
       "enabled": "Portal-enabled projects",
       "openChangeRequests": "Open change requests"
     },
+    "statusFilter": {
+      "at_risk": "At risk",
+      "completed": "Completed",
+      "on_hold": "On hold",
+      "on_track": "On track"
+    },
     "tableLabel": "Portal projects",
-    "title": "Portal Projects"
+    "title": "Portal Projects",
+    "searchClients": "Search clients…",
+    "allClients": "All clients",
+    "clientFilter": "Filter by client",
+    "manage": "Manage",
+    "portalAny": "Portal on or off",
+    "portalFilter": "Filter by portal setting"
+  },
+  "details": {
+    "close": "Close",
+    "openWorkspace": "Open project workspace",
+    "title": "Portal project"
+  },
+  "menu": {
+    "access": "Client access",
+    "client": "Open client",
+    "files": "Files",
+    "milestones": "Milestones",
+    "tasks": "Tasks",
+    "view": "View details",
+    "workspace": "Open project workspace"
   },
   "milestones": {
+    "emptyPhases": "This project has no dated phases yet. Add phases with dates in the WorkLenz project.",
+    "phasesHint": "Showing this project’s WorkLenz phases with their real dates. Clients see these. Switch to Set manually to add your own milestones.",
+    "sourceFailed": "The milestone source could not be changed.",
+    "sourceLabel": "Milestone source",
+    "sourceManual": "Set manually",
+    "sourceWorklenz": "WorkLenz phases",
     "add": "Add milestone",
     "addMilestone": "Add milestone",
     "addTitle": "Add milestone",
@@ -117,6 +162,7 @@
       "visible": "Client visible"
     },
     "complete": "Mark complete",
+    "completeBody": "{{name}} will keep its target date ({{date}}) and record today as the completion date.",
     "completeFailed": "The milestone could not be completed.",
     "completeTitle": "Mark milestone complete",
     "completedInternal": "“{{name}}” marked complete. It is Internal Only, so the client is not notified.",
@@ -137,6 +183,7 @@
     "empty": "No milestones yet. Add one to show the client where the project is heading.",
     "internalNote": "Internal note (private)",
     "internalNoteLine": "Internal: {{note}}",
+    "internalNoteLabel": "Internal:",
     "internalNotePlaceholder": "Delay reasons, capacity, risks…",
     "linkFile": "File: {{name}}",
     "linkTask": "Task: {{title}}",
@@ -169,6 +216,7 @@
   "overview": {
     "allowUploads": "Allow client uploads",
     "allowUploadsHint": "Client Admins and Client Members can add files in this project. Client Viewers never can.",
+    "datesFromWorklenz": "Taken from the WorkLenz project. Switch progress to Set manually to enter dates here.",
     "expectedCompletion": "Expected completion",
     "expectedCompletionHint": "Leave blank and the portal shows “Not set” instead of inventing a date.",
     "infoTitle": "Client-facing project information",
@@ -183,6 +231,7 @@
     "phase": "Current phase",
     "phaseNone": "Not set",
     "primaryContact": "Primary contact",
+    "primaryContactHint": "The member of your team clients contact first. Only your workspace team can be chosen; client users are not listed.",
     "primaryContactNone": "Not set",
     "progress": "Progress",
     "progressManual": "Set manually",
@@ -208,6 +257,11 @@
     "summaryHint": "Written for the client. Keep internal context in the private notes."
   },
   "tasks": {
+    "clientStatus": {
+      "done": "Done",
+      "inProgress": "In progress",
+      "notStarted": "Not started"
+    },
     "columns": {
       "assignee": "Assignee",
       "clientSees": "Client sees",
@@ -246,10 +300,18 @@
       "visibility": "Visibility"
     },
     "empty": "No tasks in this view.",
+    "filterAll": "All ({{count}})",
+    "filterClient": "Client visible ({{count}})",
+    "filterInternal": "Internal only ({{count}})",
     "filterLabel": "Filter tasks by visibility",
     "hidden": "Hidden",
     "intro": "Tasks are managed in WorkLenz as usual. Every task is Internal Only until you share it.",
     "search": "Search tasks…",
+    "status": {
+      "done": "Done",
+      "inProgress": "In progress",
+      "todo": "To do"
+    },
     "tableLabel": "Tasks",
     "visibilityFailed": "The visibility could not be changed."
   },
@@ -275,7 +337,11 @@
   },
   "workspace": {
     "backToProjects": "Back to Portal Projects",
+    "clientLabel": "Client:",
     "clientPortal": "Client Portal",
+    "phaseLabel": "Phase:",
+    "projectNameLabel": "Project name:",
+    "statusLabel": "Project status:",
     "loadDescription": "Please try again.",
     "loadTitle": "Could not load this project",
     "noClient": "No client assigned",

@@ -495,7 +495,9 @@ export async function confirmFileVersion(input: {
 
   await withTransaction(async tx => {
     await tx.query(`UPDATE project_file_versions SET status = 'active', size = $2 WHERE id = $1`, [versionId, actualSize]);
-    await tx.query(`UPDATE project_files SET current_version = $2, size = $3 WHERE id = $1`, [
+    // Confirmations can land out of order; only advance the current pointer/size when this version is
+    // actually newer, so a slower, older upload can never roll a file back to stale content.
+    await tx.query(`UPDATE project_files SET current_version = $2, size = $3 WHERE id = $1 AND current_version < $2`, [
       fileId,
       record.version_no,
       actualSize,
