@@ -1,5 +1,6 @@
 import express from "express";
 import passport from "passport";
+import { Request, Response, NextFunction } from "express";
 
 import AuthController from "../../controllers/auth-controller";
 
@@ -11,6 +12,8 @@ import safeControllerFunction from "../../shared/safe-controller-function";
 import FileConstants from "../../shared/file-constants";
 import { log_error } from "../../shared/utils";
 import { resetPasswordLimiter, updatePasswordLimiter } from "../../middlewares/reset-password-rate-limiter";
+import { AuthResponse } from "../../models/auth-response";
+import { ServerResponse } from "../../models/server-response";
 
 const authRouter = express.Router();
 
@@ -20,14 +23,68 @@ const isGoogleOAuthConfigured = Boolean(
     process.env.GOOGLE_CALLBACK_URL
 );
 
-// Local authentication
-const options = (key: string): passport.AuthenticateOptions => ({
+// Helper to detect AJAX/API requests
+const isApiRequest = (req: Request): boolean => {
+  const accept = req.headers.accept || "";
+  const contentType = req.headers["content-type"] || "";
+  const xRequestedWith = req.headers["x-requested-with"];
+  return accept.includes("application/json") || contentType.includes("application/json") || xRequestedWith === "XMLHttpRequest";
+};
+
+// Custom passport callback for API requests
+const apiAuthCallback = (strategy: string) => (req: Request, res: Response, next: NextFunction) => {
+  passport.authenticate(strategy, (err: any, user: any, info: any) => {
+    if (err) {
+      log_error(err, req.body);
+      return res.status(500).send(new ServerResponse(false, null, "Authentication failed"));
+    }
+
+    if (!user) {
+      const errorMsg = info?.message || (strategy === "local-login" ? "Incorrect email or password" : "Signup failed");
+      return res.status(401).send(new AuthResponse(`${strategy === "local-login" ? "Login" : "Signup"} Failed!`, false, null, errorMsg, null));
+    }
+
+    req.logIn(user, (loginErr) => {
+      if (loginErr) {
+        log_error(loginErr);
+        return res.status(500).send(new ServerResponse(false, null, "Session creation failed"));
+      }
+
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          log_error(saveErr);
+          return res.status(500).send(new ServerResponse(false, null, "Session save failed"));
+        }
+
+        user.build_v = FileConstants.getRelease();
+        user.appsumo_popup_frequency_days = getAppSumoPopupFrequencyDays?.() || 7;
+
+        return res.status(200).send(new AuthResponse(`${strategy === "local-login" ? "Login" : "Signup"} Successful!`, true, user, null, "User successfully logged in"));
+      });
+    });
+  })(req, res, next);
+};
+
+// Traditional form-based authentication (redirects)
+const formAuthOptions = (key: string): passport.AuthenticateOptions => ({
   failureRedirect: `/secure/verify?strategy=${key}`,
   successRedirect: `/secure/verify?strategy=${key}`
 });
 
-authRouter.post("/login", passport.authenticate("local-login", options("login")));
-authRouter.post("/signup", signUpValidator, passwordValidator, passport.authenticate("local-signup", options("signup")));
+// Local authentication - supports both form and API requests
+authRouter.post("/login", (req, res, next) => {
+  if (isApiRequest(req)) {
+    return apiAuthCallback("local-login")(req, res, next);
+  }
+  return passport.authenticate("local-login", formAuthOptions("login"))(req, res, next);
+});
+
+authRouter.post("/signup", signUpValidator, passwordValidator, (req, res, next) => {
+  if (isApiRequest(req)) {
+    return apiAuthCallback("local-signup")(req, res, next);
+  }
+  return passport.authenticate("local-signup", formAuthOptions("signup"))(req, res, next);
+});
 authRouter.post("/signup/check", signUpValidator, passwordValidator, safeControllerFunction(AuthController.status_check));
 authRouter.get("/verify", AuthController.verify);
 authRouter.post("/check-password", safeControllerFunction(AuthController.checkPasswordStrength));

@@ -22,9 +22,6 @@ import {
 import { useGetProjectsByTeamQuery } from '@/api/home-page/home-page.api.service';
 import PhoneInput from '@/components/PhoneInput/PhoneInput';
 import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
-import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
-import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
 import { useResponsive } from '@/hooks/useResponsive';
 import dayjs from 'dayjs';
 import HomeClientsTable from './HomeClientsTable';
@@ -58,8 +55,6 @@ const HomeAddClient: React.FC = () => {
   const { token } = theme.useToken();
   const { t } = useTranslation(['home', 'client-portal-clients']);
   const dispatch = useAppDispatch();
-  const authService = useAuthService();
-  const hasBusinessAccess = hasBusinessFeatureAccess(authService.getCurrentSession());
   const { isDesktop, isMobile } = useResponsive();
   const formRef = useRef<HTMLDivElement>(null);
   const [form] = Form.useForm();
@@ -105,19 +100,6 @@ const HomeAddClient: React.FC = () => {
   };
 
   const handleCreate = async (values: CreateClientRequest) => {
-    if (!hasBusinessAccess) {
-      dispatch(
-        showUpgradePrompt({
-          title: t('addClient.upgradePromptTitle', { defaultValue: 'Clients' }),
-          description: t('addClient.upgradePromptDescription', {
-            defaultValue:
-              'Give clients a branded portal to track project progress. Available on the Business plan.',
-          }),
-        })
-      );
-      return;
-    }
-
     try {
       await createClient({
         name: values.name,

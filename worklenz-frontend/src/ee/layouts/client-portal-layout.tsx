@@ -5,7 +5,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import ClientPortalSidebar from '../pages/client-portal/sidebar/client-portal-sidebar';
 import { themeWiseColor } from '../../utils/themeWiseColor';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasClientPortalAccess } from '@/ee/utils/subscription-utils';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_client_portal_viewed } from '@/shared/worklenz-analytics-events';
 import { useNavPreferences } from '@/features/navigation/useNavPreferences';
@@ -33,10 +33,10 @@ const ClientPortalLayout = () => {
   // theme details from theme slice
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
-  // Auth and business access check
+  // Auth and client portal access check (Client Portal is available on all plans)
   const auth = useAuthService();
   const currentSession = auth.getCurrentSession();
-  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const hasPortalAccess = hasClientPortalAccess(currentSession);
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Which tab is active, so the locked view can show that tab's own preview
@@ -130,7 +130,7 @@ const ClientPortalLayout = () => {
             boxSizing: 'border-box',
           }}
         >
-          {hasBusinessAccess ? (
+          {hasPortalAccess ? (
             <Outlet />
           ) : (
             <FeatureUpgradePreview

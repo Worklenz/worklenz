@@ -134,6 +134,10 @@ const allowedOrigins = [
     ? [
       `http://localhost:5000`,
       `http://127.0.0.1:5000`,
+      `https://localhost`,
+      `http://localhost`,
+      `https://127.0.0.1`,
+      `http://127.0.0.1`,
       `https://app.worklenz.com`,
       `https://www.app.worklenz.com`,
       `https://clients.worklenz.com`,
@@ -442,37 +446,53 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // CSRF token refresh endpoint
 // Note: This endpoint doesn't require authentication, but needs a session
-app.get("/csrf-token", (req: Request, res: Response) => {
+app.get("/csrf-token", (req: any, res: Response) => {
   try {
-    // Check if session exists (csrf-sync requires session)
-    if (!req.session) {
-      return res
-        .status(401)
-        .json({ done: false, message: "Session required for CSRF token" });
+    // Session should be created by sessionMiddleware for all requests
+    // If generateToken is not available, skip CSRF token generation
+    if (!generateToken) {
+      log_error("[CSRF] generateToken function not available");
+      return res.status(500).json({
+        done: false,
+        message: "CSRF token generation service unavailable",
+      });
     }
 
-    const token = generateToken(req);
+    // Generate token - this creates a session automatically if needed
+    let token: string | null = null;
+    try {
+      token = generateToken(req);
+    } catch (tokenError: any) {
+      log_error("[CSRF] Error in generateToken:", tokenError?.message);
+      // Even if there's an error, try to regenerate
+      try {
+        token = generateToken(req, true);
+      } catch (retryError: any) {
+        log_error("[CSRF] Error in generateToken retry:", retryError?.message);
+      }
+    }
+
     if (!token) {
-      log_error("[CSRF] Failed to generate token");
-      return res
-        .status(500)
-        .json({ done: false, message: "Failed to generate CSRF token" });
-    }
-
-    // Also send token in header for convenience
-    res.setHeader("X-CSRF-Token", token);
-    res
-      .status(200)
-      .json({ done: true, message: "CSRF token refreshed", token });
-  } catch (error: any) {
-    log_error("[CSRF] Error generating token:", error);
-    res
-      .status(500)
-      .json({
+      log_error("[CSRF] Failed to generate token after retries");
+      return res.status(500).json({
         done: false,
         message: "Failed to generate CSRF token",
-        error: error?.message,
       });
+    }
+
+    // Send token in response
+    res.setHeader("X-CSRF-Token", token);
+    res.status(200).json({
+      done: true,
+      message: "CSRF token refreshed",
+      token,
+    });
+  } catch (error: any) {
+    log_error("[CSRF] Unexpected error generating token:", error?.message || error);
+    res.status(500).json({
+      done: false,
+      message: "Failed to generate CSRF token",
+    });
   }
 });
 
