@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo, useCallback, useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Tooltip, theme } from '@/shared/antd-imports';
-import { HolderOutlined, PushpinFilled, PushpinOutlined } from '@/shared/antd-imports';
+import { PushpinFilled, PushpinOutlined } from '@/shared/antd-imports';
 import type { NavItem } from '@/features/navigation/nav-registry.types';
 import './nav-rail.css';
 
@@ -48,112 +48,176 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
     disabled: !draggable,
   });
 
-  // Matches PlannerLeftSidebar.tsx's existing fix for antd Tooltip's dark
-  // chip reading as a mismatched box against a light-mode rail — reused here
-  // so every surface gets the same theme-matched tooltip instead of each
-  // rewriting the same workaround.
-  const tooltipProps = {
-    color: isDark ? undefined : '#fff',
-    styles: { body: isDark ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' } },
-  };
+  // Track whether we're interacting with the pin so we can suppress the
+  // item's own click/drag when the user intends to click the pin.
+  const pinInteracting = useRef(false);
 
-  // `soon` items are non-clickable by default; `soonClickable` opts a
-  // specific item (e.g. Client Portal's Ticketing) out of that while
-  // keeping the dimmed styling and "Soon" tag below.
   const clickDisabled = item.soon && !item.soonClickable;
 
   const tooltipTitle = isPinned ? `${label} (Pinned)` : label;
+  const iconColor = active
+    ? token.colorPrimary
+    : isDark
+      ? 'rgba(255,255,255,.45)'
+      : 'rgba(0,0,0,.45)';
 
-  const iconColor = active ? token.colorPrimary : isDark ? 'rgba(255,255,255,.45)' : 'rgba(0,0,0,.45)';
+  // ─── Memoized styles ────────────────────────────────────────────────────────
 
-  const wrapperStyle: React.CSSProperties = {
-    position: 'relative',
-    width: '100%',
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1 : undefined,
-  };
+  const wrapperStyle = useMemo(
+    () => ({
+      position: 'relative' as const,
+      width: '100%',
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+      zIndex: isDragging ? 1 : undefined,
+      // Pass token colors to CSS for pure-CSS hover glow (zero JS re-renders on hover)
+      '--nav-rail-color-primary': token.colorPrimary,
+      '--nav-rail-glow': token.colorPrimary,
+    } as React.CSSProperties),
+    [transform, transition, isDragging, token.colorPrimary],
+  );
 
-  // Affordances (pin, drag handle) are always in the DOM — visibility is
-  // driven by CSS :hover/:focus-within (see nav-rail.css) so a keyboard user
-  // tabbing to them can actually find and use them, not just a mouse user.
-  const affordanceClassName = `nav-rail-affordance${isPinned ? ' nav-rail-affordance-visible' : ''}`;
+  const buttonStyle = useMemo(
+    () => ({
+      display: 'flex',
+      flexDirection: 'column' as const,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 3,
+      width: '100%',
+      padding: collapsed ? '3px 2px' : '6px 4px 6px',
+      cursor: clickDisabled ? 'default' : 'pointer',
+      opacity: item.soon ? 0.45 : 1,
+      position: 'relative' as const,
+      background: 'transparent',
+    }),
+    [collapsed, clickDisabled, item.soon],
+  );
 
-  const togglePin = () => onTogglePin();
+  // Pin icon colour: primary when already pinned, muted otherwise.
+  // The :hover glow and color are handled in CSS without re-renders.
+  const pinIconColor = useMemo(
+    () => (isPinned ? token.colorPrimary : isDark ? 'rgba(255,255,255,.40)' : 'rgba(0,0,0,.35)'),
+    [isPinned, isDark, token.colorPrimary],
+  );
+
+  const pinIconStyle = useMemo(
+    () => ({
+      fontSize: 10,
+      color: pinIconColor,
+      transition: 'color .15s',
+    }),
+    [pinIconColor],
+  );
+
+  const pinWrapperStyle = useMemo(
+    () => ({
+      position: 'absolute' as const,
+      // Top-left corner — clear of badge (top-right) and Soon tag (right side)
+      top: 4,
+      left: 4,
+      width: 16,
+      height: 16,
+      borderRadius: token.borderRadiusSM,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3,
+      cursor: 'pointer',
+    }),
+    [token.borderRadiusSM],
+  );
+
+  const tooltipProps = useMemo(
+    () => ({
+      color: isDark ? undefined : '#fff',
+      styles: {
+        body: isDark ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+      },
+    }),
+    [isDark, token.colorText],
+  );
+
+  // ─── Stable callbacks ────────────────────────────────────────────────────────
+
+  const handleSelect = useCallback(() => {
+    if (!clickDisabled) onSelect();
+  }, [clickDisabled, onSelect]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => activateOnKey(handleSelect)(e),
+    [handleSelect],
+  );
+
+  // Pin click: stop propagation so the item click / DnD listeners don't fire.
+  const handlePinClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      pinInteracting.current = false;
+      onTogglePin();
+    },
+    [onTogglePin],
+  );
+
+  const handlePinKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      e.stopPropagation();
+      activateOnKey(onTogglePin)(e);
+    },
+    [onTogglePin],
+  );
+
+  // Intercept DnD pointer events on the pin so they don't start a drag.
+  const handlePinPointerDown = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    pinInteracting.current = true;
+  }, []);
 
   return (
     <div ref={setNodeRef} style={wrapperStyle} className="nav-rail-item-wrapper">
-      <Tooltip title={tooltipTitle} placement="right" mouseEnterDelay={0.3} mouseLeaveDelay={0} {...tooltipProps}>
-        {/* A <div> with button semantics, not a real <button> — it hosts the
-            pin/drag-handle affordances below, and nested <button>s inside a
-            <button> are invalid HTML. */}
+      <Tooltip
+        title={tooltipTitle}
+        placement="right"
+        mouseEnterDelay={0.3}
+        mouseLeaveDelay={0}
+        {...tooltipProps}
+      >
         <div
-          role="button"
+          {...attributes}
+          {...listeners}
           tabIndex={clickDisabled ? -1 : 0}
           aria-disabled={clickDisabled}
-          onClick={() => !clickDisabled && onSelect()}
-          onKeyDown={activateOnKey(() => !clickDisabled && onSelect())}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 3,
-            width: '100%',
-            // Kept compact — on dense lists (e.g. Projects' 8 items, most
-            // with a "Soon" badge pinned to the item's top edge) taller
-            // padding pushes the centered icon/label away from that badge
-            // and inflates the gap between rows, which reads worse than a
-            // slightly-wide highlight.
-            padding: collapsed ? '3px 2px' : '6px 4px 6px',
-            cursor: clickDisabled ? 'default' : 'pointer',
-            opacity: item.soon ? 0.45 : 1,
-            transition: 'all .15s',
-            position: 'relative',
-          }}
+          onClick={handleSelect}
+          onKeyDown={handleKeyDown}
+          style={buttonStyle}
         >
+          {/* ── Pin affordance (top-left, visible when active/pinned or hovered) ── */}
           <span
             role="button"
             tabIndex={0}
-            className={affordanceClassName}
-            onClick={e => {
-              e.stopPropagation();
-              togglePin();
-            }}
-            onKeyDown={e => {
-              e.stopPropagation();
-              activateOnKey(togglePin)(e);
-            }}
+            aria-label={isPinned ? 'Unpin this view' : 'Pin as default view'}
             title={isPinned ? 'Pinned as default' : 'Pin as default view'}
-            style={{
-              position: 'absolute',
-              top: 4,
-              left: 4,
-              width: 16,
-              height: 16,
-              borderRadius: 3,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: isPinned ? token.colorPrimaryBg : isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)',
-              zIndex: 2,
-              cursor: 'pointer',
-            }}
+            className={`nav-rail-pin-affordance ${active || isPinned ? 'nav-rail-pin-visible' : ''}`}
+            onClick={handlePinClick}
+            onKeyDown={handlePinKeyDown}
+            onPointerDown={handlePinPointerDown}
+            style={pinWrapperStyle}
           >
             {isPinned ? (
-              <PushpinFilled style={{ fontSize: 9, color: token.colorPrimary }} />
+              <PushpinFilled style={pinIconStyle} />
             ) : (
-              <PushpinOutlined style={{ fontSize: 9, color: isDark ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.45)' }} />
+              <PushpinOutlined style={pinIconStyle} />
             )}
           </span>
 
+          {/* ── Unread badge ───────────────────────────────────────────────── */}
           {typeof badgeValue === 'number' && badgeValue > 0 && (
             <span
               style={{
                 position: 'absolute',
-                top: 5,
-                right: 7,
+                top: 4,
+                right: 5,
                 minWidth: 15,
                 height: 15,
                 borderRadius: 8,
@@ -166,98 +230,54 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
                 fontWeight: 700,
                 padding: '0 3px',
                 zIndex: 2,
+                pointerEvents: 'none',
               }}
             >
               {badgeValue > 99 ? '99+' : badgeValue}
             </span>
           )}
 
+          {/* ── Soon tag ───────────────────────────────────────────────────── */}
           {item.soon && (
             <span
               style={{
                 position: 'absolute',
-                top: 4,
+                top: 22,
                 right: 4,
                 fontSize: 8,
                 background: 'rgba(250,173,20,.15)',
                 color: '#d46b08',
-                borderRadius: 3,
+                borderRadius: token.borderRadiusSM,
                 padding: '1px 4px',
                 fontWeight: 600,
+                zIndex: 2,
+                pointerEvents: 'none',
               }}
             >
               Soon
             </span>
           )}
 
-          {/* No background fill for the active state — just the icon/label
-              color change below (iconColor already swaps to colorPrimary
-              when active). */}
+          {/* ── Nav icon (glows on hover via CSS drop-shadow, no background box) ── */}
           <span
+            className="nav-rail-item-icon"
             style={{
-              width: 24,
-              height: 24,
-              fontSize: 24,
               color: iconColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'color .15s',
             }}
           >
             {item.icon}
           </span>
 
+          {/* ── Label ─────────────────────────────────────────────────────── */}
           {!collapsed && (
             <span
+              className="nav-rail-item-label"
               style={{
-                fontSize: 11,
                 fontWeight: active ? 600 : 500,
-                textAlign: 'center',
-                lineHeight: 1.2,
                 color: iconColor,
-                whiteSpace: 'pre-line',
-                transition: 'color .15s',
               }}
             >
               {label}
-            </span>
-          )}
-
-          {draggable && (
-            <span
-              className="nav-rail-affordance"
-              {...attributes}
-              {...listeners}
-              onClick={e => e.stopPropagation()}
-              onKeyDown={e => {
-                // dnd-kit's own activation handler (Space/Enter) calls
-                // preventDefault but not stopPropagation — without this, the
-                // key event would also bubble up and trigger onSelect on the
-                // outer item, navigating away at the same moment a keyboard
-                // drag starts.
-                listeners?.onKeyDown?.(e);
-                if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
-              }}
-              aria-label={`Reorder ${typeof label === 'string' ? label : item.key}`}
-              style={{
-                position: 'absolute',
-                top: 2,
-                right: 2,
-                fontSize: 12,
-                color: token.colorPrimary,
-                background: isDark ? token.colorBgContainer : token.colorPrimaryBg,
-                border: `1px solid ${token.colorBorder}`,
-                borderRadius: token.borderRadiusSM,
-                padding: '2px',
-                cursor: 'grab',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 2,
-              }}
-            >
-              <HolderOutlined />
             </span>
           )}
         </div>
@@ -266,4 +286,4 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
   );
 };
 
-export default NavRailItem;
+export default React.memo(NavRailItem);

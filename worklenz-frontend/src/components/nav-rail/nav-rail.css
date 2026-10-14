@@ -10,19 +10,68 @@
   }
 }
 
-/* Pin + drag-handle affordances on a NavRailItem: always in the DOM (so a
-   keyboard user tabbing through can reach them), hidden until the item is
-   hovered or something inside it has focus, or the affordance is forced
-   visible (a pinned item's pin icon stays showing even without hover). */
-.nav-rail-affordance {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s;
+/* ── Main nav icon & label glow (icon glows on hover, NO background highlight) ── */
+.nav-rail-item-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.18s ease, filter 0.18s ease;
+  overflow: visible;
+  filter: none;
 }
 
-.nav-rail-item-wrapper:hover .nav-rail-affordance,
-.nav-rail-item-wrapper:focus-within .nav-rail-affordance,
-.nav-rail-affordance.nav-rail-affordance-visible {
+.nav-rail-item-label {
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.2;
+  white-space: pre-line;
+  transition: color 0.18s ease;
+}
+
+/* On item hover / focus: subtle, soft glow on the icon only, never the background */
+.nav-rail-item-wrapper:hover .nav-rail-item-icon,
+.nav-rail-item-wrapper:focus-within .nav-rail-item-icon {
+  color: var(--nav-rail-color-primary, #1890ff) !important;
+  filter: drop-shadow(0 0 3px rgba(24, 144, 255, 0.4));
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--nav-rail-glow, #1890ff) 45%, transparent));
+}
+
+.nav-rail-item-wrapper:hover .nav-rail-item-label,
+.nav-rail-item-wrapper:focus-within .nav-rail-item-label {
+  color: var(--nav-rail-color-primary, #1890ff) !important;
+}
+
+/* ── Pin affordance ────────────────────────────────────────────────────────
+   Always in DOM for accessibility. Shown when:
+   - item is active or pinned (.nav-rail-pin-visible)
+   - item is hovered or focused (.nav-rail-item-wrapper:hover / :focus-within)
+*/
+.nav-rail-pin-affordance {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, filter 0.15s ease, color 0.15s ease;
+  overflow: visible;
+  filter: none;
+}
+
+.nav-rail-item-wrapper:hover .nav-rail-pin-affordance,
+.nav-rail-item-wrapper:focus-within .nav-rail-pin-affordance,
+.nav-rail-pin-affordance.nav-rail-pin-visible {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* Soft glow and highlight on pin icon when hovered directly */
+.nav-rail-pin-affordance:hover,
+.nav-rail-pin-affordance:focus-visible {
+  filter: drop-shadow(0 0 2.5px rgba(24, 144, 255, 0.4));
+  filter: drop-shadow(0 0 2.5px color-mix(in srgb, var(--nav-rail-glow, #1890ff) 45%, transparent));
+}
+
+.nav-rail-pin-affordance:hover .anticon,
+.nav-rail-pin-affordance:focus-visible .anticon {
+  color: var(--nav-rail-color-primary, #1890ff) !important;
 }
