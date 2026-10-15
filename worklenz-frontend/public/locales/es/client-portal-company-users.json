@@ -21,7 +21,7 @@
   "projectsCount_other": "{{count}} proyectos",
   "stats": {
     "total": "Usuarios totales de clientes",
-    "pocs": "POCs",
+    "pocs": "POC",
     "companiesWithoutPoc": "Empresas sin POC",
     "companiesWithoutPocHint": "Permitido. Una empresa no puede tener POC.",
     "disabled": "Discapacitado"
@@ -38,7 +38,7 @@
     "actions": "Actions"
   },
   "role": {
-    "poc": "POC",
+    "poc": "POS",
     "member": "Miembro"
   },
   "portalStatus": {
@@ -142,12 +142,12 @@
     "nameRequired": "Introduzca un nombre.",
     "nameTooLong": "El nombre puede tener como máximo 255 caracteres.",
     "emailLabel": "Dirección de correo electrónico",
-    "emailPlaceholder": "jane@company.com",
+    "emailPlaceholder": "jane@empresa.com",
     "emailRequired": "Introduzca una dirección de correo electrónico.",
     "emailInvalid": "Ingrese una dirección de correo electrónico válida.",
     "emailLockedHint": "Este es su correo electrónico de inicio de sesión, por lo que no se puede cambiar una vez que tengan acceso al portal.",
     "jobTitleLabel": "Título del trabajo",
-    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "jobTitlePlaceholder": "por ej. Gerente de Mercadeo",
     "jobTitleTooLong": "El título del trabajo puede tener como máximo 100 caracteres.",
     "phoneLabel": "Número de teléfono (opcional)",
     "phonePlaceholder": "+1 415 555 0142",

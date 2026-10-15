@@ -1,124 +1,89 @@
-import type { ReactNode } from 'react';
-import { BankOutlined, MailOutlined, UploadOutlined, UserAddOutlined } from '@ant-design/icons';
-import { Flex, Typography, theme } from '@/shared/antd-imports';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { BankOutlined, UserAddOutlined } from '@ant-design/icons';
+import { Typography, theme } from '@/shared/antd-imports';
 import type { WizardMethod } from './wizard-state';
-
-const { Text } = Typography;
 
 interface MethodStepProps {
   method: WizardMethod | null;
   onSelect: (method: WizardMethod) => void;
 }
 
-interface MethodOption {
-  key: WizardMethod;
-  icon: ReactNode;
+const METHODS: {
+  method: WizardMethod;
+  icon: React.ReactNode;
+  nameKey: string;
   nameDefault: string;
-  descriptionDefault: string;
-}
-
-const METHOD_OPTIONS: MethodOption[] = [
+  descKey: string;
+  descDefault: string;
+}[] = [
   {
-    key: 'company',
+    method: 'new_organization',
     icon: <BankOutlined />,
-    nameDefault: 'New client',
-    descriptionDefault: 'Create a company record and its first contact together.',
+    nameKey: 'method.newOrganization.name',
+    nameDefault: 'New client organization',
+    descKey: 'method.newOrganization.description',
+    descDefault: 'Create the organization and invite its first user as Client Admin.',
   },
   {
-    key: 'user',
+    method: 'existing_organization',
     icon: <UserAddOutlined />,
-    nameDefault: 'Add a client user',
-    descriptionDefault: 'Add another contact to a company that already exists.',
-  },
-  {
-    key: 'existing',
-    icon: <MailOutlined />,
-    nameDefault: 'Invite an existing contact',
-    descriptionDefault: 'Already a lead or client? Just send portal access.',
-  },
-  {
-    key: 'csv',
-    icon: <UploadOutlined />,
-    nameDefault: 'Import from CSV',
-    descriptionDefault: 'Bulk add clients from a spreadsheet.',
+    nameKey: 'method.existingOrganization.name',
+    nameDefault: 'Add a user to an existing organization',
+    descKey: 'method.existingOrganization.description',
+    descDefault: 'Invite another person to an organization that already has portal access.',
   },
 ];
 
-/** Step 1: how the client is being added. */
 export const MethodStep = ({ method, onSelect }: MethodStepProps) => {
-  const { t } = useTranslation('client-portal-add-client');
+  const { t } = useTranslation('client-portal-v2-add-client');
   const { token } = theme.useToken();
 
   return (
-    <Flex vertical gap={12}>
-      <Text type="secondary">
-        {t('method.helper', {
-          defaultValue: 'Every path ends the same way. Pick whichever fits what you already know.',
+    <div role="radiogroup" aria-label={t('method.groupLabel', { defaultValue: 'How to add this client' })}>
+      <Typography.Paragraph type="secondary" style={{ fontSize: 12.5 }}>
+        {t('method.intro', {
+          defaultValue: 'Every client user belongs to an organization, and sees only the projects you assign to them.',
         })}
-      </Text>
-
-      <div
-        role="radiogroup"
-        aria-label={t('method.groupLabel', { defaultValue: 'How do you want to add this client?' })}
-        style={{ display: 'grid', gap: 10 }}
-      >
-        {METHOD_OPTIONS.map(option => {
-          const isSelected = method === option.key;
-
-          return (
-            <button
-              key={option.key}
-              type="button"
-              role="radio"
-              aria-checked={isSelected}
-              onClick={() => onSelect(option.key)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                width: '100%',
-                padding: '12px 14px',
-                textAlign: 'start',
-                cursor: 'pointer',
-                color: token.colorText,
-                borderRadius: token.borderRadiusLG,
-                border: `1px solid ${isSelected ? token.colorPrimary : token.colorBorderSecondary}`,
-                background: isSelected ? token.colorPrimaryBg : token.colorBgContainer,
-                transition: 'border-color 0.2s, background 0.2s',
-              }}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  width: 36,
-                  height: 36,
-                  fontSize: 18,
-                  borderRadius: token.borderRadius,
-                  color: token.colorPrimary,
-                  background: token.colorFillTertiary,
-                }}
-              >
-                {option.icon}
+      </Typography.Paragraph>
+      {METHODS.map(item => {
+        const selected = method === item.method;
+        return (
+          <button
+            key={item.method}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onSelect(item.method)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              width: '100%',
+              textAlign: 'left',
+              padding: '12px 14px',
+              marginBottom: 10,
+              cursor: 'pointer',
+              color: token.colorText,
+              background: selected ? token.colorPrimaryBg : token.colorBgContainer,
+              border: `1px solid ${selected ? token.colorPrimary : token.colorBorderSecondary}`,
+              borderRadius: 8,
+            }}
+          >
+            <span style={{ fontSize: 18, color: selected ? token.colorPrimary : token.colorTextSecondary }}>
+              {item.icon}
+            </span>
+            <span>
+              <span style={{ display: 'block', fontWeight: 600, fontSize: 13.5 }}>
+                {t(item.nameKey, { defaultValue: item.nameDefault })}
               </span>
-              <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                <Text strong>
-                  {t(`method.${option.key}.name`, { defaultValue: option.nameDefault })}
-                </Text>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  {t(`method.${option.key}.description`, {
-                    defaultValue: option.descriptionDefault,
-                  })}
-                </Text>
+              <span style={{ display: 'block', fontSize: 12, color: token.colorTextSecondary }}>
+                {t(item.descKey, { defaultValue: item.descDefault })}
               </span>
-            </button>
-          );
-        })}
-      </div>
-    </Flex>
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 };

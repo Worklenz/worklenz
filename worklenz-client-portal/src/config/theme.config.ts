@@ -1,10 +1,16 @@
 import { theme } from '@/shared/antd-imports';
 import type { ThemeConfig } from 'antd';
 
+/** Height of buttons, inputs and selects in the client portal; custom controls beside them use it too. */
+export const PORTAL_CONTROL_HEIGHT = 36;
+
 export const getThemeConfig = (
   currentTheme: 'light' | 'dark',
   primaryColor?: string | null
-): ThemeConfig => ({
+): ThemeConfig => {
+  // Branding colours surfaces and accents only; the core text colour must stay neutral.
+  const coreTextColor = currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)';
+  return {
   algorithm: currentTheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
   token: {
     colorPrimary: primaryColor || '#1890ff',
@@ -28,14 +34,24 @@ export const getThemeConfig = (
     Menu: {
       colorBgContainer: 'transparent',
       itemBg: 'transparent',
-      itemSelectedBg: currentTheme === 'dark' ? 'rgba(24, 144, 255, 0.15)' : '#e6f4ff',
-      itemHoverBg: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-      itemSelectedColor: primaryColor || '#1890ff',
-      itemColor: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)',
+      itemSelectedBg: 'var(--portal-brand-tint)',
+      itemHoverBg: 'var(--portal-brand-tint-soft)',
+      itemSelectedColor: coreTextColor,
+      itemHoverColor: coreTextColor,
+      itemColor: coreTextColor,
       itemMarginBlock: 4,
       itemMarginInline: 8,
       itemPaddingInline: 16,
       itemBorderRadius: 6,
+    },
+    Tabs: {
+      itemColor: coreTextColor,
+      itemHoverColor: coreTextColor,
+      itemActiveColor: coreTextColor,
+      itemSelectedColor: coreTextColor,
+    },
+    Segmented: {
+      itemSelectedColor: coreTextColor,
     },
     Card: {
       borderRadiusLG: 8,
@@ -43,15 +59,16 @@ export const getThemeConfig = (
     },
     Button: {
       borderRadius: 6,
-      controlHeight: 36,
+      controlHeight: PORTAL_CONTROL_HEIGHT,
     },
     Input: {
       borderRadius: 6,
-      controlHeight: 36,
+      controlHeight: PORTAL_CONTROL_HEIGHT,
     },
     Select: {
       borderRadius: 6,
-      controlHeight: 36,
+      controlHeight: PORTAL_CONTROL_HEIGHT,
+      optionSelectedColor: coreTextColor,
     },
     Table: {
       borderRadius: 8,
@@ -65,6 +82,5 @@ export const getThemeConfig = (
       titleMarginTop: 0,
     },
   },
-});
-
-
+  };
+};

@@ -7,6 +7,9 @@ interface SettingsToggleRowProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   isLast?: boolean;
+  disabled?: boolean;
+  /** Accessible name for the switch; defaults to the label when that is plain text. */
+  ariaLabel?: string;
 }
 
 /** Label + description on the left, a `Switch` on the right, divider between rows. */
@@ -16,6 +19,8 @@ export const SettingsToggleRow: React.FC<SettingsToggleRowProps> = ({
   checked,
   onChange,
   isLast = false,
+  disabled = false,
+  ariaLabel,
 }) => {
   const { token } = theme.useToken();
   return (
@@ -37,7 +42,12 @@ export const SettingsToggleRow: React.FC<SettingsToggleRowProps> = ({
           </div>
         )}
       </div>
-      <Switch checked={checked} onChange={onChange} />
+      <Switch
+        checked={checked}
+        onChange={onChange}
+        disabled={disabled}
+        aria-label={ariaLabel ?? (typeof label === 'string' ? label : undefined)}
+      />
     </div>
   );
 };

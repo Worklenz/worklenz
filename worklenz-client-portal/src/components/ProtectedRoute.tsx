@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Spin, Layout } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { saveReturnTo } from '@/utils/returnTo';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -27,6 +28,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   // If not authenticated, redirect to login
   if (!isAuthenticated || !token) {
+    // Remember where they were going so sign-in (including the emailed-link step) lands there.
+    saveReturnTo(`${location.pathname}${location.search}`);
     return (
       <Navigate 
         to="/auth/login" 

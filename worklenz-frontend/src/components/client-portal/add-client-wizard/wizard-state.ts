@@ -1,280 +1,147 @@
-import type {
-  AddCompanyUserRequest,
-  CompanyUserRole,
-  ImportRowInput,
-  InviteDelivery,
-  OnboardClientRequest,
-} from '@/api/client-portal/company-users-api';
-import {
-  PERMISSION_TEMPLATES,
-  PermissionTemplateKey,
-  applyPermissionTemplate,
-  toProjectAccessPayload,
-} from '@/lib/client-portal/client-permissions';
-import { isValidEmailAddress } from '@/pages/client-portal/clients/company-users/company-users-helpers';
+import type { AddClientRequest, ClientRole } from '@/types/client-portal/v2';
+import { isValidEmailAddress } from '@/components/client-portal/v2/validation';
 
 /**
- * State of the Add Client wizard. Four methods (a new client, a user for an existing company, an
- * existing contact, a CSV import) each have their own details step and converge on one review step.
+ * State of the Add Client wizard: two ways in (a new organization, or another user for an existing
+ * one) that share one ending (project access, review, "send the invitation now").
  */
 
-export type WizardMethod = 'company' | 'user' | 'existing' | 'csv';
+export type WizardMethod = 'new_organization' | 'existing_organization';
 export type WizardStep = 1 | 2 | 3;
-
-export interface PersonFields {
-  firstName: string;
-  lastName: string;
-  email: string;
-  jobTitle: string;
-  phone: string;
-}
-
-export interface NewClientFields extends PersonFields {
-  companyName: string;
-  /** "Set up their portal": post a welcome message to Messages. */
-  welcomeMessage: boolean;
-}
-
-export interface CompanyUserFields extends PersonFields {
-  companyId: string | null;
-  companyName: string;
-  isPoc: boolean;
-  /** A Permission Template to apply across the company's current projects, if any. */
-  template: PermissionTemplateKey | null;
-}
-
-/** The person chosen in "Invite an existing contact", kept so the review step can show them. */
-export interface ExistingContactSnapshot {
-  id: string;
-  name: string;
-  email: string;
-  companyName: string;
-}
 
 export interface WizardState {
   step: WizardStep;
   method: WizardMethod | null;
-  company: NewClientFields;
-  user: CompanyUserFields;
-  existing: ExistingContactSnapshot | null;
-  sendInvite: boolean;
-  delivery: InviteDelivery;
-  csv: { fileName: string | null; rows: ImportRowInput[] };
+  /** New organization: the name to create. */
+  organizationName: string;
+  /** Existing organization: the chosen one, kept with its name so the review step can show it. */
+  organization: { id: string; name: string } | null;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  jobTitle: string;
+  /** Only chosen for an existing organization; the first user of a new one is always a Client Admin. */
+  role: ClientRole;
+  projectIds: string[];
+  sendInvitation: boolean;
 }
-
-const EMPTY_PERSON: PersonFields = {
-  firstName: '',
-  lastName: '',
-  email: '',
-  jobTitle: '',
-  phone: '',
-};
 
 export const INITIAL_WIZARD_STATE: WizardState = {
   step: 1,
   method: null,
-  company: { ...EMPTY_PERSON, companyName: '', welcomeMessage: true },
-  user: { ...EMPTY_PERSON, companyId: null, companyName: '', isPoc: false, template: null },
-  existing: null,
-  // Inviting now is the common case; unchecking it saves the record without sending anything.
-  sendInvite: true,
-  delivery: 'email',
-  csv: { fileName: null, rows: [] },
+  organizationName: '',
+  organization: null,
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  jobTitle: '',
+  role: 'member',
+  projectIds: [],
+  sendInvitation: true,
 };
+
+export type PersonField = 'firstName' | 'lastName' | 'email' | 'phone' | 'jobTitle';
 
 export type WizardAction =
-  | { type: 'reset' }
   | { type: 'selectMethod'; method: WizardMethod }
+  | { type: 'setOrganizationName'; value: string }
+  | { type: 'selectOrganization'; organization: { id: string; name: string } | null }
+  | { type: 'setPerson'; field: PersonField; value: string }
+  | { type: 'setRole'; role: ClientRole }
+  | { type: 'toggleProject'; projectId: string }
+  | { type: 'setSendInvitation'; value: boolean }
+  /** Opened from an organization's workspace: skip the choice of method and organization. */
+  | { type: 'startForOrganization'; organization: { id: string; name: string } }
   | { type: 'next' }
   | { type: 'back' }
-  | { type: 'updateCompany'; patch: Partial<NewClientFields> }
-  | { type: 'updateUser'; patch: Partial<CompanyUserFields> }
-  | { type: 'selectUserCompany'; company: { id: string; name: string } | null }
-  | { type: 'selectExisting'; contact: ExistingContactSnapshot | null }
-  | { type: 'setSendInvite'; value: boolean }
-  | { type: 'setDelivery'; value: InviteDelivery }
-  | { type: 'setCsv'; fileName: string | null; rows: ImportRowInput[] };
+  | { type: 'reset' };
 
-/** A CSV import has no review step: its second step ends with the import itself. */
-export const getStepCount = (method: WizardMethod | null): number => (method === 'csv' ? 2 : 3);
-
-export const wizardReducer = (state: WizardState, action: WizardAction): WizardState => {
-  switch (action.type) {
-    case 'reset':
-      return INITIAL_WIZARD_STATE;
-
-    case 'selectMethod':
-      return { ...state, method: action.method };
-
-    case 'next':
-      return state.step >= getStepCount(state.method)
-        ? state
-        : { ...state, step: (state.step + 1) as WizardStep };
-
-    case 'back':
-      return state.step <= 1 ? state : { ...state, step: (state.step - 1) as WizardStep };
-
-    case 'updateCompany':
-      return { ...state, company: { ...state.company, ...action.patch } };
-
-    case 'updateUser':
-      return { ...state, user: { ...state.user, ...action.patch } };
-
-    case 'selectUserCompany':
-      // A template applies to one company's projects, so it does not carry over to another.
-      return {
-        ...state,
-        user: {
-          ...state.user,
-          companyId: action.company?.id ?? null,
-          companyName: action.company?.name ?? '',
-          template: null,
-        },
-      };
-
-    case 'selectExisting':
-      return { ...state, existing: action.contact };
-
-    case 'setSendInvite':
-      return { ...state, sendInvite: action.value };
-
-    case 'setDelivery':
-      return { ...state, delivery: action.value };
-
-    case 'setCsv':
-      return { ...state, csv: { fileName: action.fileName, rows: action.rows } };
-
-    default:
-      return state;
-  }
-};
-
-/** Whether the email is filled in and looks like an email address. */
-export const hasValidEmail = (email: string): boolean =>
-  Boolean(email.trim()) && isValidEmailAddress(email);
-
-export const getPersonErrors = (
-  person: PersonFields
-): { firstName: boolean; email: 'missing' | 'invalid' | null } => ({
-  firstName: !person.firstName.trim(),
-  email: !person.email.trim() ? 'missing' : isValidEmailAddress(person.email) ? null : 'invalid',
-});
-
-/** Whether "Continue" (or the final action of a two-step method) is available on the current step. */
+/** The ending of the flow is the same for both methods, so these checks decide when each step is complete. */
 export const canContinue = (state: WizardState): boolean => {
   if (state.step === 1) return state.method !== null;
 
   if (state.step === 2) {
-    switch (state.method) {
-      case 'company':
-        return Boolean(state.company.firstName.trim()) && hasValidEmail(state.company.email);
-      case 'user':
-        return (
-          state.user.companyId !== null &&
-          Boolean(state.user.firstName.trim()) &&
-          hasValidEmail(state.user.email)
-        );
-      case 'existing':
-        return state.existing !== null;
-      case 'csv':
-        return state.csv.rows.length > 0;
-      default:
-        return false;
-    }
+    const hasOrganization =
+      state.method === 'new_organization' ? state.organizationName.trim() !== '' : state.organization !== null;
+    return hasOrganization && state.firstName.trim() !== '' && isValidEmailAddress(state.email);
   }
 
   return true;
 };
 
-export interface ReviewSubject {
-  name: string;
-  company: string | null;
-  email: string;
-  /** Not shown for an existing contact, whose role is already set. */
-  role: CompanyUserRole | null;
-}
+/** The first user of a new organization is a Client Admin; anyone else gets the role that was picked. */
+export const getEffectiveRole = (state: WizardState): ClientRole =>
+  state.method === 'new_organization' ? 'admin' : state.role;
 
-const fullName = (person: PersonFields) =>
-  [person.firstName, person.lastName]
-    .map(part => part.trim())
-    .filter(Boolean)
-    .join(' ');
+export const getFullName = (state: Pick<WizardState, 'firstName' | 'lastName'>): string =>
+  `${state.firstName.trim()} ${state.lastName.trim()}`.trim();
 
-/** Who the review step is about, for the method that was chosen. */
-export const getReviewSubject = (state: WizardState): ReviewSubject | null => {
-  switch (state.method) {
-    case 'company':
+export const getOrganizationLabel = (state: WizardState): string =>
+  state.method === 'new_organization' ? state.organizationName.trim() : (state.organization?.name ?? '');
+
+export const wizardReducer = (state: WizardState, action: WizardAction): WizardState => {
+  switch (action.type) {
+    case 'selectMethod':
+      // A different method offers different projects, so the selection starts again.
+      return action.method === state.method
+        ? state
+        : { ...state, method: action.method, organization: null, projectIds: [] };
+    case 'setOrganizationName':
+      return { ...state, organizationName: action.value };
+    case 'selectOrganization':
+      return { ...state, organization: action.organization, projectIds: [] };
+    case 'setPerson':
+      return { ...state, [action.field]: action.value };
+    case 'setRole':
+      return { ...state, role: action.role };
+    case 'toggleProject':
       return {
-        name: fullName(state.company),
-        // Without a company name the client is named after the person.
-        company: state.company.companyName.trim() || null,
-        email: state.company.email.trim(),
-        // The first contact of a new company is its POC.
-        role: 'poc',
+        ...state,
+        projectIds: state.projectIds.includes(action.projectId)
+          ? state.projectIds.filter(id => id !== action.projectId)
+          : [...state.projectIds, action.projectId],
       };
-    case 'user':
+    case 'setSendInvitation':
+      return { ...state, sendInvitation: action.value };
+    case 'startForOrganization':
       return {
-        name: fullName(state.user),
-        company: state.user.companyName || null,
-        email: state.user.email.trim(),
-        role: state.user.isPoc ? 'poc' : 'member',
+        ...INITIAL_WIZARD_STATE,
+        method: 'existing_organization',
+        organization: action.organization,
+        step: 2,
       };
-    case 'existing':
-      return state.existing
-        ? {
-            name: state.existing.name,
-            company: state.existing.companyName || null,
-            email: state.existing.email,
-            role: null,
-          }
-        : null;
+    case 'next':
+      return canContinue(state) && state.step < 3 ? { ...state, step: (state.step + 1) as WizardStep } : state;
+    case 'back':
+      return state.step > 1 ? { ...state, step: (state.step - 1) as WizardStep } : state;
+    case 'reset':
+      return INITIAL_WIZARD_STATE;
     default:
-      return null;
+      return state;
   }
 };
 
-/** Whether the "send invite now" choice applies: an existing contact is always invited. */
-export const canDeferInvite = (method: WizardMethod | null): boolean =>
-  method === 'company' || method === 'user';
-
-const optional = (value: string): string | undefined => value.trim() || undefined;
-
-export const buildOnboardRequest = (
-  state: WizardState,
-  welcomeMessageText: string
-): OnboardClientRequest => ({
-  company_name: optional(state.company.companyName),
-  first_name: state.company.firstName.trim(),
-  last_name: optional(state.company.lastName),
-  email: state.company.email.trim(),
-  phone: optional(state.company.phone),
-  job_title: optional(state.company.jobTitle),
-  send_invite: state.sendInvite,
-  delivery: state.delivery,
-  welcome_message: state.company.welcomeMessage ? welcomeMessageText : null,
-});
-
-/**
- * The template is applied here, over the company's projects as they are right now, and sent as an
- * explicit list, so the server only ever validates levels and never needs to know the templates.
- */
-export const buildAddUserRequest = (
-  state: WizardState,
-  companyProjectIds: string[]
-): AddCompanyUserRequest => {
-  const template = PERMISSION_TEMPLATES.find(item => item.key === state.user.template);
+/** The one request that finishes the wizard. The server does it all in a single transaction. */
+export const buildAddClientRequest = (state: WizardState): AddClientRequest => {
+  const isNewOrganization = state.method === 'new_organization';
+  const lastName = state.lastName.trim();
+  const phone = state.phone.trim();
+  const jobTitle = state.jobTitle.trim();
 
   return {
-    first_name: state.user.firstName.trim(),
-    last_name: optional(state.user.lastName),
-    email: state.user.email.trim(),
-    phone: optional(state.user.phone),
-    job_title: optional(state.user.jobTitle),
-    role: state.user.isPoc ? 'poc' : 'member',
-    project_access: template
-      ? toProjectAccessPayload(applyPermissionTemplate(template, companyProjectIds))
-      : [],
-    send_invite: state.sendInvite,
-    delivery: state.delivery,
+    method: isNewOrganization ? 'new_organization' : 'existing_organization',
+    ...(isNewOrganization
+      ? { organization_name: state.organizationName.trim() }
+      : { organization_id: state.organization?.id }),
+    first_name: state.firstName.trim(),
+    ...(lastName ? { last_name: lastName } : {}),
+    email: state.email.trim(),
+    ...(phone ? { phone } : {}),
+    ...(jobTitle ? { job_title: jobTitle } : {}),
+    ...(isNewOrganization ? {} : { role: state.role }),
+    project_ids: state.projectIds,
+    send_invitation: state.sendInvitation,
   };
 };

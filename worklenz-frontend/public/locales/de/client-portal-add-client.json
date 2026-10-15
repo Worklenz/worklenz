@@ -58,7 +58,7 @@
     "email": "E-Mail-Adresse",
     "emailPlaceholder": "jane@company.com",
     "jobTitle": "Berufsbezeichnung",
-    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "jobTitlePlaceholder": "z.B. Marketingmanager",
     "phone": "Telefon (optional)",
     "phonePlaceholder": "+1 415 555 0142"
   },

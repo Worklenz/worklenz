@@ -127,9 +127,9 @@ describe('InvoicesTable', () => {
     setInvoices([invoice()], { total: 42 });
     renderTable();
 
-    fireEvent.change(screen.getByLabelText('Rows per page:'), { target: { value: '25' } });
+    fireEvent.change(screen.getByLabelText('Rows per page:'), { target: { value: '20' } });
 
-    expect(lastQueryArgs()).toMatchObject({ page: 1, limit: 25 });
+    expect(lastQueryArgs()).toMatchObject({ page: 1, limit: 20 });
   });
 
   it('shows stat cards from the organization totals, not just the visible rows', () => {

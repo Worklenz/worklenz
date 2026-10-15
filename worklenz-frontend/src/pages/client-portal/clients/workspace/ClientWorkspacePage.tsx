@@ -1,67 +1,57 @@
-import { useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button, Col, Dropdown, Modal, Result, Row, Skeleton, Tabs } from '@/shared/antd-imports';
-import { EditOutlined, MoreOutlined } from '@ant-design/icons';
+import { EditOutlined, MessageOutlined, MoreOutlined } from '@ant-design/icons';
+import { Badge, Button, Col, Dropdown, Flex, Modal, Result, Row, Tabs } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { ClientPortalEventProps, MixpanelEvents } from '@/types/mixpanel-events.types';
 import {
   openAddCompanyUserDrawer,
   toggleClientDetailsDrawer,
-  toggleClientSettingsDrawer,
 } from '@/features/clients-portal/clients/clients-slice';
-import {
-  useGetClientWorkspaceProfileQuery,
-  useGetClientWorkspaceStatsQuery,
-} from '@/api/client-portal/client-workspace-api';
-import ClientDetailsDrawer from '@/components/client-portal/ClientDetailsDrawer';
-import ClientSettingsDrawer from '@/components/client-portal/ClientSettingsDrawer';
+import { useGetOrganizationOverviewQuery } from '@/api/client-portal/portal-access-api';
+import { portalPaths } from '../../portal-paths';
+import { MessageClientModal } from '../../discussions/MessageClientModal';
+import { ActivityTab } from './ActivityTab';
+import { ApprovalsTab } from './ApprovalsTab';
 import { BillingTab } from './BillingTab';
-import { MembersTab } from './MembersTab';
-import { MessagesTab } from './MessagesTab';
+import { ChangeRequestsTab } from './ChangeRequestsTab';
 import { OverviewTab } from './OverviewTab';
 import { ProjectsTab } from './ProjectsTab';
+import { UsersTab } from './UsersTab';
 import { WorkspaceHeader } from './WorkspaceHeader';
 import { WorkspaceRail } from './WorkspaceRail';
-import {
-  CLIENTS_PATH,
-  DEFAULT_WORKSPACE_TAB,
-  WorkspaceTab,
-  getClientDisplayName,
-  parseWorkspaceTab,
-} from './workspace-helpers';
+import { CLIENTS_PATH, DEFAULT_WORKSPACE_TAB, WorkspaceTab, parseWorkspaceTab } from './workspace-helpers';
+import { PortalLoader } from '@/components/client-portal/v2';
 
 /**
- * One record for a client instead of five screens: who they are, how their portal is doing, and
- * their messages, people, projects and invoices together. Every way of opening a client lands here.
+ * One record for a client organization: who they are, who can sign in, what they are waiting on
+ * and their projects, approvals, change requests, invoices and audit trail together. Every way of
+ * opening a client lands here.
  */
 const ClientWorkspacePage = () => {
-  const { t } = useTranslation('client-portal-client-workspace');
+  // "Edit client" opens the drawer mounted by the Clients list, which always renders underneath this modal.
+  const { t } = useTranslation('client-portal-v2-clients');
   const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const [isMessaging, setIsMessaging] = useState(false);
 
   const activeTab = parseWorkspaceTab(searchParams.get('tab'));
 
-  const profileQuery = useGetClientWorkspaceProfileQuery(id, { skip: !id });
-  const statsQuery = useGetClientWorkspaceStatsQuery(id, {
-    skip: !id,
-    refetchOnMountOrArgChange: true,
-  });
-  const profile = profileQuery.data?.body;
-  const stats = statsQuery.data?.body;
-  const clientName = profile ? getClientDisplayName(profile) : '';
+  const overviewQuery = useGetOrganizationOverviewQuery(id, { skip: !id });
+  const overview = overviewQuery.data?.body;
+  const organization = overview?.organization;
 
   // Count one view per opened client, once we know it exists.
   const trackedClientId = useRef<string | null>(null);
   useEffect(() => {
-    if (!profile || trackedClientId.current === profile.id) return;
-    trackedClientId.current = profile.id;
+    if (!organization || trackedClientId.current === organization.id) return;
+    trackedClientId.current = organization.id;
 
     const props: ClientPortalEventProps = {
       page: 'client_workspace',
@@ -69,7 +59,7 @@ const ClientWorkspacePage = () => {
       source: activeTab,
     };
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_CLIENT_VIEWED, props);
-  }, [profile, activeTab, trackMixpanelEvent]);
+  }, [organization, activeTab, trackMixpanelEvent]);
 
   const goToTab = (tab: WorkspaceTab) =>
     setSearchParams(
@@ -89,116 +79,119 @@ const ClientWorkspacePage = () => {
     else navigate(CLIENTS_PATH);
   };
 
+  const openInviteWizard = () => {
+    if (organization) dispatch(openAddCompanyUserDrawer({ id: organization.id, name: organization.name }));
+  };
+
   let body;
 
-  if (profileQuery.isLoading) {
+  if (overviewQuery.isLoading) {
     body = (
       <div aria-busy="true">
-        <Skeleton active avatar paragraph={{ rows: 1 }} />
-        <Skeleton active paragraph={{ rows: 8 }} style={{ marginTop: 24 }} />
+        <PortalLoader />
       </div>
     );
-  } else if (profileQuery.isError || !profile) {
-    const isNotFound = (profileQuery.error as { status?: number } | undefined)?.status === 404;
+  } else if (overviewQuery.isError || !overview || !organization) {
+    const isNotFound = (overviewQuery.error as { status?: number } | undefined)?.status === 404;
 
     body = (
       <Result
         status={isNotFound ? '404' : 'error'}
         title={
           isNotFound
-            ? t('errors.notFoundTitle', { defaultValue: 'Client not found' })
-            : t('errors.loadTitle', { defaultValue: 'Could not load this client' })
+            ? t('workspace.errors.notFoundTitle', { defaultValue: 'Client not found' })
+            : t('workspace.errors.loadTitle', { defaultValue: 'Could not load this client' })
         }
         subTitle={
           isNotFound
-            ? t('errors.notFoundDescription', {
+            ? t('workspace.errors.notFoundDescription', {
                 defaultValue: 'It may have been removed, or the link is wrong.',
               })
-            : t('errors.loadDescription', { defaultValue: 'Please try again.' })
+            : t('workspace.errors.loadDescription', { defaultValue: 'Please try again.' })
         }
         extra={[
           !isNotFound && (
-            <Button key="retry" type="primary" onClick={() => profileQuery.refetch()}>
+            <Button key="retry" type="primary" onClick={() => overviewQuery.refetch()}>
               {t('retry', { defaultValue: 'Retry' })}
             </Button>
           ),
-          <Button
-            key="back"
-            type={isNotFound ? 'primary' : 'default'}
-            onClick={() => navigate(CLIENTS_PATH)}
-          >
-            {t('errors.backToClients', { defaultValue: 'Back to clients' })}
+          <Button key="back" type={isNotFound ? 'primary' : 'default'} onClick={() => navigate(CLIENTS_PATH)}>
+            {t('workspace.errors.backToClients', { defaultValue: 'Back to clients' })}
           </Button>,
         ]}
       />
     );
   } else {
+    const awaitingApprovals = overview.needs_attention.filter(item => item.kind === 'approval_awaiting').length;
+    const needsReview = overview.needs_attention.filter(item => item.kind === 'change_request_review').length;
+
+    const tabLabel = (label: string, count: number) =>
+      count > 0 ? (
+        <span>
+          {label} <Badge count={count} size="small" />
+        </span>
+      ) : (
+        label
+      );
+
     const tabItems = [
       {
         key: 'overview',
-        label: t('tabs.overview', { defaultValue: 'Overview' }),
-        children: (
-          <OverviewTab
-            clientId={id}
-            clientName={clientName}
-            stats={stats}
-            isStatsLoading={statsQuery.isLoading}
-            isStatsError={statsQuery.isError}
-            onRetryStats={() => statsQuery.refetch()}
-          />
-        ),
+        label: t('workspace.tabs.overview', { defaultValue: 'Overview' }),
+        children: <OverviewTab overview={overview} organizationId={id} onOpenTab={goToTab} />,
       },
       {
-        key: 'messages',
-        label: t('tabs.messages', { defaultValue: 'Messages' }),
-        children: <MessagesTab clientId={id} clientName={clientName} />,
-      },
-      {
-        key: 'members',
-        label: t('tabs.members', { defaultValue: 'Company Members' }),
+        key: 'users',
+        label: t('workspace.tabs.users', { defaultValue: 'Users & Access' }),
         children: (
-          <MembersTab
-            clientId={id}
-            onAddUser={() => dispatch(openAddCompanyUserDrawer({ id, name: clientName }))}
-          />
+          <UsersTab organizationId={id} organizationName={organization.name} onInviteUser={openInviteWizard} />
         ),
       },
       {
         key: 'projects',
-        label: t('tabs.projects', { defaultValue: 'Projects' }),
+        label: t('workspace.tabs.projects', { defaultValue: 'Projects' }),
+        children: <ProjectsTab organizationId={id} organizationName={organization.name} />,
+      },
+      {
+        key: 'approvals',
+        label: tabLabel(t('workspace.tabs.approvals', { defaultValue: 'Approvals' }), awaitingApprovals),
+        children: <ApprovalsTab organizationId={id} organizationName={organization.name} />,
+      },
+      {
+        key: 'change-requests',
+        label: tabLabel(t('workspace.tabs.changeRequests', { defaultValue: 'Change Requests' }), needsReview),
+        children: <ChangeRequestsTab organizationId={id} organizationName={organization.name} />,
+      },
+      {
+        key: 'billing',
+        label: t('workspace.tabs.billing', { defaultValue: 'Billing' }),
         children: (
-          <ProjectsTab
-            clientId={id}
-            clientName={clientName}
-            onAssignProject={() => dispatch(toggleClientSettingsDrawer(id))}
+          <BillingTab
+            organizationId={id}
+            organizationName={organization.name}
+            portalAccess={organization.portal_access}
+            onOpenTab={goToTab}
           />
         ),
       },
       {
-        key: 'billing',
-        label: t('tabs.billing', { defaultValue: 'Billing' }),
-        children: (
-          <BillingTab
-            clientId={id}
-            clientName={clientName}
-            portalStatus={stats?.portalStatus.status}
-            onInvited={() => statsQuery.refetch()}
-          />
-        ),
+        key: 'activity',
+        label: t('workspace.tabs.activity', { defaultValue: 'Activity' }),
+        children: <ActivityTab organizationId={id} organizationName={organization.name} />,
       },
     ];
 
     body = (
       <>
-        <WorkspaceHeader profile={profile} stats={stats} isStatsLoading={statsQuery.isLoading} />
+        <WorkspaceHeader organization={organization} />
 
         {/* The rail sits above the content on narrow screens and beside it from the large breakpoint. */}
         <Row gutter={[24, 24]}>
           <Col xs={24} lg={8} xl={6}>
             <WorkspaceRail
-              profile={profile}
-              stats={stats}
-              isStatsLoading={statsQuery.isLoading}
+              organization={organization}
+              onInviteUser={openInviteWizard}
+              onRequestApproval={() => navigate(portalPaths.newApproval({ organizationId: id }))}
               onOpenTab={goToTab}
             />
           </Col>
@@ -209,25 +202,35 @@ const ClientWorkspacePage = () => {
               items={tabItems}
               destroyOnHidden
               tabBarExtraContent={
-                <Dropdown
-                  menu={{
-                    items: [
-                      {
-                        key: 'edit',
-                        icon: <EditOutlined />,
-                        label: t('header.edit', { defaultValue: 'Edit client' }),
-                        onClick: () => dispatch(toggleClientDetailsDrawer(id)),
-                      },
-                    ],
-                  }}
-                  trigger={['click']}
-                >
+                <Flex align="center" gap={4}>
                   <Button
-                    type="text"
-                    icon={<MoreOutlined />}
-                    aria-label={t('header.actionsLabel', { defaultValue: 'Client actions' })}
-                  />
-                </Dropdown>
+                    size="small"
+                    icon={<MessageOutlined />}
+                    disabled={organization.active_users === 0}
+                    onClick={() => setIsMessaging(true)}
+                  >
+                    {t('workspace.header.message', { defaultValue: 'Message' })}
+                  </Button>
+                  <Dropdown
+                    menu={{
+                      items: [
+                        {
+                          key: 'edit',
+                          icon: <EditOutlined />,
+                          label: t('workspace.header.edit', { defaultValue: 'Edit client' }),
+                          onClick: () => dispatch(toggleClientDetailsDrawer(id)),
+                        },
+                      ],
+                    }}
+                    trigger={['click']}
+                  >
+                    <Button
+                      type="text"
+                      icon={<MoreOutlined />}
+                      aria-label={t('workspace.header.actionsLabel', { defaultValue: 'Client actions' })}
+                    />
+                  </Dropdown>
+                </Flex>
               }
             />
           </Col>
@@ -250,9 +253,7 @@ const ClientWorkspacePage = () => {
       >
         {body}
       </Modal>
-
-      {createPortal(<ClientDetailsDrawer />, document.body)}
-      {createPortal(<ClientSettingsDrawer />, document.body)}
+      {isMessaging && <MessageClientModal target={{ organizationId: id }} onClose={() => setIsMessaging(false)} />}
     </>
   );
 };

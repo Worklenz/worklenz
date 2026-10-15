@@ -8,7 +8,7 @@
   "currentSprintName": "Bieżący sprint · {{name}}",
   "sprintCompletedCount": "{{done}}/{{total}} ukończono",
   "sprintCompletedPoints": "{{done}}/{{total}} pkt. ukończone",
-  "sprintPointsTotal": "{{total}} punktów łącznie",
+  "sprintPointsTotal": "{{points}} punktów łącznie",
   "sprintScopeAdded": "+{{count}} zakres",
   "sprintScopeAddedTooltip": "Problemy dodane po rozpoczęciu sprintu",
   "sprintItemCount_one": "{{count}} element",
