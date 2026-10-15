@@ -75,3 +75,19 @@
 .nav-rail-pin-affordance:focus-visible .anticon {
   color: var(--nav-rail-color-primary, #1890ff) !important;
 }
+
+/* ── Reorder handle affordance ─────────────────────────────────────────────
+   Always in DOM for accessibility. Shown when item is hovered or focused. */
+.nav-rail-affordance {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.nav-rail-item-wrapper:hover .nav-rail-affordance,
+.nav-rail-item-wrapper:focus-within .nav-rail-affordance,
+.nav-rail-affordance.nav-rail-affordance-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+

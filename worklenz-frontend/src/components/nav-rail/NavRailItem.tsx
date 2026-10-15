@@ -41,7 +41,13 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
   onTogglePin,
 }) => {
   const { token } = theme.useToken();
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: item.key,
     disabled: !draggable,
   });
@@ -139,23 +145,15 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
     if (!clickDisabled) onSelect();
   }, [clickDisabled, onSelect]);
 
+  // Keep navigation activation strictly on Enter or Space for the item itself.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      // First invoke dnd-kit's onKeyDown listener if present
-      listeners?.onKeyDown?.(e);
-
-      // If dnd-kit handled the key (e.g. Space to initiate keyboard drag), don't trigger selection
-      if (e.isDefaultPrevented() || e.defaultPrevented) {
-        return;
-      }
-
-      // Keyboard activation for selection on Enter or Space
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         handleSelect();
       }
     },
-    [listeners, handleSelect],
+    [handleSelect],
   );
 
   // Pin click: stop propagation so surrounding elements don't trigger.
@@ -183,8 +181,7 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
   return (
     <div ref={setNodeRef} style={wrapperStyle} className="nav-rail-item-wrapper">
       {/* ── Pin affordance (top-left, visible when active/pinned or hovered) ──
-          Positioned as a sibling outside the interactive sortable item to avoid
-          nested interactive controls while remaining independently keyboard-accessible. */}
+          Positioned as an independent sibling outside the interactive sortable item. */}
       <span
         role="button"
         tabIndex={0}
@@ -203,6 +200,7 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
         )}
       </span>
 
+      {/* ── Navigation item (navigates on click/Enter/Space; whole item supports mouse drag) ── */}
       <Tooltip
         title={tooltipTitle}
         placement="right"
@@ -211,12 +209,12 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
         {...tooltipProps}
       >
         <div
-          {...attributes}
-          {...listeners}
+          role="button"
           tabIndex={clickDisabled ? -1 : 0}
           aria-disabled={clickDisabled}
           onClick={handleSelect}
           onKeyDown={handleKeyDown}
+          onPointerDown={draggable && listeners ? e => listeners.onPointerDown(e) : undefined}
           style={buttonStyle}
         >
           {/* ── Unread badge ───────────────────────────────────────────────── */}
@@ -290,6 +288,7 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
           )}
         </div>
       </Tooltip>
+
     </div>
   );
 };
