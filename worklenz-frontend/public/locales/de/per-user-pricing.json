@@ -13,7 +13,6 @@
   "currentPlan": "Aktueller Tarif",
   "select": "Tarif auswählen",
   "switch": "Zu diesem Tarif wechseln",
-  "updateSeats": "Plätze aktualisieren",
   "unavailable": "Dieser Tarif ist für den gewählten Abrechnungszeitraum nicht verfügbar.",
   "plans": {
     "pro": {
@@ -77,7 +76,6 @@
   "messages": {
     "success": "Abonnement erfolgreich aktualisiert!",
     "changed": "Tarif erfolgreich gewechselt!",
-    "seatsUpdated": "Plätze aktualisiert. Die neue Anzahl wird in Kürze angezeigt.",
     "error": "Die Zahlung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
     "checkoutError": "Fehler beim Bezahlvorgang: {{message}}"
   },
@@ -86,6 +84,8 @@
   "billingPeriod": "Abrechnungszeitraum",
   "seatsHelp_one": "Mindestens {{count}} (Ihr aktueller aktiver Benutzer)",
   "seatsHelp_other": "Mindestens {{count}} (Ihre aktuellen aktiven Benutzer)",
+  "seatsBelowMinimum_one": "Plätze dürfen nicht unter {{count}} aktivem Mitglied liegen",
+  "seatsBelowMinimum_other": "Plätze dürfen nicht unter {{count}} aktiven Mitgliedern liegen",
   "totalMonthly_one": "{{total}} pro Monat für {{count}} Benutzer",
   "totalMonthly_other": "{{total}} pro Monat für {{count}} Benutzer",
   "totalAnnual_one": "{{total}} pro Jahr für {{count}} Benutzer",

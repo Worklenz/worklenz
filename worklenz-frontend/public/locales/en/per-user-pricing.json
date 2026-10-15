@@ -10,6 +10,8 @@
   "seats": "Users",
   "seatsHelp_one": "Minimum {{count}} (your current active user)",
   "seatsHelp_other": "Minimum {{count}} (your current active users)",
+  "seatsBelowMinimum_one": "Seats can't be fewer than your {{count}} active member",
+  "seatsBelowMinimum_other": "Seats can't be fewer than your {{count}} active members",
   "perUserPerMonth": "per user / month",
   "billedAnnually": "billed annually ({{total}} per user / year)",
   "totalMonthly_one": "{{total}} per month for {{count}} user",
@@ -19,7 +21,6 @@
   "currentPlan": "Current plan",
   "select": "Select plan",
   "switch": "Switch to this plan",
-  "updateSeats": "Update seats",
   "unavailable": "This plan is not available for the selected billing period.",
   "plans": {
     "pro": {
@@ -83,7 +84,6 @@
   "messages": {
     "success": "Subscription updated successfully!",
     "changed": "Subscription plan changed successfully!",
-    "seatsUpdated": "Seats updated. The new count will show shortly.",
     "error": "We could not start checkout. Please try again.",
     "checkoutError": "Error during checkout: {{message}}"
   },

@@ -10,6 +10,8 @@
   "seats": "Użytkownicy",
   "seatsHelp_one": "Minimum {{count}} (obecny aktywny użytkownik)",
   "seatsHelp_other": "Minimum {{count}} (obecni aktywni użytkownicy)",
+  "seatsBelowMinimum_one": "Liczba miejsc nie może być mniejsza niż {{count}} aktywny członek",
+  "seatsBelowMinimum_other": "Liczba miejsc nie może być mniejsza niż {{count}} aktywnych członków",
   "perUserPerMonth": "za użytkownika / miesiąc",
   "billedAnnually": "rozliczane rocznie ({{total}} za użytkownika / rok)",
   "totalMonthly_one": "{{total}} miesięcznie za {{count}} użytkownika",
@@ -19,7 +21,6 @@
   "currentPlan": "Obecny plan",
   "select": "Wybierz plan",
   "switch": "Przejdź na ten plan",
-  "updateSeats": "Zaktualizuj liczbę miejsc",
   "unavailable": "Ten plan nie jest dostępny dla wybranego okresu rozliczeniowego.",
   "plans": {
     "pro": {
@@ -83,7 +84,6 @@
   "messages": {
     "success": "Subskrypcja została zaktualizowana!",
     "changed": "Plan subskrypcji został zmieniony!",
-    "seatsUpdated": "Liczba miejsc została zaktualizowana. Nowa wartość pojawi się wkrótce.",
     "error": "Nie udało się rozpocząć płatności. Spróbuj ponownie.",
     "checkoutError": "Błąd podczas płatności: {{message}}"
   },

@@ -10,6 +10,8 @@
   "seats": "Utilisateurs",
   "seatsHelp_one": "Minimum {{count}} (votre utilisateur actif actuel)",
   "seatsHelp_other": "Minimum {{count}} (vos utilisateurs actifs actuels)",
+  "seatsBelowMinimum_one": "Le nombre de places ne peut pas être inférieur à {{count}} membre actif",
+  "seatsBelowMinimum_other": "Le nombre de places ne peut pas être inférieur à {{count}} membres actifs",
   "perUserPerMonth": "par utilisateur / mois",
   "billedAnnually": "facturé annuellement ({{total}} par utilisateur / an)",
   "totalMonthly_one": "{{total}} par mois pour {{count}} utilisateur",
@@ -19,7 +21,6 @@
   "currentPlan": "Offre actuelle",
   "select": "Choisir cette offre",
   "switch": "Passer à cette offre",
-  "updateSeats": "Mettre à jour les places",
   "unavailable": "Cette offre n’est pas disponible pour la période de facturation sélectionnée.",
   "plans": {
     "pro": {
@@ -83,7 +84,6 @@
   "messages": {
     "success": "Abonnement mis à jour !",
     "changed": "Offre d’abonnement modifiée !",
-    "seatsUpdated": "Places mises à jour. Le nouveau nombre s’affichera sous peu.",
     "error": "Impossible de démarrer le paiement. Veuillez réessayer.",
     "checkoutError": "Erreur lors du paiement : {{message}}"
   },

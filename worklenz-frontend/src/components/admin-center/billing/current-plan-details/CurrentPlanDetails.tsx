@@ -38,6 +38,7 @@ import { calculateTimeGap } from '@/utils/calculate-time-gap';
 // UpgradePlans modal is now handled globally in MainLayout.tsx
 import { ISUBSCRIPTION_TYPE, SUBSCRIPTION_STATUS } from '@/shared/constants';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
+import ManageSeatsModal from './ManageSeatsModal';
 import { useAuthService } from '@/hooks/useAuth';
 
 type SubscriptionAction = 'pause' | 'resume';
@@ -66,6 +67,7 @@ const CurrentPlanDetails = () => {
   const [cancellingPlan, setCancellingPlan] = useState(false);
   const [addingSeats, setAddingSeats] = useState(false);
   const [isMoreSeatsModalVisible, setIsMoreSeatsModalVisible] = useState(false);
+  const [isManageSeatsOpen, setIsManageSeatsOpen] = useState(false);
   const [selectedSeatCount, setSelectedSeatCount] = useState<number | string>(1);
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -612,8 +614,31 @@ const CurrentPlanDetails = () => {
 
         {renderPricingModelInfo()}
 
+        {/* Per-user plans on Paddle Billing: seats are managed separately from the plan */}
+        {shouldShowAddSeats &&
+          billingInfo?.billing_provider === 'paddle_billing' &&
+          !!billingInfo?.total_seats && (
+            <Flex align="center" gap={12} wrap style={{ marginTop: 12 }}>
+              <Typography.Text>
+                {t('seatsInUse', {
+                  defaultValue: '{{used}} of {{total}} seats are in use.',
+                  used: billingInfo.total_used ?? 0,
+                  total: billingInfo.total_seats,
+                })}
+              </Typography.Text>
+              <Button
+                size="small"
+                icon={<PlusOutlined />}
+                onClick={() => setIsManageSeatsOpen(true)}
+              >
+                {t('manageSeats', { defaultValue: 'Manage seats' })}
+              </Button>
+            </Flex>
+          )}
+
         {shouldShowAddSeats &&
           billingInfo?.total_seats &&
+          billingInfo?.billing_provider !== 'paddle_billing' &&
           billingInfo?.pricing_model === 'per_user' && (
             <div style={{ marginTop: '16px' }}>
               <Row gutter={16} align="middle">
@@ -853,6 +878,22 @@ const CurrentPlanDetails = () => {
             <RedeemCodeDrawer />
           </>
         )}
+
+        <ManageSeatsModal
+          open={isManageSeatsOpen}
+          onClose={() => setIsManageSeatsOpen(false)}
+          totalSeats={billingInfo?.total_seats ?? 0}
+          usedSeats={billingInfo?.total_used ?? 1}
+          currency={billingInfo?.default_currency}
+          monthlyUnitPrice={Number(
+            (billingInfo?.billing_type === 'year'
+              ? billingInfo?.unit_price_per_month
+              : billingInfo?.unit_price) ?? 0
+          )}
+          annualUnitPrice={
+            billingInfo?.billing_type === 'year' ? Number(billingInfo?.unit_price ?? 0) : undefined
+          }
+        />
 
         <Modal
           title={t('addMoreSeats', { defaultValue: 'Add more seats' })}

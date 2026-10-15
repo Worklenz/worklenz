@@ -13,7 +13,6 @@
   "currentPlan": "当前套餐",
   "select": "选择套餐",
   "switch": "切换到此套餐",
-  "updateSeats": "更新席位",
   "unavailable": "所选计费周期不提供此套餐。",
   "plans": {
     "pro": {
@@ -77,7 +76,6 @@
   "messages": {
     "success": "订阅更新成功！",
     "changed": "订阅套餐更换成功！",
-    "seatsUpdated": "席位已更新，新数量稍后显示。",
     "error": "无法开始结账，请重试。",
     "checkoutError": "结账时出错：{{message}}"
   },
@@ -101,6 +99,8 @@
   },
   "seatsHelp_one": "最少 {{count}}（您当前的活跃用户数）",
   "seatsHelp_other": "最少 {{count}}（您当前的活跃用户数）",
+  "seatsBelowMinimum_one": "席位数不能少于 {{count}} 位活跃成员",
+  "seatsBelowMinimum_other": "席位数不能少于 {{count}} 位活跃成员",
   "totalMonthly_one": "{{count}} 位用户，每月 {{total}}",
   "totalMonthly_other": "{{count}} 位用户，每月 {{total}}",
   "totalAnnual_one": "{{count}} 位用户，每年 {{total}}",

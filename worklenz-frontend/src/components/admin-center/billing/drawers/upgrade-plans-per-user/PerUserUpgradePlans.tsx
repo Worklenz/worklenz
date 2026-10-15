@@ -70,10 +70,14 @@ interface SeatStepperProps {
   onChange: (value: number) => void;
 }
 
-/** Compact "- 5 +" control. Values below the minimum are not accepted. */
+/**
+ * Compact "- 5 +" control. Typing below the minimum is allowed so the user sees why it is rejected:
+ * the field turns red and the parent disables the actions until the value is valid again.
+ */
 const SeatStepper: React.FC<SeatStepperProps> = ({ value, min, labelId, onChange }) => {
   const { t } = useTranslation('per-user-pricing');
-  const clamp = (next: number) => Math.min(MAX_SEATS, Math.max(min, Math.floor(next) || min));
+  const clamp = (next: number) => Math.min(MAX_SEATS, Math.max(0, Math.floor(next) || 0));
+  const invalid = value < min;
   return (
     <Space.Compact>
       <Button
@@ -85,20 +89,22 @@ const SeatStepper: React.FC<SeatStepperProps> = ({ value, min, labelId, onChange
       <InputNumber
         className="seat-stepper-input"
         controls={false}
-        min={min}
         max={MAX_SEATS}
         precision={0}
         value={value}
+        status={invalid ? 'error' : undefined}
         aria-labelledby={labelId}
+        aria-invalid={invalid}
         style={{ width: 72 }}
         onChange={next => typeof next === 'number' && onChange(clamp(next))}
-        onBlur={() => onChange(clamp(value))}
+        // An emptied field falls back to the minimum instead of staying blank.
+        onBlur={() => onChange(value > 0 ? clamp(value) : min)}
       />
       <Button
         aria-label={t('increaseUsers')}
         icon={<PlusOutlined />}
         disabled={value >= MAX_SEATS}
-        onClick={() => onChange(clamp(value + 1))}
+        onClick={() => onChange(clamp(Math.max(value, min - 1) + 1))}
       />
     </Space.Compact>
   );
@@ -151,6 +157,9 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
         (group.monthly?.id === billingInfo.plan_id || group.annual?.id === billingInfo.plan_id)
     )?.key ?? null;
   const hasCurrentCard = currentGroupKey !== null || isFreeUser;
+  // Seats can never drop below the members already using them.
+  const seatsBelowMinimum = seats < activeUsers;
+  const expansionBelowMinimum = expansionSeats < 1;
   const cardCount = groups.length + 1 + (showFreeCard ? 1 : 0);
   const cardColumns = cardCount >= 5 ? 8 : cardCount === 4 ? 6 : 8;
 
@@ -262,29 +271,6 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
     }
   };
 
-  const updateSeats = async (plan: IPerUserPlan, seatCount: number) => {
-    setBusyPlanId(plan.id);
-    try {
-      const response = await billingApiService.purchaseMoreSeats(seatCount);
-      if (!response.done) throw new Error(response.message || 'Seat update failed');
-      trackMixpanelEvent(MixpanelBillingEvents.PLAN_SELECTED, {
-        ...trackingProps(plan, seatCount),
-        change: 'seats',
-      });
-      message.success(t('messages.seatsUpdated'));
-      // The new seat count lands once the webhook is processed.
-      dispatch(fetchBillingInfo());
-      POST_CHECKOUT_REFRESH_STEPS_MS.forEach(delay =>
-        setTimeout(() => dispatch(fetchBillingInfo()), delay)
-      );
-    } catch (error) {
-      message.error(t('messages.error'));
-      logger.error('Failed to update seats', error);
-    } finally {
-      setBusyPlanId(null);
-    }
-  };
-
   const switchToFree = async () => {
     const teamId = currentSession?.team_id;
     if (!teamId) return;
@@ -352,9 +338,6 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
     const isCurrent = !!plan && billingInfo?.plan_id === plan.id;
     const isCurrentTier = group.key === currentGroupKey;
     const isPopular = group.key === MOST_POPULAR_KEY;
-    // Same plan, different seat count: the button updates seats instead of being disabled.
-    const seatsChanged =
-      isCurrent && !isExpansion && purchasedSeats > 0 && cardSeats !== purchasedSeats;
     const isHighlighted = isCurrentTier || (isPopular && !hasCurrentCard);
     const nameId = `per-user-plan-${group.key}`;
 
@@ -448,27 +431,20 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
                     })}
                 </Typography.Text>
                 <Button
-                  type={
-                    (isHighlighted && !isCurrent) || seatsChanged || isExpansion
-                      ? 'primary'
-                      : 'default'
-                  }
+                  type={(isHighlighted && !isCurrent) || isExpansion ? 'primary' : 'default'}
                   size="large"
                   block
-                  disabled={!plan || (isCurrent && !seatsChanged)}
-                  loading={!!plan && busyPlanId === plan.id}
-                  onClick={() =>
-                    plan &&
-                    (seatsChanged ? updateSeats(plan, cardSeats) : handleSelect(plan, cardSeats))
+                  disabled={
+                    !plan || isCurrent || (isExpansion ? expansionBelowMinimum : seatsBelowMinimum)
                   }
+                  loading={!!plan && busyPlanId === plan.id}
+                  onClick={() => plan && handleSelect(plan, cardSeats)}
                 >
-                  {seatsChanged
-                    ? t('updateSeats')
-                    : isCurrent
-                      ? t('currentPlan')
-                      : data.has_billing_subscription
-                        ? t('switch')
-                        : t('select')}
+                  {isCurrent
+                    ? t('currentPlan')
+                    : data.has_billing_subscription
+                      ? t('switch')
+                      : t('select')}
                 </Button>
               </Flex>
               <Space direction="vertical" size={6} style={{ marginTop: 4 }}>
@@ -620,9 +596,15 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
               setSeats(next);
             }}
           />
-          <Typography.Text type="secondary">
-            {t('seatsHelp', { count: activeUsers })}
-          </Typography.Text>
+          {seatsBelowMinimum ? (
+            <Typography.Text type="danger" role="alert">
+              {t('seatsBelowMinimum', { count: activeUsers })}
+            </Typography.Text>
+          ) : (
+            <Typography.Text type="secondary">
+              {t('seatsHelp', { count: activeUsers })}
+            </Typography.Text>
+          )}
         </Flex>
       </Flex>
 

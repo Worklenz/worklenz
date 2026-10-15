@@ -13,7 +13,6 @@
   "currentPlan": "Plan actual",
   "select": "Elegir plan",
   "switch": "Cambiar a este plan",
-  "updateSeats": "Actualizar puestos",
   "unavailable": "Este plan no está disponible para el periodo de facturación seleccionado.",
   "plans": {
     "pro": {
@@ -77,7 +76,6 @@
   "messages": {
     "success": "¡Suscripción actualizada correctamente!",
     "changed": "¡Plan de suscripción cambiado correctamente!",
-    "seatsUpdated": "Puestos actualizados. El nuevo número se mostrará en breve.",
     "error": "No pudimos iniciar el pago. Inténtalo de nuevo.",
     "checkoutError": "Error durante el pago: {{message}}"
   },
@@ -86,6 +84,8 @@
   "billingPeriod": "Periodo de facturación",
   "seatsHelp_one": "Mínimo {{count}} (tu usuario activo actual)",
   "seatsHelp_other": "Mínimo {{count}} (tus usuarios activos actuales)",
+  "seatsBelowMinimum_one": "Los puestos no pueden ser menos que tu {{count}} miembro activo",
+  "seatsBelowMinimum_other": "Los puestos no pueden ser menos que tus {{count}} miembros activos",
   "totalMonthly_one": "{{total}} al mes por {{count}} usuario",
   "totalMonthly_other": "{{total}} al mes por {{count}} usuarios",
   "totalAnnual_one": "{{total}} al año por {{count}} usuario",
