@@ -1,4 +1,4 @@
-import { memo, useMemo, Suspense } from 'react';
+import { memo, useLayoutEffect, useMemo, useRef, useState, Suspense } from 'react';
 import {
   Table,
   TableColumnsType,
@@ -10,8 +10,10 @@ import {
   Pagination,
   Empty,
   Spin,
+  Button,
+  theme,
 } from '@/shared/antd-imports';
-import { DoubleRightOutlined } from '@/shared/antd-imports';
+import { DoubleRightOutlined, ExpandAltOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -42,6 +44,9 @@ import { setProjectId } from '@/features/project/project.slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { useAllTasksReportsFilterOptions } from '../../hooks/useAllTasksReportsFilterOptions';
 import './all-tasks-reports-table.css';
+import { buildSkeletonRows, toSkeletonColumns } from '@/components/reporting/table-skeleton';
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'));
 
@@ -62,6 +67,7 @@ const AllTasksReportsTable = () => {
     selectedAssignees,
   } = useAppSelector(state => state.allTasksReportsReducer);
 
+  const { token } = theme.useToken();
   const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
 
   // Get filter options for columns
@@ -155,38 +161,47 @@ const AllTasksReportsTable = () => {
   const allColumns: TableColumnsType<IProjectTask> = useMemo(
     () => [
       {
+        key: 'taskKey',
+        dataIndex: 'task_key',
+        title: <CustomTableTitle title={t('taskKeyColumn', { defaultValue: 'Key' })} />,
+        width: 90,
+        fixed: 'left' as const,
+        render: value => (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {value || '-'}
+          </Typography.Text>
+        ),
+      },
+      {
         key: 'taskName',
         dataIndex: 'name',
         title: <CustomTableTitle title={t('taskNameColumn', { defaultValue: 'Task' })} />,
         fixed: 'left' as const,
-        width: 200,
+        width: 240,
         ellipsis: true,
         sorter: true,
         render: (_, record) => (
           <Flex
             align="center"
-            gap={4}
+            justify="space-between"
+            gap={8}
             className="task-name-cell"
             onClick={() => handleTaskClick(record)}
           >
+            <Flex align="center" gap={4} style={{ minWidth: 0 }}>
             {Number(record.sub_tasks_count) > 0 && (
               <DoubleRightOutlined style={{ fontSize: 10, flexShrink: 0 }} />
             )}
-            <Typography.Text ellipsis={{ tooltip: record.name }} style={{ maxWidth: 160 }}>
+            <Typography.Text ellipsis={{ tooltip: record.name }} style={{ maxWidth: 190 }}>
               {record.name}
             </Typography.Text>
+            </Flex>
+            <ExpandAltOutlined
+              className="hidden group-hover:flex"
+              style={{ flexShrink: 0 }}
+              aria-label={t('openButton', { defaultValue: 'Open' })}
+            />
           </Flex>
-        ),
-      },
-      {
-        key: 'taskKey',
-        dataIndex: 'task_key',
-        title: <CustomTableTitle title={t('taskKeyColumn', { defaultValue: 'Key' })} />,
-        width: 90,
-        render: value => (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {value || '-'}
-          </Typography.Text>
         ),
       },
       {
@@ -522,66 +537,141 @@ const AllTasksReportsTable = () => {
     return allColumns.filter(col => visibleColumns.includes(col.key as string));
   }, [allColumns, visibleColumns]);
 
-  if (!isLoading && tasksList.length === 0) {
-    return (
-      <Empty
-        description={
-          <Flex vertical align="center" gap={8}>
-            <Typography.Text>
-              {t('noTasksFound', { defaultValue: 'No tasks found' })}
-            </Typography.Text>
-            <Typography.Text type="secondary">
-              {t('noTasksDescription', {
-                defaultValue: 'Try adjusting your filters or search criteria',
-              })}
-            </Typography.Text>
-          </Flex>
-        }
-      />
-    );
-  }
+  // The first load has no rows yet, so draw placeholder rows instead of an empty state.
+  const showSkeleton = isLoading && tasksList.length === 0;
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scrollY, setScrollY] = useState<number>(240);
+
+  // Size the table body to the space left above the pagination footer so the header stays visible.
+  useLayoutEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+    const measure = () => {
+      const header = element.querySelector<HTMLElement>('.ant-table-header')?.offsetHeight ?? 40;
+      setScrollY(Math.max(120, element.clientHeight - header - 2));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [tasksList, isLoading]);
+
+  const handlePageSizeChange = (nextSize: number) => handlePaginationChange(1, nextSize);
+
+  const rangeStart = total === 0 ? 0 : (index - 1) * pageSize + 1;
+  const rangeEnd = Math.min(index * pageSize, total);
+  const lastPage = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <Flex vertical gap={16}>
-      <Table
-        columns={filteredColumns}
-        dataSource={tasksList}
-        rowKey={record => record.id || ''}
-        loading={isLoading}
-        pagination={false}
-        scroll={{ x: 'max-content' }}
-        onChange={handleTableChange}
-        size="small"
-        onRow={() => ({
-          className: 'all-tasks-table-row',
-        })}
-        className="all-tasks-table"
-      />
-
-      <Flex justify="flex-end">
-        <Pagination
-          current={index}
-          pageSize={pageSize}
-          total={total}
-          showSizeChanger
-          showQuickJumper
-          pageSizeOptions={['10', '20', '50', '100']}
-          onChange={handlePaginationChange}
-          showTotal={(total, range) =>
-            t('showingResults', {
-              from: range[0],
-              to: range[1],
-              total,
-              defaultValue: `Showing ${range[0]}-${range[1]} of ${total} tasks`,
-            })
-          }
+    <div
+      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border"
+      style={{ borderColor: token.colorBorderSecondary, background: token.colorBgContainer }}
+    >
+      <div ref={containerRef} className="min-h-0 flex-1 overflow-hidden">
+        <Table
+          columns={showSkeleton ? toSkeletonColumns(filteredColumns) : filteredColumns}
+          dataSource={showSkeleton ? buildSkeletonRows<IProjectTask>(pageSize) : tasksList}
+          rowKey={record => record.id || ''}
+          loading={isLoading && !showSkeleton}
+          pagination={false}
+          showSorterTooltip={false}
+          scroll={{ x: 'max-content', y: scrollY }}
+          onChange={handleTableChange}
+          onRow={() => ({
+            className: 'all-tasks-table-row group',
+            style: { height: 56 },
+          })}
+          className="all-tasks-table"
+          locale={{
+            emptyText: (
+              <Empty
+                description={
+                  <Flex vertical align="center" gap={8}>
+                    <Typography.Text>
+                      {t('noTasksFound', { defaultValue: 'No tasks found' })}
+                    </Typography.Text>
+                    <Typography.Text type="secondary">
+                      {t('noTasksDescription', {
+                        defaultValue: 'Try adjusting your filters or search criteria',
+                      })}
+                    </Typography.Text>
+                  </Flex>
+                }
+              />
+            ),
+          }}
         />
+      </div>
+      <Flex
+        align="center"
+        justify="space-between"
+        gap={12}
+        wrap="wrap"
+        className="px-4 py-3"
+        style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}
+      >
+        <Flex align="center" gap={8}>
+          <label htmlFor="all-tasks-page-size" className="text-xs">
+            {t('rowsPerPage', { defaultValue: 'Rows per page:' })}
+          </label>
+          <select
+            id="all-tasks-page-size"
+            value={pageSize}
+            onChange={event => handlePageSizeChange(Number(event.target.value))}
+            className="rounded-md border px-2 py-1 text-xs"
+            style={{
+              background: token.colorBgContainer,
+              color: token.colorText,
+              borderColor: token.colorBorder,
+            }}
+          >
+            {PAGE_SIZE_OPTIONS.map(size => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs" style={{ color: token.colorTextSecondary }}>
+            {t('rangeOfTotal', {
+              start: rangeStart,
+              end: rangeEnd,
+              total,
+              defaultValue: '{{start}}-{{end}} of {{total}}',
+            })}
+          </span>
+        </Flex>
+        <Flex align="center" gap={8}>
+          <Button
+            size="small"
+            aria-label={t('firstPage', { defaultValue: 'First page' })}
+            disabled={index <= 1}
+            onClick={() => handlePaginationChange(1, pageSize)}
+          >
+            «
+          </Button>
+          <Pagination
+            current={index}
+            pageSize={pageSize}
+            total={total}
+            showSizeChanger={false}
+            onChange={handlePaginationChange}
+          />
+          <Button
+            size="small"
+            aria-label={t('lastPage', { defaultValue: 'Last page' })}
+            disabled={index >= lastPage}
+            onClick={() => handlePaginationChange(lastPage, pageSize)}
+          >
+            »
+          </Button>
+        </Flex>
       </Flex>
 
       <Suspense fallback={<Spin size="small" />}>
         <TaskDrawer />
       </Suspense>
-    </Flex>
+    </div>
   );
 };
 

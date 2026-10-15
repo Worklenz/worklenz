@@ -43,6 +43,14 @@ export const reportingExportApiService = {
     })}`;
   },
 
+  /**
+   * Excel export of the current Projects report view (table: visible columns + active filters;
+   * grouped: grouped like the grouped view).
+   */
+  exportProjectsFiltered(params: Record<string, string | number | boolean | undefined>) {
+    window.location.href = `${rootUrl}/projects/filtered${toQueryString(params)}`;
+  },
+
   exportProjects(teamName: string | undefined) {
     const params = toQueryString({
       team_name: teamName,

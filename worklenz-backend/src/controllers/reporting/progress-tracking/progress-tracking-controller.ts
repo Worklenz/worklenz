@@ -23,16 +23,25 @@ import {
  */
 const PORTFOLIO_CTE = `
 WITH visible_projects AS (
-  SELECT p.id, p.name, c.name AS client_name, p.created_at
+  SELECT p.id, p.name, p.color_code, p.client_id, c.name AS client_name, p.created_at, p.start_date, p.end_date,
+         (SELECT STRING_AGG(tmi.name, ', ' ORDER BY tmi.name)
+          FROM project_members pm
+                 JOIN team_member_info_view tmi ON tmi.team_member_id = pm.team_member_id
+          WHERE pm.project_id = p.id
+            AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')) AS manager,
+         (SELECT ARRAY_AGG(pm.team_member_id)
+          FROM project_members pm
+          WHERE pm.project_id = p.id
+            AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')) AS manager_ids
   FROM projects p
   LEFT JOIN clients c ON c.id = p.client_id
   WHERE p.team_id = $1::uuid
-    AND NOT EXISTS (
+    AND (__INCLUDE_ARCHIVED__ OR NOT EXISTS (
       SELECT 1
       FROM archived_projects ap
       WHERE ap.project_id = p.id
         AND ap.user_id = $2::uuid
-    )
+    ))
 ),
 task_stats AS (
   SELECT t.project_id,
@@ -63,7 +72,13 @@ blocked_stats AS (
 portfolio AS (
   SELECT v.id,
          v.name,
+         v.color_code,
+         v.client_id,
+         v.manager_ids,
          v.client_name,
+         v.manager,
+         v.start_date,
+         v.end_date,
          v.created_at,
          COALESCE(ts.total_tasks, 0) AS total_tasks,
          COALESCE(ts.done_tasks, 0) AS done_tasks,
@@ -91,11 +106,11 @@ portfolio AS (
 `;
 
 const SUMMARY_SQL = `
-SELECT COUNT(*) FILTER (WHERE ap.project_id IS NULL)::int AS total,
-       COUNT(*) FILTER (WHERE ap.project_id IS NULL AND pdc.status = 'green')::int AS on_track,
-       COUNT(*) FILTER (WHERE ap.project_id IS NULL AND pdc.status = 'amber')::int AS at_risk,
-       COUNT(*) FILTER (WHERE ap.project_id IS NULL AND pdc.status = 'red')::int AS off_track,
-       COUNT(*) FILTER (WHERE ap.project_id IS NULL AND pdc.status IS NULL)::int AS not_set,
+SELECT COUNT(*) FILTER (WHERE (__INCLUDE_ARCHIVED__ OR ap.project_id IS NULL))::int AS total,
+       COUNT(*) FILTER (WHERE (__INCLUDE_ARCHIVED__ OR ap.project_id IS NULL) AND pdc.status = 'green')::int AS on_track,
+       COUNT(*) FILTER (WHERE (__INCLUDE_ARCHIVED__ OR ap.project_id IS NULL) AND pdc.status = 'amber')::int AS at_risk,
+       COUNT(*) FILTER (WHERE (__INCLUDE_ARCHIVED__ OR ap.project_id IS NULL) AND pdc.status = 'red')::int AS off_track,
+       COUNT(*) FILTER (WHERE (__INCLUDE_ARCHIVED__ OR ap.project_id IS NULL) AND pdc.status IS NULL)::int AS not_set,
        COUNT(*) FILTER (WHERE ap.project_id IS NOT NULL)::int AS archived_excluded
 FROM projects p
        LEFT JOIN project_delivery_confidence pdc ON pdc.project_id = p.id
@@ -103,10 +118,41 @@ FROM projects p
 WHERE p.team_id = $1::uuid
 `;
 
+const withArchivedScope = (sql: string, includeArchived: boolean): string =>
+  sql.replaceAll("__INCLUDE_ARCHIVED__", includeArchived ? "TRUE" : "FALSE");
+
+const CLIENT_OPTIONS_SQL = `
+SELECT DISTINCT c.id, c.name
+FROM projects p
+       JOIN clients c ON c.id = p.client_id
+WHERE p.team_id = $1::uuid
+  AND NOT EXISTS (
+    SELECT 1 FROM archived_projects ap WHERE ap.project_id = p.id AND ap.user_id = $2::uuid
+  )
+ORDER BY c.name
+`;
+
+const MANAGER_OPTIONS_SQL = `
+SELECT DISTINCT tmi.team_member_id AS id, tmi.name
+FROM projects p
+       JOIN project_members pm ON pm.project_id = p.id
+       JOIN team_member_info_view tmi ON tmi.team_member_id = pm.team_member_id
+WHERE p.team_id = $1::uuid
+  AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')
+  AND NOT EXISTS (
+    SELECT 1 FROM archived_projects ap WHERE ap.project_id = p.id AND ap.user_id = $2::uuid
+  )
+ORDER BY tmi.name
+`;
+
 interface PortfolioRow {
   id: string;
   name: string;
+  color_code: string | null;
   client_name: string | null;
+  manager: string | null;
+  start_date: string | null;
+  end_date: string | null;
   total_tasks: number;
   done_tasks: number;
   percent_complete: number | null;
@@ -125,7 +171,11 @@ const toInt = (value: unknown): number => {
 const mapProject = (row: PortfolioRow) => ({
   id: row.id,
   name: row.name,
+  color_code: row.color_code ?? null,
   client_name: row.client_name,
+  manager: row.manager ?? null,
+  start_date: row.start_date ?? null,
+  end_date: row.end_date ?? null,
   total_tasks: toInt(row.total_tasks),
   done_tasks: toInt(row.done_tasks),
   percent_complete: row.percent_complete === null || row.percent_complete === undefined
@@ -154,6 +204,8 @@ export default class ProgressTrackingController extends ReportingControllerBase 
 
     const listQuery = buildProgressTrackingListQuery({
       search: typeof req.query.search === "string" ? req.query.search : "",
+      managerIds: typeof req.query.manager_ids === "string" ? req.query.manager_ids : undefined,
+      clientIds: typeof req.query.client_ids === "string" ? req.query.client_ids : undefined,
       confidence: typeof req.query.confidence === "string" ? req.query.confidence : undefined,
       percentRange: typeof req.query.percent_range === "string" ? req.query.percent_range : undefined,
       hasBlockers: req.query.has_blockers === "true",
@@ -161,20 +213,27 @@ export default class ProgressTrackingController extends ReportingControllerBase 
       sortOrder: typeof req.query.order === "string" ? req.query.order : undefined,
     }, 3);
 
+    const includeArchived = req.query.include_archived === "true";
+    const portfolioCte = withArchivedScope(PORTFOLIO_CTE, includeArchived);
+
     const limitIndex = 3 + listQuery.params.length;
     const offsetIndex = limitIndex + 1;
     const filterParams = [teamId, userId, ...listQuery.params];
     const countSql = `
-      ${PORTFOLIO_CTE}
+      ${portfolioCte}
       SELECT COUNT(*)::int AS total
       FROM portfolio
       WHERE ${listQuery.whereSql}
     `;
     const pageSql = `
-      ${PORTFOLIO_CTE}
+      ${portfolioCte}
       SELECT id,
              name,
+             color_code,
              client_name,
+             manager,
+             start_date,
+             end_date,
              total_tasks,
              done_tasks,
              percent_complete,
@@ -189,8 +248,10 @@ export default class ProgressTrackingController extends ReportingControllerBase 
       LIMIT $${limitIndex} OFFSET $${offsetIndex}
     `;
 
-    const [summaryResult, countResult, pageResult] = await Promise.all([
-      db.query(SUMMARY_SQL, [teamId, userId]),
+    const [summaryResult, clientsResult, managersResult, countResult, pageResult] = await Promise.all([
+      db.query(withArchivedScope(SUMMARY_SQL, includeArchived), [teamId, userId]),
+      db.query(CLIENT_OPTIONS_SQL, [teamId, userId]),
+      db.query(MANAGER_OPTIONS_SQL, [teamId, userId]),
       db.query(countSql, filterParams),
       db.query(pageSql, [...filterParams, pagination.pageSize, pagination.offset]),
     ]);
@@ -203,6 +264,8 @@ export default class ProgressTrackingController extends ReportingControllerBase 
       total: toInt(countResult.rows[0]?.total),
       page: pagination.page,
       page_size: pagination.pageSize,
+      clients: clientsResult.rows,
+      managers: managersResult.rows,
       summary: {
         total: toInt(summaryRow.total),
         on_track: toInt(summaryRow.on_track),

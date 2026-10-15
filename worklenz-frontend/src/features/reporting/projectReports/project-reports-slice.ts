@@ -248,6 +248,37 @@ export const fetchGroupedProjects = createAsyncThunk(
   }
 );
 
+// Query params describing the current filtered view; used by the filtered Excel export.
+export const buildProjectsExportParams = (state: ProjectReportsState) => {
+  const teams = selectedTeams(state);
+  const allHealthsSelected = state.selectedProjectHealths.length === state.projectHealths?.length;
+  const allCategoriesSelected =
+    state.orgCategories.length > 0 &&
+    state.selectedProjectCategories.length === state.orgCategories.length + 1;
+
+  return {
+    view: state.viewMode,
+    group_by: state.groupBy,
+    search: state.searchQuery,
+    field: state.field,
+    order: state.order,
+    statuses: state.selectedProjectStatuses.map((s: IProjectStatus) => s.id || '').join(','),
+    healths: allHealthsSelected
+      ? ''
+      : state.selectedProjectHealths.map((h: IProjectHealth) => h.id || '').join(','),
+    categories: allCategoriesSelected
+      ? ''
+      : state.selectedProjectCategories.map((c: IProjectCategory) => c.id || '').join(','),
+    project_managers: state.selectedProjectManagers
+      .map((m: IProjectManager) => m.id || '')
+      .join(','),
+    teams: teams.join(','),
+    archived: state.archived,
+    clients: state.selectedClients.join(','),
+    priorities: state.selectedProjectPriorities.join(','),
+  };
+};
+
 // View-aware fetch: calls the appropriate fetch function based on current view mode
 // This should be used by filter components instead of calling fetchProjectData directly
 export const fetchProjectDataForCurrentView = createAsyncThunk(
@@ -296,8 +327,8 @@ const initialState: ProjectReportsState = {
   // filters
   index: 1,
   pageSize: 10,
-  field: 'name',
-  order: 'asc',
+  field: 'priority_name',
+  order: 'desc',
   searchQuery: '',
   filterIndex: filterIndex(),
   archived: false,
@@ -536,8 +567,8 @@ const projectReportsSlice = createSlice({
       state.error = null;
       state.index = 1;
       state.pageSize = 10;
-      state.field = 'name';
-      state.order = 'asc';
+      state.field = 'priority_name';
+      state.order = 'desc';
       state.searchQuery = '';
       state.filterIndex = filterIndex();
       // Note: archived state is preserved to maintain user preference across view changes

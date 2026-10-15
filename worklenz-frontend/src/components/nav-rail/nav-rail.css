@@ -26,3 +26,60 @@
   opacity: 1;
   pointer-events: auto;
 }
+
+/* Hide the native scrollbar on a scrollable rail; ScrollableRail shows
+   up/down arrows instead when content overflows. */
+.nav-rail-scroll-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.nav-rail-scroll-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+/* Scroll arrows: fade in when they appear, then gently bounce in the scroll
+   direction so the scrollability is noticeable. */
+.nav-rail-scroll-arrow {
+  animation: nav-rail-arrow-fade-in 0.2s ease-out;
+  transition: background-color 0.15s;
+}
+
+.nav-rail-scroll-arrow:hover {
+  background-color: rgba(128, 128, 128, 0.15) !important;
+}
+
+.nav-rail-scroll-arrow:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+
+.nav-rail-scroll-arrow .anticon {
+  animation: nav-rail-arrow-bounce-down 1.4s ease-in-out infinite;
+}
+
+.nav-rail-scroll-arrow-up .anticon {
+  animation-name: nav-rail-arrow-bounce-up;
+}
+
+@keyframes nav-rail-arrow-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes nav-rail-arrow-bounce-down {
+  0%, 100% { transform: translateY(-2px); }
+  50% { transform: translateY(3px); }
+}
+
+@keyframes nav-rail-arrow-bounce-up {
+  0%, 100% { transform: translateY(2px); }
+  50% { transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-rail-scroll-arrow,
+  .nav-rail-scroll-arrow .anticon {
+    animation: none;
+  }
+}

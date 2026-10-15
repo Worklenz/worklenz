@@ -473,6 +473,14 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
         groupByFields = "p.team_id, t.name";
         groupOrderBy = "COALESCE(t.name, 'no_team')";
         break;
+      case "client":
+        groupField = "COALESCE(p.client_id::text, 'no_client')";
+        groupName = "COALESCE(cl.name, 'no_client')";
+        groupColor = "'#1890ff'";
+        groupJoin = "LEFT JOIN clients cl ON p.client_id = cl.id";
+        groupByFields = "p.client_id, cl.name";
+        groupOrderBy = "COALESCE(cl.name, 'no_client')";
+        break;
       case "manager":
         // Use LATERAL join to get manager info for each project
         groupField = "COALESCE(mgr.manager_id::text, 'no_manager')";

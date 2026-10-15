@@ -1,4 +1,5 @@
 {
+  "pageSubtitle": "Follow how far each project has come, how confident its managers are, and which ones need attention.",
   "pageTitle": "Progress Tracking",
   "documentTitle": "Reporting - Progress Tracking",
   "breadcrumb": "Reports",
@@ -32,8 +33,7 @@
   "percentTooltip": "{{done}} of {{total}} tasks done",
   "blockedTooltip": "{{count}} tasks with an unresolved Blocked by dependency",
   "openInsights": "Open Insights",
-  "archivedExcluded_one": "{{count}} archived project excluded from this view.",
-  "archivedExcluded_other": "{{count}} archived projects excluded from this view.",
+  "includeArchived": "Include archived projects",
   "notePlaceholder": "Optional note…",
   "saveNote": "Save note",
   "confidenceUpdated": "Delivery Confidence updated to \"{{label}}\"",

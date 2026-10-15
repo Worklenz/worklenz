@@ -105,7 +105,10 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     userId: string,
     req?: any,
     practiceIds: string[] = [],
-    departmentIds: string[] = []
+    departmentIds: string[] = [],
+    memberTeamIds: string[] = [],
+    sortField = "",
+    sortOrder = ""
   ) {
     const pagingClause = (size !== null && offset !== null) ? `LIMIT ${size} OFFSET ${offset}` : "";
     const archivedClause = includeArchived
@@ -207,6 +210,33 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       departmentsFilterClause = `AND tmiv.team_member_id IN (SELECT tm.id FROM team_members tm WHERE ${departmentsCondition})`;
     }
 
+    // Guests are external collaborators; the members report lists internal members only.
+    const excludeGuestsClause = `AND NOT EXISTS (
+        SELECT 1 FROM team_members gtm
+        WHERE gtm.id = tmiv.team_member_id
+          AND COALESCE(gtm.is_guest, FALSE) = TRUE
+          AND NOT is_owner(gtm.user_id, gtm.team_id)
+          AND NOT is_admin(gtm.user_id, gtm.team_id)
+      )`;
+
+    let memberTeamsFilterClause = "";
+    let memberTeamFilterParams: any[] = [];
+    if (memberTeamIds.length > 0) {
+      const { clause, params } = SqlHelper.buildInClause(memberTeamIds, paramOffset);
+      memberTeamFilterParams = params;
+      memberTeamsFilterClause = `AND tmiv.user_id IN (
+        SELECT tm.user_id FROM team_members tm
+        WHERE tm.team_id IN (${clause}) AND tm.active IS NOT FALSE AND in_organization(tm.team_id, $1)
+      )`;
+      paramOffset += memberTeamFilterParams.length;
+    }
+
+    // Only whitelisted columns can reach ORDER BY; anything else keeps the default ordering.
+    const SORTABLE_COLUMNS = ["name", "email", "role_name", "projects", "teams_count", "tasks", "overdue", "completed", "ongoing"];
+    const orderByClause = SORTABLE_COLUMNS.includes(sortField)
+      ? `ORDER BY ${sortField} ${sortOrder === "desc" ? "DESC" : "ASC"} NULLS LAST, name ASC`
+      : "ORDER BY last_user_activity DESC NULLS LAST";
+
     const q = `SELECT COUNT(DISTINCT email) AS total,
               (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
                   FROM (SELECT team_member_id AS id,
@@ -216,6 +246,17 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                               (SELECT COUNT(project_id)
                               FROM project_members pm
                               WHERE pm.team_member_id = tmiv.team_member_id) AS projects,
+
+                              (SELECT r.name
+                              FROM team_members tm3
+                                      JOIN roles r ON r.id = tm3.role_id
+                              WHERE tm3.id = tmiv.team_member_id) AS role_name,
+
+                              (SELECT COUNT(DISTINCT tm2.team_id)
+                              FROM team_members tm2
+                              WHERE tm2.user_id = (SELECT user_id FROM team_members WHERE id = tmiv.team_member_id)
+                                AND tm2.active IS NOT FALSE
+                                AND in_organization(tm2.team_id, $1)) AS teams_count,
 
                               (SELECT GREATEST(
                                 (SELECT MAX(created_at) FROM task_activity_logs WHERE user_id = (SELECT user_id FROM team_members WHERE id = tmiv.team_member_id) AND team_id = $1),
@@ -295,17 +336,17 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                                       ${timeLogDateRangeClause}
                                       ${includeArchived ? "" : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`}) AS non_billable_time
                       FROM team_member_info_view tmiv
-                      WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause} ${practicesFilterClause} ${departmentsFilterClause}
+                      WHERE tmiv.team_id = $1 ${excludeGuestsClause} ${teamsClause} ${memberFilterClause} ${practicesFilterClause} ${departmentsFilterClause} ${memberTeamsFilterClause}
                           ${searchQuery}
                       GROUP BY email, name, avatar_url, team_member_id, tmiv.team_id
-                      ORDER BY last_user_activity DESC NULLS LAST
+                      ${orderByClause}
 
                       ${pagingClause}) t) AS members
                   FROM team_member_info_view tmiv
-                  WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause} ${practicesFilterClause} ${departmentsFilterClause}
+                  WHERE tmiv.team_id = $1 ${excludeGuestsClause} ${teamsClause} ${memberFilterClause} ${practicesFilterClause} ${departmentsFilterClause} ${memberTeamsFilterClause}
                   ${searchQuery}`;
     // Pass all parameters - searchParams come after teamId, then teamIdsParams, then other filter params
-    const queryParams = [teamId, ...searchParams, ...teamIdsParams, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams, ...practiceFilterParams, ...departmentFilterParams];
+    const queryParams = [teamId, ...searchParams, ...teamIdsParams, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams, ...practiceFilterParams, ...departmentFilterParams, ...memberTeamFilterParams];
     const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
@@ -620,8 +661,14 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       ? (req.query.departments as string).split(",").filter(id => id.trim())
       : [];
 
+    const memberTeamIds = typeof req.query.member_teams === "string"
+      ? req.query.member_teams.split(",").map(id => id.trim()).filter(Boolean)
+      : [];
+    const sortField = typeof req.query.field === "string" ? req.query.field : "";
+    const sortOrder = typeof req.query.order === "string" ? req.query.order.toLowerCase() : "";
+
     const teamId = this.getCurrentTeamId(req);
-    const result = await this.getMembers(teamId as string, searchQuery, searchParams, size, offset, teamsClause, teamIdsParams, duration as string, dateRange, archived, req.user?.id as string, req, practiceIds, departmentIds);
+    const result = await this.getMembers(teamId as string, searchQuery, searchParams, size, offset, teamsClause, teamIdsParams, duration as string, dateRange, archived, req.user?.id as string, req, practiceIds, departmentIds, memberTeamIds, sortField, sortOrder);
     const body = {
       total: result.total,
       members: result.members,

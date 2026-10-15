@@ -1,6 +1,7 @@
 {
   "title": "Cartera de proyectos",
   "reportingPeriod": "Período del informe",
+  "selectPeriod": "Seleccionar período",
   "yearly": "Anual",
   "quarterly": "Trimestral",
   "monthly": "Mensual",

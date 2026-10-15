@@ -1,6 +1,7 @@
 {
   "title": "Portefeuille de projets",
   "reportingPeriod": "Période du rapport",
+  "selectPeriod": "Sélectionner la période",
   "yearly": "Annuel",
   "quarterly": "Trimestriel",
   "monthly": "Mensuel",

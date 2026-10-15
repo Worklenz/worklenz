@@ -21,6 +21,9 @@ export interface NavItem {
   key: string;
   label: NavItemLabel;
   icon: ReactNode;
+  // Expanded text shown in the hover tooltip when `label` is an abbreviation
+  // (e.g. "CFD"). Falls back to `label` when omitted.
+  tooltip?: NavItemLabel;
   // Resolved by the mounting page against its own store slice — keeps the
   // registry free of a second selector-lookup table for the two items
   // (home.my-tasks, client-portal.chats) that have a live count today.

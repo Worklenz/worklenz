@@ -52,7 +52,11 @@ const TOTAL_PROJECTS = 45;
 const buildProject = (index: number): IProgressTrackingProject => ({
   id: `project-${index}`,
   name: `Project ${index}`,
+  color_code: null,
   client_name: null,
+  manager: null,
+  start_date: null,
+  end_date: null,
   total_tasks: 0,
   done_tasks: 0,
   percent_complete: null,
@@ -74,6 +78,8 @@ const buildResponse = (query: IProgressTrackingQuery) => {
     total: TOTAL_PROJECTS,
     page,
     page_size: pageSize,
+    clients: [],
+    managers: [],
     summary: {
       total: TOTAL_PROJECTS,
       on_track: 0,
@@ -94,7 +100,13 @@ const expectLastQuery = async (expected: Partial<IProgressTrackingQuery>) => {
   });
 };
 
-const getHeader = (name: string) => screen.getByRole('columnheader', { name: new RegExp(name) });
+const getHeader = (name: string) => {
+  const match = screen
+    .getAllByRole('columnheader')
+    .find(header => header.textContent?.trim() === name);
+  if (!match) throw new Error(`Column header not found: ${name}`);
+  return match;
+};
 
 const clickHeader = (name: string) => fireEvent.click(getHeader(name));
 
@@ -103,11 +115,8 @@ const goToPage = (page: number) => {
 };
 
 const changePageSize = async (label: string) => {
-  const sizeChanger = document.querySelector('.ant-pagination-options .ant-select-selector');
-  if (!sizeChanger) throw new Error('Page size changer not rendered');
-  fireEvent.mouseDown(sizeChanger);
-  const option = await screen.findByTitle(label);
-  fireEvent.click(option);
+  const select = screen.getByLabelText('Rows per page:');
+  fireEvent.change(select, { target: { value: label.split(' ')[0] } });
 };
 
 const renderPage = async () => {
@@ -130,9 +139,11 @@ describe('ProgressTrackingPage sorting', () => {
     expect(initialQuery.order).toBeUndefined();
     expect(initialQuery).toEqual(expect.objectContaining({ page: 1, page_size: 20 }));
 
-    ['Project', 'Client', '% Complete', 'Blocked', 'Delivery Confidence', 'Last updated'].forEach(name => {
-      expect(getHeader(name)).not.toHaveAttribute('aria-sort');
-    });
+    ['Project', 'Client', '% Complete', 'Blocked', 'Delivery Confidence', 'Last updated'].forEach(
+      name => {
+        expect(getHeader(name)).not.toHaveAttribute('aria-sort');
+      }
+    );
   });
 
   it.each([
@@ -182,7 +193,9 @@ describe('ProgressTrackingPage sorting', () => {
 
     clickHeader('Blocked');
     await waitFor(() => {
-      expect(lastQuery()).toEqual(expect.objectContaining({ page: 1, field: undefined, order: undefined }));
+      expect(lastQuery()).toEqual(
+        expect.objectContaining({ page: 1, field: undefined, order: undefined })
+      );
     });
 
     goToPage(2);
@@ -230,7 +243,7 @@ describe('ProgressTrackingPage sorting', () => {
       );
     });
 
-    const table = screen.getByRole('table');
+    const table = screen.getAllByRole('table').slice(-1)[0];
     expect(within(table).getByText('Project 1')).toBeInTheDocument();
   });
 });

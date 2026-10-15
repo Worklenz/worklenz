@@ -21,7 +21,11 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { durations } from '@/shared/constants';
 import { setDateRange, setDuration } from '@/features/reporting/reporting.slice';
 
-const TimeWiseFilter = () => {
+interface TimeWiseFilterProps {
+  isPrimary?: boolean;
+}
+
+const TimeWiseFilter = ({ isPrimary = false }: TimeWiseFilterProps) => {
   const { t } = useTranslation('reporting-members');
   const { mode: themeMode } = useAppSelector(state => state.themeReducer);
   const dispatch = useAppDispatch();
@@ -310,6 +314,7 @@ const TimeWiseFilter = () => {
       open={isDropdownOpen}
     >
       <Button
+        type={isPrimary ? 'primary' : 'default'}
         icon={<DownOutlined />}
         iconPosition="end"
         style={{
@@ -317,12 +322,18 @@ const TimeWiseFilter = () => {
           height: 36,
           borderRadius: 6,
           fontWeight: 500,
-          border: isDropdownOpen ? '1px solid #1890ff' : '1px solid #d9d9d9',
-          color: isDropdownOpen ? '#1890ff' : 'inherit',
-          boxShadow: isDropdownOpen ? '0 0 0 2px rgba(24, 144, 255, 0.1)' : 'none',
-          transition: 'all 0.2s ease',
+          ...(isPrimary
+            ? { transition: 'all 0.2s ease' }
+            : {
+                border: isDropdownOpen ? '1px solid #1890ff' : '1px solid #d9d9d9',
+                color: isDropdownOpen ? '#1890ff' : 'inherit',
+                boxShadow: isDropdownOpen ? '0 0 0 2px rgba(24, 144, 255, 0.1)' : 'none',
+                transition: 'all 0.2s ease',
+              }),
         }}
-        className="transition-all duration-200 hover:border-blue-400 hover:text-blue-500"
+        className={
+          isPrimary ? undefined : 'transition-all duration-200 hover:border-blue-400 hover:text-blue-500'
+        }
       >
         <Flex align="center" gap={6}>
           <CalendarOutlined style={{ fontSize: 14 }} />

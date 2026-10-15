@@ -1,4 +1,6 @@
 {
+  "includeArchivedProjects": "Include archived projects",
+  "searchLabel": "Search projects",
   "searchByNamePlaceholder": "Search by project name",
   "searchByCategoryPlaceholder": "Search by category",
   "searchClientsPlaceholder": "Search clients...",
@@ -16,7 +18,7 @@
   "healthText": "Health",
   "categoryText": "Category",
   "projectManagerText": "Project Manager",
-  "showFieldsText": "Show fields",
+  "showFieldsText": "Show or hide columns",
 
   "cancelledText": "Cancelled",
   "blockedText": "Blocked",
@@ -36,7 +38,9 @@
   "estimatedVsActualText": "Estimated Vs Actual",
   "tasksProgressText": "Tasks Progress",
   "lastActivityText": "Last Activity",
-  "datesText": "Start/End Dates",
+  "startDateText": "Start Date",
+  "endDateText": "End Date",
+  "timeVarianceText": "Time Variance",
   "daysLeftText": "Days Left/Overdue",
   "projectHealthText": "Project Health",
   "projectUpdateText": "Project Update",
@@ -54,5 +58,6 @@
   "groupByStatusText": "Status",
   "groupByHealthText": "Health",
   "groupByTeamText": "Team",
-  "groupByManagerText": "Manager"
+  "groupByClientText": "Client",
+  "groupByManagerText": "Project Manager"
 }

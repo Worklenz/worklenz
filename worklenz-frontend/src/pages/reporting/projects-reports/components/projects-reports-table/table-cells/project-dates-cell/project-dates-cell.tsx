@@ -17,9 +17,11 @@ type ProjectDatesCellProps = {
   projectId: string;
   startDate: string | Date | null;
   endDate: string | Date | null;
+  /** Which date(s) to render; defaults to both with a separator */
+  mode?: 'start' | 'end' | 'both';
 };
 
-const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCellProps) => {
+const ProjectDatesCell = memo(({ projectId, startDate, endDate, mode = 'both' }: ProjectDatesCellProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
   const { socket, connected } = useSocket();
@@ -220,7 +222,7 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
   return (
     <Flex gap={4} align="center">
       {/* Start Date Picker */}
-      {activeDatePicker === 'start' ? (
+      {mode === 'end' ? null : activeDatePicker === 'start' ? (
         <div className="relative">
           <DatePicker
             disabledDate={disabledStartDate}
@@ -274,10 +276,10 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
         </div>
       )}
 
-      <Typography.Text>-</Typography.Text>
+      {mode === 'both' && <Typography.Text>-</Typography.Text>}
 
       {/* End Date Picker */}
-      {activeDatePicker === 'end' ? (
+      {mode === 'start' ? null : activeDatePicker === 'end' ? (
         <div className="relative">
           <DatePicker
             disabledDate={disabledEndDate}

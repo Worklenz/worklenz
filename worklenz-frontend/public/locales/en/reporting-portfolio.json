@@ -1,6 +1,8 @@
 {
+  "subtitle": "Compare health, budget and delivery across all your projects for the selected reporting period.",
   "title": "Project Portfolio",
   "reportingPeriod": "Reporting Period",
+  "selectPeriod": "Select Period",
   "yearly": "Yearly",
   "quarterly": "Quarterly",
   "monthly": "Monthly",

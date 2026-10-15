@@ -1,13 +1,10 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import {
-  Badge,
   Button,
-  Divider,
+  Checkbox,
   Flex,
   Popover,
-  Tag,
   Typography,
-  theme,
 } from '@/shared/antd-imports';
 import { FilterOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +12,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {
   resetAllFilters,
+  setArchived,
   fetchProjectDataForCurrentView,
 } from '@/features/reporting/projectReports/project-reports-slice';
 
@@ -30,7 +28,6 @@ const { Text } = Typography;
 
 const ProjectReportsFilterPanel = () => {
   const { t } = useTranslation('reporting-projects-filters');
-  const { token } = theme.useToken();
   const dispatch = useAppDispatch();
   const [panelOpen, setPanelOpen] = useState(false);
 
@@ -41,6 +38,7 @@ const ProjectReportsFilterPanel = () => {
     selectedProjectManagers,
     selectedClients,
     selectedProjectPriorities,
+    archived,
     teams,
   } = useAppSelector(state => state.projectReportsReducer);
 
@@ -59,6 +57,7 @@ const ProjectReportsFilterPanel = () => {
     if (selectedProjectManagers.length > 0) count++;
     if (selectedClients.length > 0) count++;
     if (selectedProjectPriorities.length > 0) count++;
+    if (archived) count++;
     return count;
   }, [
     deselectedTeamsCount,
@@ -68,10 +67,12 @@ const ProjectReportsFilterPanel = () => {
     selectedProjectManagers,
     selectedClients,
     selectedProjectPriorities,
+    archived,
   ]);
 
   const handleClearAll = useCallback(() => {
     dispatch(resetAllFilters());
+    dispatch(setArchived(false));
     dispatch(fetchProjectDataForCurrentView());
   }, [dispatch]);
 
@@ -104,6 +105,13 @@ const ProjectReportsFilterPanel = () => {
         <ProjectClientFilterDropdown />
         <ProjectPriorityFilterDropdown />
       </Flex>
+
+      {/* Archived option on its own last row */}
+      <Flex style={{ marginTop: 12 }}>
+        <Checkbox checked={archived} onChange={() => dispatch(setArchived(!archived))}>
+          {t('includeArchivedProjects', { defaultValue: 'Include archived projects' })}
+        </Checkbox>
+      </Flex>
     </div>
   );
 
@@ -111,7 +119,7 @@ const ProjectReportsFilterPanel = () => {
     <Popover
       content={panelContent}
       trigger="click"
-      placement="bottomLeft"
+      placement="bottomRight"
       open={panelOpen}
       onOpenChange={setPanelOpen}
       overlayStyle={{ padding: 0 }}
@@ -119,21 +127,11 @@ const ProjectReportsFilterPanel = () => {
     >
       <Button
         icon={<FilterOutlined />}
-        style={
-          panelOpen || activeFilterCount > 0
-            ? { borderColor: token.colorPrimary, color: token.colorPrimary }
-            : undefined
-        }
-        className="transition-colors duration-300"
+        type={activeFilterCount > 0 ? 'primary' : 'default'}
+        ghost={activeFilterCount > 0}
       >
         {t('filterButton', { defaultValue: 'Filter' })}
-        {activeFilterCount > 0 && (
-          <Badge
-            count={activeFilterCount}
-            size="small"
-            style={{ marginLeft: 4, backgroundColor: token.colorPrimary }}
-          />
-        )}
+        {activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
       </Button>
     </Popover>
   );

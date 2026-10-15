@@ -141,6 +141,22 @@ export const REPORTING_NAV_SURFACE: NavSurface = {
           icon: <DashboardOutlined />,
         },
         {
+          key: 'project-portfolio',
+          label: { i18nNs: 'reporting-sidebar', i18nKey: 'portfolio', defaultValue: 'Portfolio' },
+          icon: <PieChartOutlined />,
+        },
+        {
+          key: 'progress-tracking',
+          label: { i18nNs: 'reporting-sidebar', i18nKey: 'progressTracking', defaultValue: 'Progress' },
+          icon: <RiseOutlined />,
+        },
+      ],
+    },
+    {
+      key: 'work',
+      label: { i18nNs: 'reporting-sidebar', i18nKey: 'groupWork', defaultValue: 'Work' },
+      items: [
+        {
           key: 'projects',
           label: { i18nNs: 'reporting-sidebar', i18nKey: 'projects', defaultValue: 'Projects' },
           icon: <AppstoreOutlined />,
@@ -155,34 +171,21 @@ export const REPORTING_NAV_SURFACE: NavSurface = {
           label: { i18nNs: 'reporting-sidebar', i18nKey: 'allTasks', defaultValue: 'Tasks' },
           icon: <UnorderedListOutlined />,
         },
-        {
-          key: 'progress-tracking',
-          label: {
-            i18nNs: 'reporting-sidebar',
-            i18nKey: 'progressTracking',
-            defaultValue: 'Progress Tracking',
-          },
-          icon: <RiseOutlined />,
-        },
-        {
-          key: 'project-portfolio',
-          label: { i18nNs: 'reporting-sidebar', i18nKey: 'portfolio', defaultValue: 'Portfolio' },
-          icon: <PieChartOutlined />,
-        },
       ],
     },
     {
       key: 'reporting-analytics',
-      label: { i18nNs: 'reporting-sidebar', i18nKey: 'reportingAnalytics', defaultValue: 'Reporting & Analytics' },
+      label: { i18nNs: 'reporting-sidebar', i18nKey: 'groupFlow', defaultValue: 'Flow' },
       items: [
         {
           key: 'velocity-charts',
-          label: { i18nNs: 'reporting-sidebar', i18nKey: 'velocityCharts', defaultValue: 'Velocity Charts' },
+          label: { i18nNs: 'reporting-sidebar', i18nKey: 'velocity', defaultValue: 'Velocity' },
           icon: <BarChartOutlined />,
         },
         {
           key: 'cumulative-flow',
-          label: { i18nNs: 'reporting-sidebar', i18nKey: 'cumulativeFlow', defaultValue: 'Cumulative Flow Diagram' },
+          label: { i18nNs: 'reporting-sidebar', i18nKey: 'cumulativeFlowShort', defaultValue: 'CFD' },
+          tooltip: { i18nNs: 'reporting-sidebar', i18nKey: 'cumulativeFlow', defaultValue: 'Cumulative Flow Diagram' },
           icon: <AreaChartOutlined />,
         },
         {
@@ -194,7 +197,7 @@ export const REPORTING_NAV_SURFACE: NavSurface = {
     },
     {
       key: 'time-sheet',
-      label: { i18nNs: 'reporting-sidebar', i18nKey: 'timeReports', defaultValue: 'Time Reports' },
+      label: { i18nNs: 'reporting-sidebar', i18nKey: 'groupTime', defaultValue: 'Time' },
       items: [
         {
           key: 'time-sheet-overview',
@@ -203,22 +206,23 @@ export const REPORTING_NAV_SURFACE: NavSurface = {
         },
         {
           key: 'time-sheet-projects',
-          label: { i18nNs: 'reporting-sidebar', i18nKey: 'projects', defaultValue: 'Projects' },
+          label: { i18nNs: 'reporting-sidebar', i18nKey: 'byProject', defaultValue: 'By Project' },
           icon: <ProjectOutlined />,
         },
         {
           key: 'time-sheet-members',
-          label: { i18nNs: 'reporting-sidebar', i18nKey: 'members', defaultValue: 'Members' },
+          label: { i18nNs: 'reporting-sidebar', i18nKey: 'byMember', defaultValue: 'By Member' },
           icon: <TeamOutlined />,
         },
         {
           key: 'time-sheet-estimate-vs-actual',
-          label: { i18nNs: 'reporting-sidebar', i18nKey: 'estimateVsActual', defaultValue: 'Estimate vs Actual' },
+          label: { i18nNs: 'reporting-sidebar', i18nKey: 'estimateVsActualShort', defaultValue: 'Est. vs Act.' },
+          tooltip: { i18nNs: 'reporting-sidebar', i18nKey: 'estimateVsActual', defaultValue: 'Estimate vs Actual' },
           icon: <BarChartOutlined />,
         },
         {
           key: 'time-sheet-logs',
-          label: { i18nNs: 'reporting-sidebar', i18nKey: 'logs', defaultValue: 'Logs' },
+          label: { i18nNs: 'reporting-sidebar', i18nKey: 'logs', defaultValue: 'Time Logs' },
           icon: <FileOutlined />,
         },
       ],

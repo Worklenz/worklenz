@@ -88,6 +88,7 @@ interface AllTasksReportsState {
 }
 
 const defaultVisibleColumns = [
+  'taskKey',
   'taskName',
   'project',
   'status',
@@ -110,7 +111,9 @@ const initialState: AllTasksReportsState = {
     unassignedTasks: 0,
     dueThisWeek: 0,
   },
-  isLoading: false,
+  // Starts true: the page fetches on mount, so the first paint shows skeletons rather than
+  // a "No tasks found" message and zeroed stat cards.
+  isLoading: true,
   error: null,
 
   viewMode: 'table',

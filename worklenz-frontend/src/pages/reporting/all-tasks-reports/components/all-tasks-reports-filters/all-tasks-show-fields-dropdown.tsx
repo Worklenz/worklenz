@@ -1,6 +1,6 @@
 import { memo } from 'react';
-import { Button, Card, Checkbox, Dropdown, Flex } from '@/shared/antd-imports';
-import { CaretDownFilled } from '@/shared/antd-imports';
+import { Button, Checkbox, Flex, Popover, Tooltip } from '@/shared/antd-imports';
+import { EyeOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -39,36 +39,28 @@ const AllTasksShowFieldsDropdown = () => {
   };
 
   const dropdownContent = (
-    <Card className="custom-card" styles={{ body: { padding: 8, width: 220 } }}>
-      <Flex vertical gap={4} style={{ maxHeight: 300, overflowY: 'auto' }}>
-        {allColumns.map(column => (
-          <Checkbox
-            key={column.key}
-            checked={visibleColumns.includes(column.key)}
-            onChange={() => handleToggle(column.key)}
-            disabled={column.key === 'taskName'}
-          >
-            {column.label}
-          </Checkbox>
-        ))}
-      </Flex>
-    </Card>
+    <Flex vertical gap={4} style={{ minWidth: 200, maxHeight: 300, overflowY: 'auto' }}>
+      {allColumns.map(column => (
+        <Checkbox
+          key={column.key}
+          checked={visibleColumns.includes(column.key)}
+          onChange={() => handleToggle(column.key)}
+          disabled={column.key === 'taskName'}
+        >
+          {column.label}
+        </Checkbox>
+      ))}
+    </Flex>
   );
 
+  const label = t('showFields', { defaultValue: 'Show or hide columns' });
+
   return (
-    <Dropdown
-      overlayClassName="custom-dropdown"
-      dropdownRender={() => dropdownContent}
-      trigger={['click']}
-      placement="bottomRight"
-    >
-      <Button style={{ height: 30, fontSize: 12, borderRadius: 7, paddingInline: 12 }}>
-        <Flex align="center" gap={4}>
-          {t('showFields', { defaultValue: 'Show Fields' })}
-          <CaretDownFilled />
-        </Flex>
-      </Button>
-    </Dropdown>
+    <Popover trigger="click" placement="bottomRight" title={label} content={dropdownContent}>
+      <Tooltip title={label}>
+        <Button icon={<EyeOutlined />} aria-label={label} />
+      </Tooltip>
+    </Popover>
   );
 };
 

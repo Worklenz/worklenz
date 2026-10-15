@@ -132,7 +132,7 @@ reportingApiRouter.get("/projects/grouped",
   validateUuidArrayParam("project_managers", ","),
   validateUuidArrayParam("teams", ","),
   validateEnumParam("archived", ["true", "false"]),
-  validateEnumParam("group_by", ["category", "status", "health", "team", "manager"]),
+  validateEnumParam("group_by", ["category", "status", "health", "team", "client", "manager"]),
   validatePaginationParams(),
   safeControllerFunction(ReportingProjectsController.getGrouped)
 );
@@ -204,6 +204,7 @@ reportingApiRouter.get("/projects/widgets/time-in-status",
 reportingApiRouter.get("/members",
   teamOwnerOrAdminValidator,
   validateUuidArrayParam("teams", ","),  // ?teams=uuid1,uuid2
+  validateUuidArrayParam("member_teams", ","),  // ?member_teams=uuid1,uuid2
   validatePaginationParams(),
   safeControllerFunction(ReportingMembersController.getReportingMembers)
 );

@@ -15,6 +15,7 @@ reportingExportApiRouter.get("/overview/projects", teamOwnerOrAdminValidator, sa
 reportingExportApiRouter.get("/overview/members", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.getMembersByTeam));
 reportingExportApiRouter.get("/allocation/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.export));
 reportingExportApiRouter.get("/projects/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingProjectsExportController.export));
+reportingExportApiRouter.get("/projects/filtered", teamOwnerOrAdminValidator, validateEnumParam("view", ["table", "grouped"]), safeControllerFunction(ReportingProjectsExportController.exportFiltered));
 reportingExportApiRouter.get("/portfolio", teamOwnerOrAdminValidator, validateEnumParam("period", ["yearly", "quarterly", "monthly"]), validateEnumParam("type", ["summary", "detailed"]), safeControllerFunction(ReportingPortfolioController.export));
 reportingExportApiRouter.get("/projects-time-log-breakdown/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingProjectsExportController.exportProjectTimeLogs));
 reportingExportApiRouter.get("/members/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.export));

@@ -26,7 +26,11 @@ const ProjectGroupByDropdown = () => {
       { value: 'status', label: t('groupByStatusText') },
       { value: 'health', label: t('groupByHealthText') },
       { value: 'team', label: t('groupByTeamText') },
-      { value: 'manager', label: t('groupByManagerText') },
+      { value: 'client', label: t('groupByClientText', { defaultValue: 'Client' }) },
+      {
+        value: 'manager',
+        label: t('groupByManagerText', { defaultValue: 'Project Manager' }),
+      },
     ],
     [t]
   );

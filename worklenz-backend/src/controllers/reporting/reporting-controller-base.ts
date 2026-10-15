@@ -506,6 +506,12 @@ export default abstract class ReportingControllerBase extends WorklenzController
     projectManagersClause: string,
     queryParams: any[] = []) {
 
+    // Priority sorts by its numeric value (Low 0 ... Critical 3), not alphabetically.
+    // Projects without a priority always sort after the ranked ones.
+    const orderByExpression = sortField === "priority_name" || sortField === "priority"
+      ? "COALESCE((SELECT value FROM sys_project_priorities WHERE id = p.priority_id), -1)"
+      : sortField;
+
     const q = `SELECT COUNT(*) AS total,
              (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
               FROM (SELECT p.id,
@@ -639,7 +645,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                              LEFT JOIN project_categories pc ON pc.id = p.category_id
                              LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
                     WHERE ${teamFilterClause} ${searchQuery} ${healthClause} ${statusClause} ${categoryClause} ${projectManagersClause} ${archivedClause}
-                    ORDER BY ${sortField} ${sortOrder}
+                    ORDER BY ${orderByExpression} ${sortOrder}, p.name ASC
                     LIMIT $2 OFFSET $3) t) AS projects
       FROM projects p
                LEFT JOIN project_categories pc ON pc.id = p.category_id

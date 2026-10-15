@@ -1,9 +1,7 @@
-import { Button, Card, Checkbox, Dropdown, Flex, Space, Typography } from '@/shared/antd-imports';
-import { useMemo, useCallback, memo, useEffect, useLayoutEffect } from 'react';
+import { Flex, Typography } from '@/shared/antd-imports';
+import { useMemo, memo, useEffect } from 'react';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_reporting_projects_overview } from '@/shared/worklenz-analytics-events';
-import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
-import { DownOutlined } from '@/shared/antd-imports';
 import ProjectReportsTable from './components/projects-reports-table/projects-reports-table';
 import ProjectsGroupedView from './components/projects-grouped-view/projects-grouped-view';
 import ProjectsReportsFilters from './components/projects-reports-filters/project-reports-filters';
@@ -11,24 +9,19 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import {
-  setArchived,
   fetchReportingTeams,
-  resetAllFilters,
   fetchProjectDataForCurrentView,
 } from '@/features/reporting/projectReports/project-reports-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAuthService } from '@/hooks/useAuth';
-import { reportingExportApiService } from '@/api/reporting/reporting-export.api.service';
 
 const ProjectsReports = () => {
   const { t } = useTranslation('reporting-projects');
   const dispatch = useAppDispatch();
-  const currentSession = useAuthService().getCurrentSession();
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   useDocumentTitle('Reporting - Projects');
 
-  const { total, archived, viewMode } = useAppSelector(state => state.projectReportsReducer);
+  const { archived, viewMode } = useAppSelector(state => state.projectReportsReducer);
 
   // Fetch data after filters are reset
   useEffect(() => {
@@ -46,53 +39,7 @@ const ProjectsReports = () => {
     dispatch(fetchProjectDataForCurrentView());
   }, [archived, dispatch]);
 
-  // Memoize the title to prevent recalculation on every render
-  const pageTitle = useMemo(() => {
-    return `${total === 1 ? `${total}  ${t('projectCount')}` : `${total}  ${t('projectCountPlural')}`} `;
-  }, [total, t]);
-
-  // Memoize the Excel export handler to prevent recreation on every render
-  const handleExcelExport = useCallback(() => {
-    const teamName = currentSession?.team_name || 'Team';
-    reportingExportApiService.exportProjects(teamName);
-  }, [currentSession?.team_name]);
-
-  // Memoize the archived checkbox handler to prevent recreation on every render
-  const handleArchivedChange = useCallback(() => {
-    dispatch(setArchived(!archived));
-  }, [dispatch, archived]);
-
-  // Memoize the dropdown menu items to prevent recreation on every render
-  const dropdownMenuItems = useMemo(
-    () => [{ key: '1', label: t('excelButton'), onClick: handleExcelExport }],
-    [t, handleExcelExport]
-  );
-
-  // Memoize the header children to prevent recreation on every render
-  const headerChildren = useMemo(
-    () => (
-      <Space wrap style={{ rowGap: 8 }}>
-        <Button>
-          <Checkbox checked={archived} onChange={handleArchivedChange}>
-            <Typography.Text>{t('includeArchivedButton')}</Typography.Text>
-          </Checkbox>
-        </Button>
-
-        <Dropdown menu={{ items: dropdownMenuItems }}>
-          <Button type="primary" icon={<DownOutlined />} iconPosition="end">
-            {t('exportButton')}
-          </Button>
-        </Dropdown>
-      </Space>
-    ),
-    [archived, handleArchivedChange, t, dropdownMenuItems]
-  );
-
-  // Memoize the card title to prevent recreation on every render
-  const cardTitle = useMemo(() => <ProjectsReportsFilters />, []);
-
-  // Memoize the content based on view mode
-  const cardContent = useMemo(() => {
+  const content = useMemo(() => {
     if (viewMode === 'grouped') {
       return <ProjectsGroupedView />;
     }
@@ -100,10 +47,22 @@ const ProjectsReports = () => {
   }, [viewMode]);
 
   return (
-    <Flex vertical>
-      <CustomPageHeader title={pageTitle} children={headerChildren} style={{ padding: 0, marginBottom: 16 }} />
+    // Fills the reporting layout (viewport - top bar - content padding) so only the table scrolls.
+    <Flex vertical gap={16} style={{ height: 'calc(100vh - 52px - 48px)', overflow: 'hidden' }}>
+      <Flex vertical>
+        <Typography.Title level={3} className="!mb-0 !mt-1">
+          {t('pageTitle', { defaultValue: 'Projects Overview' })}
+        </Typography.Title>
+        <Typography.Text type="secondary">
+          {t('pageSubtitle', {
+            defaultValue: 'Track status, health, timelines and progress across all your projects.',
+          })}
+        </Typography.Text>
+      </Flex>
 
-      <Card title={cardTitle}>{cardContent}</Card>
+      <ProjectsReportsFilters />
+
+      {content}
     </Flex>
   );
 };

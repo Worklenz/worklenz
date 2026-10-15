@@ -14,6 +14,7 @@ type MembersReportsState = {
 
   // filters
   archived: boolean;
+  teams: string[];
   searchQuery: string;
   index: number;
   pageSize: number;
@@ -38,11 +39,12 @@ const initialState: MembersReportsState = {
 
   // filters
   archived: false,
+  teams: [],
   searchQuery: '',
   index: 1,
-  pageSize: 10,
-  field: 'name',
-  order: 'asc',
+  pageSize: 20,
+  field: '',
+  order: '',
   duration: durations[1].key,
   dateRange: '',
 
@@ -57,8 +59,9 @@ export const fetchMembersData = createAsyncThunk(
     const body = {
       index: state.index,
       size: state.pageSize,
-      field: state.field,
-      order: state.order,
+      field: state.field || undefined,
+      order: state.order || undefined,
+      member_teams: state.teams.length > 0 ? state.teams : undefined,
       search: state.searchQuery,
       archived: state.archived,
       duration: duration || state.duration,
@@ -91,6 +94,15 @@ const membersReportsSlice = createSlice({
     },
     setArchived: (state, action) => {
       state.archived = action.payload;
+    },
+    setTeams: (state, action: PayloadAction<string[]>) => {
+      state.teams = action.payload;
+      state.index = 1;
+    },
+    setSort: (state, action: PayloadAction<{ field: string; order: string }>) => {
+      state.field = action.payload.field;
+      state.order = action.payload.order;
+      state.index = 1;
     },
     setSearchQuery: (state, action) => {
       state.searchQuery = action.payload;
@@ -149,6 +161,8 @@ export const {
   setMemberReportingDrawerActiveTab,
   setArchived,
   setSearchQuery,
+  setTeams,
+  setSort,
   setIndex,
   setPageSize,
   setField,

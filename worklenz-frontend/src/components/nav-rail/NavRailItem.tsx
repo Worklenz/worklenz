@@ -9,6 +9,7 @@ import './nav-rail.css';
 interface NavRailItemProps {
   item: NavItem;
   label: React.ReactNode;
+  tooltipLabel?: React.ReactNode;
   active: boolean;
   collapsed: boolean;
   isDark: boolean;
@@ -33,6 +34,7 @@ const activateOnKey = (action: () => void) => (e: React.KeyboardEvent) => {
 const NavRailItem: React.FC<NavRailItemProps> = ({
   item,
   label,
+  tooltipLabel,
   active,
   collapsed,
   isDark,
@@ -62,7 +64,8 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
   // keeping the dimmed styling and "Soon" tag below.
   const clickDisabled = item.soon && !item.soonClickable;
 
-  const tooltipTitle = isPinned ? `${label} (Pinned)` : label;
+  const tooltipText = tooltipLabel ?? label;
+  const tooltipTitle = isPinned ? `${tooltipText} (Pinned)` : tooltipText;
 
   const iconColor = active ? token.colorPrimary : isDark ? 'rgba(255,255,255,.45)' : 'rgba(0,0,0,.45)';
 

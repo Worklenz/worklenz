@@ -1,4 +1,14 @@
-import { CSSProperties, memo, ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  CSSProperties,
+  memo,
+  ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -17,7 +27,13 @@ import {
   theme,
 } from '@/shared/antd-imports';
 import type { TableColumnsType } from '@/shared/antd-imports';
-import { DownOutlined, EyeOutlined, InfoCircleOutlined, RightOutlined } from '@ant-design/icons';
+import {
+  CalendarOutlined,
+  DownOutlined,
+  EyeOutlined,
+  InfoCircleOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
 import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -53,7 +69,13 @@ const compareDate = (a: string | null, b: string | null) =>
 const NO_CATEGORY_KEY = '__none__';
 
 const formatDate = (value: string | null) =>
-  value ? new Date(value).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+  value
+    ? new Date(value).toLocaleDateString(undefined, {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '-';
 
 const columnKey = (group: ColumnGroup, id: string) => `${group}:${id}`;
 
@@ -61,7 +83,9 @@ const readHiddenColumns = (): string[] => {
   try {
     const stored = localStorage.getItem(HIDDEN_COLUMNS_STORAGE_KEY);
     const parsed: unknown = stored ? JSON.parse(stored) : [];
-    return Array.isArray(parsed) ? parsed.filter((key): key is string => typeof key === 'string') : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((key): key is string => typeof key === 'string')
+      : [];
   } catch {
     return [];
   }
@@ -101,7 +125,10 @@ export const PortfolioDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const selection = useMemo(() => ({ period, year, quarter, month }), [period, year, quarter, month]);
+  const selection = useMemo(
+    () => ({ period, year, quarter, month }),
+    [period, year, quarter, month]
+  );
   const { data, isLoading, isFetching, isError, refetch } = useGetPortfolioQuery(selection);
   const portfolio = data?.body;
 
@@ -145,71 +172,84 @@ export const PortfolioDashboard = () => {
   return (
     // Fills the reporting layout (viewport - top bar - content padding) so only the table scrolls.
     <Flex vertical gap={16} style={{ height: 'calc(100vh - 52px - 48px)', overflow: 'hidden' }}>
-      <CustomPageHeader
-        title={t('title', { defaultValue: 'Project Portfolio' })}
-        style={{ padding: 0 }}
-      />
-
-      <Card size="small">
-        <Flex gap={12} wrap="wrap" align="center" justify="space-between">
-          <Flex gap={8} wrap="wrap" align="center">
-            <Typography.Text strong>{t('reportingPeriod', { defaultValue: 'Reporting Period' })}</Typography.Text>
-            <Select
-              className="min-w-[130px]"
-              value={period}
-              options={periodOptions}
-              onChange={setPeriod}
-              aria-label={t('reportingPeriod', { defaultValue: 'Reporting Period' })}
-            />
-            {period === 'quarterly' && (
-              <Select
-                className="min-w-[90px]"
-                value={quarter}
-                options={quarterOptions}
-                onChange={setQuarter}
-                aria-label={t('quarter', { defaultValue: 'Quarter' })}
-              />
-            )}
-            {period === 'monthly' && (
-              <Select
-                className="min-w-[140px]"
-                value={month}
-                options={monthOptions}
-                onChange={setMonth}
-                aria-label={t('month', { defaultValue: 'Month' })}
-              />
-            )}
-            <Select
-              className="min-w-[100px]"
-              value={year}
-              options={yearOptions}
-              onChange={setYear}
-              aria-label={t('year', { defaultValue: 'Year' })}
-            />
-          </Flex>
-          <Flex gap={8} align="center">
-            <Dropdown menu={{ items: exportItems }} trigger={['click']} disabled={!portfolio}>
-              <Button icon={<DownOutlined />} iconPosition="end">
-                {t('exportReports', { defaultValue: 'Export' })}
-              </Button>
-            </Dropdown>
-            {portfolio && (
-              <ColumnVisibilityPopover
-                lookups={portfolio.lookups}
-                hidden={hiddenColumns}
-                onChange={handleHiddenColumnsChange}
-              />
-            )}
-          </Flex>
+      <Flex align="flex-end" justify="space-between" gap={12} wrap="wrap">
+        <Flex vertical gap={4}>
+          <CustomPageHeader
+            title={t('title', { defaultValue: 'Project Portfolio' })}
+            style={{ padding: 0 }}
+          />
+          <Typography.Text type="secondary">
+            {t('subtitle', {
+              defaultValue:
+                'Compare health, budget and delivery across all your projects for the selected reporting period.',
+            })}
+          </Typography.Text>
         </Flex>
-      </Card>
+        <Flex gap={8} wrap="wrap" align="center" justify="flex-end">
+          <Popover
+            trigger="click"
+            placement="bottomRight"
+            title={t('reportingPeriod', { defaultValue: 'Reporting Period' })}
+            content={
+              <Flex vertical gap={8} style={{ minWidth: 200 }}>
+                <Select
+                  value={period}
+                  options={periodOptions}
+                  onChange={setPeriod}
+                  aria-label={t('reportingPeriod', { defaultValue: 'Reporting Period' })}
+                />
+                {period === 'quarterly' && (
+                  <Select
+                    value={quarter}
+                    options={quarterOptions}
+                    onChange={setQuarter}
+                    aria-label={t('quarter', { defaultValue: 'Quarter' })}
+                  />
+                )}
+                {period === 'monthly' && (
+                  <Select
+                    value={month}
+                    options={monthOptions}
+                    onChange={setMonth}
+                    aria-label={t('month', { defaultValue: 'Month' })}
+                  />
+                )}
+                <Select
+                  value={year}
+                  options={yearOptions}
+                  onChange={setYear}
+                  aria-label={t('year', { defaultValue: 'Year' })}
+                />
+              </Flex>
+            }
+          >
+            <Button type="primary" icon={<CalendarOutlined />}>
+              {t('selectPeriod', { defaultValue: 'Select Period' })}
+            </Button>
+          </Popover>
+          <Dropdown menu={{ items: exportItems }} trigger={['click']} disabled={!portfolio}>
+            <Button icon={<DownOutlined />} iconPosition="end">
+              {t('exportReports', { defaultValue: 'Export' })}
+            </Button>
+          </Dropdown>
+          {portfolio && (
+            <ColumnVisibilityPopover
+              lookups={portfolio.lookups}
+              hidden={hiddenColumns}
+              onChange={handleHiddenColumnsChange}
+            />
+          )}
+        </Flex>
+      </Flex>
 
       {isError ? (
         <Alert
           type="error"
           showIcon
           message={t('errorTitle', { defaultValue: 'Could not load the portfolio' })}
-          description={t('errorDescription', { defaultValue: 'Something went wrong while loading the report.' })}
+          description={t('errorDescription', {
+            defaultValue: 'Something went wrong while loading the report.',
+          })}
           action={
             <Button size="small" onClick={() => refetch()}>
               {t('retry', { defaultValue: 'Retry' })}
@@ -250,7 +290,11 @@ const PortfolioSkeleton = () => {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
           <Card key={index} size="small">
-            <Skeleton active title={{ width: '60%' }} paragraph={{ rows: 2, width: ['40%', '50%'] }} />
+            <Skeleton
+              active
+              title={{ width: '60%' }}
+              paragraph={{ rows: 2, width: ['40%', '50%'] }}
+            />
           </Card>
         ))}
       </div>
@@ -271,10 +315,34 @@ const PortfolioKpiCards = memo(({ kpis }: { kpis: PortfolioKpis }) => {
   const { token } = theme.useToken();
 
   const cards = [
-    { key: 'opening', label: t('openingCount', { defaultValue: 'Opening project count' }), sub: t('openingSub', { defaultValue: 'Ongoing projects' }), value: kpis.opening },
-    { key: 'new', label: t('newCount', { defaultValue: 'New' }), sub: t('newSub', { defaultValue: 'New projects' }), value: kpis.new },
-    { key: 'close', label: t('closeCount', { defaultValue: 'Close' }), sub: t('closeSub', { defaultValue: 'Closed projects' }), value: kpis.close },
-    { key: 'closing', label: t('closingCount', { defaultValue: 'Closing project count' }), sub: t('closingSub', { defaultValue: 'Portfolio balance' }), value: kpis.closing },
+    {
+      key: 'opening',
+      color: token.colorPrimary,
+      label: t('openingCount', { defaultValue: 'Opening project count' }),
+      sub: t('openingSub', { defaultValue: 'Ongoing projects' }),
+      value: kpis.opening,
+    },
+    {
+      key: 'new',
+      color: token.colorSuccess,
+      label: t('newCount', { defaultValue: 'New' }),
+      sub: t('newSub', { defaultValue: 'New projects' }),
+      value: kpis.new,
+    },
+    {
+      key: 'close',
+      color: token.colorWarning,
+      label: t('closeCount', { defaultValue: 'Close' }),
+      sub: t('closeSub', { defaultValue: 'Closed projects' }),
+      value: kpis.close,
+    },
+    {
+      key: 'closing',
+      color: token.purple,
+      label: t('closingCount', { defaultValue: 'Closing project count' }),
+      sub: t('closingSub', { defaultValue: 'Portfolio balance' }),
+      value: kpis.closing,
+    },
   ];
 
   return (
@@ -300,7 +368,7 @@ const PortfolioKpiCards = memo(({ kpis }: { kpis: PortfolioKpis }) => {
               </Tooltip>
             )}
           </Flex>
-          <div className="text-3xl font-semibold" style={{ color: token.colorText }}>
+          <div className="text-3xl font-semibold" style={{ color: card.color }}>
             {card.value}
           </div>
           <Typography.Text type="secondary" className="text-xs">
@@ -319,66 +387,83 @@ interface ColumnVisibilityPopoverProps {
   onChange: (hidden: string[]) => void;
 }
 
-const ColumnVisibilityPopover = memo(({ lookups, hidden, onChange }: ColumnVisibilityPopoverProps) => {
-  const { t } = useTranslation('reporting-portfolio');
-  const label = t('showHideColumns', { defaultValue: 'Show or hide columns' });
+const ColumnVisibilityPopover = memo(
+  ({ lookups, hidden, onChange }: ColumnVisibilityPopoverProps) => {
+    const { t } = useTranslation('reporting-portfolio');
+    const label = t('showHideColumns', { defaultValue: 'Show or hide columns' });
 
-  const sections: { group: ColumnGroup; title: string; items: { key: string; name: string }[] }[] = [
-    {
-      group: 'status',
-      title: t('projectStatus', { defaultValue: 'Project Status' }),
-      items: [
-        ...lookups.statuses.map(item => ({ key: columnKey('status', item.id), name: item.name })),
-        { key: OVERDUE_COLUMN_KEY, name: t('overdue', { defaultValue: 'Overdue' }) },
-      ],
-    },
-    {
-      group: 'priority',
-      title: t('projectPriority', { defaultValue: 'Project Priority' }),
-      items: lookups.priorities.map(item => ({ key: columnKey('priority', item.id), name: item.name })),
-    },
-    {
-      group: 'health',
-      title: t('projectHealth', { defaultValue: 'Project Health' }),
-      items: lookups.healths.map(item => ({ key: columnKey('health', item.id), name: item.name })),
-    },
-  ];
+    const sections: {
+      group: ColumnGroup;
+      title: string;
+      items: { key: string; name: string }[];
+    }[] = [
+      {
+        group: 'status',
+        title: t('projectStatus', { defaultValue: 'Project Status' }),
+        items: [
+          ...lookups.statuses.map(item => ({ key: columnKey('status', item.id), name: item.name })),
+          { key: OVERDUE_COLUMN_KEY, name: t('overdue', { defaultValue: 'Overdue' }) },
+        ],
+      },
+      {
+        group: 'priority',
+        title: t('projectPriority', { defaultValue: 'Project Priority' }),
+        items: lookups.priorities.map(item => ({
+          key: columnKey('priority', item.id),
+          name: item.name,
+        })),
+      },
+      {
+        group: 'health',
+        title: t('projectHealth', { defaultValue: 'Project Health' }),
+        items: lookups.healths.map(item => ({
+          key: columnKey('health', item.id),
+          name: item.name,
+        })),
+      },
+    ];
 
-  const toggle = (key: string, isVisible: boolean) =>
-    onChange(isVisible ? hidden.filter(value => value !== key) : [...hidden, key]);
+    const toggle = (key: string, isVisible: boolean) =>
+      onChange(isVisible ? hidden.filter(value => value !== key) : [...hidden, key]);
 
-  const content = (
-    <Flex vertical gap={12} className="min-w-[200px]">
-      {sections.map(section => (
-        <Flex vertical gap={4} key={section.group}>
-          <Typography.Text strong>{section.title}</Typography.Text>
-          {section.items.map(item => (
-            <Checkbox
-              key={item.key}
-              checked={!hidden.includes(item.key)}
-              onChange={event => toggle(item.key, event.target.checked)}
-            >
-              {item.name}
-            </Checkbox>
-          ))}
-        </Flex>
-      ))}
-      {hidden.length > 0 && (
-        <Button size="small" type="link" className="self-start !px-0" onClick={() => onChange([])}>
-          {t('showAllColumns', { defaultValue: 'Show all columns' })}
-        </Button>
-      )}
-    </Flex>
-  );
+    const content = (
+      <Flex vertical gap={12} className="min-w-[200px]">
+        {sections.map(section => (
+          <Flex vertical gap={4} key={section.group}>
+            <Typography.Text strong>{section.title}</Typography.Text>
+            {section.items.map(item => (
+              <Checkbox
+                key={item.key}
+                checked={!hidden.includes(item.key)}
+                onChange={event => toggle(item.key, event.target.checked)}
+              >
+                {item.name}
+              </Checkbox>
+            ))}
+          </Flex>
+        ))}
+        {hidden.length > 0 && (
+          <Button
+            size="small"
+            type="link"
+            className="self-start !px-0"
+            onClick={() => onChange([])}
+          >
+            {t('showAllColumns', { defaultValue: 'Show all columns' })}
+          </Button>
+        )}
+      </Flex>
+    );
 
-  return (
-    <Popover trigger="click" placement="bottomRight" title={label} content={content}>
-      <Tooltip title={label}>
-        <Button icon={<EyeOutlined />} aria-label={label} />
-      </Tooltip>
-    </Popover>
-  );
-});
+    return (
+      <Popover trigger="click" placement="bottomRight" title={label} content={content}>
+        <Tooltip title={label}>
+          <Button icon={<EyeOutlined />} aria-label={label} />
+        </Tooltip>
+      </Popover>
+    );
+  }
+);
 ColumnVisibilityPopover.displayName = 'ColumnVisibilityPopover';
 
 interface PortfolioCategoryTableProps {
@@ -390,262 +475,296 @@ interface PortfolioCategoryTableProps {
 
 const PortfolioCategoryTable = memo(
   ({ categories, lookups, hiddenColumns, loading }: PortfolioCategoryTableProps) => {
-  const { t } = useTranslation('reporting-portfolio');
-  const { token } = theme.useToken();
+    const { t } = useTranslation('reporting-portfolio');
+    const { token } = theme.useToken();
 
-  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+    const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
 
-  const countColumn = (key: string, title: ReactNode) => ({
-    key,
-    title,
-    width: COUNT_COLUMN_WIDTH,
-    align: 'center' as const,
-    sorter: (a: PortfolioCategory, b: PortfolioCategory) => readCount(a, key) - readCount(b, key),
-    render: (_: unknown, record: PortfolioCategory) => readCount(record, key),
-  });
+    const countColumn = (key: string, title: ReactNode) => ({
+      key,
+      title,
+      width: COUNT_COLUMN_WIDTH,
+      align: 'center' as const,
+      sorter: (a: PortfolioCategory, b: PortfolioCategory) => readCount(a, key) - readCount(b, key),
+      render: (_: unknown, record: PortfolioCategory) => readCount(record, key),
+    });
 
-  const optionTitle = (item: PortfolioLookupItem) => (
-    <Flex gap={6} align="center" justify="center">
-      {item.color && (
-        <span
-          aria-hidden
-          className="inline-block h-2 w-2 shrink-0 rounded-full"
-          style={{ background: item.color }}
-        />
-      )}
-      <span>{item.name}</span>
-    </Flex>
-  );
+    const optionTitle = (item: PortfolioLookupItem) => (
+      <Flex gap={6} align="center" justify="center">
+        {item.color && (
+          <span
+            aria-hidden
+            className="inline-block h-2 w-2 shrink-0 rounded-full"
+            style={{ background: item.color }}
+          />
+        )}
+        <span>{item.name}</span>
+      </Flex>
+    );
 
-  const optionColumns = (group: ColumnGroup, items: PortfolioLookupItem[]) =>
-    items
-      .filter(item => !hiddenColumns.includes(columnKey(group, item.id)))
-      .map(item => countColumn(columnKey(group, item.id), optionTitle(item)));
+    const optionColumns = (group: ColumnGroup, items: PortfolioLookupItem[]) =>
+      items
+        .filter(item => !hiddenColumns.includes(columnKey(group, item.id)))
+        .map(item => countColumn(columnKey(group, item.id), optionTitle(item)));
 
-  const statusChildren = [
-    ...optionColumns('status', lookups.statuses),
-    ...(hiddenColumns.includes(OVERDUE_COLUMN_KEY)
-      ? []
-      : [
-          countColumn(
-            OVERDUE_COLUMN_KEY,
-            <span style={{ color: token.colorError }}>{t('overdue', { defaultValue: 'Overdue' })}</span>
-          ),
-        ]),
-  ];
-  const priorityChildren = optionColumns('priority', lookups.priorities);
-  const healthChildren = optionColumns('health', lookups.healths);
+    const statusChildren = [
+      ...optionColumns('status', lookups.statuses),
+      ...(hiddenColumns.includes(OVERDUE_COLUMN_KEY)
+        ? []
+        : [
+            countColumn(
+              OVERDUE_COLUMN_KEY,
+              <span style={{ color: token.colorError }}>
+                {t('overdue', { defaultValue: 'Overdue' })}
+              </span>
+            ),
+          ]),
+    ];
+    const priorityChildren = optionColumns('priority', lookups.priorities);
+    const healthChildren = optionColumns('health', lookups.healths);
 
-  const groupColumn = (key: string, title: string, children: ReturnType<typeof countColumn>[]) =>
-    children.length ? [{ key, title, align: 'center' as const, children }] : [];
+    const groupColumn = (key: string, title: string, children: ReturnType<typeof countColumn>[]) =>
+      children.length ? [{ key, title, align: 'center' as const, children }] : [];
 
-  const columns: TableColumnsType<PortfolioCategory> = [
-    {
-      key: 'category',
-      title: t('projectCategory', { defaultValue: 'Project Category' }),
-      width: 220,
-      fixed: 'left',
-      sorter: (a, b) => {
-        if (a.id === null || b.id === null) return a.id === b.id ? 0 : a.id === null ? 1 : -1;
-        return compareText(a.name, b.name);
+    const columns: TableColumnsType<PortfolioCategory> = [
+      {
+        key: 'category',
+        title: t('projectCategory', { defaultValue: 'Project Category' }),
+        width: 220,
+        fixed: 'left',
+        sorter: (a, b) => {
+          if (a.id === null || b.id === null) return a.id === b.id ? 0 : a.id === null ? 1 : -1;
+          return compareText(a.name, b.name);
+        },
+        filters: categories.map(category => ({
+          text: category.name ?? t('uncategorized', { defaultValue: 'Uncategorized' }),
+          value: category.id ?? NO_CATEGORY_KEY,
+        })),
+        filterSearch: true,
+        filteredValue: categoryFilter.length ? categoryFilter : null,
+        render: (_, record) => {
+          const rowKey = record.id ?? '__none__';
+          const isExpanded = expandedKeys.includes(rowKey);
+          const name = record.name ?? t('uncategorized', { defaultValue: 'Uncategorized' });
+          return (
+            <Flex gap={4} align="center">
+              {record.projects.length > 0 ? (
+                <Button
+                  type="text"
+                  size="small"
+                  aria-expanded={isExpanded}
+                  aria-label={
+                    isExpanded
+                      ? t('collapseRow', { name, defaultValue: 'Collapse {{name}}' })
+                      : t('expandRow', { name, defaultValue: 'Expand {{name}}' })
+                  }
+                  icon={
+                    <RightOutlined
+                      style={{
+                        fontSize: 10,
+                        transition: 'transform 200ms',
+                        transform: isExpanded ? 'rotate(90deg)' : 'none',
+                      }}
+                    />
+                  }
+                  onClick={() =>
+                    setExpandedKeys(keys =>
+                      isExpanded ? keys.filter(key => key !== rowKey) : [...keys, rowKey]
+                    )
+                  }
+                />
+              ) : (
+                <span className="inline-block w-6" aria-hidden />
+              )}
+              <span>{name}</span>
+            </Flex>
+          );
+        },
       },
-      filters: categories.map(category => ({
-        text: category.name ?? t('uncategorized', { defaultValue: 'Uncategorized' }),
-        value: category.id ?? NO_CATEGORY_KEY,
-      })),
-      filterSearch: true,
-      filteredValue: categoryFilter.length ? categoryFilter : null,
-      render: (_, record) => {
-        const rowKey = record.id ?? '__none__';
-        const isExpanded = expandedKeys.includes(rowKey);
-        const name = record.name ?? t('uncategorized', { defaultValue: 'Uncategorized' });
-        return (
-          <Flex gap={4} align="center">
-            {record.projects.length > 0 ? (
-              <Button
-                type="text"
-                size="small"
-                aria-expanded={isExpanded}
-                aria-label={
-                  isExpanded
-                    ? t('collapseRow', { name, defaultValue: 'Collapse {{name}}' })
-                    : t('expandRow', { name, defaultValue: 'Expand {{name}}' })
-                }
-                icon={
-                  <RightOutlined
-                    style={{
-                      fontSize: 10,
-                      transition: 'transform 200ms',
-                      transform: isExpanded ? 'rotate(90deg)' : 'none',
-                    }}
-                  />
-                }
-                onClick={() =>
-                  setExpandedKeys(keys => (isExpanded ? keys.filter(key => key !== rowKey) : [...keys, rowKey]))
-                }
-              />
-            ) : (
-              <span className="inline-block w-6" aria-hidden />
-            )}
-            <span>{name}</span>
-          </Flex>
-        );
+      countColumn('total', t('totalProjects', { defaultValue: 'Total Projects' })),
+      ...groupColumn(
+        'group-status',
+        t('projectStatus', { defaultValue: 'Project Status' }),
+        statusChildren
+      ),
+      ...groupColumn(
+        'group-priority',
+        t('projectPriority', { defaultValue: 'Project Priority' }),
+        priorityChildren
+      ),
+      ...groupColumn(
+        'group-health',
+        t('projectHealth', { defaultValue: 'Project Health' }),
+        healthChildren
+      ),
+    ];
+
+    const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [scrollY, setScrollY] = useState<number>(240);
+
+    // Size the table body to the space left in the page so the header and Total row stay visible.
+    useLayoutEffect(() => {
+      const element = containerRef.current;
+      if (!element) return;
+      const measure = () => {
+        const header = element.querySelector<HTMLElement>('.ant-table-header')?.offsetHeight ?? 80;
+        const footer = element.querySelector<HTMLElement>('.ant-table-summary')?.offsetHeight ?? 40;
+        setScrollY(Math.max(120, element.clientHeight - header - footer - 2));
+      };
+      measure();
+      const observer = new ResizeObserver(measure);
+      observer.observe(element);
+      return () => observer.disconnect();
+    }, [categories, hiddenColumns, loading]);
+
+    const visibleCategories = categoryFilter.length
+      ? categories.filter(category => categoryFilter.includes(category.id ?? NO_CATEGORY_KEY))
+      : categories;
+
+    /** The Total row follows the category filter. */
+    const visibleTotal = (key: string) =>
+      visibleCategories.reduce((sum, category) => sum + readCount(category, key), 0);
+
+    const summaryKeys = [
+      'total',
+      ...[...statusChildren, ...priorityChildren, ...healthChildren].map(
+        column => column.key as string
+      ),
+    ];
+
+    const projectColumns: TableColumnsType<PortfolioProject> = [
+      {
+        key: 'name',
+        title: t('projectName', { defaultValue: 'Project Name' }),
+        dataIndex: 'name',
+        sorter: (a, b) => compareText(a.name, b.name),
       },
-    },
-    countColumn('total', t('totalProjects', { defaultValue: 'Total Projects' })),
-    ...groupColumn('group-status', t('projectStatus', { defaultValue: 'Project Status' }), statusChildren),
-    ...groupColumn('group-priority', t('projectPriority', { defaultValue: 'Project Priority' }), priorityChildren),
-    ...groupColumn('group-health', t('projectHealth', { defaultValue: 'Project Health' }), healthChildren),
-  ];
-
-  const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [scrollY, setScrollY] = useState<number>(240);
-
-  // Size the table body to the space left in the page so the header and Total row stay visible.
-  useLayoutEffect(() => {
-    const element = containerRef.current;
-    if (!element) return;
-    const measure = () => {
-      const header = element.querySelector<HTMLElement>('.ant-table-header')?.offsetHeight ?? 80;
-      const footer = element.querySelector<HTMLElement>('.ant-table-summary')?.offsetHeight ?? 40;
-      setScrollY(Math.max(120, element.clientHeight - header - footer - 2));
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [categories, hiddenColumns, loading]);
-
-  const visibleCategories = categoryFilter.length
-    ? categories.filter(category => categoryFilter.includes(category.id ?? NO_CATEGORY_KEY))
-    : categories;
-
-  /** The Total row follows the category filter. */
-  const visibleTotal = (key: string) => visibleCategories.reduce((sum, category) => sum + readCount(category, key), 0);
-
-  const summaryKeys = ['total', ...[...statusChildren, ...priorityChildren, ...healthChildren].map(column => column.key as string)];
-
-  const projectColumns: TableColumnsType<PortfolioProject> = [
-    {
-      key: 'name',
-      title: t('projectName', { defaultValue: 'Project Name' }),
-      dataIndex: 'name',
-      sorter: (a, b) => compareText(a.name, b.name),
-    },
-    {
-      key: 'status',
-      title: t('status', { defaultValue: 'Status' }),
-      dataIndex: 'status',
-      sorter: (a, b) => compareText(a.status, b.status),
-    },
-    {
-      key: 'priority',
-      title: t('priority', { defaultValue: 'Priority' }),
-      sorter: (a, b) => (a.priorityValue ?? -1) - (b.priorityValue ?? -1),
-      render: (_, project) => project.priority ?? '-',
-    },
-    {
-      key: 'health',
-      title: t('health', { defaultValue: 'Health' }),
-      sorter: (a, b) => compareText(a.health, b.health),
-      render: (_, project) =>
-        project.health ? (
-          <span style={{ color: project.healthColor ?? token.colorText, fontWeight: 600 }}>{project.health}</span>
-        ) : (
-          '-'
-        ),
-    },
-    {
-      key: 'manager',
-      title: t('projectManager', { defaultValue: 'Project Manager' }),
-      sorter: (a, b) => compareText(a.manager, b.manager),
-      render: (_, project) => project.manager ?? '-',
-    },
-    {
-      key: 'startDate',
-      title: t('startDate', { defaultValue: 'Start Date' }),
-      sorter: (a, b) => compareDate(a.startDate, b.startDate),
-      render: (_, project) => formatDate(project.startDate),
-    },
-    {
-      key: 'endDate',
-      title: t('endDate', { defaultValue: 'End Date' }),
-      sorter: (a, b) => compareDate(a.endDate, b.endDate),
-      render: (_, project) => formatDate(project.endDate),
-    },
-  ];
-
-  // Summary cells only take a className, so the theme tokens are passed down as CSS variables.
-  const totalRowClass =
-    '!bg-[var(--portfolio-total-bg)] !border-t-2 !border-t-[var(--portfolio-total-border)] font-semibold';
-
-  return (
-    <div
-      ref={containerRef}
-      className="min-h-0 flex-1 overflow-hidden"
-      style={
-        {
-          '--portfolio-total-bg': token.colorPrimaryBg,
-          '--portfolio-total-border': token.colorPrimary,
-        } as CSSProperties
-      }
-    >
-      <Table<PortfolioCategory>
-        size="small"
-        showSorterTooltip={false}
-        bordered
-        loading={loading}
-        pagination={false}
-        rowKey={record => record.id ?? '__none__'}
-        columns={columns}
-        dataSource={visibleCategories}
-        onChange={(_pagination, filters) => setCategoryFilter((filters.category as string[] | null) ?? [])}
-        scroll={{ x: 'max-content', y: scrollY }}
-        locale={{
-          emptyText: (
-            <Empty
-              description={t('noData', {
-                defaultValue: 'No projects found for this period. Try a different reporting period.',
-              })}
-            />
+      {
+        key: 'status',
+        title: t('status', { defaultValue: 'Status' }),
+        dataIndex: 'status',
+        sorter: (a, b) => compareText(a.status, b.status),
+      },
+      {
+        key: 'priority',
+        title: t('priority', { defaultValue: 'Priority' }),
+        sorter: (a, b) => (a.priorityValue ?? -1) - (b.priorityValue ?? -1),
+        render: (_, project) => project.priority ?? '-',
+      },
+      {
+        key: 'health',
+        title: t('health', { defaultValue: 'Health' }),
+        sorter: (a, b) => compareText(a.health, b.health),
+        render: (_, project) =>
+          project.health ? (
+            <span style={{ color: project.healthColor ?? token.colorText, fontWeight: 600 }}>
+              {project.health}
+            </span>
+          ) : (
+            '-'
           ),
-        }}
-        expandable={{
-          showExpandColumn: false,
-          expandedRowKeys: expandedKeys,
-          rowExpandable: record => record.projects.length > 0,
-          expandedRowRender: record => (
-            <Table<PortfolioProject>
-              size="small"
-              showSorterTooltip={false}
-              pagination={false}
-              rowKey="id"
-              columns={projectColumns}
-              dataSource={record.projects}
-              scroll={{ x: 'max-content' }}
-            />
-          ),
-        }}
-        summary={() =>
-          categories.length ? (
-            <Table.Summary fixed="bottom">
-              <Table.Summary.Row>
-                <Table.Summary.Cell index={0} className={totalRowClass}>
-                  <strong style={{ paddingLeft: 28 }}>{t('total', { defaultValue: 'Total' })}</strong>
-                </Table.Summary.Cell>
-                {summaryKeys.map((key, index) => (
-                  <Table.Summary.Cell key={key} index={index + 1} align="center" className={totalRowClass}>
-                    <strong>{visibleTotal(key)}</strong>
-                  </Table.Summary.Cell>
-                ))}
-              </Table.Summary.Row>
-            </Table.Summary>
-          ) : null
+      },
+      {
+        key: 'manager',
+        title: t('projectManager', { defaultValue: 'Project Manager' }),
+        sorter: (a, b) => compareText(a.manager, b.manager),
+        render: (_, project) => project.manager ?? '-',
+      },
+      {
+        key: 'startDate',
+        title: t('startDate', { defaultValue: 'Start Date' }),
+        sorter: (a, b) => compareDate(a.startDate, b.startDate),
+        render: (_, project) => formatDate(project.startDate),
+      },
+      {
+        key: 'endDate',
+        title: t('endDate', { defaultValue: 'End Date' }),
+        sorter: (a, b) => compareDate(a.endDate, b.endDate),
+        render: (_, project) => formatDate(project.endDate),
+      },
+    ];
+
+    // Summary cells only take a className, so the theme tokens are passed down as CSS variables.
+    const totalRowClass =
+      '!bg-[var(--portfolio-total-bg)] !border-t-2 !border-t-[var(--portfolio-total-border)] font-semibold';
+
+    return (
+      <div
+        ref={containerRef}
+        className="min-h-0 flex-1 overflow-hidden"
+        style={
+          {
+            '--portfolio-total-bg': token.colorPrimaryBg,
+            '--portfolio-total-border': token.colorPrimary,
+          } as CSSProperties
         }
-      />
-    </div>
-  );
+      >
+        <Table<PortfolioCategory>
+          size="small"
+          showSorterTooltip={false}
+          bordered
+          loading={loading}
+          pagination={false}
+          rowKey={record => record.id ?? '__none__'}
+          columns={columns}
+          dataSource={visibleCategories}
+          onChange={(_pagination, filters) =>
+            setCategoryFilter((filters.category as string[] | null) ?? [])
+          }
+          scroll={{ x: 'max-content', y: scrollY }}
+          locale={{
+            emptyText: (
+              <Empty
+                description={t('noData', {
+                  defaultValue:
+                    'No projects found for this period. Try a different reporting period.',
+                })}
+              />
+            ),
+          }}
+          expandable={{
+            showExpandColumn: false,
+            expandedRowKeys: expandedKeys,
+            rowExpandable: record => record.projects.length > 0,
+            expandedRowRender: record => (
+              <Table<PortfolioProject>
+                size="small"
+                showSorterTooltip={false}
+                pagination={false}
+                rowKey="id"
+                columns={projectColumns}
+                dataSource={record.projects}
+                scroll={{ x: 'max-content' }}
+              />
+            ),
+          }}
+          summary={() =>
+            categories.length ? (
+              <Table.Summary fixed="bottom">
+                <Table.Summary.Row>
+                  <Table.Summary.Cell index={0} className={totalRowClass}>
+                    <strong style={{ paddingLeft: 28 }}>
+                      {t('total', { defaultValue: 'Total' })}
+                    </strong>
+                  </Table.Summary.Cell>
+                  {summaryKeys.map((key, index) => (
+                    <Table.Summary.Cell
+                      key={key}
+                      index={index + 1}
+                      align="center"
+                      className={totalRowClass}
+                    >
+                      <strong>{visibleTotal(key)}</strong>
+                    </Table.Summary.Cell>
+                  ))}
+                </Table.Summary.Row>
+              </Table.Summary>
+            ) : null
+          }
+        />
+      </div>
+    );
   }
 );
 PortfolioCategoryTable.displayName = 'PortfolioCategoryTable';

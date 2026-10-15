@@ -7,11 +7,19 @@
   "estimateVsActual": "预计用时 vs 实际用时",
   "logs": "日志",
   "allTasks": "任务",
-  "progressTracking": "进度跟踪",
+  "progressTracking": "进度",
   "portfolio": "项目组合",
   "currentOrganizationTooltip": "当前的组织",
   "reportingAnalytics": "报告与分析",
   "velocityCharts": "速度图",
   "cumulativeFlow": "累积流图",
-  "timeInStatus": "状态停留时间"
+  "timeInStatus": "状态停留时间",
+  "groupWork": "工作",
+  "groupFlow": "流程",
+  "groupTime": "时间",
+  "byProject": "按项目",
+  "byMember": "按成员",
+  "velocity": "速度",
+  "cumulativeFlowShort": "CFD",
+  "estimateVsActualShort": "预计/实际"
 }

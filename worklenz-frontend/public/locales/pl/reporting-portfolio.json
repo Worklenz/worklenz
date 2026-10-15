@@ -1,6 +1,7 @@
 {
   "title": "Portfolio projektów",
   "reportingPeriod": "Okres raportowania",
+  "selectPeriod": "Wybierz okres",
   "yearly": "Roczny",
   "quarterly": "Kwartalny",
   "monthly": "Miesięczny",

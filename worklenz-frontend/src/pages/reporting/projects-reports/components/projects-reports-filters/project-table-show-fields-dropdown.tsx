@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
-import { MoreOutlined } from '@/shared/antd-imports';
-import { Button, Card, Checkbox, Dropdown, List, Space } from '@/shared/antd-imports';
+import { memo } from 'react';
+import { EyeOutlined } from '@/shared/antd-imports';
+import { Button, Checkbox, Flex, Popover, Tooltip } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleColumnHidden } from '@/features/reporting/projectReports/project-reports-table-column-slice/project-reports-table-column-slice';
 import { useTranslation } from 'react-i18next';
 
 const ProjectTableShowFieldsDropdown = () => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { t } = useTranslation('reporting-projects-filters');
 
   const columnsVisibility = useAppSelector(state => state.projectReportsTableColumnsReducer);
@@ -17,37 +16,32 @@ const ProjectTableShowFieldsDropdown = () => {
     key => key !== 'project' && key !== 'projectManager'
   );
 
-  // Replace the showFieldsDropdownContent with a menu items structure
-  const menuItems = {
-    items: columnKeys.map(key => ({
-      key,
-      label: (
-        <Space>
-          <Checkbox
-            checked={columnsVisibility[key]}
-            onClick={() => dispatch(toggleColumnHidden(key))}
-          >
-            {t(`${key}Text`)}
-          </Checkbox>
-        </Space>
-      ),
-    })),
-  };
+  const label = t('showFieldsText', { defaultValue: 'Show or hide columns' });
 
   return (
-    <Dropdown menu={menuItems} trigger={['click']} onOpenChange={open => setIsDropdownOpen(open)}>
-      <Button
-        icon={<MoreOutlined />}
-        className={`transition-colors duration-300 ${
-          isDropdownOpen
-            ? 'border-[#1890ff] text-[#1890ff]'
-            : 'hover:text-[#1890ff hover:border-[#1890ff]'
-        }`}
-      >
-        {t('showFieldsText')}
-      </Button>
-    </Dropdown>
+    <Popover
+      trigger="click"
+      placement="bottomRight"
+      title={label}
+      content={
+        <Flex vertical gap={4} className="min-w-[200px]">
+          {columnKeys.map(key => (
+            <Checkbox
+              key={key}
+              checked={columnsVisibility[key]}
+              onChange={() => dispatch(toggleColumnHidden(key))}
+            >
+              {t(`${key}Text`)}
+            </Checkbox>
+          ))}
+        </Flex>
+      }
+    >
+      <Tooltip title={label}>
+        <Button icon={<EyeOutlined />} aria-label={label} />
+      </Tooltip>
+    </Popover>
   );
 };
 
-export default ProjectTableShowFieldsDropdown;
+export default memo(ProjectTableShowFieldsDropdown);

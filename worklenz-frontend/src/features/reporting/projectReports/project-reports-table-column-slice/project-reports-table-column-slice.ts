@@ -10,26 +10,36 @@ type ColumnsVisibilityState = {
   [key: string]: boolean;
 };
 
-const getInitialState = () => {
+const DEFAULT_COLUMNS: ColumnsVisibilityState = {
+  name: true,
+  projectHealth: true,
+  priority: true,
+  category: true,
+  projectUpdate: false,
+  client: false,
+  team: false,
+  projectManager: true,
+  estimatedVsActual: true,
+  timeVariance: true,
+  tasksProgress: true,
+  lastActivity: false,
+  status: true,
+  startDate: false,
+  endDate: false,
+  daysLeft: true,
+};
+
+// Merge saved preferences over the defaults so newly added columns (and the
+// split start/end date columns) appear for users with an older saved state.
+const getInitialState = (): ColumnsVisibilityState => {
   const savedState = getJSONFromLocalStorage(PROJECT_LIST_COLUMNS);
-  return (
-    savedState || {
-      name: true,
-      projectHealth: true,
-      priority: true,
-      category: true,
-      projectUpdate: true,
-      client: true,
-      team: true,
-      projectManager: true,
-      estimatedVsActual: true,
-      tasksProgress: true,
-      lastActivity: true,
-      status: true,
-      dates: true,
-      daysLeft: true,
-    }
-  );
+  if (!savedState) return DEFAULT_COLUMNS;
+  const { dates, ...rest } = savedState as ColumnsVisibilityState;
+  return {
+    ...DEFAULT_COLUMNS,
+    ...rest,
+    ...(dates === undefined ? {} : { startDate: dates, endDate: dates }),
+  };
 };
 
 const initialState: ColumnsVisibilityState = getInitialState();

@@ -1,11 +1,9 @@
 {
   "pageTitle": "All Tasks",
   "pageDescription": "View all tasks across your organization",
-
   "searchPlaceholder": "Search by task name, key, or description",
   "searchProjectsPlaceholder": "Search projects...",
   "searchMembersPlaceholder": "Search members...",
-
   "filtersTitle": "Filters",
   "teamsFilter": "Teams",
   "projectsFilter": "Projects",
@@ -23,7 +21,6 @@
   "healthFilter": "Health",
   "projectStatusFilter": "Project Status",
   "archivedFilter": "Include Archived",
-
   "allTeams": "All Teams",
   "allProjects": "All Projects",
   "allStatuses": "All Statuses",
@@ -33,7 +30,6 @@
   "assignedToMe": "Assigned to me",
   "selectAll": "Select All",
   "clearAll": "Clear All",
-
   "today": "Today",
   "thisWeek": "This Week",
   "thisMonth": "This Month",
@@ -47,23 +43,18 @@
   "startDateField": "Start Date",
   "createdDateField": "Created Date",
   "completedDateField": "Completed Date",
-
   "allTasks": "All Tasks",
   "parentTasksOnly": "Parent Tasks Only",
   "subtasksOnly": "Subtasks Only",
-
   "all": "All",
   "incompleteOnly": "Incomplete Only",
   "completedOnly": "Completed Only",
   "overdueOnly": "Overdue Only",
-
   "withTimeLogged": "With Time Logged",
   "withoutTimeLogged": "Without Time Logged",
   "overEstimatedTime": "Over Estimated Time",
-
   "billableOnly": "Billable Only",
   "nonBillableOnly": "Non-Billable Only",
-
   "taskNameColumn": "Task",
   "taskKeyColumn": "Key",
   "projectColumn": "Project",
@@ -87,11 +78,9 @@
   "attachmentsColumn": "Attachments",
   "reporterColumn": "Reporter",
   "billableColumn": "Billable",
-
   "sortBy": "Sort by",
   "ascending": "Ascending",
   "descending": "Descending",
-
   "groupBy": "Group by",
   "noGrouping": "None",
   "groupByProject": "Project",
@@ -102,27 +91,22 @@
   "groupByPhase": "Phase",
   "groupByTeam": "Team",
   "groupByCategory": "Category",
-
   "dueToday": "Due Today",
   "dueThisWeek": "Due This Week",
   "dueThisMonth": "Due This Month",
   "dueLater": "Due Later",
   "noDueDate": "No Due Date",
-
   "viewMode": "View",
   "tableView": "Table",
   "boardView": "Board",
   "listView": "List",
-
-  "showFields": "Show Fields",
-
+  "showFields": "Show or hide columns",
   "totalTasks": "Total Tasks",
   "completedTasks": "Completed",
   "inProgressTasks": "In Progress",
   "overdueTasks": "Overdue",
   "unassignedTasks": "Unassigned",
   "dueThisWeekTasks": "Due This Week",
-
   "exportButton": "Export",
   "exportToCsv": "Export to CSV",
   "exportToExcel": "Export to Excel",
@@ -131,7 +115,6 @@
   "saveViewButton": "Save View",
   "savedViews": "Saved Views",
   "manageViews": "Manage Views",
-
   "bulkActions": "Bulk Actions",
   "selectedCount": "{{count}} selected",
   "changeStatus": "Change Status",
@@ -139,28 +122,22 @@
   "assignMembers": "Assign Members",
   "addLabels": "Add Labels",
   "archiveTasks": "Archive Tasks",
-
   "showingResults": "Showing {{from}}-{{to}} of {{total}} tasks",
   "tasksPerPage": "Tasks per page",
   "page": "Page",
   "of": "of",
-
   "noTasksFound": "No tasks found",
   "noTasksDescription": "Try adjusting your filters or search criteria",
   "clearFilters": "Clear Filters",
-
   "loadingTasks": "Loading tasks...",
   "applyingFilters": "Applying filters...",
-
   "errorLoadingTasks": "Error loading tasks",
   "tryAgain": "Try Again",
-
   "expandAllGroups": "Expand all groups",
   "collapseAllGroups": "Collapse all groups",
   "openTaskDetails": "Open task details",
   "moreFilters": "More filters",
   "lessFilters": "Less filters",
-
   "quickFilters": "Quick filters",
   "filterButton": "Filter",
   "searchClients": "Search clients...",
@@ -169,8 +146,19 @@
   "searchPhases": "Search phases...",
   "selectProjectFirst": "Select a project to see phases",
   "noPhases": "No phases found",
-
   "todoStatus": "To Do",
   "doingStatus": "Doing",
-  "doneStatus": "Done"
+  "doneStatus": "Done",
+  "pageSubtitle": "Browse, filter and export every task across your teams and projects.",
+  "searchLabel": "Search tasks",
+  "totalTasksSub": "Matching current filters",
+  "completedTasksSub": "Finished tasks",
+  "inProgressTasksSub": "Currently being worked on",
+  "overdueTasksSub": "Past their due date",
+  "unassignedTasksSub": "No assignee yet",
+  "dueThisWeekTasksSub": "Coming up soon",
+  "rowsPerPage": "Rows per page:",
+  "rangeOfTotal": "{{start}}-{{end}} of {{total}}",
+  "firstPage": "First page",
+  "lastPage": "Last page"
 }

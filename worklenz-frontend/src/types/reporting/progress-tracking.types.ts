@@ -12,7 +12,11 @@ export type ProgressTrackingPercentRange =
 export interface IProgressTrackingProject {
   id: string;
   name: string;
+  color_code: string | null;
   client_name: string | null;
+  manager: string | null;
+  start_date: string | null;
+  end_date: string | null;
   total_tasks: number;
   done_tasks: number;
   percent_complete: number | null;
@@ -39,14 +43,28 @@ export interface IProgressTrackingList {
   page: number;
   page_size: number;
   summary: IProgressTrackingSummary;
+  clients: { id: string; name: string }[];
+  managers: { id: string; name: string }[];
 }
 
 export interface IProgressTrackingQuery {
   search?: string;
-  confidence?: DeliveryConfidence | 'unset';
-  percent_range?: ProgressTrackingPercentRange;
+  client_ids?: string[];
+  manager_ids?: string[];
+  confidence?: (DeliveryConfidence | 'unset')[];
+  percent_range?: ProgressTrackingPercentRange[];
   has_blockers?: boolean;
-  field?: 'name' | 'client' | 'percent' | 'blocked' | 'confidence' | 'updated';
+  include_archived?: boolean;
+  field?:
+    | 'name'
+    | 'client'
+    | 'percent'
+    | 'blocked'
+    | 'confidence'
+    | 'updated'
+    | 'manager'
+    | 'start_date'
+    | 'end_date';
   order?: 'asc' | 'desc';
   page?: number;
   page_size?: number;

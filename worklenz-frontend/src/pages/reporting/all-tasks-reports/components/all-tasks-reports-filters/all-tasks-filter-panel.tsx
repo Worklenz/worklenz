@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo, useState } from 'react';
-import { Badge, Button, Flex, Popover, Typography } from '@/shared/antd-imports';
+import { Badge, Button, Checkbox, Flex, Popover, Typography } from '@/shared/antd-imports';
 import { FilterOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -7,6 +7,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import {
   resetAllFilters,
   fetchAllTasks,
+  setIncludeArchived,
 } from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
 
 import AllTasksTeamFilter from './all-tasks-team-filter';
@@ -33,6 +34,7 @@ const AllTasksFilterPanel = () => {
     selectedAssignees,
     selectedPhases,
     selectedClients,
+    includeArchived,
   } = useAppSelector(state => state.allTasksReportsReducer);
 
   // Count active filters
@@ -50,6 +52,7 @@ const AllTasksFilterPanel = () => {
     if (selectedAssignees.length > 0) count++;
     if (selectedPhases.length > 0) count++;
     if (selectedClients.length > 0) count++;
+    if (includeArchived) count++;
     return count;
   }, [
     deselectedTeamsCount,
@@ -59,6 +62,7 @@ const AllTasksFilterPanel = () => {
     selectedAssignees,
     selectedPhases,
     selectedClients,
+    includeArchived,
   ]);
 
   const handleClearAll = useCallback(() => {
@@ -96,6 +100,18 @@ const AllTasksFilterPanel = () => {
         <AllTasksPhaseFilter />
         <AllTasksClientFilter />
       </Flex>
+
+      <Flex style={{ marginTop: 12 }}>
+        <Checkbox
+          checked={includeArchived}
+          onChange={event => {
+            dispatch(setIncludeArchived(event.target.checked));
+            dispatch(fetchAllTasks());
+          }}
+        >
+          {t('archivedFilter', { defaultValue: 'Include Archived' })}
+        </Checkbox>
+      </Flex>
     </div>
   );
 
@@ -103,7 +119,7 @@ const AllTasksFilterPanel = () => {
     <Popover
       content={panelContent}
       trigger="click"
-      placement="bottomLeft"
+      placement="bottomRight"
       open={panelOpen}
       onOpenChange={setPanelOpen}
       overlayStyle={{ padding: 0 }}
@@ -113,7 +129,6 @@ const AllTasksFilterPanel = () => {
         icon={<FilterOutlined />}
         className={`transition-colors duration-300 ${panelOpen || activeFilterCount > 0 ? 'border-[#1890ff] text-[#1890ff]' : ''
           }`}
-        style={{ height: 30, fontSize: 12, borderRadius: 7, paddingInline: 12 }}
       >
         {t('filterButton', { defaultValue: 'Filter' })}
         {activeFilterCount > 0 && (

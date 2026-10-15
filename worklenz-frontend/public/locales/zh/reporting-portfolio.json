@@ -1,6 +1,7 @@
 {
   "title": "项目组合",
   "reportingPeriod": "报告周期",
+  "selectPeriod": "选择周期",
   "yearly": "按年",
   "quarterly": "按季度",
   "monthly": "按月",

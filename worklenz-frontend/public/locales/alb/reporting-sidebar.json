@@ -7,11 +7,19 @@
   "estimateVsActual": "Vlerësimi vs Aktual",
   "logs": "Regjistrat",
   "allTasks": "Detyrat",
-  "progressTracking": "Ndjekja e progresit",
+  "progressTracking": "Progresi",
   "portfolio": "Portofoli",
   "currentOrganizationTooltip": "Organizata aktuale",
   "reportingAnalytics": "Raportime dhe analiza",
   "velocityCharts": "Grafikët e shpejtësisë",
   "cumulativeFlow": "Diagrami i rrjedhës kumulative",
-  "timeInStatus": "Koha në status"
+  "timeInStatus": "Koha në status",
+  "groupWork": "Puna",
+  "groupFlow": "Rrjedha",
+  "groupTime": "Koha",
+  "byProject": "Sipas projektit",
+  "byMember": "Sipas anëtarit",
+  "velocity": "Shpejtësia",
+  "cumulativeFlowShort": "CFD",
+  "estimateVsActualShort": "Vlr. vs Akt."
 }

@@ -1,4 +1,4 @@
-import { Drawer, Typography, Flex, Button, Space, Dropdown } from '@/shared/antd-imports';
+import { Modal, Typography, Flex, Button, Space, Dropdown } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleMembersReportsDrawer, clearSelectedStatType } from '../membersReportsSlice';
@@ -130,14 +130,17 @@ const MembersReportsDrawer = ({ memberId }: MembersReportsDrawerProps) => {
   };
 
   return (
-    <Drawer
+    <Modal
       open={isDrawerOpen}
-      onClose={handleClose}
-      width={900}
+      onCancel={handleClose}
+      footer={null}
+      centered
+      width={1000}
       destroyOnClose
+      styles={{ body: { maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' } }}
       title={
         selectedMember && (
-          <Flex align="center" justify="space-between">
+          <Flex align="center" justify="space-between" style={{ paddingRight: 32 }}>
             <Flex gap={8} align="center" style={{ fontWeight: 500 }}>
               <Typography.Text>{selectedMember.name}</Typography.Text>
             </Flex>
@@ -171,7 +174,7 @@ const MembersReportsDrawer = ({ memberId }: MembersReportsDrawerProps) => {
       {selectedMember && <MembersReportsDrawerTabs memberId={selectedMember.id} />}
       {selectedMember && <MembersOverviewTasksStatsDrawer memberId={selectedMember.id} />}
       {selectedMember && <MembersOverviewProjectsStatsDrawer memberId={selectedMember.id} />}
-    </Drawer>
+    </Modal>
   );
 };
 

@@ -7,11 +7,19 @@
   "estimateVsActual": "Szacunki kontra fakty",
   "logs": "Dzienniki czasu",
   "allTasks": "Zadania",
-  "progressTracking": "Śledzenie postępu",
+  "progressTracking": "Postęp",
   "portfolio": "Portfolio",
   "currentOrganizationTooltip": "Obecna organizacja",
   "reportingAnalytics": "Raporty i analizy",
   "velocityCharts": "Wykresy prędkości",
   "cumulativeFlow": "Skumulowany diagram przepływu",
-  "timeInStatus": "Czas w statusie"
+  "timeInStatus": "Czas w statusie",
+  "groupWork": "Praca",
+  "groupFlow": "Przepływ",
+  "groupTime": "Czas",
+  "byProject": "Według projektu",
+  "byMember": "Według członka",
+  "velocity": "Prędkość",
+  "cumulativeFlowShort": "CFD",
+  "estimateVsActualShort": "Szac. vs Fakt."
 }

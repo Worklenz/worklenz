@@ -15,6 +15,7 @@ import { MenuFoldOutlined, MenuUnfoldOutlined } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import type { NavItem, ResolvedNavState } from '@/features/navigation/nav-registry.types';
 import NavRailItem from './NavRailItem';
+import { ScrollableRail } from './ScrollableRail';
 
 interface NavRailProps {
   resolved: ResolvedNavState;
@@ -26,7 +27,10 @@ interface NavRailProps {
   onUnpin: () => void;
   onReorder: (groupKey: string, order: string[]) => void;
   onToggleCollapse: () => void;
+  showScrollArrows?: boolean;
+  scrollBottomInset?: number;
   renderLabel?: (item: NavItem) => React.ReactNode;
+  renderTooltip?: (item: NavItem) => React.ReactNode;
   renderGroupLabel?: (label: NavItem['label']) => React.ReactNode;
 }
 
@@ -49,7 +53,10 @@ const NavRail: React.FC<NavRailProps> = ({
   onUnpin,
   onReorder,
   onToggleCollapse,
+  showScrollArrows = false,
+  scrollBottomInset = 0,
   renderLabel = defaultRenderLabel,
+  renderTooltip,
   renderGroupLabel = defaultRenderGroupLabel,
 }) => {
   const { groups, collapsed } = resolved;
@@ -136,11 +143,11 @@ const NavRail: React.FC<NavRailProps> = ({
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEnd}>
-        <div
+        <RailScroller
+          showArrows={showScrollArrows}
+          bottomInset={scrollBottomInset}
+          isDark={isDark}
           style={{
-            flex: 1,
-            overflowY: 'auto',
-            overflowX: 'hidden',
             display: 'flex',
             flexDirection: 'column',
             gap: RAIL_ITEM_GAP,
@@ -176,6 +183,7 @@ const NavRail: React.FC<NavRailProps> = ({
                       key={item.key}
                       item={item}
                       label={renderLabel(item)}
+                      tooltipLabel={renderTooltip?.(item)}
                       active={activeKey === item.key}
                       collapsed={collapsed}
                       isDark={isDark}
@@ -190,10 +198,27 @@ const NavRail: React.FC<NavRailProps> = ({
               </React.Fragment>
             );
           })}
-        </div>
+        </RailScroller>
       </DndContext>
     </div>
   );
 };
+
+// Plain native-scroll container by default; with arrows enabled it hides the
+// scrollbar and shows up/down arrows while content overflows.
+const RailScroller: React.FC<{
+  showArrows: boolean;
+  bottomInset: number;
+  isDark: boolean;
+  style: React.CSSProperties;
+  children: React.ReactNode;
+}> = ({ showArrows, bottomInset, isDark, style, children }) =>
+  showArrows ? (
+    <ScrollableRail isDark={isDark} contentStyle={style} bottomInset={bottomInset}>
+      {children}
+    </ScrollableRail>
+  ) : (
+    <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', ...style }}>{children}</div>
+  );
 
 export default NavRail;

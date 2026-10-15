@@ -7,6 +7,8 @@ import Excel from "exceljs";
 import ReportingControllerBase from "../reporting-controller-base";
 import { DATE_RANGES } from "../../../shared/constants";
 import db from "../../../config/db";
+import ReportingProjectsController from "./reporting-projects-controller";
+import { ServerResponse } from "../../../models/server-response";
 
 export default class ReportingProjectsExportController extends ReportingProjectsBase {
 
@@ -106,6 +108,177 @@ export default class ReportingProjectsExportController extends ReportingProjects
         res.end();
       });
 
+  }
+
+  /**
+   * GET /reporting-export/projects/filtered
+   * Excel export of the current Projects report view:
+   *  - view=table   -> every row matching the active filters/search/sort, using the visible columns
+   *  - view=grouped -> the same data grouped like the grouped view
+   */
+  @HandleExceptions()
+  public static async exportFiltered(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    const view = req.query.view === "grouped" ? "grouped" : "table";
+    const teamName = (req.query.team_name as string)?.trim() || "Team";
+
+    // Reuse the list endpoints' filtering by calling them with a capturing response and a page size
+    // large enough to cover the whole filtered result.
+    const proxyReq = Object.create(req) as IWorkLenzRequest;
+    // The sort field is interpolated into SQL by the list query, so only accept known column fields.
+    const sortableFields = ["name", "status_id", "project_health", "category_name", "client", "team_name", "priority_name"];
+    const field = sortableFields.includes(req.query.field as string) ? (req.query.field as string) : "priority_name";
+    proxyReq.query = { ...req.query, field, index: "1", size: view === "grouped" ? "1000" : "5000" };
+
+    let captured: any = null;
+    const captureRes = {
+      status() { return this; },
+      send(body: any) { captured = body; return this; }
+    } as unknown as IWorkLenzResponse;
+
+    if (view === "grouped") {
+      await ReportingProjectsController.getGrouped(proxyReq, captureRes);
+    } else {
+      await ReportingProjectsController.get(proxyReq, captureRes);
+    }
+
+    if (!captured?.done) {
+      return res.status(400).send(new ServerResponse(false, null, "Failed to load projects for export"));
+    }
+
+    const exportDate = moment().format("MMM-DD-YYYY");
+    const workbook = new Excel.Workbook();
+    const sheet = workbook.addWorksheet("Projects");
+
+    const dash = (value: unknown) => (value === null || value === undefined || value === "" ? "-" : String(value));
+    const hoursAndMinutes = (totalSeconds: number) => {
+      const totalMinutes = Math.round(Math.abs(totalSeconds) / 60);
+      return `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`;
+    };
+    const managerNames = (value: any): string => {
+      if (!value) return "-";
+      const list = Array.isArray(value) ? value : [value];
+      const names = list.map((m: any) => (typeof m === "string" ? m : m?.name)).filter(Boolean);
+      return names.length ? names.join(", ") : "-";
+    };
+    const stripHtml = (value: unknown) => (value ? String(value).replace(/<[^>]*>/g, "").trim() : "-");
+
+    type Col = { header: string; width: number; value: (item: any) => string };
+    const tableColumns: Record<string, Col[]> = {
+      name: [{ header: "Project", width: 30, value: i => dash(i.name) }],
+      projectHealth: [{ header: "Project Health", width: 18, value: i => dash(i.health_name) }],
+      priority: [{ header: "Priority", width: 14, value: i => dash(i.priority_name) }],
+      category: [{ header: "Category", width: 20, value: i => dash(i.category_name) }],
+      projectUpdate: [{ header: "Project Update", width: 40, value: i => stripHtml(i.comment) }],
+      client: [{ header: "Client", width: 20, value: i => dash(i.client) }],
+      team: [{ header: "Team", width: 20, value: i => dash(i.team_name) }],
+      projectManager: [{ header: "Project Manager", width: 24, value: i => managerNames(i.project_manager) }],
+      estimatedVsActual: [
+        { header: "Estimated Time", width: 16, value: i => dash(i.estimated_time_string) },
+        { header: "Actual Time", width: 16, value: i => dash(i.actual_time_string) }
+      ],
+      timeVariance: [{
+        header: "Time Variance",
+        width: 22,
+        value: i => {
+          if (!i.estimated_time) return "-";
+          const variance = (i.actual_time || 0) - i.estimated_time * 60;
+          if (variance === 0) return "0h 0m (0%)";
+          const sign = variance > 0 ? "+" : "-";
+          const percent = Math.round((Math.abs(variance) / (i.estimated_time * 60)) * 100);
+          return `${sign}${hoursAndMinutes(variance)} (${sign}${percent}%)`;
+        }
+      }],
+      tasksProgress: [
+        { header: "Done Tasks (%)", width: 16, value: i => `${i.tasks_stat?.done ?? 0}` },
+        { header: "Doing Tasks (%)", width: 16, value: i => `${i.tasks_stat?.doing ?? 0}` },
+        { header: "Todo Tasks (%)", width: 16, value: i => `${i.tasks_stat?.todo ?? 0}` }
+      ],
+      lastActivity: [{ header: "Last Activity", width: 36, value: i => dash(i.last_activity?.last_activity_string) }],
+      status: [{ header: "Status", width: 18, value: i => dash(i.status_name) }],
+      startDate: [{ header: "Start Date", width: 14, value: i => dash(i.start_date) }],
+      endDate: [{ header: "End Date", width: 14, value: i => dash(i.end_date) }],
+      daysLeft: [{
+        header: "Days Left/Overdue",
+        width: 18,
+        value: i => (i.is_today ? "Today" : i.days_left ? (i.is_overdue ? `-${i.days_left}` : `${i.days_left}`) : "-")
+      }]
+    };
+    const defaultTableKeys = Object.keys(tableColumns);
+
+    let cols: Col[];
+    let lastColumnLetter: string;
+
+    const writeTitle = (columnCount: number, title: string) => {
+      const last = sheet.getColumn(columnCount).letter;
+      sheet.getCell("A1").value = title;
+      sheet.mergeCells(`A1:${last}1`);
+      sheet.getCell("A1").alignment = { horizontal: "center" };
+      sheet.getCell("A1").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D9D9D9" } };
+      sheet.getCell("A1").font = { size: 16 };
+      sheet.getCell("A2").value = `Exported on : ${exportDate}`;
+      sheet.mergeCells(`A2:${last}2`);
+      sheet.getCell("A2").alignment = { horizontal: "center" };
+      sheet.getCell("A2").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F2F2F2" } };
+      sheet.getCell("A2").font = { size: 12 };
+      return last;
+    };
+
+    if (view === "table") {
+      const requested = ((req.query.columns as string) || "")
+        .split(",")
+        .map(key => key.trim())
+        .filter(key => key in tableColumns);
+      const keys = requested.length ? requested : defaultTableKeys;
+      // Project name is always the first column, matching the table.
+      if (!keys.includes("name")) keys.unshift("name");
+      cols = keys.flatMap(key => tableColumns[key]);
+
+      sheet.columns = cols.map(c => ({ width: c.width }));
+      lastColumnLetter = writeTitle(cols.length, `Projects from ${teamName}`);
+      sheet.getRow(4).values = cols.map(c => c.header);
+      sheet.getRow(4).font = { bold: true };
+
+      for (const item of captured.body.projects || []) {
+        sheet.addRow(cols.map(c => c.value(item)));
+      }
+    } else {
+      cols = [
+        { header: "Project", width: 30, value: i => dash(i.name) },
+        { header: "Category", width: 20, value: i => dash(i.category_name) },
+        { header: "Status", width: 18, value: i => dash(i.status_name) },
+        { header: "Health", width: 18, value: i => dash(i.health_name) },
+        { header: "Team", width: 20, value: i => dash(i.team_name) },
+        { header: "Start Date", width: 14, value: i => dash(i.start_date) },
+        { header: "End Date", width: 14, value: i => dash(i.end_date) },
+        { header: "Total Tasks", width: 12, value: i => `${i.tasks_stat?.total ?? 0}` },
+        { header: "Done", width: 10, value: i => `${i.tasks_stat?.done ?? 0}` },
+        { header: "Doing", width: 10, value: i => `${i.tasks_stat?.doing ?? 0}` },
+        { header: "Todo", width: 10, value: i => `${i.tasks_stat?.todo ?? 0}` }
+      ];
+      sheet.columns = cols.map(c => ({ width: c.width }));
+      const groupBy = (req.query.group_by as string) || "category";
+      lastColumnLetter = writeTitle(cols.length, `Projects from ${teamName} - grouped by ${groupBy}`);
+      sheet.getRow(4).values = cols.map(c => c.header);
+      sheet.getRow(4).font = { bold: true };
+
+      for (const group of captured.body.groups || []) {
+        const groupRow = sheet.addRow([`${group.group_name || "Unassigned"} (${group.project_count} projects)`]);
+        sheet.mergeCells(`A${groupRow.number}:${lastColumnLetter}${groupRow.number}`);
+        groupRow.font = { bold: true };
+        groupRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "E6EEF8" } };
+        for (const project of group.projects || []) {
+          sheet.addRow(cols.map(c => c.value(project)));
+        }
+      }
+    }
+
+    const fileName = `${teamName} projects (${view === "grouped" ? "grouped" : "filtered"}) - ${exportDate}`;
+    res.setHeader("Content-Type", "application/vnd.openxmlformats");
+    res.setHeader("Content-Disposition", `attachment; filename=${encodeURIComponent(fileName)}.xlsx`);
+
+    await workbook.xlsx.write(res).then(() => {
+      res.end();
+    });
   }
 
   @HandleExceptions()

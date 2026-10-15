@@ -1,76 +1,79 @@
-import { Card, Col, Row, Statistic, Skeleton } from '@/shared/antd-imports';
+import { memo } from 'react';
+import { Card, Skeleton, Typography, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import './all-tasks-stats-cards.css';
 
 const AllTasksStatsCards = () => {
   const { t } = useTranslation('reporting-all-tasks');
+  const { token } = theme.useToken();
   const { stats, isLoading } = useAppSelector(state => state.allTasksReportsReducer);
 
   const statsConfig = [
     {
       key: 'total',
-      title: t('totalTasks', { defaultValue: 'Total Tasks' }),
+      label: t('totalTasks', { defaultValue: 'Total Tasks' }),
+      sub: t('totalTasksSub', { defaultValue: 'Matching current filters' }),
       value: stats.totalTasks,
-      className: 'stats-card',
+      color: token.colorPrimary,
     },
     {
       key: 'completed',
-      title: t('completedTasks', { defaultValue: 'Completed' }),
+      label: t('completedTasks', { defaultValue: 'Completed' }),
+      sub: t('completedTasksSub', { defaultValue: 'Finished tasks' }),
       value: stats.completedTasks,
-      className: 'stats-card stats-card--completed',
+      color: token.colorSuccess,
     },
     {
       key: 'inProgress',
-      title: t('inProgressTasks', { defaultValue: 'In Progress' }),
+      label: t('inProgressTasks', { defaultValue: 'In Progress' }),
+      sub: t('inProgressTasksSub', { defaultValue: 'Currently being worked on' }),
       value: stats.inProgressTasks,
-      className: 'stats-card stats-card--in-progress',
+      color: token.geekblue,
     },
     {
       key: 'overdue',
-      title: t('overdueTasks', { defaultValue: 'Overdue' }),
+      label: t('overdueTasks', { defaultValue: 'Overdue' }),
+      sub: t('overdueTasksSub', { defaultValue: 'Past their due date' }),
       value: stats.overdueTasks,
-      className: 'stats-card stats-card--overdue',
+      color: token.colorError,
     },
     {
       key: 'unassigned',
-      title: t('unassignedTasks', { defaultValue: 'Unassigned' }),
+      label: t('unassignedTasks', { defaultValue: 'Unassigned' }),
+      sub: t('unassignedTasksSub', { defaultValue: 'No assignee yet' }),
       value: stats.unassignedTasks,
-      className: 'stats-card stats-card--unassigned',
+      color: token.colorWarning,
     },
     {
       key: 'dueThisWeek',
-      title: t('dueThisWeekTasks', { defaultValue: 'Due This Week' }),
+      label: t('dueThisWeekTasks', { defaultValue: 'Due This Week' }),
+      sub: t('dueThisWeekTasksSub', { defaultValue: 'Coming up soon' }),
       value: stats.dueThisWeek,
-      className: 'stats-card stats-card--due-week',
+      color: token.purple,
     },
   ];
 
-  if (isLoading) {
-    return (
-      <Row gutter={[16, 16]}>
-        {statsConfig.map(stat => (
-          <Col key={stat.key} xs={12} sm={8} md={6} lg={4}>
-            <Card className={stat.className}>
-              <Skeleton active paragraph={false} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
-    );
-  }
-
   return (
-    <Row gutter={[16, 16]}>
-      {statsConfig.map(stat => (
-        <Col key={stat.key} xs={12} sm={8} md={6} lg={4}>
-          <Card className={stat.className}>
-            <Statistic title={stat.title} value={stat.value} />
-          </Card>
-        </Col>
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {statsConfig.map(item => (
+        <Card key={item.key} size="small">
+          <Typography.Text type="secondary" className="text-xs uppercase">
+            {item.label}
+          </Typography.Text>
+          {isLoading ? (
+            <Skeleton active title={{ width: 48 }} paragraph={false} className="py-2" />
+          ) : (
+            <div className="text-3xl font-semibold" style={{ color: item.color }}>
+              {item.value}
+            </div>
+          )}
+          <Typography.Text type="secondary" className="text-xs">
+            {item.sub}
+          </Typography.Text>
+        </Card>
       ))}
-    </Row>
+    </div>
   );
 };
 
-export default AllTasksStatsCards;
+export default memo(AllTasksStatsCards);
