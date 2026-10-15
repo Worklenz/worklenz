@@ -22,9 +22,6 @@ export const NewParentFieldEditor = () => {
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
   const draft = useAppSelector(state => state.taskListCustomColumnsReducer.newParentField);
-  const isFromExistingColumn = useAppSelector(
-    state => state.taskListCustomColumnsReducer.customColumnModalType === 'edit'
-  );
   const inputRefs = useRef<Record<string, InputRef | null>>({});
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
 
@@ -104,35 +101,6 @@ export const NewParentFieldEditor = () => {
             defaultValue: 'New parent field',
           })}
         </Typography.Text>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {t('customColumns.dependentSelection.newParentHint', {
-            defaultValue:
-              'This creates a separate Selection column when you click Update. Its options become the groups below.',
-          })}
-        </Typography.Text>
-
-        {isFromExistingColumn && (
-          <>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {t('customColumns.dependentSelection.newChildHint', {
-                defaultValue:
-                  'This field keeps its current parent and options. A new child field is created for the new parent instead.',
-              })}
-            </Typography.Text>
-            <Input
-              size="small"
-              value={draft.childName}
-              onChange={event => updateDraft({ childName: event.target.value })}
-              onPressEnter={event => event.preventDefault()}
-              placeholder={t('customColumns.dependentSelection.newChildNamePlaceholder', {
-                defaultValue: 'New child field title, e.g. Team',
-              })}
-              aria-label={t('customColumns.dependentSelection.newChildNameLabel', {
-                defaultValue: 'New child field title',
-              })}
-            />
-          </>
-        )}
 
         <Input
           size="small"

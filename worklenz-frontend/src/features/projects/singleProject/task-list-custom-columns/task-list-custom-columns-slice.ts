@@ -23,8 +23,6 @@ export const NEW_PARENT_COLUMN_ID = '__new_parent__';
 export interface INewParentFieldDraft {
   name: string;
   selections: SelectionType[];
-  /** Title of the new child column, used when the draft is started from an existing column. */
-  childName: string;
 }
 
 type TaskListCustomColumnsState = {

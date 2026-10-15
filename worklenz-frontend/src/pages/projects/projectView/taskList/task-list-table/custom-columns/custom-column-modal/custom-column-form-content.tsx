@@ -184,7 +184,6 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         setNewParentField({
           name: '',
           selections: [{ selection_id: nanoid(), selection_name: '', selection_color: PhaseColorCodes[0] }],
-          childName: '',
         })
       );
     }
@@ -444,19 +443,11 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   // Survives a failed child save so a retry does not create the parent twice.
   const createdNewParentIdRef = useRef<string | null>(null);
 
-  /** Edit-mode "+ Create new parent field": creates the parent and a new child column. */
-  const createChildForNewParent = async () => {
-    const childName = newParentField?.childName.trim() || '';
-    if (!childName) {
-      message.error(
-        t('customColumns.dependentSelection.newChildNameRequired', {
-          defaultValue: 'Give the new child field a title.',
-        })
-      );
-      setIsSubmitting(false);
-      return;
-    }
-
+  /**
+   * Edit-mode "+ Create new parent field": creates the parent and a new child column named by
+   * the Field title, leaving the opened column untouched.
+   */
+  const createChildForNewParent = async (childName: string) => {
     try {
       let newParentId = createdNewParentIdRef.current;
       if (!newParentId) {
@@ -523,7 +514,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       resolvedTypeForParent === 'selection' ? parentColumnId : null;
 
     if (isCreatingChildFromExisting) {
-      await createChildForNewParent();
+      await createChildForNewParent(String(value.fieldTitle || '').trim());
       return;
     }
 
