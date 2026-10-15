@@ -142,11 +142,6 @@ BEGIN
 END
 $$;
 
--- Step 5: Grant necessary permissions
-GRANT EXECUTE ON FUNCTION can_access_team_management(uuid, uuid) TO PUBLIC;
-GRANT EXECUTE ON FUNCTION can_access_billing(uuid, uuid) TO PUBLIC;
-GRANT EXECUTE ON FUNCTION can_manage_specific_member(uuid, uuid, uuid) TO PUBLIC;
-GRANT EXECUTE ON FUNCTION get_user_permissions_summary(uuid, uuid) TO PUBLIC;
 
 -- Step 6: Add verification that functions work correctly
 DO $$
