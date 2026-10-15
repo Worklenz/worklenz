@@ -36,4 +36,19 @@ describe('CommentsColumn', () => {
     expect(onOpenComment).toHaveBeenCalledTimes(2);
     expect(onRowClick).not.toHaveBeenCalled();
   });
+
+  it('does not make a synthetic archived parent comment navigable', () => {
+    const onOpenComment = vi.fn();
+    const task = {
+      id: 'archived-parent-container-parent-1',
+      is_parent_container: true,
+      latest_comment_id: 'comment-from-archived-child',
+      latest_comment: '<p>Copied child comment</p>',
+    } as Task;
+    render(<CommentsColumn width="240px" task={task} onOpenComment={onOpenComment} />);
+
+    expect(screen.getByText('Copied child comment')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open latest comment' })).not.toBeInTheDocument();
+    expect(onOpenComment).not.toHaveBeenCalled();
+  });
 });

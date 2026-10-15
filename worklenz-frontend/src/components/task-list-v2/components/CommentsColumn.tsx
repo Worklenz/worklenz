@@ -37,7 +37,9 @@ export const CommentsColumn: React.FC<CommentsColumnProps> = memo(({ width, task
   const meta = [author, date].filter(Boolean).join(' · ');
   const columnLabel = t('commentsColumn', { defaultValue: 'Latest Comment' });
   const openCommentLabel = t('openLatestComment', { defaultValue: 'Open latest comment' });
-  const canOpenComment = Boolean(comment && latestCommentId && onOpenComment);
+  const canOpenComment = Boolean(
+    comment && latestCommentId && onOpenComment && !task.is_parent_container
+  );
 
   return (
     <div
