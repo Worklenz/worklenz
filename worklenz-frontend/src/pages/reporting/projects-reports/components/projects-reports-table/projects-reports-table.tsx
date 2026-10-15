@@ -219,7 +219,8 @@ const ProjectsReportsTable = () => {
         width: 200,
       },
       {
-        key: 'lastActivity',
+        key: 'last_activity',
+        dataIndex: 'last_activity',
         title: <CustomTableTitle title={t('lastActivityColumn')} />,
         sorter: true,
         render: record => (
@@ -292,7 +293,7 @@ const ProjectsReportsTable = () => {
         width: 275,
       },
       {
-        key: 'daysLeft',
+        key: 'days_left',
         dataIndex: 'days_left',
         title: <CustomTableTitle title={t('daysLeftColumn')} />,
         sorter: true,
@@ -356,7 +357,8 @@ const ProjectsReportsTable = () => {
         width: 200,
       },
       {
-        key: 'projectUpdate',
+        key: 'comment',
+        dataIndex: 'comment',
         title: <CustomTableTitle title={t('projectUpdateColumn')} />,
         sorter: true,
         onCell: () => ({ className: 'project-update-cell' }),
@@ -417,10 +419,12 @@ const ProjectsReportsTable = () => {
         ),
 
         filtered: Boolean(selectedProjectManagers?.length),
-        render: (_, record: IRPTProject) => {
-          const managerName = typeof record.project_manager === 'object' ? record.project_manager?.name : record.project_manager;
-          return managerName ? <ProjectManagerCell manager={managerName} /> : '-';
-        },
+        render: (_, record: IRPTProject) =>
+          record.project_manager ? (
+            <ProjectManagerCell manager={record.project_manager} />
+          ) : (
+            '-'
+          ),
         width: 200,
       },
     ],
@@ -432,17 +436,37 @@ const ProjectsReportsTable = () => {
     [columns, columnsVisibility]
   );
 
-
   const handleTableChange = useCallback(
-    (pagination: PaginationProps, _filters: Record<string, (React.Key | boolean)[] | null>, sorter: any) => {
+    (
+      pagination: PaginationProps,
+      _filters: Record<string, (React.Key | boolean)[] | null>,
+      sorter: any
+    ) => {
       const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
 
-      if (activeSorter?.order && activeSorter?.field) {
+      const columnKey = String(
+        activeSorter?.field ?? activeSorter?.columnKey ?? ''
+      );
+
+      const sortFieldMap: Record<string, string> = {
+        name: 'name',
+        last_activity: 'last_activity',
+        days_left: 'days_left',
+        comment: 'comment',
+      };
+
+      if (!activeSorter?.order) {
+        dispatch(setField('name'));
+        dispatch(setOrder('asc'));
+        dispatch(setIndex(1));
+      } else if (sortFieldMap[columnKey]) {
+        dispatch(setField(sortFieldMap[columnKey]));
         dispatch(setOrder(activeSorter.order === 'ascend' ? 'asc' : 'desc'));
-        dispatch(setField(String(activeSorter.field)));
+        dispatch(setIndex(1));
+      } else {
+        dispatch(setIndex(pagination.current || 1));
       }
 
-      dispatch(setIndex(pagination.current || 1));
       dispatch(setPageSize(pagination.pageSize || 10));
     },
     [dispatch]
