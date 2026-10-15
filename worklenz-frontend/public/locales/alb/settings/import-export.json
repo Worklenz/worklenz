@@ -17,8 +17,7 @@
     "previewCsv": "Parapamje",
     "reviewDetails": "Rishiko detajet",
     "createProject": "Krijo projektin",
-    "reviewImport": "Rishiko detajet dhe importo",
-    "previewCsv": "Pamje"
+    "reviewImport": "Rishiko detajet dhe importo"
   },
   "fields": {
     "taskTitle": "Emri i detyrës / Titulli",

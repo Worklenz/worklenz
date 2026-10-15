@@ -23,6 +23,7 @@ const AUDIT_MIGRATIONS = [
   "1791193625587_create-audit-events-table.js",
   "1791193625588_add-audit-log-retention-to-organizations.js",
   "1791267995553_allow-audit-events-fk-set-null.js",
+  "1792051800000_restrict_audit_retention_execution.js",
 ];
 
 const collectMigrationSql = (fileName: string): string => {
@@ -116,6 +117,12 @@ describe("runAuditLogRetentionPurge", () => {
 });
 
 describe("purge_expired_audit_events() definition", () => {
+  it("revokes public and application execution, granting only the retention role", () => {
+    const permissionsSql = collectMigrationSql("1792051800000_restrict_audit_retention_execution.js");
+    expect(permissionsSql).toMatch(/REVOKE ALL ON FUNCTION purge_expired_audit_events\(UUID\) FROM PUBLIC/);
+    expect(permissionsSql).toMatch(/REVOKE ALL ON FUNCTION purge_expired_audit_events\(UUID\) FROM worklenz_client/);
+    expect(permissionsSql).toMatch(/GRANT EXECUTE ON FUNCTION purge_expired_audit_events\(UUID\) TO worklenz_audit_retention/);
+  });
   const purgeSql = collectMigrationSql(AUDIT_MIGRATIONS[1]);
 
   it("deletes only rows older than the owning organization's retention window", () => {

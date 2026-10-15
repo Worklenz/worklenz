@@ -51,6 +51,9 @@ exports.up = (pgm) => {
     END;
     $$;
 
+    REVOKE ALL ON FUNCTION purge_expired_audit_events(UUID) FROM PUBLIC;
+    REVOKE ALL ON FUNCTION purge_expired_audit_events(UUID) FROM worklenz_client;
+
     COMMENT ON FUNCTION purge_expired_audit_events(UUID) IS
       'Deletes audit_events rows older than their organization''s audit_log_retention_months. Pass an organization_id to scope to one org, or NULL (default) to sweep all orgs - intended to be invoked by a scheduled retention job, never from a user-facing endpoint.';
 

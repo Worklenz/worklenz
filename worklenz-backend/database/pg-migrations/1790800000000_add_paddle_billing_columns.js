@@ -103,6 +103,9 @@ BEGIN
     $patch$${PATCHED_JOIN}$patch$,
     'ON lus.subscription_plan_id = lpp.paddle_id'
   );
+  IF position('lus.billing_provider' IN _def) > 0 THEN
+    RAISE EXCEPTION 'deserialize_user(uuid) still references billing_provider; aborting down migration';
+  END IF;
   EXECUTE _def;
 END
 $migration$;

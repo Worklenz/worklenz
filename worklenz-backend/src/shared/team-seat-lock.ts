@@ -1,23 +1,41 @@
 import db from "../config/db";
 
-/**
- * Runs `fn` while holding a per-team advisory lock. Seat checks read the member count and the
- * invite inserts the member afterwards; without the lock two concurrent invites both see a free
- * seat and the team ends up one over its purchased seats.
- *
- * The lock is session-level on a dedicated connection, so it is released even if `fn` throws.
- */
-export async function withTeamSeatLock<T>(teamId: string, fn: () => Promise<T>): Promise<T> {
-  const client = await db.pool.connect();
+const LOCK_WAIT_MS = 5000;
+const RETRY_DELAY_MS = 50;
+
+/** Serialize a team's seat checks. Contending requests release their pool connection before retrying. */
+export async function withTeamSeatLock<T>(
+  teamId: string,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const deadline = Date.now() + LOCK_WAIT_MS;
   const key = `team-seats:${teamId}`;
-  try {
-    await client.query("SELECT pg_advisory_lock(hashtext($1));", [key]);
+  while (true) {
+    const client = await db.pool.connect();
+    let acquired = false;
+    let discardConnection = false;
     try {
-      return await fn();
+      const result = await client.query(
+        "SELECT pg_try_advisory_lock(hashtext($1)) AS acquired;",
+        [key],
+      );
+      acquired = result.rows[0]?.acquired === true;
+      if (acquired) return await fn();
     } finally {
-      await client.query("SELECT pg_advisory_unlock(hashtext($1));", [key]);
+      try {
+        if (acquired)
+          await client.query("SELECT pg_advisory_unlock(hashtext($1));", [key]);
+      } catch (error) {
+        discardConnection = true;
+        throw error;
+      } finally {
+        client.release(discardConnection);
+      }
     }
-  } finally {
-    client.release();
+    if (Date.now() >= deadline)
+      throw new Error(
+        "Timed out waiting for the team seat lock. Please try again.",
+      );
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
   }
 }

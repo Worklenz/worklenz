@@ -18,24 +18,50 @@ patterns=(
   'KEYGEN_ADMIN_TOKEN[[:space:]]*=[[:space:]]*[A-Za-z0-9._-]{12,}'
 )
 
-# On a git checkout scan only tracked files (what could be published); elsewhere scan the tree.
-scan() {
-  local pattern="$1"
-  if [ "$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null)" = "$(cd "$dir" && pwd)" ]; then
-    git -C "$dir" ls-files -z | (cd "$dir" && xargs -0 grep -EnH --binary-files=without-match -e "$pattern" 2>/dev/null)
-  else
-    grep -rEn --binary-files=without-match \
-      --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=build --exclude-dir=dist \
-      -e "$pattern" "$dir" 2>/dev/null
+# Materialize the file list first so a failed git/find command cannot look like a clean scan.
+file_list=$(mktemp)
+trap 'rm -f "$file_list"' EXIT
+if ! dir=$(cd "$dir" && pwd); then
+  echo "secret scan: cannot access input directory" >&2
+  exit 2
+fi
+if [ "$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null)" = "$dir" ]; then
+  if ! git -C "$dir" ls-files -z > "$file_list"; then
+    echo "secret scan: could not list tracked files" >&2
+    exit 2
   fi
+  cd "$dir"
+else
+  if ! find "$dir" -type d \( -name node_modules -o -name .git -o -name build -o -name dist \) -prune     -o -type f -print0 > "$file_list"; then
+    echo "secret scan: could not list input files" >&2
+    exit 2
+  fi
+fi
+
+scan() {
+  # grep exits 1 for no matches; only errors (>1) fail the batch. NUL-delimited filenames
+  # let the formatter discard matched content without confusing colons in paths or values.
+  xargs -0 -r bash -c '
+    grep -EnHZ --binary-files=without-match -e "$1" -- "${@:2}"
+    result=$?
+    if [ "$result" -gt 1 ]; then exit "$result"; fi
+    exit 0
+  ' _ "$1" < "$file_list" | while IFS= read -r -d '' file && IFS= read -r match; do
+    printf '%s:%s\n' "$file" "${match%%:*}"
+  done
 }
 
 status=0
 for pattern in "${patterns[@]}"; do
   if hits=$(scan "$pattern"); then
-    echo "possible secret matching /$pattern/:" >&2
-    echo "$hits" | cut -c1-160 | sed 's/^/  /' >&2
-    status=1
+    if [ -n "$hits" ]; then
+      echo "possible secret matching /$pattern/:" >&2
+      printf '%s\n' "$hits" >&2
+      status=1
+    fi
+  else
+    echo "secret scan: failed while scanning files" >&2
+    exit 2
   fi
 done
 

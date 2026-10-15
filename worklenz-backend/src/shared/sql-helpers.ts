@@ -34,7 +34,11 @@ export class SqlHelper {
       return { clause: "", params: [] };
     }
 
-    const placeholders = values.map((_, index) => `$${paramOffset + index}`).join(", ");
+    const startIndex = Number(paramOffset);
+    if (!Number.isSafeInteger(startIndex) || startIndex < 1 || !Number.isSafeInteger(startIndex + values.length)) {
+      throw new RangeError("SQL parameter offset must be a positive safe integer");
+    }
+    const placeholders = values.map((_, index) => `$${Number(startIndex) + index}`).join(", ");
     return {
       clause: placeholders,
       params: values,

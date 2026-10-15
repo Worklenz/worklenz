@@ -113,13 +113,14 @@ export default class BillingController extends WorklenzControllerBase {
 
     // Seats can never be set below the number of members already using them.
     const activeMembers = (await getActiveTeamMemberCount(req.user?.owner_id ?? ""))?.user_count ?? 0;
-    if (!Number.isFinite(Number(seatCount)) || Number(seatCount) < Math.max(activeMembers, 1)) {
+    const seats = Math.floor(Number(seatCount));
+    if (!Number.isSafeInteger(seats) || seats < Math.max(activeMembers, 1)) {
       return res
         .status(200)
         .send(new ServerResponse(false, null, `Seats cannot be fewer than your ${activeMembers} active members.`));
     }
 
-    const response = await updateUsers(subscriptionRef, seatCount);
+    const response = await updateUsers(subscriptionRef, seats);
 
     if (!response.body.subscription_id) {
       return res.status(200).send(new ServerResponse(false, null, response.message || "Please check your subscription."));

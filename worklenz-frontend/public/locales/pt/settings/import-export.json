@@ -17,8 +17,7 @@
     "previewCsv": "Pré-visualização",
     "reviewDetails": "Revisar detalhes",
     "createProject": "Criar projeto",
-    "reviewImport": "Revisar detalhes e importar",
-    "previewCsv": "Visualizar"
+    "reviewImport": "Revisar detalhes e importar"
   },
   "fields": {
     "taskTitle": "Nome da tarefa / Título",
