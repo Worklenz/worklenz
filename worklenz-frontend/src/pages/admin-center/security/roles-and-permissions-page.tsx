@@ -23,6 +23,7 @@ import {
   DeleteOutlined,
   LockOutlined,
   PlusOutlined,
+  RightOutlined,
   TableColumnsType,
 } from '@/shared/antd-imports';
 import {
@@ -66,6 +67,8 @@ const PROJECT_PERMISSION_KEYS = [
   'Archive project',
   'Delete project',
 ] as const;
+
+const PROJECTS_SECTION_ID = 'roles-permissions-projects-section';
 
 // Organization-wide permissions only apply to the default scheme
 const ORGANIZATION_PERMISSION_KEYS = Object.values(ORGANIZATION_PERMISSIONS);
@@ -113,6 +116,7 @@ export const RolesAndPermissionsPage: React.FC = () => {
   const { token } = theme.useToken();
 
   const { data: schemes = [], isLoading: schemesLoading } = useListSchemesQuery();
+  const [isProjectsExpanded, setIsProjectsExpanded] = useState(false);
 
   const sectionStyle: React.CSSProperties = {
     marginBottom: token.marginLG,
@@ -158,17 +162,80 @@ export const RolesAndPermissionsPage: React.FC = () => {
 
       {/* Step 2 — Apply to Projects */}
       <Card
-        title={<Title level={5} style={{ margin: 0 }}>{t('step2Title', { defaultValue: 'Apply to Projects' })}</Title>}
+        title={
+          <SectionToggle
+            isExpanded={isProjectsExpanded}
+            onToggle={() => setIsProjectsExpanded(prev => !prev)}
+            controlsId={PROJECTS_SECTION_ID}
+            label={t('step2Title', { defaultValue: 'Apply to Projects' })}
+            labelFontSize={token.fontSizeHeading5}
+          />
+        }
         style={{ ...sectionStyle, borderColor: token.colorBorder }}
-        styles={{ body: { padding: token.paddingMD } }}
+        styles={{
+          body: isProjectsExpanded ? { padding: token.paddingMD } : { display: 'none' },
+        }}
       >
-        <ProjectsSection schemes={schemes} />
+        <div id={PROJECTS_SECTION_ID}>
+          {isProjectsExpanded && <ProjectsSection schemes={schemes} />}
+        </div>
       </Card>
     </div>
   );
 };
 
 export default RolesAndPermissionsPage;
+
+// ---------------------------------------------------------------------------
+// SectionToggle — icon-only expand/collapse button beside a clickable label
+// ---------------------------------------------------------------------------
+
+interface SectionToggleProps {
+  isExpanded: boolean;
+  onToggle: () => void;
+  controlsId: string;
+  label: string;
+  labelFontSize?: number;
+}
+
+const SectionToggle: React.FC<SectionToggleProps> = ({
+  isExpanded,
+  onToggle,
+  controlsId,
+  label,
+  labelFontSize,
+}) => {
+  const labelId = `${controlsId}-label`;
+  return (
+    <Flex align="center" gap={4}>
+      <Button
+        type="text"
+        size="small"
+        onClick={onToggle}
+        aria-expanded={isExpanded}
+        aria-controls={controlsId}
+        aria-labelledby={labelId}
+        icon={
+          <RightOutlined
+            style={{
+              fontSize: 12,
+              transition: 'transform 200ms ease',
+              transform: isExpanded ? 'rotate(90deg)' : 'none',
+            }}
+          />
+        }
+      />
+      <Text
+        id={labelId}
+        strong
+        onClick={onToggle}
+        style={{ fontSize: labelFontSize, cursor: 'pointer', userSelect: 'none' }}
+      >
+        {label}
+      </Text>
+    </Flex>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Step 1 — SchemesSection
@@ -195,6 +262,7 @@ const SchemesSection: React.FC<SchemesSectionProps> = ({ schemes, loading }) => 
 
   const [addPermissionsModalOpen, setAddPermissionsModalOpen] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [isProjectPermissionsExpanded, setIsProjectPermissionsExpanded] = useState(false);
 
   // Pick first scheme by default once loaded
   const activeId = activeSchemeId ?? schemes[0]?.id ?? null;
@@ -481,21 +549,41 @@ const SchemesSection: React.FC<SchemesSectionProps> = ({ schemes, loading }) => 
           </Empty>
         ) : (
           <Flex vertical gap={token.margin}>
-            {permissionSections.map(section => (
-              <div key={section.key}>
-                <Text strong style={{ display: 'block', marginBottom: token.marginXS }}>
-                  {section.title}
-                </Text>
-                <Table
-                  size="small"
-                  dataSource={section.data}
-                  columns={visibleColumns}
-                  pagination={false}
-                  scroll={{ x: 'max-content' }}
-                  style={{ borderRadius: token.borderRadius }}
-                />
-              </div>
-            ))}
+            {permissionSections.map(section => {
+              const isCollapsible = section.key === 'project';
+              const isExpanded = !isCollapsible || isProjectPermissionsExpanded;
+              const sectionBodyId = `roles-permissions-${section.key}-permissions`;
+              return (
+                <div key={section.key}>
+                  {isCollapsible ? (
+                    <div style={{ marginBottom: token.marginXS }}>
+                      <SectionToggle
+                        isExpanded={isExpanded}
+                        onToggle={() => setIsProjectPermissionsExpanded(prev => !prev)}
+                        controlsId={sectionBodyId}
+                        label={section.title}
+                      />
+                    </div>
+                  ) : (
+                    <Text strong style={{ display: 'block', marginBottom: token.marginXS }}>
+                      {section.title}
+                    </Text>
+                  )}
+                  <div id={sectionBodyId} hidden={!isExpanded}>
+                    {isExpanded && (
+                      <Table
+                        size="small"
+                        dataSource={section.data}
+                        columns={visibleColumns}
+                        pagination={false}
+                        scroll={{ x: 'max-content' }}
+                        style={{ borderRadius: token.borderRadius }}
+                      />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
             {canEditPermissionList && (
               <Button
                 size="small"
