@@ -1,6 +1,7 @@
 import express from "express";
 
 import AdminCenterController from "../../controllers/admin-center-controller";
+import PermissionSchemesController from "../../controllers/permission-schemes-controller";
 import AuditLogController from "../../controllers/audit-log-controller";
 import AuditLogExportController from "../../controllers/audit-log-export-controller";
 import AuditLogRetentionController from "../../controllers/audit-log-retention-controller";
@@ -87,5 +88,29 @@ adminCenterApiRouter.post("/billing/redeem", teamOwnerOrAdminValidator, safeCont
 
 // AppSumo endpoints
 adminCenterApiRouter.get("/appsumo/countdown-widget", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getAppSumoCountdownWidget));
+
+// permission schemes
+adminCenterApiRouter.get("/my-organization-permissions", safeControllerFunction(PermissionSchemesController.getMyOrganizationPermissions));
+adminCenterApiRouter.get("/permission-schemes", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.getSchemes));
+adminCenterApiRouter.post("/permission-schemes", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.createScheme));
+adminCenterApiRouter.get("/permission-schemes/:id", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.getScheme));
+adminCenterApiRouter.put("/permission-schemes/:id", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.updateScheme));
+adminCenterApiRouter.delete("/permission-schemes/:id", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.deleteScheme));
+adminCenterApiRouter.put("/permission-schemes/:id/grants", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.updateGrants));
+adminCenterApiRouter.post("/permission-schemes/:id/permissions", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.addSchemePermissions));
+adminCenterApiRouter.post("/permission-schemes/:id/permissions/remove", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.removeSchemePermissions));
+
+// permission groups
+adminCenterApiRouter.get("/permission-groups", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.getGroups));
+adminCenterApiRouter.post("/permission-groups", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.createGroup));
+adminCenterApiRouter.put("/permission-groups/:id", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.updateGroup));
+adminCenterApiRouter.delete("/permission-groups/:id", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.deleteGroup));
+
+// project scheme assignments
+adminCenterApiRouter.get("/permission-scheme-projects", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.getTeamProjectSchemes));
+adminCenterApiRouter.get("/projects/:projectId/scheme", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.getProjectScheme));
+adminCenterApiRouter.put("/projects/:projectId/scheme", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.assignProjectScheme));
+adminCenterApiRouter.post("/projects/:projectId/scheme/members", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.addSchemeMember));
+adminCenterApiRouter.delete("/projects/:projectId/scheme/members/:memberId", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.removeSchemeMember));
 
 export default adminCenterApiRouter;

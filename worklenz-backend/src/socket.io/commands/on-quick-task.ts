@@ -12,6 +12,7 @@ import { logEndDateChange, logStartDateChange, logStatusChange } from "../../ser
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import { log_error } from "../../shared/utils";
 import { isTaskCreationRestricted } from "../../shared/task-creation-restriction";
+import { PROJECT_ROLE_PERMISSIONS } from "../../shared/organization-permissions";
 
 import { createQuickTaskRecord } from "../../shared/create-quick-task-record";
 
@@ -76,7 +77,11 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
       // Check restrict_task_creation before proceeding
       const userId = getLoggedInUserIdFromSocket(socket);
       if (userId && body.project_id) {
-        const restricted = await isTaskCreationRestricted(userId, body.project_id);
+        const restricted = await isTaskCreationRestricted(
+          userId,
+          body.project_id,
+          PROJECT_ROLE_PERMISSIONS.CREATE_TASKS
+        );
         if (restricted) {
           socket.emit(SocketEvents.QUICK_TASK.toString(), {
             error: true,

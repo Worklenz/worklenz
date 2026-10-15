@@ -30,6 +30,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useProjectRoomSync, projectIdsFromTasks, hasParentSubtaskOverlap } from '@/hooks/useProjectRoomSync';
 import { useAuthService } from '@/hooks/useAuth';
+import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { getUserSession } from '@/utils/session-helper';
 import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader';
 import { getEnglishWeekdayName } from '@/utils/dateUtils';
@@ -83,6 +84,7 @@ const PlannerScheduleView: React.FC = () => {
   const workingHours = useAppSelector(state => state.scheduleReducer.workingHours) || 8;
   const workingDaysRaw = useAppSelector(state => state.scheduleReducer.workingDays);
   const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
+  const isReadOnly = useIsAdminSurfaceReadOnly();
 
   const weekdayShort = useMemo(() => WEEKDAY_KEYS.map(k => t(k, { defaultValue: k.replace('Short', '') })), [t]);
 
@@ -246,6 +248,7 @@ const PlannerScheduleView: React.FC = () => {
   // pre-seeded with the clicked member + date. See PlannerAddTaskModal.
   const [addTaskCell, setAddTaskCell] = useState<{ memberId: string; date: dayjs.Dayjs } | null>(null);
   const openCreateTask = (memberId: string, date: dayjs.Dayjs) => {
+    if (isReadOnly) return;
     dispatch(setShowTaskDrawer(false));
     setAddTaskCell({ memberId, date });
   };
@@ -864,7 +867,7 @@ const PlannerScheduleView: React.FC = () => {
   const handleChipDrop = (targetMemberId: string, targetDate: dayjs.Dayjs) => {
     const info = dragInfo.current;
     dragInfo.current = null;
-    if (!info) return;
+    if (!info || isReadOnly) return;
 
     const targetDateStr = targetDate.format('YYYY-MM-DD');
     const dateChanged = info.date !== targetDateStr;
@@ -1209,7 +1212,7 @@ const PlannerScheduleView: React.FC = () => {
   // handle, so resizing never also triggers the whole-chip move/reassign drag.
   const makeChipDragStartHandler =
     (task: any, memberId: string, date: dayjs.Dayjs) => (e: React.DragEvent) => {
-      if (suppressChipDragRef.current) {
+      if (isReadOnly || suppressChipDragRef.current) {
         e.preventDefault();
         return;
       }
@@ -1226,7 +1229,8 @@ const PlannerScheduleView: React.FC = () => {
   // Small grip strip anchored to the chip's bottom edge (chip needs position:relative).
   // Days ('full') and Weeks ('compact') zoom only — Months ('bar') chips are 8px slivers
   // with no room for a handle and are left untouched.
-  const renderResizeHandle = (task: any, dense: 'full' | 'compact', color: string, handleHeight: number) => (
+  const renderResizeHandle = (task: any, dense: 'full' | 'compact', color: string, handleHeight: number) =>
+    isReadOnly ? null : (
     <div
       onMouseDown={e => startChipResize(e, task, dense)}
       onClick={e => e.stopPropagation()}
@@ -1250,7 +1254,8 @@ const PlannerScheduleView: React.FC = () => {
   // (edge 'start') or last day cell (edge 'end'), since a multi-day task is drawn as a
   // separate chip in every day column it spans rather than one continuous bar. Days/Weeks
   // zoom only, same scoping as renderResizeHandle above.
-  const renderDateResizeHandle = (task: any, edge: 'start' | 'end', color: string) => (
+  const renderDateResizeHandle = (task: any, edge: 'start' | 'end', color: string) =>
+    isReadOnly ? null : (
     <div
       onMouseDown={e => startChipDateResize(e, task, edge)}
       onClick={e => e.stopPropagation()}
@@ -1477,14 +1482,16 @@ const PlannerScheduleView: React.FC = () => {
               aria-label={t('refreshSchedule', { defaultValue: 'Refresh Schedule' })}
             />
           </Tooltip>
-          <Button
-            size="small"
-            shape="circle"
-            onClick={handleOpenSettings}
-            title={t('settings', { defaultValue: 'Settings' })}
-          >
-            <SettingOutlined />
-          </Button>
+          {!isReadOnly && (
+            <Button
+              size="small"
+              shape="circle"
+              onClick={handleOpenSettings}
+              title={t('settings', { defaultValue: 'Settings' })}
+            >
+              <SettingOutlined />
+            </Button>
+          )}
         </Space>
       </Flex>
       </div>
@@ -1790,7 +1797,7 @@ const PlannerScheduleView: React.FC = () => {
                       return (
                         <div
                           key={d.offset}
-                          className="planner-day-cell"
+                          className={isReadOnly ? undefined : 'planner-day-cell'}
                           onClick={() => {
                             // A resize gesture's terminal mouseup landed here — consume the
                             // flag and swallow this click rather than opening Add Task.
@@ -1887,11 +1894,11 @@ const PlannerScheduleView: React.FC = () => {
                                     e.stopPropagation();
                                     openTaskDrawer(task);
                                   }}
-                                  draggable
+                                  draggable={!isReadOnly}
                                   onDragStart={makeChipDragStartHandler(task, memberId, d.date)}
                                   style={{
                                     position: 'relative',
-                                    cursor: 'grab',
+                                    cursor: isReadOnly ? 'pointer' : 'grab',
                                     borderRadius: 4,
                                     marginLeft: isSubtask ? 8 : 0,
                                     background: isSubtask ? `${color}0c` : `${color}18`,
@@ -2014,7 +2021,7 @@ const PlannerScheduleView: React.FC = () => {
                                             e.stopPropagation();
                                             openTaskDrawer(task);
                                           }}
-                                          draggable
+                                          draggable={!isReadOnly}
                                           onDragStart={makeChipDragStartHandler(task, memberId, d.date)}
                                           style={{
                                             position: 'relative',

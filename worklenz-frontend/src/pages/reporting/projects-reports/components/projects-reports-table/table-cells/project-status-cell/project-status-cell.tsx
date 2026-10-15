@@ -13,9 +13,10 @@ import logger from '@/utils/errorLogger';
 interface ProjectStatusCellProps {
   currentStatus: string;
   projectId: string;
+  isReadOnly?: boolean;
 }
 
-const ProjectStatusCell = ({ currentStatus, projectId }: ProjectStatusCellProps) => {
+const ProjectStatusCell = ({ currentStatus, projectId, isReadOnly = false }: ProjectStatusCellProps) => {
   const { t } = useTranslation('reporting-projects');
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
@@ -72,6 +73,17 @@ const ProjectStatusCell = ({ currentStatus, projectId }: ProjectStatusCellProps)
   useEffect(() => {
     setSelectedStatus(currentStatus);
   }, [currentStatus]);
+
+  if (isReadOnly) {
+    if (!currentStatusObject) return <Typography.Text type="secondary">-</Typography.Text>;
+
+    return (
+      <Typography.Text style={{ display: 'flex', alignItems: 'center', gap: 4, paddingInline: 11 }}>
+        {getStatusIcon(currentStatusObject.icon || '', currentStatusObject.color_code || '')}
+        {t(`${currentStatusObject.name}`)}
+      </Typography.Text>
+    );
+  }
 
   return (
     <ConfigProvider

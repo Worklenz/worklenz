@@ -74,6 +74,8 @@ type SubTaskTableProps = {
   loadingSubTasks: boolean;
   refreshSubTasks: () => void;
   canCreateTask?: boolean;
+  /** Defaults to `canCreateTask && !isGuest` when not provided. */
+  canAddSubtask?: boolean;
   isGuest?: boolean;
   t: TFunction;
 };
@@ -301,9 +303,11 @@ const SubTaskTable = ({
   loadingSubTasks,
   refreshSubTasks,
   canCreateTask = true,
+  canAddSubtask: canAddSubtaskProp,
   isGuest = false,
   t,
 }: SubTaskTableProps) => {
+  const canAddSubtask = canAddSubtaskProp ?? (canCreateTask && !isGuest);
   const { socket, connected } = useSocket();
   const [isEdit, setIsEdit] = useState(false);
   const [creatingTask, setCreatingTask] = useState(false);
@@ -452,7 +456,7 @@ const SubTaskTable = ({
   };
 
   const addInstantTask = async (taskName: string) => {
-    if (!canCreateTask || isGuest || creatingTask || !taskName?.trim() || !connected) return;
+    if (!canAddSubtask || creatingTask || !taskName?.trim() || !connected) return;
 
     try {
       setCreatingTask(true);
@@ -610,7 +614,7 @@ const SubTaskTable = ({
           </DndContext>
         )}
 
-        {isEdit && !isGuest && canCreateTask ? (
+        {isEdit && canAddSubtask ? (
           <Input
             autoFocus
             value={newTaskName}
@@ -635,18 +639,18 @@ const SubTaskTable = ({
                 : 'Type your task and hit enter'
             }
           />
-        ) : !isGuest ? (
+        ) : !isGuest || canAddSubtask ? (
           <Button
             type="text"
             style={{
               width: 'fit-content',
-              color: canCreateTask ? colors.skyBlue : undefined,
+              color: canAddSubtask ? colors.skyBlue : undefined,
               padding: 0,
-              opacity: !canCreateTask ? 0.4 : 1,
-              cursor: !canCreateTask ? 'not-allowed' : 'pointer',
+              opacity: !canAddSubtask ? 0.4 : 1,
+              cursor: !canAddSubtask ? 'not-allowed' : 'pointer',
             }}
-            disabled={!canCreateTask}
-            onClick={() => canCreateTask && setIsEdit(true)}
+            disabled={!canAddSubtask}
+            onClick={() => canAddSubtask && setIsEdit(true)}
             aria-label={
               typeof t === 'function'
                 ? t('taskInfoTab.subTasks.addSubTask', {

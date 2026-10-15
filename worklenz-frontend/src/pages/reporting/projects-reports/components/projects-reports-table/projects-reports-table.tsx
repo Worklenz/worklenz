@@ -51,11 +51,13 @@ import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuse
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
+import { useCanEditReports } from '@/hooks/useCanEditReports';
 
 const ProjectsReportsTable = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
   const { socket, connected } = useSocket();
+  const isReadOnly = !useCanEditReports();
 
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
@@ -221,7 +223,11 @@ const ProjectsReportsTable = () => {
         defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
         title: <CustomTableTitle title={t('statusColumn')} />,
         render: (_, record: IRPTProject) => (
-          <ProjectStatusCell currentStatus={record.status_id} projectId={record.id} />
+          <ProjectStatusCell
+            currentStatus={record.status_id}
+            projectId={record.id}
+            isReadOnly={isReadOnly}
+          />
         ),
         width: 200,
         sorter: true,
@@ -254,6 +260,7 @@ const ProjectsReportsTable = () => {
             projectId={record.id}
             startDate={record.start_date}
             endDate={record.end_date}
+            isReadOnly={isReadOnly}
           />
         ),
         width: 275,
@@ -283,6 +290,7 @@ const ProjectsReportsTable = () => {
             label={record.health_name}
             color={record.health_color}
             projectId={record.id}
+            isReadOnly={isReadOnly}
           />
         ),
         width: 200,
@@ -300,6 +308,7 @@ const ProjectsReportsTable = () => {
             id={record.category_id || ''}
             name={record.category_name || ''}
             color_code={record.category_color || ''}
+            isReadOnly={isReadOnly}
           />
         ),
         width: 200,
@@ -340,7 +349,7 @@ const ProjectsReportsTable = () => {
         width: 200,
       },
     ],
-    [t, order, handleDrawerOpen]
+    [t, order, handleDrawerOpen, isReadOnly]
   );
 
   const visibleColumns = useMemo(

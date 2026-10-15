@@ -838,7 +838,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const { token: themeToken } = theme.useToken();
 
   // Task creation/assignment restriction (Business Plan feature)
-  const { canCreateTask } = useTaskCreationPermission();
+  const { canCreateTask, canAddTask } = useTaskCreationPermission();
 
   // Redux state selectors
   const allTasks = useAppSelector(selectAllTasksArray);
@@ -1760,7 +1760,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 isActiveSprint={activeSprintGroupIds.has(group.id)}
               />
             )}
-            {isGroupEmpty && !isGroupCollapsed && hasNoTasks && !isGuest && (
+            {isGroupEmpty && !isGroupCollapsed && hasNoTasks && (!isGuest || canAddTask) && (
               <ExampleTaskRows
                 visibleColumns={visibleColumns}
                 isDarkMode={isDarkMode}
@@ -1770,7 +1770,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 groupName={group.title || ''}
                 groupColor={(isDarkMode ? group.color_code_dark || group.color : group.color) || ''}
                 projectId={urlProjectId || ''}
-                canCreateTask={canCreateTask}
+                canCreateTask={canAddTask}
                 onTaskCreated={(task, options) =>
                   handleTaskCreated(task, group.id, !!options?.openDrawer, null)
                 }
@@ -1792,7 +1792,8 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       hasNoTasks,
       activeId,
       overGroupId,
-      canCreateTask,
+      canAddTask,
+      isGuest,
       isBacklogMode,
       activeSprintGroupIds,
     ]
@@ -1805,8 +1806,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       if (!item || !urlProjectId) return null;
 
       if ('isAddTaskRow' in item && item.isAddTaskRow) {
-        // Hide the add-task row entirely when task creation is restricted or user is guest
-        if (!canCreateTask || isGuest) return null;
+        if (!canAddTask) return null;
         return (
           <AddTaskRow
             groupId={item.groupId}
@@ -1841,6 +1841,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           isFirstInGroup={isFirstInGroup}
           updateTaskCustomColumnValue={updateTaskCustomColumnValue}
           canCreateTask={canCreateTask}
+          canAddTask={canAddTask}
           isGuest={isGuest}
         />
       );
@@ -1855,6 +1856,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       handleDeactivateAddRow,
       handleTaskCreated,
       canCreateTask,
+      canAddTask,
       isGuest,
     ]
   );
@@ -2416,7 +2418,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                         />
                       )}
                       {/* Single add task row - reused for all tasks */}
-                      {canCreateTask && !isGuest && (
+                      {canAddTask && (
                         <AddTaskRow
                           groupId={unmappedGroupId}
                           groupType="phase"
@@ -2658,7 +2660,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                               isDarkMode={isDarkMode}
                             />
                           )}
-                           {showInsertDivider && previousItem && canCreateTask && !isGuest && (
+                           {showInsertDivider && previousItem && canAddTask && (
                              <InsertTaskDivider
                                key="insert-divider"
                                isVisible={true}
@@ -2676,7 +2678,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                           <React.Fragment key={item.id ?? `virtuoso-item-${index}`}>
                             {renderTask(index, isFirstInGroup)}
                           </React.Fragment>
-                          {isLastInGroup && canCreateTask && !isGuest && (
+                          {isLastInGroup && canAddTask && (
                             <InsertTaskDivider
                               key="insert-divider-bottom"
                               isVisible={true}

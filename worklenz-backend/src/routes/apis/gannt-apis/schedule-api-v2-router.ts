@@ -14,10 +14,12 @@ import verifyTaskAccess, { verifyNonGuestTaskAccess } from "../../../middlewares
 import verifyNonGuestPlannerAccess from "../../../middlewares/verify-non-guest-planner-access";
 import { requireAnyFeature } from "../../../shared/entitlements/gates";
 import { PLANNER_FEATURES } from "../../../shared/entitlements/feature-registry";
+import { ownerOrAdminWriteValidator } from "../../../middlewares/validators/organization-permission-validator";
+import { requireProjectPermission } from "../../../middlewares/validators/require-project-permission";
 
 const scheduleApiRouter = express.Router();
 
-// Guests do not have access to the Planner (Schedule/Timeline/Workload) at all.
+// Guests only reach the Planner (Schedule/Timeline/Workload) when granted "View planner".
 scheduleApiRouter.use(verifyNonGuestPlannerAccess);
 
 // Shared endpoints, available on every plan because screens outside the Planner use them:
@@ -25,7 +27,7 @@ scheduleApiRouter.use(verifyNonGuestPlannerAccess);
 //  - time-off, a personal calendar feature (Home calendar, quick actions)
 // Everything registered after the requireAnyFeature gate below is Planner-only.
 scheduleApiRouter.get("/settings", safeControllerFunction(ScheduleControllerV2.getSettings));
-scheduleApiRouter.put("/settings", safeControllerFunction(ScheduleControllerV2.updateSettings));
+scheduleApiRouter.put("/settings", ownerOrAdminWriteValidator, safeControllerFunction(ScheduleControllerV2.updateSettings));
 
 // ============================================
 // Time-Off Management Endpoints
@@ -99,7 +101,7 @@ scheduleApiRouter.get(
 scheduleApiRouter.get("/timeline/projects", safeControllerFunction(ProjectTimelineController.getProjectsTimeline));
 
 // Update a project's start/end date (drag-resize on the Timeline bar)
-scheduleApiRouter.put("/timeline/projects/:id/dates", idParamValidator, safeControllerFunction(ProjectTimelineController.updateProjectDates));
+scheduleApiRouter.put("/timeline/projects/:id/dates", requireProjectPermission("settings", { sources: ["params.id"] }), idParamValidator, safeControllerFunction(ProjectTimelineController.updateProjectDates));
 
 // ============================================
 // Workload Management Endpoints (NEW)

@@ -15,6 +15,7 @@ import {
 import type { PortalProject } from '@/types/client-portal/v2';
 import { portalPaths } from '../../portal-paths';
 import { AssignProjectsToClientModal } from './AssignProjectsToClientModal';
+import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 
 interface ProjectsTabProps {
   organizationId: string;
@@ -28,6 +29,7 @@ export const ProjectsTab = ({ organizationId, organizationName }: ProjectsTabPro
   const navigate = useNavigate();
   const paging = usePortalPaging();
   const [assigning, setAssigning] = useState(false);
+  const isReadOnly = useIsAdminSurfaceReadOnly();
   const query = useGetPortalProjectsQuery({
     organization_id: organizationId,
     page: paging.page,
@@ -88,7 +90,7 @@ export const ProjectsTab = ({ organizationId, organizationName }: ProjectsTabPro
     },
   ];
 
-  const assignButton = (
+  const assignButton = isReadOnly ? null : (
     <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => setAssigning(true)}>
       {t('workspace.projects.assign.button', { defaultValue: 'Assign project' })}
     </Button>

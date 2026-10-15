@@ -16,7 +16,64 @@ describe('getTaskCreationPermission', () => {
       orgConfig: {},
     });
 
-    expect(result).toEqual({ canCreateTask: false, isRestricted: false });
+    expect(result).toEqual({ canCreateTask: false, canAddTask: false, isRestricted: false });
+  });
+
+  it('allows guests granted "Edit tasks" by the permission scheme', () => {
+    const result = getTaskCreationPermission({
+      session: makeSession('member'),
+      project: { is_guest: true, role_permissions: { edit_tasks: true, delete_tasks: false, comment: true } },
+      orgConfig: {},
+    });
+
+    expect(result).toEqual({ canCreateTask: true, canAddTask: true, isRestricted: false });
+  });
+
+  it('blocks members whose role lacks "Edit tasks"', () => {
+    const result = getTaskCreationPermission({
+      session: makeSession('member'),
+      project: { role_permissions: { edit_tasks: false, delete_tasks: false, comment: true } },
+      orgConfig: {},
+    });
+
+    expect(result).toEqual({ canCreateTask: false, canAddTask: false, isRestricted: false });
+  });
+
+  it('lets members add tasks with "Create tasks" even without "Edit tasks"', () => {
+    const result = getTaskCreationPermission({
+      session: makeSession('member'),
+      project: {
+        role_permissions: { create_tasks: true, edit_tasks: false, delete_tasks: false, comment: true },
+      },
+      orgConfig: {},
+    });
+
+    expect(result).toEqual({ canCreateTask: false, canAddTask: true, isRestricted: false });
+  });
+
+  it('blocks adding tasks when "Create tasks" is not granted', () => {
+    const result = getTaskCreationPermission({
+      session: makeSession('member'),
+      project: {
+        role_permissions: { create_tasks: false, edit_tasks: true, delete_tasks: true, comment: true },
+      },
+      orgConfig: {},
+    });
+
+    expect(result).toEqual({ canCreateTask: true, canAddTask: false, isRestricted: false });
+  });
+
+  it('keeps members view-only when the project restricts task creation', () => {
+    const result = getTaskCreationPermission({
+      session: makeSession('member', true),
+      project: {
+        restrict_task_creation: true,
+        role_permissions: { create_tasks: true, edit_tasks: true, delete_tasks: true, comment: true },
+      },
+      orgConfig: {},
+    });
+
+    expect(result).toEqual({ canCreateTask: false, canAddTask: false, isRestricted: true });
   });
 
   it('allows privileged members to create tasks when restrictions are enabled', () => {
@@ -26,6 +83,6 @@ describe('getTaskCreationPermission', () => {
       orgConfig: {},
     });
 
-    expect(result).toEqual({ canCreateTask: true, isRestricted: true });
+    expect(result).toEqual({ canCreateTask: true, canAddTask: true, isRestricted: true });
   });
 });

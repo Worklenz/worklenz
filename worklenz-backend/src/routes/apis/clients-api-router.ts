@@ -16,8 +16,16 @@ import projectManagerValidator from "../../middlewares/validators/project-manage
 import chatIdParamValidator from "../../middlewares/validators/chat-id-param-validator";
 import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
 import { requireFeature } from "../../shared/entitlements/gates";
+import { clientsReadOnlyValidator } from "../../middlewares/validators/organization-permission-validator";
 
 const clientsApiRouter = express.Router();
+
+// Client Portal management: reads need "View clients", writes stay Owner/Admin-only.
+// Chats are excluded because Home > Inbox lets every member message clients.
+clientsApiRouter.use("/portal", (req, res, next) => {
+  if (req.path.startsWith("/chats")) return next();
+  return clientsReadOnlyValidator(req, res, next);
+});
 
 clientsApiRouter.post("/", projectManagerValidator, clientsBodyValidator, safeControllerFunction(ClientsController.create));
 clientsApiRouter.get("/", safeControllerFunction(ClientsController.get));

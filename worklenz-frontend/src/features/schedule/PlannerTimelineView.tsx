@@ -21,6 +21,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
 import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
+import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import PlannerMultiFilterDropdown from '@/features/schedule/PlannerMultiFilterDropdown';
 import {
@@ -229,6 +230,7 @@ interface TimelineBarRowProps {
   cardBg: string;
   onDatesChange: (projectId: string, startDate: string, endDate: string) => void;
   highlighted?: boolean;
+  isReadOnly?: boolean;
 }
 
 // Same tooltip surface treatment as PlannerScheduleView's renderTaskTooltipTitle: a
@@ -253,6 +255,7 @@ const TimelineProjectBarRow: React.FC<TimelineBarRowProps> = ({
   cardBg,
   onDatesChange,
   highlighted,
+  isReadOnly = false,
 }) => {
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -341,6 +344,7 @@ const TimelineProjectBarRow: React.FC<TimelineBarRowProps> = ({
   // click-and-hold pan (which still fires normally for clicks on empty grid background,
   // since that's a separate mousedown handler on the scroll container, not this bar).
   const startBarMove = (e: React.MouseEvent) => {
+    if (isReadOnly) return;
     e.stopPropagation();
     e.preventDefault();
     liveRef.current = { start: dayjs(project.start_date), end: dayjs(project.end_date), startX: e.clientX };
@@ -442,7 +446,7 @@ const TimelineProjectBarRow: React.FC<TimelineBarRowProps> = ({
               height: BAR_HEIGHT,
               display: 'flex',
               alignItems: 'center',
-              cursor: dragMode === 'move' ? 'grabbing' : 'grab',
+              cursor: isReadOnly ? 'default' : dragMode === 'move' ? 'grabbing' : 'grab',
             }}
           >
             <div
@@ -471,14 +475,18 @@ const TimelineProjectBarRow: React.FC<TimelineBarRowProps> = ({
             {/* Invisible drag handles at each edge, layered on top of the bar-move handler
                 above — resizing either one only moves that edge's date; the other date and
                 the segmented fill stay put. */}
-            <div
-              onMouseDown={startEdgeDrag('start')}
-              style={{ position: 'absolute', left: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
-            />
-            <div
-              onMouseDown={startEdgeDrag('end')}
-              style={{ position: 'absolute', right: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
-            />
+            {!isReadOnly && (
+              <>
+                <div
+                  onMouseDown={startEdgeDrag('start')}
+                  style={{ position: 'absolute', left: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
+                />
+                <div
+                  onMouseDown={startEdgeDrag('end')}
+                  style={{ position: 'absolute', right: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
+                />
+              </>
+            )}
           </div>
         </Tooltip>
 
@@ -525,6 +533,7 @@ interface TimelinePlaceholderRowProps {
   cardBg: string;
   onDatesChange: (projectId: string, startDate: string, endDate: string) => void;
   onHoverRangeChange: (range: { start: Dayjs; end: Dayjs } | null) => void;
+  isReadOnly?: boolean;
 }
 
 // Undated projects have no bar to show, so their row instead previews a default
@@ -541,6 +550,7 @@ const TimelineProjectPlaceholderRow: React.FC<TimelinePlaceholderRowProps> = ({
   cardBg,
   onDatesChange,
   onHoverRangeChange,
+  isReadOnly = false,
 }) => {
   const { token } = theme.useToken();
   const [hoverStart, setHoverStart] = useState<Dayjs | null>(null);
@@ -548,6 +558,7 @@ const TimelineProjectPlaceholderRow: React.FC<TimelinePlaceholderRowProps> = ({
   const xForDate = (date: Dayjs) => date.diff(rangeStart, 'day') * pxPerDay;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isReadOnly) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const start = rangeStart.add(Math.round((e.clientX - rect.left) / pxPerDay), 'day');
     setHoverStart(start);
@@ -580,7 +591,7 @@ const TimelineProjectPlaceholderRow: React.FC<TimelinePlaceholderRowProps> = ({
         width: totalWidth,
         position: 'relative',
         borderBottom: `1px solid ${borderColor}`,
-        cursor: 'pointer',
+        cursor: isReadOnly ? 'default' : 'pointer',
         // Opaque background for the same reason as TimelineProjectBarRow above — this
         // row can now be inside a position:sticky wrapper.
         background: hoverStart ? token.colorFillQuaternary : cardBg,
@@ -806,6 +817,7 @@ interface TimelineTaskBarRowProps {
   totalWidth: number;
   borderColor: string;
   onDatesChange: (taskId: string, startDate: string, endDate: string) => void;
+  isReadOnly?: boolean;
 }
 
 const TASK_BAR_HEIGHT = 18;
@@ -821,6 +833,7 @@ const TimelineTaskBarRow: React.FC<TimelineTaskBarRowProps> = ({
   totalWidth,
   borderColor,
   onDatesChange,
+  isReadOnly = false,
 }) => {
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -897,7 +910,7 @@ const TimelineTaskBarRow: React.FC<TimelineTaskBarRowProps> = ({
   };
 
   const startBarMove = (e: React.MouseEvent) => {
-    if (!hasDates) return;
+    if (!hasDates || isReadOnly) return;
     e.stopPropagation();
     e.preventDefault();
     liveRef.current = { start: dayjs(task.start_date as string), end: dayjs(task.end_date as string), startX: e.clientX };
@@ -947,17 +960,21 @@ const TimelineTaskBarRow: React.FC<TimelineTaskBarRowProps> = ({
               background: task.status_color || token.colorPrimary,
               opacity: task.is_done_status ? 0.55 : 1,
               boxShadow: `0 0 0 1px ${token.colorBorderSecondary}`,
-              cursor: dragMode === 'move' ? 'grabbing' : 'grab',
+              cursor: isReadOnly ? 'default' : dragMode === 'move' ? 'grabbing' : 'grab',
             }}
           >
-            <div
-              onMouseDown={startEdgeDrag('start')}
-              style={{ position: 'absolute', left: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
-            />
-            <div
-              onMouseDown={startEdgeDrag('end')}
-              style={{ position: 'absolute', right: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
-            />
+            {!isReadOnly && (
+              <>
+                <div
+                  onMouseDown={startEdgeDrag('start')}
+                  style={{ position: 'absolute', left: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
+                />
+                <div
+                  onMouseDown={startEdgeDrag('end')}
+                  style={{ position: 'absolute', right: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
+                />
+              </>
+            )}
           </div>
         </Tooltip>
       ) : (
@@ -974,6 +991,7 @@ const PlannerTimelineView: React.FC = () => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
+  const isReadOnly = useIsAdminSurfaceReadOnly();
 
   // Live sync: date/status changes made here (or in any other project view) refresh
   // this view's data via RTK Query cache invalidation — see useScheduleSocketHandlers
@@ -1952,6 +1970,7 @@ const PlannerTimelineView: React.FC = () => {
                           cardBg={cardBg}
                           onDatesChange={handleProjectDatesChange}
                           highlighted={group.project.id === focusProjectId}
+                          isReadOnly={isReadOnly}
                         />
                       ) : (
                         <TimelineProjectPlaceholderRow
@@ -1963,6 +1982,7 @@ const PlannerTimelineView: React.FC = () => {
                           cardBg={cardBg}
                           onDatesChange={handlePlaceholderDatesCommit}
                           onHoverRangeChange={setHoverPreviewRange}
+                          isReadOnly={isReadOnly}
                         />
                       )}
                     </div>
@@ -1982,6 +2002,7 @@ const PlannerTimelineView: React.FC = () => {
                           totalWidth={totalWidth}
                           borderColor={borderColor}
                           onDatesChange={handleTaskDatesChange}
+                          isReadOnly={isReadOnly}
                         />
                       )
                     )}

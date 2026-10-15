@@ -9,9 +9,15 @@ import {
   TeamRoleName,
 } from "./team-permissions";
 import {
+  getProjectSchemeRoleGrants,
+  GUEST_ROLE_NAME,
+  PROJECT_ROLE_PERMISSIONS,
+} from "./organization-permissions";
+import {
   IProjectAccess,
   IProjectMembershipContext,
   IProjectPermissions,
+  SchemeControlledPermission,
 } from "./project-access.types";
 
 export type {
@@ -181,6 +187,40 @@ const guestPermissions = (): IProjectPermissions => ({
 const isProjectManagerAccessLevel = (accessLevel: string | null): boolean =>
   (accessLevel || "").toUpperCase() === "PROJECT_MANAGER";
 
+const isGuestAccessLevel = (accessLevel: string | null): boolean =>
+  (accessLevel || "").toUpperCase() === "GUEST";
+
+const SCHEME_PERMISSION_NAMES: Record<SchemeControlledPermission, string> = {
+  settings: PROJECT_ROLE_PERMISSIONS.MANAGE_PROJECT_SETTINGS,
+  statuses: PROJECT_ROLE_PERMISSIONS.MANAGE_STATUSES,
+  phases: PROJECT_ROLE_PERMISSIONS.MANAGE_PHASES,
+  customColumns: PROJECT_ROLE_PERMISSIONS.MANAGE_CUSTOM_COLUMNS,
+  members: PROJECT_ROLE_PERMISSIONS.MANAGE_MEMBERS,
+  saveAsTemplate: PROJECT_ROLE_PERMISSIONS.SAVE_AS_TEMPLATE,
+  finance: PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT_FINANCE,
+  archive: PROJECT_ROLE_PERMISSIONS.ARCHIVE_PROJECT,
+  delete: PROJECT_ROLE_PERMISSIONS.DELETE_PROJECT,
+};
+
+/** Overrides the role baseline with the project's scheme grants (Team Lead / Member / Guest). */
+const applySchemeGrants = (
+  permissions: IProjectPermissions,
+  grants: IProjectMembershipContext["schemeGrants"]
+): IProjectPermissions => {
+  if (!grants) return permissions;
+
+  const next: IProjectPermissions = { ...permissions, members: { ...permissions.members } };
+  for (const [key, granted] of Object.entries(grants) as [SchemeControlledPermission, boolean | undefined][]) {
+    if (granted === undefined) continue;
+    if (key === "members") {
+      next.members = { add: granted, removeMember: granted, changeMemberRole: granted };
+    } else {
+      next[key] = granted;
+    }
+  }
+  return next;
+};
+
 /**
  * Pure builder — unit-tested. Does not hit the database.
  *
@@ -199,8 +239,9 @@ export const buildProjectAccess = (
   const rawIsPm = isProjectManagerAccessLevel(ctx.accessLevel);
   // Guests never elevate from a PROJECT_MANAGER row (Phase 0 / acceptance).
   const isProjectManager = rawIsPm && !isGuest && isProjectMember;
+  const hasSchemeFinance = ctx.schemeGrants?.finance === true;
   const financeAccess =
-    isProjectManager && ctx.financeAccess === true;
+    (isProjectManager && ctx.financeAccess === true) || hasSchemeFinance;
 
   const base: IProjectAccess = {
     teamRole,
@@ -237,7 +278,8 @@ export const buildProjectAccess = (
       return {
         ...base,
         isProjectMember: true,
-        permissions: teamLeadPermissions(),
+        financeAccess: hasSchemeFinance,
+        permissions: applySchemeGrants(teamLeadPermissions(), ctx.schemeGrants),
       };
     }
 
@@ -260,16 +302,19 @@ export const buildProjectAccess = (
     return {
       ...base,
       isProjectManager: false,
-      financeAccess: false,
+      financeAccess: hasSchemeFinance,
       canCreateProjectsFromTemplates: false,
-      permissions: guestPermissions(),
+      permissions: applySchemeGrants(guestPermissions(), ctx.schemeGrants),
     };
   }
 
-  let permissions =
+  // Scheme grants apply to the role baseline; PM elevation is added on top
+  let permissions = applySchemeGrants(
     teamRole === TEAM_ROLE_NAMES.TEAM_LEAD
       ? teamLeadPermissions()
-      : memberPermissions();
+      : memberPermissions(),
+    ctx.schemeGrants
+  );
 
   if (isProjectManager) {
     permissions = orPermissions(
@@ -363,16 +408,50 @@ export const getProjectAccess = async (
   const teamRole: TeamRoleName = row.team_role
     ? normalizeTeamRoleName(row.team_role)
     : getEffectiveTeamRole(user);
+  const isGuest = !!row.is_guest || !!user.is_guest;
 
   return buildProjectAccess({
     teamRole,
-    isGuest: !!row.is_guest || !!user.is_guest,
+    isGuest,
     isActive: !!row.active,
     accessLevel: row.access_level,
     financeAccess: !!row.finance_access,
     canCreateProjectsFromTemplates: !!row.can_create_projects_from_templates,
     isProjectMember: !!row.is_project_member,
+    schemeGrants: await getSchemeGrants(
+      row.project_team_id,
+      projectId,
+      teamRole,
+      isGuest || isGuestAccessLevel(row.access_level)
+    ),
   });
+};
+
+/** Owner / Admin always hold every project permission, so their grants are not looked up. */
+const getSchemeGrants = async (
+  teamId: string,
+  projectId: string,
+  teamRole: TeamRoleName,
+  isGuest: boolean
+): Promise<IProjectMembershipContext["schemeGrants"]> => {
+  if (teamRole === TEAM_ROLE_NAMES.OWNER || teamRole === TEAM_ROLE_NAMES.ADMIN) return undefined;
+
+  const schemeRoleName =
+    teamRole === TEAM_ROLE_NAMES.MEMBER && isGuest ? GUEST_ROLE_NAME : teamRole;
+  const granted = new Set(
+    await getProjectSchemeRoleGrants(
+      teamId,
+      projectId,
+      schemeRoleName,
+      Object.values(SCHEME_PERMISSION_NAMES)
+    )
+  );
+
+  return Object.fromEntries(
+    (Object.entries(SCHEME_PERMISSION_NAMES) as [SchemeControlledPermission, string][]).map(
+      ([key, permissionName]) => [key, granted.has(permissionName)]
+    )
+  );
 };
 
 /**
