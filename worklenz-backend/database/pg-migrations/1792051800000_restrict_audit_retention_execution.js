@@ -18,6 +18,5 @@ exports.up = pgm => {
 exports.down = pgm => {
   pgm.sql(`
     REVOKE EXECUTE ON FUNCTION purge_expired_audit_events(UUID) FROM worklenz_audit_retention;
-    GRANT EXECUTE ON FUNCTION purge_expired_audit_events(UUID) TO PUBLIC;
   `);
 };

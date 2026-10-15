@@ -15,6 +15,7 @@ jest.mock("../shared/utils", () => ({
 }));
 
 interface MigrationModule {
+  down: (pgm: { sql: (statement: string) => void }) => void;
   up: (pgm: { sql: (statement: string) => void }) => void;
 }
 
@@ -123,6 +124,15 @@ describe("purge_expired_audit_events() definition", () => {
     expect(permissionsSql).toMatch(/REVOKE ALL ON FUNCTION purge_expired_audit_events\(UUID\) FROM worklenz_client/);
     expect(permissionsSql).toMatch(/GRANT EXECUTE ON FUNCTION purge_expired_audit_events\(UUID\) TO worklenz_audit_retention/);
   });
+  it("keeps public execution revoked when the retention-role migration is rolled back", () => {
+    const migration = require(path.join(MIGRATIONS_DIR, "1792051800000_restrict_audit_retention_execution.js")) as MigrationModule;
+    const statements: string[] = [];
+    migration.down({ sql: statement => statements.push(statement) });
+    const sql = statements.join("\n");
+    expect(sql).toMatch(/REVOKE EXECUTE.*FROM worklenz_audit_retention/);
+    expect(sql).not.toMatch(/GRANT.*TO PUBLIC/);
+  });
+
   const purgeSql = collectMigrationSql(AUDIT_MIGRATIONS[1]);
 
   it("deletes only rows older than the owning organization's retention window", () => {
