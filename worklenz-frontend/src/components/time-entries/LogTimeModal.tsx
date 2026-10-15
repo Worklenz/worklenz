@@ -165,15 +165,6 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     return dayjs().startOf('day').subtract(backdateLimitDays, 'day');
   }, [backdateLimitDays]);
 
-  const isDateDisabled = React.useCallback(
-    (current: Dayjs) => {
-      if (!current) return false;
-      if (!minLogDate) return false;
-      return current.isBefore(minLogDate, 'day');
-    },
-    [minLogDate]
-  );
-
   const handleProjectChange = (projectId: string | undefined) => {
     const found = projects.find(p => p.id === projectId) || null;
     setSelectedProject(found);
@@ -187,12 +178,13 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     (current: Dayjs) => {
       if (!current) return false;
       if (current.toDate() > new Date()) return true;
+      if (minLogDate && current.isBefore(minLogDate, 'day')) return true;
       if (selectedProject?.start_date && current.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')) {
         return true;
       }
       return false;
     },
-    [selectedProject]
+    [minLogDate, selectedProject]
   );
 
   const isFormValid = () => {
