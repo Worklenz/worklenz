@@ -1,162 +1,90 @@
-import type { ReactNode } from 'react';
-import { CheckSquareOutlined, FileTextOutlined, MessageOutlined } from '@ant-design/icons';
-import { Button, Card, Flex, Skeleton, Typography, theme } from '@/shared/antd-imports';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type {
-  ClientWorkspaceProfile,
-  ClientWorkspaceStats,
-} from '@/api/client-portal/client-workspace-api';
-import { fromNow } from '@/utils/dateUtils';
-import { WorkspaceTab, getClientDisplayName } from './workspace-helpers';
-
-const { Text } = Typography;
+import { FileDoneOutlined, AccountBookOutlined, UserAddOutlined } from '@ant-design/icons';
+import { Button, Card, Flex, Typography, theme } from '@/shared/antd-imports';
+import type { ClientOrganization } from '@/types/client-portal/v2';
+import type { WorkspaceTab } from './workspace-helpers';
 
 interface WorkspaceRailProps {
-  profile: ClientWorkspaceProfile;
-  stats: ClientWorkspaceStats | undefined;
-  isStatsLoading: boolean;
+  organization: ClientOrganization;
+  onInviteUser: () => void;
+  onRequestApproval: () => void;
   onOpenTab: (tab: WorkspaceTab) => void;
 }
 
-interface RailRow {
-  key: string;
-  label: string;
-  value: ReactNode;
-}
+const formatOutstanding = (outstanding: ClientOrganization['outstanding'], locale?: string): string[] =>
+  outstanding.map(entry => {
+    try {
+      return new Intl.NumberFormat(locale, { style: 'currency', currency: entry.currency }).format(entry.amount);
+    } catch {
+      // An unknown currency code should still show the number.
+      return `${entry.currency} ${entry.amount.toFixed(2)}`;
+    }
+  });
 
-/** The left column: who the client is, how their portal is doing, and the common next steps. */
-export const WorkspaceRail = ({
-  profile,
-  stats,
-  isStatsLoading,
-  onOpenTab,
-}: WorkspaceRailProps) => {
-  const { t } = useTranslation('client-portal-client-workspace');
+const Row = ({ label, children }: { label: string; children: React.ReactNode }) => {
   const { token } = theme.useToken();
-
-  const contactRows: RailRow[] = [
-    {
-      key: 'email',
-      label: t('rail.email', { defaultValue: 'Email' }),
-      value: profile.email?.trim() || '—',
-    },
-    {
-      key: 'company',
-      label: t('rail.company', { defaultValue: 'Company' }),
-      value: getClientDisplayName(profile),
-    },
-    {
-      key: 'projects',
-      label: t('rail.projects', { defaultValue: 'Projects' }),
-      value: profile.assigned_projects_count,
-    },
-  ];
-
-  const healthRows: RailRow[] = [
-    {
-      key: 'signIn',
-      label: t('rail.signInMethod', { defaultValue: 'Sign-in method' }),
-      value: isStatsLoading ? (
-        <Skeleton.Input active size="small" style={{ width: 80, minWidth: 0 }} />
-      ) : stats?.hasSignedIn ? (
-        t('rail.signInPassword', { defaultValue: 'Password' })
-      ) : (
-        t('rail.signInNone', { defaultValue: 'Not signed in yet' })
-      ),
-    },
-    {
-      key: 'lastSignIn',
-      label: t('rail.lastSignIn', { defaultValue: 'Last sign-in' }),
-      value: isStatsLoading ? (
-        <Skeleton.Input active size="small" style={{ width: 80, minWidth: 0 }} />
-      ) : stats?.lastLoginAt ? (
-        fromNow(stats.lastLoginAt)
-      ) : (
-        t('rail.never', { defaultValue: 'Never' })
-      ),
-    },
-  ];
-
-  const renderRows = (rows: RailRow[]) =>
-    rows.map(row => (
-      <Flex
-        key={row.key}
-        justify="space-between"
-        gap={12}
-        style={{ padding: '5px 0', fontSize: 12.5 }}
-      >
-        <Text type="secondary">{row.label}</Text>
-        <Text strong style={{ textAlign: 'end', wordBreak: 'break-word' }}>
-          {row.value}
-        </Text>
-      </Flex>
-    ));
-
-  const sectionTitle = (title: string) => (
-    <Text
-      type="secondary"
-      strong
-      style={{
-        display: 'block',
-        marginBottom: 6,
-        fontSize: 11,
-        letterSpacing: 0.6,
-        textTransform: 'uppercase',
-      }}
-    >
-      {title}
-    </Text>
+  return (
+    <Flex justify="space-between" gap={8} style={{ fontSize: 12.5, padding: '5px 0' }}>
+      <span style={{ color: token.colorTextSecondary }}>{label}</span>
+      <span style={{ fontWeight: 600, textAlign: 'right', minWidth: 0, wordBreak: 'break-word' }}>{children}</span>
+    </Flex>
   );
+};
 
-  const quickActions: Array<{ key: string; icon: ReactNode; label: string; tab: WorkspaceTab }> = [
-    {
-      key: 'message',
-      icon: <MessageOutlined />,
-      label: t('rail.sendMessage', { defaultValue: 'Send message' }),
-      tab: 'messages',
-    },
-    {
-      key: 'invoice',
-      icon: <FileTextOutlined />,
-      label: t('rail.createInvoice', { defaultValue: 'Create invoice' }),
-      tab: 'billing',
-    },
-    {
-      key: 'task',
-      icon: <CheckSquareOutlined />,
-      label: t('rail.assignTask', { defaultValue: 'Assign task' }),
-      tab: 'projects',
-    },
-  ];
+/** The organization at a glance, its portal-user counts, and the actions staff reach for most. */
+export const WorkspaceRail = ({ organization, onInviteUser, onRequestApproval, onOpenTab }: WorkspaceRailProps) => {
+  const { t, i18n } = useTranslation('client-portal-v2-clients');
+  const { token } = theme.useToken();
+  const owed = formatOutstanding(organization.outstanding, i18n.language);
 
   return (
-    <Flex vertical gap={16}>
-      <Card size="small" style={{ borderRadius: 8 }}>
-        {sectionTitle(t('rail.contact', { defaultValue: 'Contact' }))}
-        {renderRows(contactRows)}
+    <Flex vertical gap={12}>
+      <Card size="small" title={t('workspace.rail.organization', { defaultValue: 'Organization' })}>
+        <Row label={t('workspace.rail.primaryContact', { defaultValue: 'Primary contact' })}>
+          {organization.primary_contact_name ?? '—'}
+        </Row>
+        <Row label={t('workspace.rail.email', { defaultValue: 'Email' })}>
+          {organization.primary_contact_email ?? '—'}
+        </Row>
+        <Row label={t('workspace.rail.portalProjects', { defaultValue: 'Portal projects' })}>
+          {organization.portal_projects}
+        </Row>
+        <Row label={t('workspace.rail.balance', { defaultValue: 'Balance' })}>
+          {owed.length > 0 ? owed.map(amount => <div key={amount}>{amount}</div>) : '—'}
+        </Row>
       </Card>
 
-      <Card size="small" style={{ borderRadius: 8 }}>
-        {sectionTitle(t('rail.portalHealth', { defaultValue: 'Portal health' }))}
-        {renderRows(healthRows)}
+      <Card size="small" title={t('workspace.rail.portalAccess', { defaultValue: 'Portal access' })}>
+        <Row label={t('workspace.rail.active', { defaultValue: 'Active' })}>
+          <span style={{ color: token.colorSuccess }}>{organization.active_users}</span>
+        </Row>
+        <Row label={t('workspace.rail.invited', { defaultValue: 'Invited' })}>
+          <span style={{ color: token.colorWarning }}>{organization.invited_users}</span>
+        </Row>
+        <Row label={t('workspace.rail.deactivated', { defaultValue: 'Deactivated' })}>
+          {organization.deactivated_users}
+        </Row>
       </Card>
 
-      <Card size="small" style={{ borderRadius: 8 }}>
-        {sectionTitle(t('rail.quickActions', { defaultValue: 'Quick actions' }))}
-        <Flex vertical gap={4}>
-          {quickActions.map(action => (
-            <Button
-              key={action.key}
-              type="text"
-              icon={action.icon}
-              onClick={() => onOpenTab(action.tab)}
-              style={{ justifyContent: 'flex-start', color: token.colorText }}
-            >
-              {action.label}
-            </Button>
-          ))}
+      <Card size="small" title={t('workspace.rail.quickActions', { defaultValue: 'Quick actions' })}>
+        <Flex vertical align="stretch" gap={4}>
+          <Button type="text" icon={<UserAddOutlined />} onClick={onInviteUser} style={{ justifyContent: 'flex-start' }}>
+            {t('workspace.rail.inviteUser', { defaultValue: 'Invite a user' })}
+          </Button>
+          <Button type="text" icon={<FileDoneOutlined />} onClick={onRequestApproval} style={{ justifyContent: 'flex-start' }}>
+            {t('workspace.rail.requestApproval', { defaultValue: 'Request approval' })}
+          </Button>
+          <Button type="text" icon={<AccountBookOutlined />} onClick={() => onOpenTab('billing')} style={{ justifyContent: 'flex-start' }}>
+            {t('workspace.rail.billing', { defaultValue: 'Billing' })}
+          </Button>
         </Flex>
       </Card>
+      <Typography.Text type="secondary" style={{ fontSize: 11.5 }}>
+        {t('workspace.rail.hint', {
+          defaultValue: 'A client user sees only the projects assigned to them.',
+        })}
+      </Typography.Text>
     </Flex>
   );
 };

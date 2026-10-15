@@ -53,12 +53,12 @@ a:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(128, 128, 128, 0.4);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(128, 128, 128, 0.6);
 }
 
 /* Dark mode scrollbar */
@@ -82,4 +82,23 @@ a:hover {
   .ant-layout-content {
     margin: 8px !important;
   }
+}
+
+/* Browser autofill paints inputs pale blue / yellow with dark text, which clashes with the dark theme
+   and the branding. Delaying the browser's colour change indefinitely keeps the input's own theme colours. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  transition:
+    background-color 600000s 0s,
+    color 600000s 0s;
+  caret-color: currentColor;
+}
+
+/* Table headers stay on one line; columns size to their content. */
+.ant-table-thead > tr > th {
+  white-space: nowrap;
 }

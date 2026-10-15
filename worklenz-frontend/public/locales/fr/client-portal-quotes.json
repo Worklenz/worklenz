@@ -111,5 +111,7 @@
   "deleteConfirmationDescription": "Voulez-vous vraiment supprimer {{number}} ? Cette action est irréversible.",
   "deleteConfirmationOk": "Supprimer",
   "deleteQuoteSuccess": "Devis supprimé avec succès",
-  "deleteQuoteError": "Échec de la suppression du devis"
+  "deleteQuoteError": "Échec de la suppression du devis",
+  "linkedChangeRequest": "Demande de modification liée",
+  "openChangeRequest": "Demande de modification ouverte"
 }

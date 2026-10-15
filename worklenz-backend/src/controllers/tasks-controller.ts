@@ -963,6 +963,14 @@ export default class TasksController extends TasksControllerBase {
 
     if (task) {
       task.custom_column_values = customColumnValues;
+      if (projectId) {
+        const projDates = await db.query(
+          "SELECT start_date, end_date FROM projects WHERE id = $1 LIMIT 1;",
+          [projectId]
+        );
+        task.project_start_date = projDates.rows[0]?.start_date ?? null;
+        task.project_end_date = projDates.rows[0]?.end_date ?? null;
+      }
     }
 
     for (const member of data.view_model?.team_members || []) {

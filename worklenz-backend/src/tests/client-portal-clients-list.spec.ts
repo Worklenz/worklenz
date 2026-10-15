@@ -124,7 +124,9 @@ describe("ClientPortalClientsController.getClients", () => {
     );
 
     const [dataSql] = dataCall();
-    expect(dataSql).toContain("ORDER BY assigned_projects_count DESC, id ASC");
+    // The NULLS clause is empty for this sort, which leaves a stray space before the comma.
+    const normalised = String(dataSql).replace(/\s+/g, " ").replace(/\s+,/g, ",");
+    expect(normalised).toContain("ORDER BY assigned_projects_count DESC, id ASC");
   });
 
   it("returns the derived portal status and last sign-in for each client", async () => {

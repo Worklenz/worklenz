@@ -19,6 +19,10 @@ export const s3Client = new S3Client({
   },
   endpoint: S3_ENDPOINT,
   forcePathStyle: Boolean(S3_ENDPOINT),
+  // Newer SDKs sign a CRC32 of the (empty) body into presigned PUT URLs, so the browser's real upload
+  // fails the checksum. Only compute checksums where the API requires them.
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
 });
 
 export const presignS3Client = S3_ENDPOINT
@@ -30,5 +34,9 @@ export const presignS3Client = S3_ENDPOINT
       },
       endpoint: getPublicEndpointFromUrl(),
       forcePathStyle: true,
+      // Newer SDKs sign a CRC32 of the (empty) body into presigned PUT URLs, so the browser's real upload
+      // fails the checksum. Only compute checksums where the API requires them.
+      requestChecksumCalculation: "WHEN_REQUIRED",
+      responseChecksumValidation: "WHEN_REQUIRED",
     })
   : s3Client;

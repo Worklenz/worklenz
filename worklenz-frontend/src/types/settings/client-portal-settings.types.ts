@@ -26,6 +26,7 @@ export interface IClientPortalSettings {
   primary_color: string | null;
   portal_title: string | null;
   portal_theme: PortalTheme;
+  show_powered_by: boolean;
 
   // Client Visible Selection
   visible_project_plan: boolean;
@@ -104,6 +105,7 @@ export const CLIENT_PORTAL_SETTINGS_DEFAULTS: IClientPortalSettings = {
   primary_color: '#1677ff',
   portal_title: null,
   portal_theme: 'light',
+  show_powered_by: true,
   ...CLIENT_PORTAL_VISIBILITY_DEFAULTS,
   ...CLIENT_PORTAL_NOTIFICATION_DEFAULTS,
   poc_can_add_users: false,

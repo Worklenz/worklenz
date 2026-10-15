@@ -26,6 +26,12 @@ describe('help-links-constants', () => {
     expect(placeholders).toEqual([]);
   });
 
+  it('WORKLENZ_STATUS_DOCS_URL should point to the status documentation page', () => {
+    expect(helpLinks.WORKLENZ_STATUS_DOCS_URL).toBe(
+      'https://docs.worklenz.com/en/task-management/what-is-status/'
+    );
+  });
+
   describe('support email', () => {
     const mailto = new URL(helpLinks.WORKLENZ_SUPPORT_MAILTO_URL);
 

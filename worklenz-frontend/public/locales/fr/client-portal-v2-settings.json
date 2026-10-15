@@ -1,0 +1,122 @@
+{
+  "auditRecorded": "Changement d'autorisation enregistré dans le journal d'audit.",
+  "loadEmpty": "Aucun paramètre de portail n'a été renvoyé.",
+  "loadFailed": "Les paramètres du portail n'ont pas pu être chargés.",
+  "nav": {
+    "notifications": "Notifications",
+    "roles": "Rôles des clients",
+    "sharing": "Partage & Visibilité"
+  },
+  "notifications": {
+    "banner": "Les notifications envoyées aux clients ne contiennent jamais de contenu uniquement interne dans le titre ou le corps. Les alertes dans l'application sont toujours activées. L'e-mail est facultatif par événement.",
+    "client": {
+      "accessChanges": "Accéder aux modifications",
+      "accessChangesDescription": "Invitation, changement de rôle ou affectation de projet.",
+      "approvalRequest": "Nouvelle demande d'approbation",
+      "approvalRequestDescription": "Un approbateur client est invité à approuver un élément.",
+      "changeRequestUpdate": "Mise à jour de la demande de modification",
+      "changeRequestUpdateDescription": "Changements de statut, de réponse ou d’estimation sur une demande.",
+      "commentOrReply": "Commentaire ou réponse",
+      "commentOrReplyDescription": "Quelqu'un répond dans une discussion visible par le client.",
+      "fileShared": "Fichier partagé",
+      "fileSharedDescription": "Un fichier est marqué Client Visible ou une nouvelle version est téléchargée.",
+      "milestoneChange": "Changement d'étape",
+      "milestoneChangeDescription": "Un jalon visible par le client change de statut ou de date.",
+      "projectUpdate": "Mise à jour du projet",
+      "projectUpdateDescription": "Le statut du projet change ou une mise à jour est publiée.",
+      "title": "Notifications aux clients"
+    },
+    "emailColumn": "Email",
+    "emailLabel": "E-mail : {{event}}",
+    "eventColumn": "Événement",
+    "inAppColumn": "Dans l'application",
+    "inAppLabel": "Dans l'application : {{event}} (toujours activé)",
+    "team": {
+      "approvalDecision": "Décision d'approbation du client",
+      "approvalDecisionDescription": "Un client approuve ou demande des modifications.",
+      "changeRequest": "Nouvelle demande de changement ou suivi",
+      "changeRequestDescription": "Un client soumet une demande ou répond à une question.",
+      "clientComment": "Commentaire d'un nouveau client",
+      "clientCommentDescription": "Un client commente dans une discussion.",
+      "clientFileUpload": "Téléchargement du fichier client",
+      "clientFileUploadDescription": "Un client télécharge un fichier dans un projet.",
+      "title": "Notifications à votre équipe"
+    }
+  },
+  "retry": "Réessayer",
+  "roles": {
+    "allowed": "Autorisé",
+    "alwaysTrue": {
+      "nextRequest": "La désactivation d'un utilisateur ou la suppression d'une attribution de projet prend effet lors de sa prochaine demande, et non lors de sa prochaine connexion.",
+      "noTeamDirectory": "Un utilisateur client ne voit jamais le répertoire de votre équipe interne et ne peut jamais devenir administrateur de votre espace de travail.",
+      "oneOrganization": "Un utilisateur client appartient à exactement une organisation et voit uniquement les projets qui lui sont affectés.",
+      "ownOrganizationOnly": "Un administrateur client ne peut voir et gérer que les utilisateurs de sa propre organisation, jamais celle d'un autre client.",
+      "title": "Toujours vrai"
+    },
+    "capability": {
+      "approve": "Approuver des éléments ou demander des modifications",
+      "comment": "Commentez et répondez dans les discussions visibles par le client",
+      "manageUsers": "Gérer les utilisateurs dans leur propre organisation (si activé ci-dessous)",
+      "submitChangeRequest": "Soumettre et suivre les demandes de changement",
+      "upload": "Télécharger des fichiers (là où le projet le permet)",
+      "view": "Afficher les projets assignés, les jalons, les tâches et les fichiers visibles par le client"
+    },
+    "capabilityColumn": "Capacité",
+    "matrixDescription": "Trois rôles, pas de générateur d'autorisations. Un rôle s'applique à chaque projet auquel l'utilisateur est affecté.",
+    "matrixError": "Les autorisations du rôle n'ont pas pu être chargées.",
+    "matrixTitle": "Ce que chaque rôle peut faire",
+    "notAllowed": "Non autorisé",
+    "selfManagement": {
+      "description": "Laissez un administrateur client gérer qui, dans sa propre organisation, a accès au portail, au lieu de transmettre chaque modification via votre équipe.",
+      "invite": {
+        "description": "Un administrateur client peut inviter un collègue de sa propre organisation.",
+        "label": "Autoriser les administrateurs clients à inviter des utilisateurs"
+      },
+      "remove": {
+        "description": "Un administrateur client peut supprimer un autre utilisateur de sa propre organisation.",
+        "label": "Autoriser les administrateurs clients à supprimer des utilisateurs"
+      },
+      "title": "Autogestion de l'administrateur client"
+    },
+    "signIn": {
+      "addedOnly": "Seule une adresse que vous, ou un administrateur client que vous autorisez, avez ajoutée peut recevoir un code. Les autres n’obtiennent rien.",
+      "code": "Il n'y a pas de mots de passe. Un client se connecte avec un code à 6 chiffres envoyé à son adresse e-mail. Cela fonctionne une fois et expire après 10 minutes.",
+      "description": "Rien à configurer. Chaque client signe de la même manière.",
+      "direct": "Les clients peuvent également ouvrir le portail, saisir leur adresse et recevoir un code, sans le lien.",
+      "link": "Un e-mail d'invitation contient un lien de connexion avec l'adresse intégrée. Son ouverture envoie le code immédiatement. Les liens expirent après 7 jours et peuvent être renvoyés par les utilisateurs.",
+      "title": "Comment les clients se connectent"
+    }
+  },
+  "saveFailed": "Les paramètres du portail n'ont pas pu être enregistrés.",
+  "sharing": {
+    "defaults": {
+      "clientUploads": {
+        "description": "Les administrateurs clients et les membres clients peuvent ajouter des fichiers. Les téléspectateurs clients ne le peuvent jamais. Vous pouvez remplacer cela par projet.",
+        "label": "Autoriser les téléchargements de clients sur les nouveaux projets de portail"
+      },
+      "showInvoices": {
+        "description": "Ajoute une page Factures pour les clients. Masqué par défaut.",
+        "label": "Afficher les factures dans le portail client"
+      },
+      "title": "Sections et valeurs par défaut"
+    },
+    "rules": {
+      "defaultInternal": "Les tâches, fichiers, jalons et commentaires sont internes uniquement par défaut, pour les éléments existants et nouveaux.",
+      "explicitShare": "Rien n'atteint le portail jusqu'à ce qu'un membre autorisé de l'équipe le marque comme client visible.",
+      "fixedTag": "Règles fixes",
+      "neverExposed": "Les commentaires internes, les relevés de temps, les estimations, les coûts et les dépendances ne sont jamais exposés, quoi que vous partagiez.",
+      "noHints": "Un élément masqué n'est jamais compté ni évoqué dans les tableaux de bord, les listes ou les notifications.",
+      "revertImmediate": "Remettre un élément en interne uniquement le supprime immédiatement du portail et conserve son historique interne.",
+      "title": "Comment fonctionne le partage"
+    },
+    "shared": {
+      "count": "{{shared}} sur {{total}} client visible",
+      "description": "Comptabilisation des projets pour lesquels le portail client est activé.",
+      "files": "Fichiers",
+      "milestones": "Jalons",
+      "tasks": "Tâches",
+      "title": "Actuellement partagé entre les projets de portail"
+    }
+  },
+  "subtitle": "Branding, ce qui est partagé par défaut, rôles et notifications pour votre portail client."
+}

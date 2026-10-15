@@ -1,6 +1,7 @@
 // Every external link on Settings > Help, in one place. Not overridable by
 // self-hosted admins in v1 — to add that later, change only this file.
 export const WORKLENZ_DOCS_URL = 'https://docs.worklenz.com/en/start/introduction/';
+export const WORKLENZ_STATUS_DOCS_URL = 'https://docs.worklenz.com/en/task-management/what-is-status/';
 export const WORKLENZ_CHANGELOG_URL = 'https://worklenz.com/changelog';
 
 export const WORKLENZ_YOUTUBE_URL = 'https://www.youtube.com/@WorklenzHQ';

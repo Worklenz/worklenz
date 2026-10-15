@@ -1,0 +1,18 @@
+/* Per-message actions (Reply / Edit / Delete) show on hover or keyboard focus. Opacity, not display, so the row never shifts. */
+.thread-message-actions {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.thread-message:hover .thread-message-actions,
+.thread-message:focus-within .thread-message-actions,
+.thread-message-actions:has(.ant-popover-open) {
+  opacity: 1;
+}
+
+/* Touch screens have no hover, so the actions stay visible there. */
+@media (hover: none) {
+  .thread-message-actions {
+    opacity: 1;
+  }
+}

@@ -40,7 +40,8 @@
     "invitationMessage": "Foi convidado a trabalhar com <1>{{teamName}}</1>.",
     "teamInvitation": "Foi convidado a juntar-se a {{teamName}}",
     "loading": "A carregar...",
-    "markAllAsRead": "Marcar tudo como lido"
+    "markAllAsRead": "Marcar tudo como lido",
+    "clientActivity": "Atividade do cliente"
   },
   "searchAnything": "Pesquisar qualquer coisa",
   "globalSearchPlaceholder": "Pesquisar tarefas, projetos, clientes, membros…",

@@ -1,4 +1,5 @@
 import ClientPortalControllerBase from "./client-portal-base";
+import { cleanRichNotes } from "../../services/client-portal-v2/rich-text";
 import { AuthenticatedClientRequest } from "../../middlewares/client-auth-middleware";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
@@ -39,6 +40,14 @@ import {
   snapshotFromRow,
   snapshotParams,
 } from "./client-portal-client-snapshot";
+import {
+  copyChangeRequestLink,
+  getChangeRequestNumbers,
+  getLinkedChangeRequest,
+  linkDocumentToChangeRequest,
+  resolveBillableChangeRequest,
+} from "../../services/client-portal-v2/change-request-billing";
+import { PortalError } from "../../services/client-portal-v2/errors";
 
 export default class ClientPortalInvoicesController extends ClientPortalControllerBase {
 
@@ -432,6 +441,13 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       const totalInvoiced = roundMoney(parseFloat(totalsRow.total_invoiced || "0"));
       const totalPaid = roundMoney(parseFloat(totalsRow.total_paid || "0"));
 
+      const changeRequestNumbers = await getChangeRequestNumbers(
+        db,
+        organizationId,
+        "client_portal_invoices",
+        listResult.rows.map((row: any) => row.id)
+      );
+
       const invoices = listResult.rows.map((row: any) => ({
         id: row.id,
         invoiceNumber: row.invoice_no,
@@ -447,6 +463,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         requestNumber: row.request_number,
+        changeRequestNumber: changeRequestNumbers.get(row.id) ?? null,
         serviceName: row.service_name,
         clientId: row.client_id,
         clientName: row.client_name,
@@ -491,7 +508,8 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
 
     // ---- validate input (nothing is written until all of it is good) ----
     const requestId = body.requestId ? String(body.requestId) : null;
-    const clientIdInput = body.clientId ? String(body.clientId) : null;
+    let clientIdInput = body.clientId ? String(body.clientId) : null;
+    const changeRequestIdInput = body.changeRequestId ? String(body.changeRequestId) : null;
     const status = body.status ?? "draft";
     if (status !== "draft" && status !== "sent") {
       return res
@@ -512,7 +530,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
     }
 
     const projectName = cleanText(body.projectName, 255);
-    const notes = cleanText(body.notes, 5000);
+    const notesResult = cleanRichNotes(body.notes, 5000);
+    if (notesResult.error) return res.status(400).json(new ServerResponse(false, null, notesResult.error));
+    const notes = notesResult.value;
     const currency = normalizeCurrency(body.currency);
 
     // Line items drive the totals. A caller that only sends `amount` (older clients) gets one line.
@@ -544,12 +564,30 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         .json(new ServerResponse(false, null, "Invoice total must be greater than 0"));
     }
 
-    // ---- resolve the client: from the linked request, or picked directly ----
+    // ---- resolve the client: from the linked change request / request, or picked directly ----
     let clientId: string;
     let clientName: string | null = null;
     let serviceName: string | null = null;
     // The client's details as they are now, kept on the invoice so it always shows who it was issued to.
     let clientSnapshot: ClientSnapshot;
+
+    // An invoice starts from a change request: the request decides the client and must be billable.
+    let linkedChangeRequestId: string | null = null;
+    if (changeRequestIdInput) {
+      if (!isValidUuid(changeRequestIdInput)) {
+        return res.status(400).json(new ServerResponse(false, null, "Invalid change request ID"));
+      }
+      try {
+        const changeRequest = await resolveBillableChangeRequest(db, organizationId, changeRequestIdInput);
+        linkedChangeRequestId = changeRequest.id;
+        clientIdInput = changeRequest.client_id;
+      } catch (error) {
+        if (error instanceof PortalError) {
+          return res.status(error.status).json(new ServerResponse(false, null, error.message));
+        }
+        throw error;
+      }
+    }
 
     if (requestId) {
       if (!isValidUuid(requestId)) {
@@ -659,6 +697,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       newInvoice = insertResult.rows[0];
 
       await ClientPortalInvoicesController.insertLineItems(conn, newInvoice.id, lineItems);
+      if (linkedChangeRequestId) {
+        await linkDocumentToChangeRequest(conn, "client_portal_invoices", newInvoice.id, linkedChangeRequestId);
+      }
       await conn.query("COMMIT");
     } catch (error) {
       await conn.query("ROLLBACK");
@@ -937,9 +978,10 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         LEFT JOIN client_portal_settings cps ON cps.organization_team_id = t.id
         WHERE t.id = $1
       `;
-      const [orgResult, lineItems] = await Promise.all([
+      const [orgResult, lineItems, changeRequest] = await Promise.all([
         db.query(orgQuery, [organizationId]),
         ClientPortalInvoicesController.getLineItems(invoice.id),
+        getLinkedChangeRequest(db, organizationId, "client_portal_invoices", invoice.id),
       ]);
       const orgSettings = orgResult.rows[0] || {};
 
@@ -967,6 +1009,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         subtotal: parseFloat(invoice.subtotal || "0"),
         lineItems,
         isOverdue: invoice.is_overdue === true,
+        changeRequest: changeRequest
+          ? { id: changeRequest.id, number: changeRequest.cr_no, title: changeRequest.title, status: changeRequest.status }
+          : null,
         request: invoice.request_id
           ? {
               id: invoice.request_id,
@@ -1061,17 +1106,26 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Invoice is already paid"));
       }
 
-      // Mark the invoice fully paid, store the payment proof URL and save notes. The document
-      // status is left alone: payment and lifecycle are separate fields.
+      // A client cannot declare an invoice paid: the reference they type is unverified. It is stored as
+      // payment details for the team, who confirm the payment with their own "mark paid" action. The
+      // payment status and the document status are left alone.
       const updateQuery = `
         UPDATE client_portal_invoices
-        SET payment_status = 'paid', paid_amount = amount, paid_at = NOW(), updated_at = NOW(),
-            payment_proof_url = $2, notes = COALESCE($3, notes)
-        WHERE id = $1
+        SET updated_at = NOW(), payment_proof_url = $2, notes = COALESCE($3, notes)
+        WHERE id = $1 AND client_id = $4 AND organization_team_id = $5 AND payment_status <> 'paid'
         RETURNING id, invoice_no, amount, currency, status, payment_status, paid_amount, paid_at, updated_at, payment_proof_url, notes
       `;
 
-      const result = await db.query(updateQuery, [id, transactionId || null, notes || null]);
+      const result = await db.query(updateQuery, [
+        id,
+        typeof transactionId === "string" ? transactionId.trim().slice(0, 255) || null : null,
+        typeof notes === "string" ? notes.trim().slice(0, 2000) || null : null,
+        clientId,
+        organizationId,
+      ]);
+      if (result.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Invoice not found"));
+      }
       const updatedInvoice = result.rows[0];
 
       return res.json(
@@ -1090,7 +1144,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
             paymentProofUrl: updatedInvoice.payment_proof_url,
             notes: updatedInvoice.notes,
           },
-          "Invoice paid successfully"
+          "Payment details sent. Your team will confirm the payment."
         )
       );
     } catch (error) {
@@ -1428,7 +1482,11 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         }
         setColumn("due_date", dueDate);
       }
-      if (body.notes !== undefined) setColumn("notes", cleanText(body.notes, 5000));
+      if (body.notes !== undefined) {
+        const notesResult = cleanRichNotes(body.notes, 5000);
+        if (notesResult.error) return res.status(400).json(new ServerResponse(false, null, notesResult.error));
+        setColumn("notes", notesResult.value);
+      }
       if (body.projectName !== undefined) setColumn("project_name", cleanText(body.projectName, 255));
 
       // ---- money: line items drive the totals; a legacy scalar `amount` is still accepted ----
@@ -2028,6 +2086,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         `,
         [copy.id, id]
       );
+      await copyChangeRequestLink(conn, "client_portal_invoices", id, copy.id);
 
       await conn.query("COMMIT");
 
