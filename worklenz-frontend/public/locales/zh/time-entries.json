@@ -123,5 +123,7 @@
   "minutesRangeError": "0 – 59",
   "hoursLabel": "小时",
   "hoursMinError": "小时必须为 0 或更大",
-  "minutesLabel": "分钟"
+  "minutesLabel": "分钟",
+  "durationGreaterThanZeroError": "时长必须大于 0 分钟",
+  "totalDurationBadge": "总计: {{duration}}"
 }

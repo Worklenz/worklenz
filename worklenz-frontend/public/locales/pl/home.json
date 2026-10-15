@@ -250,7 +250,8 @@
     "weekdaySat": "sob",
     "weekdaySun": "niedziela",
     "createdTimeColumn": "Stworzony czas",
-    "minutesPlaceholder": "0"
+    "minutesPlaceholder": "0",
+    "totalDurationBadge": "Łącznie: {{duration}}"
   },
   "expenses": {
     "emptyTitle": "Nie zarejestrowano jeszcze żadnych wydatków",

@@ -123,5 +123,7 @@
   "minutesRangeError": "0 – 59",
   "hoursLabel": "Horaires",
   "hoursMinError": "Les heures doivent être égales ou supérieures à 0",
-  "minutesLabel": "Procès-verbal"
+  "minutesLabel": "Procès-verbal",
+  "durationGreaterThanZeroError": "La durée doit être supérieure à 0 minute",
+  "totalDurationBadge": "Total : {{duration}}"
 }

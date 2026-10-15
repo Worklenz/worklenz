@@ -250,7 +250,8 @@
     "weekdaySat": "Sat",
     "weekdaySun": "Sun",
     "createdTimeColumn": "Created Time",
-    "minutesPlaceholder": "0"
+    "minutesPlaceholder": "0",
+    "totalDurationBadge": "Total: {{duration}}"
   },
   "expenses": {
     "emptyTitle": "No expenses logged yet",

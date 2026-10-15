@@ -250,7 +250,8 @@
     "weekdaySat": "周六",
     "weekdaySun": "周日",
     "createdTimeColumn": "创建时间",
-    "minutesPlaceholder": "0"
+    "minutesPlaceholder": "0",
+    "totalDurationBadge": "总计: {{duration}}"
   },
   "expenses": {
     "emptyTitle": "暂无费用记录",

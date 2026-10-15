@@ -250,7 +250,8 @@
     "weekdaySat": "Samedi",
     "weekdaySun": "Soleil",
     "createdTimeColumn": "Temps de création",
-    "minutesPlaceholder": "0"
+    "minutesPlaceholder": "0",
+    "totalDurationBadge": "Total : {{duration}}"
   },
   "expenses": {
     "emptyTitle": "Aucune dépense enregistrée pour l'instant",

@@ -123,5 +123,7 @@
   "minutesRangeError": "0 – 59",
   "hoursLabel": "Orë",
   "hoursMinError": "Orët duhet të jenë 0 ose më shumë",
-  "minutesLabel": "Minuta"
+  "minutesLabel": "Minuta",
+  "durationGreaterThanZeroError": "Kohëzgjatja duhet të jetë më e madhe se 0 minuta",
+  "totalDurationBadge": "Totali: {{duration}}"
 }

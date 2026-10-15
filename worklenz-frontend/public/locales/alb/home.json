@@ -250,7 +250,8 @@
     "weekdaySat": "Sht",
     "weekdaySun": "Die",
     "createdTimeColumn": "Koha e krijuar",
-    "minutesPlaceholder": "0"
+    "minutesPlaceholder": "0",
+    "totalDurationBadge": "Totali: {{duration}}"
   },
   "expenses": {
     "emptyTitle": "Ende pa shpenzime të regjistruara",

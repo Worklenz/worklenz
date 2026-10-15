@@ -129,6 +129,10 @@ describe('EditTimeEntryModal with the real time-log form', () => {
 });
 
 describe('TimeLogForm used by the task drawer (no inModal)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('keeps its compact look: small controls, left-aligned buttons', async () => {
     render(<TimeLogForm mode="create" taskId="task-1" projectId="project-1" onCancel={vi.fn()} />);
 
@@ -176,6 +180,44 @@ describe('TimeLogForm used by the task drawer (no inModal)', () => {
         project_id: 'project-1',
         seconds_spent: 16200, // 4 hours 30 minutes across midnight
         description: 'Overnight deploy',
+      })
+    );
+  });
+
+  it('automatically treats end time earlier than start time as overnight (+1 day) with single date', async () => {
+    const user = userEvent.setup();
+    render(
+      <TimeLogForm
+        mode="edit"
+        projectId="project-1"
+        initialValues={{
+          id: 'log-cross-midnight',
+          project_id: 'project-1',
+          created_at: '2026-09-24T22:00:00.000Z',
+          start_time: '2026-09-24T22:00:00.000Z',
+          end_time: '2026-09-25T02:00:00.000Z',
+          description: 'Night work',
+        }}
+        onCancel={vi.fn()}
+      />
+    );
+
+    const updateBtn = await screen.findByRole('button', { name: /Update/i });
+    await waitFor(() => expect(updateBtn).toBeEnabled());
+
+    // Should display live duration tag showing 4h 0m
+    expect(await screen.findByText(/4h 0m/)).toBeInTheDocument();
+
+    await user.click(updateBtn);
+
+    await waitFor(() => expect(mocks.update).toHaveBeenCalledTimes(1));
+    expect(mocks.update).toHaveBeenCalledWith(
+      'log-cross-midnight',
+      expect.objectContaining({
+        id: 'log-cross-midnight',
+        project_id: 'project-1',
+        seconds_spent: 14400, // 4 hours
+        description: 'Night work',
       })
     );
   });

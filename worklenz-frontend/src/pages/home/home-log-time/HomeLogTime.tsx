@@ -16,6 +16,7 @@ import {
   CaretUpOutlined,
   CaretDownOutlined,
   Tag,
+  ClockCircleOutlined,
 } from '@/shared/antd-imports';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
@@ -171,6 +172,22 @@ const HomeLogTime: React.FC = () => {
   const { data: projectListData } = useGetProjectsByTeamQuery();
   const projects = useMemo(() => projectListData?.body || [], [projectListData]);
   const priorities = useAppSelector(state => state.priorityReducer.priorities);
+  const backdateLimitDays = useAppSelector(
+    state => state.orgConfigReducer?.timelog_backdate_limit_days
+  );
+  const minLogDate = useMemo(() => {
+    if (!backdateLimitDays || backdateLimitDays <= 0) return null;
+    return dayjs().startOf('day').subtract(backdateLimitDays, 'day');
+  }, [backdateLimitDays]);
+
+  const isDateDisabled = useCallback(
+    (current: Dayjs) => {
+      if (!current) return false;
+      if (!minLogDate) return false;
+      return current.isBefore(minLogDate, 'day');
+    },
+    [minLogDate]
+  );
 
   useEffect(() => {
     dispatch(fetchPriorities());
@@ -430,10 +447,40 @@ const HomeLogTime: React.FC = () => {
     if (inputMode === 'Duration') {
       return Math.max(0, timeHours) * 3600 + Math.max(0, Math.min(59, timeMinutes)) * 60;
     }
-    if (!startTime || !endTime) return 0;
-    const diff = endTime.diff(startTime, 'second');
+    if (!startTime || !endTime || !date) return 0;
+    const fullStart = dayjs(date)
+      .hour(startTime.hour())
+      .minute(startTime.minute())
+      .second(0)
+      .millisecond(0);
+    let fullEnd = dayjs(date)
+      .hour(endTime.hour())
+      .minute(endTime.minute())
+      .second(0)
+      .millisecond(0);
+    // Automatic overnight rollover: if endTime is before start time, it rolls over to next day
+    if (fullEnd.isBefore(fullStart)) {
+      fullEnd = fullEnd.add(1, 'day');
+    }
+    const diff = fullEnd.diff(fullStart, 'second');
     return diff > 0 ? diff : 0;
-  }, [inputMode, timeHours, timeMinutes, startTime, endTime]);
+  }, [inputMode, timeHours, timeMinutes, startTime, endTime, date]);
+
+  const handleModeChange = (nextMode: 'Duration' | 'Time Range') => {
+    if (nextMode === inputMode) return;
+    if (nextMode === 'Duration') {
+      const totalMins = Math.floor(loggedSeconds / 60);
+      setTimeHours(Math.floor(totalMins / 60));
+      setTimeMinutes(totalMins % 60);
+    } else {
+      const totalMins = Math.max(0, timeHours * 60 + timeMinutes);
+      const safeStart = startTime || dayjs().second(0).millisecond(0);
+      const safeEnd = safeStart.add(totalMins, 'minute');
+      setStartTime(safeStart);
+      setEndTime(safeEnd);
+    }
+    setInputMode(nextMode);
+  };
 
   const isFormValid = useMemo(() => {
     if (!selProjectId || !selTaskId || !date || loggedSeconds <= 0) return false;
@@ -835,7 +882,7 @@ const HomeLogTime: React.FC = () => {
             <Segmented
               block
               value={inputMode}
-              onChange={v => setInputMode(v as 'Duration' | 'Time Range')}
+              onChange={v => handleModeChange(v as 'Duration' | 'Time Range')}
               options={[
                 { value: 'Duration', label: t('logTime.durationMode', { defaultValue: 'Duration' }) },
                 { value: 'Time Range', label: t('logTime.timeRangeMode', { defaultValue: 'Time Range' }) },
@@ -851,7 +898,7 @@ const HomeLogTime: React.FC = () => {
                   style={{ width: '100%' }}
                   value={date}
                   onChange={d => d && setDate(d)}
-                  disabledDate={current => current && current.toDate() > new Date()}
+                  disabledDate={isDateDisabled}
                 />
               </div>
               <div style={{ flex: 1, minWidth: 72 }}>
@@ -896,7 +943,7 @@ const HomeLogTime: React.FC = () => {
                   style={{ width: '100%' }}
                   value={date}
                   onChange={d => d && setDate(d)}
-                  disabledDate={current => current && current.toDate() > new Date()}
+                  disabledDate={isDateDisabled}
                 />
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
@@ -930,6 +977,17 @@ const HomeLogTime: React.FC = () => {
               onChange={e => setNotes(e.target.value)}
             />
           </div>
+
+          {loggedSeconds > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <Tag color="blue" icon={<ClockCircleOutlined />}>
+                {t('logTime.totalDurationBadge', {
+                  duration: `${Math.floor(loggedSeconds / 3600)}h ${Math.floor((loggedSeconds % 3600) / 60)}m`,
+                  defaultValue: `Total: ${Math.floor(loggedSeconds / 3600)}h ${Math.floor((loggedSeconds % 3600) / 60)}m`,
+                })}
+              </Tag>
+            </div>
+          )}
 
           <Button
             type="primary"
