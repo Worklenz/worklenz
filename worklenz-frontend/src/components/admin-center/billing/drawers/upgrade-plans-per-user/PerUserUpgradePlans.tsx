@@ -37,6 +37,7 @@ import {
   openPaddleBillingCheckout,
 } from '@/utils/paddle-billing-checkout';
 import logger from '@/utils/errorLogger';
+import './per-user-upgrade-plans.css';
 import {
   IPlanGroup,
   PricingFrequency,
@@ -82,13 +83,14 @@ const SeatStepper: React.FC<SeatStepperProps> = ({ value, min, labelId, onChange
         onClick={() => onChange(clamp(value - 1))}
       />
       <InputNumber
+        className="seat-stepper-input"
         controls={false}
         min={min}
         max={MAX_SEATS}
         precision={0}
         value={value}
         aria-labelledby={labelId}
-        style={{ width: 72, textAlign: 'center' }}
+        style={{ width: 72 }}
         onChange={next => typeof next === 'number' && onChange(clamp(next))}
         onBlur={() => onChange(clamp(value))}
       />
@@ -313,7 +315,7 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
           }}
           styles={{ body: { height: '100%' } }}
         >
-          <Flex vertical gap={12} justify="space-between" style={{ height: '100%' }}>
+          <Flex vertical gap={12} style={{ height: "100%" }}>
             <Flex vertical gap={8}>
               <Flex justify="space-between" align="center">
                 <Typography.Title level={3} id={nameId} style={{ margin: 0 }}>
@@ -380,6 +382,27 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
                 </Flex>
               )}
 
+              <Flex vertical gap={12}>
+                {/* Reserved even when empty, so the buttons line up across cards */}
+                <Typography.Text strong style={{ fontSize: 15, minHeight: 22 }}>
+                  {plan &&
+                    cardSeats > 1 &&
+                    t(plan.billing_type === 'year' ? 'totalAnnual' : 'totalMonthly', {
+                      total: formatUsd(periodTotal(plan, cardSeats)),
+                      count: cardSeats,
+                    })}
+                </Typography.Text>
+                <Button
+                  type={isPopular || isExpansion ? 'primary' : 'default'}
+                  size="large"
+                  block
+                  disabled={!plan || isCurrent}
+                  loading={!!plan && busyPlanId === plan.id}
+                  onClick={() => plan && handleSelect(plan, cardSeats)}
+                >
+                  {data.has_billing_subscription ? t('switch') : t('select')}
+                </Button>
+              </Flex>
               <Space direction="vertical" size={6} style={{ marginTop: 4 }}>
                 {Array.isArray(features) &&
                   features.map(feature => (
@@ -389,28 +412,6 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
                     </Typography.Text>
                   ))}
               </Space>
-            </Flex>
-
-            <Flex vertical gap={12}>
-              {/* Reserved even when empty, so the buttons line up across cards */}
-              <Typography.Text strong style={{ fontSize: 15, minHeight: 22 }}>
-                {plan &&
-                  cardSeats > 1 &&
-                  t(plan.billing_type === 'year' ? 'totalAnnual' : 'totalMonthly', {
-                    total: formatUsd(periodTotal(plan, cardSeats)),
-                    count: cardSeats,
-                  })}
-              </Typography.Text>
-              <Button
-                type={isPopular || isExpansion ? 'primary' : 'default'}
-                size="large"
-                block
-                disabled={!plan || isCurrent}
-                loading={!!plan && busyPlanId === plan.id}
-                onClick={() => plan && handleSelect(plan, cardSeats)}
-              >
-                {data.has_billing_subscription ? t('switch') : t('select')}
-              </Button>
             </Flex>
           </Flex>
         </Card>
@@ -430,7 +431,7 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
     return (
       <Col xs={24} md={12} xl={cardColumns} key={key}>
         <Card role="group" aria-labelledby={nameId} style={{ height: '100%' }} styles={{ body: { height: '100%' } }}>
-          <Flex vertical gap={12} justify="space-between" style={{ height: '100%' }}>
+          <Flex vertical gap={12} style={{ height: "100%" }}>
             <Flex vertical gap={8}>
               <Flex justify="space-between" align="center">
                 <Typography.Title level={3} id={nameId} style={{ margin: 0 }}>
@@ -447,6 +448,11 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
               </Flex>
               {/* Same slot as the paid cards' savings line, so the feature lists line up */}
               <div style={{ minHeight: 24 }} />
+              <Flex vertical gap={12}>
+                {/* Matches the total line on the paid cards */}
+                <Typography.Text style={{ minHeight: 22 }} />
+                {action}
+              </Flex>
               <Space direction="vertical" size={6} style={{ marginTop: 4 }}>
                 {Array.isArray(features) &&
                   features.map(feature => (
@@ -456,11 +462,6 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
                     </Typography.Text>
                   ))}
               </Space>
-            </Flex>
-            <Flex vertical gap={12}>
-              {/* Matches the total line on the paid cards */}
-              <Typography.Text style={{ minHeight: 22 }} />
-              {action}
             </Flex>
           </Flex>
         </Card>
