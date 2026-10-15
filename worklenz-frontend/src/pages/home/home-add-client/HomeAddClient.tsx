@@ -1,6 +1,7 @@
 import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  theme,
   Button,
   Input,
   Form,
@@ -9,7 +10,6 @@ import {
   Divider,
   Typography,
   Alert,
-  theme,
   message,
 } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -208,7 +208,7 @@ const HomeAddClient: React.FC = () => {
                   <Input
                     placeholder={t('recordNamePlaceholder', {
                       ns: 'client-portal-clients',
-                      defaultValue: 'Enter internal record name',
+                      defaultValue: 'Enter an internal record name',
                     })}
                   />
                 </Form.Item>

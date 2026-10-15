@@ -131,13 +131,13 @@ const ProjectTemplateCard: React.FC<ProjectTemplateCardProps> = ({
   const menuItems: MenuProps['items'] = [
     ...(canCreateProject
       ? [
-          {
-            key: 'use',
-            label: t('useTemplate'),
-            icon: <ImportOutlined />,
-            onClick: onUse,
-          },
-        ]
+        {
+          key: 'use',
+          label: t('useTemplate'),
+          icon: <ImportOutlined />,
+          onClick: onUse,
+        },
+      ]
       : []),
     {
       key: 'preview',
@@ -147,70 +147,70 @@ const ProjectTemplateCard: React.FC<ProjectTemplateCardProps> = ({
     },
     ...(canManage && canChangeScope
       ? [
-          {
-            key: 'scope',
-            label: (
-              <Flex
-                justify="space-between"
-                align="center"
-                gap={16}
-                onClick={event => event.stopPropagation()}
-                onKeyDown={event => event.stopPropagation()}
-                role="presentation"
-              >
-                <span>{t('shareWithOrganization')}</span>
-                <Switch
-                  size="small"
-                  checked={isOrganizationScope}
-                  loading={scopeUpdating}
-                  onChange={checked =>
-                    onScopeChange(checked ? 'organization' : 'team')
-                  }
-                  aria-label={t('shareWithOrganization')}
-                />
-              </Flex>
-            ),
-          },
-        ]
+        {
+          key: 'scope',
+          label: (
+            <Flex
+              justify="space-between"
+              align="center"
+              gap={16}
+              onClick={event => event.stopPropagation()}
+              onKeyDown={event => event.stopPropagation()}
+              role="presentation"
+            >
+              <span>{t('shareWithOrganization')}</span>
+              <Switch
+                size="small"
+                checked={isOrganizationScope}
+                loading={scopeUpdating}
+                onChange={checked =>
+                  onScopeChange(checked ? 'organization' : 'team')
+                }
+                aria-label={t('shareWithOrganization')}
+              />
+            </Flex>
+          ),
+        },
+      ]
       : []),
     ...(canManage
       ? [
-          {
-            key: 'edit',
-            label: t('editToolTip'),
-            icon: <EditOutlined />,
-            onClick: onEdit,
+        {
+          key: 'edit',
+          label: t('editToolTip'),
+          icon: <EditOutlined />,
+          onClick: onEdit,
+        },
+        {
+          key: 'rename',
+          label: t('renameToolTip'),
+          icon: <FormOutlined />,
+          onClick: onRename,
+        },
+        {
+          key: 'duplicate',
+          label: t('duplicateToolTip', { defaultValue: 'Duplicate' }),
+          icon: <CopyOutlined />,
+          disabled: duplicating,
+          onClick: onDuplicate,
+        },
+        {
+          key: 'delete',
+          label: t('deleteToolTip'),
+          icon: <DeleteOutlined />,
+          danger: true,
+          onClick: () => {
+            Modal.confirm({
+              title: t('confirmText'),
+              okText: t('okText'),
+              okType: 'danger',
+              cancelText: t('cancelText'),
+              centered: true,
+              onOk: onDelete,
+            });
           },
-          {
-            key: 'rename',
-            label: t('renameToolTip'),
-            icon: <FormOutlined />,
-            onClick: onRename,
-          },
-          {
-            key: 'duplicate',
-            label: t('duplicateToolTip', { defaultValue: 'Duplicate' }),
-            icon: <CopyOutlined />,
-            disabled: duplicating,
-            onClick: onDuplicate,
-          },
-          {
-            key: 'delete',
-            label: t('deleteToolTip'),
-            icon: <DeleteOutlined />,
-            danger: true,
-            onClick: () => {
-              Modal.confirm({
-                title: t('confirmText'),
-                okText: t('okText'),
-                okType: 'danger',
-                cancelText: t('cancelText'),
-                centered: true,
-                onOk: onDelete,
-              });
-            },
-          },
-        ]
+        },
+      ]
       : []),
   ];
 
@@ -283,13 +283,13 @@ const BuiltInTemplateCard: React.FC<BuiltInTemplateCardProps> = ({
   const menuItems: MenuProps['items'] = [
     ...(canCreateProject
       ? [
-          {
-            key: 'use',
-            label: t('useTemplate'),
-            icon: <ImportOutlined />,
-            onClick: onUse,
-          },
-        ]
+        {
+          key: 'use',
+          label: t('useTemplate'),
+          icon: <ImportOutlined />,
+          onClick: onUse,
+        },
+      ]
       : []),
     {
       key: 'copy-customize',
@@ -392,64 +392,64 @@ const TaskTemplateCard: React.FC<TaskTemplateCardProps> = ({
   const menuItems: MenuProps['items'] = [
     ...(canManage && canChangeScope
       ? [
-          {
-            key: 'scope',
-            label: (
-              <Flex
-                justify="space-between"
-                align="center"
-                gap={16}
-                onClick={event => event.stopPropagation()}
-                onKeyDown={event => event.stopPropagation()}
-                role="presentation"
-              >
-                <span>{t('shareWithOrganization')}</span>
-                <Switch
-                  size="small"
-                  checked={isOrganizationScope}
-                  loading={scopeUpdating}
-                  onChange={checked =>
-                    onScopeChange(checked ? 'organization' : 'team')
-                  }
-                  aria-label={t('shareWithOrganization')}
-                />
-              </Flex>
-            ),
-          },
-        ]
+        {
+          key: 'scope',
+          label: (
+            <Flex
+              justify="space-between"
+              align="center"
+              gap={16}
+              onClick={event => event.stopPropagation()}
+              onKeyDown={event => event.stopPropagation()}
+              role="presentation"
+            >
+              <span>{t('shareWithOrganization')}</span>
+              <Switch
+                size="small"
+                checked={isOrganizationScope}
+                loading={scopeUpdating}
+                onChange={checked =>
+                  onScopeChange(checked ? 'organization' : 'team')
+                }
+                aria-label={t('shareWithOrganization')}
+              />
+            </Flex>
+          ),
+        },
+      ]
       : []),
     ...(canManage
       ? [
-          {
-            key: 'edit',
-            label: t('editToolTip'),
-            icon: <EditOutlined />,
-            onClick: onEdit,
+        {
+          key: 'edit',
+          label: t('editToolTip'),
+          icon: <EditOutlined />,
+          onClick: onEdit,
+        },
+        {
+          key: 'duplicate',
+          label: t('duplicateToolTip', { defaultValue: 'Duplicate' }),
+          icon: <CopyOutlined />,
+          disabled: duplicating,
+          onClick: onDuplicate,
+        },
+        {
+          key: 'delete',
+          label: t('deleteToolTip'),
+          icon: <DeleteOutlined />,
+          danger: true,
+          onClick: () => {
+            Modal.confirm({
+              title: t('confirmText'),
+              okText: t('okText'),
+              okType: 'danger',
+              cancelText: t('cancelText'),
+              centered: true,
+              onOk: onDelete,
+            });
           },
-          {
-            key: 'duplicate',
-            label: t('duplicateToolTip', { defaultValue: 'Duplicate' }),
-            icon: <CopyOutlined />,
-            disabled: duplicating,
-            onClick: onDuplicate,
-          },
-          {
-            key: 'delete',
-            label: t('deleteToolTip'),
-            icon: <DeleteOutlined />,
-            danger: true,
-            onClick: () => {
-              Modal.confirm({
-                title: t('confirmText'),
-                okText: t('okText'),
-                okType: 'danger',
-                cancelText: t('cancelText'),
-                centered: true,
-                onOk: onDelete,
-              });
-            },
-          },
-        ]
+        },
+      ]
       : []),
   ];
 
@@ -531,6 +531,7 @@ const EmptyStateSteps: React.FC<{ title: string; steps: string[] }> = ({ title, 
 
 const TemplatesPage: React.FC = () => {
   const { t } = useTranslation('projects/templates');
+  const { token } = theme.useToken();
   const navigate = useNavigate();
   useDocumentTitle(t('pageTitle', { defaultValue: 'Templates' }));
 
@@ -657,9 +658,9 @@ const TemplatesPage: React.FC = () => {
       } else {
         message.error(
           (res as { message?: string }).message ||
-            t('duplicateProjectTemplateError', {
-              defaultValue: 'Failed to duplicate project template.',
-            })
+          t('duplicateProjectTemplateError', {
+            defaultValue: 'Failed to duplicate project template.',
+          })
         );
       }
     } catch (error) {
@@ -688,9 +689,9 @@ const TemplatesPage: React.FC = () => {
       } else {
         message.error(
           (res as { message?: string }).message ||
-            t('duplicateTaskTemplateError', {
-              defaultValue: 'Failed to duplicate task template.',
-            })
+          t('duplicateTaskTemplateError', {
+            defaultValue: 'Failed to duplicate task template.',
+          })
         );
       }
     } catch (error) {
@@ -1058,12 +1059,18 @@ const TemplatesPage: React.FC = () => {
           ]}
         />
         <Input
+          prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
           allowClear
           placeholder={t('searchPlaceholder')}
-          style={{ width: 240, maxWidth: '100%', height: 32, fontSize: 12 }}
+          style={{
+            width: 240,
+            maxWidth: '100%',
+            height: 32,
+            fontSize: 12,
+            borderRadius: 7,
+          }}
           value={search}
           onChange={e => setSearch(e.target.value)}
-          suffix={<SearchOutlined style={{ color: 'rgba(0,0,0,.35)' }} />}
         />
       </Flex>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import {
+  theme,
   Typography,
   Flex,
   Input,
@@ -55,6 +56,7 @@ const initialPageState = <T,>(): PageState<T> => ({
 });
 
 const FilesPage: React.FC = () => {
+  const { token } = theme.useToken();
   const { t } = useTranslation('team-files');
   const dispatch = useAppDispatch();
 
@@ -396,9 +398,15 @@ const FilesPage: React.FC = () => {
           <Input
             allowClear
             placeholder={t('searchPlaceholder', { defaultValue: 'Search files...' })}
-            style={{ width: 220, maxWidth: '100%', height: 30, fontSize: 12 }}
+            prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
+            style={{
+              width: 220,
+              maxWidth: '100%',
+              height: 32,
+              fontSize: 12,
+              borderRadius: 7,
+            }}
             onChange={e => handleSearch(e.target.value)}
-            suffix={<SearchOutlined style={{ color: 'rgba(0,0,0,.45)' }} />}
             onPressEnter={e => handleSearch((e.target as HTMLInputElement).value)}
           />
           {activeTab !== 'links' ? (
