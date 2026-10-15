@@ -3,7 +3,6 @@ import {
   Flex,
   Input,
   Typography,
-  Spin,
   Tooltip,
   Popover,
   Select,
@@ -37,6 +36,7 @@ import {
   useGetClientProjectsQuery,
 } from '../../../../../api/client-portal/client-portal-api';
 import '@/styles/chat-thread.css';
+import { PortalLoader } from '@/components/client-portal/v2';
 
 type ChatBoxProps = {
   openedChat: TempChatsType;
@@ -356,7 +356,7 @@ const ChatBox = ({ openedChat, onBack, subtitle }: ChatBoxProps) => {
           {isLoading ? (
             <Flex align="center" justify="center" style={{ padding: 40 }}>
               <Flex vertical align="center" gap={12}>
-                <Spin />
+                <PortalLoader />
                 <Typography.Text type="secondary">{t('loadingMessages')}</Typography.Text>
               </Flex>
             </Flex>

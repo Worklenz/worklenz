@@ -67,7 +67,7 @@ const TimeLogForm = ({
   allowReassign = false,
   asTimeEntry = false,
   inModal = false,
-
+  projectStartDate: projectStartDateProp,
 }: TimeLogFormProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
   const controlSize = inModal ? 'middle' : 'small';
@@ -130,6 +130,8 @@ const TimeLogForm = ({
     return dayjs().startOf('day').subtract(backdateLimitDays, 'day');
   }, [backdateLimitDays]);
 
+  const currentProjectInStore = useAppSelector(state => state.projectReducer.project);
+
   // In edit mode the log's own date must stay selectable even once it ages past
   // the limit, so description/duration edits remain possible. The backend applies
   // the same exemption for an unchanged date.
@@ -138,15 +140,34 @@ const TimeLogForm = ({
     return dayjs(initialValues.created_at).startOf('day');
   }, [mode, initialValues?.created_at]);
 
+  // Project start date boundary
+  const effectiveProjectStartDate = React.useMemo(() => {
+    if (selectedReassignProject?.start_date) {
+      return dayjs(selectedReassignProject.start_date).startOf('day');
+    }
+    if (projectStartDateProp) {
+      return dayjs(projectStartDateProp).startOf('day');
+    }
+    if (taskFormViewModel?.task?.project_start_date) {
+      return dayjs(taskFormViewModel.task.project_start_date).startOf('day');
+    }
+    if (currentProjectInStore?.start_date && (!projectIdProp || currentProjectInStore.id === projectIdProp)) {
+      return dayjs(currentProjectInStore.start_date).startOf('day');
+    }
+    return null;
+  }, [selectedReassignProject, projectStartDateProp, taskFormViewModel?.task?.project_start_date, currentProjectInStore, projectIdProp]);
+
   const isDateDisabled = React.useCallback(
     (current: Dayjs) => {
       if (!current) return false;
       // Allow future dates. Only enforce organization backdate limits for past dates.
       if (!minLogDate) return false;
       if (originalLogDate && current.isSame(originalLogDate, 'day')) return false;
-      return current.isBefore(minLogDate, 'day');
+      if (minLogDate && current.isBefore(minLogDate, 'day')) return true;
+      if (effectiveProjectStartDate && current.isBefore(effectiveProjectStartDate, 'day')) return true;
+      return false;
     },
-    [minLogDate, originalLogDate]
+    [minLogDate, originalLogDate, effectiveProjectStartDate]
   );
 
   const getNowRoundedToMinute = React.useCallback(() => {
@@ -292,7 +313,13 @@ const TimeLogForm = ({
         setReassignProjectSearchResults(
           list
             .filter((p: any) => p.name?.toLowerCase().includes(q))
-            .map((p: any) => ({ id: p.id, name: p.name, color_code: p.color_code }))
+            .map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              color_code: p.color_code,
+              start_date: p.start_date,
+              end_date: p.end_date,
+            }))
         );
       } catch {
         setReassignProjectSearchResults([]);
@@ -558,6 +585,30 @@ const TimeLogForm = ({
       quickAssignMember(currentSession);
     }
 
+    // Client-side mirror of the project start date restriction
+    if (
+      effectiveProjectStartDate &&
+      values.date &&
+      values.date.isBefore(effectiveProjectStartDate, 'day') &&
+      !(originalLogDate && values.date.isSame(originalLogDate, 'day'))
+    ) {
+      const errorMsg = t('taskTimeLogTab.timeLogForm.projectStartDateError', {
+        date: effectiveProjectStartDate.format('MMM DD, YYYY'),
+        defaultValue: 'Time cannot be logged before the project start date ({{date}}).',
+      });
+      message.warning({
+        content: errorMsg,
+        key: 'time-log-project-start-date',
+      });
+      form.setFields([
+        {
+          name: 'date',
+          errors: [errorMsg],
+        },
+      ]);
+      return;
+    }
+
     // Client-side mirror of the org backdate limit, so the user sees the problem
     // before a round trip. The server enforces the same rule regardless.
     const activeDate = values.date;
@@ -781,6 +832,22 @@ const TimeLogForm = ({
           setFormValues({ ...values } as TimeLogFormValues);
         }}
       >
+        {effectiveProjectStartDate && effectiveProjectStartDate.isAfter(dayjs(), 'day') && (
+          <Alert
+            type="warning"
+            showIcon
+            message={t('taskTimeLogTab.timeLogForm.projectNotStartedWarningTitle', {
+              defaultValue: 'Project has not started yet',
+            })}
+            description={t('taskTimeLogTab.timeLogForm.projectNotStartedWarningDesc', {
+              date: effectiveProjectStartDate.format('MMM DD, YYYY'),
+              defaultValue:
+                'This project is scheduled to start on {{date}}. Time cannot be logged before the project start date.',
+            })}
+            style={{ marginBlockEnd: 12 }}
+          />
+        )}
+
         <Form.Item
           label={t('taskTimeLogTab.timeLogForm.inputMode', { defaultValue: 'Input Mode' })}
           style={{ marginBlockEnd: 6 }}
@@ -809,6 +876,14 @@ const TimeLogForm = ({
               <Form.Item
                 name="date"
                 label={t('taskTimeLogTab.timeLogForm.date')}
+                extra={
+                  effectiveProjectStartDate
+                    ? t('taskTimeLogTab.timeLogForm.projectStartDateHint', {
+                        date: effectiveProjectStartDate.format('MMM DD, YYYY'),
+                        defaultValue: 'Project start date: {{date}}',
+                      })
+                    : undefined
+                }
                 rules={[
                   {
                     required: true,

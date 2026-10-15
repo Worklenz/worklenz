@@ -1,51 +1,49 @@
-import { Badge, Button, Flex, Typography, Space, theme } from '@/shared/antd-imports';
-import PillToggle from '@/pages/home/PillToggle';
-import { PlusOutlined, ShareAltOutlined } from '@ant-design/icons';
+import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
+import { PlusOutlined } from '@ant-design/icons';
+import { Badge, Button, Col, Flex, Row, Typography, theme } from '@/shared/antd-imports';
+import PillToggle from '@/pages/home/PillToggle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleAddClientDrawer } from '@/features/clients-portal/clients/clients-slice';
-import { useGetClientsStatsQuery } from '@/api/client-portal/client-portal-api';
-import { useGetCompanyUsersStatsQuery } from '@/api/client-portal/company-users-api';
-import ClientsTable from './ClientsTable';
-import { ClientsStats } from './ClientsStats';
-import { CompanyUsersTab } from './company-users/CompanyUsersTab';
-import { clientWorkspacePath } from './workspace/workspace-helpers';
-import ClientDetailsDrawer from '@/components/client-portal/ClientDetailsDrawer';
-import InviteLinkModal from '@/components/client-portal/InviteLinkModal';
-import { createPortal } from 'react-dom';
-import { useEffect, useRef, useState } from 'react';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { toggleAddClientDrawer } from '@/features/clients-portal/clients/clients-slice';
+import {
+  useGetPortalClientUsersQuery,
+  useGetPortalOrganizationsQuery,
+} from '@/api/client-portal/portal-access-api';
+import ClientDetailsDrawer from '@/components/client-portal/ClientDetailsDrawer';
+import { StatCard } from '@/components/client-portal/v2';
 import {
   MixpanelEvents,
   ClientPortalEventProps,
   ClientPortalActionEventProps,
 } from '@/types/mixpanel-events.types';
+import { OrganizationsPanel } from './OrganizationsPanel';
+import { ClientUsersPanel } from './users/ClientUsersPanel';
+import { clientWorkspacePath } from './workspace/workspace-helpers';
 
-const { Title } = Typography;
+/** Matches the Input, Select and Button heights set in config/theme.config.ts. */
+const CONTROL_HEIGHT = 36;
 
-type ClientsView = 'company' | 'users';
+type ClientsView = 'organizations' | 'users';
 
 const ClientPortalClients = () => {
-  const { t } = useTranslation('client-portal-clients');
-  const { t: tUsers } = useTranslation('client-portal-company-users');
+  const { t } = useTranslation('client-portal-v2-clients');
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { trackMixpanelEvent } = useMixpanelTracking();
 
-  const [showInviteModal, setShowInviteModal] = useState(false);
-
   // The view lives in the URL so coming back from a client keeps the tab that was open.
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeView: ClientsView = searchParams.get('view') === 'users' ? 'users' : 'company';
-  const { data: usersStats } = useGetCompanyUsersStatsQuery();
+  const activeView: ClientsView = searchParams.get('view') === 'users' ? 'users' : 'organizations';
 
-  const handleViewChange = (key: string) => {
+  const handleViewChange = (view: ClientsView) => {
     setSearchParams(
       previous => {
         const next = new URLSearchParams(previous);
-        if (key === 'users') next.set('view', 'users');
+        if (view === 'users') next.set('view', 'users');
         else next.delete('view');
         return next;
       },
@@ -53,26 +51,27 @@ const ClientPortalClients = () => {
     );
   };
 
-  // Shares its cache entry with the stat cards, so this does not add a request.
-  const { data: statsData, isLoading: isStatsLoading } = useGetClientsStatsQuery();
+  // One-row queries for the stat cards and tab counts; each result carries the whole-workspace totals.
+  const statsQuery = useGetPortalOrganizationsQuery({ page: 1, limit: 1 });
+  const usersCountQuery = useGetPortalClientUsersQuery({ page: 1, limit: 1 });
+  const stats = statsQuery.data?.body?.stats;
   const hasTrackedVisit = useRef(false);
 
-  // Track the page visit once, as soon as the total is known (or the stats request has failed).
+  // Track the page visit once, as soon as the totals are known (or the request has failed).
   useEffect(() => {
-    if (isStatsLoading || hasTrackedVisit.current) return;
+    if (statsQuery.isLoading || hasTrackedVisit.current) return;
     hasTrackedVisit.current = true;
 
     const pageEventProps: ClientPortalEventProps = {
       page: 'clients',
       section: 'client_portal',
-      total_items: statsData?.body?.total ?? 0,
+      total_items: stats?.organizations ?? 0,
       source: 'direct_visit',
     };
-
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_PAGE_VISITED, pageEventProps);
-  }, [isStatsLoading, statsData, trackMixpanelEvent]);
+  }, [statsQuery.isLoading, stats, trackMixpanelEvent]);
 
-  const handleAddClientWithTracking = () => {
+  const handleAddClient = () => {
     const actionProps: ClientPortalActionEventProps = {
       action_type: 'create',
       item_type: 'client',
@@ -80,121 +79,116 @@ const ClientPortalClients = () => {
       section: 'client_portal',
       source: 'add_client_button',
     };
-
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_CLIENT_CREATED, actionProps);
     dispatch(toggleAddClientDrawer());
   };
 
-  const handleShowInviteModalWithTracking = () => {
-    const actionProps: ClientPortalActionEventProps = {
-      action_type: 'view',
-      item_type: 'client',
-      page: 'clients',
-      section: 'client_portal',
-      source: 'invite_button',
-    };
+  const countBadge = (count: number, active: boolean) => (
+    <Badge
+      count={count}
+      showZero
+      overflowCount={999}
+      style={{
+        backgroundColor: active ? token.colorBgContainer : token.colorPrimary,
+        color: active ? token.colorPrimary : token.colorTextLightSolid,
+        boxShadow: 'none',
+      }}
+    />
+  );
 
-    trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_CLIENT_LINK_COPIED, actionProps);
-    setShowInviteModal(true);
-  };
+  const viewToggle = (
+    <PillToggle<ClientsView>
+      value={activeView}
+      onChange={handleViewChange}
+      // Same height as the search input and filters beside it (the theme sets Input/Select/Button to 36).
+      style={{ height: CONTROL_HEIGHT, boxSizing: 'border-box' }}
+      ariaLabel={t('page.viewToggle', { defaultValue: 'Clients view' })}
+      options={[
+        {
+          value: 'organizations',
+          label: (
+            <Flex align="center" gap={8}>
+              <span>{t('page.organizationsTab', { defaultValue: 'Clients' })}</span>
+              {countBadge(stats?.organizations ?? 0, activeView === 'organizations')}
+            </Flex>
+          ),
+        },
+        {
+          value: 'users',
+          label: (
+            <Flex align="center" gap={8}>
+              <span>{t('page.usersTab', { defaultValue: 'Client Users' })}</span>
+              {countBadge(usersCountQuery.data?.body?.total ?? 0, activeView === 'users')}
+            </Flex>
+          ),
+        },
+      ]}
+    />
+  );
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        minHeight: 0,
-        maxWidth: '100%',
-      }}
-    >
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, maxWidth: '100%' }}>
       <div style={{ marginBottom: 16, flexShrink: 0 }}>
-        <Title level={4} style={{ margin: 0, fontSize: 22 }}>
-          {t('pageTitle', { defaultValue: 'Clients' })}
-        </Title>
+        <Typography.Title level={4} style={{ margin: 0, fontSize: 22 }}>
+          {t('page.title', { defaultValue: 'Clients' })}
+        </Typography.Title>
         <Typography.Text type="secondary">
-          {t('pageDescription', {
-            defaultValue: 'Manage your clients and their access to the portal',
+          {t('page.description', {
+            defaultValue:
+              'Client organizations, the people who can sign in to their portal, and what each of them is waiting on.',
           })}
         </Typography.Text>
       </div>
 
-      <Flex
-        justify="space-between"
-        align="center"
-        wrap="wrap"
-        gap={16}
-        style={{ marginBottom: 16, flexShrink: 0 }}
-      >
-        <PillToggle<ClientsView>
-          value={activeView}
-          onChange={handleViewChange}
-          ariaLabel={t('viewToggleLabel', { defaultValue: 'Clients view' })}
-          options={[
-            { value: 'company', label: t('companyTab', { defaultValue: 'Clients' }) },
-            {
-              value: 'users',
-              label: (
-                <Flex align="center" gap={8}>
-                  <span>{t('companyUsersTab', { defaultValue: 'Client Users' })}</span>
-                  <Badge
-                    count={usersStats?.body?.total ?? 0}
-                    showZero
-                    overflowCount={999}
-                    style={{
-                      backgroundColor:
-                        activeView === 'users' ? token.colorBgContainer : token.colorPrimary,
-                      color:
-                        activeView === 'users' ? token.colorPrimary : token.colorTextLightSolid,
-                      boxShadow: 'none',
-                    }}
-                    aria-label={tUsers('tabCountLabel', { defaultValue: 'Total client users' })}
-                  />
-                </Flex>
-              ),
-            },
-          ]}
-        />
+      <Flex align="center" wrap="wrap" gap={16} style={{ marginBottom: 16, flexShrink: 0 }}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddClient} style={{ fontSize: 12, fontWeight: 500 }}>
+          {t('page.addClient', { defaultValue: 'Add New' })}
+        </Button>
 
-        <Space wrap>
-          <Button
-            icon={<ShareAltOutlined />}
-            onClick={handleShowInviteModalWithTracking}
-            size="small"
-          >
-            {t('inviteButton', { defaultValue: 'Send Invitation' })}
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleAddClientWithTracking}
-            size="small"
-          >
-            {t('addClientButton', { defaultValue: 'Add new' })}
-          </Button>
-        </Space>
       </Flex>
 
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        {activeView === 'company' ? (
-          <>
-            <div style={{ flexShrink: 0 }}>
-              <ClientsStats />
-            </div>
-            <ClientsTable />
-          </>
-        ) : (
-          <CompanyUsersTab
-            onAdd={handleAddClientWithTracking}
-            onOpenCompany={clientId => navigate(clientWorkspacePath(clientId))}
+      <Row gutter={[12, 12]} style={{ marginBottom: 16, flexShrink: 0 }}>
+        <Col xs={12} lg={6}>
+          <StatCard
+            label={t('stats.organizations', { defaultValue: 'Client organizations' })}
+            value={stats?.organizations ?? '—'}
           />
+        </Col>
+        <Col xs={12} lg={6}>
+          <StatCard
+            label={t('stats.activeUsers', { defaultValue: 'Active users' })}
+            value={stats?.active_users ?? '—'}
+            tone="success"
+          />
+        </Col>
+        <Col xs={12} lg={6}>
+          <StatCard
+            label={t('stats.invited', { defaultValue: 'Invited' })}
+            value={stats?.invited_users ?? '—'}
+            tone="warning"
+            sub={t('stats.expired', { count: stats?.expired_invites ?? 0, defaultValue: '{{count}} expired' })}
+          />
+        </Col>
+        <Col xs={12} lg={6}>
+          <StatCard
+            label={t('stats.awaiting', { defaultValue: 'Awaiting client action' })}
+            value={stats?.awaiting_client_action ?? '—'}
+            tone="warning"
+            sub={t('stats.awaitingSub', { defaultValue: 'Approvals and info requests' })}
+          />
+        </Col>
+      </Row>
+
+      <div style={{ flex: 1, minHeight: 0 }}>
+        {activeView === 'organizations' ? (
+          <OrganizationsPanel toolbarLead={viewToggle} />
+        ) : (
+          <ClientUsersPanel toolbarLead={viewToggle} onOpenOrganization={organizationId => navigate(clientWorkspacePath(organizationId))} />
         )}
       </div>
 
-      {/* Edit Client opens this modal. Everything else about a client lives in its workspace. */}
+      {/* Edit client opens this drawer. Everything else about a client lives in its workspace. */}
       {createPortal(<ClientDetailsDrawer />, document.body)}
-
-      <InviteLinkModal visible={showInviteModal} onClose={() => setShowInviteModal(false)} />
 
       {/* clients/:id renders here as a modal over this list, so a direct or shared link
           still shows the list underneath it instead of a blank page. */}

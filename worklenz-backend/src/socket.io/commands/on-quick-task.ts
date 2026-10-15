@@ -13,6 +13,8 @@ import { ExternalNotificationsService } from "../../services/external-notificati
 import { log_error } from "../../shared/utils";
 import { isTaskCreationRestricted } from "../../shared/task-creation-restriction";
 
+import { createQuickTaskRecord } from "../../shared/create-quick-task-record";
+
 export async function getTaskCompleteInfo(task: any) {
   if (!task) return null;
 
@@ -56,7 +58,6 @@ function createGaantTask(body: any) {
 
 export async function on_quick_task(_io: Server, socket: Socket, data?: string) {
   try {
-    const q = `SELECT create_quick_task($1) AS task;`;
     const body = JSON.parse(data as string);
 
     body.name = (body.name || "").trim();
@@ -86,7 +87,7 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
       }
 
       body.total_minutes = toMinutes(body.total_hours, body.total_minutes);
-      const result = await db.query(q, [JSON.stringify(body)]);
+      const result = await createQuickTaskRecord(JSON.stringify(body), body.project_id, body.issue_type);
       const [d] = result.rows;
       if (d.task) {
 

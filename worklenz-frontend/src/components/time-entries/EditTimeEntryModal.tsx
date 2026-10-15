@@ -15,6 +15,7 @@ export interface EditableTimeEntry {
   project_id: string;
   project_name: string;
   project_color?: string | null;
+  project_start_date?: string | null;
   user_id?: string;
   user_name?: string | null;
   /** Seconds. Postgres NUMERIC can arrive as a string at runtime, so it is coerced below. */
@@ -115,6 +116,7 @@ export const EditTimeEntryModal: React.FC<EditTimeEntryModalProps> = ({ entry, o
         initialValues={initialValues}
         taskId={shown.task_id}
         projectId={shown.project_id}
+        projectStartDate={shown.project_start_date}
         onCancel={onClose}
         onSubmitSuccess={onSaved}
       />

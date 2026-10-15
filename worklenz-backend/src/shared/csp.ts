@@ -84,6 +84,8 @@ const policies = {
     "https://forms.hscollectedforms.net",
     "https://cdn.paddle.com",
     "https://sandbox-cdn.paddle.com",
+    "https://checkout-service.paddle.com", // Paddle.js v2 (Paddle Billing)
+    "https://sandbox-checkout-service.paddle.com",
     "wss://uat.app.worklenz.com",
     "wss://app.worklenz.com",
     "https://*.hsforms.com",

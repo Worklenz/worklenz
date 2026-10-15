@@ -1,0 +1,84 @@
+{
+  "access": {
+    "introExisting": "Wybierz projekty, które ten użytkownik może otworzyć. Jeśli dla wybranego przez Ciebie projektu Portal Klienta jest wyłączony, zostanie włączony.",
+    "introNew": "Wybierz projekty, które ten klient powinien zobaczyć. Projekty bez klienta są łączone z nową organizacją, a Portal Klienta jest włączany dla każdego wybranego przez Ciebie.",
+    "loadFailed": "Nie udało się wczytać projektów.",
+    "noClientYet": "Nie ma jeszcze klienta",
+    "noProjectsExisting": "Ta organizacja nie ma jeszcze żadnych projektów. Użytkownikowi można później przypisać projekty.",
+    "noProjectsNew": "Każdy projekt obszaru roboczego ma już klienta. Link do jednego później w Portal Projects.",
+    "portalOff": "Portal wyłączony, zostanie włączony",
+    "search": "Wyszukaj projekty…",
+    "title": "Dostęp do projektów"
+  },
+  "details": {
+    "email": "Adres e-mail",
+    "emailHint": "To jest adres logowania i zaproszenia. To musi być wyjątkowe.",
+    "emailInvalid": "Wprowadź prawidłowy adres e-mail.",
+    "firstName": "Imię",
+    "firstNamePlaceholder": "Anna",
+    "firstUserNotice": "Pierwszym użytkownikiem nowej organizacji jest Administrator Klienta. Mogą zatwierdzać elementy i, jeśli włączysz tę opcję w Ustawieniach portalu, zarządzać swoimi współpracownikami. Jak każdy użytkownik klienta loguje się za pomocą jednorazowego kodu przesłanego na ten adres e-mailem.",
+    "jobTitle": "Tytuł pracy",
+    "jobTitlePlaceholder": "np. Kierownik ds. marketingu",
+    "lastName": "Nazwisko",
+    "lastNamePlaceholder": "Kowalska",
+    "noOrganizations": "Nie znaleziono organizacji.",
+    "organization": "Organizacja",
+    "organizationName": "Nazwa organizacji",
+    "organizationNamePlaceholder": "np. Beacon Logistics",
+    "phone": "Telefon (opcjonalnie)",
+    "role": "Role",
+    "selectOrganization": "Wybierz organizację…"
+  },
+  "footer": {
+    "addUser": "Dodaj użytkownika",
+    "back": "Powrót",
+    "continue": "Kontynuuj",
+    "sendInvitation": "Wyślij zaproszenie"
+  },
+  "method": {
+    "existingOrganization": {
+      "description": "Zaproś inną osobę do organizacji, która ma już dostęp do portalu.",
+      "name": "Dodaj użytkownika do istniejącej organizacji"
+    },
+    "groupLabel": "Jak dodać tego klienta",
+    "intro": "Każdy użytkownik klienta należy do organizacji i widzi tylko projekty, które mu przypisałeś.",
+    "newOrganization": {
+      "description": "Utwórz organizację i zaproś jej pierwszego użytkownika jako administratora klienta.",
+      "name": "Nowa organizacja klienta"
+    }
+  },
+  "result": {
+    "activationHint": "Otwierają link w e-mailu i logują się za pomocą 6-cyfrowego kodu przesłanego na ich adres. Nie ma hasła.",
+    "addedNoInvite": "{{name}} został dodany jako {{role}}. Żadne zaproszenie nie zostało jeszcze wysłane.",
+    "emailNotSent": "{{name}} został zapisany, ale e-mail z zaproszeniem nie mógł zostać wysłany. Zamiast tego udostępnij link.",
+    "failed": "Nie można dodać klienta.",
+    "invited": "Zaproszenie wysłane na adres {{email}}.",
+    "portalsSwitchedOn": "Portal Klienta włączony dla projektów {{count}}.",
+    "portalsSwitchedOn_one": "Portal Klienta włączony dla projektu {{count}}.",
+    "portalsSwitchedOn_other": "Portal Klienta włączony dla projektów {{count}}."
+  },
+  "review": {
+    "email": "Email",
+    "name": "Name",
+    "organization": "Organizacja",
+    "projects": "Projekty",
+    "projectsAssigned": "{{count}} przypisano",
+    "projectsAssigned_one": "{{count}} przypisano",
+    "projectsAssigned_other": "{{count}} przypisano",
+    "projectsNone": "Jeszcze żaden",
+    "role": "Role",
+    "sendInvitation": "Wyślij zaproszenie teraz",
+    "sendInvitationHint": "Link zawiera ich adres e-mail; otwarcie go powoduje wysłanie 6-cyfrowego kodu, więc nie trzeba ustawiać hasła. Link wygasa po 7 dniach. Jeśli wygaśnie, wyślij go ponownie z listy użytkowników lub mogą zalogować się, podając swój adres e-mail."
+  },
+  "steps": {
+    "access": "Dostęp",
+    "details": "Details",
+    "method": "Metoda"
+  },
+  "title": {
+    "access": "Dostęp i recenzja",
+    "detailsExisting": "Wybierz organizację i użytkownika",
+    "detailsNew": "Opowiedz nam o organizacji",
+    "method": "Jak chcesz dodać tego klienta?"
+  }
+}

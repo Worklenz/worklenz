@@ -18,5 +18,13 @@
   "manageAssignee": "Gestionar cesionario",
   "start": "Empezar",
   "assignMember": "Asignar miembro",
-  "completeSprint": "Sprint completo"
+  "completeSprint": "Sprint completo",
+  "deleteSprintTitle": "¿Eliminar {{name}}?",
+  "deleteSprintContentWithItems": "{{count}} elementos de trabajo de este sprint se moverán a {{backlog}}. Esta acción no se puede deshacer.",
+  "deleteSprintContent": "Esta acción no se puede deshacer.",
+  "deleteSprint": "Eliminar sprint",
+  "sprintDeleted": "Sprint eliminado",
+  "sprintDeleteError": "No se pudo eliminar el sprint",
+  "completeSprintAutoStartHint": "El siguiente sprint planificado comenzará hoy y conservará su duración prevista.",
+  "nextSprintStarted": "{{name}} iniciado ({{start}} – {{end}})"
 }

@@ -5,7 +5,6 @@ import {
   Avatar,
   Tag,
   Button,
-  Spin,
   Alert,
   message,
   Dropdown,
@@ -35,6 +34,7 @@ import PhoneInput from '@/components/PhoneInput/PhoneInput';
 import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
 import { getCountries } from 'libphonenumber-js';
 import type { CountryCode } from 'libphonenumber-js';
+import { PortalLoadingOverlay } from '@/components/client-portal/v2';
 
 const { Title, Text } = Typography;
 
@@ -300,7 +300,7 @@ const ClientDetailsDrawer = () => {
         </Flex>
       }
     >
-      <Spin spinning={isLoadingClient}>
+      <PortalLoadingOverlay loading={isLoadingClient}>
         {clientError && (
           <Alert
             message={t('errorTitle') || 'Error'}
@@ -458,7 +458,7 @@ const ClientDetailsDrawer = () => {
           </Row>
         </Form>
 
-      </Spin>
+      </PortalLoadingOverlay>
     </Modal>
   );
 };

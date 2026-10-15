@@ -18,5 +18,13 @@
   "manageAssignee": "Menaxhoni të ngarkuarin",
   "start": "Filloni",
   "assignMember": "Cakto një anëtar",
-  "completeSprint": "Sprint i plotë"
+  "completeSprint": "Sprint i plotë",
+  "deleteSprintTitle": "Të fshihet {{name}}?",
+  "deleteSprintContentWithItems": "{{count}} elemente pune në këtë sprint do të zhvendosen te {{backlog}}. Ky veprim nuk mund të zhbëhet.",
+  "deleteSprintContent": "Ky veprim nuk mund të zhbëhet.",
+  "deleteSprint": "Fshi sprintin",
+  "sprintDeleted": "Sprinti u fshi",
+  "sprintDeleteError": "Nuk mund të fshihej sprinti",
+  "completeSprintAutoStartHint": "Sprinti tjetër i planifikuar do të nisë sot dhe do të ruajë kohëzgjatjen e planifikuar.",
+  "nextSprintStarted": "{{name}} nisi ({{start}} – {{end}})"
 }

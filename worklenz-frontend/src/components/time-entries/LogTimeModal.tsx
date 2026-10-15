@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Alert,
   Modal,
   Flex,
   Select,
@@ -96,6 +97,8 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
                 id: p.id!,
                 name: p.name!,
                 color_code: p.color_code || '',
+                start_date: p.start_date,
+                end_date: p.end_date,
               }))
           );
         } else {
@@ -180,8 +183,23 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     form.setFieldsValue({ taskId: undefined });
   };
 
+  const isDateDisabled = React.useCallback(
+    (current: Dayjs) => {
+      if (!current) return false;
+      if (current.toDate() > new Date()) return true;
+      if (selectedProject?.start_date && current.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')) {
+        return true;
+      }
+      return false;
+    },
+    [selectedProject]
+  );
+
   const isFormValid = () => {
     if (!selectedProject || !selectedTaskId || !formValues.date) return false;
+    if (selectedProject.start_date && formValues.date.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')) {
+      return false;
+    }
     if (inputMode === 'duration') {
       const h = Math.max(0, Number(formValues.hours || 0));
       const m = Math.max(0, Math.min(59, Number(formValues.minutes || 0)));
@@ -349,8 +367,9 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
       }
       onSuccess();
       onClose();
-    } catch {
-      appMessage.error(t('logTimeError', { defaultValue: 'Failed to log time' }));
+    } catch (error: any) {
+      const serverMessage = error?.response?.data?.message;
+      appMessage.error(serverMessage || t('logTimeError', { defaultValue: 'Failed to log time' }));
     } finally {
       setSubmitting(false);
     }
@@ -360,6 +379,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     <Modal
       open={open}
       onCancel={onClose}
+      centered
       title={t('modalTitle', { defaultValue: 'Quick Time Entry' })}
       footer={null}
       width={440}
@@ -386,7 +406,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
         }}
         requiredMark={false}
       >
-        <Form.Item label={t('projectLabel', { defaultValue: 'Project' })} style={{ marginBottom: 16 }}>
+        <Form.Item label={t('projectLabel', { defaultValue: 'Project' })} style={{ marginBottom: 12 }}>
           <Select
             aria-label={t('projectLabel', { defaultValue: 'Project' })}
             showSearch
@@ -405,7 +425,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
           />
         </Form.Item>
 
-        <Form.Item name="taskId" label={t('taskLabel', { defaultValue: 'Task' })} style={{ marginBottom: 16 }}>
+        <Form.Item name="taskId" label={t('taskLabel', { defaultValue: 'Task' })} style={{ marginBottom: 12 }}>
           <Select
             showSearch
             allowClear
@@ -425,7 +445,20 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
           />
         </Form.Item>
 
-        <Form.Item label={t('inputModeLabel', { defaultValue: 'Input Mode' })} style={{ marginBottom: 16 }}>
+        {selectedProject?.start_date && dayjs(selectedProject.start_date).isAfter(dayjs(), 'day') && (
+          <Alert
+            type="warning"
+            showIcon
+            message={t('projectNotStartedWarningDesc', {
+              date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+              defaultValue:
+                'This project is scheduled to start on {{date}}. Time cannot be logged before the project start date.',
+            })}
+            style={{ marginBottom: 12 }}
+          />
+        )}
+
+        <Form.Item label={t('inputModeLabel', { defaultValue: 'Input Mode' })} style={{ marginBottom: 12 }}>
           <Segmented
             block
             value={inputMode}
@@ -442,8 +475,16 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
             <Form.Item
               name="date"
               label={t('dateLabel', { defaultValue: 'Date' })}
+              extra={
+                selectedProject?.start_date
+                  ? t('projectStartDateHint', {
+                      date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+                      defaultValue: 'Project start date: {{date}}',
+                    })
+                  : undefined
+              }
               rules={[{ required: true, message: t('selectDateError', { defaultValue: 'Select a date' }) }]}
-              style={{ flex: 1.4, minWidth: 160, marginBottom: 16 }}
+              style={{ flex: 1.4, minWidth: 160, marginBottom: 12 }}
             >
               <DatePicker
                 style={{ width: '100%' }}
@@ -455,7 +496,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
               name="hours"
               label={t('hoursLabel', { defaultValue: 'Hours' })}
               rules={[{ type: 'number', min: 0, message: t('hoursMinError', { defaultValue: 'Hours must be 0 or greater' }) }]}
-              style={{ flex: 1, minWidth: 80, marginBottom: 16 }}
+              style={{ flex: 1, minWidth: 80, marginBottom: 12 }}
             >
               <InputNumber min={0} precision={0} placeholder="0" style={{ width: '100%' }} />
             </Form.Item>
@@ -464,7 +505,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
               name="minutes"
               label={t('minutesLabel', { defaultValue: 'Minutes' })}
               rules={[{ type: 'number', min: 0, max: 59, message: t('minutesRangeError', { defaultValue: '0 – 59' }) }]}
-              style={{ flex: 1, minWidth: 80, marginBottom: 16 }}
+              style={{ flex: 1, minWidth: 80, marginBottom: 12 }}
             >
               <InputNumber min={0} max={59} precision={0} placeholder="0" style={{ width: '100%' }} />
             </Form.Item>
@@ -474,8 +515,16 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
             <Form.Item
               name="date"
               label={t('dateLabel', { defaultValue: 'Date' })}
+              extra={
+                selectedProject?.start_date
+                  ? t('projectStartDateHint', {
+                      date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+                      defaultValue: 'Project start date: {{date}}',
+                    })
+                  : undefined
+              }
               rules={[{ required: true, message: t('selectDateError', { defaultValue: 'Select a date' }) }]}
-              style={{ marginBottom: 16 }}
+              style={{ marginBottom: 12 }}
             >
               <DatePicker
                 style={{ width: '100%' }}
@@ -488,7 +537,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
                 name="startTime"
                 label={t('startTimeLabel', { defaultValue: 'Start Time' })}
                 rules={[{ required: true, message: t('selectStartTimeError', { defaultValue: 'Select a start time' }) }]}
-                style={{ flex: 1, marginBottom: 16 }}
+                style={{ flex: 1, marginBottom: 12 }}
               >
                 <TimePicker format="HH:mm" style={{ width: '100%' }} />
               </Form.Item>
@@ -497,7 +546,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
                 name="endTime"
                 label={t('endTimeLabel', { defaultValue: 'End Time' })}
                 rules={[{ required: true, message: t('selectEndTimeError', { defaultValue: 'Select an end time' }) }]}
-                style={{ flex: 1, marginBottom: 16 }}
+                style={{ flex: 1, marginBottom: 12 }}
               >
                 <TimePicker format="HH:mm" style={{ width: '100%' }} />
               </Form.Item>
@@ -508,13 +557,13 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
         <Form.Item
           name="description"
           label={t('workDescriptionLabel', { defaultValue: 'Work Description' })}
-          style={{ marginBottom: 20 }}
+          style={{ marginBottom: 16 }}
         >
           <TextArea
             placeholder={t('workDescriptionPlaceholder', { defaultValue: 'What did you work on?' })}
             maxLength={500}
             showCount
-            autoSize={{ minRows: 2, maxRows: 5 }}
+            autoSize={{ minRows: 2, maxRows: 3 }}
           />
         </Form.Item>
 

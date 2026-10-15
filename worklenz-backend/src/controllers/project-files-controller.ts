@@ -18,7 +18,17 @@ import {
   uploadBuffer,
 } from "../shared/storage";
 import { getStorageUrl } from "../shared/constants";
+import {
+  getAllReplacementObjectKeys,
+  getReplacementObjectKey,
+} from "../shared/project-file-versions";
 import { log_error } from "../shared/utils";
+import {
+  BLOCKED_EXTENSIONS,
+  MAX_PRESIGN_FILE_SIZE_BYTES,
+  PRESIGN_EXPIRY_MS,
+  sanitizeDisplayName,
+} from "../shared/project-file-rules";
 
 const ALLOWED_SORT_FIELDS: Record<string, string> = {
   name: "pf.name",
@@ -28,46 +38,6 @@ const ALLOWED_SORT_FIELDS: Record<string, string> = {
 };
 
 const MAX_PAGE_SIZE = 100;
-
-// Blocked extensions — kept in sync with the frontend and the validator middleware
-const BLOCKED_EXTENSIONS = new Set([
-  "exe", "bat", "cmd", "com", "pif", "scr", "vbs", "js",
-  "jar", "app", "deb", "rpm", "dmg", "pkg", "sh", "ps1", "dll", "msi",
-]);
-
-// Maximum file size for presigned uploads (250 MB — Business plan ceiling)
-const MAX_PRESIGN_FILE_SIZE_BYTES = 250 * 1024 * 1024;
-
-// How long (ms) a pending presign record is considered valid before it can be
-// cleaned up. Matches the presigned URL expiry (15 min) plus a small buffer.
-const PRESIGN_EXPIRY_MS = 20 * 60 * 1000;
-
-// Sanitize a filename for use as the *display name* (the `name` column shown in
-// the UI). The storage key is derived from a random fileId, never the filename,
-// so we only need to strip characters that are dangerous for display/paths —
-// not flatten every space or parenthesis into underscores. This keeps names
-// like "My Report (Final).pdf" readable instead of "My_Report__Final_.pdf".
-const sanitizeDisplayName = (fileName: string, extension: string): string => {
-  const parsed = path.parse(fileName);
-  const baseName = parsed.name || "file";
-  // Strip characters that are dangerous for paths, filesystems and — critically
-  // — the download Content-Disposition header (the stored name is reflected
-  // unquoted into `attachment; filename=...`), while preserving spaces,
-  // parentheses and other readable characters. Removed set: path separators
-  // (/ \), ASCII control chars (incl. CR/LF), the header-breaking quote/
-  // semicolon/comma, and Windows-reserved chars (< > : " | ? *). Then collapse
-  // whitespace. The storage key is derived from a random fileId (never the
-  // filename), so this name is purely for display and can stay human-readable.
-  // eslint-disable-next-line no-control-regex
-  const normalizedBase = baseName
-    .replace(/[/\\<>:"|?*;,\x00-\x1f\x7f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  const safeBase = normalizedBase || "file";
-  const maxBaseLength = Math.max(1, 255 - (extension ? extension.length + 1 : 0));
-  const trimmedBase = safeBase.slice(0, maxBaseLength);
-  return extension ? `${trimmedBase}.${extension}` : trimmedBase;
-};
 
 export default class ProjectFilesController extends WorklenzControllerBase {
   @HandleExceptions()
@@ -311,7 +281,9 @@ export default class ProjectFilesController extends WorklenzControllerBase {
       file.type,
     );
 
-    const keyToUse = (await objectExists(newKey)) ? newKey : legacyKey;
+    // A replaced file (Client Portal versions) is served from its current version's own key.
+    const replacementKey = await getReplacementObjectKey(file.id);
+    const keyToUse = replacementKey ?? ((await objectExists(newKey)) ? newKey : legacyKey);
 
     const url = await createPresignedUrlWithClient(keyToUse, file.name);
 
@@ -335,6 +307,10 @@ export default class ProjectFilesController extends WorklenzControllerBase {
         .status(401)
         .send(new ServerResponse(false, null, "Authentication required"));
     }
+
+    // Collected before the delete: replacement versions cascade with the row, but their storage
+    // objects have to be removed explicitly.
+    const replacementKeys = await getAllReplacementObjectKeys(fileId);
 
     const result = await db.query(
       `DELETE FROM project_files
@@ -361,6 +337,7 @@ export default class ProjectFilesController extends WorklenzControllerBase {
     );
 
     void deleteObject(storageKey);
+    replacementKeys.forEach((key) => void deleteObject(key));
 
     return res
       .status(200)

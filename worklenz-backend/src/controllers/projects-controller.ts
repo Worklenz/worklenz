@@ -199,7 +199,7 @@ export default class ProjectsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getMyProjectsToTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT p.id, p.name, p.color_code
+    const q = `SELECT p.id, p.name, p.color_code, p.start_date, p.end_date
                FROM projects p
                ${NON_GUEST_ACCESS_JOIN('$2')}
                -- For non-admins, require explicit project membership
@@ -650,7 +650,9 @@ export default class ProjectsController extends WorklenzControllerBase {
                                   ((SELECT team_member_id as team_member_id
                                     FROM project_members
                                     WHERE project_id = projects.id
-                                      AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))) AS project_manager_team_member_id,
+                                      AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')
+                                    ORDER BY created_at
+                                    LIMIT 1)) AS project_manager_team_member_id,
 
                                   (SELECT default_view
                                     FROM project_members prm
@@ -804,6 +806,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.phase_label,
              projects.project_type,
              projects.auto_archive_on_sprint_complete,
+             projects.auto_start_complete_sprints,
              projects.story_point_scale,
              projects.category_id,
              projects.currency,
@@ -1789,7 +1792,9 @@ export default class ProjectsController extends WorklenzControllerBase {
                                    ((SELECT project_members.team_member_id as team_member_id
                                       FROM project_members
                                       WHERE project_members.project_id = p2.id
-                                        AND project_members.project_access_level_id = (SELECT project_access_levels.id FROM project_access_levels WHERE project_access_levels.key = 'PROJECT_MANAGER'))) AS project_manager_team_member_id,
+                                        AND project_members.project_access_level_id = (SELECT project_access_levels.id FROM project_access_levels WHERE project_access_levels.key = 'PROJECT_MANAGER')
+                                      ORDER BY project_members.created_at
+                                      LIMIT 1)) AS project_manager_team_member_id,
                                    (SELECT project_members.default_view
                                       FROM project_members
                                       WHERE project_members.project_id = p2.id

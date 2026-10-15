@@ -1,0 +1,126 @@
+{
+  "page": {
+    "title": "Overview",
+    "description": "Qué necesita su atención entre clientes, proyectos y discusiones.",
+    "editingHint": "Drag widgets to reorder them, change their size, or hide the ones you do not need.",
+    "loadFailed": "No se pudo cargar la descripción general."
+  },
+  "widget": {
+    "viewAll": "Ver todo",
+    "retry": "Reintentar",
+    "error": "Este widget no se pudo cargar."
+  },
+  "edit": {
+    "customize": "Personalizar",
+    "done": "Hecho",
+    "cancel": "Cancel",
+    "reset": "Reset to default",
+    "resetConfirm": "¿Restaurar el diseño predeterminado?",
+    "saveFailed": "No se pudo guardar el diseño.",
+    "resetFailed": "No se pudo restablecer el diseño.",
+    "drag": "Arrastre para reordenar {{title}}",
+    "size": "Tamaño de {{title}}",
+    "size_s": "S",
+    "size_m": "M",
+    "size_l": "L",
+    "hide": "Ocultar widget",
+    "show": "Mostrar widget",
+    "hideNamed": "Ocultar {{title}}",
+    "showNamed": "Mostrar {{title}}",
+    "save": "Guardar",
+    "saved": "Resumen guardado",
+    "resetDone": "Descripción general restablecida al diseño predeterminado",
+    "resetConfirmHelp": "Se eliminará el arreglo guardado.",
+    "addWidget": "Agregar widget",
+    "emptyTitle": "No hay widgets en tu descripción general",
+    "emptyHelp": "Elija Personalizar y luego Agregar widget para recuperar algunos.",
+    "widgetSettings": "{{name}} configuración",
+    "settingsFor": "Configuración para {{name}}",
+    "width": "Ancho",
+    "widthQuarter": "Ancho de un cuarto",
+    "widthThird": "un tercio",
+    "widthHalf": "Medio ancho",
+    "widthTwoThirds": "dos tercios",
+    "widthThreeQuarters": "tres cuartos",
+    "widthFull": "Ancho completo",
+    "moveEarlier": "Mover antes",
+    "moveLater": "Mover más tarde",
+    "leaveTitle": "¿Salir sin ahorrar?",
+    "leaveBody": "Sus cambios en la descripción general no se han guardado y se perderán.",
+    "leave": "salir",
+    "stay": "quedarse"
+  },
+  "status": {
+    "awaiting": "esperando",
+    "approved": "Aprobado",
+    "changes_requested": "Cambios solicitados",
+    "cr_submitted": "Enviado",
+    "cr_under_review": "En revisión",
+    "cr_more_info": "Más información",
+    "cr_approved": "Aprobado",
+    "cr_in_progress": "En progreso",
+    "cr_completed": "Completado",
+    "cr_rejected": "Rechazado",
+    "cr_cancelled": "Cancelado"
+  },
+  "widgets": {
+    "kpi_awaiting_approvals": {
+      "title": "Aprobaciones pendientes",
+      "sub": "{{count}} vencido"
+    },
+    "kpi_open_change_requests": {
+      "title": "Solicitudes de cambio para revisar",
+      "sub": "{{count}} esperando al cliente"
+    },
+    "kpi_delayed_milestones": {
+      "title": "Hitos retrasados",
+      "sub": "En todos los proyectos del portal"
+    },
+    "kpi_unread_discussions": {
+      "title": "Discusiones no leídas",
+      "sub": "Con mensajes de nuevos clientes"
+    },
+    "kpi_overdue_invoices": {
+      "title": "Facturas vencidas",
+      "none": "Nada atrasado"
+    },
+    "pending_approvals": {
+      "title": "Aprobaciones pendientes",
+      "empty": "No hay aprobaciones esperando a un cliente.",
+      "overdue": "Vencido · {{date}}",
+      "due": "Vencimiento {{date}}"
+    },
+    "change_requests": {
+      "title": "Solicitudes de cambio para revisar",
+      "empty": "Ninguna solicitud de cambio necesita revisión."
+    },
+    "upcoming_milestones": {
+      "title": "Próximos hitos",
+      "empty": "No hay hitos abiertos en proyectos de portal."
+    },
+    "latest_discussions": {
+      "title": "Últimas discusiones",
+      "empty": "Aún no hay discusiones."
+    },
+    "mentions_me": {
+      "title": "menciones de mi",
+      "empty": "Nadie te ha mencionado en una discusión.",
+      "row": "{{name}} en {{project}}"
+    },
+    "approvals_by_status": {
+      "title": "Aprobaciones por estado",
+      "empty": "Aún no se han enviado aprobaciones."
+    },
+    "cr_by_status": {
+      "title": "Canalización de solicitudes de cambio",
+      "empty": "Aún no hay solicitudes de cambio."
+    },
+    "needs_attention": {
+      "title": "necesita atencion",
+      "empty": "Nada necesita atención. Buen trabajo.",
+      "approval_overdue": "Aprobación vencida",
+      "change_request_review": "Solicitud de revisión de alta prioridad",
+      "milestone_late": "Hito tardío"
+    }
+  }
+}

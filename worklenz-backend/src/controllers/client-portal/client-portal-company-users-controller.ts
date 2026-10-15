@@ -147,7 +147,7 @@ export default class ClientPortalCompanyUsersController {
       const result = await db.query(
         `SELECT
            COUNT(*)::int AS total,
-           COUNT(*) FILTER (WHERE role = 'poc')::int AS pocs,
+           COUNT(*) FILTER (WHERE role = 'admin')::int AS pocs,
            COUNT(*) FILTER (WHERE disabled_at IS NOT NULL)::int AS disabled,
            (
              SELECT COUNT(*)::int FROM (
@@ -155,7 +155,7 @@ export default class ClientPortalCompanyUsersController {
                FROM client_contacts
                WHERE team_id = $1
                GROUP BY client_id
-               HAVING COUNT(*) FILTER (WHERE role = 'poc') = 0
+               HAVING COUNT(*) FILTER (WHERE role = 'admin') = 0
              ) AS companies_without_poc
            ) AS companies_without_poc
          FROM client_contacts
@@ -286,14 +286,14 @@ export default class ClientPortalCompanyUsersController {
     }
   }
 
-  /** PUT /portal/company-users/:userId/role  body: { role: 'poc' | 'member' } */
+  /** PUT /portal/company-users/:userId/role  body: { role: 'admin' | 'member' | 'viewer' } */
   static async setRole(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const teamId = req.user?.team_id;
       if (!teamId) return unauthenticated(res);
 
       const { role } = req.body ?? {};
-      if (!isClientContactRole(role)) return badRequest(res, "Role must be 'poc' or 'member'");
+      if (!isClientContactRole(role)) return badRequest(res, "Role must be 'admin', 'member' or 'viewer'");
 
       const result = await db.query(
         `UPDATE client_contacts SET role = $1, updated_at = NOW() WHERE id = $2 AND team_id = $3 RETURNING id`,

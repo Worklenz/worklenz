@@ -22,5 +22,9 @@
   "projectCategoryUpdatedDesc": "La catégorie de projet a été mise à jour.",
   "permissionLostDesc": "Vos autorisations sur ce projet ont été mises à jour. Rechargement de votre vue.",
   "You do not have permission to access this project": "Vous n'êtes pas autorisé à accéder à ce projet",
-  "Failed to load project": "Échec du chargement du projet"
+  "Failed to load project": "Échec du chargement du projet",
+  "issueTypeSaveError": "Impossible de modifier le type d’élément. Veuillez réessayer.",
+  "changeIssueType": "Modifier le type d’élément",
+  "unpinTabFromHeader": "Retirer de l’en-tête",
+  "pinTabToHeader": "Afficher dans l’en-tête"
 }

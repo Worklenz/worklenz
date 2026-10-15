@@ -16,6 +16,8 @@ export interface IReceiver {
   project_color?: string;
   task_id?: string;
   comment_id?: string;
+  /** Optional in-app deep link. When set it replaces the default project link. */
+  url?: string;
 }
 
 export interface ICreateNotificationRequest {
@@ -29,4 +31,6 @@ export interface ICreateNotificationRequest {
   taskId: string | null;
   projectId: string | null;
   commentId?: string;
+  /** Optional in-app deep link stored with the notification (e.g. a Client Portal approval). */
+  url?: string;
 }

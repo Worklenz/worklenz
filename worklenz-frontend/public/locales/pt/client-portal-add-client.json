@@ -56,9 +56,9 @@
     "lastName": "Sobrenome",
     "lastNamePlaceholder": "Silva",
     "email": "Endereço de e-mail",
-    "emailPlaceholder": "jane@company.com",
+    "emailPlaceholder": "jane@empresa.com",
     "jobTitle": "Cargo",
-    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "jobTitlePlaceholder": "por exemplo Gerente de Marketing",
     "phone": "Telefone (opcional)",
     "phonePlaceholder": "+1 415 555 0142"
   },

@@ -19,7 +19,7 @@ export const IssueTypeBadge = ({ type, showTooltip = true }: IssueTypeBadgeProps
     <span
       role="img"
       aria-label={label}
-      className="inline-grid place-items-center w-5 h-5 rounded text-[10px] font-extrabold text-white flex-none"
+      className="inline-grid place-items-center w-5 h-5 rounded text-[10px] leading-none font-extrabold text-white flex-none align-middle"
       style={{ backgroundColor: getIssueTypeColor(type, token) }}
     >
       {ISSUE_TYPE_LETTERS[type]}

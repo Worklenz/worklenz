@@ -439,5 +439,9 @@
   "releaseItemsAdded_other": "{{count}} work items added",
   "releaseItemsAddError": "Could not add the work items",
   "You do not have permission to access this project": "You do not have permission to access this project",
-  "Failed to load project": "Failed to load project"
+  "Failed to load project": "Failed to load project",
+  "issueTypeSaveError": "Could not change the issue type. Please try again.",
+  "changeIssueType": "Change issue type",
+  "unpinTabFromHeader": "Remove from header",
+  "pinTabToHeader": "Show in header"
 }

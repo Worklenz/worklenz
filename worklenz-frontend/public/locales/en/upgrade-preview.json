@@ -147,36 +147,6 @@
           "Unlimited client accounts"
         ]
       },
-      "requests": {
-        "title": "Requests",
-        "description": "Let clients submit and track service requests without leaving their portal.",
-        "features": [
-          "Client-submitted service requests",
-          "Accept, reject, or follow up in one place",
-          "Status tracking from submission to completion",
-          "Linked directly to the service that was requested"
-        ]
-      },
-      "services": {
-        "title": "Services",
-        "description": "Publish the services clients can request, and control what they can see.",
-        "features": [
-          "A catalog of requestable services",
-          "Per-service visibility controls",
-          "Request volume per service",
-          "Assign a service owner on your team"
-        ]
-      },
-      "chats": {
-        "title": "Messages",
-        "description": "Message clients directly from the same portal they use for everything else.",
-        "features": [
-          "Direct messaging with clients",
-          "One conversation thread per client",
-          "Searchable conversation history",
-          "Notifications when a client replies"
-        ]
-      },
       "invoices": {
         "title": "Invoices",
         "description": "Create, send, and track client invoices without leaving Worklenz.",
@@ -195,6 +165,66 @@
           "Branded header across the portal",
           "Consistent visual identity for clients",
           "Company details clients can see"
+        ]
+      },
+      "projects": {
+        "title": "Portal Projects",
+        "description": "Choose which projects clients can see and what is shared inside each one.",
+        "features": [
+          "Switch the Client Portal on per project",
+          "Share tasks, files and milestones one by one",
+          "Everything stays Internal Only until you share it",
+          "Client-facing status, phase and progress"
+        ]
+      },
+      "approvals": {
+        "title": "Approvals",
+        "description": "Get formal, recorded sign-off from clients on exact file versions.",
+        "features": [
+          "Ask a Client Admin to approve a file, milestone or task",
+          "The exact version or revision is recorded",
+          "Every decision is kept, with a full history",
+          "Overdue and awaiting approvals at a glance"
+        ]
+      },
+      "changeRequests": {
+        "title": "Change Requests",
+        "description": "Review, estimate and decide on scope changes, then turn approved ones into work.",
+        "features": [
+          "Clients submit scope changes from their portal",
+          "Estimate, approve, reject or ask for more information",
+          "Convert approved requests into tasks",
+          "Create quotes and invoices from a request"
+        ]
+      },
+      "discussions": {
+        "title": "Discussions",
+        "description": "Talk to clients about the exact task, file or approval, with internal comments kept private.",
+        "features": [
+          "Conversations attached to the work they are about",
+          "Client-visible replies and private internal comments",
+          "Mention client users, never by accident in internal notes",
+          "Unread tracking across your team"
+        ]
+      },
+      "auditLog": {
+        "title": "Audit Log",
+        "description": "A tamper-proof record of client and team activity.",
+        "features": [
+          "Access, sharing, file, approval and change request events",
+          "Every entry is timestamped and attributed",
+          "Filter by client, event type or who acted",
+          "Export the filtered view as CSV"
+        ]
+      },
+      "preview": {
+        "title": "Client Portal",
+        "description": "See exactly what a client sees before you share anything.",
+        "features": [
+          "Preview as any active client user",
+          "Built from the same rules the portal enforces",
+          "See what is hidden from that user",
+          "Check what each role can do"
         ]
       }
     }

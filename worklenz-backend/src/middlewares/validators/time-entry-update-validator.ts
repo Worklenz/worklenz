@@ -4,6 +4,7 @@ import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import { getBackdateViolation } from "../../shared/timelog-backdate-restriction";
+import { getProjectStartDateViolation } from "../../shared/timelog-project-date-restriction";
 import { isTeamOwner, isTeamAdmin } from "../../shared/team-permissions";
 
 /**
@@ -20,6 +21,13 @@ export default async function (req: IWorkLenzRequest, res: IWorkLenzResponse, ne
   if (!seconds_spent || !formatted_start) {
     return res.status(400).send(new ServerResponse(false, null, "A duration and a start time are required."));
   }
+
+  const projectViolation = await getProjectStartDateViolation({
+    workLogId: req.params.id || null,
+    formattedStart: formatted_start,
+    userId: req.user?.id,
+  });
+  if (projectViolation) return res.status(400).send(new ServerResponse(false, null, projectViolation));
 
   const violation = await getBackdateViolation(
     formatted_start,

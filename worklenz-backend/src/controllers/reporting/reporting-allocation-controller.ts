@@ -715,9 +715,11 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     const billableQuery = this.buildBillableQueryWithAlias(billable, 't');
     const members = (req.body.members || []) as string[];
+    const practiceIds = (req.body.practice_ids || []) as string[];
+    const departmentIds = (req.body.department_ids || []) as string[];
     
     // Build all filters in the order they appear in the query to ensure parameter positions match
-    // Query parameter order: teams (main WHERE), dates (subquery), projects (subquery), categories (subquery), archived (subquery), members (main WHERE)
+    // Query parameter order: teams (main WHERE), dates (subquery), projects (subquery), categories (subquery), archived (subquery), practices (main WHERE), departments (main WHERE), members (main WHERE)
     
     let paramOffsetForFilters = teamIdsParams.length + 1;
     
@@ -782,8 +784,63 @@ export default class ReportingAllocationController extends ReportingControllerBa
       archivedParams = [req.user?.id];
       paramOffsetForFilters += 1;
     }
-    
-    // 5. Members filter (appears in main WHERE clause after subquery)
+
+    // 5. Practice filter (appears in the main WHERE clause after the subquery).
+    // The sentinel represents members who have not been assigned a practice.
+    let practicesFilter = "";
+    let practiceParams: string[] = [];
+    if (Array.isArray(req.body.practice_ids)) {
+      const noPracticeFilterId = "__no_practice__";
+      const selectedPracticeIds = practiceIds.filter(id => id !== noPracticeFilterId);
+      const includeNoPractice = practiceIds.includes(noPracticeFilterId);
+
+      if (selectedPracticeIds.length === 0 && !includeNoPractice) {
+        practicesFilter = "AND FALSE";
+      } else {
+        let practiceCondition = "";
+        if (selectedPracticeIds.length > 0) {
+          const { clause, params } = SqlHelper.buildInClause(selectedPracticeIds, paramOffsetForFilters);
+          practiceCondition = `tm.practice_id IN (${clause})`;
+          practiceParams = params as string[];
+          paramOffsetForFilters += practiceParams.length;
+        }
+        if (includeNoPractice) {
+          practiceCondition = practiceCondition
+            ? `(${practiceCondition} OR tm.practice_id IS NULL)`
+            : "tm.practice_id IS NULL";
+        }
+        practicesFilter = `AND tmiv.team_member_id IN (SELECT tm.id FROM team_members tm WHERE ${practiceCondition})`;
+      }
+    }
+
+    // 6. Department filter follows the same semantics as the practice filter.
+    let departmentsFilter = "";
+    let departmentParams: string[] = [];
+    if (Array.isArray(req.body.department_ids)) {
+      const noDepartmentFilterId = "__no_department__";
+      const selectedDepartmentIds = departmentIds.filter(id => id !== noDepartmentFilterId);
+      const includeNoDepartment = departmentIds.includes(noDepartmentFilterId);
+
+      if (selectedDepartmentIds.length === 0 && !includeNoDepartment) {
+        departmentsFilter = "AND FALSE";
+      } else {
+        let departmentCondition = "";
+        if (selectedDepartmentIds.length > 0) {
+          const { clause, params } = SqlHelper.buildInClause(selectedDepartmentIds, paramOffsetForFilters);
+          departmentCondition = `tm.department_id IN (${clause})`;
+          departmentParams = params as string[];
+          paramOffsetForFilters += departmentParams.length;
+        }
+        if (includeNoDepartment) {
+          departmentCondition = departmentCondition
+            ? `(${departmentCondition} OR tm.department_id IS NULL)`
+            : "tm.department_id IS NULL";
+        }
+        departmentsFilter = `AND tmiv.team_member_id IN (SELECT tm.id FROM team_members tm WHERE ${departmentCondition})`;
+      }
+    }
+
+    // 7. Members filter (appears in the main WHERE clause after the subquery)
     let membersFilter = "";
     let memberParams: any[] = [];
     if (members.length > 0) {
@@ -834,6 +891,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
       FROM team_member_info_view tmiv
       WHERE tmiv.team_id IN (${teamIdsClause})
         AND tmiv.active = TRUE
+        ${practicesFilter}
+        ${departmentsFilter}
         ${membersFilter}
       GROUP BY tmiv.email, tmiv.name, tmiv.team_member_id, tmiv.user_id, tmiv.team_id
       ORDER BY logged_time DESC;`;
@@ -844,8 +903,10 @@ export default class ReportingAllocationController extends ReportingControllerBa
     // 3. conditionalProjectParams (subquery filter - appears second)
     // 4. conditionalCategoryParams (subquery filter - appears third)
     // 5. archivedParams (subquery filter - appears fourth)
-    // 6. memberParams (main WHERE clause - appears last)
-    const queryParams = [...teamIdsParams, ...customDurationParams, ...conditionalProjectParams, ...conditionalCategoryParams, ...archivedParams, ...memberParams];
+    // 6. practiceParams (main WHERE clause)
+    // 7. departmentParams (main WHERE clause)
+    // 8. memberParams (main WHERE clause)
+    const queryParams = [...teamIdsParams, ...customDurationParams, ...conditionalProjectParams, ...conditionalCategoryParams, ...archivedParams, ...practiceParams, ...departmentParams, ...memberParams];
     const result = await db.query(q, queryParams);
     const utilization = (req.body.utilization || []) as string[];
 

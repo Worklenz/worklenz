@@ -198,5 +198,7 @@
   "sendInvoiceError": "Failed to send invoice",
   "paidOfTotal": "{{paid}} paid of {{total}}",
   "noPaymentProof": "No payment proof uploaded.",
-  "closeButton": "Close"
+  "closeButton": "Close",
+  "linkedChangeRequest": "Linked Change Request",
+  "openChangeRequest": "Open change request"
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
+  Alert,
   Select,
   DatePicker,
   TimePicker,
@@ -475,9 +476,10 @@ const HomeLogTime: React.FC = () => {
 
   const isFormValid = useMemo(() => {
     if (!selProjectId || !selTaskId || !date || loggedSeconds <= 0) return false;
+    if (selectedProject?.start_date && date.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')) return false;
     if (inputMode === 'Time Range' && (!startTime || !endTime)) return false;
     return true;
-  }, [selProjectId, selTaskId, date, loggedSeconds, inputMode, startTime, endTime]);
+  }, [selProjectId, selTaskId, date, loggedSeconds, inputMode, startTime, endTime, selectedProject]);
 
   const handleProjectChange = (projectId: string) => {
     setSelProjectId(projectId);
@@ -530,8 +532,8 @@ const HomeLogTime: React.FC = () => {
       setEndTime(null);
       setNotes('');
       refreshData();
-    } catch {
-      notification.error({ message: t('logTime.failedToLogTime', { defaultValue: 'Failed to log time' }) });
+     } catch {
+      // The API client interceptor already toasted the error message via alertService.
     } finally {
       setSubmitting(false);
     }
@@ -575,12 +577,14 @@ const HomeLogTime: React.FC = () => {
 
   const renderLogSortableTitle = useCallback(
     (label: string, field: LogSortField) => (
-      <span
+        <span
         onClick={() => handleLogSortClick(field)}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', cursor: 'pointer', userSelect: 'none' }}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', minWidth: 0, cursor: 'pointer', userSelect: 'none' }}
       >
-        <span>{label}</span>
-        <SortArrows active={logSortField === field ? logSortOrder : null} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{label}</span>
+        <span style={{ flexShrink: 0 }}>
+          <SortArrows active={logSortField === field ? logSortOrder : null} />
+        </span>
       </span>
     ),
     [logSortField, logSortOrder, handleLogSortClick]
@@ -699,6 +703,7 @@ const HomeLogTime: React.FC = () => {
         key: 'priority',
         title: renderLogSortableTitle(t('logTime.priorityColumn', { defaultValue: 'Priority' }), 'priority_name'),
         width: '12%',
+        ellipsis: true,
         filters: logPriorityFilterOptions,
         filteredValue: selectedLogPriorityNames,
         onFilter: (value, record) => record.priority_name === value,
@@ -712,10 +717,12 @@ const HomeLogTime: React.FC = () => {
             </Tag>
           ) : null,
       },
-      {
+            {
         key: 'billable',
         title: t('logTime.billableColumn', { defaultValue: 'Billable' }),
         width: '10%',
+        ellipsis: true,
+        onHeaderCell: () => ({ style: { whiteSpace: 'nowrap' } }),
         filters: logBillableFilterOptions,
         filteredValue: selectedLogBillable,
         onFilter: (value, record) => (record.billable ? 'yes' : 'no') === value,
@@ -742,12 +749,14 @@ const HomeLogTime: React.FC = () => {
         key: 'date',
         title: renderLogSortableTitle(t('logTime.dateColumn', { defaultValue: 'Date' }), 'created_at'),
         width: '10%',
+        ellipsis: true,
         render: (_, record) => <span style={{ opacity: 0.5, fontSize: 11 }}>{formatLogDate(record.created_at)}</span>,
       },
       {
         key: 'createdTime',
         title: t('logTime.createdTimeColumn', { defaultValue: 'Created Time' }),
         width: '10%',
+         ellipsis: true,
         render: (_, record) => {
           if (!record.created_at) {
             return <span style={{ opacity: 0.5, fontSize: 11 }}>-</span>;
@@ -816,9 +825,25 @@ const HomeLogTime: React.FC = () => {
             alignSelf: isDesktop ? 'flex-start' : 'stretch',
           }}
         >
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>{t('logTime.quickEntryTitle', { defaultValue: 'Quick Time Entry' })}</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>{t('logTime.quickEntryTitle', { defaultValue: 'Quick Time Entry' })}</div>
 
-          <div style={{ marginBottom: 14 }}>
+          {selectedProject?.start_date && dayjs(selectedProject.start_date).isAfter(dayjs(), 'day') && (
+            <Alert
+              type="warning"
+              showIcon
+              message={t('logTime.projectNotStartedWarningTitle', {
+                defaultValue: 'Project has not started yet',
+              })}
+              description={t('logTime.projectNotStartedWarningDesc', {
+                date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+                defaultValue:
+                  'This project is scheduled to start on {{date}}. Time cannot be logged before the project start date.',
+              })}
+              style={{ marginBottom: 10 }}
+            />
+          )}
+
+          <div style={{ marginBottom: 10 }}>
             <label style={fldLbl}>{t('logTime.projectLabel', { defaultValue: 'Project' })}</label>
             <Select
               classNames={{ popup: { root: 'quick-entry-dropdown' } }}
@@ -833,7 +858,7 @@ const HomeLogTime: React.FC = () => {
             />
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom: 10 }}>
             <label style={fldLbl}>{t('logTime.taskLabel', { defaultValue: 'Task' })}</label>
             <Select
               showSearch
@@ -873,7 +898,7 @@ const HomeLogTime: React.FC = () => {
             />
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom: 10 }}>
             <label style={fldLbl}>{t('logTime.inputModeLabel', { defaultValue: 'Input Mode' })}</label>
             <Segmented
               block
@@ -887,7 +912,7 @@ const HomeLogTime: React.FC = () => {
           </div>
 
           {inputMode === 'Duration' ? (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
                <div style={{ flex: 1.4, minWidth: 160 }}>
                  <label style={fldLbl}>{t('logTime.dateLabel', { defaultValue: 'Date' })}</label>
                  <DatePicker
@@ -933,7 +958,7 @@ const HomeLogTime: React.FC = () => {
             </div>
           ) : (
             <>
-              <div style={{ marginBottom: 14 }}>
+              <div style={{ marginBottom: 10 }}>
                 <label style={fldLbl}><span style={{ color: token.colorError }}>*</span> {t('logTime.dateLabel', { defaultValue: 'Date' })}</label>
                 <DatePicker
                   style={{ width: '100%' }}
@@ -965,7 +990,7 @@ const HomeLogTime: React.FC = () => {
             </>
           )}
 
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 12 }}>
             <label style={fldLbl}>{t('logTime.workDescriptionLabel', { defaultValue: 'Description' })}</label>
             <Input
               placeholder={t('logTime.workDescriptionPlaceholder', { defaultValue: 'What did you work on?' })}
