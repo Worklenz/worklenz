@@ -67,7 +67,7 @@ declare global {
 
 const UpgradePlans = () => {
   const dispatch = useAppDispatch();
-  const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal', 'admin-center/overview']);
+  const { t, i18n } = useTranslation(['admin-center/current-bill', 'pricing-modal', 'admin-center/overview']);
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { trackAppSumoEvent } = useAppSumoTracking();
   const { isLicenseExpired } = useAuthStatus();
@@ -85,6 +85,7 @@ const UpgradePlans = () => {
   const [selectedPlanType, setSelectedPlanType] = useState<PlanType>('pro');
   const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>('monthly');
   const [teamSize, setTeamSize] = useState<number>(1);
+  const userPluralSuffix = teamSize > 1 && i18n.language !== 'zh_tw' ? 's' : '';
 
   // Loading states
   const [isLoadingPlans, setIsLoadingPlans] = useState(true);
@@ -652,7 +653,7 @@ const UpgradePlans = () => {
                       'Automatically using per-user pricing for {{count}} user{{s}}',
                       {
                         count: teamSize,
-                        s: teamSize > 1 ? 's' : '',
+                        s: userPluralSuffix,
                       }
                     )
                     : t(
@@ -660,7 +661,7 @@ const UpgradePlans = () => {
                       'Automatically using base plan pricing for {{count}} user{{s}}',
                       {
                         count: teamSize,
-                        s: teamSize > 1 ? 's' : '',
+                        s: userPluralSuffix,
                       }
                     )}
                 </Typography.Text>
@@ -793,7 +794,7 @@ const UpgradePlans = () => {
                       const userText = t(
                         'pricing-modal:billing.forUsers',
                         ' for {{count}} user{{s}}',
-                        { count: teamSize, s: teamSize > 1 ? 's' : '' }
+                        { count: teamSize, s: userPluralSuffix }
                       );
                       return `$${annualTotal}/year${userText}`;
                     } else {
@@ -801,7 +802,7 @@ const UpgradePlans = () => {
                       const userText = t(
                         'pricing-modal:billing.forUsers',
                         ' for {{count}} user{{s}}',
-                        { count: teamSize, s: teamSize > 1 ? 's' : '' }
+                        { count: teamSize, s: userPluralSuffix }
                       );
                       return `$${monthlyTotal}/month${userText}`;
                     }
@@ -875,7 +876,7 @@ const UpgradePlans = () => {
                     const userText = t(
                       'pricing-modal:billing.forUsers',
                       ' for {{count}} user{{s}}',
-                      { count: teamSize, s: teamSize > 1 ? 's' : '' }
+                      { count: teamSize, s: userPluralSuffix }
                     );
                     return `$${annualTotal}/year${userText}`;
                   } else {
@@ -883,7 +884,7 @@ const UpgradePlans = () => {
                     const userText = t(
                       'pricing-modal:billing.forUsers',
                       ' for {{count}} user{{s}}',
-                      { count: teamSize, s: teamSize > 1 ? 's' : '' }
+                      { count: teamSize, s: userPluralSuffix }
                     );
                     return `$${monthlyTotal}/month${userText}`;
                   }

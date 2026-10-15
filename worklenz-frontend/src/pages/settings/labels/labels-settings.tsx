@@ -30,7 +30,7 @@ import { evt_settings_labels_visit } from '@/shared/worklenz-analytics-events';
 import { alertService } from '@/services/alerts/alertService';
 
 const LabelsSettings = () => {
-  const { t } = useTranslation('settings/labels');
+  const { t, i18n } = useTranslation('settings/labels');
   const { trackMixpanelEvent } = useMixpanelTracking();
   useDocumentTitle(t('pageTitle', 'Manage Labels'));
 
@@ -135,7 +135,7 @@ const LabelsSettings = () => {
       render: (record: ITaskLabel) => {
         const usageCount = record.usage || 0;
         const labelName = record.name || 'this label';
-        const plural = usageCount > 1 ? 's' : '';
+        const plural = usageCount > 1 && i18n.language !== 'zh_tw' ? 's' : '';
         const isInUse = usageCount > 0;
 
         return (

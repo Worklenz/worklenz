@@ -1,0 +1,15 @@
+{
+  "pageTitle": "任務範本",
+  "nameColumn": "名稱",
+  "createdColumn": "建立時間",
+  "editToolTip": "編輯",
+  "deleteToolTip": "刪除",
+  "confirmText": "確定要執行嗎？",
+  "okText": "是",
+  "cancelText": "取消",
+  "noTemplatesYet": "尚無任務範本",
+  "step1": "前往並開啟專案。",
+  "step2": "使用 [批次編輯] 選項選取任務。",
+  "step3": "在批次操作列中點選 [更多選項]，再選擇 [建立任務範本]。",
+  "totalItems": "總筆數"
+}

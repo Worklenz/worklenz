@@ -1,0 +1,22 @@
+{
+  "title": "管理實務領域",
+  "nameColumn": "名稱",
+  "search": "搜尋實務領域",
+  "createPracticeButton": "建立實務領域",
+  "createPracticeDrawerTitle": "建立實務領域",
+  "updatePracticeDrawerTitle": "更新實務領域",
+  "nameLabel": "名稱",
+  "namePlaceholder": "請輸入實務領域名稱",
+  "nameRequiredError": "實務領域名稱為必填欄位",
+  "createButton": "建立",
+  "updateButton": "更新",
+  "editTooltip": "編輯",
+  "deleteTooltip": "刪除",
+  "deleteConfirmationTitle": "確定要刪除此實務領域嗎？",
+  "deleteConfirmationOk": "刪除",
+  "deleteConfirmationCancel": "取消",
+  "fetchPracticeErrorMessage": "無法取得實務領域",
+  "createPracticeErrorMessage": "無法建立實務領域",
+  "updatePracticeErrorMessage": "無法更新實務領域",
+  "pinTooltip": "釘選至導覽列"
+}

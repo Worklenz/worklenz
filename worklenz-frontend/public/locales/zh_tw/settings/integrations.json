@@ -1,0 +1,25 @@
+{
+  "connect": "連結",
+  "comingSoon": "即將推出",
+  "availableSoon": "即將開放",
+  "slack": {
+    "title": "Slack",
+    "description": "整合 Slack，接收即時通知、建立任務，並讓團隊保持同步。"
+  },
+  "teams": {
+    "title": "Microsoft Teams",
+    "description": "將 Microsoft Teams 與 Worklenz 團隊整合，接收即時通知、從 Teams 建立任務，並讓團隊在兩個平台上保持同步。"
+  },
+  "github": {
+    "title": "GitHub",
+    "description": "連結 GitHub 儲存庫，將提交紀錄、提取要求及議題與任務一併追蹤。"
+  },
+  "googleDrive": {
+    "title": "Google Drive",
+    "description": "連結 Google Drive，附加檔案、分享文件，並與團隊順暢協作完成專案交付成果。"
+  },
+  "googleCalendar": {
+    "title": "Google Calendar",
+    "description": "將任務與期限同步至 Google Calendar，管理排程、設定提醒，不錯過重要的專案里程碑。"
+  }
+}

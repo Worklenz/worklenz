@@ -1,0 +1,13 @@
+{
+  "title": "{{items}} 個專案",
+
+  "table": {
+    "header": {
+      "name": "名稱",
+      "status": "狀態",
+      "taskProgress": "任務進度",
+      "lastUpdates": "最後更新",
+      "members": "成員"
+    }
+  }
+}

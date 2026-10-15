@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { enUS, es, pt, de, zhCN, sq } from 'date-fns/locale';
+import { enUS, es, pt, de, zhCN, sq, zhTW } from 'date-fns/locale';
 import i18n from '@/i18n';
 
 /**
@@ -40,6 +40,7 @@ export const formatDateTimeWithUserTimezone = (
         pt: 'pt-PT',
         de: 'de-DE',
         zh: 'zh-CN',
+        zh_tw: 'zh-TW',
         alb: 'sq-AL',
       };
       const locale = localeMap[lng] || 'en-US';
@@ -62,7 +63,9 @@ export const formatDateTimeWithUserTimezone = (
                 ? zhCN
                 : lng === 'alb'
                   ? sq
-                  : enUS;
+                  : lng === 'zh_tw'
+                    ? zhTW
+                    : enUS;
     return format(date, 'MMM d, yyyy, h:mm:ss a', { locale });
   } catch (error) {
     console.error('Error formatting date with user timezone:', error);
