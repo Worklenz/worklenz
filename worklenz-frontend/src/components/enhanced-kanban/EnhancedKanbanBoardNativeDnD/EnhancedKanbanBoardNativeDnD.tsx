@@ -94,6 +94,16 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
   const activeSprintFilterAppliedRef = useRef(false);
   const statusReorderVersionRef = useRef(0);
   const statusReorderQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const statusReorderProjectIdRef = useRef(projectId);
+  const currentProjectIdRef = useRef(projectId);
+  currentProjectIdRef.current = projectId;
+
+  useEffect(() => {
+    if (statusReorderProjectIdRef.current === projectId) return;
+    statusReorderProjectIdRef.current = projectId;
+    statusReorderVersionRef.current++;
+    statusReorderQueueRef.current = Promise.resolve();
+  }, [projectId]);
 
   useEffect(() => {
     if (projectId && loadedProjectId !== projectId) {
@@ -265,25 +275,23 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
                 projectId
               );
               if (!response.done) {
-                if (statusReorderVersionRef.current === reorderVersion) {
-                  const revertedGroups = [...reorderedGroups];
-                  const [movedBack] = revertedGroups.splice(toIdx, 1);
-                  revertedGroups.splice(fromIdx, 0, movedBack);
-                  dispatch(
-                    reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups })
-                  );
+                if (
+                  statusReorderVersionRef.current === reorderVersion &&
+                  statusReorderProjectIdRef.current === projectId &&
+                  currentProjectIdRef.current === projectId
+                ) {
+                  dispatch(fetchEnhancedKanbanGroups(projectId) as any);
+                  alertService.error(t('failedToUpdateColumnOrder'), t('pleaseTryAgain'));
                 }
-                alertService.error(t('failedToUpdateColumnOrder'), t('pleaseTryAgain'));
               }
             } catch (err) {
               logger.error('Failed to update column order', err);
-              if (statusReorderVersionRef.current === reorderVersion) {
-                const revertedGroups = [...reorderedGroups];
-                const [movedBack] = revertedGroups.splice(toIdx, 1);
-                revertedGroups.splice(fromIdx, 0, movedBack);
-                dispatch(
-                  reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups })
-                );
+              if (
+                statusReorderVersionRef.current === reorderVersion &&
+                statusReorderProjectIdRef.current === projectId &&
+                currentProjectIdRef.current === projectId
+              ) {
+                dispatch(fetchEnhancedKanbanGroups(projectId) as any);
               }
             }
           });
