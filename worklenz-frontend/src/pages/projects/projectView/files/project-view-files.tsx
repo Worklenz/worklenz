@@ -558,7 +558,7 @@ const ProjectViewFiles = () => {
 
   const handleSearch = (value: string) => {
     setPaginationConfig(prev => ({ ...prev, pageIndex: 1 }));
-    setSearchValue(value.trim());
+    setSearchValue(value);
   };
 
   const downloadFile = async (file: ProjectFile) => {
@@ -847,7 +847,7 @@ const ProjectViewFiles = () => {
             <Space size={8} wrap style={{ justifyContent: 'flex-end' }}>
 
               <Input
-                placeholder="Search files..."
+                placeholder={t('searchPlaceholder', { defaultValue: 'Search files...' })}
                 prefix={
                   <SearchOutlined
                     style={{ color: token.colorTextTertiary }}
