@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, DatePicker, Form, Input, TimePicker, Flex, InputNumber, Segmented, Tag, Alert } from '@/shared/antd-imports';
+import { Button, DatePicker, Form, Input, TimePicker, Flex, InputNumber, Segmented, Tag, Alert, theme } from '@/shared/antd-imports';
 import { ClockCircleOutlined, InfoCircleOutlined } from '@/shared/antd-imports';
 
 import dayjs, { Dayjs } from 'dayjs';
@@ -8,6 +8,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { fetchOrgConfig } from '@/features/org-config/org-config.slice';
 import { themeWiseColor } from '@/utils/themeWiseColor';
+import { computeTimeRangeSplits, TimeRangeSplitResult } from '@/utils/timeUtils';
 import { useAuthService } from '@/hooks/useAuth';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -106,6 +107,7 @@ const TimeLogForm = ({
   });
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const { token } = theme.useToken();
   const { taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
 
   const dispatch = useAppDispatch();
@@ -394,43 +396,27 @@ const TimeLogForm = ({
     setInputMode(nextMode);
   };
 
-  const createReqBody = (values: TimeLogFormValues) => {
+  const createReqBodies = (values: TimeLogFormValues) => {
     const dateValue = values.date;
-    if (!dateValue) return;
+    if (!dateValue) return [];
 
     const startTimeValue = values.startTime || getNowRoundedToMinute();
+    const targetTaskId = (taskIdProp ?? taskFormViewModel?.task?.id ?? initialValues?.task_id) as string;
+    const targetId = mode === 'edit' && initialValues?.id ? initialValues.id : targetTaskId;
+    const targetProjectId = (projectIdProp ?? taskFormViewModel?.task?.project_id ?? (initialValues as any)?.project_id) as string;
 
     if (inputMode === 'timeRange') {
-      if (!values.startTime || !values.endTime) return;
+      if (!values.startTime || !values.endTime) return [];
 
-      const formattedStartTime = dayjs(dateValue)
-        .hour(values.startTime.hour())
-        .minute(values.startTime.minute())
-        .second(0)
-        .millisecond(0);
-
-      let formattedEndTime = dayjs(dateValue)
-        .hour(values.endTime.hour())
-        .minute(values.endTime.minute())
-        .second(0)
-        .millisecond(0);
-
-      // If end time is before start time, it rolls over to next day
-      if (formattedEndTime.isBefore(formattedStartTime)) {
-        formattedEndTime = formattedEndTime.add(1, 'day');
-      }
-
-      const diff = formattedEndTime.diff(formattedStartTime, 'seconds');
-
-      return {
-        id: mode === 'edit' && initialValues?.id ? initialValues.id : (taskIdProp ?? taskFormViewModel?.task?.id),
-        project_id: (projectIdProp ?? taskFormViewModel?.task?.project_id ?? (initialValues as any)?.project_id) as string,
-        formatted_start: formattedStartTime.toISOString(),
-        seconds_spent: Math.max(0, Math.floor(diff)),
+      const splitInfo = computeTimeRangeSplits(dateValue, values.startTime, values.endTime);
+      return splitInfo.splits.map(split => ({
+        id: targetId,
+        project_id: targetProjectId,
+        formatted_start: split.formatted_start,
+        seconds_spent: split.seconds_spent,
         description: values.description,
-        // Only include new_task_id if user explicitly selected a different task
         ...(mode === 'edit' && selectedReassignTaskId ? { new_task_id: selectedReassignTaskId } : {}),
-      };
+      }));
     }
 
     const hours = Math.max(0, Number(values.hours || 0));
@@ -443,15 +429,16 @@ const TimeLogForm = ({
       .second(0)
       .millisecond(0);
 
-    return {
-      id: mode === 'edit' && initialValues?.id ? initialValues.id : (taskIdProp ?? taskFormViewModel?.task?.id),
-      project_id: (projectIdProp ?? taskFormViewModel?.task?.project_id ?? (initialValues as any)?.project_id) as string,
-      formatted_start: formattedStartTime.toISOString(),
-      seconds_spent: secondsSpent,
-      description: values.description,
-      // Only include new_task_id if user explicitly selected a different task
-      ...(mode === 'edit' && selectedReassignTaskId ? { new_task_id: selectedReassignTaskId } : {}),
-    };
+    return [
+      {
+        id: targetId,
+        project_id: targetProjectId,
+        formatted_start: formattedStartTime.toISOString(),
+        seconds_spent: secondsSpent,
+        description: values.description,
+        ...(mode === 'edit' && selectedReassignTaskId ? { new_task_id: selectedReassignTaskId } : {}),
+      },
+    ];
   };
 
   const onFinish = async (values: TimeLogFormValues) => {
@@ -596,17 +583,48 @@ const TimeLogForm = ({
       return;
     }
 
-    const requestBody = createReqBody(values);
-    if (!requestBody) return;
+    const requestBodies = createReqBodies(values);
+    if (!requestBodies || requestBodies.length === 0) return;
 
     setSubmitting(true);
     try {
       if (mode === 'edit' && initialValues?.id) {
-        await (asTimeEntry
-          ? taskTimeLogsApiService.updateEntry(initialValues.id, requestBody)
-          : taskTimeLogsApiService.update(initialValues.id, requestBody));
+        const partIds =
+          initialValues.part_log_ids && initialValues.part_log_ids.length > 0
+            ? initialValues.part_log_ids
+            : [initialValues.id];
+        const targetTaskId =
+          (taskIdProp ?? taskFormViewModel?.task?.id ?? initialValues.task_id ?? '') as string;
+
+        const doUpdate = (id: string, body: any) =>
+          asTimeEntry
+            ? taskTimeLogsApiService.updateEntry(id, body)
+            : taskTimeLogsApiService.update(id, body);
+        const doDelete = (id: string) =>
+          asTimeEntry
+            ? taskTimeLogsApiService.deleteEntry(id, targetTaskId)
+            : taskTimeLogsApiService.delete(id, targetTaskId);
+
+        if (partIds.length === 2) {
+          if (requestBodies.length === 2) {
+            await doUpdate(partIds[0], requestBodies[0]);
+            await doUpdate(partIds[1], requestBodies[1]);
+          } else {
+            await doUpdate(partIds[0], requestBodies[0]);
+            await doDelete(partIds[1]);
+          }
+        } else {
+          if (requestBodies.length === 2) {
+            await doUpdate(initialValues.id, requestBodies[0]);
+            await taskTimeLogsApiService.create({ ...requestBodies[1], id: targetTaskId });
+          } else {
+            await doUpdate(initialValues.id, requestBodies[0]);
+          }
+        }
       } else {
-        await taskTimeLogsApiService.create(requestBody);
+        for (const body of requestBodies) {
+          await taskTimeLogsApiService.create(body);
+        }
       }
 
       // Call onSubmitSuccess if provided, otherwise just cancel
@@ -676,38 +694,32 @@ const TimeLogForm = ({
         isOvernight: false,
         daySpan: 0,
         exceedsDay: totalMins > 24 * 60,
+        splits: [] as TimeRangeSplitResult[],
       };
     }
 
     if (!formValues.date || !formValues.startTime || !formValues.endTime) {
-      return { hours: 0, minutes: 0, totalMinutes: 0, isOvernight: false, daySpan: 0, exceedsDay: false };
+      return {
+        hours: 0,
+        minutes: 0,
+        totalMinutes: 0,
+        isOvernight: false,
+        daySpan: 0,
+        exceedsDay: false,
+        splits: [] as TimeRangeSplitResult[],
+      };
     }
 
-    const fullStart = dayjs(formValues.date)
-      .hour(formValues.startTime.hour())
-      .minute(formValues.startTime.minute())
-      .second(0)
-      .millisecond(0);
-    let fullEnd = dayjs(formValues.date)
-      .hour(formValues.endTime.hour())
-      .minute(formValues.endTime.minute())
-      .second(0)
-      .millisecond(0);
-
-    const isOvernight = fullEnd.isBefore(fullStart);
-    if (isOvernight) {
-      fullEnd = fullEnd.add(1, 'day');
-    }
-
-    const totalMinutes = fullEnd.diff(fullStart, 'minute');
+    const splitInfo = computeTimeRangeSplits(formValues.date, formValues.startTime, formValues.endTime);
 
     return {
-      hours: Math.floor(totalMinutes / 60),
-      minutes: totalMinutes % 60,
-      totalMinutes,
-      isOvernight,
-      daySpan: isOvernight ? 1 : 0,
-      exceedsDay: totalMinutes > 24 * 60,
+      hours: splitInfo.totalHours,
+      minutes: splitInfo.remainingMinutes,
+      totalMinutes: splitInfo.totalMinutes,
+      isOvernight: splitInfo.isOvernight,
+      daySpan: splitInfo.isOvernight ? 1 : 0,
+      exceedsDay: splitInfo.totalMinutes > 24 * 60,
+      splits: splitInfo.splits,
     };
   }, [inputMode, formValues]);
 
@@ -1015,7 +1027,7 @@ const TimeLogForm = ({
         {/* Live duration summary (pure hours and minutes like Clockify/Toggl, no overnight/OT badges) */}
         {activeDurationInfo.totalMinutes > 0 && (
           <div style={{ marginBlockEnd: 10, width: '100%' }}>
-            <Flex align="center" gap={6}>
+            <Flex align="center" gap={6} wrap="wrap">
               <Tag color="blue" icon={<ClockCircleOutlined />}>
                 {t('taskTimeLogTab.timeLogForm.totalDurationBadge', {
                   duration: `${activeDurationInfo.hours}h ${activeDurationInfo.minutes}m`,

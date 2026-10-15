@@ -125,5 +125,6 @@
   "hoursMinError": "小时必须为 0 或更大",
   "minutesLabel": "分钟",
   "durationGreaterThanZeroError": "时长必须大于 0 分钟",
-  "totalDurationBadge": "总计: {{duration}}"
+  "totalDurationBadge": "总计: {{duration}}",
+  "overnightSplitBreakdown": "({{day1Date}} {{day1Duration}}, {{day2Date}} {{day2Duration}})"
 }

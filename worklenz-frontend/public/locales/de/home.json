@@ -251,7 +251,8 @@
     "weekdaySun": "So",
     "createdTimeColumn": "Erstellte Zeit",
     "minutesPlaceholder": "0",
-    "totalDurationBadge": "Gesamt: {{duration}}"
+    "totalDurationBadge": "Gesamt: {{duration}}",
+    "overnightSplitBreakdown": "({{day1Duration}} am {{day1Date}}, {{day2Duration}} am {{day2Date}})"
   },
   "expenses": {
     "emptyTitle": "Noch keine Ausgaben erfasst",

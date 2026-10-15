@@ -135,19 +135,29 @@ describe('LogTimeModal', () => {
     fireEvent.change(inputs[2], { target: { value: '02:00' } });
     fireEvent.keyDown(inputs[2], { key: 'Enter', code: 'Enter' });
 
-    // Duration badge should show 4h 0m
+    // Duration badge should show 4h 0m and breakdown hint should not be rendered
     expect(await screen.findByText(/4h 0m/)).toBeInTheDocument();
+    expect(screen.queryByText(/2h 0m.*2h 0m/)).toBeNull();
 
     const submitBtn = screen.getByRole('button', { name: /Log Time/i });
     expect(submitBtn).toBeEnabled();
     fireEvent.click(submitBtn);
 
-    await waitFor(() => expect(mocks.create).toHaveBeenCalledTimes(1));
-    expect(mocks.create).toHaveBeenCalledWith(
+    await waitFor(() => expect(mocks.create).toHaveBeenCalledTimes(2));
+    expect(mocks.create).toHaveBeenNthCalledWith(
+      1,
       expect.objectContaining({
         id: 'task-1',
         project_id: 'proj-1',
-        seconds_spent: 14400, // 4 hours overnight
+        seconds_spent: 7200, // 2 hours on Day 1 (22:00 to 00:00)
+      })
+    );
+    expect(mocks.create).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        id: 'task-1',
+        project_id: 'proj-1',
+        seconds_spent: 7200, // 2 hours on Day 2 (00:00 to 02:00)
       })
     );
   });

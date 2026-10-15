@@ -182,6 +182,7 @@
     "confirmDelete": "Tem certeza de que deseja excluir este registro de tempo?",
     "confirmDeleteYes": "Sim",
     "confirmDeleteNo": "Não",
+    "dailyBreakdownTitle": "Detalhamento diário",
     "historyLockedBoundary": "O histórico de registros de tempo está limitado aos últimos 90 dias neste plano",
     "historyLockedTitle": "Histórico de registro de tempo bloqueado",
     "historyLockedBody": "Registros de tempo com mais de 90 dias estão disponíveis no plano Business.",
@@ -225,7 +226,8 @@
       "totalDurationBadge": "Total: {{duration}}",
       "overnightSessionBadge": "Durante a noite (+1 dia)",
       "multiDaySessionBadge": "Abrange {{days}} dias (+{{days}}d)",
-      "durationExceedsDayWarning": "Esta sessão excede 24 horas. Por favor, verifique as datas de início e término."
+      "durationExceedsDayWarning": "Esta sessão excede 24 horas. Por favor, verifique as datas de início e término.",
+      "overnightSplitBreakdown": "({{day1Duration}} em {{day1Date}}, {{day2Duration}} em {{day2Date}})"
     },
     "rollupLoggedTooltip": "Soma do tempo logado nas subtarefas"
   },

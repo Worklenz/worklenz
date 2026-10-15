@@ -125,5 +125,6 @@
   "hoursMinError": "Stunden müssen 0 oder größer sein",
   "minutesLabel": "Minuten",
   "durationGreaterThanZeroError": "Die Dauer muss größer als 0 Minuten sein",
-  "totalDurationBadge": "Gesamt: {{duration}}"
+  "totalDurationBadge": "Gesamt: {{duration}}",
+  "overnightSplitBreakdown": "({{day1Duration}} am {{day1Date}}, {{day2Duration}} am {{day2Date}})"
 }

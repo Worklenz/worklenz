@@ -182,6 +182,7 @@
     "confirmDelete": "Möchten Sie dieses Zeitprotokoll wirklich löschen?",
     "confirmDeleteYes": "Ja",
     "confirmDeleteNo": "Nein",
+    "dailyBreakdownTitle": "Tägliche Aufschlüsselung",
     "historyLockedBoundary": "Zeitprotokolle sind in diesem Plan auf die letzten 90 Tage begrenzt",
     "historyLockedTitle": "Zeitprotokollverlauf gesperrt",
     "historyLockedBody": "Zeitprotokolle älter als 90 Tage sind im Business-Plan verfügbar.",
@@ -225,7 +226,8 @@
       "totalDurationBadge": "Gesamt: {{duration}}",
       "overnightSessionBadge": "Über Nacht (+1 Tag)",
       "multiDaySessionBadge": "Erstreckt sich über {{days}} Tage (+{{days}}T)",
-      "durationExceedsDayWarning": "Diese Sitzung überschreitet 24 Stunden. Bitte überprüfen Sie das Start- und Enddatum."
+      "durationExceedsDayWarning": "Diese Sitzung überschreitet 24 Stunden. Bitte überprüfen Sie das Start- und Enddatum.",
+      "overnightSplitBreakdown": "({{day1Duration}} am {{day1Date}}, {{day2Duration}} am {{day2Date}})"
     },
     "rollupLoggedTooltip": "Summe der angemeldeten Zeit für Unteraufgaben"
   },

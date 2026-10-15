@@ -251,7 +251,8 @@
     "weekdaySun": "Die",
     "createdTimeColumn": "Koha e krijuar",
     "minutesPlaceholder": "0",
-    "totalDurationBadge": "Totali: {{duration}}"
+    "totalDurationBadge": "Totali: {{duration}}",
+    "overnightSplitBreakdown": "({{day1Duration}} më {{day1Date}}, {{day2Duration}} më {{day2Date}})"
   },
   "expenses": {
     "emptyTitle": "Ende pa shpenzime të regjistruara",

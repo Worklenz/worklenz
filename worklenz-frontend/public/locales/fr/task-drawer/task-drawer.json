@@ -182,6 +182,7 @@
     "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce journal de temps ?",
     "confirmDeleteYes": "Oui",
     "confirmDeleteNo": "Non",
+    "dailyBreakdownTitle": "Détail quotidien",
     "historyLockedBoundary": "L'historique du journal de temps est limité aux 90 derniers jours sur ce plan",
     "historyLockedTitle": "Historique du journal de temps verrouillé",
     "historyLockedBody": "Les entrées de journal de temps au-delà de 90 jours sont disponibles sur le plan Business.",
@@ -225,7 +226,8 @@
       "totalDurationBadge": "Total : {{duration}}",
       "overnightSessionBadge": "De nuit (+1 jour)",
       "multiDaySessionBadge": "S'étend sur {{days}} jours (+{{days}}j)",
-      "durationExceedsDayWarning": "Cette session dépasse 24 heures. Veuillez vérifier les dates de début et de fin."
+      "durationExceedsDayWarning": "Cette session dépasse 24 heures. Veuillez vérifier les dates de début et de fin.",
+      "overnightSplitBreakdown": "({{day1Duration}} le {{day1Date}}, {{day2Duration}} le {{day2Date}})"
     },
     "rollupLoggedTooltip": "Somme du temps passé sur les sous-tâches"
   },

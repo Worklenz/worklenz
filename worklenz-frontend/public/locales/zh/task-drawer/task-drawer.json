@@ -182,6 +182,7 @@
     "confirmDelete": "您确定要删除此时间日志吗？",
     "confirmDeleteYes": "是",
     "confirmDeleteNo": "否",
+    "dailyBreakdownTitle": "每日明细",
     "historyLockedBoundary": "时间日志记录在此方案中仅限最近 90 天",
     "historyLockedTitle": "时间日志历史已锁定",
     "historyLockedBody": "90 天以前的时间日志仅在 Business 方案中可用。",
@@ -225,7 +226,8 @@
       "totalDurationBadge": "总计: {{duration}}",
       "overnightSessionBadge": "通宵 (+1天)",
       "multiDaySessionBadge": "跨越 {{days}} 天 (+{{days}}天)",
-      "durationExceedsDayWarning": "此工时记录超过 24 小时，请核对开始和结束日期。"
+      "durationExceedsDayWarning": "此工时记录超过 24 小时，请核对开始和结束日期。",
+      "overnightSplitBreakdown": "({{day1Date}} {{day1Duration}}, {{day2Date}} {{day2Duration}})"
     },
     "rollupLoggedTooltip": "子任务的登录时间总和"
   },

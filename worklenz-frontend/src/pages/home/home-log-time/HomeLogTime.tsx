@@ -48,6 +48,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 import { toSolidTagColor } from '@/utils/colorUtils';
+import { computeTimeRangeSplits } from '@/utils/timeUtils';
 import { useResponsive } from '@/hooks/useResponsive';
 import { store } from '@/app/store';
 import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
@@ -443,28 +444,18 @@ const HomeLogTime: React.FC = () => {
   const projectOptions = projects.map((p: IProject) => ({ value: p.id, label: p.name }));
   const taskOptions = tasks.map(t => ({ value: t.id, label: t.name }));
 
+  const overnightSplitInfo = useMemo(() => {
+    if (inputMode !== 'Time Range' || !startTime || !endTime || !date) return null;
+    return computeTimeRangeSplits(date, startTime, endTime);
+  }, [inputMode, startTime, endTime, date]);
+
   const loggedSeconds = useMemo(() => {
     if (inputMode === 'Duration') {
       return Math.max(0, timeHours) * 3600 + Math.max(0, Math.min(59, timeMinutes)) * 60;
     }
     if (!startTime || !endTime || !date) return 0;
-    const fullStart = dayjs(date)
-      .hour(startTime.hour())
-      .minute(startTime.minute())
-      .second(0)
-      .millisecond(0);
-    let fullEnd = dayjs(date)
-      .hour(endTime.hour())
-      .minute(endTime.minute())
-      .second(0)
-      .millisecond(0);
-    // Automatic overnight rollover: if endTime is before start time, it rolls over to next day
-    if (fullEnd.isBefore(fullStart)) {
-      fullEnd = fullEnd.add(1, 'day');
-    }
-    const diff = fullEnd.diff(fullStart, 'second');
-    return diff > 0 ? diff : 0;
-  }, [inputMode, timeHours, timeMinutes, startTime, endTime, date]);
+    return overnightSplitInfo ? overnightSplitInfo.totalSeconds : 0;
+  }, [inputMode, timeHours, timeMinutes, startTime, endTime, date, overnightSplitInfo]);
 
   const handleModeChange = (nextMode: 'Duration' | 'Time Range') => {
     if (nextMode === inputMode) return;
@@ -495,38 +486,43 @@ const HomeLogTime: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!isFormValid) return;
+    if (!isFormValid || !selTaskId) return;
     setSubmitting(true);
     try {
-      // Persist the actual start clock time — backend stores formatted_start as
-      // created_at, and the task-drawer edit form derives start/end from that.
-      // Sending only the DatePicker value kept "now" (or midnight) and dropped
-      // the Time Range start, so edit showed current time + same duration.
-      let formattedStart: string;
-      if (inputMode === 'Time Range' && startTime) {
-        formattedStart = dayjs(date)
-          .hour(startTime.hour())
-          .minute(startTime.minute())
-          .second(0)
-          .millisecond(0)
-          .toISOString();
+      if (
+        inputMode === 'Time Range' &&
+        startTime &&
+        endTime &&
+        overnightSplitInfo &&
+        overnightSplitInfo.splits.length > 0
+      ) {
+        for (const split of overnightSplitInfo.splits) {
+          await taskTimeLogsApiService.create({
+            id: selTaskId,
+            project_id: selProjectId,
+            formatted_start: split.formatted_start,
+            seconds_spent: split.seconds_spent,
+            description: notes || undefined,
+          });
+        }
       } else {
         const now = dayjs().second(0).millisecond(0);
-        formattedStart = dayjs(date)
+        const formattedStart = dayjs(date)
           .hour(now.hour())
           .minute(now.minute())
           .second(0)
           .millisecond(0)
           .toISOString();
+
+        await taskTimeLogsApiService.create({
+          id: selTaskId,
+          project_id: selProjectId,
+          formatted_start: formattedStart,
+          seconds_spent: loggedSeconds,
+          description: notes || undefined,
+        });
       }
 
-      await taskTimeLogsApiService.create({
-        id: selTaskId,
-        project_id: selProjectId,
-        formatted_start: formattedStart,
-        seconds_spent: loggedSeconds,
-        description: notes || undefined,
-      });
       setTimeHours(0);
       setTimeMinutes(30);
       minutesAutoClearedRef.current = false;
@@ -980,12 +976,14 @@ const HomeLogTime: React.FC = () => {
 
           {loggedSeconds > 0 && (
             <div style={{ marginBottom: 14 }}>
-              <Tag color="blue" icon={<ClockCircleOutlined />}>
-                {t('logTime.totalDurationBadge', {
-                  duration: `${Math.floor(loggedSeconds / 3600)}h ${Math.floor((loggedSeconds % 3600) / 60)}m`,
-                  defaultValue: `Total: ${Math.floor(loggedSeconds / 3600)}h ${Math.floor((loggedSeconds % 3600) / 60)}m`,
-                })}
-              </Tag>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <Tag color="blue" icon={<ClockCircleOutlined />}>
+                  {t('logTime.totalDurationBadge', {
+                    duration: `${Math.floor(loggedSeconds / 3600)}h ${Math.floor((loggedSeconds % 3600) / 60)}m`,
+                    defaultValue: `Total: ${Math.floor(loggedSeconds / 3600)}h ${Math.floor((loggedSeconds % 3600) / 60)}m`,
+                  })}
+                </Tag>
+              </div>
             </div>
           )}
 

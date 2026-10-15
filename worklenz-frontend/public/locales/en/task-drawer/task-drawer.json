@@ -182,6 +182,7 @@
     "confirmDelete": "Are you sure you want to delete this time log?",
     "confirmDeleteYes": "Yes",
     "confirmDeleteNo": "No",
+    "dailyBreakdownTitle": "Daily Breakdown",
     "historyLockedBoundary": "Time log history is limited to the last 90 days on this plan",
     "historyLockedTitle": "Time Log History Locked",
     "historyLockedBody": "Time log entries beyond 90 days are available on the Business plan.",
@@ -225,7 +226,8 @@
       "totalDurationBadge": "Total: {{duration}}",
       "overnightSessionBadge": "Overnight (+1 day)",
       "multiDaySessionBadge": "Spans {{days}} days (+{{days}}d)",
-      "durationExceedsDayWarning": "This session exceeds 24 hours. Please verify the start and end dates."
+      "durationExceedsDayWarning": "This session exceeds 24 hours. Please verify the start and end dates.",
+      "overnightSplitBreakdown": "({{day1Duration}} on {{day1Date}}, {{day2Duration}} on {{day2Date}})"
     },
     "rollupLoggedTooltip": "Sum of time logged on subtasks"
   },

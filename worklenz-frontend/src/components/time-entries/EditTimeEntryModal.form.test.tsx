@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, within, waitFor } from '@testing-library/react';
+import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TimeLogForm from '@/components/task-drawer/shared/time-log/time-log-form';
 import { EditTimeEntryModal, type EditableTimeEntry } from './EditTimeEntryModal';
@@ -218,6 +218,56 @@ describe('TimeLogForm used by the task drawer (no inModal)', () => {
         project_id: 'project-1',
         seconds_spent: 14400, // 4 hours
         description: 'Night work',
+      })
+    );
+  });
+
+  it('splits overnight entry across midnight into two entries when creating', async () => {
+    const user = userEvent.setup();
+    mocks.create.mockResolvedValue({ done: true });
+
+    render(
+      <TimeLogForm
+        mode="create"
+        taskId="task-1"
+        projectId="project-1"
+        onCancel={vi.fn()}
+      />
+    );
+
+    // Switch to Time Range
+    fireEvent.click(screen.getByText('Time Range'));
+
+    const inputs = screen.getAllByRole('textbox');
+    // inputs[0]: DatePicker, inputs[1]: startTime, inputs[2]: endTime
+    fireEvent.change(inputs[1], { target: { value: '22:00' } });
+    fireEvent.keyDown(inputs[1], { key: 'Enter', code: 'Enter' });
+
+    fireEvent.change(inputs[2], { target: { value: '02:00' } });
+    fireEvent.keyDown(inputs[2], { key: 'Enter', code: 'Enter' });
+
+    expect(await screen.findByText(/4h 0m/)).toBeInTheDocument();
+    expect(screen.queryByText(/2h 0m.*2h 0m/)).toBeNull();
+
+    const submitBtn = await screen.findByRole('button', { name: /Log Time|logTime/i });
+    await waitFor(() => expect(submitBtn).toBeEnabled());
+    await user.click(submitBtn);
+
+    await waitFor(() => expect(mocks.create).toHaveBeenCalledTimes(2));
+    expect(mocks.create).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        id: 'task-1',
+        project_id: 'project-1',
+        seconds_spent: 7200, // 2 hours on Day 1
+      })
+    );
+    expect(mocks.create).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        id: 'task-1',
+        project_id: 'project-1',
+        seconds_spent: 7200, // 2 hours on Day 2
       })
     );
   });

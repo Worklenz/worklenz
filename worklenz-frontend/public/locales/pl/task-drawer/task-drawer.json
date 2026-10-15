@@ -182,6 +182,7 @@
     "confirmDelete": "Czy na pewno chcesz usunąć ten dziennik czasu?",
     "confirmDeleteYes": "Tak",
     "confirmDeleteNo": "Nie",
+    "dailyBreakdownTitle": "Podział dzienny",
     "historyLockedBoundary": "Historia dziennika czasu jest ograniczona do ostatnich 90 dni w tym planie",
     "historyLockedTitle": "Historia dziennika czasu zablokowana",
     "historyLockedBody": "Wpisy do dziennika czasu przekraczające 90 dni są dostępne w planie biznesowym.",
@@ -225,7 +226,8 @@
       "totalDurationBadge": "Łącznie: {{duration}}",
       "overnightSessionBadge": "W nocy (+1 dzień)",
       "multiDaySessionBadge": "Obejmuje {{days}} dni (+{{days}}d)",
-      "durationExceedsDayWarning": "Ta sesja przekracza 24 godziny. Sprawdź datę rozpoczęcia i zakończenia."
+      "durationExceedsDayWarning": "Ta sesja przekracza 24 godziny. Sprawdź datę rozpoczęcia i zakończenia.",
+      "overnightSplitBreakdown": "({{day1Duration}} w dniu {{day1Date}}, {{day2Duration}} w dniu {{day2Date}})"
     },
     "rollupLoggedTooltip": "Suma czasu zalogowanego w podzadaniach"
   },
