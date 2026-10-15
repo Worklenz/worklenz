@@ -13,18 +13,12 @@ export type SelectionType = {
   selection_color: string;
   selection_id: string;
   selection_name: string;
+  parent_selection_id?: string | null;
 };
 
 const SelectionTypeColumn = () => {
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
-  const [selections, setSelections] = useState<SelectionType[]>([
-    {
-      selection_id: nanoid(),
-      selection_name: 'Untitled selection',
-      selection_color: PhaseColorCodes[0],
-    },
-  ]);
 
   // Get the custom column modal type and column ID from the store
   const {
@@ -33,6 +27,19 @@ const SelectionTypeColumn = () => {
     currentColumnData,
     selectionsList: storeSelectionsList,
   } = useAppSelector(state => state.taskListCustomColumnsReducer);
+
+  // Start from the store when it already has options (e.g. switching back from "Depends on").
+  const [selections, setSelections] = useState<SelectionType[]>(() =>
+    storeSelectionsList.length > 0
+      ? storeSelectionsList.map(selection => ({ ...selection, parent_selection_id: null }))
+      : [
+          {
+            selection_id: nanoid(),
+            selection_name: 'Untitled selection',
+            selection_color: PhaseColorCodes[0],
+          },
+        ]
+  );
 
   // Use the current column data passed from TaskListV2
   const openedColumn = currentColumnData;

@@ -40,6 +40,8 @@ type TaskListCustomColumnsState = {
   secondNumericColumn: CustomTableColumnsType | null;
   labelsList: LabelType[];
   selectionsList: SelectionType[];
+  // Selection field whose value scopes this Selection field's options (cascading field).
+  parentColumnId: string | null;
   hiddenCustomColumnIds: string[]; // IDs of custom columns the user has hidden
 };
 
@@ -62,6 +64,7 @@ const initialState: TaskListCustomColumnsState = {
   secondNumericColumn: null,
   labelsList: [],
   selectionsList: [],
+  parentColumnId: null,
   hiddenCustomColumnIds: [], // empty = all custom columns visible by default
 };
 
@@ -120,6 +123,9 @@ const taskListCustomColumnsSlice = createSlice({
     setSelectionsList: (state, action: PayloadAction<SelectionType[]>) => {
       state.selectionsList = action.payload;
     },
+    setParentColumnId: (state, action: PayloadAction<string | null>) => {
+      state.parentColumnId = action.payload;
+    },
     // Toggles a single custom column hidden/visible by its ID
     toggleCustomColumnVisibility: (state, action: PayloadAction<string>) => {
       const id = action.payload;
@@ -146,6 +152,7 @@ const taskListCustomColumnsSlice = createSlice({
       state.secondNumericColumn = initialState.secondNumericColumn;
       state.labelsList = initialState.labelsList;
       state.selectionsList = initialState.selectionsList;
+      state.parentColumnId = initialState.parentColumnId;
       state.currentColumnData = initialState.currentColumnData;
       state.canChangeColumnType = initialState.canChangeColumnType;
     },
@@ -165,6 +172,7 @@ export const {
   setSecondNumericColumn,
   setLabelsList,
   setSelectionsList,
+  setParentColumnId,
   toggleCustomColumnVisibility,
   setHiddenCustomColumnIds,
   resetCustomFieldValues,

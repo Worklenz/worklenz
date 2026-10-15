@@ -1,7 +1,21 @@
-import { useEffect, useState } from 'react';
-import { Button, Divider, Flex, Form, Input, message, Select, Typography, Popconfirm, theme } from '@/shared/antd-imports';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  ApartmentOutlined,
+  Button,
+  Divider,
+  Flex,
+  Form,
+  Input,
+  message,
+  Select,
+  Tooltip,
+  Typography,
+  Popconfirm,
+  theme,
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import SelectionTypeColumn from './selection-type-column/selection-type-column';
+import { DependentSelectionTypeColumn } from './dependent-selection-type-column/dependent-selection-type-column';
 import NumberTypeColumn from './number-type-column/number-type-column';
 import LabelTypeColumn from './label-type-column/label-type-column';
 import FormulaTypeColumn from './formula-type-column/formula-type-column';
@@ -21,9 +35,19 @@ import {
   setFirstNumericColumn,
   setSecondNumericColumn,
   setSelectionsList,
+  setParentColumnId,
   setLabelsList,
   resetCustomFieldValues,
 } from '@features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
+import { selectCustomColumns } from '@/features/task-management/task-management.selectors';
+import { ITaskCustomColumn } from '@/types/tasks/task.types';
+import {
+  findParentColumn,
+  getEligibleParentColumns,
+  parseDependsOnTypeValue,
+  toDependsOnTypeValue,
+} from '@/utils/cascading-selection';
+import { getTaskCustomFieldDisplayName } from '@/utils/task-custom-columns';
 import CustomColumnHeader from '../custom-column-header/custom-column-header';
 import { nanoid } from '@reduxjs/toolkit';
 import {
@@ -45,6 +69,8 @@ import { toggleColumnVisibility, updateCustomColumnPinned } from '@/features/tas
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useCustomColumnVisibility } from '@/hooks/useCustomColumnVisibility';
+
+const NO_PARENT_VALUE = '__none__';
 
 interface CustomColumnFormContentProps {
   projectId?: string;
@@ -79,8 +105,10 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     secondNumericColumn,
     labelsList,
     selectionsList,
+    parentColumnId,
     customFieldType,
   } = useAppSelector(state => state.taskListCustomColumnsReducer);
+  const projectCustomColumns = useAppSelector(selectCustomColumns) as ITaskCustomColumn[];
 
   const fieldType: CustomFieldsTypes = useAppSelector(
     state => state.taskListCustomColumnsReducer.customFieldType
@@ -98,6 +126,42 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFieldTypeDropdownOpen, setIsFieldTypeDropdownOpen] = useState(isTypeChangeAllowed);
 
+  const editingColumnUuid: string | null = isEditMode
+    ? customColumnId || openedColumn?.uuid || null
+    : null;
+  const eligibleParentColumns = useMemo(
+    () => getEligibleParentColumns(projectCustomColumns || [], editingColumnUuid),
+    [projectCustomColumns, editingColumnUuid]
+  );
+  const selectedParentColumn = useMemo(
+    () =>
+      parentColumnId
+        ? (projectCustomColumns || []).find(column => column.id === parentColumnId) || null
+        : null,
+    [projectCustomColumns, parentColumnId]
+  );
+  const dependentColumnNames = useMemo(
+    () =>
+      editingColumnUuid
+        ? (projectCustomColumns || [])
+            .filter(
+              column =>
+                findParentColumn(column, projectCustomColumns || [])?.id === editingColumnUuid
+            )
+            .map(getTaskCustomFieldDisplayName)
+        : [],
+    [projectCustomColumns, editingColumnUuid]
+  );
+  const hasDependentColumns = dependentColumnNames.length > 0;
+  const isDependentSelection = customFieldType === 'selection' && !!parentColumnId;
+
+  const handleFieldTypeChange = (selectedValue: string) => {
+    const dependsOnColumnId = parseDependsOnTypeValue(selectedValue);
+    dispatch(setCustomFieldType(dependsOnColumnId ? 'selection' : (selectedValue as CustomFieldsTypes)));
+    dispatch(setParentColumnId(dependsOnColumnId));
+    mainForm.setFieldValue('fieldType', selectedValue);
+  };
+
   const resetModalData = () => {
     mainForm.resetFields();
     dispatch(resetCustomFieldValues());
@@ -109,6 +173,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   useEffect(() => {
     if (isEditMode && openedColumn) {
       dispatch(setCustomFieldType(openedColumn.custom_column_obj?.fieldType || 'people'));
+      dispatch(setParentColumnId(null));
 
       if (openedColumn.custom_column_obj?.fieldType === 'number') {
         dispatch(setCustomFieldNumberType(openedColumn.custom_column_obj?.numberType || 'formatted'));
@@ -123,15 +188,23 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         if (Array.isArray(openedColumn.custom_column_obj?.selectionsList)) {
           dispatch(setSelectionsList(openedColumn.custom_column_obj.selectionsList));
         }
+        dispatch(setParentColumnId(openedColumn.custom_column_obj?.parentColumnId || null));
       } else if (openedColumn.custom_column_obj?.fieldType === 'labels') {
         if (Array.isArray(openedColumn.custom_column_obj?.labelsList)) {
           dispatch(setLabelsList(openedColumn.custom_column_obj.labelsList));
         }
       }
 
+      const openedParentColumnId =
+        openedColumn.custom_column_obj?.fieldType === 'selection'
+          ? openedColumn.custom_column_obj?.parentColumnId
+          : null;
+
       mainForm.setFieldsValue({
         fieldTitle: openedColumn.name || openedColumn.custom_column_obj?.fieldTitle,
-        fieldType: openedColumn.custom_column_obj?.fieldType,
+        fieldType: openedParentColumnId
+          ? toDependsOnTypeValue(openedParentColumnId)
+          : openedColumn.custom_column_obj?.fieldType,
         numberType: openedColumn.custom_column_obj?.numberType,
         decimals: openedColumn.custom_column_obj?.decimals,
         label: openedColumn.custom_column_obj?.label,
@@ -219,8 +292,53 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     { key: 'selection', value: 'selection', label: t('customColumns.fieldTypes.selection'), disabled: false },
   ];
 
-  const handleFormSubmit = async (value: any) => {
+  const dependsOnTypeOptions = eligibleParentColumns.map(column => ({
+    key: toDependsOnTypeValue(column.id),
+    value: toDependsOnTypeValue(column.id),
+    title: getTaskCustomFieldDisplayName(column),
+    label: (
+      <Flex align="center" gap={6} style={{ minWidth: 0 }}>
+        <ApartmentOutlined style={{ color: token.colorTextSecondary }} />
+        <span className="truncate">{getTaskCustomFieldDisplayName(column)}</span>
+      </Flex>
+    ),
+  }));
+
+  const typeSelectOptions = [
+    ...fieldTypesOptions,
+    ...(dependsOnTypeOptions.length > 0
+      ? [
+          {
+            label: t('customColumns.dependentSelection.typeGroup', {
+              defaultValue: 'Depends on selection',
+            }),
+            title: t('customColumns.dependentSelection.typeGroup', {
+              defaultValue: 'Depends on selection',
+            }),
+            options: dependsOnTypeOptions,
+          },
+        ]
+      : []),
+  ];
+
+  const buildSelectionsPayload = (fieldTypeValue: string) => {
+    if (fieldTypeValue !== 'selection') return [];
+    return selectionsList.map((selection, index) => ({
+      selection_id: selection.selection_id,
+      selection_name: selection.selection_name,
+      selection_color: selection.selection_color,
+      selection_order: index,
+      parent_selection_id: parentColumnId ? selection.parent_selection_id || null : null,
+    }));
+  };
+
+  const handleFormSubmit = async (formValue: any) => {
     if (isSubmitting) return;
+    // The Type dropdown encodes "Selection that depends on <column>" as its own value.
+    const value = {
+      ...formValue,
+      fieldType: parseDependsOnTypeValue(formValue.fieldType) ? 'selection' : formValue.fieldType,
+    };
     setIsSubmitting(true);
     try {
       if (customColumnModalType === 'create') {
@@ -237,6 +355,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
             ...value,
             labelsList: value.fieldType === 'labels' ? labelsList : [],
             selectionsList: value.fieldType === 'selection' ? selectionsList : [],
+            parentColumnId: value.fieldType === 'selection' ? parentColumnId : null,
           },
         };
 
@@ -251,15 +370,8 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
           expression: value.expression,
           first_numeric_column_key: value.firstNumericColumn?.key,
           second_numeric_column_key: value.secondNumericColumn?.key,
-          selections_list:
-            value.fieldType === 'selection'
-              ? selectionsList.map((selection, index) => ({
-                  selection_id: selection.selection_id,
-                  selection_name: selection.selection_name,
-                  selection_color: selection.selection_color,
-                  selection_order: index,
-                }))
-              : [],
+          parent_column_id: value.fieldType === 'selection' ? parentColumnId : null,
+          selections_list: buildSelectionsPayload(value.fieldType),
           labels_list:
             value.fieldType === 'labels'
               ? labelsList.map((label, index) => ({
@@ -322,15 +434,8 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
               expression: value.expression,
               first_numeric_column_key: value.firstNumericColumn?.key,
               second_numeric_column_key: value.secondNumericColumn?.key,
-              selections_list:
-                resolvedFieldType === 'selection'
-                  ? selectionsList.map((selection, index) => ({
-                      selection_id: selection.selection_id,
-                      selection_name: selection.selection_name,
-                      selection_color: selection.selection_color,
-                      selection_order: index,
-                    }))
-                  : [],
+              parent_column_id: resolvedFieldType === 'selection' ? parentColumnId : null,
+              selections_list: buildSelectionsPayload(resolvedFieldType),
               labels_list:
                 resolvedFieldType === 'labels'
                   ? labelsList.map((label, index) => ({
@@ -446,24 +551,60 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
               </Typography.Text>
             ) : (
               <Select
-                options={fieldTypesOptions}
-                value={fieldType}
-                onChange={selectedType => {
-                  dispatch(setCustomFieldType(selectedType));
-                  mainForm.setFieldValue('fieldType', selectedType);
-                }}
+                options={typeSelectOptions}
+                onChange={handleFieldTypeChange}
                 open={isFieldTypeDropdownOpen}
                 onOpenChange={setIsFieldTypeDropdownOpen}
+                popupMatchSelectWidth={false}
               />
             )}
           </Form.Item>
         </Flex>
 
+        {isEditMode && !canChangeColumnType && originalFieldType === 'selection' && (
+          <Form.Item
+            label={
+              <Typography.Text>
+                {t('customColumns.dependentSelection.dependsOn', { defaultValue: 'Depends on' })}
+              </Typography.Text>
+            }
+            extra={
+              hasDependentColumns ? (
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {t('customColumns.dependentSelection.hasDependentsHint', {
+                    defaultValue: '{{fields}} depends on this field, so it cannot depend on another field.',
+                    fields: dependentColumnNames.join(', '),
+                  })}
+                </Typography.Text>
+              ) : undefined
+            }
+          >
+            <Select
+              value={parentColumnId || NO_PARENT_VALUE}
+              disabled={hasDependentColumns}
+              onChange={selectedValue =>
+                dispatch(setParentColumnId(selectedValue === NO_PARENT_VALUE ? null : selectedValue))
+              }
+              options={[
+                {
+                  value: NO_PARENT_VALUE,
+                  label: t('customColumns.dependentSelection.none', { defaultValue: 'None' }),
+                },
+                ...eligibleParentColumns.map(column => ({
+                  value: column.id,
+                  label: getTaskCustomFieldDisplayName(column),
+                })),
+              ]}
+            />
+          </Form.Item>
+        )}
+
         {customFieldType === 'key' && <KeyTypeColumn />}
         {customFieldType === 'number' && <NumberTypeColumn />}
         {customFieldType === 'formula' && <FormulaTypeColumn />}
         {customFieldType === 'labels' && <LabelTypeColumn />}
-        {customFieldType === 'selection' && <SelectionTypeColumn />}
+        {customFieldType === 'selection' && !isDependentSelection && <SelectionTypeColumn />}
+        {isDependentSelection && <DependentSelectionTypeColumn parentColumn={selectedParentColumn} />}
 
         <Divider style={{ margin: '20px 0 16px' }} />
 
@@ -477,19 +618,33 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                   })}
                 </Button>
 
-                <Popconfirm
-                  title={t('customColumns.modal.deleteConfirmTitle')}
-                  description={t('customColumns.modal.deleteConfirmDescription')}
-                  icon={<ExclamationCircleFilled style={{ color: token.colorError }} />}
-                  onConfirm={handleDeleteColumn}
-                  okText={t('customColumns.modal.deleteButton')}
-                  cancelText={t('customColumns.modal.cancelButton')}
-                  okButtonProps={{ danger: true }}
-                >
-                  <Button size="small" danger>
-                    {t('customColumns.modal.deleteButton')}
-                  </Button>
-                </Popconfirm>
+                {hasDependentColumns ? (
+                  <Tooltip
+                    title={t('customColumns.dependentSelection.deleteBlocked', {
+                      defaultValue:
+                        "Can't delete this field because {{fields}} depends on it. Remove that dependency first.",
+                      fields: dependentColumnNames.join(', '),
+                    })}
+                  >
+                    <Button size="small" danger disabled>
+                      {t('customColumns.modal.deleteButton')}
+                    </Button>
+                  </Tooltip>
+                ) : (
+                  <Popconfirm
+                    title={t('customColumns.modal.deleteConfirmTitle')}
+                    description={t('customColumns.modal.deleteConfirmDescription')}
+                    icon={<ExclamationCircleFilled style={{ color: token.colorError }} />}
+                    onConfirm={handleDeleteColumn}
+                    okText={t('customColumns.modal.deleteButton')}
+                    cancelText={t('customColumns.modal.cancelButton')}
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Button size="small" danger>
+                      {t('customColumns.modal.deleteButton')}
+                    </Button>
+                  </Popconfirm>
+                )}
               </Flex>
             )}
           </div>
