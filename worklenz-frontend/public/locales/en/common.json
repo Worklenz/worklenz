@@ -118,5 +118,22 @@
   "need-help": "Need help?",
   "contact-support": "Contact support",
   "view-pricing": "view pricing",
-  "justNow": "Just now"
+  "justNow": "Just now",
+  "save": "Save",
+  "business-trial-then-plan": "you'll continue on {{plan}} after that",
+  "error": {
+    "unknownError": "An unknown error occurred",
+    "somethingWentWrong": "Something went wrong",
+    "description": "We encountered an unexpected error. Please try again or return to the home page.",
+    "retry": "Try Again",
+    "goHome": "Go Home",
+    "viewDetails": "View Error Details",
+    "errorMessage": "Error Message",
+    "stackTrace": "Stack Trace",
+    "title": "Error"
+  },
+  "refreshingData": "Refreshing data...",
+  "loadingData": "Loading data...",
+  "noDataAvailable": "No data available",
+  "licennse-expired-contacting-support": "Contacting support..."
 }

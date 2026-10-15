@@ -25,6 +25,34 @@ const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 // (ReportingControllerBase.getPercentage).
 const getPercentage = (n: number, total: number) => +(n ? (n / total) * 100 : 0).toFixed();
 
+// Shared legend row styles so the header row ("Assigned this week") and the
+// Doing / Done / To Do rows line up: labels stay on one line (ellipsis when
+// too narrow) and counts sit in a fixed-width, right-aligned column.
+const legendRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  fontSize: 12,
+};
+
+const legendLabelStyle: React.CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  opacity: 0.7,
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+};
+
+const legendCountStyle: React.CSSProperties = {
+  fontWeight: 700,
+  minWidth: 20,
+  flexShrink: 0,
+  textAlign: 'right',
+  fontVariantNumeric: 'tabular-nums',
+  paddingRight: 8,
+};
+
 interface HomeProgressDonutProps {
   period: HomePeriod;
 }
@@ -104,7 +132,7 @@ const HomeProgressDonut: React.FC<HomeProgressDonutProps> = ({ period }) => {
   return (
     <Card styles={{ body: { padding: '20px' } }} style={{ borderRadius: 10 }}>
       {titleRow}
-      <div {...{ [WIDGET_DATA_ATTRIBUTE]: '' }} style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+      <div {...{ [WIDGET_DATA_ATTRIBUTE]: '' }} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <svg width={DONUT_SIZE} height={DONUT_SIZE} viewBox={`0 0 ${DONUT_SIZE} ${DONUT_SIZE}`}>
             <circle
@@ -156,11 +184,12 @@ const HomeProgressDonut: React.FC<HomeProgressDonutProps> = ({ period }) => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-            <span style={{ width: 9, height: 9, flexShrink: 0 }} />
-            <span style={{ flex: 1, opacity: 0.7 }}>{assignedLabel}</span>
-            <span style={{ fontWeight: 700 }}>{total}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minWidth: 0 }}>
+          <div style={legendRowStyle}>
+            <span style={legendLabelStyle} title={assignedLabel}>
+              {assignedLabel}
+            </span>
+            <span style={legendCountStyle}>{total}</span>
           </div>
           {total > 0 ? (
             [
@@ -168,10 +197,7 @@ const HomeProgressDonut: React.FC<HomeProgressDonutProps> = ({ period }) => {
               { label: t('progressDonut.done', { defaultValue: 'Done' }), count: counts.done, color: '#52c41a' },
               { label: t('progressDonut.toDo', { defaultValue: 'To Do' }), count: counts.todo, color: '#faad14' },
             ].map(s => (
-              <div
-                key={s.label}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}
-              >
+              <div key={s.label} style={legendRowStyle}>
                 <span
                   style={{
                     width: 9,
@@ -181,8 +207,10 @@ const HomeProgressDonut: React.FC<HomeProgressDonutProps> = ({ period }) => {
                     flexShrink: 0,
                   }}
                 />
-                <span style={{ flex: 1, opacity: 0.7 }}>{s.label}</span>
-                <span style={{ fontWeight: 700 }}>{s.count}</span>
+                <span style={legendLabelStyle} title={s.label}>
+                  {s.label}
+                </span>
+                <span style={legendCountStyle}>{s.count}</span>
               </div>
             ))
           ) : (

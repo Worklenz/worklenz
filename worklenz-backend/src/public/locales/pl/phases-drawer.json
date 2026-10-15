@@ -32,5 +32,17 @@
   "noMembersFound": "Nie znaleziono żadnych członków",
   "continue": "Kontynuuj",
   "pendingMemberLabel": "(w oczekiwaniu)",
-  "inviteMember": "Zaproś członka"
+  "inviteMember": "Zaproś członka",
+  "manageAssignee": "Zarządzaj cesjonariuszem",
+  "start": "Zacznij",
+  "assignMember": "Przypisz członka",
+  "completeSprint": "Kompletny sprint",
+  "deleteSprintTitle": "Usunąć {{name}}?",
+  "deleteSprintContentWithItems": "{{count}} elementów pracy z tego sprintu zostanie przeniesionych do {{backlog}}. Tej operacji nie można cofnąć.",
+  "deleteSprintContent": "Tej operacji nie można cofnąć.",
+  "deleteSprint": "Usuń sprint",
+  "sprintDeleted": "Sprint usunięty",
+  "sprintDeleteError": "Nie udało się usunąć sprintu",
+  "completeSprintAutoStartHint": "Następny zaplanowany sprint rozpocznie się dzisiaj i zachowa planowany czas trwania.",
+  "nextSprintStarted": "Rozpoczęto {{name}} ({{start}} – {{end}})"
 }

@@ -91,7 +91,7 @@ const RateCardAssigneeSelector = ({
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => dropdownContent}
+      popupRender={() => dropdownContent}
       onOpenChange={open => {
         if (open) setTimeout(() => membersInputRef.current?.focus(), 0);
       }}

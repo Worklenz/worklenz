@@ -51,5 +51,10 @@
   "editedTooltip": "Modifié {{time}} par {{author}}",
   "unknown": "Inconnu",
   "you": "Vous",
-  "attachment": "Pièce jointe"
+  "attachment": "Pièce jointe",
+  "commentError": "Échec de l'envoi du commentaire",
+  "deleteSuccess": "Commentaire supprimé avec succès",
+  "deleteError": "Échec de la suppression du commentaire",
+  "editSuccess": "Commentaire mis à jour avec succès",
+  "editError": "Échec de la modification du commentaire"
 }

@@ -42,5 +42,6 @@
   "moreOptions": "More options",
   "changeMemberStatusConfirmation": "Are you sure you want to change this member's status?",
   "yesProceed": "Yes, Proceed",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "removeFromProject": "Remove from Project"
 }

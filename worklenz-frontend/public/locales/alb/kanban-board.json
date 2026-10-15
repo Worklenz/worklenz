@@ -60,5 +60,13 @@
   "failedToUpdatePhaseOrder": "Dështoi përditësimi i rendit të fazave",
   "pleaseTryAgain": "Ju lutemi provoni përsëri",
   "taskNotCompleted": "Detyra nuk është përfunduar",
-  "completeTaskDependencies": "Ju lutemi përfundoni varësitë e detyrës para se të vazhdoni"
+  "completeTaskDependencies": "Ju lutemi përfundoni varësitë e detyrës para se të vazhdoni",
+  "expand": "Zgjero",
+  "collapse": "Mbyll",
+  "low": "I ulët",
+  "medium": "I mesëm",
+  "high": "I lartë",
+  "critical": "Kritik",
+  "unarchive": "Ç'arkivo",
+  "addSubtask": "Shto Nën-detyrë"
 }

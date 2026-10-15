@@ -63,5 +63,9 @@
   "deleteLink": "Usuń link",
   "openTask": "Otwórz zadanie",
   "fromTask": "Od: {{taskName}}",
-  "noLinks": "Nie ma jeszcze żadnych linków. Kliknij „Dodaj link”, aby dodać pierwszy link."
+  "noLinks": "Nie ma jeszcze żadnych linków. Kliknij „Dodaj link”, aby dodać pierwszy link.",
+  "uploadExpired": "Sesja przesyłania wygasła. Spróbuj ponownie.",
+  "fileTooLargePopoverBody": "Pliki większe niż 25MB wymagają planu Business. Ten plik ma rozmiar {{sizeMb}} MB. Uaktualnij, aby przesyłać większe pliki.",
+  "linksPaginationSummary": "{{start}}–{{end}} z {{count}} linków",
+  "fileTooLargePopoverTitle": "Plik jest za duży"
 }

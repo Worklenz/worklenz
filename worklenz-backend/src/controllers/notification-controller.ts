@@ -14,12 +14,14 @@ import { getColor } from "../shared/utils";
 // resets only on server restart, which a real migration-then-deploy triggers
 // anyway.
 let releaseIdColumnMissing = false;
+// Same guard for user_notifications.url (Client Portal deep links), added by a later migration.
+let urlColumnMissing = false;
 
 export default class NotificationController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const buildQuery = (includeReleaseId: boolean) => `
+    const buildQuery = (includeReleaseId: boolean, includeUrl: boolean) => `
       SELECT un.id,
              un.message,
              un.message_key,
@@ -28,6 +30,7 @@ export default class NotificationController extends WorklenzControllerBase {
              un.created_at,
              un.read,
              ${includeReleaseId ? "un.release_id," : ""}
+             ${includeUrl ? "un.url," : ""}
              (SELECT name FROM teams WHERE id = un.team_id) AS team,
              (SELECT name FROM projects WHERE id = un.project_id) AS project,
              (SELECT color_code FROM projects WHERE id = un.project_id) AS color,
@@ -46,24 +49,35 @@ export default class NotificationController extends WorklenzControllerBase {
 
     const params = [req.user?.id, req.query.filter === "Read"];
 
-    let result;
-    if (releaseIdColumnMissing) {
-      result = await db.query(buildQuery(false), params);
-    } else {
+    // Retry without whichever newer column is missing (42703 = undefined_column), remembering it so
+    // later requests skip straight to the working query.
+    let result: { rows: any[] } | undefined;
+    for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        result = await db.query(buildQuery(true), params);
+        result = await db.query(buildQuery(!releaseIdColumnMissing, !urlColumnMissing), params);
+        break;
       } catch (error: any) {
-        if (error?.code !== "42703") throw error;
-        releaseIdColumnMissing = true;
-        result = await db.query(buildQuery(false), params);
+        if (error?.code !== "42703" || attempt === 2) throw error;
+        const message = String(error?.message ?? "");
+        if (message.includes("release_id")) releaseIdColumnMissing = true;
+        else if (message.includes("url")) urlColumnMissing = true;
+        else {
+          releaseIdColumnMissing = true;
+          urlColumnMissing = true;
+        }
       }
     }
 
+    if (!result) throw new Error("Could not load notifications");
+
     for (const item of result.rows) {
       item.team_color = getColor(item.team_name);
-      item.url = item.project_id ? `/worklenz/projects/${item.project_id}` : null;
-      item.params = { task: item.task_id, tab: "tasks-list", from: "notification" };
-      if (item.comment_id) {
+      // A stored url (Client Portal notifications) opens its own item; every other notification
+      // keeps the project link with the task / comment params.
+      const hasOwnUrl = typeof item.url === "string" && item.url.length > 0;
+      item.url = hasOwnUrl ? item.url : item.project_id ? `/worklenz/projects/${item.project_id}` : null;
+      item.params = hasOwnUrl ? {} : { task: item.task_id, tab: "tasks-list", from: "notification" };
+      if (!hasOwnUrl && item.comment_id) {
         item.params.comment = item.comment_id;
       }
     }

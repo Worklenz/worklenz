@@ -36,6 +36,7 @@ import taskDuplicateApiService from '@/api/tasks/task-duplicate.api.service';
 import logger from '@/utils/errorLogger';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { IssueTypeBadge } from '@/components/projects/software/issue-type-badge';
+import { IssueTypePicker } from './IssueTypePicker';
 
 interface TitleColumnProps {
   width: string;
@@ -280,11 +281,16 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
                       </span>
                     )}
 
-                    {isSoftwareProject && (
-                      <IssueTypeBadge
-                        type={task.parent_task_id ? 'subtask' : task.issue_type ?? 'task'}
-                      />
-                    )}
+                    {isSoftwareProject &&
+                      (task.parent_task_id ? (
+                        <IssueTypeBadge type="subtask" />
+                      ) : (
+                        <IssueTypePicker
+                          task={task}
+                          projectId={projectId}
+                          disabled={isGuest || !canCreateTask}
+                        />
+                      ))}
 
                     <span
                       className={`text-sm text-gray-700 dark:text-gray-300 truncate ${canCreateTask ? 'cursor-text' : 'cursor-default'} flex-shrink min-w-0`}

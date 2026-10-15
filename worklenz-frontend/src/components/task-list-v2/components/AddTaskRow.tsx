@@ -1,15 +1,15 @@
-import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
-import { Input } from '@/shared/antd-imports';
+import React, { useState, useCallback, memo, useRef, useEffect, useMemo } from 'react';
+import { Dropdown, Input } from '@/shared/antd-imports';
 import { PlusOutlined } from '@/shared/antd-imports';
-import { ArrowsAltOutlined } from '@/shared/antd-imports';
+import { ArrowsAltOutlined, DownOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { openCreateIssueModal } from '@/features/projects/singleProject/create-issue/create-issue-modal.slice';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { IssueTypeBadge, getIssueTypeLabel } from '@/components/projects/software/issue-type-badge';
+import { IssueType } from '@/types/project/softwareIssue.types';
 import { assignTaskToMember } from '@/utils/assign-task-to-member';
 import {
   UNMAPPED_PHASE_ID,
@@ -58,19 +58,29 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
     const listMode = useTaskListMode();
     const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
     const isSoftwareProject = isSoftwareProjectType(projectType);
-    const isCreateIssueModalMode = isSoftwareProject && listMode === 'backlog' && !isInsertMode;
-    const [isAdding, setIsAdding] = useState(!isCreateIssueModalMode && (autoFocus || isActive));
+    const isBacklogWorkItemRow = isSoftwareProject && listMode === 'backlog' && !isInsertMode;
+    const [isAdding, setIsAdding] = useState(autoFocus || isActive);
     const [taskName, setTaskName] = useState('');
+    const [issueType, setIssueType] = useState<IssueType>('task');
     const [creatingTask, setCreatingTask] = useState(false);
     const inputRef = useRef<any>(null);
     const { socket, connected } = useSocket();
     const { t } = useTranslation('task-list-table');
-    const dispatch = useAppDispatch();
-    const isGroupedBySprint = useAppSelector(
-      state => groupType === 'phase' && state.phaseReducer.phaseList.some(phase => phase.id === groupValue)
+    const { t: tProjectView } = useTranslation('project-view');
+    const issueTypeMenuItems = useMemo(
+      () =>
+        ISSUE_TYPES.map(type => ({
+          key: type,
+          label: (
+            <span className="flex items-center gap-2">
+              <IssueTypeBadge type={type} showTooltip={false} />
+              {getIssueTypeLabel(type, tProjectView)}
+            </span>
+          ),
+        })),
+      [tProjectView]
     );
-    const targetSprintId = isGroupedBySprint ? groupValue : null;
-    const addTaskLabel = isCreateIssueModalMode
+    const addTaskLabel = isBacklogWorkItemRow
       ? t('createWorkItemText', { defaultValue: 'Create work item' })
       : isSoftwareProject
         ? t('createIssueText', { defaultValue: 'Create Issue' })
@@ -91,23 +101,22 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
 
     // Auto-focus when autoFocus prop is true
     useEffect(() => {
-      if (isCreateIssueModalMode) return;
       if (autoFocus && inputRef.current) {
         setIsAdding(true);
         setTimeout(() => {
           inputRef.current?.focus();
         }, 100);
       }
-    }, [autoFocus, isCreateIssueModalMode]);
+    }, [autoFocus]);
 
     useEffect(() => {
-      if (isActive && !isCreateIssueModalMode) {
+      if (isActive) {
         setIsAdding(true);
         setTimeout(() => {
           inputRef.current?.focus();
         }, 50);
       }
-    }, [isActive, isCreateIssueModalMode]);
+    }, [isActive]);
 
     // The global socket handler (useTaskSocketHandlers) will handle task addition
     // No need for local socket listener to avoid duplicate additions
@@ -130,6 +139,10 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
           reporter_id: currentSession.id,
           team_id: currentSession.team_id,
         };
+
+        if (isSoftwareProject) {
+          body.issue_type = issueType;
+        }
 
         // Map grouping type to correct field name expected by backend
         switch (groupType) {
@@ -229,11 +242,14 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
         insertAfterTaskId,
         listMode,
         t,
+        isSoftwareProject,
+        issueType,
       ]
     );
 
     const handleCancel = useCallback(() => {
       setTaskName('');
+      setIssueType('task');
       setIsAdding(false);
       onDeactivate?.();
     }, [onDeactivate]);
@@ -319,10 +335,6 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
                   {!isAdding ? (
                     <button
                       onClick={() => {
-                        if (isCreateIssueModalMode) {
-                          dispatch(openCreateIssueModal({ sprintId: targetSprintId }));
-                          return;
-                        }
                         onActivate?.();
                         setIsAdding(true);
                       }}
@@ -333,6 +345,36 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
                     </button>
                   ) : (
                     <div className="flex items-center w-full h-full gap-1 pr-1">
+                      {isSoftwareProject && (
+                        <Dropdown
+                          trigger={['click']}
+                          disabled={creatingTask}
+                          menu={{
+                            items: issueTypeMenuItems,
+                            selectable: true,
+                            selectedKeys: [issueType],
+                            onClick: ({ key }) => {
+                              setIssueType(key as IssueType);
+                              inputRef.current?.focus();
+                            },
+                          }}
+                          dropdownRender={menu => (
+                            // Keep focus in the title input so picking a type doesn't trigger blur-save/cancel
+                            <div onMouseDown={e => e.preventDefault()}>{menu}</div>
+                          )}
+                        >
+                          <button
+                            type="button"
+                            onMouseDown={e => e.preventDefault()}
+                            className="h-7 shrink-0 flex items-center gap-1 px-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                            title={tProjectView('createIssueType', { defaultValue: 'Type' })}
+                            aria-label={tProjectView('createIssueType', { defaultValue: 'Type' })}
+                          >
+                            <IssueTypeBadge type={issueType} showTooltip={false} />
+                            <DownOutlined className="text-[10px]" />
+                          </button>
+                        </Dropdown>
+                      )}
                       <Input
                         ref={inputRef}
                         value={taskName}
@@ -392,9 +434,10 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
         visibleColumns,
         onActivate,
         isInsertMode,
-        isCreateIssueModalMode,
-        targetSprintId,
-        dispatch,
+        isSoftwareProject,
+        issueType,
+        issueTypeMenuItems,
+        tProjectView,
       ]
     );
 
@@ -409,6 +452,8 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
     );
   }
 );
+
+const ISSUE_TYPES: IssueType[] = ['task', 'story', 'bug'];
 
 AddTaskRow.displayName = 'AddTaskRow';
 

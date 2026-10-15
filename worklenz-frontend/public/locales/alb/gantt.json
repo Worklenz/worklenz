@@ -37,7 +37,8 @@
     "failedToRemoveDependency": "Dështoi heqja e dependencës.",
     "taskAddedToRoadmap": "Detyra u shtua në rrugën e projektit për 5 ditët e ardhshme.",
     "failedToAddTaskToRoadmap": "Dështoi shtimi i detyrës në rrugën e projektit.",
-    "unscheduledTaskNotFound": "Nuk mund të gjendet detyra e zgjedhur."
+    "unscheduledTaskNotFound": "Nuk mund të gjendet detyra e zgjedhur.",
+    "undatedTaskReadOnly": "Detyrë pa data (vetëm për lexim për mysafirët)"
   },
   "common": {
     "noStart": "Pa fillim",

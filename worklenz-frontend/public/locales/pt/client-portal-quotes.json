@@ -111,5 +111,7 @@
   "deleteConfirmationDescription": "Tem a certeza de que pretende eliminar {{number}}? Esta ação não pode ser anulada.",
   "deleteConfirmationOk": "Eliminar",
   "deleteQuoteSuccess": "Orçamento eliminado com sucesso",
-  "deleteQuoteError": "Falha ao eliminar o orçamento"
+  "deleteQuoteError": "Falha ao eliminar o orçamento",
+  "linkedChangeRequest": "Solicitação de alteração vinculada",
+  "openChangeRequest": "Abrir solicitação de alteração"
 }

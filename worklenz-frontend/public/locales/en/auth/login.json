@@ -34,5 +34,6 @@
   "errorMessages": {
     "loginErrorTitle": "Login failed",
     "loginErrorMessage": "Please check your email and password and try again"
-  }
+  },
+  "rememberMe": "Remember me"
 }

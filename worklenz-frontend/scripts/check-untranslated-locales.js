@@ -8,6 +8,7 @@ const SOURCE_LANGUAGE = 'en';
 const ALLOWED_SOURCE_VALUES = new Set([
   '—',
   '...',
+  'https://example.com',
   'OK',
   'Ok',
   'ETC',
@@ -38,6 +39,8 @@ const ALLOWED_SOURCE_VALUES = new Set([
   'Google Calendar',
   'Twitter',
   'Worklenz',
+  // Technical Jira hostname placeholder; keep the valid domain in every language.
+  'yourcompany.atlassian.net',
   'Deutsch',
   'Español',
   'Português',
@@ -186,6 +189,15 @@ const isAllowableValue = value => {
 };
 
 const ENGLISH_MARKERS = /\b(projected|revenue|profit|forecast|this month|next month|billable|invoice|budget|utilization|project|member|client|search|retry)\b/gi;
+// Words that are correctly spelled the same in these languages (cognates/loanwords), not missed
+// translations.
+const LANGUAGE_SOURCE_VALUES = {
+  fr: new Set(['Urgent', 'Description', 'Discussions', 'Conversation', '← Discussions']),
+  de: new Set(['Portal', 'Link']),
+  es: new Set(['Portal']),
+  pt: new Set(['Portal']),
+  pl: new Set(['Link']),
+};
 const namespaceArgument = process.argv.find(argument => argument.startsWith('--namespace='));
 const namespaceFilter = namespaceArgument?.split('=', 2)[1];
 const strict = process.argv.includes('--strict');
@@ -211,9 +223,13 @@ const getByPath = (value, keyPath) =>
 
 const hasLikelyEnglishText = value => {
   if (typeof value !== 'string') return false;
-  const matches = value.match(ENGLISH_MARKERS) ?? [];
+  // Strip {{variable}} interpolation placeholders first: their names (e.g. {{client}},
+  // {{project}}) are code tokens, not translatable text, and would otherwise read as
+  // English words even in a correctly translated string.
+  const withoutPlaceholders = value.replace(/\{\{[^}]+\}\}/g, '');
+  const matches = withoutPlaceholders.match(ENGLISH_MARKERS) ?? [];
   return (
-    /\bvs\s+(?:last|this)\s+month\b/i.test(value) ||
+    /\bvs\s+(?:last|this)\s+month\b/i.test(withoutPlaceholders) ||
     new Set(matches.map(match => match.toLowerCase())).size >= 2
   );
 };
@@ -245,6 +261,9 @@ for (const language of languages) {
       .filter(([keyPath, englishValue]) => {
         if (isAllowableValue(englishValue)) return false;
         const localeValue = getByPath(locale, keyPath);
+        if (localeValue === englishValue && LANGUAGE_SOURCE_VALUES[language]?.has(englishValue)) {
+          return false;
+        }
         return localeValue === englishValue || hasLikelyEnglishText(localeValue);
       })
       .map(([keyPath]) => keyPath);

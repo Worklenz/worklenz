@@ -56,30 +56,7 @@ export const ProjectSetupBanner = ({ projectId }: ProjectSetupBannerProps) => {
 
   if (!visible) return null;
 
-  return (
-    <Alert
-      type="info"
-      showIcon
-      closable
-      onClose={handleDismiss}
-      style={{ marginBottom: 12, borderRadius: 8 }}
-      message={t('title', { defaultValue: 'Your project is ready!' })}
-      description={t('description', {
-        defaultValue:
-          'Add status, dates, a manager and more to help your team stay aligned.',
-      })}
-      action={
-        <Button
-          size="small"
-          icon={<SettingOutlined />}
-          onClick={handleOpenSettings}
-          aria-label={t('openSettings', { defaultValue: 'Open project settings' })}
-        >
-          {t('openSettings', { defaultValue: 'Open settings' })}
-        </Button>
-      }
-    />
-  );
+ 
 };
 
 export default ProjectSetupBanner;

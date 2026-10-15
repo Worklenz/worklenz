@@ -29,5 +29,6 @@
   "role": "Rolle",
   "owner": "Besitzer",
   "admin": "Administrator",
-  "member": "Mitglied"
+  "member": "Mitglied",
+  "clickToEditName": "Klicken Sie, um den Namen zu bearbeiten"
 }

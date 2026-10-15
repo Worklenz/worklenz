@@ -63,5 +63,9 @@
   "deleteLink": "Eliminar enlace",
   "openTask": "Abrir tarea",
   "fromTask": "De: {{taskName}}",
-  "noLinks": "Aún no hay enlaces. Haga clic en \"Agregar Enlace\" para agregar su primer enlace."
+  "noLinks": "Aún no hay enlaces. Haga clic en \"Agregar Enlace\" para agregar su primer enlace.",
+  "linksPaginationSummary": "{{start}}–{{end}} de {{count}} enlaces",
+  "uploadExpired": "La sesión de carga expiró. Por favor inténtalo de nuevo.",
+  "fileTooLargePopoverTitle": "Archivo demasiado grande",
+  "fileTooLargePopoverBody": "Los archivos de más de 25 MB requieren el plan Business. Este archivo tiene {{sizeMb}} MB. Actualice para cargar archivos más grandes."
 }

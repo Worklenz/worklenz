@@ -164,13 +164,28 @@ export function SlackChannelFormModal({
 
   // Load initial projects when modal opens
   useEffect(() => {
-    if (open && !editingChannel) {
-      setProjects([]);
-      setProjectsPage(1);
-      setProjectsSearch('');
-      scrollPositionRef.current = 0;
-      loadProjects(1, '', false);
+    if (!open) return;
+
+    setProjectsPage(1);
+    setProjectsSearch('');
+    scrollPositionRef.current = 0;
+
+    if (editingChannel) {
+      // In edit mode the project field is disabled and the project list is not fetched.
+      // Seed the configured project so the Select shows the project name instead of the raw project ID.
+      setProjects([
+        {
+          id: editingChannel.projectId,
+          name: editingChannel.projectName || editingChannel.projectId,
+        },
+      ]);
+      setProjectsTotal(1);
+      return;
     }
+
+    setProjects([]);
+    setProjectsTotal(0);
+    loadProjects(1, '', false);
   }, [open, editingChannel, loadProjects]);
 
   const handleRefreshChannels = async () => {
@@ -219,7 +234,7 @@ export function SlackChannelFormModal({
             disabled={!!editingChannel}
             loading={projectsLoading}
             notFoundContent={projectsLoading ? <Spin size="small" /> : null}
-            dropdownRender={menu => (
+            popupRender={menu => (
               <>
                 {menu}
                 {projectsLoading && projects.length > 0 && (

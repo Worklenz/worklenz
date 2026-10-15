@@ -747,10 +747,10 @@ export const EstimationColumn: React.FC<EstimationColumnProps> = memo(({ width, 
 
       <Flex justify="flex-end" gap={8}>
         <Button size="small" onClick={() => setIsOpen(false)}>
-          {t('common:common.cancel', { defaultValue: 'Cancel' })}
+          {t('common:cancel', { defaultValue: 'Cancel' })}
         </Button>
         <Button size="small" type="primary" onClick={handleSave}>
-          {t('common:common.save', { defaultValue: 'Save' })}
+          {t('common:save', { defaultValue: 'Save' })}
         </Button>
       </Flex>
     </div>

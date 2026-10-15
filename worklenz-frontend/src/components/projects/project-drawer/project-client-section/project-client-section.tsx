@@ -157,7 +157,7 @@ const ProjectClientSection = ({
           onSelect={handleClientSelect}
           onChange={handleClientChange}
           placeholder={t('typeToSearchClients')}
-          dropdownRender={menu => (
+          popupRender={menu => (
             <>
               {(loadingClients || loadingSearch) && (
                 <Flex justify="center" align="center" style={{ height: '100px' }}>

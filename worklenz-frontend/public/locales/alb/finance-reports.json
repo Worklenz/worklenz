@@ -108,7 +108,8 @@
       "high": "Mbi-ndarë",
       "watch": "Për t'u ndjekur",
       "ok": "OK"
-    }
+    },
+    "overallocatedCount": "{{count}} anëtarë"
   },
   "profitability": {
     "pageTitle": "Përfitueshmëria",

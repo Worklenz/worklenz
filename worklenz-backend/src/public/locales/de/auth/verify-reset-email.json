@@ -10,5 +10,12 @@
   "passwordRequired": "Bitte geben Sie Ihr neues Passwort ein",
   "returnToLoginButton": "Zurück zur Anmeldung",
   "confirmPasswordRequired": "Bitte bestätigen Sie Ihr neues Passwort",
-  "passwordMismatch": "Die beiden Passwörter stimmen nicht überein"
+  "passwordMismatch": "Die beiden Passwörter stimmen nicht überein",
+  "passwordChecklist": {
+    "lowercase": "Ein Kleinbuchstabe",
+    "number": "Eine Zahl",
+    "uppercase": "Ein Großbuchstabe",
+    "minLength": "Mindestens 8 Zeichen",
+    "special": "Ein Sonderzeichen"
+  }
 }

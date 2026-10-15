@@ -56,7 +56,7 @@ const viewRow = (overrides: Record<string, unknown> = {}) => ({
   email: "alex@brandbase.com",
   phone: null,
   job_title: "CEO",
-  role: "poc",
+  role: "admin",
   has_login: false,
   last_login_at: null,
   invited_at: null,
@@ -204,11 +204,11 @@ describe("ClientPortalCompanyUsersController.setStatus", () => {
 });
 
 describe("ClientPortalCompanyUsersController.setRole", () => {
-  it("rejects a role other than poc or member", async () => {
+  it("rejects a role that is not admin, member or viewer (the retired poc role included)", async () => {
     const res = createMockResponse();
 
     await ClientPortalCompanyUsersController.setRole(
-      createMockRequest({ params: { userId: CONTACT_ID }, body: { role: "admin" } }),
+      createMockRequest({ params: { userId: CONTACT_ID }, body: { role: "poc" } }),
       res
     );
 

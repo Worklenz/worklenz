@@ -1,0 +1,11 @@
+{
+  "title": "Panel",
+  "totalRequests": "Solicitudes totales",
+  "pendingRequests": "Solicitudes pendientes",
+  "activeProjects": "Proyectos activos",
+  "unpaidInvoices": "Facturas impagas",
+  "recentRequests": "Solicitudes recientes",
+  "noRecentRequests": "No hay solicitudes recientes",
+  "recentMessages": "Mensajes recientes",
+  "noRecentMessages": "No hay mensajes recientes"
+}

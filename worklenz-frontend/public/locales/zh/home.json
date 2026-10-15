@@ -20,7 +20,8 @@
     "showDone": "显示已完成",
     "created": "创建于",
     "finished": "完成于",
-    "tasks": "任务"
+    "tasks": "任务",
+    "loading": "加载中..."
   },
   "projects": {
     "title": "项目",
@@ -39,7 +40,13 @@
     "assignedToMe": "分配给我",
     "assignedByMe": "由我分配",
     "dueTasks": "到期任务",
-    "priority": "优先级",
+    "dueTask": "到期任务",
+    "total": "总计",
+    "on": "于",
+    "totalDue": "总到期",
+    "todo": "待办",
+    "doing": "进行中",
+    "done": "完成",
     "all": "全部",
     "today": "今天",
     "upcoming": "即将到来",
@@ -48,9 +55,11 @@
     "noTasks": "没有任务可显示。",
     "addTask": "+ 添加任务",
     "addTaskButton": "添加任务",
+    "markTimeOff": "标记请假 / 休假",
     "name": "名称",
     "project": "项目",
     "status": "状态",
+    "priority": "优先级",
     "dueDate": "截止日期",
     "dueDatePlaceholder": "设置截止日期",
     "tomorrow": "明天",
@@ -80,13 +89,6 @@
     "timeLoggedTaskAriaLabel": "时间记录任务：",
     "errorLoadingRecentTasks": "加载最近任务时出错",
     "errorLoadingTimeLoggedTasks": "加载时间记录任务时出错",
-    "dueTask": "到期任务",
-    "total": "总计",
-    "on": "于",
-    "totalDue": "总到期",
-    "todo": "待办",
-    "doing": "进行中",
-    "done": "完成",
     "newTask": "新建任务",
     "assignTask": "分配任务",
     "createTask": "创建任务",
@@ -103,7 +105,6 @@
     "searchMembers": "按姓名或邮箱搜索…",
     "noMembersFound": "未找到成员",
     "time": "时间",
-    "markTimeOff": "标记请假 / 休假",
     "pinned": "已置顶",
     "tabsLabel": "筛选任务",
     "pinTask": "置顶任务",
@@ -136,7 +137,9 @@
     "weekdayMiniThu": "四",
     "weekdayMiniFri": "五",
     "weekdayMiniSat": "六",
-    "weekdayMiniSun": "日"
+    "weekdayMiniSun": "日",
+    "clientsSearchPlaceholder": "搜索客户...",
+    "projectsSearchPlaceholder": "搜索项目..."
   },
   "activityLogs": {
     "title": "最近活动",
@@ -154,9 +157,9 @@
       "statusChanged": "{{userName}}更改了项目{{projectName}}的状态",
       "managerAssigned": "{{userName}}为项目{{projectName}}分配了项目经理",
       "managerRemoved": "{{userName}}移除了项目{{projectName}}的项目经理",
+      "managerFinanceChanged": "{{userName}} 更改了 {{projectName}} 的项目经理财务访问权限",
       "memberAdded": "{{userName}}将{{memberName}}添加到项目{{projectName}}",
-      "memberRemoved": "{{userName}}从项目{{projectName}}中移除了{{memberName}}",
-      "managerFinanceChanged": "{{userName}} 更改了 {{projectName}} 的项目经理财务访问权限"
+      "memberRemoved": "{{userName}}从项目{{projectName}}中移除了{{memberName}}"
     },
     "task": {
       "created": "{{userName}}创建了任务{{taskName}}",
@@ -236,6 +239,10 @@
     "no": "否",
     "timeColumn": "时间",
     "dateColumn": "日期",
+    "projectStartDateError": "无法在项目开始日期（{{date}}）之前记录时间",
+    "projectStartDateHint": "项目开始日期：{{date}}",
+    "projectNotStartedWarningTitle": "项目尚未开始",
+    "projectNotStartedWarningDesc": "该项目计划于 {{date}} 开始。无法在项目开始日期之前记录时间。",
     "failedToLogTime": "记录时间失败",
     "today": "今天",
     "yesterday": "昨天",
@@ -245,7 +252,9 @@
     "weekdayThu": "周四",
     "weekdayFri": "周五",
     "weekdaySat": "周六",
-    "weekdaySun": "周日"
+    "weekdaySun": "周日",
+    "createdTimeColumn": "创建时间",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "暂无费用记录",
@@ -259,7 +268,8 @@
     "columnAssignee": "负责人",
     "columnDate": "日期",
     "openTask": "打开任务",
-    "rowsPerPage": "每页行数："
+    "rowsPerPage": "每页行数：",
+    "addExpense": "添加费用"
   },
   "addExpense": {
     "modalTitle": "添加费用",
@@ -526,5 +536,7 @@
     "viewAllMore": "查看全部（还有 {{remaining}} 项）",
     "addFailed": "无法添加该待办事项，请重试。",
     "completeFailed": "无法更新该待办事项，请重试。"
-  }
+  },
+  "projectsAtRisk": "面临风险的项目",
+  "flagged": "标记的"
 }

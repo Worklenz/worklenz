@@ -8,7 +8,7 @@
   "currentSprintName": "当前冲刺 · {{name}}",
   "sprintCompletedCount": "{{done}}/{{total}} 已完成",
   "sprintCompletedPoints": "已完成 {{done}}/{{total}} 分",
-  "sprintPointsTotal": "共 {{total}} 点",
+  "sprintPointsTotal": "共 {{points}} 点",
   "sprintScopeAdded": "+{{count}} 范围",
   "sprintScopeAddedTooltip": "冲刺开始后添加的问题",
   "sprintItemCount_one": "{{count}} 项",

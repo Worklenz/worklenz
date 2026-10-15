@@ -1,0 +1,337 @@
+{
+  "actions": {
+    "createLinkFailed": "Lidhja e identifikimit nuk mund të krijohej.",
+    "deactivateFailed": "Përdoruesi nuk mund të çaktivizohej.",
+    "deactivated": "{{name}} u çaktivizua. Aksesi në portal dhe API anulohet menjëherë.",
+    "messageNoProjects": "{{name}} nuk ka ende projekte. Së pari caktoni një projekt, pastaj filloni një diskutim.",
+    "reactivateFailed": "Përdoruesi nuk mund të riaktivizohej.",
+    "reactivated": "{{name}} mund të identifikohet përsëri. Statusi i tyre i mëparshëm është rikthyer.",
+    "removeFailed": "Përdoruesi nuk mund të hiqej.",
+    "removed": "{{name}} u hoq nga portali.",
+    "resendFailed": "Ftesa nuk mund të dërgohej përsëri.",
+    "resent": "Ftesa u ridërgua te {{email}}. Lidhja është e vlefshme për 7 ditë."
+  },
+  "assign": {
+    "description": "Një përdorues sheh vetëm projekte të caktuara këtu, edhe pse ato i përkasin {{organization}}. Ajo që ata mund të bëjnë brenda secilit projekt varet nga roli i tyre:",
+    "failed": "Qasja në projekt nuk mund të përditësohej.",
+    "loadFailed": "Projektet nuk mund të ngarkoheshin.",
+    "noProjects": "{{organization}} nuk ka ende projekte.",
+    "portalOff": "Portali i klientit është joaktiv për këtë projekt. Ndizeni fillimisht.",
+    "save": "Ruaj",
+    "saved": "Qasja në projekt u përditësua për {{name}}.",
+    "savedWithRemoval": "Qasja në projekt u përditësua për {{name}}. Qasja e hequr zbatohet menjëherë.",
+    "title": "Cakto projekte · {{name}}"
+  },
+  "deactivate": {
+    "body": "{{name}} humbet aksesin menjëherë. Nëse ata kanë një seancë të hapur, kërkesa e tyre e radhës dështon dhe ata janë të nënshkruar. Mund t'i riaktivizoni më vonë dhe statusi i tyre i mëparshëm do të rikthehet.",
+    "confirm": "Çaktivizo",
+    "title": "Të çaktivizohet ky përdorues klienti?"
+  },
+  "edit": {
+    "failed": "Përdoruesi nuk mund të përditësohej.",
+    "roleChanged": "{{name}} tani është një {{role}}. Ai zbatohet në kërkesën e tyre të radhës, jo vetëm pas një identifikimi të ri.",
+    "roleNotice": "Ndryshimet e roleve hyjnë në fuqi në kontrollin e ardhshëm të autorizimit të përdoruesit, jo vetëm pas një identifikimi të ri.",
+    "save": "Ruaj",
+    "title": "Redakto përdoruesin · {{organization}}",
+    "updated": "{{name}} përditësuar."
+  },
+  "fields": {
+    "email": "Email (adresa e hyrjes)",
+    "emailInvalid": "Fut një adresë të vlefshme emaili.",
+    "emailRequired": "Futni adresën e emailit të përdoruesit.",
+    "jobTitle": "Titulli i punës",
+    "name": "Emri i Plotë",
+    "nameRequired": "Futni emrin e përdoruesit.",
+    "phone": "Telefoni (opsionale)",
+    "role": "Role"
+  },
+  "lastAdmin": {
+    "confirm": "Vazhdo gjithsesi",
+    "title": "Ky është administratori i fundit i klientit"
+  },
+  "menu": {
+    "assign": "Caktoni projekte",
+    "createLink": "Krijo lidhjen e hyrjes",
+    "deactivate": "Çaktivizo përdoruesin",
+    "edit": "Redakto përdoruesin dhe rolin",
+    "message": "Message",
+    "reactivate": "Riaktivizoni përdoruesin",
+    "remove": "Hiq përdoruesin",
+    "resend": "Ridërgo ftesën",
+    "resendShort": "Ridërgoje",
+    "view": "Shiko profilin"
+  },
+  "organizations": {
+    "accessFilter": {
+      "active": "Aktiv",
+      "deactivated": "I çaktivizuar",
+      "invited": "I ftuar",
+      "none": "Pa përdorues"
+    },
+    "awaitingApprovals_one": "miratimi {{count}}",
+    "awaitingApprovals_other": "{{count}} miratimet",
+    "awaitingChangeRequests_one": "{{count}} kërkesë për ndryshim",
+    "awaitingChangeRequests_other": "{{count}} kërkesat për ndryshim",
+    "columns": {
+      "access": "Qasja në portal",
+      "actions": "Actions",
+      "awaiting": "Në pritje të klientit",
+      "client": "Client",
+      "contactEmail": "Email kontakti",
+      "contactName": "Kontakti kryesor",
+      "projects": "Projektet e portalit",
+      "users": "Përdoruesit",
+      "contact": "Primary contact"
+    },
+    "empty": "No client organizations yet. Use Add Client to create the first one.",
+    "emptySearch": "No clients match this search.",
+    "createLinkFailed": "Lidhja e ftesës nuk mund të krijohej.",
+    "menu": {
+      "copyInvite": "Kopjo lidhjen e ftesës",
+      "edit": "Redakto klientin",
+      "message": "Klienti i mesazheve",
+      "open": "Open workspace",
+      "projects": "Menaxhoni projekte",
+      "users": "Menaxho përdoruesit dhe aksesin"
+    },
+    "rowActions": "Veprimet për {{name}}",
+    "search": "Search organizations…",
+    "searchLabel": "Kërkoni organizatat e klientëve",
+    "tableLabel": "Organizatat e klientëve",
+    "usersSummary": "{{active}} aktive · {{total}} gjithsej",
+    "waiting": "{{count}} në pritje",
+    "waiting_one": "{{count}} në pritje",
+    "waiting_other": "{{count}} në pritje",
+    "columnHelp": {
+      "access": "Aktiv nëse ndonjë përdorues mund të identifikohet, përndryshe i ftuar, çaktivizuar ose Nuk ka përdorues.",
+      "awaiting": "Aprovimet dhe kërkesat për informacion në pritje të klientit.",
+      "client": "Organizata e klientit.",
+      "contactEmail": "Adresa e emailit të kontaktit kryesor.",
+      "contactName": "Administratori i parë i portalit aktiv i këtij klienti.",
+      "projects": "Projektet e ndara me këtë klient në portal.",
+      "users": "Përdoruesit që janë identifikuar, nga të gjithë përdoruesit për këtë klient."
+    }
+  },
+  "overview": {
+    "attention": {
+      "approvalAwaiting": "klientin",
+      "changeRequestReview": "\"{{title}}\" ka nevojë për shqyrtimin tuaj",
+      "empty": "Asgjë nuk ju pret për {{name}}.",
+      "inviteExpired": "Ftesa e {{name}} ka skaduar",
+      "inviteExpiredAsked": "Ftesa e {{name}} skadoi dhe ata kërkuan një lidhje të re",
+      "theClient": "klientin",
+      "title": "Ka nevojë për vëmendje",
+      "unreadMessage": "Mesazh i palexuar i klientit"
+    },
+    "recent": {
+      "empty": "Asnjë aktivitet ende.",
+      "error": "Aktiviteti i fundit nuk mund të ngarkohej.",
+      "title": "Aktiviteti i fundit"
+    },
+    "stats": {
+      "awaiting": "Në pritje të veprimit të klientit",
+      "awaitingSub": "Miratime dhe kërkesa për informacion",
+      "openChangeRequests": "Hapni kërkesat për ndryshim",
+      "portalProjects": "Projektet e portalit"
+    }
+  },
+  "page": {
+    "addClient": "Add Client",
+    "description": "Organizatat e klientëve, njerëzit që mund të regjistrohen në portalin e tyre dhe çfarë pret secili prej tyre.",
+    "organizationsTab": "Organizations",
+    "title": "Klientët",
+    "usersTab": "Përdoruesit e Klientit",
+    "viewToggle": "Pamja e klientëve"
+  },
+  "profile": {
+    "assignedProjects_one": "Projektet e caktuara ({{count}})",
+    "assignedProjects_other": "Projektet e caktuara ({{count}})",
+    "lastAccess": "Qasja e fundit",
+    "neverAccessed": "kurrë",
+    "noJobTitle": "Nuk ka titull pune në dosje",
+    "noProjects": "Asnjë projekt i caktuar ende. Ky përdorues hyn në një portal bosh.",
+    "phone": "Telefoni",
+    "title": "Përdorues klienti"
+  },
+  "remove": {
+    "body": "{{name}} dhe detyrat e tyre të projektit janë hequr. Komentet dhe miratimet që ata bënë mbeten në histori.",
+    "confirm": "Hiq përdoruesin",
+    "title": "Të hiqet ky përdorues klienti?"
+  },
+  "retry": "Provo përsëri",
+  "roleAdminDescription": "Shiko projektet e caktuara, komentet, ngarkon skedarët e lejuar, dorëzon kërkesa për ndryshime, miraton artikuj dhe mund të menaxhojë përdoruesit e klientëve nëse aktivizohet.",
+  "roleMemberDescription": "Shiko projektet e caktuara, komente, ngarkon skedarë të lejuar dhe paraqet kërkesa për ndryshim. Nuk mund të miratojë ose menaxhojë përdoruesit.",
+  "roleViewerDescription": "Vetëm për lexim: informacione për projektin, momente historike, detyra dhe skedarë të dukshëm nga klienti. Nuk mund të komentojë, ngarkojë, miratojë ose dorëzojë kërkesa për ndryshim.",
+  "rowsPerPage": "Rreshta për faqe:",
+  "stats": {
+    "activeUsers": "Përdorues aktivë",
+    "awaiting": "Në pritje të veprimit të klientit",
+    "awaitingSub": "Miratime dhe kërkesa për informacion",
+    "expired": "{{count}} ka skaduar",
+    "expired_one": "{{count}} ka skaduar",
+    "expired_other": "{{count}} ka skaduar",
+    "invited": "I ftuar",
+    "organizations": "Organizatat e klientëve"
+  },
+  "users": {
+    "allRoles": "Të gjitha rolet",
+    "allStatuses": "Të gjitha statuset",
+    "columns": {
+      "actions": "Actions",
+      "email": "Email",
+      "jobTitle": "Titulli i punës",
+      "lastAccess": "Qasja e fundit",
+      "name": "Name",
+      "organization": "Organization",
+      "phone": "Numri i telefonit",
+      "projects": "Projektet",
+      "role": "Role",
+      "status": "Status",
+      "user": "Përdoruesi"
+    },
+    "empty": "No client users yet. Use Add Client to invite the first one.",
+    "emptyFiltered": "Asnjë përdorues klienti nuk përputhet me këto filtra.",
+    "groupBy": {
+      "client": "Grupi",
+      "label": "Grupi i përdoruesve të klientëve",
+      "count_one": "përdorues {{count}}",
+      "count_other": "{{count}} përdorues"
+    },
+    "invitedAgo": "I ftuar {{when}}",
+    "neverAccessed": "kurrë",
+    "noProjects": "Asnjë i caktuar",
+    "projectCount": "{{count}} projekte",
+    "projectCount_one": "Projekti {{count}}",
+    "projectCount_other": "{{count}} projekte",
+    "roleFilter": "Filtro sipas rolit",
+    "rowActions": "Veprimet për {{name}}",
+    "search": "Search users, emails or organizations…",
+    "searchInOrganization": "Search users or emails…",
+    "searchLabel": "Kërkoni përdoruesit e klientëve",
+    "statusFilter": "Filtro sipas statusit",
+    "tableLabel": "Përdoruesit e klientëve",
+    "columnHelp": {
+      "email": "Adresa me të cilën identifikohet ky përdorues.",
+      "jobTitle": "Roli i tyre brenda kompanisë së klientit.",
+      "lastAccess": "Kur përdoruesi është identifikuar për herë të fundit në portal.",
+      "name": "Emri i plotë i përdoruesit të klientit.",
+      "organization": "Klienti të cilit i përket ky përdorues.",
+      "phone": "Numri i telefonit të kontaktit, nëse ofrohet.",
+      "projects": "Numri i projekteve të portalit që ky përdorues mund të hapë.",
+      "role": "Çfarë mund të bëjë përdoruesi në portal: Admin, Anëtar ose Shikues.",
+      "status": "Nëse përdoruesi është identifikuar, është i ftuar ose i çaktivizuar."
+    },
+    "searchClients": "Kërko klientët…"
+  },
+  "workspace": {
+    "activity": {
+      "empty": "Nuk ka ende asnjë aktivitet për {{name}}.",
+      "error": "Aktiviteti nuk mund të ngarkohej.",
+      "openFullLog": "Hap regjistrin e plotë të auditimit",
+      "sideClient": "Client",
+      "sideInternal": "E brendshme",
+      "title": "Gjurma e auditimit për {{name}}"
+    },
+    "approvals": {
+      "columns": {
+        "due": "Afati",
+        "id": "ID",
+        "linked": "Artikulli i lidhur",
+        "status": "Status",
+        "title": "Titulli"
+      },
+      "empty": "Ende nuk ka miratime për {{name}}.",
+      "request": "Kërkoni miratim",
+      "tableLabel": "Miratime për këtë klient"
+    },
+    "billing": {
+      "createInvoice": "Krijo faturë",
+      "manageUsers": "Menaxho përdoruesit",
+      "title": "Faturat",
+      "warningDescription": "Asnjë nga përdoruesit e tyre nuk ka pranuar një ftesë, kështu që ata nuk mund të shikojnë ose paguajnë fatura në portalin e tyre. Mund të krijoni ende fatura. Fillimisht ftoni një përdorues nëse duhet ta shohë atë.",
+      "warningTitle": "{{name}} nuk mund ta përdorë ende portalin e tyre"
+    },
+    "changeRequests": {
+      "columns": {
+        "id": "ID",
+        "priority": "Prioriteti",
+        "status": "Status",
+        "submitted": "dorëzuar",
+        "title": "Titulli"
+      },
+      "empty": "Nuk ka ende kërkesa për ndryshim nga {{name}}.",
+      "tableLabel": "Ndrysho kërkesat nga ky klient"
+    },
+    "errors": {
+      "backToClients": "Kthehu te klientët",
+      "loadDescription": "Ju lutemi provoni përsëri.",
+      "loadTitle": "Ky klient nuk mund të ngarkohej",
+      "notFoundDescription": "Mund të jetë hequr, ose lidhja është e gabuar.",
+      "notFoundTitle": "Klienti nuk u gjet"
+    },
+    "header": {
+      "actionsLabel": "Veprimet e klientit",
+      "edit": "Redakto klientin",
+      "message": "Message"
+    },
+    "projects": {
+      "assign": {
+        "button": "Caktoni projektin",
+        "cancel": "Cancel",
+        "confirm": "Cakto",
+        "description": "Zgjidhni projektet e hapësirës së punës që nuk i përkasin ende një klienti. Portali i Klientit qëndron i fikur për ta derisa ta ndizni.",
+        "done_one": "Projekti {{count}} i caktuar për {{name}}. Aktivizoni Portalin e Klientit për ta ndarë atë.",
+        "done_other": "{{count}} projekte të caktuara për {{name}}. Aktivizoni Portalin e Klientit për t'i ndarë ato.",
+        "failed": "Disa projekte nuk mund të caktoheshin: {{details}}",
+        "loadFailed": "Projektet nuk mund të ngarkoheshin.",
+        "none": "Çdo projekt i hapësirës së punës tashmë i përket një klienti.",
+        "placeholder": "Kërko projekte…",
+        "retry": "Provo përsëri",
+        "title": "Cakto projekte për {{name}}"
+      },
+      "columns": {
+        "phase": "Phase",
+        "portal": "Portali",
+        "progress": "Progresi",
+        "project": "Projekti",
+        "status": "Statusi përballë klientit",
+        "users": "Përdoruesit"
+      },
+      "empty": "Nuk ka ende projekte për {{name}}. Lidhni një projekt të hapësirës së punës me këtë klient nga Projektet e Portalit.",
+      "emptyShort": "Nuk ka ende projekte për {{name}}.",
+      "manage": "Menaxho",
+      "progressLabel": "Përparimi i {{name}}",
+      "tableLabel": "Projektet e këtij klienti",
+      "title": "Projektet"
+    },
+    "rail": {
+      "active": "Aktiv",
+      "balance": "Bilanci",
+      "billing": "Faturimi",
+      "deactivated": "I çaktivizuar",
+      "email": "Email",
+      "hint": "Një përdorues klient sheh vetëm projektet që i janë caktuar.",
+      "inviteUser": "Ftoni një përdorues",
+      "invited": "I ftuar",
+      "organization": "Organizata",
+      "portalAccess": "Qasja në portal",
+      "portalProjects": "Projektet e portalit",
+      "primaryContact": "Kontakti kryesor",
+      "quickActions": "Veprime të shpejta",
+      "requestApproval": "Kërkoni miratim"
+    },
+    "tabs": {
+      "activity": "Aktiviteti",
+      "approvals": "Miratimet",
+      "billing": "Faturimi",
+      "changeRequests": "Kërkesat për ndryshim",
+      "overview": "Overview",
+      "projects": "Projektet",
+      "users": "Përdoruesit & Qasja"
+    },
+    "users": {
+      "description": "Personat në {{name}} që mund të identifikohen. Secili sheh vetëm projektet që u janë caktuar.",
+      "invite": "Fto përdorues"
+    }
+  }
+}

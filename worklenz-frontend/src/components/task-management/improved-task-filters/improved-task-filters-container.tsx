@@ -402,6 +402,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   position,
   className = '',
   mode = 'default',
+  extraActions,
 }) => {
   const { t } = useTranslation('task-list-filters');
   const dispatch = useAppDispatch();
@@ -1163,6 +1164,8 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
               createDebouncedFunction={createDebouncedFunction}
             />
           )}
+
+          {extraActions}
         </div>
       </div>
 

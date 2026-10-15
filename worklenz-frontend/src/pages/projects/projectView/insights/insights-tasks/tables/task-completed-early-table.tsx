@@ -1,5 +1,4 @@
-import { Flex, Table, Typography } from '@/shared/antd-imports';
-import { TableProps } from 'antd/lib';
+import { Flex, Table, Typography, TableProps } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';

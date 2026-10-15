@@ -944,7 +944,9 @@ const ManagePhaseContent: React.FC<ManagePhaseContentProps> = ({
 
       setIsSavingAutoArchive(true);
       try {
-        const res = await phasesApiService.updateSprintSettings(finalProjectId, checked);
+        const res = await phasesApiService.updateSprintSettings(finalProjectId, {
+          auto_archive_on_sprint_complete: checked,
+        });
         if (!res.done) throw new Error(res.message);
         dispatch(mergeProject({ auto_archive_on_sprint_complete: checked }));
       } catch (error) {

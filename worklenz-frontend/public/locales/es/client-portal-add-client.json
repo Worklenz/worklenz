@@ -56,9 +56,9 @@
     "lastName": "apellido",
     "lastNamePlaceholder": "García",
     "email": "Dirección de correo electrónico",
-    "emailPlaceholder": "jane@company.com",
+    "emailPlaceholder": "jane@empresa.com",
     "jobTitle": "Título del trabajo",
-    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "jobTitlePlaceholder": "por ej. Gerente de Mercadeo",
     "phone": "Teléfono (opcional)",
     "phonePlaceholder": "+1 415 555 0142"
   },
@@ -93,7 +93,8 @@
     "templateNoProjects": "{{company}} aún no tiene proyectos, por lo que no hay nada a lo que aplicar una plantilla.",
     "templateTooManyProjects": "{{company}} tiene más proyectos de los que se pueden enumerar aquí. Asigne acceso por proyecto posteriormente.",
     "templateApplied": "Otorga a {{template}} acceso a todos los {{count}} de los proyectos actuales de {{company}}. Puede realizar ajustes por proyecto posteriormente desde el menú de filas.",
-    "templateHint": "Elija una plantilla para otorgar acceso a todos los proyectos actuales a la vez, o déjela como está y asigne proyectos individualmente después."
+    "templateHint": "Elija una plantilla para otorgar acceso a todos los proyectos actuales a la vez, o déjela como está y asigne proyectos individualmente después.",
+    "existingUsers": "Usuarios existentes"
   },
   "existing": {
     "helper": "Contactos sin acceso activo al portal.",
@@ -111,7 +112,7 @@
     "emailMissing": "no proporcionado",
     "role": "Role",
     "rolePocDefault": "POC (predeterminado para una nueva empresa)",
-    "rolePoc": "POC",
+    "rolePoc": "POS",
     "roleMember": "Usuario cliente",
     "projectAccess": "Acceso al proyecto",
     "projectAccessTemplate": "{{template}} en todos los {{count}} proyectos actuales",

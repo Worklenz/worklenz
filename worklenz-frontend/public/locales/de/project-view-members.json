@@ -42,5 +42,6 @@
   "moreOptions": "Weitere Optionen",
   "changeMemberStatusConfirmation": "Möchten Sie den Status dieses Mitglieds wirklich ändern?",
   "yesProceed": "Ja, fortfahren",
-  "cancel": "Abbrechen"
+  "cancel": "Abbrechen",
+  "removeFromProject": "Aus Projekt entfernen"
 }

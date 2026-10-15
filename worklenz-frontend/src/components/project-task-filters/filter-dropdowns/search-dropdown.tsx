@@ -94,7 +94,7 @@ const SearchDropdown = () => {
       open={isOpen}
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => searchDropdownContent}
+      popupRender={() => searchDropdownContent}
       onOpenChange={handleSearchDropdownOpen}
     >
       <Button icon={<SearchOutlined />} />

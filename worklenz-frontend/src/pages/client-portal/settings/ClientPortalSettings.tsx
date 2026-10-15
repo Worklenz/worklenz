@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Spin, Flex, Typography, message, theme } from '@/shared/antd-imports';
+import { Alert, Button, Flex, Typography, message, theme } from '@/shared/antd-imports';
 import {
   BankOutlined,
   BgColorsOutlined,
@@ -8,12 +8,15 @@ import {
   EyeOutlined,
   BellOutlined,
   TeamOutlined,
-  SafetyCertificateOutlined,
-  TagsOutlined,
   SaveOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
+import {
+  useGetPortalSettingsQuery,
+  useSavePortalSettingsMutation,
+} from '@/api/client-portal/portal-access-api';
+import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
   MixpanelEvents,
@@ -24,24 +27,22 @@ import {
   CLIENT_PORTAL_SETTINGS_DEFAULTS,
   IClientPortalSettings,
 } from '@/types/settings/client-portal-settings.types';
+import type { PortalSettingsV2 } from '@/types/client-portal/v2';
 import { CompanyDetailsSection } from './sections/CompanyDetailsSection';
 import { BrandingSection } from './sections/BrandingSection';
 import { InvoiceTemplateSection } from './sections/InvoiceTemplateSection';
-import { VisibilitySection } from './sections/VisibilitySection';
+import { SharingVisibilitySection } from './sections/SharingVisibilitySection';
+import { ClientRolesSection } from './sections/ClientRolesSection';
 import { NotificationsSection } from './sections/NotificationsSection';
-import { ClientUserManagementSection } from './sections/ClientUserManagementSection';
-import { PermissionTemplatesSection } from './sections/PermissionTemplatesSection';
-import { TicketingConfigSection } from './sections/TicketingConfigSection';
+import { PortalLoader } from '@/components/client-portal/v2';
 
 type SectionKey =
   | 'company'
   | 'branding'
   | 'invoiceTemplate'
-  | 'visibility'
-  | 'notifications'
-  | 'clientUsers'
-  | 'templates'
-  | 'ticketing';
+  | 'sharing'
+  | 'roles'
+  | 'notifications';
 
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -51,8 +52,32 @@ const fileToBase64 = (file: File): Promise<string> =>
     reader.readAsDataURL(file);
   });
 
+/**
+ * These three values belong to the v2 Portal Settings API (Sharing & Visibility and Client Roles).
+ * The older company/branding save must not send them, or it would write back whatever this page
+ * loaded and could undo a v2 change made since.
+ */
+const toLegacyPayload = (
+  settings: IClientPortalSettings,
+  logoUrl: string | null
+): Partial<IClientPortalSettings> => {
+  const payload: Partial<IClientPortalSettings> = { ...settings, logo_url: logoUrl };
+  delete payload.visible_invoices;
+  delete payload.poc_can_add_users;
+  delete payload.poc_can_remove_users;
+  return payload;
+};
+
+/** The permission switches whose change the server writes to the audit log. */
+const PERMISSION_SWITCHES: ((settings: PortalSettingsV2) => boolean)[] = [
+  settings => settings.show_invoices,
+  settings => settings.admins_can_invite_users,
+  settings => settings.admins_can_remove_users,
+];
+
 const ClientPortalSettings = () => {
   const { t } = useTranslation('client-portal-settings');
+  const { t: tV2 } = useTranslation('client-portal-v2-settings');
   const { token } = theme.useToken();
   const { trackMixpanelEvent } = useMixpanelTracking();
 
@@ -72,15 +97,51 @@ const ClientPortalSettings = () => {
   const [pendingLogoUrl, setPendingLogoUrl] = useState<string | null>(null);
   const [pendingLogoRemoval, setPendingLogoRemoval] = useState(false);
 
-  const SECTIONS: { key: SectionKey; icon: React.ReactNode; labelKey: string; labelDefault: string }[] = [
-    { key: 'company', icon: <BankOutlined />, labelKey: 'navCompanyDetails', labelDefault: 'Company Details' },
-    { key: 'branding', icon: <BgColorsOutlined />, labelKey: 'navBranding', labelDefault: 'Branding' },
-    { key: 'invoiceTemplate', icon: <FileTextOutlined />, labelKey: 'navInvoiceTemplate', labelDefault: 'Invoice Template' },
-    { key: 'visibility', icon: <EyeOutlined />, labelKey: 'navVisibility', labelDefault: 'Client Visible Selection' },
-    { key: 'notifications', icon: <BellOutlined />, labelKey: 'navNotifications', labelDefault: 'Notifications' },
-    { key: 'clientUsers', icon: <TeamOutlined />, labelKey: 'navClientUsers', labelDefault: 'Client User Management' },
-    { key: 'templates', icon: <SafetyCertificateOutlined />, labelKey: 'navTemplates', labelDefault: 'Permission Templates' },
-    { key: 'ticketing', icon: <TagsOutlined />, labelKey: 'navTicketing', labelDefault: 'Ticketing Config' },
+  // v2 settings: the server copy comes from RTK Query, and `draftV2` holds the user's edits.
+  // `null` means "no edits yet", so a background refetch can never overwrite typed changes.
+  const {
+    data: v2Response,
+    isLoading: isV2Loading,
+    isError: isV2Error,
+    isFetching: isV2Fetching,
+    refetch: refetchV2,
+  } = useGetPortalSettingsQuery();
+  const [savePortalSettings] = useSavePortalSettingsMutation();
+  const savedV2 = v2Response?.body?.settings;
+  const [draftV2, setDraftV2] = useState<PortalSettingsV2 | null>(null);
+  const currentV2 = draftV2 ?? savedV2 ?? null;
+
+  const SECTIONS: { key: SectionKey; icon: React.ReactNode; label: string }[] = [
+    {
+      key: 'company',
+      icon: <BankOutlined />,
+      label: t('navCompanyDetails', { defaultValue: 'Company Details' }),
+    },
+    {
+      key: 'branding',
+      icon: <BgColorsOutlined />,
+      label: t('navBranding', { defaultValue: 'Branding' }),
+    },
+    {
+      key: 'invoiceTemplate',
+      icon: <FileTextOutlined />,
+      label: t('navInvoiceTemplate', { defaultValue: 'Invoice Template' }),
+    },
+    {
+      key: 'sharing',
+      icon: <EyeOutlined />,
+      label: tV2('nav.sharing', { defaultValue: 'Sharing & Visibility' }),
+    },
+    {
+      key: 'roles',
+      icon: <TeamOutlined />,
+      label: tV2('nav.roles', { defaultValue: 'Client Roles' }),
+    },
+    {
+      key: 'notifications',
+      icon: <BellOutlined />,
+      label: tV2('nav.notifications', { defaultValue: 'Notifications' }),
+    },
   ];
 
   useEffect(() => {
@@ -123,6 +184,11 @@ const ClientPortalSettings = () => {
 
   const handleSettingsChange = (patch: Partial<IClientPortalSettings>) => {
     setSettings(prev => ({ ...prev, ...patch }));
+  };
+
+  const handleV2Change = (patch: Partial<PortalSettingsV2>) => {
+    if (!currentV2) return;
+    setDraftV2({ ...currentV2, ...patch });
   };
 
   const handleLogoFileSelected = (file: File) => {
@@ -180,7 +246,7 @@ const ClientPortalSettings = () => {
     setPendingLogoRemoval(false);
   };
 
-  const hasUnsavedChanges = useMemo(
+  const hasLegacyChanges = useMemo(
     () =>
       JSON.stringify(settings) !== JSON.stringify(originalSettings) ||
       Boolean(pendingLogoFile) ||
@@ -188,65 +254,103 @@ const ClientPortalSettings = () => {
     [settings, originalSettings, pendingLogoFile, pendingLogoRemoval]
   );
 
+  const hasV2Changes = useMemo(
+    () => draftV2 !== null && JSON.stringify(draftV2) !== JSON.stringify(savedV2),
+    [draftV2, savedV2]
+  );
+
+  const hasUnsavedChanges = hasLegacyChanges || hasV2Changes;
+
   const handleCancelChanges = () => {
     setSettings(originalSettings);
+    setDraftV2(null);
     resetPendingLogoState();
+  };
+
+  /** Saves Company Details, Branding and Invoice Template through the original settings endpoint. */
+  const saveLegacySettings = async (): Promise<boolean> => {
+    let logoUrl = settings.logo_url;
+
+    if (pendingLogoFile) {
+      const base64 = await fileToBase64(pendingLogoFile);
+      const uploadResponse = await profileSettingsApiService.uploadClientPortalLogo(base64);
+      if (!uploadResponse.done || !uploadResponse.body?.logo_url) {
+        message.error(t('logoUploadFailedError', { defaultValue: 'Failed to upload logo.' }));
+        return false;
+      }
+      logoUrl = uploadResponse.body.logo_url;
+      setCustomLogo(`${logoUrl}?t=${Date.now()}`);
+      setIsLogoSynced(false);
+
+      const uploadProps: ClientPortalActionEventProps = {
+        action_type: 'create',
+        item_type: 'settings',
+        page: 'settings',
+        section: 'client_portal',
+        source: 'save_changes_button',
+      };
+      trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_LOGO_UPLOADED, uploadProps);
+    } else if (pendingLogoRemoval) {
+      logoUrl = null;
+      setCustomLogo(null);
+    }
+
+    const response = await profileSettingsApiService.updateClientPortalSettings(
+      toLegacyPayload(settings, logoUrl)
+    );
+    if (!response.done) {
+      message.error(t('settingsSaveFailedError', { defaultValue: 'Failed to save settings.' }));
+      return false;
+    }
+
+    const saved = { ...settings, logo_url: logoUrl };
+    setSettings(saved);
+    setOriginalSettings(saved);
+    resetPendingLogoState();
+    return true;
+  };
+
+  /** Saves the v2 sections and tells the user which permission change was written to the audit log. */
+  const saveV2Settings = async (): Promise<boolean> => {
+    if (!draftV2 || !savedV2) return true;
+    try {
+      await savePortalSettings(draftV2).unwrap();
+    } catch (error) {
+      message.error(
+        getPortalErrorMessage(
+          error,
+          tV2('saveFailed', { defaultValue: 'The portal settings could not be saved.' })
+        )
+      );
+      return false;
+    }
+
+    const changed = PERMISSION_SWITCHES.filter(read => read(draftV2) !== read(savedV2));
+    if (changed.length > 0) {
+      message.info(
+        tV2('auditRecorded', { defaultValue: 'Permission change recorded in the audit log.' })
+      );
+    }
+    setDraftV2(null);
+    return true;
   };
 
   const handleSaveChanges = async () => {
     try {
       setSaving(true);
-      let logoUrl = settings.logo_url;
+      if (hasLegacyChanges && !(await saveLegacySettings())) return;
+      if (hasV2Changes && !(await saveV2Settings())) return;
 
-      if (pendingLogoFile) {
-        const base64 = await fileToBase64(pendingLogoFile);
-        const uploadResponse = await profileSettingsApiService.uploadClientPortalLogo(base64);
-        if (!uploadResponse.done || !uploadResponse.body?.logo_url) {
-          message.error(t('logoUploadFailedError', { defaultValue: 'Failed to upload logo.' }));
-          setSaving(false);
-          return;
-        }
-        logoUrl = uploadResponse.body.logo_url;
-        setCustomLogo(`${logoUrl}?t=${Date.now()}`);
-        setIsLogoSynced(false);
-
-        const uploadProps: ClientPortalActionEventProps = {
-          action_type: 'create',
-          item_type: 'settings',
-          page: 'settings',
-          section: 'client_portal',
-          source: 'save_changes_button',
-        };
-        trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_LOGO_UPLOADED, uploadProps);
-      } else if (pendingLogoRemoval) {
-        logoUrl = null;
-        setCustomLogo(null);
-      }
-
-      const response = await profileSettingsApiService.updateClientPortalSettings({
-        ...settings,
-        logo_url: logoUrl,
-      });
-
-      if (response.done) {
-        const saved = { ...settings, logo_url: logoUrl };
-        setSettings(saved);
-        setOriginalSettings(saved);
-        resetPendingLogoState();
-        message.success(t('settingsSavedText', { defaultValue: 'Settings saved successfully' }));
-
-        const saveProps: ClientPortalActionEventProps = {
-          action_type: 'edit',
-          item_type: 'settings',
-          page: 'settings',
-          section: 'client_portal',
-          source: 'save_changes_button',
-          success: true,
-        };
-        trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_SETTINGS_SAVED, saveProps);
-      } else {
-        message.error(t('settingsSaveFailedError', { defaultValue: 'Failed to save settings.' }));
-      }
+      message.success(t('settingsSavedText', { defaultValue: 'Settings saved successfully' }));
+      const saveProps: ClientPortalActionEventProps = {
+        action_type: 'edit',
+        item_type: 'settings',
+        page: 'settings',
+        section: 'client_portal',
+        source: 'save_changes_button',
+        success: true,
+      };
+      trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_SETTINGS_SAVED, saveProps);
     } catch (error) {
       console.error('Failed to save settings:', error);
       message.error(t('settingsSaveFailedError', { defaultValue: 'Failed to save settings.' }));
@@ -255,10 +359,32 @@ const ClientPortalSettings = () => {
     }
   };
 
+  /** The rebuilt sections need the v2 settings; show loading and error states around them. */
+  const renderV2Section = (render: (current: PortalSettingsV2) => React.ReactNode) => {
+    if (currentV2) return render(currentV2);
+    if (isV2Loading) return <PortalLoader />;
+    return (
+      <Alert
+        type="error"
+        showIcon
+        message={
+          isV2Error
+            ? tV2('loadFailed', { defaultValue: 'The portal settings could not be loaded.' })
+            : tV2('loadEmpty', { defaultValue: 'No portal settings were returned.' })
+        }
+        action={
+          <Button size="small" onClick={() => refetchV2()} loading={isV2Fetching}>
+            {tV2('retry', { defaultValue: 'Retry' })}
+          </Button>
+        }
+      />
+    );
+  };
+
   if (loading) {
     return (
       <Flex justify="center" align="center" style={{ height: 'calc(100vh - 200px)' }}>
-        <Spin size="large" />
+        <PortalLoader />
       </Flex>
     );
   }
@@ -270,18 +396,26 @@ const ClientPortalSettings = () => {
           {t('title', { defaultValue: 'Portal Settings' })}
         </Typography.Title>
         <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-          {t('customizePortalText', { defaultValue: 'Customize your client portal appearance and branding' })}
+          {tV2('subtitle', {
+            defaultValue:
+              'Branding, what is shared by default, roles and notifications for your client portal.',
+          })}
         </Typography.Text>
       </div>
 
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <div style={{ width: 220, flexShrink: 0 }}>
+        <nav
+          aria-label={t('title', { defaultValue: 'Portal Settings' })}
+          style={{ width: 220, flexShrink: 0 }}
+        >
           {SECTIONS.map(item => {
             const active = section === item.key;
             return (
               <button
                 key={item.key}
+                type="button"
                 onClick={() => setSection(item.key)}
+                aria-current={active ? 'page' : undefined}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -307,12 +441,12 @@ const ClientPortalSettings = () => {
                   {item.icon}
                 </span>
                 <span style={{ color: active ? token.colorPrimary : token.colorText, fontWeight: active ? 600 : 400 }}>
-                  {t(item.labelKey, { defaultValue: item.labelDefault })}
+                  {item.label}
                 </span>
               </button>
             );
           })}
-        </div>
+        </nav>
 
         <div style={{ flex: '1 1 480px', minWidth: 0 }}>
           {section === 'company' && (
@@ -337,20 +471,33 @@ const ClientPortalSettings = () => {
           {section === 'invoiceTemplate' && (
             <InvoiceTemplateSection settings={settings} onChange={handleSettingsChange} />
           )}
-          {section === 'visibility' && (
-            <VisibilitySection settings={settings} onChange={handleSettingsChange} />
-          )}
-          {section === 'notifications' && (
-            <NotificationsSection settings={settings} onChange={handleSettingsChange} />
-          )}
-          {section === 'clientUsers' && (
-            <ClientUserManagementSection settings={settings} onChange={handleSettingsChange} />
-          )}
-          {section === 'templates' && <PermissionTemplatesSection />}
-          {section === 'ticketing' && <TicketingConfigSection />}
+          {section === 'sharing' &&
+            renderV2Section(current => (
+              <SharingVisibilitySection
+                settings={current}
+                shared={v2Response?.body?.shared}
+                onChange={handleV2Change}
+              />
+            ))}
+          {section === 'roles' &&
+            renderV2Section(current => <ClientRolesSection settings={current} onChange={handleV2Change} />)}
+          {section === 'notifications' &&
+            renderV2Section(current => <NotificationsSection settings={current} onChange={handleV2Change} />)}
 
           {hasUnsavedChanges && (
-            <Flex justify="flex-start" gap={8} style={{ marginTop: 20 }}>
+            <Flex
+              justify="flex-start"
+              gap={8}
+              style={{
+                position: 'sticky',
+                bottom: 0,
+                marginTop: 20,
+                padding: '12px 0',
+                background: token.colorBgLayout,
+                borderTop: `1px solid ${token.colorBorderSecondary}`,
+                zIndex: 1,
+              }}
+            >
               <Button size="small" icon={<CloseOutlined />} onClick={handleCancelChanges} disabled={saving}>
                 {t('cancelButton', { defaultValue: 'Cancel' })}
               </Button>

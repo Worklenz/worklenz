@@ -46,5 +46,6 @@
   "continueToCsvImport": "Vazhdo te importimi CSV",
   "customizeNo": "Jo",
   "customizeYes": "Po, personalizo",
-  "customizeFooterQuestion": "Dëshironi ta personalizoni përpara krijimit?"
+  "customizeFooterQuestion": "Dëshironi ta personalizoni përpara krijimit?",
+  "templateRequired": "Zgjidhni një shabllon për të krijuar një projekt."
 }

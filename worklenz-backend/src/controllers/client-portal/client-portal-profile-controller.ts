@@ -3,7 +3,6 @@ import { AuthenticatedClientRequest } from "../../middlewares/client-auth-middle
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import db from "../../config/db";
-import TokenService from "../../services/token-service";
 
 export default class ClientPortalProfileController extends ClientPortalControllerBase {
 
@@ -15,12 +14,14 @@ export default class ClientPortalProfileController extends ClientPortalControlle
       const { clientId } = req;
       const { clientEmail } = req;
 
-      // Get client user details
+      // The login is one row shared by every team it belongs to; `client_users.client_id` only names
+      // the first one. Match the login by email and take the company from the team in the token, so
+      // the profile (which the app uses to validate a session) works after switching teams too.
       const query = `
         SELECT cu.*, c.name as client_name, c.company_name
         FROM client_users cu
-        JOIN clients c ON cu.client_id = c.id
-        WHERE cu.client_id = $1 AND cu.email = $2
+        JOIN clients c ON c.id = $1
+        WHERE LOWER(cu.email) = LOWER($2)
       `;
 
       const result = await db.query(query, [clientId, clientEmail]);
@@ -41,7 +42,7 @@ export default class ClientPortalProfileController extends ClientPortalControlle
             email: clientUser.email,
             name: clientUser.name,
             role: clientUser.role,
-            clientId: clientUser.client_id,
+            clientId,
             clientName: clientUser.client_name,
             companyName: clientUser.company_name,
             createdAt: clientUser.created_at,
@@ -65,9 +66,8 @@ export default class ClientPortalProfileController extends ClientPortalControlle
     res: IWorkLenzResponse
   ) {
     try {
-      const { clientId } = req;
       const { clientEmail } = req;
-      const { name, currentPassword, newPassword } = req.body;
+      const { name } = req.body;
 
       if (!name) {
         return res
@@ -77,8 +77,8 @@ export default class ClientPortalProfileController extends ClientPortalControlle
 
       // Get current client user
       const currentUser = await db.query(
-        "SELECT * FROM client_users WHERE client_id = $1 AND email = $2",
-        [clientId, clientEmail]
+        "SELECT * FROM client_users WHERE LOWER(email) = LOWER($1)",
+        [clientEmail]
       );
 
       if (currentUser.rows.length === 0) {
@@ -91,38 +91,6 @@ export default class ClientPortalProfileController extends ClientPortalControlle
       const updateFields = ["name = $1", "updated_at = NOW()"];
       const updateValues = [name];
       let paramIndex = 2;
-
-      // Handle password update if provided
-      if (newPassword) {
-        if (!currentPassword) {
-          return res
-            .status(400)
-            .json(
-              new ServerResponse(
-                false,
-                null,
-                "Current password is required to set new password"
-              )
-            );
-        }
-
-        // Verify current password using bcrypt (with legacy SHA256 fallback)
-        const { isValid } = await TokenService.verifyClientPassword(currentPassword, user.password_hash);
-
-        if (!isValid) {
-          return res
-            .status(400)
-            .json(
-              new ServerResponse(false, null, "Current password is incorrect")
-            );
-        }
-
-        // Hash new password using bcrypt
-        const newPasswordHash = TokenService.hashClientPassword(newPassword);
-        updateFields.push(`password_hash = $${paramIndex}`);
-        updateValues.push(newPasswordHash);
-        paramIndex++;
-      }
 
       // Update the user
       updateValues.push(user.id);

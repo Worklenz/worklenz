@@ -118,5 +118,22 @@
   "need-help": "Potrzebujesz pomocy?",
   "contact-support": "Skontaktuj się z pomocą techniczną",
   "view-pricing": "zobacz ceny",
-  "justNow": "Właśnie teraz"
+  "justNow": "Właśnie teraz",
+  "save": "Zapisz",
+  "business-trial-then-plan": "potem będziesz kontynuować podróż {{plan}}",
+  "error": {
+    "unknownError": "Wystąpił nieznany błąd",
+    "somethingWentWrong": "Coś poszło nie tak",
+    "description": "Napotkaliśmy nieoczekiwany błąd. Spróbuj ponownie lub wróć do strony głównej.",
+    "retry": "Spróbuj ponownie",
+    "goHome": "Idź do domu",
+    "viewDetails": "Wyświetl szczegóły błędu",
+    "errorMessage": "Komunikat o błędzie",
+    "stackTrace": "Śledzenie stosu",
+    "title": "Błąd"
+  },
+  "refreshingData": "Odświeżanie danych...",
+  "loadingData": "Ładowanie danych...",
+  "noDataAvailable": "Brak dostępnych danych",
+  "licennse-expired-contacting-support": "Kontaktuję się z pomocą techniczną..."
 }

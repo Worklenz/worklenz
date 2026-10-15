@@ -105,5 +105,12 @@
   "emailAddress": "Endereço de e-mail",
   "enterOrganizationName": "Insira o nome da organização",
   "ownerSuffix": "(Proprietário)",
-  "closePopover": "Fechar popover"
+  "closePopover": "Fechar popover",
+  "fileSizeUpgradeModalHeadline": "Faça upload de arquivos de qualquer tamanho",
+  "fileSizeUpgradeModalSubCopy": "Seu plano atual suporta arquivos de até 25 MB. Atualize para Business para fazer upload de arquivos de até 250 MB e manter grandes ativos próximos ao trabalho do seu projeto.",
+  "fileSizeUpgradeModalBenefitFileSize": "Uploads de arquivos de até 250 MB",
+  "fileSizeUpgradeModalBenefitStorage": "Armazenamento total expandido",
+  "fileSizeUpgradeModalBenefitFileTypes": "Todos os tipos de arquivo suportados",
+  "previousMonth": "Mês anterior",
+  "nextMonth": "No próximo mês"
 }

@@ -12,31 +12,24 @@
   "addTask": "Add Task",
   "addSectionButton": "Add Section",
   "changeCategory": "Change category",
-
   "deleteTooltip": "Delete",
   "deleteConfirmationTitle": "Are you sure?",
   "deleteConfirmationOk": "Yes",
   "deleteConfirmationCancel": "Cancel",
-
   "deleteTaskTitle": "Delete Task",
   "deleteTaskContent": "Are you sure you want to delete this task? This action cannot be undone.",
   "deleteTaskConfirm": "Delete",
   "deleteTaskCancel": "Cancel",
-
   "deleteStatusTitle": "Delete Status",
   "deleteStatusContent": "Are you sure you want to delete this status? This action cannot be undone.",
-
   "deletePhaseTitle": "Delete Phase",
   "deletePhaseContent": "Are you sure you want to delete this phase? This action cannot be undone.",
-
   "dueDate": "Due date",
   "cancel": "Cancel",
-
   "today": "Today",
   "tomorrow": "Tomorrow",
   "assignToMe": "Assign to me",
   "archive": "Archive",
-
   "newTaskNamePlaceholder": "Write a task Name",
   "newSubtaskNamePlaceholder": "Write a subtask Name",
   "untitledSection": "Untitled section",
@@ -51,14 +44,12 @@
   "noSubtasks": "No subtasks",
   "showSubtasks": "Show subtasks",
   "hideSubtasks": "Hide subtasks",
-
   "exampleTasks": {
     "prefix": "e.g.",
     "task1": "Define project scope",
     "task2": "Review with stakeholders",
     "task3": "Schedule kickoff"
   },
-
   "errorLoadingTasks": "Error loading tasks",
   "noTasksFound": "No tasks found",
   "noIssuesFound": "No issues found",
@@ -69,5 +60,13 @@
   "failedToUpdatePhaseOrder": "Failed to update phase order",
   "pleaseTryAgain": "Please try again",
   "taskNotCompleted": "Task is not completed",
-  "completeTaskDependencies": "Please complete the task dependencies before proceeding"
+  "completeTaskDependencies": "Please complete the task dependencies before proceeding",
+  "expand": "Expand",
+  "collapse": "Collapse",
+  "low": "Low",
+  "medium": "Medium",
+  "high": "High",
+  "critical": "Critical",
+  "unarchive": "Unarchive",
+  "addSubtask": "Add Subtask"
 }

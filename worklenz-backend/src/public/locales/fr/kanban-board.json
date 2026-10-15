@@ -49,5 +49,13 @@
   "failedToUpdatePhaseOrder": "Échec de la mise à jour de l'ordre des phases",
   "pleaseTryAgain": "Veuillez réessayer",
   "taskNotCompleted": "La tâche n'est pas terminée",
-  "completeTaskDependencies": "Veuillez compléter les dépendances des tâches avant de continuer"
+  "completeTaskDependencies": "Veuillez compléter les dépendances des tâches avant de continuer",
+  "critical": "Critique",
+  "high": "Élevé",
+  "expand": "Développer",
+  "medium": "Moyen",
+  "addSubtask": "Ajouter une sous-tâche",
+  "collapse": "Réduire",
+  "unarchive": "Désarchiver",
+  "low": "Faible"
 }

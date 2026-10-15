@@ -7,6 +7,12 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import {TASK_STATUS_COLOR_ALPHA} from "../shared/constants";
 import {isValidUuid} from "../shared/validation-helpers";
+import {
+  completeSprintRecord,
+  getSprintLengthDays,
+  startSprintRecord,
+  tryStartNextSprintAfterCompletion,
+} from "../shared/sprint-lifecycle";
 
 export default class TaskPhasesController extends WorklenzControllerBase {
   private static readonly DEFAULT_PHASE_COLOR = "#fbc84c";
@@ -296,19 +302,32 @@ export default class TaskPhasesController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async updateSprintSettings(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const autoArchive = req.body?.auto_archive_on_sprint_complete;
-    if (typeof autoArchive !== "boolean") {
-      return res.status(400).send(new ServerResponse(false, null, "auto_archive_on_sprint_complete must be a boolean"));
+    const autoSchedule = req.body?.auto_start_complete_sprints;
+    const isOptionalBoolean = (value: unknown) => value === undefined || typeof value === "boolean";
+    if (!isOptionalBoolean(autoArchive) || !isOptionalBoolean(autoSchedule)
+      || (autoArchive === undefined && autoSchedule === undefined)) {
+      return res.status(400).send(new ServerResponse(
+        false,
+        null,
+        "auto_archive_on_sprint_complete and auto_start_complete_sprints must be booleans"
+      ));
     }
 
     const q = `
         UPDATE projects
-        SET auto_archive_on_sprint_complete = $2
+        SET auto_archive_on_sprint_complete = COALESCE($2, auto_archive_on_sprint_complete),
+            auto_start_complete_sprints = COALESCE($4, auto_start_complete_sprints)
         WHERE id = $1
           AND team_id = $3
           AND project_type = 'software'
-        RETURNING id, auto_archive_on_sprint_complete;
+        RETURNING id, auto_archive_on_sprint_complete, auto_start_complete_sprints;
     `;
-    const result = await db.query(q, [req.params.id, autoArchive, req.user?.team_id]);
+    const result = await db.query(q, [
+      req.params.id,
+      autoArchive ?? null,
+      req.user?.team_id,
+      autoSchedule ?? null,
+    ]);
     const [data] = result.rows;
     if (!data) {
       return res.status(404).send(new ServerResponse(false, null, "Software project not found"));
@@ -405,52 +424,12 @@ export default class TaskPhasesController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "Invalid request"));
     }
 
-    const projectId = req.query.id as string;
-    const phaseId = req.params.id;
-
-    const activeCheck = await db.query(
-      `SELECT id, name FROM project_phases
-       WHERE project_id = $1 AND sprint_status = 'active' AND id <> $2
-       LIMIT 1`,
-      [projectId, phaseId]
-    );
-    if (activeCheck.rows[0]) {
-      return res.status(400).send(
-        new ServerResponse(
-          false,
-          null,
-          `Complete the active sprint "${activeCheck.rows[0].name}" before starting another.`
-        )
-      );
+    const result = await startSprintRecord(req.query.id as string, req.params.id);
+    if (!result.ok) {
+      return res.status(400).send(new ServerResponse(false, null, result.error));
     }
 
-    const q = `
-      UPDATE project_phases
-      SET sprint_status = 'active',
-          start_date = COALESCE(start_date, CURRENT_TIMESTAMP),
-          started_at = COALESCE(started_at, CURRENT_TIMESTAMP),
-          committed_points = COALESCE(committed_points, scope.points),
-          committed_issue_count = COALESCE(committed_issue_count, scope.issue_count)
-      FROM (
-        SELECT COALESCE(SUM(t.story_points), 0)::FLOAT AS points, COUNT(*)::INT AS issue_count
-        FROM task_phase tp
-        INNER JOIN tasks t ON t.id = tp.task_id AND t.archived IS FALSE
-        WHERE tp.phase_id = $1
-      ) scope
-      WHERE id = $1
-        AND project_id = $2
-        AND sprint_status IN ('planned', 'active')
-      RETURNING ${this.PHASE_RETURNING_COLUMNS};
-    `;
-    const result = await db.query(q, [phaseId, projectId]);
-    const [data] = result.rows;
-
-    if (!data) {
-      return res.status(400).send(
-        new ServerResponse(false, null, "Sprint not found or already completed")
-      );
-    }
-
+    const data = result.data;
     data.color_code = data.color_code + TASK_STATUS_COLOR_ALPHA;
     return res.status(200).send(new ServerResponse(true, data));
   }
@@ -470,138 +449,28 @@ export default class TaskPhasesController extends WorklenzControllerBase {
         ? null
         : destinationRaw;
 
-    if (destinationPhaseId) {
-      const destCheck = await db.query(
-        `SELECT id FROM project_phases
-         WHERE id = $1 AND project_id = $2 AND sprint_status = 'planned'`,
-        [destinationPhaseId, projectId]
-      );
-      if (!destCheck.rows[0]) {
-        return res.status(400).send(
-          new ServerResponse(false, null, "Destination must be a planned sprint or backlog")
-        );
-      }
+    const result = await completeSprintRecord(projectId, phaseId, destinationPhaseId);
+    if (!result.ok) {
+      return res.status(400).send(new ServerResponse(false, null, result.error));
     }
 
-    const client = await db.connect();
-    try {
-      await client.query("BEGIN");
+    const {phase, archivedCount, movedCount} = result.data;
 
-      const phaseResult = await client.query(
-        `UPDATE project_phases
-         SET sprint_status = 'completed',
-             end_date = COALESCE(end_date, CURRENT_TIMESTAMP),
-             started_at = COALESCE(started_at, start_date),
-             completed_at = CURRENT_TIMESTAMP,
-             completed_points = outcome.done_points,
-             completed_issue_count = outcome.done_count,
-             carried_over_points = outcome.open_points,
-             carried_over_issue_count = outcome.open_count
-         FROM (
-           SELECT COALESCE(SUM(t.story_points) FILTER (WHERE cat.is_done IS TRUE), 0)::FLOAT AS done_points,
-                  COUNT(*) FILTER (WHERE cat.is_done IS TRUE)::INT AS done_count,
-                  COALESCE(SUM(t.story_points) FILTER (WHERE cat.is_done IS NOT TRUE), 0)::FLOAT AS open_points,
-                  COUNT(*) FILTER (WHERE cat.is_done IS NOT TRUE)::INT AS open_count
-           FROM task_phase tp
-           INNER JOIN tasks t ON t.id = tp.task_id AND t.archived IS FALSE
-           LEFT JOIN task_statuses ts ON ts.id = t.status_id
-           LEFT JOIN sys_task_status_categories cat ON cat.id = ts.category_id
-           WHERE tp.phase_id = $1
-         ) outcome
-         WHERE id = $1 AND project_id = $2 AND sprint_status IN ('active', 'planned')
-         RETURNING ${this.PHASE_RETURNING_COLUMNS}`,
-        [phaseId, projectId]
-      );
-      const [phase] = phaseResult.rows;
-      if (!phase) {
-        await client.query("ROLLBACK");
-        return res.status(400).send(
-          new ServerResponse(false, null, "Sprint not found or already completed")
-        );
-      }
+    const startedSprint = await tryStartNextSprintAfterCompletion(
+      projectId, destinationPhaseId, getSprintLengthDays(phase)
+    );
+    if (startedSprint) startedSprint.color_code = startedSprint.color_code + TASK_STATUS_COLOR_ALPHA;
 
-      // Move incomplete (not Done-category) issues out of the sprint
-      let movedResult;
-      if (destinationPhaseId) {
-        movedResult = await client.query(
-          `UPDATE task_phase tp
-           SET phase_id = $1
-           FROM tasks t
-           INNER JOIN task_statuses ts ON t.status_id = ts.id
-           INNER JOIN sys_task_status_categories cat ON ts.category_id = cat.id
-           WHERE tp.task_id = t.id
-             AND tp.phase_id = $2
-             AND t.project_id = $3
-             AND cat.is_done IS NOT TRUE
-           RETURNING tp.task_id`,
-          [destinationPhaseId, phaseId, projectId]
-        );
-      } else {
-        movedResult = await client.query(
-          `DELETE FROM task_phase tp
-           USING tasks t
-           INNER JOIN task_statuses ts ON t.status_id = ts.id
-           INNER JOIN sys_task_status_categories cat ON ts.category_id = cat.id
-           WHERE tp.task_id = t.id
-             AND tp.phase_id = $1
-             AND t.project_id = $2
-             AND cat.is_done IS NOT TRUE
-           RETURNING tp.task_id`,
-          [phaseId, projectId]
-        );
-      }
-      const movedCount = movedResult.rowCount || 0;
-
-      // Optionally archive Done issues in this sprint
-      const settings = await client.query(
-        `SELECT auto_archive_on_sprint_complete, project_type
-         FROM projects WHERE id = $1`,
-        [projectId]
-      );
-      const projectSettings = settings.rows[0];
-      let archivedCount = 0;
-      if (
-        projectSettings?.project_type === "software" &&
-        projectSettings?.auto_archive_on_sprint_complete !== false
-      ) {
-        const archiveResult = await client.query(
-          `UPDATE tasks t
-           SET archived = TRUE
-           WHERE t.project_id = $2
-             AND t.archived IS FALSE
-             AND EXISTS (
-               SELECT 1 FROM task_phase tp
-               WHERE tp.task_id = t.id AND tp.phase_id = $1
-             )
-             AND EXISTS (
-               SELECT 1
-               FROM task_statuses ts
-               INNER JOIN sys_task_status_categories cat ON ts.category_id = cat.id
-               WHERE ts.id = t.status_id AND cat.is_done IS TRUE
-             )
-           RETURNING t.id`,
-          [phaseId, projectId]
-        );
-        archivedCount = archiveResult.rowCount || 0;
-      }
-
-      await client.query("COMMIT");
-
-      phase.color_code = phase.color_code + TASK_STATUS_COLOR_ALPHA;
-      return res.status(200).send(
-        new ServerResponse(true, {
-          ...phase,
-          archived_count: archivedCount,
-          moved_count: movedCount,
-          destination_phase_id: destinationPhaseId,
-        })
-      );
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
-    }
+    phase.color_code = phase.color_code + TASK_STATUS_COLOR_ALPHA;
+    return res.status(200).send(
+      new ServerResponse(true, {
+        ...phase,
+        archived_count: archivedCount,
+        moved_count: movedCount,
+        destination_phase_id: destinationPhaseId,
+        started_sprint: startedSprint,
+      })
+    );
   }
 
   @HandleExceptions()

@@ -75,5 +75,10 @@
   "convertToTaskError": "Dështoi krijimi i detyrës",
   "convertToTaskSuccess": "Detyra u krijua nga mesazhi",
   "noClientProject": "Ky klient nuk ka asnjë projekt të caktuar",
-  "createTask": "Krijo detyrë"
+  "createTask": "Krijo detyrë",
+  "errorSendingMessage": "Dështoi dërgimi i mesazhit",
+  "comingSoon": "Reagimet janë të disponueshme në bisedën e projektit",
+  "actions": {
+    "reply": "Përgjigju"
+  }
 }

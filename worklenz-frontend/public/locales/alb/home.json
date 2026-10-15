@@ -20,7 +20,8 @@
     "showDone": "Shfaq të Përfunduarat",
     "created": "Krijuar",
     "finished": "Përfunduar",
-    "tasks": "detyra"
+    "tasks": "detyra",
+    "loading": "Duke ngarkuar..."
   },
   "projects": {
     "title": "Projektet",
@@ -39,7 +40,13 @@
     "assignedToMe": "Më janë caktuar",
     "assignedByMe": "I kam caktuar",
     "dueTasks": "detyra me afat",
-    "priority": "Prioriteti",
+    "dueTask": "detyrë e afatit",
+    "total": "Totali",
+    "on": "më",
+    "totalDue": "Totali i afateve",
+    "todo": "Për të bërë",
+    "doing": "Duke bërë",
+    "done": "E kryer",
     "all": "Të Gjitha",
     "today": "Sot",
     "upcoming": "Ardhj",
@@ -48,9 +55,11 @@
     "noTasks": "Asnjë detyrë për të shfaqur.",
     "addTask": "+ Shto detyrë",
     "addTaskButton": "Shto detyrë",
+    "markTimeOff": "Shëno Pushim / Leje",
     "name": "Emri",
     "project": "Projekti",
     "status": "Statusi",
+    "priority": "Prioriteti",
     "dueDate": "Afati",
     "dueDatePlaceholder": "Cakto Afatin",
     "tomorrow": "Nesër",
@@ -80,13 +89,6 @@
     "timeLoggedTaskAriaLabel": "Detyrë me kohë të regjistruar:",
     "errorLoadingRecentTasks": "Gabim në ngarkimin e detyrave të fundit",
     "errorLoadingTimeLoggedTasks": "Gabim në ngarkimin e detyrave me kohë të regjistruar",
-    "dueTask": "detyrë e afatit",
-    "total": "Totali",
-    "on": "më",
-    "totalDue": "Totali i afateve",
-    "todo": "Për të bërë",
-    "doing": "Duke bërë",
-    "done": "E kryer",
     "newTask": "Detyrë e Re",
     "assignTask": "Cakto Detyrën",
     "createTask": "Krijo Detyrë",
@@ -103,7 +105,6 @@
     "searchMembers": "Kërko sipas emrit ose email-it…",
     "noMembersFound": "Nuk u gjetën anëtarë",
     "time": "Koha",
-    "markTimeOff": "Shëno Pushim / Leje",
     "pinned": "Të fiksuara",
     "tabsLabel": "Filtro detyrat",
     "pinTask": "Fikso detyrën",
@@ -136,7 +137,9 @@
     "weekdayMiniThu": "E",
     "weekdayMiniFri": "P",
     "weekdayMiniSat": "Sh",
-    "weekdayMiniSun": "D"
+    "weekdayMiniSun": "D",
+    "clientsSearchPlaceholder": "Kërko klientë...",
+    "projectsSearchPlaceholder": "Kërko projekte..."
   },
   "activityLogs": {
     "title": "Aktiviteti i Fundit",
@@ -154,9 +157,9 @@
       "statusChanged": "{{userName}} ndryshoi statusin e projektit {{projectName}}",
       "managerAssigned": "{{userName}} caktoi një menaxher për projektin {{projectName}}",
       "managerRemoved": "{{userName}} hoqi menaxherin e projektit {{projectName}}",
+      "managerFinanceChanged": "{{userName}} ndryshoi aksesin financiar të menaxherit të projektit në {{projectName}}",
       "memberAdded": "{{userName}} shtoi {{memberName}} në projektin {{projectName}}",
-      "memberRemoved": "{{userName}} hoqi {{memberName}} nga projekti {{projectName}}",
-      "managerFinanceChanged": "{{userName}} ndryshoi aksesin financiar të menaxherit të projektit në {{projectName}}"
+      "memberRemoved": "{{userName}} hoqi {{memberName}} nga projekti {{projectName}}"
     },
     "task": {
       "created": "{{userName}} krijoi detyrën {{taskName}}",
@@ -236,6 +239,10 @@
     "no": "Jo",
     "timeColumn": "Koha",
     "dateColumn": "Data",
+    "projectStartDateError": "Koha nuk mund të regjistrohet para datës së fillimit të projektit ({{date}})",
+    "projectStartDateHint": "Data e fillimit të projektit: {{date}}",
+    "projectNotStartedWarningTitle": "Projekti nuk ka filluar ende",
+    "projectNotStartedWarningDesc": "Ky projekt është planifikuar të fillojë më {{date}}. Koha nuk mund të regjistrohet para datës së fillimit të projektit.",
     "failedToLogTime": "Dështoi regjistrimi i kohës",
     "today": "Sot",
     "yesterday": "Dje",
@@ -245,7 +252,9 @@
     "weekdayThu": "Enj",
     "weekdayFri": "Pre",
     "weekdaySat": "Sht",
-    "weekdaySun": "Die"
+    "weekdaySun": "Die",
+    "createdTimeColumn": "Koha e krijuar",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "Ende pa shpenzime të regjistruara",
@@ -259,7 +268,8 @@
     "columnAssignee": "I Caktuari",
     "columnDate": "Data",
     "openTask": "Hap detyrën",
-    "rowsPerPage": "Rreshta për faqe:"
+    "rowsPerPage": "Rreshta për faqe:",
+    "addExpense": "Shto Shpenzim"
   },
   "addExpense": {
     "modalTitle": "Shto Shpenzim",
@@ -526,5 +536,7 @@
     "viewAllMore": "Shiko të gjitha ({{remaining}} të tjera)",
     "addFailed": "Detyra nuk u shtua. Ju lutemi provoni përsëri.",
     "completeFailed": "Detyra nuk u përditësua. Ju lutemi provoni përsëri."
-  }
+  },
+  "projectsAtRisk": "Projektet në rrezik",
+  "flagged": "me flamur"
 }

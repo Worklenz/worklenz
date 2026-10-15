@@ -23,7 +23,8 @@
       "@assets/*": ["src/assets/*"],
       "@utils/*": ["src/utils/*"],
       "@api/*": ["src/api/*"],
-      "@services/*": ["src/services/*"]
+      "@services/*": ["src/services/*"],
+      "react-grid-layout/legacy": ["node_modules/react-grid-layout/dist/legacy.d.ts"]
     },
     "types": ["vitest", "node"]
   },

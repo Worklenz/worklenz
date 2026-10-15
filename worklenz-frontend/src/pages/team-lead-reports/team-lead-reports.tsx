@@ -664,7 +664,7 @@ const TeamLeadReports: React.FC = () => {
               <Text>{t('dateRange.label')}:</Text>
               <Dropdown
                 trigger={['click']}
-                dropdownRender={() => (
+                popupRender={() => (
                   <Card
                     styles={{
                       body: {

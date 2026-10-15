@@ -194,6 +194,7 @@ export const handleNewTaskReceived = (response: any, options: HandleNewTaskRecei
       created_at: data.created_at || new Date().toISOString(),
       updated_at: data.updated_at || new Date().toISOString(),
       order: data.sort_order || 0,
+      issue_type: data.issue_type ?? 'task',
       sub_tasks: [],
       sub_tasks_count: data.sub_tasks_count || 0,
       show_sub_tasks: false,

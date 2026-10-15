@@ -88,7 +88,7 @@ const ProjectStatusCell = memo(({ currentStatus, projectId }: ProjectStatusCellP
       }}
     >
       <Select
-        variant="borderless"
+        variant="outlined"
         options={statusOptions}
         value={selectedStatus}
         onChange={handleStatusChange}

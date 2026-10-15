@@ -42,5 +42,6 @@
   "moreOptions": "更多选项",
   "changeMemberStatusConfirmation": "确定要更改此成员的状态吗？",
   "yesProceed": "是，继续",
-  "cancel": "取消"
+  "cancel": "取消",
+  "removeFromProject": "从项目中删除"
 }

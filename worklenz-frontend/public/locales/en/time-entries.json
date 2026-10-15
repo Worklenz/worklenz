@@ -77,6 +77,10 @@
   "selectDateError": "Select a date",
   "selectStartTimeError": "Select a start time",
   "selectEndTimeError": "Select an end time",
+  "projectStartDateError": "Time cannot be logged before the project start date ({{date}})",
+  "projectStartDateHint": "Project start date: {{date}}",
+  "projectNotStartedWarningTitle": "Project has not started yet",
+  "projectNotStartedWarningDesc": "This project is scheduled to start on {{date}}. Time cannot be logged before the project start date.",
   "logTimeError": "Failed to log time",
   "groupByButtonLabel": "Group by: {{groupBy}}",
   "groupByNone": "None",
@@ -119,5 +123,9 @@
     "week_total": "This Week Total",
     "week_billable": "Week Billable",
     "week_non_billable": "Week Non-Billable"
-  }
+  },
+  "minutesRangeError": "0 – 59",
+  "hoursLabel": "Hours",
+  "hoursMinError": "Hours must be 0 or greater",
+  "minutesLabel": "Minutes"
 }

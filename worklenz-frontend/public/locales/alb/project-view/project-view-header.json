@@ -31,5 +31,8 @@
   "projectStatusTooltip": "Statusi i projektit",
   "projectDatesInfo": "Informacioni i afateve të projektit",
   "projectCategoryTooltip": "Kategoria e projektit",
-  "defaultTaskName": "Detyrë Pa Emër"
+  "defaultTaskName": "Detyrë Pa Emër",
+  "softwareProjectTooltip": "Projekt softuerësh - probleme, prapambetje dhe sprinte",
+  "softwareProjectTag": "Softuer",
+  "settingsDisabledForGuest": "Cilësimet e projektit nuk janë të aksesueshme për përdoruesit e ftuar"
 }

@@ -1,290 +1,155 @@
+import './brand-tint.css';
 import React from 'react';
-import {
-  Layout,
-  Avatar,
-  Dropdown,
-  theme,
-  Select,
-  Switch,
-  UserOutlined,
-  LogoutOutlined,
-  MoonOutlined,
-  SunOutlined,
-  TranslationOutlined
-} from '@/shared/antd-imports';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { logout, setUser } from '@/store/slices/authSlice';
-import { toggleSidebar, setTheme, setLanguage } from '@/store/slices/uiSlice';
-import { useGetProfileQuery, useGetNotificationsQuery, useGetOrganizationSettingsQuery } from '@/store/api';
-import type { RootState } from '@/store';
+import { Drawer, Layout, Skeleton, theme } from '@/shared/antd-imports';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import ClientPortalSidebar from './ClientPortalSidebar';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { useResponsive } from '@/hooks/useResponsive';
-import NotificationCenter from '../NotificationCenter';
-import OrganizationSwitcher from '../OrganizationSwitcher';
-import { VISIBILITY_GATED_KEYS } from '@/lib/client-portal/client-portal-constants';
-
-const { Header, Sider, Content } = Layout;
+import { useClientAccess } from '@/hooks/useClientAccess';
+import { useGetOrganizationSettingsQuery } from '@/store/api';
+import { setLanguage, setOrgBranding, setTheme } from '@/store/slices/uiSlice';
+import { IconRailSidebar } from './IconRailSidebar';
+import {
+  CONTENT_CORNER_RADIUS,
+  railBackground,
+  RAIL_COLLAPSED_WIDTH,
+  RAIL_DIVIDER_DARK,
+  RAIL_DIVIDER_LIGHT,
+  RAIL_EXPANDED_WIDTH,
+  useRailCollapsed,
+} from './navigation';
+import { TOP_BAR_HEIGHT, TopBar } from './TopBar';
 
 const ClientLayout: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
   const { t, i18n } = useTranslation();
   const { isMobile } = useResponsive();
-
-  const { isAuthenticated } = useAppSelector((state: RootState) => state.auth);
-
-  // Redirect unauthenticated users to login
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const { collapsed, toggle: toggleCollapsed } = useRailCollapsed();
+  const isDark = useAppSelector(state => state.ui.theme) === 'dark';
+  const railBg = railBackground(isDark, token.colorPrimary);
+  const dividerColor = isDark ? RAIL_DIVIDER_DARK : RAIL_DIVIDER_LIGHT;
+  // Hover and selected surfaces everywhere (menus, lists, settings nav) share the branding colour at a fixed
+  // strength. Set on :root because dropdowns render outside this tree.
   React.useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/auth/login', { replace: true });
-    }
+    const root = document.documentElement;
+    root.style.setProperty('--portal-brand-tint', `color-mix(in srgb, ${token.colorPrimary} ${isDark ? 32 : 18}%, transparent)`);
+    root.style.setProperty('--portal-brand-tint-soft', `color-mix(in srgb, ${token.colorPrimary} ${isDark ? 18 : 10}%, transparent)`);
+  }, [token.colorPrimary, isDark]);
+  const railWidth = collapsed ? RAIL_COLLAPSED_WIDTH : RAIL_EXPANDED_WIDTH;
+
+  const { isAuthenticated, teamEpoch } = useAppSelector(state => state.auth);
+  const currentLanguage = useAppSelector(state => state.ui.language);
+  const { me, isLoading: isAccessLoading } = useClientAccess();
+
+  React.useEffect(() => {
+    if (!isAuthenticated) navigate('/auth/login', { replace: true });
   }, [isAuthenticated, navigate]);
 
-  // Redirect a direct URL visit to a section the admin has turned off — the sidebar already
-  // hides the link, but that alone doesn't stop someone reaching it by typing the URL.
-  const { data: orgSettingsData } = useGetOrganizationSettingsQuery();
+  // Branding (logo, colour, title) from the operator's settings. A returning viewer's own theme
+  // choice (in localStorage) is never overwritten by the operator's default.
+  const { data: settingsData } = useGetOrganizationSettingsQuery();
+  const showPoweredBy = !!settingsData?.body && settingsData.body.show_powered_by !== false;
   React.useEffect(() => {
-    if (!orgSettingsData?.body) return;
-    const topSegment = location.pathname.split('/').filter(Boolean)[0] || '';
-    const visibilityField = VISIBILITY_GATED_KEYS[topSegment];
-    if (visibilityField && orgSettingsData.body[visibilityField] === false) {
-      navigate('/dashboard', { replace: true });
+    if (!settingsData?.body) return;
+    dispatch(
+      setOrgBranding({
+        primaryColor: settingsData.body.primary_color || null,
+        portalTitle: settingsData.body.portal_title || null,
+      })
+    );
+    if (!localStorage.getItem('theme') && settingsData.body.portal_theme) {
+      dispatch(setTheme(settingsData.body.portal_theme));
     }
-  }, [location.pathname, orgSettingsData, navigate]);
-  
-  const sidebarCollapsed = useAppSelector((state: RootState) => state.ui.sidebarCollapsed);
-  const currentTheme = useAppSelector((state: RootState) => state.ui.theme);
-  const currentLanguage = useAppSelector((state: RootState) => state.ui.language);
-  const user = useAppSelector((state: RootState) => state.auth.user);
+  }, [settingsData, dispatch]);
 
-  // RTK Query hooks
-  const { data: profileData } = useGetProfileQuery();
-  const { data: notificationsData } = useGetNotificationsQuery({ limit: 10 });
-
-  // Update user data when profile is loaded
+  // The language saved on the account follows the person across devices.
   React.useEffect(() => {
-    if (profileData?.body && !user) {
-      dispatch(setUser(profileData.body));
-    }
-  }, [profileData, user, dispatch]);
+    if (me?.language && me.language !== currentLanguage) dispatch(setLanguage(me.language));
+    // Only when the account's value arrives or changes; a local choice is saved to the account from Settings.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?.language]);
 
-  // Update notification count
   React.useEffect(() => {
-    // if (notificationsData?.body) {
-    //   const unreadCount = notificationsData.body.filter(n => !n.read).length;
-    //   // dispatch(setUnreadNotifications(unreadCount));
-    // }
-  }, [notificationsData]);
-
-  // Sync i18n language with Redux state on mount
-  React.useEffect(() => {
-    if (currentLanguage && i18n.language !== currentLanguage) {
-      i18n.changeLanguage(currentLanguage);
-    }
+    if (currentLanguage && i18n.language !== currentLanguage) void i18n.changeLanguage(currentLanguage);
   }, [currentLanguage, i18n]);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/auth/login');
-  };
-
-  const handleThemeToggle = () => {
-    dispatch(setTheme(currentTheme === 'light' ? 'dark' : 'light'));
-  };
-
-  const handleLanguageChange = async (language: string) => {
-    try {
-      await i18n.changeLanguage(language);
-      dispatch(setLanguage(language));
-    } catch (error) {
-      console.error('Failed to change language:', error);
-    }
-  };
-
-  const languageOptions = [
-    { value: 'en', label: 'English' },
-    { value: 'es', label: 'Español' },
-    { value: 'pt', label: 'Português' },
-    { value: 'de', label: 'Deutsch' },
-    { value: 'al', label: 'Shqip' },
-    { value: 'zh', label: '中文' },
-    { value: 'pl', label: 'Polski' },
-    { value: 'fr', label: 'Français' },
-  ];
-
-
-  const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: (
-        <div style={{ padding: '8px 0' }}>
-          <div style={{ 
-            fontSize: '14px', 
-            fontWeight: '600',
-            color: token.colorText,
-            marginBottom: '4px',
-          }}>
-            {user?.name || t('user.defaultName', 'Client User')}
-          </div>
-          <div style={{ 
-            fontSize: '12px', 
-            color: token.colorTextSecondary,
-          }}>
-            {user?.email || 'user@example.com'}
-          </div>
-        </div>
-      ),
-      disabled: true,
-    },
-    {
-      type: 'divider' as const,
-    },
-    {
-      key: 'settings',
-      icon: <UserOutlined />,
-      label: t('user.profile', 'Profile Settings'),
-      onClick: () => navigate('/profile'),
-    },
-    {
-      type: 'divider' as const,
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: t('user.logout', 'Logout'),
-      onClick: handleLogout,
-      danger: true,
-    },
-  ];
-
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      {!isMobile && (
-        <Sider
-          trigger={null}
-          collapsible
-          collapsed={sidebarCollapsed}
-          width={240}
-          collapsedWidth={80}
+    <Layout style={{ minHeight: '100vh', background: railBg }}>
+      <TopBar onOpenMenu={() => setMenuOpen(true)} />
+
+      {isMobile ? (
+        <Drawer
+          placement="left"
+          width={260}
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          title={t('navigation.title', { defaultValue: 'Menu' })}
+          styles={{ body: { padding: 0 } }}
+        >
+          <IconRailSidebar stacked onNavigate={() => setMenuOpen(false)} />
+        </Drawer>
+      ) : (
+        <aside
           style={{
-            borderRight: `1px solid ${token.colorBorderSecondary}`,
-            background: token.colorBgContainer,
             position: 'fixed',
-            height: '100vh',
+            top: TOP_BAR_HEIGHT,
+            bottom: 0,
             left: 0,
-            top: 0,
-            zIndex: 1001,
-            overflow: 'auto',
+            width: railWidth,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            background: railBg,
+            zIndex: 900,
+            transition: 'width 0.18s ease',
           }}
         >
-          <ClientPortalSidebar
-            collapsed={sidebarCollapsed}
-            onToggleCollapse={() => dispatch(toggleSidebar())}
-          />
-        </Sider>
+          <IconRailSidebar collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
+        </aside>
       )}
-      
-      {isMobile && (
-        <ClientPortalSidebar
-          collapsed={false}
-          onToggleCollapse={() => dispatch(toggleSidebar())}
-        />
-      )}
-      
-      <Layout
+
+      {/* A plain <main>: the global `.ant-layout-content` rule forces its margin on small screens. */}
+      <main
         style={{
-          marginLeft: isMobile ? 0 : sidebarCollapsed ? 80 : 240,
-          transition: 'margin-left 0.2s cubic-bezier(0.645, 0.045, 0.355, 1)',
-          background: token.colorBgLayout,
+          marginTop: TOP_BAR_HEIGHT,
+          marginLeft: isMobile ? 0 : railWidth,
+          minHeight: `calc(100vh - ${TOP_BAR_HEIGHT}px)`,
+          display: 'flex',
+          flexDirection: 'column',
+          padding: isMobile ? 16 : 24,
+          background: token.colorBgContainer,
+          // Curved top-left corner where the content pane meets the header/rail panel.
+          borderTopLeftRadius: isMobile ? 0 : CONTENT_CORNER_RADIUS,
+          borderTop: `1px solid ${dividerColor}`,
+          borderLeft: isMobile ? undefined : `1px solid ${dividerColor}`,
+          transition: 'margin-left 0.18s ease',
         }}
       >
-        <Header
-          style={{
-            padding: 0,
-            background: token.colorBgContainer,
-            borderBottom: `1px solid ${token.colorBorderSecondary}`,
-            height: 56,
-            lineHeight: '56px',
-            zIndex: 1000,
-            position: 'sticky',
-            top: 0,
-          }}
-        >
-          <div style={{
-            width: '100%',
-            height: '100%',
-            paddingInline: isMobile ? 16 : 24,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: 16,
-          }}>
-            {/* Theme & Language Controls */}
-            {!isMobile && (
-              <>
-                <Switch
-                  checked={currentTheme === 'dark'}
-                  onChange={handleThemeToggle}
-                  checkedChildren={<MoonOutlined />}
-                  unCheckedChildren={<SunOutlined />}
-                  size="small"
-                />
-                <Select
-                  value={currentLanguage}
-                  onChange={handleLanguageChange}
-                  style={{ width: 110 }}
-                  size="small"
-                  options={languageOptions}
-                  suffixIcon={<TranslationOutlined />}
-                  variant="borderless"
-                />
-                <OrganizationSwitcher />
-              </>
-            )}
-            
-            <NotificationCenter />
-            
-            <Dropdown
-              menu={{ items: userMenuItems }}
-              placement="bottomRight"
-              trigger={['click']}
+        {/* Full-width inner pages: the content fills the pane instead of a centred 1280px column. */}
+        {/* Wait for the person's role: until it arrives every control would read as locked. */}
+        {/* Keyed by the team so a switch remounts the page: no state from the old team survives. */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {isAccessLoading ? <Skeleton active paragraph={{ rows: 6 }} /> : <Outlet key={teamEpoch} />}
+        </div>
+
+        {/* Hidden until the settings arrive (no flash) and when the operator switched it off. */}
+        {showPoweredBy && (
+          <footer style={{ marginTop: 24, textAlign: 'right', fontSize: 12, color: token.colorTextSecondary }}>
+            {t('app.poweredBy', { defaultValue: 'Powered by' })}{' '}
+            <a
+              href="https://worklenz.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'inherit', fontWeight: 600 }}
             >
-              <div style={{ 
-                cursor: 'pointer', 
-                display: 'flex', 
-                alignItems: 'center',
-                padding: '4px 8px',
-                borderRadius: 6,
-                transition: 'background 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = token.colorFillSecondary}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <Avatar 
-                  icon={<UserOutlined />} 
-                  size={32}
-                  style={{ backgroundColor: token.colorPrimary }}
-                />
-              </div>
-            </Dropdown>
-          </div>
-        </Header>
-        
-        <Content
-          style={{
-            margin: isMobile ? 16 : 24,
-            minHeight: 'calc(100vh - 104px)',
-          }}
-        >
-          <Outlet />
-        </Content>
-      </Layout>
+              {t('app.worklenz', { defaultValue: 'Worklenz' })}
+            </a>
+          </footer>
+        )}
+      </main>
     </Layout>
   );
 };

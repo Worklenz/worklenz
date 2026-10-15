@@ -26,6 +26,7 @@
   "clickToFilter": "Kliko për të filtruar sipas",
   "noProjects": "Nuk u gjetën projekte",
   "addToFavourites": "Shto te të preferuarit",
+  "removeFromFavourites": "Hiq nga të preferuarat",
   "list": "Lista",
   "group": "Grupi",
   "listView": "Pamja e Listës",
@@ -50,5 +51,14 @@
     "noCategory": "Pa Kategori"
   },
   "projectFields": "Fushat e Projektit",
-  "required": "I kërkuar"
+  "required": "I kërkuar",
+  "errors": {
+    "loadFailed": "Ngarkimi i projekteve dështoi. Ju lutemi provoni përsëri.",
+    "refreshFailed": "Rifreskimi i projekteve dështoi. Ju lutemi provoni përsëri."
+  },
+  "rowsPerPage": "Rreshta për faqe:",
+  "groups": "grupe",
+  "retry": "Provo përsëri",
+  "searchProjects": "Kërkoni sipas emrit të projektit",
+  "members": "Anëtarë"
 }

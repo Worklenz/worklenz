@@ -18,9 +18,11 @@ import {
   setSearch,
 } from '@/features/admin-center/audit-log/audit-log.slice';
 import {
+  getAuditLogNow,
   hasActiveAuditLogFilters,
   toAuditLogQueryParams,
 } from '@/features/admin-center/audit-log/audit-log-filters';
+import { getUserSession } from '@/utils/session-helper';
 import { PRESET_LABELS } from '@/pages/reporting/time-sheets/components/time-logs/TimeLogsDatePresetPill';
 import { AUDIT_LOG_I18N_NAMESPACE } from '@/shared/audit-log-constants';
 import { AuditLogRetentionControl } from '@/components/admin-center/audit-log/AuditLogRetentionControl';
@@ -38,10 +40,14 @@ const AuditLogPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { filters, page, pageSize } = useAppSelector(selectAuditLogState);
 
-  const queryParams = React.useMemo(() => toAuditLogQueryParams(filters), [filters]);
+  const timezone = getUserSession()?.timezone_name;
+  const queryParams = React.useMemo(
+    () => toAuditLogQueryParams(filters, {}, getAuditLogNow(timezone)),
+    [filters, timezone]
+  );
   const summaryParams = React.useMemo(
-    () => toAuditLogQueryParams(filters, { includeCategories: false }),
-    [filters]
+    () => toAuditLogQueryParams(filters, { includeCategories: false }, getAuditLogNow(timezone)),
+    [filters, timezone]
   );
 
   const eventsQuery = useGetAuditEventsQuery({ ...queryParams, index: page, size: pageSize });
