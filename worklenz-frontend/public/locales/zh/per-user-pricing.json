@@ -13,6 +13,7 @@
   "currentPlan": "当前套餐",
   "select": "选择套餐",
   "switch": "切换到此套餐",
+  "updateSeats": "更新席位",
   "unavailable": "所选计费周期不提供此套餐。",
   "plans": {
     "pro": {
@@ -76,6 +77,7 @@
   "messages": {
     "success": "订阅更新成功！",
     "changed": "订阅套餐更换成功！",
+    "seatsUpdated": "席位已更新，新数量稍后显示。",
     "error": "无法开始结账，请重试。",
     "checkoutError": "结账时出错：{{message}}"
   },

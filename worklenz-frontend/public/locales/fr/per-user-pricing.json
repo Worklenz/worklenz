@@ -19,6 +19,7 @@
   "currentPlan": "Offre actuelle",
   "select": "Choisir cette offre",
   "switch": "Passer à cette offre",
+  "updateSeats": "Mettre à jour les places",
   "unavailable": "Cette offre n’est pas disponible pour la période de facturation sélectionnée.",
   "plans": {
     "pro": {
@@ -82,6 +83,7 @@
   "messages": {
     "success": "Abonnement mis à jour !",
     "changed": "Offre d’abonnement modifiée !",
+    "seatsUpdated": "Places mises à jour. Le nouveau nombre s’affichera sous peu.",
     "error": "Impossible de démarrer le paiement. Veuillez réessayer.",
     "checkoutError": "Erreur lors du paiement : {{message}}"
   },

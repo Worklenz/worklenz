@@ -13,6 +13,7 @@
   "currentPlan": "Plani aktual",
   "select": "Zgjidh planin",
   "switch": "Kalo te ky plan",
+  "updateSeats": "Përditëso vendet",
   "unavailable": "Ky plan nuk është i disponueshëm për periudhën e zgjedhur të faturimit.",
   "plans": {
     "pro": {
@@ -76,6 +77,7 @@
   "messages": {
     "success": "Abonimi u përditësua me sukses!",
     "changed": "Plani i abonimit u ndryshua me sukses!",
+    "seatsUpdated": "Vendet u përditësuan. Numri i ri do të shfaqet së shpejti.",
     "error": "Nuk mundëm të nisim pagesën. Provoni përsëri.",
     "checkoutError": "Gabim gjatë pagesës: {{message}}"
   },

@@ -19,6 +19,7 @@
   "currentPlan": "Current plan",
   "select": "Select plan",
   "switch": "Switch to this plan",
+  "updateSeats": "Update seats",
   "unavailable": "This plan is not available for the selected billing period.",
   "plans": {
     "pro": {
@@ -82,6 +83,7 @@
   "messages": {
     "success": "Subscription updated successfully!",
     "changed": "Subscription plan changed successfully!",
+    "seatsUpdated": "Seats updated. The new count will show shortly.",
     "error": "We could not start checkout. Please try again.",
     "checkoutError": "Error during checkout: {{message}}"
   },

@@ -19,6 +19,7 @@
   "currentPlan": "Obecny plan",
   "select": "Wybierz plan",
   "switch": "Przejdź na ten plan",
+  "updateSeats": "Zaktualizuj liczbę miejsc",
   "unavailable": "Ten plan nie jest dostępny dla wybranego okresu rozliczeniowego.",
   "plans": {
     "pro": {
@@ -82,6 +83,7 @@
   "messages": {
     "success": "Subskrypcja została zaktualizowana!",
     "changed": "Plan subskrypcji został zmieniony!",
+    "seatsUpdated": "Liczba miejsc została zaktualizowana. Nowa wartość pojawi się wkrótce.",
     "error": "Nie udało się rozpocząć płatności. Spróbuj ponownie.",
     "checkoutError": "Błąd podczas płatności: {{message}}"
   },
