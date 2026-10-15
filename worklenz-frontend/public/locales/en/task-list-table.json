@@ -221,6 +221,8 @@
       },
       "selections": "Selections",
       "addSelection": "+ Add a selection",
+      "selectionPlaceholder": "Type a selection and press Enter",
+      "selectionNameLabel": "Selection name",
       "labels": "Labels",
       "addLabel": "+ Add a label",
       "keyLabelPlaceholder": "ex: MK"
@@ -236,7 +238,7 @@
       "optionCount": "{{count}} options",
       "emptyGroup": "No options yet. Add the choices available when {{parent}} is {{value}}.",
       "addOption": "+ Add option under {{value}}",
-      "untitledOption": "Untitled option",
+      "optionPlaceholder": "Type an option and press Enter",
       "optionNameLabel": "Option name",
       "optionColorLabel": "Option color",
       "moveTo": "Move to…",

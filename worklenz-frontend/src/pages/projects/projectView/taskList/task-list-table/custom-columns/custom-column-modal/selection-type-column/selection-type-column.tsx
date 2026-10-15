@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import { useTranslation } from 'react-i18next';
 import { PhaseColorCodes } from '../../../../../../../../shared/constants';
 import { Button, Flex, Input, Select, Tag, Typography } from '@/shared/antd-imports';
+import type { InputRef } from '@/shared/antd-imports';
 import { CloseCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '../../../../../../../../hooks/useAppDispatch';
@@ -35,7 +36,7 @@ const SelectionTypeColumn = () => {
       : [
           {
             selection_id: nanoid(),
-            selection_name: 'Untitled selection',
+            selection_name: '',
             selection_color: PhaseColorCodes[0],
           },
         ]
@@ -73,15 +74,38 @@ const SelectionTypeColumn = () => {
     ),
   }));
 
-  // add a new selection
+  const inputRefs = useRef<Record<string, InputRef | null>>({});
+  const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingFocusId) return;
+    inputRefs.current[pendingFocusId]?.focus();
+    setPendingFocusId(null);
+  }, [pendingFocusId, selections]);
+
+  // add a new, empty selection and focus it
   const handleAddSelection = () => {
     const newSelection = {
       selection_id: nanoid(),
-      selection_name: 'Untitled selection',
-      selection_color: PhaseColorCodes[0],
+      selection_name: '',
+      selection_color: PhaseColorCodes[selections.length % PhaseColorCodes.length],
     };
     setSelections(prevSelections => [...prevSelections, newSelection]);
     dispatch(setSelectionsList([...selections, newSelection])); // update the slice with the new selection
+    setPendingFocusId(newSelection.selection_id);
+  };
+
+  // Enter moves to the next selection (adding one at the end) instead of submitting the form.
+  const handleSelectionEnter = (event: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    event.preventDefault();
+    if (!selections[index]?.selection_name.trim()) return;
+
+    const nextSelection = selections[index + 1];
+    if (nextSelection) {
+      setPendingFocusId(nextSelection.selection_id);
+    } else {
+      handleAddSelection();
+    }
   };
 
   // update selection name
@@ -122,12 +146,22 @@ const SelectionTypeColumn = () => {
       </Typography.Text>
       <Flex vertical gap={8}>
         <Flex vertical gap={8} style={{ maxHeight: 160, overflow: 'auto' }}>
-          {selections.map(selection => (
+          {selections.map((selection, index) => (
             <Flex gap={8} align="center" key={selection.selection_id}>
               <HolderOutlined style={{ fontSize: 14, color: 'rgba(0,0,0,0.35)' }} />
               <Input
+                ref={element => {
+                  inputRefs.current[selection.selection_id] = element;
+                }}
                 value={selection.selection_name}
                 onChange={e => handleUpdateSelectionName(selection.selection_id, e.target.value)}
+                onPressEnter={event => handleSelectionEnter(event, index)}
+                placeholder={t('customColumns.fieldTypeForms.selectionPlaceholder', {
+                  defaultValue: 'Type a selection and press Enter',
+                })}
+                aria-label={t('customColumns.fieldTypeForms.selectionNameLabel', {
+                  defaultValue: 'Selection name',
+                })}
                 size="small"
                 style={{ maxWidth: 300 }}
               />

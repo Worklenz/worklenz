@@ -323,13 +323,15 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
 
   const buildSelectionsPayload = (fieldTypeValue: string) => {
     if (fieldTypeValue !== 'selection') return [];
-    return selectionsList.map((selection, index) => ({
-      selection_id: selection.selection_id,
-      selection_name: selection.selection_name,
-      selection_color: selection.selection_color,
-      selection_order: index,
-      parent_selection_id: parentColumnId ? selection.parent_selection_id || null : null,
-    }));
+    return selectionsList
+      .filter(selection => selection.selection_name.trim() !== '')
+      .map((selection, index) => ({
+        selection_id: selection.selection_id,
+        selection_name: selection.selection_name.trim(),
+        selection_color: selection.selection_color,
+        selection_order: index,
+        parent_selection_id: parentColumnId ? selection.parent_selection_id || null : null,
+      }));
   };
 
   const handleFormSubmit = async (formValue: any) => {
