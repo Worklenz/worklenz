@@ -6,6 +6,7 @@ import type { Task } from '@/types/task-management.types';
 interface CommentsColumnProps {
   width: string;
   task: Task;
+  onOpenComment?: (commentId: string) => void;
 }
 
 /** Strip HTML tags so rich-text comments render as plain, single-line text. */
@@ -27,13 +28,16 @@ const formatCommentDate = (value?: string | null): string => {
  * Shows the text of the most recent comment posted on a task so recent activity
  * can be scanned without opening the task drawer.
  */
-export const CommentsColumn: React.FC<CommentsColumnProps> = memo(({ width, task }) => {
+export const CommentsColumn: React.FC<CommentsColumnProps> = memo(({ width, task, onOpenComment }) => {
   const { t } = useTranslation('task-list-table');
   const comment = stripHtml(task.latest_comment || '');
+  const latestCommentId = task.latest_comment_id;
   const author = task.latest_comment_author ? String(task.latest_comment_author) : '';
   const date = formatCommentDate(task.latest_comment_at);
   const meta = [author, date].filter(Boolean).join(' · ');
   const columnLabel = t('commentsColumn', { defaultValue: 'Latest Comment' });
+  const openCommentLabel = t('openLatestComment', { defaultValue: 'Open latest comment' });
+  const canOpenComment = Boolean(comment && latestCommentId && onOpenComment);
 
   return (
     <div
@@ -49,13 +53,26 @@ export const CommentsColumn: React.FC<CommentsColumnProps> = memo(({ width, task
             </div>
           }
         >
-          <span
-            className="w-full cursor-default truncate text-sm text-gray-600 dark:text-gray-300"
-            tabIndex={0}
-            aria-label={columnLabel}
-          >
-            {comment}
-          </span>
+          {canOpenComment ? (
+            <button
+              type="button"
+              className="w-full truncate border-0 bg-transparent p-0 text-left text-sm text-gray-600 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-gray-300"
+              aria-label={openCommentLabel}
+              onClick={event => {
+                event.stopPropagation();
+                if (latestCommentId) onOpenComment?.(latestCommentId);
+              }}
+            >
+              {comment}
+            </button>
+          ) : (
+            <span
+              className="w-full truncate text-sm text-gray-600 dark:text-gray-300"
+              aria-label={columnLabel}
+            >
+              {comment}
+            </span>
+          )}
         </Tooltip>
       ) : (
         <span

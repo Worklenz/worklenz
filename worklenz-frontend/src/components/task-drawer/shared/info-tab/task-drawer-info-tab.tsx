@@ -70,7 +70,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   const isSoftwareProject = useAppSelector(state =>
     isSoftwareProjectType(state.projectReducer.project?.project_type)
   );
-  const { taskFormViewModel, loadingTask, selectedTaskId } = useAppSelector(
+  const { taskFormViewModel, loadingTask, selectedTaskId, targetCommentId } = useAppSelector(
     state => state.taskDrawerReducer
   );
   const [subTasks, setSubTasks] = useState<ISubTask[]>([]);
@@ -102,6 +102,13 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   const defaultCollapseKeys = ['details', 'description', 'subTasks', 'dependencies', 'attachments', 'comments'];
   const [collapseActiveKeys, setCollapseActiveKeys] = useState<string[]>(defaultCollapseKeys);
   const [expandedCustomFieldsByTask, setExpandedCustomFieldsByTask] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!targetCommentId) return;
+    setCollapseActiveKeys(previousKeys =>
+      previousKeys.includes('comments') ? previousKeys : [...previousKeys, 'comments']
+    );
+  }, [targetCommentId]);
 
   // Keep the custom fields section expanded when fields exist or the user can add one.
   useEffect(() => {
