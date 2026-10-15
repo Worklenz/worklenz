@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ApartmentOutlined,
   Button,
@@ -36,9 +36,12 @@ import {
   setSecondNumericColumn,
   setSelectionsList,
   setParentColumnId,
+  setNewParentField,
+  NEW_PARENT_COLUMN_ID,
   setLabelsList,
   resetCustomFieldValues,
 } from '@features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
+import { PhaseColorCodes } from '@/shared/constants';
 import { selectCustomColumns } from '@/features/task-management/task-management.selectors';
 import { ITaskCustomColumn } from '@/types/tasks/task.types';
 import {
@@ -106,6 +109,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     labelsList,
     selectionsList,
     parentColumnId,
+    newParentField,
     customFieldType,
   } = useAppSelector(state => state.taskListCustomColumnsReducer);
   const projectCustomColumns = useAppSelector(selectCustomColumns) as ITaskCustomColumn[];
@@ -133,13 +137,26 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     () => getEligibleParentColumns(projectCustomColumns || [], editingColumnUuid),
     [projectCustomColumns, editingColumnUuid]
   );
-  const selectedParentColumn = useMemo(
-    () =>
-      parentColumnId
-        ? (projectCustomColumns || []).find(column => column.id === parentColumnId) || null
-        : null,
-    [projectCustomColumns, parentColumnId]
-  );
+  const selectedParentColumn = useMemo((): ITaskCustomColumn | null => {
+    if (!parentColumnId) return null;
+    if (parentColumnId === NEW_PARENT_COLUMN_ID) {
+      // Stand-in for the not-yet-created parent so the grouped editor can show its options.
+      return {
+        id: NEW_PARENT_COLUMN_ID,
+        key: NEW_PARENT_COLUMN_ID,
+        name:
+          newParentField?.name.trim() ||
+          t('customColumns.dependentSelection.newParentTitle', { defaultValue: 'New parent field' }),
+        custom_column_obj: {
+          fieldType: 'selection',
+          selectionsList: (newParentField?.selections || []).filter(
+            selection => selection.selection_name.trim() !== ''
+          ),
+        },
+      };
+    }
+    return (projectCustomColumns || []).find(column => column.id === parentColumnId) || null;
+  }, [projectCustomColumns, parentColumnId, newParentField, t]);
   const dependentColumnNames = useMemo(
     () =>
       editingColumnUuid
@@ -155,11 +172,85 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   const hasDependentColumns = dependentColumnNames.length > 0;
   const isDependentSelection = customFieldType === 'selection' && !!parentColumnId;
 
+  // In edit mode, "+ Create new parent field" builds a separate child column and leaves the
+  // opened column untouched, so its own options are set aside while the new child is drafted.
+  const stashedSelectionsRef = useRef<typeof selectionsList | null>(null);
+  const isCreatingChildFromExisting = isEditMode && parentColumnId === NEW_PARENT_COLUMN_ID;
+
+  const selectParentColumn = (nextParentColumnId: string | null) => {
+    const isNextNew = nextParentColumnId === NEW_PARENT_COLUMN_ID;
+    if (isNextNew && !newParentField) {
+      dispatch(
+        setNewParentField({
+          name: '',
+          selections: [{ selection_id: nanoid(), selection_name: '', selection_color: PhaseColorCodes[0] }],
+          childName: '',
+        })
+      );
+    }
+    if (isEditMode) {
+      if (isNextNew && parentColumnId !== NEW_PARENT_COLUMN_ID) {
+        stashedSelectionsRef.current = selectionsList;
+        dispatch(setSelectionsList([]));
+      } else if (!isNextNew && parentColumnId === NEW_PARENT_COLUMN_ID) {
+        dispatch(setSelectionsList(stashedSelectionsRef.current || []));
+        stashedSelectionsRef.current = null;
+        dispatch(setNewParentField(null));
+      }
+    }
+    dispatch(setParentColumnId(nextParentColumnId));
+  };
+
   const handleFieldTypeChange = (selectedValue: string) => {
     const dependsOnColumnId = parseDependsOnTypeValue(selectedValue);
     dispatch(setCustomFieldType(dependsOnColumnId ? 'selection' : (selectedValue as CustomFieldsTypes)));
-    dispatch(setParentColumnId(dependsOnColumnId));
+    selectParentColumn(dependsOnColumnId);
     mainForm.setFieldValue('fieldType', selectedValue);
+  };
+
+  /** Creates the inline "new parent field" column and returns its id, or null on failure. */
+  const createNewParentColumn = async (): Promise<string | null> => {
+    const parentName = newParentField?.name.trim() || '';
+    const parentSelections = (newParentField?.selections || []).filter(
+      selection => selection.selection_name.trim() !== ''
+    );
+
+    if (!parentName || parentSelections.length === 0) {
+      message.error(
+        t('customColumns.dependentSelection.newParentIncomplete', {
+          defaultValue: 'Give the new parent field a title and at least one option.',
+        })
+      );
+      return null;
+    }
+
+    const res = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
+      name: parentName,
+      key: nanoid(),
+      field_type: 'selection',
+      width: 120,
+      is_visible: true,
+      configuration: {
+        field_title: parentName,
+        field_type: 'selection',
+        parent_column_id: null,
+        selections_list: parentSelections.map((selection, index) => ({
+          selection_id: selection.selection_id,
+          selection_name: selection.selection_name.trim(),
+          selection_color: selection.selection_color,
+          selection_order: index,
+        })),
+        labels_list: [],
+      },
+    });
+
+    if (!res.done || !res.body?.id) {
+      if (res.message) message.error(res.message);
+      return null;
+    }
+
+    socket?.emit(SocketEvents.CUSTOM_COLUMN_CREATED.toString(), JSON.stringify({ project_id: projectId }));
+    return res.body.id as string;
   };
 
   const resetModalData = () => {
@@ -304,6 +395,22 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     ),
   }));
 
+  const createNewParentLabel = t('customColumns.dependentSelection.createNewParent', {
+    defaultValue: '+ Create new parent field',
+  });
+  if (!hasDependentColumns) {
+    dependsOnTypeOptions.unshift({
+      key: toDependsOnTypeValue(NEW_PARENT_COLUMN_ID),
+      value: toDependsOnTypeValue(NEW_PARENT_COLUMN_ID),
+      title: createNewParentLabel,
+      label: (
+        <Flex align="center" gap={6} style={{ minWidth: 0, color: token.colorPrimary }}>
+          <span className="truncate">{createNewParentLabel}</span>
+        </Flex>
+      ),
+    });
+  }
+
   const typeSelectOptions = [
     ...fieldTypesOptions,
     ...(dependsOnTypeOptions.length > 0
@@ -321,7 +428,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       : []),
   ];
 
-  const buildSelectionsPayload = (fieldTypeValue: string) => {
+  const buildSelectionsPayload = (fieldTypeValue: string, effectiveParentId: string | null) => {
     if (fieldTypeValue !== 'selection') return [];
     return selectionsList
       .filter(selection => selection.selection_name.trim() !== '')
@@ -330,8 +437,76 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         selection_name: selection.selection_name.trim(),
         selection_color: selection.selection_color,
         selection_order: index,
-        parent_selection_id: parentColumnId ? selection.parent_selection_id || null : null,
+        parent_selection_id: effectiveParentId ? selection.parent_selection_id || null : null,
       }));
+  };
+
+  // Survives a failed child save so a retry does not create the parent twice.
+  const createdNewParentIdRef = useRef<string | null>(null);
+
+  /** Edit-mode "+ Create new parent field": creates the parent and a new child column. */
+  const createChildForNewParent = async () => {
+    const childName = newParentField?.childName.trim() || '';
+    if (!childName) {
+      message.error(
+        t('customColumns.dependentSelection.newChildNameRequired', {
+          defaultValue: 'Give the new child field a title.',
+        })
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      let newParentId = createdNewParentIdRef.current;
+      if (!newParentId) {
+        newParentId = await createNewParentColumn();
+        if (!newParentId) {
+          setIsSubmitting(false);
+          return;
+        }
+        createdNewParentIdRef.current = newParentId;
+      }
+
+      const res = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
+        name: childName,
+        key: nanoid(),
+        field_type: 'selection',
+        width: 120,
+        is_visible: true,
+        configuration: {
+          field_title: childName,
+          field_type: 'selection',
+          parent_column_id: newParentId,
+          selections_list: buildSelectionsPayload('selection', newParentId),
+          labels_list: [],
+        },
+      });
+
+      if (!res.done) {
+        if (res.message) message.error(res.message);
+        if (projectId) dispatch(fetchTaskListColumns(projectId));
+        setIsSubmitting(false);
+        return;
+      }
+
+      socket?.emit(SocketEvents.CUSTOM_COLUMN_CREATED.toString(), JSON.stringify({ project_id: projectId }));
+      createdNewParentIdRef.current = null;
+      stashedSelectionsRef.current = null;
+      resetModalData();
+      message.success(t('customColumns.modal.createSuccessMessage'));
+      if (projectId) {
+        dispatch(fetchTaskListColumns(projectId));
+        dispatch(fetchTasksV3(projectId));
+      }
+      setIsSubmitting(false);
+      onDone();
+    } catch (error) {
+      logger.error('Error creating child column for new parent:', error);
+      message.error(t('customColumns.modal.createErrorMessage'));
+      if (projectId) dispatch(fetchTaskListColumns(projectId));
+      setIsSubmitting(false);
+    }
   };
 
   const handleFormSubmit = async (formValue: any) => {
@@ -342,6 +517,33 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       fieldType: parseDependsOnTypeValue(formValue.fieldType) ? 'selection' : formValue.fieldType,
     };
     setIsSubmitting(true);
+
+    const resolvedTypeForParent = isEditMode && !canChangeColumnType ? originalFieldType : value.fieldType;
+    let effectiveParentId: string | null =
+      resolvedTypeForParent === 'selection' ? parentColumnId : null;
+
+    if (isCreatingChildFromExisting) {
+      await createChildForNewParent();
+      return;
+    }
+
+    if (effectiveParentId === NEW_PARENT_COLUMN_ID) {
+      try {
+        effectiveParentId = await createNewParentColumn();
+      } catch (error) {
+        logger.error('Error creating parent custom column:', error);
+        effectiveParentId = null;
+      }
+      if (!effectiveParentId) {
+        setIsSubmitting(false);
+        return;
+      }
+      // Point at the real column so a failed child save can be retried without re-creating it.
+      dispatch(setParentColumnId(effectiveParentId));
+      dispatch(setNewParentField(null));
+      if (projectId) dispatch(fetchTaskListColumns(projectId));
+    }
+
     try {
       if (customColumnModalType === 'create') {
         const columnKey = nanoid();
@@ -357,7 +559,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
             ...value,
             labelsList: value.fieldType === 'labels' ? labelsList : [],
             selectionsList: value.fieldType === 'selection' ? selectionsList : [],
-            parentColumnId: value.fieldType === 'selection' ? parentColumnId : null,
+            parentColumnId: effectiveParentId,
           },
         };
 
@@ -372,8 +574,8 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
           expression: value.expression,
           first_numeric_column_key: value.firstNumericColumn?.key,
           second_numeric_column_key: value.secondNumericColumn?.key,
-          parent_column_id: value.fieldType === 'selection' ? parentColumnId : null,
-          selections_list: buildSelectionsPayload(value.fieldType),
+          parent_column_id: effectiveParentId,
+          selections_list: buildSelectionsPayload(value.fieldType, effectiveParentId),
           labels_list:
             value.fieldType === 'labels'
               ? labelsList.map((label, index) => ({
@@ -436,8 +638,11 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
               expression: value.expression,
               first_numeric_column_key: value.firstNumericColumn?.key,
               second_numeric_column_key: value.secondNumericColumn?.key,
-              parent_column_id: resolvedFieldType === 'selection' ? parentColumnId : null,
-              selections_list: buildSelectionsPayload(resolvedFieldType),
+              parent_column_id: resolvedFieldType === 'selection' ? effectiveParentId : null,
+              selections_list: buildSelectionsPayload(
+                resolvedFieldType,
+                resolvedFieldType === 'selection' ? effectiveParentId : null
+              ),
               labels_list:
                 resolvedFieldType === 'labels'
                   ? labelsList.map((label, index) => ({
@@ -554,6 +759,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
             ) : (
               <Select
                 options={typeSelectOptions}
+                listHeight={420}
                 onChange={handleFieldTypeChange}
                 open={isFieldTypeDropdownOpen}
                 onOpenChange={setIsFieldTypeDropdownOpen}
@@ -585,7 +791,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
               value={parentColumnId || NO_PARENT_VALUE}
               disabled={hasDependentColumns}
               onChange={selectedValue =>
-                dispatch(setParentColumnId(selectedValue === NO_PARENT_VALUE ? null : selectedValue))
+                selectParentColumn(selectedValue === NO_PARENT_VALUE ? null : selectedValue)
               }
               options={[
                 {
@@ -596,6 +802,12 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                   value: column.id,
                   label: getTaskCustomFieldDisplayName(column),
                 })),
+                {
+                  value: NEW_PARENT_COLUMN_ID,
+                  label: (
+                    <span style={{ color: token.colorPrimary }}>{createNewParentLabel}</span>
+                  ),
+                },
               ]}
             />
           </Form.Item>
