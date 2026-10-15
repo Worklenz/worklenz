@@ -455,6 +455,7 @@
   "savedViewRenameFailed": "Could not rename the view",
   "savedViewDeleteFailed": "Could not delete the view",
   "savedViewNameLabel": "Tab name",
+  "savedViewNamePlaceholder": "Name this tab",
   "savedViewOptions": "Tab options",
   "renameSavedView": "Rename",
   "deleteSavedView": "Delete tab",
