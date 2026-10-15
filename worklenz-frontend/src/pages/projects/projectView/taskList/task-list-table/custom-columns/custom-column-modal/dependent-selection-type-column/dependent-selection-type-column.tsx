@@ -173,19 +173,20 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
           defaultValue: 'Option color',
         })}
       />
-      <Select
-        size="small"
-        style={{ width: 128 }}
-        value={isUnassigned ? undefined : selection.parent_selection_id || undefined}
-        placeholder={t('customColumns.dependentSelection.moveTo', { defaultValue: 'Move to…' })}
-        options={moveToOptions}
-        onChange={value => updateSelection(selection.selection_id, { parent_selection_id: value })}
-        aria-label={t('customColumns.dependentSelection.moveToLabel', {
-          defaultValue: 'Move option to another {{parent}} group',
-          parent: parentName,
-        })}
-        popupMatchSelectWidth={false}
-      />
+      {isUnassigned && (
+        <Select
+          size="small"
+          style={{ width: 128 }}
+          placeholder={t('customColumns.dependentSelection.moveTo', { defaultValue: 'Move to…' })}
+          options={moveToOptions}
+          onChange={value => updateSelection(selection.selection_id, { parent_selection_id: value })}
+          aria-label={t('customColumns.dependentSelection.moveToLabel', {
+            defaultValue: 'Move option to another {{parent}} group',
+            parent: parentName,
+          })}
+          popupMatchSelectWidth={false}
+        />
+      )}
       <Tooltip
         title={t('customColumns.dependentSelection.removeOption', { defaultValue: 'Remove option' })}
       >
