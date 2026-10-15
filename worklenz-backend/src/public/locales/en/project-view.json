@@ -10,5 +10,11 @@
   "error": "Error loading project",
   "pinnedTab": "Pinned as default tab",
   "pinTab": "Pin as default tab",
-  "unpinTab": "Unpin default tab"
-} 
+  "unpinTab": "Unpin default tab",
+  "You do not have permission to access this project": "You do not have permission to access this project",
+  "Failed to load project": "Failed to load project",
+  "issueTypeSaveError": "Could not change the issue type. Please try again.",
+  "changeIssueType": "Change issue type",
+  "unpinTabFromHeader": "Remove from header",
+  "pinTabToHeader": "Show in header"
+}

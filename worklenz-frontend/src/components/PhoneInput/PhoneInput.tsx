@@ -7,8 +7,20 @@ import {
   AsYouType,
 } from 'libphonenumber-js';
 import type { CountryCode } from 'libphonenumber-js';
-// Import flag icons from country-flag-icons
-import * as flags from 'country-flag-icons/react/3x2';
+// Flag icons (~250 components) are loaded lazily so they stay out of the initial bundle
+type FlagsModule = typeof import('country-flag-icons/react/3x2');
+let flagsModule: FlagsModule | null = null;
+let flagsPromise: Promise<FlagsModule> | null = null;
+
+const loadFlags = (): Promise<FlagsModule> => {
+  if (!flagsPromise) {
+    flagsPromise = import('country-flag-icons/react/3x2').then(mod => {
+      flagsModule = mod;
+      return mod;
+    });
+  }
+  return flagsPromise;
+};
 
 interface PhoneInputProps {
   value?: string;
@@ -107,8 +119,24 @@ const FlagIcon: React.FC<{ countryCode: string; style?: React.CSSProperties }> =
   countryCode,
   style = {},
 }) => {
-  // Get the flag component dynamically
-  const FlagComponent = flags[countryCode as keyof typeof flags];
+  const [flags, setFlags] = useState<FlagsModule | null>(flagsModule);
+
+  useEffect(() => {
+    if (flags) return;
+    let cancelled = false;
+    loadFlags()
+      .then(mod => {
+        if (!cancelled) setFlags(mod);
+      })
+      .catch(() => {
+        // Keep the emoji fallback if the flag chunk fails to load
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [flags]);
+
+  const FlagComponent = flags?.[countryCode as keyof FlagsModule];
 
   if (FlagComponent) {
     return (

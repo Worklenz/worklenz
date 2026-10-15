@@ -78,7 +78,8 @@
         "selectDate": "选择日期",
         "selectOption": "选择选项",
         "selectPeople": "选择人员",
-        "updateError": "更新自定义字段失败"
+        "updateError": "更新自定义字段失败",
+        "enterText": "输入文本"
       },
       "recurring": "重复"
     },
@@ -215,6 +216,10 @@
       "moveToTaskTooltip": "将此工时记录重新分配到其他任务",
       "selectTask": "选择任务...",
       "backdateLimitError": "工时记录的补录不能超过 {{days}} 天。可记录的最早日期为 {{earliestDate}}。",
+      "projectStartDateError": "无法在项目开始日期（{{date}}）之前记录时间。",
+      "projectStartDateHint": "项目开始日期：{{date}}",
+      "projectNotStartedWarningTitle": "项目尚未开始",
+      "projectNotStartedWarningDesc": "该项目计划于 {{date}} 开始。无法在项目开始日期之前记录时间。",
       "saveError": "无法保存工时记录，请重试。"
     },
     "rollupLoggedTooltip": "子任务的登录时间总和"

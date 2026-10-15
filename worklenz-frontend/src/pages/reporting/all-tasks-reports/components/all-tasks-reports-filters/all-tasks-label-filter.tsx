@@ -22,7 +22,40 @@ import {
   fetchAllTasks,
 } from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
 
+const getLabelTextColor = (color?: string): string => {
+  if (!color) return 'inherit';
+
+  const hex = color.replace('#', '').trim();
+  if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(hex)) {
+    return 'inherit';
+  }
+
+  const normalizedHex =
+    hex.length === 3
+      ? hex.split('').map(character => character + character).join('')
+      : hex;
+
+  const red = parseInt(normalizedHex.slice(0, 2), 16) / 255;
+  const green = parseInt(normalizedHex.slice(2, 4), 16) / 255;
+  const blue = parseInt(normalizedHex.slice(4, 6), 16) / 255;
+
+  const luminance = [red, green, blue]
+    .map(channel =>
+      channel <= 0.04045
+        ? channel / 12.92
+        : ((channel + 0.055) / 1.055) ** 2.4
+    )
+    .reduce(
+      (total, channel, index) =>
+        total + channel * [0.2126, 0.7152, 0.0722][index],
+      0
+    );
+
+  return luminance > 0.179 ? '#000000' : '#FFFFFF';
+};
+
 const AllTasksLabelFilter = () => {
+
   const { t } = useTranslation('reporting-all-tasks');
   const dispatch = useAppDispatch();
 
@@ -101,9 +134,17 @@ const AllTasksLabelFilter = () => {
                 checked={selectedLabels.includes(label.id || '')}
                 onChange={() => handleToggle(label.id || '')}
               >
-                <Tag color={label.color_code} style={{ margin: 0 }}>
+
+                <Tag
+                  color={label.color_code}
+                  style={{
+                    margin: 0,
+                    color: getLabelTextColor(label.color_code),
+                  }}
+                >
                   {label.name}
                 </Tag>
+
               </Checkbox>
             ))}
           </Flex>
@@ -115,7 +156,7 @@ const AllTasksLabelFilter = () => {
   return (
     <Dropdown
       overlayClassName="custom-dropdown"
-      dropdownRender={() => dropdownContent}
+      popupRender={() => dropdownContent}
       trigger={['click']}
       placement="bottomLeft"
     >

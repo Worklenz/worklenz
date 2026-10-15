@@ -24,9 +24,27 @@ exports.up = (pgm) => {
         RETURN NEW;
       END IF;
 
+      -- organization_id is ON DELETE CASCADE. Permit only that referential delete; direct
+      -- deletes still fall through to the append-only exception below.
+      IF TG_OP = 'DELETE'
+         AND NOT EXISTS (SELECT 1 FROM organizations WHERE id = OLD.organization_id)
+      THEN
+        RETURN OLD;
+      END IF;
+
+      -- team_id and actor_user_id are ON DELETE SET NULL. Permit that referential update only
+      -- when the referenced entity has actually been deleted; direct updates that attempt to
+      -- erase attribution while the referenced row still exists fall through to the exception.
       IF TG_OP = 'UPDATE'
-         AND (NEW.team_id IS NULL OR NEW.team_id IS NOT DISTINCT FROM OLD.team_id)
-         AND (NEW.actor_user_id IS NULL OR NEW.actor_user_id IS NOT DISTINCT FROM OLD.actor_user_id)
+         AND (
+           NEW.team_id IS NOT DISTINCT FROM OLD.team_id
+           OR (NEW.team_id IS NULL AND NOT EXISTS (SELECT 1 FROM teams WHERE id = OLD.team_id))
+         )
+         AND (
+           NEW.actor_user_id IS NOT DISTINCT FROM OLD.actor_user_id
+           OR (NEW.actor_user_id IS NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = OLD.actor_user_id))
+         )
+         AND (NEW.team_id IS DISTINCT FROM OLD.team_id OR NEW.actor_user_id IS DISTINCT FROM OLD.actor_user_id)
          AND (to_jsonb(NEW) - 'team_id' - 'actor_user_id') = (to_jsonb(OLD) - 'team_id' - 'actor_user_id')
       THEN
         RETURN NEW;

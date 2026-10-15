@@ -147,36 +147,6 @@
           "Nielimitowane konta klientów"
         ]
       },
-      "requests": {
-        "title": "Żądania",
-        "description": "Pozwól klientom przesyłać i śledzić zgłoszenia serwisowe bez opuszczania portalu.",
-        "features": [
-          "Zgłoszenia serwisowe przesłane przez klienta",
-          "Akceptuj, odrzucaj lub śledź w jednym miejscu",
-          "Śledzenie statusu od przesłania do zakończenia",
-          "Powiązany bezpośrednio z żądaną usługą"
-        ]
-      },
-      "services": {
-        "title": "Usługi",
-        "description": "Publikuj usługi, o które mogą prosić klienci, i kontroluj to, co mogą zobaczyć.",
-        "features": [
-          "Katalog żądanych usług",
-          "Kontrola widoczności poszczególnych usług",
-          "Żądaj ilości na usługę",
-          "Przypisz właściciela usługi do swojego zespołu"
-        ]
-      },
-      "chats": {
-        "title": "Wiadomości",
-        "description": "Wysyłaj wiadomości do klientów bezpośrednio z tego samego portalu, którego używają do innych celów.",
-        "features": [
-          "Bezpośrednia komunikacja z klientami",
-          "Jeden wątek rozmowy na klienta",
-          "Przeszukiwalna historia rozmów",
-          "Powiadomienia, gdy klient odpowie"
-        ]
-      },
       "invoices": {
         "title": "Faktury",
         "description": "Twórz, wysyłaj i śledź faktury klientów bez opuszczania Worklenz.",
@@ -187,16 +157,6 @@
           "Status płatności w skrócie"
         ]
       },
-      "ticketing": {
-        "title": "Bilety",
-        "description": "Pozwól klientom zgłaszać i śledzić zgłoszenia do pomocy technicznej bezpośrednio z poziomu portalu.",
-        "features": [
-          "Zgłoszenia pomocy przesłane przez klienta",
-          "Śledzenie i aktualizacje statusu biletów",
-          "Notatki wewnętrzne i zadanie",
-          "Tagowanie priorytetów i SLA"
-        ]
-      },
       "settings": {
         "title": "Ustawienia portalu",
         "description": "Dostosuj swój portal klienta za pomocą własnego brandingu.",
@@ -205,6 +165,76 @@
           "Nagłówek z marką w całym portalu",
           "Spójna identyfikacja wizualna dla klientów",
           "Dane firmy mogą zobaczyć klienci"
+        ]
+      },
+      "projects": {
+        "title": "Projekty Portalu",
+        "description": "Wybierz, które projekty klienci mogą zobaczyć i co jest w nich udostępniane.",
+        "features": [
+          "Switch the Client Portal on per project",
+          "Share tasks, files and milestones one by one",
+          "Everything stays Internal Only until you share it",
+          "Client-facing status, phase and progress"
+        ]
+      },
+      "approvals": {
+        "title": "Zatwierdzenia",
+        "description": "Uzyskaj formalne, zarejestrowane potwierdzenie od klientów dotyczące dokładnych wersji plików.",
+        "features": [
+          "Ask a Client Admin to approve a file, milestone or task",
+          "The exact version or revision is recorded",
+          "Every decision is kept, with a full history",
+          "Overdue and awaiting approvals at a glance"
+        ]
+      },
+      "changeRequests": {
+        "title": "Zmień żądania",
+        "description": "Przejrzyj, oszacuj i podejmij decyzję o zmianach zakresu, a następnie zamień zatwierdzone zmiany w pracę.",
+        "features": [
+          "Clients submit scope changes from their portal",
+          "Estimate, approve, reject or ask for more information",
+          "Convert approved requests into tasks",
+          "Create quotes and invoices from a request"
+        ]
+      },
+      "discussions": {
+        "title": "Dyskusje",
+        "description": "Porozmawiaj z klientami o dokładnym zadaniu, pliku lub zatwierdzeniu, zachowując prywatne komentarze wewnętrzne.",
+        "features": [
+          "Conversations attached to the work they are about",
+          "Client-visible replies and private internal comments",
+          "Mention client users, never by accident in internal notes",
+          "Unread tracking across your team"
+        ]
+      },
+      "auditLog": {
+        "title": "Dziennik audytu",
+        "description": "Odporny na manipulacje zapis aktywności klienta i zespołu.",
+        "features": [
+          "Access, sharing, file, approval and change request events",
+          "Every entry is timestamped and attributed",
+          "Filter by client, event type or who acted",
+          "Export the filtered view as CSV"
+        ]
+      },
+      "preview": {
+        "title": "Portal klienta",
+        "description": "Zanim cokolwiek udostępnisz, zobacz dokładnie to, co widzi klient.",
+        "features": [
+          "Preview as any active client user",
+          "Built from the same rules the portal enforces",
+          "See what is hidden from that user",
+          "Check what each role can do"
+        ]
+      },
+      "ticketing": {
+        "title": "Bilety",
+        "description": "Pozwól klientom zgłaszać i śledzić zgłoszenia do pomocy technicznej bezpośrednio z poziomu portalu.",
+        "features": [
+          "Zgłoszenia pomocy przesłane przez klienta",
+          "Śledzenie i aktualizacje statusu biletów",
+          "Notatki wewnętrzne i zadanie",
+          "Tagowanie priorytetów i SLA"
         ]
       }
     }
@@ -274,23 +304,6 @@
       "rowsPerPage": "Wiersze na stronie: {{count}}"
     }
   },
-  "ticketingMockup": {
-    "openTickets": "Bilety otwarte",
-    "inProgress": "W toku",
-    "resolvedToday": "Rozwiązano dzisiaj",
-    "avgResponseTime": "Śr. Czas reakcji",
-    "ticketsCard": "Bilety",
-    "ticketNoColumn": "Numer biletu",
-    "clientColumn": "Klient",
-    "subjectColumn": "Temat",
-    "priorityColumn": "Priorytet",
-    "statusColumn": "Stan",
-    "priorityHigh": "Wysoka",
-    "priorityMedium": "Średni",
-    "priorityLow": "Niski",
-    "statusOpen": "Otwórz",
-    "statusResolved": "Rozwiązano"
-  },
   "plannerMockup": {
     "chrome": {
       "daysOption": "Dni",
@@ -333,5 +346,7 @@
       "utilColumn": "UTIL",
       "teamTotalRow": "Zespół Razem"
     }
-  }
+  },
+  "paginationText": "{{from}}-{{to}} z {{total}}",
+  "perPageText": "{{count}} / stronę"
 }

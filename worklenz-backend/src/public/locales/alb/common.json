@@ -7,5 +7,21 @@
   "update-banner-description": "Rifresko kur të jesh gati për të marrë përmirësimet më të fundit.",
   "reconnecting": "Jeni shkëputur nga serveri.",
   "connection-lost": "Lidhja me serverin dështoi. Ju lutemi kontrolloni lidhjen tuaj me internet.",
-  "connection-restored": "U lidhët me serverin me sukses"
+  "connection-restored": "U lidhët me serverin me sukses",
+  "error": {
+    "title": "Gabim",
+    "unknownError": "Ndodhi një gabim i panjohur",
+    "description": "Kemi hasur në një gabim të papritur. Ju lutemi provoni përsëri ose kthehuni në faqen kryesore.",
+    "somethingWentWrong": "Diçka shkoi keq",
+    "goHome": "Shkoni në shtëpi",
+    "viewDetails": "Shikoni detajet e gabimit",
+    "errorMessage": "Mesazh gabimi",
+    "retry": "Provo përsëri",
+    "stackTrace": "Gjurmimi i stivës"
+  },
+  "noDataAvailable": "Nuk ka të dhëna të disponueshme",
+  "business-trial-then-plan": "do të vazhdosh në {{plan}} pas kësaj",
+  "licennse-expired-contacting-support": "Po kontakton me mbështetjen...",
+  "loadingData": "Duke ngarkuar të dhënat...",
+  "refreshingData": "Të dhënat po rifreskohen..."
 }

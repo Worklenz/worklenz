@@ -10,5 +10,12 @@
   "passwordRequired": "Por favor, digite sua nova senha",
   "returnToLoginButton": "Voltar ao Login",
   "confirmPasswordRequired": "Por favor, confirme sua nova senha",
-  "passwordMismatch": "As senhas não coincidem"
+  "passwordMismatch": "As senhas não coincidem",
+  "passwordChecklist": {
+    "lowercase": "Uma letra minúscula",
+    "number": "Um número",
+    "uppercase": "Uma letra maiúscula",
+    "minLength": "Pelo menos 8 caracteres",
+    "special": "Um caractere especial"
+  }
 }

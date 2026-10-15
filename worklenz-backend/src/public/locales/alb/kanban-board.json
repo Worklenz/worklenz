@@ -4,20 +4,16 @@
   "addTask": "Shto Detyrë",
   "addSectionButton": "Shto Seksion",
   "changeCategory": "Ndrysho kategorinë",
-
   "deleteTooltip": "Fshi",
   "deleteConfirmationTitle": "Jeni i sigurt?",
   "deleteConfirmationOk": "Po",
   "deleteConfirmationCancel": "Anulo",
-
   "dueDate": "Data e përfundimit",
   "cancel": "Anulo",
-
   "today": "Sot",
   "tomorrow": "Nesër",
   "assignToMe": "Cakto mua",
   "archive": "Arkivo",
-
   "newTaskNamePlaceholder": "Shkruaj emrin e detyrës",
   "newSubtaskNamePlaceholder": "Shkruaj emrin e nëndetyrës",
   "untitledSection": "Seksion pa titull",
@@ -26,5 +22,13 @@
   "noDueDate": "Pa datë përfundimi",
   "save": "Ruaj",
   "clear": "Pastro",
-  "nextWeek": "Javën e ardhshme"
+  "nextWeek": "Javën e ardhshme",
+  "critical": "Kritik",
+  "high": "I lartë",
+  "expand": "Zgjero",
+  "medium": "I mesëm",
+  "addSubtask": "Shto Nën-detyrë",
+  "collapse": "Mbyll",
+  "unarchive": "Ç'arkivo",
+  "low": "I ulët"
 }

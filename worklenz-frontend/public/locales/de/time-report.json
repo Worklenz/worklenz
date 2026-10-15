@@ -116,7 +116,6 @@
   "totalLogged": "Gesamt protokolliert",
   "varianceUnder": "(unter)",
   "varianceOver": "(über)",
-
   "timeLogsFilterButton": "Filter",
   "timeLogsFiltersTitle": "Filter",
   "timeLogsFilterApply": "Anwenden",
@@ -190,5 +189,17 @@
   "timeLogsGroupEntriesShowing": "{{shown}} von {{total}} Einträgen angezeigt",
   "timeLogsGroupLoadMore": "Mehr laden",
   "timeLogsViewFlatTooltip": "Jeder Zeiteintrag in einer eigenen Zeile, so wie er erfasst wurde.",
-  "timeLogsViewByTaskTooltip": "Eine Zeile pro Aufgabe, mit der Summe der Zeit aller ihrer Einträge."
+  "timeLogsViewByTaskTooltip": "Eine Zeile pro Aufgabe, mit der Summe der Zeit aller ihrer Einträge.",
+  "noDepartmentOption": "Keine Abteilung",
+  "departmentFilterLabel": "Abteilung",
+  "searchByDepartment": "Suchabteilung",
+  "noDepartments": "Keine Abteilungen gefunden",
+  "noPracticeOption": "Keine Übung",
+  "practiceFilterLabel": "Praxis",
+  "searchByPractice": "Suchpraxis",
+  "noPractices": "Keine Praxen gefunden",
+  "noDataMatchingFilters": "Keine Daten, die den ausgewählten Filtern entsprechen",
+  "holidaysExcluded": "Feiertage ausgeschlossen",
+  "reportSettings": "Berichtseinstellungen",
+  "Members Time Sheet": "Mitglieder-Zeiterfassung"
 }

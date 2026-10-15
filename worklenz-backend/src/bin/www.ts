@@ -14,6 +14,7 @@ import {getLoggedInUserIdFromSocket} from "../socket.io/util";
 import {startCronJobs} from "../cron_jobs";
 import {startRecurringTasksJob} from "../cron_jobs/recurring-tasks";
 import {startProjectFilesCleanupJob} from "../cron_jobs/project-files-cleanup-job";
+import {startSprintAutoScheduleJob} from "../cron_jobs/sprint-auto-schedule-job";
 import {startTaskExportCleanupJob} from "../cron_jobs/task-export-cleanup-job";
 import {startAuditLogExportCleanupJob} from "../cron_jobs/audit-log-export-cleanup-job";
 import {startAuditLogRetentionJob} from "../cron_jobs/audit-log-retention-job";
@@ -21,6 +22,8 @@ import FileConstants from "../shared/file-constants";
 import {initRedis} from "../redis/client";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
 import { initializeI18n } from "../config/i18n";
+import { getEmailConfigurationErrors } from "../shared/email";
+import { getDeploymentMode } from "../shared/deployment-mode";
 
 function normalizePort(val?: string) {
   const p = parseInt(val || "0", 10);
@@ -30,6 +33,11 @@ function normalizePort(val?: string) {
 }
 
 const port = normalizePort(process.env.PORT);
+console.info(`Worklenz deployment mode: ${getDeploymentMode()}`);
+const emailConfigurationErrors = getEmailConfigurationErrors();
+if (emailConfigurationErrors.length) {
+  console.warn(`Email delivery is not configured: ${emailConfigurationErrors.join("; ")}`);
+}
 app.set("port", port);
 
 const server = http.createServer(app);
@@ -115,6 +123,7 @@ function onListening() {
   startBackgroundWorkers();
   process.env.ENABLE_RECURRING_JOBS === "true" && startRecurringTasksJob();
   startProjectFilesCleanupJob();
+  startSprintAutoScheduleJob();
   startTaskExportCleanupJob();
   startAuditLogExportCleanupJob();
   startAuditLogRetentionJob();

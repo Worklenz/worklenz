@@ -1,0 +1,122 @@
+{
+  "auditRecorded": "Alteração de permissão registrada no log de auditoria.",
+  "loadEmpty": "Nenhuma configuração do portal foi retornada.",
+  "loadFailed": "Não foi possível carregar as configurações do portal.",
+  "nav": {
+    "notifications": "Notifications",
+    "roles": "Funções do cliente",
+    "sharing": "Compartilhamento e visibilidade"
+  },
+  "notifications": {
+    "banner": "As notificações enviadas aos clientes nunca contêm conteúdo apenas interno no título ou no corpo. Os alertas no aplicativo estão sempre ativados. O e-mail é opcional por evento.",
+    "client": {
+      "accessChanges": "Alterações de acesso",
+      "accessChangesDescription": "Convite, mudança de função ou atribuição de projeto.",
+      "approvalRequest": "Nova solicitação de aprovação",
+      "approvalRequestDescription": "Um aprovador do cliente é solicitado a aprovar um item.",
+      "changeRequestUpdate": "Atualização da solicitação de alteração",
+      "changeRequestUpdateDescription": "Mudanças de status, resposta ou estimativa em uma solicitação.",
+      "commentOrReply": "Comente ou responda",
+      "commentOrReplyDescription": "Alguém responde em uma discussão visível para o cliente.",
+      "fileShared": "Arquivo compartilhado",
+      "fileSharedDescription": "Um arquivo é marcado como Visível para Cliente ou uma nova versão é carregada.",
+      "milestoneChange": "Mudança de marco",
+      "milestoneChangeDescription": "Um marco visível para o cliente altera o status ou a data.",
+      "projectUpdate": "Atualização do projeto",
+      "projectUpdateDescription": "O status do projeto muda ou uma atualização é publicada.",
+      "title": "Notificações aos clientes"
+    },
+    "emailColumn": "Email",
+    "emailLabel": "E-mail: {{event}}",
+    "eventColumn": "Evento",
+    "inAppColumn": "No aplicativo",
+    "inAppLabel": "No aplicativo: {{event}} (sempre ativado)",
+    "team": {
+      "approvalDecision": "Decisão de aprovação do cliente",
+      "approvalDecisionDescription": "Um cliente aprova ou solicita alterações.",
+      "changeRequest": "Nova solicitação ou acompanhamento de mudança",
+      "changeRequestDescription": "Um cliente envia uma solicitação ou responde a uma pergunta.",
+      "clientComment": "Comentário do novo cliente",
+      "clientCommentDescription": "Um cliente comenta em uma discussão.",
+      "clientFileUpload": "Upload de arquivo do cliente",
+      "clientFileUploadDescription": "Um cliente carrega um arquivo para um projeto.",
+      "title": "Notificações para sua equipe"
+    }
+  },
+  "retry": "Tentar novamente",
+  "roles": {
+    "allowed": "Permitido",
+    "alwaysTrue": {
+      "nextRequest": "A desativação de um usuário ou a remoção de uma atribuição de projeto entrará em vigor na próxima solicitação, e não no próximo login.",
+      "noTeamDirectory": "Um usuário cliente nunca vê o diretório interno da equipe e nunca pode se tornar um administrador do seu espaço de trabalho.",
+      "oneOrganization": "Um usuário cliente pertence exatamente a uma organização e vê apenas os projetos atribuídos a ele.",
+      "ownOrganizationOnly": "Um administrador de cliente só pode ver e gerenciar usuários em sua própria organização, nunca na de outro cliente.",
+      "title": "Sempre verdadeiro"
+    },
+    "capability": {
+      "approve": "Aprovar itens ou solicitar alterações",
+      "comment": "Comente e responda em discussões visíveis ao cliente",
+      "manageUsers": "Gerenciar usuários em sua própria organização (se habilitado abaixo)",
+      "submitChangeRequest": "Envie e siga solicitações de mudança",
+      "upload": "Fazer upload de arquivos (onde o projeto permitir)",
+      "view": "Visualize projetos atribuídos, marcos, tarefas e arquivos visíveis ao cliente"
+    },
+    "capabilityColumn": "Capacidade",
+    "matrixDescription": "Três funções, sem construtor de permissão. Uma função se aplica a cada projeto ao qual o usuário está atribuído.",
+    "matrixError": "As permissões de função não puderam ser carregadas.",
+    "matrixTitle": "O que cada função pode fazer",
+    "notAllowed": "Não permitido",
+    "selfManagement": {
+      "description": "Deixe que um administrador de cliente gerencie quem de sua própria organização tem acesso ao portal, em vez de encaminhar todas as alterações por meio de sua equipe.",
+      "invite": {
+        "description": "Um administrador de cliente pode convidar um colega da sua própria organização.",
+        "label": "Permitir que os administradores do cliente convidem usuários"
+      },
+      "remove": {
+        "description": "Um administrador de cliente pode remover outro usuário de sua própria organização.",
+        "label": "Permitir que os administradores do cliente removam usuários"
+      },
+      "title": "Autogerenciamento do administrador do cliente"
+    },
+    "signIn": {
+      "addedOnly": "Somente um endereço adicionado por você ou por um administrador de cliente que você permitiu pode receber um código. Qualquer outra pessoa não ganha nada.",
+      "code": "Não há senhas. Um cliente faz login com um código de 6 dígitos enviado para seu endereço de e-mail. Funciona uma vez e expira após 10 minutos.",
+      "description": "Nada para configurar. Cada cliente assina da mesma forma.",
+      "direct": "O cliente também pode abrir o portal, digitar seu endereço e receber um código, sem o link.",
+      "link": "Um e-mail de convite traz um link de login com o endereço integrado. Abri-lo envia o código imediatamente. Os links expiram após 7 dias e podem ser reenviados pelos Usuários.",
+      "title": "Como os clientes fazem login"
+    }
+  },
+  "saveFailed": "As configurações do portal não puderam ser salvas.",
+  "sharing": {
+    "defaults": {
+      "clientUploads": {
+        "description": "Administradores de clientes e membros de clientes podem adicionar arquivos. Os visualizadores de clientes nunca podem. Você pode substituir isso por projeto.",
+        "label": "Permitir uploads de clientes em novos projetos de portal"
+      },
+      "showInvoices": {
+        "description": "Adiciona uma página de faturas para clientes. Oculto por padrão.",
+        "label": "Mostrar faturas no portal do cliente"
+      },
+      "title": "Seções e padrões"
+    },
+    "rules": {
+      "defaultInternal": "Tarefas, arquivos, marcos e comentários são somente internos por padrão, para itens novos e existentes.",
+      "explicitShare": "Nada chega ao portal até que um membro autorizado da equipe o marque como Cliente Visível.",
+      "fixedTag": "Regras fixas",
+      "neverExposed": "Comentários internos, registros de tempo, estimativas, custos e dependências nunca são expostos, independentemente do que você compartilhe.",
+      "noHints": "Um item oculto nunca é contado ou sugerido em painéis, listas ou notificações.",
+      "revertImmediate": "Voltar um item para Somente Interno remove-o imediatamente do portal e mantém seu histórico interno.",
+      "title": "Como funciona o compartilhamento"
+    },
+    "shared": {
+      "count": "{{shared}} do cliente {{total}} visível",
+      "description": "Contados sobre projetos que possuem o Portal do Cliente ativado.",
+      "files": "Arquivos",
+      "milestones": "Marcos",
+      "tasks": "Tarefas",
+      "title": "Atualmente compartilhado entre projetos de portal"
+    }
+  },
+  "subtitle": "Branding, o que é compartilhado por padrão, funções e notificações para o portal do seu cliente."
+}

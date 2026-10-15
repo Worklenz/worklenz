@@ -204,11 +204,11 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             FROM client_users cu
             WHERE cu.client_id = c.id
           ) as last_login_at,
-          -- Every POC of the company (a company can have zero, one or several)
+          -- Every Client Admin of the company (a company can have zero, one or several)
           COALESCE((
             SELECT array_agg(cc.name::text ORDER BY cc.created_at, cc.id)
             FROM client_contacts cc
-            WHERE cc.client_id = c.id AND cc.role = 'poc'
+            WHERE cc.client_id = c.id AND cc.role = 'admin'
           ), ARRAY[]::text[]) as poc_names,
           (
             SELECT COUNT(*)::int FROM client_contacts cc WHERE cc.client_id = c.id

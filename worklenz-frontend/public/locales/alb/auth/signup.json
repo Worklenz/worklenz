@@ -35,5 +35,7 @@
     "lowercase": "Një shkronjë e vogël",
     "number": "Një numër",
     "special": "Një simbol"
-  }
+  },
+  "strongPasswordPlaceholder": "Futni një fjalëkalim të fortë",
+  "passwordValidationAltText": "Kërkesat e fjalëkalimit"
 }

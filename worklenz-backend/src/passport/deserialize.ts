@@ -3,6 +3,7 @@ import db from "../config/db";
 import {IDeserializeCallback} from "../interfaces/deserialize-callback";
 import {IPassportSession} from "../interfaces/passport-session";
 import {enrichSessionWithTemplateCreateAccess} from "../shared/template-create-access";
+import { getDeploymentMode, isSelfHostedDeployment } from "../shared/deployment-mode";
 
 async function setLastActive(id: string) {
   try {
@@ -57,6 +58,10 @@ export async function deserialize(user: { id: string | null }, done: IDeserializ
         }
 
         await enrichSessionWithTemplateCreateAccess(data.user as IPassportSession);
+        // This UI hint is derived server-side. Protected APIs independently
+        // enforce the same rule, so browser storage cannot elevate access.
+        data.user.business_features_enabled = isSelfHostedDeployment();
+        data.user.deployment_mode = getDeploymentMode();
 
         void setLastActive(data.user.id);
         void clearEmailInvitations(data.user.email, data.user.team_id);

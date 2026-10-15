@@ -141,5 +141,7 @@
     "totalBudgetManDays": "Kostoja totale e buxhetuar duke përfshirë koston e përllogaritur (Ditët Burrash × Çmimet ditore) + Kostot fikse.",
     "totalActual": "Kostoja totale aktuale duke përfshirë koston e bazuar në kohë + Kostot fikse.",
     "variance": "Varianca e kostos: Kostot totale të buxhetuara - Kostoja totale aktuale. Vlerat pozitive tregojnë nën-buxhet, vlerat negative tregojnë mbi-buxhet."
-  }
+  },
+  "import": "Importo",
+  "noTaskSelected": "Asnjë detyrë e zgjedhur"
 }

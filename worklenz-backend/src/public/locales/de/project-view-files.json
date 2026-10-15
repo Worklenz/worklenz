@@ -10,5 +10,9 @@
   "deleteConfirmationOk": "Ja",
   "deleteConfirmationCancel": "Abbrechen",
   "segmentedTooltip": "Demnächst verfügbar! Wechseln zwischen Listenansicht und Miniaturansicht.",
-  "emptyText": "Es gibt keine Anhänge in diesem Projekt."
+  "emptyText": "Es gibt keine Anhänge in diesem Projekt.",
+  "uploadExpired": "Die Upload-Sitzung ist abgelaufen. Bitte versuchen Sie es erneut.",
+  "fileTooLargePopoverBody": "Für Dateien, die größer als 25 MB sind, ist der Business-Plan erforderlich. Diese Datei ist {{sizeMb}} MB groß. Führen Sie ein Upgrade durch, um größere Dateien hochzuladen.",
+  "linksPaginationSummary": "{{start}}–{{end}} von {{count}} Links",
+  "fileTooLargePopoverTitle": "Datei zu groß"
 }

@@ -1,4 +1,6 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
+import '@ant-design/v5-patch-for-react-19';
+import { vi } from 'vitest';
 
 // Mock window.matchMedia (immune to vi.restoreAllMocks)
 const createMatchMedia = (query: string) => ({
@@ -47,4 +49,20 @@ Object.defineProperty(window, 'sessionStorage', {
   writable: true,
   configurable: true,
   value: sessionStorageMock,
+});
+
+// jsdom has no ResizeObserver (react-grid-layout and recharts both measure their container).
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+if (!('ResizeObserver' in globalThis)) {
+  Object.defineProperty(globalThis, 'ResizeObserver', { writable: true, configurable: true, value: ResizeObserverStub });
+}
+
+// ProseMirror needs a real layout engine, so tests type into a textarea stand-in for the rich-text editor.
+vi.mock('@/components/v2/RichTextEditor', async () => {
+  const { RichTextEditorStub } = await import('./richTextEditorStub');
+  return { RichTextEditor: RichTextEditorStub };
 });

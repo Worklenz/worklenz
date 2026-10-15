@@ -3,6 +3,7 @@ import {
   ISurvey,
   ISurveySubmissionRequest,
   ISurveyResponse,
+  ISurveyStatusResponse,
 } from '@/types/account-setup/survey.types';
 import apiClient from '../api-client';
 
@@ -33,12 +34,10 @@ export const surveyApiService = {
     return response.data;
   },
 
-  async checkAccountSetupSurveyStatus(): Promise<
-    IServerResponse<{ is_completed: boolean; completed_at?: string }>
-  > {
-    const response = await apiClient.get<
-      IServerResponse<{ is_completed: boolean; completed_at?: string }>
-    >(`${API_BASE_URL}/surveys/account-setup/status`);
+  async checkAccountSetupSurveyStatus(): Promise<IServerResponse<ISurveyStatusResponse>> {
+    const response = await apiClient.get<IServerResponse<ISurveyStatusResponse>>(
+      `${API_BASE_URL}/surveys/account-setup/status`
+    );
     return response.data;
   },
 };

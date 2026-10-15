@@ -19,5 +19,7 @@
   "updateJobTitleErrorMessage": "Aktualizacja stanowiska nie powiodła się!",
   "paginationTotal": "{{start}}-{{end}} z {{total}} elementów",
   "editTooltip": "Edytuj",
-  "deleteTooltip": "Usuń"
+  "deleteTooltip": "Usuń",
+  "fetchJobTitleErrorMessage": "Nie udało się pobrać nazwy stanowiska. Spróbuj ponownie.",
+  "pageTitle": "Zarządzaj tytułami stanowisk"
 }

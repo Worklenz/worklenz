@@ -224,7 +224,21 @@
       "labels": "Etiquetas",
       "addLabel": "+ Añadir una etiqueta",
       "keyLabelPlaceholder": "ej: MK"
-    }
+    },
+    "newColumn": "Nueva columna",
+    "projectNotFound": "Proyecto no encontrado",
+    "columnCreated": "Columna creada. Haz clic en el encabezado para editar.",
+    "columnCreationFailed": "Error al crear la columna",
+    "guestCannotAddColumn": "Los usuarios invitados no pueden agregar columnas personalizadas",
+    "columnNameRequired": "El nombre de la columna es obligatorio",
+    "columnNotFound": "Columna no encontrada",
+    "columnIdNotFound": "ID de columna no encontrado - actualice e intente de nuevo",
+    "columnUpdated": "Nombre de columna actualizado",
+    "updateFailed": "Error al actualizar el nombre de la columna",
+    "enterColumnName": "Ingrese el nombre de la columna",
+    "clickToEdit": "Haz clic para editar el nombre de la columna",
+    "columnSettings": "Configuración de columna",
+    "textPlaceholder": "Ingresar texto"
   },
   "indicators": {
     "tooltips": {
@@ -249,5 +263,16 @@
     "completeTaskDependencies": "Por favor, completa las dependencias de la tarea antes de continuar",
     "incompleteDependencies": "Dependencias incompletas!",
     "someDependenciesNotCompleted": "Algunas tareas no se actualizaron. Asegúrese de que todas las tareas dependientes estén completas antes de continuar."
-  }
+  },
+  "insertTaskText": "Insertar tarea",
+  "insertTaskAtBottomText": "Insertar tarea al final",
+  "untitledTaskName": "Tarea sin título",
+  "openTask": "Abrir tarea",
+  "descriptionPlaceholder": "Agregar descripción…",
+  "descriptionDisabledTooltip": "Solo lectura - no se puede editar",
+  "descriptionRichTooltip": "Contiene formato enriquecido — haz clic para editar en el panel de tareas",
+  "setDueTime": "Establecer hora de vencimiento",
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "changeStatus": "Cambiar estado: {{status}}"
 }

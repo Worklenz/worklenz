@@ -22,6 +22,7 @@ describe('audit log display helpers', () => {
   it('labels known categories and event types from the shared catalog', () => {
     expect(getCategoryLabel(t, 'access')).toBe('Access & Authentication');
     expect(getEventLabel(t, 'role_changed')).toBe('Role changed');
+    expect(getEventLabel(t, 'team_deleted')).toBe('Team deleted');
   });
 
   it('humanizes event types this build does not know yet', () => {

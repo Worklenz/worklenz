@@ -37,7 +37,8 @@
     "failedToRemoveDependency": "依赖删除失败。",
     "taskAddedToRoadmap": "任务已添加到路线图，持续5天。",
     "failedToAddTaskToRoadmap": "任务添加至路线图失败。",
-    "unscheduledTaskNotFound": "无法找到所选任务。"
+    "unscheduledTaskNotFound": "无法找到所选任务。",
+    "undatedTaskReadOnly": "没有日期的任务（访客只读）"
   },
   "common": {
     "noStart": "无开始",

@@ -77,6 +77,10 @@
   "selectDateError": "Sélectionnez une date",
   "selectStartTimeError": "Sélectionnez une heure de début",
   "selectEndTimeError": "Sélectionnez une heure de fin",
+  "projectStartDateError": "Le temps ne peut pas être enregistré avant la date de début du projet ({{date}})",
+  "projectStartDateHint": "Date de début du projet : {{date}}",
+  "projectNotStartedWarningTitle": "Le projet n'a pas encore commencé",
+  "projectNotStartedWarningDesc": "Ce projet doit débuter le {{date}}. Le temps ne peut pas être enregistré avant la date de début du projet.",
   "logTimeError": "Échec de l'enregistrement de l'heure",
   "groupByButtonLabel": "Regrouper par : {{groupBy}}",
   "groupByNone": "Aucun",
@@ -119,5 +123,9 @@
     "week_total": "Total de cette semaine",
     "week_billable": "Semaine facturable",
     "week_non_billable": "Semaine non facturable"
-  }
+  },
+  "minutesRangeError": "0 – 59",
+  "hoursLabel": "Horaires",
+  "hoursMinError": "Les heures doivent être égales ou supérieures à 0",
+  "minutesLabel": "Procès-verbal"
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { message } from '@/shared/antd-imports';
 import { buildTimeString } from '@/utils/timeUtils';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -6,7 +7,8 @@ import logger from '@/utils/errorLogger';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { updateTaskTimeTracking } from '@/features/tasks/tasks.slice';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { selectTaskById } from '@/features/task-management/task-management.slice';
+import { selectTaskById, updateTask } from '@/features/task-management/task-management.slice';
+import { store } from '@/app/store';
 
 export const useTaskTimer = (taskId: string, initialStartTime: number | null) => {
   const dispatch = useAppDispatch();
@@ -14,6 +16,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
   const DEFAULT_TIME_LEFT = buildTimeString(0, 0, 0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasInitialized = useRef(false); // Track if we've initialized
+  const isPendingStart = useRef(false);
 
   const activeTimers = useAppSelector(state => state.taskReducer.activeTimers);
   const task = useAppSelector(state => selectTaskById(state, taskId));
@@ -42,11 +45,32 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
     }
   }, [taskId]);
 
+  const clearReduxTimer = useCallback(
+    (targetTaskId: string) => {
+      dispatch(updateTaskTimeTracking({ taskId: targetTaskId, timeTracking: null }));
+      const currentTask = store.getState().taskManagement.entities[targetTaskId];
+      if (currentTask && currentTask.timeTracking?.activeTimer) {
+        dispatch(
+          updateTask({
+            ...currentTask,
+            timeTracking: {
+              ...currentTask.timeTracking,
+              activeTimer: undefined,
+            },
+            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+        );
+      }
+    },
+    [dispatch]
+  );
+
   const resetTimer = useCallback(() => {
     clearTimerInterval();
     setTimeString(DEFAULT_TIME_LEFT);
     setLocalStarted(false);
-  }, [clearTimerInterval, taskId]);
+  }, [clearTimerInterval]);
 
   // Timer management effect
   useEffect(() => {
@@ -69,7 +93,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
     return () => {
       clearTimerInterval();
     };
-  }, [reduxStartTime, started, localStarted, timerTick, clearTimerInterval, taskId]);
+  }, [reduxStartTime, started, localStarted, timerTick, clearTimerInterval]);
 
   // Initialize timer only on first mount if Redux is unset
   useEffect(() => {
@@ -84,13 +108,16 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
 
   const handleStartTimer = useCallback(() => {
     if (started || !taskId) return;
+
     try {
       const now = Date.now();
+      isPendingStart.current = true;
 
       dispatch(updateTaskTimeTracking({ taskId, timeTracking: now }));
       setLocalStarted(true);
       socket?.emit(SocketEvents.TASK_TIMER_START.toString(), JSON.stringify({ task_id: taskId }));
     } catch (error) {
+      isPendingStart.current = false;
       logger.error('Error starting timer:', error);
     }
   }, [taskId, started, socket, dispatch]);
@@ -98,32 +125,62 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
   const handleStopTimer = useCallback(() => {
     if (!taskId) return;
 
+    isPendingStart.current = false;
     resetTimer();
     socket?.emit(SocketEvents.TASK_TIMER_STOP.toString(), JSON.stringify({ task_id: taskId }));
-    dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
-  }, [taskId, socket, dispatch, resetTimer]);
+    clearReduxTimer(taskId);
+  }, [taskId, socket, resetTimer, clearReduxTimer]);
 
   // Socket event listeners
   useEffect(() => {
     if (!socket) return;
 
-    const handleTimerStop = (data: string) => {
+    const handleTimerStop = (data: any) => {
       try {
-        const { task_id } = typeof data === 'string' ? JSON.parse(data) : data;
-        if (task_id === taskId) {
+        if (!data) return;
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        const targetId = parsed?.task_id || parsed?.id;
+        if (targetId === taskId) {
+          isPendingStart.current = false;
           resetTimer();
-          dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
+          clearReduxTimer(taskId);
         }
       } catch (error) {
         logger.error('Error parsing timer stop event:', error);
       }
     };
 
-    const handleTimerStart = (data: string) => {
+    const handleTimerStart = (data: any) => {
       try {
-        const { task_id, start_time } = typeof data === 'string' ? JSON.parse(data) : data;
-        if (task_id === taskId && start_time) {
-          const time = typeof start_time === 'number' ? start_time : parseInt(start_time);
+        if (!data) {
+          // If start was rejected or failed on the backend, ensure local timer rolls back
+          if (isPendingStart.current) {
+            isPendingStart.current = false;
+            resetTimer();
+            clearReduxTimer(taskId);
+          }
+          return;
+        }
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        const targetId = parsed?.task_id || parsed?.id;
+
+        if (parsed?.error || parsed?.message) {
+          if (!targetId || targetId === taskId) {
+            isPendingStart.current = false;
+            resetTimer();
+            clearReduxTimer(taskId);
+            message.warning({
+              content: parsed.error || parsed.message,
+              key: `timer-error-${taskId}`,
+            });
+            return;
+          }
+        }
+
+        const startTimeVal = parsed?.start_time || parsed?.timer_start_time;
+        if (targetId === taskId && startTimeVal) {
+          isPendingStart.current = false;
+          const time = typeof startTimeVal === 'number' ? startTimeVal : parseInt(startTimeVal);
 
           dispatch(updateTaskTimeTracking({ taskId, timeTracking: time }));
           setLocalStarted(true);
@@ -133,14 +190,37 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
       }
     };
 
+    const handleTimerError = (data: any) => {
+      try {
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        const targetId = parsed?.task_id || parsed?.id;
+        if (!targetId || targetId === taskId) {
+          isPendingStart.current = false;
+          resetTimer();
+          clearReduxTimer(taskId);
+          const warnMsg = parsed?.message || parsed?.error;
+          if (warnMsg) {
+            message.warning({
+              content: warnMsg,
+              key: `timer-error-${taskId}`,
+            });
+          }
+        }
+      } catch (err) {
+        logger.error('Error handling timer error event:', err);
+      }
+    };
+
     socket.on(SocketEvents.TASK_TIMER_STOP.toString(), handleTimerStop);
     socket.on(SocketEvents.TASK_TIMER_START.toString(), handleTimerStart);
+    socket.on('timer-error', handleTimerError);
 
     return () => {
       socket.off(SocketEvents.TASK_TIMER_STOP.toString(), handleTimerStop);
       socket.off(SocketEvents.TASK_TIMER_START.toString(), handleTimerStart);
+      socket.off('timer-error', handleTimerError);
     };
-  }, [socket, taskId, dispatch, resetTimer]);
+  }, [socket, taskId, dispatch, resetTimer, clearReduxTimer]);
 
   return {
     started,

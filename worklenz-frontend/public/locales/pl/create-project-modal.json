@@ -43,5 +43,6 @@
   "csvImportSelected": "Wybrano import zadania CSV",
   "csvImportHint": "Mapuj pola CSV i zadania importu po skonfigurowaniu tego projektu.",
   "csvImportFooterHint": "Zmapujesz pola CSV przed utworzeniem tego projektu.",
-  "continueToCsvImport": "Kontynuuj importowanie pliku CSV"
+  "continueToCsvImport": "Kontynuuj importowanie pliku CSV",
+  "templateRequired": "Wybierz szablon, aby utworzyć projekt."
 }

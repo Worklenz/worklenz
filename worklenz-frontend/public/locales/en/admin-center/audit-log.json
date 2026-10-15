@@ -2,12 +2,10 @@
   "pageTitle": "Audit Log",
   "footnoteTitle": "How this log works —",
   "footnoteBody": "Every row here is append-only: there's no edit or delete affordance anywhere in this UI, only the retention window above, which ages entries out automatically. This is a separate log from the per-task Activity Log in each task drawer — that one tracks task edits for collaborators; this one tracks admin, permission, and access events for compliance. The two are never merged.",
-
   "categoryAccess": "Access & Authentication",
   "categoryUser": "User & Role Management",
   "categoryPermission": "Permission & Settings Changes",
   "categoryLifecycle": "Project & Workspace Lifecycle",
-
   "eventLoginSuccess": "Login succeeded",
   "eventLoginFailed": "Login failed",
   "eventLogout": "Logged out",
@@ -26,6 +24,7 @@
   "eventProjectDeleted": "Project deleted",
   "eventProjectRestored": "Project restored",
   "eventWorkspaceRenamed": "Workspace renamed",
+  "eventTeamDeleted": "Team deleted",
   "eventWorkspaceDeleted": "Workspace deleted",
   "eventMemberUpdated": "Member details changed",
   "eventMemberActivated": "Member activated",
@@ -38,12 +37,10 @@
   "eventProjectMemberRemoved": "Removed from project",
   "eventProjectSettingChanged": "Project setting changed",
   "eventMemberPermissionChanged": "Member permission changed",
-
   "statEvents": "Events ({{range}})",
   "statFailedLogins": "Failed logins",
   "statPermissionChanges": "Permission changes",
   "statRetention": "Retention window",
-
   "searchPlaceholder": "Search actor or event…",
   "actorFilterLabel": "Actors",
   "actorSearchPlaceholder": "Search workspace users",
@@ -55,7 +52,6 @@
   "chipPermission": "Permissions",
   "chipLifecycle": "Lifecycle",
   "clearFilters": "Clear filters",
-
   "columnTimestamp": "Timestamp",
   "columnActor": "Actor",
   "columnCategory": "Category",
@@ -77,7 +73,6 @@
   "emptyFilteredHint": "Try a wider date range or clear some filters.",
   "loadError": "Couldn't load the audit log",
   "retry": "Retry",
-
   "exportCsv": "Export to CSV",
   "exportDownloaded": "Audit log exported to CSV.",
   "exportQueued": "This export is large, so it's being prepared in the background. The download link will appear here.",
@@ -93,7 +88,6 @@
   "exportFailedTitle": "The export couldn't be completed.",
   "exportTryAgain": "Try again",
   "exportExpired": "This export has expired. Start a new export to get a fresh file.",
-
   "retentionLabel": "Retention:",
   "retentionMonths_one": "{{count}} month",
   "retentionMonths_other": "{{count}} months",

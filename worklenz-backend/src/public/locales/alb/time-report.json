@@ -2,43 +2,44 @@
   "includeArchivedProjects": "Përfshij Projektet e Arkivuara",
   "export": "Eksporto",
   "timeSheet": "Fletë Kohore",
-
   "searchByName": "Kërko sipas emrit",
   "selectAll": "Zgjidh të Gjitha",
   "teams": "Ekipet",
-
   "searchByProject": "Kërko sipas emrit të projektit",
   "projects": "Projektet",
-
   "searchByCategory": "Kërko sipas emrit të kategorisë",
   "categories": "Kategoritë",
-
   "billable": "Fakturueshme",
   "nonBillable": "Jo Fakturueshme",
-
   "total": "Total",
-
   "projectsTimeSheet": "Fletë Kohore e Projekteve",
-
   "loggedTime": "Koha e Regjistruar(orë)",
-
   "exportToExcel": "Eksporto në Excel",
   "logged": "regjistruar",
   "for": "për",
-
   "membersTimeSheet": "Fletë Kohore e Anëtarëve",
   "member": "Anëtar",
-
   "estimatedVsActual": "Vlerësuar vs Aktual",
   "workingDays": "Ditë Pune",
   "manDays": "Ditë Njeri",
   "days": "Ditë",
   "estimatedDays": "Ditë të Vlerësuara",
   "actualDays": "Ditë Aktuale",
-
   "noCategories": "Nuk u gjetën kategori",
   "noCategory": "Pa Kategori",
   "noProjects": "Nuk u gjetën projekte",
   "noTeams": "Nuk u gjetën ekipe",
-  "noData": "Nuk u gjetën të dhëna"
+  "noData": "Nuk u gjetën të dhëna",
+  "practiceFilterLabel": "Praktika",
+  "holidaysExcluded": "Pushimet përjashtohen",
+  "noPracticeOption": "Asnjë praktikë",
+  "noDepartments": "Nuk u gjet asnjë departament",
+  "departmentFilterLabel": "Departamenti",
+  "searchByPractice": "Praktika e kërkimit",
+  "noDepartmentOption": "Asnjë departament",
+  "noDataMatchingFilters": "Nuk ka të dhëna që përputhen me filtrat e zgjedhur",
+  "noPractices": "Nuk u gjetën praktika",
+  "reportSettings": "Cilësimet e raportit",
+  "Members Time Sheet": "Fleta e kohës së anëtarëve",
+  "searchByDepartment": "Departamenti i kërkimit"
 }

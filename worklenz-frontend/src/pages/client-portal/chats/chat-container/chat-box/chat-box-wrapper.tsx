@@ -1,4 +1,4 @@
-import { Card, Flex, Typography, Spin, Button } from '@/shared/antd-imports';
+import { Card, Flex, Typography, Button } from '@/shared/antd-imports';
 import React, { ReactNode, useState } from 'react';
 import ChatList from '../chat-list';
 import ChatBox from './chat-box';
@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { MessageOutlined, ReloadOutlined, InboxOutlined } from '@ant-design/icons';
 import NewChatModal from '@/components/client-portal/NewChatModal';
 import { themeWiseColor } from '@utils/themeWiseColor';
+import { PortalLoader } from '@/components/client-portal/v2';
 
 export type TempChatsType = {
   id: string;
@@ -144,7 +145,7 @@ const ChatBoxWrapper = ({
       >
         <Flex align="center" justify="center" style={{ height: '100%' }}>
           <Flex vertical align="center" gap={16}>
-            <Spin size="large" />
+            <PortalLoader />
             <Typography.Text type="secondary">{t('loadingChats')}</Typography.Text>
           </Flex>
         </Flex>

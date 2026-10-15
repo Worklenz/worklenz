@@ -108,7 +108,8 @@
       "high": "Surutilisé",
       "watch": "Regarder",
       "ok": "D'accord"
-    }
+    },
+    "overallocatedCount": "{{count}} membres"
   },
   "profitability": {
     "pageTitle": "Rentabilité",

@@ -12,5 +12,12 @@
   "confirmPasswordRequired": "Veuillez confirmer votre nouveau mot de passe",
   "passwordMismatch": "Les deux mots de passe ne correspondent pas",
   "successTitle": "Réinitialisation du mot de passe réussie",
-  "successMessage": "Votre mot de passe a été mis à jour. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe."
+  "successMessage": "Votre mot de passe a été mis à jour. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.",
+  "passwordChecklist": {
+    "minLength": "Au moins 8 caractères",
+    "uppercase": "Une lettre majuscule",
+    "lowercase": "Une lettre minuscule",
+    "number": "Un numéro",
+    "special": "Un personnage spécial"
+  }
 }

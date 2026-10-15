@@ -58,7 +58,7 @@
     "email": "E-Mail-Adresse",
     "emailPlaceholder": "jane@company.com",
     "jobTitle": "Berufsbezeichnung",
-    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "jobTitlePlaceholder": "z.B. Marketingmanager",
     "phone": "Telefon (optional)",
     "phonePlaceholder": "+1 415 555 0142"
   },
@@ -93,7 +93,8 @@
     "templateNoProjects": "{{company}} hat noch keine Projekte, daher gibt es nichts, auf das eine Vorlage angewendet werden könnte.",
     "templateTooManyProjects": "{{company}} hat mehr Projekte, als hier aufgelistet werden können. Weisen Sie anschließend den Zugriff pro Projekt zu.",
     "templateApplied": "Gewährt {{template}} Zugriff auf alle {{count}} der aktuellen Projekte von {{company}}. Anschließend können Sie über das Zeilenmenü eine Feinabstimmung pro Projekt vornehmen.",
-    "templateHint": "Wählen Sie eine Vorlage aus, um Zugriff auf jedes aktuelle Projekt auf einmal zu gewähren, oder lassen Sie es unverändert und weisen Sie Projekte anschließend einzeln zu."
+    "templateHint": "Wählen Sie eine Vorlage aus, um Zugriff auf jedes aktuelle Projekt auf einmal zu gewähren, oder lassen Sie es unverändert und weisen Sie Projekte anschließend einzeln zu.",
+    "existingUsers": "Bestehende Benutzer"
   },
   "existing": {
     "helper": "Kontakte ohne aktiven Portalzugang.",

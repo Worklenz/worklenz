@@ -9,7 +9,9 @@ export function resolveNavState(
   surface: NavSurface,
   prefs: NavPreferencesState,
   isGuestUser?: boolean,
-  isOwnerOrAdmin?: boolean
+  isOwnerOrAdmin?: boolean,
+  // The customize dialog lists hidden items too, so it can show them again.
+  includeHidden = false
 ): ResolvedNavState {
   const savedOrderForSurface = prefs.order[surface.key] || {};
 
@@ -42,12 +44,26 @@ export function resolveNavState(
     return { ...group, items: ordered };
   });
 
+  // Hidden items are dropped last, so they keep their place in the saved order. A saved list that
+  // would hide everything is ignored rather than leaving an empty rail.
+  const hiddenKeys = new Set(includeHidden ? [] : (prefs.hidden?.[surface.key] ?? []));
+  const visibleGroups = groups.map(group => ({
+    ...group,
+    items: group.items.filter(item => !hiddenKeys.has(item.key)),
+  }));
+  const shownGroups = visibleGroups.some(group => group.items.length > 0) ? visibleGroups : groups;
+  const shownKeys = shownGroups.flatMap(group => group.items.map(item => item.key));
+
   const pinned = prefs.pinnedDefaults[surface.key];
-  const pinnedStillExists = !!pinned && groups.some(group => group.items.some(item => item.key === pinned));
+  const pinnedStillExists = !!pinned && shownKeys.includes(pinned);
+  // The surface's own default page may itself be hidden; open the first item still shown instead.
+  const fallbackKey = shownKeys.includes(surface.defaultItemKey)
+    ? surface.defaultItemKey
+    : (shownKeys[0] ?? surface.defaultItemKey);
 
   return {
-    groups,
-    activeDefaultKey: pinnedStillExists ? (pinned as string) : surface.defaultItemKey,
+    groups: shownGroups,
+    activeDefaultKey: pinnedStillExists ? (pinned as string) : fallbackKey,
     collapsed: prefs.collapsed,
   };
 }

@@ -10,5 +10,8 @@
   "refreshButtonTooltip": "Atualizar membros",
   "memberCount": "Membro",
   "membersCountPlural": "Membros",
-  "emptyText": "Não há anexos no projeto."
+  "emptyText": "Não há anexos no projeto.",
+  "removeFromProject": "Remover do projeto",
+  "assignFailedMessage": "Não foi possível atualizar os destinatários da tarefa. Por favor, tente novamente.",
+  "assignFailedTitle": "Falha na tarefa"
 }

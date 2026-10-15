@@ -141,5 +141,7 @@
     "totalBudgetManDays": "Coût total budgétisé, y compris le coût estimé (jours-homme × tarifs journaliers) + coûts fixes.",
     "totalActual": "Coût réel total, y compris le coût basé sur le temps + les coûts fixes.",
     "variance": "Écart de coût : Coûts totaux budgétés - Coût total réel. Les valeurs positives indiquent un sous-budget, les valeurs négatives indiquent un dépassement de budget."
-  }
+  },
+  "import": "Importer",
+  "noTaskSelected": "Aucune tâche sélectionnée"
 }

@@ -75,7 +75,7 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({ open, onClose, proj
         </div>
       }
       className={`${isDarkMode ? 'dark-modal' : ''} phase-manage-modal`}
-      destroyOnClose
+      destroyOnHidden
     >
       {open && <ManagePhaseContent projectId={projectId} enableDates={enableDates} />}
     </Modal>

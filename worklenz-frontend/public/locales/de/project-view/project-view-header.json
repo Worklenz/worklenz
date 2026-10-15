@@ -31,5 +31,8 @@
   "projectStatusTooltip": "Projektstatus",
   "projectDatesInfo": "Projekt-Zeitleisten-Informationen",
   "projectCategoryTooltip": "Projektkategorie",
-  "defaultTaskName": "Unbenannte Aufgabe"
+  "defaultTaskName": "Unbenannte Aufgabe",
+  "softwareProjectTooltip": "Softwareprojekt – Probleme, Rückstand und Sprints",
+  "softwareProjectTag": "Software",
+  "settingsDisabledForGuest": "Die Projekteinstellungen sind für Gastbenutzer nicht zugänglich"
 }

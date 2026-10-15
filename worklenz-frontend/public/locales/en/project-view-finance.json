@@ -14,7 +14,6 @@
   "nonBillableOnlyText": "Non-Billable Only",
   "allTasksText": "All Tasks",
   "projectBudgetOverviewText": "Project Budget Overview",
-
   "taskColumn": "Task",
   "membersColumn": "Members",
   "hoursColumn": "Estimated Hours",
@@ -30,11 +29,9 @@
   "varianceColumn": "Variance",
   "totalText": "Total",
   "noTasksFound": "No tasks found",
-
   "addRoleButton": "+ Add Role",
   "ratecardImportantNotice": "* This rate card is generated based on the company's standard job titles and rates. However, you have the flexibility to modify it according to the project. These changes will not impact the organization's standard job titles and rates.",
   "saveButton": "Save",
-
   "jobTitleColumn": "Job Title",
   "ratePerHourColumn": "Rate per hour",
   "ratePerManDayColumn": "Rate per man day",
@@ -51,10 +48,8 @@
   "yes": "Yes",
   "no": "No",
   "alreadyImportedRateCardMessage": "A rate card has already been imported. Clear all imported rate cards to add a new one.",
-
   "noCurrenciesFound": "No currencies found",
   "unknownProject": "Unknown Project",
-
   "messages": {
     "projectIdNotFound": "Project ID not found",
     "financeDataExportedSuccessfully": "Finance data exported successfully",
@@ -67,7 +62,6 @@
     "projectBudgetUpdatedSuccessfully": "Project budget updated successfully",
     "failedToUpdateProjectBudget": "Failed to update project budget"
   },
-
   "alerts": {
     "businessPlanRequired": {
       "message": "Business Plan Required",
@@ -79,12 +73,10 @@
       "ratecardDescription": "You can view rate card data but cannot edit rates or manage member assignments. Only project managers, team admins, and team owners can make changes."
     }
   },
-
   "tooltips": {
     "availableOnlyOnBusinessPlan": "Available only on Business plan",
     "budgetCalculationSettings": "Budget & Calculation Settings"
   },
-
   "budgetOverviewTooltips": {
     "manualBudget": "Manual project budget amount set by project manager",
     "totalActualCost": "Total actual cost including fixed costs",
@@ -95,7 +87,6 @@
     "timeBasedCost": "Actual cost from time tracking (excluding fixed costs)",
     "remainingBudget": "Remaining budget amount"
   },
-
   "budgetModal": {
     "title": "Edit Project Budget",
     "description": "Set a manual budget for this project. This budget will be used for all financial calculations and should include both time-based costs and fixed costs.",
@@ -103,7 +94,6 @@
     "saveButton": "Save",
     "cancelButton": "Cancel"
   },
-
   "budgetStatistics": {
     "manualBudget": "Manual Budget",
     "totalActualCost": "Total Actual Cost",
@@ -115,7 +105,6 @@
     "remainingBudget": "Remaining Budget",
     "noManualBudgetSet": "(No Manual Budget Set)"
   },
-
   "budgetSettingsDrawer": {
     "title": "Project Budget Settings",
     "budgetConfiguration": "Budget Configuration",
@@ -138,7 +127,6 @@
     "budgetSettingsUpdated": "Budget settings updated successfully",
     "budgetSettingsUpdateFailed": "Failed to update budget settings"
   },
-
   "columnTooltips": {
     "hours": "Total estimated hours for all tasks. Calculated from task time estimates. Display format: Xh Ym.",
     "manDays": "Total estimated man days for all tasks. Based on {{hoursPerDay}} hours per working day.",
@@ -153,5 +141,7 @@
     "totalBudgetManDays": "Total budgeted cost including estimated cost (Man Days × Daily Rates) + Fixed Costs.",
     "totalActual": "Total actual cost including time-based cost + Fixed Costs.",
     "variance": "Cost variance: Total Budgeted Costs - Total Actual Cost. Positive values indicate under-budget, negative values indicate over-budget."
-  }
+  },
+  "import": "Import",
+  "noTaskSelected": "No task selected"
 }

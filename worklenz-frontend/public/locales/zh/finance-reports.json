@@ -108,7 +108,8 @@
       "high": "超额分配",
       "watch": "需关注",
       "ok": "OK"
-    }
+    },
+    "overallocatedCount": "{{count}} 名成员"
   },
   "profitability": {
     "pageTitle": "盈利能力",

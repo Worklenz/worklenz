@@ -1125,17 +1125,22 @@ export const useTaskSocketHandlers = () => {
   const handleTimerStart = useCallback(
     (data: string) => {
       try {
-        const { task_id, start_time } = typeof data === 'string' ? JSON.parse(data) : data;
-        if (!task_id) return;
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        if (!parsed || parsed.error || parsed.message) return;
 
-        const timerTimestamp = start_time
-          ? typeof start_time === 'number'
-            ? start_time
-            : parseInt(start_time)
-          : Date.now();
+        const targetId = parsed.task_id || parsed.id;
+        const rawStartTime = parsed.start_time || parsed.timer_start_time;
+        if (!targetId || !rawStartTime) return;
+
+        const timerTimestamp =
+          typeof rawStartTime === 'number'
+            ? rawStartTime
+            : parseInt(rawStartTime, 10);
+
+        if (isNaN(timerTimestamp) || timerTimestamp <= 0) return;
 
         // Update the task-management slice to include timer state
-        const currentTask = store.getState().taskManagement.entities[task_id];
+        const currentTask = store.getState().taskManagement.entities[targetId];
         if (currentTask) {
           const updatedTask: Task = {
             ...currentTask,
@@ -1150,7 +1155,7 @@ export const useTaskSocketHandlers = () => {
         }
 
         // Also update the tasks slice activeTimers to keep both slices in sync
-        dispatch(updateTaskTimeTracking({ taskId: task_id, timeTracking: timerTimestamp }));
+        dispatch(updateTaskTimeTracking({ taskId: targetId, timeTracking: timerTimestamp }));
       } catch (error) {
         logger.error('Error handling timer start event:', error);
       }
@@ -1162,11 +1167,13 @@ export const useTaskSocketHandlers = () => {
   const handleTimerStop = useCallback(
     (data: string) => {
       try {
-        const { task_id } = typeof data === 'string' ? JSON.parse(data) : data;
-        if (!task_id) return;
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        if (!parsed) return;
+        const targetId = parsed.task_id || parsed.id;
+        if (!targetId) return;
 
         // Update the task-management slice to remove timer state
-        const currentTask = store.getState().taskManagement.entities[task_id];
+        const currentTask = store.getState().taskManagement.entities[targetId];
         if (currentTask) {
           const updatedTask: Task = {
             ...currentTask,
@@ -1181,7 +1188,7 @@ export const useTaskSocketHandlers = () => {
         }
 
         // Also update the tasks slice activeTimers to keep both slices in sync
-        dispatch(updateTaskTimeTracking({ taskId: task_id, timeTracking: null }));
+        dispatch(updateTaskTimeTracking({ taskId: targetId, timeTracking: null }));
       } catch (error) {
         logger.error('Error handling timer stop event:', error);
       }

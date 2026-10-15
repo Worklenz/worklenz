@@ -177,7 +177,7 @@ export const ProjectViewBacklog = () => {
   };
 
   const backlogActions = (
-    <Flex align="center" gap={8} wrap="wrap" className="mb-2.5">
+    <Flex align="center" gap={8} wrap="wrap">
       {filteredEpic && (
         <Button
           size="small"
@@ -194,7 +194,7 @@ export const ProjectViewBacklog = () => {
           {t('epicFilterChip', { defaultValue: 'Epic: {{name}}', name: filteredEpic.name })}
         </Button>
       )}
-      <Flex gap={8} className="ml-auto">
+      <Flex gap={8}>
         {canManageSprints && (
           <Button
             size="small"
@@ -244,7 +244,9 @@ export const ProjectViewBacklog = () => {
 
       {error ? (
         <>
-          {backlogActions}
+          <Flex justify="end" className="mb-2.5">
+            {backlogActions}
+          </Flex>
           <Flex vertical align="center" justify="center" style={{ padding: 48 }}>
             <Empty
               description={t('backlogLoadError', {
@@ -254,7 +256,7 @@ export const ProjectViewBacklog = () => {
           </Flex>
         </>
       ) : (
-        <TaskListV2 mode="backlog" belowToolbar={backlogActions} />
+        <TaskListV2 mode="backlog" toolbarActions={backlogActions} />
       )}
     </div>
   );

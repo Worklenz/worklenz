@@ -8,7 +8,7 @@
   "jobTitleColumn": "Titulli i punës",
   "jobTitleEmpty": "I pa caktuar",
   "teamAccessEmpty": "Qasje vizitori",
-  "teamAccessValue": "Qasje vizitori",
+  "teamAccessValue": "Qasje {{access}}",
   "teamAccessColumn": "Qasja në Ekip",
   "accessLevels": {
     "GUEST": "Mysafirit",

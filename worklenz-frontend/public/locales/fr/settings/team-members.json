@@ -234,5 +234,11 @@
   "guestInviteFailed": "Échec de l'invitation d'invités : {{emails}}",
   "guestInviteError": "Une erreur s'est produite lors de l'invitation d'invités",
   "partialSuccess": "{{count}} invité(s) invité(s) avec succès. Échec : {{emails}}",
-  "selectProjectFirst": "Sélectionnez d'abord un projet"
+  "selectProjectFirst": "Sélectionnez d'abord un projet",
+  "inviteLinkGeneratedCopyFailed": "Lien d'invitation généré, mais n'a pas pu être copié automatiquement. Veuillez le copier manuellement.",
+  "noManagedProjectsFound": "Aucun projet pour lequel vous êtes chef de projet",
+  "projectInvite_guestLimitExceeded": "Limite d'invités dépassée pour ce plan. Veuillez mettre à niveau pour ajouter plus d'invités.",
+  "license-expired-subtitle": "Votre abonnement Worklenz est terminé. Veuillez renouveler votre abonnement pour continuer à profiter de toutes les fonctionnalités.",
+  "Failed to fetch job titles": "Échec de la récupération des titres de poste",
+  "assign_team_lead": "Désigner un chef d'équipe"
 }

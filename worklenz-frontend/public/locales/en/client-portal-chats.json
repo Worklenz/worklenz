@@ -75,5 +75,10 @@
   "convertToTaskError": "Failed to create task",
   "convertToTaskSuccess": "Task created from message",
   "noClientProject": "This client has no assigned project",
-  "createTask": "Create task"
+  "createTask": "Create task",
+  "errorSendingMessage": "Failed to send message",
+  "comingSoon": "Reactions are available in project chat",
+  "actions": {
+    "reply": "Reply"
+  }
 }

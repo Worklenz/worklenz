@@ -267,7 +267,7 @@ const NotifyMemberSelector = ({ task, t, disabled = false }: NotifyMemberSelecto
       <Dropdown
         overlayClassName="custom-dropdown"
         trigger={disabled ? [] : ['click']}
-        dropdownRender={() => membersDropdownContent}
+        popupRender={() => membersDropdownContent}
         onOpenChange={disabled ? undefined : handleMembersDropdownOpen}
       >
         <Button

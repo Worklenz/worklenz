@@ -47,5 +47,6 @@
     "loadChannelsFailed": "加载频道失败",
     "refreshChannelsFailed": "刷新频道失败",
     "addIntegrationFailed": "添加集成失败"
-  }
+  },
+  "businessPlan": "商业"
 }

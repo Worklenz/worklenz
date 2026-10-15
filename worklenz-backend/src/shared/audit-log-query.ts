@@ -11,6 +11,7 @@
 import moment from "moment-timezone";
 
 import { AUDIT_EVENT_TYPE, isValidAuditEventCategory } from "./audit-log-constants";
+import { isValidUuid } from "./validation-helpers";
 
 export interface AuditLogFilters {
   startDate: string;
@@ -33,6 +34,13 @@ const splitCsv = (value: unknown): string[] =>
     .map((v) => v.trim())
     .filter(Boolean);
 
+/** Returns a strict ISO calendar date, or an empty string so malformed dates never reach a
+ * Postgres DATE cast in the shared list/summary/export query path. */
+const parseAuditLogDate = (value: unknown): string => {
+  const date = typeof value === "string" ? value.trim() : "";
+  return moment(date, "YYYY-MM-DD", true).isValid() ? date : "";
+};
+
 /** Returns the zone name when it is a known IANA zone, otherwise "" - an unknown name would
  * make Postgres reject the whole query. */
 export function resolveAuditLogTimezone(timezone: unknown): string {
@@ -44,11 +52,13 @@ export function resolveAuditLogTimezone(timezone: unknown): string {
 /** Parses + validates raw query params into the filter shape every call site shares. */
 export function parseAuditLogFilters(query: Record<string, unknown>, timezone?: string | null): AuditLogFilters {
   return {
-    startDate: (query.start_date as string || "").trim(),
-    endDate: (query.end_date as string || "").trim(),
+    startDate: parseAuditLogDate(query.start_date),
+    endDate: parseAuditLogDate(query.end_date),
     categories: splitCsv(query.category).filter((c) => isValidAuditEventCategory(c)),
-    actorUserIds: splitCsv(query.actor_user_id),
-    search: (query.search as string || "").trim(),
+    // The WHERE clause casts this list to UUID[], so discard malformed values rather than
+    // letting an invalid query parameter make the list/export endpoint fail in Postgres.
+    actorUserIds: splitCsv(query.actor_user_id).filter(isValidUuid),
+    search: typeof query.search === "string" ? query.search.trim() : "",
     timezone: resolveAuditLogTimezone(timezone),
   };
 }

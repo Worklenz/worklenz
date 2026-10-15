@@ -2,7 +2,6 @@
   "searchButton": "Search",
   "resetButton": "Reset",
   "searchInputPlaceholder": "Search by name",
-
   "sortText": "Sort",
   "statusText": "Status",
   "phaseText": "Phase",
@@ -40,18 +39,14 @@
   "reporterText": "Reporter",
   "dueTimeText": "Due Time",
   "duetimeText": "Due Time",
-
   "lowText": "Low",
   "mediumText": "Medium",
   "highText": "High",
-
   "createStatusButtonTooltip": "Status settings",
   "configPhaseButtonTooltip": "Phase settings",
   "noLabelsFound": "No labels found",
-
   "addStatusButton": "Add Status",
   "addPhaseButton": "Add Phase",
-
   "createStatus": "Create Status",
   "name": "Name",
   "category": "Category",
@@ -59,7 +54,6 @@
   "pleaseEnterAName": "Please enter a name",
   "pleaseSelectACategory": "Please select a category",
   "create": "Create",
-
   "searchTasks": "Search tasks...",
   "searchWork": "Search work…",
   "searchShortcutHint": "Press / to search",
@@ -116,5 +110,28 @@
   "currentSort": "Current sort: {{field}} {{order}}",
   "apply": "Apply",
   "showingYourTasksOnly": "Showing your tasks only",
-  "showingYourTasksOnlyTooltip": "This project only shows tasks assigned to you. Counts and progress reflect that subset."
+  "showingYourTasksOnlyTooltip": "This project only shows tasks assigned to you. Counts and progress reflect that subset.",
+  "filters": "Filters",
+  "addFilter": "Add a filter",
+  "allFiltersApplied": "All filter options applied",
+  "removeFilter": "Remove filter",
+  "selectAll": "Select all",
+  "clear": "Clear",
+  "noFiltersAvailable": "No filters available",
+  "columnConfigSaved": "Column configuration saved successfully",
+  "columnCategoryBasic": "Basic Information",
+  "columnCategoryTime": "Time & Estimation",
+  "columnCategoryDates": "Dates",
+  "columnCategoryOther": "Other",
+  "configureShowFieldsTitle": "Configure Show Fields",
+  "cancelText": "Cancel",
+  "resetText": "Reset",
+  "saveConfigurationText": "Save Configuration",
+  "configureShowFieldsDescription": "Configure which columns appear in the \"Show Fields\" dropdown and their order. Use the up/down arrows to reorder columns.",
+  "orderLabel": "Order",
+  "configureFieldsButton": "Configure Fields",
+  "groupBySelected": "{{label}}: {{value}}",
+  "selectedCount": "{{label}}: {{count}} selected",
+  "searchBacklog": "Search backlog issues...",
+  "more": "More"
 }

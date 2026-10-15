@@ -1,0 +1,337 @@
+{
+  "actions": {
+    "createLinkFailed": "Nie można utworzyć linku do logowania.",
+    "deactivateFailed": "Nie można dezaktywować użytkownika.",
+    "deactivated": "{{name}} został dezaktywowany. Dostęp do portalu i API zostaje natychmiast cofnięty.",
+    "messageNoProjects": "{{name}} nie ma jeszcze żadnych projektów. Najpierw przydziel projekt, a potem rozpocznij dyskusję.",
+    "reactivateFailed": "Nie można było ponownie aktywować użytkownika.",
+    "reactivated": "{{name}} może zalogować się ponownie. Przywrócono ich poprzedni stan.",
+    "removeFailed": "Nie można usunąć użytkownika.",
+    "removed": "{{name}} został usunięty z portalu.",
+    "resendFailed": "Nie można ponownie wysłać zaproszenia.",
+    "resent": "Zaproszenie wysłane ponownie do {{email}}. Link jest ważny przez 7 dni."
+  },
+  "assign": {
+    "description": "Użytkownik widzi tylko projekty przypisane tutaj, mimo że należą one do {{organization}}. To, co mogą zrobić w każdym projekcie, zależy od ich roli:",
+    "failed": "Nie udało się zaktualizować dostępu do projektu.",
+    "loadFailed": "Nie udało się wczytać projektów.",
+    "noProjects": "{{organization}} nie ma jeszcze żadnych projektów.",
+    "portalOff": "Portal Klienta jest wyłączony dla tego projektu. Najpierw to włącz.",
+    "save": "Zapisz",
+    "saved": "Zaktualizowano dostęp do projektów dla {{name}}.",
+    "savedWithRemoval": "Zaktualizowano dostęp do projektu dla {{name}}. Usunięty dostęp obowiązuje natychmiast.",
+    "title": "Przypisz projekty · {{name}}"
+  },
+  "deactivate": {
+    "body": "{{name}} natychmiast traci dostęp. Jeśli sesja jest otwarta, kolejne żądanie zakończy się niepowodzeniem i nastąpi wylogowanie. Możesz je później ponownie aktywować, a ich poprzedni status zostanie przywrócony.",
+    "confirm": "Dezaktywuj",
+    "title": "Dezaktywować tego użytkownika klienta?"
+  },
+  "edit": {
+    "failed": "Nie można zaktualizować użytkownika.",
+    "roleChanged": "{{name}} jest teraz {{role}}. Ma to zastosowanie przy kolejnym żądaniu, a nie tylko po ponownym zalogowaniu.",
+    "roleNotice": "Zmiany ról mają wpływ na kolejną kontrolę autoryzacji użytkownika, a nie dopiero po ponownym zalogowaniu.",
+    "save": "Zapisz",
+    "title": "Edytuj użytkownika · {{organization}}",
+    "updated": "{{name}} zaktualizowano."
+  },
+  "fields": {
+    "email": "E-mail (adres logowania)",
+    "emailInvalid": "Wprowadź prawidłowy adres e-mail.",
+    "emailRequired": "Wpisz adres e-mail użytkownika.",
+    "jobTitle": "Tytuł pracy",
+    "name": "Pełne imię i nazwisko",
+    "nameRequired": "Wprowadź nazwę użytkownika.",
+    "phone": "Telefon (opcjonalnie)",
+    "role": "Role"
+  },
+  "lastAdmin": {
+    "confirm": "Kontynuuj mimo to",
+    "title": "To jest ostatni administrator klienta"
+  },
+  "menu": {
+    "assign": "Przypisz projekty",
+    "createLink": "Utwórz link do logowania",
+    "deactivate": "Dezaktywuj użytkownika",
+    "edit": "Edytuj użytkownika i rolę",
+    "message": "Message",
+    "reactivate": "Aktywuj ponownie użytkownika",
+    "remove": "Usuń użytkownika",
+    "resend": "Wyślij ponownie zaproszenie",
+    "resendShort": "Wyślij ponownie",
+    "view": "Zobacz profil"
+  },
+  "organizations": {
+    "accessFilter": {
+      "active": "Aktywny",
+      "deactivated": "Dezaktywowane",
+      "invited": "Zaproszony",
+      "none": "Brak użytkowników"
+    },
+    "awaitingApprovals_one": "Zatwierdzenie {{count}}",
+    "awaitingApprovals_other": "{{count}} zatwierdzenia",
+    "awaitingChangeRequests_one": "{{count}} żądanie zmiany",
+    "awaitingChangeRequests_other": "{{count}} żądania zmiany",
+    "columns": {
+      "access": "Dostęp do portalu",
+      "actions": "Actions",
+      "awaiting": "Oczekiwanie na klienta",
+      "client": "Client",
+      "contactEmail": "Adres e-mail do kontaktu",
+      "contactName": "Podstawowy kontakt",
+      "projects": "Projekty portalowe",
+      "users": "Użytkownicy",
+      "contact": "Primary contact"
+    },
+    "empty": "No client organizations yet. Use Add Client to create the first one.",
+    "emptySearch": "No clients match this search.",
+    "createLinkFailed": "Nie można utworzyć linku z zaproszeniem.",
+    "menu": {
+      "copyInvite": "Skopiuj link z zaproszeniem",
+      "edit": "Edytuj klienta",
+      "message": "Klient wiadomości",
+      "open": "Open workspace",
+      "projects": "Zarządzaj projektami",
+      "users": "Zarządzaj użytkownikami i dostępem"
+    },
+    "rowActions": "Działania dla {{name}}",
+    "search": "Search organizations…",
+    "searchLabel": "Wyszukaj organizacje klientów",
+    "tableLabel": "Organizacje klientów",
+    "usersSummary": "{{active}} aktywne · {{total}} łącznie",
+    "waiting": "{{count}} czekam",
+    "waiting_one": "{{count}} czekam",
+    "waiting_other": "{{count}} czekam",
+    "columnHelp": {
+      "access": "Aktywny, jeśli dowolny użytkownik może się zalogować, w przeciwnym razie Zaproszony, Dezaktywowany lub Brak użytkowników.",
+      "awaiting": "Zgody i wnioski o informacje czekają na klienta.",
+      "client": "Organizacja klienta.",
+      "contactEmail": "Adres e-mail głównego kontaktu.",
+      "contactName": "Pierwszy aktywny administrator portalu tego klienta.",
+      "projects": "Projekty udostępnione temu klientowi w portalu.",
+      "users": "Użytkownicy, którzy się zalogowali spośród wszystkich użytkowników tego klienta."
+    }
+  },
+  "overview": {
+    "attention": {
+      "approvalAwaiting": "klient",
+      "changeRequestReview": "„{{title}}” wymaga Twojej recenzji",
+      "empty": "Nic nie czeka na Ciebie przez {{name}}.",
+      "inviteExpired": "Zaproszenie {{name}} wygasło",
+      "inviteExpiredAsked": "Zaproszenie użytkownika {{name}} wygasło i poprosił o nowy link",
+      "theClient": "klient",
+      "title": "Potrzebuje uwagi",
+      "unreadMessage": "Nieprzeczytana wiadomość od klienta"
+    },
+    "recent": {
+      "empty": "Brak aktywności.",
+      "error": "Nie udało się wczytać ostatniej aktywności.",
+      "title": "Ostatnia aktywność"
+    },
+    "stats": {
+      "awaiting": "Oczekiwanie na działanie klienta",
+      "awaitingSub": "Zatwierdzenia i prośby o informacje",
+      "openChangeRequests": "Otwórz żądania zmian",
+      "portalProjects": "Projekty portalowe"
+    }
+  },
+  "page": {
+    "addClient": "Add Client",
+    "description": "Organizacje klienckie, osoby, które mogą logować się do ich portalu i na co każda z nich czeka.",
+    "organizationsTab": "Organizations",
+    "title": "Klienci",
+    "usersTab": "Użytkownicy kliencki",
+    "viewToggle": "Widok klientów"
+  },
+  "profile": {
+    "assignedProjects_one": "Przypisane projekty ({{count}})",
+    "assignedProjects_other": "Przypisane projekty ({{count}})",
+    "lastAccess": "Ostatni dostęp",
+    "neverAccessed": "Nigdy",
+    "noJobTitle": "Brak podanego stanowiska",
+    "noProjects": "Nie przydzielono jeszcze żadnych projektów. Ten użytkownik loguje się do pustego portalu.",
+    "phone": "Telefon",
+    "title": "Użytkownik kliencki"
+  },
+  "remove": {
+    "body": "{{name}} i przypisane im projekty zostały usunięte. Poczynione przez nich komentarze i zgody zapisały się w historii.",
+    "confirm": "Usuń użytkownika",
+    "title": "Usunąć tego użytkownika klienta?"
+  },
+  "retry": "Spróbuj ponownie",
+  "roleAdminDescription": "Wyświetla przydzielone projekty, komentarze, przesyła dozwolone pliki, przesyła prośby o zmiany, zatwierdza elementy i może zarządzać użytkownikami klienckimi, jeśli jest włączona.",
+  "roleMemberDescription": "Wyświetla przydzielone projekty, komentarze, przesyła dozwolone pliki i przesyła prośby o zmiany. Nie można zatwierdzać użytkowników ani zarządzać nimi.",
+  "roleViewerDescription": "Tylko do odczytu: informacje o projekcie, kamienie milowe, zadania i pliki widoczne dla klienta. Nie można komentować, przesyłać, zatwierdzać ani przesyłać próśb o zmiany.",
+  "rowsPerPage": "Wierszy na stronę:",
+  "stats": {
+    "activeUsers": "Aktywni użytkownicy",
+    "awaiting": "Oczekiwanie na działanie klienta",
+    "awaitingSub": "Zatwierdzenia i prośby o informacje",
+    "expired": "{{count}} wygasł",
+    "expired_one": "{{count}} wygasł",
+    "expired_other": "{{count}} wygasł",
+    "invited": "Zaproszony",
+    "organizations": "Organizacje klientów"
+  },
+  "users": {
+    "allRoles": "Wszystkie role",
+    "allStatuses": "Wszystkie statusy",
+    "columns": {
+      "actions": "Actions",
+      "email": "Email",
+      "jobTitle": "Tytuł pracy",
+      "lastAccess": "Ostatni dostęp",
+      "name": "Name",
+      "organization": "Organization",
+      "phone": "Numer telefonu",
+      "projects": "Projekty",
+      "role": "Role",
+      "status": "Status",
+      "user": "Użytkownik"
+    },
+    "empty": "No client users yet. Use Add Client to invite the first one.",
+    "emptyFiltered": "Żaden użytkownik klienta nie pasuje do tych filtrów.",
+    "groupBy": {
+      "client": "Grupa",
+      "label": "Grupuj użytkowników klienta",
+      "count_one": "{{count}} użytkownik",
+      "count_other": "{{count}} użytkowników"
+    },
+    "invitedAgo": "Zaproszono {{when}}",
+    "neverAccessed": "Nigdy",
+    "noProjects": "Żaden nie został przydzielony",
+    "projectCount": "{{count}} projekty",
+    "projectCount_one": "{{count}} projekt",
+    "projectCount_other": "{{count}} projekty",
+    "roleFilter": "Filtruj według roli",
+    "rowActions": "Działania dla {{name}}",
+    "search": "Search users, emails or organizations…",
+    "searchInOrganization": "Search users or emails…",
+    "searchLabel": "Wyszukaj użytkowników klienta",
+    "statusFilter": "Filtruj według statusu",
+    "tableLabel": "Użytkownicy klienta",
+    "columnHelp": {
+      "email": "Adres, za pomocą którego loguje się ten użytkownik.",
+      "jobTitle": "Ich rola w firmie klienta.",
+      "lastAccess": "Kiedy użytkownik ostatni raz logował się do portalu.",
+      "name": "Imię i nazwisko użytkownika klienta.",
+      "organization": "Klient, do którego należy ten użytkownik.",
+      "phone": "Numer telefonu kontaktowego, jeśli został podany.",
+      "projects": "Liczba projektów portalu, które ten użytkownik może otworzyć.",
+      "role": "Co użytkownik może zrobić w portalu: Administrator, Członek lub Przeglądający.",
+      "status": "Określa, czy użytkownik się zalogował, został zaproszony, czy też został dezaktywowany."
+    },
+    "searchClients": "Wyszukaj klientów…"
+  },
+  "workspace": {
+    "activity": {
+      "empty": "Brak aktywności dla {{name}}.",
+      "error": "Nie można wczytać działania.",
+      "openFullLog": "Otwórz pełny dziennik audytu",
+      "sideClient": "Client",
+      "sideInternal": "Wewnętrzne",
+      "title": "Ścieżka audytu dla {{name}}"
+    },
+    "approvals": {
+      "columns": {
+        "due": "Termin",
+        "id": "ID",
+        "linked": "Powiązany element",
+        "status": "Status",
+        "title": "Tytuł"
+      },
+      "empty": "Brak zatwierdzeń dla {{name}}.",
+      "request": "Poproś o zatwierdzenie",
+      "tableLabel": "Zatwierdzenia dla tego klienta"
+    },
+    "billing": {
+      "createInvoice": "Utwórz fakturę",
+      "manageUsers": "Zarządzaj użytkownikami",
+      "title": "Faktury",
+      "warningDescription": "Żaden z ich użytkowników nie przyjął zaproszenia, więc nie mogą przeglądać ani płacić faktur w swoim portalu. Nadal możesz tworzyć faktury. Najpierw zaproś użytkownika, jeśli powinien go zobaczyć.",
+      "warningTitle": "{{name}} nie może jeszcze korzystać ze swojego portalu"
+    },
+    "changeRequests": {
+      "columns": {
+        "id": "ID",
+        "priority": "Priorytet",
+        "status": "Status",
+        "submitted": "Przesłane",
+        "title": "Tytuł"
+      },
+      "empty": "Nie ma jeszcze żadnych żądań zmian od {{name}}.",
+      "tableLabel": "Zmień żądania od tego klienta"
+    },
+    "errors": {
+      "backToClients": "Powrót do klientów",
+      "loadDescription": "Spróbuj ponownie.",
+      "loadTitle": "Nie udało się załadować tego klienta",
+      "notFoundDescription": "Mógł zostać usunięty lub link jest nieprawidłowy.",
+      "notFoundTitle": "Nie znaleziono klienta"
+    },
+    "header": {
+      "actionsLabel": "Działania klienta",
+      "edit": "Edytuj klienta",
+      "message": "Message"
+    },
+    "projects": {
+      "assign": {
+        "button": "Przypisz projekt",
+        "cancel": "Cancel",
+        "confirm": "Przypisz",
+        "description": "Wybierz projekty obszaru roboczego, które nie należą jeszcze do klienta. Portal Klienta pozostaje dla nich wyłączony, dopóki go nie włączysz.",
+        "done_one": "Projekt {{count}} przypisany do {{name}}. Włącz Portal Klienta, aby go udostępnić.",
+        "done_other": "{{count}} projekty przypisane do {{name}}. Aby je udostępnić, włącz Portal Klienta.",
+        "failed": "Niektórych projektów nie można przypisać: {{details}}",
+        "loadFailed": "Nie udało się wczytać projektów.",
+        "none": "Każdy projekt obszaru roboczego należy już do klienta.",
+        "placeholder": "Wyszukaj projekty…",
+        "retry": "Spróbuj ponownie",
+        "title": "Przypisz projekty do {{name}}"
+      },
+      "columns": {
+        "phase": "Phase",
+        "portal": "Portalu",
+        "progress": "Postęp",
+        "project": "Projekt",
+        "status": "Stan skierowany do klienta",
+        "users": "Użytkownicy"
+      },
+      "empty": "Nie ma jeszcze projektów dla {{name}}. Połącz projekt obszaru roboczego z tym klientem z poziomu projektów portalu.",
+      "emptyShort": "Brak projektów dla {{name}}.",
+      "manage": "Zarządzaj",
+      "progressLabel": "Postęp {{name}}",
+      "tableLabel": "Projekty tego klienta",
+      "title": "Projekty"
+    },
+    "rail": {
+      "active": "Aktywny",
+      "balance": "Saldo",
+      "billing": "Rozliczenia",
+      "deactivated": "Dezaktywowane",
+      "email": "Email",
+      "hint": "Użytkownik klienta widzi tylko projekty do niego przypisane.",
+      "inviteUser": "Zaproś użytkownika",
+      "invited": "Zaproszony",
+      "organization": "Organizacja",
+      "portalAccess": "Dostęp do portalu",
+      "portalProjects": "Projekty portalowe",
+      "primaryContact": "Podstawowy kontakt",
+      "quickActions": "Szybkie akcje",
+      "requestApproval": "Poproś o zatwierdzenie"
+    },
+    "tabs": {
+      "activity": "Aktywność",
+      "approvals": "Zatwierdzenia",
+      "billing": "Rozliczenia",
+      "changeRequests": "Zmień żądania",
+      "overview": "Overview",
+      "projects": "Projekty",
+      "users": "Użytkownicy i dostęp"
+    },
+    "users": {
+      "description": "Osoby w {{name}}, które mogą się zalogować. Każdy widzi tylko projekty do niego przypisane.",
+      "invite": "Zaproś użytkownika"
+    }
+  }
+}

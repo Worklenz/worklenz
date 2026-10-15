@@ -116,7 +116,6 @@
   "totalLogged": "Łącznie zalogowane",
   "varianceUnder": "(pod)",
   "varianceOver": "(koniec)",
-
   "timeLogsFilterButton": "Filtruj",
   "timeLogsFiltersTitle": "Filtry",
   "timeLogsFilterApply": "Zastosuj",
@@ -190,5 +189,17 @@
   "timeLogsGroupEntriesShowing": "Wyświetlono {{shown}} z {{total}} wpisów",
   "timeLogsGroupLoadMore": "Wczytaj więcej",
   "timeLogsViewFlatTooltip": "Każdy wpis czasu w osobnym wierszu, tak jak został zapisany.",
-  "timeLogsViewByTaskTooltip": "Jeden wiersz na zadanie, z sumą czasu wszystkich jego wpisów."
+  "timeLogsViewByTaskTooltip": "Jeden wiersz na zadanie, z sumą czasu wszystkich jego wpisów.",
+  "noDepartmentOption": "Brak działu",
+  "departmentFilterLabel": "Dział",
+  "searchByDepartment": "Dział wyszukiwania",
+  "noDepartments": "Nie znaleziono żadnych działów",
+  "noPracticeOption": "Brak praktyki",
+  "practiceFilterLabel": "Ćwicz",
+  "searchByPractice": "Praktyka wyszukiwania",
+  "noPractices": "Nie znaleziono żadnych praktyk",
+  "noDataMatchingFilters": "Brak danych pasujących do wybranych filtrów",
+  "holidaysExcluded": "Święta wyłączone",
+  "reportSettings": "Ustawienia raportu",
+  "Members Time Sheet": "Arkusz czasu pracy członków"
 }

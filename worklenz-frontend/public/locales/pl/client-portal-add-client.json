@@ -93,7 +93,8 @@
     "templateNoProjects": "Firma {{company}} nie ma jeszcze żadnych projektów, więc nie ma do czego zastosować szablonu.",
     "templateTooManyProjects": "Firma {{company}} ma więcej projektów, niż można tu wyświetlić. Przypisz dostęp dla każdego projektu osobno później.",
     "templateApplied": "Przyznaje dostęp {{template}} do wszystkich {{count}} bieżących projektów firmy {{company}}. Możesz później dostosować ustawienia dla każdego projektu z menu wiersza.",
-    "templateHint": "Wybierz szablon, aby jednocześnie przyznać dostęp do wszystkich bieżących projektów, lub pozostaw bez zmian i przypisz projekty pojedynczo później."
+    "templateHint": "Wybierz szablon, aby jednocześnie przyznać dostęp do wszystkich bieżących projektów, lub pozostaw bez zmian i przypisz projekty pojedynczo później.",
+    "existingUsers": "Istniejący użytkownicy"
   },
   "existing": {
     "helper": "Kontakty bez aktywnego dostępu do portalu.",

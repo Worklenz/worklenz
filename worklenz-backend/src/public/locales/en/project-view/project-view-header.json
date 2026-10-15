@@ -26,5 +26,8 @@
   "navigateBackTooltip": "Go back to projects list",
   "projectStatusTooltip": "Project status",
   "projectDatesInfo": "Project timeline information",
-  "projectCategoryTooltip": "Project category"
+  "projectCategoryTooltip": "Project category",
+  "softwareProjectTooltip": "Software project — issues, backlog, and sprints",
+  "settingsDisabledForGuest": "Project settings are not accessible for guest users",
+  "softwareProjectTag": "Software"
 }

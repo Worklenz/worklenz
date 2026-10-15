@@ -1,5 +1,4 @@
-import { Tabs } from '@/shared/antd-imports';
-import { TabsProps } from 'antd/lib';
+import { Tabs, TabsProps } from '@/shared/antd-imports';
 import React from 'react';
 import MembersReportsOverviewTab from './overviewTab/MembersReportsOverviewTab';
 import MembersReportsTimeLogsTab from './time-log-tab/members-reports-time-logs-tab';
