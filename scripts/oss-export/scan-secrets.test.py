@@ -42,6 +42,12 @@ class SecretScannerTest(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertNotIn('secret scan: clean', result.stdout)
 
+    def test_broken_git_metadata_fails_closed(self):
+        (self.root / '.git').write_text('gitdir: /missing/git-metadata\n')
+        result = self.scan()
+        self.assertEqual(result.returncode, 2)
+        self.assertNotIn('secret scan: clean', result.stdout)
+
     def test_git_file_listing_failure_fails_closed(self):
         subprocess.run(['git', 'init', '-q', str(self.root)], check=True)
         binary_dir = self.root / 'bin'

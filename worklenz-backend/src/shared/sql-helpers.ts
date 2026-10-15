@@ -30,9 +30,9 @@ export class SqlHelper {
    * await db.query(query, params);
    */
   static buildInClause(values: any[], paramOffset = 1): { clause: string; params: any[] } {
-    if (!values || values.length === 0) {
-      return { clause: "", params: [] };
-    }
+    if (!values) return { clause: "", params: [] };
+    if (!Array.isArray(values)) throw new TypeError("SQL IN values must be an array");
+    if (values.length === 0) return { clause: "", params: [] };
 
     const startIndex = Number(paramOffset);
     if (!Number.isSafeInteger(startIndex) || startIndex < 1 || !Number.isSafeInteger(startIndex + values.length)) {

@@ -25,7 +25,7 @@ if ! dir=$(cd "$dir" && pwd); then
   echo "secret scan: cannot access input directory" >&2
   exit 2
 fi
-if [ "$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null)" = "$dir" ]; then
+if [ -e "$dir/.git" ] || [ -L "$dir/.git" ]; then
   if ! git -C "$dir" ls-files -z > "$file_list"; then
     echo "secret scan: could not list tracked files" >&2
     exit 2

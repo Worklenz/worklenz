@@ -25,3 +25,8 @@ describe("SQL placeholder safety", () => {
     ).toThrow(RangeError);
   });
 });
+
+
+it("rejects a string sent where a filter array is required", () => {
+  expect(() => SqlHelper.buildInClause("member-1" as unknown as string[])).toThrow(TypeError);
+});
