@@ -211,5 +211,18 @@
   "pricingModelNote": "Informacioni i modelit të çmimeve",
   "switchAnytime": "Mund të kaloni midis modeleve të çmimeve në çdo kohë nga cilësimet e faturimit",
   "flatRateLimit": "Planet me tarifë të sheshtë kanë kufij përdoruesi - sigurohuni që madhësia e ekipit tuaj të përshtatet brenda kufirit",
-  "perUserScaling": "Planet për përdorues shkallëzohen automatikisht me rritjen e ekipit tuaj"
+  "perUserScaling": "Planet për përdorues shkallëzohen automatikisht me rritjen e ekipit tuaj",
+  "paymentHistory": "Historiku i pagesave",
+  "receiptDownloadFailed": "Shkarkimi dështoi",
+  "receiptDownloadFailedDescription": "Fatura nuk mund të gjenerohej. Ju lutemi provoni përsëri.",
+  "date": "Data",
+  "card": "Karta",
+  "receipt": "Fatura",
+  "noPaymentHistory": "Nuk ka historik pagesash",
+  "flatRatePricingDescription": "Çmim fiks për deri në {{count}} përdorues",
+  "flatRateMonthlyPrice": "{{currency}} {{price}} në muaj",
+  "upToUsers": "(deri në {{count}} përdorues)",
+  "legacyPlanTitle": "Plani i mëparshëm",
+  "legacyPlanDescription": "Plani juaj nuk ofrohet më dhe mbetet i pandryshuar. Kalimi në një plan aktual për përdorues është opsional dhe abonimi juaj zëvendësohet vetëm kur ju konfirmoni.",
+  "everythingInFree": "Gjithçka në Free, plus:"
 }

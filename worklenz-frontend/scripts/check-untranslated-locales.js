@@ -22,7 +22,11 @@ const ALLOWED_SOURCE_VALUES = new Set([
   'TB',
   'URL',
   'ID',
+  // Pricing tier names are product labels and remain unchanged in translated pricing cards.
   'Pro',
+  'Business',
+  'Free',
+  'Enterprise',
   'AppSumo Special',
   'Slack',
   'Microsoft Teams',

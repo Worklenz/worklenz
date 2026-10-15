@@ -23,6 +23,7 @@ export function useRegionCheck() {
 
   useEffect(() => {
     async function checkRegion() {
+      // Dev-only escape hatch for testing the Paddle checkout from an LKR region/timezone.
       if (import.meta.env.DEV && import.meta.env.VITE_FORCE_PADDLE_CHECKOUT === 'true') {
         setIsLkrUser(false);
         setRegionCheckComplete(true);

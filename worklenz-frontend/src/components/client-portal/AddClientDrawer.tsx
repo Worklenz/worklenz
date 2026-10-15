@@ -4,7 +4,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
 import { toggleAddClientDrawer } from '@/features/clients-portal/clients/clients-slice';
 import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
-import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { canUseFeature } from '@/utils/subscription-utils';
 import { AddClientWizard } from './add-client-wizard/AddClientWizard';
 
 /**
@@ -21,7 +21,7 @@ const AddClientDrawer = () => {
     state => state.clientsPortalReducer.clientsReducer.isAddClientDrawerOpen
   );
   const preset = useAppSelector(state => state.clientsPortalReducer.clientsReducer.addClientPreset);
-  const hasBusinessAccess = hasBusinessFeatureAccess(authService.getCurrentSession());
+  const hasBusinessAccess = canUseFeature(authService.getCurrentSession(), 'client_portal');
 
   return (
     <AddClientWizard
