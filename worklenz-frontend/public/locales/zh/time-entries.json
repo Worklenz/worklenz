@@ -81,6 +81,10 @@
   "selectDateError": "选择日期",
   "selectStartTimeError": "选择开始时间",
   "selectEndTimeError": "选择结束时间",
+  "projectStartDateError": "无法在项目开始日期（{{date}}）之前记录时间",
+  "projectStartDateHint": "项目开始日期：{{date}}",
+  "projectNotStartedWarningTitle": "项目尚未开始",
+  "projectNotStartedWarningDesc": "该项目计划于 {{date}} 开始。无法在项目开始日期之前记录时间。",
   "logTimeError": "记录工时失败",
   "groupByButtonLabel": "分组依据：{{groupBy}}",
   "groupByNone": "无",
@@ -123,5 +127,9 @@
     "week_total": "本周总计",
     "week_billable": "本周可计费",
     "week_non_billable": "本周不可计费"
-  }
+  },
+  "minutesRangeError": "0 – 59",
+  "hoursLabel": "小时",
+  "hoursMinError": "小时必须为 0 或更大",
+  "minutesLabel": "分钟"
 }

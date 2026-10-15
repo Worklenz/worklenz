@@ -40,7 +40,8 @@
     "invitationMessage": "Ju jeni ftuar të punoni me <1>{{teamName}}</1>.",
     "teamInvitation": "Ju jeni ftuar të bashkoheni me {{teamName}}",
     "loading": "Duke u ngarkuar...",
-    "markAllAsRead": "Shëno të gjitha si të lexuara"
+    "markAllAsRead": "Shëno të gjitha si të lexuara",
+    "clientActivity": "Aktiviteti i klientit"
   },
   "searchAnything": "Kërko gjithçka",
   "globalSearchPlaceholder": "Kërko detyra, projekte, klientë, anëtarë…",
@@ -95,5 +96,6 @@
     "modalHeading": "Të Rejat — {{title}}",
     "readFullChangelog": "Shiko regjistrin e plotë të ndryshimeve →",
     "releaseUnavailable": "Ky përditësim nuk është më i disponueshëm."
-  }
+  },
+  "guestRole": "Mysafirit"
 }

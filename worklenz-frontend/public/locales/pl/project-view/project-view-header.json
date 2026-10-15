@@ -31,5 +31,8 @@
   "projectStatusTooltip": "Stan projektu",
   "projectDatesInfo": "Informacje o harmonogramie projektu",
   "projectCategoryTooltip": "Kategoria projektu",
-  "defaultTaskName": "Zadanie bez tytułu"
+  "defaultTaskName": "Zadanie bez tytułu",
+  "softwareProjectTooltip": "Projekt oprogramowania — problemy, zaległości i sprinty",
+  "softwareProjectTag": "Oprogramowanie",
+  "settingsDisabledForGuest": "Ustawienia projektu nie są dostępne dla gości"
 }

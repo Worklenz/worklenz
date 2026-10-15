@@ -26,6 +26,7 @@
   "clickToFilter": "Cliquez pour filtrer par",
   "noProjects": "Aucun projet trouvé",
   "addToFavourites": "Ajouter aux favoris",
+  "removeFromFavourites": "Retirer des favoris",
   "list": "Liste",
   "group": "Groupe",
   "listView": "Vue en liste",
@@ -48,5 +49,14 @@
     "noClient": "Aucun client",
     "noPriority": "Aucune priorité",
     "noCategory": "Aucune catégorie"
-  }
+  },
+  "retry": "Réessayer",
+  "searchProjects": "Rechercher par nom de projet",
+  "rowsPerPage": "Lignes par page :",
+  "errors": {
+    "refreshFailed": "Échec de l'actualisation des projets. Veuillez réessayer.",
+    "loadFailed": "Échec du chargement des projets. Veuillez réessayer."
+  },
+  "groups": "groupes",
+  "members": "Membres"
 }

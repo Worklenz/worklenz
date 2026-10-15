@@ -106,10 +106,7 @@ const AllTasksFilterPanel = () => {
       placement="bottomLeft"
       open={panelOpen}
       onOpenChange={setPanelOpen}
-      styles={{
-        root: { padding: 0 },
-        body: { padding: '12px 16px', borderRadius: 8 },
-      }}
+      styles={{ root: { padding: 0 }, body: { padding: '12px 16px', borderRadius: 8 } }}
     >
       <Button
         icon={<FilterOutlined />}

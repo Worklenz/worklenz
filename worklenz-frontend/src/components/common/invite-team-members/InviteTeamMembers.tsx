@@ -172,7 +172,7 @@ const InviteTeamMembers = () => {
       const res = await teamMembersApiService.generateInvitationLink(linkData);
       
       // Check for seat limit exceeded error
-      if (!res.done && res.body?.error_code === 'SEAT_LIMIT_EXCEEDED') {
+      if (!res.done && res.body && 'error_code' in res.body && res.body.error_code === 'SEAT_LIMIT_EXCEEDED') {
         setSeatLimitData(res.body);
         setPendingInvite({
           job_title: selectedJobTitle,
@@ -266,7 +266,7 @@ const InviteTeamMembers = () => {
       const res = await teamMembersApiService.createTeamMember(body);
       
       // Check for seat limit exceeded error
-      if (!res.done && res.body?.error_code === 'SEAT_LIMIT_EXCEEDED') {
+      if (!res.done && res.body && 'error_code' in res.body && res.body.error_code === 'SEAT_LIMIT_EXCEEDED') {
         setSeatLimitData(res.body);
         setPendingInvite(body);
         setSeatLimitModalOpen(true);

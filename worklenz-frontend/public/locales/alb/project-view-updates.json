@@ -51,5 +51,10 @@
   "editedTooltip": "Modifikuar {{time}} nga {{author}}",
   "unknown": "E panjohur",
   "you": "Ti",
-  "attachment": "Bashkëngjitje"
+  "attachment": "Bashkëngjitje",
+  "commentError": "Dërgimi i komentit dështoi",
+  "deleteSuccess": "Komenti u fshi me sukses",
+  "deleteError": "Fshirja e komentit dështoi",
+  "editSuccess": "Komenti u përditësua me sukses",
+  "editError": "Redaktimi i komentit dështoi"
 }

@@ -28,8 +28,6 @@ type AdminCenterMenuItems = {
   selfHostedExcluded?: boolean;
   /** Hidden from the sidebar and route-guarded unless the user is an Owner or Admin. */
   ownerOrAdminOnly?: boolean;
-  /** Shows a "NEW" badge next to the label. */
-  isNew?: boolean;
 };
 // settings all element items use for sidebar and routes
 export const adminCenterItems: AdminCenterMenuItems[] = [

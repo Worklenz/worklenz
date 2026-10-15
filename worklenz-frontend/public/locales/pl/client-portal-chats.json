@@ -75,5 +75,10 @@
   "convertToTaskError": "Nie udało się utworzyć zadania",
   "convertToTaskSuccess": "Zadanie utworzone z wiadomości",
   "noClientProject": "Ten klient nie ma przypisanego projektu",
-  "createTask": "Utwórz zadanie"
+  "createTask": "Utwórz zadanie",
+  "errorSendingMessage": "Nie udało się wysłać wiadomości",
+  "comingSoon": "Reakcje są dostępne na czacie projektu",
+  "actions": {
+    "reply": "Odpowiedz"
+  }
 }

@@ -90,7 +90,7 @@ export const WorkItemEpic = ({ item }: { item: IReleaseWorkItem }) => {
   return (
     <span
       className="inline-flex items-center gap-1.5 min-w-0 max-w-full text-xs"
-      style={{ color: token.purple }}
+      style={{ color: token.colorText }}
     >
       <span
         aria-hidden="true"

@@ -228,6 +228,7 @@ describeWithDb("audit log retention against Postgres", () => {
     await expectBlocked("DELETE FROM audit_events WHERE description = 'A-1mo'");
     await expectBlocked("UPDATE audit_events SET description = 'tampered' WHERE description = 'A-1mo'");
     await expectBlocked("UPDATE audit_events SET actor_user_id = $1 WHERE description = 'A-1mo'", [orgB.user_id]);
+    await expectBlocked("UPDATE audit_events SET actor_user_id = NULL WHERE description = 'A-1mo'");
   });
 
   it("keeps entries (with team_id nulled) when their team is deleted", async () => {
@@ -236,6 +237,9 @@ describeWithDb("audit log retention against Postgres", () => {
       [orgB.user_id]
     );
     await insertEvent(orgB, "B-team", "1 day", team.rows[0].id);
+
+    // Direct attempt to null team_id while the team still exists must be blocked.
+    await expectBlocked("UPDATE audit_events SET team_id = NULL WHERE description = 'B-team'");
 
     await client.query("DELETE FROM teams WHERE id = $1", [team.rows[0].id]);
 

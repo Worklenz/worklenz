@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import { isSelfHostedDeployment } from "../deployment-mode";
 import { hasBusinessPlanAccess } from "../../middlewares/subscription-middleware";
 import { checkTeamSubscriptionStatus } from "../../shared/paddle-utils";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
@@ -91,6 +92,9 @@ export const requireAnyFeature = (features: FeatureKey[]) =>
  */
 export const requireFeatureForOrganization = (feature: FeatureKey) =>
   async (req: Request & { organizationId?: string }, res: Response, next: NextFunction): Promise<Response | void> => {
+    // Preserve the self-hosted Business grant from requireBusinessPlanForOrganization.
+    if (isSelfHostedDeployment()) return next();
+
     const teamId = req.organizationId;
     if (!teamId) return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
 

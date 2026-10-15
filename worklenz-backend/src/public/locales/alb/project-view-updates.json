@@ -2,5 +2,10 @@
   "inputPlaceholder": "Shto një koment..",
   "addButton": "Shto",
   "cancelButton": "Anulo",
-  "deleteButton": "Fshi"
+  "deleteButton": "Fshi",
+  "deleteSuccess": "Komenti u fshi me sukses",
+  "editSuccess": "Komenti u përditësua me sukses",
+  "deleteError": "Fshirja e komentit dështoi",
+  "editError": "Redaktimi i komentit dështoi",
+  "commentError": "Dërgimi i komentit dështoi"
 }

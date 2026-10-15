@@ -60,5 +60,13 @@
   "failedToUpdatePhaseOrder": "Fehler beim Aktualisieren der Phasenreihenfolge",
   "pleaseTryAgain": "Bitte versuchen Sie es erneut",
   "taskNotCompleted": "Aufgabe ist nicht abgeschlossen",
-  "completeTaskDependencies": "Bitte schließen Sie die Aufgabenabhängigkeiten ab, bevor Sie fortfahren"
+  "completeTaskDependencies": "Bitte schließen Sie die Aufgabenabhängigkeiten ab, bevor Sie fortfahren",
+  "expand": "Erweitern",
+  "collapse": "Reduzieren",
+  "low": "Niedrig",
+  "medium": "Mittel",
+  "high": "Hoch",
+  "critical": "Kritisch",
+  "unarchive": "Dearchivieren",
+  "addSubtask": "Unteraufgabe hinzufügen"
 }

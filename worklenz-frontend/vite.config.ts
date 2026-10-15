@@ -133,6 +133,10 @@ export default defineConfig(({ command, mode }) => {
       hmr: {
         overlay: false,
       },
+      // Pre-transform entry files so the first page load is faster
+      warmup: {
+        clientFiles: ['./src/index.tsx', './src/App.tsx'],
+      },
       // Allow-list specific dev hosts (e.g., ngrok) to prevent blocked host errors
       // Configure via VITE_ALLOWED_HOSTS environment variable (comma-separated list)
       // Example: VITE_ALLOWED_HOSTS=host1.example.com,host2.example.com
@@ -290,12 +294,6 @@ export default defineConfig(({ command, mode }) => {
         'react/jsx-runtime',
         'antd',
         '@ant-design/icons',
-        'chart.js',
-        'react-chartjs-2',
-        'chartjs-plugin-datalabels',
-        'gantt-task-react',
-        'html2canvas',
-        'jspdf',
         'socket.io-client',
         'i18next',
         'react-i18next',

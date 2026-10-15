@@ -94,14 +94,35 @@ exports.up = (pgm) => {
     -- --------------------------------------------------------------------------------------
     -- 1.2 Append-only enforcement
     -- --------------------------------------------------------------------------------------
-    -- This trigger blocks every UPDATE/DELETE on this table unless it originates from the
-    -- retention purge function (task 1.3), which flips a transaction-local flag immediately
-    -- before it deletes.
+    -- database/sql/5_database_user.sql blanket-grants INSERT/SELECT/UPDATE/DELETE on ALL
+    -- TABLES to worklenz_client (the app runtime role) and that bootstrap already carries
+    -- precedent for narrowing specific tables with a REVOKE + targeted GRANT (see
+    -- task_priorities, timezones, etc. in that same file). This migration applies that same
+    -- override to audit_events, and - because migrate:up always runs after the sql/ bootstrap
+    -- for both fresh installs and upgrades - this REVOKE is guaranteed to land after, and
+    -- therefore win over, that blanket grant in every environment.
+    REVOKE UPDATE, DELETE ON audit_events FROM worklenz_client;
+    GRANT INSERT, SELECT ON audit_events TO worklenz_client;
+
+    -- Defense in depth: even if a future blanket GRANT (e.g. a careless "GRANT ALL ON ALL
+    -- TABLES") re-adds UPDATE/DELETE to worklenz_client, this trigger still blocks every
+    -- UPDATE/DELETE on this table unless it originates from the retention purge function
+    -- (task 1.3), which flips a transaction-local flag immediately before it deletes, or
+    -- from the organization's ON DELETE CASCADE foreign-key action.
     CREATE OR REPLACE FUNCTION prevent_audit_events_mutation()
     RETURNS trigger
     LANGUAGE plpgsql
     AS $$
     BEGIN
+      -- A parent organization deletion cascades through this table. The parent row is no
+      -- longer visible by the time this child-row trigger runs, which distinguishes that
+      -- referential action from a direct audit_events DELETE.
+      IF TG_OP = 'DELETE'
+         AND NOT EXISTS (SELECT 1 FROM organizations WHERE id = OLD.organization_id)
+      THEN
+        RETURN OLD;
+      END IF;
+
       IF current_setting('worklenz.audit_purge_in_progress', true) IS DISTINCT FROM 'on' THEN
         RAISE EXCEPTION 'audit_events is append-only: % is not permitted (only the retention purge job may remove entries)', TG_OP;
       END IF;

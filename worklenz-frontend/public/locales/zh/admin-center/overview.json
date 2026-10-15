@@ -105,5 +105,12 @@
   "emailAddress": "电子邮箱",
   "enterOrganizationName": "输入组织名称",
   "ownerSuffix": "（业主）",
-  "closePopover": "关闭弹出层"
+  "closePopover": "关闭弹出层",
+  "fileSizeUpgradeModalHeadline": "上传任意大小的文件",
+  "fileSizeUpgradeModalSubCopy": "您当前的计划支持最大 25MB 的文件。升级到企业版可上传高达 250MB 的文件，并使大型资产靠近您的项目工作。",
+  "fileSizeUpgradeModalBenefitFileSize": "文件上传最大 250MB",
+  "fileSizeUpgradeModalBenefitStorage": "扩大总存储空间",
+  "fileSizeUpgradeModalBenefitFileTypes": "支持所有文件类型",
+  "previousMonth": "上个月",
+  "nextMonth": "下个月"
 }

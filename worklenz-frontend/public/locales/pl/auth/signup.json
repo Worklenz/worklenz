@@ -35,5 +35,7 @@
     "lowercase": "Jedna mała litera",
     "number": "Jeden numer",
     "special": "Jeden znak specjalny"
-  }
+  },
+  "strongPasswordPlaceholder": "Wprowadź silne hasło",
+  "passwordValidationAltText": "Wymagania dotyczące hasła"
 }

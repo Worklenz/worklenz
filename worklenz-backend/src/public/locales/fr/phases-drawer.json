@@ -32,5 +32,17 @@
   "noMembersFound": "Aucun membre trouvé",
   "continue": "Continuer",
   "pendingMemberLabel": "(En attente)",
-  "inviteMember": "Inviter un membre"
+  "inviteMember": "Inviter un membre",
+  "manageAssignee": "Gérer le responsable",
+  "start": "Commencer",
+  "assignMember": "Attribuer un membre",
+  "completeSprint": "Sprint complet",
+  "deleteSprintTitle": "Supprimer {{name}} ?",
+  "deleteSprintContentWithItems": "{{count}} éléments de travail de ce sprint seront déplacés vers {{backlog}}. Cette action est irréversible.",
+  "deleteSprintContent": "Cette action est irréversible.",
+  "deleteSprint": "Supprimer le sprint",
+  "sprintDeleted": "Sprint supprimé",
+  "sprintDeleteError": "Impossible de supprimer le sprint",
+  "completeSprintAutoStartHint": "Le prochain sprint planifié démarrera aujourd’hui et conservera sa durée prévue.",
+  "nextSprintStarted": "{{name}} démarré ({{start}} – {{end}})"
 }

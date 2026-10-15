@@ -10,5 +10,8 @@
   "refreshButtonTooltip": "Refresh members",
   "memberCount": "Member",
   "membersCountPlural": "Members",
-  "emptyText": "There are no attachments in the project."
+  "emptyText": "There are no attachments in the project.",
+  "removeFromProject": "Remove from Project",
+  "assignFailedMessage": "Could not update the task assignees. Please try again.",
+  "assignFailedTitle": "Assignment failed"
 }

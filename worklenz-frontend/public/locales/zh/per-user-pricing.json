@@ -96,5 +96,11 @@
     "content": "您的付费方案将终止，并失去付费功能，包括超出免费版限制的项目。此操作无法在此撤销。",
     "ok": "切换到免费版",
     "cancel": "保留当前方案"
-  }
+  },
+  "seatsHelp_one": "最少 {{count}}（您当前的活跃用户数）",
+  "seatsHelp_other": "最少 {{count}}（您当前的活跃用户数）",
+  "totalMonthly_one": "{{count}} 位用户，每月 {{total}}",
+  "totalMonthly_other": "{{count}} 位用户，每月 {{total}}",
+  "totalAnnual_one": "{{count}} 位用户，每年 {{total}}",
+  "totalAnnual_other": "{{count}} 位用户，每年 {{total}}"
 }

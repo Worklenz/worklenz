@@ -1,0 +1,84 @@
+{
+  "access": {
+    "introExisting": "Zgjidh projektet që mund të hapë ky përdorues. Nëse Portali i Klientit është i fikur për një projekt që ju zgjidhni, ai ndizet.",
+    "introNew": "Zgjidh projektet që ky klient duhet të shohë. Projektet pa klient janë të lidhura me organizatën e re dhe Portali i Klientit është i ndezur për secilën që zgjidhni.",
+    "loadFailed": "Projektet nuk mund të ngarkoheshin.",
+    "noClientYet": "Ende nuk ka klient",
+    "noProjectsExisting": "Kjo organizatë nuk ka ende projekte. Përdoruesit mund t'i caktohen projekte më vonë.",
+    "noProjectsNew": "Çdo projekt i hapësirës së punës tashmë ka një klient. Lidhni një më vonë nga Projektet e Portalit.",
+    "portalOff": "Portali fikur, do të ndizet",
+    "search": "Kërko projekte…",
+    "title": "Akses në projekt"
+  },
+  "details": {
+    "email": "Adresa e emailit",
+    "emailHint": "Kjo është adresa e hyrjes dhe e ftesës. Duhet të jetë unik.",
+    "emailInvalid": "Fut një adresë të vlefshme emaili.",
+    "firstName": "Emri i parë",
+    "firstNamePlaceholder": "Zanë",
+    "firstUserNotice": "Përdoruesi i parë i një organizate të re është administratori i klientit. Ata mund të miratojnë artikuj dhe, nëse e aktivizoni në Cilësimet e portalit, të menaxhojnë vetë kolegët e tyre. Ashtu si çdo përdorues klienti, ata identifikohen me një kod një herë të dërguar me email në këtë adresë.",
+    "jobTitle": "Titulli i punës",
+    "jobTitlePlaceholder": "p.sh. Menaxher marketingu",
+    "lastName": "Mbiemri",
+    "lastNamePlaceholder": "Duka",
+    "noOrganizations": "Nuk u gjet asnjë organizatë.",
+    "organization": "Organizata",
+    "organizationName": "Emri i organizatës",
+    "organizationNamePlaceholder": "p.sh. Beacon Logistics",
+    "phone": "Telefoni (opsionale)",
+    "role": "Role",
+    "selectOrganization": "Zgjidhni një organizatë…"
+  },
+  "footer": {
+    "addUser": "Shto përdorues",
+    "back": "Kthehu",
+    "continue": "Vazhdo",
+    "sendInvitation": "Dërgo ftesë"
+  },
+  "method": {
+    "existingOrganization": {
+      "description": "Fto një person tjetër në një organizatë që tashmë ka akses në portal.",
+      "name": "Shtoni një përdorues në një organizatë ekzistuese"
+    },
+    "groupLabel": "Si të shtoni këtë klient",
+    "intro": "Çdo përdorues klienti i përket një organizate dhe sheh vetëm projektet që ju i caktoni atij.",
+    "newOrganization": {
+      "description": "Krijo organizatën dhe fto përdoruesin e saj të parë si Administrator i Klientit.",
+      "name": "Organizata e re e klientit"
+    }
+  },
+  "result": {
+    "activationHint": "Ata hapin lidhjen në email dhe regjistrohen me një kod 6-shifror të dërguar në adresën e tyre. Nuk ka asnjë fjalëkalim.",
+    "addedNoInvite": "{{name}} u shtua si {{role}}. Nuk është dërguar ende asnjë ftesë.",
+    "emailNotSent": "{{name}} u ruajt, por emaili i ftesës nuk mund të dërgohej. Ndani lidhjen në vend.",
+    "failed": "Klienti nuk mund të shtohej.",
+    "invited": "Ftesa u dërgua te {{email}}.",
+    "portalsSwitchedOn": "Portali i klientit u aktivizua për projekt(et) {{count}}.",
+    "portalsSwitchedOn_one": "Portali i klientit u aktivizua për projektin {{count}}.",
+    "portalsSwitchedOn_other": "Portali i klientit u aktivizua për projektet {{count}}."
+  },
+  "review": {
+    "email": "Email",
+    "name": "Name",
+    "organization": "Organizata",
+    "projects": "Projektet",
+    "projectsAssigned": "{{count}} caktuar",
+    "projectsAssigned_one": "{{count}} caktuar",
+    "projectsAssigned_other": "{{count}} caktuar",
+    "projectsNone": "Asnjë ende",
+    "role": "Role",
+    "sendInvitation": "Dërgo ftesën tani",
+    "sendInvitationHint": "Lidhja përmban adresën e tyre të emailit; hapja e tij u dërgon atyre një kod 6-shifror, kështu që nuk ka fjalëkalim për të vendosur. Lidhja skadon pas 7 ditësh. Nëse skadon, ridërgojeni nga lista e përdoruesve, ose ata mund të identifikohen duke futur emailin e tyre."
+  },
+  "steps": {
+    "access": "Qasja",
+    "details": "Details",
+    "method": "Metoda"
+  },
+  "title": {
+    "access": "Qasja dhe rishikimi",
+    "detailsExisting": "Zgjidhni organizatën dhe përdoruesin",
+    "detailsNew": "Na tregoni për organizatën",
+    "method": "Si dëshironi ta shtoni këtë klient?"
+  }
+}

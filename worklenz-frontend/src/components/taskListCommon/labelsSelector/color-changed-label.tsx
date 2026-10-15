@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 const ColorChangedLabel = ({ label }: { label: LabelType | null }) => {
   // localization
-  const { t } = useTranslation('labelsSettings');
+  const { t } = useTranslation('settings/labels');
 
   // color options for the labels
   const colorsOptions = PhaseColorCodes.map(color => ({

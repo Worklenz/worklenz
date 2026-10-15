@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, memo, useEffect, useRef } from 'react';
+import { CUSTOM_COLUMN_DEFAULT_WIDTH } from '@/utils/column-width-validation';
 import { Tooltip, Flex, Dropdown, DatePicker, Input, Popover, Button, Typography, message } from '@/shared/antd-imports';
 import { PlusOutlined, SettingOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -134,7 +135,7 @@ export const AddCustomColumnButton: React.FC = memo(() => {
         name: defaultFieldTitle,
         key: columnKey,
         field_type: 'text',
-        width: 180,
+        width: CUSTOM_COLUMN_DEFAULT_WIDTH,
         is_visible: true,
         configuration,
       });
@@ -144,7 +145,7 @@ export const AddCustomColumnButton: React.FC = memo(() => {
           key: columnKey,
           name: defaultFieldTitle,
           columnHeader: null, // Will be rendered dynamically
-          width: 180,
+          width: `${CUSTOM_COLUMN_DEFAULT_WIDTH}px`,
           isVisible: true,
           custom_column: true,
           custom_column_obj: {
@@ -381,7 +382,7 @@ export const CustomColumnHeader: React.FC<{
       const response = await tasksCustomColumnsService.updateCustomColumn(columnId, {
         name: editValue.trim(),
         field_type: existingConfig.fieldType || 'text',
-        width: Number.parseInt(String(column.width || 180), 10) || 180,
+        width: Number.parseInt(String(column.width || CUSTOM_COLUMN_DEFAULT_WIDTH), 10) || CUSTOM_COLUMN_DEFAULT_WIDTH,
         is_visible: true,
         configuration,
       });
@@ -434,7 +435,7 @@ export const CustomColumnHeader: React.FC<{
 
   if (isEditing && !isGuest) {
     return (
-      <Flex align="center" gap={4} className="w-full" style={{ width: '100%', minWidth: 0 }}>
+      <Flex align="center" gap={4} wrap="nowrap" className="w-full" style={{ width: '100%', minWidth: 0 }}>
         <Input
           ref={inputRef}
           value={editValue}
@@ -452,7 +453,7 @@ export const CustomColumnHeader: React.FC<{
             icon={<span style={{ color: '#52c41a' }}>✓</span>}
             onClick={handleSave}
             loading={isSaving}
-            style={{ padding: '0 4px', minWidth: 20 }}
+            style={{ padding: '0 4px', minWidth: 20, flexShrink: 0 }}
           />
         </Tooltip>
         <Tooltip title={t('cancel', { defaultValue: 'Cancel' })}>
@@ -462,7 +463,7 @@ export const CustomColumnHeader: React.FC<{
             icon={<span style={{ color: '#ff4d4f' }}>✕</span>}
             onClick={handleCancel}
             disabled={isSaving}
-            style={{ padding: '0 4px', minWidth: 20 }}
+            style={{ padding: '0 4px', minWidth: 20, flexShrink: 0 }}
           />
         </Tooltip>
       </Flex>

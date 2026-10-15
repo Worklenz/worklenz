@@ -178,7 +178,7 @@ export default class ClientPortalOnboardingController {
         return badRequest(res, "First name is required");
       }
       if (body.role !== undefined && !isClientContactRole(body.role)) {
-        return badRequest(res, "Role must be 'poc' or 'member'");
+        return badRequest(res, "Role must be 'admin', 'member' or 'viewer'");
       }
 
       const projectAccess = parseProjectAccess(body.project_access);
@@ -195,7 +195,7 @@ export default class ClientPortalOnboardingController {
           email: typeof body.email === "string" ? body.email : "",
           phone: optionalText(body.phone),
           jobTitle: optionalText(body.job_title),
-          role: body.role === "poc" ? "poc" : "member",
+          role: isClientContactRole(body.role) ? body.role : "member",
           projectAccess,
         })
       );

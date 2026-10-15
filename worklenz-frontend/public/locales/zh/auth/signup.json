@@ -35,5 +35,7 @@
     "lowercase": "一个小写字母",
     "number": "一个数字",
     "special": "一个特殊字符"
-  }
+  },
+  "strongPasswordPlaceholder": "输入强密码",
+  "passwordValidationAltText": "密码要求"
 }

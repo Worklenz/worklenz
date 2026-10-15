@@ -70,5 +70,17 @@
   "sprintGoal": "Sprint goal",
   "sprintGoalPlaceholder": "What should this sprint achieve?",
   "sprintDatesRequired": "Set start and end dates to start the sprint",
-  "sprintEndBeforeStart": "End date must be after start date"
+  "sprintEndBeforeStart": "End date must be after start date",
+  "start": "Start",
+  "completeSprint": "Complete sprint",
+  "manageAssignee": "Manage assignee",
+  "assignMember": "Assign member",
+  "deleteSprintTitle": "Delete {{name}}?",
+  "deleteSprintContentWithItems": "{{count}} work item(s) in this sprint will move to {{backlog}}. This cannot be undone.",
+  "deleteSprintContent": "This cannot be undone.",
+  "deleteSprint": "Delete sprint",
+  "sprintDeleted": "Sprint deleted",
+  "sprintDeleteError": "Could not delete sprint",
+  "completeSprintAutoStartHint": "The next planned sprint will start today and keep its planned length.",
+  "nextSprintStarted": "{{name}} started ({{start}} – {{end}})"
 }

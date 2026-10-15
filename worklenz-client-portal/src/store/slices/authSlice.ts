@@ -8,97 +8,31 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  inviteToken: string | null;
-  inviteValid: boolean;
-  inviteChecked: boolean;
-  inviteLoading: boolean;
-  inviteDetails: {
-    email?: string;
-    name?: string;
-    organizationName?: string;
-    clientName?: string;
-    companyName?: string;
-    isOrganizationInvite?: boolean;
-    isExistingWorklenzUser?: boolean;
-  } | null;
   tokenExpiry: string | null;
   organizations: ClientOrganization[];
   currentOrganizationId: string | null;
   switchingOrganization: boolean;
+  /** Bumped on every team switch; keys the routed content so page-local state starts fresh. */
+  teamEpoch: number;
 }
 
 // Async thunks for authentication
-export const loginUser = createAsyncThunk(
-  'auth/login',
-  async (credentials: { email: string; password: string }, { rejectWithValue }) => {
+// Sign-in is a one-time code emailed to an address the project team has added; there are no passwords.
+// Requesting the code needs no state here (the sign-in page holds it); verifying it starts the session.
+export const verifySignInCode = createAsyncThunk(
+  'auth/verifySignInCode',
+  async (input: { email: string; code: string }, { rejectWithValue }) => {
     try {
-      const response = await clientPortalAPI.login(credentials);
+      const response = await clientPortalAPI.verifySignInCode(input);
       if (response.done) {
         // Set token in API service
         clientPortalAPI.setToken(response.body.token);
         return response.body;
-      } else {
-        throw new Error(response.message || 'Login failed');
       }
+      throw new Error(response.message || 'Sign-in failed');
     } catch (error: any) {
-      // Extract error message from API response
-      const errorMessage = error?.response?.data?.message || error?.message || 'Login failed';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Sign-in failed';
       return rejectWithValue(errorMessage);
-    }
-  }
-);
-
-export const validateInviteToken = createAsyncThunk(
-  'auth/validateInvite',
-  async (token: string, { rejectWithValue }) => {
-    try {
-      const response = await clientPortalAPI.validateInvite(token);
-      if (response.done) {
-        return { token, ...response.body };
-      } else {
-        throw new Error(response.message || 'Invalid invite token');
-      }
-    } catch (error: any) {
-      // Extract error message from API response
-      const errorMessage = error?.response?.data?.message || error?.message || 'Invalid invite token';
-      return rejectWithValue(errorMessage);
-    }
-  }
-);
-
-export const acceptInvite = createAsyncThunk(
-  'auth/acceptInvite',
-  async (
-    inviteData: { 
-      token: string; 
-      name: string; 
-      email: string; 
-      password: string; 
-    }, 
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await clientPortalAPI.acceptInvite(inviteData);
-      if (response.done) {
-        // Set token in API service
-        clientPortalAPI.setToken(response.body.token);
-        return response.body;
-      } else {
-        // If response.done is false, check for messageKey or titleKey
-        const messageKey = (response as any).messageKey || (response as any).titleKey;
-        const message = response.message || 'Failed to accept invite';
-        return rejectWithValue(messageKey || message);
-      }
-    } catch (error: any) {
-      // Extract error message from API response
-      // Check both error.response.data (for axios errors) and error.response (for direct responses)
-      const responseData = error?.response?.data || error?.response;
-      const messageKey = responseData?.messageKey;
-      const titleKey = responseData?.titleKey;
-      const message = responseData?.message || error?.message || 'Failed to accept invite';
-      
-      // Prefer messageKey over message, as it's the i18n key
-      return rejectWithValue(messageKey || titleKey || message);
     }
   }
 );
@@ -248,15 +182,11 @@ const initialState: AuthState = {
   isAuthenticated: false, // Don't assume authentication until validated
   isLoading: true, // Start with loading state during initialization
   error: null,
-  inviteToken: null,
-  inviteValid: false,
-  inviteChecked: false,
-  inviteLoading: false,
-  inviteDetails: null,
   tokenExpiry: localStorage.getItem('clientTokenExpiry'),
   organizations: [],
   currentOrganizationId: null,
   switchingOrganization: false,
+  teamEpoch: 0,
 };
 
 const authSlice = createSlice({
@@ -283,15 +213,20 @@ const authSlice = createSlice({
       localStorage.setItem('clientTokenExpiry', action.payload.expiresAt);
     },
     logout: (state) => {
+      state.organizations = [];
+      state.currentOrganizationId = null;
       state.user = null;
       state.token = null;
       state.tokenExpiry = null;
       state.isAuthenticated = false;
       state.error = null;
-      state.inviteToken = null;
-      state.inviteValid = false;
       localStorage.removeItem('clientToken');
       localStorage.removeItem('clientTokenExpiry');
+    },
+    /** The session now acts in another team (its token is already stored). */
+    teamSwitched: (state, action: PayloadAction<string>) => {
+      state.currentOrganizationId = action.payload;
+      state.teamEpoch += 1;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
@@ -300,26 +235,16 @@ const authSlice = createSlice({
       state.error = action.payload;
     },
     clearAuth: (state) => {
+      state.organizations = [];
+      state.currentOrganizationId = null;
       state.user = null;
       state.token = null;
       state.tokenExpiry = null;
       state.isAuthenticated = false;
       state.isLoading = false;
       state.error = null;
-      state.inviteToken = null;
-      state.inviteValid = false;
-      state.inviteLoading = false;
       localStorage.removeItem('clientToken');
       localStorage.removeItem('clientTokenExpiry');
-    },
-    setInviteToken: (state, action: PayloadAction<string | null>) => {
-      state.inviteToken = action.payload;
-    },
-    setInviteValid: (state, action: PayloadAction<boolean>) => {
-      state.inviteValid = action.payload;
-    },
-    setInviteLoading: (state, action: PayloadAction<boolean>) => {
-      state.inviteLoading = action.payload;
     },
     // Check if token is expired
     checkTokenExpiry: (state) => {
@@ -338,13 +263,13 @@ const authSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Login
+    // Sign in with a one-time code
     builder
-      .addCase(loginUser.pending, (state) => {
+      .addCase(verifySignInCode.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state, action) => {
+      .addCase(verifySignInCode.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
@@ -358,60 +283,10 @@ const authSlice = createSlice({
           localStorage.setItem('clientTokenExpiry', action.payload.expiresAt);
         }
       })
-      .addCase(loginUser.rejected, (state, action) => {
+      .addCase(verifySignInCode.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
         state.isAuthenticated = false;
-      });
-
-    // Validate invite
-    builder
-      .addCase(validateInviteToken.pending, (state) => {
-        state.inviteLoading = true;
-        state.inviteChecked = false;
-        state.error = null;
-      })
-      .addCase(validateInviteToken.fulfilled, (state, action) => {
-        state.inviteLoading = false;
-        state.inviteValid = true;
-        state.inviteChecked = true;
-        state.inviteToken = action.payload.token;
-        state.inviteDetails = {
-          email: action.payload.email,
-          organizationName: action.payload.organizationName,
-        };
-        state.error = null;
-      })
-      .addCase(validateInviteToken.rejected, (state, action) => {
-        state.inviteLoading = false;
-        state.inviteValid = false;
-        state.inviteChecked = true;
-        state.error = action.payload as string;
-      });
-
-    // Accept invite
-    builder
-      .addCase(acceptInvite.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(acceptInvite.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-        state.tokenExpiry = action.payload.expiresAt;
-        state.isAuthenticated = true;
-        state.error = null;
-        state.inviteToken = null;
-        state.inviteValid = false;
-        localStorage.setItem('clientToken', action.payload.token);
-        if (action.payload.expiresAt) {
-          localStorage.setItem('clientTokenExpiry', action.payload.expiresAt);
-        }
-      })
-      .addCase(acceptInvite.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
       });
 
     // Refresh token
@@ -471,13 +346,13 @@ const authSlice = createSlice({
       })
       .addCase(logoutUser.fulfilled, (state) => {
         state.isLoading = false;
+        state.organizations = [];
+        state.currentOrganizationId = null;
         state.user = null;
         state.token = null;
         state.tokenExpiry = null;
         state.isAuthenticated = false;
         state.error = null;
-        state.inviteToken = null;
-        state.inviteValid = false;
         localStorage.removeItem('clientToken');
         localStorage.removeItem('clientTokenExpiry');
       })
@@ -489,8 +364,6 @@ const authSlice = createSlice({
         state.tokenExpiry = null;
         state.isAuthenticated = false;
         state.error = action.payload as string;
-        state.inviteToken = null;
-        state.inviteValid = false;
         state.organizations = [];
         state.currentOrganizationId = null;
         localStorage.removeItem('clientToken');
@@ -564,13 +437,11 @@ export const {
   setUser,
   setToken,
   setTokenWithExpiry,
+  teamSwitched,
   logout,
   setLoading,
   setError,
   clearAuth,
-  setInviteToken,
-  setInviteValid,
-  setInviteLoading,
   checkTokenExpiry
 } = authSlice.actions;
 

@@ -828,7 +828,10 @@ const PlannerWorkloadView: React.FC = () => {
       autoAdjustOverflow
       color={themeMode === 'dark' ? undefined : '#fff'}
       styles={{
-        body: themeMode === 'dark' ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+        body:
+          themeMode === 'dark'
+            ? undefined
+            : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
       }}
       title={renderTaskChipTooltip(wl)}
     >
@@ -883,7 +886,10 @@ const PlannerWorkloadView: React.FC = () => {
         autoAdjustOverflow
         color={themeMode === 'dark' ? undefined : '#fff'}
         styles={{
-          body: themeMode === 'dark' ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+          body:
+            themeMode === 'dark'
+              ? undefined
+              : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
         }}
         title={renderBlockChipTooltip(b)}
       >

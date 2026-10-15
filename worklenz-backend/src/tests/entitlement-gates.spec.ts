@@ -208,3 +208,21 @@ describe("planLiftsLtdMemberLimit", () => {
     expect(planLiftsLtdMemberLimit(proClassic)).toBe(false);
   });
 });
+
+
+describe("requireFeatureForOrganization in self-hosted deployments", () => {
+  it.each(["off", "on"])("keeps Business access without a cloud subscription when enforcement is %s", async enforce => {
+    process.env.WORKLENZ_DEPLOYMENT_MODE = "self_hosted";
+    process.env.ENTITLEMENTS_ENFORCE = enforce;
+    jest.mocked(paddleUtils.checkTeamSubscriptionStatus).mockClear();
+    const next = jest.fn();
+    const middleware = requireFeatureForOrganization("client_portal");
+    try {
+      await middleware({ organizationId: "t1" } as Parameters<typeof middleware>[0], makeRes(), next);
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(paddleUtils.checkTeamSubscriptionStatus).not.toHaveBeenCalled();
+    } finally {
+      process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud";
+    }
+  });
+});

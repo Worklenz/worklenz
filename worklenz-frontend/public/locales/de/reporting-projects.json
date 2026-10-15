@@ -21,6 +21,8 @@
   "openButton": "Öffnen",
   "setStartDate": "Startdatum festlegen",
   "setEndDate": "Enddatum festlegen",
+  "startDateSaveFailed": "Startdatum konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+  "endDateSaveFailed": "Enddatum konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
   "clearStartDate": "Startdatum löschen",
   "clearEndDate": "Enddatum löschen",
   "estimatedText": "Geschätzt",

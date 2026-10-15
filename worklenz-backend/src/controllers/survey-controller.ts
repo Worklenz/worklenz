@@ -6,6 +6,9 @@ import HandleExceptions from "../decorators/handle-exceptions";
 import { ISurveySubmissionRequest } from "../interfaces/survey";
 import db from "../config/db";
 
+// Accounts younger than this (fresh sign-ups, including invitation sign-ups) are not prompted with the survey popup.
+const SURVEY_NEW_USER_GRACE_PERIOD_DAYS = 7;
+
 export default class SurveyController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getAccountSetupSurvey(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
@@ -190,11 +193,25 @@ export default class SurveyController extends WorklenzControllerBase {
         AND s.survey_type = 'account_setup'
         AND sr.is_completed = true
         LIMIT 1
-      ) as completed_at;
+      ) as completed_at,
+      COALESCE((
+        SELECT u.created_at > NOW() - make_interval(days => $2::INT)
+        FROM users u
+        WHERE u.id = $1
+      ), FALSE) as is_new_user,
+      EXISTS(
+        SELECT 1
+        FROM team_members tm
+        INNER JOIN teams t ON tm.team_id = t.id
+        INNER JOIN users u ON tm.user_id = u.id
+        WHERE tm.user_id = $1
+        AND t.user_id <> $1
+        AND tm.created_at <= u.created_at
+      ) as joined_via_invitation;
     `;
 
-    const result = await db.query(q, [userId]);
-    const status = result.rows[0] || { is_completed: false, completed_at: null };
+    const result = await db.query(q, [userId, SURVEY_NEW_USER_GRACE_PERIOD_DAYS]);
+    const status = result.rows[0] || { is_completed: false, completed_at: null, is_new_user: false, joined_via_invitation: false };
 
     return res.status(200).send(new ServerResponse(true, status));
   }

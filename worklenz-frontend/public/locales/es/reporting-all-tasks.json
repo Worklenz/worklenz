@@ -1,11 +1,9 @@
 {
   "pageTitle": "Todas las tareas",
   "pageDescription": "Ver todas las tareas de su organización",
-
   "searchPlaceholder": "Buscar por nombre, clave o descripción de tarea",
   "searchProjectsPlaceholder": "Buscar proyectos...",
   "searchMembersPlaceholder": "Buscar miembros...",
-
   "filtersTitle": "Filtros",
   "teamsFilter": "Equipos",
   "projectsFilter": "Proyectos",
@@ -23,7 +21,6 @@
   "healthFilter": "Estado",
   "projectStatusFilter": "Estado del proyecto",
   "archivedFilter": "Incluir archivados",
-
   "allTeams": "Todos los equipos",
   "allProjects": "Todos los proyectos",
   "allStatuses": "Todos los estados",
@@ -33,7 +30,6 @@
   "assignedToMe": "Asignado a mí",
   "selectAll": "Seleccionar todo",
   "clearAll": "Borrar todo",
-
   "today": "Hoy",
   "thisWeek": "Esta semana",
   "thisMonth": "Este mes",
@@ -47,23 +43,18 @@
   "startDateField": "Fecha de inicio",
   "createdDateField": "Fecha de creación",
   "completedDateField": "Fecha de finalización",
-
   "allTasks": "Todas las tareas",
   "parentTasksOnly": "Solo tareas principales",
   "subtasksOnly": "Solo subtareas",
-
   "all": "Todos",
   "incompleteOnly": "Solo incompletas",
   "completedOnly": "Solo completadas",
   "overdueOnly": "Solo vencidas",
-
   "withTimeLogged": "Con tiempo registrado",
   "withoutTimeLogged": "Sin tiempo registrado",
   "overEstimatedTime": "Tiempo estimado excedido",
-
   "billableOnly": "Solo facturables",
   "nonBillableOnly": "Solo no facturables",
-
   "taskNameColumn": "Tarea",
   "taskKeyColumn": "Clave",
   "projectColumn": "Proyecto",
@@ -87,11 +78,9 @@
   "attachmentsColumn": "Adjuntos",
   "reporterColumn": "Informador",
   "billableColumn": "Facturable",
-
   "sortBy": "Ordenar por",
   "ascending": "Ascendente",
   "descending": "Descendente",
-
   "groupBy": "Agrupar por",
   "noGrouping": "Ninguno",
   "groupByProject": "Proyecto",
@@ -102,27 +91,22 @@
   "groupByPhase": "Fase",
   "groupByTeam": "Equipo",
   "groupByCategory": "Categoría",
-
   "dueToday": "Vence hoy",
   "dueThisWeek": "Vence esta semana",
   "dueThisMonth": "Vence este mes",
   "dueLater": "Vence más tarde",
   "noDueDate": "Sin fecha de vencimiento",
-
   "viewMode": "Vista",
   "tableView": "Tabla",
   "boardView": "Tablero",
   "listView": "Lista",
-
   "showFields": "Mostrar campos",
-
   "totalTasks": "Total de tareas",
   "completedTasks": "Completadas",
   "inProgressTasks": "En progreso",
   "overdueTasks": "Vencidas",
   "unassignedTasks": "Sin asignar",
   "dueThisWeekTasks": "Vence esta semana",
-
   "exportButton": "Exportar",
   "exportToCsv": "Exportar a CSV",
   "exportToExcel": "Exportar a Excel",
@@ -131,7 +115,6 @@
   "saveViewButton": "Guardar vista",
   "savedViews": "Vistas guardadas",
   "manageViews": "Gestionar vistas",
-
   "bulkActions": "Acciones masivas",
   "selectedCount": "{{count}} seleccionados",
   "changeStatus": "Cambiar estado",
@@ -139,28 +122,22 @@
   "assignMembers": "Asignar miembros",
   "addLabels": "Añadir etiquetas",
   "archiveTasks": "Archivar tareas",
-
   "showingResults": "Mostrando {{from}}-{{to}} de {{total}} tareas",
   "tasksPerPage": "Tareas por página",
   "page": "Página",
   "of": "de",
-
   "noTasksFound": "No se encontraron tareas",
   "noTasksDescription": "Intente ajustar sus filtros o criterios de búsqueda",
   "clearFilters": "Borrar filtros",
-
   "loadingTasks": "Cargando tareas...",
   "applyingFilters": "Aplicando filtros...",
-
   "errorLoadingTasks": "Error al cargar las tareas",
   "tryAgain": "Intentar de nuevo",
-
   "expandAllGroups": "Expandir todos los grupos",
   "collapseAllGroups": "Contraer todos los grupos",
   "openTaskDetails": "Abrir detalles de la tarea",
   "moreFilters": "Más filtros",
   "lessFilters": "Menos filtros",
-
   "quickFilters": "Filtros rápidos",
   "filterButton": "Filtrar",
   "searchClients": "Buscar clientes...",
@@ -169,8 +146,11 @@
   "searchPhases": "Buscar fases...",
   "selectProjectFirst": "Seleccione un proyecto para ver fases",
   "noPhases": "No se encontraron fases",
-
   "todoStatus": "Por hacer",
   "doingStatus": "En curso",
-  "doneStatus": "Hecho"
+  "doneStatus": "Hecho",
+  "clientFilter": "Cliente",
+  "searchLabels": "Buscar etiquetas...",
+  "noLabels": "No se encontraron etiquetas",
+  "labelFilter": "Etiquetas"
 }

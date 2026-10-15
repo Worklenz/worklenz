@@ -1,0 +1,11 @@
+{
+  "title": "Paneli",
+  "totalRequests": "Kërkesat totale",
+  "pendingRequests": "Kërkesat në pritje",
+  "activeProjects": "Projektet aktive",
+  "unpaidInvoices": "Faturat e papaguara",
+  "recentRequests": "Kërkesat e fundit",
+  "noRecentRequests": "Nuk ka kërkesa të fundit",
+  "recentMessages": "Mesazhet e fundit",
+  "noRecentMessages": "Nuk ka mesazhe të fundit"
+}

@@ -1,0 +1,44 @@
+/* Account menu, styled like the admin app's profile dropdown. */
+.portal-profile-dropdown .ant-dropdown-menu {
+  margin-top: 8px;
+  padding: 4px;
+  min-width: 230px;
+  border-radius: 8px;
+}
+
+.portal-profile-dropdown .ant-dropdown-menu-item {
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.portal-profile-dropdown .ant-dropdown-menu-item .ant-dropdown-menu-item-icon {
+  font-size: 14px;
+}
+
+.portal-profile-dropdown .ant-dropdown-menu-item.portal-profile-header-item {
+  padding: 0;
+  margin-bottom: 4px;
+  cursor: pointer;
+  background: transparent;
+}
+
+.portal-profile-dropdown .ant-dropdown-menu-item.portal-profile-header-item:hover {
+  background: transparent;
+}
+
+.portal-profile-dropdown .ant-dropdown-menu-item.portal-profile-header-item > .ant-dropdown-menu-title-content > div {
+  transition: filter 0.2s ease;
+}
+
+.portal-profile-dropdown .ant-dropdown-menu-item.portal-profile-header-item:hover > .ant-dropdown-menu-title-content > div {
+  filter: brightness(0.95);
+}
+
+.portal-profile-dropdown .ant-dropdown-menu-item.portal-profile-theme-item .ant-dropdown-menu-title-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}

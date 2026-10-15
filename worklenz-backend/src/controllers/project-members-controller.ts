@@ -1533,7 +1533,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
     // Check if user has access to the project
     const projectAccessQuery = `
-      SELECT id, name FROM projects 
+      SELECT id, name FROM projects
       WHERE id = $1 AND team_id = $2
     `;
     const projectResult = await db.query(projectAccessQuery, [project_id, teamId]);

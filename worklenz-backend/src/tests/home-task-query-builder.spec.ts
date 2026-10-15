@@ -11,6 +11,8 @@ import {
   buildTaskFilterClauses,
   buildTaskOrderClause,
   buildTabClause,
+  buildPinnedJoin,
+  PINNED_SELECT_COLUMNS,
 } from "../shared/home-task-query-builder";
 
 const VALID_UUID_1 = "550e8400-e29b-41d4-a716-446655440000";
@@ -175,6 +177,39 @@ describe("buildTaskOrderClause", () => {
 
   it("respects sort_order=desc", () => {
     expect(buildTaskOrderClause({ sort_field: "name", sort_order: "desc" })).toBe("ORDER BY t.name DESC NULLS LAST, t.id ASC");
+  });
+});
+
+describe("pinned tasks", () => {
+  it("joins the current user's pins by the given user param", () => {
+    expect(buildPinnedJoin(2)).toBe("LEFT JOIN user_pinned_tasks upt ON upt.task_id = t.id AND upt.user_id = $2");
+  });
+
+  it("Pinned tab keeps only pinned tasks", () => {
+    expect(buildTabClause("Pinned", 3)).toBe("AND upt.id IS NOT NULL");
+  });
+
+  it("Pinned tab lists the most recently pinned first, ignoring the chosen sort", () => {
+    expect(buildTaskOrderClause({ sort_field: "name", sort_order: "desc" }, "Pinned")).toBe(
+      "ORDER BY upt.pinned_at DESC, t.id ASC"
+    );
+  });
+
+  it("floats pinned tasks to the top of every other tab, then applies the chosen sort", () => {
+    for (const tab of ["All", "Today", "Overdue", "Upcoming", "NoDueDate"]) {
+      expect(buildTaskOrderClause({ sort_field: "priority", sort_order: "desc" }, tab)).toBe(
+        "ORDER BY (upt.id IS NULL) ASC, upt.pinned_at DESC NULLS LAST, tp.value DESC NULLS LAST, t.id ASC"
+      );
+    }
+  });
+
+  it("does not touch pins when no tab is given (the unassigned list has no pins)", () => {
+    expect(buildTaskOrderClause({})).not.toMatch(/upt/);
+  });
+
+  it("selects is_pinned and pinned_at", () => {
+    expect(PINNED_SELECT_COLUMNS).toMatch(/is_pinned/);
+    expect(PINNED_SELECT_COLUMNS).toMatch(/pinned_at/);
   });
 });
 

@@ -139,5 +139,10 @@
     "updateStatusFailed": "更新频道状态失败",
     "removeConfigFailed": "删除频道配置失败",
     "refreshChannelsFailed": "刷新频道失败"
+  },
+  "connection": {
+    "success": "Slack 工作区连接成功！",
+    "error": "连接 Slack 工作区失败",
+    "cancelled": "Slack 安装已取消"
   }
 }

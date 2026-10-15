@@ -22,13 +22,43 @@
   "clickToFilter": "Clique para filtrar por",
   "noProjects": "Nenhum projeto encontrado",
   "addToFavourites": "Adicionar aos favoritos",
+  "removeFromFavourites": "Remover dos favoritos",
   "list": "Lista",
   "group": "Grupo",
   "listView": "Visualização em Lista",
   "groupView": "Visualização em Grupo",
   "groupBy": {
     "category": "Categoria",
-    "client": "Cliente"
+    "client": "Cliente",
+    "priorities": "prioridades",
+    "priority": "Prioridade",
+    "categories": "categorias",
+    "clients": "clientes"
   },
-  "noPermission": "Você não tem permissão para realizar esta ação"
+  "noPermission": "Você não tem permissão para realizar esta ação",
+  "fieldsText": "Campos",
+  "noOptionsFound": "Nenhuma opção encontrada",
+  "showFields": "Mostrar campos",
+  "retry": "Tentar novamente",
+  "searchProjects": "Pesquisar por nome do projeto",
+  "favorite": "Favorito",
+  "filter": {
+    "noCategory": "Sem Categoria",
+    "noPriority": "Sem Prioridade",
+    "noClient": "Sem Cliente"
+  },
+  "activeFiltersCount": "Filtros: {{count}}",
+  "settingsDisabledForGuest": "Configurações desabilitadas para convidado",
+  "rowsPerPage": "Linhas por página:",
+  "errors": {
+    "refreshFailed": "Falha ao atualizar projetos. Por favor, tente novamente.",
+    "loadFailed": "Falha ao carregar projetos. Por favor, tente novamente."
+  },
+  "projectFields": "Campos do Projeto",
+  "fieldsWithCount": "Campos: {{count}}",
+  "groups": "grupos",
+  "endDate": "Data de término do projeto",
+  "settingsTooltip": "Abrir configurações do projeto",
+  "required": "Obrigatório",
+  "priority": "Prioridade"
 }

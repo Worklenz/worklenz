@@ -1,4 +1,5 @@
 import {
+  Checkbox,
   Drawer,
   Empty,
   Segmented,
@@ -17,7 +18,7 @@ import {
   setNotificationType,
   toggleDrawer,
   fetchUnreadCount,
-} from '../../../../../features/navbar/notificationSlice';
+} from '@/features/navbar/notificationSlice';
 import { setTargetCommentId } from '@/features/task-drawer/task-drawer.slice';
 
 import { NOTIFICATION_OPTION_READ, NOTIFICATION_OPTION_UNREAD } from '@/shared/constants';
@@ -72,7 +73,12 @@ const NotificationDrawer = () => {
     token.colorBgContainer.includes('dark') ||
     document.documentElement.getAttribute('data-theme') === 'dark';
 
-  const notificationCount = notifications?.length || 0;
+  // Client Portal activity ("Client activity") is mixed into the same bell; Owners and Admins can narrow to it.
+  const [clientActivityOnly, setClientActivityOnly] = useState(false);
+  const visibleNotifications = clientActivityOnly
+    ? (notifications ?? []).filter(item => item.notification_type_key?.startsWith('CLIENT_PORTAL_'))
+    : notifications;
+  const notificationCount = visibleNotifications?.length || 0;
   const [isLoading, setIsLoading] = useState(false);
   const [appSumoBannerImageLoaded, setAppSumoBannerImageLoaded] = useState(false);
 
@@ -440,6 +446,16 @@ const NotificationDrawer = () => {
         )}
       </Flex>
 
+      {authService.isOwnerOrAdmin() && (
+        <Checkbox
+          checked={clientActivityOnly}
+          onChange={event => setClientActivityOnly(event.target.checked)}
+          style={{ marginTop: 12 }}
+        >
+          {t('notificationsDrawer.clientActivity', { defaultValue: 'Client activity' })}
+        </Checkbox>
+      )}
+
       {isLoading && (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}>
           <Spin />
@@ -457,9 +473,9 @@ const NotificationDrawer = () => {
           ))}
         </div>
       ) : null}
-      {notifications && notifications.length > 0 ? (
+      {visibleNotifications && visibleNotifications.length > 0 ? (
         <div className="notification-list mt-3">
-          {notifications.map(notification => (
+          {visibleNotifications.map(notification => (
             <NotificationItem
               key={notification.id}
               notification={notification}

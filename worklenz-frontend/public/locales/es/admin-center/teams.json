@@ -31,5 +31,6 @@
   "admin": "Administrador",
   "member": "Miembro",
   "cannotChangeOwnerRole": "El rol de Propietario no puede ser cambiado",
-  "pendingInvitation": "Invitación pendiente"
+  "pendingInvitation": "Invitación pendiente",
+  "clickToEditName": "Haga clic para editar el nombre"
 }

@@ -53,15 +53,15 @@ const ClientPortalLayout = () => {
   const clientPortalPreviews = useClientPortalFeaturePreviews();
   const lockedPreview = clientPortalPreviews[activeKey];
 
+  // Hooks must run before any early return, so tracking sits above the auth redirect.
+  useEffect(() => {
+    trackMixpanelEvent(evt_client_portal_viewed);
+  }, [trackMixpanelEvent]);
+
   // Redirect unauthorized users to main dashboard
   if (!auth.isAuthenticated()) {
     return <Navigate to="/auth/signin" replace />;
   }
-
-  // Track client portal view
-  useEffect(() => {
-    trackMixpanelEvent(evt_client_portal_viewed);
-  }, [trackMixpanelEvent]);
 
   // The Sider below is hidden entirely on mobile (ClientPortalSidebar renders
   // its own Drawer there instead), so this width only ever matters on

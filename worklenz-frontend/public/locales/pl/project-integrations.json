@@ -47,5 +47,6 @@
     "loadChannelsFailed": "Nie udało się załadować kanałów",
     "refreshChannelsFailed": "Nie udało się odświeżyć kanałów",
     "addIntegrationFailed": "Nie udało się dodać integracji"
-  }
+  },
+  "businessPlan": "Biznes"
 }

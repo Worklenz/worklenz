@@ -2,7 +2,6 @@
   "today": "Sot",
   "week": "Javë",
   "month": "Muaj",
-
   "settings": "Cilësimet",
   "workingDays": "Ditët e punës",
   "monday": "E hënë",
@@ -15,7 +14,6 @@
   "workingHours": "Orët e punës",
   "hours": "Orë",
   "saveButton": "Ruaj",
-
   "totalAllocation": "Alokimi Total",
   "timeLogged": "Koha e Regjistruar",
   "remainingTime": "Koha e Mbetur",
@@ -24,16 +22,35 @@
   "tasks": "detyra",
   "startDate": "Data e Fillimit",
   "endDate": "Data e Përfundimit",
-
   "hoursPerDay": "Orë Në Ditë",
   "totalHours": "Orë Totale",
   "deleteButton": "Fshi",
   "cancelButton": "Anulo",
-
   "tabTitle": "Detyra pa Data Fillimi & Përfundimi",
-
   "allocatedTime": "Koha e alokuar",
   "totalLogged": "Total i Regjistruar",
   "loggedBillable": "Regjistruar Fakturueshme",
-  "loggedNonBillable": "Regjistruar Jo Fakturueshme"
+  "loggedNonBillable": "Regjistruar Jo Fakturueshme",
+  "timelineError": "Ngarkimi i afatit kohor dështoi",
+  "noProjects": "Asnjë projekt i caktuar",
+  "capacityConflicts": "U zbuluan konflikte kapacitetesh",
+  "taskDatesError": "Dështoi përditësimi i datave të detyrës",
+  "manageTimeOff": "Menaxho kohë-off",
+  "noTasksInDateRange": "Nuk u gjet asnjë detyrë në këtë interval datash",
+  "key": "Çelësi",
+  "filterByStatus": "Statusi",
+  "selectMemberToViewTasks": "Zgjidhni një anëtar për të parë detyrat",
+  "retry": "Provo përsëri",
+  "loadingTimeline": "Afati kohor po ngarkohet...",
+  "open": "Hap",
+  "loggedTime": "Regjistruar",
+  "filterByMember": "Anëtari i ekipit",
+  "filterByProject": "Projekti",
+  "estimation": "Vlerësimi",
+  "noTasksScheduled": "Asnjë detyrë e planifikuar",
+  "taskDatesUpdated": "Datat e detyrave u përditësuan",
+  "noTasksInGroup": "Nuk ka detyra në këtë grup",
+  "filterByPriority": "Prioriteti",
+  "priority": "Prioriteti",
+  "selectProjectToViewTasks": "Zgjidhni një projekt për të parë detyrat"
 }

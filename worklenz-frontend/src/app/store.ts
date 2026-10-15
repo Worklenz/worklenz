@@ -7,6 +7,7 @@ import userReducer from '@features/user/userSlice';
 
 // Home Page
 import homePageReducer from '@features/home-page/home-page.slice';
+import homePreferencesReducer from '@features/home-page/homePreferences.slice';
 import userActivityReducer from '@features/home-page/user-activity.slice';
 
 // Account Setup
@@ -110,7 +111,6 @@ import projectWorkloadReducer from '@features/project-workload/projectWorkloadSl
 import clientsPortalReducer from '../features/clients-portal';
 
 //client view
-import clientViewReducer from '../features/client-view';
 
 // Client Portal API
 import { clientPortalApi } from '@/api/client-portal/client-portal-api';
@@ -141,6 +141,7 @@ const coreReducers = {
 
   // Home Page
   homePageReducer: homePageReducer,
+  homePreferencesReducer: homePreferencesReducer,
   [homePageApiService.reducerPath]: homePageApiService.reducer,
   [personalOverviewApi.reducerPath]: personalOverviewApi.reducer,
   [projectsApi.reducerPath]: projectsApi.reducer,
@@ -234,8 +235,6 @@ const coreReducers = {
   //clients portal
   clientsPortalReducer: clientsPortalReducer,
 
-  //client view
-  clientViewReducer: clientViewReducer,
   // Finance
   projectFinanceRateCardReducer: projectFinanceRateCardReducer,
   projectFinancesReducer: projectFinancesReducer,
@@ -275,6 +274,7 @@ export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: false,
+      immutableCheck: false,
     }).concat(
       homePageApiService.middleware,
       personalOverviewApi.middleware,

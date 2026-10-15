@@ -15,7 +15,7 @@ import {
   fetchBillingInfo,
 } from '@/features/admin-center/admin-center.slice';
 import logger from '@/utils/errorLogger';
-import { tr } from 'date-fns/locale';
+import { tr } from 'date-fns/locale/tr';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_admin_center_overview_visit } from '@/shared/worklenz-analytics-events';
 import { AuditLogRetentionControl } from '@/components/admin-center/audit-log/AuditLogRetentionControl';

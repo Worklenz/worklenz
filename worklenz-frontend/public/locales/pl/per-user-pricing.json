@@ -1,0 +1,103 @@
+{
+  "title": "Wybierz plan",
+  "subtitle": "Płać tylko za osoby w swoim zespole. Ceny za użytkownika w USD.",
+  "monthly": "Miesięcznie",
+  "annual": "Rocznie",
+  "saveUpTo": "Oszczędź {{percent}}% przy rozliczeniu rocznym",
+  "annualBadge": "Oszczędź do {{percent}}%",
+  "mostPopular": "Najpopularniejszy",
+  "billingPeriod": "Okres rozliczeniowy",
+  "seats": "Użytkownicy",
+  "seatsHelp_one": "Minimum {{count}} (obecny aktywny użytkownik)",
+  "seatsHelp_other": "Minimum {{count}} (obecni aktywni użytkownicy)",
+  "perUserPerMonth": "za użytkownika / miesiąc",
+  "billedAnnually": "rozliczane rocznie ({{total}} za użytkownika / rok)",
+  "totalMonthly_one": "{{total}} miesięcznie za {{count}} użytkownika",
+  "totalMonthly_other": "{{total}} miesięcznie za {{count}} użytkowników",
+  "totalAnnual_one": "{{total}} rocznie za {{count}} użytkownika",
+  "totalAnnual_other": "{{total}} rocznie za {{count}} użytkowników",
+  "currentPlan": "Obecny plan",
+  "select": "Wybierz plan",
+  "switch": "Przejdź na ten plan",
+  "unavailable": "Ten plan nie jest dostępny dla wybranego okresu rozliczeniowego.",
+  "plans": {
+    "pro": {
+      "name": "Pro",
+      "description": "Wszystko do zarządzania projektami i śledzenia czasu.",
+      "features": [
+        "Wszystko z Free",
+        "Nieograniczona liczba projektów",
+        "Śledzenie czasu i raporty",
+        "Pola i szablony niestandardowe",
+        "Do 5 gości"
+      ]
+    },
+    "business": {
+      "name": "Business",
+      "description": "Planowanie, finanse i narzędzia dla klientów rozwijających się zespołów.",
+      "features": [
+        "Wszystko z Pro",
+        "Planer, oś czasu, obciążenie pracą",
+        "Finanse i portal klienta",
+        "Nieograniczeni goście i Slack"
+      ]
+    },
+    "expansion": {
+      "name": "Rozszerzenie AppSumo",
+      "description": "Dodaj stanowiska Business do swoich kodów AppSumo.",
+      "features": [
+        "Funkcje Business",
+        "Dodatkowe stanowiska rozliczane za użytkownika",
+        "Dla klientów AppSumo"
+      ]
+    },
+    "free": {
+      "name": "Bezpłatny",
+      "description": "Idealny na początek.",
+      "features": [
+        "3 projekty",
+        "Do 5 użytkowników",
+        "Lista zadań i tablica Kanban",
+        "Pliki i komentarze"
+      ]
+    },
+    "enterprise": {
+      "name": "Dla przedsiębiorstw",
+      "description": "Dla dużych organizacji.",
+      "features": [
+        "Wszystko z Business",
+        "Nieograniczeni użytkownicy bez dodatkowych opłat",
+        "Zaawansowane zabezpieczenia",
+        "Niestandardowe integracje",
+        "Priorytetowe wsparcie"
+      ]
+    }
+  },
+  "legacyConfirm": {
+    "title": "Zastąpić obecny plan?",
+    "content": "Korzystasz z poprzedniego planu. Subskrypcja nowego planu oznacza rezygnację z dotychczasowej ceny. Obecna subskrypcja zostanie anulowana po rozpoczęciu nowej.",
+    "ok": "Kontynuuj",
+    "cancel": "Zachowaj obecny plan"
+  },
+  "messages": {
+    "success": "Subskrypcja została zaktualizowana!",
+    "changed": "Plan subskrypcji został zmieniony!",
+    "error": "Nie udało się rozpocząć płatności. Spróbuj ponownie.",
+    "checkoutError": "Błąd podczas płatności: {{message}}"
+  },
+  "trustLine": "Anuluj w dowolnym momencie. Podatki obliczane przy płatności. Bezpieczne płatności przez Paddle.",
+  "contactSales": "Skontaktuj się z działem sprzedaży",
+  "freeForever": "na zawsze",
+  "switchToFree": "Przejdź na plan bezpłatny",
+  "custom": "Indywidualna",
+  "customNote": "wycena",
+  "freeConfirm": {
+    "title": "Przejść na plan bezpłatny?",
+    "content": "Twój płatny plan zostanie zakończony i utracisz płatne funkcje, w tym projekty ponad limit planu bezpłatnego. Nie można tego cofnąć w tym miejscu.",
+    "ok": "Przejdź na plan bezpłatny",
+    "cancel": "Zachowaj obecny plan"
+  },
+  "decreaseUsers": "Zmniejsz liczbę użytkowników",
+  "increaseUsers": "Zwiększ liczbę użytkowników",
+  "freeLimitHint": "Plan bezpłatny obsługuje do {{count}} użytkowników. Usuń użytkowników, aby na niego przejść."
+}

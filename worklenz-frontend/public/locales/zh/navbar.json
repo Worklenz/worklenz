@@ -40,7 +40,8 @@
     "invitationMessage": "您已被邀请加入 <1>{{teamName}}</1> 进行协作。",
     "teamInvitation": "您已被邀请加入 {{teamName}}",
     "loading": "加载中...",
-    "markAllAsRead": "全部标记为已读"
+    "markAllAsRead": "全部标记为已读",
+    "clientActivity": "客户活动"
   },
   "searchAnything": "搜索任何内容",
   "globalSearchPlaceholder": "搜索任务、项目、客户、成员…",
@@ -95,5 +96,6 @@
     "modalHeading": "新功能 — {{title}}",
     "readFullChangelog": "查看完整更新日志 →",
     "releaseUnavailable": "此更新已不可用。"
-  }
+  },
+  "guestRole": "访客"
 }

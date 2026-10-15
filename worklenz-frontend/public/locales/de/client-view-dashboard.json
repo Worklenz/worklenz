@@ -1,0 +1,11 @@
+{
+  "title": "Armaturenbrett",
+  "totalRequests": "Gesamtzahl der Anfragen",
+  "pendingRequests": "Ausstehende Anfragen",
+  "activeProjects": "Aktive Projekte",
+  "unpaidInvoices": "Unbezahlte Rechnungen",
+  "recentRequests": "Aktuelle Anfragen",
+  "noRecentRequests": "Keine aktuellen Anfragen",
+  "recentMessages": "Aktuelle Nachrichten",
+  "noRecentMessages": "Keine aktuellen Nachrichten"
+}

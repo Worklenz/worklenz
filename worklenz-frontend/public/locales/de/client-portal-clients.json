@@ -328,5 +328,7 @@
   "bulkDeactivateConfirmationDescription_other": "Die {{count}} ausgewählten Kunden deaktivieren? Sie verlieren den Zugang zum Portal, alle Daten bleiben erhalten.",
   "statsErrorMessage": "Kundenstatistiken konnten nicht geladen werden.",
   "unansweredMessagesLabel": "Unbeantwortete Nachrichten",
-  "unansweredMessagesHint": "Kundennachrichten, die auf eine Antwort Ihres Teams warten"
+  "unansweredMessagesHint": "Kundennachrichten, die auf eine Antwort Ihres Teams warten",
+  "tryAgainMessage": "Bitte versuchen Sie es erneut.",
+  "viewToggleLabel": "Kundenansicht"
 }

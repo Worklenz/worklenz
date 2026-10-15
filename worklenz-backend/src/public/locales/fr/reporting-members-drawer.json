@@ -73,5 +73,9 @@
   "notSetText": "Non défini",
   "needsAttentionText": "A besoin d'attention",
   "atRiskText": "À risque",
-  "goodText": "Bon"
+  "goodText": "Bon",
+  "completedOnColumn": "Terminé le",
+  "noTasksText": "Aucune tâche",
+  "daysOverdueColumn": "Jours de retard",
+  "phaseColumn": "Phase"
 }

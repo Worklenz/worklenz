@@ -63,5 +63,9 @@
   "deleteLink": "删除链接",
   "openTask": "打开任务",
   "fromTask": "来自：{{taskName}}",
-  "noLinks": "暂无链接。点击\"添加链接\"添加您的第一个链接。"
+  "noLinks": "暂无链接。点击\"添加链接\"添加您的第一个链接。",
+  "linksPaginationSummary": "{{start}}–{{end}}（共 {{count}} 个链接）",
+  "uploadExpired": "上传会话已过期。请再试一次。",
+  "fileTooLargePopoverTitle": "文件太大",
+  "fileTooLargePopoverBody": "大于 25MB 的文件需要商业计划。该文件大小为 {{sizeMb}} MB。升级以上传更大的文件。"
 }

@@ -104,7 +104,12 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         }
         styles={{
           root: { maxWidth: '280px' },
-          body: { padding: '8px 12px', wordBreak: 'break-word', wordSpacing: '0.1em', lineHeight: '1.5' },
+          body: {
+            padding: '8px 12px',
+            wordBreak: 'break-word',
+            wordSpacing: '0.1em',
+            lineHeight: '1.5',
+          },
         }}
       >
         <Button

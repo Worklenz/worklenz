@@ -69,6 +69,13 @@ describe("AuditLogExportService", () => {
     });
   });
 
+  describe("getJob", () => {
+    it("returns null without querying when the job id is not a UUID", async () => {
+      await expect(AuditLogExportService.getJob("not-a-job-id")).resolves.toBeNull();
+      expect(db.query).not.toHaveBeenCalled();
+    });
+  });
+
   describe("getLatestJob", () => {
     it("queries the organization's newest job from the last 24 hours", async () => {
       (db.query as jest.Mock).mockResolvedValue({
@@ -87,6 +94,17 @@ describe("AuditLogExportService", () => {
     it("returns null when there is no recent job", async () => {
       (db.query as jest.Mock).mockResolvedValue({ rows: [] });
       await expect(AuditLogExportService.getLatestJob("org-1")).resolves.toBeNull();
+    });
+
+    it("preserves a null creator after the requesting user has been deleted", async () => {
+      (db.query as jest.Mock).mockResolvedValue({
+        rows: [{ id: "job-1", organization_id: "org-1", created_by: null, status: "ready", filters: {} }],
+      });
+
+      await expect(AuditLogExportService.getLatestJob("org-1")).resolves.toMatchObject({
+        id: "job-1",
+        created_by: null,
+      });
     });
   });
 

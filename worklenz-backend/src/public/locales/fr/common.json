@@ -118,5 +118,21 @@
   "need-help": "Besoin d'aide ?",
   "contact-support": "Contacter l'assistance",
   "view-pricing": "voir les prix",
-  "justNow": "Juste maintenant"
+  "justNow": "Juste maintenant",
+  "error": {
+    "title": "Erreur",
+    "unknownError": "Une erreur inconnue s'est produite",
+    "description": "Nous avons rencontré une erreur inattendue. Veuillez réessayer ou revenir à la page d'accueil.",
+    "somethingWentWrong": "Quelque chose s'est mal passé",
+    "goHome": "Rentrer à la maison",
+    "viewDetails": "Afficher les détails de l'erreur",
+    "errorMessage": "Message d'erreur",
+    "retry": "Réessayez",
+    "stackTrace": "Trace de pile"
+  },
+  "noDataAvailable": "Aucune donnée disponible",
+  "business-trial-then-plan": "vous continuerez sur {{plan}} après cela",
+  "licennse-expired-contacting-support": "Contacter l'assistance...",
+  "loadingData": "Chargement des données...",
+  "refreshingData": "Actualisation des données..."
 }

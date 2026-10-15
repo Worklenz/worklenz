@@ -75,5 +75,10 @@
   "convertToTaskError": "Falha ao criar a tarefa",
   "convertToTaskSuccess": "Tarefa criada a partir da mensagem",
   "noClientProject": "Este cliente não tem nenhum projeto atribuído",
-  "createTask": "Criar tarefa"
+  "createTask": "Criar tarefa",
+  "errorSendingMessage": "Falha ao enviar a mensagem",
+  "comingSoon": "As reações estão disponíveis no chat do projeto",
+  "actions": {
+    "reply": "Responder"
+  }
 }

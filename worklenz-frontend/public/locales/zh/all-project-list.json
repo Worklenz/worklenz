@@ -53,5 +53,14 @@
     "noClient": "无客户",
     "noPriority": "无优先级",
     "noCategory": "无类别"
-  }
+  },
+  "errors": {
+    "loadFailed": "无法加载项目。请再试一次。",
+    "refreshFailed": "无法刷新项目。请再试一次。"
+  },
+  "rowsPerPage": "每页行数：",
+  "groups": "团体",
+  "retry": "重试",
+  "searchProjects": "按项目名称搜索",
+  "members": "成员"
 }

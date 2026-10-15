@@ -1,0 +1,126 @@
+{
+  "page": {
+    "title": "Overview",
+    "description": "Co wymaga Twojej uwagi wśród klientów, projektów i dyskusji.",
+    "editingHint": "Drag widgets to reorder them, change their size, or hide the ones you do not need.",
+    "loadFailed": "Nie można załadować przeglądu."
+  },
+  "widget": {
+    "viewAll": "Zobacz wszystkie",
+    "retry": "Spróbuj ponownie",
+    "error": "Nie można załadować tego widgetu."
+  },
+  "edit": {
+    "customize": "Dostosuj",
+    "done": "Gotowe",
+    "cancel": "Cancel",
+    "reset": "Reset to default",
+    "resetConfirm": "Przywrócić domyślny układ?",
+    "saveFailed": "Nie można zapisać układu.",
+    "resetFailed": "Nie udało się zresetować układu.",
+    "drag": "Przeciągnij, aby zmienić kolejność {{title}}",
+    "size": "Rozmiar {{title}}",
+    "size_s": "S",
+    "size_m": "M",
+    "size_l": "L",
+    "hide": "Ukryj widżet",
+    "show": "Pokaż widżet",
+    "hideNamed": "Ukryj {{title}}",
+    "showNamed": "Pokaż {{title}}",
+    "save": "Zapisz",
+    "saved": "Przegląd został zapisany",
+    "resetDone": "Przegląd zresetowany do układu domyślnego",
+    "resetConfirmHelp": "Zapisana aranżacja zostanie usunięta.",
+    "addWidget": "Dodaj widżet",
+    "emptyTitle": "Brak widżetów w Twoim przeglądzie",
+    "emptyHelp": "Wybierz Dostosuj, a następnie Dodaj widżet, aby go przywrócić.",
+    "widgetSettings": "Ustawienia {{name}}",
+    "settingsFor": "Ustawienia dla {{name}}",
+    "width": "Szerokość",
+    "widthQuarter": "Szerokość ćwiartkowa",
+    "widthThird": "Jedna trzecia",
+    "widthHalf": "Połowa szerokości",
+    "widthTwoThirds": "Dwie trzecie",
+    "widthThreeQuarters": "Trzy czwarte",
+    "widthFull": "Pełna szerokość",
+    "moveEarlier": "Przenieś się wcześniej",
+    "moveLater": "Przenieś później",
+    "leaveTitle": "Wyjść bez zapisywania?",
+    "leaveBody": "Twoje zmiany w przeglądzie nie zostały zapisane i zostaną utracone.",
+    "leave": "Wyjdź",
+    "stay": "Zostań"
+  },
+  "status": {
+    "awaiting": "Oczekiwanie",
+    "approved": "Zatwierdzone",
+    "changes_requested": "Zażądano zmian",
+    "cr_submitted": "Przesłane",
+    "cr_under_review": "W trakcie przeglądu",
+    "cr_more_info": "Więcej informacji",
+    "cr_approved": "Zatwierdzone",
+    "cr_in_progress": "W toku",
+    "cr_completed": "Ukończono",
+    "cr_rejected": "Odrzucony",
+    "cr_cancelled": "Anulowano"
+  },
+  "widgets": {
+    "kpi_awaiting_approvals": {
+      "title": "Oczekujące zatwierdzenia",
+      "sub": "{{count}} spóźniony"
+    },
+    "kpi_open_change_requests": {
+      "title": "Zmień prośby o sprawdzenie",
+      "sub": "{{count}} czeka na klienta"
+    },
+    "kpi_delayed_milestones": {
+      "title": "Opóźnione kamienie milowe",
+      "sub": "W projektach portalowych"
+    },
+    "kpi_unread_discussions": {
+      "title": "Nieprzeczytane dyskusje",
+      "sub": "Z nowymi wiadomościami od klientów"
+    },
+    "kpi_overdue_invoices": {
+      "title": "Zaległe faktury",
+      "none": "Nic nie jest przeterminowane"
+    },
+    "pending_approvals": {
+      "title": "Oczekujące zatwierdzenia",
+      "empty": "Żadne zatwierdzenia nie czekają na klienta.",
+      "overdue": "Zaległe · {{date}}",
+      "due": "Termin {{date}}"
+    },
+    "change_requests": {
+      "title": "Zmień prośby o sprawdzenie",
+      "empty": "Żadne prośby o zmiany nie wymagają sprawdzenia."
+    },
+    "upcoming_milestones": {
+      "title": "Nadchodzące kamienie milowe",
+      "empty": "Brak otwartych kamieni milowych w projektach portalowych."
+    },
+    "latest_discussions": {
+      "title": "Najnowsze dyskusje",
+      "empty": "Nie ma jeszcze dyskusji."
+    },
+    "mentions_me": {
+      "title": "Wzmianki o mnie",
+      "empty": "Nikt nie wspomniał o Tobie w dyskusji.",
+      "row": "{{name}} w {{project}}"
+    },
+    "approvals_by_status": {
+      "title": "Zatwierdzenia według statusu",
+      "empty": "Żadne zatwierdzenia nie zostały jeszcze przesłane."
+    },
+    "cr_by_status": {
+      "title": "Zmień potok żądań",
+      "empty": "Nie ma jeszcze żadnych próśb o zmianę."
+    },
+    "needs_attention": {
+      "title": "Potrzebuje uwagi",
+      "empty": "Nic nie wymaga uwagi. Niezła robota.",
+      "approval_overdue": "Spóźniona akceptacja",
+      "change_request_review": "Żądanie o wysokim priorytecie do sprawdzenia",
+      "milestone_late": "Późny kamień milowy"
+    }
+  }
+}

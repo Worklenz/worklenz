@@ -1,0 +1,122 @@
+{
+  "auditRecorded": "Cambio de permiso registrado en el registro de auditoría.",
+  "loadEmpty": "No se devolvió ninguna configuración del portal.",
+  "loadFailed": "No se pudo cargar la configuración del portal.",
+  "nav": {
+    "notifications": "Notifications",
+    "roles": "Roles del cliente",
+    "sharing": "Compartir y visibilidad"
+  },
+  "notifications": {
+    "banner": "Las notificaciones enviadas a los clientes nunca contienen contenido exclusivamente interno en el título o el cuerpo. Las alertas dentro de la aplicación están siempre activas. El correo electrónico es opcional por evento.",
+    "client": {
+      "accessChanges": "Cambios de acceso",
+      "accessChangesDescription": "Invitación, cambio de rol o asignación de proyecto.",
+      "approvalRequest": "Nueva solicitud de aprobación",
+      "approvalRequestDescription": "Se solicita a un aprobador de cliente que apruebe un elemento.",
+      "changeRequestUpdate": "Actualización de solicitud de cambio",
+      "changeRequestUpdateDescription": "Cambios de estado, respuesta o estimación de una solicitud.",
+      "commentOrReply": "Comentar o responder",
+      "commentOrReplyDescription": "Alguien responde en una discusión visible para el cliente.",
+      "fileShared": "Archivo compartido",
+      "fileSharedDescription": "Un archivo se marca como Cliente visible o se carga una nueva versión.",
+      "milestoneChange": "Cambio de hito",
+      "milestoneChangeDescription": "Un hito visible para el cliente cambia de estado o de fecha.",
+      "projectUpdate": "Actualización del proyecto",
+      "projectUpdateDescription": "El estado del proyecto cambia o se publica una actualización.",
+      "title": "Notificaciones a clientes"
+    },
+    "emailColumn": "Email",
+    "emailLabel": "Correo electrónico: {{event}}",
+    "eventColumn": "Evento",
+    "inAppColumn": "En la aplicación",
+    "inAppLabel": "En la aplicación: {{event}} (siempre activado)",
+    "team": {
+      "approvalDecision": "Decisión de aprobación del cliente",
+      "approvalDecisionDescription": "Un cliente aprueba o solicita cambios.",
+      "changeRequest": "Nueva solicitud de cambio o seguimiento",
+      "changeRequestDescription": "Un cliente envía una solicitud o responde a una pregunta.",
+      "clientComment": "Nuevo comentario de cliente",
+      "clientCommentDescription": "Un cliente comenta en una discusión.",
+      "clientFileUpload": "Carga de archivos de cliente",
+      "clientFileUploadDescription": "Un cliente carga un archivo a un proyecto.",
+      "title": "Notificaciones a tu equipo"
+    }
+  },
+  "retry": "Reintentar",
+  "roles": {
+    "allowed": "Permitido",
+    "alwaysTrue": {
+      "nextRequest": "La desactivación de un usuario o la eliminación de una asignación de proyecto tiene efecto en su siguiente solicitud, no en su próximo inicio de sesión.",
+      "noTeamDirectory": "Un usuario cliente nunca ve el directorio interno de su equipo y nunca puede convertirse en administrador de su espacio de trabajo.",
+      "oneOrganization": "Un usuario cliente pertenece exactamente a una organización y solo ve los proyectos que se le han asignado.",
+      "ownOrganizationOnly": "Un administrador de cliente solo puede ver y administrar usuarios en su propia organización, nunca en la de otro cliente.",
+      "title": "Siempre cierto"
+    },
+    "capability": {
+      "approve": "Aprobar artículos o solicitar cambios",
+      "comment": "Comente y responda en discusiones visibles para el cliente.",
+      "manageUsers": "Administrar usuarios en su propia organización (si está habilitado a continuación)",
+      "submitChangeRequest": "Enviar y seguir solicitudes de cambio",
+      "upload": "Subir archivos (donde el proyecto lo permita)",
+      "view": "Ver proyectos asignados, hitos, tareas y archivos visibles para el cliente"
+    },
+    "capabilityColumn": "Capacidad",
+    "matrixDescription": "Tres roles, sin permiso de constructor. Se aplica un rol a cada proyecto al que está asignado el usuario.",
+    "matrixError": "No se pudieron cargar los permisos del rol.",
+    "matrixTitle": "Qué puede hacer cada rol",
+    "notAllowed": "No permitido",
+    "selfManagement": {
+      "description": "Deje que un administrador de clientes administre quién desde su propia organización tiene acceso al portal, en lugar de enrutar cada cambio a través de su equipo.",
+      "invite": {
+        "description": "Un administrador de cliente puede invitar a un colega de su propia organización.",
+        "label": "Permitir que los administradores de clientes inviten a los usuarios"
+      },
+      "remove": {
+        "description": "Un administrador de cliente puede eliminar a otro usuario de su propia organización.",
+        "label": "Permitir que los administradores de clientes eliminen usuarios"
+      },
+      "title": "Autogestión del administrador del cliente"
+    },
+    "signIn": {
+      "addedOnly": "Solo una dirección que usted o un administrador de cliente que usted permita haya agregado puede recibir un código. Los demás no obtienen nada.",
+      "code": "No hay contraseñas. Un cliente inicia sesión con un código de 6 dígitos enviado a su dirección de correo electrónico. Funciona una vez y caduca después de 10 minutos.",
+      "description": "Nada que configurar. Cada cliente firma de la misma forma.",
+      "direct": "Los clientes también pueden abrir el portal, escribir su dirección y recibir un código, sin el enlace.",
+      "link": "Un correo electrónico de invitación incluye un enlace de inicio de sesión con la dirección incorporada. Al abrirlo, se envía el código de inmediato. Los enlaces caducan después de 7 días y los Usuarios pueden reenviarlos.",
+      "title": "Cómo inician sesión los clientes"
+    }
+  },
+  "saveFailed": "No se pudo guardar la configuración del portal.",
+  "sharing": {
+    "defaults": {
+      "clientUploads": {
+        "description": "Los administradores de clientes y los miembros clientes pueden agregar archivos. Los espectadores de clientes nunca podrán hacerlo. Puede anular esto por proyecto.",
+        "label": "Permitir cargas de clientes en nuevos proyectos del portal"
+      },
+      "showInvoices": {
+        "description": "Agrega una página de Facturas para los clientes. Oculto por defecto.",
+        "label": "Mostrar facturas en el portal del cliente"
+      },
+      "title": "Secciones y valores predeterminados"
+    },
+    "rules": {
+      "defaultInternal": "Las tareas, archivos, hitos y comentarios son solo internos de forma predeterminada, para elementos nuevos y existentes.",
+      "explicitShare": "Nada llega al portal hasta que un miembro autorizado del equipo lo marca como Cliente Visible.",
+      "fixedTag": "Reglas fijas",
+      "neverExposed": "Los comentarios internos, registros de tiempo, estimaciones, costos y dependencias nunca se exponen, independientemente de lo que comparta.",
+      "noHints": "Un elemento oculto nunca se cuenta ni se insinúa en paneles, listas o notificaciones.",
+      "revertImmediate": "Al volver a convertir un elemento en Solo interno, se elimina del portal inmediatamente y se mantiene su historial interno.",
+      "title": "Cómo funciona compartir"
+    },
+    "shared": {
+      "count": "{{shared}} de {{total}} cliente visible",
+      "description": "Contados sobre proyectos que tienen el Portal del Cliente activado.",
+      "files": "Archivos",
+      "milestones": "Hitos",
+      "tasks": "Tareas",
+      "title": "Actualmente compartido entre proyectos del portal"
+    }
+  },
+  "subtitle": "Branding, qué se comparte por defecto, roles y notificaciones para tu portal de cliente."
+}

@@ -73,5 +73,9 @@
   "notSetText": "Nieustawione",
   "needsAttentionText": "Wymaga uwagi",
   "atRiskText": "Ryzyko",
-  "goodText": "Dobrze"
+  "goodText": "Dobrze",
+  "noTasksText": "Brak zadań",
+  "phaseColumn": "Faza",
+  "completedOnColumn": "Ukończono dnia",
+  "daysOverdueColumn": "Dni spóźnione"
 }

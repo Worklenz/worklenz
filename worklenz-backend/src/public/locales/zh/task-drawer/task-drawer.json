@@ -37,7 +37,8 @@
         "selectDate": "选择日期",
         "selectOption": "选择选项",
         "selectPeople": "选择人员",
-        "updateError": "更新自定义字段失败"
+        "updateError": "更新自定义字段失败",
+        "enterText": "输入文本"
       },
       "recurring": "重复"
     },

@@ -108,7 +108,8 @@
       "high": "Sobreasignado",
       "watch": "Vigilar",
       "ok": "OK"
-    }
+    },
+    "overallocatedCount": "{{count}} miembros"
   },
   "profitability": {
     "pageTitle": "Rentabilidad",

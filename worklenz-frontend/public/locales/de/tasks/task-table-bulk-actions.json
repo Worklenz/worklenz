@@ -44,5 +44,8 @@
   "DUE_DATE_UPDATED": "Fälligkeitsdatum erfolgreich aktualisiert",
   "DUE_DATE_CLEARED": "Fälligkeitsdatum erfolgreich gelöscht",
   "archiveSuccessTitle": "Sammelaktualisierung abgeschlossen",
-  "archiveSuccessMessage": "{{parentCount}} Aufgaben und {{subtaskCount}} Unteraufgaben wurden {{action}}."
+  "archiveSuccessMessage": "{{parentCount}} Aufgaben und {{subtaskCount}} Unteraufgaben wurden {{action}}.",
+  "SET_START_DATE": "Startdatum festlegen",
+  "Unarchive": "Dearchivieren",
+  "Archive": "Archivieren"
 }
