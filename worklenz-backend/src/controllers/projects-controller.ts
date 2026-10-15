@@ -199,7 +199,7 @@ export default class ProjectsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getMyProjectsToTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT p.id, p.name, p.color_code
+    const q = `SELECT p.id, p.name, p.color_code, p.start_date, p.end_date
                FROM projects p
                ${NON_GUEST_ACCESS_JOIN('$2')}
                -- For non-admins, require explicit project membership

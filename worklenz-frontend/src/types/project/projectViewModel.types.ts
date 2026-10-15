@@ -36,8 +36,8 @@ export interface IProjectViewModel extends IProject {
   status?: string;
   status_color?: string;
   status_icon?: string;
-  start_date?: string;
-  end_date?: string;
+  start_date?: string | null;
+  end_date?: string | null;
   phase_label?: string;
   /** Delivery mode: general PM vs software (issues/sprints/backlog). */
   project_type?: ProjectType;
