@@ -58,13 +58,15 @@ describe('TimeLogItem', () => {
     mocks.deleteLog.mockResolvedValue({ done: true });
   });
 
-  it('renders a normal single-day time log without breakdown', () => {
+  it('renders a normal single-day time log with same-day timeline range', () => {
     const normalLog: ITaskLogViewModel = {
       id: 'log-1',
       user_id: 'user-1',
       user_name: 'John Doe',
       time_spent_text: '2h 0m',
       created_at: '2026-10-15T10:00:00.000Z',
+      start_time: '2026-10-15T10:00:00.000Z',
+      end_time: '2026-10-15T12:00:00.000Z',
       description: 'Worked on feature',
     };
 
@@ -73,10 +75,11 @@ describe('TimeLogItem', () => {
     expect(screen.getByText('John Doe')).toBeDefined();
     expect(screen.getByText('2h 0m')).toBeDefined();
     expect(screen.getByText('Worked on feature')).toBeDefined();
+    expect(screen.getByText(/Oct 15, 2026, 10:00 AM – 12:00 PM/)).toBeDefined();
     expect(screen.queryByText('Daily Breakdown:')).toBeNull();
   });
 
-  it('renders an overnight split time log with combined time and daily breakdown tags', () => {
+  it('renders an overnight split time log with combined time and cross-day timeline range without breakdown box', () => {
     const splitLog: ITaskLogViewModel = {
       id: 'log-part-1',
       part_log_ids: ['log-part-1', 'log-part-2'],
@@ -85,27 +88,9 @@ describe('TimeLogItem', () => {
       user_name: 'John Doe',
       time_spent_text: '4h 0m',
       created_at: '2026-10-15T22:00:00.000Z',
+      start_time: '2026-10-15T22:00:00.000Z',
+      end_time: '2026-10-16T02:00:00.000Z',
       description: 'Overnight maintenance work',
-      daily_breakdown: [
-        {
-          date: '2026-10-15',
-          date_formatted: 'Oct 15, 2026',
-          time_spent: 7200,
-          time_spent_text: '2h 0m',
-          start_time: '2026-10-15T22:00:00.000Z',
-          end_time: '2026-10-16T00:00:00.000Z',
-          time_range_text: '22:00 – 00:00',
-        },
-        {
-          date: '2026-10-16',
-          date_formatted: 'Oct 16, 2026',
-          time_spent: 7200,
-          time_spent_text: '2h 0m',
-          start_time: '2026-10-16T00:00:00.000Z',
-          end_time: '2026-10-16T02:00:00.000Z',
-          time_range_text: '00:00 – 02:00',
-        },
-      ],
     };
 
     render(<TimeLogItem log={splitLog} />);
@@ -113,9 +98,8 @@ describe('TimeLogItem', () => {
     expect(screen.getByText('John Doe')).toBeDefined();
     expect(screen.getByText('4h 0m')).toBeDefined();
     expect(screen.getByText('Overnight maintenance work')).toBeDefined();
-    expect(screen.getByText('Daily Breakdown:')).toBeDefined();
-    expect(screen.getByText('Oct 15, 2026')).toBeDefined();
-    expect(screen.getByText('Oct 16, 2026')).toBeDefined();
+    expect(screen.getByText(/Oct 15, 2026, 10:00 PM – Oct 16, 2026, 2:00 AM/)).toBeDefined();
+    expect(screen.queryByText('Daily Breakdown:')).toBeNull();
   });
 
   it('deletes both underlying log IDs when deleting an overnight split entry', async () => {

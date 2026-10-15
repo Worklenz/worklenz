@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Divider, Flex, Popconfirm, Typography, Space, Tag, theme } from '@/shared/antd-imports';
+import { Button, Divider, Flex, Popconfirm, Typography, Space } from '@/shared/antd-imports';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
-import { formatDateTimeWithUserTimezone } from '@/utils/format-date-time-with-user-timezone';
+import { formatLogTimeline } from '@/utils/format-date-time-with-user-timezone';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import './time-log-item.css';
 import { taskTimeLogsApiService } from '@/api/tasks/task-time-logs.api.service';
@@ -37,7 +37,6 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
   const projectId = taskFormViewModel?.task?.project_id ?? null;
-  const { token } = theme.useToken();
   const isProjectManager = useIsProjectManager(projectId);
   const isOwnerOrAdmin = authService.isOwnerOrAdmin();
 
@@ -132,7 +131,7 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
                   {renderLoggedByTimer()} {calculateTimeGap(created_at || '')}
                 </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {formatDateTimeWithUserTimezone(created_at || '', currentSession?.timezone_name)}
+                  {formatLogTimeline(log.start_time || created_at, log.end_time, currentSession?.timezone_name)}
                 </Typography.Text>
               </Flex>
               {renderActionButtons()}
@@ -142,31 +141,6 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
               <Typography.Text style={{ marginTop: 8, display: 'block' }}>
                 {description}
               </Typography.Text>
-            )}
-
-            {log.is_overnight_split && log.daily_breakdown && log.daily_breakdown.length > 0 && (
-              <div
-                style={{
-                  marginTop: 8,
-                  padding: '6px 10px',
-                  borderRadius: token.borderRadiusSM,
-                  background: token.colorFillAlter,
-                  border: `1px solid ${token.colorBorderSecondary}`,
-                }}
-              >
-                <Flex vertical gap={4}>
-                  <Typography.Text type="secondary" style={{ fontSize: 11, fontWeight: 500 }}>
-                    {t('taskTimeLogTab.dailyBreakdownTitle', { defaultValue: 'Daily Breakdown' })}:
-                  </Typography.Text>
-                  <Flex gap={6} wrap="wrap">
-                    {log.daily_breakdown.map((item, idx) => (
-                      <Tag key={idx} style={{ margin: 0, fontSize: 11 }}>
-                        <strong>{item.date_formatted}</strong>: {item.time_spent_text} ({item.time_range_text})
-                      </Tag>
-                    ))}
-                  </Flex>
-                </Flex>
-              </div>
             )}
           </Flex>
         </Flex>

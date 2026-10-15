@@ -77,6 +77,82 @@ export const formatDateTimeWithUserTimezone = (
 };
 
 /**
+ * Formats a time log start and end into a clean timeline range in the user's timezone (Option A - no seconds)
+ * Examples:
+ * - Overnight: "Oct 14, 2026, 11:00 PM – Oct 15, 2026, 2:00 AM"
+ * - Same-day: "Oct 14, 2026, 10:00 AM – 12:00 PM"
+ * - Single/fallback: "Oct 14, 2026, 11:00 PM"
+ */
+export const formatLogTimeline = (
+  startDateString?: string | null,
+  endDateString?: string | null,
+  userTimezone?: string | null
+): string => {
+  if (!startDateString) return '';
+
+  try {
+    const start = new Date(startDateString);
+    if (isNaN(start.getTime())) return startDateString;
+
+    const lng = (i18n.language || 'en').split('-')[0];
+    const localeMap: Record<string, string> = {
+      en: 'en-US',
+      es: 'es-ES',
+      pt: 'pt-PT',
+      de: 'de-DE',
+      fr: 'fr-FR',
+      pl: 'pl-PL',
+      zh: 'zh-CN',
+      alb: 'sq-AL',
+    };
+    const locale = localeMap[lng] || 'en-US';
+    const tz = userTimezone && userTimezone !== 'UTC' ? userTimezone : (userTimezone === 'UTC' ? 'UTC' : undefined);
+
+    const dateOpts: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      ...(tz ? { timeZone: tz } : {}),
+    };
+
+    const timeOpts: Intl.DateTimeFormatOptions = {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      ...(tz ? { timeZone: tz } : {}),
+    };
+
+    const formattedStartDate = start.toLocaleDateString(locale, dateOpts);
+    const formattedStartTime = start.toLocaleTimeString(locale, timeOpts);
+
+    if (!endDateString) {
+      return `${formattedStartDate}, ${formattedStartTime}`;
+    }
+
+    const end = new Date(endDateString);
+    if (isNaN(end.getTime()) || end.getTime() <= start.getTime()) {
+      return `${formattedStartDate}, ${formattedStartTime}`;
+    }
+
+    const formattedEndDate = end.toLocaleDateString(locale, dateOpts);
+    const formattedEndTime = end.toLocaleTimeString(locale, timeOpts);
+
+    const isSameDay =
+      start.toLocaleDateString(locale, { year: 'numeric', month: 'numeric', day: 'numeric', ...(tz ? { timeZone: tz } : {}) }) ===
+      end.toLocaleDateString(locale, { year: 'numeric', month: 'numeric', day: 'numeric', ...(tz ? { timeZone: tz } : {}) });
+
+    if (isSameDay) {
+      return `${formattedStartDate}, ${formattedStartTime} – ${formattedEndTime}`;
+    }
+
+    return `${formattedStartDate}, ${formattedStartTime} – ${formattedEndDate}, ${formattedEndTime}`;
+  } catch (error) {
+    console.error('Error formatting timeline with user timezone:', error);
+    return startDateString;
+  }
+};
+
+/**
  * Checks if a date is "yesterday" in the user's timezone
  * This is used to ensure consistency with reporting filters
  *
