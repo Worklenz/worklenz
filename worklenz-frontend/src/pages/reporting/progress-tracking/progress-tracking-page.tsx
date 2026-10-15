@@ -15,6 +15,7 @@ import {
   Tag,
   Tooltip,
   Typography,
+  SearchOutlined,
   theme,
 } from '@/shared/antd-imports';
 import type { TableProps } from '@/shared/antd-imports';
@@ -462,12 +463,22 @@ const ProgressTrackingPage = () => {
       <Card>
         <Flex gap={8} wrap="wrap" align="center" className="mb-4">
           <Input
+            prefix={
+              <SearchOutlined
+                style={{ color: token.colorTextTertiary }}
+              />
+            }
             allowClear
             value={searchInput}
             onChange={event => setSearchInput(event.target.value)}
             placeholder={t('searchPlaceholder', { defaultValue: 'Search project or client…' })}
             aria-label={t('searchLabel', { defaultValue: 'Search projects or clients' })}
             className="max-w-[280px]"
+            style={{
+              height: 32,
+              fontSize: 12,
+              borderRadius: 7,
+            }}
           />
           <Flex gap={6} wrap="wrap" role="group" aria-label={t('columnConfidence', { defaultValue: 'Delivery Confidence' })}>
             {chipItems.map(item => {
