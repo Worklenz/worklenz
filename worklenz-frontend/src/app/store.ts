@@ -85,6 +85,7 @@ import projectReportsTableColumnsReducer from '../features/reporting/projectRepo
 import projectReportsReducer from '../features/reporting/projectReports/project-reports-slice';
 import membersReportsReducer from '../features/reporting/membersReports/membersReportsSlice';
 import allTasksReportsReducer from '../features/reporting/allTasksReports/all-tasks-reports-slice';
+import timeInStatusReducer from '../features/reporting/timeInStatus/time-in-status-slice';
 import timeReportsOverviewReducer from '@features/reporting/time-reports/time-reports-overview.slice';
 
 import roadmapReducer from '../features/roadmap/roadmap-slice';
@@ -229,6 +230,7 @@ const coreReducers = {
   projectReportsReducer: projectReportsReducer,
   membersReportsReducer: membersReportsReducer,
   allTasksReportsReducer: allTasksReportsReducer,
+  timeInStatusReducer: timeInStatusReducer,
   roadmapReducer: roadmapReducer,
   groupByFilterDropdownReducer: groupByFilterDropdownReducer,
   timeReportsOverviewReducer: timeReportsOverviewReducer,

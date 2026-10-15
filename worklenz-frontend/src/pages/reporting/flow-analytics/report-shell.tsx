@@ -1,34 +1,44 @@
-import React, { useMemo, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import { useTranslation } from 'react-i18next';
-import { Card, DatePicker, Flex, Typography, theme } from '@/shared/antd-imports';
+import { Card, Flex, Typography, theme } from '@/shared/antd-imports';
 import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
-import { useGetProgressChartOptionsQuery } from '@/api/reporting/progress-chart.api.service';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { setDateRange, setDuration } from '@/features/reporting/reporting.slice';
+import { durations, LAST_WEEK } from '@/shared/constants';
+import { type GetFlowArgs, useGetProgressChartOptionsQuery } from '@/api/reporting/progress-chart.api.service';
 
-const DEFAULT_RANGE_DAYS = 30;
+const DEFAULT_RANGE_DAYS = 7;
 const MAX_RANGE_DAYS = 366;
 
 interface ReportShellProps {
   title: string;
   subtitle: string;
-  filters: React.ReactNode;
+  /** Toolbar shown on the subtitle's row, aligned to its bottom edge. */
+  actions?: React.ReactNode;
+  filters?: React.ReactNode;
   children: React.ReactNode;
 }
 
 /** Common page frame for the Reporting & Analytics reports: header, one filter card, then content. */
-export const ReportShell: React.FC<ReportShellProps> = ({ title, subtitle, filters, children }) => (
+export const ReportShell: React.FC<ReportShellProps> = ({ title, subtitle, actions, filters, children }) => (
   <Flex vertical gap={16} style={{ paddingBottom: 24 }}>
     <Flex vertical gap={4}>
       <CustomPageHeader title={title} style={{ padding: 0 }} />
-      <Typography.Text type="secondary" style={{ maxWidth: 900 }}>
-        {subtitle}
-      </Typography.Text>
-    </Flex>
-    <Card size="small">
-      <Flex gap={12} wrap="wrap" align="center">
-        {filters}
+      <Flex gap={12} wrap="wrap" align="end" justify="space-between">
+        <Typography.Text type="secondary" style={{ maxWidth: 900 }}>
+          {subtitle}
+        </Typography.Text>
+        {actions && <div style={{ marginLeft: 'auto' }}>{actions}</div>}
       </Flex>
-    </Card>
+    </Flex>
+    {filters && (
+      <Card size="small">
+        <Flex gap={12} wrap="wrap" align="center">
+          {filters}
+        </Flex>
+      </Card>
+    )}
     {children}
   </Flex>
 );
@@ -62,53 +72,78 @@ export const StatCard: React.FC<StatCardProps> = ({ label, value, caption, tone 
   );
 };
 
-/** Date range state shared by the CFD and Time in Status pages; defaults to the last 30 days. */
-export const useReportDateRange = () => {
-  const [range, setRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>(() => [
-    dayjs().subtract(DEFAULT_RANGE_DAYS - 1, 'day'),
-    dayjs(),
-  ]);
-  const dateRange = useMemo(
-    () => ({ from: range[0].format('YYYY-MM-DD'), to: range[1].format('YYYY-MM-DD') }),
-    [range]
-  );
-  return { range, setRange, dateRange };
+export interface ReportDateRange {
+  from: string;
+  to: string;
+}
+
+/**
+ * The date filter shared with the Members report (TimeWiseFilter writes it to `reportingReducer`),
+ * as YYYY-MM-DD. Falls back to the last 7 days and is clamped to the API's maximum span.
+ */
+export const useReportDateRange = (): ReportDateRange => {
+  const stored = useAppSelector(state => state.reportingReducer.dateRange);
+  return useMemo(() => {
+    const parsedFrom = stored[0] ? dayjs(stored[0]) : null;
+    const parsedTo = stored[1] ? dayjs(stored[1]) : null;
+    const to = parsedTo?.isValid() ? parsedTo : dayjs();
+    let from = parsedFrom?.isValid() ? parsedFrom : to.subtract(DEFAULT_RANGE_DAYS - 1, 'day');
+    if (to.diff(from, 'day') + 1 > MAX_RANGE_DAYS) from = to.subtract(MAX_RANGE_DAYS - 1, 'day');
+    return { from: from.format('YYYY-MM-DD'), to: to.format('YYYY-MM-DD') };
+  }, [stored]);
 };
 
-export const ReportRangePicker: React.FC<{
-  value: [dayjs.Dayjs, dayjs.Dayjs];
-  onChange: (value: [dayjs.Dayjs, dayjs.Dayjs]) => void;
-}> = ({ value, onChange }) => {
-  const { t } = useTranslation('reporting-flow');
-  return (
-    <DatePicker.RangePicker
-      allowClear={false}
-      value={value}
-      format="MMM DD, YYYY"
-      aria-label={t('dateRange', { defaultValue: 'Date range' })}
-      presets={[
-        { label: t('last7Days', { defaultValue: 'Last 7 days' }), value: [dayjs().subtract(6, 'day'), dayjs()] },
-        { label: t('last30Days', { defaultValue: 'Last 30 days' }), value: [dayjs().subtract(29, 'day'), dayjs()] },
-        { label: t('last90Days', { defaultValue: 'Last 90 days' }), value: [dayjs().subtract(89, 'day'), dayjs()] },
-      ]}
-      disabledDate={(current, info) => {
-        if (current.isAfter(dayjs(), 'day')) return true;
-        const from = (info as { from?: dayjs.Dayjs }).from;
-        return Boolean(from && Math.abs(current.diff(from, 'day')) >= MAX_RANGE_DAYS);
-      }}
-      onChange={dates => {
-        if (dates?.[0] && dates[1]) onChange([dates[0], dates[1]]);
-      }}
-    />
-  );
+/**
+ * Opens a report on "Last 7 days": the shared store may still hold the range picked in another report.
+ * TimeWiseFilter reads the stored duration when it mounts, so render the report only once this is true.
+ */
+export const useDefaultLastWeekFilter = (): boolean => {
+  const dispatch = useAppDispatch();
+  const [isReady, setIsReady] = useState(false);
+  useLayoutEffect(() => {
+    dispatch(setDuration(LAST_WEEK));
+    // Set the range too, so the first request is not made with the previous report's dates.
+    const [from, to] = durations.find(duration => duration.key === LAST_WEEK)?.dates?.split(' - ') ?? [];
+    if (from && to) dispatch(setDateRange([from, to]));
+    setIsReady(true);
+  }, [dispatch]);
+  return isReady;
+};
+
+interface FlowSelection {
+  selectedProjects: string[];
+  selectedAssignees: string[];
+  includeSubtasks: boolean;
+  includeArchived: boolean;
+}
+
+/**
+ * Query args shared by the flow reports. One selected project is read in "project" scope (a band per
+ * status); none or several use team scope, optionally limited to those projects.
+ */
+export const buildFlowArgs = (selection: FlowSelection, dateRange: ReportDateRange): GetFlowArgs => {
+  const { selectedProjects, selectedAssignees, includeSubtasks, includeArchived } = selection;
+  const isSingleProject = selectedProjects.length === 1;
+  return {
+    config: {
+      progressScope: isSingleProject ? 'project' : 'team',
+      projectId: isSingleProject ? selectedProjects[0] : undefined,
+      includeSubtasks,
+    },
+    includeArchived,
+    dateRange,
+    assigneeIds: selectedAssignees,
+    projectIds: isSingleProject ? undefined : selectedProjects,
+  };
 };
 
 /** Projects (and team members) for the report pickers. */
-export const useReportOptions = () => {
-  const { data, isFetching } = useGetProgressChartOptionsQuery({});
+export const useReportOptions = (includeArchived = false) => {
+  const { data, isFetching } = useGetProgressChartOptionsQuery({ includeArchived });
   return {
     projects: data?.body?.projects ?? [],
     members: data?.body?.members ?? [],
+    statuses: data?.body?.statuses ?? [],
     isFetching,
   };
 };

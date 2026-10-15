@@ -29,6 +29,11 @@ vi.mock('@/hooks/useAppSelector', () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({ themeReducer: { mode: 'light' } }),
 }));
+const taskDrawerMocks = vi.hoisted(() => ({ openTask: vi.fn() }));
+vi.mock('./components/time-logs/useTimeLogsTaskDrawer', () => ({
+  useTimeLogsTaskDrawer: () => ({ openTask: taskDrawerMocks.openTask, drawer: null }),
+}));
+
 vi.mock('@/api/reporting/reporting-time-logs.api.service', () => ({
   reportingTimeLogsApiService: {
     getTimeLogs: (...args: unknown[]) => mocks.getTimeLogs(...args),
@@ -439,6 +444,8 @@ describe('Time Logs page', { timeout: 20000 }, () => {
 
       const names = screen
         .getAllByRole('option')
+        // not the rows-per-page <select>'s own options
+        .filter(option => option.tagName !== 'OPTION')
         // each option reads "<preset> <resolved dates>"; keep just the preset name
         .map(option => (option.textContent ?? '').replace(/\s*[A-Z][a-z]{2} \d.*$/, '').trim());
       expect(names).toEqual([
@@ -622,13 +629,13 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       renderPage();
       await screen.findByText('Project Management');
 
-      await user.click(screen.getByRole('button', { name: 'Duration' }));
+      await user.click(screen.getByRole('columnheader', { name: /^Duration/ }));
       await waitFor(() =>
         expect(lastListRequest()).toEqual(
           expect.objectContaining({ sort_field: 'duration', sort_order: 'asc', page: 1 })
         )
       );
-      await user.click(screen.getByRole('button', { name: 'Duration' }));
+      await user.click(screen.getByRole('columnheader', { name: /^Duration/ }));
       await waitFor(() => expect(lastListRequest().sort_order).toBe('desc'));
     });
   });
@@ -689,7 +696,7 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       expect(screen.getByRole('radio', { name: 'Flat' })).toBeChecked();
       expect(screen.getByRole('radio', { name: 'By task' })).not.toBeChecked();
       expect(lastListRequest().view).toBe('flat');
-      expect(screen.getByRole('button', { name: 'Date' })).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: /^Date/ })).toBeInTheDocument();
     });
 
     it('explains each option in a tooltip', async () => {
@@ -720,7 +727,7 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       await waitFor(() => expect(lastListRequest().view).toBe('task'));
       expect(await screen.findByText('Review • Meeting')).toBeInTheDocument();
       expect(screen.getByRole('radio', { name: 'By task' })).toBeChecked();
-      expect(screen.getByRole('button', { name: 'Last logged' })).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: /^Last logged/ })).toBeInTheDocument();
       expect(screen.getByText('Tasks: 1')).toBeInTheDocument();
       // the whole set's time, summed across the task's entries
       expect(screen.getAllByText('3h 30m').length).toBeGreaterThanOrEqual(1);
@@ -757,7 +764,7 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       await openPill(user, 'Members');
       await user.click(await screen.findByText('Ushani'));
       await user.click(screen.getByRole('button', { name: 'Apply' }));
-      await user.click(screen.getByRole('button', { name: 'Duration' }));
+      await user.click(screen.getByRole('columnheader', { name: /^Duration/ }));
       await waitFor(() => expect(lastListRequest().sort_field).toBe('duration'));
 
       await user.click(screen.getByRole('radio', { name: 'By task' }));
@@ -781,7 +788,17 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       await user.click(screen.getByRole('radio', { name: 'Flat' }));
       expect(await screen.findByText('Meeting')).toBeInTheDocument();
       expect(lastListRequest().view).toBe('flat');
-      expect(screen.getByRole('button', { name: 'Date' })).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: /^Date/ })).toBeInTheDocument();
+    });
+  });
+
+  describe('opening a task', () => {
+    it('opens the task drawer for the task whose name is clicked', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText('Project Management');
+      await user.click(screen.getByRole('button', { name: 'Open task Project Management' }));
+      expect(taskDrawerMocks.openTask).toHaveBeenCalledWith(ENTRY.task_id, ENTRY.project_id);
     });
   });
 
@@ -814,7 +831,7 @@ describe('Time Logs page', { timeout: 20000 }, () => {
         page: 1,
         page_size: 20,
       });
-      expect(await screen.findByText('Total Entries')).toBeInTheDocument();
+      expect(await screen.findByRole('columnheader', { name: 'Total Entries' })).toBeInTheDocument();
       expect(screen.getByText('Kai Buhler')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Group by: Member/ })).toBeInTheDocument();
       // the table is gone
@@ -835,7 +852,7 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       await screen.findByText('Project Management');
       await chooseGroupBy(user, label);
       await waitFor(() => expect(lastGroupsRequest().group_by).toBe(groupBy));
-      expect(await screen.findByText(secondary)).toBeInTheDocument();
+      expect(await screen.findByRole('columnheader', { name: secondary })).toBeInTheDocument();
     });
 
     it('stops loading the table while grouped, and the groups while not', async () => {
@@ -845,7 +862,7 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       const listCalls = mocks.getTimeLogs.mock.calls.length;
 
       await chooseGroupBy(user, 'Project');
-      await screen.findByText('Total Entries');
+      await screen.findByRole('columnheader', { name: 'Total Entries' });
       expect(mocks.getTimeLogs.mock.calls.length).toBe(listCalls);
 
       const groupCalls = mocks.getTimeLogGroups.mock.calls.length;
@@ -862,7 +879,7 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       await screen.findByText('Review • Meeting');
 
       await chooseGroupBy(user, 'Member');
-      await screen.findByText('Total Entries');
+      await screen.findByRole('columnheader', { name: 'Total Entries' });
       expect(screen.queryByRole('radio', { name: 'Flat' })).not.toBeInTheDocument();
       expect(screen.queryByRole('radio', { name: 'By task' })).not.toBeInTheDocument();
 
@@ -911,9 +928,9 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       renderPage();
       await screen.findByText('Project Management');
       await chooseGroupBy(user, 'Client');
-      await screen.findByText('1 – 20 of 45');
+      await screen.findByText('1-20 of 45');
 
-      await user.click(screen.getByRole('button', { name: '2' }));
+      await user.click(screen.getByTitle('2'));
       await waitFor(() => expect(lastGroupsRequest().page).toBe(2));
     });
 
@@ -925,8 +942,8 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       renderPage();
       await screen.findByText('Project Management');
       await chooseGroupBy(user, 'Client');
-      await screen.findByText('1 – 20 of 45');
-      await user.click(screen.getByRole('button', { name: '2' }));
+      await screen.findByText('1-20 of 45');
+      await user.click(screen.getByTitle('2'));
       await waitFor(() => expect(lastGroupsRequest().page).toBe(2));
 
       await chooseGroupBy(user, 'Project');
@@ -974,7 +991,7 @@ describe('Time Logs page', { timeout: 20000 }, () => {
   describe('layout in the URL', () => {
     it('opens as the URL says: grouped', async () => {
       renderPage('/?group_by=project&view=task');
-      await screen.findByText('Total Entries');
+      await screen.findByRole('columnheader', { name: 'Total Entries' });
       expect(lastGroupsRequest().group_by).toBe('project');
       expect(screen.getByRole('button', { name: /Group by: Project/ })).toBeInTheDocument();
       expect(mocks.getTimeLogs).not.toHaveBeenCalled();
@@ -1029,7 +1046,7 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       await screen.findByText('Project Management');
       await user.click(screen.getByRole('radio', { name: 'By task' }));
       await screen.findByText('Review • Meeting');
-      await user.click(screen.getByRole('button', { name: 'Duration' }));
+      await user.click(screen.getByRole('columnheader', { name: /^Duration/ }));
       await exportFiltered(user);
       expect(mocks.exportTimeLogs).toHaveBeenLastCalledWith(
         expect.objectContaining({ view: 'task', sortField: 'duration', mode: 'filtered' })
@@ -1057,9 +1074,9 @@ describe('Time Logs page', { timeout: 20000 }, () => {
         renderPage();
         await screen.findByText('Project Management');
         await user.click(screen.getByRole('radio', { name: 'By task' }));
-        await user.click(await screen.findByRole('button', { name: 'Duration' }));
+        await user.click(await screen.findByRole('columnheader', { name: /^Duration/ }));
         await chooseGroupBy(user, label);
-        await screen.findByText('Total Entries');
+        await screen.findByRole('columnheader', { name: 'Total Entries' });
         await exportFiltered(user);
         const params =
           mocks.exportTimeLogs.mock.calls[mocks.exportTimeLogs.mock.calls.length - 1][0];
@@ -1082,8 +1099,8 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       renderPage();
       await screen.findByText('Project Management');
       await chooseGroupBy(user, 'Member');
-      await screen.findByText('1 – 20 of 45');
-      await user.click(screen.getByRole('button', { name: '2' }));
+      await screen.findByText('1-20 of 45');
+      await user.click(screen.getByTitle('2'));
       await waitFor(() => expect(lastGroupsRequest().page).toBe(2));
 
       await exportFiltered(user);
@@ -1103,7 +1120,7 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       await user.click(await screen.findByText('Ushani'));
       await user.click(screen.getByRole('button', { name: 'Apply' }));
       await chooseGroupBy(user, 'Project');
-      await screen.findByText('Total Entries');
+      await screen.findByRole('columnheader', { name: 'Total Entries' });
 
       await exportFiltered(user);
       expect(mocks.exportTimeLogs).toHaveBeenLastCalledWith(
@@ -1119,7 +1136,7 @@ describe('Time Logs page', { timeout: 20000 }, () => {
       renderPage();
       await screen.findByText('Project Management');
       await chooseGroupBy(user, 'Member');
-      await screen.findByText('Total Entries');
+      await screen.findByRole('columnheader', { name: 'Total Entries' });
 
       await user.click(screen.getByRole('button', { name: /Export/ }));
       const allGroup = (await screen.findByText('All entries in the date range')).closest(

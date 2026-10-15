@@ -4,6 +4,7 @@
   "Export Excel": "导出到Excel",
   "Export CSV": "导出到CSV",
   "timeSheet": "时间表",
+  "timeSheetSubtitle": "查看所选时间段内每位团队成员在各项目上记录的时长。",
   "Task Type": "任务类型",
   "Billable": "可计费",
 

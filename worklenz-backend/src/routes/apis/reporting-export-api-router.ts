@@ -3,11 +3,13 @@ import safeControllerFunction from "../../shared/safe-controller-function";
 import ReportingOverviewExportController from "../../controllers/reporting/overview/reporting-overview-export-controller";
 import ReportingAllocationController from "../../controllers/reporting/reporting-allocation-controller";
 import ReportingProjectsExportController from "../../controllers/reporting/projects/reporting-projects-export-controller";
+import ReportingTimeInStatusExportController from "../../controllers/reporting/projects/reporting-time-in-status-export-controller";
+import ReportingVelocityExportController from "../../controllers/reporting/projects/reporting-velocity-export-controller";
 import ReportingPortfolioController from "../../controllers/reporting/projects/reporting-portfolio-controller";
 import ReportingMembersController from "../../controllers/reporting/reporting-members-controller";
 import ReportingTimeLogsController from "../../controllers/reporting/reporting-time-logs-controller";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
-import { validateEnumParam } from "../../middlewares/validators/query-param-validator";
+import { validateEnumParam, validateUuidArrayParam } from "../../middlewares/validators/query-param-validator";
 
 const reportingExportApiRouter = express.Router();
 
@@ -16,6 +18,8 @@ reportingExportApiRouter.get("/overview/members", teamOwnerOrAdminValidator, saf
 reportingExportApiRouter.get("/allocation/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.export));
 reportingExportApiRouter.get("/projects/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingProjectsExportController.export));
 reportingExportApiRouter.get("/projects/filtered", teamOwnerOrAdminValidator, validateEnumParam("view", ["table", "grouped"]), safeControllerFunction(ReportingProjectsExportController.exportFiltered));
+reportingExportApiRouter.get("/time-in-status", teamOwnerOrAdminValidator, validateEnumParam("view", ["table", "grouped"]), validateEnumParam("scope", ["team", "project"]), validateEnumParam("group_by", ["project", "status", "assignee"]), validateEnumParam("order", ["asc", "desc"]), validateUuidArrayParam("projectIds", ","), validateUuidArrayParam("assigneeIds", ","), safeControllerFunction(ReportingTimeInStatusExportController.export));
+reportingExportApiRouter.get("/velocity", teamOwnerOrAdminValidator, validateEnumParam("metric", ["story_points", "issue_count"]), validateEnumParam("includeSubtasks", ["true", "false"]), validateEnumParam("trend", ["true", "false"]), safeControllerFunction(ReportingVelocityExportController.export));
 reportingExportApiRouter.get("/portfolio", teamOwnerOrAdminValidator, validateEnumParam("period", ["yearly", "quarterly", "monthly"]), validateEnumParam("type", ["summary", "detailed"]), safeControllerFunction(ReportingPortfolioController.export));
 reportingExportApiRouter.get("/projects-time-log-breakdown/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingProjectsExportController.exportProjectTimeLogs));
 reportingExportApiRouter.get("/members/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.export));

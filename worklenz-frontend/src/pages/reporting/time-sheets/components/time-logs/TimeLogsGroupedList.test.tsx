@@ -102,11 +102,12 @@ const renderList = (overrides: Partial<React.ComponentProps<typeof TimeLogsGroup
   return { props, ...render(<TimeLogsGroupedList {...props} />) };
 };
 
-const groupRows = () => screen.getAllByRole('listitem');
+// The group rows of the table (not the expanded rows that hold a group's entries).
+const groupRows = () => Array.from(document.querySelectorAll<HTMLElement>('tr.ant-table-row'));
+const cellTexts = (row: HTMLElement) =>
+  Array.from(row.querySelectorAll(':scope > td')).map(el => (el.textContent ?? '').trim());
 const headerTexts = () =>
-  Array.from(document.querySelectorAll('.time-logs-groups-head > span'))
-    .map(el => (el.textContent ?? '').trim())
-    .filter(Boolean);
+  screen.getAllByRole('columnheader').map(el => (el.textContent ?? '').trim());
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -119,9 +120,7 @@ describe('TimeLogsGroupedList', () => {
       renderList();
       const row = within(groupRows()[0]);
       expect(row.getByText('Kai Buhler')).toBeInTheDocument();
-      const cells = Array.from(
-        groupRows()[0].querySelectorAll('.time-logs-group-row > .time-logs-group-cell')
-      ).map(el => (el.textContent ?? '').trim());
+      const cells = cellTexts(groupRows()[0]);
       // name | projects | entries | billable entries | billable tasks | billable time |
       // non-billable entries | non-billable tasks | non-billable time | total time
       expect(cells.slice(1)).toEqual(['2', '6', '4', '3', '3h 30m', '2', '1', '1h 30m', '5h 0m']);
@@ -154,10 +153,7 @@ describe('TimeLogsGroupedList', () => {
           makeGroup({ group_key: 'p1', group_label: 'Website', member_count: 5, project_count: 1 }),
         ],
       });
-      const cells = Array.from(
-        groupRows()[0].querySelectorAll('.time-logs-group-row > .time-logs-group-cell')
-      ).map(el => (el.textContent ?? '').trim());
-      expect(cells[1]).toBe('5');
+      expect(cellTexts(groupRows()[0])[1]).toBe('5');
     });
 
     it('names the projects without a client "No client"', () => {
@@ -192,7 +188,7 @@ describe('TimeLogsGroupedList', () => {
         groups: [makeGroup({ group_key: 'p1', group_label: 'Website', group_color: '#ff0000' })],
       });
       const dot = container.querySelector(
-        '.time-logs-group-row span[aria-hidden="true"]'
+        'tr.ant-table-row .ant-badge-status-dot'
       ) as HTMLElement;
       expect(dot).toHaveStyle({ background: '#ff0000' });
     });
@@ -205,10 +201,11 @@ describe('TimeLogsGroupedList', () => {
       expect(screen.getByText('Total time logged')).toBeInTheDocument();
       expect(screen.getByText('42h 15m')).toBeInTheDocument();
       expect(screen.getByText('(42.25 h)')).toBeInTheDocument();
-      const foot = document.querySelector('.time-logs-groups-foot') as HTMLElement;
+      const row = screen.getByText('Total time logged').closest('tr') as HTMLTableRowElement;
       // the label spans every column but the last, which holds the total
-      expect(foot.children).toHaveLength(2);
-      expect((foot.children[0] as HTMLElement).style.gridColumn).toBe('1 / span 10');
+      expect(row.children).toHaveLength(2);
+      expect((row.children[0] as HTMLTableCellElement).colSpan).toBe(9);
+      expect(row.children[1]).toContainElement(screen.getByText('42h 15m'));
     });
 
     it('is exposed as a polite live region', () => {
@@ -219,12 +216,12 @@ describe('TimeLogsGroupedList', () => {
       );
     });
 
-    it('sits inside the scroll area, where CSS pins it to the bottom', () => {
-      const { container } = renderList();
-      const area = container.querySelector('.time-logs-groups-scroll') as HTMLElement;
-      expect(area.style.overflow).toBe('auto');
-      expect(area).toContainElement(screen.getByText('Total time logged'));
-      expect(area.contains(screen.getByText('Rows per page'))).toBe(false);
+    it('is the summary row, pinned below the scrolling rows', () => {
+      renderList();
+      const row = screen.getByText('Total time logged').closest('tr') as HTMLElement;
+      expect(row.closest('.ant-table-summary')).not.toBeNull();
+      expect(row.closest('.ant-table-body')).toBeNull();
+      expect(screen.getByLabelText('Rows per page:')).toBeInTheDocument();
     });
   });
 
@@ -278,7 +275,7 @@ describe('TimeLogsGroupedList', () => {
         'aria-expanded',
         'true'
       );
-      const entries = screen.getByRole('table', { name: 'Entries of Kai Buhler' });
+      const entries = screen.getByRole('region', { name: 'Entries of Kai Buhler' });
       expect(within(entries).getByText('Sep 17, 2026')).toBeInTheDocument();
       expect(within(entries).getByText('INS-12')).toBeInTheDocument();
       expect(within(entries).getByText('Project Management')).toBeInTheDocument();
@@ -299,7 +296,7 @@ describe('TimeLogsGroupedList', () => {
     ])('does not repeat the grouped %s as a column of its entries', async (groupBy, expected) => {
       renderList({ groupBy, groups: [makeGroup({ group_label: 'Group' })] });
       fireEvent.click(screen.getByRole('button', { name: 'Expand Group' }));
-      const entries = await screen.findByRole('table', { name: 'Entries of Group' });
+      const entries = await screen.findByRole('region', { name: 'Entries of Group' });
       await within(entries).findByText('Meeting with Wolfgang');
       expect(
         within(entries)
@@ -312,12 +309,26 @@ describe('TimeLogsGroupedList', () => {
       renderList();
       await openFirst();
       fireEvent.click(screen.getByRole('button', { name: 'Collapse Kai Buhler' }));
-      expect(screen.queryByText('Meeting with Wolfgang')).not.toBeInTheDocument();
+      // antd animates the row away, so it can stay in the DOM — but out of sight
+      await waitFor(() => expect(screen.queryByText('Meeting with Wolfgang')).not.toBeVisible());
       expect(screen.getByRole('button', { name: 'Expand Kai Buhler' })).toBeInTheDocument();
 
       // the whole row is a target too — but the chevron's click must not toggle twice
-      fireEvent.click(document.querySelector('.time-logs-group-row') as HTMLElement);
+      fireEvent.click(groupRows()[0]);
       expect(await screen.findByText('Meeting with Wolfgang')).toBeInTheDocument();
+    });
+
+    it('opens a task from the entries of an open group, and shows the project dot', async () => {
+      const onOpenTask = vi.fn();
+      mocks.getTimeLogs.mockResolvedValue(
+        entriesResponse([makeEntry({ project_color: '#00ff00' })], 6)
+      );
+      renderList({ groupBy: 'member', onOpenTask });
+      await openFirst();
+      const entries = screen.getByRole('region', { name: 'Entries of Kai Buhler' });
+      fireEvent.click(within(entries).getByRole('button', { name: 'Open task Project Management' }));
+      expect(onOpenTask).toHaveBeenCalledWith('t1', 'p1');
+      expect(entries.querySelector('.ant-badge-status-dot')).toHaveStyle({ background: '#00ff00' });
     });
 
     it('opens several groups independently', async () => {
@@ -356,14 +367,14 @@ describe('TimeLogsGroupedList', () => {
       const { rerender, props } = renderList({ totalGroups: 60 });
       await openFirst();
       rerender(<TimeLogsGroupedList {...props} page={2} />);
-      expect(screen.queryByText('Meeting with Wolfgang')).not.toBeInTheDocument();
+      await waitFor(() => expect(screen.queryByText('Meeting with Wolfgang')).not.toBeVisible());
     });
 
     it('shows a skeleton while the first entries load', () => {
       mocks.getTimeLogs.mockReturnValue(new Promise(() => undefined));
       renderList();
       fireEvent.click(screen.getByRole('button', { name: 'Expand Kai Buhler' }));
-      const entries = screen.getByRole('table', { name: 'Entries of Kai Buhler' });
+      const entries = screen.getByRole('region', { name: 'Entries of Kai Buhler' });
       expect(entries).toHaveAttribute('aria-busy', 'true');
       expect(entries.querySelectorAll('.ant-skeleton').length).toBeGreaterThan(0);
     });
@@ -424,10 +435,9 @@ describe('TimeLogsGroupedList', () => {
       expect(skeleton.querySelectorAll('.ant-skeleton').length).toBeGreaterThan(0);
     });
 
-    it('keeps the current groups on screen, dimmed, while a later response loads', () => {
+    it('keeps the current groups on screen under the loading overlay while a later response loads', () => {
       renderList({ loading: true });
       expect(screen.getByText('Kai Buhler')).toBeInTheDocument();
-      expect(screen.getByRole('list')).toHaveAttribute('aria-busy', 'true');
       expect(screen.queryByRole('status', { name: 'Loading time logs' })).not.toBeInTheDocument();
     });
 
@@ -451,24 +461,16 @@ describe('TimeLogsGroupedList', () => {
   });
 
   describe('pagination', () => {
-    it('pages the groups, with the same dropdown bar as the table', () => {
+    it('pages the groups, with the same bar as the table', () => {
       renderList({ totalGroups: 45, pageSize: 20 });
-      expect(screen.getByRole('button', { name: 'Rows per page 20' })).toBeInTheDocument();
-      expect(screen.getByText('1 – 20 of 45')).toBeInTheDocument();
+      expect(screen.getByLabelText('Rows per page:')).toHaveValue('20');
+      expect(screen.getByText('1-20 of 45')).toBeInTheDocument();
     });
 
-    it('changes the page size through the menu and returns to page 1', async () => {
+    it('changes the page size through the select and returns to page 1', () => {
       const { props } = renderList({ totalGroups: 120, page: 3 });
-      fireEvent.click(screen.getByRole('button', { name: 'Rows per page 20' }));
-      fireEvent.click(await screen.findByText('50'));
+      fireEvent.change(screen.getByLabelText('Rows per page:'), { target: { value: '50' } });
       expect(props.onPageChange).toHaveBeenCalledWith(1, 50);
-    });
-
-    it('insets itself by the same padding as the rows', () => {
-      renderList({ totalGroups: 45 });
-      const bar = screen.getByText('Rows per page').parentElement!.parentElement as HTMLElement;
-      expect(bar.style.paddingLeft).toBe('8px');
-      expect(bar.style.paddingRight).toBe('8px');
     });
 
     it('counts no groups when the load failed', () => {
@@ -477,32 +479,19 @@ describe('TimeLogsGroupedList', () => {
     });
   });
 
-  describe('scrolling', () => {
-    it('is a card capped at the height it is given, with one scrolling element for the rows', () => {
+  describe('layout (the Projects report grouped view)', () => {
+    it('fills the height it is given, in a bordered rounded card', () => {
       const { container } = renderList();
-      const card = container.querySelector('.time-logs-table') as HTMLElement;
-      expect(card).toHaveStyle({ maxHeight: '100%', display: 'flex', flexDirection: 'column' });
-      expect(card.style.height).toBe('');
-      const area = container.querySelector('.time-logs-groups-scroll') as HTMLElement;
-      expect(area).toContainElement(
-        document.querySelector('.time-logs-groups-head') as HTMLElement
-      );
-      expect(area).toContainElement(groupRows()[0]);
+      const card = container.firstElementChild as HTMLElement;
+      expect(card).toHaveClass('rounded-lg', 'border', 'flex-col');
+      expect(card).toHaveStyle({ height: '100%' });
     });
 
-    it('hands the theme colours to the sticky cells as CSS variables', () => {
+    it('scrolls the rows in the table body, under a fixed header', () => {
       const { container } = renderList();
-      const area = container.querySelector('.time-logs-groups-scroll') as HTMLElement;
-      for (const name of [
-        '--time-logs-sticky-bg',
-        '--time-logs-summary-bg',
-        '--time-logs-summary-border',
-        '--time-logs-border',
-        '--time-logs-hover-bg',
-        '--time-logs-billable',
-      ]) {
-        expect(area.style.getPropertyValue(name)).not.toBe('');
-      }
+      expect(container.querySelector('.ant-table-header')).not.toBeNull();
+      expect(container.querySelector('.ant-table-body')).not.toBeNull();
+      expect(container.querySelector('.ant-table-body')).toContainElement(groupRows()[0]);
     });
   });
 });

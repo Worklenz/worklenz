@@ -42,8 +42,11 @@ import {
   FlowFilters,
   getCumulativeFlow,
   getTimeInStatus,
+  getTimeInStatusGroups,
+  getTimeInStatusTasks,
 } from "../../../services/reporting-flow.service";
 import { isValidUuid } from "../../../shared/validation-helpers";
+import { parseTimeInStatusRequest } from "./time-in-status-query";
 
 const WIDGET_TYPES = [
   "project_stats_by_status",
@@ -204,7 +207,7 @@ export default class ReportingProjectWidgetsController extends WorklenzControlle
   public static async getProgressChartOptions(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const projectId = req.query.projectId as string | undefined;
     if (projectId && !isValidUuid(projectId)) return res.status(400).send(new ServerResponse(false, null, "Invalid id"));
-    const options = await getProgressChartOptions(req.user?.team_id as string, req.user?.id as string, projectId);
+    const options = await getProgressChartOptions(req.user?.team_id as string, req.user?.id as string, projectId, req.query.archived === "true");
     return res.status(200).send(new ServerResponse(true, options));
   }
 
@@ -238,33 +241,14 @@ export default class ReportingProjectWidgetsController extends WorklenzControlle
     }
   }
 
-  /** Parses the query shared by the cumulative flow and time in status endpoints; null means a 400 was sent. */
+  /** Parses the query shared by the flow endpoints; null means a 400 was sent. */
   private static parseFlowFilters(req: IWorkLenzRequest, res: IWorkLenzResponse): FlowFilters | null {
-    const scope = (req.query.scope as string) || "team";
-    const projectId = req.query.projectId as string | undefined;
-    const dateFrom = parseIsoDate(req.query.dateFrom);
-    const dateTo = parseIsoDate(req.query.dateTo);
-    const assigneeId = (req.query.assigneeId as string | undefined) || undefined;
-
-    const fail = (message: string): null => {
-      res.status(400).send(new ServerResponse(false, null, message));
+    const parsed = parseTimeInStatusRequest(req);
+    if (typeof parsed === "string") {
+      res.status(400).send(new ServerResponse(false, null, parsed));
       return null;
-    };
-    if (!(FLOW_SCOPES as readonly string[]).includes(scope)) return fail("Invalid scope");
-    if (dateFrom === null || dateTo === null) return fail("Dates must be YYYY-MM-DD");
-    if ((projectId && !isValidUuid(projectId)) || (assigneeId && !isValidUuid(assigneeId))) return fail("Invalid id");
-
-    return {
-      teamId: req.user?.team_id as string,
-      userId: req.user?.id as string,
-      scope: scope as FlowFilters["scope"],
-      projectId,
-      includeSubtasks: req.query.includeSubtasks === "true",
-      includeArchived: req.query.archived === "true",
-      assigneeId,
-      dateFrom,
-      dateTo,
-    };
+    }
+    return parsed.filters;
   }
 
   /** GET /reporting/projects/widgets/cumulative-flow - tasks per status (project) or status category (team) per day. */
@@ -287,6 +271,32 @@ export default class ReportingProjectWidgetsController extends WorklenzControlle
     if (!filters) return;
     try {
       return res.status(200).send(new ServerResponse(true, await getTimeInStatus(filters)));
+    } catch (error) {
+      if (error instanceof FlowError) return res.status(error.status).send(new ServerResponse(false, null, error.message));
+      throw error;
+    }
+  }
+
+  /** GET /reporting/projects/widgets/time-in-status/tasks - one sorted, filtered page of open tasks. */
+  @HandleExceptions()
+  public static async getTimeInStatusTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse | void> {
+    const parsed = parseTimeInStatusRequest(req);
+    if (typeof parsed === "string") return res.status(400).send(new ServerResponse(false, null, parsed));
+    try {
+      return res.status(200).send(new ServerResponse(true, await getTimeInStatusTasks(parsed.filters, parsed.query)));
+    } catch (error) {
+      if (error instanceof FlowError) return res.status(error.status).send(new ServerResponse(false, null, error.message));
+      throw error;
+    }
+  }
+
+  /** GET /reporting/projects/widgets/time-in-status/groups - open tasks grouped by project, status or assignee. */
+  @HandleExceptions()
+  public static async getTimeInStatusGroups(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse | void> {
+    const parsed = parseTimeInStatusRequest(req);
+    if (typeof parsed === "string") return res.status(400).send(new ServerResponse(false, null, parsed));
+    try {
+      return res.status(200).send(new ServerResponse(true, await getTimeInStatusGroups(parsed.filters, parsed.query, parsed.groupBy)));
     } catch (error) {
       if (error instanceof FlowError) return res.status(error.status).send(new ServerResponse(false, null, error.message));
       throw error;

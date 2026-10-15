@@ -238,6 +238,7 @@ export const buildTimeLogsRowsQuery = (filters: ITimeLogsFilters, options: ITime
            to_char((MAX(twl.created_at) AT TIME ZONE ${tz}::text)::date, 'YYYY-MM-DD') AS log_day,
            p.id AS project_id,
            p.name AS project_name,
+           p.color_code AS project_color,
            p.client_id,
            c.name AS client_name,
            t.id AS task_id,
@@ -256,7 +257,7 @@ export const buildTimeLogsRowsQuery = (filters: ITimeLogsFilters, options: ITime
            )) AS members
     ${FROM_CLAUSE}${team}
     ${where}
-    GROUP BY t.id, t.name, t.task_no, t.billable, p.id, p.key, p.name, p.client_id, c.name
+    GROUP BY t.id, t.name, t.task_no, t.billable, p.id, p.key, p.name, p.color_code, p.client_id, c.name
     ORDER BY ${buildTaskViewOrderBy(options.sortField, options.sortOrder)}`;
 
   const flatSelect = `
@@ -268,6 +269,7 @@ export const buildTimeLogsRowsQuery = (filters: ITimeLogsFilters, options: ITime
            ${MEMBER_STATUS_EXPRESSION} AS member_status,
            p.id AS project_id,
            p.name AS project_name,
+           p.color_code AS project_color,
            p.client_id,
            c.name AS client_name,
            t.id AS task_id,

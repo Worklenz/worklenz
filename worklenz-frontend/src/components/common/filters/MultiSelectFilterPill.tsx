@@ -44,6 +44,8 @@ export interface MultiSelectFilterPillProps {
   loading?: boolean;
   /** Server-side search: when set, typed text is passed here and `options` are shown unfiltered. */
   onSearchChange?: (search: string) => void;
+  /** Style of the pill button; defaults to the compact FILTER_PILL_BUTTON_STYLE. */
+  buttonStyle?: React.CSSProperties;
 }
 
 // Multi-select checklist pill — mirrors the Task List "Status" filter's Card
@@ -58,6 +60,7 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
   emptyText,
   loading = false,
   onSearchChange,
+  buttonStyle = FILTER_PILL_BUTTON_STYLE,
 }) => {
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -151,11 +154,11 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
         style={
           open || value.length > 0
             ? {
-                ...FILTER_PILL_BUTTON_STYLE,
+                ...buttonStyle,
                 borderColor: token.colorPrimary,
                 color: token.colorPrimary,
               }
-            : FILTER_PILL_BUTTON_STYLE
+            : buttonStyle
         }
       >
         <Space>

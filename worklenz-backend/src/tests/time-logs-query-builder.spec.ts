@@ -259,7 +259,8 @@ describe("buildTimeLogsRowsQuery — By task view", () => {
     expect(q.text).toContain("t.id AS id");
     expect(q.text).toContain("SUM(twl.time_spent)::FLOAT8 AS time_spent");
     expect(q.text).toContain("COUNT(*)::INT AS entry_count");
-    expect(q.text).toMatch(/GROUP BY t\.id, t\.name, t\.task_no, t\.billable, p\.id, p\.key, p\.name, p\.client_id, c\.name/);
+    expect(q.text).toMatch(/GROUP BY t\.id, t\.name, t\.task_no, t\.billable, p\.id, p\.key, p\.name, p\.color_code, p\.client_id, c\.name/);
+    expect(q.text).toContain("p.color_code AS project_color");
     // not one row per entry
     expect(q.text).not.toMatch(/SELECT twl\.id,/);
   });

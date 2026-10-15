@@ -214,6 +214,7 @@ export const WORKLENZ_REDIRECT_PROJ_KEY = 'worklenz.redirect_proj';
 export const PROJECT_SORT_FIELD = 'worklenz.projects.sort_field';
 export const PROJECT_SORT_ORDER = 'worklenz.projects.sort_order';
 export const PROJECT_LIST_COLUMNS = 'worklenz.reporting.projects.column_list';
+export const TIME_IN_STATUS_COLUMNS = 'worklenz.reporting.time_in_status.column_list';
 
 export const PROJECT_STATUS_ICON_MAP = {
   'check-circle': CheckCircleOutlined,

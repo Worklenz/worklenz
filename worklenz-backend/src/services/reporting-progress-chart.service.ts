@@ -293,22 +293,24 @@ export async function getProgressChart(filters: ProgressChartFilters): Promise<P
 }
 
 export interface ProgressChartOptions {
-  projects: { id: string; name: string; project_type: string; has_sprints: boolean }[];
+  projects: { id: string; name: string; color_code: string | null; project_type: string; has_sprints: boolean }[];
   sprints: { id: string; name: string; sprint_status: string }[];
   /** Active-team members, for the Time in Status assignee filter. */
   members: { id: string; name: string }[];
+  /** Distinct open (not done) status names across the team's projects, for the Time in Status status filter. */
+  statuses: { name: string; color: string | null }[];
 }
 
 /** Pickers for the widget's settings: the active team's projects and (for a project) its sprints. */
-export async function getProgressChartOptions(teamId: string, userId: string, projectId?: string): Promise<ProgressChartOptions> {
+export async function getProgressChartOptions(teamId: string, userId: string, projectId?: string, includeArchived = false): Promise<ProgressChartOptions> {
   const projects = await db.query(
-    `SELECT p.id, p.name, p.project_type,
+    `SELECT p.id, p.name, p.color_code, p.project_type,
             EXISTS(SELECT 1 FROM project_phases pp WHERE pp.project_id = p.id AND pp.sprint_status IN ('active', 'completed')) AS has_sprints
      FROM projects p
      WHERE p.team_id = $1
-       AND p.id NOT IN (SELECT ap.project_id FROM archived_projects ap WHERE ap.user_id = $2)
+       AND ($3::BOOLEAN OR p.id NOT IN (SELECT ap.project_id FROM archived_projects ap WHERE ap.user_id = $2))
      ORDER BY p.name`,
-    [teamId, userId]
+    [teamId, userId, includeArchived]
   );
 
   let sprints: ProgressChartOptions["sprints"] = [];
@@ -331,5 +333,15 @@ export async function getProgressChartOptions(teamId: string, userId: string, pr
      ORDER BY tmi.name`,
     [teamId]
   );
-  return { projects: projects.rows, sprints, members: members.rows };
+  const statuses = await db.query(
+    `SELECT ts.name, MIN(COALESCE(ts.color_code, cat.color_code)) AS color
+     FROM task_statuses ts
+            INNER JOIN sys_task_status_categories cat ON cat.id = ts.category_id
+            INNER JOIN projects p ON p.id = ts.project_id AND p.team_id = $1
+     WHERE cat.is_done IS FALSE
+     GROUP BY ts.name
+     ORDER BY ts.name`,
+    [teamId]
+  );
+  return { projects: projects.rows, sprints, members: members.rows, statuses: statuses.rows };
 }

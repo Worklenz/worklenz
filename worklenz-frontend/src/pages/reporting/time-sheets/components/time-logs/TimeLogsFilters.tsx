@@ -10,7 +10,6 @@ import {
   TimeLogsTableView,
 } from '@/types/reporting/time-logs.types';
 import PillToggle from '@/pages/home/PillToggle';
-import { FILTER_PILL_BUTTON_STYLE } from '@/components/common/filters/MultiSelectFilterPill';
 import { ITimeLogsFilterOptions, TimeLogsFilterPanel } from './TimeLogsFilterPanel';
 import { ITimeLogsFilterState } from './time-logs-filters';
 
@@ -118,6 +117,9 @@ export const TimeLogsFilters: React.FC<TimeLogsFiltersProps> = ({
           value={tableView}
           onChange={onTableViewChange}
           ariaLabel={t('timeLogsTableViewLabel', { defaultValue: 'Table view' })}
+          // Same size as the Filter button next to it.
+          style={{ height: 32, borderRadius: 6 }}
+          segmentStyle={{ padding: '0 15px', fontSize: 14, fontWeight: 400 }}
           options={[
             {
               value: 'flat',
@@ -144,7 +146,7 @@ export const TimeLogsFilters: React.FC<TimeLogsFiltersProps> = ({
         value={searchValue}
         onChange={e => handleSearchChange(e.target.value)}
         allowClear
-        style={{ width: 240, maxWidth: '100%', ...FILTER_PILL_BUTTON_STYLE, paddingInline: 11 }}
+        className="w-[320px] max-w-full"
       />
 
       <TimeLogsFilterPanel
@@ -164,7 +166,7 @@ export const TimeLogsFilters: React.FC<TimeLogsFiltersProps> = ({
           selectedKeys: [groupBy],
         }}
       >
-        <Button style={FILTER_PILL_BUTTON_STYLE}>
+        <Button>
           {t('timeLogsGroupByButton', {
             defaultValue: 'Group by: {{groupBy}}',
             groupBy: groupByLabels[groupBy],
@@ -174,7 +176,7 @@ export const TimeLogsFilters: React.FC<TimeLogsFiltersProps> = ({
       </Dropdown>
 
       <Dropdown trigger={['click']} menu={{ items: exportItems, onClick: handleExportClick }}>
-        <Button icon={<ExportOutlined />} style={FILTER_PILL_BUTTON_STYLE}>
+        <Button icon={<ExportOutlined />}>
           {t('export', { defaultValue: 'Export' })} <CaretDownFilled />
         </Button>
       </Dropdown>

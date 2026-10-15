@@ -19,7 +19,12 @@ import {
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
-const Projects: React.FC = () => {
+interface ProjectsProps {
+  /** "middle" matches the chips in the Time in Status filter popover. */
+  size?: 'small' | 'middle';
+}
+
+const Projects: React.FC<ProjectsProps> = ({ size = 'small' }) => {
   const dispatch = useAppDispatch();
   const [checkedList, setCheckedList] = useState<string[]>([]);
   const [searchText, setSearchText] = useState('');
@@ -218,7 +223,7 @@ const Projects: React.FC = () => {
           }
         }}
       >
-        <Button loading={loadingProjects} size="small" style={{ fontSize: 12, borderRadius: 7 }}>
+        <Button loading={loadingProjects} size={size} style={size === 'small' ? { fontSize: 12, borderRadius: 7 } : undefined}>
           {getButtonText()}
           <CaretDownFilled style={{ fontSize: 10, marginLeft: 4 }} />
         </Button>

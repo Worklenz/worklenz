@@ -22,6 +22,8 @@ interface TimeLogsDatePresetPillProps {
   ) => void;
   /** When provided, only these presets are shown in the dropdown. Defaults to TIME_LOGS_DATE_PRESETS. */
   allowedPresets?: TimeLogsDatePreset[];
+  /** Style of the pill button; defaults to the compact FILTER_PILL_BUTTON_STYLE. */
+  buttonStyle?: React.CSSProperties;
 }
 
 /** Default text per preset, keyed to the `time-report` locale keys. */
@@ -45,6 +47,7 @@ export const TimeLogsDatePresetPill: React.FC<TimeLogsDatePresetPillProps> = ({
   customRange,
   onChange,
   allowedPresets,
+  buttonStyle = FILTER_PILL_BUTTON_STYLE,
 }) => {
   const { t } = useTranslation('time-report');
   const { token } = theme.useToken();
@@ -158,11 +161,11 @@ export const TimeLogsDatePresetPill: React.FC<TimeLogsDatePresetPillProps> = ({
         style={
           open
             ? {
-                ...FILTER_PILL_BUTTON_STYLE,
+                ...buttonStyle,
                 borderColor: token.colorPrimary,
                 color: token.colorPrimary,
               }
-            : FILTER_PILL_BUTTON_STYLE
+            : buttonStyle
         }
       >
         {labelOf(datePreset)}

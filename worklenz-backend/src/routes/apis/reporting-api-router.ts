@@ -197,7 +197,30 @@ reportingApiRouter.get("/projects/widgets/time-in-status",
   validateEnumParam("scope", ["team", "project"]),
   validateEnumParam("includeSubtasks", ["true", "false"]),
   validateEnumParam("archived", ["true", "false"]),
+  validateUuidArrayParam("projectIds", ","),
+  validateUuidArrayParam("assigneeIds", ","),
   safeControllerFunction(ReportingProjectWidgetsController.getTimeInStatus)
+);
+reportingApiRouter.get("/projects/widgets/time-in-status/tasks",
+  teamOwnerOrAdminValidator,
+  validateEnumParam("scope", ["team", "project"]),
+  validateEnumParam("includeSubtasks", ["true", "false"]),
+  validateEnumParam("archived", ["true", "false"]),
+  validateUuidArrayParam("projectIds", ","),
+  validateUuidArrayParam("assigneeIds", ","),
+  validateEnumParam("order", ["asc", "desc"]),
+  validatePaginationParams("index", "size", 100),
+  safeControllerFunction(ReportingProjectWidgetsController.getTimeInStatusTasks)
+);
+reportingApiRouter.get("/projects/widgets/time-in-status/groups",
+  teamOwnerOrAdminValidator,
+  validateEnumParam("scope", ["team", "project"]),
+  validateEnumParam("includeSubtasks", ["true", "false"]),
+  validateEnumParam("archived", ["true", "false"]),
+  validateUuidArrayParam("projectIds", ","),
+  validateUuidArrayParam("assigneeIds", ","),
+  validateEnumParam("group_by", ["project", "status", "assignee"]),
+  safeControllerFunction(ReportingProjectWidgetsController.getTimeInStatusGroups)
 );
 
 // members

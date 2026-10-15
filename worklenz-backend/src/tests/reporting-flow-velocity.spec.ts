@@ -4,8 +4,11 @@ import {
   buildCumulativeFlow,
   buildTimeInStatus,
   FlowBand,
+  buildTaskOrderBy,
   FlowError,
+  groupTimeInStatusTasks,
   resolveFlowRange,
+  TimeInStatusTask,
 } from "../services/reporting-flow.service";
 import { buildVelocity } from "../services/reporting-velocity.service";
 import { InvalidOverviewLayoutError, validateLayout } from "../services/reporting-overview-layout.service";
@@ -99,6 +102,61 @@ describe("buildTimeInStatus", () => {
 
   it("returns an empty result when nothing moved", () => {
     expect(buildTimeInStatus("team", range, BANDS, [])).toMatchObject({ rows: [], avg_hours_overall: 0 });
+  });
+});
+
+describe("buildTaskOrderBy", () => {
+  it("maps whitelisted fields and honours the direction", () => {
+    expect(buildTaskOrderBy("name", "desc")).toBe("ORDER BY t.name DESC, t.id");
+    expect(buildTaskOrderBy("task_key", "asc")).toBe("ORDER BY p.key ASC, t.task_no ASC, t.id");
+    expect(buildTaskOrderBy("hours_overdue", "asc")).toContain("NULLS LAST");
+  });
+
+  it("never lets an unknown field reach SQL and falls back to longest time in status", () => {
+    expect(buildTaskOrderBy("name; DROP TABLE tasks", "asc")).toBe("ORDER BY q.hours_in_status DESC, t.id");
+    expect(buildTaskOrderBy(undefined, undefined)).toBe("ORDER BY q.hours_in_status DESC, t.id");
+  });
+});
+
+describe("groupTimeInStatusTasks", () => {
+  const task = (id: string, overrides: Partial<TimeInStatusTask>): TimeInStatusTask => ({
+    id,
+    name: id,
+    task_key: null,
+    project_id: "p1",
+    project_name: "Alpha",
+    project_color: "#111111",
+    status_name: "To Do",
+    status_color: "#222222",
+    hours_in_status: 10,
+    hours_overdue: null,
+    assignees: [],
+    updated_at: "2026-10-01T00:00:00.000Z",
+    ...overrides,
+  });
+  const ann = { id: "m1", name: "Ann", avatar_url: null };
+  const bob = { id: "m2", name: "Bob", avatar_url: null };
+  const tasks = [
+    task("a", { assignees: [ann, bob], hours_in_status: 20, hours_overdue: 5 }),
+    task("b", { project_id: "p2", project_name: "Beta", status_name: "Doing", assignees: [ann] }),
+    task("c", {}),
+  ];
+
+  it("groups by project with averages and overdue counts", () => {
+    const groups = groupTimeInStatusTasks(tasks, "project");
+    expect(groups.map(g => [g.group_name, g.task_count])).toEqual([["Alpha", 2], ["Beta", 1]]);
+    expect(groups[0]).toMatchObject({ avg_hours: 15, overdue_count: 1 });
+  });
+
+  it("groups by status", () => {
+    expect(groupTimeInStatusTasks(tasks, "status").map(g => g.group_name)).toEqual(["To Do", "Doing"]);
+  });
+
+  it("shows a task under each assignee and collects the unassigned", () => {
+    const groups = groupTimeInStatusTasks(tasks, "assignee");
+    expect(groups.find(g => g.group_name === "Ann")?.task_count).toBe(2);
+    expect(groups.find(g => g.group_name === "Bob")?.task_count).toBe(1);
+    expect(groups.find(g => g.group_id === "unassigned")?.task_count).toBe(1);
   });
 });
 

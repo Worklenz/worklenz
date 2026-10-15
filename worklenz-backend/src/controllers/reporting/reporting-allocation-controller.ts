@@ -176,11 +176,16 @@ export default class ReportingAllocationController extends ReportingControllerBa
     try {
       // Use SqlHelper.buildInClause for safe IN clause
       const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teamIds, 1);
+      // Guests are external collaborators; the timesheet lists internal members only
+      // (owners and admins stay even when flagged as guests, as in the members report).
       const q = `SELECT id, (SELECT name)
                FROM users
-               WHERE id IN (SELECT user_id
-                            FROM team_members
-                            WHERE team_id IN (${teamIdsClause}))
+               WHERE id IN (SELECT tm.user_id
+                            FROM team_members tm
+                            WHERE tm.team_id IN (${teamIdsClause})
+                              AND NOT (COALESCE(tm.is_guest, FALSE) = TRUE
+                                       AND NOT is_owner(tm.user_id, tm.team_id)
+                                       AND NOT is_admin(tm.user_id, tm.team_id)))
                GROUP BY id
                ORDER BY name`;
       const result = await db.query(q, teamIdsParams);

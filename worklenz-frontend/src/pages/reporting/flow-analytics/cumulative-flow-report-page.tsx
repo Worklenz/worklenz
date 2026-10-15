@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Line } from 'react-chartjs-2';
 import {
@@ -11,17 +11,17 @@ import {
   PointElement,
   Tooltip as ChartTooltip,
 } from 'chart.js';
-import { Alert, Button, Card, Checkbox, Empty, Flex, Select, Skeleton, Typography, theme } from '@/shared/antd-imports';
+import { Alert, Button, Card, Empty, Flex, Skeleton, Spin, Typography, theme } from '@/shared/antd-imports';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_reporting_cumulative_flow } from '@/shared/worklenz-analytics-events';
 import { useGetCumulativeFlowQuery } from '@/api/reporting/progress-chart.api.service';
-import type { OverviewWidgetConfig } from '@/api/reporting/overview-layout.api.service';
-import { ReportRangePicker, ReportShell, StatCard, useReportDateRange, useReportOptions } from './report-shell';
+import { ReportShell, StatCard, useDefaultLastWeekFilter, useReportDateRange } from './report-shell';
+import CumulativeFlowToolbar from './cumulative-flow/cumulative-flow-toolbar';
+import { useCumulativeFlowFilters } from './cumulative-flow/use-cumulative-flow-filters';
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Filler, Legend, ChartTooltip);
 
-const ALL_PROJECTS = 'all';
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
 const withAlpha = (color: string, alpha: string): string => (HEX_COLOR_PATTERN.test(color) ? `${color}${alpha}` : color);
@@ -35,35 +35,33 @@ export const CumulativeFlowReportPage = () => {
   const { trackMixpanelEvent } = useMixpanelTracking();
   useDocumentTitle(t('cfd.title', { defaultValue: 'Cumulative Flow Diagram' }));
 
-  const { projects, isFetching: isLoadingOptions } = useReportOptions();
-  const { range, setRange, dateRange } = useReportDateRange();
-  const [projectId, setProjectId] = useState<string>(ALL_PROJECTS);
-  const [includeSubtasks, setIncludeSubtasks] = useState(false);
-  const [includeArchived, setIncludeArchived] = useState(false);
-  const [hiddenBands, setHiddenBands] = useState<string[]>([]);
+  // Always open on "Last 7 days". The date filter reads the shared duration when it mounts, so set it first.
+  const isDateFilterReady = useDefaultLastWeekFilter();
+  const dateRange = useReportDateRange();
+  const { filters, updateFilters, resetFilters, flowArgs } = useCumulativeFlowFilters(dateRange);
 
   useEffect(() => {
     trackMixpanelEvent(evt_reporting_cumulative_flow);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const isTeam = projectId === ALL_PROJECTS;
-  const config = useMemo<OverviewWidgetConfig>(
-    () => ({ progressScope: isTeam ? 'team' : 'project', projectId: isTeam ? undefined : projectId, includeSubtasks }),
-    [isTeam, projectId, includeSubtasks]
-  );
-  const { data, isLoading, isError, refetch } = useGetCumulativeFlowQuery({ config, includeArchived, dateRange });
+  const { data, isLoading, isFetching, isError, refetch } = useGetCumulativeFlowQuery(flowArgs, {
+    skip: !isDateFilterReady,
+  });
   const flow = data?.body;
+  const { selectedStages } = filters;
 
-  const handleProjectChange = (value: string) => {
-    setProjectId(value);
-    setHiddenBands([]);
-  };
+  const stageOptions = useMemo(
+    () => (flow?.bands ?? []).map(band => ({ id: band.id, name: band.name, color: band.color })),
+    [flow]
+  );
 
   const chartData = useMemo(() => {
     if (!flow) return null;
     // Done at the bottom, the rest stacked above it in board order: the classic CFD reading order.
-    const visible = [...flow.bands].reverse().filter(band => !hiddenBands.includes(band.id));
+    const visible = [...flow.bands]
+      .reverse()
+      .filter(band => selectedStages.length === 0 || selectedStages.includes(band.id));
     return {
       labels: flow.series.map(point => formatDay(point.date)),
       datasets: visible.map(band => ({
@@ -78,47 +76,10 @@ export const CumulativeFlowReportPage = () => {
         spanGaps: false,
       })),
     };
-  }, [flow, hiddenBands]);
+  }, [flow, selectedStages]);
 
   const summary = flow?.summary;
   const hasTasks = Boolean(summary && summary.total > 0);
-
-  const filters = (
-    <>
-      <Select
-        showSearch
-        optionFilterProp="label"
-        style={{ minWidth: 220 }}
-        loading={isLoadingOptions}
-        aria-label={t('project', { defaultValue: 'Project' })}
-        value={projectId}
-        onChange={handleProjectChange}
-        options={[
-          { value: ALL_PROJECTS, label: t('allProjects', { defaultValue: 'All projects (active team)' }) },
-          ...projects.map(project => ({ value: project.id, label: project.name })),
-        ]}
-      />
-      <ReportRangePicker value={range} onChange={setRange} />
-      <Checkbox checked={includeSubtasks} onChange={event => setIncludeSubtasks(event.target.checked)}>
-        {t('includeSubtasks', { defaultValue: 'Include sub-tasks' })}
-      </Checkbox>
-      {isTeam && (
-        <Checkbox checked={includeArchived} onChange={event => setIncludeArchived(event.target.checked)}>
-          {t('includeArchived', { defaultValue: 'Include archived projects' })}
-        </Checkbox>
-      )}
-      {flow && flow.bands.length > 0 && (
-        <Flex gap={4} wrap="wrap" align="center" role="group" aria-label={t('cfd.stages', { defaultValue: 'Stages' })}>
-          <Typography.Text type="secondary">{t('cfd.stages', { defaultValue: 'Stages' })}:</Typography.Text>
-          <Checkbox.Group
-            value={flow.bands.map(band => band.id).filter(id => !hiddenBands.includes(id))}
-            options={flow.bands.map(band => ({ value: band.id, label: band.name }))}
-            onChange={checked => setHiddenBands(flow.bands.map(band => band.id).filter(id => !checked.includes(id)))}
-          />
-        </Flex>
-      )}
-    </>
-  );
 
   let body: React.ReactNode;
   if (isLoading) {
@@ -154,7 +115,10 @@ export const CumulativeFlowReportPage = () => {
           />
           <StatCard
             label={t('cfd.throughput', { defaultValue: 'Throughput' })}
-            value={t('cfd.perWeekValue', { defaultValue: '{{value}} items/wk', value: formatValue(Math.round(summary.throughput_per_day * 7 * 10) / 10) })}
+            value={t('cfd.perWeekValue', {
+              defaultValue: '{{value}} items/wk',
+              value: formatValue(Math.round(summary.throughput_per_day * 7 * 10) / 10),
+            })}
             caption={t('cfd.throughputCaption', { defaultValue: 'Average over this period' })}
             tone="colorSuccess"
           />
@@ -210,16 +174,28 @@ export const CumulativeFlowReportPage = () => {
     );
   }
 
+  if (!isDateFilterReady) return null;
+
   return (
     <ReportShell
       title={t('cfd.title', { defaultValue: 'Cumulative Flow Diagram' })}
-      subtitle={t('cfd.subtitle', {
-        defaultValue:
-          'See how work accumulates across workflow stages over time. The thickness of each band is the number of tasks in that stage; widening bands reveal bottlenecks.',
-      })}
-      filters={filters}
+      subtitle={t('cfd.subtitle', { defaultValue: 'See how work accumulates across workflow stages over time.' })}
+      actions={
+        <CumulativeFlowToolbar
+          filters={filters}
+          stageOptions={stageOptions}
+          isLoadingStages={isLoading}
+          onFiltersChange={updateFilters}
+          onFiltersReset={resetFilters}
+        />
+      }
     >
-      {body}
+      {/* Keep the previous chart in view, dimmed, while a changed filter reloads. */}
+      <Spin spinning={isFetching && !isLoading}>
+        <Flex vertical gap={16}>
+          {body}
+        </Flex>
+      </Spin>
     </ReportShell>
   );
 };

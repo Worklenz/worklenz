@@ -111,6 +111,22 @@ export function buildVelocity(metric: VelocityMetric, rows: VelocitySprintRow[])
   };
 }
 
+/** Least-squares line through the completed values, one point per sprint (the report's "Trend line"). */
+export function trendLine(values: number[]): number[] {
+  const n = values.length;
+  if (n < 2) return values;
+  const meanX = (n - 1) / 2;
+  const meanY = values.reduce((sum, value) => sum + value, 0) / n;
+  let numerator = 0;
+  let denominator = 0;
+  values.forEach((value, index) => {
+    numerator += (index - meanX) * (value - meanY);
+    denominator += (index - meanX) ** 2;
+  });
+  const slope = denominator === 0 ? 0 : numerator / denominator;
+  return values.map((_, index) => round(meanY + slope * (index - meanX)));
+}
+
 export async function getVelocity(filters: VelocityFilters): Promise<VelocityResult> {
   const project = await db.query(`SELECT id FROM projects WHERE id = $1 AND team_id = $2`, [filters.projectId, filters.teamId]);
   if (!project.rows.length) throw new VelocityError("Project not found", 404);

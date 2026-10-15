@@ -68,6 +68,8 @@ export interface ITimeLogEntry {
   client_id: string | null;
   client_name: string | null;
   project_name: string | null;
+  /** The project's colour, for the dot next to its name. */
+  project_color?: string | null;
   task_id: string;
   /** The Task ID shown across the app: project key + task number, e.g. `WL-12`. */
   task_key: string | null;
@@ -98,6 +100,8 @@ export interface ITimeLogTaskRow {
   client_id: string | null;
   client_name: string | null;
   project_name: string | null;
+  /** The project's colour, for the dot next to its name. */
+  project_color?: string | null;
   task_id: string;
   task_key: string | null;
   task_name: string | null;

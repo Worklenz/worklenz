@@ -15,7 +15,12 @@ import {
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const Billable: React.FC = () => {
+interface BillableProps {
+  /** "middle" matches the chips in the Time in Status filter popover. */
+  size?: 'small' | 'middle';
+}
+
+const Billable: React.FC<BillableProps> = ({ size = 'small' }) => {
   const { t } = useTranslation('time-report');
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
@@ -210,7 +215,7 @@ const Billable: React.FC = () => {
         }}
         overlayClassName="billable-filter-dropdown"
       >
-        <Button size="small" style={{ fontSize: 12, borderRadius: 7 }}>
+        <Button size={size} style={size === 'small' ? { fontSize: 12, borderRadius: 7 } : undefined}>
           {getButtonText()}
           <CaretDownFilled style={{ fontSize: 10, marginLeft: 4 }} />
         </Button>

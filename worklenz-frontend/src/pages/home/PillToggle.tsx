@@ -13,6 +13,8 @@ interface PillToggleProps<T extends string> {
   options: PillToggleOption<T>[];
   onChange: (v: T) => void;
   style?: React.CSSProperties;
+  /** Extra style for every segment button (padding, font size) — e.g. to match a neighbouring Button. */
+  segmentStyle?: React.CSSProperties;
   /** Give every segment the same width instead of sizing to its label — keeps
    * short/long labels (e.g. "Today" vs "This Week") from making the pill look lopsided. */
   equalWidth?: boolean;
@@ -32,6 +34,7 @@ function PillToggle<T extends string>({
   options,
   onChange,
   style,
+  segmentStyle,
   equalWidth,
   ariaLabel,
 }: PillToggleProps<T>) {
@@ -102,6 +105,7 @@ function PillToggle<T extends string>({
               color: selected ? token.colorTextLightSolid : token.colorText,
               transition: 'all .15s',
               whiteSpace: 'nowrap',
+              ...segmentStyle,
             }}
           >
             {opt.label}

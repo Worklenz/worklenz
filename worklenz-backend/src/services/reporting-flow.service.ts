@@ -27,10 +27,12 @@ export interface FlowFilters {
   userId: string;
   scope: FlowScope;
   projectId?: string;
+  /** Team scope only: restrict to these projects (Time in Status). */
+  projectIds?: string[];
   includeSubtasks: boolean;
   includeArchived: boolean;
-  /** Only tasks assigned to this team member (Time in Status). */
-  assigneeId?: string;
+  /** Only tasks assigned to any of these team members (Time in Status). */
+  assigneeIds?: string[];
   /** YYYY-MM-DD */
   dateFrom?: string;
   dateTo?: string;
@@ -84,8 +86,6 @@ export interface TimeInStatusResult {
   rows: TimeInStatusRow[];
   /** Task-weighted mean time per task across the open bands. */
   avg_hours_overall: number;
-  /** Open tasks, longest time in their current status first (capped). */
-  tasks: TimeInStatusTask[];
 }
 
 export interface TimeInStatusTask {
@@ -94,17 +94,97 @@ export interface TimeInStatusTask {
   task_key: string | null;
   project_id: string;
   project_name: string;
+  project_color: string;
   status_name: string;
   status_color: string;
   /** Hours since the task entered its current status. */
   hours_in_status: number;
   /** Hours past the due date; null when it has none or is not late. */
   hours_overdue: number | null;
-  assignees: string[];
+  assignees: TimeInStatusAssignee[];
   updated_at: string;
 }
 
-export const MAX_TIME_IN_STATUS_TASKS = 100;
+export interface TimeInStatusAssignee {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+}
+
+export const MAX_GROUPED_TASKS = 2000;
+
+export const TIME_IN_STATUS_GROUP_BYS = ["project", "status", "assignee"] as const;
+export type TimeInStatusGroupBy = (typeof TIME_IN_STATUS_GROUP_BYS)[number];
+
+export interface TimeInStatusTaskQuery {
+  search?: string;
+  /** Current status names to keep. */
+  statusNames?: string[];
+  sortField?: string;
+  sortOrder?: string;
+  index?: number;
+  size?: number;
+}
+
+export interface TimeInStatusGroup {
+  group_id: string;
+  group_name: string;
+  group_color: string;
+  task_count: number;
+  avg_hours: number;
+  overdue_count: number;
+  tasks: TimeInStatusTask[];
+}
+
+/** Whitelisted ORDER BY expressions; a client sort field never reaches SQL except through this map. */
+const TASK_SORT_COLUMNS: Record<string, string> = {
+  task_key: "p.key, t.task_no",
+  name: "t.name",
+  project_name: "p.name",
+  status_name: "ts.name",
+  hours_in_status: "q.hours_in_status",
+  hours_overdue: "q.hours_overdue",
+  updated_at: "t.updated_at",
+};
+export const DEFAULT_TASK_SORT_FIELD = "hours_in_status";
+
+/** Builds `ORDER BY ...` from the whitelist; unknown fields fall back to longest time in status first. */
+export function buildTaskOrderBy(sortField?: string, sortOrder?: string): string {
+  const known = Boolean(sortField) && Object.prototype.hasOwnProperty.call(TASK_SORT_COLUMNS, sortField as string);
+  const field = known ? (sortField as string) : DEFAULT_TASK_SORT_FIELD;
+  const direction = known ? (sortOrder === "desc" ? "DESC" : "ASC") : "DESC";
+  const expression = TASK_SORT_COLUMNS[field]
+    .split(",")
+    .map(part => `${part.trim()} ${direction}${field === "hours_overdue" ? " NULLS LAST" : ""}`)
+    .join(", ");
+  return `ORDER BY ${expression}, t.id`;
+}
+
+const UNASSIGNED_GROUP_ID = "unassigned";
+
+/** Pure grouping of open tasks by project, status or assignee (a task shows under each of its assignees). */
+export function groupTimeInStatusTasks(tasks: TimeInStatusTask[], groupBy: TimeInStatusGroupBy): TimeInStatusGroup[] {
+  const groups = new Map<string, TimeInStatusGroup>();
+  const add = (id: string, name: string, color: string, task: TimeInStatusTask) => {
+    const group = groups.get(id) ?? { group_id: id, group_name: name, group_color: color, task_count: 0, avg_hours: 0, overdue_count: 0, tasks: [] };
+    group.tasks.push(task);
+    groups.set(id, group);
+  };
+  for (const task of tasks) {
+    if (groupBy === "project") add(task.project_id, task.project_name, task.project_color, task);
+    else if (groupBy === "status") add(`status:${task.status_name}`, task.status_name, task.status_color, task);
+    else if (!task.assignees.length) add(UNASSIGNED_GROUP_ID, "", "#cccccc", task);
+    else for (const assignee of task.assignees) add(assignee.id, assignee.name, "#1890ff", task);
+  }
+  return Array.from(groups.values())
+    .map(group => ({
+      ...group,
+      task_count: group.tasks.length,
+      avg_hours: round(group.tasks.reduce((sum, task) => sum + task.hours_in_status, 0) / group.tasks.length),
+      overdue_count: group.tasks.filter(task => task.hours_overdue !== null).length,
+    }))
+    .sort((a, b) => b.task_count - a.task_count || a.group_name.localeCompare(b.group_name));
+}
 
 /** Thrown for bad input / missing resources; the controller turns it into a 400/404. */
 export class FlowError extends Error {
@@ -206,8 +286,7 @@ export function buildTimeInStatus(
   scope: FlowScope,
   range: FlowRange,
   bands: FlowBand[],
-  rows: TimeInStatusSqlRow[],
-  tasks: TimeInStatusTask[] = []
+  rows: TimeInStatusSqlRow[]
 ): TimeInStatusResult {
   const byBand = new Map(rows.map(row => [row.band_id, row]));
   const result: TimeInStatusRow[] = [];
@@ -231,7 +310,6 @@ export function buildTimeInStatus(
     end_date: toDateKey(range.end),
     rows: result,
     avg_hours_overall: taskTotal ? round(totalHours / taskTotal) : 0,
-    tasks,
   };
 }
 
@@ -259,12 +337,13 @@ async function buildScopedQuery(filters: FlowFilters): Promise<ScopedQuery> {
     const archivedClause = filters.includeArchived
       ? ""
       : `AND p.id NOT IN (SELECT ap.project_id FROM archived_projects ap WHERE ap.user_id = $${params.push(filters.userId)}::UUID)`;
-    taskFilter = `t.project_id IN (SELECT p.id FROM projects p WHERE p.team_id = ${teamParam} ${archivedClause})`;
+    const projectClause = filters.projectIds?.length ? `AND p.id = ANY($${params.push(filters.projectIds)}::UUID[])` : "";
+    taskFilter = `t.project_id IN (SELECT p.id FROM projects p WHERE p.team_id = ${teamParam} ${archivedClause} ${projectClause})`;
   }
 
   const subtaskFilter = filters.includeSubtasks ? "" : "AND t.parent_task_id IS NULL";
-  const assigneeFilter = filters.assigneeId
-    ? `AND EXISTS(SELECT 1 FROM tasks_assignees ta WHERE ta.task_id = t.id AND ta.team_member_id = $${params.push(filters.assigneeId)}::UUID)`
+  const assigneeFilter = filters.assigneeIds?.length
+    ? `AND EXISTS(SELECT 1 FROM tasks_assignees ta WHERE ta.task_id = t.id AND ta.team_member_id = ANY($${params.push(filters.assigneeIds)}::UUID[]))`
     : "";
   const bandColumn = filters.scope === "project" ? "ts.id" : "ts.category_id";
 
@@ -374,7 +453,6 @@ export async function getCumulativeFlow(filters: FlowFilters): Promise<Cumulativ
 export async function getTimeInStatus(filters: FlowFilters): Promise<TimeInStatusResult> {
   const range = resolveFlowRange(filters.dateFrom, filters.dateTo);
   const { ctes, params } = await buildScopedQuery(filters);
-  const scopedParams = [...params];
   const startParam = `$${params.push(range.start.toISOString())}::TIMESTAMPTZ`;
   const endParam = `$${params.push(new Date(range.end.getTime() + DAY_MS).toISOString())}::TIMESTAMPTZ`;
 
@@ -403,18 +481,17 @@ export async function getTimeInStatus(filters: FlowFilters): Promise<TimeInStatu
     params
   );
 
-  // Task details: open tasks and how long each has been in its current status (since its last
-  // logged status change, or since creation when it never changed).
-  // Own parameter list: Postgres rejects parameters a statement never references.
-  const taskParams = [...scopedParams];
-  const limitParam = `$${taskParams.push(MAX_TIME_IN_STATUS_TASKS)}::INT`;
-  const taskRows = await db.query(
-    `WITH ${ctes}
+  const bands = await getBands(filters);
+  return buildTimeInStatus(filters.scope, range, bands, result.rows as TimeInStatusSqlRow[]);
+}
+
+const TASK_SELECT = `
     SELECT t.id,
            t.name,
            CASE WHEN p.key IS NOT NULL AND t.task_no IS NOT NULL THEN p.key || '-' || t.task_no END AS task_key,
            p.id   AS project_id,
            p.name AS project_name,
+           p.color_code AS project_color,
            ts.name AS status_name,
            COALESCE(ts.color_code, cat.color_code) AS status_color,
            (EXTRACT(EPOCH FROM (NOW() - COALESCE(
@@ -422,35 +499,104 @@ export async function getTimeInStatus(filters: FlowFilters): Promise<TimeInStatu
              t.created_at))) / 3600)::FLOAT8 AS hours_in_status,
            CASE WHEN t.end_date IS NOT NULL AND t.end_date < NOW()
                   THEN (EXTRACT(EPOCH FROM (NOW() - t.end_date)) / 3600)::FLOAT8 END AS hours_overdue,
-           COALESCE((SELECT ARRAY_AGG(tmi.name ORDER BY tmi.name)
+           COALESCE((SELECT JSON_AGG(JSON_BUILD_OBJECT('id', tmi.team_member_id, 'name', tmi.name, 'avatar_url', tmi.avatar_url) ORDER BY tmi.name)
                      FROM tasks_assignees ta
                             INNER JOIN team_member_info_view tmi ON tmi.team_member_id = ta.team_member_id
-                     WHERE ta.task_id = t.id), '{}') AS assignees,
-           t.updated_at
+                     WHERE ta.task_id = t.id), '[]'::JSON) AS assignees,
+           t.updated_at`;
+
+const TASK_FROM = `
     FROM scoped s
            INNER JOIN tasks t ON t.id = s.id
            INNER JOIN projects p ON p.id = t.project_id
            INNER JOIN task_statuses ts ON ts.id = t.status_id
-           INNER JOIN sys_task_status_categories cat ON cat.id = ts.category_id
-    WHERE cat.is_done IS FALSE
-    ORDER BY hours_in_status DESC
-    LIMIT ${limitParam}`,
-    taskParams
-  );
-  const tasks: TimeInStatusTask[] = (taskRows.rows as Record<string, unknown>[]).map(row => ({
-    id: row.id as string,
-    name: row.name as string,
-    task_key: (row.task_key as string | null) ?? null,
-    project_id: row.project_id as string,
-    project_name: row.project_name as string,
-    status_name: row.status_name as string,
-    status_color: (row.status_color as string | null) ?? "#cccccc",
-    hours_in_status: round(Math.max(Number(row.hours_in_status), 0)),
-    hours_overdue: row.hours_overdue === null ? null : round(Number(row.hours_overdue)),
-    assignees: (row.assignees as string[] | null) ?? [],
-    updated_at: new Date(row.updated_at as string).toISOString(),
-  }));
+           INNER JOIN sys_task_status_categories cat ON cat.id = ts.category_id`;
 
-  const bands = await getBands(filters);
-  return buildTimeInStatus(filters.scope, range, bands, result.rows as TimeInStatusSqlRow[], tasks);
+const toTimeInStatusTask = (row: Record<string, unknown>): TimeInStatusTask => ({
+  id: row.id as string,
+  name: row.name as string,
+  task_key: (row.task_key as string | null) ?? null,
+  project_id: row.project_id as string,
+  project_name: row.project_name as string,
+  project_color: (row.project_color as string | null) ?? "#cccccc",
+  status_name: row.status_name as string,
+  status_color: (row.status_color as string | null) ?? "#cccccc",
+  hours_in_status: round(Math.max(Number(row.hours_in_status), 0)),
+  hours_overdue: row.hours_overdue === null ? null : round(Number(row.hours_overdue)),
+  assignees: ((row.assignees as TimeInStatusAssignee[] | null) ?? []).map(a => ({ id: a.id, name: a.name ?? "", avatar_url: a.avatar_url ?? null })),
+  updated_at: new Date(row.updated_at as string).toISOString(),
+});
+
+/** WHERE clause for open tasks plus the table-only filters; values are pushed onto `params`, never concatenated. */
+function buildTaskFilterClause(query: TimeInStatusTaskQuery, params: unknown[]): string {
+  const clauses = ["cat.is_done IS FALSE"];
+  const search = query.search?.trim();
+  if (search) {
+    const pattern = `$${params.push(`%${search.replace(/[\\%_]/g, "\\$&")}%`)}`;
+    clauses.push(`(t.name ILIKE ${pattern} OR (p.key || '-' || t.task_no) ILIKE ${pattern})`);
+  }
+  if (query.statusNames?.length) clauses.push(`ts.name = ANY($${params.push(query.statusNames)}::TEXT[])`);
+  return clauses.join(" AND ");
+}
+
+/** One page of open tasks with how long each has been in its current status. */
+export async function getTimeInStatusTasks(
+  filters: FlowFilters,
+  query: TimeInStatusTaskQuery
+): Promise<{ tasks: TimeInStatusTask[]; total: number }> {
+  const { ctes, params } = await buildScopedQuery(filters);
+  const where = buildTaskFilterClause(query, params);
+  const size = Math.min(Math.max(Math.trunc(query.size ?? 10), 1), 100);
+  const index = Math.max(Math.trunc(query.index ?? 1), 1);
+  const limit = `$${params.push(size)}::INT`;
+  const offset = `$${params.push((index - 1) * size)}::INT`;
+
+  const result = await db.query(
+    `WITH ${ctes},
+    q AS (${TASK_SELECT}${TASK_FROM} WHERE ${where})
+    SELECT q.*, COUNT(*) OVER() AS total_count
+    FROM q
+           INNER JOIN tasks t ON t.id = q.id
+           INNER JOIN projects p ON p.id = t.project_id
+           INNER JOIN task_statuses ts ON ts.id = t.status_id
+    ${buildTaskOrderBy(query.sortField, query.sortOrder)}
+    LIMIT ${limit} OFFSET ${offset}`,
+    params
+  );
+  const rows = result.rows as Record<string, unknown>[];
+  return { tasks: rows.map(toTimeInStatusTask), total: rows.length ? Number(rows[0].total_count) : 0 };
+}
+
+/** Every matching open task up to a cap; used for grouping and export. */
+export async function getAllTimeInStatusTasks(
+  filters: FlowFilters,
+  query: TimeInStatusTaskQuery,
+  cap = MAX_GROUPED_TASKS
+): Promise<{ tasks: TimeInStatusTask[]; truncated: boolean }> {
+  const { ctes, params } = await buildScopedQuery(filters);
+  const where = buildTaskFilterClause(query, params);
+  const limit = `$${params.push(cap + 1)}::INT`;
+  const result = await db.query(
+    `WITH ${ctes},
+    q AS (${TASK_SELECT}${TASK_FROM} WHERE ${where})
+    SELECT q.*
+    FROM q
+           INNER JOIN tasks t ON t.id = q.id
+           INNER JOIN projects p ON p.id = t.project_id
+           INNER JOIN task_statuses ts ON ts.id = t.status_id
+    ${buildTaskOrderBy(query.sortField, query.sortOrder)}
+    LIMIT ${limit}`,
+    params
+  );
+  const rows = result.rows as Record<string, unknown>[];
+  return { tasks: rows.slice(0, cap).map(toTimeInStatusTask), truncated: rows.length > cap };
+}
+
+export async function getTimeInStatusGroups(
+  filters: FlowFilters,
+  query: TimeInStatusTaskQuery,
+  groupBy: TimeInStatusGroupBy
+): Promise<{ groups: TimeInStatusGroup[]; truncated: boolean }> {
+  const { tasks, truncated } = await getAllTimeInStatusTasks(filters, query);
+  return { groups: groupTimeInStatusTasks(tasks, groupBy), truncated };
 }

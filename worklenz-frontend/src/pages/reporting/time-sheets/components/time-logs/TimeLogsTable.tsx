@@ -1,8 +1,16 @@
 import React, { useCallback, useMemo } from 'react';
-import { Flex, Skeleton, Table, TableProps, Typography, theme } from '@/shared/antd-imports';
+import {
+  ConfigProvider,
+  Flex,
+  Table,
+  TableColumnsType,
+  TableProps,
+  Typography,
+  theme,
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import TablePagination from '@/components/TablePagination';
-import { SortArrows } from '@/components/common/SortArrows';
+import CustomTableTitle from '@/components/CustomTableTitle';
+import { buildSkeletonRows, toSkeletonColumns } from '@/components/reporting/table-skeleton';
 import { formatLoggedDuration } from '@/components/time-entries/time-entries-format';
 import { formatCalendarDate } from '@/utils/date-presets';
 import {
@@ -16,36 +24,44 @@ import {
   ELLIPSIS_STYLE,
   EmptyCell,
   MemberCell,
+  ProjectNameCell,
   TaskMembersCell,
+  TaskNameCell,
   TextCell,
 } from './time-logs-cells';
-import { TimeLogsEmptyState, TimeLogsTotalValue } from './time-logs-states';
-import { useScrollbarGutter } from './useScrollbarGutter';
+import { ROW_HEIGHT, TABLE_CONFIG, useTableScrollY } from './time-logs-table-config';
+import { TimeLogsPaginationBar } from './TimeLogsPaginationBar';
 import './time-logs.css';
+import { TimeLogsEmptyState, TimeLogsTotalValue } from './time-logs-states';
 
 const { Text } = Typography;
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
-// Horizontal padding of a table cell — see time-logs.css (`padding: 4px 8px`). The pagination bar
-// below uses the same inset so its text lines up with the data.
-const CELL_PADDING = 8;
 // The total row spans every column but Duration, so its total lands under Duration.
 const SUMMARY_LABEL_COLUMNS = 7;
-// Skeleton rows shown on the very first load (capped: a 100-row page is not worth drawing 100).
-const MAX_SKELETON_ROWS = 12;
-const SKELETON_ROW_HEIGHT = 45;
-
-// Column widths as relative weights (they total 100).
+// Column widths in px, like the Projects report table (the table scrolls sideways below their sum).
 const COLUMN_WIDTHS = {
-  date: '10%',
-  taskKey: '8%',
-  task: '17%',
-  member: '15%',
-  project: '14%',
-  client: '12%',
-  description: '15%',
-  duration: '9%',
+  date: 130,
+  taskKey: 110,
+  task: 240,
+  member: 200,
+  project: 200,
+  client: 180,
+  description: 240,
+  duration: 130,
 } as const;
+
+// Column key -> the field the server sorts by.
+const SORT_FIELD_BY_COLUMN: Record<string, TimeLogSortField> = {
+  date: 'date',
+  taskKey: 'task_key',
+  task: 'task',
+  member: 'member',
+  project: 'project',
+  client: 'client',
+  duration: 'duration',
+};
+
+const SCROLL_X = 'max-content';
 
 interface TimeLogsTableProps {
   logs: TimeLogRow[];
@@ -65,6 +81,8 @@ interface TimeLogsTableProps {
   onSortChange: (field: TimeLogSortField) => void;
   /** Offered in the empty state when something is narrowing the result. */
   onClearFilters?: () => void;
+  /** Opens a task from its name; without it the task names are plain text. */
+  onOpenTask?: (taskId: string, projectId: string) => void;
 }
 
 export const TimeLogsTable: React.FC<TimeLogsTableProps> = ({
@@ -82,38 +100,18 @@ export const TimeLogsTable: React.FC<TimeLogsTableProps> = ({
   sortOrder,
   onSortChange,
   onClearFilters,
+  onOpenTask,
 }) => {
   const { t } = useTranslation('time-report');
   const { token } = theme.useToken();
 
-  const renderSortableTitle = useCallback(
-    (label: string, field: TimeLogSortField) => (
-      <span
-        role="button"
-        tabIndex={0}
-        aria-label={label}
-        onClick={() => onSortChange(field)}
-        onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onSortChange(field);
-          }
-        }}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 4,
-          width: '100%',
-          cursor: 'pointer',
-          userSelect: 'none',
-        }}
-      >
-        <span>{label}</span>
-        <SortArrows active={sortField === field ? sortOrder : null} />
-      </span>
-    ),
-    [sortField, sortOrder, onSortChange]
+  const isTaskView = view === 'task';
+
+  // Only the active sort field shows a sort indicator.
+  const sortOrderFor = useCallback(
+    (field: TimeLogSortField) =>
+      sortField === field ? (sortOrder === 'asc' ? ('ascend' as const) : ('descend' as const)) : null,
+    [sortField, sortOrder]
   );
 
   // Tells assistive tech which column the rows are sorted by, and in which direction.
@@ -129,26 +127,31 @@ export const TimeLogsTable: React.FC<TimeLogsTableProps> = ({
     [sortField, sortOrder]
   );
 
-  const isTaskView = view === 'task';
-
-  const columns: TableProps<TimeLogRow>['columns'] = useMemo(
+  const columns: TableColumnsType<TimeLogRow> = useMemo(
     () => [
       {
         key: 'date',
         // In the By task view a row spans several days, so its date is the latest entry's.
-        title: renderSortableTitle(
-          isTaskView
-            ? t('timeLogsLastLogged', { defaultValue: 'Last logged' })
-            : t('Date', { defaultValue: 'Date' }),
-          'date'
+        title: (
+          <CustomTableTitle
+            title={
+              isTaskView
+                ? t('timeLogsLastLogged', { defaultValue: 'Last logged' })
+                : t('Date', { defaultValue: 'Date' })
+            }
+          />
         ),
+        sorter: true,
+        sortOrder: sortOrderFor('date'),
         onHeaderCell: sortHeaderCell('date'),
         width: COLUMN_WIDTHS.date,
         render: (_, record) => formatCalendarDate(record.log_day),
       },
       {
         key: 'taskKey',
-        title: renderSortableTitle(t('timeLogsTaskId', { defaultValue: 'Task ID' }), 'task_key'),
+        title: <CustomTableTitle title={t('timeLogsTaskId', { defaultValue: 'Task ID' })} />,
+        sorter: true,
+        sortOrder: sortOrderFor('task_key'),
         onHeaderCell: sortHeaderCell('task_key'),
         width: COLUMN_WIDTHS.taskKey,
         render: (_, record) =>
@@ -156,15 +159,26 @@ export const TimeLogsTable: React.FC<TimeLogsTableProps> = ({
       },
       {
         key: 'task',
-        title: renderSortableTitle(t('timeLogsTaskName', { defaultValue: 'Task name' }), 'task'),
+        title: <CustomTableTitle title={t('timeLogsTaskName', { defaultValue: 'Task name' })} />,
+        sorter: true,
+        sortOrder: sortOrderFor('task'),
         onHeaderCell: sortHeaderCell('task'),
         width: COLUMN_WIDTHS.task,
         ellipsis: { showTitle: false },
-        render: (_, record) => <TextCell value={record.task_name} />,
+        render: (_, record) => (
+          <TaskNameCell
+            name={record.task_name}
+            taskId={record.task_id}
+            projectId={record.project_id}
+            onOpenTask={onOpenTask}
+          />
+        ),
       },
       {
         key: 'member',
-        title: renderSortableTitle(t('Member', { defaultValue: 'Member' }), 'member'),
+        title: <CustomTableTitle title={t('Member', { defaultValue: 'Member' })} />,
+        sorter: true,
+        sortOrder: sortOrderFor('member'),
         onHeaderCell: sortHeaderCell('member'),
         width: COLUMN_WIDTHS.member,
         render: (_, record) =>
@@ -180,15 +194,21 @@ export const TimeLogsTable: React.FC<TimeLogsTableProps> = ({
       },
       {
         key: 'project',
-        title: renderSortableTitle(t('Project', { defaultValue: 'Project' }), 'project'),
+        title: <CustomTableTitle title={t('Project', { defaultValue: 'Project' })} />,
+        sorter: true,
+        sortOrder: sortOrderFor('project'),
         onHeaderCell: sortHeaderCell('project'),
         width: COLUMN_WIDTHS.project,
         ellipsis: true,
-        render: (_, record) => <span style={{ fontWeight: 500 }}>{record.project_name}</span>,
+        render: (_, record) => (
+          <ProjectNameCell name={record.project_name} color={record.project_color} />
+        ),
       },
       {
         key: 'client',
-        title: renderSortableTitle(t('timeLogsClient', { defaultValue: 'Client' }), 'client'),
+        title: <CustomTableTitle title={t('timeLogsClient', { defaultValue: 'Client' })} />,
+        sorter: true,
+        sortOrder: sortOrderFor('client'),
         onHeaderCell: sortHeaderCell('client'),
         width: COLUMN_WIDTHS.client,
         ellipsis: { showTitle: false },
@@ -196,67 +216,74 @@ export const TimeLogsTable: React.FC<TimeLogsTableProps> = ({
       },
       {
         key: 'description',
-        title: t('Description', { defaultValue: 'Description' }),
+        title: <CustomTableTitle title={t('Description', { defaultValue: 'Description' })} />,
         width: COLUMN_WIDTHS.description,
         ellipsis: { showTitle: false },
         render: (_, record) => <TextCell value={record.description} />,
       },
       {
         key: 'duration',
-        title: renderSortableTitle(t('Duration', { defaultValue: 'Duration' }), 'duration'),
+        title: <CustomTableTitle title={t('Duration', { defaultValue: 'Duration' })} />,
+        sorter: true,
+        sortOrder: sortOrderFor('duration'),
         onHeaderCell: sortHeaderCell('duration'),
         width: COLUMN_WIDTHS.duration,
         render: (_, record) => formatLoggedDuration(record.time_spent),
       },
     ],
-    [renderSortableTitle, sortHeaderCell, t, isTaskView]
+    [sortHeaderCell, sortOrderFor, t, isTaskView, onOpenTask]
   );
 
-  // The very first load has nothing to show yet, so it gets skeleton rows (like Home > My Tasks).
-  // Later loads (paging, sorting, filtering) keep the current rows with antd's own loading overlay
-  // instead of blanking the table.
+  // The first load has no rows yet, so draw placeholder rows instead of an empty state. Later loads
+  // (paging, sorting, filtering) keep the current rows under antd's own loading overlay.
   const isFirstLoad = loading && logs.length === 0 && !failed;
 
-  // The rows scroll inside this element; the pagination bar below insets itself by the width of
-  // its scrollbar (when it has one) so both stay lined up with the data cells.
-  const { scrollAreaRef, scrollbarWidth } = useScrollbarGutter([
-    logs.length,
-    pageSize,
-    loading,
-    isFirstLoad,
-  ]);
+  const skeletonData = useMemo(() => buildSkeletonRows<TimeLogRow>(pageSize), [pageSize]);
+  const visibleColumns = useMemo(
+    () => (isFirstLoad ? toSkeletonColumns(columns) : columns),
+    [columns, isFirstLoad]
+  );
+
+  const handleTableChange = useCallback<NonNullable<TableProps<TimeLogRow>['onChange']>>(
+    (_pagination, _filters, sorter) => {
+      const columnKey = (Array.isArray(sorter) ? sorter[0] : sorter)?.columnKey;
+      const field = columnKey ? SORT_FIELD_BY_COLUMN[String(columnKey)] : undefined;
+      if (field) onSortChange(field);
+    },
+    [onSortChange]
+  );
+
+  const { containerRef, scrollY } = useTableScrollY([logs, loading]);
+
+  const shownTotal = failed ? 0 : total;
+
+  const scrollConfig = useMemo(() => ({ x: SCROLL_X, y: scrollY }), [scrollY]);
+  const getRowKey = useCallback((record: TimeLogRow) => record.id, []);
+  const rowProps = useMemo(() => ({ style: { height: ROW_HEIGHT }, className: 'group' }), []);
+  const getRowProps = useCallback(() => rowProps, [rowProps]);
 
   const emptyContent = (
     <TimeLogsEmptyState failed={failed} onRetry={onRetry} onClearFilters={onClearFilters} />
   );
 
-  // The total is a real table row (a `<tfoot>`): it shares the column grid with the data, so
-  // "Total" sits under the Duration column and "Entries" under the first column's text, and it
-  // scrolls horizontally with them. Like the header sticks to the top of the scrolling area, this
-  // row sticks to the bottom (time-logs.css), so the total stays in view however many rows scroll
-  // past. It covers every entry matching the filters — not just this page — so it can be used for
-  // an invoice straight away.
-  //
-  // antd's Table.Summary.Cell takes `className` but ignores `style`, so the row is styled from
-  // time-logs.css, with the theme colours handed over as CSS variables on the scrolling area.
+  // The total is a summary row pinned to the bottom of the table: it shares the column grid with the
+  // data, so "Total" sits under the Duration column and "Entries" under the first column's text, and
+  // it stays in view however many rows scroll past. It covers every entry matching the filters — not
+  // just this page — so it can be used for an invoice straight away.
   const renderSummary = () => (
-    <Table.Summary>
+    <Table.Summary fixed="bottom">
       <Table.Summary.Row>
-        <Table.Summary.Cell
-          index={0}
-          colSpan={SUMMARY_LABEL_COLUMNS}
-          className="time-logs-summary-cell"
-        >
+        <Table.Summary.Cell index={0} colSpan={SUMMARY_LABEL_COLUMNS}>
           <Flex justify="space-between" align="center" gap={8}>
             <Text type="secondary" style={{ fontSize: 12 }}>
               {isTaskView
                 ? t('timeLogsTasksCount', {
                     defaultValue: 'Tasks: {{count}}',
-                    count: failed ? 0 : total,
+                    count: shownTotal,
                   })
                 : t('timeLogsEntriesCount', {
                     defaultValue: 'Entries: {{count}}',
-                    count: failed ? 0 : total,
+                    count: shownTotal,
                   })}
             </Text>
             <Text type="secondary" style={{ fontSize: 12 }}>
@@ -264,131 +291,58 @@ export const TimeLogsTable: React.FC<TimeLogsTableProps> = ({
             </Text>
           </Flex>
         </Table.Summary.Cell>
-        <Table.Summary.Cell index={SUMMARY_LABEL_COLUMNS} className="time-logs-summary-cell">
+        <Table.Summary.Cell index={SUMMARY_LABEL_COLUMNS}>
           <TimeLogsTotalValue totalSeconds={totalSeconds} failed={failed} />
         </Table.Summary.Cell>
       </Table.Summary.Row>
     </Table.Summary>
   );
 
-  // Column-shaped placeholder rows, sized like the real cells so the layout does not jump.
-  const skeletonColumns: { width: string; shape: 'text' | 'avatar' }[] = [
-    { width: COLUMN_WIDTHS.date, shape: 'text' },
-    { width: COLUMN_WIDTHS.taskKey, shape: 'text' },
-    { width: COLUMN_WIDTHS.task, shape: 'text' },
-    { width: COLUMN_WIDTHS.member, shape: 'avatar' },
-    { width: COLUMN_WIDTHS.project, shape: 'text' },
-    { width: COLUMN_WIDTHS.client, shape: 'text' },
-    { width: COLUMN_WIDTHS.description, shape: 'text' },
-    { width: COLUMN_WIDTHS.duration, shape: 'text' },
-  ];
-  const skeletonRows = Math.min(pageSize, MAX_SKELETON_ROWS);
-
   return (
-    // Same workflow as the Home > My Tasks table: a bordered card that shrinks to fit its rows and
-    // is capped at the height the page gives it (`maxHeight: 100%`). Inside, one element scrolls
-    // (the rows, with a sticky header and a sticky total row) while the pagination bar stays
-    // pinned below it — so a long page, or a larger "rows per page", scrolls the table and never
-    // the page.
-    <div
-      className="time-logs-table"
-      style={{
-        maxHeight: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: 10,
-        border: `1px solid ${token.colorBorderSecondary}`,
-        background: token.colorBgContainer,
-        overflow: 'hidden',
-      }}
-    >
-      {isFirstLoad ? (
+    <ConfigProvider {...TABLE_CONFIG}>
+      <div
+        className="flex min-h-0 flex-col overflow-hidden rounded-lg border"
+        style={{
+          height: '100%',
+          borderColor: token.colorBorderSecondary,
+          background: token.colorBgContainer,
+        }}
+      >
         <div
-          role="status"
-          aria-busy="true"
-          aria-label={t('timeLogsLoading', { defaultValue: 'Loading time logs' })}
-          style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
-        >
-          {Array.from({ length: skeletonRows }).map((_, row) => (
-            <div
-              key={row}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                height: SKELETON_ROW_HEIGHT,
-                boxSizing: 'border-box',
-                borderBottom:
-                  row < skeletonRows - 1 ? `1px solid ${token.colorBorderSecondary}` : 'none',
-              }}
-            >
-              {skeletonColumns.map((col, i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: col.width,
-                    flexShrink: 0,
-                    boxSizing: 'border-box',
-                    padding: `0 ${CELL_PADDING}px`,
-                  }}
-                >
-                  {col.shape === 'avatar' ? (
-                    <Flex align="center" gap={8}>
-                      <Skeleton.Avatar active size={22} shape="circle" />
-                      <Skeleton.Input active size="small" style={{ height: 14, minWidth: 0 }} />
-                    </Flex>
-                  ) : (
-                    <Skeleton.Input active size="small" block style={{ height: 14, minWidth: 0 }} />
-                  )}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div
-          ref={scrollAreaRef}
-          className="time-logs-table-card"
-          style={
-            {
-              '--time-logs-sticky-bg': token.colorBgContainer,
-              '--time-logs-summary-bg': token.colorFillAlter,
-              '--time-logs-summary-border': token.colorBorderSecondary,
-              flex: 1,
-              minHeight: 0,
-              overflowY: 'auto',
-            } as React.CSSProperties
-          }
+          ref={containerRef}
+          className="time-logs-fill min-h-0 flex-1 overflow-hidden"
+          style={{ '--time-logs-body-height': `${scrollY}px` } as React.CSSProperties}
+          {...(isFirstLoad
+            ? {
+                role: 'status',
+                'aria-busy': true,
+                'aria-label': t('timeLogsLoading', { defaultValue: 'Loading time logs' }),
+              }
+            : {})}
         >
           <Table<TimeLogRow>
-            dataSource={failed ? [] : logs}
-            rowKey={record => record.id}
-            columns={columns}
-            size="middle"
+            showSorterTooltip={false}
+            columns={visibleColumns}
+            dataSource={isFirstLoad ? skeletonData : failed ? [] : logs}
             pagination={false}
-            tableLayout="fixed"
+            scroll={scrollConfig}
             summary={renderSummary}
-            loading={loading}
+            loading={loading && !isFirstLoad}
+            onChange={handleTableChange}
+            rowKey={getRowKey}
+            onRow={getRowProps}
             // While a later response is in flight the overlay spinner is the only thing to show —
             // not a premature "nothing logged" message underneath it.
             locale={{ emptyText: loading ? <div style={{ minHeight: 120 }} /> : emptyContent }}
           />
         </div>
-      )}
-
-      <div style={{ flexShrink: 0 }}>
-        <TablePagination
-          variant="dropdown"
+        <TimeLogsPaginationBar
           page={page}
           pageSize={pageSize}
-          total={failed ? 0 : total}
+          total={shownTotal}
           onPageChange={onPageChange}
-          // Line up with the data cells: same side padding, plus the scrollbar gutter on the right.
-          insetStart={CELL_PADDING}
-          insetEnd={CELL_PADDING + scrollbarWidth}
-          pageSizeOptions={PAGE_SIZE_OPTIONS}
-          rowsPerPageLabel={t('timeLogsRowsPerPage', { defaultValue: 'Rows per page' })}
         />
       </div>
-    </div>
+    </ConfigProvider>
   );
 };

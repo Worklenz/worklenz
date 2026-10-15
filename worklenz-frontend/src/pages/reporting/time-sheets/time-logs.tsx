@@ -27,6 +27,7 @@ import {
 } from './components/time-logs/time-logs-filters';
 import { useTimeLogGroupsData } from './components/time-logs/useTimeLogGroupsData';
 import { useTimeLogsData } from './components/time-logs/useTimeLogsData';
+import { useTimeLogsTaskDrawer } from './components/time-logs/useTimeLogsTaskDrawer';
 import {
   useMemberFilterOptions,
   useStaticFilterOptions,
@@ -96,6 +97,7 @@ const TimeLogsPage: React.FC = () => {
   // Only the view on screen loads: the table (flat or by task) or the grouped list.
   const table = useTimeLogsData(request, !isGrouped);
   const grouped = useTimeLogGroupsData(groupsRequest);
+  const { openTask, drawer } = useTimeLogsTaskDrawer();
   const { projects, practices, clients } = useStaticFilterOptions();
   const members = useMemberFilterOptions(range, filters.userIds);
 
@@ -191,13 +193,21 @@ const TimeLogsPage: React.FC = () => {
     // region's height, scrolling its own rows — so the page itself never scrolls, not even when
     // "rows per page" is raised.
     <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      <Flex align="baseline" wrap="wrap" gap={12} style={{ marginBottom: 16, flexShrink: 0 }}>
-        <Title level={4} style={{ margin: 0 }}>
+      <Flex vertical style={{ marginBottom: 16, flexShrink: 0 }}>
+        <Title level={3} className="!mb-0 !mt-1">
           {t('Time Logs', { defaultValue: 'Time Logs' })}
         </Title>
-        <Text type="secondary" style={{ fontSize: 13 }}>
-          {rangeLabel}
-        </Text>
+        <Flex align="baseline" wrap="wrap" gap={8}>
+          <Text type="secondary">
+            {t('timeLogsPageSubtitle', {
+              defaultValue:
+                'Every time entry logged by your team, with the member, project and client behind it.',
+            })}
+          </Text>
+          <Text type="secondary" strong>
+            {rangeLabel}
+          </Text>
+        </Flex>
       </Flex>
 
       <div style={{ marginBottom: 16, flexShrink: 0 }}>
@@ -234,6 +244,7 @@ const TimeLogsPage: React.FC = () => {
             pageSize={pageSize}
             onPageChange={handlePageChange}
             onClearFilters={canClearFilters ? handleClearFilters : undefined}
+            onOpenTask={openTask}
           />
         ) : (
           <TimeLogsTable
@@ -251,9 +262,12 @@ const TimeLogsPage: React.FC = () => {
             sortOrder={sortOrder}
             onSortChange={handleSortChange}
             onClearFilters={canClearFilters ? handleClearFilters : undefined}
+            onOpenTask={openTask}
           />
         )}
       </div>
+
+      {drawer}
     </div>
   );
 };

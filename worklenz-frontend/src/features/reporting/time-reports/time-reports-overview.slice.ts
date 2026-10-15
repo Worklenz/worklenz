@@ -15,6 +15,8 @@ const NO_PRACTICE_FILTER_ID = '__no_practice__';
 
 interface ITimeReportsOverviewState {
   archived: boolean;
+  /** True once the first teams -> categories -> projects option load has finished. */
+  filtersInitialized: boolean;
 
   teams: ISelectableTeam[];
   loadingTeams: boolean;
@@ -46,6 +48,7 @@ interface ITimeReportsOverviewState {
 
 const initialState: ITimeReportsOverviewState = {
   archived: false,
+  filtersInitialized: false,
   utilizationVisible: true,
   showOnlyMembersWithTimeLogs: false,
 
@@ -445,12 +448,14 @@ const timeReportsOverviewSlice = createSlice({
       }
       state.projects = projects;
       state.loadingProjects = false;
+      state.filtersInitialized = true;
     });
     builder.addCase(fetchReportingProjects.pending, state => {
       state.loadingProjects = true;
     });
     builder.addCase(fetchReportingProjects.rejected, state => {
       state.loadingProjects = false;
+      state.filtersInitialized = true;
     });
     builder.addCase(fetchReportingMembers.fulfilled, (state, action) => {
       const members = action.payload.members.map((member: any) => ({

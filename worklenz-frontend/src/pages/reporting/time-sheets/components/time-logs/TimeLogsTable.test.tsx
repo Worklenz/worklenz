@@ -91,6 +91,10 @@ const renderTable = (overrides: Partial<React.ComponentProps<typeof TimeLogsTabl
   return { props, ...render(<TimeLogsTable {...props} />) };
 };
 
+// A sortable header is the whole <th> (antd's own sorter), named by its title.
+const columnHeader = (name: string) =>
+  screen.getByRole('columnheader', { name: new RegExp(`^${name}`) });
+
 describe('TimeLogsTable', () => {
   it('renders each entry with date, member, client, project, task, description and duration', () => {
     renderTable();
@@ -143,14 +147,13 @@ describe('TimeLogsTable', () => {
     describe('alignment with the data rows', () => {
       const cellOf = (text: string) => screen.getByText(text).closest('td') as HTMLTableCellElement;
 
-      it('is a row of the very same <table> as the data rows, so it shares their column grid', () => {
+      it("is the table's summary row, pinned below the scrolling rows", () => {
         renderTable({ total: 128, totalSeconds: 3600 });
         const row = screen.getByText('Total time logged').closest('tr') as HTMLTableRowElement;
-        const dataRow = document.querySelector('tr.ant-table-row') as HTMLTableRowElement;
         expect(row).not.toBeNull();
-        expect(row.closest('table')).toBe(dataRow.closest('table'));
-        // a <tfoot>, which time-logs.css sticks to the bottom of the scroll area
         expect(row.closest('.ant-table-summary')).not.toBeNull();
+        // outside the scrolling body, so it never scrolls out of view
+        expect(row.closest('.ant-table-body')).toBeNull();
       });
 
       it('puts the total under the Duration column, aligned like the durations above it', () => {
@@ -175,14 +178,6 @@ describe('TimeLogsTable', () => {
         renderTable({ total: 128, totalSeconds: 3600 });
         const entriesCell = cellOf('Entries: 128');
         expect(entriesCell).toBe(entriesCell.parentElement!.firstElementChild);
-      });
-
-      it('insets the pagination by the same cell padding as the data rows', () => {
-        renderTable({ total: 128, totalSeconds: 3600 });
-        const bar = screen.getByText('Rows per page').parentElement!.parentElement as HTMLElement;
-        expect(bar.style.paddingLeft).toBe('8px');
-        // no scrollbar gutter in jsdom, so the right inset is just the cell padding
-        expect(bar.style.paddingRight).toBe('8px');
       });
     });
 
@@ -273,25 +268,73 @@ describe('TimeLogsTable', () => {
 
     it('calls the "Task" column "Task name" now', () => {
       renderTable();
-      expect(screen.getByRole('button', { name: 'Task name' })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Task' })).not.toBeInTheDocument();
+      expect(columnHeader('Task name')).toBeInTheDocument();
+      expect(screen.queryByRole('columnheader', { name: /^Task$/ })).not.toBeInTheDocument();
     });
 
     it('sorts by Task ID and by task name independently', () => {
       const { props } = renderTable();
-      fireEvent.click(screen.getByRole('button', { name: 'Task ID' }));
+      fireEvent.click(columnHeader('Task ID'));
       expect(props.onSortChange).toHaveBeenLastCalledWith('task_key');
-      fireEvent.click(screen.getByRole('button', { name: 'Task name' }));
+      fireEvent.click(columnHeader('Task name'));
       expect(props.onSortChange).toHaveBeenLastCalledWith('task');
     });
 
     it('reports a Task ID sort to assistive technology', () => {
       renderTable({ sortField: 'task_key', sortOrder: 'desc' });
-      const header = screen.getByRole('button', { name: 'Task ID' }).closest('th');
-      expect(header).toHaveAttribute('aria-sort', 'descending');
-      expect(screen.getByRole('button', { name: 'Task name' }).closest('th')).not.toHaveAttribute(
-        'aria-sort'
-      );
+      expect(columnHeader('Task ID')).toHaveAttribute('aria-sort', 'descending');
+      expect(columnHeader('Task name')).not.toHaveAttribute('aria-sort');
+    });
+  });
+
+  describe('Project column', () => {
+    it("shows the project's colour dot before its name", () => {
+      const { container } = renderTable({ logs: [makeLog({ project_color: '#ff0000' })] });
+      const cell = screen.getByText('InsolvenzTool MASTER').closest('td') as HTMLElement;
+      expect(cell.querySelector('.ant-badge-status-dot')).toHaveStyle({ background: '#ff0000' });
+      expect(container.querySelectorAll('.ant-badge-status-dot').length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('opening a task from its name', () => {
+    it('opens the task with its project when the task name is clicked', () => {
+      const onOpenTask = vi.fn();
+      renderTable({ onOpenTask });
+      fireEvent.click(screen.getByRole('button', { name: 'Open task Project Management' }));
+      expect(onOpenTask).toHaveBeenCalledWith('t1', 'p1');
+    });
+
+    it('opens it from the keyboard too', () => {
+      const onOpenTask = vi.fn();
+      renderTable({ onOpenTask });
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Open task Project Management' }), {
+        key: 'Enter',
+      });
+      expect(onOpenTask).toHaveBeenCalledWith('t1', 'p1');
+    });
+
+    it('shows an expand icon in the task cell, revealed when the row is hovered', () => {
+      renderTable({ onOpenTask: vi.fn() });
+      const cell = screen.getByText('Project Management').closest('td') as HTMLElement;
+      const icon = cell.querySelector('.anticon-expand-alt') as HTMLElement;
+      expect(icon).not.toBeNull();
+      expect(icon).toHaveClass('hidden', 'group-hover:flex');
+      // the row carries the `group` class the hover relies on
+      expect(cell.closest('tr')).toHaveClass('group');
+    });
+
+    it('opens a task from a By task row as well', () => {
+      const onOpenTask = vi.fn();
+      renderTable({ view: 'task', logs: [makeTaskRow()], onOpenTask });
+      fireEvent.click(screen.getByRole('button', { name: 'Open task Project Management' }));
+      expect(onOpenTask).toHaveBeenCalledWith('t1', 'p1');
+    });
+
+    it('is plain text when nothing can open the task', () => {
+      renderTable();
+      expect(screen.queryByRole('button', { name: /Open task/ })).not.toBeInTheDocument();
+      const cell = screen.getByText('Project Management').closest('td') as HTMLElement;
+      expect(cell.querySelector('.anticon-expand-alt')).toBeNull();
     });
   });
 
@@ -315,7 +358,7 @@ describe('TimeLogsTable', () => {
 
     it('is sortable', () => {
       const { props } = renderTable();
-      fireEvent.click(screen.getByRole('button', { name: 'Client' }));
+      fireEvent.click(columnHeader('Client'));
       expect(props.onSortChange).toHaveBeenCalledWith('client');
     });
   });
@@ -323,8 +366,8 @@ describe('TimeLogsTable', () => {
   describe('Duration column alignment', () => {
     it('is left-aligned, header and data, like every other column', () => {
       renderTable();
-      const th = screen.getByRole('button', { name: 'Duration' }).closest('th') as HTMLElement;
-      const dateTh = screen.getByRole('button', { name: 'Date' }).closest('th') as HTMLElement;
+      const th = columnHeader('Duration');
+      const dateTh = columnHeader('Date');
       const durationCell = screen.getAllByText('1h 30m')[0].closest('td') as HTMLElement;
       const dateCell = screen.getByText('Sep 17, 2026').closest('td') as HTMLElement;
       for (const el of [th, durationCell]) {
@@ -335,16 +378,14 @@ describe('TimeLogsTable', () => {
       expect(getComputedStyle(durationCell).textAlign).toBe(getComputedStyle(dateCell).textAlign);
     });
 
-    it('keeps the sort arrows at the end of the Duration header cell, as in the other headers', () => {
+    it("shows antd's sort arrows in the Duration header, as in the other sortable headers", () => {
       renderTable();
-      const header = screen.getByRole('button', { name: 'Duration' });
-      expect(header).toHaveStyle({ justifyContent: 'space-between' });
+      expect(columnHeader('Duration').querySelector('.ant-table-column-sorter')).not.toBeNull();
     });
   });
 
   describe('sorting', () => {
-    const headerOf = (name: string) =>
-      screen.getByRole('button', { name }).closest('th') as HTMLElement;
+    const headerOf = (name: string) => columnHeader(name);
 
     it('reports the sort column and direction to assistive technology (aria-sort)', () => {
       renderTable({ sortField: 'client', sortOrder: 'asc' });
@@ -366,94 +407,79 @@ describe('TimeLogsTable', () => {
 
     it('asks to sort by the clicked column', () => {
       const { props } = renderTable();
-      fireEvent.click(screen.getByRole('button', { name: 'Duration' }));
+      fireEvent.click(columnHeader('Duration'));
       expect(props.onSortChange).toHaveBeenCalledWith('duration');
-      fireEvent.click(screen.getByRole('button', { name: 'Member' }));
+      fireEvent.click(columnHeader('Member'));
       expect(props.onSortChange).toHaveBeenCalledWith('member');
     });
 
     it('is reachable from the keyboard', () => {
       const { props } = renderTable();
-      fireEvent.keyDown(screen.getByRole('button', { name: 'Date' }), { key: 'Enter' });
+      fireEvent.keyDown(columnHeader('Date'), { key: 'Enter', keyCode: 13 });
       expect(props.onSortChange).toHaveBeenCalledWith('date');
     });
 
     it('does not offer sorting on the free-text description column', () => {
       renderTable();
-      expect(screen.queryByRole('button', { name: 'Description' })).not.toBeInTheDocument();
+      expect(columnHeader('Description').querySelector('.ant-table-column-sorter')).toBeNull();
     });
   });
 
-  describe('scrolling (the My Tasks workflow)', () => {
+  describe('layout (the Projects report table)', () => {
     // jsdom does no layout, so these pin the structure that makes the browser behave: a card that
-    // shrinks to fit its rows but is capped at the page's height, with ONE scrolling element inside
-    // it holding the (CSS-sticky) header, the rows and the (CSS-sticky) total row.
+    // fills the height it is given, a table whose body scrolls under a fixed header, and a
+    // pagination bar below it.
     const manyLogs = Array.from({ length: 100 }, (_, i) => makeLog({ id: `log-${i}` }));
-    const scrollArea = (container: HTMLElement) =>
-      container.querySelector('.time-logs-table-card') as HTMLElement;
 
-    it('is capped at the height it is given but shrinks to fit a short result', () => {
+    it('fills the height it is given, in a bordered rounded card', () => {
       const { container } = renderTable({ logs: manyLogs, total: 100, pageSize: 100 });
-      const card = container.querySelector('.time-logs-table') as HTMLElement;
-      expect(card).toHaveStyle({ maxHeight: '100%', display: 'flex', flexDirection: 'column' });
-      // not stretched to the full height, or a few rows would leave a gap above the pagination
-      expect(card.style.height).toBe('');
+      const card = container.firstElementChild as HTMLElement;
+      expect(card).toHaveClass('rounded-lg', 'border', 'flex-col');
+      expect(card).toHaveStyle({ height: '100%' });
     });
 
-    it('scrolls its rows inside one element, so raising rows-per-page scrolls the table, not the page', () => {
+    it('scrolls the rows in the table body, under a fixed header', () => {
       const { container } = renderTable({ logs: manyLogs, total: 100, pageSize: 100 });
-      const area = scrollArea(container);
-      expect(area).not.toBeNull();
-      expect(area.style.overflowY).toBe('auto');
-      // antd's own scroll.y body would be a second, competing scroll container
-      expect(container.querySelector('.ant-table-body')).toBeNull();
+      expect(container.querySelector('.ant-table-body')).not.toBeNull();
+      expect(container.querySelector('.ant-table-header')).not.toBeNull();
       expect(container.querySelectorAll('tr.ant-table-row')).toHaveLength(100);
-      expect(area).toContainElement(container.querySelector('tr.ant-table-row') as HTMLElement);
     });
 
-    it('keeps the header row and the total row inside the scroll area, where CSS pins them', () => {
+    it('keeps the pagination outside the scrolling table', () => {
       const { container } = renderTable({ logs: manyLogs, total: 100, pageSize: 100 });
-      const area = scrollArea(container);
-      expect(area).toContainElement(screen.getByRole('button', { name: 'Date' }));
-      expect(area).toContainElement(screen.getByText('Total time logged'));
-    });
-
-    it('keeps the pagination outside the scroll area, pinned below it', () => {
-      const { container } = renderTable({ logs: manyLogs, total: 100, pageSize: 100 });
-      expect(scrollArea(container).contains(screen.getByText('Rows per page'))).toBe(false);
-      expect(container.querySelector('.time-logs-table')).toContainElement(
-        screen.getByText('Rows per page')
-      );
-    });
-
-    it('hands the theme colours to the sticky cells as CSS variables on the scroll area', () => {
-      const { container } = renderTable();
-      const area = scrollArea(container);
-      expect(area.style.getPropertyValue('--time-logs-sticky-bg')).not.toBe('');
-      expect(area.style.getPropertyValue('--time-logs-summary-bg')).not.toBe('');
-      expect(area.style.getPropertyValue('--time-logs-summary-border')).not.toBe('');
+      const label = screen.getByText('Rows per page:');
+      expect(container.querySelector('.ant-table-wrapper')?.contains(label)).toBe(false);
+      expect(container.firstElementChild).toContainElement(label);
     });
   });
 
-  describe('pagination (the My Tasks bar)', () => {
-    it('uses the dropdown "Rows per page" control with a "start – end of total" summary', () => {
+  describe('pagination (the Projects report bar)', () => {
+    it('has a "Rows per page" select and a "start-end of total" summary', () => {
       renderTable({ logs: [makeLog()], total: 15, pageSize: 20 });
-      expect(screen.getByRole('button', { name: 'Rows per page 20' })).toBeInTheDocument();
-      expect(screen.getByText('1 – 15 of 15')).toBeInTheDocument();
+      expect(screen.getByLabelText('Rows per page:')).toHaveValue('20');
+      expect(screen.getByText('1-15 of 15')).toBeInTheDocument();
     });
 
-    it('changes the page size through the menu and returns to page 1', async () => {
+    it('changes the page size through the select and returns to page 1', () => {
       const { props } = renderTable({ logs: [makeLog()], total: 120, pageSize: 20, page: 3 });
-      fireEvent.click(screen.getByRole('button', { name: 'Rows per page 20' }));
-      fireEvent.click(await screen.findByText('50'));
+      fireEvent.change(screen.getByLabelText('Rows per page:'), { target: { value: '50' } });
       expect(props.onPageChange).toHaveBeenCalledWith(1, 50);
     });
 
-    it('offers 20, 50 and 100 rows per page', async () => {
+    it('offers 10, 20, 50 and 100 rows per page', () => {
       renderTable({ logs: [makeLog()], total: 120, pageSize: 20 });
-      fireEvent.click(screen.getByRole('button', { name: 'Rows per page 20' }));
-      expect(await screen.findByText('50')).toBeInTheDocument();
-      expect(screen.getByText('100')).toBeInTheDocument();
+      const options = Array.from(
+        (screen.getByLabelText('Rows per page:') as HTMLSelectElement).options
+      ).map(option => option.value);
+      expect(options).toEqual(['10', '20', '50', '100']);
+    });
+
+    it('jumps to the first and last page', () => {
+      const { props } = renderTable({ logs: [makeLog()], total: 120, pageSize: 20, page: 3 });
+      fireEvent.click(screen.getByRole('button', { name: 'Last page' }));
+      expect(props.onPageChange).toHaveBeenLastCalledWith(6, 20);
+      fireEvent.click(screen.getByRole('button', { name: 'First page' }));
+      expect(props.onPageChange).toHaveBeenLastCalledWith(1, 20);
     });
   });
 
@@ -478,20 +504,20 @@ describe('TimeLogsTable', () => {
 
     it('calls the date column "Last logged", because a row spans several days', () => {
       renderByTask();
-      expect(screen.getByRole('button', { name: 'Last logged' })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Date' })).not.toBeInTheDocument();
+      expect(columnHeader('Last logged')).toBeInTheDocument();
+      expect(screen.queryByRole('columnheader', { name: /^Date/ })).not.toBeInTheDocument();
       expect(screen.getByText('Sep 18, 2026')).toBeInTheDocument();
     });
 
     it('keeps the flat view\'s header as "Date"', () => {
       renderTable({ view: 'flat' });
-      expect(screen.getByRole('button', { name: 'Date' })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Last logged' })).not.toBeInTheDocument();
+      expect(columnHeader('Date')).toBeInTheDocument();
+      expect(screen.queryByRole('columnheader', { name: /^Last logged/ })).not.toBeInTheDocument();
     });
 
     it('still sorts the date column by the same field', () => {
       const { props } = renderByTask();
-      fireEvent.click(screen.getByRole('button', { name: 'Last logged' }));
+      fireEvent.click(columnHeader('Last logged'));
       expect(props.onSortChange).toHaveBeenCalledWith('date');
     });
 
@@ -545,7 +571,7 @@ describe('TimeLogsTable', () => {
       renderByTask({ total: 42, pageSize: 20 });
       expect(screen.getByText('Tasks: 42')).toBeInTheDocument();
       expect(screen.queryByText(/^Entries:/)).not.toBeInTheDocument();
-      expect(screen.getByText('1 – 20 of 42')).toBeInTheDocument();
+      expect(screen.getByText('1-20 of 42')).toBeInTheDocument();
     });
 
     it('keeps the flat footer counting entries', () => {

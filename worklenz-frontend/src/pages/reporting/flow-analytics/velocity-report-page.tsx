@@ -14,20 +14,27 @@ import {
   PointElement,
   Tooltip as ChartTooltip,
 } from 'chart.js';
-import { Alert, Button, Card, Checkbox, Empty, Flex, Select, Skeleton, Table, Tag, Typography, theme } from '@/shared/antd-imports';
+import { Alert, Button, Card, Dropdown, Empty, Flex, Skeleton, Table, Tag, Tooltip, Typography, theme } from '@/shared/antd-imports';
+import { DownOutlined, InfoCircleOutlined } from '@/shared/antd-imports';
 import type { TableColumnsType } from '@/shared/antd-imports';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { reportingExportApiService } from '@/api/reporting/reporting-export.api.service';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_reporting_velocity } from '@/shared/worklenz-analytics-events';
 import { type VelocitySprint, useGetVelocityQuery } from '@/api/reporting/progress-chart.api.service';
 import type { OverviewWidgetConfig } from '@/api/reporting/overview-layout.api.service';
 import { ReportShell, StatCard, useReportOptions } from './report-shell';
+import VelocityFilterPanel, {
+  DEFAULT_SPRINT_COUNT,
+  DEFAULT_VELOCITY_METRIC,
+  type VelocityFilters,
+  type VelocityMetric,
+} from './velocity/velocity-filter-panel';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, BarController, LineElement, LineController, PointElement, Legend, ChartTooltip);
 
 const COMMITTED_COLOR = '#b7bdf0';
 const COMPLETED_COLOR = '#4caf50';
-const SPRINT_COUNT_OPTIONS = Array.from({ length: 10 }, (_, index) => ({ value: index + 3, label: String(index + 3) }));
 
 const formatValue = (value: number): string => (Number.isInteger(value) ? String(value) : value.toFixed(1));
 const formatDate = (value: string | null): string =>
@@ -59,11 +66,14 @@ export const VelocityReportPage = () => {
   useDocumentTitle(t('velocity.title', { defaultValue: 'Velocity Charts' }));
 
   const { projects: allProjects, isFetching: isLoadingOptions } = useReportOptions();
-  // Velocity needs sprints, so only projects that have started one are offered.
-  const projects = useMemo(() => allProjects.filter(project => project.has_sprints), [allProjects]);
+  // Velocity needs sprints, so only Software projects that have started one are offered.
+  const projects = useMemo(
+    () => allProjects.filter(project => project.project_type === 'software' && project.has_sprints),
+    [allProjects]
+  );
   const [projectId, setProjectId] = useState<string | undefined>();
-  const [metric, setMetric] = useState<'story_points' | 'issue_count'>('story_points');
-  const [sprintCount, setSprintCount] = useState(8);
+  const [metric, setMetric] = useState<VelocityMetric>(DEFAULT_VELOCITY_METRIC);
+  const [sprintCount, setSprintCount] = useState(DEFAULT_SPRINT_COUNT);
   const [includeSubtasks, setIncludeSubtasks] = useState(false);
   const [showTrend, setShowTrend] = useState(false);
 
@@ -85,7 +95,7 @@ export const VelocityReportPage = () => {
 
   const unit =
     metric === 'issue_count'
-      ? t('velocity.unitIssues', { defaultValue: 'issues' })
+      ? t('velocity.unitIssues', { defaultValue: 'tasks' })
       : t('velocity.unitPoints', { defaultValue: 'pts' });
 
   const chartData = useMemo<ChartData<'bar' | 'line', (number | null)[], string> | null>(() => {
@@ -165,59 +175,83 @@ export const VelocityReportPage = () => {
     },
   ];
 
-  const filters = (
-    <>
-      <Select
-        showSearch
-        optionFilterProp="label"
-        style={{ minWidth: 220 }}
-        loading={isLoadingOptions}
-        placeholder={t('selectProject', { defaultValue: 'Select a project' })}
-        aria-label={t('project', { defaultValue: 'Project' })}
-        value={projectId}
-        options={projects.map(project => ({ value: project.id, label: project.name }))}
-        onChange={setProjectId}
-      />
-      <Select
-        style={{ minWidth: 150 }}
-        aria-label={t('velocity.metric', { defaultValue: 'Metric' })}
-        value={metric}
-        onChange={setMetric}
-        options={[
-          { value: 'story_points', label: t('velocity.metricStoryPoints', { defaultValue: 'Metric: Story points' }) },
-          { value: 'issue_count', label: t('velocity.metricIssues', { defaultValue: 'Metric: Issues' }) },
-        ]}
-      />
-      <Select
-        style={{ minWidth: 130 }}
-        aria-label={t('velocity.sprintsToShow', { defaultValue: 'Sprints to show' })}
-        value={sprintCount}
-        onChange={setSprintCount}
-        options={SPRINT_COUNT_OPTIONS.map(option => ({
-          value: option.value,
-          label: t('velocity.lastSprints', { defaultValue: 'Last {{count}} sprints', count: option.value }),
-        }))}
-      />
-      <Checkbox checked={includeSubtasks} onChange={event => setIncludeSubtasks(event.target.checked)}>
-        {t('includeSubtasks', { defaultValue: 'Include sub-tasks' })}
-      </Checkbox>
-      <Checkbox checked={showTrend} onChange={event => setShowTrend(event.target.checked)}>
-        {t('velocity.trendLine', { defaultValue: 'Trend line' })}
-      </Checkbox>
-    </>
-  );
+  const filters: VelocityFilters = { projectId, metric, sprintCount, includeSubtasks, showTrend };
+  const updateFilters = (patch: Partial<VelocityFilters>) => {
+    if ('projectId' in patch) setProjectId(patch.projectId);
+    if (patch.metric !== undefined) setMetric(patch.metric);
+    if (patch.sprintCount !== undefined) setSprintCount(patch.sprintCount);
+    if (patch.includeSubtasks !== undefined) setIncludeSubtasks(patch.includeSubtasks);
+    if (patch.showTrend !== undefined) setShowTrend(patch.showTrend);
+  };
+  // Clear keeps the chosen project: the report cannot render without one.
+  const resetFilters = () =>
+    updateFilters({ metric: DEFAULT_VELOCITY_METRIC, sprintCount: DEFAULT_SPRINT_COUNT, includeSubtasks: false, showTrend: false });
+
+  const exportReport = () => {
+    if (!projectId) return;
+    reportingExportApiService.exportVelocity({ projectId, metric, sprintCount, includeSubtasks, trend: showTrend });
+  };
+  const exportItems = [
+    {
+      key: 'excel',
+      label: t('velocity.exportExcel', { defaultValue: 'Excel' }),
+      onClick: exportReport,
+    },
+  ];
+
+  const legendItems: { key: string; label: string; hint: string; swatch: string; isLine?: boolean }[] = [
+    {
+      key: 'committed',
+      label: t('velocity.committed', { defaultValue: 'Committed' }),
+      hint: t('velocity.committedHint', {
+        defaultValue: 'Work in the sprint when it started. Anything added later does not count.',
+      }),
+      swatch: COMMITTED_COLOR,
+    },
+    {
+      key: 'completed',
+      label: t('velocity.completed', { defaultValue: 'Completed' }),
+      hint: t('velocity.completedHint', {
+        defaultValue: 'Work finished (moved to a done status) by the time the sprint ended, or so far for an active sprint.',
+      }),
+      swatch: COMPLETED_COLOR,
+    },
+    ...(velocity?.average_velocity != null
+      ? [
+          {
+            key: 'average',
+            label: t('velocity.average', { defaultValue: 'Average velocity ({{value}})', value: formatValue(velocity.average_velocity) }),
+            hint: t('velocity.averageHint', {
+              defaultValue: 'The mean of completed work across finished sprints. Use it to size the next sprint.',
+            }),
+            swatch: token.colorWarning,
+            isLine: true,
+          },
+        ]
+      : []),
+    ...(showTrend
+      ? [
+          {
+            key: 'trend',
+            label: t('velocity.trend', { defaultValue: 'Trend' }),
+            hint: t('velocity.trendHint', {
+              defaultValue: 'A best-fit line through completed work per sprint. Rising means the team is delivering more over time.',
+            }),
+            swatch: token.colorPrimary,
+            isLine: true,
+          },
+        ]
+      : []),
+  ];
 
   let body: React.ReactNode;
-  if (!projectId) {
+  // Options still loading, or the first project is about to be picked: show the loader, not an empty state.
+  if (isLoadingOptions || (!projectId && projects.length > 0)) {
+    body = <Skeleton active paragraph={{ rows: 10 }} />;
+  } else if (!projectId) {
     body = (
       <Card>
-        <Empty description={
-          isLoadingOptions
-            ? undefined
-            : projects.length
-              ? t('velocity.pickProject', { defaultValue: 'Choose a project to see its velocity' })
-              : t('velocity.noSprintProjects', { defaultValue: 'No project has a started sprint yet' })
-        } />
+        <Empty description={t('velocity.noSprintProjects', { defaultValue: 'No Software project has a started sprint yet' })} />
       </Card>
     );
   } else if (isLoading) {
@@ -270,6 +304,25 @@ export const VelocityReportPage = () => {
           title={t('velocity.chartTitle', { defaultValue: 'Sprint velocity: committed vs completed' })}
           loading={isFetching && !velocity}
         >
+          <Flex gap={16} wrap="wrap" justify="center" style={{ marginBottom: 12 }}>
+            {legendItems.map(item => (
+              <Tooltip key={item.key} title={item.hint}>
+                <Flex gap={6} align="center" tabIndex={0} style={{ cursor: 'help' }}>
+                  <span
+                    aria-hidden
+                    style={{
+                      width: item.isLine ? 16 : 12,
+                      height: item.isLine ? 3 : 12,
+                      borderRadius: item.isLine ? 2 : 3,
+                      background: item.swatch,
+                    }}
+                  />
+                  <Typography.Text style={{ fontSize: 13 }}>{item.label}</Typography.Text>
+                  <InfoCircleOutlined aria-label={item.hint} style={{ fontSize: 12, color: token.colorTextTertiary }} />
+                </Flex>
+              </Tooltip>
+            ))}
+          </Flex>
           <div
             role="img"
             aria-label={t('velocity.chartAria', {
@@ -286,7 +339,7 @@ export const VelocityReportPage = () => {
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 color: token.colorTextSecondary,
-                plugins: { legend: { position: 'bottom' } },
+                plugins: { legend: { display: false } },
                 scales: {
                   x: { ticks: { color: token.colorTextSecondary }, grid: { display: false } },
                   y: { beginAtZero: true, ticks: { color: token.colorTextSecondary }, grid: { color: token.colorBorderSecondary } },
@@ -313,10 +366,24 @@ export const VelocityReportPage = () => {
     <ReportShell
       title={t('velocity.title', { defaultValue: 'Velocity Charts' })}
       subtitle={t('velocity.subtitle', {
-        defaultValue:
-          'Track sprint velocity and compare committed versus completed work, so planning is based on what the team actually delivers.',
+        defaultValue: 'Compare committed and completed work per sprint. Software project type only.',
       })}
-      filters={filters}
+      actions={
+        <Flex gap={8} align="center">
+          <VelocityFilterPanel
+            filters={filters}
+            projectOptions={projects}
+            isLoadingProjects={isLoadingOptions}
+            onChange={updateFilters}
+            onReset={resetFilters}
+          />
+          <Dropdown menu={{ items: exportItems }} trigger={['click']} disabled={!projectId}>
+            <Button icon={<DownOutlined />} iconPosition="end">
+              {t('velocity.exportButton', { defaultValue: 'Export' })}
+            </Button>
+          </Dropdown>
+        </Flex>
+      }
     >
       {body}
     </ReportShell>

@@ -4,6 +4,7 @@
   "Export Excel": "Exportar para Excel",
   "Export CSV": "Exportar para CSV",
   "timeSheet": "Folha de tempo",
+  "timeSheetSubtitle": "Veja quanto tempo cada membro da equipe registrou em cada projeto no período selecionado.",
 
   "searchByName": "Pesquisar por nome",
   "selectAll": "Selecionar tudo",

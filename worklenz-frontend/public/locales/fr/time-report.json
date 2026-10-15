@@ -4,6 +4,7 @@
   "Export Excel": "Exporter Excel",
   "Export CSV": "Exporter au format CSV",
   "timeSheet": "Feuille de temps",
+  "timeSheetSubtitle": "Consultez le temps enregistré par chaque membre de l’équipe sur chaque projet pour la période sélectionnée.",
   "searchByName": "Rechercher par nom",
   "selectAll": "Sélectionner tout",
   "clearAll": "Tout effacer",

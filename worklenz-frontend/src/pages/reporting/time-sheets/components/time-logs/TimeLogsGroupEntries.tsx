@@ -1,7 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Skeleton, Typography } from '@/shared/antd-imports';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Button, Table, TableColumnsType, Typography, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { reportingTimeLogsApiService } from '@/api/reporting/reporting-time-logs.api.service';
+import CustomTableTitle from '@/components/CustomTableTitle';
+import { buildSkeletonRows, toSkeletonColumns } from '@/components/reporting/table-skeleton';
 import { formatLoggedDuration } from '@/components/time-entries/time-entries-format';
 import {
   ITimeLogEntry,
@@ -11,7 +13,16 @@ import {
 } from '@/types/reporting/time-logs.types';
 import { formatCalendarDate } from '@/utils/date-presets';
 import logger from '@/utils/errorLogger';
-import { ELLIPSIS_STYLE, EmptyCell, MemberCell, TextCell } from './time-logs-cells';
+import {
+  ELLIPSIS_STYLE,
+  EmptyCell,
+  MemberCell,
+  ProjectNameCell,
+  TaskNameCell,
+  TextCell,
+} from './time-logs-cells';
+import { ROW_HEIGHT } from './time-logs-table-config';
+import './time-logs.css';
 
 const { Text } = Typography;
 
@@ -48,15 +59,15 @@ const COLUMN_HIDDEN_BY_GROUP: Record<TimeLogsGroupDimension, EntryColumn> = {
   client: 'client',
 };
 
-const ENTRY_COLUMN_WIDTHS: Record<EntryColumn, string> = {
-  date: '96px',
-  taskKey: '72px',
-  task: 'minmax(140px, 2fr)',
-  member: 'minmax(120px, 1.4fr)',
-  project: 'minmax(110px, 1.4fr)',
-  client: 'minmax(100px, 1.2fr)',
-  description: 'minmax(120px, 1.6fr)',
-  duration: '84px',
+const ENTRY_COLUMN_WIDTHS: Record<EntryColumn, number> = {
+  date: 130,
+  taskKey: 110,
+  task: 240,
+  member: 200,
+  project: 200,
+  client: 180,
+  description: 240,
+  duration: 130,
 };
 
 /** The request that lists just this group's entries: the page's filters, narrowed to the group. */
@@ -92,6 +103,8 @@ interface TimeLogsGroupEntriesProps {
   entryCount: number;
   /** The filters the groups were built with; the entries are loaded with the same ones. */
   filterRequest: ITimeLogsFilterRequest;
+  /** Opens a task from its name; without it the task names are plain text. */
+  onOpenTask?: (taskId: string, projectId: string) => void;
 }
 
 /**
@@ -105,8 +118,10 @@ export const TimeLogsGroupEntries: React.FC<TimeLogsGroupEntriesProps> = ({
   groupLabel,
   entryCount,
   filterRequest,
+  onOpenTask,
 }) => {
   const { t } = useTranslation('time-report');
+  const { token } = theme.useToken();
   const [state, setState] = useState<IEntriesState>({
     rows: [],
     page: 0,
@@ -189,7 +204,14 @@ export const TimeLogsGroupEntries: React.FC<TimeLogsGroupEntriesProps> = ({
           <EmptyCell />
         );
       case 'task':
-        return <TextCell value={entry.task_name} />;
+        return (
+          <TaskNameCell
+            name={entry.task_name}
+            taskId={entry.task_id}
+            projectId={entry.project_id}
+            onOpenTask={onOpenTask}
+          />
+        );
       case 'member':
         return (
           <MemberCell
@@ -199,7 +221,7 @@ export const TimeLogsGroupEntries: React.FC<TimeLogsGroupEntriesProps> = ({
           />
         );
       case 'project':
-        return <span style={ELLIPSIS_STYLE}>{entry.project_name}</span>;
+        return <ProjectNameCell name={entry.project_name} color={entry.project_color} />;
       case 'client':
         return <TextCell value={entry.client_name} />;
       case 'description':
@@ -211,50 +233,48 @@ export const TimeLogsGroupEntries: React.FC<TimeLogsGroupEntriesProps> = ({
 
   const hasMore = state.rows.length < entryCount;
   const isFirstLoad = state.loading && state.rows.length === 0 && !state.failed;
-  const gridStyle = {
-    '--time-logs-entry-columns': columns.map(column => ENTRY_COLUMN_WIDTHS[column]).join(' '),
-  } as React.CSSProperties;
+
+  const tableColumns: TableColumnsType<ITimeLogEntry> = useMemo(() => {
+    const built = columns.map(column => ({
+      key: column,
+      title: <CustomTableTitle title={labels[column]} />,
+      width: ENTRY_COLUMN_WIDTHS[column],
+      ...(column === 'task' || column === 'client' || column === 'description'
+        ? { ellipsis: { showTitle: false } }
+        : {}),
+      render: (_: unknown, entry: ITimeLogEntry) => renderCell(column, entry),
+    }));
+    return isFirstLoad ? toSkeletonColumns(built) : built;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- labels / renderCell follow `t`, `onOpenTask`
+  }, [groupBy, isFirstLoad, onOpenTask, t]);
 
   return (
     <div
       id={id}
-      role="table"
+      role="region"
       aria-label={t('timeLogsGroupEntriesLabel', {
         defaultValue: 'Entries of {{group}}',
         group: groupLabel,
       })}
       aria-busy={state.loading}
-      className="time-logs-group-entries"
-      style={gridStyle}
     >
-      <div role="row" className="time-logs-group-entries-head">
-        {columns.map(column => (
-          <span key={column} role="columnheader" style={ELLIPSIS_STYLE}>
-            {labels[column]}
-          </span>
-        ))}
-      </div>
+      <Table<ITimeLogEntry>
+        className="time-logs-entries-table"
+        showSorterTooltip={false}
+        tableLayout="fixed"
+        pagination={false}
+        rowKey="id"
+        columns={tableColumns}
+        dataSource={isFirstLoad ? buildSkeletonRows<ITimeLogEntry>(SKELETON_ROWS) : state.rows}
+        scroll={{ x: 'max-content' }}
+        onRow={() => ({ className: 'group', style: { height: ROW_HEIGHT } })}
+        locale={{ emptyText: <span /> }}
+      />
 
-      {state.rows.map(entry => (
-        <div key={entry.id} role="row" className="time-logs-group-entry">
-          {columns.map(column => (
-            <div key={column} role="cell" style={{ minWidth: 0 }}>
-              {renderCell(column, entry)}
-            </div>
-          ))}
-        </div>
-      ))}
-
-      {isFirstLoad &&
-        Array.from({ length: SKELETON_ROWS }).map((_, row) => (
-          <div key={row} className="time-logs-group-entry" aria-hidden="true">
-            <div style={{ gridColumn: '1 / -1' }}>
-              <Skeleton.Input active size="small" block style={{ height: 14, minWidth: 0 }} />
-            </div>
-          </div>
-        ))}
-
-      <div className="time-logs-group-entries-foot">
+      <div
+        className="flex items-center justify-between gap-2 px-4 py-2"
+        style={{ borderTop: `1px solid ${token.colorBorderSecondary}`, minHeight: 40 }}
+      >
         {state.failed ? (
           <>
             <span role="alert">

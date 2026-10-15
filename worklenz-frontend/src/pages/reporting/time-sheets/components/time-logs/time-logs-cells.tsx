@@ -1,5 +1,5 @@
 import React from 'react';
-import { Avatar, Flex, Tag, Tooltip, theme } from '@/shared/antd-imports';
+import { Avatar, Badge, ExpandAltOutlined, Flex, Tag, Tooltip, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { TimeEntryMemberAvatars } from '@/components/time-entries/TimeEntryMemberAvatars';
 import { avatarNamesMap } from '@/shared/constants';
@@ -36,6 +36,71 @@ export const TextCell: React.FC<TextCellProps> = ({ value }) =>
   ) : (
     <EmptyCell />
   );
+
+/** A project's name behind its colour dot, like the Project column of the Projects report. */
+export const ProjectNameCell: React.FC<{ name: string | null; color?: string | null }> = ({
+  name,
+  color,
+}) => {
+  const { token } = theme.useToken();
+  return (
+    <Flex align="center" gap={8} style={{ minWidth: 0 }}>
+      <Badge color={color || token.colorPrimary} />
+      <span style={{ ...ELLIPSIS_STYLE, fontWeight: 500 }}>{name}</span>
+    </Flex>
+  );
+};
+
+interface TaskNameCellProps {
+  name: string | null;
+  taskId: string;
+  projectId: string;
+  /** Opens the task. Without it the name is plain text. */
+  onOpenTask?: (taskId: string, projectId: string) => void;
+}
+
+/**
+ * A task's name. Hovering the row shows an expand icon at the end of the cell, and clicking the cell
+ * opens the task — like the Project column of the Projects report. The row needs the `group` class.
+ */
+export const TaskNameCell: React.FC<TaskNameCellProps> = ({
+  name,
+  taskId,
+  projectId,
+  onOpenTask,
+}) => {
+  const { t } = useTranslation('time-report');
+  if (!onOpenTask) return <TextCell value={name} />;
+
+  const open = () => onOpenTask(taskId, projectId);
+  return (
+    <Flex
+      align="center"
+      justify="space-between"
+      gap={8}
+      role="button"
+      tabIndex={0}
+      aria-label={t('timeLogsOpenTask', { defaultValue: 'Open task {{name}}', name: name ?? '' })}
+      style={{ cursor: 'pointer', minWidth: 0 }}
+      onClick={open}
+      onKeyDown={event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          open();
+        }
+      }}
+    >
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <TextCell value={name} />
+      </div>
+      <ExpandAltOutlined
+        className="hidden group-hover:flex group-focus-within:flex"
+        aria-hidden="true"
+        style={{ flexShrink: 0 }}
+      />
+    </Flex>
+  );
+};
 
 /** The "Deactivated" / "Removed" tag a member who is no longer active carries. */
 export const MemberStatusTag: React.FC<{ status: TimeLogMemberStatus }> = ({ status }) => {

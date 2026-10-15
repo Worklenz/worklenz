@@ -75,20 +75,29 @@ const MembersReportsTable = ({ hiddenColumns = [] }: MembersReportsTableProps) =
     dispatch(toggleMembersReportsDrawer());
   };
 
+  const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState<number>(240);
 
-  // Size the table body to the space left above the pagination footer so the header stays visible.
+  // The card shrinks to its rows. The most it may use is what the page leaves it (the page is a
+  // fixed-height column), so measure that from the parent, not from the card itself.
   useLayoutEffect(() => {
-    const element = containerRef.current;
-    if (!element) return;
+    const root = rootRef.current;
+    const parent = root?.parentElement;
+    if (!root || !parent) return;
     const measure = () => {
-      const header = element.querySelector<HTMLElement>('.ant-table-header')?.offsetHeight ?? 40;
-      setScrollY(Math.max(120, element.clientHeight - header - 2));
+      const gap = parseFloat(getComputedStyle(parent).rowGap) || 0;
+      const siblings = Array.from(parent.children).filter(child => child !== root) as HTMLElement[];
+      const used = siblings.reduce((sum, child) => sum + child.offsetHeight + gap, 0);
+      const available = parent.clientHeight - used;
+      const header = containerRef.current?.querySelector<HTMLElement>('.ant-table-header')?.offsetHeight ?? 40;
+      const footer = footerRef.current?.offsetHeight ?? 64;
+      setScrollY(Math.max(120, available - header - footer - 2));
     };
     measure();
     const observer = new ResizeObserver(measure);
-    observer.observe(element);
+    observer.observe(parent);
     return () => observer.disconnect();
   }, [membersList, isLoading]);
 
@@ -293,10 +302,11 @@ const MembersReportsTable = ({ hiddenColumns = [] }: MembersReportsTableProps) =
       }}
     >
       <div
-        className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border"
+        ref={rootRef}
+        className="flex min-h-0 flex-col overflow-hidden rounded-lg border"
         style={{ borderColor: token.colorBorderSecondary, background: token.colorBgContainer }}
       >
-        <div ref={containerRef} className="min-h-0 flex-1 overflow-hidden">
+        <div ref={containerRef} className="min-h-0 overflow-hidden">
           <Table
             size="middle"
             showSorterTooltip={false}
@@ -310,6 +320,7 @@ const MembersReportsTable = ({ hiddenColumns = [] }: MembersReportsTableProps) =
           />
         </div>
         <Flex
+          ref={footerRef}
           align="center"
           justify="space-between"
           gap={12}

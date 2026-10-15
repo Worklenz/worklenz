@@ -3,7 +3,6 @@ import { Badge, Button, Divider, Flex, Popover, Typography, theme } from '@/shar
 import { FilterOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import {
-  FILTER_PILL_BUTTON_STYLE,
   FilterOption,
   MultiSelectFilterPill,
 } from '@/components/common/filters/MultiSelectFilterPill';
@@ -19,6 +18,9 @@ import {
 } from './time-logs-filters';
 
 const { Text } = Typography;
+
+// The pills in the popover are the default-size buttons, like the Projects report's filter popover.
+const POPOVER_PILL_STYLE: React.CSSProperties = {};
 
 export interface ITimeLogsFilterOptions {
   options: FilterOption[];
@@ -104,6 +106,7 @@ export const TimeLogsFilterPanel: React.FC<TimeLogsFilterPanelProps> = ({
       options={group.options}
       value={selected}
       onChange={onChange}
+      buttonStyle={POPOVER_PILL_STYLE}
     />
   );
 
@@ -116,6 +119,7 @@ export const TimeLogsFilterPanel: React.FC<TimeLogsFilterPanelProps> = ({
 
       <Flex gap={8} wrap="wrap" align="center">
         <TimeLogsDatePresetPill
+          buttonStyle={POPOVER_PILL_STYLE}
           datePreset={draft.datePreset}
           customRange={draft.customRange}
           onChange={(datePreset, customRange) => patch({ datePreset, customRange })}
@@ -147,6 +151,7 @@ export const TimeLogsFilterPanel: React.FC<TimeLogsFilterPanelProps> = ({
         <MultiSelectFilterPill
           label={t('timeLogsFilterBillable', { defaultValue: 'Billable' })}
           searchable={false}
+          buttonStyle={POPOVER_PILL_STYLE}
           options={billableOptions}
           value={draft.billable}
           onChange={values => patch({ billable: values as TimeLogsBillableValue[] })}
@@ -201,12 +206,8 @@ export const TimeLogsFilterPanel: React.FC<TimeLogsFilterPanelProps> = ({
         aria-expanded={panelOpen}
         style={
           panelOpen || activeCount > 0
-            ? {
-                ...FILTER_PILL_BUTTON_STYLE,
-                borderColor: token.colorPrimary,
-                color: token.colorPrimary,
-              }
-            : FILTER_PILL_BUTTON_STYLE
+            ? { borderColor: token.colorPrimary, color: token.colorPrimary }
+            : undefined
         }
       >
         {t('timeLogsFilterButton', { defaultValue: 'Filter' })}

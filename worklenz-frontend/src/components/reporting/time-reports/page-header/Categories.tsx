@@ -21,7 +21,12 @@ import {
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const Categories: React.FC = () => {
+interface CategoriesProps {
+  /** "middle" matches the chips in the Time in Status filter popover. */
+  size?: 'small' | 'middle';
+}
+
+const Categories: React.FC<CategoriesProps> = ({ size = 'small' }) => {
   const dispatch = useAppDispatch();
 
   const [searchText, setSearchText] = useState('');
@@ -268,7 +273,7 @@ const Categories: React.FC = () => {
           }
         }}
       >
-        <Button loading={loadingCategories} size="small" style={{ fontSize: 12, borderRadius: 7 }}>
+        <Button loading={loadingCategories} size={size} style={size === 'small' ? { fontSize: 12, borderRadius: 7 } : undefined}>
           {getButtonText()}
           <CaretDownFilled style={{ fontSize: 10, marginLeft: 4 }} />
         </Button>

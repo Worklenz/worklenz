@@ -21,7 +21,12 @@ import {
   setSelectOrDeselectTeam,
 } from '@/features/reporting/time-reports/time-reports-overview.slice';
 
-const Team: React.FC = () => {
+interface TeamProps {
+  /** "middle" matches the chips in the Time in Status filter popover. */
+  size?: 'small' | 'middle';
+}
+
+const Team: React.FC<TeamProps> = ({ size = 'small' }) => {
   const dispatch = useAppDispatch();
   const [searchText, setSearchText] = useState('');
   const [selectAll, setSelectAll] = useState(true);
@@ -225,7 +230,7 @@ const Team: React.FC = () => {
           }
         }}
       >
-        <Button loading={loadingTeams} size="small" style={{ fontSize: 12, borderRadius: 7 }}>
+        <Button loading={loadingTeams} size={size} style={size === 'small' ? { fontSize: 12, borderRadius: 7 } : undefined}>
           {getButtonText()}
           <CaretDownFilled style={{ fontSize: 10, marginLeft: 4 }} />
         </Button>

@@ -51,6 +51,16 @@ export const reportingExportApiService = {
     window.location.href = `${rootUrl}/projects/filtered${toQueryString(params)}`;
   },
 
+  /** Excel export of the Time in Status report (current view, or everything when `detailed`). */
+  exportTimeInStatus(params: Record<string, string | number | boolean | undefined>) {
+    window.location.href = `${rootUrl}/time-in-status${toQueryString(params)}`;
+  },
+
+  /** Excel export of the Velocity Charts report for one project. */
+  exportVelocity(params: Record<string, string | number | boolean | undefined>) {
+    window.location.href = `${rootUrl}/velocity${toQueryString(params)}`;
+  },
+
   exportProjects(teamName: string | undefined) {
     const params = toQueryString({
       team_name: teamName,

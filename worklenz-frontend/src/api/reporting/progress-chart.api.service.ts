@@ -44,9 +44,10 @@ export interface ProgressChartResponse {
 }
 
 export interface ProgressChartOptionsResponse {
-  projects: { id: string; name: string; project_type: string; has_sprints: boolean }[];
+  projects: { id: string; name: string; color_code: string | null; project_type: string; has_sprints: boolean }[];
   sprints: { id: string; name: string; sprint_status: string }[];
   members: { id: string; name: string }[];
+  statuses: { name: string; color: string | null }[];
 }
 
 export interface GetProgressChartArgs {
@@ -121,12 +122,51 @@ export interface TimeInStatusTask {
   task_key: string | null;
   project_id: string;
   project_name: string;
+  project_color: string;
   status_name: string;
   status_color: string;
   hours_in_status: number;
   hours_overdue: number | null;
-  assignees: string[];
+  assignees: TimeInStatusAssignee[];
   updated_at: string;
+}
+
+export interface TimeInStatusAssignee {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+}
+
+export type TimeInStatusGroupBy = 'project' | 'status' | 'assignee';
+
+export interface TimeInStatusGroup {
+  group_id: string;
+  group_name: string;
+  group_color: string;
+  task_count: number;
+  avg_hours: number;
+  overdue_count: number;
+  tasks: TimeInStatusTask[];
+}
+
+export interface TimeInStatusTasksResponse {
+  tasks: TimeInStatusTask[];
+  total: number;
+}
+
+export interface TimeInStatusGroupsResponse {
+  groups: TimeInStatusGroup[];
+  truncated: boolean;
+}
+
+export interface TimeInStatusTaskArgs extends GetFlowArgs {
+  search?: string;
+  statuses?: string[];
+  field?: string;
+  order?: 'asc' | 'desc';
+  index?: number;
+  size?: number;
+  groupBy?: TimeInStatusGroupBy;
 }
 
 export interface TimeInStatusResponse {
@@ -135,18 +175,19 @@ export interface TimeInStatusResponse {
   end_date: string;
   rows: { band: FlowBand; task_count: number; avg_hours: number; median_hours: number; total_hours: number }[];
   avg_hours_overall: number;
-  tasks: TimeInStatusTask[];
 }
 
 export interface GetFlowArgs {
   config?: OverviewWidgetConfig;
   includeArchived?: boolean;
   dateRange?: { from: string; to: string } | null;
-  /** Time in Status: only tasks assigned to this team member. */
-  assigneeId?: string;
+  /** Time in Status: only tasks assigned to any of these team members. */
+  assigneeIds?: string[];
+  /** Time in Status: restrict to these projects (team scope). */
+  projectIds?: string[];
 }
 
-const buildFlowParams = ({ config: widgetConfig, includeArchived, dateRange, assigneeId }: GetFlowArgs): Record<string, string> => {
+const buildFlowParams = ({ config: widgetConfig, includeArchived, dateRange, assigneeIds, projectIds }: GetFlowArgs): Record<string, string> => {
   const scope = widgetConfig?.progressScope ?? 'team';
   const params: Record<string, string> = {
     scope,
@@ -154,10 +195,26 @@ const buildFlowParams = ({ config: widgetConfig, includeArchived, dateRange, ass
     archived: String(widgetConfig?.includeArchived ?? includeArchived ?? false),
   };
   if (scope === 'project' && widgetConfig?.projectId) params.projectId = widgetConfig.projectId;
-  if (assigneeId) params.assigneeId = assigneeId;
+  if (assigneeIds?.length) params.assigneeIds = assigneeIds.join(',');
+  if (projectIds?.length) params.projectIds = projectIds.join(',');
   if (dateRange) {
     params.dateFrom = dateRange.from;
     params.dateTo = dateRange.to;
+  }
+  return params;
+};
+
+const buildTaskParams = (args: TimeInStatusTaskArgs, grouped: boolean): Record<string, string> => {
+  const params = buildFlowParams(args);
+  if (args.search) params.search = args.search;
+  if (args.statuses?.length) params.statuses = args.statuses.join(',');
+  if (args.field) params.field = args.field;
+  if (args.order) params.order = args.order;
+  if (grouped) {
+    params.group_by = args.groupBy ?? 'project';
+  } else {
+    params.index = String(args.index ?? 1);
+    params.size = String(args.size ?? 10);
   }
   return params;
 };
@@ -194,11 +251,16 @@ const progressChartApi = createApi({
     getProgressChart: builder.query<IServerResponse<ProgressChartResponse>, GetProgressChartArgs>({
       query: args => ({ url: '/reporting/projects/widgets/progress-chart', params: buildParams(args) }),
     }),
-    getProgressChartOptions: builder.query<IServerResponse<ProgressChartOptionsResponse>, { projectId?: string }>({
-      query: ({ projectId }) => ({
-        url: '/reporting/projects/widgets/progress-chart/options',
-        params: projectId ? { projectId } : undefined,
-      }),
+    getProgressChartOptions: builder.query<
+      IServerResponse<ProgressChartOptionsResponse>,
+      { projectId?: string; includeArchived?: boolean }
+    >({
+      query: ({ projectId, includeArchived }) => {
+        const params: Record<string, string> = {};
+        if (projectId) params.projectId = projectId;
+        if (includeArchived) params.archived = 'true';
+        return { url: '/reporting/projects/widgets/progress-chart/options', params };
+      },
     }),
     getVelocity: builder.query<IServerResponse<VelocityResponse>, { config?: OverviewWidgetConfig }>({
       query: ({ config: widgetConfig }) => ({ url: '/reporting/projects/widgets/velocity', params: buildVelocityParams(widgetConfig) }),
@@ -209,6 +271,12 @@ const progressChartApi = createApi({
     getTimeInStatus: builder.query<IServerResponse<TimeInStatusResponse>, GetFlowArgs>({
       query: args => ({ url: '/reporting/projects/widgets/time-in-status', params: buildFlowParams(args) }),
     }),
+    getTimeInStatusTasks: builder.query<IServerResponse<TimeInStatusTasksResponse>, TimeInStatusTaskArgs>({
+      query: args => ({ url: '/reporting/projects/widgets/time-in-status/tasks', params: buildTaskParams(args, false) }),
+    }),
+    getTimeInStatusGroups: builder.query<IServerResponse<TimeInStatusGroupsResponse>, TimeInStatusTaskArgs>({
+      query: args => ({ url: '/reporting/projects/widgets/time-in-status/groups', params: buildTaskParams(args, true) }),
+    }),
   }),
 });
 
@@ -218,6 +286,8 @@ export const {
   useGetVelocityQuery,
   useGetCumulativeFlowQuery,
   useGetTimeInStatusQuery,
+  useGetTimeInStatusTasksQuery,
+  useGetTimeInStatusGroupsQuery,
 } = progressChartApi;
 
 export default progressChartApi;
