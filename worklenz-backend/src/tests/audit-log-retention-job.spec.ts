@@ -118,18 +118,17 @@ describe("runAuditLogRetentionPurge", () => {
 });
 
 describe("purge_expired_audit_events() definition", () => {
-  it("revokes public and application execution, granting only the retention role", () => {
+  it("restricts public execution without requiring deployment-specific roles", () => {
     const permissionsSql = collectMigrationSql("1792051800000_restrict_audit_retention_execution.js");
     expect(permissionsSql).toMatch(/REVOKE ALL ON FUNCTION purge_expired_audit_events\(UUID\) FROM PUBLIC/);
-    expect(permissionsSql).toMatch(/REVOKE ALL ON FUNCTION purge_expired_audit_events\(UUID\) FROM worklenz_client/);
-    expect(permissionsSql).toMatch(/GRANT EXECUTE ON FUNCTION purge_expired_audit_events\(UUID\) TO worklenz_audit_retention/);
+    expect(permissionsSql).not.toMatch(/worklenz_client|worklenz_audit_retention|CREATE ROLE|GRANT/);
   });
   it("keeps public execution revoked when the retention-role migration is rolled back", () => {
     const migration = require(path.join(MIGRATIONS_DIR, "1792051800000_restrict_audit_retention_execution.js")) as MigrationModule;
     const statements: string[] = [];
     migration.down({ sql: statement => statements.push(statement) });
     const sql = statements.join("\n");
-    expect(sql).toMatch(/REVOKE EXECUTE.*FROM worklenz_audit_retention/);
+    expect(sql).toBe("");
     expect(sql).not.toMatch(/GRANT.*TO PUBLIC/);
   });
 
