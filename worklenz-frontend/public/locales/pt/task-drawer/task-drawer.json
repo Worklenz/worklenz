@@ -222,7 +222,16 @@
       "moveToTaskTooltip": "Reatribuir este registro de tempo a uma tarefa diferente",
       "selectTask": "Selecionar tarefa...",
       "backdateLimitError": "Os registos de tempo não podem ser retroagidos mais de {{days}} dias. A data mais antiga que pode registar é {{earliestDate}}.",
-      "saveError": "Não foi possível guardar o registo de tempo. Por favor, tente novamente."
+      "saveError": "Não foi possível guardar o registo de tempo. Por favor, tente novamente.",
+      "totalDurationBadge": "Total: {{duration}}",
+      "overnightSessionBadge": "Pernoite (+1 dia)",
+      "multiDaySessionBadge": "Abrange {{days}} dias (+{{days}}d)",
+      "durationExceedsDayWarning": "Esta sessão excede 24 horas. Verifique as datas de início e término.",
+      "overnightSplitBreakdown": "({{day1Duration}} em {{day1Date}}, {{day2Duration}} em {{day2Date}})",
+      "projectStartDateError": "O tempo não pode ser registrado antes da data de início do projeto ({{date}}).",
+      "projectNotStartedWarningTitle": "O projeto ainda não começou",
+      "projectNotStartedWarningDesc": "Este projeto está programado para começar em {{date}}. O tempo não pode ser registrado antes da data de início do projeto.",
+      "projectStartDateHint": "Data de início do projeto: {{date}}"
     },
     "rollupLoggedTooltip": "Soma do tempo logado nas subtarefas"
   },

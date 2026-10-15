@@ -227,7 +227,11 @@
       "overnightSessionBadge": "Overnight (+1 day)",
       "multiDaySessionBadge": "Spans {{days}} days (+{{days}}d)",
       "durationExceedsDayWarning": "This session exceeds 24 hours. Please verify the start and end dates.",
-      "overnightSplitBreakdown": "({{day1Duration}} on {{day1Date}}, {{day2Duration}} on {{day2Date}})"
+      "overnightSplitBreakdown": "({{day1Duration}} on {{day1Date}}, {{day2Duration}} on {{day2Date}})",
+      "projectStartDateError": "Time cannot be logged before the project start date ({{date}}).",
+      "projectNotStartedWarningTitle": "Project has not started yet",
+      "projectNotStartedWarningDesc": "This project is scheduled to start on {{date}}. Time cannot be logged before the project start date.",
+      "projectStartDateHint": "Project start date: {{date}}"
     },
     "rollupLoggedTooltip": "Sum of time logged on subtasks"
   },

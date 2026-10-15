@@ -31,6 +31,7 @@ vi.mock('@/hooks/useAppSelector', () => ({
     selector({
       themeReducer: { mode: 'light' },
       taskDrawerReducer: { taskFormViewModel: null },
+      projectReducer: { project: null },
       orgConfigReducer: { timelog_backdate_limit_days: 0, isInitialized: true, isLoading: false },
     }),
 }));

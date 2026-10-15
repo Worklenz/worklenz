@@ -130,7 +130,7 @@ const TimeLogForm = ({
     return dayjs().startOf('day').subtract(backdateLimitDays, 'day');
   }, [backdateLimitDays]);
 
-  const currentProjectInStore = useAppSelector(state => state.projectReducer.project);
+  const currentProjectInStore = useAppSelector(state => state.projectReducer?.project);
 
   // In edit mode the log's own date must stay selectable even once it ages past
   // the limit, so description/duration edits remain possible. The backend applies

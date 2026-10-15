@@ -227,7 +227,11 @@
       "overnightSessionBadge": "Gjatë natës (+1 ditë)",
       "multiDaySessionBadge": "Zgjat {{days}} ditë (+{{days}}d)",
       "durationExceedsDayWarning": "Kjo seancë tejkalon 24 orë. Ju lutemi verifikoni datën e fillimit dhe të përfundimit.",
-      "overnightSplitBreakdown": "({{day1Duration}} më {{day1Date}}, {{day2Duration}} më {{day2Date}})"
+      "overnightSplitBreakdown": "({{day1Duration}} më {{day1Date}}, {{day2Duration}} më {{day2Date}})",
+      "projectStartDateError": "Koha nuk mund të regjistrohet para datës së fillimit të projektit ({{date}}).",
+      "projectNotStartedWarningTitle": "Projekti nuk ka filluar ende",
+      "projectNotStartedWarningDesc": "Ky projekt është planifikuar të fillojë më {{date}}. Koha nuk mund të regjistrohet para datës së fillimit të projektit.",
+      "projectStartDateHint": "Data e fillimit të projektit: {{date}}"
     },
     "rollupLoggedTooltip": "Shuma e kohës së regjistruar në nën-detyrat"
   },

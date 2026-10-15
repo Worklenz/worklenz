@@ -227,7 +227,11 @@
       "overnightSessionBadge": "通宵 (+1天)",
       "multiDaySessionBadge": "跨越 {{days}} 天 (+{{days}}天)",
       "durationExceedsDayWarning": "此工时记录超过 24 小时，请核对开始和结束日期。",
-      "overnightSplitBreakdown": "({{day1Date}} {{day1Duration}}, {{day2Date}} {{day2Duration}})"
+      "overnightSplitBreakdown": "({{day1Date}} {{day1Duration}}, {{day2Date}} {{day2Duration}})",
+      "projectStartDateError": "无法在项目开始日期（{{date}}）之前记录时间。",
+      "projectNotStartedWarningTitle": "项目尚未开始",
+      "projectNotStartedWarningDesc": "此项目计划于 {{date}} 开始。不能在项目开始日期之前记录时间。",
+      "projectStartDateHint": "项目开始日期：{{date}}"
     },
     "rollupLoggedTooltip": "子任务的登录时间总和"
   },

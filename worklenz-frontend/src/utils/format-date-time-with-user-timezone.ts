@@ -44,6 +44,8 @@ export const formatDateTimeWithUserTimezone = (
         es: 'es-ES',
         pt: 'pt-PT',
         de: 'de-DE',
+        fr: 'fr-FR',
+        pl: 'pl-PL',
         zh: 'zh-CN',
         alb: 'sq-AL',
       };

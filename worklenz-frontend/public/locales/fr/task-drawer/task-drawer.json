@@ -227,7 +227,11 @@
       "overnightSessionBadge": "De nuit (+1 jour)",
       "multiDaySessionBadge": "S'étend sur {{days}} jours (+{{days}}j)",
       "durationExceedsDayWarning": "Cette session dépasse 24 heures. Veuillez vérifier les dates de début et de fin.",
-      "overnightSplitBreakdown": "({{day1Duration}} le {{day1Date}}, {{day2Duration}} le {{day2Date}})"
+      "overnightSplitBreakdown": "({{day1Duration}} le {{day1Date}}, {{day2Duration}} le {{day2Date}})",
+      "projectStartDateError": "Le temps ne peut pas être enregistré avant la date de début du projet ({{date}}).",
+      "projectNotStartedWarningTitle": "Le projet n'a pas encore commencé",
+      "projectNotStartedWarningDesc": "Ce projet doit débuter le {{date}}. Le temps ne peut pas être enregistré avant la date de début du projet.",
+      "projectStartDateHint": "Date de début du projet : {{date}}"
     },
     "rollupLoggedTooltip": "Somme du temps passé sur les sous-tâches"
   },
