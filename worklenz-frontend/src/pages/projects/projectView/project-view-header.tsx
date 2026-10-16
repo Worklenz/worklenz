@@ -155,6 +155,7 @@ const ProjectViewHeader = memo(() => {
           case 'all-attachments':
           case 'members':
           case 'updates':
+          case 'docs':
             await Promise.all([
               projectPromise,
               new Promise(resolve => setTimeout(resolve, 1000)), // minimum 1s spin

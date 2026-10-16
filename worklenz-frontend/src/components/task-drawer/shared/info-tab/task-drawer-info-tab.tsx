@@ -9,6 +9,7 @@ import {
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { InboxOutlined } from '@ant-design/icons';
 import DescriptionEditor from './description-editor';
+import MentionedInDocs from './mentioned-in-docs';
 import SubTaskTable from './subtask-table';
 import DependenciesTable from './dependencies-table';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -463,12 +464,15 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
       key: 'description',
       label: <Typography.Text strong>{t('taskInfoTab.description.title', { defaultValue: 'Description' })}</Typography.Text>,
       children: (
-        <DescriptionEditor
-          description={taskFormViewModel?.task?.description || null}
-          taskId={taskFormViewModel?.task?.id || ''}
-          parentTaskId={taskFormViewModel?.task?.parent_task_id || ''}
-          isGuest={isGuest}
-        />
+        <Flex vertical>
+          <DescriptionEditor
+            description={taskFormViewModel?.task?.description || null}
+            taskId={taskFormViewModel?.task?.id || ''}
+            parentTaskId={taskFormViewModel?.task?.parent_task_id || ''}
+            isGuest={isGuest}
+          />
+          {selectedTaskId ? <MentionedInDocs taskId={selectedTaskId} isGuest={isGuest} /> : null}
+        </Flex>
       ),
       style: panelStyle,
       className: 'custom-task-drawer-info-collapse',
@@ -673,14 +677,12 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
             </div>
           </div>
         )}
-        <Flex vertical>
-          <Collapse
-            items={infoItems}
-            bordered={false}
-            activeKey={collapseActiveKeys}
-            onChange={keys => setCollapseActiveKeys(keys as string[])}
-          />
-        </Flex>
+        <Collapse
+          items={infoItems}
+          bordered={false}
+          activeKey={collapseActiveKeys}
+          onChange={keys => setCollapseActiveKeys(keys as string[])}
+        />
       </div>
     </Skeleton>
   );
