@@ -1,6 +1,13 @@
 import db from "../../config/db";
 import { parseIssueKeys } from "./github-issue-key-parser";
-import { notifyGithubActivity, reconcileTasks } from "./github-automation.service";
+import {
+  closeTaskForClosedIssue,
+  notifyGithubActivity,
+  reconcileTasks,
+} from "./github-automation.service";
+import { matchesLabelFilter } from "./github-issue-mapping";
+import { importGithubIssue, issueLabelNames } from "./github-issue-import.service";
+import { IGithubIssue } from "./github-app.service";
 
 type Json = Record<string, any>;
 
@@ -298,6 +305,67 @@ async function handlePullRequestReview(payload: Json): Promise<void> {
   }
 }
 
+interface IImportSettings {
+  auto_import?: boolean;
+  labels?: string[];
+  default_phase_id?: string | null;
+  close_on_issue_close?: boolean;
+}
+
+/** Issue opened/labeled/closed/reopened: auto-import, keep link state, close linked issues. */
+async function handleIssues(payload: Json): Promise<void> {
+  const issue = payload.issue as IGithubIssue | undefined;
+  if (!issue || issue.pull_request) return;
+  const action: string = payload.action;
+  if (!["opened", "labeled", "closed", "reopened"].includes(action)) return;
+
+  const repository = await resolveRepository(payload);
+  if (!repository) return;
+
+  if (action === "closed" || action === "reopened") {
+    const updated = await db.query(
+      `UPDATE github_issue_links SET state = $3, last_synced_at = NOW()
+       WHERE repository_id = $1 AND issue_number = $2
+       RETURNING task_id`,
+      [repository.id, issue.number, action === "closed" ? "closed" : "open"],
+    );
+    if (action === "closed") {
+      for (const row of updated.rows) await closeTaskForClosedIssue(row.task_id, repository.id);
+    }
+    await notifyGithubActivity(updated.rows.map(r => r.task_id));
+    return;
+  }
+
+  // opened / labeled: auto-import into every linked project that asks for it.
+  const links = await db.query(
+    `SELECT pr.project_id, pr.linked_by, pr.settings, r.full_name, i.connected_by
+     FROM github_project_repositories pr
+     JOIN github_repositories r ON r.id = pr.repository_id
+     JOIN github_integrations i ON i.id = r.integration_id
+     JOIN projects p ON p.id = pr.project_id
+     WHERE pr.repository_id = $1 AND p.project_type = 'software'`,
+    [repository.id],
+  );
+
+  for (const link of links.rows) {
+    const settings: IImportSettings = link.settings?.import || {};
+    if (!settings.auto_import) continue;
+    if (!matchesLabelFilter(issueLabelNames(issue), settings.labels)) continue;
+
+    const actorId = link.linked_by || link.connected_by;
+    if (!actorId) continue;
+
+    const outcome = await importGithubIssue(issue, {
+      projectId: link.project_id,
+      repositoryId: repository.id,
+      repositoryFullName: link.full_name,
+      actorId,
+      phaseId: settings.default_phase_id || null,
+    });
+    if (outcome.status === "imported") await notifyGithubActivity([outcome.taskId]);
+  }
+}
+
 async function handleInstallation(payload: Json): Promise<void> {
   const installationId = payload.installation?.id;
   if (!installationId) return;
@@ -354,6 +422,9 @@ export async function processGithubEvent(eventType: string, payload: Json): Prom
       return "processed";
     case "pull_request_review":
       await handlePullRequestReview(payload);
+      return "processed";
+    case "issues":
+      await handleIssues(payload);
       return "processed";
     case "installation":
       await handleInstallation(payload);

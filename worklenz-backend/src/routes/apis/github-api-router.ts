@@ -30,11 +30,27 @@ githubApiRouter.put(
   projectSettings,
   safeControllerFunction(GithubController.updateRepositoryLink),
 );
+const projectTasks = requireProjectPermission("tasks", { sources: ["params.projectId"] });
+githubApiRouter.get(
+  "/projects/:projectId/repositories/:linkId/issues",
+  projectTasks,
+  safeControllerFunction(GithubController.listRepositoryIssues),
+);
+githubApiRouter.post(
+  "/projects/:projectId/repositories/:linkId/issues/import",
+  projectTasks,
+  safeControllerFunction(GithubController.importRepositoryIssues),
+);
+
 githubApiRouter.delete(
   "/projects/:projectId/repositories/:linkId",
   projectSettings,
   safeControllerFunction(GithubController.unlinkRepository),
 );
+
+// Team sync health
+githubApiRouter.get("/sync-status", safeControllerFunction(GithubController.getSyncStatus));
+githubApiRouter.post("/events/:id/retry", idParamValidator, safeControllerFunction(GithubController.retryEvent));
 
 // Task development info
 githubApiRouter.get("/tasks/:id/development", idParamValidator, safeControllerFunction(GithubController.getTaskDevelopment));

@@ -213,3 +213,50 @@ export async function notifyGithubActivity(taskIds: string[]): Promise<void> {
     log_error(error);
   }
 }
+
+/**
+ * A linked GitHub issue was closed: finish the Worklenz issue when the repository link asks for
+ * it. Targets the mapped "merged" status, else the project's first done status. Never reopens
+ * or touches issues that are already done.
+ */
+export async function closeTaskForClosedIssue(taskId: string, repositoryId: string): Promise<void> {
+  try {
+    const contextResult = await db.query(
+      `SELECT t.id, t.project_id, t.parent_task_id, t.status_id, t.archived,
+              COALESCE(c.is_done, FALSE) AS status_is_done,
+              pr.settings, pr.linked_by
+       FROM tasks t
+       JOIN task_statuses s ON s.id = t.status_id
+       LEFT JOIN sys_task_status_categories c ON c.id = s.category_id
+       JOIN github_project_repositories pr
+         ON pr.project_id = t.project_id AND pr.repository_id = $2
+       WHERE t.id = $1`,
+      [taskId, repositoryId],
+    );
+    const context: (ITaskContext & { settings: { status_map?: GithubStatusMap; import?: { close_on_issue_close?: boolean } } | null }) | undefined =
+      contextResult.rows[0];
+    if (!context || context.archived || context.status_is_done) return;
+    if (!context.settings?.import?.close_on_issue_close) return;
+
+    const doneStatuses = await db.query(
+      `SELECT s.id FROM task_statuses s
+       JOIN sys_task_status_categories c ON c.id = s.category_id
+       WHERE s.project_id = $1 AND c.is_done IS TRUE
+       ORDER BY s.sort_order`,
+      [context.project_id],
+    );
+    const doneIds: string[] = doneStatuses.rows.map(r => r.id);
+    const mapped = context.settings.status_map?.pr_merged;
+    const target = mapped && doneIds.includes(mapped) ? mapped : doneIds[0];
+    if (!target) return;
+
+    const canContinue = await TasksControllerV2.checkForCompletedDependencies(taskId, target);
+    if (!canContinue) return;
+
+    const actorId = await resolveActorId(context, repositoryId);
+    if (!actorId) return;
+    await applyStatusTransition(context, target, actorId);
+  } catch (error) {
+    log_error(error);
+  }
+}

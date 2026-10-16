@@ -27,6 +27,18 @@ export interface IGithubRepo {
   private: boolean;
 }
 
+export interface IGithubIssue {
+  number: number;
+  title: string;
+  body: string | null;
+  state: "open" | "closed";
+  html_url: string;
+  labels: Array<string | { name?: string }>;
+  assignee: { login: string } | null;
+  pull_request?: unknown;
+  created_at: string;
+}
+
 export class GithubApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -161,6 +173,34 @@ export class GithubAppService {
       if (result.repositories.length < 100) break;
     }
     return repos;
+  }
+
+  /** One page of issues (pull requests filtered out). */
+  public static async listIssues(
+    installationId: number,
+    fullName: string,
+    options: { state: "open" | "closed" | "all"; labels?: string[]; page: number; perPage?: number },
+  ): Promise<{ issues: IGithubIssue[]; hasMore: boolean }> {
+    const token = await this.getInstallationToken(installationId);
+    const perPage = options.perPage ?? 30;
+    const params = new URLSearchParams({
+      state: options.state,
+      per_page: String(perPage),
+      page: String(options.page),
+      sort: "created",
+      direction: "desc",
+    });
+    if (options.labels?.length) params.set("labels", options.labels.join(","));
+    const items = await this.request<IGithubIssue[]>(`/repos/${fullName}/issues?${params}`, token);
+    return {
+      issues: items.filter(item => !item.pull_request),
+      hasMore: items.length === perPage,
+    };
+  }
+
+  public static async getIssue(installationId: number, fullName: string, number: number): Promise<IGithubIssue> {
+    const token = await this.getInstallationToken(installationId);
+    return this.request<IGithubIssue>(`/repos/${fullName}/issues/${number}`, token);
   }
 
   /** Repository default branch plus up to 100 branch names (alphabetical). */

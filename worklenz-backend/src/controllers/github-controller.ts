@@ -9,6 +9,8 @@ import { GithubAppService } from "../services/github/github-app.service";
 import { getProjectAccessForRequest } from "../shared/project-access";
 import { log_error } from "../shared/utils";
 import { isValidUuid } from "../shared/validation-helpers";
+import { IO } from "../shared/io";
+import { SocketEvents } from "../socket.io/events";
 import { isValidBranchName } from "../services/github/github-branch-name";
 import {
   buildDefaultStatusMap,
@@ -18,6 +20,7 @@ import {
 } from "../services/github/github-transition-rules";
 import { GithubApiError } from "../services/github/github-app.service";
 import { notifyGithubActivity, reconcileTasks } from "../services/github/github-automation.service";
+import { importGithubIssue, issueLabelNames } from "../services/github/github-issue-import.service";
 
 const STATE_PURPOSE = "github-install";
 const STATE_TTL = "15m";
@@ -68,6 +71,38 @@ async function syncRepositories(integrationId: string, installationId: number): 
     [integrationId, ids],
   );
   return repos.length;
+}
+
+async function getOpenSprints(projectId: string) {
+  const result = await db.query(
+    `SELECT id, name, sprint_status FROM project_phases
+     WHERE project_id = $1 AND sprint_status IN ('planned', 'active')
+     ORDER BY sort_index, created_at`,
+    [projectId],
+  );
+  return result.rows as Array<{ id: string; name: string; sprint_status: string }>;
+}
+
+/** A repository link of this project, with what the GitHub API needs. Null when not found. */
+async function getProjectLink(projectId: string, linkId: string, teamId: string) {
+  if (!isValidUuid(linkId)) return null;
+  const result = await db.query(
+    `SELECT pr.id, pr.repository_id, r.full_name, i.installation_id
+     FROM github_project_repositories pr
+     JOIN github_repositories r ON r.id = pr.repository_id
+     JOIN github_integrations i ON i.id = r.integration_id
+     WHERE pr.id = $1 AND pr.project_id = $2 AND i.team_id = $3 AND i.status = 'active'`,
+    [linkId, projectId, teamId],
+  );
+  const row = result.rows[0];
+  return row
+    ? {
+        id: row.id as string,
+        repositoryId: row.repository_id as string,
+        fullName: row.full_name as string,
+        installationId: Number(row.installation_id),
+      }
+    : null;
 }
 
 async function getTeamOwnerName(teamId: string): Promise<string | null> {
@@ -378,6 +413,7 @@ export default class GithubController extends WorklenzControllerBase {
         linked: linked.rows,
         available: available.rows,
         statuses: await getProjectStatuses(projectId),
+        sprints: await getOpenSprints(projectId),
         can_connect: canManageTeam(req),
         owner_name: integration ? null : await getTeamOwnerName(req.user?.team_id as string),
       }),
@@ -430,10 +466,21 @@ export default class GithubController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async updateRepositoryLink(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { projectId, linkId } = req.params;
-    const body = req.body as { default_base_branch?: string | null; status_map?: Record<string, string | null> };
+    const body = req.body as {
+      default_base_branch?: string | null;
+      status_map?: Record<string, string | null>;
+      import_settings?: {
+        auto_import?: boolean;
+        labels?: unknown;
+        default_phase_id?: string | null;
+        close_on_issue_close?: boolean;
+      };
+    };
 
     const updates: string[] = [];
     const values: unknown[] = [linkId, projectId];
+    // status_map and import settings both live in `settings`; compose one assignment.
+    let settingsExpr = "COALESCE(settings, '{}'::JSONB)";
 
     if ("default_base_branch" in body) {
       const branch = body.default_base_branch || null;
@@ -456,8 +503,39 @@ export default class GithubController extends WorklenzControllerBase {
         statusMap[event] = value || null;
       }
       values.push(JSON.stringify(statusMap));
-      updates.push(`settings = jsonb_set(settings, '{status_map}', $${values.length}::JSONB, TRUE)`);
+      settingsExpr = `jsonb_set(${settingsExpr}, '{status_map}', $${values.length}::JSONB, TRUE)`;
     }
+
+    if (body.import_settings) {
+      const raw = body.import_settings;
+      const labels = Array.isArray(raw.labels)
+        ? raw.labels.filter((l): l is string => typeof l === "string").map(l => l.trim()).filter(Boolean)
+        : [];
+      if (labels.length > 20 || labels.some(l => l.length > 50)) {
+        return res.status(400).send(new ServerResponse(false, null, "Too many or too long labels"));
+      }
+      let phaseId: string | null = null;
+      if (raw.default_phase_id) {
+        const phase = await db.query(
+          `SELECT 1 FROM project_phases
+           WHERE id = $1 AND project_id = $2 AND sprint_status IN ('planned', 'active')`,
+          [raw.default_phase_id, projectId],
+        );
+        if (!phase.rowCount) return res.status(400).send(new ServerResponse(false, null, "Sprint not found"));
+        phaseId = raw.default_phase_id;
+      }
+      values.push(
+        JSON.stringify({
+          auto_import: !!raw.auto_import,
+          labels,
+          default_phase_id: phaseId,
+          close_on_issue_close: !!raw.close_on_issue_close,
+        }),
+      );
+      settingsExpr = `jsonb_set(${settingsExpr}, '{import}', $${values.length}::JSONB, TRUE)`;
+    }
+
+    if (body.status_map || body.import_settings) updates.push(`settings = ${settingsExpr}`);
 
     if (!updates.length) return res.status(400).send(new ServerResponse(false, null, "Nothing to update"));
 
@@ -628,5 +706,182 @@ export default class GithubController extends WorklenzControllerBase {
 
     const result = await GithubAppService.listBranches(target.installationId, target.fullName);
     return res.status(200).send(new ServerResponse(true, result));
+  }
+
+  /** Open/closed GitHub issues of a linked repository, flagged when already imported. */
+  @HandleExceptions()
+  public static async listRepositoryIssues(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { projectId, linkId } = req.params;
+    const link = await getProjectLink(projectId, linkId, req.user?.team_id as string);
+    if (!link) return res.status(404).send(new ServerResponse(false, null, "Repository link not found"));
+
+    const stateParam = req.query.state;
+    const state = stateParam === "closed" || stateParam === "all" ? stateParam : "open";
+    const page = Math.min(Math.max(parseInt(String(req.query.page || "1"), 10) || 1, 1), 50);
+    const labels = typeof req.query.labels === "string"
+      ? req.query.labels.split(",").map(l => l.trim()).filter(Boolean).slice(0, 10)
+      : [];
+
+    const { issues, hasMore } = await GithubAppService.listIssues(link.installationId, link.fullName, {
+      state,
+      labels,
+      page,
+    });
+
+    const imported = await db.query(
+      `SELECT l.issue_number, CONCAT(p.key, '-', t.task_no) AS task_key
+       FROM github_issue_links l
+       JOIN tasks t ON t.id = l.task_id
+       JOIN projects p ON p.id = t.project_id
+       WHERE l.repository_id = $1 AND l.issue_number = ANY($2::INT[])`,
+      [link.repositoryId, issues.map(i => i.number)],
+    );
+    const importedByNumber = new Map<number, string>(imported.rows.map(r => [r.issue_number, r.task_key]));
+
+    return res.status(200).send(
+      new ServerResponse(true, {
+        has_more: hasMore,
+        issues: issues.map(issue => ({
+          number: issue.number,
+          title: issue.title,
+          state: issue.state,
+          html_url: issue.html_url,
+          labels: issueLabelNames(issue),
+          assignee_login: issue.assignee?.login ?? null,
+          created_at: issue.created_at,
+          imported_task_key: importedByNumber.get(issue.number) ?? null,
+        })),
+      }),
+    );
+  }
+
+  /** Import selected GitHub issues into the backlog or a sprint. */
+  @HandleExceptions()
+  public static async importRepositoryIssues(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { projectId, linkId } = req.params;
+    const body = req.body as { numbers?: unknown; phase_id?: string | null };
+    const link = await getProjectLink(projectId, linkId, req.user?.team_id as string);
+    if (!link) return res.status(404).send(new ServerResponse(false, null, "Repository link not found"));
+
+    const numbers = Array.isArray(body.numbers)
+      ? [...new Set(body.numbers.filter((n): n is number => Number.isSafeInteger(n) && n > 0))]
+      : [];
+    if (!numbers.length || numbers.length > 50) {
+      return res.status(400).send(new ServerResponse(false, null, "Select between 1 and 50 issues"));
+    }
+
+    let phaseId: string | null = null;
+    if (body.phase_id) {
+      const phase = await db.query(
+        `SELECT 1 FROM project_phases
+         WHERE id = $1 AND project_id = $2 AND sprint_status IN ('planned', 'active')`,
+        [body.phase_id, projectId],
+      );
+      if (!phase.rowCount) return res.status(400).send(new ServerResponse(false, null, "Sprint not found"));
+      phaseId = body.phase_id;
+    }
+
+    const imported: Array<{ number: number; task_key: string }> = [];
+    const skipped: Array<{ number: number; reason: string }> = [];
+    const importedTaskIds: string[] = [];
+
+    for (const number of numbers) {
+      try {
+        const issue = await GithubAppService.getIssue(link.installationId, link.fullName, number);
+        if (issue.pull_request) {
+          skipped.push({ number, reason: "pull_request" });
+          continue;
+        }
+        const outcome = await importGithubIssue(issue, {
+          projectId,
+          repositoryId: link.repositoryId,
+          repositoryFullName: link.fullName,
+          actorId: req.user?.id as string,
+          phaseId,
+        });
+        if (outcome.status === "imported") {
+          imported.push({ number, task_key: outcome.taskKey });
+          importedTaskIds.push(outcome.taskId);
+        } else {
+          skipped.push({ number, reason: outcome.reason });
+        }
+      } catch (error) {
+        log_error(error);
+        skipped.push({ number, reason: "failed" });
+      }
+    }
+
+    if (importedTaskIds.length) {
+      IO.getInstance()?.to(projectId).emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+      await notifyGithubActivity(importedTaskIds);
+    }
+
+    return res.status(200).send(new ServerResponse(true, { imported, skipped }));
+  }
+
+  /** Webhook health for the team: counts, last delivery and recent failures (owners/admins). */
+  @HandleExceptions()
+  public static async getSyncStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    if (!canManageTeam(req)) {
+      return res.status(403).send(new ServerResponse(false, null, "Only team owners and admins can view sync status"));
+    }
+    const integration = await db.query(
+      `SELECT installation_id FROM github_integrations
+       WHERE team_id = $1 AND status <> 'disconnected' LIMIT 1`,
+      [req.user?.team_id],
+    );
+    if (!integration.rowCount) {
+      return res.status(200).send(
+        new ServerResponse(true, { connected: false, counts: {}, last_event_at: null, failed: [] }),
+      );
+    }
+    const installationId = integration.rows[0].installation_id;
+
+    const [counts, last, failed] = await Promise.all([
+      db.query(
+        `SELECT status, COUNT(*)::INT AS count FROM github_webhook_events
+         WHERE installation_id = $1 AND received_at > NOW() - INTERVAL '7 days'
+         GROUP BY status`,
+        [installationId],
+      ),
+      db.query(
+        `SELECT MAX(received_at) AS last_event_at FROM github_webhook_events WHERE installation_id = $1`,
+        [installationId],
+      ),
+      db.query(
+        `SELECT id, event_type, error_message, attempts, received_at
+         FROM github_webhook_events
+         WHERE installation_id = $1 AND status = 'failed'
+         ORDER BY received_at DESC LIMIT 20`,
+        [installationId],
+      ),
+    ]);
+
+    return res.status(200).send(
+      new ServerResponse(true, {
+        connected: true,
+        counts: Object.fromEntries(counts.rows.map(r => [r.status, r.count])),
+        last_event_at: last.rows[0]?.last_event_at ?? null,
+        failed: failed.rows,
+      }),
+    );
+  }
+
+  @HandleExceptions()
+  public static async retryEvent(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    if (!canManageTeam(req)) {
+      return res.status(403).send(new ServerResponse(false, null, "Only team owners and admins can retry events"));
+    }
+    const result = await db.query(
+      `UPDATE github_webhook_events e
+       SET status = 'pending', attempts = 0, error_message = NULL, next_attempt_at = NOW()
+       FROM github_integrations i
+       WHERE e.id = $1 AND e.status = 'failed'
+         AND i.installation_id = e.installation_id AND i.team_id = $2
+       RETURNING e.id`,
+      [req.params.id, req.user?.team_id],
+    );
+    if (!result.rowCount) return res.status(404).send(new ServerResponse(false, null, "Event not found"));
+    return res.status(200).send(new ServerResponse(true, null));
   }
 }
