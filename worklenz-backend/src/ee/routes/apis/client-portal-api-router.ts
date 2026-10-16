@@ -13,7 +13,6 @@ import ClientPortalNotificationsController from "../../controllers/client-portal
 import ClientPortalAttachmentController from "../../controllers/client-portal-attachment-controller";
 import safeControllerFunction from "../../../shared/safe-controller-function";
 import { authenticateClient, requireClientPermission } from "../../../middlewares/client-auth-middleware";
-import { requireBusinessPlanForOrganization } from "../../middlewares/subscription-middleware";
 import phoneNumberValidator from "../../../middlewares/validators/phone-number-validator";
 import { resetPasswordLimiter, updatePasswordLimiter } from "../../../middlewares/reset-password-rate-limiter";
 
@@ -32,16 +31,14 @@ router.post("/handle-organization-invite", safeControllerFunction(ClientPortalAu
 // Protected routes (authentication required)
 router.use(authenticateClient);
 
-// Logout and organization switching must stay reachable even when the client's
-// *currently selected* organization lacks a Business plan — otherwise a client
-// who belongs to multiple organizations could get locked out of switching to
-// one that does have a plan, and couldn't even log out cleanly.
+// Session routes: logout and organization switching.
 router.post("/auth/logout", safeControllerFunction(ClientPortalAuthController.clientLogout));
 router.get("/organizations", safeControllerFunction(ClientPortalAuthController.getClientOrganizations));
 router.post("/organizations/switch", safeControllerFunction(ClientPortalAuthController.switchOrganization));
 
-// Client Portal authorization
-router.use(requireBusinessPlanForOrganization);
+// The Client Portal is available on every plan (including Free), so no
+// Business-plan check is applied to the routes below. Every route is still
+// scoped to the authenticated client's organization via authenticateClient.
 
 // Dashboard
 router.get("/dashboard", safeControllerFunction(ClientPortalDashboardController.getDashboard));

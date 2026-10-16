@@ -42,7 +42,7 @@ export const navRoutes: NavRoutesType[] = [
     // (or 'clients' if nothing is pinned) via the client-portal index route.
     path: '/worklenz/client-portal',
     adminOnly: true,
-    freePlanFeature: false,
+    freePlanFeature: true, // Client Portal is available on the Free plan
     selfHostedExcluded: true,
   },
   {
