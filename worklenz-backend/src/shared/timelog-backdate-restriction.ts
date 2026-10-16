@@ -26,7 +26,8 @@ interface BackdateContext {
 async function getBackdateContext(
   userId: string,
   teamId: string,
-  workLogId?: string | null
+  workLogId?: string | null,
+  canEditOthersLogs = false
 ): Promise<BackdateContext | null> {
   const q = `
     SELECT
@@ -38,12 +39,17 @@ async function getBackdateContext(
       (SELECT twl.created_at
        FROM task_work_log twl
        WHERE twl.id = $3::uuid
-         AND twl.user_id = $1)                                          AS existing_created_at
+         AND (twl.user_id = $1
+              OR ($4::boolean AND EXISTS (
+                    SELECT 1
+                    FROM tasks t
+                    INNER JOIN projects p ON p.id = t.project_id
+                    WHERE t.id = twl.task_id AND p.team_id = $2::uuid))))  AS existing_created_at
     FROM users u
     WHERE u.id = $1
     LIMIT 1;
   `;
-  const result = await db.query(q, [userId, teamId, workLogId || null]);
+  const result = await db.query(q, [userId, teamId, workLogId || null, canEditOthersLogs]);
   const [row] = result.rows;
   if (!row) return null;
 
@@ -60,7 +66,11 @@ async function getBackdateContext(
  *
  * When `workLogId` is supplied (an edit), a log whose date is unchanged is always
  * allowed through — otherwise an entry that ages past the limit would become
- * impossible to correct, even for its description or duration.
+ * impossible to correct, even for its description or duration. That exemption covers
+ * the caller's own logs and, only when `canEditOthersLogs` is true (used solely by the
+ * Time Entries page's owner/admin edit route, decided server-side), any log in their team,
+ * so an admin can fix a member's old entry. With the flag off (the default, and what the
+ * task drawer's route uses) behaviour is exactly the original: the caller's own logs only.
  *
  * Fails open (returns `null`) on any error so a transient DB issue never blocks
  * legitimate time logging.
@@ -69,12 +79,13 @@ export async function getBackdateViolation(
   startDate?: string | null,
   userId?: string | null,
   teamId?: string | null,
-  workLogId?: string | null
+  workLogId?: string | null,
+  canEditOthersLogs = false
 ): Promise<string | null> {
   if (!startDate || !userId || !teamId) return null;
 
   try {
-    const context = await getBackdateContext(userId, teamId, workLogId);
+    const context = await getBackdateContext(userId, teamId, workLogId, canEditOthersLogs);
     if (!context || context.limitDays <= 0) return null;
 
     const { limitDays, timezone, existingCreatedAt } = context;

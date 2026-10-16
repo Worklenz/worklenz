@@ -1,6 +1,7 @@
 import { IUser } from '../auth/login.types';
 import { ITaskLabel } from '../label.type';
 import { IProject } from '../project/project.types';
+import { IssueType } from '../project/softwareIssue.types';
 import { IProjectMember } from '../project/projectMember.types';
 import { InlineMember } from '../teamMembers/inlineMember.types';
 import { ITeamMember } from '../teamMembers/teamMember.types';
@@ -107,6 +108,11 @@ export interface IProjectMemberViewModel extends IProjectMember {
 }
 
 export interface ITaskViewModel extends ITask {
+  story_points?: number | null;
+  is_blocked?: boolean;
+  issue_type?: IssueType;
+  epic_id?: string | null;
+  release_id?: string | null;
   created_from_now?: string;
   updated_from_now?: string;
   reporter?: string;
@@ -120,6 +126,8 @@ export interface ITaskViewModel extends ITask {
   recurring?: boolean;
   task_level?: number;
   schedule_id?: string | null;
+  project_start_date?: string | null;
+  project_end_date?: string | null;
   custom_column_values?: Record<string, ITaskCustomColumnValue>;
   /** TVR-13: parent of assigned-only subtask — viewable, not editable */
   assignee_scope_readonly?: boolean;

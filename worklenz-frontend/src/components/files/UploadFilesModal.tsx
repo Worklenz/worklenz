@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';
 import projectFilesApiService from '@/api/projects/project-files.api.service';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { colors } from '@/styles/colors';
 import logger from '@/utils/errorLogger';
 
@@ -230,7 +230,7 @@ export const UploadFilesModal: React.FC<UploadFilesModalProps> = ({ open, onClos
       onOk={uploadFiles}
       confirmLoading={uploading}
       width={700}
-      destroyOnClose
+      destroyOnHidden
     >
       <Typography.Text style={{ display: 'block', marginBottom: 8 }}>
         {t('selectProjectLabel', { defaultValue: 'Project' })}

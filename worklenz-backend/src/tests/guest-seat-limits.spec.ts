@@ -3,10 +3,10 @@ import {
   canAddGuest,
   getGuestLimitByTier
 } from "../shared/guest-seat-limits";
-import * as paddleUtils from "../ee/shared/paddle-utils";
+import * as paddleUtils from "../shared/paddle-utils";
 import * as utils from "../shared/utils";
 
-jest.mock("../ee/shared/paddle-utils");
+jest.mock("../shared/paddle-utils");
 jest.mock("../shared/utils", () => ({
   log_error: jest.fn()
 }));
@@ -130,6 +130,19 @@ describe("guest-seat-limits", () => {
         can_add_guest: false,
         error_message: "Your APPSUMO_LTD plan includes 5 guests. Upgrade to add more guests."
       });
+    });
+
+    it("should treat per-user Paddle Billing Pro plans as PROFESSIONAL", async () => {
+      (paddleUtils.checkTeamSubscriptionStatus as jest.Mock).mockResolvedValue({
+        subscription_type: "PADDLE",
+        plan_name: "Pro (per user, monthly)"
+      });
+      (paddleUtils.getActiveGuestCount as jest.Mock).mockResolvedValue(0);
+
+      const result = await getGuestSeatLimit(teamId);
+
+      expect(result.plan_tier).toBe("PROFESSIONAL");
+      expect(result.guest_limit).toBe(5);
     });
 
     it("should return PROFESSIONAL tier with 5 guest limit", async () => {

@@ -113,6 +113,15 @@ const noopAppSumoMigrationService: IAppSumoMigrationService = {
   }),
 };
 
+export interface ISignupEmailDomainPolicy {
+  /** Resolves true when signups from the email's domain must be rejected. */
+  isBlocked(email: string): Promise<boolean>;
+}
+
+const noopSignupEmailDomainPolicy: ISignupEmailDomainPolicy = {
+  isBlocked: async () => false,
+};
+
 let hasLoggedMissingPrivateExtensions = false;
 
 const isMissingPrivateExtension = (error: unknown, modulePath: string): boolean => {
@@ -148,3 +157,6 @@ export const appSumoLtdEntitlementService: IAppSumoLtdEntitlementService =
 
 export const appSumoMigrationService: IAppSumoMigrationService =
   load("../private/services/appsumo-migration-service", "AppSumoMigrationService", noopAppSumoMigrationService);
+
+export const signupEmailDomainPolicy: ISignupEmailDomainPolicy =
+  load("../private/shared/signup-email-domain-policy", "SignupEmailDomainPolicy", noopSignupEmailDomainPolicy);

@@ -23,7 +23,7 @@
     "step2": {
       "title": "2. 邀请机器人到频道",
       "description": "在每个您想要接收通知的 Slack 频道中，输入：",
-      "command": "/invite @Worklenz",
+      "command": "/邀请@Worklenz",
       "note": "每个频道只需执行一次此操作。"
     },
     "step3": {
@@ -139,5 +139,10 @@
     "updateStatusFailed": "更新频道状态失败",
     "removeConfigFailed": "删除频道配置失败",
     "refreshChannelsFailed": "刷新频道失败"
+  },
+  "connection": {
+    "success": "Slack 工作区连接成功！",
+    "error": "连接 Slack 工作区失败",
+    "cancelled": "Slack 安装已取消"
   }
 }

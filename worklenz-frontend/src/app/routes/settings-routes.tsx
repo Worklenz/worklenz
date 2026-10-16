@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import SettingsLayout from '@/layouts/SettingsLayout';
 import { getAccessibleSettings, settingsItems } from '@/lib/settings/settings-constants';
 import { useAuthService } from '@/hooks/useAuth';
+import { isExpiredTrialSession } from '@/utils/subscription-utils';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 
 const SettingsGuard = ({
@@ -20,6 +21,9 @@ const SettingsGuard = ({
   const hasAccess = accessibleSettings.some(item => item.key === itemKey);
 
   if (!hasAccess) {
+    if (isExpiredTrialSession(currentSession)) {
+      return <Navigate to="/worklenz/settings/profile" replace />;
+    }
     return <Navigate to="/worklenz/unauthorized" replace />;
   }
 

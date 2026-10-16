@@ -11,15 +11,31 @@ import {
   Flex,
   theme,
   Divider,
-  Input,
-  Form,
-  Alert,
-} from 'antd';
+  Progress,
+} from '@/shared/antd-imports';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
 import { IProjectTemplate } from '@/types/project-templates/project-templates.types';
+import {
+  IProjectTemplateIncludes,
+  IProjectTemplateSettingsOverrides,
+  IProjectTemplateSettingsSnapshot,
+} from '@/types/project/projectTemplate.types';
 import logger from '@/utils/errorLogger';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import ConfigureTemplateImportForm, {
+  ConfigureTemplateImportFormValues,
+  buildSettingsOverrides,
+  initFormValuesFromSettings,
+} from './configure-template-import-form';
+
+export interface ProjectTemplateImportPayload {
+  projectName: string;
+  start_date: string;
+  settings_overrides: IProjectTemplateSettingsOverrides;
+}
 
 interface ProjectTemplatePreviewModalProps {
   visible: boolean;
@@ -27,14 +43,25 @@ interface ProjectTemplatePreviewModalProps {
   templateName: string;
   onClose: () => void;
   /** Called when the user confirms import. Should return an error message string on failure, or null/undefined on success. */
-  onImport: (templateId: string, projectName: string) => Promise<string | null | undefined> | void;
+  onImport: (
+    templateId: string,
+    payload: ProjectTemplateImportPayload
+  ) => Promise<string | null | undefined> | void;
   importing?: boolean;
   /** Which step to open on. 'confirm' skips straight to the "name your project" step
    * (used by the "Use this Template" action), 'preview' (default) opens the template preview. */
   initialStep?: 'preview' | 'confirm';
+  /** When false, hides import actions (restricted members can still preview). Defaults to true. */
+  canImport?: boolean;
 }
 
 const { Text, Title } = Typography;
+
+interface CustomTemplateDetail extends IProjectTemplate {
+  schema_version?: number;
+  includes?: IProjectTemplateIncludes | null;
+  settings?: IProjectTemplateSettingsSnapshot | null;
+}
 
 export const ProjectTemplatePreviewModal: React.FC<ProjectTemplatePreviewModalProps> = ({
   visible,
@@ -44,46 +71,88 @@ export const ProjectTemplatePreviewModal: React.FC<ProjectTemplatePreviewModalPr
   onImport,
   importing = false,
   initialStep = 'preview',
+  canImport = true,
 }) => {
   const { t } = useTranslation('settings/project-templates');
   const { token } = theme.useToken();
-  const [template, setTemplate] = useState<IProjectTemplate | null>(null);
+  const [template, setTemplate] = useState<CustomTemplateDetail | null>(null);
   const [loading, setLoading] = useState(false);
-  const [confirmStep, setConfirmStep] = useState(initialStep === 'confirm');
-  const [projectName, setProjectName] = useState(initialStep === 'confirm' ? decodeHtmlEntities(templateName) : '');
+  const [confirmStep, setConfirmStep] = useState(initialStep === 'confirm' && canImport);
+  const [projectName, setProjectName] = useState(
+    initialStep === 'confirm' && canImport ? decodeHtmlEntities(templateName) : ''
+  );
+  const [startDate, setStartDate] = useState<Dayjs | null>(dayjs());
+  const [formValues, setFormValues] = useState<ConfigureTemplateImportFormValues>(() =>
+    initFormValuesFromSettings(
+      initialStep === 'confirm' && canImport ? decodeHtmlEntities(templateName) : '',
+      null
+    )
+  );
   const [nameError, setNameError] = useState('');
+  const [startDateError, setStartDateError] = useState('');
 
   useEffect(() => {
     if (!visible || !templateId) return;
     setTemplate(null);
-    setConfirmStep(initialStep === 'confirm');
-    setProjectName(initialStep === 'confirm' ? decodeHtmlEntities(templateName) : '');
+    const shouldConfirm = initialStep === 'confirm' && canImport;
+    setConfirmStep(shouldConfirm);
+    const decodedName = shouldConfirm ? decodeHtmlEntities(templateName) : '';
+    setProjectName(decodedName);
+    setStartDate(dayjs());
+    setFormValues(initFormValuesFromSettings(decodedName, null));
     setNameError('');
+    setStartDateError('');
     setLoading(true);
     projectTemplatesApiService
       .getCustomTemplateById(templateId)
       .then(res => {
-        if (res.done) setTemplate(res.body);
+        if (res.done) {
+          const body = res.body as CustomTemplateDetail;
+          setTemplate(body);
+          if (shouldConfirm) {
+            setFormValues(initFormValuesFromSettings(decodedName, body.settings));
+          }
+        }
       })
       .catch(err => logger.error('Failed to load template preview:', err))
       .finally(() => setLoading(false));
-  }, [visible, templateId]);
+  }, [visible, templateId, initialStep, canImport, templateName]);
 
-  // Pre-fill the name input with the template name when entering confirm step
   const handleImportClick = () => {
-    setProjectName(decodeHtmlEntities(templateName));
+    if (!canImport) return;
+    const decodedName = decodeHtmlEntities(templateName);
+    setProjectName(decodedName);
+    setStartDate(dayjs());
+    setFormValues(initFormValuesFromSettings(decodedName, template?.settings));
     setNameError('');
+    setStartDateError('');
     setConfirmStep(true);
   };
 
   const handleConfirmImport = async () => {
+    if (!canImport) return;
     const trimmed = projectName.trim();
+    let hasError = false;
     if (!trimmed) {
-      setNameError(t('projectNameRequired'));
-      return;
+      setNameError(t('projectNameRequired', { defaultValue: 'Please enter a project name.' }));
+      hasError = true;
     }
-    if (!templateId) return;
-    const errorMsg = await onImport(templateId, trimmed);
+    if (!startDate) {
+      setStartDateError(t('startDateRequired', { defaultValue: 'Please select a start date.' }));
+      hasError = true;
+    }
+    if (hasError || !templateId) return;
+
+    const overrides = buildSettingsOverrides(
+      { ...formValues, projectName: trimmed, startDate: startDate as Dayjs },
+      template?.includes
+    );
+
+    const errorMsg = await onImport(templateId, {
+      projectName: trimmed,
+      start_date: (startDate as Dayjs).format('YYYY-MM-DD'),
+      settings_overrides: overrides,
+    });
     if (errorMsg) {
       setNameError(errorMsg);
     }
@@ -92,13 +161,19 @@ export const ProjectTemplatePreviewModal: React.FC<ProjectTemplatePreviewModalPr
   const handleBack = () => {
     setConfirmStep(false);
     setNameError('');
+    setStartDateError('');
   };
 
   const handleClose = () => {
     setConfirmStep(false);
     setProjectName('');
     setNameError('');
+    setStartDateError('');
     onClose();
+  };
+
+  const handleFormValuesChange = (patch: Partial<ConfigureTemplateImportFormValues>) => {
+    setFormValues(prev => ({ ...prev, ...patch }));
   };
 
   const renderSection = (
@@ -133,101 +208,146 @@ export const ProjectTemplatePreviewModal: React.FC<ProjectTemplatePreviewModalPr
   );
 
   const tasks = template?.tasks ?? [];
-  const rootTasks = tasks.filter((t: any) => !t.parent_task_id);
-  const subTaskMap: Record<string, any[]> = {};
-  tasks.forEach((t: any) => {
-    if (t.parent_task_id) {
-      if (!subTaskMap[t.parent_task_id]) subTaskMap[t.parent_task_id] = [];
-      subTaskMap[t.parent_task_id].push(t);
+  const rootTasks = tasks.filter((t: { parent_task_id?: string }) => !t.parent_task_id);
+  const subTaskMap: Record<string, typeof tasks> = {};
+  tasks.forEach((task: { parent_task_id?: string; original_task_id?: string; id?: string }) => {
+    if (task.parent_task_id) {
+      if (!subTaskMap[task.parent_task_id]) subTaskMap[task.parent_task_id] = [];
+      subTaskMap[task.parent_task_id].push(task);
     }
   });
+
+  const taskCount = tasks.length;
+  const createLabel =
+    importing && taskCount > 50
+      ? t('confirmImportProgress', {
+          defaultValue: 'Creating project ({{count}} tasks)…',
+          count: taskCount,
+        })
+      : t('confirmImport', { defaultValue: 'Create Project' });
 
   return (
     <Modal
       title={
         <Space>
-          <Title level={5} style={{ margin: 0 }}>
-            {confirmStep ? t('importAsTitle') : `${t('previewTitle')}: ${decodeHtmlEntities(templateName)}`}
+          <Title level={5} style={{ margin: 0 }} id="template-import-modal-title">
+            {confirmStep
+              ? t('importAsTitle', { defaultValue: 'Configure Project' })
+              : `${t('previewTitle', { defaultValue: 'Template Preview' })}: ${decodeHtmlEntities(templateName)}`}
           </Title>
         </Space>
       }
       open={visible}
       onCancel={handleClose}
-      width={640}
+      width={confirmStep ? 560 : 640}
       centered
       destroyOnHidden
+      maskClosable={!importing}
+      keyboard={!importing}
+      aria-labelledby="template-import-modal-title"
       footer={
-        confirmStep ? (
+        confirmStep && canImport ? (
           <Flex justify="space-between" align="center">
-            <Button onClick={handleBack} disabled={importing}>
-              {t('backToPreview')}
-            </Button>
+            {initialStep === 'preview' ? (
+              <Button onClick={handleBack} disabled={importing} aria-label={t('backToPreview', { defaultValue: 'Back' })}>
+                {t('backToPreview', { defaultValue: 'Back' })}
+              </Button>
+            ) : (
+              <span />
+            )}
             <Flex gap={8}>
-              <Button onClick={handleClose} disabled={importing}>
-                {t('cancelText')}
+              <Button
+                onClick={handleClose}
+                disabled={importing}
+                aria-label={t('cancelText', { defaultValue: 'Cancel' })}
+              >
+                {t('cancelText', { defaultValue: 'Cancel' })}
               </Button>
               <Button
                 type="primary"
                 loading={importing}
                 onClick={handleConfirmImport}
+                aria-busy={importing}
+                aria-label={createLabel}
               >
-                {t('confirmImport')}
+                {createLabel}
               </Button>
             </Flex>
           </Flex>
         ) : (
           <Flex justify="flex-end" gap={8}>
-            <Button onClick={handleClose}>{t('cancelText')}</Button>
-            <Button
-              type="primary"
-              disabled={!templateId || loading}
-              onClick={handleImportClick}
-            >
-              {t('importTemplate')}
+            <Button onClick={handleClose} aria-label={t('cancelText', { defaultValue: 'Cancel' })}>
+              {t('cancelText', { defaultValue: 'Cancel' })}
             </Button>
+            {canImport && (
+              <Button
+                type="primary"
+                disabled={!templateId || loading}
+                onClick={handleImportClick}
+                aria-label={t('importTemplate', { defaultValue: 'Import' })}
+              >
+                {t('importTemplate', { defaultValue: 'Import' })}
+              </Button>
+            )}
           </Flex>
         )
       }
     >
-      {confirmStep ? (
-        /* ── Name entry step ── */
-        <div style={{ padding: '8px 0' }}>
-          <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-            {t('importNameHint')}
-          </Text>
-          <Form layout="vertical">
-            <Form.Item
-              label={t('projectNameLabel')}
-              required
-            >
-              <Input
-                autoFocus
-                value={projectName}
-                onChange={e => {
-                  setProjectName(e.target.value);
+      {confirmStep && canImport ? (
+        <div
+          style={{ maxHeight: '65vh', overflowY: 'auto', paddingRight: 4 }}
+          role="region"
+          aria-label={t('importAsTitle', { defaultValue: 'Configure Project' })}
+        >
+          {importing && (
+            <div style={{ marginBottom: 16 }} aria-live="polite" aria-busy="true">
+              <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                {t('importProgressHint', {
+                  defaultValue:
+                    taskCount > 0
+                      ? 'Creating project and applying template ({{count}} tasks)…'
+                      : 'Creating project from template…',
+                  count: taskCount,
+                })}
+              </Text>
+              <Progress
+                percent={taskCount > 80 ? 70 : 45}
+                status="active"
+                showInfo={false}
+                strokeColor={token.colorPrimary}
+                aria-label={t('importProgressHint', {
+                  defaultValue: 'Creating project from template…',
+                })}
+              />
+            </div>
+          )}
+          {loading ? (
+            <Skeleton active paragraph={{ rows: 6 }} />
+          ) : (
+            <>
+              <ConfigureTemplateImportForm
+                projectName={projectName}
+                onProjectNameChange={value => {
+                  setProjectName(value);
                   if (nameError) setNameError('');
                 }}
-                onPressEnter={handleConfirmImport}
-                placeholder={t('projectNamePlaceholder')}
-                maxLength={100}
-                showCount
+                startDate={startDate}
+                onStartDateChange={value => {
+                  setStartDate(value);
+                  if (startDateError) setStartDateError('');
+                }}
+                settings={template?.settings}
+                includes={template?.includes}
+                formValues={formValues}
+                onFormValuesChange={handleFormValuesChange}
                 disabled={importing}
+                nameError={nameError}
+                startDateError={startDateError}
               />
-            </Form.Item>
-          </Form>
-          {nameError && (
-            <Alert
-              type="error"
-              message={nameError}
-              showIcon
-              closable
-              onClose={() => setNameError('')}
-              style={{ marginTop: 8 }}
-            />
+            </>
           )}
         </div>
       ) : (
-        /* ── Preview step ── */
         <Skeleton active loading={loading} paragraph={{ rows: 8 }}>
           {!template ? (
             <Empty description={t('noTemplateData')} />
@@ -259,7 +379,11 @@ export const ProjectTemplatePreviewModal: React.FC<ProjectTemplatePreviewModalPr
                   <List
                     size="small"
                     dataSource={rootTasks}
-                    renderItem={(task: any) => (
+                    renderItem={(task: {
+                      original_task_id?: string;
+                      id?: string;
+                      name?: string;
+                    }) => (
                       <React.Fragment key={task.original_task_id ?? task.id ?? task.name}>
                         <List.Item style={{ padding: '6px 8px', borderBottom: 'none' }}>
                           <Flex gap={8} align="center">
@@ -267,17 +391,23 @@ export const ProjectTemplatePreviewModal: React.FC<ProjectTemplatePreviewModalPr
                             <Text>{decodeHtmlEntities(task.name)}</Text>
                           </Flex>
                         </List.Item>
-                        {(subTaskMap[task.original_task_id ?? task.id] ?? []).map((sub: any) => (
-                          <List.Item
-                            key={sub.original_task_id ?? sub.id ?? sub.name}
-                            style={{ padding: '4px 8px 4px 32px', borderBottom: 'none' }}
-                          >
-                            <Flex gap={8} align="center">
-                              <span style={{ color: token.colorTextTertiary, fontSize: 11 }}>↳</span>
-                              <Text type="secondary" style={{ fontSize: 13 }}>{decodeHtmlEntities(sub.name)}</Text>
-                            </Flex>
-                          </List.Item>
-                        ))}
+                        {(subTaskMap[task.original_task_id ?? task.id ?? ''] ?? []).map(
+                          (sub: { original_task_id?: string; id?: string; name?: string }) => (
+                            <List.Item
+                              key={sub.original_task_id ?? sub.id ?? sub.name}
+                              style={{ padding: '4px 8px 4px 32px', borderBottom: 'none' }}
+                            >
+                              <Flex gap={8} align="center">
+                                <span style={{ color: token.colorTextTertiary, fontSize: 11 }}>
+                                  ↳
+                                </span>
+                                <Text type="secondary" style={{ fontSize: 13 }}>
+                                  {decodeHtmlEntities(sub.name)}
+                                </Text>
+                              </Flex>
+                            </List.Item>
+                          )
+                        )}
                       </React.Fragment>
                     )}
                   />

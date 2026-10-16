@@ -1,37 +1,37 @@
 {
-  "title": "Phase Details",
+  "title": "阶段详情",
   "overview": {
-    "title": "Overview",
-    "totalTasks": "Total Tasks",
-    "completion": "Completion",
-    "progress": "Progress"
+    "title": "概览",
+    "totalTasks": "任务总数",
+    "completion": "完成",
+    "progress": "进度"
   },
   "timeline": {
-    "title": "Timeline",
-    "startDate": "Start Date",
-    "endDate": "End Date",
-    "status": "Status",
-    "notSet": "Not set",
+    "title": "时间线",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "status": "状态",
+    "notSet": "未设置",
     "statusLabels": {
-      "upcoming": "Upcoming",
-      "active": "In Progress",
-      "overdue": "Overdue",
-      "notScheduled": "Not Scheduled"
+      "upcoming": "即将到来",
+      "active": "进行中",
+      "overdue": "逾期",
+      "notScheduled": "未安排"
     }
   },
   "taskBreakdown": {
-    "title": "Task Breakdown",
-    "completed": "Completed",
-    "pending": "Pending",
-    "overdue": "Overdue"
+    "title": "任务分解",
+    "completed": "已完成",
+    "pending": "待处理",
+    "overdue": "逾期"
   },
   "phaseColor": {
-    "title": "Phase Color",
-    "description": "Phase identifier color"
+    "title": "阶段颜色",
+    "description": "相标识符颜色"
   },
   "tasksInPhase": {
-    "title": "Tasks in this Phase",
-    "noTasks": "No tasks in this phase",
+    "title": "本阶段任务",
+    "noTasks": "此阶段没有任务",
     "priority": "优先级",
     "assignees": "受理人",
     "dueDate": "截止日期",

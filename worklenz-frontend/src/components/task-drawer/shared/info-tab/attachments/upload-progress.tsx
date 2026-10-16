@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, Progress, Typography } from '@/shared/antd-imports';
 import { formatFileSize } from '@/pages/projects/projectView/files/utils';
 
@@ -33,31 +33,43 @@ interface TaskAttachmentUploadProgressProps {
 }
 
 export const TaskAttachmentUploadProgress: React.FC<TaskAttachmentUploadProgressProps> = ({ file }) => {
-  const [uploadedBytes, setUploadedBytes] = useState(0);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
   const [speed, setSpeed] = useState<number | undefined>(undefined);
+  // Upload start time lives in a ref: storing it in state made the effect
+  // below depend on a value it also sets, which re-ran it forever while the
+  // file was uploading ("Maximum update depth exceeded").
+  const startedAtRef = useRef<number | null>(null);
+  // Latest progress values, read by the interval without restarting it.
+  const percentRef = useRef(0);
+  const fileSizeRef = useRef(file.size);
+
+  const percent = useMemo(() => Math.max(0, Math.min(100, file.percent ?? 0)), [file.percent]);
+
+  useEffect(() => {
+    percentRef.current = percent;
+    fileSizeRef.current = file.size;
+  }, [percent, file.size]);
 
   useEffect(() => {
     if (file.status !== 'uploading') {
+      startedAtRef.current = null;
+      setSpeed(undefined);
       return;
     }
 
-    setUploadedBytes(0);
-    setStartedAt(Date.now());
+    startedAtRef.current = Date.now();
     setSpeed(undefined);
 
     const interval = window.setInterval(() => {
+      const startedAt = startedAtRef.current;
       if (startedAt === null) return;
       const elapsedMs = Date.now() - startedAt;
       if (elapsedMs <= 0) return;
-      const bytesPerSecond = (uploadedBytes / elapsedMs) * 1000;
-      setSpeed(bytesPerSecond);
+      const uploadedBytes = (fileSizeRef.current * percentRef.current) / 100;
+      setSpeed((uploadedBytes / elapsedMs) * 1000);
     }, 500);
 
     return () => window.clearInterval(interval);
-  }, [file.status, file.uid, startedAt, uploadedBytes]);
-
-  const percent = useMemo(() => Math.max(0, Math.min(100, file.percent ?? 0)), [file.percent]);
+  }, [file.status, file.uid]);
 
   if (file.status === 'done') {
     return (

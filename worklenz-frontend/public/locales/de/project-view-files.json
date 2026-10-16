@@ -63,5 +63,9 @@
   "deleteLink": "Link löschen",
   "openTask": "Aufgabe öffnen",
   "fromTask": "Von: {{taskName}}",
-  "noLinks": "Noch keine Links. Klicken Sie auf \"Link hinzufügen\", um Ihren ersten Link hinzuzufügen."
+  "noLinks": "Noch keine Links. Klicken Sie auf \"Link hinzufügen\", um Ihren ersten Link hinzuzufügen.",
+  "linksPaginationSummary": "{{start}}–{{end}} von {{count}} Links",
+  "uploadExpired": "Die Upload-Sitzung ist abgelaufen. Bitte versuchen Sie es erneut.",
+  "fileTooLargePopoverTitle": "Datei zu groß",
+  "fileTooLargePopoverBody": "Für Dateien, die größer als 25 MB sind, ist der Business-Plan erforderlich. Diese Datei ist {{sizeMb}} MB groß. Führen Sie ein Upgrade durch, um größere Dateien hochzuladen."
 }

@@ -10,5 +10,9 @@
   "deleteConfirmationOk": "Sim",
   "deleteConfirmationCancel": "Cancelar",
   "segmentedTooltip": "Em breve! Alterne entre a visualização em lista e a visualização em miniatura.",
-  "emptyText": "Não há anexos no projeto."
+  "emptyText": "Não há anexos no projeto.",
+  "uploadExpired": "A sessão de upload expirou. Por favor, tente novamente.",
+  "fileTooLargePopoverBody": "Arquivos maiores que 25 MB exigem o plano Business. Este arquivo tem {{sizeMb}} MB. Atualize para fazer upload de arquivos maiores.",
+  "linksPaginationSummary": "{{start}}–{{end}} de {{count}} links",
+  "fileTooLargePopoverTitle": "Arquivo muito grande"
 }

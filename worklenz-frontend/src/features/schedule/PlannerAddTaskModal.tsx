@@ -385,7 +385,7 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
       okText={createMode === 'unassigned' ? t('assignTask', { defaultValue: 'Assign Task' }) : t('createTask', { defaultValue: 'Create Task' })}
       onOk={() => form.submit()}
       okButtonProps={{ loading: submitting, disabled: createMode === 'unassigned' && !selectedUnassignedTask }}
-      destroyOnClose
+      destroyOnHidden
     >
       {/* Same tab-pill format/color as the Days/Weeks/Months zoom toggle in
           PlannerScheduleView.tsx (active = token.colorPrimary fill), so the modal's
@@ -465,7 +465,7 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
           >
             <Input
               autoFocus
-              placeholder={t('addTask', { defaultValue: 'Enter task name…' })}
+              placeholder={t('enterTaskName', { defaultValue: 'Enter task name…' })}
               onKeyDown={e => {
                 if (e.key === 'Enter') form.submit();
               }}
@@ -477,7 +477,7 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
           <Form.Item label={t('unassignedTask', { defaultValue: 'Unassigned Task' })} required>
             {!selectedProjectId ? (
               <div style={{ fontSize: 12, opacity: 0.45, padding: '8px 0' }}>
-                {t('selectProjectFirst', { defaultValue: 'Select a project to see its unassigned tasks.' })}
+                {t('pickProjectFirst', { defaultValue: 'Select a project to see its unassigned tasks.' })}
               </div>
             ) : (
               <>

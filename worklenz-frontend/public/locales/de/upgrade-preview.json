@@ -44,7 +44,7 @@
         ]
       },
       "budgets": {
-        "title": "Budgets",
+        "title": "Budgetplanung",
         "description": "Legen Sie Budgets pro Projekt fest und verfolgen Sie die Ausgaben im Vergleich dazu in Echtzeit.",
         "features": [
           "Projektbudgetplanung",
@@ -147,36 +147,6 @@
           "Unbegrenzte Kundenkonten"
         ]
       },
-      "requests": {
-        "title": "Anfragen",
-        "description": "Ermöglichen Sie Kunden, Serviceanfragen einzureichen und zu verfolgen, ohne ihr Portal zu verlassen.",
-        "features": [
-          "Vom Kunden übermittelte Serviceanfragen",
-          "Akzeptieren, ablehnen oder nachverfolgen an einer Stelle",
-          "Statusverfolgung von der Einreichung bis zur Fertigstellung",
-          "Direkter Link zum angeforderten Dienst"
-        ]
-      },
-      "services": {
-        "title": "Dienstleistungen",
-        "description": "Veröffentlichen Sie die Dienste, die Kunden anfordern können, und steuern Sie, was sie sehen können.",
-        "features": [
-          "Ein Katalog der anforderbaren Dienstleistungen",
-          "Sichtbarkeitskontrollen pro Dienst",
-          "Anforderungsvolumen pro Dienst",
-          "Weisen Sie Ihrem Team einen Service-Inhaber zu"
-        ]
-      },
-      "chats": {
-        "title": "Nachrichten",
-        "description": "Benachrichtigen Sie Kunden direkt über dasselbe Portal, das sie für alles andere verwenden.",
-        "features": [
-          "Direkte Nachrichtenübermittlung an Kunden",
-          "Ein Konversationsthread pro Kunde",
-          "Durchsuchbarer Gesprächsverlauf",
-          "Benachrichtigungen, wenn ein Kunde antwortet"
-        ]
-      },
       "invoices": {
         "title": "Rechnungen",
         "description": "Erstellen, versenden und verfolgen Sie Kundenrechnungen, ohne Worklenz zu verlassen.",
@@ -187,16 +157,6 @@
           "Zahlungsstatus auf einen Blick"
         ]
       },
-      "ticketing": {
-        "title": "Ticketverkauf",
-        "description": "Ermöglichen Sie Kunden, Support-Tickets direkt über ihr Portal zu erstellen und zu verfolgen.",
-        "features": [
-          "Vom Kunden eingereichte Support-Tickets",
-          "Verfolgung und Aktualisierung des Ticketstatus",
-          "Interne Notizen und Aufgaben",
-          "Prioritäts- und SLA-Tagging"
-        ]
-      },
       "settings": {
         "title": "Portal-Einstellungen",
         "description": "Passen Sie Ihr Kundenportal mit Ihrem eigenen Branding an.",
@@ -205,6 +165,66 @@
           "Marken-Header im gesamten Portal",
           "Konsistente visuelle Identität für Kunden",
           "Firmendetails, die Kunden sehen können"
+        ]
+      },
+      "projects": {
+        "title": "Portalprojekte",
+        "description": "Wählen Sie aus, welche Projekte Kunden sehen können und was darin geteilt wird.",
+        "features": [
+          "Switch the Client Portal on per project",
+          "Share tasks, files and milestones one by one",
+          "Everything stays Internal Only until you share it",
+          "Client-facing status, phase and progress"
+        ]
+      },
+      "approvals": {
+        "title": "Zulassungen",
+        "description": "Erhalten Sie von Kunden eine formelle, aufgezeichnete Freigabe der genauen Dateiversionen.",
+        "features": [
+          "Ask a Client Admin to approve a file, milestone or task",
+          "The exact version or revision is recorded",
+          "Every decision is kept, with a full history",
+          "Overdue and awaiting approvals at a glance"
+        ]
+      },
+      "changeRequests": {
+        "title": "Änderungswünsche",
+        "description": "Überprüfen, schätzen und entscheiden Sie über Umfangsänderungen und setzen Sie die genehmigten Änderungen dann in die Tat um.",
+        "features": [
+          "Clients submit scope changes from their portal",
+          "Estimate, approve, reject or ask for more information",
+          "Convert approved requests into tasks",
+          "Create quotes and invoices from a request"
+        ]
+      },
+      "discussions": {
+        "title": "Diskussionen",
+        "description": "Sprechen Sie mit Kunden über die genaue Aufgabe, Datei oder Genehmigung, wobei interne Kommentare vertraulich bleiben.",
+        "features": [
+          "Conversations attached to the work they are about",
+          "Client-visible replies and private internal comments",
+          "Mention client users, never by accident in internal notes",
+          "Unread tracking across your team"
+        ]
+      },
+      "auditLog": {
+        "title": "Audit-Protokoll",
+        "description": "Eine manipulationssichere Aufzeichnung der Kunden- und Teamaktivitäten.",
+        "features": [
+          "Access, sharing, file, approval and change request events",
+          "Every entry is timestamped and attributed",
+          "Filter by client, event type or who acted",
+          "Export the filtered view as CSV"
+        ]
+      },
+      "preview": {
+        "title": "Kundenportal",
+        "description": "Sehen Sie genau, was ein Kunde sieht, bevor Sie etwas teilen.",
+        "features": [
+          "Preview as any active client user",
+          "Built from the same rules the portal enforces",
+          "See what is hidden from that user",
+          "Check what each role can do"
         ]
       }
     }
@@ -274,23 +294,6 @@
       "rowsPerPage": "Zeilen pro Seite: {{count}}"
     }
   },
-  "ticketingMockup": {
-    "openTickets": "Offene Tickets",
-    "inProgress": "In Bearbeitung",
-    "resolvedToday": "Heute gelöst",
-    "avgResponseTime": "Durchschn. Reaktionszeit",
-    "ticketsCard": "Tickets",
-    "ticketNoColumn": "Ticket-Nr.",
-    "clientColumn": "Kunde",
-    "subjectColumn": "Betreff",
-    "priorityColumn": "Priorität",
-    "statusColumn": "Alle Status",
-    "priorityHigh": "Hoch",
-    "priorityMedium": "Mittel",
-    "priorityLow": "Niedrig",
-    "statusOpen": "Öffnen",
-    "statusResolved": "Gelöst"
-  },
   "plannerMockup": {
     "chrome": {
       "daysOption": "Tage",
@@ -333,5 +336,7 @@
       "utilColumn": "UTIL",
       "teamTotalRow": "Team gesamt"
     }
-  }
+  },
+  "paginationText": "{{from}}-{{to}} von {{total}}",
+  "perPageText": "{{count}} / Seite"
 }

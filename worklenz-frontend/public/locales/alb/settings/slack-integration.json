@@ -23,7 +23,7 @@
     "step2": {
       "title": "2. Fto Bot-in në Kanale",
       "description": "Në çdo kanal të Slack ku dëshironi të merrni njoftime, shkruani:",
-      "command": "/invite @Worklenz",
+      "command": "/fto @Worklenz",
       "note": "Ju duhet ta bëni këtë vetëm një herë për kanal."
     },
     "step3": {
@@ -139,5 +139,10 @@
     "updateStatusFailed": "Dështoi përditësimi i statusit të kanalit",
     "removeConfigFailed": "Dështoi heqja e konfigurimit të kanalit",
     "refreshChannelsFailed": "Dështoi rifreskimi i kanaleve"
+  },
+  "connection": {
+    "success": "Hapësira e punës së Slack u lidh me sukses!",
+    "error": "Dështoi lidhja e hapësirës së punës së Slack",
+    "cancelled": "Instalimi i Slack u anulua"
   }
 }

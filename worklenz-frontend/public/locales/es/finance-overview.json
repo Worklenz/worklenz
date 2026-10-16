@@ -32,7 +32,7 @@
     "watch": "Vigilar (65–100% gastado)",
     "overBudget": "Sobre presupuesto (>100% gastado)",
     "projects": "proyectos",
-    "total": "Total",
+    "total": "totales",
     "breakdown": "Desglose de costos: {{fixed}} fijo · {{timeBased}} basado en tiempo"
   },
   "tableCard": {

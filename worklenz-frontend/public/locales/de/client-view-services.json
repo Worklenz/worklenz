@@ -1,0 +1,10 @@
+{
+  "modal": {
+    "title": "Service anfordern",
+    "submitButton": "Anfrage abschicken"
+  },
+  "uploadLogoText": "Klicken oder ziehen Sie eine Datei, um sie hochzuladen",
+  "uploadLogoAltText": "Datei hochladen",
+  "title": "Dienstleistungen",
+  "requestButton": "Stellen Sie eine Anfrage"
+}

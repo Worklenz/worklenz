@@ -4,7 +4,6 @@ import {
   UserOutlined,
   SettingOutlined,
   CreditCardOutlined,
-  DeleteOutlined,
 } from '@/shared/antd-imports';
 import {
   Card,
@@ -88,10 +87,6 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
 
   const itemStyle = {
     color: token.colorText,
-  };
-
-  const dangerItemStyle = {
-    color: token.colorError,
   };
 
   const iconStyle = {
@@ -194,19 +189,17 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
               {t('billing', { defaultValue: 'Billing' })}
             </Link>
           )}
-          {!isLicenseExpired && (
-            <Link
-              to="/worklenz/settings/profile"
-              style={itemStyle}
-              onMouseEnter={handleItemMouseEnter}
-              onMouseLeave={handleItemMouseLeave}
-            >
-              <span style={iconStyle}>
-                <SettingOutlined />
-              </span>
-              {t('settings', { defaultValue: 'Settings' })}
-            </Link>
-          )}
+          <Link
+            to="/worklenz/settings/profile"
+            style={itemStyle}
+            onMouseEnter={handleItemMouseEnter}
+            onMouseLeave={handleItemMouseLeave}
+          >
+            <span style={iconStyle}>
+              <SettingOutlined />
+            </span>
+            {t('settings', { defaultValue: 'Settings' })}
+          </Link>
           {!isLicenseExpired && (
             <div
               onClick={() => { setMobileModalOpen(true); setDropdownOpen(false); }}
@@ -219,19 +212,6 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
               </span>
               {t('getMobileApp', { defaultValue: 'Get Mobile App' })}
             </div>
-          )}
-          {isLicenseExpired && (
-            <Link
-              to="/worklenz/settings/account-deletion"
-              style={dangerItemStyle}
-              onMouseEnter={handleItemMouseEnter}
-              onMouseLeave={handleItemMouseLeave}
-            >
-              <span style={{ ...iconStyle, color: token.colorError }}>
-                <DeleteOutlined />
-              </span>
-              {t('deleteAccount', { defaultValue: 'Delete Account' })}
-            </Link>
           )}
           <div
             onClick={() => dispatch(toggleTheme())}

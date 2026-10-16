@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, DatePicker, Form, Input, TimePicker, Flex, InputNumber, Segmented } from '@/shared/antd-imports';
+import { Alert, Button, DatePicker, Form, Input, TimePicker, Flex, InputNumber, Segmented, message } from '@/shared/antd-imports';
 import { ClockCircleOutlined, InfoCircleOutlined } from '@/shared/antd-imports';
 
 import dayjs, { Dayjs } from 'dayjs';
@@ -28,8 +28,13 @@ interface TimeLogFormProps {
   taskId?: string;
   projectId?: string;
   allowReassign?: boolean;  // Allow the form to reassign the log to a different task/project in edit mode
-
-
+  /** Save edits through the Time Entries endpoint (owners/admins may edit other members' entries).
+   * Only the Time Entries page sets this; the task drawer leaves it off and keeps its author-only route. */
+  asTimeEntry?: boolean;
+  /** Rendered inside a dialog: drops the divider/top padding that separate the inline form from the
+   * content above it, uses regular-size controls, and right-aligns the buttons like a modal footer. */
+  inModal?: boolean;
+  projectStartDate?: string | null;
 }
 
 type TimeLogInputMode = 'duration' | 'timeRange';
@@ -51,9 +56,12 @@ const TimeLogForm = ({
   taskId: taskIdProp,
   projectId: projectIdProp,
   allowReassign = false,
-
+  asTimeEntry = false,
+  inModal = false,
+  projectStartDate: projectStartDateProp,
 }: TimeLogFormProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
+  const controlSize = inModal ? 'middle' : 'small';
   const currentSession = useAuthService().getCurrentSession();
   const { socket, connected } = useSocket();
   const [form] = Form.useForm();
@@ -112,6 +120,8 @@ const TimeLogForm = ({
     return dayjs().startOf('day').subtract(backdateLimitDays, 'day');
   }, [backdateLimitDays]);
 
+  const currentProjectInStore = useAppSelector(state => state.projectReducer.project);
+
   // In edit mode the log's own date must stay selectable even once it ages past
   // the limit, so description/duration edits remain possible. The backend applies
   // the same exemption for an unchanged date.
@@ -120,15 +130,33 @@ const TimeLogForm = ({
     return dayjs(initialValues.created_at).startOf('day');
   }, [mode, initialValues?.created_at]);
 
+  // Project start date boundary
+  const effectiveProjectStartDate = React.useMemo(() => {
+    if (selectedReassignProject?.start_date) {
+      return dayjs(selectedReassignProject.start_date).startOf('day');
+    }
+    if (projectStartDateProp) {
+      return dayjs(projectStartDateProp).startOf('day');
+    }
+    if (taskFormViewModel?.task?.project_start_date) {
+      return dayjs(taskFormViewModel.task.project_start_date).startOf('day');
+    }
+    if (currentProjectInStore?.start_date && (!projectIdProp || currentProjectInStore.id === projectIdProp)) {
+      return dayjs(currentProjectInStore.start_date).startOf('day');
+    }
+    return null;
+  }, [selectedReassignProject, projectStartDateProp, taskFormViewModel?.task?.project_start_date, currentProjectInStore, projectIdProp]);
+
   const isDateDisabled = React.useCallback(
     (current: Dayjs) => {
       if (!current) return false;
       if (current.toDate() > new Date()) return true;
-      if (!minLogDate) return false;
       if (originalLogDate && current.isSame(originalLogDate, 'day')) return false;
-      return current.isBefore(minLogDate, 'day');
+      if (minLogDate && current.isBefore(minLogDate, 'day')) return true;
+      if (effectiveProjectStartDate && current.isBefore(effectiveProjectStartDate, 'day')) return true;
+      return false;
     },
-    [minLogDate, originalLogDate]
+    [minLogDate, originalLogDate, effectiveProjectStartDate]
   );
 
   const getNowRoundedToMinute = React.useCallback(() => {
@@ -243,7 +271,13 @@ const TimeLogForm = ({
         setReassignProjectSearchResults(
           list
             .filter((p: any) => p.name?.toLowerCase().includes(q))
-            .map((p: any) => ({ id: p.id, name: p.name, color_code: p.color_code }))
+            .map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              color_code: p.color_code,
+              start_date: p.start_date,
+              end_date: p.end_date,
+            }))
         );
       } catch {
         setReassignProjectSearchResults([]);
@@ -447,6 +481,30 @@ const TimeLogForm = ({
       quickAssignMember(currentSession);
     }
 
+    // Client-side mirror of the project start date restriction
+    if (
+      effectiveProjectStartDate &&
+      values.date &&
+      values.date.isBefore(effectiveProjectStartDate, 'day') &&
+      !(originalLogDate && values.date.isSame(originalLogDate, 'day'))
+    ) {
+      const errorMsg = t('taskTimeLogTab.timeLogForm.projectStartDateError', {
+        date: effectiveProjectStartDate.format('MMM DD, YYYY'),
+        defaultValue: 'Time cannot be logged before the project start date ({{date}}).',
+      });
+      message.warning({
+        content: errorMsg,
+        key: 'time-log-project-start-date',
+      });
+      form.setFields([
+        {
+          name: 'date',
+          errors: [errorMsg],
+        },
+      ]);
+      return;
+    }
+
     // Client-side mirror of the org backdate limit, so the user sees the problem
     // before a round trip. The server enforces the same rule regardless.
     if (
@@ -477,7 +535,9 @@ const TimeLogForm = ({
     setSubmitting(true);
     try {
       if (mode === 'edit' && initialValues?.id) {
-        await taskTimeLogsApiService.update(initialValues.id, requestBody);
+        await (asTimeEntry
+          ? taskTimeLogsApiService.updateEntry(initialValues.id, requestBody)
+          : taskTimeLogsApiService.update(initialValues.id, requestBody));
       } else {
         await taskTimeLogsApiService.create(requestBody);
       }
@@ -531,21 +591,23 @@ const TimeLogForm = ({
         position: 'relative',
         height: 'fit-content',
         justifySelf: 'flex-end',
-        paddingTop: 16,
+        paddingTop: inModal ? 0 : 16,
         paddingBottom: 0,
         overflow: 'visible',
       }}
     >
-      <div
-        style={{
-          marginBlockEnd: 0,
-          height: 1,
-          position: 'absolute',
-          top: 0,
-          width: '100%',
-          backgroundColor: themeWiseColor('#ebebeb', '#3a3a3a', themeMode),
-        }}
-      />
+      {!inModal && (
+        <div
+          style={{
+            marginBlockEnd: 0,
+            height: 1,
+            position: 'absolute',
+            top: 0,
+            width: '100%',
+            backgroundColor: themeWiseColor('#ebebeb', '#3a3a3a', themeMode),
+          }}
+        />
+      )}
 
       <Form
         form={form}
@@ -576,12 +638,28 @@ const TimeLogForm = ({
           setFormValues(values as TimeLogFormValues);
         }}
       >
+        {effectiveProjectStartDate && effectiveProjectStartDate.isAfter(dayjs(), 'day') && (
+          <Alert
+            type="warning"
+            showIcon
+            message={t('taskTimeLogTab.timeLogForm.projectNotStartedWarningTitle', {
+              defaultValue: 'Project has not started yet',
+            })}
+            description={t('taskTimeLogTab.timeLogForm.projectNotStartedWarningDesc', {
+              date: effectiveProjectStartDate.format('MMM DD, YYYY'),
+              defaultValue:
+                'This project is scheduled to start on {{date}}. Time cannot be logged before the project start date.',
+            })}
+            style={{ marginBlockEnd: 12 }}
+          />
+        )}
+
         <Form.Item
           label={t('taskTimeLogTab.timeLogForm.inputMode', { defaultValue: 'Input Mode' })}
           style={{ marginBlockEnd: 6 }}
         >
           <Segmented
-            size="small"
+            size={controlSize}
             value={inputMode}
             onChange={value => handleModeChange(value as TimeLogInputMode)}
             options={[
@@ -604,6 +682,14 @@ const TimeLogForm = ({
               <Form.Item
                 name="date"
                 label={t('taskTimeLogTab.timeLogForm.date')}
+                extra={
+                  effectiveProjectStartDate
+                    ? t('taskTimeLogTab.timeLogForm.projectStartDateHint', {
+                        date: effectiveProjectStartDate.format('MMM DD, YYYY'),
+                        defaultValue: 'Project start date: {{date}}',
+                      })
+                    : undefined
+                }
                 rules={[
                   {
                     required: true,
@@ -613,7 +699,7 @@ const TimeLogForm = ({
                 style={{ flex: 1.4, minWidth: 170, marginBlockEnd: 0 }}
               >
                 <DatePicker
-                  size="small"
+                  size={controlSize}
                   style={{ width: '100%' }}
                   disabledDate={isDateDisabled}
                 />
@@ -633,7 +719,7 @@ const TimeLogForm = ({
                 ]}
                 style={{ flex: 1, minWidth: 120, marginBlockEnd: 0 }}
               >
-                <InputNumber size="small" min={0} precision={0} style={{ width: '100%' }} />
+                <InputNumber size={controlSize} min={0} precision={0} style={{ width: '100%' }} />
               </Form.Item>
 
               <Form.Item
@@ -651,7 +737,7 @@ const TimeLogForm = ({
                 ]}
                 style={{ flex: 1, minWidth: 120, marginBlockEnd: 0 }}
               >
-                <InputNumber size="small" min={0} max={59} precision={0} style={{ width: '100%' }} />
+                <InputNumber size={controlSize} min={0} max={59} precision={0} style={{ width: '100%' }} />
               </Form.Item>
             </Flex>
           </Form.Item>
@@ -660,6 +746,14 @@ const TimeLogForm = ({
             <Form.Item
               name="date"
               label={t('taskTimeLogTab.timeLogForm.date')}
+              extra={
+                effectiveProjectStartDate
+                  ? t('taskTimeLogTab.timeLogForm.projectStartDateHint', {
+                      date: effectiveProjectStartDate.format('MMM DD, YYYY'),
+                      defaultValue: 'Project start date: {{date}}',
+                    })
+                  : undefined
+              }
               rules={[
                 {
                   required: true,
@@ -668,7 +762,7 @@ const TimeLogForm = ({
               ]}
             >
               <DatePicker
-                size="small"
+                size={controlSize}
                 style={{ width: '100%' }}
                 disabledDate={isDateDisabled}
               />
@@ -687,7 +781,7 @@ const TimeLogForm = ({
                   ]}
                   style={{ flex: 1, minWidth: 140, marginBlockEnd: 0 }}
                 >
-                  <TimePicker size="small" format="HH:mm" style={{ width: '100%' }} />
+                  <TimePicker size={controlSize} format="HH:mm" style={{ width: '100%' }} />
                 </Form.Item>
 
                 <Form.Item
@@ -701,7 +795,7 @@ const TimeLogForm = ({
                   ]}
                   style={{ flex: 1, minWidth: 140, marginBlockEnd: 0 }}
                 >
-                  <TimePicker size="small" format="HH:mm" style={{ width: '100%' }} />
+                  <TimePicker size={controlSize} format="HH:mm" style={{ width: '100%' }} />
                 </Form.Item>
               </Flex>
             </Form.Item>
@@ -754,7 +848,7 @@ const TimeLogForm = ({
                   setSelectedReassignTaskId(null);
                   setReassignTasks([]);
                 }}
-                size="small"
+                size={controlSize}
                 style={{ width: '100%' }}
                 notFoundContent={reassignProjectLoading ? <Spin size="small" /> : null}
                 options={reassignProjectSearchResults.map(p => ({ value: p.id, label: p.name }))}
@@ -785,7 +879,7 @@ const TimeLogForm = ({
                   loading={reassignTaskLoading}
                   onSearch={val => setReassignTaskSearch(val)}
                   onChange={(val: string | undefined) => setSelectedReassignTaskId(val || null)}
-                  size="small"
+                  size={controlSize}
                   style={{ width: '100%' }}
                   notFoundContent={reassignTaskLoading ? <Spin size="small" /> : null}
                   options={reassignTasks.map(task => ({ value: task.id, label: task.name }))}
@@ -810,7 +904,7 @@ const TimeLogForm = ({
         </Form.Item>
 
         <Form.Item style={{ marginBlockEnd: 0 }}>
-          <Flex gap={8}>
+          <Flex gap={8} justify={inModal ? 'flex-end' : undefined}>
             <Button onClick={onCancel}>{t('taskTimeLogTab.timeLogForm.cancel')}</Button>
             <Button
               type="primary"

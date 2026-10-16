@@ -83,7 +83,7 @@ const ProjectTimeLogDrawer: React.FC = () => {
           <TimeWiseFilter />
         </div>
       }
-      destroyOnClose
+      destroyOnHidden
       afterOpenChange={() => {
         handleDrawerOpen();
       }}

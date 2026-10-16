@@ -4,20 +4,16 @@
   "addTask": "Agregar tarea",
   "addSectionButton": "Agregar sección",
   "changeCategory": "Cambiar categoría",
-
   "deleteTooltip": "Eliminar",
   "deleteConfirmationTitle": "¿Estás seguro?",
   "deleteConfirmationOk": "Sí",
   "deleteConfirmationCancel": "Cancelar",
-
   "dueDate": "Fecha de vencimiento",
   "cancel": "Cancelar",
-
   "today": "Hoy",
   "tomorrow": "Mañana",
   "assignToMe": "Asignarme",
   "archive": "Archivar",
-
   "newTaskNamePlaceholder": "Escribe un nombre de tarea",
   "newSubtaskNamePlaceholder": "Escribe un nombre de subtarea",
   "untitledSection": "Sección sin título",
@@ -26,5 +22,13 @@
   "noDueDate": "Sin fecha de vencimiento",
   "save": "Guardar",
   "clear": "Limpiar",
-  "nextWeek": "Próxima semana"
+  "nextWeek": "Próxima semana",
+  "critical": "Crítica",
+  "high": "Alta",
+  "expand": "Expandir",
+  "medium": "Media",
+  "addSubtask": "Agregar Subtarea",
+  "collapse": "Contraer",
+  "unarchive": "Desarchivar",
+  "low": "Baja"
 }

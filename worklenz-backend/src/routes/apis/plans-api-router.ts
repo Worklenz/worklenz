@@ -1,5 +1,5 @@
 import express from "express";
-import SubscriptionController from "../../ee/controllers/subscription-controller";
+import SubscriptionController from "../../controllers/subscription-controller";
 
 const plansApiRouter = express.Router();
 

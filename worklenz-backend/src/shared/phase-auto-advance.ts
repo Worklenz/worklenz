@@ -339,9 +339,11 @@ export async function autoAdvanceToNextPhase(
     // Emit TASK_STATUS_CHANGE to reset the status badge on the board/list to "To Do"
     if (todoStatusId) {
       const statusColorResult = await db.query(
-        `SELECT color_code, color_code_dark
-         FROM sys_task_status_categories
-         WHERE id = (SELECT category_id FROM task_statuses WHERE id = $1);`,
+        `SELECT COALESCE(s.color_code, c.color_code)                       AS color_code,
+                COALESCE(s.color_code, c.color_code_dark, c.color_code) AS color_code_dark
+         FROM task_statuses s
+                INNER JOIN sys_task_status_categories c ON c.id = s.category_id
+         WHERE s.id = $1;`,
         [todoStatusId]
       );
       const statusRow = statusColorResult.rows[0];

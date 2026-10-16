@@ -28,9 +28,16 @@ import {
   FileTextOutlined,
   CompassOutlined,
   TagOutlined,
+  EyeOutlined,
+  AuditOutlined,
+  SwapOutlined,
+  MessageOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 import type { NavSurface, SurfaceKey } from './nav-registry.types';
-import type { TempChatsType } from '@/ee/pages/client-portal/chats/chat-container/chat-box/chat-box-wrapper';
+import type { RootState } from '@/app/store';
+import { portalCountsApi } from '@/api/client-portal/portal-counts-api';
+import type { PortalCounts } from '@/types/client-portal/v2';
 
 // ─── Home ───────────────────────────────────────────────────────────────────
 // Ported 1:1 from the NAV_ITEMS previously hardcoded in HomeLeftSidebar.tsx.
@@ -82,6 +89,7 @@ export const HOME_NAV_SURFACE: NavSurface = {
           key: 'add-client',
           label: { i18nNs: 'home-sidebar', i18nKey: 'addClient', defaultValue: 'Add\nClient' },
           icon: <UserAddOutlined />,
+          adminOnly: true, // Owner/Admin only — Members must not manage clients
         },
       ],
     },
@@ -150,6 +158,15 @@ export const REPORTING_NAV_SURFACE: NavSurface = {
           label: { i18nNs: 'reporting-sidebar', i18nKey: 'allTasks', defaultValue: 'Tasks' },
           icon: <UnorderedListOutlined />,
         },
+        {
+          key: 'progress-tracking',
+          label: {
+            i18nNs: 'reporting-sidebar',
+            i18nKey: 'progressTracking',
+            defaultValue: 'Progress Tracking',
+          },
+          icon: <RiseOutlined />,
+        },
       ],
     },
     {
@@ -187,53 +204,83 @@ export const REPORTING_NAV_SURFACE: NavSurface = {
 };
 
 // ─── Client Portal (staff-side management view) ────────────────────────────
-// Mirrors client-portal-constants.ts's clientPortalItems.
+// Client Portal v2 order (#2509): Clients, Projects, Approvals, Change Req., Discussions,
+// Quotes, Invoices, Audit Log, Portal Settings, Client Portal. Services, Requests, Ticketing and
+// Chats are retired in v2 (#2499). Sidebar labels resolve against 'client-portal-common' (see
+// client-portal-sidebar.tsx), so every key below lives in that file.
+//
+// Bump ORDER_VERSIONS['client-portal'] in navPreferences.slice.ts when this order changes.
+const EMPTY_PORTAL_COUNTS: PortalCounts = {
+  awaiting_approvals: 0,
+  review_change_requests: 0,
+  unread_threads: 0,
+};
+
+// Reads one sidebar badge from the cached counts query. ClientPortalSidebar keeps that query fresh.
+const portalCount = (read: (counts: PortalCounts) => number) => (state: RootState) =>
+  read(portalCountsApi.endpoints.getPortalCounts.select()(state)?.data?.body ?? EMPTY_PORTAL_COUNTS);
+
 export const CLIENT_PORTAL_NAV_SURFACE: NavSurface = {
   key: 'client-portal',
-  defaultItemKey: 'clients',
+  defaultItemKey: 'overview',
   groups: [
     {
       key: '',
       items: [
+        {
+          key: 'overview',
+          label: { i18nNs: 'client-portal-common', i18nKey: 'overview', defaultValue: 'Overview' },
+          icon: <DashboardOutlined />,
+        },
         {
           key: 'clients',
           label: { i18nNs: 'client-portal-common', i18nKey: 'clients', defaultValue: 'Clients' },
           icon: <GroupOutlined />,
         },
         {
-          key: 'requests',
-          label: { i18nNs: 'client-portal-common', i18nKey: 'requests', defaultValue: 'Requests' },
-          icon: <UnorderedListOutlined />,
+          key: 'projects',
+          label: { i18nNs: 'client-portal-common', i18nKey: 'projects', defaultValue: 'Projects' },
+          icon: <ProjectOutlined />,
         },
         {
-          key: 'services',
-          label: { i18nNs: 'client-portal-common', i18nKey: 'services', defaultValue: 'Services' },
-          icon: <AppstoreOutlined />,
+          key: 'approvals',
+          label: { i18nNs: 'client-portal-common', i18nKey: 'approvals', defaultValue: 'Approvals' },
+          icon: <AuditOutlined />,
         },
         {
-          key: 'chats',
-          label: { i18nNs: 'client-portal-common', i18nKey: 'chats', defaultValue: 'Chats' },
-          icon: <CommentOutlined />,
-          badgeSelector: state =>
-            (state.clientsPortalReducer?.chatsReducer?.chatList || []).filter(
-              (chat: TempChatsType) => chat.status === 'unread'
-            ).length,
+          key: 'change-requests',
+          label: {
+            i18nNs: 'client-portal-common',
+            i18nKey: 'changeRequests',
+            defaultValue: 'Change Req.',
+          },
+          icon: <SwapOutlined />,
+          badgeSelector: portalCount(counts => counts.review_change_requests),
+        },
+        {
+          key: 'discussions',
+          label: {
+            i18nNs: 'client-portal-common',
+            i18nKey: 'discussions',
+            defaultValue: 'Discussions',
+          },
+          icon: <MessageOutlined />,
+          badgeSelector: portalCount(counts => counts.unread_threads),
+        },
+        {
+          key: 'quotes',
+          label: { i18nNs: 'client-portal-common', i18nKey: 'quotes', defaultValue: 'Quotes' },
+          icon: <FileTextOutlined />,
         },
         {
           key: 'invoices',
           label: { i18nNs: 'client-portal-common', i18nKey: 'invoices', defaultValue: 'Invoices' },
           icon: <FileDoneOutlined />,
         },
-        // No real feature behind this yet — visually tagged "Soon" (matches
-        // the design reference) but, unlike other `soon` items, still
-        // navigates to its Coming Soon route (see client-portal-routes.tsx)
-        // via `soonClickable`, so it isn't a dead end.
         {
-          key: 'ticketing',
-          label: { i18nNs: 'client-portal-common', i18nKey: 'ticketing', defaultValue: 'Ticketing' },
-          icon: <TagOutlined />,
-          soon: true,
-          soonClickable: true,
+          key: 'audit-log',
+          label: { i18nNs: 'client-portal-common', i18nKey: 'auditLog', defaultValue: 'Audit Log' },
+          icon: <HistoryOutlined />,
         },
         {
           key: 'settings',
@@ -243,6 +290,15 @@ export const CLIENT_PORTAL_NAV_SURFACE: NavSurface = {
             defaultValue: 'Portal\nSettings',
           },
           icon: <SettingOutlined />,
+        },
+        {
+          key: 'preview',
+          label: {
+            i18nNs: 'client-portal-common',
+            i18nKey: 'clientPortalPreview',
+            defaultValue: 'Client Portal',
+          },
+          icon: <EyeOutlined />,
         },
       ],
     },
@@ -298,6 +354,7 @@ export const PROJECTS_NAV_SURFACE: NavSurface = {
           label: { i18nNs: 'projects-sidebar', i18nKey: 'templates', defaultValue: 'Templates' },
           icon: <BlockOutlined />,
           guestExcluded: true, // Hide from guest users
+          adminOnly: true, // Only Owner/Admin may create projects from templates
         },
         // {
         //   key: 'archived',

@@ -18,5 +18,7 @@
   "fetchPracticeErrorMessage": "Marrja e praktikës dështoi",
   "createPracticeErrorMessage": "Krijimi i praktikës dështoi",
   "updatePracticeErrorMessage": "Përditësimi i praktikës dështoi",
-  "pinTooltip": "Fiksoje në menynë kryesore"
+  "pinTooltip": "Fiksoje në menynë kryesore",
+  "rowsPerPage": "Rreshta për faqe:",
+  "paginationSummary": "{{range}} nga {{total}}"
 }

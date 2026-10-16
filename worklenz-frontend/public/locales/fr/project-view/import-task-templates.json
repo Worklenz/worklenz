@@ -1,0 +1,13 @@
+{
+  "importTaskTemplate": "Modèle de tâche d'importation",
+  "templateName": "Nom du modèle",
+  "templateDescription": "Description du modèle",
+  "selectedTasks": "Tâches sélectionnées",
+  "tasks": "Tâches",
+  "templates": "Modèles",
+  "remove": "Supprimer",
+  "cancel": "Annuler",
+  "import": "Importer",
+  "subtasksLabel": "sous-tâches",
+  "subtaskCountTooltip": "{{count}} sous-tâches seront importées"
+}

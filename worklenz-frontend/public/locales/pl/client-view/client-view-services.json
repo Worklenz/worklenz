@@ -1,0 +1,10 @@
+{
+  "title": "{{items}} Usługi",
+  "requestButton": "Złóż wniosek",
+  "modal": {
+    "title": "Złóż wniosek",
+    "submitButton": "Prześlij"
+  },
+  "uploadLogoText": "Kliknij lub przeciągnij plik do tego obszaru, aby go przesłać",
+  "uploadLogoAltText": "Obsługa przesyłania pojedynczego lub zbiorczego. Surowo zabraniaj przesyłania danych firmowych lub innych plików zespołu"
+}

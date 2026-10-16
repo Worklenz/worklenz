@@ -56,13 +56,13 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({
     () =>
       dateRange && dateRange.length >= 2 && dateRange[0] && dateRange[1]
         ? {
-            from: dayjs(dateRange[0]).format('YYYY-MM-DD'),
-            to: dayjs(dateRange[1]).format('YYYY-MM-DD'),
-          }
+          from: dayjs(dateRange[0]).format('YYYY-MM-DD'),
+          to: dayjs(dateRange[1]).format('YYYY-MM-DD'),
+        }
         : {
-            from: dayjs().startOf('month').format('YYYY-MM-DD'),
-            to: dayjs().endOf('month').format('YYYY-MM-DD'),
-          },
+          from: dayjs().startOf('month').format('YYYY-MM-DD'),
+          to: dayjs().endOf('month').format('YYYY-MM-DD'),
+        },
     [dateRange]
   );
 
@@ -186,7 +186,7 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({
 
   const SkeletonCard = ({ wide }: { wide?: boolean }) => (
     <Card
-      style={wide ? { ...cardStyle, flex: '2 1 460px', minWidth: 460 } : cardStyle}
+      style={wide ? { ...cardStyle, flex: '2 1 220px', minWidth: 220 } : cardStyle}
       styles={{ body: { padding: '20px' } }}
     >
       <Skeleton active title={false} paragraph={{ rows: 3, width: ['40%', '60%', '80%'] }} />
@@ -244,8 +244,8 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({
           <Card
             style={{
               ...cardStyle,
-              flex: '2 1 460px',
-              minWidth: 460,
+              flex: '2 1 220px',
+              minWidth: 220,
               borderColor: utilizationData.statusColor,
               borderWidth: '2px',
             }}
@@ -271,7 +271,7 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({
                 </div>
               </Tooltip>
             </Flex>
-            <Flex align="center" gap={16}>
+            <Flex align="center" gap={16} wrap="wrap">
               <div
                 style={{
                   fontSize: 28,
@@ -283,7 +283,7 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({
               >
                 {utilizationData.utilizationPercent}%
               </div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: '1 1 180px', minWidth: 0 }}>
                 <Progress
                   percent={Math.min(utilizationData.utilizationPercent, 150)}
                   strokeColor={{
@@ -323,7 +323,7 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({
                   fontSize: 10,
                   color: isOver ? colors.variance.colNeg : colors.variance.colPos,
                   fontWeight: 500,
-                  whiteSpace: 'nowrap',
+                  whiteSpace: 'normal',
                 }}
               >
                 {t(isOver ? 'considerWorkloadRedistribution' : 'capacityAvailableForNewProjects')}

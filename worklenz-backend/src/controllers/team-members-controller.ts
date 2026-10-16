@@ -1,3 +1,4 @@
+import { planLiftsLtdMemberLimit } from "../shared/entitlements/gates";
 import moment from "moment";
 import Excel from "exceljs";
 import crypto from "crypto";
@@ -21,17 +22,38 @@ import {
   TRIAL_MEMBER_LIMIT,
   BUSINESS_PLAN_LIMIT,
   APPSUMO_PLAN_LIMIT,
+  LOG_I18N_KEYS,
 } from "../shared/constants";
-import { checkTeamSubscriptionStatus } from "../ee/shared/paddle-utils";
-import { updateUsers } from "../ee/shared/paddle-requests";
-import { getTeamMemberSeatLimit } from "../ee/shared/subscription-limits";
+import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
+import { updateUsers } from "../shared/paddle-requests";
+import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
+import { withTeamSeatLock } from "../shared/team-seat-lock";
 import {
   canAssignRole,
   canManageTargetRole,
   getTeamMemberRoleName,
+  hasTeamAdminPrivileges,
   TEAM_ROLE_NAMES,
 } from "../shared/team-permissions";
 import { NotificationsService } from "../services/notifications/notifications.service";
+import {
+  clearPmAccessForTeamMember,
+  listPmProjectsForTeamMember,
+  notifyClearedPmRows,
+} from "../shared/pm-lifecycle";
+import { ActivityLoggingService } from "../services/activity-logging.service";
+import {
+  actorFromSessionUser,
+  logAuditEvent,
+  resolveOrganizationIdForUserId,
+} from "../services/audit-log.service";
+import {
+  captureTeamMember,
+  logTeamEvent,
+  logTeamMemberChanges,
+  logTeamMemberEvent,
+} from "../services/team-member-audit.service";
+import { AUDIT_EVENT_TYPE } from "../shared/audit-log-constants";
 
 export default class TeamMembersController extends WorklenzControllerBase {
   private static async ensureAssignableRole(
@@ -194,12 +216,30 @@ export default class TeamMembersController extends WorklenzControllerBase {
       projectId || "",
     );
 
+    // one audit entry per invited email. This is the single shared
+    // invite-processing function used by both the self-hosted and cloud/Paddle paths in
+    // create() above, so instrumenting here (rather than in create()) covers both without
+    // duplicating the call.
+    if (user.organization_id) {
+      for (const member of newMembers) {
+        logAuditEvent({
+          organizationId: user.organization_id,
+          teamId: user.team_id || null,
+          actor: actorFromSessionUser(user),
+          eventType: AUDIT_EVENT_TYPE.MEMBER_INVITED.id,
+          description: `Invited ${member.name || member.email || "a new member"} to ${user.team_name || "the team"}`,
+        });
+      }
+    }
+
     return newMembers;
   }
 
   @HandleExceptions({
     raisedExceptions: {
       ERROR_EMAIL_INVITATION_EXISTS: `Team member with email "{0}" already exists.`,
+      ERROR_TRIAL_MEMBER_LIMIT_EXCEEDED:
+        "Trial users cannot exceed {0} team members. Please upgrade to add more members.",
     },
   })
   public static async create(
@@ -339,11 +379,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
        * Only applies to users who are still on AppSumo lifetime deals (not upgraded to Business plans)
        * Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
        */
-      const isBusinessPlan =
-        subscriptionData.subscription_type === "ANNUAL_BUSINESS" ||
-        subscriptionData.plan_name?.toLowerCase().includes("business") ||
-        subscriptionData.business_plan_override === true ||
-        subscriptionData.appsumo_business_eligible === true;
+      const isBusinessPlan = planLiftsLtdMemberLimit(subscriptionData);
 
       if (
         incrementBy > 0 &&
@@ -611,7 +647,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
                            team_members.reports_to_member_id,
                            (SELECT name FROM team_member_info_view
                             WHERE team_member_info_view.team_member_id = team_members.reports_to_member_id) AS current_team_lead_name,
-                            active
+                            active,
+                            COALESCE(team_members.can_create_projects_from_templates, FALSE)
+                              AS can_create_projects_from_templates
                     FROM team_members
                            LEFT JOIN users u ON team_members.user_id = u.id
                     WHERE ${searchQuery} team_id = $1
@@ -732,7 +770,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
               ) AS email,
             EXISTS(SELECT id FROM roles WHERE id = team_members.role_id AND admin_role IS TRUE) AS is_admin,
             reports_to_member_id,
-            active
+            active,
+            COALESCE(can_create_projects_from_templates, FALSE) AS can_create_projects_from_templates
       FROM team_members
       WHERE id = $1
         AND team_id = $2;
@@ -799,12 +838,43 @@ export default class TeamMembersController extends WorklenzControllerBase {
       return res.status(200).send(roleAssignmentError);
     }
 
+    // captured before update_team_member() runs so there's an old value
+    // to compare against. Note: the Owner role is never an assignable target of this endpoint
+    // (see ensureAssignableRole/MANAGEABLE_ROLE_MAP in shared/team-permissions.ts — Owner can
+    // only "keep their own role", never be assigned to someone else), so there is no
+    // "ownership transferred" code path to instrument here or anywhere else in this
+    // codebase today. Only Admin/Team Lead/Member transitions are logged below.
+    const previousRoleName = await getTeamMemberRoleName(req.params.id, req.user?.team_id || "");
+    const memberBefore = await captureTeamMember(req.user, req.params.id);
+
     req.body.id = req.params.id;
     req.body.team_id = req.user?.team_id || null;
     req.body.is_admin = !!req.body.is_admin;
 
     const q = `SELECT update_team_member($1) AS team_member;`;
     const result = await db.query(q, [JSON.stringify(req.body)]);
+
+    if (
+      req.user?.organization_id &&
+      previousRoleName &&
+      previousRoleName !== requestedRoleName
+    ) {
+      const targetInfoResult = await db.query(
+        `SELECT name, email FROM team_member_info_view WHERE team_member_id = $1`,
+        [req.params.id]
+      );
+      const targetName = targetInfoResult.rows[0]?.name || targetInfoResult.rows[0]?.email || "a member";
+
+      logAuditEvent({
+        organizationId: req.user.organization_id,
+        teamId: req.user.team_id || null,
+        actor: actorFromSessionUser(req.user),
+        eventType: AUDIT_EVENT_TYPE.ROLE_CHANGED.id,
+        description: `${targetName}: ${previousRoleName} → ${requestedRoleName}`,
+        oldValue: previousRoleName,
+        newValue: requestedRoleName,
+      });
+    }
 
     const teamId = req.user?.team_id || null;
 
@@ -823,6 +893,29 @@ export default class TeamMembersController extends WorklenzControllerBase {
         [practiceId, req.params.id, teamId]
       );
     }
+
+    // Phase 5 — Owner/Admin may grant create-from-templates per member (D4).
+    if (
+      Object.prototype.hasOwnProperty.call(
+        req.body,
+        "can_create_projects_from_templates"
+      )
+    ) {
+      if (hasTeamAdminPrivileges(req.user)) {
+        await db.query(
+          `UPDATE team_members
+           SET can_create_projects_from_templates = $1
+           WHERE id = $2::UUID AND team_id = $3::UUID;`,
+          [
+            Boolean(req.body.can_create_projects_from_templates),
+            req.params.id,
+            teamId,
+          ]
+        );
+      }
+    }
+
+    await logTeamMemberChanges(req.user, req.params.id, memberBefore);
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -854,6 +947,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     }
 
     const trimmedName = name.trim();
+    const memberBefore = await captureTeamMember(req.user, id);
 
     // First, resolve whether this team member has a linked user account
     // or is still a pending invitation (no user_id yet).
@@ -894,6 +988,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
       `;
       await db.query(updateInviteQ, [trimmedName, id, req.user.team_id]);
     }
+
+    await logTeamMemberChanges(req.user, id, memberBefore);
 
     return res
       .status(200)
@@ -950,6 +1046,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
     }
 
     member.id = member.team_member_id;
+
+    logTeamEvent(
+      req.user,
+      AUDIT_EVENT_TYPE.INVITATION_RESENT.id,
+      `Resent the invitation to ${member.name || member.email} for ${req.user?.team_name || "the team"}`
+    );
 
     return res
       .status(200)
@@ -1014,9 +1116,71 @@ export default class TeamMembersController extends WorklenzControllerBase {
         );
     }
 
+    // captured before remove_team_member() runs so the audit
+    // description below still has a readable identity for the member being removed.
+    const removedMemberInfoResult = await db.query(
+      `SELECT name, email FROM team_member_info_view WHERE team_member_id = $1`,
+      [id]
+    );
+    const removedMemberInfo = removedMemberInfoResult.rows[0];
+
     const q = `SELECT remove_team_member($1, $2, $3) AS member;`;
-    const result = await db.query(q, [id, req.user?.id, req.user?.team_id]);
+
+    // Phase 6: capture PM projects before cascade delete, notify viewers.
+    const pmRows = await listPmProjectsForTeamMember(id);
+
+    const client = await db.pool.connect();
+    let result;
+    try {
+      await client.query("BEGIN");
+      result = await client.query(q, [id, req.user?.id, req.user?.team_id]);
+
+      // An outdated remove_team_member() definition can return normally without
+      // deleting the row, so confirm the removal before reporting success.
+      const remaining = await client.query(
+        `SELECT 1 FROM team_members WHERE id = $1 AND team_id = $2;`,
+        [id, req.user?.team_id],
+      );
+      if (remaining.rowCount) {
+        await client.query("ROLLBACK");
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(false, null, "Failed to remove the team member. Please try again."),
+          );
+      }
+
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
     const [data] = result.rows;
+
+    if (req.user?.organization_id) {
+      logAuditEvent({
+        organizationId: req.user.organization_id,
+        teamId: req.user.team_id || null,
+        actor: actorFromSessionUser(req.user),
+        eventType: AUDIT_EVENT_TYPE.MEMBER_REMOVED.id,
+        description: `Removed ${removedMemberInfo?.name || removedMemberInfo?.email || "a member"} from ${req.user.team_name || "the team"}`,
+      });
+    }
+
+    if (pmRows.length) {
+      for (const row of pmRows) {
+        await ActivityLoggingService.logProjectActivity({
+          teamId: row.team_id || req.user?.team_id || "",
+          projectId: row.project_id,
+          userId: req.user?.id || "",
+          i18nKey: LOG_I18N_KEYS.PROJECT_MANAGER_REMOVED,
+          projectName: row.project_name || undefined,
+        });
+      }
+      notifyClearedPmRows(pmRows, "member_removed");
+    }
 
     const safeName = sanitizePlainText(req.user?.name || "an administrator");
     const safeTeamName = sanitizePlainText(req.user?.team_name || "the team");
@@ -1057,7 +1221,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
         removedUserId: data.member.id,
       },
     );
-    return res.status(200).send(new ServerResponse(true, result.rows));
+    return res
+      .status(200)
+      .send(new ServerResponse(true, result.rows, "Team member deleted successfully."));
   }
 
   @HandleExceptions()
@@ -1773,6 +1939,17 @@ export default class TeamMembersController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ) {
+    const teamId = req.user?.team_id;
+    // Reactivation checks the free seats and then flips the member; hold the team's lock across
+    // both so it cannot race with an invite taking the last seat.
+    if (!teamId || req.query.active !== "true") return this.toggleMemberActive(req, res);
+    return withTeamSeatLock(teamId, () => this.toggleMemberActive(req, res));
+  }
+
+  private static async toggleMemberActive(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ) {
     const targetManagementError = await this.ensureManageableTarget(
       req,
       req.params.id,
@@ -1852,10 +2029,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
         // Check AppSumo lifetime deal limit - only applies if not on Business plan
         // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
-        const isBusinessPlanAccept = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
-          subscriptionData.plan_name?.toLowerCase().includes("business") ||
-          subscriptionData.business_plan_override === true ||
-          subscriptionData.appsumo_business_eligible === true;
+        const isBusinessPlanAccept = planLiftsLtdMemberLimit(subscriptionData);
 
         if (
           subscriptionData.is_ltd &&
@@ -1885,6 +2059,23 @@ export default class TeamMembersController extends WorklenzControllerBase {
       const q = `UPDATE team_members SET active = NOT active WHERE id = $1 RETURNING active;`;
       const result = await db.query(q, [req.params?.id]);
       data = result.rows[0];
+
+      // Phase 6: deactivating a member clears their PM elevation (query.active === true branch).
+      if (data && data.active === false) {
+        const cleared = await clearPmAccessForTeamMember(req.params.id);
+        if (cleared.length) {
+          for (const row of cleared) {
+            await ActivityLoggingService.logProjectActivity({
+              teamId: row.team_id || req.user?.team_id || "",
+              projectId: row.project_id,
+              userId: req.user?.id || "",
+              i18nKey: LOG_I18N_KEYS.PROJECT_MANAGER_REMOVED,
+              projectName: row.project_name || undefined,
+            });
+          }
+          notifyClearedPmRows(cleared, "member_deactivated");
+        }
+      }
 
       // const userExists = await this.checkIfUserActiveInOtherTeams(req.user?.owner_id as string, req.query?.email as string);
 
@@ -1947,10 +2138,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
         // Check AppSumo lifetime deal limit - only applies if not on Business plan
         // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
-        const isBusinessPlanReactivate = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
-          subscriptionData.plan_name?.toLowerCase().includes("business") ||
-          subscriptionData.business_plan_override === true ||
-          subscriptionData.appsumo_business_eligible === true;
+        const isBusinessPlanReactivate = planLiftsLtdMemberLimit(subscriptionData);
 
         if (
           subscriptionData.is_ltd &&
@@ -2039,6 +2227,33 @@ export default class TeamMembersController extends WorklenzControllerBase {
       const q = `UPDATE team_members SET active = NOT active WHERE id = $1 RETURNING active;`;
       const result = await db.query(q, [req.params?.id]);
       data = result.rows[0];
+
+      // Phase 6: deactivating a member clears their PM elevation.
+      if (data && data.active === false) {
+        const cleared = await clearPmAccessForTeamMember(req.params.id);
+        if (cleared.length) {
+          for (const row of cleared) {
+            await ActivityLoggingService.logProjectActivity({
+              teamId: row.team_id || req.user?.team_id || "",
+              projectId: row.project_id,
+              userId: req.user?.id || "",
+              i18nKey: LOG_I18N_KEYS.PROJECT_MANAGER_REMOVED,
+              projectName: row.project_name || undefined,
+            });
+          }
+          notifyClearedPmRows(cleared, "member_deactivated");
+        }
+      }
+    }
+
+    if (data) {
+      await logTeamMemberEvent(
+        req.user,
+        data.active ? AUDIT_EVENT_TYPE.MEMBER_ACTIVATED.id : AUDIT_EVENT_TYPE.MEMBER_DEACTIVATED.id,
+        req.params.id,
+        (memberLabel) =>
+          `${data.active ? "Activated" : "Deactivated"} ${memberLabel} in ${req.user?.team_name || "the team"}`
+      );
     }
 
     return res
@@ -2055,6 +2270,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
   @HandleExceptions({
     raisedExceptions: {
       ERROR_EMAIL_INVITATION_EXISTS: `Team member with email "{0}" already exists.`,
+      ERROR_TRIAL_MEMBER_LIMIT_EXCEEDED:
+        "Trial users cannot exceed {0} team members. Please upgrade to add more members.",
     },
   })
   public static async addTeamMember(
@@ -2101,11 +2318,57 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
     }
 
-    // if (subscriptionData.status === "trialing") break;
-    if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
+    // Per-user Paddle Billing plans sell a fixed number of seats that members fill later, so adding
+    // a member never changes the quantity here: it only has to fit the purchased seats.
+    // Paddle Classic subscriptions keep the original behavior below.
+    if (
+      subscriptionData.billing_provider === "paddle_billing" &&
+      subscriptionData.subscription_status === "active" &&
+      subscriptionData.team_member_limit_override !== true
+    ) {
+      const emailsToAdd = req.body.emails?.length || 1;
+      const teamId: string = req.body.team_id;
+      const user = req.user;
+
+      // The seat check and the insert run under one lock per team, on a fresh member count, so
+      // concurrent invites cannot both take the last seat.
+      return withTeamSeatLock(teamId, async () => {
+        const current = await checkTeamSubscriptionStatus(teamId);
+        const seatLimit = getTeamMemberSeatLimit(current);
+        const currentMembers = parseInt(current.current_count) || 0;
+        if (currentMembers + emailsToAdd > seatLimit) {
+          return res.status(200).send(
+            new ServerResponse(
+              false,
+              {
+                error_code: "SEAT_LIMIT_EXCEEDED",
+                seats_enough: false,
+                required_count: currentMembers + emailsToAdd - seatLimit,
+                current_members: currentMembers,
+                plan_seat_limit: seatLimit,
+                current_seat_amount: seatLimit,
+                subscription_type: current.subscription_type,
+              },
+              "Not enough seats. Add more seats to invite this member.",
+            ),
+          );
+        }
+
+        const invited = await this.createOrInviteMembers(req.body, user);
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(
+              true,
+              invited,
+              `Your teammates will get an email that gives them access to your team.`,
+            ).withTitle("Invitations sent"),
+          );
+      });
+    } else if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
       if (subscriptionData.subscription_status === "active") {
         const response = await updateUsers(
-          subscriptionData.subscription_id,
+          subscriptionData.subscription_ref ?? subscriptionData.subscription_id,
           subscriptionData.quantity + (req.body.emails.length || 1),
         );
         if (!response.body.subscription_id)
@@ -2268,11 +2531,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
 
       // Check LTD user limits - only applies if not on Business plan (check both subscription_type and plan_name)
-      const isBusinessPlan =
-        subscriptionData.subscription_type === "ANNUAL_BUSINESS" ||
-        subscriptionData.plan_name?.toLowerCase().includes("business") ||
-        subscriptionData.business_plan_override === true ||
-        subscriptionData.appsumo_business_eligible === true;
+      const isBusinessPlan = planLiftsLtdMemberLimit(subscriptionData);
       if (
         subscriptionData.is_ltd &&
         subscriptionData.current_count &&
@@ -2389,6 +2648,14 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
           invitationLink = result.rows[0];
         }
+      }
+
+      if (checkResult.rows.length === 0) {
+        logTeamEvent(
+          req.user,
+          AUDIT_EVENT_TYPE.INVITATION_LINK_CREATED.id,
+          `Created an invitation link for ${req.user?.team_name || "the team"} (role: ${role_name}, expires in 7 days)`
+        );
       }
 
       // Generate the full invitation URL
@@ -2508,6 +2775,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
       const teamId = validation.team_id;
 
+      // Seat check and insert run under the team's lock so concurrent joins cannot both take the last seat.
+      return await withTeamSeatLock(teamId, async () => {
+
       // Get team owner ID for checking user existence
       const ownerQuery = `
         SELECT u.id, u.name, t.name as team_name, t.user_id as owner_id
@@ -2584,11 +2854,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
         // Check LTD user limits - only applies if not on Business plan
         // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
-        const isBusinessPlanLink =
-          subscriptionData.subscription_type === "ANNUAL_BUSINESS" ||
-          subscriptionData.plan_name?.toLowerCase().includes("business") ||
-          subscriptionData.business_plan_override === true ||
-          subscriptionData.appsumo_business_eligible === true;
+        const isBusinessPlanLink = planLiftsLtdMemberLimit(subscriptionData);
 
         if (
           incrementBy > 0 &&
@@ -2751,6 +3017,19 @@ export default class TeamMembersController extends WorklenzControllerBase {
           const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
           await db.query(setActiveTeamQuery, [userId, teamId]);
         }
+
+        // The member is created under a stand-in owner session with no workspace, so the
+        // workspace is resolved from the team itself.
+        const workspace = await resolveOrganizationIdForUserId(owner.id, teamId);
+        if (workspace) {
+          logAuditEvent({
+            organizationId: workspace.organizationId,
+            teamId,
+            actor: { userId: userId || null, name: name || email },
+            eventType: AUDIT_EVENT_TYPE.MEMBER_JOINED.id,
+            description: `${name || email} joined ${owner.team_name || "the team"} using an invitation link`,
+          });
+        }
       }
 
       return res
@@ -2762,6 +3041,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
             "Successfully joined the team!",
           ),
         );
+      });
     } catch (error) {
       console.error("Error accepting team invitation:", error);
       return res
@@ -2807,6 +3087,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
             new ServerResponse(false, null, "No active invitation link found."),
           );
       }
+
+      logTeamEvent(
+        req.user,
+        AUDIT_EVENT_TYPE.INVITATION_LINK_REVOKED.id,
+        `Revoked the invitation link for ${req.user?.team_name || "the team"}`
+      );
 
       return res
         .status(200)

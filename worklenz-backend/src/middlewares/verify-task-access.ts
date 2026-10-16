@@ -1,6 +1,7 @@
 import {NextFunction} from "express";
 import {IWorkLenzRequest} from "../interfaces/worklenz-request";
 import {IWorkLenzResponse} from "../interfaces/worklenz-response";
+import {IPassportSession} from "../interfaces/passport-session";
 import {ServerResponse} from "../models/server-response";
 import db from "../config/db";
 import {log_error} from "../shared/utils";
@@ -11,6 +12,7 @@ import {
   TASK_ASSIGNEE_READONLY_CODE,
   TASK_ASSIGNEE_RESTRICTED_CODE,
 } from "../shared/assignee-task-scope";
+import {userHasProjectAccessInTeam} from "./verify-project-access";
 
 export interface VerifyTaskAccessOptions {
   /**
@@ -52,12 +54,115 @@ const isReadOnlyHttpMethod = (method: string | undefined): boolean => {
 };
 
 /**
+ * Role fields for the task's team, used to evaluate assignee-scope before
+ * `activate_team` persists a workspace switch.
+ */
+interface TaskProjectTeamContext {
+  projectTeamId: string;
+  teamMemberId: string;
+  owner: boolean;
+  /** Session is_admin: Owner or Admin role. Team Lead's admin_role flag is separate. */
+  isAdmin: boolean;
+  roleName: string | null;
+  isGuest: boolean;
+}
+
+/**
+ * Resolve membership and project access on the task's team without changing
+ * the user's active team. Assignee-scope exemptions must use this context,
+ * not the currently active workspace role.
+ */
+const resolveTaskProjectTeamContext = async (
+  userId: string,
+  projectId: string,
+  projectTeamId: string
+): Promise<TaskProjectTeamContext | null> => {
+  const userTeamAccessResult = await db.query(
+    `
+    SELECT tm.id, r.owner, r.admin_role, r.name, tm.is_guest
+    FROM team_members tm
+    INNER JOIN roles r ON tm.role_id = r.id
+    WHERE tm.user_id = $1 AND tm.team_id = $2 AND tm.active = TRUE
+    LIMIT 1;
+    `,
+    [userId, projectTeamId]
+  );
+
+  if (!userTeamAccessResult.rowCount) {
+    return null;
+  }
+
+  const userTeamRole = userTeamAccessResult.rows[0];
+  const isOwnerOfProjectTeam = !!userTeamRole.owner;
+  const isAdminOfProjectTeam = !!userTeamRole.admin_role;
+
+  const hasProjectAccessInTeam = await userHasProjectAccessInTeam(
+    projectId,
+    userId,
+    projectTeamId,
+    isOwnerOfProjectTeam,
+    isAdminOfProjectTeam
+  );
+
+  if (!hasProjectAccessInTeam) {
+    return null;
+  }
+
+  return {
+    projectTeamId,
+    teamMemberId: userTeamRole.id,
+    owner: isOwnerOfProjectTeam,
+    // Match deserialize_user: is_admin is Admin role (or owner), not Team Lead's admin_role flag
+    isAdmin:
+      isOwnerOfProjectTeam ||
+      String(userTeamRole.name || "").toLowerCase() === "admin",
+    roleName: userTeamRole.name ?? null,
+    isGuest: !!userTeamRole.is_guest,
+  };
+};
+
+const sessionForTaskProjectTeam = (
+  user: IPassportSession,
+  context: TaskProjectTeamContext
+): IPassportSession => ({
+  ...user,
+  team_id: context.projectTeamId,
+  team_member_id: context.teamMemberId,
+  owner: context.owner,
+  is_admin: context.isAdmin,
+  role_name: context.roleName ?? undefined,
+  is_guest: context.isGuest,
+});
+
+const activateTaskProjectTeam = async (
+  req: IWorkLenzRequest,
+  userId: string,
+  context: TaskProjectTeamContext
+): Promise<void> => {
+  await db.query(`SELECT activate_team($1, $2)`, [context.projectTeamId, userId]);
+
+  if (req.user) {
+    req.user.team_id = context.projectTeamId;
+    req.user.team_member_id = context.teamMemberId;
+    req.user.owner = context.owner;
+    req.user.is_admin = context.isAdmin;
+    req.user.role_name = context.roleName ?? undefined;
+    req.user.is_guest = context.isGuest;
+  }
+};
+
+/**
  * Middleware to verify that the authenticated user has access to a specific task.
  * This prevents IDOR (Insecure Direct Object Reference) attacks by ensuring users
  * can only access tasks that belong to projects in their team.
  *
  * Also enforces projects.restrict_tasks_to_assignee (TVR-11) with a
  * notification/mention deep-link exception (TVR-12).
+ *
+ * When the task belongs to another team the user can access, assignee-scope is
+ * evaluated with that team's role context first. The team is activated only
+ * after detail access (and edit access, for mutations) is allowed, so an
+ * unauthorized deep link does not change the active workspace.
  *
  * Usage:
  * - For task ID in URL params: verifyTaskAccess('params', 'id')
@@ -93,42 +198,90 @@ export default function verifyTaskAccess(
     }
 
     try {
-      // Verify that the task belongs to a project in the user's team
-      const q = `
-        SELECT 1
+      // Resolve the task's project + team (needed for auto team-switch)
+      const taskLookup = await db.query(
+        `
+        SELECT t.project_id, p.team_id AS project_team_id
         FROM tasks t
         INNER JOIN projects p ON t.project_id = p.id
-        WHERE t.id = $1 AND p.team_id = $2
+        WHERE t.id = $1
         LIMIT 1;
-      `;
-      
-      const result = await db.query(q, [taskId, teamId]);
-      
-      if (result.rowCount && result.rowCount > 0) {
-        const mayAccess = await canUserAccessTaskDetail(userId, taskId, req.user, {
-          requireNotificationLink: options?.requireNotificationLink === true,
-          notificationLinkFrom: getNotificationLinkFrom(req),
-        });
-
-        if (!mayAccess) {
-          return denyAssigneeRestricted(res);
-        }
-
-        // TVR-13: parent-context (and other non-assignee) viewers may not mutate
-        if (!isReadOnlyHttpMethod(req.method)) {
-          const mayEdit = await canUserEditTask(userId, taskId, req.user);
-          if (!mayEdit) {
-            return denyAssigneeReadonly(res);
-          }
-        }
-
-        return next();
-      }
-      
-      // Task not found or user doesn't have access
-      return res.status(403).send(
-        new ServerResponse(false, null, "You do not have permission to access this task")
+        `,
+        [taskId]
       );
+
+      if (!taskLookup.rowCount) {
+        return res.status(403).send(
+          new ServerResponse(false, null, "You do not have permission to access this task")
+        );
+      }
+
+      const {project_id: projectId, project_team_id: projectTeamId} = taskLookup.rows[0];
+
+      let pendingTeam: TaskProjectTeamContext | null = null;
+
+      if (projectTeamId !== teamId) {
+        try {
+          pendingTeam = await resolveTaskProjectTeamContext(
+            userId,
+            projectId,
+            projectTeamId
+          );
+          if (!pendingTeam) {
+            return res.status(403).send(
+              new ServerResponse(false, null, "You do not have permission to access this task")
+            );
+          }
+        } catch (switchError) {
+          log_error(switchError);
+          console.error(
+            `[AUTO_TEAM_SWITCH] Failed to resolve team ${projectTeamId} for user ${userId} and task ${taskId}:`,
+            switchError
+          );
+          return res.status(500).send(
+            new ServerResponse(false, null, "Failed to switch teams. Please try again.")
+          );
+        }
+      }
+
+      const accessUser =
+        pendingTeam && req.user
+          ? sessionForTaskProjectTeam(req.user, pendingTeam)
+          : req.user;
+
+      const mayAccess = await canUserAccessTaskDetail(userId, taskId, accessUser, {
+        requireNotificationLink: options?.requireNotificationLink === true,
+        notificationLinkFrom: getNotificationLinkFrom(req),
+      });
+
+      if (!mayAccess) {
+        return denyAssigneeRestricted(res);
+      }
+
+      // TVR-13: parent-context (and other non-assignee) viewers may not mutate
+      if (!isReadOnlyHttpMethod(req.method)) {
+        const mayEdit = await canUserEditTask(userId, taskId, accessUser);
+        if (!mayEdit) {
+          return denyAssigneeReadonly(res);
+        }
+      }
+
+      if (pendingTeam) {
+        try {
+          await activateTaskProjectTeam(req, userId, pendingTeam);
+        } catch (switchError) {
+          log_error(switchError);
+          console.error(
+            `[AUTO_TEAM_SWITCH] Failed to switch user ${userId} to team ${projectTeamId} for task ${taskId}:`,
+            switchError
+          );
+          return res.status(500).send(
+            new ServerResponse(false, null, "Failed to switch teams. Please try again.")
+          );
+        }
+      }
+
+      return next();
     } catch (error) {
       log_error(error);
       return res.status(500).send(
@@ -170,7 +323,11 @@ export function verifyNonGuestTaskAccess(
       if (result.rowCount && result.rowCount > 0) return next();
 
       return res.status(403).send(
-        new ServerResponse(false, null, "Guests cannot edit custom column values")
+        new ServerResponse(
+          false,
+          null,
+          "You do not have permission to modify this task. Only non-guest members of the task's team can make changes."
+        )
       );
     } catch (error) {
       log_error(error);

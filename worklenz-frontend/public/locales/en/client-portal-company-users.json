@@ -1,0 +1,186 @@
+{
+  "tabCountLabel": "Total client users",
+  "retryButton": "Retry",
+  "cancelButton": "Cancel",
+  "saveButton": "Save",
+  "refreshButton": "Refresh",
+  "clearFiltersButton": "Clear Filters",
+  "addButton": "Add Client",
+  "rowActionsLabel": "Actions for {{name}}",
+  "searchPlaceholder": "Search users or companies...",
+  "statusFilterLabel": "Filter by status",
+  "allStatusesOption": "All statuses",
+  "paginationSummary": "Showing {{from}}-{{to}} of {{total}} users",
+  "errorTitle": "Error loading client users",
+  "errorDescription": "There was an error loading client users. Please try again.",
+  "statsErrorMessage": "Could not load client user statistics.",
+  "lastActivityInvited": "Invited {{time}}",
+  "lastActivityNever": "Never signed in",
+  "projectsNone": "No projects assigned",
+  "projectsCount_one": "{{count}} project",
+  "projectsCount_other": "{{count}} projects",
+
+  "stats": {
+    "total": "Total client users",
+    "pocs": "POCs",
+    "companiesWithoutPoc": "Companies with no POC",
+    "companiesWithoutPocHint": "Allowed. A company can have no POC.",
+    "disabled": "Disabled"
+  },
+
+  "columns": {
+    "user": "User",
+    "email": "Email",
+    "phone": "Phone",
+    "company": "Company",
+    "access": "Access",
+    "jobTitle": "Job title",
+    "projects": "Projects",
+    "portalStatus": "Portal Status",
+    "actions": "Actions"
+  },
+
+  "role": {
+    "poc": "POC",
+    "member": "Member"
+  },
+
+  "portalStatus": {
+    "active": "Active",
+    "invited": "Invited",
+    "expired": "Expired",
+    "not_invited": "Not Invited",
+    "disabled": "Disabled"
+  },
+
+  "empty": {
+    "title": "No client users found",
+    "filtered": "No users match the current filters.",
+    "none": "No client users yet. Add a client or a user to a company to give people portal access."
+  },
+
+  "menu": {
+    "viewProfile": "View Profile",
+    "editUser": "Edit User",
+    "assignProjects": "Assign Projects",
+    "makePoc": "Make POC",
+    "removePoc": "Remove POC",
+    "sendInvite": "Send Invite",
+    "resendInvite": "Resend Invite",
+    "enableUser": "Enable User",
+    "disableUser": "Disable User",
+    "removeUser": "Remove User"
+  },
+
+  "confirmDisable": {
+    "title": "Disable this user?",
+    "content": "{{name}} will lose access to the portal straight away. You can enable them again later and they will return to the status they had.",
+    "ok": "Disable user"
+  },
+
+  "confirmRemove": {
+    "title": "Remove this user?",
+    "content": "{{name}} will be removed from the company and lose portal access. This can’t be undone. The company and its other users are not affected.",
+    "ok": "Remove user"
+  },
+
+  "messages": {
+    "madePoc": "{{name}} is now a POC.",
+    "removedPoc": "{{name}} is no longer a POC.",
+    "roleError": "Could not change the role.",
+    "inviteSent": "Invitation sent to {{email}}.",
+    "inviteEmailFailed": "The invitation was created but the email could not be sent.",
+    "inviteError": "Could not send the invitation.",
+    "disabled": "{{name}} was disabled.",
+    "enabled": "{{name}} was enabled.",
+    "statusError": "Could not update the user.",
+    "removed": "{{name}} was removed.",
+    "removeError": "Could not remove the user.",
+    "linkCopied": "Invitation link copied.",
+    "linkCopyError": "Could not copy the link."
+  },
+
+  "permissionLevels": {
+    "unknown": "Unknown level",
+    "view": {
+      "label": "View only",
+      "description": "Status, milestones, tasks and deliverables. No comments, edits or uploads."
+    },
+    "comment": {
+      "label": "View + comment",
+      "description": "Comment, approve or reject and attach files to comments. Cannot create tasks."
+    },
+    "contributor": {
+      "label": "Full contributor",
+      "description": "Everything above, plus create and edit tasks, change status and upload attachments."
+    }
+  },
+
+  "permissionTemplates": {
+    "view_only": {
+      "name": "View Only",
+      "description": "Stakeholders who just need visibility: status and deliverables, no editing."
+    },
+    "standard_contact": {
+      "name": "Standard Contact",
+      "description": "The default for most client contacts: can comment, approve or reject and attach files."
+    },
+    "full_partner": {
+      "name": "Full Partner",
+      "description": "Hands-on collaborators: can create and edit tasks and upload attachments."
+    }
+  },
+
+  "assignProjects": {
+    "title": "Assign projects — {{name}}",
+    "helper": "Pick which of {{company}}’s projects {{name}} can access, and their permission level on each. A project can be assigned to many company users.",
+    "noProjectsTitle": "{{company}} has no projects yet",
+    "noProjectsDescription": "Assign a project to this company first, then come back to give this user access. Permission templates need at least one project to apply to.",
+    "truncatedMessage": "Only {{shown}} of {{total}} projects are shown, so access can’t be edited here.",
+    "templatesTitle": "Apply a template (sets every project below to that level)",
+    "selectAll": "Select all",
+    "selectedCount": "{{selected}} of {{total}} selected",
+    "bulkLabel": "Set access for {{count}} selected:",
+    "levelFor": "Permission level for {{project}}",
+    "saveButton": "Save access",
+    "savedMessage": "Project access updated for {{name}}.",
+    "saveError": "Could not update project access.",
+    "loadError": "Could not load this company’s projects."
+  },
+
+  "editUser": {
+    "title": "Edit user",
+    "nameLabel": "Full name",
+    "namePlaceholder": "Jane Doe",
+    "nameRequired": "Enter a name.",
+    "nameTooLong": "The name can be at most 255 characters.",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "jane@company.com",
+    "emailRequired": "Enter an email address.",
+    "emailInvalid": "Enter a valid email address.",
+    "emailLockedHint": "This is their sign-in email, so it can’t be changed once they have portal access.",
+    "jobTitleLabel": "Job title",
+    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "jobTitleTooLong": "The job title can be at most 100 characters.",
+    "phoneLabel": "Phone number (optional)",
+    "phonePlaceholder": "+1 415 555 0142",
+    "phoneTooLong": "The phone number can be at most 50 characters.",
+    "footerHint": "Company ({{company}}) and access role are managed separately, from the row menu.",
+    "savedMessage": "{{name}} updated.",
+    "saveError": "Could not update this user."
+  },
+
+  "profile": {
+    "title": "Member profile",
+    "email": "Email",
+    "phone": "Phone",
+    "jobTitle": "Job title",
+    "lastActivity": "Last activity",
+    "signInMethod": "Sign-in method",
+    "signInPassword": "Password",
+    "signInNone": "Not signed in yet",
+    "noJobTitle": "No job title on file",
+    "assignedProjects": "Assigned projects ({{count}})",
+    "noProjects": "No projects assigned yet."
+  }
+}

@@ -2,7 +2,10 @@ import moment from "moment";
 import db from "../config/db";
 import {IDeserializeCallback} from "../interfaces/deserialize-callback";
 import {IPassportSession} from "../interfaces/passport-session";
+import {resolveEntitlements, runShadowComparison} from "../shared/entitlements";
+import {isEnforceMode} from "../shared/entitlements/gates";
 import { getDeploymentMode, isSelfHostedDeployment } from "../shared/deployment-mode";
+import {enrichSessionWithTemplateCreateAccess} from "../shared/template-create-access";
 
 async function setLastActive(id: string) {
   try {
@@ -44,11 +47,41 @@ export async function deserialize(user: { id: string | null }, done: IDeserializ
         // short in every downstream check that reads req.user.
 
         data.user.is_member = !!data.user.team_member_id;
+        const passwordResult = await db.query(
+          "SELECT (password IS NOT NULL AND btrim(password) <> '') AS has_password FROM users WHERE id = $1;",
+          [data.user.id]
+        );
+        data.user.has_password = passwordResult.rows[0]?.has_password === true;
+        const isFreePlan =
+          data.user.subscription_type === "FREE" ||
+          String(data.user.subscription_status || "").toLowerCase() === "free";
+        if (!isFreePlan && excludedSubscriptionTypes.includes(data.user.subscription_type)) {
+          data.user.is_expired = realExpiredDate.isBefore(moment(), "days");
+        }
+
+        await enrichSessionWithTemplateCreateAccess(data.user as IPassportSession);
+
+        try {
+          // Additive: resolved plan entitlements, plus shadow comparison against the legacy checks.
+          // Gates still use the legacy fields until Phase 2; this must never affect authentication.
+          const entitlements = resolveEntitlements(data.user);
+          data.user.entitlements = {
+            tier: entitlements.tier,
+            features: entitlements.features,
+            guest_limit: entitlements.guestLimit,
+            seat_limit: entitlements.seatLimit,
+            primary_source: entitlements.primarySource,
+            enforced: isEnforceMode(),
+          };
+          runShadowComparison(data.user, entitlements);
+        } catch {
+          // ignored
+        }
+
         // This UI hint is derived server-side. Protected APIs independently
         // enforce the same rule, so browser storage cannot elevate access.
         data.user.business_features_enabled = isSelfHostedDeployment();
         data.user.deployment_mode = getDeploymentMode();
-        if (excludedSubscriptionTypes.includes(data.user.subscription_type)) data.user.is_expired = realExpiredDate.isBefore(moment(), "days");
 
         void setLastActive(data.user.id);
         void clearEmailInvitations(data.user.email, data.user.team_id);

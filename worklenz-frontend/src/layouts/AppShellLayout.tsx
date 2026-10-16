@@ -12,7 +12,7 @@ import { MobileAppBanner } from '@/components/mobile-app/MobileAppBanner';
 import { AppSumoPopup } from '@/components/appsumo-popup/AppSumoPopup';
 import { NAV_RAIL_BG_DARK, NAV_RAIL_BG_LIGHT } from '@/components/nav-rail/nav-rail-constants';
 import { PROJECTS_RAIL_SUB_ROUTES, FINANCE_RAIL_SUB_ROUTES } from '@/features/navigation/nav-registry';
-import { shouldShowAppSumoPromo } from '@/ee/utils/subscription-utils';
+import { shouldShowAppSumoPromo } from '@/utils/subscription-utils';
 
 // Single shared header for every authenticated section (main app, reporting,
 // client portal) so there is exactly one <Navbar/> mount and one header

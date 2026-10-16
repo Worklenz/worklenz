@@ -10,6 +10,7 @@ type MembersReportsState = {
   total: number;
   membersList: any[];
   isLoading: boolean;
+  currentRequestId: string | null;
   error: string | null;
 
   // filters
@@ -34,6 +35,7 @@ const initialState: MembersReportsState = {
   total: 0,
   membersList: [],
   isLoading: false,
+  currentRequestId: null,
   error: null,
 
   // filters
@@ -126,18 +128,31 @@ const membersReportsSlice = createSlice({
   },
   extraReducers: builder => {
     builder
-      .addCase(fetchMembersData.pending, state => {
+      .addCase(fetchMembersData.pending, (state, action) => {
+        state.currentRequestId = action.meta.requestId;
         state.isLoading = true;
         state.error = null;
       })
       .addCase(fetchMembersData.fulfilled, (state, action) => {
+        if (state.currentRequestId !== action.meta.requestId) {
+          return;
+        }
+
         state.isLoading = false;
+        state.currentRequestId = null;
+        state.error = null;
         state.membersList = action.payload.members || [];
         state.total = action.payload.total || 0;
       })
       .addCase(fetchMembersData.rejected, (state, action) => {
+        if (state.currentRequestId !== action.meta.requestId) {
+          return;
+        }
+
         state.isLoading = false;
-        state.error = action.error.message || 'Failed to fetch members data';
+        state.currentRequestId = null;
+        state.error =
+          action.error.message || 'Failed to fetch members data';
       });
   },
 });

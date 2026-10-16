@@ -26,7 +26,8 @@
     "user": "usuário",
     "users": "usuários",
     "helpDescription": "Digite o número de usuários na sua equipe (1-500)",
-    "placeholder": "Selecionar tamanho da equipe"
+    "placeholder": "Selecionar tamanho da equipe",
+    "aria": "Tamanho da equipe"
   },
   "plans": {
     "free": {
@@ -70,7 +71,8 @@
       "payPerUser": "Pague por usuário (1-5 usuários)",
       "usersIncluded": "{{count}} Usuários incluídos",
       "maxUsers": "Até {{count}} usuários no máximo",
-      "maxUsersAppSumo": "Até 50 usuários no máximo (AppSumo especial)"
+      "maxUsersAppSumo": "Até 50 usuários no máximo (AppSumo especial)",
+      "namePromo": "Negócios (especial AppSumo)"
     },
     "proSmall": {
       "name": "Pro Pequeno",
@@ -120,7 +122,7 @@
       ]
     },
     "enterprise": {
-      "name": "Enterprise",
+      "name": "Empresa",
       "description": "Para grandes organizações",
       "features": [
         "Tudo no Business Grande",
@@ -129,8 +131,11 @@
         "Integrações personalizadas",
         "Gerente de conta dedicado",
         "Implementação on-premises"
-      ]
-    }
+      ],
+      "customPricing": "Personalizado",
+      "customPricingNote": "adaptado à sua equipe"
+    },
+    "additionalUsersCharged": "Usuários adicionais além dos incluídos: ${{price}}/usuário/mês"
   },
   "badges": {
     "mostPopular": "Mais Popular",
@@ -326,7 +331,8 @@
     "billedMonthly": "(cobrado mensalmente)",
     "perYear": "/ano",
     "perMonth": "/mês",
-    "forUsers": " para {{count}} usuário{{s}}"
+    "forUsers": " para {{count}} usuário{{s}}",
+    "annualSavingsShortOff": "Até {{percent}}% de desconto"
   },
   "ribbon": {
     "recommended": "Recomendado",

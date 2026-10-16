@@ -4,18 +4,36 @@ import {SocketEvents} from "../events";
 import db from "../../config/db";
 import {getColor} from "../../shared/utils";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
+import {logUnauthorizedSocketAccess, verifyProjectAccessSocket} from "../authorization";
 
 export async function on_join_project_room(_io: Server, socket: Socket, data: { id: string | null; type: string; }) {
-  const payload = {...data};
-  payload.id = /undefined|null/.test(data.id as string) ? null : payload.id;
+  let parsed = data;
+  if (typeof data === "string") {
+    try {
+      parsed = JSON.parse(data);
+    } catch {
+      return;
+    }
+  }
+  const payload = {...parsed};
+  payload.id = /undefined|null/.test(payload.id as string) ? null : payload.id;
 
-  if (!payload.id) return;
+  if (!payload.id || typeof payload.id !== "string") return;
 
   try {
     if (payload.type === "join") {
+      const hasAccess = await verifyProjectAccessSocket(socket, payload.id);
+      if (!hasAccess) {
+        logUnauthorizedSocketAccess(socket, "JOIN_OR_LEAVE_PROJECT_ROOM", "project", payload.id);
+        return;
+      }
       await socket.join(payload.id);
     } else {
       await socket.leave(payload.id);
+      const hasAccess = await verifyProjectAccessSocket(socket, payload.id);
+      if (!hasAccess) {
+        return;
+      }
     }
 
     const clients = await _io.in(payload.id).fetchSockets();

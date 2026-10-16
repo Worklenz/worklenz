@@ -7,9 +7,25 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import {TASK_STATUS_COLOR_ALPHA} from "../shared/constants";
 import {isValidUuid} from "../shared/validation-helpers";
+import {
+  completeSprintRecord,
+  getSprintLengthDays,
+  startSprintRecord,
+  tryStartNextSprintAfterCompletion,
+} from "../shared/sprint-lifecycle";
 
 export default class TaskPhasesController extends WorklenzControllerBase {
   private static readonly DEFAULT_PHASE_COLOR = "#fbc84c";
+  private static readonly SPRINT_GOAL_MAX_LENGTH = 500;
+  private static readonly PHASE_RETURNING_COLUMNS =
+    "id, name, color_code, start_date, end_date, sprint_status, sprint_goal, sort_index";
+
+  /** Normalizes an optional sprint goal: trimmed text, or null when empty. */
+  private static parseSprintGoal(value: unknown): string | null {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
 
   @HandleExceptions()
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
@@ -20,19 +36,41 @@ export default class TaskPhasesController extends WorklenzControllerBase {
     const phaseName = req.body.name?.trim() || 
       `Untitled Phase (${(await db.query("SELECT COUNT(*) FROM project_phases WHERE project_id = $1", [req.query.id])).rows[0].count + 1})`;
 
+    const sprintGoal = this.parseSprintGoal(req.body.sprint_goal);
+    if (sprintGoal && sprintGoal.length > this.SPRINT_GOAL_MAX_LENGTH) {
+      return res.status(400).send(new ServerResponse(false, null, "Sprint goal is too long"));
+    }
+
     const q = `
-        INSERT INTO project_phases (name, color_code, project_id, sort_index)
+        INSERT INTO project_phases (name, color_code, project_id, sort_index, start_date, end_date, sprint_status, sprint_goal)
         VALUES (
                 $1,
                 $2,
                 $3,
-                (SELECT COUNT(*) FROM project_phases WHERE project_id = $3) + 1)
-        RETURNING id, name, color_code, sort_index;
+                (SELECT COUNT(*) FROM project_phases WHERE project_id = $3) + 1,
+                $4::TIMESTAMPTZ,
+                $5::TIMESTAMPTZ,
+                COALESCE(NULLIF($6::TEXT, ''), 'planned'),
+                $7)
+        RETURNING ${this.PHASE_RETURNING_COLUMNS};
     `;
 
     req.body.color_code = this.DEFAULT_PHASE_COLOR;
 
-    const result = await db.query(q, [phaseName, req.body.color_code, req.query.id]);
+    const sprintStatus =
+      req.body.sprint_status === "active" || req.body.sprint_status === "completed"
+        ? req.body.sprint_status
+        : "planned";
+
+    const result = await db.query(q, [
+      phaseName,
+      req.body.color_code,
+      req.query.id,
+      req.body.start_date || null,
+      req.body.end_date || null,
+      sprintStatus,
+      sprintGoal,
+    ]);
     const [data] = result.rows;
 
     // Return the stored color with alpha appended — same as the GET endpoint —
@@ -50,7 +88,35 @@ export default class TaskPhasesController extends WorklenzControllerBase {
         pp.name,
         pp.color_code,
         pp.default_assignee_id,
+        pp.start_date,
+        pp.end_date,
+        pp.sprint_status,
+        pp.sprint_goal,
         (SELECT COUNT(*) FROM task_phase WHERE phase_id = pp.id) AS usage,
+        -- Issues moved into the active sprint after it started (scope change)
+        CASE
+          WHEN pp.sprint_status = 'active' AND pp.start_date IS NOT NULL THEN (
+            SELECT COUNT(DISTINCT tp.task_id)
+            FROM task_phase tp
+            INNER JOIN tasks t ON t.id = tp.task_id AND t.archived IS FALSE
+            WHERE tp.phase_id = pp.id
+              AND EXISTS (
+                SELECT 1
+                FROM task_activity_logs tal
+                WHERE tal.task_id = tp.task_id
+                  AND tal.attribute_type = 'phase'
+                  AND tal.new_value = pp.id::TEXT
+                  AND tal.created_at > pp.start_date
+              )
+          )
+          ELSE 0
+        END::INT AS scope_added_count,
+        sprint_metrics.issue_count,
+        sprint_metrics.done_issue_count,
+        sprint_metrics.total_points,
+        sprint_metrics.done_points,
+        sprint_metrics.blocked_issue_count,
+        sprint_metrics.high_priority_open_count,
         (SELECT tmiv.name
            FROM team_member_info_view tmiv
           WHERE tmiv.team_member_id = pp.default_assignee_id
@@ -60,6 +126,24 @@ export default class TaskPhasesController extends WorklenzControllerBase {
           WHERE tmiv.team_member_id = pp.default_assignee_id
           LIMIT 1) AS default_assignee_avatar_url
       FROM project_phases pp
+      -- Active sprint health metrics. "Blocked" is the status seeded for software projects;
+      -- high priority means task_priorities.value >= 2 (High, Critical).
+      LEFT JOIN LATERAL (
+        SELECT
+          COUNT(*)::INT AS issue_count,
+          COUNT(*) FILTER (WHERE stsc.is_done IS TRUE)::INT AS done_issue_count,
+          COALESCE(SUM(t.story_points), 0)::FLOAT AS total_points,
+          COALESCE(SUM(t.story_points) FILTER (WHERE stsc.is_done IS TRUE), 0)::FLOAT AS done_points,
+          COUNT(*) FILTER (WHERE LOWER(ts.name) = 'blocked')::INT AS blocked_issue_count,
+          COUNT(*) FILTER (WHERE tpr.value >= 2 AND stsc.is_done IS NOT TRUE)::INT AS high_priority_open_count
+        FROM task_phase tp
+        INNER JOIN tasks t ON t.id = tp.task_id AND t.archived IS FALSE
+        LEFT JOIN task_statuses ts ON ts.id = t.status_id
+        LEFT JOIN sys_task_status_categories stsc ON stsc.id = ts.category_id
+        LEFT JOIN task_priorities tpr ON tpr.id = t.priority_id
+        WHERE tp.phase_id = pp.id
+          AND pp.sprint_status = 'active'
+      ) sprint_metrics ON TRUE
       WHERE pp.project_id = $1
       ORDER BY pp.sort_index DESC;
     `;
@@ -131,15 +215,41 @@ export default class TaskPhasesController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const hasOwn = (key: string) => Object.prototype.hasOwnProperty.call(req.body, key);
+    const hasDates = hasOwn("start_date") || hasOwn("end_date");
+    const hasGoal = hasOwn("sprint_goal");
+
+    if (hasDates && req.body.start_date && req.body.end_date
+      && new Date(req.body.end_date).getTime() < new Date(req.body.start_date).getTime()) {
+      return res.status(400).send(new ServerResponse(false, null, "End date cannot be before start date"));
+    }
+
+    const sprintGoal = this.parseSprintGoal(req.body.sprint_goal);
+    if (sprintGoal && sprintGoal.length > this.SPRINT_GOAL_MAX_LENGTH) {
+      return res.status(400).send(new ServerResponse(false, null, "Sprint goal is too long"));
+    }
+
     const q = `
       UPDATE project_phases
-      SET name = $3
+      SET name = COALESCE(NULLIF(TRIM($3), ''), name),
+          start_date = CASE WHEN $4::BOOLEAN THEN $5::TIMESTAMPTZ ELSE start_date END,
+          end_date = CASE WHEN $4::BOOLEAN THEN $6::TIMESTAMPTZ ELSE end_date END,
+          sprint_goal = CASE WHEN $7::BOOLEAN THEN $8 ELSE sprint_goal END
       WHERE id = $1
         AND project_id = $2
-      RETURNING id, name, color_code;
+      RETURNING ${this.PHASE_RETURNING_COLUMNS};
     `;
 
-    const result = await db.query(q, [req.params.id, req.query.id, req.body.name.trim()]);
+    const result = await db.query(q, [
+      req.params.id,
+      req.query.id,
+      typeof req.body.name === "string" ? req.body.name : "",
+      hasDates,
+      req.body.start_date || null,
+      req.body.end_date || null,
+      hasGoal,
+      sprintGoal,
+    ]);
     const [data] = result.rows;
 
     return res.status(200).send(new ServerResponse(true, data));
@@ -186,6 +296,42 @@ export default class TaskPhasesController extends WorklenzControllerBase {
     `;
     const result = await db.query(q, [req.params.id, req.body.name.trim()]);
     const [data] = result.rows;
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
+  @HandleExceptions()
+  public static async updateSprintSettings(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const autoArchive = req.body?.auto_archive_on_sprint_complete;
+    const autoSchedule = req.body?.auto_start_complete_sprints;
+    const isOptionalBoolean = (value: unknown) => value === undefined || typeof value === "boolean";
+    if (!isOptionalBoolean(autoArchive) || !isOptionalBoolean(autoSchedule)
+      || (autoArchive === undefined && autoSchedule === undefined)) {
+      return res.status(400).send(new ServerResponse(
+        false,
+        null,
+        "auto_archive_on_sprint_complete and auto_start_complete_sprints must be booleans"
+      ));
+    }
+
+    const q = `
+        UPDATE projects
+        SET auto_archive_on_sprint_complete = COALESCE($2, auto_archive_on_sprint_complete),
+            auto_start_complete_sprints = COALESCE($4, auto_start_complete_sprints)
+        WHERE id = $1
+          AND team_id = $3
+          AND project_type = 'software'
+        RETURNING id, auto_archive_on_sprint_complete, auto_start_complete_sprints;
+    `;
+    const result = await db.query(q, [
+      req.params.id,
+      autoArchive ?? null,
+      req.user?.team_id,
+      autoSchedule ?? null,
+    ]);
+    const [data] = result.rows;
+    if (!data) {
+      return res.status(404).send(new ServerResponse(false, null, "Software project not found"));
+    }
     return res.status(200).send(new ServerResponse(true, data));
   }
 
@@ -270,6 +416,61 @@ export default class TaskPhasesController extends WorklenzControllerBase {
       console.error('[ST-5] Error logging phase reorder:', err);
       // Don't throw - logging failure shouldn't block the reorder operation
     }
+  }
+
+  @HandleExceptions()
+  public static async startSprint(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    if (!req.query.id) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid request"));
+    }
+
+    const result = await startSprintRecord(req.query.id as string, req.params.id);
+    if (!result.ok) {
+      return res.status(400).send(new ServerResponse(false, null, result.error));
+    }
+
+    const data = result.data;
+    data.color_code = data.color_code + TASK_STATUS_COLOR_ALPHA;
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
+  @HandleExceptions()
+  public static async completeSprint(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    if (!req.query.id) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid request"));
+    }
+
+    const projectId = req.query.id as string;
+    const phaseId = req.params.id;
+    // destination: null/'backlog' → remove phase assignment; UUID → move to that planned sprint
+    const destinationRaw = (req.body?.destination_phase_id ?? "backlog") as string;
+    const destinationPhaseId =
+      !destinationRaw || destinationRaw === "backlog" || destinationRaw === "Unmapped"
+        ? null
+        : destinationRaw;
+
+    const result = await completeSprintRecord(projectId, phaseId, destinationPhaseId);
+    if (!result.ok) {
+      return res.status(400).send(new ServerResponse(false, null, result.error));
+    }
+
+    const {phase, archivedCount, movedCount} = result.data;
+
+    const startedSprint = await tryStartNextSprintAfterCompletion(
+      projectId, destinationPhaseId, getSprintLengthDays(phase)
+    );
+    if (startedSprint) startedSprint.color_code = startedSprint.color_code + TASK_STATUS_COLOR_ALPHA;
+
+    phase.color_code = phase.color_code + TASK_STATUS_COLOR_ALPHA;
+    return res.status(200).send(
+      new ServerResponse(true, {
+        ...phase,
+        archived_count: archivedCount,
+        moved_count: movedCount,
+        destination_phase_id: destinationPhaseId,
+        started_sprint: startedSprint,
+      })
+    );
   }
 
   @HandleExceptions()

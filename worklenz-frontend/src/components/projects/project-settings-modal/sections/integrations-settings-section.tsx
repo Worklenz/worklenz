@@ -4,10 +4,10 @@ import { Flex, Typography, TeamOutlined, theme, message } from '@/shared/antd-im
 import { GithubOutlined } from '@ant-design/icons';
 import { IntegrationItem } from '@/components/projects/integrations/IntegrationItem';
 import { SlackIcon } from '@/components/settings/integrations/IntegrationIcons';
-import { SlackProjectQuickAddModal } from '@/ee/components/projects/integrations/SlackProjectQuickAddModal';
-import { slackApiService } from '@/ee/api/slack/slack.api.service';
+import { SlackProjectQuickAddModal } from '@/components/projects/integrations/SlackProjectQuickAddModal';
+import { slackApiService } from '@/api/slack/slack.api.service';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import type { ProjectIntegrationStatus } from '@/components/projects/integrations/integrations.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';

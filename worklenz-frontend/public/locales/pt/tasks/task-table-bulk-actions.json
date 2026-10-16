@@ -10,7 +10,7 @@
   "delete": "Deletar",
   "moreOptions": "Mais opções",
   "deselectAll": "Desmarcar todas",
-  "status": "Status",
+  "status": "Estado",
   "priority": "Prioridade",
   "phase": "Fase",
   "member": "Membro",
@@ -26,6 +26,7 @@
   "CHANGE_STATUS": "Alterar Status",
   "CHANGE_PRIORITY": "Alterar Prioridade",
   "CHANGE_PHASE": "Alterar Fase",
+  "MOVE_TO_SPRINT": "Mover para sprint",
   "ADD_LABELS": "Adicionar Etiquetas",
   "ASSIGN_TO_ME": "Atribuir a Mim",
   "ASSIGN_MEMBERS": "Atribuir Membros",
@@ -43,5 +44,8 @@
   "DUE_DATE_UPDATED": "Data de vencimento atualizada com sucesso",
   "DUE_DATE_CLEARED": "Data de vencimento limpa com sucesso",
   "archiveSuccessTitle": "Atualização em massa concluída",
-  "archiveSuccessMessage": "{{parentCount}} tarefas e {{subtaskCount}} subtarefas foram {{action}}das."
+  "archiveSuccessMessage": "{{parentCount}} tarefas e {{subtaskCount}} subtarefas foram {{action}}das.",
+  "SET_START_DATE": "Definir Data de Início",
+  "Unarchive": "Desarquivar",
+  "Archive": "Arquivar"
 }

@@ -46,5 +46,15 @@
   "convertToTaskError": "No se pudo crear la tarea",
   "convertToTaskEmpty": "El mensaje no tiene texto para usar como nombre de tarea",
   "attachFile": "Adjuntar archivo",
-  "attachmentUploadError": "Error al subir el adjunto"
+  "attachmentUploadError": "Error al subir el adjunto",
+  "edited": "(editado)",
+  "editedTooltip": "Editado {{time}} por {{author}}",
+  "unknown": "Desconocido",
+  "you": "Tú",
+  "attachment": "Archivo adjunto",
+  "commentError": "No se pudo enviar el comentario",
+  "deleteSuccess": "Comentario eliminado con éxito",
+  "deleteError": "No se pudo eliminar el comentario",
+  "editSuccess": "Comentario actualizado exitosamente",
+  "editError": "No se pudo editar el comentario"
 }

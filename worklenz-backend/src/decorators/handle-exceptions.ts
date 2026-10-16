@@ -44,6 +44,20 @@ function getKeys(error: any) {
   return ((error?.message) || "").split(":");
 }
 
+/**
+ * The generic "Unknown error has occurred." hides the real exception, which is
+ * otherwise only printed in the server terminal (log_error). In development,
+ * append its code + message so the cause is visible right in the browser's
+ * Network preview / toast. Explicitly gated on NODE_ENV === "development" (the
+ * same rule app.ts uses for stack traces) so no other environment ever exposes
+ * internal error text.
+ */
+function withDevCause(message: string, error: any): string {
+  if (process.env.NODE_ENV !== "development") return message;
+  const cause = [error?.code, error?.message].filter(Boolean).join(": ");
+  return cause ? `${message} [${cause}]` : message;
+}
+
 function handleError(error: any, res: Response, opt: any, req: any) {
   const constraint = getConstraint(error);
   if (typeof constraint === "string") {
@@ -60,7 +74,7 @@ function handleError(error: any, res: Response, opt: any, req: any) {
   }
 
   log_error(error, (opt.logWithError && req[opt.logWithError]) || null);
-  return res.status(200).send(new ServerResponse(false, null, opt.message));
+  return res.status(200).send(new ServerResponse(false, null, withDevCause(opt.message, error)));
 }
 
 /** HandleExceptions can only be used with an instance of WorklenzControllerBase. */

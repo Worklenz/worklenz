@@ -147,36 +147,6 @@
           "Contas de clientes ilimitadas"
         ]
       },
-      "requests": {
-        "title": "Solicitações",
-        "description": "Permita que os clientes enviem e rastreiem solicitações de serviço sem sair do portal.",
-        "features": [
-          "Solicitações de serviço enviadas pelo cliente",
-          "Aceite, rejeite ou acompanhe em um só lugar",
-          "Acompanhamento de status desde o envio até a conclusão",
-          "Vinculado diretamente ao serviço solicitado"
-        ]
-      },
-      "services": {
-        "title": "Serviços",
-        "description": "Publique os serviços que os clientes podem solicitar e controle o que eles podem ver.",
-        "features": [
-          "Um catálogo de serviços solicitáveis",
-          "Controles de visibilidade por serviço",
-          "Volume de solicitações por serviço",
-          "Atribua um proprietário de serviço à sua equipe"
-        ]
-      },
-      "chats": {
-        "title": "Mensagens",
-        "description": "Envie mensagens aos clientes diretamente do mesmo portal que eles usam para todo o resto.",
-        "features": [
-          "Mensagens diretas com clientes",
-          "Um tópico de conversa por cliente",
-          "Histórico de conversas pesquisável",
-          "Notificações quando um cliente responde"
-        ]
-      },
       "invoices": {
         "title": "Faturas",
         "description": "Crie, envie e rastreie faturas de clientes sem sair da Worklenz.",
@@ -187,16 +157,6 @@
           "Visão geral do status do pagamento"
         ]
       },
-      "ticketing": {
-        "title": "Tickets",
-        "description": "Permita que os clientes criem e rastreiem tickets de suporte diretamente em seu portal.",
-        "features": [
-          "Tickets de suporte enviados pelo cliente",
-          "Acompanhamento e atualizações de status de tickets",
-          "Notas internas e tarefas",
-          "Marcação de prioridade e SLA"
-        ]
-      },
       "settings": {
         "title": "Configurações do Portal",
         "description": "Personalize o portal do seu cliente com sua própria marca.",
@@ -205,6 +165,66 @@
           "Cabeçalho com marca em todo o portal",
           "Identidade visual consistente para clientes",
           "Detalhes da empresa que os clientes podem ver"
+        ]
+      },
+      "projects": {
+        "title": "Projetos de portais",
+        "description": "Escolha quais projetos os clientes podem ver e o que é compartilhado dentro de cada um.",
+        "features": [
+          "Switch the Client Portal on per project",
+          "Share tasks, files and milestones one by one",
+          "Everything stays Internal Only until you share it",
+          "Client-facing status, phase and progress"
+        ]
+      },
+      "approvals": {
+        "title": "Aprovações",
+        "description": "Obtenha aprovação formal e registrada dos clientes nas versões exatas dos arquivos.",
+        "features": [
+          "Ask a Client Admin to approve a file, milestone or task",
+          "The exact version or revision is recorded",
+          "Every decision is kept, with a full history",
+          "Overdue and awaiting approvals at a glance"
+        ]
+      },
+      "changeRequests": {
+        "title": "Solicitações de mudança",
+        "description": "Revise, estime e decida sobre as mudanças de escopo e, em seguida, transforme as aprovadas em trabalho.",
+        "features": [
+          "Clients submit scope changes from their portal",
+          "Estimate, approve, reject or ask for more information",
+          "Convert approved requests into tasks",
+          "Create quotes and invoices from a request"
+        ]
+      },
+      "discussions": {
+        "title": "Discussões",
+        "description": "Converse com os clientes sobre a tarefa, arquivo ou aprovação exata, com comentários internos mantidos em sigilo.",
+        "features": [
+          "Conversations attached to the work they are about",
+          "Client-visible replies and private internal comments",
+          "Mention client users, never by accident in internal notes",
+          "Unread tracking across your team"
+        ]
+      },
+      "auditLog": {
+        "title": "Log de auditoria",
+        "description": "Um registro à prova de falsificação das atividades do cliente e da equipe.",
+        "features": [
+          "Access, sharing, file, approval and change request events",
+          "Every entry is timestamped and attributed",
+          "Filter by client, event type or who acted",
+          "Export the filtered view as CSV"
+        ]
+      },
+      "preview": {
+        "title": "Portal do Cliente",
+        "description": "Veja exatamente o que um cliente vê antes de compartilhar qualquer coisa.",
+        "features": [
+          "Preview as any active client user",
+          "Built from the same rules the portal enforces",
+          "See what is hidden from that user",
+          "Check what each role can do"
         ]
       }
     }
@@ -274,23 +294,6 @@
       "rowsPerPage": "Linhas por página: {{count}}"
     }
   },
-  "ticketingMockup": {
-    "openTickets": "Ingressos abertos",
-    "inProgress": "Em progresso",
-    "resolvedToday": "Resolvido hoje",
-    "avgResponseTime": "Média Tempo de resposta",
-    "ticketsCard": "Ingressos",
-    "ticketNoColumn": "Bilhete #",
-    "clientColumn": "Cliente",
-    "subjectColumn": "Assunto",
-    "priorityColumn": "Prioridade",
-    "statusColumn": "Estado",
-    "priorityHigh": "Alta",
-    "priorityMedium": "Média",
-    "priorityLow": "Baixa",
-    "statusOpen": "Abrir",
-    "statusResolved": "Resolvido"
-  },
   "plannerMockup": {
     "chrome": {
       "daysOption": "Dias",
@@ -333,5 +336,7 @@
       "utilColumn": "UTIL",
       "teamTotalRow": "Total da equipe"
     }
-  }
+  },
+  "paginationText": "{{from}}-{{to}} de {{total}}",
+  "perPageText": "{{count}} / página"
 }

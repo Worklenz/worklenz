@@ -1,0 +1,15 @@
+{
+  "pageTitle": "Szablony zadań",
+  "nameColumn": "Imię",
+  "createdColumn": "Utworzono",
+  "editToolTip": "Edytuj",
+  "deleteToolTip": "Usuń",
+  "confirmText": "Czy jesteś pewien?",
+  "okText": "Tak",
+  "cancelText": "Anuluj",
+  "noTemplatesYet": "Nie ma jeszcze szablonów zadań",
+  "step1": "Przejdź do projektu i otwórz go.",
+  "step2": "Wybierz zadania, korzystając z opcji edycji zbiorczej.",
+  "step3": "Kliknij opcję Więcej opcji na zbiorczym pasku akcji i wybierz opcję Utwórz szablon zadania.",
+  "totalItems": "Łączna liczba elementów"
+}

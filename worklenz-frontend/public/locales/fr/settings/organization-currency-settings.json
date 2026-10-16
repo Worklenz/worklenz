@@ -1,0 +1,15 @@
+{
+  "pageTitle": "Devise de l'organisation",
+  "pageSubtitle": "Définissez la devise de base de votre organisation. Les totaux financiers seront convertis dans cette devise en utilisant les taux de change en vigueur.",
+  "save": "Enregistrer",
+  "saveChanges": "Enregistrer les modifications",
+  "adminOnly": "Seuls les propriétaires et administrateurs de l’organisation peuvent modifier ce paramètre.",
+  "successMessage": "Devise de base de l'organisation définie sur {{currency}}",
+  "errorMessage": "Échec de l'enregistrement du paramètre de devise",
+  "selectAriaLabel": "Devise de base de l'organisation",
+  "ratesCardTitle": "Taux de change en direct - 1 {{currency}} =",
+  "ratesUpdated": "Mise à jour : {{time}}",
+  "refreshRatesTooltip": "Taux de rafraîchissement",
+  "refreshRatesAriaLabel": "Actualiser les taux de change",
+  "noRateData": "Aucune donnée tarifaire disponible."
+}

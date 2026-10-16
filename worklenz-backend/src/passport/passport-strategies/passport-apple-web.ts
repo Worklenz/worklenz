@@ -6,6 +6,7 @@ import db from "../../config/db";
 import { log_error } from "../../shared/utils";
 import { ERROR_KEY } from "./passport-constants";
 import { sendWelcomeEmail } from "../../shared/email-templates";
+import { BLOCKED_SIGNUP_EMAIL_MESSAGE, isSignupEmailDomainBlocked } from "../../shared/signup-email-domain-policy";
 
 /**
  * Apple ID Token Payload Interface
@@ -197,6 +198,12 @@ async function handleAppleWebAuth(
       return done(null, undefined, { message: req.flash(ERROR_KEY, message) });
     }
 
+    if (await isSignupEmailDomainBlocked(email)) {
+      const message = BLOCKED_SIGNUP_EMAIL_MESSAGE;
+      (req.session as any).error = message;
+      return done(null, undefined, { message: req.flash(ERROR_KEY, message) });
+    }
+
     // Register new user via database function
     const registerResult = await db.query(
       "SELECT register_apple_user($1) AS user;",
@@ -212,6 +219,11 @@ async function handleAppleWebAuth(
       message: "User successfully registered and logged in",
     });
   } catch (error: any) {
+    if (error.message?.includes("ERROR_SIGNUP_EMAIL_DOMAIN_BLOCKED")) {
+      const message = BLOCKED_SIGNUP_EMAIL_MESSAGE;
+      (req.session as any).error = message;
+      return done(null, undefined, { message: req.flash(ERROR_KEY, message) });
+    }
     log_error("Apple web authentication error:", error);
     return done(error);
   }

@@ -32,7 +32,7 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({ open, loading, onSub
       onCancel={handleCancel}
       confirmLoading={loading}
       okText={t('addLink', { defaultValue: 'Add Link' })}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" requiredMark={false}>
         <Form.Item

@@ -12,5 +12,12 @@
   "confirmPasswordRequired": "Please confirm your new password",
   "passwordMismatch": "The two passwords do not match",
   "successTitle": "Password reset successful",
-  "successMessage": "Your password has been updated. You can now log in with your new password."
+  "successMessage": "Your password has been updated. You can now log in with your new password.",
+  "passwordChecklist": {
+    "minLength": "At least 8 characters",
+    "uppercase": "One uppercase letter",
+    "lowercase": "One lowercase letter",
+    "number": "One number",
+    "special": "One special character"
+  }
 }

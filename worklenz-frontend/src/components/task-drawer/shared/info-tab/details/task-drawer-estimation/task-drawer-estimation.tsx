@@ -45,7 +45,7 @@ const TaskDrawerEstimation = ({ t, task, form, disabled = false }: TaskDrawerEst
 
   const handleTimeEstimationBlur = (e: FocusEvent<HTMLInputElement>) => {
     handleEstimationBlurTracking(e);
-    if (!connected || !task.id) return;
+    if (disabled || !connected || !task.id) return;
 
     // Get current form values instead of using state
     const currentHours = form.getFieldValue('hours') || 0;

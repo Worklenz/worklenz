@@ -118,7 +118,7 @@ const AllTasksReports = () => {
         title={`${t('pageTitle', { defaultValue: 'All Tasks' })} (${total})`}
         style={{ padding: 0 }}
         children={
-          <Space>
+          <Space wrap style={{ rowGap: 8 }}>
             <Button>
               <Checkbox
                 checked={includeArchived}

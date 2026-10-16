@@ -295,7 +295,7 @@ const FinanceExpensesPage: React.FC = () => {
                 setPage(1);
                 fetchRecentExpenses(1, v);
               }}
-              options={[5, 10, 20, 50].map(n => ({ value: n, label: n }))}
+              options={[10, 20, 50, 100].map(n => ({ value: n, label: n }))}
             />
             <span style={{ fontSize: 12, color: token.colorTextSecondary, marginLeft: 4 }}>
               {recentTotal === 0 ? '0' : `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, recentTotal)}`} of {recentTotal}

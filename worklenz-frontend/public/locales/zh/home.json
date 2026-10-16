@@ -20,7 +20,8 @@
     "showDone": "显示已完成",
     "created": "创建于",
     "finished": "完成于",
-    "tasks": "任务"
+    "tasks": "任务",
+    "loading": "加载中..."
   },
   "projects": {
     "title": "项目",
@@ -39,7 +40,13 @@
     "assignedToMe": "分配给我",
     "assignedByMe": "由我分配",
     "dueTasks": "到期任务",
-    "priority": "优先级",
+    "dueTask": "到期任务",
+    "total": "总计",
+    "on": "于",
+    "totalDue": "总到期",
+    "todo": "待办",
+    "doing": "进行中",
+    "done": "完成",
     "all": "全部",
     "today": "今天",
     "upcoming": "即将到来",
@@ -48,9 +55,11 @@
     "noTasks": "没有任务可显示。",
     "addTask": "+ 添加任务",
     "addTaskButton": "添加任务",
+    "markTimeOff": "标记请假 / 休假",
     "name": "名称",
     "project": "项目",
     "status": "状态",
+    "priority": "优先级",
     "dueDate": "截止日期",
     "dueDatePlaceholder": "设置截止日期",
     "tomorrow": "明天",
@@ -80,14 +89,6 @@
     "timeLoggedTaskAriaLabel": "时间记录任务：",
     "errorLoadingRecentTasks": "加载最近任务时出错",
     "errorLoadingTimeLoggedTasks": "加载时间记录任务时出错",
-    "dueTask": "到期任务",
-    "total": "总计",
-    "on": "于",
-    "totalDue": "总到期",
-    "todo": "待办",
-    "doing": "进行中",
-    "done": "完成",
-    "priority": "优先级",
     "newTask": "新建任务",
     "assignTask": "分配任务",
     "createTask": "创建任务",
@@ -104,7 +105,14 @@
     "searchMembers": "按姓名或邮箱搜索…",
     "noMembersFound": "未找到成员",
     "time": "时间",
-    "markTimeOff": "标记请假 / 休假"
+    "pinned": "已置顶",
+    "tabsLabel": "筛选任务",
+    "pinTask": "置顶任务",
+    "unpinTask": "取消置顶",
+    "pinLimitReached": "最多可置顶 {{limit}} 个任务。请先取消置顶一个任务。",
+    "noPinnedTasks": "暂无置顶任务。将鼠标悬停在任意任务上并点击图钉图标，即可将其保留在此处。",
+    "pinFailed": "无法更新置顶状态，请重试。",
+    "viewAll": "查看全部（{{total}}）"
   },
   "homeCalendar": {
     "todayButton": "今天",
@@ -129,7 +137,9 @@
     "weekdayMiniThu": "四",
     "weekdayMiniFri": "五",
     "weekdayMiniSat": "六",
-    "weekdayMiniSun": "日"
+    "weekdayMiniSun": "日",
+    "clientsSearchPlaceholder": "搜索客户...",
+    "projectsSearchPlaceholder": "搜索项目..."
   },
   "activityLogs": {
     "title": "最近活动",
@@ -147,6 +157,7 @@
       "statusChanged": "{{userName}}更改了项目{{projectName}}的状态",
       "managerAssigned": "{{userName}}为项目{{projectName}}分配了项目经理",
       "managerRemoved": "{{userName}}移除了项目{{projectName}}的项目经理",
+      "managerFinanceChanged": "{{userName}} 更改了 {{projectName}} 的项目经理财务访问权限",
       "memberAdded": "{{userName}}将{{memberName}}添加到项目{{projectName}}",
       "memberRemoved": "{{userName}}从项目{{projectName}}中移除了{{memberName}}"
     },
@@ -166,7 +177,7 @@
     "emptyTitle": "太棒了，任务全部完成！",
     "emptySubtitle": "这里还没有任务 — 创建一个开始吧。",
     "sideUnassigned": "未分配",
-    "columnId": "ID",
+    "columnId": "身份证号",
     "columnTask": "任务",
     "columnAssignee": "负责人",
     "columnDue": "截止日期",
@@ -228,6 +239,10 @@
     "no": "否",
     "timeColumn": "时间",
     "dateColumn": "日期",
+    "projectStartDateError": "无法在项目开始日期（{{date}}）之前记录时间",
+    "projectStartDateHint": "项目开始日期：{{date}}",
+    "projectNotStartedWarningTitle": "项目尚未开始",
+    "projectNotStartedWarningDesc": "该项目计划于 {{date}} 开始。无法在项目开始日期之前记录时间。",
     "failedToLogTime": "记录时间失败",
     "today": "今天",
     "yesterday": "昨天",
@@ -237,7 +252,9 @@
     "weekdayThu": "周四",
     "weekdayFri": "周五",
     "weekdaySat": "周六",
-    "weekdaySun": "周日"
+    "weekdaySun": "周日",
+    "createdTimeColumn": "创建时间",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "暂无费用记录",
@@ -251,7 +268,8 @@
     "columnAssignee": "负责人",
     "columnDate": "日期",
     "openTask": "打开任务",
-    "rowsPerPage": "每页行数："
+    "rowsPerPage": "每页行数：",
+    "addExpense": "添加费用"
   },
   "addExpense": {
     "modalTitle": "添加费用",
@@ -266,10 +284,10 @@
     "amountPlaceholder": "0.00",
     "submitButton": "添加任务费用",
     "upgradePromptTitle": "费用",
-    "upgradePromptDescription": "跟踪任务的固定成本并将其汇总到您的财务报告中。仅在商业版计划中可用。",
+    "upgradePromptDescription": "追踪任务上的固定成本并汇总到您的财务报告中。适用于 Business 计划。",
     "loadTasksError": "无法加载此项目的任务和货币。",
-    "successMessage": "固定成本已添加到任务",
-    "errorMessage": "无法将固定成本添加到任务"
+    "successMessage": "已添加任务固定成本",
+    "errorMessage": "添加任务固定成本失败"
   },
   "addClient": {
     "pageTitle": "添加新客户",
@@ -373,7 +391,8 @@
     "tasks": "任务",
     "activity": "动态",
     "timeLogged": "已记录时间",
-    "title": "继续您上次的工作"
+    "title": "继续您上次的工作",
+    "showTabs": "显示标签页"
   },
   "focusTime": {
     "title": "专注与时间",
@@ -382,24 +401,6 @@
     "startTimer": "开始计时"
   },
   "views": "视图",
-  "addExpense": {
-    "modalTitle": "添加费用",
-    "projectLabel": "项目",
-    "projectPlaceholder": "选择项目…",
-    "taskLabel": "任务",
-    "taskPlaceholderWithProject": "搜索任务…",
-    "taskPlaceholderNoProject": "请先选择一个项目",
-    "taskLoading": "加载中…",
-    "noTasksFound": "未找到任务",
-    "amountLabel": "金额",
-    "amountPlaceholder": "0.00",
-    "submitButton": "添加任务费用",
-    "upgradePromptTitle": "费用",
-    "upgradePromptDescription": "追踪任务上的固定成本并汇总到您的财务报告中。适用于 Business 计划。",
-    "loadTasksError": "无法加载此项目的任务和货币。",
-    "successMessage": "已添加任务固定成本",
-    "errorMessage": "添加任务固定成本失败"
-  },
   "timeOff": {
     "timeOff": "请假",
     "off": "休假",
@@ -409,5 +410,133 @@
       "personal": "事假",
       "other": "其他"
     }
-  }
+  },
+  "customize": {
+    "button": "自定义",
+    "title": "自定义主页",
+    "description": "拖动各区块以重新排序，也可使用箭头按钮。关闭某个区块即可将其从主页隐藏。",
+    "mainColumn": "主区域",
+    "sideColumn": "侧边栏",
+    "emptyColumn": "将区块拖放到此处",
+    "dragHandle": "重新排序 {{name}}。按空格键拾取，然后使用方向键移动。",
+    "moveUp": "上移",
+    "moveDown": "下移",
+    "moveUpNamed": "上移 {{name}}",
+    "moveDownNamed": "下移 {{name}}",
+    "moveToSide": "移至侧边栏",
+    "moveToMain": "移至主区域",
+    "cannotHide": "此区块无法隐藏。",
+    "showNamed": "显示 {{name}}",
+    "reset": "恢复默认",
+    "resetConfirm": "将主页恢复为默认设置？",
+    "cancel": "取消",
+    "save": "保存",
+    "widgets": {
+      "statCards": "概览卡片",
+      "priorities": "任务优先级",
+      "progressDonut": "我的进度",
+      "continue": "继续上次的工作",
+      "greeting": "问候横幅",
+      "teamMembers": "团队成员",
+      "assignedByMe": "我分配的任务",
+      "mentions": "提及我的评论",
+      "todo": "我的待办事项"
+    },
+    "tabs": {
+      "layout": "布局",
+      "taskTabs": "任务标签页",
+      "sorting": "排序",
+      "sidebar": "左侧边栏",
+      "defaultView": "默认视图"
+    },
+    "topSection": "页面顶部",
+    "tabsDescription": "选择任务表格上方显示哪些标签页及其顺序。至少需保留一个标签页。",
+    "cannotHideLastTab": "至少需保留一个可见的标签页。",
+    "sortDescription": "选择任务在表格中的排序方式。置顶任务始终显示在最前面。",
+    "sortField": "排序依据",
+    "sortOrder": "方向",
+    "sortDefault": "默认顺序（截止日期，最近的在前）",
+    "sortAsc": "升序",
+    "sortDesc": "降序",
+    "sortPinnedNote": "“已置顶”标签页始终将最近置顶的任务排在最前。",
+    "sidebarDescription": "重新排列左侧边栏中的项目并选择要显示的项目。置顶其中一项，使其成为进入主页时首先打开的页面。",
+    "pinSidebarItem": "将 {{name}} 置顶为首先打开的页面",
+    "unpinSidebarItem": "取消置顶 {{name}}",
+    "assignedDefault": "表格默认打开",
+    "assignedLastUsed": "上次使用的视图",
+    "cannotHideLanding": "主页会打开此页面。请先置顶其他页面再隐藏它。",
+    "cannotHideLastItem": "至少需保留一个可见的项目。",
+    "tableTitle": "自定义任务表格",
+    "tableResetConfirm": "将任务表格重置为默认设置？",
+    "done": "完成"
+  },
+  "widgets": {
+    "menu": {
+      "options": "{{name}}选项",
+      "showPeriod": "显示",
+      "remove": "移除小组件"
+    },
+    "add": {
+      "button": "添加小组件",
+      "hint": "点击“添加”，或将小组件拖到页面上。",
+      "addAction": "添加",
+      "addNamed": "添加{{name}}",
+      "empty": "所有小组件都已在您的主页上。"
+    },
+    "descriptions": {
+      "greeting": "带有今日日期的问候语，以及需要您关注的事项。",
+      "statCards": "今日任务、已逾期、已完成的任务以及您的专注时间。",
+      "priorities": "您今天或本周的任务，随时可以开始处理。",
+      "progressDonut": "您被分配的工作中，已完成、进行中和待办的比例。",
+      "continue": "快速回到最近的项目、任务、动态和已记录的时间。",
+      "teamMembers": "查看团队成员，并打开完整的团队页面。",
+      "assignedByMe": "您分配给同事的任务，方便您跟进。",
+      "mentions": "同事在任务评论中 @提及 您的最新评论。",
+      "todo": "记下个人待办事项，完成后逐项勾选。"
+    },
+    "drag": {
+      "pickedUp": "已拿起 {{name}}。",
+      "dropped": "已放下 {{name}}。",
+      "cancelled": "已取消移动 {{name}}。"
+    },
+    "dropHere": "将小组件拖放到此处",
+    "state": {
+      "error": "无法加载此小组件。",
+      "retry": "重试"
+    },
+    "empty": {
+      "title": "拖放新的小组件",
+      "titleNoDrag": "向主页添加小组件",
+      "button": "添加小组件"
+    }
+  },
+  "teamMembers": {
+    "empty": "还没有团队成员。",
+    "viewTeam": "查看团队"
+  },
+  "assignedByMe": {
+    "empty": "您还没有分配任何未完成的任务。",
+    "assignNewTask": "分配新任务",
+    "viewAll": "查看所有已分配任务（{{total}}）"
+  },
+  "mentions": {
+    "empty": "还没有人在评论中提及您。",
+    "reply": "回复",
+    "replyPlaceholder": "写下回复…",
+    "replyHint": "将作为评论发布在“{{task}}”下。",
+    "replySent": "已将回复添加到“{{task}}”。",
+    "replyFailed": "无法发布您的回复，请重试。",
+    "replyLabel": "回复 {{name}}"
+  },
+  "todoWidget": {
+    "addPlaceholder": "添加待办事项并按 Enter",
+    "addLabel": "新的待办事项",
+    "empty": "您已完成所有事项。",
+    "viewAll": "打开我的待办事项列表",
+    "viewAllMore": "查看全部（还有 {{remaining}} 项）",
+    "addFailed": "无法添加该待办事项，请重试。",
+    "completeFailed": "无法更新该待办事项，请重试。"
+  },
+  "projectsAtRisk": "面临风险的项目",
+  "flagged": "标记的"
 }

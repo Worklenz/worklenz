@@ -13,6 +13,11 @@ export interface UpdateSortOrderBody {
   project_id: string;
 }
 
+export interface SprintSettings {
+  auto_archive_on_sprint_complete: boolean;
+  auto_start_complete_sprints: boolean;
+}
+
 export const phasesApiService = {
   addPhaseOption: async (projectId: string, name?: string) => {
     const q = toQueryString({ id: projectId, current_project_id: projectId });
@@ -81,6 +86,59 @@ export const phasesApiService = {
       `${rootUrl}/${phaseId}/default-assignee${q}`,
       { default_assignee_id: defaultAssigneeId }
     );
+    return response.data;
+  },
+
+  addPhaseOptionWithDates: async (
+    projectId: string,
+    payload: {
+      name: string;
+      start_date?: string | null;
+      end_date?: string | null;
+    }
+  ) => {
+    const q = toQueryString({ id: projectId, current_project_id: projectId });
+    const response = await apiClient.post<IServerResponse<ITaskPhase>>(`${rootUrl}${q}`, payload);
+    return response.data;
+  },
+
+  updateSprintSettings: async (projectId: string, settings: Partial<SprintSettings>) => {
+    const q = toQueryString({ id: projectId, current_project_id: projectId });
+    const response = await apiClient.put<IServerResponse<{ id: string } & SprintSettings>>(
+      `${rootUrl}/sprint-settings/${projectId}${q}`,
+      settings
+    );
+    return response.data;
+  },
+
+  startSprint: async (phaseId: string, projectId: string) => {
+    const q = toQueryString({ id: projectId, current_project_id: projectId });
+    const response = await apiClient.post<IServerResponse<ITaskPhase>>(
+      `${rootUrl}/${phaseId}/start${q}`,
+      {}
+    );
+    return response.data;
+  },
+
+  completeSprint: async (
+    phaseId: string,
+    projectId: string,
+    destinationPhaseId: string | null = null
+  ) => {
+    const q = toQueryString({ id: projectId, current_project_id: projectId });
+    const response = await apiClient.post<
+      IServerResponse<
+        ITaskPhase & {
+          archived_count?: number;
+          moved_count?: number;
+          destination_phase_id?: string | null;
+          /** Next sprint started right away when the project auto-starts sprints. */
+          started_sprint?: ITaskPhase | null;
+        }
+      >
+    >(`${rootUrl}/${phaseId}/complete${q}`, {
+      destination_phase_id: destinationPhaseId ?? 'backlog',
+    });
     return response.data;
   },
 };

@@ -201,6 +201,33 @@ export async function getManagedMembers(teamMemberId: string): Promise<string[]>
   return result.rows.map(row => row.managed_member_id);
 }
 
+/**
+ * Team-wide guest check for the user's active team, exempting owner/admin
+ * roles the same way NON_GUEST_ACCESS_PREDICATE does (sync_team_member_guest_status()
+ * sets is_guest = TRUE for anyone holding a GUEST-level membership on any single
+ * project, with no role exception, so an owner/admin added as a guest to one
+ * client's project must not be locked out team-wide). Shared by
+ * verify-non-guest-planner-access.ts and verify-non-guest-time-entries-access.ts
+ * so the two route families can't drift on what "guest" means.
+ */
+export async function isGuestForActiveTeam(userId: string | undefined, teamId: string | undefined): Promise<boolean> {
+  if (!userId || !teamId) return false;
+
+  const result = await db.query(
+    `SELECT tm.is_guest, r.owner, r.admin_role
+     FROM team_members tm
+     INNER JOIN roles r ON r.id = tm.role_id
+     WHERE tm.user_id = $1
+       AND tm.team_id = $2
+       AND tm.active = TRUE
+     LIMIT 1`,
+    [userId, teamId]
+  );
+
+  const row = result.rows[0];
+  return row?.is_guest === true && row?.owner !== true && row?.admin_role !== true;
+}
+
 export async function getUserRoleInTeam(userId: string, teamId: string): Promise<string | null> {
   if (!userId || !teamId) return null;
   

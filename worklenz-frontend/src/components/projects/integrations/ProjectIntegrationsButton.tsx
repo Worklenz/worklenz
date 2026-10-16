@@ -9,9 +9,9 @@ import {
   CrownOutlined,
 } from '@/shared/antd-imports';
 import { IntegrationsDropdown } from './IntegrationsDropdown';
-import { slackApiService } from '@/ee/api/slack/slack.api.service';
+import { slackApiService } from '@/api/slack/slack.api.service';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
 import type { ProjectIntegrationStatus } from './integrations.types';

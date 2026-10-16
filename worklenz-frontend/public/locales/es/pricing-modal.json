@@ -26,7 +26,8 @@
     "user": "usuario",
     "users": "usuarios",
     "helpDescription": "Ingresa el número de usuarios en tu equipo (1-500)",
-    "placeholder": "Seleccionar tamaño del equipo"
+    "placeholder": "Seleccionar tamaño del equipo",
+    "aria": "Tamaño del equipo"
   },
   "plans": {
     "free": {
@@ -70,7 +71,8 @@
       "payPerUser": "Pago por usuario (1-5 usuarios)",
       "usersIncluded": "{{count}} Usuarios incluidos",
       "maxUsers": "Hasta {{count}} usuarios máx.",
-      "maxUsersAppSumo": "Hasta 50 usuarios como máximo (especial AppSumo)"
+      "maxUsersAppSumo": "Hasta 50 usuarios como máximo (especial AppSumo)",
+      "namePromo": "Negocios (especial AppSumo)"
     },
     "proSmall": {
       "name": "Pro Pequeño",
@@ -120,7 +122,7 @@
       ]
     },
     "enterprise": {
-      "name": "Enterprise",
+      "name": "Empresa",
       "description": "Para grandes organizaciones",
       "features": [
         "Todo en Business Grande",
@@ -129,8 +131,11 @@
         "Integraciones personalizadas",
         "Gerente de cuenta dedicado",
         "Implementación on-premises"
-      ]
-    }
+      ],
+      "customPricing": "Personalizado",
+      "customPricingNote": "adaptado a tu equipo"
+    },
+    "additionalUsersCharged": "Usuarios adicionales además de los incluidos: ${{price}}/usuario/mes"
   },
   "badges": {
     "mostPopular": "Más Popular",
@@ -224,10 +229,10 @@
     "title": "Confirma tu Suscripción",
     "subtitle": "Revisa los detalles de tu plan antes de continuar",
     "summary": "Resumen de Suscripción",
-    "plan": "Plan",
+    "plan": "Planificar",
     "teamSize": "Tamaño del Equipo",
     "discount": "Descuento",
-    "total": "Total",
+    "total": "totales",
     "secureCheckout": "Pago Seguro",
     "secureDescription": "Tu pago será procesado de forma segura a través de Paddle. Puedes cancelar o cambiar tu plan en cualquier momento.",
     "appsumoSpecial": "Precios Especiales AppSumo",
@@ -326,7 +331,8 @@
     "billedMonthly": "(facturado mensualmente)",
     "perYear": "/año",
     "perMonth": "/mes",
-    "forUsers": " para {{count}} usuario{{s}}"
+    "forUsers": " para {{count}} usuario{{s}}",
+    "annualSavingsShortOff": "Hasta {{percent}}% de descuento"
   },
   "ribbon": {
     "recommended": "Recomendado",

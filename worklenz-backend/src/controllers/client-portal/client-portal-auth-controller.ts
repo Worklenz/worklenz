@@ -1,0 +1,1108 @@
+import ClientPortalControllerBase from "./client-portal-base";
+import { AuthenticatedClientRequest } from "../../middlewares/client-auth-middleware";
+import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
+import { ServerResponse } from "../../models/server-response";
+import db from "../../config/db";
+import TokenService from "../../services/token-service";
+import crypto from "crypto";
+import { sendEmail, sendEmailEnhanced, EmailRequest } from "../../shared/email";
+import { loadClientSubject } from "../../services/client-portal-v2/subject";
+import FileConstants from "../../shared/file-constants";
+import { IEmailTemplateType } from "../../interfaces/email-template-type";
+import { getClientPortalBaseUrl } from "../../cron_jobs/helpers";
+import {
+  ensureContactIdForClient,
+  getLoginAccessState,
+  linkContactToLogin,
+} from "../../services/client-contacts-service";
+
+export default class ClientPortalAuthController extends ClientPortalControllerBase {
+  static async validateInvitationBySlug(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ) {
+    try {
+      const { slug } = req.params;
+
+      if (!slug) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invitation slug is required"));
+      }
+
+      // Get client by invite_slug
+      const clientQuery = `
+        SELECT c.id, c.name, c.email, c.company_name, c.status, c.invite_slug, t.name as team_name
+        FROM clients c
+        JOIN teams t ON c.team_id = t.id
+        WHERE LOWER(c.invite_slug) = LOWER($1) AND c.status = 'pending'
+      `;
+      const clientResult = await db.query(clientQuery, [slug]);
+
+      if (clientResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invalid invitation link"));
+      }
+
+      const client = clientResult.rows[0];
+
+      // Check if email exists in Worklenz users table
+      let isExistingWorklenzUser = false;
+      if (client.email) {
+        const existingWorklenzUserQuery = `
+          SELECT id FROM users
+          WHERE LOWER(email) = LOWER($1) AND is_deleted = FALSE
+        `;
+        const existingWorklenzUserResult = await db.query(
+          existingWorklenzUserQuery,
+          [client.email],
+        );
+        isExistingWorklenzUser = existingWorklenzUserResult.rows.length > 0;
+      }
+
+      // Return client details for the frontend (similar to token-based invitation)
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            valid: true,
+            email: client.email,
+            clientId: client.id,
+            clientName: client.name,
+            companyName: client.company_name,
+            teamName: client.team_name,
+            inviteSlug: client.invite_slug,
+            type: "vanity_url",
+            isExistingWorklenzUser,
+          },
+          "Invitation is valid",
+        ),
+      );
+    } catch (error) {
+      console.error("Error validating invitation by slug:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to validate invitation"));
+    }
+  }
+
+  static async validateInvitation(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ) {
+    try {
+      const { token } = req.query;
+
+      if (!token) {
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(false, null, "Invitation token is required"),
+          );
+      }
+
+      // Get invitation details (TokenService handles both old hex and new base62 tokens)
+      const invitation = await TokenService.getInvitationByToken(
+        token as string,
+      );
+
+      if (!invitation) {
+        return res
+          .status(404)
+          .json(
+            new ServerResponse(false, null, "Invalid or expired invitation"),
+          );
+      }
+
+      // Check if email exists in Worklenz users table
+      let isExistingWorklenzUser = false;
+      if (invitation.email) {
+        const existingWorklenzUserQuery = `
+          SELECT id FROM users
+          WHERE LOWER(email) = LOWER($1) AND is_deleted = FALSE
+        `;
+        const existingWorklenzUserResult = await db.query(
+          existingWorklenzUserQuery,
+          [invitation.email],
+        );
+        isExistingWorklenzUser = existingWorklenzUserResult.rows.length > 0;
+      }
+
+      // Return invitation details for the frontend
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            valid: true,
+            email: invitation.email,
+            organizationName: invitation.team_name,
+            id: invitation.id,
+            name: invitation.name,
+            role: invitation.role,
+            clientName: invitation.client_name,
+            companyName: invitation.company_name,
+            teamName: invitation.team_name,
+            expiresAt: invitation.expires_at,
+            status: invitation.status,
+            type: "token",
+            isExistingWorklenzUser,
+          },
+          "Invitation is valid",
+        ),
+      );
+    } catch (error) {
+      console.error("Error validating invitation:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to validate invitation"));
+    }
+  }
+
+  static async refreshClientToken(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ) {
+    try {
+      const { token } = req.body;
+
+      if (!token) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Token is required"));
+      }
+
+      // Verify the current token
+      const decoded = TokenService.verifyClientToken(token);
+      if (!decoded) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Invalid or expired token"));
+      }
+
+      // A refresh must not outlive the user's access. Tokens issued before clientUserId was always
+      // included are resolved by email so they can't be refreshed indefinitely.
+      let clientUserId = decoded.clientUserId;
+      if (!clientUserId) {
+        const found = await db.query(
+          "SELECT id FROM client_users WHERE LOWER(email) = LOWER($1) LIMIT 1",
+          [decoded.email],
+        );
+        clientUserId = found.rows[0]?.id;
+      }
+
+      const access = clientUserId
+        ? await getLoginAccessState(db, clientUserId, decoded.clientId)
+        : null;
+      if (!access || !access.exists || access.loginStatus !== "active" || access.isDisabled) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Access has been revoked"));
+      }
+
+      // Removing a company user deletes the contact but not the login, so also require that this person is
+      // still an Active company user of the client the token is for. Otherwise a removed user could mint a
+      // new token every day.
+      const subject = await loadClientSubject(db, {
+        clientUserId: clientUserId as string,
+        clientId: decoded.clientId,
+        teamId: decoded.organizationId,
+      });
+      if (!subject) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Access has been revoked"));
+      }
+
+      // Generate new token with updated expiry
+      const newToken = TokenService.generateClientToken({
+        clientId: decoded.clientId,
+        organizationId: decoded.organizationId,
+        clientUserId,
+        email: decoded.email,
+        permissions: decoded.permissions || [],
+        availableOrganizations: TokenService.toTokenOrganizations(
+          await TokenService.getClientUserOrganizations(clientUserId as string),
+        ),
+        type: "client" as const,
+      });
+
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            token: newToken,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+          },
+          "Token refreshed successfully",
+        ),
+      );
+    } catch (error) {
+      console.error("Error refreshing client token:", error);
+      return res
+        .status(401)
+        .json(new ServerResponse(false, null, "Token refresh failed"));
+    }
+  }
+
+  static async clientLogout(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse,
+  ) {
+    try {
+      // In a more complete implementation, you would invalidate the token
+      // For now, we'll just return a success response
+      return res.json(new ServerResponse(true, null, "Logout successful"));
+    } catch (error) {
+      console.error("Error during client logout:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Logout failed"));
+    }
+  }
+
+  static async getClientOrganizations(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse,
+  ) {
+    try {
+      const { clientUserId } = req as any;
+
+      if (!clientUserId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Client user ID not found"));
+      }
+
+      // Get all organizations accessible by this user, flagging the one this token is acting in
+      const currentTeamId = (req as any).organizationId;
+      const organizations = (
+        await TokenService.getClientUserOrganizations(clientUserId)
+      ).map(org => ({ ...org, isCurrent: org.teamId === currentTeamId }));
+
+      return res.json(
+        new ServerResponse(
+          true,
+          { organizations },
+          "Organizations retrieved successfully",
+        ),
+      );
+    } catch (error) {
+      console.error("Error fetching client organizations:", error);
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve organizations"),
+        );
+    }
+  }
+
+  static async switchOrganization(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse,
+  ) {
+    try {
+      const { clientUserId } = req as any;
+      const { organizationId } = req.body;
+
+      if (!clientUserId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Client user ID not found"));
+      }
+
+      if (!organizationId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Organization ID is required"));
+      }
+
+      // Get all organizations the user can currently sign in to (live, so a revoked or deactivated
+      // team cannot be switched to even though the membership row still exists)
+      const organizations =
+        await TokenService.getClientUserOrganizations(clientUserId);
+      const target = organizations.find(org => org.teamId === organizationId);
+
+      if (!target) {
+        return res
+          .status(403)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Access denied to this organization",
+            ),
+          );
+      }
+
+      const clientId = target.clientId;
+
+      // Generate new token with updated organization
+      const tokenPayload = {
+        clientId,
+        organizationId,
+        clientUserId,
+        email: (req as any).clientEmail || "",
+        permissions: await TokenService.getClientPermissions(clientId),
+        availableOrganizations: TokenService.toTokenOrganizations(organizations),
+        type: "client" as const,
+      };
+
+      const newToken = TokenService.generateClientToken(tokenPayload);
+
+      // Update last accessed timestamp
+      await TokenService.updateOrganizationAccess(clientUserId, organizationId);
+
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            token: newToken,
+            organizationId,
+            clientId,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          },
+          "Organization switched successfully",
+        ),
+      );
+    } catch (error) {
+      console.error("Error switching organization:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to switch organization"));
+    }
+  }
+
+  static async handleOrganizationInvite(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ) {
+    try {
+      const { token } = req.body;
+
+      if (!token) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invalid invitation token"));
+      }
+
+      // Verify the organization invitation token
+      const decoded = TokenService.verifyOrganizationInviteToken(token);
+
+      if (!decoded) {
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Invalid or expired invitation token",
+            ),
+          );
+      }
+
+      // Check if token exists in database and is still valid
+      const inviteQuery = `
+        SELECT oi.*, t.name as organization_name
+        FROM organization_invitations oi
+        JOIN teams t ON oi.team_id = t.id
+        WHERE oi.token = $1 AND oi.expires_at > NOW()
+      `;
+      const inviteResult = await db.query(inviteQuery, [token]);
+
+      if (!inviteResult.rows.length) {
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(false, null, "Invalid or expired invitation"),
+          );
+      }
+
+      const invitation = inviteResult.rows[0];
+
+      // Check if user is already authenticated
+      const userId = req.user?.id;
+
+      if (userId) {
+        // User is already authenticated - check if they are linked to this organization's client portal
+        const clientCheckQuery = `
+          SELECT cu.*
+          FROM client_users cu
+          JOIN clients c ON cu.client_id = c.id
+          WHERE cu.user_id = $1 AND c.team_id = $2
+        `;
+        const clientResult = await db.query(clientCheckQuery, [
+          userId,
+          invitation.team_id,
+        ]);
+
+        if (clientResult.rows.length > 0) {
+          // User is already linked to this organization's client portal
+          return res.json(
+            new ServerResponse(true, {
+              redirectTo: "client-portal",
+              message:
+                "You already have access to this organization's client portal",
+            }),
+          );
+        }
+
+        // User is authenticated but not linked to client portal
+        // Create a client record and link the user
+        const userQuery = `SELECT email, name FROM users WHERE id = $1`;
+        const userResult = await db.query(userQuery, [userId]);
+        const user = userResult.rows[0];
+
+        if (user) {
+          // Create client record
+          const createClientQuery = `
+            INSERT INTO clients (id, team_id, name, email, status, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, 'active', NOW(), NOW())
+            RETURNING id
+          `;
+          const clientId = crypto.randomUUID();
+          await db.query(createClientQuery, [
+            clientId,
+            invitation.team_id,
+            user.name,
+            user.email,
+          ]);
+
+          // Link user to client portal with active status
+          // Check if email already exists in client_users to avoid duplicate key error
+          const emailExistsCheck = await db.query(
+            `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            [user.email],
+          );
+
+          let clientUserId: string;
+          if (emailExistsCheck.rows.length > 0) {
+            // Update existing record
+            clientUserId = emailExistsCheck.rows[0].id;
+            await db.query(
+              `UPDATE client_users
+               SET user_id = $1, client_id = $2, name = $3, team_id = $4, status = 'active', updated_at = NOW()
+               WHERE id = $5`,
+              [userId, clientId, user.name, invitation.team_id, clientUserId],
+            );
+          } else {
+            const linkUserQuery = `
+              INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
+              VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
+              RETURNING id
+            `;
+            const result = await db.query(linkUserQuery, [
+              userId,
+              clientId,
+              user.email,
+              user.name,
+              invitation.team_id,
+            ]);
+            clientUserId = result.rows[0].id;
+          }
+
+          // Create organization access record for multi-org support
+          const orgAccessQuery = `
+            INSERT INTO client_user_organizations (client_user_id, team_id, client_id, is_default, created_at, updated_at)
+            VALUES ($1, $2, $3, FALSE, NOW(), NOW())
+            ON CONFLICT (client_user_id, team_id) 
+            DO UPDATE SET client_id = $3, updated_at = NOW()
+          `;
+          await db.query(orgAccessQuery, [
+            clientUserId,
+            invitation.team_id,
+            clientId,
+          ]);
+
+          // The joiner is the only person at the company created for them, so they are its POC.
+          try {
+            await linkContactToLogin(db, {
+              teamId: invitation.team_id,
+              clientId,
+              clientUserId,
+              email: user.email,
+              name: user.name,
+              role: "admin",
+            });
+          } catch (linkError) {
+            console.error("Could not create company user for joiner:", linkError);
+          }
+
+          return res.json(
+            new ServerResponse(true, {
+              redirectTo: "client-portal",
+              message: "Successfully linked to organization's client portal",
+            }),
+          );
+        }
+      }
+
+      // User is not authenticated - they need to login/register first
+      return res.json(
+        new ServerResponse(true, {
+          redirectTo: "login",
+          message: "Please login or create an account to accept the invitation",
+          organizationName: invitation.organization_name,
+        }),
+      );
+    } catch (error) {
+      console.error("Error handling organization invitation:", error);
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(
+            false,
+            null,
+            "Failed to process organization invitation",
+          ),
+        );
+    }
+  }
+
+  static async generateClientInvitationLink(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ) {
+    try {
+      const { clientId } = req.body;
+      const userId = req.user?.id;
+      const teamId = req.user?.team_id;
+
+      if (!userId || !teamId) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Authentication required"));
+      }
+
+      if (!clientId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Client ID is required"));
+      }
+
+      // Handle organization-level invite
+      if (clientId === "organization") {
+        return ClientPortalAuthController.generateOrganizationInvitationLink(
+          req,
+          res,
+        );
+      }
+
+      // Get client information
+      const clientQuery = `
+        SELECT c.id, c.name, c.email, c.company_name, c.phone, c.contact_person, c.invite_slug
+        FROM clients c
+        WHERE c.id = $1 AND c.team_id = $2
+      `;
+      const clientResult = await db.query(clientQuery, [clientId, teamId]);
+
+      if (!clientResult.rows.length) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
+      }
+
+      const client = clientResult.rows[0];
+
+      // Validate that client has an email address
+      if (!client.email || client.email.trim() === "") {
+        return res.status(400).json(
+          new ServerResponse(
+            false,
+            {
+              errorCode: "EMAIL_REQUIRED",
+              clientId: client.id,
+              clientName: client.name,
+            },
+            "Email address is required to invite the client to the portal",
+          ),
+        );
+      }
+
+      // Check if this email already exists as a Worklenz user
+      const existingUserQuery = `
+        SELECT u.id, u.email, u.name
+        FROM users u
+        WHERE LOWER(u.email) = LOWER($1)
+      `;
+      const existingUserResult = await db.query(existingUserQuery, [
+        client.email,
+      ]);
+
+      if (existingUserResult.rows.length > 0) {
+        // User already exists in Worklenz - link them to client portal
+        const existingUser = existingUserResult.rows[0];
+
+        // Check if this Worklenz user is already linked to the client portal
+        const linkCheckQuery = `
+          SELECT id FROM client_users
+          WHERE user_id = $1 AND client_id = $2
+        `;
+        const linkResult = await db.query(linkCheckQuery, [
+          existingUser.id,
+          client.id,
+        ]);
+
+        if (linkResult.rows.length === 0) {
+          // Check if email already exists in client_users (for any client)
+          const emailExistsCheck = await db.query(
+            `SELECT id, client_id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            [client.email],
+          );
+
+          let newClientUserId: string;
+
+          if (emailExistsCheck.rows.length > 0) {
+            // Email already exists - update the existing record to link to this client
+            const existingClientUser = emailExistsCheck.rows[0];
+            newClientUserId = existingClientUser.id;
+
+            // Update the existing client_users record to link to this client and user
+            await db.query(
+              `UPDATE client_users
+               SET user_id = $1, client_id = $2, name = $3, team_id = $4, status = 'active', updated_at = NOW()
+               WHERE id = $5`,
+              [
+                existingUser.id,
+                client.id,
+                client.name,
+                teamId,
+                existingClientUser.id,
+              ],
+            );
+          } else {
+            // Create client_users record linking Worklenz user to client portal
+            // Note: password_hash is NULL since they'll authenticate via users table (let DB generate UUID)
+            const linkUserQuery = `
+              INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
+              VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
+              RETURNING id
+            `;
+            const insertResult = await db.query(linkUserQuery, [
+              existingUser.id,
+              client.id,
+              client.email,
+              client.name,
+              teamId,
+            ]);
+            newClientUserId = insertResult.rows[0].id;
+          }
+
+          // Create organization access record for multi-org support
+          const orgAccessQuery = `
+            INSERT INTO client_user_organizations (client_user_id, team_id, client_id, is_default, created_at, updated_at)
+            VALUES ($1, $2, $3, TRUE, NOW(), NOW())
+            ON CONFLICT (client_user_id, team_id) DO NOTHING
+          `;
+          await db.query(orgAccessQuery, [newClientUserId, teamId, client.id]);
+
+          // Tie the company user to the login that was just linked
+          try {
+            await linkContactToLogin(db, {
+              teamId,
+              clientId: client.id,
+              clientUserId: newClientUserId,
+              email: client.email,
+              name: client.contact_person?.trim() || client.name,
+              role: "admin",
+            });
+          } catch (linkError) {
+            console.error("Could not link company user to login:", linkError);
+          }
+
+          // Update client status to active since user already exists
+          const updateClientQuery = `
+            UPDATE clients SET status = 'active', updated_at = NOW()
+            WHERE id = $1 AND team_id = $2
+          `;
+          await db.query(updateClientQuery, [client.id, teamId]);
+
+          // Create client portal access record with full permissions
+          // For linked Worklenz users, we use a placeholder password_hash since they authenticate via users table
+          await db.query(
+            `INSERT INTO client_portal_access (client_id, email, password_hash, is_active, created_at, updated_at)
+             VALUES ($1, $2, 'LINKED_USER', TRUE, NOW(), NOW())
+             ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, email = $2, updated_at = NOW()`,
+            [client.id, client.email],
+          );
+        }
+
+        // Return response indicating user can use existing Worklenz credentials
+        return res.json(
+          new ServerResponse(
+            true,
+            {
+              isExistingUser: true,
+              message: "This client is already a Worklenz user!",
+              clientName: client.name,
+              clientEmail: client.email,
+              portalUrl: `${getClientPortalBaseUrl()}/login`,
+            },
+            "Client is existing Worklenz user - access granted",
+          ),
+        );
+      }
+
+      // Generate secure short random token for invitation (64 characters, same as team/project invitations)
+      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
+      const inviteToken = TokenService.generateInviteToken();
+
+      // Create invitation record in database, tied to the company's contact for this email
+      await TokenService.createInvitation({
+        clientId: client.id,
+        email: client.email,
+        name: client.name,
+        role: "member",
+        invitedBy: userId,
+        token: inviteToken,
+        clientContactId: await ensureContactIdForClient(db, teamId, client),
+      });
+
+      // Generate client portal link with secure token
+      const baseUrl = getClientPortalBaseUrl();
+      const tokenLink = `${baseUrl}/invite?token=${inviteToken}`;
+
+      // Also provide vanity URL option if client has invite_slug
+      let vanityLink = null;
+      if (client.invite_slug) {
+        vanityLink = `${baseUrl}/i/${client.invite_slug}`;
+      }
+
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            invitationLink: tokenLink,
+            vanityLink: vanityLink,
+            token: inviteToken,
+            expiresAt: new Date(expiresAt).toISOString(),
+            clientName: client.name,
+            clientEmail: client.email,
+            inviteSlug: client.invite_slug,
+          },
+          "Invitation link generated successfully",
+        ),
+      );
+    } catch (error) {
+      console.error("Error generating client invitation link:", error);
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to generate invitation link"),
+        );
+    }
+  }
+
+  static async resendClientInvitation(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ) {
+    try {
+      const { id: clientId } = req.params;
+      const userId = req.user?.id;
+      const teamId = req.user?.team_id;
+      const inviterName = req.user?.name || "Your team";
+
+      if (!userId || !teamId) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Authentication required"));
+      }
+
+      if (!clientId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Client ID is required"));
+      }
+
+      // Get client information
+      const clientQuery = `
+        SELECT c.id, c.name, c.email, c.company_name, c.phone, c.contact_person
+        FROM clients c
+        WHERE c.id = $1 AND c.team_id = $2
+      `;
+      const clientResult = await db.query(clientQuery, [clientId, teamId]);
+
+      if (!clientResult.rows.length) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
+      }
+
+      const client = clientResult.rows[0];
+      const clientContactId = await ensureContactIdForClient(db, teamId, client);
+
+      // Check if client already has an active portal user (already joined)
+      const activeUserCheck = await db.query(
+        `SELECT id FROM client_users WHERE client_id = $1 AND status = 'active'`,
+        [clientId],
+      );
+
+      if (activeUserCheck.rows.length > 0) {
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Client has already joined the portal",
+            ),
+          );
+      }
+
+      // Check if there's a pending invitation
+      const pendingInviteCheck = await db.query(
+        `SELECT id, email, name, token FROM client_invitations
+         WHERE client_id = $1 AND status = 'pending'
+         ORDER BY created_at DESC LIMIT 1`,
+        [clientId],
+      );
+
+      // Generate new invitation token (short random token)
+      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
+      let inviteToken: string;
+
+      if (pendingInviteCheck.rows.length > 0) {
+        const existingInvitation = pendingInviteCheck.rows[0];
+        inviteToken = TokenService.generateInviteToken();
+
+        // Update invitation with new token, expiry, and current client email/name. created_at is
+        // restarted too so "latest invitation" and the invited-at time reflect this send.
+        await db.query(
+          `UPDATE client_invitations
+           SET token = $1, expires_at = $2, email = $3, name = $4, updated_at = NOW(),
+               created_at = NOW(), client_contact_id = COALESCE(client_contact_id, $6)
+           WHERE id = $5`,
+          [
+            inviteToken,
+            new Date(expiresAt),
+            client.email,
+            client.name,
+            existingInvitation.id,
+            clientContactId,
+          ],
+        );
+      } else {
+        inviteToken = TokenService.generateInviteToken();
+        // Create new invitation record
+        await TokenService.createInvitation({
+          clientId: client.id,
+          email: client.email,
+          name: client.name,
+          role: "member",
+          invitedBy: userId,
+          token: inviteToken,
+          clientContactId,
+        });
+      }
+
+      // Generate invitation link
+      const inviteLink = `${getClientPortalBaseUrl()}/invite?token=${inviteToken}`;
+
+      // Get team name for email
+      const teamQuery = `SELECT name FROM teams WHERE id = $1`;
+      const teamResult = await db.query(teamQuery, [teamId]);
+      const teamName = teamResult.rows[0]?.name || "Worklenz Team";
+
+      // Get the email template (same as initial invitation)
+      const template = FileConstants.getEmailTemplate(
+        IEmailTemplateType.ClientInvitation,
+      ) as string;
+      if (!template) {
+        return res
+          .status(500)
+          .json(new ServerResponse(false, null, "Email template not found"));
+      }
+
+      // Replace template variables
+      const emailContent = template
+        .replace(/\[VAR_CLIENT_NAME\]/g, client.name || "Client")
+        .replace(/\[VAR_CLIENT_EMAIL\]/g, client.email || "")
+        .replace(/\[VAR_COMPANY_NAME\]/g, client.company_name || "N/A")
+        .replace(/\[VAR_CLIENT_PHONE\]/g, client.phone || "N/A")
+        .replace(/\[VAR_TEAM_NAME\]/g, teamName)
+        .replace(/\[VAR_PORTAL_LINK\]/g, inviteLink);
+
+      // Send invitation email
+      const emailRequest = new EmailRequest(
+        [client.email],
+        `Welcome to your Client Portal - ${teamName}`,
+        emailContent,
+      );
+
+      const emailResult = await sendEmailEnhanced(emailRequest);
+
+      if (!emailResult.success) {
+        console.error(
+          "Failed to send client invitation email:",
+          emailResult.error,
+        );
+        const errorMessage =
+          emailResult.error?.message || "Failed to send invitation email";
+        return res
+          .status(500)
+          .json(new ServerResponse(false, null, errorMessage));
+      }
+
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            invitationLink: inviteLink,
+            clientName: client.name,
+            clientEmail: client.email,
+            expiresAt: new Date(expiresAt).toISOString(),
+            emailSent: true,
+          },
+          "Invitation email sent successfully",
+        ),
+      );
+    } catch (error) {
+      console.error("Error resending client invitation:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to resend invitation"));
+    }
+  }
+
+  static async sendClientInvitationEmail(
+    client: any,
+    teamId: string,
+    invitedBy: string,
+  ) {
+    try {
+      // Get team information
+      const teamQuery = `SELECT name FROM teams WHERE id = $1`;
+      const teamResult = await db.query(teamQuery, [teamId]);
+      const teamName = teamResult.rows[0]?.name || "Worklenz Team";
+
+      // Generate secure token for invitation (short random token)
+      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
+      const inviteToken = TokenService.generateInviteToken();
+
+      // Create invitation record in database
+      await TokenService.createInvitation({
+        clientId: client.id,
+        email: client.email,
+        name: client.name,
+        role: "member",
+        invitedBy,
+        token: inviteToken,
+        clientContactId: await ensureContactIdForClient(db, teamId, client),
+      });
+
+      // Get the email template
+      const template = FileConstants.getEmailTemplate(
+        IEmailTemplateType.ClientInvitation,
+      ) as string;
+      if (!template) {
+        throw new Error("Client invitation email template not found");
+      }
+
+      // Generate client portal link with secure token
+      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${inviteToken}`;
+
+      // Replace template variables
+      const emailContent = template
+        .replace(/\[VAR_CLIENT_NAME\]/g, client.name || "Client")
+        .replace(/\[VAR_CLIENT_EMAIL\]/g, client.email || "")
+        .replace(/\[VAR_COMPANY_NAME\]/g, client.company_name || "N/A")
+        .replace(/\[VAR_CLIENT_PHONE\]/g, client.phone || "N/A")
+        .replace(/\[VAR_TEAM_NAME\]/g, teamName)
+        .replace(/\[VAR_PORTAL_LINK\]/g, portalLink);
+
+      // Send the email
+      await sendEmail({
+        to: [client.email],
+        subject: `Welcome to your Client Portal - ${teamName}`,
+        html: emailContent,
+      });
+    } catch (error) {
+      console.error("Error sending client invitation email:", error);
+      throw error;
+    }
+  }
+
+  static async generateOrganizationInvitationLink(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ) {
+    try {
+      const userId = req.user?.id;
+      const teamId = req.user?.team_id;
+
+      if (!userId || !teamId) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Authentication required"));
+      }
+
+      // Get team information
+      const teamQuery = `SELECT name FROM teams WHERE id = $1`;
+      const teamResult = await db.query(teamQuery, [teamId]);
+      const teamName = teamResult.rows[0]?.name || "Worklenz Team";
+
+      // Generate secure token for organization invitation
+      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
+      const inviteToken = TokenService.generateOrganizationInviteToken({
+        teamId,
+        type: "organization_invite",
+        invitedBy: userId,
+        expiresAt,
+        organizationName: teamName,
+      });
+
+      // Create or update organization invitation record in database
+      const upsertQuery = `
+        INSERT INTO organization_invitations (team_id, token, invited_by, expires_at, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, NOW(), NOW())
+        ON CONFLICT (team_id)
+        DO UPDATE SET
+          token = EXCLUDED.token,
+          invited_by = EXCLUDED.invited_by,
+          expires_at = EXCLUDED.expires_at,
+          updated_at = NOW()
+        RETURNING id
+      `;
+
+      await db.query(upsertQuery, [
+        teamId,
+        inviteToken,
+        userId,
+        new Date(expiresAt),
+      ]);
+
+      // Generate organization portal link with secure token (URL-encode to handle + characters in JWT)
+      const portalLink = `${
+        process.env.CLIENT_PORTAL_HOSTNAME
+          ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}`
+          : "http://localhost:5174"
+      }/organization-invite?token=${encodeURIComponent(inviteToken)}`;
+
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            invitationLink: portalLink,
+            token: inviteToken,
+            expiresAt: new Date(expiresAt).toISOString(),
+            organizationName: teamName,
+          },
+          "Organization invitation link generated successfully",
+        ),
+      );
+    } catch (error) {
+      console.error("Error generating organization invitation link:", error);
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(
+            false,
+            null,
+            "Failed to generate organization invitation link",
+          ),
+        );
+    }
+  }
+}

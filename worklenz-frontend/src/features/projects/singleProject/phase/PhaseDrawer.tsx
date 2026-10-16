@@ -1,4 +1,4 @@
-import { Button, Drawer, Flex, Input, Spin, Typography, Tooltip } from '@/shared/antd-imports';
+import { Button, Drawer, Flex, Input, Spin, Typography, Tooltip, Divider } from '@/shared/antd-imports';
 import { useState } from 'react';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
@@ -10,12 +10,11 @@ import {
   updatePhaseListOrder,
   updateProjectPhaseLabel,
 } from './phases.slice';
-import { Divider } from 'antd/lib';
 import { PlusOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import PhaseOptionItem from './PhaseOptionItem';
 import {

@@ -24,7 +24,7 @@ import {
 import CustomColumnFormContent from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-form-content';
 import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess, isFreeUser } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess, isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { LICENSING_SETTINGS } from '@/shared/licensing_settings';
 import type { ITaskListColumn } from '@/types/tasks/taskList.types';

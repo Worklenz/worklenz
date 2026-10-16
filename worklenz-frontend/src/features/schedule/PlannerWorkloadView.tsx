@@ -827,9 +827,12 @@ const PlannerWorkloadView: React.FC = () => {
       placement={showTaskDrawer ? 'left' : 'right'}
       autoAdjustOverflow
       color={themeMode === 'dark' ? undefined : '#fff'}
-      overlayInnerStyle={
-        themeMode === 'dark' ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' }
-      }
+      styles={{
+        body:
+          themeMode === 'dark'
+            ? undefined
+            : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+      }}
       title={renderTaskChipTooltip(wl)}
     >
       <div
@@ -882,9 +885,12 @@ const PlannerWorkloadView: React.FC = () => {
         placement={showTaskDrawer ? 'left' : 'right'}
         autoAdjustOverflow
         color={themeMode === 'dark' ? undefined : '#fff'}
-        overlayInnerStyle={
-          themeMode === 'dark' ? undefined : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' }
-        }
+        styles={{
+          body:
+            themeMode === 'dark'
+              ? undefined
+              : { color: token.colorText, boxShadow: '0 2px 8px rgba(0,0,0,.15)' },
+        }}
         title={renderBlockChipTooltip(b)}
       >
         <div
@@ -1779,7 +1785,7 @@ const WorkloadAddPopover: React.FC<{
       onCancel={onClose}
       title={`${t('addFor', { defaultValue: 'Add for' })} ${ctx.rowLabel}`}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
     >
       {/* Same tab-pill toggle (bordered container, filled active pill) as
           PlannerAddTaskModal's mode switch in Schedule, plus a third,
@@ -1846,7 +1852,7 @@ const WorkloadAddPopover: React.FC<{
               autoFocus
               value={newTaskName}
               onChange={e => setNewTaskName(e.target.value)}
-              placeholder={t('addTask', { defaultValue: 'Enter task name…' })}
+              placeholder={t('enterTaskName', { defaultValue: 'Enter task name…' })}
               onKeyDown={e => {
                 if (e.key === 'Enter') submitNewTask();
               }}
@@ -1952,7 +1958,12 @@ const WorkloadAddPopover: React.FC<{
                             </span>
                           </span>
                           <span style={{ opacity: 0.5, flexShrink: 0, fontSize: 11 }}>
-                            {hours > 0 ? `${Math.round(hours * 10) / 10}h` : `${fallbackEst}h default`}
+                            {hours > 0
+                              ? `${Math.round(hours * 10) / 10}h`
+                              : t('defaultHours', {
+                                  hours: fallbackEst,
+                                  defaultValue: `${fallbackEst}h default`,
+                                })}
                           </span>
                         </div>
                       );

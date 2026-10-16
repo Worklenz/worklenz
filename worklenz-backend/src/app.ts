@@ -18,17 +18,18 @@ import importsApiRouter from "./routes/apis/imports-api-router";
 import authRouter from "./routes/auth";
 import emailTemplatesRouter from "./routes/email-templates";
 import public_router from "./routes/public";
-import clientPortalApiRouter from "./ee/routes/apis/client-portal-api-router";
+import clientPortalApiRouter from "./routes/apis/client-portal-api-router";
 import { loadAddonRouters } from "./addons/load-addons";
 import { isInternalServer, isProduction, log_error } from "./shared/utils";
 import { STORAGE_PROVIDER } from "./shared/constants";
 import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
-import BillingController from "./ee/controllers/billing-controller";
+import BillingController from "./controllers/billing-controller";
 import { CSP_POLICIES } from "./shared/csp";
 import importWorker from "./services/import-worker";
 import taskExportWorker from "./services/task-export/task-export-worker";
+import auditLogExportWorker from "./services/audit-log-export/audit-log-export-worker";
 import { sqlInjectionDetectorWithBlocking } from "./middlewares/sql-injection-detector";
 import { createCsrfRotation } from "./middlewares/csrf-rotation";
 import linkPreviewMiddleware from "./middlewares/link-preview-middleware";
@@ -48,13 +49,19 @@ const globalRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-if (process.env.IMPORT_WORKER_ENABLED !== "false") {
-  importWorker.start();
-}
+export const startBackgroundWorkers = (): void => {
+  if (process.env.IMPORT_WORKER_ENABLED !== "false") {
+    importWorker.start();
+  }
 
-if (process.env.TASK_EXPORT_WORKER_ENABLED !== "false") {
-  taskExportWorker.start();
-}
+  if (process.env.TASK_EXPORT_WORKER_ENABLED !== "false") {
+    taskExportWorker.start();
+  }
+
+  if (process.env.AUDIT_LOG_EXPORT_WORKER_ENABLED !== "false") {
+    auditLogExportWorker.start();
+  }
+};
 
 // Trust first proxy if behind reverse proxy
 app.set("trust proxy", 1);

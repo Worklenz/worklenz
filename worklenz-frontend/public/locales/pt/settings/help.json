@@ -1,0 +1,29 @@
+{
+  "pageTitle": "Ajuda",
+  "pageDescription": "Documentação, notas de versão, links da comunidade e informações da versão.",
+  "opensInNewTab": "abre em uma nova guia",
+  "opensEmailApp": "abre seu app de e-mail",
+  "items": {
+    "documentation": "Documentação",
+    "releaseNotes": "Notas de versão",
+    "changelog": "Registro de alterações",
+    "emailSupport": "Suporte por e-mail",
+    "youtube": "YouTube",
+    "discord": "Discórdia",
+    "github": "GitHub",
+    "facebook": "Facebook",
+    "linkedin": "LinkedIn",
+    "x": "X",
+    "privacyPolicy": "Política de privacidade",
+    "about": "Sobre"
+  },
+  "releaseNotes": {
+    "unavailable": "Nenhuma nota de versão publicada ainda",
+    "loadFailed": "Não foi possível carregar as notas de versão. Clique para tentar novamente.",
+    "loadFailedMessage": "Não foi possível carregar as notas de versão. Tente novamente."
+  },
+  "about": {
+    "version": "Versão",
+    "lastUpdated": "Última atualização"
+  }
+}

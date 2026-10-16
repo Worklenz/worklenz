@@ -1,0 +1,84 @@
+{
+  "retry": "Tentar novamente",
+  "tabs": {
+    "overview": "Overview",
+    "messages": "Messages",
+    "members": "Membros da Empresa",
+    "projects": "Projetos",
+    "billing": "Faturamento"
+  },
+  "portalStatus": {
+    "active": "Ativo",
+    "invited": "Convidado",
+    "expired": "Expirado",
+    "not_invited": "Não convidado"
+  },
+  "header": {
+    "back": "Clientes",
+    "edit": "Editar cliente",
+    "actionsLabel": "Ações do cliente",
+    "lastSignedIn": "Último login em {{time}}",
+    "invited": "Convidado {{time}}",
+    "neverSignedIn": "Nunca fiz login"
+  },
+  "rail": {
+    "contact": "Contato",
+    "email": "Email",
+    "company": "Company",
+    "projects": "Projetos",
+    "balance": "Equilíbrio",
+    "portalHealth": "Saúde do portal",
+    "signInMethod": "Método de login",
+    "signInPassword": "Senha",
+    "signInNone": "Ainda não fez login",
+    "lastSignIn": "Último login",
+    "never": "Nunca",
+    "quickActions": "Ações rápidas",
+    "sendMessage": "Enviar mensagem",
+    "createInvoice": "Criar fatura",
+    "assignTask": "Atribuir tarefa"
+  },
+  "overview": {
+    "tasksOpen": "Tarefas abertas",
+    "invoicesDue": "Faturas vencidas",
+    "unansweredMessages": "Mensagens não respondidas",
+    "statsError": "Não foi possível carregar os números deste cliente.",
+    "recentActivity": "Atividade recente",
+    "activityError": "Não foi possível carregar a atividade recente.",
+    "noActivity": "Nada registrado para {{name}} ainda."
+  },
+  "members": {
+    "title": "Membros da empresa",
+    "addUser": "Adicionar usuário"
+  },
+  "projects": {
+    "title": "Projetos",
+    "project": "Projeto",
+    "openProject": "Abra {{name}}",
+    "health": "Saúde",
+    "progress": "Progresso",
+    "progressLabel": "Progresso de {{name}}",
+    "due": "Devido",
+    "assign": "Atribuir projeto",
+    "loadError": "Não foi possível carregar os projetos deste cliente.",
+    "empty": "Ainda não há projetos para {{name}}.",
+    "truncated": "Mostrando o primeiro {{shown}} de {{total}} projetos."
+  },
+  "billing": {
+    "title": "Faturas",
+    "createInvoice": "Criar fatura",
+    "warningTitle": "{{name}} ainda não pode usar o portal",
+    "warningDescription": "Eles não aceitaram o convite e, portanto, não podem visualizar ou pagar faturas no portal. Você ainda pode criar faturas. Envie o convite primeiro se eles quiserem vê-los.",
+    "sendInvite": "Enviar convite",
+    "resendInvite": "Reenviar convite",
+    "inviteSent": "Convite enviado para {{name}}.",
+    "inviteError": "Não foi possível enviar o convite."
+  },
+  "errors": {
+    "notFoundTitle": "Cliente não encontrado",
+    "notFoundDescription": "Pode ter sido removido ou o link está errado.",
+    "loadTitle": "Não foi possível carregar este cliente",
+    "loadDescription": "Por favor, tente novamente.",
+    "backToClients": "De volta aos clientes"
+  }
+}

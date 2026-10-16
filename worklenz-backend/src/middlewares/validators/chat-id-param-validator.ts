@@ -11,9 +11,9 @@ export default function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: Ne
     return res.status(400).send(new ServerResponse(false, null, "Chat ID parameter is required"));
   }
 
-  // Pattern: UUID v4 format (8-4-4-4-12 hex chars) followed by dash and ISO date (YYYY-MM-DD)
-  // Format: clientUuid-YYYY-MM-DD
-  const chatIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}-\d{4}-\d{2}-\d{2}$/i;
+  // Pattern: UUID v4 format (8-4-4-4-12 hex chars), optionally followed by dash and ISO date (YYYY-MM-DD)
+  // Format: clientUuid-YYYY-MM-DD (one day of a conversation) or clientUuid (the whole conversation)
+  const chatIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(-\d{4}-\d{2}-\d{2})?$/i;
   
   if (!chatIdPattern.test(chatId)) {
     return res.status(400).send(new ServerResponse(false, null, "Invalid chat ID format"));

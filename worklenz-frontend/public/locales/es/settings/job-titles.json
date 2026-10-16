@@ -19,5 +19,7 @@
   "updateJobTitleErrorMessage": "¡Error al actualizar el cargo!",
   "paginationTotal": "{{start}}-{{end}} de {{total}} elementos",
   "editTooltip": "Editar",
-  "deleteTooltip": "Eliminar"
+  "deleteTooltip": "Eliminar",
+  "fetchJobTitleErrorMessage": "No se pudo recuperar el puesto de trabajo. Por favor inténtalo de nuevo.",
+  "pageTitle": "Administrar títulos de trabajo"
 }

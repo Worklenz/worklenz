@@ -24,6 +24,9 @@ export interface ITaskListConfigV2 {
   labels?: string | null;
   priorities?: string | null;
   phases?: string | null;
+  epics?: string | null;
+  /** Software-project quick filters, space separated: `mine bugs blocked`. */
+  quick_filters?: string | null;
   archived?: boolean;
   count?: boolean;
   parent_task?: string;
@@ -150,7 +153,7 @@ export const tasksApiService = {
     taskId: string | undefined,
     projectId: string,
     searchQuery: string
-  ): Promise<IServerResponse<{ label: string; value: string }[]>> => {
+  ): Promise<IServerResponse<{ label: string; value: string; task_key?: string }[]>> => {
     const q = toQueryString({ taskId, projectId, searchQuery });
     const response = await apiClient.get(`${rootUrl}/search${q}`);
     return response.data;

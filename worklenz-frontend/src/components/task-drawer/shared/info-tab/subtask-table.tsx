@@ -13,7 +13,6 @@ import {
   EditOutlined,
   ExclamationCircleFilled,
   HolderOutlined,
-  PlusOutlined,
 } from '@/shared/antd-imports';
 import { nanoid } from '@reduxjs/toolkit';
 import { TFunction } from 'i18next';
@@ -453,7 +452,7 @@ const SubTaskTable = ({
   };
 
   const addInstantTask = async (taskName: string) => {
-    if (creatingTask || !taskName?.trim() || !connected) return;
+    if (!canCreateTask || isGuest || creatingTask || !taskName?.trim() || !connected) return;
 
     try {
       setCreatingTask(true);
@@ -561,10 +560,6 @@ const SubTaskTable = ({
 
   return (
     <Flex vertical gap={12}>
-      {taskFormViewModel?.task?.sub_tasks_count !== undefined && (
-        <Progress percent={getSubTasksProgress()} />
-      )}
-
       <Flex vertical gap={6}>
         {localSubTasks.length > 0 && (
           <DndContext
@@ -615,34 +610,56 @@ const SubTaskTable = ({
           </DndContext>
         )}
 
-        <div className="flex items-center min-w-max px-1 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[36px]">
-          {isEdit && !isGuest ? (
-            <Input
-              autoFocus
-              value={newTaskName}
-              onChange={e => setNewTaskName(e.target.value)}
-              style={{ border: 'none', boxShadow: 'none', height: 38 }}
-              placeholder={
-                typeof t === 'function'
-                  ? t('taskInfoTab.subTasks.addSubTaskInputPlaceholder')
-                  : 'Type your task and hit enter'
-              }
-              onBlur={handleInputBlur}
-              onPressEnter={handleOnBlur}
-              size="small"
-              className="subtask-table-input"
-            />
-          ) : !isGuest ? (
-            <button
-              type="button"
-              onClick={() => setIsEdit(true)}
-              className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors h-full w-full px-2 text-left"
-            >
-              <PlusOutlined style={{ color: themeMode === 'dark' ? '#8c8c8c' : '#595959' }} />
-              {t('taskInfoTab.subTasks.addSubTask')}
-            </button>
-          ) : null}
-        </div>
+        {isEdit && !isGuest && canCreateTask ? (
+          <Input
+            autoFocus
+            value={newTaskName}
+            onChange={e => setNewTaskName(e.target.value)}
+            style={{ border: 'none', boxShadow: 'none', height: 38 }}
+            placeholder={
+              typeof t === 'function'
+                ? t('taskInfoTab.subTasks.addSubTaskInputPlaceholder', {
+                    defaultValue: 'Type your task and hit enter',
+                  })
+                : 'Type your task and hit enter'
+            }
+            onBlur={handleInputBlur}
+            onPressEnter={handleOnBlur}
+            size="small"
+            className="subtask-table-input"
+            aria-label={
+              typeof t === 'function'
+                ? t('taskInfoTab.subTasks.addSubTaskInputPlaceholder', {
+                    defaultValue: 'Type your task and hit enter',
+                  })
+                : 'Type your task and hit enter'
+            }
+          />
+        ) : !isGuest ? (
+          <Button
+            type="text"
+            style={{
+              width: 'fit-content',
+              color: canCreateTask ? colors.skyBlue : undefined,
+              padding: 0,
+              opacity: !canCreateTask ? 0.4 : 1,
+              cursor: !canCreateTask ? 'not-allowed' : 'pointer',
+            }}
+            disabled={!canCreateTask}
+            onClick={() => canCreateTask && setIsEdit(true)}
+            aria-label={
+              typeof t === 'function'
+                ? t('taskInfoTab.subTasks.addSubTask', {
+                    defaultValue: '+ Add new sub task',
+                  })
+                : '+ Add new sub task'
+            }
+          >
+            {t('taskInfoTab.subTasks.addSubTask', {
+              defaultValue: '+ Add new sub task',
+            })}
+          </Button>
+        ) : null}
       </Flex>
     </Flex>
   );

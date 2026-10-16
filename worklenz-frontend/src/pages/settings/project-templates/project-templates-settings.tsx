@@ -2,7 +2,6 @@ import './project-templates-settings.css';
 import {
   Button,
   Card,
-  notification,
   Popconfirm,
   Table,
   TableProps,
@@ -20,6 +19,8 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
 import logger from '@/utils/errorLogger';
 import { ICustomTemplate } from '@/types/project-templates/project-templates.types';
+import { ProjectTemplateImportPayload } from '@/components/project-templates/project-template-preview-modal';
+import { presentCustomTemplateImportResult } from '@/utils/project-template-import-result';
 
 const ProjectTemplatesSettings = () => {
   const { t } = useTranslation('settings/project-templates');
@@ -68,20 +69,27 @@ const ProjectTemplatesSettings = () => {
     }
   };
 
-  const handleImportTemplate = async (templateId: string, projectName: string): Promise<string | null> => {
+  const handleImportTemplate = async (
+    templateId: string,
+    payload: ProjectTemplateImportPayload
+  ): Promise<string | null> => {
     try {
       setImporting(true);
       const res = await projectTemplatesApiService.createFromCustomTemplate({
-        template_id: templateId, project_name: projectName,
+        template_id: templateId,
+        project_name: payload.projectName,
+        start_date: payload.start_date,
+        settings_overrides: payload.settings_overrides,
       });
       if (res.done) {
-        notification.success({
-          message: t('importSuccess', { defaultValue: 'Template imported successfully!' }),
-          placement: 'topRight',
-          style: { borderRadius: '4px' },
+        const projectId = res.body?.project_id ?? '';
+        presentCustomTemplateImportResult({
+          t,
+          projectId,
+          skips: res.body?.skips,
+          onBeforeNavigate: () => setPreviewModalVisible(false),
+          navigate,
         });
-        setPreviewModalVisible(false);
-        navigate(`/worklenz/projects/${(res.body as any)?.project_id ?? ''}`);
         return null;
       } else {
         // Return the error message so the modal can display it inline on the name field
@@ -220,7 +228,7 @@ const ProjectTemplatesSettings = () => {
           size: 'small',
           pageSize,
           showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50'],
+          pageSizeOptions: ['10', '20', '50', '100'],
            showTotal: (total, range) => t('paginationTotal', { start: range[0], end: range[1], total, defaultValue: '{{start}}-{{end}} of {{total}} items' }),
           onShowSizeChange: (_, size) => {
             setPageSize(size);

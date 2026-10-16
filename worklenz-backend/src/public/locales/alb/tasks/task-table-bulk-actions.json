@@ -22,5 +22,8 @@
   "labelExists": "Etiketa ekziston tashmë",
   "pendingInvitation": "Ftesë në Pritje",
   "noMatchingLabels": "Asnjë etiketë që përputhet",
-  "noLabels": "Asnjë etiketë"
+  "noLabels": "Asnjë etiketë",
+  "SET_START_DATE": "Vendos Datën e Fillimit",
+  "Unarchive": "Ç'arkivo",
+  "Archive": "Arkivo"
 }

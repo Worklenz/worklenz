@@ -1,0 +1,13 @@
+{
+  "title": "Nieautoryzowane!",
+  "subtitle": "Nie masz uprawnień dostępu do tej strony",
+  "commentAccessTitle": "Aby wyświetlić ten komentarz, musisz mieć dostęp",
+  "commentAccessContactAdmin": "Nie jesteś zaproszony do tego projektu. Skontaktuj się z administratorem lub właścicielem projektu, aby poprosić o dostęp.",
+  "commentAccessDenied": "Nie jesteś zaproszony do tego projektu. Skontaktuj się z administratorem lub właścicielem projektu, aby poprosić o dostęp.",
+  "invalidCommentLink": "Ten link do komentarza jest nieprawidłowy.",
+  "commentNotFound": "Nie udało się znaleźć tego komentarza.",
+  "commentLinkOpenFailed": "Nie można otworzyć tego linku do komentarza. Spróbuj ponownie lub otwórz komentarz do zadania.",
+  "unableToOpenComment": "Nie można otworzyć komentarza",
+  "openingComment": "Otwieram komentarz...",
+  "button": "Przejdź do strony głównej"
+}

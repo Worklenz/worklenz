@@ -353,6 +353,8 @@ const AccountSetup: React.FC = () => {
     { key: Language.DE, label: 'Deutsch', flag: '🇩🇪' },
     { key: Language.ALB, label: 'Shqip', flag: '🇦🇱' },
     { key: Language.ZH, label: '简体中文', flag: '🇨🇳' },
+    { key: Language.PL, label: 'Polski', flag: '🇵🇱' },
+    { key: Language.FR, label: 'Français', flag: '🇫🇷' },
   ];
 
   const handleLanguageChange = (languageKey: ILanguageType) => {

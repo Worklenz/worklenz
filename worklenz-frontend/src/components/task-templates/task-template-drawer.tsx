@@ -1,11 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Checkbox,
-  Drawer,
+  Flex,
   Form,
   Input,
   List,
+  Modal,
   Tag,
   Tooltip,
   Typography,
@@ -36,7 +37,7 @@ interface TaskTemplateDrawerProps {
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /** Count all tasks in the tree: parent + all subtasks + all grandchildren. */
-function countAllTasks(tasks: ITaskTemplateTask[]): number {
+const countAllTasks = (tasks: ITaskTemplateTask[]): number => {
   return tasks.reduce((sum, task) => {
     const subtaskCount = (task.sub_tasks || []).reduce(
       (s, sub) => s + 1 + (sub.sub_tasks?.length ?? 0),
@@ -44,14 +45,14 @@ function countAllTasks(tasks: ITaskTemplateTask[]): number {
     );
     return sum + 1 + subtaskCount;
   }, 0);
-}
+};
 
 /**
  * Flatten the task tree to top-level only (strip all sub_tasks).
  * Used when the user unchecks "Include subtasks hierarchy".
  * Every task — including previously nested ones — becomes a top-level entry.
  */
-function flattenToTopLevel(tasks: ITaskTemplateTask[]): ITaskTemplateTask[] {
+const flattenToTopLevel = (tasks: ITaskTemplateTask[]): ITaskTemplateTask[] => {
   const flat: ITaskTemplateTask[] = [];
   for (const task of tasks) {
     flat.push({ id: task.id, name: task.name, total_minutes: task.total_minutes });
@@ -63,13 +64,13 @@ function flattenToTopLevel(tasks: ITaskTemplateTask[]): ITaskTemplateTask[] {
     }
   }
   return flat;
-}
+};
 
 /**
  * Convert IProjectTask[] (already hierarchy-aware, built by handleOpenTemplateDrawer)
  * into ITaskTemplateTask[] for the API payload and preview.
  */
-function projectTasksToTemplateTasks(projectTasks: any[]): ITaskTemplateTask[] {
+const projectTasksToTemplateTasks = (projectTasks: any[]): ITaskTemplateTask[] => {
   return projectTasks.map(task => ({
     id: task.id,
     name: task.name || '',
@@ -93,7 +94,7 @@ function projectTasksToTemplateTasks(projectTasks: any[]): ITaskTemplateTask[] {
         }
       : {}),
   }));
-}
+};
 
 // ─── Sub-component: renders one subtask row + its grandchildren ──────────────
 
@@ -102,7 +103,6 @@ const SubTaskRow: React.FC<{ subtask: ITaskTemplateSubTask }> = ({ subtask }) =>
 
   return (
     <div>
-      {/* Level-2 subtask */}
       <div
         style={{
           display: 'flex',
@@ -123,7 +123,6 @@ const SubTaskRow: React.FC<{ subtask: ITaskTemplateSubTask }> = ({ subtask }) =>
         )}
       </div>
 
-      {/* Level-3 grandchildren */}
       {subtask.sub_tasks && subtask.sub_tasks.length > 0 && (
         <div style={{ paddingLeft: 20 }}>
           {subtask.sub_tasks.map((grandchild, gcIdx) => (
@@ -159,28 +158,33 @@ const TaskTemplateDrawer = ({
 }: TaskTemplateDrawerProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('task-template-drawer');
+  const { token } = theme.useToken();
   const [form] = Form.useForm();
 
   const [templateData, setTemplateData] = useState<ITaskTemplateGetResponse>({});
   const [isLoading, setIsLoading] = useState(false);
   const [creatingTemplate, setCreatingTemplate] = useState(false);
   const [updatingTemplate, setUpdatingTemplate] = useState(false);
-  // Controls whether the selected hierarchy is preserved or flattened
   const [includeSubtasks, setIncludeSubtasks] = useState(true);
 
-  // selectedTasks is the hierarchy-aware IProjectTask[] built by handleOpenTemplateDrawer
   const { selectedTasks } = useAppSelector(state => state.bulkActionReducer);
 
-  // Show the checkbox only when the selection actually contains a hierarchy
   const hasAnySubtasks = useMemo(
     () => selectedTasks.some(task => task.sub_tasks && task.sub_tasks.length > 0),
     [selectedTasks]
   );
 
-  const onCloseDrawer = () => {
+  const isSaving = creatingTemplate || updatingTemplate;
+
+  const resetState = () => {
     form.resetFields();
     setTemplateData({});
     setIncludeSubtasks(true);
+  };
+
+  const handleClose = () => {
+    if (isSaving) return;
+    resetState();
     onClose();
   };
 
@@ -200,19 +204,18 @@ const TaskTemplateDrawer = ({
     }
   };
 
-  const afterOpenChange = (open: boolean) => {
-    if (!open) return;
+  useEffect(() => {
+    if (!showDrawer) return;
+
     if (selectedTemplateId) {
-      // Editing an existing template — fetch from server
       fetchTemplateData();
-    } else {
-      // Creating a new template — selectedTasks already has the correct
-      // hierarchy built by handleOpenTemplateDrawer (selection-aware tree).
-      // Convert to ITaskTemplateTask[] for the preview and payload.
-      const tasks = projectTasksToTemplateTasks(selectedTasks);
-      setTemplateData({ tasks });
+      return;
     }
-  };
+
+    const tasks = projectTasksToTemplateTasks(selectedTasks);
+    setTemplateData({ tasks });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once when opened
+  }, [showDrawer, selectedTemplateId]);
 
   const handleRemoveTask = (index: number) => {
     const updated = [...(templateData.tasks || [])];
@@ -220,11 +223,6 @@ const TaskTemplateDrawer = ({
     setTemplateData({ ...templateData, tasks: updated });
   };
 
-  /**
-   * Build the final payload for the API.
-   * - includeSubtasks = true  → send the hierarchy as-is
-   * - includeSubtasks = false → flatten everything to top-level tasks
-   */
   const buildPayloadTasks = (): ITaskTemplateTask[] => {
     const tasks = templateData.tasks || [];
     if (!includeSubtasks) return flattenToTopLevel(tasks);
@@ -243,13 +241,8 @@ const TaskTemplateDrawer = ({
         tasks: payloadTasks,
       });
       if (res.done) {
-        // Reset drawer state
-        form.resetFields();
-        setTemplateData({});
-        setIncludeSubtasks(true);
-        // Clear the Redux template selection state
+        resetState();
         dispatch(setSelectedTasks([]));
-        // Notify parent: saved successfully (triggers selection clear in task list)
         onSaved?.();
         onClose();
       }
@@ -273,10 +266,7 @@ const TaskTemplateDrawer = ({
         tasks: payloadTasks,
       });
       if (res.done) {
-        // Reset drawer state
-        form.resetFields();
-        setTemplateData({});
-        setIncludeSubtasks(true);
+        resetState();
         dispatch(setSelectedTasks([]));
         onSaved?.();
         onClose();
@@ -298,7 +288,6 @@ const TaskTemplateDrawer = ({
     });
   };
 
-  // Display list respects the includeSubtasks toggle for live preview
   const displayTasks = useMemo((): ITaskTemplateTask[] => {
     const tasks = templateData.tasks || [];
     if (!includeSubtasks) return flattenToTopLevel(tasks);
@@ -310,37 +299,59 @@ const TaskTemplateDrawer = ({
     [displayTasks, includeSubtasks]
   );
 
+  const title = selectedTemplateId ? t('editTaskTemplate') : t('createTaskTemplate');
+
   return (
-    <Drawer
-      width={650}
-      title={selectedTemplateId ? t('editTaskTemplate') : t('createTaskTemplate')}
+    <Modal
+      title={<span id="task-template-modal-title">{title}</span>}
       open={showDrawer}
-      onClose={onCloseDrawer}
-      afterOpenChange={afterOpenChange}
-      destroyOnHidden={true}
+      onCancel={handleClose}
+      width={720}
+      centered
+      destroyOnHidden
+      maskClosable={!isSaving}
+      keyboard={!isSaving}
+      aria-labelledby="task-template-modal-title"
       footer={
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'right' }}>
-          <Button onClick={onCloseDrawer}>{t('cancelButton')}</Button>
+        <Flex justify="flex-end" gap={8}>
+          <Button
+            onClick={handleClose}
+            disabled={isSaving}
+            aria-label={t('cancelButton')}
+          >
+            {t('cancelButton')}
+          </Button>
           <Button
             type="primary"
             onClick={handleSaveTemplate}
-            loading={creatingTemplate || updatingTemplate}
+            loading={isSaving}
+            disabled={isLoading}
+            aria-label={t('saveButton')}
           >
             {t('saveButton')}
           </Button>
-        </div>
+        </Flex>
       }
     >
-      <Form form={form} initialValues={{ name: templateData?.name }}>
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{ name: templateData?.name }}
+        style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}
+      >
         <Form.Item
           name="name"
           label={t('templateNameText')}
           rules={[{ required: true, message: t('templateNameRequired') }]}
         >
-          <Input type="text" />
+          <Input
+            type="text"
+            maxLength={100}
+            aria-label={t('templateNameText')}
+            autoFocus
+          />
         </Form.Item>
 
-        {/* Hierarchy toggle — only shown when the selection has a parent-child structure */}
         {hasAnySubtasks && (
           <Form.Item style={{ marginBottom: 12 }}>
             <Checkbox
@@ -367,15 +378,18 @@ const TaskTemplateDrawer = ({
           {t('selectedTasks')} ({totalTaskCount})
         </Typography.Text>
 
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginTop: 16 }}>
           <List
             loading={isLoading}
             bordered
             dataSource={displayTasks}
+            style={{
+              borderRadius: token.borderRadiusLG ?? 8,
+              borderColor: token.colorBorderSecondary,
+            }}
             renderItem={(item, index) => (
               <List.Item>
                 <div style={{ width: '100%' }}>
-                  {/* Level-1: parent task row */}
                   <div
                     style={{
                       display: 'flex',
@@ -398,13 +412,16 @@ const TaskTemplateDrawer = ({
                           </Tag>
                         </Tooltip>
                       )}
-                      <Button type="link" onClick={() => handleRemoveTask(index)}>
+                      <Button
+                        type="link"
+                        onClick={() => handleRemoveTask(index)}
+                        aria-label={t('removeTask')}
+                      >
                         {t('removeTask')}
                       </Button>
                     </div>
                   </div>
 
-                  {/* Level-2 subtasks + Level-3 grandchildren */}
                   {item.sub_tasks && item.sub_tasks.length > 0 && (
                     <div style={{ marginTop: 6, paddingLeft: 16 }}>
                       {item.sub_tasks.map((subtask, subIndex) => (
@@ -418,7 +435,7 @@ const TaskTemplateDrawer = ({
           />
         </div>
       </Form>
-    </Drawer>
+    </Modal>
   );
 };
 

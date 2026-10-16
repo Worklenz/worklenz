@@ -10,4 +10,7 @@ export interface IMyTask extends IProjectTask {
   status_color?: string;
   project_statuses?: ITaskStatusViewModel[];
   parent_task_name?: string;
+  /** Pinned by the current user on Today's Priorities. Only set on rows from GET /home/tasks. */
+  is_pinned?: boolean;
+  pinned_at?: string | null;
 }

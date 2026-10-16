@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { adminCenterItems } from '../../../lib/admin-center-constants';
 import './sidebar.css';
 import { useAuthService } from '@/hooks/useAuth';
-import { isBusinessPlan } from '@/ee/utils/subscription-utils';
+import { isBusinessPlan } from '@/utils/subscription-utils';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 
 const AdminCenterSidebar: React.FC = () => {
@@ -18,12 +18,16 @@ const AdminCenterSidebar: React.FC = () => {
 
   type MenuItem = Required<MenuProps>['items'][number];
   const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
 
   const menuItems = adminCenterItems.filter(item => {
     if (item.key === 'settings') {
       return isBusinessPlan(currentSession);
     }
     if (item.selfHostedExcluded && isSelfHosted) {
+      return false;
+    }
+    if (item.ownerOrAdminOnly && !isOwnerOrAdmin) {
       return false;
     }
     return true;

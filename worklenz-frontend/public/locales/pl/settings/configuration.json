@@ -1,0 +1,17 @@
+{
+  "configurationTitle": "Konfiguracja",
+  "configurationDescription": "Zarządzaj ustawieniami obejmującymi całą organizację, które mają zastosowanie we wszystkich projektach.",
+  "businessPlanRequired": "Wymagany biznesplan",
+  "businessPlanRequiredDescription": "Ustawienia ograniczeń zadań na poziomie organizacji są dostępne w planach Business i Enterprise.",
+  "upgradePlan": "Plan aktualizacji",
+  "taskManagementSection": "Zarządzanie zadaniami",
+  "restrictTaskCreation": "Ogranicz przydzielanie zadań do administratorów i liderów zespołów",
+  "restrictTaskCreationTooltip": "Po włączeniu tylko administratorzy i liderzy zespołów mogą tworzyć i przypisywać zadania we wszystkich projektach. Członkowie zespołu mogą przeglądać tylko przydzielone im zadania. Ustawienia na poziomie projektu zastępują to ustawienie na poziomie organizacji.",
+  "restrictTaskCreationNote": "Uwaga: ustawienia na poziomie projektu mają wyższy priorytet niż ustawienia na poziomie organizacji. Zmiany wchodzą w życie natychmiast.",
+  "timeTrackingSection": "Śledzenie czasu",
+  "limitTimelogBackdating": "Ogranicz, jak daleko wstecz może być rejestrowany czas",
+  "limitTimelogBackdatingTooltip": "Gdy ta opcja jest włączona, członkowie nie mogą tworzyć dziennika czasu z datą wcześniejszą niż dozwolona liczba dni. Dotyczy wszystkich, w tym właścicieli i administratorów. Nie ma to wpływu na uruchomione liczniki czasu i zaimportowane dzienniki.",
+  "timelogBackdateLimitDays": "Maksymalna liczba dni, w których dziennik czasu może być datowany wstecz",
+  "timelogBackdateLimitNote": "Uwaga: istniejące rejestry czasu nigdy nie są zmieniane. Edycja już starego logu pozostaje możliwa, o ile nie zmieni się jego data.",
+  "days": "dni"
+}

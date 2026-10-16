@@ -9,6 +9,7 @@ import { Badge } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import { NavigateFunction } from 'react-router-dom';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import { getProjectDefaultTab } from '@/lib/project/software-project';
 
 export const ProjectNameCell: React.FC<{
   record: IProjectViewModel;
@@ -23,17 +24,7 @@ export const ProjectNameCell: React.FC<{
   const selectProject = (record: IProjectViewModel) => {
     if (!record.id) return;
 
-    let viewTab = 'tasks-list';
-    switch (record.team_member_default_view) {
-      case 'TASK_LIST':
-        viewTab = 'tasks-list';
-        break;
-      case 'BOARD':
-        viewTab = 'board';
-        break;
-      default:
-        viewTab = 'tasks-list';
-    }
+    const viewTab = getProjectDefaultTab(record.team_member_default_view, record.project_type);
 
     const searchParams = new URLSearchParams({
       tab: viewTab,

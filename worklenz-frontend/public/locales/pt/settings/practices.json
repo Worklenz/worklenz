@@ -18,5 +18,7 @@
   "fetchPracticeErrorMessage": "Falha ao buscar a prática",
   "createPracticeErrorMessage": "Falha ao criar a prática",
   "updatePracticeErrorMessage": "Falha ao atualizar a prática",
-  "pinTooltip": "Fixar na barra de navegação"
+  "pinTooltip": "Fixar na barra de navegação",
+  "rowsPerPage": "Linhas por página:",
+  "paginationSummary": "{{range}} de {{total}}"
 }

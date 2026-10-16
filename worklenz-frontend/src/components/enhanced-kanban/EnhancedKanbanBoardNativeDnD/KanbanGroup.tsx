@@ -1,5 +1,7 @@
 import React, { memo, useMemo, useState, useRef, useEffect } from 'react';
+import type { InputRef } from 'antd';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import TaskCard from './TaskCard';
 import { themeWiseColor } from '@/utils/themeWiseColor';
@@ -25,7 +27,7 @@ import {
   IGroupBy,
   toggleGroupCollapse,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
-import { Modal, Dropdown, Badge, Tooltip } from '@/shared/antd-imports';
+import { Modal, Dropdown, Badge, Tooltip, Input } from '@/shared/antd-imports';
 // @ts-ignore: Heroicons module types
 import {
   EllipsisHorizontalIcon,
@@ -37,6 +39,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { getContrastColor } from '@/utils/colorUtils';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
+import { UNASSIGNED_GROUP_ID } from '@/utils/assign-task-to-member';
+import { openCreateIssueModal } from '@/features/projects/singleProject/create-issue/create-issue-modal.slice';
 
 // Simple Portal component - removed as it's no longer used
 
@@ -153,19 +157,21 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     const isProjectManager = useIsProjectManager();
     const { canCreateTask } = useTaskCreationPermission();
     const [name, setName] = useState(group.name);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<InputRef>(null);
     const [dropdownVisible, setDropdownVisible] = useState(false);
     const [isChangingCategory, setIsChangingCategory] = useState(false);
     const themeMode = useAppSelector(state => state.themeReducer.mode);
     const dispatch = useAppDispatch();
-    const { projectId } = useAppSelector(state => state.projectReducer);
+    const { projectId, project } = useAppSelector(state => state.projectReducer);
     const { groupBy, collapsedGroups } = useAppSelector(state => state.enhancedKanbanReducer);
     const { statusCategories, status } = useAppSelector(state => state.taskStatusReducer);
+    const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
+    const isSoftwareProject = isSoftwareProjectType(project?.project_type);
     const { trackMixpanelEvent } = useMixpanelTracking();
     const [showNewCardTop, setShowNewCardTop] = useState(false);
     const [showNewCardBottom, setShowNewCardBottom] = useState(false);
     const { t } = useTranslation('kanban-board');
-    
+
     // Track if user is dragging (to prevent click-to-expand during drag)
     const [isDragging, setIsDragging] = useState(false);
     const dragStartPos = useRef<{ x: number; y: number } | null>(null);
@@ -178,30 +184,30 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
       e.stopPropagation();
       dispatch(toggleGroupCollapse(group.id));
     };
-    
+
     // Handle drag start - track position and set dragging state
     const handleHeaderDragStart = (e: React.DragEvent) => {
       setIsDragging(true);
       dragStartPos.current = { x: e.clientX, y: e.clientY };
       onGroupDragStart(e, group.id);
     };
-    
+
     // Handle drag end - reset dragging state after a small delay
     const handleHeaderDragEnd = (e: React.DragEvent) => {
       onDragEnd(e);
-      
+
       // Clear any existing timeout
       if (dragTimeoutRef.current) {
         clearTimeout(dragTimeoutRef.current);
       }
-      
+
       // Reset dragging state after a small delay to prevent click event
       dragTimeoutRef.current = setTimeout(() => {
         setIsDragging(false);
         dragStartPos.current = null;
       }, 100);
     };
-    
+
     // Cleanup timeout on unmount
     useEffect(() => {
       return () => {
@@ -210,20 +216,24 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
         }
       };
     }, []);
-    
+
     // Handle click - only expand if not dragging
     const handleHeaderClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      
+
       // Don't expand if user was dragging
       if (isDragging) {
         return;
       }
-      
+
       // When collapsed, clicking anywhere expands
       if (isCollapsed) {
         handleToggleCollapse(e);
-      } else if ((isProjectManager || isOwnerOrAdmin) && group.name !== t('unmapped')) {
+      } else if (
+        (isProjectManager || isOwnerOrAdmin) &&
+        group.name !== t('unmapped') &&
+        groupBy !== IGroupBy.ASSIGNEE
+      ) {
         setIsEditable(true);
       }
     };
@@ -295,8 +305,10 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
 
     const handlePressEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
-        setShowNewCardTop(true);
-        setShowNewCardBottom(false);
+        if (!isSoftwareProject) {
+          setShowNewCardTop(true);
+          setShowNewCardBottom(false);
+        }
         handleBlur();
       }
     };
@@ -408,12 +420,45 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
       );
     }, [groupBy, group.id, group.name, t]);
 
+    const isUnassignedGroup = groupBy === IGroupBy.ASSIGNEE && group.id === UNASSIGNED_GROUP_ID;
+
+    const getCreateIssueTarget = () => {
+      if (groupBy === IGroupBy.PHASE) {
+        return { sprintId: isUnmappedPhase ? null : group.id };
+      }
+      const activeSprintId = phaseList.find(phase => phase.sprint_status === 'active')?.id ?? null;
+      if (groupBy === IGroupBy.STATUS) {
+        return { sprintId: activeSprintId, statusId: group.id };
+      }
+      return { sprintId: activeSprintId };
+    };
+
+    const handleOpenCreateCard = (position: 'top' | 'bottom') => {
+      if (isSoftwareProject) {
+        dispatch(openCreateIssueModal(getCreateIssueTarget()));
+        return;
+      }
+      setShowNewCardTop(position === 'top');
+      setShowNewCardBottom(position === 'bottom');
+    };
+
+    const displayName = (() => {
+      if (isUnmappedPhase && isSoftwareProjectType(project?.project_type)) {
+        return t('backlogGroupName', { defaultValue: 'Backlog' });
+      }
+      if (isUnassignedGroup) {
+        return t('unassignedGroupName', { defaultValue: 'Unassigned' });
+      }
+      return name;
+    })();
+
     // Create dropdown menu items
     const menuItems = useMemo(() => {
       if (!isOwnerOrAdmin && !isProjectManager) return [];
 
-      // Don't show menu for Unmapped phase or priority grouping
-      if (isUnmappedPhase || groupBy === IGroupBy.PRIORITY) return [];
+      if (isUnmappedPhase || groupBy === IGroupBy.PRIORITY || groupBy === IGroupBy.ASSIGNEE) {
+        return [];
+      }
 
       const items = [
         {
@@ -502,9 +547,9 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     // }, [showDropdown]);
 
     return (
-      <div 
+      <div
         className={`enhanced-kanban-group ${isCollapsed ? 'collapsed' : ''}`}
-        style={{ 
+        style={{
           position: 'relative',
           // When collapsed, make the group much more compact
           minHeight: isCollapsed ? 'auto' : undefined,
@@ -572,14 +617,19 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                 </button>
 
                 {isEditable && !isCollapsed ? (
-                  <input
+                  <Input
                     ref={inputRef}
                     value={name}
-                    className="bg-transparent border-none outline-none text-sm font-semibold min-w-[185px]"
-                    style={{ color: headerTextColor }}
+                    maxLength={50}
+                    showCount
+                    className="bg-transparent border-none outline-none text-sm font-semibold min-w-[120px] flex-1"
+                    style={{
+                      marginBottom: 0,
+                      color: headerTextColor,
+                    }}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    onKeyDown={handlePressEnter}
+                    onPressEnter={handlePressEnter}
                     onMouseDown={e => {
                       e.stopPropagation();
                     }}
@@ -588,10 +638,10 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                     }}
                   />
                 ) : (
-                  <Tooltip title={name} placement="top">
+                  <Tooltip title={displayName} placement="top">
                     <div
                       className="text-sm font-semibold"
-                      style={{ 
+                      style={{
                         color: headerTextColor,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -610,7 +660,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                         e.stopPropagation();
                       }}
                     >
-                      {name} ({group.tasks.length})
+                      {displayName} ({group.tasks.length})
                     </div>
                   </Tooltip>
                 )}
@@ -622,10 +672,12 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   <button
                     type="button"
                     className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
-                    onClick={() => {
-                      setShowNewCardTop(true);
-                      setShowNewCardBottom(false);
-                    }}
+                    onClick={() => handleOpenCreateCard('top')}
+                    aria-label={
+                      isSoftwareProject
+                        ? t('createIssue', { defaultValue: 'Create Issue' })
+                        : t('addTask')
+                    }
                   >
                     <svg
                       className="w-4 h-4"
@@ -671,12 +723,12 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
 
           {/* Simple Delete Confirmation */}
           {/* Portal-based confirmation removed, now handled by Modal.confirm */}
-          
+
           {/* Tasks section - hidden when collapsed */}
           {!isCollapsed && (
             <div className="enhanced-kanban-group-tasks">
               {/* Create card at top */}
-              {(showNewCardTop && canCreateTask ) && (
+              {(showNewCardTop && canCreateTask) && (
                 <EnhancedKanbanCreateTaskCard
                   sectionId={group.id}
                   setShowNewCard={setShowNewCardTop}
@@ -703,40 +755,30 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                 >
                   <ExampleKanbanCards
                     isDarkMode={themeMode === 'dark'}
-                    onClick={() => {
-                      setShowNewCardBottom(false);
-                      setShowNewCardTop(true);
-                    }}
+                    onClick={() => handleOpenCreateCard('top')}
                   />
                 </div>
               )}
 
-            {/* Drop indicator at the top of the group */}
-            {hoveredGroupId === group.id && hoveredTaskIdx === 0 && (
-              <div className="drop-preview-indicator">
-                <div className="drop-line" />
-              </div>
-            )}
-
-            {group.tasks.map((task, idx) => (
-              <React.Fragment key={task.id}>
-                {/* Drop indicator before this card */}
-                {hoveredGroupId === group.id && hoveredTaskIdx === idx && (
-                  <div
-                    onDragOver={e => onTaskDragOver(e, group.id, idx)}
-                    onDrop={e => onTaskDrop(e, group.id, idx)}
-                  >
+              {group.tasks.map((task, idx) => (
+                <React.Fragment key={task.id}>
+                  {/* Drop indicator before this card */}
+                  {hoveredGroupId === group.id && hoveredTaskIdx === idx && (
                     <div
-                      className="w-full h-full bg-red-500"
-                      style={{
-                        height: 80,
-                        background: themeMode === 'dark' ? '#2a2a2a' : '#E2EAF4',
-                        borderRadius: 6,
-                        border: `5px`,
-                      }}
-                    ></div>
-                  </div>
-                )}
+                      onDragOver={e => onTaskDragOver(e, group.id, idx)}
+                      onDrop={e => onTaskDrop(e, group.id, idx)}
+                    >
+                      <div
+                        className="w-full h-full bg-red-500"
+                        style={{
+                          height: 80,
+                          background: themeMode === 'dark' ? '#2a2a2a' : '#E2EAF4',
+                          borderRadius: 6,
+                          border: `5px`,
+                        }}
+                      ></div>
+                    </div>
+                  )}
                 <TaskCard
                   task={task}
                   onTaskDragStart={onTaskDragStart}
@@ -781,10 +823,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
               <button
                 type="button"
                 className="h-10 w-full rounded-md border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 mt-2"
-                onClick={() => {
-                  setShowNewCardBottom(true);
-                  setShowNewCardTop(false);
-                }}
+                onClick={() => handleOpenCreateCard('bottom')}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -794,7 +833,9 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                     d="M12 4v16m8-8H4"
                   />
                 </svg>
-                {t('addTask')}
+                {isSoftwareProject
+                  ? t('createIssue', { defaultValue: 'Create Issue' })
+                  : t('addTask')}
               </button>
             )}
           </div>

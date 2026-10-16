@@ -1,4 +1,4 @@
-import RateCardSettings from '@/ee/pages/settings/rate-card-settings/RateCardSettings';
+import RateCardSettings from '@/pages/settings/rate-card-settings/RateCardSettings';
 import {
   AppstoreOutlined,
   BankOutlined,
@@ -23,7 +23,7 @@ import {
 import { MobileOutlined, SwapOutlined } from '@ant-design/icons';
 import React, { ReactNode, lazy } from 'react';
 import { ILocalSession } from '@/types/auth/local-session.types';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/utils/subscription-utils';
 const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-settings'));
 const NotificationsSettings = lazy(
   () => import('../../pages/settings/notifications/notifications-settings')
@@ -83,7 +83,8 @@ type SettingMenuItem = {
   element: ReactNode;
   adminOnly?: boolean;
   isDangerous?: boolean;
-  businessPlanRequired?: boolean;
+  /** Registry feature the plan must grant for the item to be listed. */
+  requiredFeature?: string;
   showInSidebar?: boolean;
 };
 // settings all element items use for sidebar and routes
@@ -280,7 +281,7 @@ export const settingsItems: SettingMenuItem[] = [
     groupDefaultValue: 'Financial & Billing',
     icon: React.createElement(DollarCircleOutlined),
     element: React.createElement(RateCardSettings),
-    businessPlanRequired: true,
+    requiredFeature: 'finance_module',
     adminOnly: true,
   },
   {
@@ -326,7 +327,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(SettingOutlined),
     element: React.createElement(ConfigurationSettings),
     adminOnly: true,
-    businessPlanRequired: false, // Visible to all admins; upgrade prompt shown inside
   },
   // Danger zone - always at the bottom
   {
@@ -343,16 +343,14 @@ export const settingsItems: SettingMenuItem[] = [
 ];
 
 export const getAccessibleSettings = (isAdmin: boolean, session: ILocalSession | null) => {
-  const hasBusinessAccess = hasBusinessFeatureAccess(session);
-
   return settingsItems.filter(item => {
     // Check admin requirement
     if (item.adminOnly && !isAdmin) {
       return false;
     }
 
-    // Check business plan requirement
-    if (item.businessPlanRequired && !hasBusinessAccess) return false;
+    // Check plan requirement
+    if (item.requiredFeature && !canUseFeature(session, item.requiredFeature)) return false;
 
     return true;
   });

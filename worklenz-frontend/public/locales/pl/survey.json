@@ -1,0 +1,15 @@
+{
+  "modalTitle": "Pomóż nam ulepszyć Twoje doświadczenie",
+  "skip": "Pomiń na razie",
+  "previous": "Poprzedni",
+  "next": "Następny",
+  "completeSurvey": "Wypełnij ankietę",
+  "submitting": "Przesyłanie odpowiedzi...",
+  "submitSuccessTitle": "Dziękuję!",
+  "submitSuccessSubtitle": "Twoja opinia pomoże nam ulepszyć Worklenz dla wszystkich.",
+  "submitSuccessMessage": "Dziękujemy za wypełnienie ankiety!",
+  "submitErrorMessage": "Nie udało się przesłać ankiety. Spróbuj ponownie.",
+  "submitErrorLog": "Nie udało się przesłać ankiety",
+  "fetchErrorLog": "Nie udało się pobrać ankiety",
+  "dontShowAgain": "Nie pokazuj więcej tej ankiety"
+}

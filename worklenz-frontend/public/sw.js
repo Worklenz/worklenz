@@ -24,16 +24,20 @@ const STATIC_CACHE_URLS = [
   // Ant Design and other critical CSS/JS will be cached as they're requested
 ];
 
-// API endpoints that can be cached
+// The ONLY API endpoints the worker may cache (network-first, used as an offline
+// fallback). Everything else under /api/ or /secure/ is user- or team-specific data:
+// it goes straight to the network and is never cached or replayed.
+// Paths must include the version segment (/api/v1/...) to match the real routes -
+// the old patterns omitted it and matched nothing, so the allow-list was never in effect.
 const CACHEABLE_API_PATTERNS = [
-  /\/api\/project-categories/,
-  /\/api\/project-statuses/,
-  /\/api\/task-priorities/,
-  /\/api\/task-statuses/,
-  /\/api\/job-titles/,
-  /\/api\/teams\/\d+\/members/,
-  /\/api\/auth\/user/, // Cache user info for offline access
+  /\/api\/v1\/project-categories(\/|$)/,
+  /\/api\/v1\/project-statuses(\/|$)/,
+  /\/api\/v1\/task-priorities(\/|$)/,
+  /\/api\/v1\/job-titles(\/|$)/,
 ];
+
+// Path prefixes that carry application data / session state (see above).
+const DATA_PATH_PREFIXES = ['/api/', '/secure/'];
 
 // Resources that should never be cached
 const NEVER_CACHE_PATTERNS = [
@@ -101,6 +105,14 @@ self.addEventListener('fetch', event => {
 
   // Skip non-GET requests and browser extensions
   if (request.method !== 'GET' || NEVER_CACHE_PATTERNS.some(pattern => pattern.test(url.href))) {
+    return;
+  }
+
+  // Data/session calls that aren't allow-listed: don't intercept at all, so the
+  // browser fetches natively. Previously every /api/ GET was cached - including the
+  // backend's HTTP-200 { done: false } error payloads - and replayed whenever the
+  // network fetch failed (e.g. while the API was restarting).
+  if (isNetworkOnlyRequest(url)) {
     return;
   }
 
@@ -180,7 +192,7 @@ async function networkFirstStrategy(request, cacheName) {
   try {
     const networkResponse = await fetch(request);
 
-    if (networkResponse.status === 200) {
+    if (await isCacheableResponse(networkResponse)) {
       // Cache successful responses
       const responseClone = networkResponse.clone();
       await cache.put(request, responseClone);
@@ -256,11 +268,32 @@ function isImageRequest(url) {
   );
 }
 
+// An allow-listed, cacheable API endpoint (see CACHEABLE_API_PATTERNS).
 function isAPIRequest(url) {
-  return (
-    url.pathname.startsWith('/api/') ||
-    CACHEABLE_API_PATTERNS.some(pattern => pattern.test(url.pathname))
-  );
+  return CACHEABLE_API_PATTERNS.some(pattern => pattern.test(url.pathname));
+}
+
+// A data/session call that must always hit the network (anything under /api/ or
+// /secure/ that isn't allow-listed).
+function isNetworkOnlyRequest(url) {
+  return DATA_PATH_PREFIXES.some(prefix => url.pathname.startsWith(prefix)) && !isAPIRequest(url);
+}
+
+// Only cache real successes. The backend reports failures as HTTP 200 with
+// { done: false, message }, so a 200 status alone is not proof of success - caching
+// such an envelope would replay the error later, when the network is unreachable.
+async function isCacheableResponse(response) {
+  if (response.status !== 200) return false;
+
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) return true;
+
+  try {
+    const body = await response.clone().json();
+    return !(body && body.done === false);
+  } catch (error) {
+    return true;
+  }
 }
 
 function isHTMLRequest(request) {
