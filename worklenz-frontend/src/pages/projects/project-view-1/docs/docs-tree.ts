@@ -91,6 +91,14 @@ const subtreeHeight = (pages: IProjectDocumentSummary[], id: string): number => 
   return height;
 };
 
+/** Down drops after the target, up drops before it, and a rightward drag nests inside it. */
+export const dragPlacement = (
+  activeIndex: number,
+  overIndex: number,
+  deltaX: number
+): 'before' | 'after' | 'inside' =>
+  deltaX > 28 ? 'inside' : activeIndex < overIndex ? 'after' : 'before';
+
 export const planDocumentMove = (
   pages: IProjectDocumentSummary[],
   activeId: string,

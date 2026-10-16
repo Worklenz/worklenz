@@ -390,6 +390,44 @@ export default class ProjectDocumentsController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+  public static async favorites(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    if (!req.user?.id) return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    const result = await db.query(
+      `SELECT f.document_id
+       FROM project_document_favorites f
+       INNER JOIN project_documents d ON d.id = f.document_id
+       WHERE f.user_id = $1 AND d.project_id = $2 AND d.deleted_at IS NULL`,
+      [req.user.id, req.query.project_id]
+    );
+    return res.status(200).send(new ServerResponse(true, result.rows.map(row => row.document_id)));
+  }
+
+  @HandleExceptions()
+  public static async setFavorite(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    if (!req.user?.id) return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    const favorite = req.body?.favorite;
+    if (typeof favorite !== "boolean") {
+      return res.status(400).send(new ServerResponse(false, null, "Favorite must be a boolean"));
+    }
+    // Access middleware verifies the project and docs permission. Never accept a user ID
+    // from the caller, and do not touch the shared document's autosave timestamp.
+    if (favorite) {
+      await db.query(
+        `INSERT INTO project_document_favorites (user_id, document_id)
+         SELECT $1, id FROM project_documents WHERE id = $2 AND deleted_at IS NULL
+         ON CONFLICT (user_id, document_id) DO NOTHING`,
+        [req.user.id, req.params.id]
+      );
+    } else {
+      await db.query(
+        `DELETE FROM project_document_favorites WHERE user_id = $1 AND document_id = $2`,
+        [req.user.id, req.params.id]
+      );
+    }
+    return res.status(200).send(new ServerResponse(true, { favorite }));
+  }
+
+  @HandleExceptions()
   public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const row = await this.getDocumentRow(req.params.id);
     if (!row) {

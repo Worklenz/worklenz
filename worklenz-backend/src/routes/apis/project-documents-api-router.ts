@@ -2,10 +2,13 @@ import express from "express";
 
 import ProjectDocumentsController from "../../controllers/project-documents-controller";
 import { attachDocumentProject, attachTaskProject } from "../../middlewares/project-document-access";
+import { documentFavoriteRateLimiter } from "../../middlewares/project-document-favorite-rate-limiter";
 import idParamValidator from "../../middlewares/validators/id-param-validator";
 import requireProjectPermission from "../../middlewares/validators/require-project-permission";
 import verifyProjectAccess from "../../middlewares/verify-project-access";
+import { ServerResponse } from "../../models/server-response";
 import safeControllerFunction from "../../shared/safe-controller-function";
+import { isValidUuid } from "../../shared/validation-helpers";
 
 const projectDocumentsApiRouter = express.Router();
 const docsPermission = requireProjectPermission("docs");
@@ -40,6 +43,28 @@ projectDocumentsApiRouter.put(
   verifyProjectAccess("body", "project_id"),
   docsPermission,
   safeControllerFunction(ProjectDocumentsController.reorder)
+);
+projectDocumentsApiRouter.get(
+  "/favorites",
+  (req, res, next) => {
+    const projectId = req.query.project_id;
+    if (typeof projectId !== "string" || !isValidUuid(projectId)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid project id"));
+    }
+    return next();
+  },
+  verifyProjectAccess("query", "project_id"),
+  docsPermission,
+  safeControllerFunction(ProjectDocumentsController.favorites)
+);
+projectDocumentsApiRouter.put(
+  "/:id/favorite",
+  documentFavoriteRateLimiter,
+  idParamValidator,
+  attachDocumentProject,
+  verifyProjectAccess("query", "project_id"),
+  docsPermission,
+  safeControllerFunction(ProjectDocumentsController.setFavorite)
 );
 projectDocumentsApiRouter.get(
   "/:id",

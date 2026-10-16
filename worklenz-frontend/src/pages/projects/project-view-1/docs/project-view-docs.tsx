@@ -22,6 +22,7 @@ import {
 import DocsEditor from './docs-editor';
 import DocsSidebar from './docs-sidebar';
 import { mentionStore } from './mention-store';
+import { useDocsFavorites } from './use-docs-favorites';
 import { useDocsAutosave } from './use-docs-autosave';
 
 const ProjectViewDocs = () => {
@@ -32,6 +33,13 @@ const ProjectViewDocs = () => {
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const refreshTimestamp = useAppSelector(state => state.projectReducer.refreshTimestamp);
+
+  const favorites = useDocsFavorites(projectId);
+  const handleToggleFavorite = (id: string) => {
+    void favorites.toggle(id).then(success => {
+      if (success === false) message.error(t('favoriteFailed', { defaultValue: "Couldn't update your favorites. Try again." }));
+    });
+  };
 
   const [pages, setPages] = useState<IProjectDocumentSummary[]>([]);
   const [listLoading, setListLoading] = useState(true);
@@ -119,15 +127,21 @@ const ProjectViewDocs = () => {
 
   const openDocument = useCallback(
     async (documentId: string) => {
-      await flush();
-      const response = await projectDocumentsApiService.getById(documentId);
-      if (!response.done || !response.body) {
+      if (documentId === activeRef.current?.id) return;
+      const flushed = await flush();
+      if (flushed === 'error' || flushed === 'conflict') return;
+      try {
+        const response = await projectDocumentsApiService.getById(documentId);
+        if (!response.done || !response.body) {
+          message.error(t('loadError', { defaultValue: "Couldn't load this page" }));
+          return;
+        }
+        applyDocument(response.body, markCleanRef.current);
+        setReloadToken(token => token + 1);
+        writeDocParam(response.body.id);
+      } catch {
         message.error(t('loadError', { defaultValue: "Couldn't load this page" }));
-        return;
       }
-      applyDocument(response.body, markCleanRef.current);
-      setReloadToken(token => token + 1);
-      writeDocParam(response.body.id);
     },
     [applyDocument, flush, t, writeDocParam]
   );
@@ -247,6 +261,8 @@ const ProjectViewDocs = () => {
 
   const handleCreate = async (parentId: string | null) => {
     if (!projectId) return;
+    const flushed = await flush();
+    if (flushed === 'conflict' || flushed === 'error') return;
     try {
       const response = await projectDocumentsApiService.create(
         projectId,
@@ -315,10 +331,8 @@ const ProjectViewDocs = () => {
   };
 
   const handleDuplicate = async (id: string) => {
-    if (activeRef.current?.id === id) {
-      const flushed = await flush();
-      if (flushed === 'conflict' || flushed === 'error') return;
-    }
+    const flushed = await flush();
+    if (flushed === 'conflict' || flushed === 'error') return;
     const page = pages.find(item => item.id === id);
     if (!page) return;
     const copyTitle = `${page.title} ${t('copySuffix', { defaultValue: 'copy' })}`.slice(0, 500);
@@ -359,6 +373,8 @@ const ProjectViewDocs = () => {
         const remaining = pages.filter(page => !deleted.has(page.id));
         setPages(remaining);
         if (active && deleted.has(active.id)) {
+          // Confirmed deletion discards this draft and cancels its pending autosave.
+          markClean(active);
           const next = remaining[0];
           if (next) {
             await openDocument(next.id);
@@ -385,6 +401,12 @@ const ProjectViewDocs = () => {
     >
       <DocsSidebar
         pages={pages}
+        favoriteIds={favorites.ids}
+        favoriteLoading={favorites.loading}
+        favoriteError={favorites.hasError}
+        onRetryFavorites={favorites.retry}
+        onToggleFavorite={handleToggleFavorite}
+        favoritePending={favorites.pending}
         activeId={active?.id || null}
         loading={listLoading}
         searchQuery={searchQuery}
@@ -407,9 +429,20 @@ const ProjectViewDocs = () => {
         onDelete={handleDelete}
         onReorder={items => {
           if (!projectId) return;
+          // Apply the move immediately so the row doesn't snap back while the request runs.
+          const previous = pages;
+          const moves = new Map(items.map(item => [item.id, item]));
+          setPages(current =>
+            current.map(page => {
+              const move = moves.get(page.id);
+              return move ? { ...page, parent_id: move.parent_id, position: move.position } : page;
+            })
+          );
           void projectDocumentsApiService.reorder(projectId, items).then(response => {
             if (response.done && response.body) setPages(response.body);
+            else setPages(previous);
           }).catch(() => {
+            setPages(previous);
             message.error(t('actionFailed', { defaultValue: "Couldn't reorder pages" }));
           });
         }}
@@ -440,6 +473,11 @@ const ProjectViewDocs = () => {
           <DocsEditor
             key={`${active.id}:${reloadToken}`}
             documentId={active.id}
+            pages={pages}
+            onSelectPage={id => { void openDocument(id); }}
+            isFavorite={favorites.ids.has(active.id)}
+            isFavoriteDisabled={favorites.loading || favorites.hasError || favorites.pending.has(active.id)}
+            onToggleFavorite={() => handleToggleFavorite(active.id)}
             projectId={projectId}
             title={title}
             content={content}

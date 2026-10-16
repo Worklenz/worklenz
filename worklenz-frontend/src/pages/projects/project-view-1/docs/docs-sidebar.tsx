@@ -9,6 +9,7 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
+  Alert,
   Button,
   Dropdown,
   Empty,
@@ -19,7 +20,15 @@ import {
   Typography,
   theme,
 } from '@/shared/antd-imports';
-import { FileTextOutlined, HolderOutlined, MoreOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import {
+  FileTextOutlined,
+  HolderOutlined,
+  MoreOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  StarFilled,
+  StarOutlined,
+} from '@ant-design/icons';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -29,10 +38,22 @@ import {
   IReorderDocumentItem,
 } from '@/types/project/project-documents.types';
 
-import { buildDocumentTree, flattenDocumentTree, pageDepth, planDocumentMove } from './docs-tree';
+import {
+  buildDocumentTree,
+  dragPlacement,
+  flattenDocumentTree,
+  pageDepth,
+  planDocumentMove,
+} from './docs-tree';
 
 interface DocsSidebarProps {
   pages: IProjectDocumentSummary[];
+  favoriteIds: Set<string>;
+  favoritePending: Set<string>;
+  favoriteLoading: boolean;
+  favoriteError: boolean;
+  onRetryFavorites: () => void;
+  onToggleFavorite: (id: string) => void;
   activeId: string | null;
   loading: boolean;
   searchQuery: string;
@@ -49,6 +70,12 @@ interface DocsSidebarProps {
 
 const DocsSidebar = ({
   pages,
+  favoriteIds,
+  favoritePending,
+  favoriteLoading,
+  favoriteError,
+  onRetryFavorites,
+  onToggleFavorite,
   activeId,
   loading,
   searchQuery,
@@ -72,7 +99,11 @@ const DocsSidebar = ({
   const handleDragEnd = (event: DragEndEvent) => {
     const overId = event.over?.id;
     if (!overId || overId === event.active.id) return;
-    const placement = event.delta.x > 28 ? 'inside' : 'after';
+    const placement = dragPlacement(
+      flatPages.findIndex(page => page.id === event.active.id),
+      flatPages.findIndex(page => page.id === overId),
+      event.delta.x
+    );
     const items = planDocumentMove(pages, String(event.active.id), String(overId), placement);
     if (items) onReorder(items);
   };
@@ -91,6 +122,7 @@ const DocsSidebar = ({
       style={{
         borderColor: token.colorBorderSecondary,
         background: token.colorBgContainer,
+        ['--docs-border' as string]: token.colorBorderSecondary,
         ['--docs-hover' as string]: token.colorFillTertiary,
         ['--docs-selected' as string]: token.colorFillSecondary,
         ['--docs-link' as string]: token.colorPrimary,
@@ -124,54 +156,115 @@ const DocsSidebar = ({
           onChange={event => onSearch(event.target.value)}
         />
       </div>
-      <div className="min-h-0 flex-1 overflow-auto px-2 pb-3" role="tree" aria-label={t('pages', { defaultValue: 'Pages' })}>
-        {loading ? (
-          <Flex justify="center" className="py-8">
-            <Spin />
-          </Flex>
-        ) : searchQuery.trim().length >= 2 ? (
-          <SearchResults
-            searching={searching}
-            results={searchResults}
-            onSelect={onSelect}
-          />
-        ) : flatPages.length === 0 ? (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={t('emptySidebar', { defaultValue: 'No pages yet' })}
-          />
-        ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={flatPages.map(page => page.id)} strategy={verticalListSortingStrategy}>
-              {flatPages.map(page => (
-                <PageRow
-                  key={page.id}
-                  page={page}
-                  active={page.id === activeId}
-                  editing={editingId === page.id}
-                  draftTitle={draftTitle}
-                  canNest={pageDepth(pages, page.id) < 5}
-                  onDraftTitle={setDraftTitle}
-                  onSelect={() => onSelect(page.id)}
-                  onStartRename={() => {
-                    setEditingId(page.id);
-                    setDraftTitle(page.title);
-                  }}
-                  onCommitRename={() => commitRename(page)}
-                  onCancelRename={() => setEditingId(null)}
-                  onCreate={() => onCreate(page.id)}
-                  onDuplicate={() => onDuplicate(page.id)}
-                  onDelete={() => onDelete(page.id)}
-                  onMove={(placement, overId) => {
-                    const items = planDocumentMove(pages, page.id, overId, placement);
-                    if (items) onReorder(items);
-                  }}
-                  siblings={flatPages.filter(item => item.parent_id === page.parent_id)}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+      <div className="docs-sidebar-navigation min-h-0 flex-1 overflow-auto px-2 pb-3">
+        {!searchQuery.trim() && (
+          <nav
+            className="docs-favorites"
+            aria-label={t('favorites', { defaultValue: 'Favorites' })}
+          >
+            <Typography.Text type="secondary" className="px-2 text-xs">
+              {t('favorites', { defaultValue: 'Favorites' })}
+            </Typography.Text>
+            {favoriteLoading ? (
+              <Flex justify="center" className="py-2">
+                <Spin size="small" />
+              </Flex>
+            ) : favoriteError ? (
+              <Alert
+                type="error"
+                showIcon
+                message={t('favoritesLoadError', { defaultValue: "Couldn't load favorites" })}
+                action={
+                  <Button size="small" onClick={onRetryFavorites}>
+                    {t('retry', { defaultValue: 'Retry' })}
+                  </Button>
+                }
+              />
+            ) : pages.filter(page => favoriteIds.has(page.id)).length ? (
+              pages
+                .filter(page => favoriteIds.has(page.id))
+                .map(page => (
+                  <button
+                    type="button"
+                    key={page.id}
+                    onClick={() => onSelect(page.id)}
+                    aria-current={activeId === page.id ? 'page' : undefined}
+                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm"
+                    style={{
+                      color: token.colorText,
+                      background: activeId === page.id ? token.colorFillSecondary : undefined,
+                    }}
+                  >
+                    <StarFilled aria-hidden style={{ color: token.colorPrimary }} />
+                    <span className="truncate">{page.title}</span>
+                  </button>
+                ))
+            ) : (
+              <p className="px-2 py-2 text-xs" style={{ color: token.colorTextSecondary }}>
+                {t('favoritesEmpty', {
+                  defaultValue: 'Star pages to keep them here. Only you see your favorites.',
+                })}
+              </p>
+            )}
+          </nav>
         )}
+        <div role="tree" aria-label={t('pages', { defaultValue: 'Pages' })}>
+          {loading ? (
+            <Flex justify="center" className="py-8">
+              <Spin />
+            </Flex>
+          ) : searchQuery.trim().length >= 2 ? (
+            <SearchResults searching={searching} results={searchResults} onSelect={onSelect} />
+          ) : flatPages.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={t('emptySidebar', { defaultValue: 'No pages yet' })}
+            />
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={flatPages.map(page => page.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {flatPages.map(page => (
+                  <PageRow
+                    key={page.id}
+                    page={page}
+                    active={page.id === activeId}
+                    isFavorite={favoriteIds.has(page.id)}
+                    isFavoriteDisabled={
+                      favoriteLoading || favoriteError || favoritePending.has(page.id)
+                    }
+                    onToggleFavorite={() => onToggleFavorite(page.id)}
+                    editing={editingId === page.id}
+                    draftTitle={draftTitle}
+                    canNest={pageDepth(pages, page.id) < 5}
+                    onDraftTitle={setDraftTitle}
+                    onSelect={() => onSelect(page.id)}
+                    onStartRename={() => {
+                      setEditingId(page.id);
+                      setDraftTitle(page.title);
+                    }}
+                    onCommitRename={() => commitRename(page)}
+                    onCancelRename={() => setEditingId(null)}
+                    onCreate={() => onCreate(page.id)}
+                    onDuplicate={() => onDuplicate(page.id)}
+                    onDelete={() => onDelete(page.id)}
+                    onMove={(placement, overId) => {
+                      const items = planDocumentMove(pages, page.id, overId, placement);
+                      if (items) onReorder(items);
+                    }}
+                    siblings={flatPages.filter(item => item.parent_id === page.parent_id)}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          )}
+        </div>
       </div>
     </Flex>
   );
@@ -194,7 +287,12 @@ const SearchResults = ({ searching, results, onSelect }: SearchResultsProps) => 
     );
   }
   if (!results || results.length === 0) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('noMatches', { defaultValue: 'No matching pages' })} />;
+    return (
+      <Empty
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+        description={t('noMatches', { defaultValue: 'No matching pages' })}
+      />
+    );
   }
   return (
     <Flex vertical gap={4}>
@@ -219,6 +317,9 @@ const SearchResults = ({ searching, results, onSelect }: SearchResultsProps) => 
 interface PageRowProps {
   page: ReturnType<typeof flattenDocumentTree>[number];
   active: boolean;
+  isFavorite: boolean;
+  isFavoriteDisabled: boolean;
+  onToggleFavorite: () => void;
   editing: boolean;
   draftTitle: string;
   canNest: boolean;
@@ -237,6 +338,9 @@ interface PageRowProps {
 const PageRow = ({
   page,
   active,
+  isFavorite,
+  isFavoriteDisabled,
+  onToggleFavorite,
   editing,
   draftTitle,
   canNest,
@@ -256,7 +360,8 @@ const PageRow = ({
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: page.id });
   const siblingIndex = siblings.findIndex(item => item.id === page.id);
   const previous = siblingIndex > 0 ? siblings[siblingIndex - 1] : null;
-  const next = siblingIndex >= 0 && siblingIndex < siblings.length - 1 ? siblings[siblingIndex + 1] : null;
+  const next =
+    siblingIndex >= 0 && siblingIndex < siblings.length - 1 ? siblings[siblingIndex + 1] : null;
 
   return (
     <div
@@ -302,14 +407,45 @@ const PageRow = ({
           style={{ color: token.colorText }}
           onClick={onSelect}
         >
-          <FileTextOutlined style={{ color: active ? token.colorPrimary : token.colorTextSecondary }} />
+          <FileTextOutlined
+            style={{ color: active ? token.colorPrimary : token.colorTextSecondary }}
+          />
           <span className="truncate">{page.title}</span>
         </button>
       )}
+      <Tooltip
+        title={
+          isFavorite
+            ? t('removeFavorite', { defaultValue: 'Remove from favorites' })
+            : t('addFavorite', { defaultValue: 'Add to favorites' })
+        }
+      >
+        <Button
+          size="small"
+          type="text"
+          className={isFavorite ? undefined : 'docs-page-affordance'}
+          aria-label={
+            isFavorite
+              ? t('removeFavorite', { defaultValue: 'Remove from favorites' })
+              : t('addFavorite', { defaultValue: 'Add to favorites' })
+          }
+          aria-pressed={isFavorite}
+          disabled={isFavoriteDisabled}
+          icon={isFavorite ? <StarFilled style={{ color: token.colorPrimary }} /> : <StarOutlined />}
+          onClick={onToggleFavorite}
+        />
+      </Tooltip>
       <Dropdown
         trigger={['click']}
         menu={{
           items: [
+            {
+              key: 'favorite',
+              disabled: isFavoriteDisabled,
+              label: isFavorite
+                ? t('removeFavorite', { defaultValue: 'Remove from favorites' })
+                : t('addFavorite', { defaultValue: 'Add to favorites' }),
+            },
             { key: 'rename', label: t('rename', { defaultValue: 'Rename' }) },
             {
               key: 'subpage',
@@ -332,6 +468,7 @@ const PageRow = ({
           ],
           onClick: ({ key, domEvent }) => {
             domEvent.stopPropagation();
+            if (key === 'favorite') onToggleFavorite();
             if (key === 'rename') onStartRename();
             if (key === 'subpage') onCreate();
             if (key === 'duplicate') onDuplicate();

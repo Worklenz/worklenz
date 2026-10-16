@@ -5,13 +5,14 @@ interface ToolbarButtonProps {
   label: string;
   active: boolean;
   disabled?: boolean;
+  tooltipOpen?: boolean;
   onClick: () => void;
   children: ReactNode;
 }
 
 export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
-  ({ label, active, disabled = false, onClick, children, ...props }, ref) => (
-    <Tooltip title={label} placement="bottom">
+  ({ label, active, disabled = false, tooltipOpen, onClick, children, ...props }, ref) => (
+    <Tooltip title={label} placement="bottom" open={tooltipOpen}>
       <button
         {...props}
         ref={ref}

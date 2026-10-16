@@ -41,6 +41,7 @@ interface DocsDocumentEditorProps {
   handlersRef: MutableRefObject<MentionHandlers>;
   onChange: (content: ISectionDocument) => void;
   onActivity: (editor: TiptapEditor) => void;
+  onReady?: (editor: TiptapEditor | null) => void;
 }
 
 export const DocsDocumentEditor = ({
@@ -48,6 +49,7 @@ export const DocsDocumentEditor = ({
   handlersRef,
   onChange,
   onActivity,
+  onReady,
 }: DocsDocumentEditorProps) => {
   const { t } = useTranslation('project-view-docs');
   const commands = useDocsBlockCommands();
@@ -56,8 +58,8 @@ export const DocsDocumentEditor = ({
   const slashMenuRef = useRef<DocsSuggestionMenuHandle>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const contentVersion = useRef(content.version);
-  const callbacks = useRef({ onChange, onActivity });
-  callbacks.current = { onChange, onActivity };
+  const callbacks = useRef({ onChange, onActivity, onReady });
+  callbacks.current = { onChange, onActivity, onReady };
   // The page owns the document lifetime (keyed by page ID/reload token). Local echoes
   // must never call setContent: that would reset selection and document history.
   const editor = useEditor({
@@ -153,6 +155,11 @@ export const DocsDocumentEditor = ({
     onSelectionUpdate: ({ editor: current }) => callbacks.current.onActivity(current),
     onTransaction: ({ editor: current }) => callbacks.current.onActivity(current),
   });
+
+  useEffect(() => {
+    callbacks.current.onReady?.(editor);
+    return () => callbacks.current.onReady?.(null);
+  }, [editor]);
 
   useEffect(
     () => () => {

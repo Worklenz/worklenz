@@ -65,6 +65,7 @@ const ExampleDocument = ({ dark, initialContent }: { dark: boolean; initialConte
 };
 
 beforeEach(() => {
+  localStorage.clear();
   onContentChange.mockReset();
   mentionStore.set(EMPTY_MENTIONS);
   vi.mocked(projectCommentsApiService.getMentionMembers).mockReset();
@@ -275,7 +276,7 @@ describe.each([false, true])('docs formatting with dark theme = %s', dark => {
 
     expect(floatingToolbar.getByRole('button', { name: 'Numbered list' })).toBeEnabled();
     fireEvent.click(floatingToolbar.getByRole('button', { name: 'Bullet list' }));
-    await waitFor(() => expect(screen.getByRole('listitem')).toHaveTextContent('Project goals'));
+    await waitFor(() => expect(within(body).getByRole('listitem')).toHaveTextContent('Project goals'));
     await waitFor(() => expect(body).toHaveFocus());
     expect(toolbar.getByRole('button', { name: 'Bullet list' })).toHaveAttribute('aria-pressed', 'true');
     expect(body.querySelector('strong')).toHaveTextContent('Project goals');
@@ -296,7 +297,7 @@ describe.each([false, true])('docs formatting with dark theme = %s', dark => {
     expect(body.querySelector('ol > li')).toHaveTextContent('Project goals');
 
     fireEvent.click(toolbar.getByRole('button', { name: 'Numbered list' }));
-    await waitFor(() => expect(screen.queryByRole('listitem')).not.toBeInTheDocument());
+    await waitFor(() => expect(within(body).queryByRole('listitem')).not.toBeInTheDocument());
     await waitFor(() => expect(screen.getByLabelText('Page content')).toHaveFocus());
     expect(screen.getByLabelText('Page content').querySelector('strong')).toHaveTextContent('Project goals');
     expect(screen.getByLabelText('Page content').querySelector('em')).toHaveTextContent('Project goals');
@@ -416,8 +417,8 @@ describe.each([false, true])('phase 2 writing with dark theme = %s', dark => {
     const body = screen.getByLabelText('Page content');
     const editor = editorForBody();
     act(() => { body.focus(); editor.commands.insertContent('/no-such-command'); });
-    await screen.findByRole('status');
-    expect(screen.getByRole('status')).toHaveTextContent('No matching commands');
+    await screen.findByText('No matching commands');
+    expect(screen.getByText('No matching commands')).toHaveAttribute('role', 'status');
     fireEvent.keyDown(body, { key: 'Enter' });
     expect(body.querySelectorAll('p')).toHaveLength(1);
     fireEvent.keyDown(body, { key: 'Escape' });
@@ -548,9 +549,9 @@ it('ignores a drag from another editor instance and clears its drop indicator', 
   const body = screen.getByLabelText('Page content');
   const dataTransfer = { types: ['application/x-worklenz-doc-block'], dropEffect: '', getData: () => JSON.stringify({ session: 'another-editor', blockId: secondId }) };
   fireEvent.dragOver(body.firstElementChild!, { dataTransfer });
-  expect(body.querySelector('[data-docs-drop]')).not.toBeNull();
+  expect(document.querySelector('[data-docs-drop]')).not.toBeNull();
   fireEvent.drop(body.firstElementChild!, { dataTransfer });
-  expect(body.querySelector('[data-docs-drop]')).toBeNull();
+  expect(document.querySelector('[data-docs-drop]')).toBeNull();
   expect(body.querySelectorAll('p')[0]).toHaveTextContent('First');
   expect(body.querySelectorAll('p')[1]).toHaveTextContent('Second');
   expect(onContentChange).not.toHaveBeenCalled();
@@ -575,4 +576,49 @@ it('preserves existing text to the right of a slash command at the start of a pa
   fireEvent.keyDown(body, { key: 'Enter' });
   await waitFor(() => expect(body.querySelector('h2')).toHaveTextContent('Project goals'));
   expect(body).not.toHaveTextContent('/heading');
+});
+
+
+describe.each([false, true])('phase 3 navigation with dark theme = %s', dark => {
+  it('persists full-width mode across editor remounts', () => {
+    const view = render(<ExampleDocument dark={dark} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Full width' }));
+    expect(document.querySelector('.docs-page-content')).toHaveClass('is-full-width');
+    view.unmount();
+    render(<ExampleDocument dark={dark} />);
+    expect(screen.getByRole('button', { name: 'Full width' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Full width' }));
+    expect(document.querySelector('.docs-page-content')).not.toHaveClass('is-full-width');
+  });
+
+  it('navigates to stable heading IDs after editing, including nested headings', async () => {
+    render(<ExampleDocument dark={dark} initialContent={{ version: 2, sections: [
+      { id: 'first', type: 'paragraph', content: [{ type: 'text', text: 'Introduction' }] },
+      { id: 'callout', type: 'callout', content: [], children: [
+        { id: 'heading', type: 'heading', level: 2, content: [{ type: 'text', text: 'Milestones' }] },
+      ] },
+    ] }} />);
+    const body = screen.getByLabelText('Page content');
+    const editor = (body as HTMLElement & { editor: TiptapEditor }).editor;
+    act(() => { editor.chain().setTextSelection(1).insertContent('New ').run(); });
+    fireEvent.click(screen.getByRole('button', { name: 'Document outline' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Milestones' }));
+    await waitFor(() => expect(body).toHaveFocus());
+    expect(editor.state.selection.$from.parent.attrs.id).toBe('heading');
+    expect(editor.state.selection.$from.parent.type.name).toBe('heading');
+  });
+
+  it('shows an outline empty state and keeps additional formatting available in a menu', async () => {
+    render(<ExampleDocument dark={dark} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Document outline' }));
+    expect(await screen.findByText('Add headings to navigate this page.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Document outline' }));
+    const body = screen.getByLabelText('Page content');
+    const editor = (body as HTMLElement & { editor: TiptapEditor }).editor;
+    act(() => { editor.chain().focus().setTextSelection({ from: 1, to: 8 }).run(); });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'More formatting' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'More formatting' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Strikethrough' }));
+    expect(body.querySelector('s')).toHaveTextContent('Project');
+  });
 });

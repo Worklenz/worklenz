@@ -83,5 +83,21 @@
   "noCommands": "No matching commands",
   "turnInto": "Turn into",
   "blockControls": "Block controls",
-  "dragBlock": "Drag to reorder or click for block actions"
+  "dragBlock": "Drag to reorder or click for block actions",
+  "pageBreadcrumbs": "Page breadcrumbs",
+  "documentOutline": "Document outline",
+  "onThisPage": "On this page",
+  "outlineEmpty": "Add headings to navigate this page.",
+  "untitledHeading": "Untitled heading",
+  "fullWidth": "Full width",
+  "moreFormatting": "More formatting",
+  "favorites": "Favorites",
+  "addFavorite": "Add to favorites",
+  "removeFavorite": "Remove from favorites",
+  "favoritesEmpty": "Star pages to keep them here. Only you see your favorites.",
+  "favoritesLoadError": "Couldn't load favorites",
+  "favoriteFailed": "Couldn't update your favorites. Try again.",
+  "groupText": "Text",
+  "groupLists": "Lists",
+  "groupBlocks": "Blocks"
 }

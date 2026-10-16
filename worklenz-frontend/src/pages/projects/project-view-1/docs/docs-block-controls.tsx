@@ -1,7 +1,18 @@
 import { Editor } from '@tiptap/core';
 import { closeHistory } from '@tiptap/pm/history';
 import { Dropdown, Modal } from '@/shared/antd-imports';
-import { HolderOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  CheckSquareOutlined,
+  CodeOutlined,
+  FontSizeOutlined,
+  HolderOutlined,
+  InfoCircleOutlined,
+  MinusOutlined,
+  OrderedListOutlined,
+  PlusOutlined,
+  UnorderedListOutlined,
+} from '@ant-design/icons';
+import type { ReactNode } from 'react';
 import { RefObject, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,6 +23,26 @@ import {
   moveDocumentBlock,
   turnBlockInto,
 } from './docs-block-commands';
+
+const headingIcon = (level: string) => <span className="docs-menu-glyph">{level}</span>;
+const COMMAND_ICONS: Record<string, ReactNode> = {
+  paragraph: <FontSizeOutlined />,
+  heading1: headingIcon('H1'),
+  heading2: headingIcon('H2'),
+  heading3: headingIcon('H3'),
+  bulletList: <UnorderedListOutlined />,
+  numberedList: <OrderedListOutlined />,
+  checklist: <CheckSquareOutlined />,
+  quote: <span className="docs-menu-glyph">”</span>,
+  code: <CodeOutlined />,
+  divider: <MinusOutlined />,
+  callout: <InfoCircleOutlined />,
+};
+const COMMAND_GROUPS: Array<[string, string, string[]]> = [
+  ['groupText', 'Text', ['paragraph', 'heading1', 'heading2', 'heading3']],
+  ['groupLists', 'Lists', ['bulletList', 'numberedList', 'checklist']],
+  ['groupBlocks', 'Blocks', ['quote', 'code', 'divider', 'callout']],
+];
 
 export const BLOCK_DRAG_TYPE = 'application/x-worklenz-doc-block';
 
@@ -68,8 +99,48 @@ export const DocsBlockControls = ({ editor, containerRef, commands }: DocsBlockC
       const resolved = editor.state.doc.resolve(position);
       return findDocumentBlock(editor, null, resolved.depth ? resolved.before(1) : position);
     };
+    // Gaps between blocks, side margins and the space below the last block are not
+    // block elements, so resolve those drop points to the nearest top-level block.
+    const nearestBlock = (clientY: number) => {
+      let best: HTMLElement | null = null;
+      let bestDistance = Infinity;
+      for (const child of Array.from(editor.view.dom.children)) {
+        if (!(child instanceof HTMLElement)) continue;
+        const bounds = child.getBoundingClientRect();
+        const distance =
+          clientY < bounds.top ? bounds.top - clientY : Math.max(clientY - bounds.bottom, 0);
+        if (distance < bestDistance) {
+          best = child;
+          bestDistance = distance;
+        }
+      }
+      return best ? fromElement(best) : null;
+    };
+    const dropTarget = (event: DragEvent) => fromElement(event.target) ?? nearestBlock(event.clientY);
+    let frame = 0;
+    let activeQueued = false;
+    const schedule = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (editor.isDestroyed) return;
+        if (activeQueued) {
+          activeQueued = false;
+          active();
+        }
+      });
+    };
+    // Pointer moves over the same element are ignored; transactions, resizes and
+    // observer callbacks read layout at most once per frame.
+    let lastHover: EventTarget | null = null;
     const hover = (event: PointerEvent) => {
+      if (event.target === lastHover) return;
+      lastHover = event.target;
       if (!isMenuOpen.current) publish(fromElement(event.target));
+    };
+    const queueActive = () => {
+      activeQueued = true;
+      schedule();
     };
     const keyboardMenu = (event: KeyboardEvent) => {
       if (event.key !== 'F10' || !event.shiftKey || event.isComposing) return;
@@ -88,25 +159,35 @@ export const DocsBlockControls = ({ editor, containerRef, commands }: DocsBlockC
       );
     };
     refreshAnchorRef.current = active;
-    let dropElement: HTMLElement | null = null;
+    // The indicator lives outside the contenteditable so ProseMirror's DOM observer
+    // cannot strip it while the drag is in progress.
+    let indicator: HTMLDivElement | null = null;
     const clearDrop = () => {
-      dropElement?.removeAttribute('data-docs-drop');
-      dropElement = null;
+      indicator?.remove();
+      indicator = null;
     };
     const dragOver = (event: DragEvent) => {
       if (!event.dataTransfer?.types.includes(BLOCK_DRAG_TYPE)) return;
-      const block = fromElement(event.target);
+      const block = dropTarget(event);
       if (!block) return;
       event.preventDefault();
       event.stopPropagation();
       event.dataTransfer.dropEffect = 'move';
-      clearDrop();
       const element = editor.view.nodeDOM(block.position);
       if (element instanceof HTMLElement) {
         const bounds = element.getBoundingClientRect();
-        element.dataset.docsDrop =
-          event.clientY > bounds.top + bounds.height / 2 ? 'after' : 'before';
-        dropElement = element;
+        const after = event.clientY > bounds.top + bounds.height / 2;
+        const host = container.getBoundingClientRect();
+        if (!indicator) {
+          indicator = document.createElement('div');
+          indicator.className = 'docs-drop-indicator';
+          indicator.setAttribute('aria-hidden', 'true');
+          container.appendChild(indicator);
+        }
+        indicator.dataset.docsDrop = after ? 'after' : 'before';
+        indicator.style.top = `${(after ? bounds.bottom : bounds.top) - host.top}px`;
+        indicator.style.left = `${bounds.left - host.left}px`;
+        indicator.style.width = `${bounds.width}px`;
       }
     };
     const drop = (event: DragEvent) => {
@@ -132,7 +213,7 @@ export const DocsBlockControls = ({ editor, containerRef, commands }: DocsBlockC
         return;
       }
       const source = findDocumentBlock(editor, sourceId);
-      const target = fromElement(event.target);
+      const target = dropTarget(event);
       const element = target ? editor.view.nodeDOM(target.position) : null;
       const bounds = element instanceof HTMLElement ? element.getBoundingClientRect() : null;
       if (source && target && bounds)
@@ -147,9 +228,9 @@ export const DocsBlockControls = ({ editor, containerRef, commands }: DocsBlockC
     container.addEventListener('dragend', clearDrop);
     editor.on('focus', active);
     editor.on('selectionUpdate', active);
-    editor.on('transaction', active);
-    window.addEventListener('resize', active);
-    const observer = new ResizeObserver(active);
+    editor.on('transaction', queueActive);
+    window.addEventListener('resize', queueActive);
+    const observer = new ResizeObserver(queueActive);
     observer.observe(container);
     active();
     return () => {
@@ -160,9 +241,10 @@ export const DocsBlockControls = ({ editor, containerRef, commands }: DocsBlockC
       container.removeEventListener('dragend', clearDrop);
       editor.off('focus', active);
       editor.off('selectionUpdate', active);
-      editor.off('transaction', active);
-      window.removeEventListener('resize', active);
+      editor.off('transaction', queueActive);
+      window.removeEventListener('resize', queueActive);
       observer.disconnect();
+      if (frame) cancelAnimationFrame(frame);
       clearDrop();
     };
   }, [editor, containerRef, dragSession]);
@@ -242,9 +324,21 @@ export const DocsBlockControls = ({ editor, containerRef, commands }: DocsBlockC
       <Dropdown
         autoFocus
         trigger={['click']}
+        overlayClassName="docs-insert-menu"
         onOpenChange={menuOpen}
         menu={{
-          items: commands.map(command => ({ key: command.kind, label: command.label })),
+          items: COMMAND_GROUPS.map(([groupKey, groupLabel, kinds]) => ({
+            type: 'group' as const,
+            key: groupKey,
+            label: t(groupKey, { defaultValue: groupLabel }),
+            children: commands
+              .filter(command => kinds.includes(command.kind))
+              .map(command => ({
+                key: command.kind,
+                icon: <span aria-hidden>{COMMAND_ICONS[command.kind]}</span>,
+                label: command.label,
+              })),
+          })),
           onClick: ({ key }) => {
             const command = commands.find(item => item.kind === key);
             if (command) insertDocumentBlock(editor, command.kind, target());
@@ -263,14 +357,17 @@ export const DocsBlockControls = ({ editor, containerRef, commands }: DocsBlockC
       <Dropdown
         autoFocus
         trigger={['click']}
+        overlayClassName="docs-insert-menu"
         onOpenChange={menuOpen}
         menu={{
           items: [
             {
               key: 'turnInto',
+              popupClassName: 'docs-insert-menu',
               label: t('turnInto', { defaultValue: 'Turn into' }),
               children: commands.map(command => ({
                 key: `turn:${command.kind}`,
+                icon: <span aria-hidden>{COMMAND_ICONS[command.kind]}</span>,
                 label: command.label,
               })),
             },

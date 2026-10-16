@@ -28,6 +28,20 @@ export const projectDocumentsApiService = {
     return response.data;
   },
 
+  favorites: async (projectId: string): Promise<IServerResponse<string[]>> => {
+    const response = await apiClient.get<IServerResponse<string[]>>(
+      `${rootUrl}/favorites${toQueryString({ project_id: projectId })}`, silentHeaders
+    );
+    return response.data;
+  },
+
+  setFavorite: async (documentId: string, favorite: boolean): Promise<IServerResponse<{ favorite: boolean }>> => {
+    const response = await apiClient.put<IServerResponse<{ favorite: boolean }>>(
+      `${rootUrl}/${documentId}/favorite`, { favorite }, silentHeaders
+    );
+    return response.data;
+  },
+
   getById: async (documentId: string): Promise<IServerResponse<IProjectDocument>> => {
     const response = await apiClient.get<IServerResponse<IProjectDocument>>(
       `${rootUrl}/${documentId}`,
