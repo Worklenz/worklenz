@@ -130,7 +130,7 @@
     "stateAll": "Wszystkie",
     "filterLabels": "Filtruj według etykiety",
     "destination": "Dodaj do",
-    "backlog": "Backlog",
+    "backlog": "Zaległości",
     "submit_one": "Importuj {{count}} zgłoszenie",
     "submit_other": "Importuj {{count}} zgłoszeń",
     "imported": "Zaimportowano jako {{key}}",
