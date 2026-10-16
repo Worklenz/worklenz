@@ -98,7 +98,10 @@
   "cropLogoModalTitle": "Crop Logo",
   "cropApplyButton": "Apply Crop",
   "cropZoomLabel": "Zoom",
-  "cropInstructionText": "Drag to reposition · Scroll or use slider to zoom",
+  "cropInstructionText": "Drag corners or sides to resize · Move selection to reposition",
+  "cropAspectLabel": "Aspect Ratio",
+  "cropAspectSquare": "1:1 Square",
+  "cropAspectFree": "Free",
 
   "portalLogoLabel": "Portal Logo",
   "portalTitleLabel": "Portal Title",

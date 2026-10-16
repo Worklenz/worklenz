@@ -11,32 +11,45 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('react-easy-crop', () => ({
-  default: ({
-    image,
-    showGrid,
-    onCropComplete,
-  }: {
-    image: string;
-    showGrid?: boolean;
-    onCropComplete: (area: unknown, pixels: unknown) => void;
-  }) => (
-    <div data-testid="mock-cropper" data-image={image} data-show-grid={String(showGrid)}>
-      <button
-        type="button"
-        data-testid="mock-crop-trigger"
-        onClick={() =>
-          onCropComplete(
-            { x: 0, y: 0, width: 100, height: 100 },
-            { x: 10, y: 10, width: 150, height: 150 }
-          )
-        }
+vi.mock('react-image-crop', async importOriginal => {
+  const actual = await importOriginal<typeof import('react-image-crop')>();
+  return {
+    ...actual,
+    default: ({
+      children,
+      onChange,
+      onComplete,
+      aspect,
+      ruleOfThirds,
+    }: {
+      children: React.ReactNode;
+      onChange?: (crop: unknown, percentCrop: unknown) => void;
+      onComplete?: (crop: unknown, percentCrop: unknown) => void;
+      aspect?: number;
+      ruleOfThirds?: boolean;
+    }) => (
+      <div
+        data-testid="mock-react-crop"
+        data-aspect={aspect !== undefined ? String(aspect) : 'free'}
+        data-rule-of-thirds={String(ruleOfThirds)}
       >
-        Simulate Crop Area
-      </button>
-    </div>
-  ),
-}));
+        {children}
+        <button
+          type="button"
+          data-testid="mock-crop-trigger"
+          onClick={() => {
+            const pixelCrop = { unit: 'px', x: 10, y: 10, width: 150, height: 150 };
+            const percentCrop = { unit: '%', x: 5, y: 5, width: 50, height: 50 };
+            onChange?.(pixelCrop, percentCrop);
+            onComplete?.(pixelCrop, percentCrop);
+          }}
+        >
+          Simulate Crop Area
+        </button>
+      </div>
+    ),
+  };
+});
 
 describe('LogoCropModal', () => {
   const defaultProps = {
@@ -57,9 +70,36 @@ describe('LogoCropModal', () => {
     expect(screen.getByText('Crop Logo')).toBeInTheDocument();
     expect(screen.getByText('Apply Crop')).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
-    expect(screen.getByTestId('mock-cropper')).toBeInTheDocument();
-    expect(screen.getByTestId('mock-cropper')).toHaveAttribute('data-image', defaultProps.imageSrc);
-    expect(screen.getByTestId('mock-cropper')).toHaveAttribute('data-show-grid', 'true');
+    expect(screen.getByText('1:1 Square')).toBeInTheDocument();
+    expect(screen.getByText('Free')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-react-crop')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-rule-of-thirds', 'true');
+    expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-aspect', '1');
+    expect(
+      screen.getByText('Drag corners or sides to resize · Move selection to reposition')
+    ).toBeInTheDocument();
+  });
+
+  it('toggles between 1:1 Square and Free aspect ratio', async () => {
+    const user = userEvent.setup();
+    render(<LogoCropModal {...defaultProps} />);
+
+    // Initially aspect is 1
+    expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-aspect', '1');
+
+    // Click "Free"
+    const freeOption = screen.getByText('Free');
+    await user.click(freeOption);
+
+    // Aspect becomes free (undefined)
+    expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-aspect', 'free');
+
+    // Click "1:1 Square"
+    const squareOption = screen.getByText('1:1 Square');
+    await user.click(squareOption);
+
+    // Aspect changes back to 1
+    expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-aspect', '1');
   });
 
   it('does not render modal content when open is false', () => {
@@ -82,10 +122,18 @@ describe('LogoCropModal', () => {
     const user = userEvent.setup();
     render(<LogoCropModal {...defaultProps} />);
 
-    // Simulate react-easy-crop completing a crop area
+    // Trigger load on image to populate imgRef
+    const img = screen.getByRole('img', { name: 'Crop' });
+    Object.defineProperty(img, 'naturalWidth', { value: 300, configurable: true });
+    Object.defineProperty(img, 'naturalHeight', { value: 300, configurable: true });
+    Object.defineProperty(img, 'width', { value: 300, configurable: true });
+    Object.defineProperty(img, 'height', { value: 300, configurable: true });
+    fireEvent.load(img);
+
+    // Simulate crop completion
     fireEvent.click(screen.getByTestId('mock-crop-trigger'));
 
-    // Mock canvas context and image load
+    // Mock canvas context
     const originalCreateElement = document.createElement.bind(document);
     const mockToDataURL = vi.fn().mockReturnValue('data:image/png;base64,croppedresult');
     const mockDrawImage = vi.fn();
@@ -104,28 +152,16 @@ describe('LogoCropModal', () => {
       return originalCreateElement(tagName);
     });
 
-    // Mock Image
-    const originalImage = window.Image;
-    class MockImage {
-      onload: (() => void) | null = null;
-      src = '';
-      addEventListener(event: string, callback: () => void) {
-        if (event === 'load') {
-          setTimeout(callback, 0);
-        }
-      }
-    }
-    window.Image = MockImage as unknown as typeof Image;
-
     try {
       const applyButton = screen.getByRole('button', { name: 'Apply Crop' });
       await user.click(applyButton);
 
       await waitFor(() => {
-        expect(defaultProps.onCropComplete).toHaveBeenCalledWith('data:image/png;base64,croppedresult');
+        expect(defaultProps.onCropComplete).toHaveBeenCalledWith(
+          'data:image/png;base64,croppedresult'
+        );
       });
     } finally {
-      window.Image = originalImage;
       vi.restoreAllMocks();
     }
   });
@@ -167,6 +203,10 @@ describe('LogoCropModal', () => {
       class MockImage {
         onload: (() => void) | null = null;
         src = '';
+        width = 1024;
+        height = 1024;
+        naturalWidth = 1024;
+        naturalHeight = 1024;
         addEventListener(event: string, callback: () => void) {
           if (event === 'load') setTimeout(callback, 0);
         }
@@ -225,6 +265,10 @@ describe('LogoCropModal', () => {
       class MockImage {
         onload: (() => void) | null = null;
         src = '';
+        width = 250;
+        height = 250;
+        naturalWidth = 250;
+        naturalHeight = 250;
         addEventListener(event: string, callback: () => void) {
           if (event === 'load') setTimeout(callback, 0);
         }
