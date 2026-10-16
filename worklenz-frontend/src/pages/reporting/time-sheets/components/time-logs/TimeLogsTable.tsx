@@ -253,7 +253,7 @@ export const TimeLogsTable: React.FC<TimeLogsTableProps> = ({
     [onSortChange]
   );
 
-  const { containerRef, scrollY } = useTableScrollY([logs, loading]);
+  const { containerRef, scrollY } = useTableScrollY([logs, loading], true);
 
   const shownTotal = failed ? 0 : total;
 
@@ -303,15 +303,14 @@ export const TimeLogsTable: React.FC<TimeLogsTableProps> = ({
       <div
         className="flex min-h-0 flex-col overflow-hidden rounded-lg border"
         style={{
-          height: '100%',
+          maxHeight: '100%',
           borderColor: token.colorBorderSecondary,
           background: token.colorBgContainer,
         }}
       >
         <div
           ref={containerRef}
-          className="time-logs-fill min-h-0 flex-1 overflow-hidden"
-          style={{ '--time-logs-body-height': `${scrollY}px` } as React.CSSProperties}
+          className="min-h-0 overflow-hidden"
           {...(isFirstLoad
             ? {
                 role: 'status',
