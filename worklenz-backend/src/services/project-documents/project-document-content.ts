@@ -6,7 +6,8 @@ export const MAX_DOCUMENT_TITLE_LENGTH = 500;
 
 const INLINE_NODES = new Set(["text", "hardBreak", "memberMention", "taskMention"]);
 const ALLOWED_MARKS = new Set(["bold", "italic", "underline", "strike", "code", "link"]);
-const TEXT_SECTION_TYPES = new Set(["paragraph", "heading", "quote"]);
+const TEXT_SECTION_TYPES = new Set(["paragraph", "heading", "quote", "callout"]);
+export const MAX_CONTENT_NESTING = 20;
 const LIST_SECTION_TYPES = new Set(["bulletList", "numberedList", "checklist"]);
 
 const UUID_PATTERN =
@@ -27,27 +28,31 @@ export interface DocumentMark {
 
 export interface TextSection {
   id: string;
-  type: "paragraph" | "heading" | "quote";
+  type: "paragraph" | "heading" | "quote" | "callout";
   level?: 1 | 2 | 3;
   content: DocumentNode[];
+  children?: DocumentSection[];
 }
 
 export interface ListItem {
   id: string;
   content: DocumentNode[];
   checked?: boolean;
+  children?: DocumentSection[];
 }
 
 export interface ListSection {
   id: string;
   type: "bulletList" | "numberedList" | "checklist";
   items: ListItem[];
+  start?: number;
 }
 
 export interface CodeSection {
   id: string;
   type: "code";
   text: string;
+  language?: string;
 }
 
 export interface DividerSection {
@@ -58,7 +63,7 @@ export interface DividerSection {
 export type DocumentSection = TextSection | ListSection | CodeSection | DividerSection;
 
 export interface SectionDocument {
-  version: 1;
+  version: 1 | 2;
   sections: DocumentSection[];
 }
 
@@ -189,8 +194,11 @@ const withinByteLimit = (content: SectionDocument): ContentResult => {
 
 const sanitizeSection = (
   value: unknown,
-  ids: Set<string>
+  ids: Set<string>,
+  version: 1 | 2,
+  depth = 0,
 ): DocumentSection | null => {
+  if (depth > MAX_CONTENT_NESTING) return null;
   if (!isRecord(value) || typeof value.type !== "string" || !isUuid(value.id)) {
     return null;
   }
@@ -203,16 +211,44 @@ const sanitizeSection = (
 
   if (value.type === "code") {
     if (typeof value.text !== "string") return null;
-    return { id: value.id, type: "code", text: value.text };
+    if (
+      value.language !== undefined &&
+      (version !== 2 || typeof value.language !== "string" || value.language.length > 64)
+    )
+      return null;
+    return {
+      id: value.id,
+      type: "code",
+      text: value.text,
+      ...(typeof value.language === "string" ? { language: value.language } : {}),
+    };
   }
 
+  const sanitizeChildren = (children: unknown): DocumentSection[] | null => {
+    if (children === undefined) return [];
+    if (version !== 2 || !Array.isArray(children)) return null;
+    const result: DocumentSection[] = [];
+    for (const child of children) {
+      const sanitized = sanitizeSection(child, ids, version, depth + 1);
+      if (!sanitized) return null;
+      result.push(sanitized);
+    }
+    return result;
+  };
+
   if (TEXT_SECTION_TYPES.has(value.type)) {
+    if (value.type === "callout" && version !== 2) return null;
+    if (value.children !== undefined && value.type !== "quote" && value.type !== "callout")
+      return null;
+    const children = sanitizeChildren(value.children);
+    if (!children) return null;
     const content = sanitizeInlineList(value.content, "strict");
     if (!content) return null;
     const section: TextSection = {
       id: value.id,
       type: value.type as TextSection["type"],
       content,
+      ...(children.length ? { children } : {}),
     };
     if (value.type === "heading") {
       if (value.level !== 1 && value.level !== 2 && value.level !== 3) return null;
@@ -229,16 +265,28 @@ const sanitizeSection = (
       const content = sanitizeInlineList(item.content, "strict");
       if (!content) return null;
       ids.add(item.id);
-      const next: ListItem = { id: item.id, content };
+      const children = sanitizeChildren(item.children);
+      if (!children) return null;
+      const next: ListItem = { id: item.id, content, ...(children.length ? { children } : {}) };
       if (value.type === "checklist") {
         next.checked = item.checked === true;
       }
       items.push(next);
     }
+    if (
+      value.start !== undefined &&
+      (version !== 2 ||
+        value.type !== "numberedList" ||
+        !Number.isSafeInteger(value.start) ||
+        (value.start as number) < 1 ||
+        (value.start as number) > 2147483647)
+    )
+      return null;
     return {
       id: value.id,
       type: value.type as ListSection["type"],
       items,
+      ...(typeof value.start === "number" && value.start !== 1 ? { start: value.start } : {}),
     };
   }
 
@@ -247,109 +295,126 @@ const sanitizeSection = (
 
 export const validateDocumentContent = (value: unknown): ContentResult => {
   const parsed = parseJson(value);
-  if (!isRecord(parsed) || parsed.version !== 1 || !Array.isArray(parsed.sections)) {
+  if (
+    !isRecord(parsed) ||
+    (parsed.version !== 1 && parsed.version !== 2) ||
+    !Array.isArray(parsed.sections)
+  ) {
     return { ok: false, error: "Document content must be a list of sections" };
   }
 
+  try {
+    if (Buffer.byteLength(JSON.stringify(parsed), "utf8") > MAX_DOCUMENT_CONTENT_BYTES)
+      return { ok: false, error: "Document content is larger than 500 KB" };
+  } catch {
+    return { ok: false, error: "Invalid document content" };
+  }
   const ids = new Set<string>();
   const sections: DocumentSection[] = [];
   for (const section of parsed.sections) {
-    const sanitized = sanitizeSection(section, ids);
+    const sanitized = sanitizeSection(section, ids, parsed.version);
     if (!sanitized) {
       return { ok: false, error: "Document content contains an unsupported section" };
     }
     sections.push(sanitized);
   }
 
-  return withinByteLimit({ version: 1, sections });
+  return withinByteLimit({ version: parsed.version, sections });
 };
 
-const inlineFromBlocks = (nodes: DocumentNode[]): DocumentNode[] => {
-  const content: DocumentNode[] = [];
-  nodes.forEach(node => {
-    if (node.type !== "paragraph" && node.type !== "heading") return;
-    const inline = sanitizeInlineList(node.content, "lenient") || [];
-    if (content.length > 0 && inline.length > 0) {
-      content.push({ type: "hardBreak" });
-    }
-    content.push(...inline);
-  });
-  return content;
-};
-
-const convertList = (
-  node: DocumentNode,
-  type: ListSection["type"],
-  extras: DocumentSection[]
-): ListSection => {
-  const items: ListItem[] = [];
-  for (const child of node.content || []) {
-    if (child.type !== "listItem" && child.type !== "taskItem") continue;
-    const blocks = child.content || [];
-    items.push({
-      id: randomUUID(),
-      content: inlineFromBlocks(blocks.filter(block => block.type === "paragraph" || block.type === "heading")),
-      ...(type === "checklist" ? { checked: child.attrs?.checked === true } : {}),
-    });
-    blocks.forEach(block => {
-      if (block.type === "bulletList" || block.type === "orderedList" || block.type === "taskList" || block.type === "blockquote") {
-        extras.push(...convertLegacyBlocks([block]));
-      }
-    });
-  }
-  return { id: randomUUID(), type, items };
-};
-
-const convertLegacyBlocks = (nodes: DocumentNode[]): DocumentSection[] => {
+const convertLegacyBlocks = (nodes: DocumentNode[], depth = 0): DocumentSection[] => {
+  if (depth > MAX_CONTENT_NESTING) return [];
   const sections: DocumentSection[] = [];
-  nodes.forEach(node => {
-    if (node.type === "paragraph") {
+  for (const node of nodes) {
+    const blocks = Array.isArray(node.content)
+      ? (node.content.filter(isRecord) as unknown as DocumentNode[])
+      : [];
+    const inline = sanitizeInlineList(blocks, "lenient") || [];
+    const id = randomUUID();
+    if (node.type === "paragraph" || node.type === "heading") {
       sections.push({
-        id: randomUUID(),
-        type: "paragraph",
-        content: sanitizeInlineList(node.content, "lenient") || [],
+        id,
+        type: node.type,
+        content: inline,
+        ...(node.type === "heading"
+          ? { level: node.attrs?.level === 2 ? 2 : node.attrs?.level === 3 ? 3 : 1 }
+          : {}),
       });
-      return;
-    }
-    if (node.type === "heading") {
-      const level = node.attrs?.level;
+    } else if (["bulletList", "orderedList", "taskList"].includes(node.type)) {
+      const type =
+        node.type === "orderedList"
+          ? "numberedList"
+          : node.type === "taskList"
+            ? "checklist"
+            : "bulletList";
+      const items: ListItem[] = blocks
+        .filter((child) => child.type === "listItem" || child.type === "taskItem")
+        .map((child) => {
+          const itemBlocks = Array.isArray(child.content)
+            ? (child.content.filter(isRecord) as unknown as DocumentNode[])
+            : [];
+          const first = itemBlocks[0];
+          const hasFirstParagraph =
+            first && (first.type === "paragraph" || first.type === "heading");
+          const children = convertLegacyBlocks(
+            hasFirstParagraph ? itemBlocks.slice(1) : itemBlocks,
+            depth + 1,
+          );
+          return {
+            id: randomUUID(),
+            content: hasFirstParagraph ? sanitizeInlineList(first.content, "lenient") || [] : [],
+            ...(children.length ? { children } : {}),
+            ...(type === "checklist" ? { checked: child.attrs?.checked === true } : {}),
+          };
+        });
+      const start = node.attrs?.start;
       sections.push({
-        id: randomUUID(),
-        type: "heading",
-        level: level === 2 || level === 3 ? level : 1,
-        content: sanitizeInlineList(node.content, "lenient") || [],
+        id,
+        type,
+        items,
+        ...(type === "numberedList" &&
+        typeof start === "number" &&
+        Number.isSafeInteger(start) &&
+        start > 1 &&
+        start <= 2147483647
+          ? { start }
+          : {}),
       });
-      return;
-    }
-    if (node.type === "bulletList" || node.type === "orderedList" || node.type === "taskList") {
-      const extras: DocumentSection[] = [];
-      const type = node.type === "orderedList"
-        ? "numberedList"
-        : node.type === "taskList"
-          ? "checklist"
-          : "bulletList";
-      sections.push(convertList(node, type, extras));
-      sections.push(...extras);
-      return;
-    }
-    if (node.type === "blockquote") {
-      const nested = (node.content || []).filter(child =>
-        child.type !== "paragraph" && child.type !== "heading"
-      );
+    } else if (node.type === "blockquote" || node.type === "callout") {
+      const first = blocks[0];
+      const hasFirstParagraph = first && (first.type === "paragraph" || first.type === "heading");
+      const children = convertLegacyBlocks(hasFirstParagraph ? blocks.slice(1) : blocks, depth + 1);
       sections.push({
-        id: randomUUID(),
-        type: "quote",
-        content: inlineFromBlocks(node.content || []),
+        id,
+        type: node.type === "callout" ? "callout" : "quote",
+        content: hasFirstParagraph ? sanitizeInlineList(first.content, "lenient") || [] : [],
+        ...(children.length ? { children } : {}),
       });
-      sections.push(...convertLegacyBlocks(nested));
-      return;
+    } else if (node.type === "horizontalRule") {
+      sections.push({ id, type: "divider" });
+    } else if (node.type === "codeBlock") {
+      const language = node.attrs?.language;
+      sections.push({
+        id,
+        type: "code",
+        text: blocks
+          .filter((child) => child.type === "text")
+          .map((child) => child.text || "")
+          .join(""),
+        ...(typeof language === "string" && language.length <= 64 && language ? { language } : {}),
+      });
     }
-    if (node.type === "horizontalRule") {
-      sections.push({ id: randomUUID(), type: "divider" });
-    }
-  });
+  }
   return sections;
 };
+
+const needsVersion2 = (sections: DocumentSection[]): boolean =>
+  sections.some((section) => {
+    if (section.type === "callout" || (section.type === "code" && section.language)) return true;
+    if ("items" in section)
+      return !!section.start || section.items.some((item) => !!item.children?.length);
+    return "children" in section && !!section.children?.length;
+  });
 
 const isEmptyParagraphDoc = (nodes: DocumentNode[]): boolean =>
   nodes.length === 1 &&
@@ -363,7 +428,8 @@ export const convertLegacyDocument = (value: unknown): SectionDocument => {
   }
   const blocks = parsed.content.filter(isRecord) as unknown as DocumentNode[];
   if (isEmptyParagraphDoc(blocks)) return emptyDocument();
-  return { version: 1, sections: convertLegacyBlocks(blocks) };
+  const sections = convertLegacyBlocks(blocks);
+  return { version: needsVersion2(sections) ? 2 : 1, sections };
 };
 
 /** Saved TipTap documents are converted when a page is read. Section documents are sanitized. */
@@ -379,6 +445,10 @@ export const readDocumentContent = (value: unknown): SectionDocument => {
   return validated.ok ? validated.content : emptyDocument();
 };
 
+/** Older clients must not flatten a document that has already adopted the v2 format. */
+export const canUpdateDocumentContent = (current: unknown, next: SectionDocument): boolean =>
+  readDocumentContent(current).version <= next.version;
+
 const appendInlineText = (nodes: DocumentNode[], parts: string[]): void => {
   nodes.forEach(node => {
     if (node.type === "text" && node.text) parts.push(node.text);
@@ -389,16 +459,18 @@ const appendInlineText = (nodes: DocumentNode[], parts: string[]): void => {
 
 export const extractPlainText = (content: SectionDocument): string => {
   const parts: string[] = [];
-  content.sections.forEach(section => {
-    if (section.type === "paragraph" || section.type === "heading" || section.type === "quote") {
+  const walk = (sections: DocumentSection[]): void => sections.forEach(section => {
+    if (section.type === "paragraph" || section.type === "heading" || section.type === "quote" || section.type === "callout") {
       appendInlineText(section.content, parts);
       parts.push("\n");
+      if (section.children) walk(section.children);
       return;
     }
     if (section.type === "bulletList" || section.type === "numberedList" || section.type === "checklist") {
       section.items.forEach(item => {
         appendInlineText(item.content, parts);
         parts.push("\n");
+        if (item.children) walk(item.children);
       });
       return;
     }
@@ -406,6 +478,7 @@ export const extractPlainText = (content: SectionDocument): string => {
       parts.push(section.text, "\n");
     }
   });
+  walk(content.sections);
   return parts.join("").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 };
 
@@ -423,14 +496,19 @@ const collectInlineMentions = (nodes: DocumentNode[], mentions: DocumentMentionR
 
 export const extractMentions = (content: SectionDocument): DocumentMentionRef[] => {
   const mentions: DocumentMentionRef[] = [];
-  content.sections.forEach(section => {
-    if (section.type === "paragraph" || section.type === "heading" || section.type === "quote") {
+  const walk = (sections: DocumentSection[]): void => sections.forEach(section => {
+    if (section.type === "paragraph" || section.type === "heading" || section.type === "quote" || section.type === "callout") {
       collectInlineMentions(section.content, mentions);
+      if (section.children) walk(section.children);
     }
     if (section.type === "bulletList" || section.type === "numberedList" || section.type === "checklist") {
-      section.items.forEach(item => collectInlineMentions(item.content, mentions));
+      section.items.forEach(item => {
+        collectInlineMentions(item.content, mentions);
+        if (item.children) walk(item.children);
+      });
     }
   });
+  walk(content.sections);
   const seen = new Set<string>();
   return mentions.filter(mention => {
     const key = `${mention.type}:${mention.id}`;

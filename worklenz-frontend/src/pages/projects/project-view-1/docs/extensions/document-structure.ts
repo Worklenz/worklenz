@@ -1,6 +1,26 @@
-import { Extension, Node, mergeAttributes } from '@tiptap/core';
+import { Extension, Node, mergeAttributes, wrappingInputRule } from '@tiptap/core';
 import { Plugin } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
+import { Node as ProseMirrorNode } from '@tiptap/pm/model';
+
+// Match the backend's content nesting limit so Tab cannot create an unsavable tree.
+const MAX_CONTENT_NESTING = 20;
+const supportsNesting = (node: ProseMirrorNode, depth = 0): boolean => {
+  if (depth > MAX_CONTENT_NESTING) return false;
+  let supported = true;
+  if (['bulletList', 'orderedList', 'taskList'].includes(node.type.name)) {
+    node.forEach(item =>
+      item.forEach((child, _offset, index) => {
+        if (index > 0 && !supportsNesting(child, depth + 1)) supported = false;
+      })
+    );
+  } else if (node.type.name === 'blockquote' || node.type.name === 'callout') {
+    node.forEach((child, _offset, index) => {
+      if (index > 0 && !supportsNesting(child, depth + 1)) supported = false;
+    });
+  }
+  return supported;
+};
 
 const IDENTIFIED_NODES = [
   'paragraph',
@@ -13,14 +33,15 @@ const IDENTIFIED_NODES = [
   'listItem',
   'taskList',
   'taskItem',
+  'callout',
 ];
 
-/** v1 stores one paragraph per quote/item. Restrict the schema until v2 can persist nesting. */
+/** Containers begin with a paragraph; v2 persists subsequent blocks and nested lists. */
 export const DocumentStarterKit = StarterKit.extend({
   addExtensions() {
     return (this.parent?.() || []).map(extension =>
-      ['blockquote', 'listItem'].includes(extension.name)
-        ? extension.extend({ content: 'paragraph' })
+      extension.name === 'blockquote'
+        ? extension.extend({ content: 'paragraph block*' })
         : extension
     );
   },
@@ -45,6 +66,14 @@ export const DocumentStructure = Extension.create({
   addProseMirrorPlugins() {
     return [
       new Plugin({
+        filterTransaction: transaction => {
+          let supported = true;
+          if (transaction.docChanged)
+            transaction.doc.forEach(node => {
+              if (!supportsNesting(node)) supported = false;
+            });
+          return supported;
+        },
         appendTransaction: (transactions, _oldState, state) => {
           if (!transactions.some(transaction => transaction.docChanged)) return null;
           const ids = new Set<string>();
@@ -81,7 +110,7 @@ export const DocumentTaskList = Node.create({
 export const createDocumentTaskItem = (checkboxLabel: string) =>
   Node.create({
     name: 'taskItem',
-    content: 'paragraph',
+    content: 'paragraph block*',
     defining: true,
     addAttributes: () => ({
       checked: {
@@ -109,9 +138,13 @@ export const createDocumentTaskItem = (checkboxLabel: string) =>
       ],
       ['div', {}, 0],
     ],
+    addInputRules() {
+      return [wrappingInputRule({ find: /^\s*\[\s?\]\s$/, type: this.type })];
+    },
     addKeyboardShortcuts() {
       return {
         Enter: () => this.editor.commands.splitListItem(this.name),
+        Tab: () => this.editor.commands.sinkListItem(this.name),
         'Shift-Tab': () => this.editor.commands.liftListItem(this.name),
       };
     },
@@ -160,3 +193,16 @@ export const createDocumentTaskItem = (checkboxLabel: string) =>
       };
     },
   });
+
+export const DocumentCallout = Node.create({
+  name: 'callout',
+  group: 'block',
+  content: 'paragraph block*',
+  defining: true,
+  parseHTML: () => [{ tag: 'aside[data-type="callout"]' }],
+  renderHTML: ({ HTMLAttributes }) => [
+    'aside',
+    mergeAttributes(HTMLAttributes, { 'data-type': 'callout', class: 'docs-callout' }),
+    0,
+  ],
+});

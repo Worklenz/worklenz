@@ -37,7 +37,7 @@ export interface IProjectDocumentSummary {
   updated_by_name: string | null;
 }
 
-export type DocsTextSectionType = 'paragraph' | 'heading' | 'quote';
+export type DocsTextSectionType = 'paragraph' | 'heading' | 'quote' | 'callout';
 export type DocsListSectionType = 'bulletList' | 'numberedList' | 'checklist';
 
 export interface ITextSection {
@@ -45,24 +45,28 @@ export interface ITextSection {
   type: DocsTextSectionType;
   level?: 1 | 2 | 3;
   content: IDocumentNode[];
+  children?: IDocumentSection[];
 }
 
 export interface IListItem {
   id: string;
   content: IDocumentNode[];
   checked?: boolean;
+  children?: IDocumentSection[];
 }
 
 export interface IListSection {
   id: string;
   type: DocsListSectionType;
   items: IListItem[];
+  start?: number;
 }
 
 export interface ICodeSection {
   id: string;
   type: 'code';
   text: string;
+  language?: string;
 }
 
 export interface IDividerSection {
@@ -73,7 +77,7 @@ export interface IDividerSection {
 export type IDocumentSection = ITextSection | IListSection | ICodeSection | IDividerSection;
 
 export interface ISectionDocument {
-  version: 1;
+  version: 1 | 2;
   sections: IDocumentSection[];
 }
 
@@ -86,6 +90,7 @@ export type SectionKind =
   | 'numberedList'
   | 'checklist'
   | 'quote'
+  | 'callout'
   | 'code'
   | 'divider';
 
@@ -110,7 +115,7 @@ export const createSection = (kind: SectionKind): IDocumentSection => {
       ],
     };
   }
-  if (kind === 'quote') return { id, type: 'quote', content: [] };
+  if (kind === 'quote' || kind === 'callout') return { id, type: kind, content: [] };
   return { id, type: 'paragraph', content: [] };
 };
 

@@ -331,3 +331,47 @@ button.docs-mention-chip:disabled,
   color: var(--docs-muted);
   text-decoration: line-through;
 }
+
+.docs-document-editor { position: relative; }
+.docs-block-controls {
+  position: absolute;
+  left: -52px;
+  display: flex;
+  width: 48px;
+  z-index: 3;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+  background: var(--docs-surface);
+  border-radius: 6px;
+}
+.docs-block-controls .docs-tool-btn { width: 24px; height: 28px; color: var(--docs-muted); }
+.docs-document-editor:hover > .docs-block-controls,
+.docs-document-editor:focus-within > .docs-block-controls,
+.docs-block-controls[data-open='true'] { opacity: 1; pointer-events: auto; }
+.docs-drag-handle { cursor: grab; }
+.docs-drag-handle:active { cursor: grabbing; }
+.docs-prose .ProseMirror [data-docs-drop='before'] { box-shadow: 0 -2px 0 var(--docs-link); }
+.docs-prose .ProseMirror [data-docs-drop='after'] { box-shadow: 0 2px 0 var(--docs-link); }
+.docs-prose .ProseMirror .docs-callout {
+  margin: 12px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--docs-border);
+  border-left: 3px solid var(--docs-link);
+  border-radius: 6px;
+  background: var(--docs-active);
+}
+.docs-prose .ProseMirror ul[data-type='taskList'] li:not([data-type='taskItem']) { display: list-item; }
+.docs-prose .ProseMirror ul[data-type='taskList'] ul:not([data-type='taskList']) { list-style-type: disc; padding-left: 1.4rem; }
+.docs-prose .ProseMirror li[data-checked='true'] > div > p { color: var(--docs-muted); text-decoration: line-through; }
+.docs-prose .ProseMirror li[data-checked='true'] > div { color: inherit; text-decoration: none; }
+@media (max-width: 640px) {
+  .docs-document-editor { padding-left: 40px; }
+  .docs-block-controls { left: -8px; }
+}
+@media (hover: none) {
+  .docs-block-controls { opacity: 1; pointer-events: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .docs-block-controls { transition: none; }
+}

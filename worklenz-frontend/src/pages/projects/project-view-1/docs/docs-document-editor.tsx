@@ -3,7 +3,7 @@ import { Placeholder } from '@tiptap/extensions';
 import { PluginKey } from '@tiptap/pm/state';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
-import Suggestion, { SuggestionProps } from '@tiptap/suggestion';
+import Suggestion, { exitSuggestion, SuggestionProps } from '@tiptap/suggestion';
 import {
   BoldOutlined,
   ItalicOutlined,
@@ -11,10 +11,15 @@ import {
   UnorderedListOutlined,
   OrderedListOutlined,
 } from '@ant-design/icons';
-import { MutableRefObject, useEffect, useRef } from 'react';
+import { MutableRefObject, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ISectionDocument } from '@/types/project/project-documents.types';
-import { DocsSuggestionItem, suggestionPosition } from './docs-suggestion-menu';
+import {
+  DocsSuggestionItem,
+  DocsSuggestionMenu,
+  DocsSuggestionMenuHandle,
+  suggestionPosition,
+} from './docs-suggestion-menu';
 import { MentionHandlers } from './docs-mentions';
 import { ToolbarButton } from './docs-toolbar-button';
 import { fromEditorDocument, toEditorDocument } from './docs-document-format';
@@ -22,10 +27,14 @@ import {
   DocumentStarterKit,
   DocumentStructure,
   DocumentTaskList,
+  DocumentCallout,
   createDocumentTaskItem,
 } from './extensions/document-structure';
 import { MemberMention } from './extensions/member-mention';
 import { TaskMention } from './extensions/task-mention';
+import { createSlashCommands, slashPluginKey } from './extensions/slash-commands';
+import { toggleDocumentList, useDocsBlockCommands } from './docs-block-commands';
+import { DocsBlockControls } from './docs-block-controls';
 
 interface DocsDocumentEditorProps {
   content: ISectionDocument;
@@ -41,6 +50,12 @@ export const DocsDocumentEditor = ({
   onActivity,
 }: DocsDocumentEditorProps) => {
   const { t } = useTranslation('project-view-docs');
+  const commands = useDocsBlockCommands();
+  const commandsRef = useRef(commands);
+  commandsRef.current = commands;
+  const slashMenuRef = useRef<DocsSuggestionMenuHandle>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentVersion = useRef(content.version);
   const callbacks = useRef({ onChange, onActivity });
   callbacks.current = { onChange, onActivity };
   // The page owns the document lifetime (keyed by page ID/reload token). Local echoes
@@ -60,9 +75,13 @@ export const DocsDocumentEditor = ({
       }),
       DocumentStructure,
       DocumentTaskList,
+      DocumentCallout,
+      createSlashCommands(commandsRef, slashMenuRef),
       createDocumentTaskItem(t('toggleItem', { defaultValue: 'Toggle to-do' })),
       Placeholder.configure({
-        placeholder: t('placeholder', { defaultValue: "Write, '@' for members, '#' for tasks" }),
+        placeholder: t('writingPlaceholder', {
+          defaultValue: "Write, '/' for blocks, '@' for members, '#' for tasks",
+        }),
       }),
       MemberMention,
       TaskMention,
@@ -79,11 +98,22 @@ export const DocsDocumentEditor = ({
               if (isUpdate) handlersRef.current.mentionMenu?.update(state);
               else handlersRef.current.mentionMenu?.open(state);
             };
+            const pluginKey = new PluginKey(`document-mention-${kind}`);
             return Suggestion({
-              pluginKey: new PluginKey(`document-mention-${kind}`),
+              pluginKey,
               editor: this.editor,
               char: kind === 'member' ? '@' : '#',
               allowSpaces: true,
+              allow: ({ editor, state, range }) => {
+                const parent = state.doc.resolve(range.from).parent;
+                const text = parent.textContent;
+                return (
+                  ['paragraph', 'heading'].includes(parent.type.name) &&
+                  !editor.view.composing &&
+                  !text.startsWith('/') &&
+                  (kind !== 'task' || !/^#{2,}/.test(text))
+                );
+              },
               items: ({ query }) => handlersRef.current.mentionItems(query, kind),
               command: ({ editor, range, props }) =>
                 handlersRef.current.applyMention(props as DocsSuggestionItem, editor, range),
@@ -91,8 +121,15 @@ export const DocsDocumentEditor = ({
                 onStart: props => showMenu(props, false),
                 onUpdate: props => showMenu(props, true),
                 onExit: () => handlersRef.current.mentionMenu?.close(),
-                onKeyDown: ({ event }) =>
-                  handlersRef.current.mentionMenu?.onKeyDown(event) ?? false,
+                onKeyDown: ({ event, view }) => {
+                  if (event.isComposing || view.composing) return false;
+                  if (event.key === 'Escape') {
+                    exitSuggestion(view, pluginKey);
+                    handlersRef.current.mentionMenu?.close();
+                    return true;
+                  }
+                  return handlersRef.current.mentionMenu?.onKeyDown(event) ?? false;
+                },
               }),
             });
           });
@@ -107,14 +144,42 @@ export const DocsDocumentEditor = ({
         'aria-multiline': 'true',
       },
     },
-    onUpdate: ({ editor: current }) =>
-      callbacks.current.onChange(fromEditorDocument(current.getJSON())),
+    onUpdate: ({ editor: current }) => {
+      const next = fromEditorDocument(current.getJSON(), contentVersion.current);
+      contentVersion.current = next.version;
+      callbacks.current.onChange(next);
+    },
     onFocus: ({ editor: current }) => callbacks.current.onActivity(current),
     onSelectionUpdate: ({ editor: current }) => callbacks.current.onActivity(current),
     onTransaction: ({ editor: current }) => callbacks.current.onActivity(current),
   });
 
-  useEffect(() => () => handlersRef.current.mentionMenu?.close(), [handlersRef]);
+  useEffect(
+    () => () => {
+      handlersRef.current.mentionMenu?.close();
+      slashMenuRef.current?.close();
+    },
+    [handlersRef]
+  );
+  const dismissSlash = useCallback(() => {
+    if (editor && !editor.isDestroyed) exitSuggestion(editor.view, slashPluginKey);
+  }, [editor]);
+  const activeSlashOption = useCallback(
+    (optionId: string | null, menuId: string | null) => {
+      if (!editor || editor.isDestroyed) return;
+      const element = editor.view.dom;
+      for (const [attribute, value] of [
+        ['aria-activedescendant', optionId],
+        ['aria-controls', menuId],
+        ['aria-autocomplete', menuId ? 'list' : null],
+      ] as const) {
+        if (value && element.getAttribute(attribute) !== value)
+          element.setAttribute(attribute, value);
+        else if (!value && element.hasAttribute(attribute)) element.removeAttribute(attribute);
+      }
+    },
+    [editor]
+  );
 
   const focusBelow = () => {
     if (!editor) return;
@@ -129,7 +194,7 @@ export const DocsDocumentEditor = ({
   };
 
   return (
-    <div className="docs-document-editor">
+    <div className="docs-document-editor" ref={containerRef}>
       {editor ? (
         <BubbleMenu editor={editor} options={{ placement: 'top' }}>
           <div
@@ -161,20 +226,30 @@ export const DocsDocumentEditor = ({
             <ToolbarButton
               label={t('bulletList', { defaultValue: 'Bullet list' })}
               active={editor.isActive('bulletList')}
-              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              onClick={() => toggleDocumentList(editor, 'bulletList')}
             >
               <UnorderedListOutlined />
             </ToolbarButton>
             <ToolbarButton
               label={t('numberedList', { defaultValue: 'Numbered list' })}
               active={editor.isActive('orderedList')}
-              onClick={() => editor.chain().focus().toggleOrderedList().run()}
+              onClick={() => toggleDocumentList(editor, 'numberedList')}
             >
               <OrderedListOutlined />
             </ToolbarButton>
           </div>
         </BubbleMenu>
       ) : null}
+      {editor ? (
+        <DocsBlockControls editor={editor} containerRef={containerRef} commands={commands} />
+      ) : null}
+      <DocsSuggestionMenu
+        ref={slashMenuRef}
+        ariaLabel={t('slashMenu', { defaultValue: 'Insert block' })}
+        emptyLabel={t('noCommands', { defaultValue: 'No matching commands' })}
+        onDismiss={dismissSlash}
+        onActiveOption={activeSlashOption}
+      />
       <EditorContent editor={editor} />
       <button
         type="button"

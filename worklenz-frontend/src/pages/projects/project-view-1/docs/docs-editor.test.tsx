@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ConfigProvider, theme } from 'antd';
+import userEvent from '@testing-library/user-event';
 import { Editor as TiptapEditor } from '@tiptap/core';
 import { closeHistory } from '@tiptap/pm/history';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
@@ -17,6 +18,18 @@ vi.mock('react-i18next', () => ({
 }));
 vi.mock('@/api/projects/comments/project-comments.api.service', () => ({ projectCommentsApiService: { getMentionMembers: vi.fn() } }));
 vi.mock('@/api/tasks/tasks.api.service', () => ({ tasksApiService: { searchTask: vi.fn() } }));
+// jsdom has no layout. Keep selection-driven visibility while omitting floating-ui positioning.
+vi.mock('@tiptap/react/menus', async () => {
+  const { useSyncExternalStore } = await import('react');
+  return { BubbleMenu: ({ editor, children }: { editor: TiptapEditor; children: import('react').ReactNode }) => {
+    const isVisible = useSyncExternalStore(callback => {
+      editor.on('selectionUpdate', callback);
+      editor.on('transaction', callback);
+      return () => { editor.off('selectionUpdate', callback); editor.off('transaction', callback); };
+    }, () => !editor.state.selection.empty);
+    return isVisible ? <div>{children}</div> : null;
+  } };
+});
 vi.mock('./extensions/member-mention', async () => {
   const { Node } = await import('@tiptap/core');
   return { MemberMention: Node.create({ name: 'memberMention', group: 'inline', inline: true, atom: true, addAttributes: () => ({ id: { default: null } }), renderHTML: ({ HTMLAttributes }) => ['span', HTMLAttributes, '@member'] }) };
@@ -171,7 +184,7 @@ describe.each([false, true])('docs formatting with dark theme = %s', dark => {
     expect(body).not.toHaveTextContent('Pasted second');
   });
 
-  it('inserts every existing block type through the transitional insert menu', async () => {
+  it('inserts every existing block type through the contextual insert menu', async () => {
     render(<ExampleDocument dark={dark} />);
     const body = screen.getByLabelText('Page content');
     act(() => { body.focus(); });
@@ -182,7 +195,7 @@ describe.each([false, true])('docs formatting with dark theme = %s', dark => {
       await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
     }
     const saved = onContentChange.mock.lastCall?.[0] as ISectionDocument;
-    expect(saved.sections.map(section => section.type)).toEqual(['paragraph', 'heading', 'heading', 'heading', 'bulletList', 'numberedList', 'checklist', 'quote', 'code', 'divider', 'paragraph']);
+    expect(saved.sections.map(section => section.type)).toEqual(['paragraph', 'heading', 'heading', 'heading', 'bulletList', 'numberedList', 'checklist', 'quote', 'code', 'divider', 'paragraph', 'paragraph']);
     expect(document.querySelectorAll('[contenteditable="true"]')).toHaveLength(1);
   });
 
@@ -325,7 +338,7 @@ describe('member and task suggestions', () => {
     onContentChange.mockImplementation(() => {
       expect(mentionStore.get().tasks['task-1']).toMatchObject({ name: 'Fix login', task_key: 'PROJ-123', unavailable: false });
     });
-    fireEvent.mouseDown(task);
+    fireEvent.click(task);
     await waitFor(() => expect(onContentChange).toHaveBeenLastCalledWith({
       version: 1,
       sections: [{ id: expect.any(String), type: 'paragraph', content: [
@@ -349,4 +362,217 @@ describe('member and task suggestions', () => {
     await expect(loadMentionItems('project-1', '', { current: [] }, 'Members', 'Tasks', 'member')).resolves.toEqual([]);
     await expect(loadMentionItems('project-1', '', { current: [] }, 'Members', 'Tasks', 'task')).resolves.toEqual([]);
   });
+});
+
+const emptyPage: ISectionDocument = { version: 1, sections: [] };
+const editorForBody = () => (screen.getByLabelText('Page content') as HTMLElement & { editor: TiptapEditor }).editor;
+const typeIntoEditor = (editor: TiptapEditor, text: string) => {
+  for (const character of text) {
+    const { from, to } = editor.state.selection;
+    const handled = editor.view.someProp('handleTextInput', handler => handler(editor.view, from, to, character, () => editor.state.tr.insertText(character, from, to)));
+    if (!handled) editor.view.dispatch(editor.state.tr.insertText(character, from, to));
+  }
+};
+
+describe.each([false, true])('phase 2 writing with dark theme = %s', dark => {
+  it('searches slash commands, selects with arrows and Enter, and exposes the active option', async () => {
+    render(<ExampleDocument dark={dark} initialContent={emptyPage} />);
+    const body = screen.getByLabelText('Page content');
+    const editor = editorForBody();
+    act(() => { body.focus(); editor.commands.insertContent('/'); });
+    await screen.findByRole('listbox', { name: 'Insert block' });
+    expect(screen.getByRole('option', { name: 'Paragraph' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(body, { key: 'ArrowDown' });
+    expect(screen.getByRole('option', { name: 'Heading 1' })).toHaveAttribute('aria-selected', 'true');
+    expect(body.getAttribute('aria-activedescendant')).toBe(screen.getByRole('option', { name: 'Heading 1' }).id);
+    fireEvent.keyDown(body, { key: 'ArrowUp' });
+    fireEvent.keyDown(body, { key: 'ArrowUp' });
+    expect(screen.getByRole('option', { name: 'Callout' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(body, { key: 'Enter' });
+    await waitFor(() => expect(body.querySelector('aside[data-type="callout"]')).not.toBeNull());
+    expect(body).not.toHaveTextContent('/');
+    expect(onContentChange.mock.lastCall?.[0]).toMatchObject({ version: 2, sections: [{ type: 'callout' }] });
+    expect(screen.queryByRole('listbox', { name: 'Insert block' })).not.toBeInTheDocument();
+    expect(body).not.toHaveAttribute('aria-controls');
+    act(() => { editor.commands.undo(); });
+    expect(body).toHaveTextContent('/');
+  });
+
+  it('filters commands and converts without leaving the search query in the document', async () => {
+    render(<ExampleDocument dark={dark} initialContent={emptyPage} />);
+    const body = screen.getByLabelText('Page content');
+    act(() => { body.focus(); editorForBody().commands.insertContent('/heading 2'); });
+    const option = await screen.findByRole('option', { name: 'Heading 2' });
+    expect(screen.getAllByRole('option')).toHaveLength(1);
+    fireEvent.click(option);
+    await waitFor(() => expect(body.querySelector('h2')).not.toBeNull());
+    expect(body.textContent).toBe('');
+    expect(tasksApiService.searchTask).not.toHaveBeenCalled();
+    expect(projectCommentsApiService.getMentionMembers).not.toHaveBeenCalled();
+  });
+
+  it('shows an empty result state, keeps Enter safe, and dismisses with Escape or an outside click', async () => {
+    render(<ExampleDocument dark={dark} initialContent={emptyPage} />);
+    const body = screen.getByLabelText('Page content');
+    const editor = editorForBody();
+    act(() => { body.focus(); editor.commands.insertContent('/no-such-command'); });
+    await screen.findByRole('status');
+    expect(screen.getByRole('status')).toHaveTextContent('No matching commands');
+    fireEvent.keyDown(body, { key: 'Enter' });
+    expect(body.querySelectorAll('p')).toHaveLength(1);
+    fireEvent.keyDown(body, { key: 'Escape' });
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(body).toHaveTextContent('/no-such-command');
+    act(() => { editor.commands.setContent('<p>/quote</p>'); editor.commands.focus('end'); });
+    await screen.findByRole('option', { name: 'Quote' });
+    fireEvent.pointerDown(screen.getByLabelText('Page title'));
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    expect(body).toHaveTextContent('/quote');
+  });
+
+  it('does not capture Enter during IME composition or open commands inside code', async () => {
+    render(<ExampleDocument dark={dark} initialContent={emptyPage} />);
+    const body = screen.getByLabelText('Page content');
+    const editor = editorForBody();
+    act(() => { body.focus(); editor.commands.insertContent('/heading'); });
+    await screen.findByRole('option', { name: 'Heading 1' });
+    fireEvent.compositionStart(body);
+    fireEvent.keyDown(body, { key: 'Enter', isComposing: true, keyCode: 229 });
+    expect(body.querySelector('h1')).toBeNull();
+    expect(body).toHaveTextContent('/heading');
+    fireEvent.compositionEnd(body);
+    act(() => { editor.commands.setContent('<pre><code>/heading</code></pre>'); editor.commands.focus('end'); });
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    expect(body.querySelector('pre')).toHaveTextContent('/heading');
+  });
+
+  it.each([['- ', 'bulletList'], ['1. ', 'orderedList'], ['[] ', 'taskList'], ['## ', 'heading']])('recognizes the %s shortcut without triggering a mention', async (shortcut, type) => {
+    render(<ExampleDocument dark={dark} initialContent={emptyPage} />);
+    const body = screen.getByLabelText('Page content');
+    const editor = editorForBody();
+    act(() => { body.focus(); typeIntoEditor(editor, shortcut); });
+    expect(editor.state.doc.firstChild?.type.name).toBe(type);
+    if (type === 'heading') expect(editor.state.doc.firstChild?.attrs.level).toBe(2);
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    expect(body.textContent).toBe('');
+  });
+
+  it.each(['bulletList', 'numberedList', 'checklist'] as const)('indents and outdents %s with Tab and preserves the saved tree', type => {
+    const initial: ISectionDocument = { version: 1, sections: [{ id: crypto.randomUUID(), type, items: [
+      { id: crypto.randomUUID(), content: [{ type: 'text', text: 'Parent' }] },
+      { id: crypto.randomUUID(), content: [{ type: 'text', text: 'Child' }] },
+    ] }] };
+    render(<ExampleDocument dark={dark} initialContent={initial} />);
+    const body = screen.getByLabelText('Page content');
+    const editor = editorForBody();
+    act(() => { body.focus(); editor.commands.setTextSelection(editor.state.doc.content.size - 3); });
+    fireEvent.keyDown(body, { key: 'Tab' });
+    expect(body.querySelector('li li')).toHaveTextContent('Child');
+    const saved = onContentChange.mock.lastCall?.[0] as ISectionDocument;
+    expect(saved.version).toBe(2);
+    expect(saved.sections[0]).toMatchObject({ type, items: [{ children: [{ type, items: [{ content: [{ text: 'Child' }] }] }] }] });
+    act(() => { editor.view.dispatch(closeHistory(editor.state.tr)); });
+    fireEvent.keyDown(body, { key: 'Tab', shiftKey: true });
+    expect(body.querySelector('li ul, li ol')).toBeNull();
+    expect(body.querySelectorAll('li')).toHaveLength(2);
+    act(() => { editor.commands.undo(); });
+    expect(body.querySelector('li li')).toHaveTextContent('Child');
+  });
+
+  it('shows actions for the hovered block and preserves text when turning it into a heading', async () => {
+    render(<ExampleDocument dark={dark} initialContent={{ version: 1, sections: [
+      { id: crypto.randomUUID(), type: 'paragraph', content: [{ type: 'text', text: 'First' }] },
+      { id: crypto.randomUUID(), type: 'paragraph', content: [{ type: 'text', text: 'Hovered', marks: [{ type: 'bold' }] }] },
+    ] }} />);
+    const body = screen.getByLabelText('Page content');
+    act(() => { body.focus(); });
+    fireEvent.pointerMove(body.querySelectorAll('p')[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Block actions' }));
+    await userEvent.hover(await screen.findByText('Turn into'));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Heading 2' }));
+    await waitFor(() => expect(body.querySelector('h2 strong')).toHaveTextContent('Hovered'));
+    expect(body.querySelector('p')).toHaveTextContent('First');
+    expect(body.querySelectorAll('h2')).toHaveLength(1);
+  });
+
+  it('reorders blocks using the drag handle without copying or dropping content', () => {
+    const firstId = crypto.randomUUID();
+    const secondId = crypto.randomUUID();
+    render(<ExampleDocument dark={dark} initialContent={{ version: 1, sections: [
+      { id: firstId, type: 'paragraph', content: [{ type: 'text', text: 'First' }] },
+      { id: secondId, type: 'paragraph', content: [{ type: 'text', text: 'Second' }] },
+    ] }} />);
+    const body = screen.getByLabelText('Page content');
+    act(() => { body.focus(); editorForBody().commands.setTextSelection(editorForBody().state.doc.child(0).nodeSize + 1); });
+    const store = new Map<string, string>();
+    const dataTransfer = { types: [] as string[], effectAllowed: '', dropEffect: '', setData: (type: string, value: string) => { store.set(type, value); dataTransfer.types.push(type); }, getData: (type: string) => store.get(type) || '' };
+    fireEvent.dragStart(screen.getByRole('button', { name: 'Block actions' }), { dataTransfer });
+    fireEvent.dragOver(body.firstElementChild!, { dataTransfer, clientY: -1 });
+    fireEvent.drop(body.firstElementChild!, { dataTransfer, clientY: -1 });
+    expect(body.querySelectorAll('p')[0]).toHaveTextContent('Second');
+    expect(body.querySelectorAll('p')[1]).toHaveTextContent('First');
+    expect((onContentChange.mock.lastCall?.[0] as ISectionDocument).sections.map(section => section.id)).toEqual([secondId, firstId]);
+  });
+});
+
+it('keeps version 2 after removing advanced content so older tabs cannot overwrite it', () => {
+  render(<ExampleDocument dark={false} initialContent={{ version: 2, sections: [{ id: crypto.randomUUID(), type: 'callout', content: [{ type: 'text', text: 'Note' }] }] }} />);
+  act(() => { editorForBody().commands.setContent('<p>Plain paragraph</p>'); });
+  expect(onContentChange.mock.lastCall?.[0]).toMatchObject({ version: 2, sections: [{ type: 'paragraph' }] });
+});
+
+it('opens block actions from the editor with Shift+F10', async () => {
+  // Ant Design filters keyboard targets by layout visibility, which jsdom does not calculate.
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 30));
+  render(<ExampleDocument dark={false} />);
+  const body = screen.getByLabelText('Page content');
+  act(() => { body.focus(); });
+  fireEvent.keyDown(body, { key: 'F10', shiftKey: true });
+  await screen.findByRole('menuitem', { name: 'Duplicate' });
+  await waitFor(() => expect(screen.getByRole('menu')).toContainElement(document.activeElement as HTMLElement));
+  fireEvent.keyDown(screen.getByRole('menu'), { key: 'Home', keyCode: 36, which: 36 });
+  await waitFor(() => expect(document.activeElement).toHaveTextContent('Turn into'));
+  fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown', keyCode: 40, which: 40 });
+  await waitFor(() => expect(document.activeElement).toHaveTextContent('Duplicate'));
+  fireEvent.keyDown(document.activeElement!, { key: 'Enter', keyCode: 13, which: 13 });
+  await waitFor(() => expect(body.querySelectorAll('p')).toHaveLength(2));
+});
+
+it('ignores a drag from another editor instance and clears its drop indicator', () => {
+  const firstId = crypto.randomUUID();
+  const secondId = crypto.randomUUID();
+  render(<ExampleDocument dark={false} initialContent={{ version: 1, sections: [
+    { id: firstId, type: 'paragraph', content: [{ type: 'text', text: 'First' }] },
+    { id: secondId, type: 'paragraph', content: [{ type: 'text', text: 'Second' }] },
+  ] }} />);
+  const body = screen.getByLabelText('Page content');
+  const dataTransfer = { types: ['application/x-worklenz-doc-block'], dropEffect: '', getData: () => JSON.stringify({ session: 'another-editor', blockId: secondId }) };
+  fireEvent.dragOver(body.firstElementChild!, { dataTransfer });
+  expect(body.querySelector('[data-docs-drop]')).not.toBeNull();
+  fireEvent.drop(body.firstElementChild!, { dataTransfer });
+  expect(body.querySelector('[data-docs-drop]')).toBeNull();
+  expect(body.querySelectorAll('p')[0]).toHaveTextContent('First');
+  expect(body.querySelectorAll('p')[1]).toHaveTextContent('Second');
+  expect(onContentChange).not.toHaveBeenCalled();
+});
+
+it('treats @ and # inside code as plain text without fetching mention suggestions', () => {
+  render(<ExampleDocument dark={false} initialContent={{ version: 1, sections: [{ id: crypto.randomUUID(), type: 'code', text: '' }] }} />);
+  const body = screen.getByLabelText('Page content');
+  act(() => { body.focus(); editorForBody().chain().focus('end').insertContent('@Ali #PROJ-123').run(); });
+  expect(body.querySelector('pre')).toHaveTextContent('@Ali #PROJ-123');
+  expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  expect(projectCommentsApiService.getMentionMembers).not.toHaveBeenCalled();
+  expect(tasksApiService.searchTask).not.toHaveBeenCalled();
+});
+
+it('preserves existing text to the right of a slash command at the start of a paragraph', async () => {
+  render(<ExampleDocument dark={false} />);
+  const body = screen.getByLabelText('Page content');
+  const editor = editorForBody();
+  act(() => { body.focus(); editor.commands.setTextSelection(1); editor.commands.insertContent('/heading 2'); });
+  await screen.findByRole('option', { name: 'Heading 2' });
+  fireEvent.keyDown(body, { key: 'Enter' });
+  await waitFor(() => expect(body.querySelector('h2')).toHaveTextContent('Project goals'));
+  expect(body).not.toHaveTextContent('/heading');
 });

@@ -7,6 +7,10 @@ import {
   syncDocumentMentions,
   validateDocumentContent,
   validateDocumentTree,
+  readDocumentContent,
+  MAX_CONTENT_NESTING,
+  canUpdateDocumentContent,
+  SectionDocument,
 } from "../services/project-documents/project-document-content";
 
 const member = (id: string) => ({ type: "member" as const, id });
@@ -41,6 +45,247 @@ describe("syncDocumentMentions", () => {
     expect(memberIdsToNotify(diff)).toEqual([OTHER_MEMBER_ID]);
     expect(memberIdsToNotify(diff)).not.toContain(TASK_ID);
     expect(diff.insertedTaskIds).toEqual([]);
+  });
+});
+
+let nextId = 100;
+const contentId = () => `77777777-7777-4777-8777-${String(nextId++).padStart(12, "0")}`;
+const nestedDocument = (): SectionDocument => ({
+  version: 2,
+  sections: [
+    {
+      id: contentId(),
+      type: "callout",
+      content: [{ type: "text", text: "Note" }],
+      children: [
+        {
+          id: contentId(),
+          type: "checklist",
+          items: [
+            {
+              id: contentId(),
+              checked: true,
+              content: [{ type: "memberMention", attrs: { id: MEMBER_ID } }],
+              children: [
+                {
+                  id: contentId(),
+                  type: "numberedList",
+                  start: 3,
+                  items: [
+                    {
+                      id: contentId(),
+                      content: [
+                        { type: "text", text: "Nested task " },
+                        { type: "taskMention", attrs: { id: TASK_ID } },
+                      ],
+                      children: [
+                        {
+                          id: contentId(),
+                          type: "paragraph",
+                          content: [{ type: "memberMention", attrs: { id: MEMBER_ID } }],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+});
+
+describe("version 2 document content", () => {
+  it("allows upgrades and v2 edits while preventing older clients from overwriting v2 pages", () => {
+    const old: SectionDocument = { version: 1, sections: [] };
+    const document = nestedDocument();
+    expect(canUpdateDocumentContent(old, document)).toBe(true);
+    expect(canUpdateDocumentContent(document, document)).toBe(true);
+    expect(canUpdateDocumentContent(document, old)).toBe(false);
+    expect(canUpdateDocumentContent({ version: 2, sections: [] }, old)).toBe(false);
+  });
+  it("round-trips nested lists, callouts, IDs, numbering and checklist state through validation and reads", () => {
+    const document = nestedDocument();
+    expect(validateDocumentContent(document)).toEqual({ ok: true, content: document });
+    expect(readDocumentContent(JSON.stringify(document))).toEqual(document);
+    // Page duplication stores a copy of the JSON; its contents retain the same schema.
+    expect(readDocumentContent(JSON.parse(JSON.stringify(document)))).toEqual(document);
+    expect(extractPlainText(document)).toContain("Nested task");
+    expect(extractMentions(document)).toEqual([member(MEMBER_ID), task(TASK_ID)]);
+    expect(
+      memberIdsToNotify(syncDocumentMentions(extractMentions(document), extractMentions(document))),
+    ).toEqual([]);
+    expect(memberIdsToNotify(syncDocumentMentions([], extractMentions(document)))).toEqual([
+      MEMBER_ID,
+    ]);
+  });
+
+  it("rejects v2 structures in v1 instead of silently losing their contents", () => {
+    const document = nestedDocument();
+    expect(validateDocumentContent({ ...document, version: 1 }).ok).toBe(false);
+    expect(
+      validateDocumentContent({
+        version: 1,
+        sections: [
+          {
+            id: contentId(),
+            type: "quote",
+            content: [],
+            children: [{ id: contentId(), type: "paragraph", content: [] }],
+          },
+        ],
+      }).ok,
+    ).toBe(false);
+    expect(validateDocumentContent({ version: 3, sections: [] }).ok).toBe(false);
+  });
+
+  it("rejects duplicate IDs across nesting boundaries and unsupported nested sections", () => {
+    const id = contentId();
+    expect(
+      validateDocumentContent({
+        version: 2,
+        sections: [
+          { id, type: "callout", content: [], children: [{ id, type: "paragraph", content: [] }] },
+        ],
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateDocumentContent({
+        version: 2,
+        sections: [
+          {
+            id: contentId(),
+            type: "quote",
+            content: [],
+            children: [{ id: contentId(), type: "script", content: [] }],
+          },
+        ],
+      }).ok,
+    ).toBe(false);
+  });
+
+  it("bounds content nesting and document size", () => {
+    let document: SectionDocument = {
+      version: 2,
+      sections: [{ id: contentId(), type: "paragraph", content: [] }],
+    };
+    for (let index = 0; index < MAX_CONTENT_NESTING; index++)
+      document = {
+        version: 2,
+        sections: [{ id: contentId(), type: "callout", content: [], children: document.sections }],
+      };
+    expect(validateDocumentContent(document).ok).toBe(true);
+    expect(
+      validateDocumentContent({
+        version: 2,
+        sections: [{ id: contentId(), type: "callout", content: [], children: document.sections }],
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateDocumentContent({
+        version: 2,
+        sections: [{ id: contentId(), type: "code", text: "a".repeat(512 * 1024) }],
+      }).ok,
+    ).toBe(false);
+  });
+
+  it("sanitizes unsafe nested links and rejects invalid numbering", () => {
+    const result = validateDocumentContent({
+      version: 2,
+      sections: [
+        {
+          id: contentId(),
+          type: "callout",
+          content: [],
+          children: [
+            {
+              id: contentId(),
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: "Unsafe",
+                  marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok && "children" in result.content.sections[0])
+      expect(result.content.sections[0].children?.[0]).toMatchObject({
+        content: [{ type: "text", text: "Unsafe" }],
+      });
+    for (const start of [-1, 0, 1.5, "3", 2147483648])
+      expect(
+        validateDocumentContent({
+          version: 2,
+          sections: [{ id: contentId(), type: "numberedList", start, items: [] }],
+        }).ok,
+      ).toBe(false);
+  });
+
+  it("preserves nested legacy lists, callouts, code and mention IDs during conversion", () => {
+    const document = convertLegacyDocument({
+      type: "doc",
+      content: [
+        {
+          type: "callout",
+          content: [
+            { type: "paragraph", content: [{ type: "text", text: "Legacy note" }] },
+            {
+              type: "bulletList",
+              content: [
+                {
+                  type: "listItem",
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [{ type: "memberMention", attrs: { id: MEMBER_ID } }],
+                    },
+                    {
+                      type: "orderedList",
+                      attrs: { start: 2 },
+                      content: [
+                        {
+                          type: "listItem",
+                          content: [
+                            {
+                              type: "paragraph",
+                              content: [{ type: "taskMention", attrs: { id: TASK_ID } }],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: "codeBlock",
+              attrs: { language: "typescript" },
+              content: [{ type: "text", text: "const a = 1;" }],
+            },
+          ],
+        },
+      ],
+    });
+    expect(document.version).toBe(2);
+    expect(validateDocumentContent(document)).toEqual({ ok: true, content: document });
+    expect(extractPlainText(document)).toContain("const a = 1;");
+    expect(extractMentions(document)).toEqual([member(MEMBER_ID), task(TASK_ID)]);
+    expect(document.sections[0]).toMatchObject({
+      type: "callout",
+      children: [
+        expect.objectContaining({ type: "bulletList" }),
+        expect.objectContaining({ type: "code", language: "typescript" }),
+      ],
+    });
   });
 });
 
@@ -216,6 +461,7 @@ describe("convertLegacyDocument", () => {
       "checklist",
       "quote",
       "divider",
+      "code",
     ]);
     const heading = converted.sections[0];
     if (heading.type !== "heading") return;
@@ -225,7 +471,7 @@ describe("convertLegacyDocument", () => {
     expect(checklist.items[0].checked).toBe(true);
     expect(extractMentions(converted)).toEqual([member(MEMBER_ID)]);
     expect(extractPlainText(converted)).toContain("Quoted");
-    expect(extractPlainText(converted)).not.toContain("skip");
+    expect(extractPlainText(converted)).toContain("skip");
   });
 
   it("treats an empty saved document as no sections", () => {

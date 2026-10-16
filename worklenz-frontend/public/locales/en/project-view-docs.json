@@ -77,5 +77,11 @@
   "openDocument": "Open {{title}}",
   "continueWriting": "Continue writing",
   "blockActions": "Block actions",
-  "deleteBlockConfirm": "Delete this block?"
+  "deleteBlockConfirm": "Delete this block?",
+  "writingPlaceholder": "Write, '/' for blocks, '@' for members, '#' for tasks",
+  "callout": "Callout",
+  "noCommands": "No matching commands",
+  "turnInto": "Turn into",
+  "blockControls": "Block controls",
+  "dragBlock": "Drag to reorder or click for block actions"
 }

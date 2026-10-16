@@ -14,6 +14,7 @@ import {
   SectionDocument,
   TreeItem,
   applyParentMoves,
+  canUpdateDocumentContent,
   emptyDocument,
   extractMentions,
   extractPlainText,
@@ -512,6 +513,13 @@ export default class ProjectDocumentsController extends WorklenzControllerBase {
       }
       if (toIso(current.updated_at) !== expectedIso) {
         return { conflict: true as const, id: documentId };
+      }
+
+      if (content && !canUpdateDocumentContent(current.content, content)) {
+        return {
+          error: "This page uses a newer document format. Refresh the application before editing.",
+          status: 400 as const,
+        };
       }
 
       const nextParent = parentId === undefined ? current.parent_id : parentId;

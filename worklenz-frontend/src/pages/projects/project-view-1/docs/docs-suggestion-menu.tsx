@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useEffect, useId, useImperativeHandle, useRef, useState } from 'react';
 import { theme } from '@/shared/antd-imports';
 
 export interface DocsSuggestionItem {
@@ -27,13 +27,37 @@ export interface DocsSuggestionMenuHandle {
 
 interface DocsSuggestionMenuProps {
   ariaLabel: string;
+  emptyLabel?: string;
+  onDismiss?: () => void;
+  onActiveOption?: (optionId: string | null, menuId: string | null) => void;
 }
 
 export const DocsSuggestionMenu = forwardRef<DocsSuggestionMenuHandle, DocsSuggestionMenuProps>(
-  ({ ariaLabel }, ref) => {
+  ({ ariaLabel, emptyLabel, onDismiss, onActiveOption }, ref) => {
     const { token } = theme.useToken();
     const [menu, setMenu] = useState<MenuState | null>(null);
     const menuRef = useRef<MenuState | null>(null);
+    const elementRef = useRef<HTMLDivElement>(null);
+    const menuId = useId();
+
+    useEffect(() => {
+      const optionId = menu?.items.length ? `${menuId}-${menu.selected}` : null;
+      onActiveOption?.(optionId, menu ? menuId : null);
+      if (optionId) document.getElementById(optionId)?.scrollIntoView?.({ block: 'nearest' });
+      return () => onActiveOption?.(null, null);
+    }, [menu, menuId, onActiveOption]);
+
+    useEffect(() => {
+      if (!menu || !onDismiss) return;
+      const dismiss = (event: PointerEvent) => {
+        if (event.target instanceof Node && !elementRef.current?.contains(event.target)) {
+          commitMenu(null);
+          onDismiss();
+        }
+      };
+      document.addEventListener('pointerdown', dismiss);
+      return () => document.removeEventListener('pointerdown', dismiss);
+    }, [!!menu, onDismiss]);
 
     const commitMenu = (next: MenuState | null) => {
       menuRef.current = next;
@@ -52,7 +76,14 @@ export const DocsSuggestionMenu = forwardRef<DocsSuggestionMenuHandle, DocsSugge
       close: () => commitMenu(null),
       onKeyDown: event => {
         const current = menuRef.current;
-        if (!current || current.items.length === 0) return false;
+        if (!current || event.isComposing) return false;
+        if (event.key === 'Escape') {
+          commitMenu(null);
+          onDismiss?.();
+          return true;
+        }
+        if (current.items.length === 0)
+          return !!emptyLabel && ['Enter', 'ArrowUp', 'ArrowDown'].includes(event.key);
         if (event.key === 'ArrowDown') {
           commitMenu({ ...current, selected: (current.selected + 1) % current.items.length });
           return true;
@@ -69,20 +100,18 @@ export const DocsSuggestionMenu = forwardRef<DocsSuggestionMenuHandle, DocsSugge
           if (item) current.command(item);
           return true;
         }
-        if (event.key === 'Escape') {
-          commitMenu(null);
-          return true;
-        }
         return false;
       },
     }));
 
-    if (!menu || menu.items.length === 0) return null;
+    if (!menu || (!menu.items.length && !emptyLabel)) return null;
 
     let previousGroup = '';
 
     return (
       <div
+        ref={elementRef}
+        id={menuId}
         role="listbox"
         aria-label={ariaLabel}
         className="fixed z-[80] max-h-64 w-72 overflow-auto rounded-md border py-1 shadow-lg"
@@ -94,6 +123,15 @@ export const DocsSuggestionMenu = forwardRef<DocsSuggestionMenuHandle, DocsSugge
           color: token.colorText,
         }}
       >
+        {!menu.items.length ? (
+          <div
+            role="status"
+            className="px-3 py-2 text-sm"
+            style={{ color: token.colorTextSecondary }}
+          >
+            {emptyLabel}
+          </div>
+        ) : null}
         {menu.items.map((item, index) => {
           const showGroup = item.group && item.group !== previousGroup;
           if (item.group) previousGroup = item.group;
@@ -110,6 +148,7 @@ export const DocsSuggestionMenu = forwardRef<DocsSuggestionMenuHandle, DocsSugge
               ) : null}
               <button
                 type="button"
+                id={`${menuId}-${index}`}
                 role="option"
                 aria-selected={selected}
                 className="mx-1 flex w-[calc(100%-8px)] items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-sm"
@@ -123,6 +162,8 @@ export const DocsSuggestionMenu = forwardRef<DocsSuggestionMenuHandle, DocsSugge
                 }}
                 onMouseDown={event => {
                   event.preventDefault();
+                }}
+                onClick={() => {
                   menu.command(item);
                 }}
               >

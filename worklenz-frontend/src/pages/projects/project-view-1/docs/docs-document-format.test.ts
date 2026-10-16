@@ -6,10 +6,46 @@ import {
   DocumentStarterKit,
   DocumentStructure,
   DocumentTaskList,
+  DocumentCallout,
   createDocumentTaskItem,
 } from './extensions/document-structure';
 
 describe('document format compatibility', () => {
+  it('round-trips nested mixed lists, multi-paragraph containers, numbering, code language and callouts', () => {
+    const extensions = [
+      DocumentStarterKit.configure({ trailingNode: false }),
+      DocumentStructure,
+      DocumentTaskList,
+      DocumentCallout,
+      createDocumentTaskItem('Toggle to-do'),
+    ];
+    const editor = new Editor({
+      extensions,
+      content:
+        '<aside data-type="callout"><p>Note</p><blockquote><p>First</p><p>Second</p></blockquote><ul><li><p>Parent</p><ol start="3"><li><p>Nested</p><p>More details</p></li></ol></li></ul><pre><code class="language-typescript">const a = 1;</code></pre></aside>',
+    });
+    editor.commands.insertContentAt(editor.state.doc.content.size, { type: 'paragraph' });
+    const saved = fromEditorDocument(editor.getJSON());
+    expect(saved.version).toBe(2);
+    expect(saved.sections[0]).toMatchObject({
+      type: 'callout',
+      children: [
+        expect.objectContaining({
+          type: 'quote',
+          children: [expect.objectContaining({ type: 'paragraph' })],
+        }),
+        expect.objectContaining({ type: 'bulletList' }),
+        expect.objectContaining({ type: 'code', language: 'typescript' }),
+      ],
+    });
+    const restored = new Editor({ extensions, content: toEditorDocument(saved) });
+    expect(fromEditorDocument(restored.getJSON())).toEqual(saved);
+    expect(restored.view.dom.querySelector('ol')).toHaveAttribute('start', '3');
+    expect(restored.getHTML()).toContain('More details');
+    editor.destroy();
+    restored.destroy();
+  });
+
   it('round-trips every existing section, inline mark, mention, checked state, and ID', () => {
     const document: ISectionDocument = {
       version: 1,
@@ -103,8 +139,10 @@ describe('document format compatibility', () => {
     for (const text of ['First quote', 'Second quote', 'Outer', 'Inner', 'Last']) {
       expect(restored.getText()).toContain(text);
     }
-    expect(editor.schema.nodes.listItem.spec.content).toBe('paragraph');
-    expect(editor.schema.nodes.blockquote.spec.content).toBe('paragraph');
+    expect(editor.schema.nodes.listItem.spec.content).toBe('paragraph block*');
+    expect(editor.schema.nodes.blockquote.spec.content).toBe('paragraph block*');
+    expect(saved.version).toBe(2);
+    expect(restored.getHTML()).toContain('<ul');
     editor.destroy();
     restored.destroy();
   });
