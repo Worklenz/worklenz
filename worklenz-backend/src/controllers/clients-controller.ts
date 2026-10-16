@@ -2,7 +2,7 @@ import {IWorkLenzRequest} from "../interfaces/worklenz-request";
 import {IWorkLenzResponse} from "../interfaces/worklenz-response";
 
 import db from "../config/db";
-import {isValidateEmail} from "../shared/utils";
+import {isValidateEmail, escapeHtmlEntities} from "../shared/utils";
 import {ServerResponse} from "../models/server-response";
 import {sendNewSubscriberNotification} from "../shared/email-templates";
 import WorklenzControllerBase from "./worklenz-controller-base";
@@ -126,52 +126,45 @@ export default class ClientsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getClientRequests(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = req.user?.team_id;
-    // toPaginationOptions() reads size/index/field/order — the admin UI sends page/limit/sortBy/
-    // sortOrder (matching the Clients list), so pagination and sorting are read directly here.
-    // Only its search-query building (which does read `search`) is reused, with the search
-    // placeholders offset past the team/limit/offset params already in `values`.
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.max(1, Number(req.query.limit) || 10);
     const offset = (page - 1) * limit;
-    const {searchQuery, searchParams} = this.toPaginationOptions(req.query, ["r.req_no", "s.name", "c.name", "r.notes"], false, 4);
+    const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
+    const searchPattern = search ? `%${escapeHtmlEntities(search)}%` : null;
     const {status, client_id, service_id, assigned_to, sortBy, sortOrder} = req.query;
 
-    // Whitelisted against the subquery's own SELECT aliases below — never interpolate the raw
-    // query param into ORDER BY.
-    const SORTABLE_FIELDS = new Set(["req_no", "client_name", "service_name", "status", "created_at"]);
-    const safeSortField = SORTABLE_FIELDS.has(String(sortBy)) ? String(sortBy) : "created_at";
     const safeSortOrder = String(sortOrder).toLowerCase() === "asc" ? "ASC" : "DESC";
-
-    // Build filter conditions
-    const conditions = [];
-    const values: (string | number | undefined)[] = [teamId, limit, offset, ...searchParams];
-    let paramIndex = values.length + 1;
-
-    if (status) {
-      conditions.push(`r.status = $${paramIndex}`);
-      values.push((status as string).trim());
-      paramIndex++;
+    let orderByClause = "created_at DESC";
+    switch (String(sortBy)) {
+      case "req_no":
+        orderByClause = `req_no ${safeSortOrder}`;
+        break;
+      case "client_name":
+        orderByClause = `client_name ${safeSortOrder}`;
+        break;
+      case "service_name":
+        orderByClause = `service_name ${safeSortOrder}`;
+        break;
+      case "status":
+        orderByClause = `status ${safeSortOrder}`;
+        break;
+      case "created_at":
+        orderByClause = `created_at ${safeSortOrder}`;
+        break;
     }
 
-    if (client_id) {
-      conditions.push(`r.client_id = $${paramIndex}`);
-      values.push((client_id as string).trim());
-      paramIndex++;
-    }
-
-    if (service_id) {
-      conditions.push(`r.service_id = $${paramIndex}`);
-      values.push((service_id as string).trim());
-      paramIndex++;
-    }
-
-    if (assigned_to) {
-      conditions.push(`r.assigned_to = $${paramIndex}`);
-      values.push((assigned_to as string).trim());
-      paramIndex++;
-    }
-
-    const whereClause = conditions.length > 0 ? `AND ${conditions.join(" AND ")}` : "";
+    const getFilterValue = (value: unknown): string | null =>
+      typeof value === "string" && value.trim() ? value.trim() : null;
+    const values = [
+      teamId,
+      limit,
+      offset,
+      searchPattern,
+      getFilterValue(status),
+      getFilterValue(client_id),
+      getFilterValue(service_id),
+      getFilterValue(assigned_to),
+    ];
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS requests
@@ -197,13 +190,23 @@ export default class ClientsController extends WorklenzControllerBase {
                     JOIN client_portal_services s ON r.service_id = s.id
                     JOIN clients c ON r.client_id = c.id
                     LEFT JOIN users u ON r.assigned_to = u.id
-                    WHERE r.organization_team_id = $1 ${searchQuery} ${whereClause}
-                    ORDER BY ${safeSortField} ${safeSortOrder}
+                    WHERE r.organization_team_id = $1
+                      AND ($4::text IS NULL OR r.req_no ILIKE $4 OR s.name ILIKE $4 OR c.name ILIKE $4 OR r.notes ILIKE $4)
+                      AND ($5 IS NULL OR r.status = $5)
+                      AND ($6 IS NULL OR r.client_id = $6)
+                      AND ($7 IS NULL OR r.service_id = $7)
+                      AND ($8 IS NULL OR r.assigned_to = $8)
+                    ORDER BY ${orderByClause}
                     LIMIT $2 OFFSET $3) t) AS data
       FROM client_portal_requests r
       JOIN client_portal_services s ON r.service_id = s.id
       JOIN clients c ON r.client_id = c.id
-      WHERE r.organization_team_id = $1 ${searchQuery} ${whereClause}) rec;
+      WHERE r.organization_team_id = $1
+        AND ($4::text IS NULL OR r.req_no ILIKE $4 OR s.name ILIKE $4 OR c.name ILIKE $4 OR r.notes ILIKE $4)
+        AND ($5 IS NULL OR r.status = $5)
+        AND ($6 IS NULL OR r.client_id = $6)
+        AND ($7 IS NULL OR r.service_id = $7)
+        AND ($8 IS NULL OR r.assigned_to = $8)) rec;
     `;
     
     const result = await db.query(q, values);

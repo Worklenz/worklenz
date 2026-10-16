@@ -123,3 +123,56 @@ describe("ClientsController.deleteClientRequest", () => {
     expect(res.body.done).toBe(false);
   });
 });
+
+describe("ClientsController.getClientRequests", () => {
+  beforeEach(() => {
+    mockedQuery.mockReset();
+  });
+
+  it("keeps request-controlled search, filters, and sort values out of SQL text", async () => {
+    const search = "' OR TRUE --";
+    const status = "open' OR TRUE --";
+    const clientId = "client' OR TRUE --";
+    const serviceId = "service' OR TRUE --";
+    const assignedTo = "user' OR TRUE --";
+    mockedQuery.mockResolvedValueOnce(createQueryResult([{ requests: { total: 0, data: [] } }]));
+
+    await ClientsController.getClientRequests(
+      createMockRequest({
+        query: {
+          page: "2",
+          limit: "25",
+          search,
+          status,
+          client_id: clientId,
+          service_id: serviceId,
+          assigned_to: assignedTo,
+          sortBy: "req_no; DROP TABLE users --",
+          sortOrder: "ASC; DROP TABLE users --",
+        },
+      }),
+      createMockResponse(),
+    );
+
+    const [query, params] = mockedQuery.mock.calls[0];
+    expect(query).toContain("r.req_no ILIKE $4");
+    expect(query).toContain("r.status = $5");
+    expect(query).toContain("r.client_id = $6");
+    expect(query).toContain("r.service_id = $7");
+    expect(query).toContain("r.assigned_to = $8");
+    expect(query).toContain("ORDER BY created_at DESC");
+    for (const userValue of [search, status, clientId, serviceId, assignedTo]) {
+      expect(query).not.toContain(userValue);
+    }
+    expect(params).toEqual([
+      "team-123",
+      25,
+      25,
+      `%${search}%`,
+      status,
+      clientId,
+      serviceId,
+      assignedTo,
+    ]);
+  });
+});
