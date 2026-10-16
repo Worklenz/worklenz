@@ -121,5 +121,58 @@
       "loadingBranches": "Cargando ramas…",
       "selectBranch": "Selecciona o escribe una rama"
     }
+  },
+  "import": {
+    "button": "Importar incidencias…",
+    "title": "Importar incidencias de {{name}}",
+    "stateOpen": "Abiertas",
+    "stateClosed": "Cerradas",
+    "stateAll": "Todas",
+    "filterLabels": "Filtrar por etiqueta",
+    "destination": "Añadir a",
+    "backlog": "Backlog",
+    "submit_one": "Importar {{count}} incidencia",
+    "submit_other": "Importar {{count}} incidencias",
+    "imported": "Importada como {{key}}",
+    "loadMore": "Cargar más",
+    "empty": "No se encontraron incidencias",
+    "loadFailed": "No se pudieron cargar las incidencias de GitHub.",
+    "success_one": "Se importó {{count}} incidencia.",
+    "success_other": "Se importaron {{count}} incidencias.",
+    "partial": "{{imported}} importadas, {{skipped}} omitidas.",
+    "failed": "No se pudieron importar las incidencias seleccionadas.",
+    "columnTitle": "Título",
+    "columnStatus": "Estado"
+  },
+  "importSettings": {
+    "title": "Importación de incidencias",
+    "autoImport": "Importar automáticamente las nuevas incidencias",
+    "autoImportHint": "Las nuevas incidencias de GitHub se añaden automáticamente, filtradas por las etiquetas de abajo.",
+    "labels": "Solo incidencias con estas etiquetas",
+    "labelsPlaceholder": "Todas las incidencias",
+    "destination": "Añadir las incidencias importadas a",
+    "closeOnClose": "Finalizar la incidencia cuando se cierre en GitHub",
+    "saveFailed": "No se pudieron actualizar los ajustes de importación."
+  },
+  "sync": {
+    "button": "Estado de sincronización",
+    "title": "Estado de sincronización de GitHub",
+    "refresh": "Actualizar",
+    "loadFailed": "No se pudo cargar el estado de sincronización.",
+    "notConnected": "GitHub no está conectado.",
+    "lastEvent": "Último evento recibido {{time}}",
+    "never": "Aún no se han recibido eventos.",
+    "processed": "Procesados (7 días)",
+    "pending": "Pendientes",
+    "ignored": "Ignorados",
+    "failed": "Fallidos",
+    "failedEvents": "Eventos fallidos",
+    "noFailures": "No hay eventos fallidos. Todo se está sincronizando.",
+    "event": "Evento",
+    "error": "Error",
+    "received": "Recibido",
+    "retry": "Reintentar",
+    "retried": "Evento en cola para reintento.",
+    "retryFailed": "No se pudo reintentar el evento."
   }
 }

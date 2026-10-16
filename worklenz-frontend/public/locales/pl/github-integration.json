@@ -121,5 +121,58 @@
       "loadingBranches": "Wczytywanie gałęzi…",
       "selectBranch": "Wybierz lub wpisz gałąź"
     }
+  },
+  "import": {
+    "button": "Importuj zgłoszenia…",
+    "title": "Importuj zgłoszenia z {{name}}",
+    "stateOpen": "Otwarte",
+    "stateClosed": "Zamknięte",
+    "stateAll": "Wszystkie",
+    "filterLabels": "Filtruj według etykiety",
+    "destination": "Dodaj do",
+    "backlog": "Backlog",
+    "submit_one": "Importuj {{count}} zgłoszenie",
+    "submit_other": "Importuj {{count}} zgłoszeń",
+    "imported": "Zaimportowano jako {{key}}",
+    "loadMore": "Wczytaj więcej",
+    "empty": "Nie znaleziono zgłoszeń",
+    "loadFailed": "Nie udało się wczytać zgłoszeń z GitHub.",
+    "success_one": "Zaimportowano {{count}} zgłoszenie.",
+    "success_other": "Zaimportowano {{count}} zgłoszeń.",
+    "partial": "Zaimportowano: {{imported}}, pominięto: {{skipped}}.",
+    "failed": "Nie udało się zaimportować wybranych zgłoszeń.",
+    "columnTitle": "Tytuł",
+    "columnStatus": "Status"
+  },
+  "importSettings": {
+    "title": "Import zgłoszeń",
+    "autoImport": "Automatycznie importuj nowe zgłoszenia",
+    "autoImportHint": "Nowe zgłoszenia GitHub są dodawane automatycznie, filtrowane według poniższych etykiet.",
+    "labels": "Tylko zgłoszenia z tymi etykietami",
+    "labelsPlaceholder": "Wszystkie zgłoszenia",
+    "destination": "Dodawaj zaimportowane zgłoszenia do",
+    "closeOnClose": "Zakończ zgłoszenie po zamknięciu zgłoszenia w GitHub",
+    "saveFailed": "Nie udało się zaktualizować ustawień importu."
+  },
+  "sync": {
+    "button": "Status synchronizacji",
+    "title": "Status synchronizacji GitHub",
+    "refresh": "Odśwież",
+    "loadFailed": "Nie udało się wczytać statusu synchronizacji.",
+    "notConnected": "GitHub nie jest połączony.",
+    "lastEvent": "Ostatnie zdarzenie odebrano {{time}}",
+    "never": "Nie odebrano jeszcze żadnych zdarzeń.",
+    "processed": "Przetworzone (7 dni)",
+    "pending": "Oczekujące",
+    "ignored": "Zignorowane",
+    "failed": "Nieudane",
+    "failedEvents": "Nieudane zdarzenia",
+    "noFailures": "Brak nieudanych zdarzeń. Wszystko się synchronizuje.",
+    "event": "Zdarzenie",
+    "error": "Błąd",
+    "received": "Odebrano",
+    "retry": "Ponów",
+    "retried": "Zdarzenie zakolejkowano do ponowienia.",
+    "retryFailed": "Nie udało się ponowić zdarzenia."
   }
 }

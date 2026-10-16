@@ -121,5 +121,58 @@
       "loadingBranches": "Loading branches…",
       "selectBranch": "Select or type a branch"
     }
+  },
+  "import": {
+    "button": "Import issues…",
+    "title": "Import issues from {{name}}",
+    "stateOpen": "Open",
+    "stateClosed": "Closed",
+    "stateAll": "All",
+    "filterLabels": "Filter by label",
+    "destination": "Add to",
+    "backlog": "Backlog",
+    "submit_one": "Import {{count}} issue",
+    "submit_other": "Import {{count}} issues",
+    "imported": "Imported as {{key}}",
+    "loadMore": "Load more",
+    "empty": "No issues found",
+    "loadFailed": "Could not load GitHub issues.",
+    "success_one": "Imported {{count}} issue.",
+    "success_other": "Imported {{count}} issues.",
+    "partial": "{{imported}} imported, {{skipped}} skipped.",
+    "failed": "Could not import the selected issues.",
+    "columnTitle": "Title",
+    "columnStatus": "Status"
+  },
+  "importSettings": {
+    "title": "Issue import",
+    "autoImport": "Auto-import new issues",
+    "autoImportHint": "New GitHub issues are added automatically, filtered by the labels below.",
+    "labels": "Only issues with these labels",
+    "labelsPlaceholder": "All issues",
+    "destination": "Add imported issues to",
+    "closeOnClose": "Finish the issue when its GitHub issue is closed",
+    "saveFailed": "Could not update import settings."
+  },
+  "sync": {
+    "button": "Sync status",
+    "title": "GitHub sync status",
+    "refresh": "Refresh",
+    "loadFailed": "Could not load sync status.",
+    "notConnected": "GitHub is not connected.",
+    "lastEvent": "Last event received {{time}}",
+    "never": "No events received yet.",
+    "processed": "Processed (7 days)",
+    "pending": "Pending",
+    "ignored": "Ignored",
+    "failed": "Failed",
+    "failedEvents": "Failed events",
+    "noFailures": "No failed events. Everything is syncing.",
+    "event": "Event",
+    "error": "Error",
+    "received": "Received",
+    "retry": "Retry",
+    "retried": "Event queued for retry.",
+    "retryFailed": "Could not retry the event."
   }
 }

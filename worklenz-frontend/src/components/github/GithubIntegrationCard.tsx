@@ -24,6 +24,7 @@ import {
 import { githubApiService, IGithubStatus } from '@/api/github/github.api.service';
 import logger from '@/utils/errorLogger';
 import { useGithubInstallResult } from './useGithubInstallResult';
+import { GithubSyncStatusDrawer } from './GithubSyncStatusDrawer';
 
 /** Team-level GitHub connection card for Settings > Integrations. */
 export const GithubIntegrationCard = () => {
@@ -37,6 +38,7 @@ export const GithubIntegrationCard = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [isSyncOpen, setIsSyncOpen] = useState(false);
 
   const loadStatus = useCallback(async () => {
     setIsLoading(true);
@@ -235,9 +237,14 @@ export const GithubIntegrationCard = () => {
 
         {status.can_manage && (
           <Flex justify="space-between" align="center" gap={8} wrap>
-            <Button icon={<ReloadOutlined />} loading={isRefreshing} onClick={handleRefresh}>
-              {t('actions.refresh', { defaultValue: 'Refresh repositories' })}
-            </Button>
+            <Space wrap>
+              <Button icon={<ReloadOutlined />} loading={isRefreshing} onClick={handleRefresh}>
+                {t('actions.refresh', { defaultValue: 'Refresh repositories' })}
+              </Button>
+              <Button onClick={() => setIsSyncOpen(true)}>
+                {t('sync.button', { defaultValue: 'Sync status' })}
+              </Button>
+            </Space>
             <Popconfirm
               title={t('disconnect.title', { defaultValue: 'Disconnect GitHub?' })}
               description={t('disconnect.description', {
@@ -262,6 +269,7 @@ export const GithubIntegrationCard = () => {
   return (
     <>
       {contextHolder}
+      <GithubSyncStatusDrawer open={isSyncOpen} onClose={() => setIsSyncOpen(false)} />
       <Card
         title={title}
         style={{ height: '100%', borderColor: token.colorBorderSecondary }}

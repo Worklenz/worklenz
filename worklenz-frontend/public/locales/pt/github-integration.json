@@ -121,5 +121,58 @@
       "loadingBranches": "Carregando branches…",
       "selectBranch": "Selecione ou digite uma branch"
     }
+  },
+  "import": {
+    "button": "Importar issues…",
+    "title": "Importar issues de {{name}}",
+    "stateOpen": "Abertas",
+    "stateClosed": "Fechadas",
+    "stateAll": "Todas",
+    "filterLabels": "Filtrar por etiqueta",
+    "destination": "Adicionar a",
+    "backlog": "Backlog",
+    "submit_one": "Importar {{count}} issue",
+    "submit_other": "Importar {{count}} issues",
+    "imported": "Importada como {{key}}",
+    "loadMore": "Carregar mais",
+    "empty": "Nenhuma issue encontrada",
+    "loadFailed": "Não foi possível carregar as issues do GitHub.",
+    "success_one": "{{count}} issue importada.",
+    "success_other": "{{count}} issues importadas.",
+    "partial": "{{imported}} importadas, {{skipped}} ignoradas.",
+    "failed": "Não foi possível importar as issues selecionadas.",
+    "columnTitle": "Título",
+    "columnStatus": "Status"
+  },
+  "importSettings": {
+    "title": "Importação de issues",
+    "autoImport": "Importar novas issues automaticamente",
+    "autoImportHint": "As novas issues do GitHub são adicionadas automaticamente, filtradas pelas etiquetas abaixo.",
+    "labels": "Apenas issues com estas etiquetas",
+    "labelsPlaceholder": "Todas as issues",
+    "destination": "Adicionar issues importadas a",
+    "closeOnClose": "Concluir a issue quando a issue do GitHub for fechada",
+    "saveFailed": "Não foi possível atualizar as configurações de importação."
+  },
+  "sync": {
+    "button": "Status de sincronização",
+    "title": "Status de sincronização do GitHub",
+    "refresh": "Atualizar",
+    "loadFailed": "Não foi possível carregar o status de sincronização.",
+    "notConnected": "O GitHub não está conectado.",
+    "lastEvent": "Último evento recebido {{time}}",
+    "never": "Nenhum evento recebido ainda.",
+    "processed": "Processados (7 dias)",
+    "pending": "Pendentes",
+    "ignored": "Ignorados",
+    "failed": "Com falha",
+    "failedEvents": "Eventos com falha",
+    "noFailures": "Nenhum evento com falha. Tudo está sincronizando.",
+    "event": "Evento",
+    "error": "Erro",
+    "received": "Recebido",
+    "retry": "Tentar novamente",
+    "retried": "Evento enfileirado para nova tentativa.",
+    "retryFailed": "Não foi possível tentar o evento novamente."
   }
 }

@@ -50,10 +50,18 @@ Legend: `[x]` done, `[ ]` pending, `[~]` in progress.
 - [ ] Notifications to assignees on automated transitions (deliberately skipped to avoid noise; decide)
 - [ ] Event processor / automation integration tests against a DB fixture
 
-## Phase 3: Issue import (not started)
-- [ ] Import modal and one-way import
-- [ ] Auto-import by label filter
-- [ ] Team sync-status view with retry
+## Phase 3: Issue import
+- [x] Import modal (state/label filters, load more, destination backlog or sprint) and one-way import (max 50 per request)
+- [x] Label to issue type mapping (bug / story / task), Markdown kept as escaped text with a link back (+ unit tests)
+- [x] Auto-import on `issues` opened/labeled with label filter and default destination
+- [x] Close the Worklenz issue when the GitHub issue closes (optional per repository)
+- [x] Team sync status drawer (7-day counts, last event, failed events) with retry
+- [x] i18n for all locales
+- [ ] Assignee mapping (needs the GitHub identity link)
+- [ ] Rich Markdown rendering of imported descriptions
+- [ ] Re-sync title/description edits from GitHub after import
+- [ ] DB-backed integration tests for import and the issues webhook handler
+- Limitation: an issue links to one task per repository, so a repo linked to two projects imports into only the first
 
 ## Phase 4 (not started)
 - [ ] Push-back, milestone/release sync, admin metrics
@@ -61,6 +69,6 @@ Legend: `[x]` done, `[ ]` pending, `[~]` in progress.
 ## Follow-ups noticed during Phase 1
 - [x] Project integrations quick dropdown: GitHub enabled for software projects (opens project settings > Integrations); button no longer Business-gated on software projects, Slack shows locked inside
 - [ ] Add `GITHUB_*` vars to docker env templates / SELF_HOSTING.md
-- [ ] Real-time socket push so the drawer refreshes when a webhook lands (Phase 2 with transitions)
+- [x] Real-time socket push so the drawer refreshes when a webhook lands
 - [ ] Backend tests for event processor and controller (need DB fixture)
 - [x] Connect GitHub inline from project settings (install returns to the project's Integrations section; non-admins see who to ask)

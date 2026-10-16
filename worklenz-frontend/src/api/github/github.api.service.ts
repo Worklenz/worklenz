@@ -32,6 +32,53 @@ export interface IGithubProjectStatus {
   is_done: boolean;
 }
 
+export interface IGithubImportSettings {
+  auto_import?: boolean;
+  labels?: string[];
+  default_phase_id?: string | null;
+  close_on_issue_close?: boolean;
+}
+
+export interface IGithubSprint {
+  id: string;
+  name: string;
+  sprint_status: 'planned' | 'active';
+}
+
+export interface IGithubIssueSummary {
+  number: number;
+  title: string;
+  state: 'open' | 'closed';
+  html_url: string;
+  labels: string[];
+  assignee_login: string | null;
+  created_at: string;
+  imported_task_key: string | null;
+}
+
+export interface IGithubIssuesPage {
+  issues: IGithubIssueSummary[];
+  has_more: boolean;
+}
+
+export interface IGithubImportResult {
+  imported: Array<{ number: number; task_key: string }>;
+  skipped: Array<{ number: number; reason: string }>;
+}
+
+export interface IGithubSyncStatus {
+  connected: boolean;
+  counts: Partial<Record<'pending' | 'processing' | 'processed' | 'failed' | 'ignored', number>>;
+  last_event_at: string | null;
+  failed: Array<{
+    id: string;
+    event_type: string;
+    error_message: string | null;
+    attempts: number;
+    received_at: string;
+  }>;
+}
+
 export interface IGithubLinkedRepository {
   id: string;
   repository_id: string;
@@ -40,7 +87,7 @@ export interface IGithubLinkedRepository {
   is_available: boolean;
   default_branch: string;
   default_base_branch: string;
-  settings: { status_map?: IGithubStatusMap } | null;
+  settings: { status_map?: IGithubStatusMap; import?: IGithubImportSettings } | null;
 }
 
 export interface IGithubAvailableRepository {
@@ -56,6 +103,7 @@ export interface IGithubProjectRepositories {
   linked: IGithubLinkedRepository[];
   available: IGithubAvailableRepository[];
   statuses: IGithubProjectStatus[];
+  sprints: IGithubSprint[];
   /** True for team owners/admins, who can connect GitHub for the team. */
   can_connect: boolean;
   owner_name: string | null;
@@ -174,7 +222,11 @@ export const githubApiService = {
   updateRepositoryLink: async (
     projectId: string,
     linkId: string,
-    changes: { default_base_branch?: string | null; status_map?: IGithubStatusMap }
+    changes: {
+      default_base_branch?: string | null;
+      status_map?: IGithubStatusMap;
+      import_settings?: IGithubImportSettings;
+    }
   ) => {
     const response = await apiClient.put<IServerResponse<null>>(
       `${rootUrl}/projects/${projectId}/repositories/${linkId}`,
@@ -186,6 +238,48 @@ export const githubApiService = {
   unlinkRepository: async (projectId: string, linkId: string) => {
     const response = await apiClient.delete<IServerResponse<null>>(
       `${rootUrl}/projects/${projectId}/repositories/${linkId}`
+    );
+    return response.data;
+  },
+
+  getRepositoryIssues: async (
+    projectId: string,
+    linkId: string,
+    params: { state: 'open' | 'closed' | 'all'; labels: string[]; page: number }
+  ) => {
+    const query = new URLSearchParams({
+      state: params.state,
+      page: String(params.page),
+      ...(params.labels.length ? { labels: params.labels.join(',') } : {}),
+    });
+    const response = await apiClient.get<IServerResponse<IGithubIssuesPage>>(
+      `${rootUrl}/projects/${projectId}/repositories/${linkId}/issues?${query}`
+    );
+    return response.data;
+  },
+
+  importIssues: async (
+    projectId: string,
+    linkId: string,
+    body: { numbers: number[]; phase_id: string | null }
+  ) => {
+    const response = await apiClient.post<IServerResponse<IGithubImportResult>>(
+      `${rootUrl}/projects/${projectId}/repositories/${linkId}/issues/import`,
+      body
+    );
+    return response.data;
+  },
+
+  getSyncStatus: async () => {
+    const response = await apiClient.get<IServerResponse<IGithubSyncStatus>>(
+      `${rootUrl}/sync-status`
+    );
+    return response.data;
+  },
+
+  retryEvent: async (eventId: string) => {
+    const response = await apiClient.post<IServerResponse<null>>(
+      `${rootUrl}/events/${eventId}/retry`
     );
     return response.data;
   },

@@ -19,9 +19,11 @@ import { DeleteOutlined, GithubOutlined, LockOutlined, PlusOutlined } from '@ant
 import {
   githubApiService,
   GithubTransitionEvent,
+  IGithubImportSettings,
   IGithubProjectRepositories,
 } from '@/api/github/github.api.service';
 import { GithubStatusAutomation } from './GithubStatusAutomation';
+import { GithubImportSettings } from './GithubImportSettings';
 import { useGithubInstallResult } from './useGithubInstallResult';
 import logger from '@/utils/errorLogger';
 
@@ -179,6 +181,31 @@ export const GithubProjectRepositories = ({
       setData(previous);
       messageApi.error(
         t('project.automation.saveFailed', { defaultValue: 'Could not update automation.' })
+      );
+    }
+  };
+
+  const handleImportSettingsChange = async (linkId: string, next: IGithubImportSettings) => {
+    const previous = data;
+    setData(current =>
+      current
+        ? {
+            ...current,
+            linked: current.linked.map(item =>
+              item.id === linkId
+                ? { ...item, settings: { ...(item.settings || {}), import: next } }
+                : item
+            ),
+          }
+        : current
+    );
+    try {
+      await githubApiService.updateRepositoryLink(projectId, linkId, { import_settings: next });
+    } catch (error) {
+      logger.error('Failed to update GitHub import settings', error);
+      setData(previous);
+      messageApi.error(
+        t('importSettings.saveFailed', { defaultValue: 'Could not update import settings.' })
       );
     }
   };

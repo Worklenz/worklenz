@@ -121,5 +121,58 @@
       "loadingBranches": "Po ngarkohen degët…",
       "selectBranch": "Zgjidhni ose shkruani një degë"
     }
+  },
+  "import": {
+    "button": "Importo çështje…",
+    "title": "Importo çështje nga {{name}}",
+    "stateOpen": "Të hapura",
+    "stateClosed": "Të mbyllura",
+    "stateAll": "Të gjitha",
+    "filterLabels": "Filtro sipas etiketës",
+    "destination": "Shto te",
+    "backlog": "Backlog",
+    "submit_one": "Importo {{count}} çështje",
+    "submit_other": "Importo {{count}} çështje",
+    "imported": "Importuar si {{key}}",
+    "loadMore": "Ngarko më shumë",
+    "empty": "Nuk u gjetën çështje",
+    "loadFailed": "Çështjet e GitHub nuk mund të ngarkoheshin.",
+    "success_one": "U importua {{count}} çështje.",
+    "success_other": "U importuan {{count}} çështje.",
+    "partial": "{{imported}} të importuara, {{skipped}} të anashkaluara.",
+    "failed": "Çështjet e zgjedhura nuk mund të importoheshin.",
+    "columnTitle": "Titulli",
+    "columnStatus": "Statusi"
+  },
+  "importSettings": {
+    "title": "Importimi i çështjeve",
+    "autoImport": "Importo automatikisht çështjet e reja",
+    "autoImportHint": "Çështjet e reja të GitHub shtohen automatikisht, të filtruara sipas etiketave më poshtë.",
+    "labels": "Vetëm çështje me këto etiketa",
+    "labelsPlaceholder": "Të gjitha çështjet",
+    "destination": "Shto çështjet e importuara te",
+    "closeOnClose": "Përfundo çështjen kur mbyllet çështja e saj në GitHub",
+    "saveFailed": "Cilësimet e importimit nuk mund të përditësoheshin."
+  },
+  "sync": {
+    "button": "Statusi i sinkronizimit",
+    "title": "Statusi i sinkronizimit të GitHub",
+    "refresh": "Rifresko",
+    "loadFailed": "Statusi i sinkronizimit nuk mund të ngarkohej.",
+    "notConnected": "GitHub nuk është i lidhur.",
+    "lastEvent": "Ngjarja e fundit u mor {{time}}",
+    "never": "Nuk është marrë ende asnjë ngjarje.",
+    "processed": "Të përpunuara (7 ditë)",
+    "pending": "Në pritje",
+    "ignored": "Të injoruara",
+    "failed": "Të dështuara",
+    "failedEvents": "Ngjarje të dështuara",
+    "noFailures": "Nuk ka ngjarje të dështuara. Gjithçka po sinkronizohet.",
+    "event": "Ngjarja",
+    "error": "Gabimi",
+    "received": "Marrë",
+    "retry": "Provo përsëri",
+    "retried": "Ngjarja u vendos në radhë për rinisje.",
+    "retryFailed": "Ngjarja nuk mund të rinisej."
   }
 }

@@ -121,5 +121,58 @@
       "loadingBranches": "Branches werden geladen …",
       "selectBranch": "Branch auswählen oder eingeben"
     }
+  },
+  "import": {
+    "button": "Vorgänge importieren…",
+    "title": "Vorgänge aus {{name}} importieren",
+    "stateOpen": "Offen",
+    "stateClosed": "Geschlossen",
+    "stateAll": "Alle",
+    "filterLabels": "Nach Label filtern",
+    "destination": "Hinzufügen zu",
+    "backlog": "Backlog",
+    "submit_one": "{{count}} Vorgang importieren",
+    "submit_other": "{{count}} Vorgänge importieren",
+    "imported": "Importiert als {{key}}",
+    "loadMore": "Mehr laden",
+    "empty": "Keine Vorgänge gefunden",
+    "loadFailed": "GitHub-Vorgänge konnten nicht geladen werden.",
+    "success_one": "{{count}} Vorgang importiert.",
+    "success_other": "{{count}} Vorgänge importiert.",
+    "partial": "{{imported}} importiert, {{skipped}} übersprungen.",
+    "failed": "Die ausgewählten Vorgänge konnten nicht importiert werden.",
+    "columnTitle": "Titel",
+    "columnStatus": "Status"
+  },
+  "importSettings": {
+    "title": "Vorgangsimport",
+    "autoImport": "Neue Vorgänge automatisch importieren",
+    "autoImportHint": "Neue GitHub-Vorgänge werden automatisch hinzugefügt, gefiltert nach den Labels unten.",
+    "labels": "Nur Vorgänge mit diesen Labels",
+    "labelsPlaceholder": "Alle Vorgänge",
+    "destination": "Importierte Vorgänge hinzufügen zu",
+    "closeOnClose": "Vorgang abschließen, wenn der GitHub-Vorgang geschlossen wird",
+    "saveFailed": "Importeinstellungen konnten nicht aktualisiert werden."
+  },
+  "sync": {
+    "button": "Sync-Status",
+    "title": "GitHub-Sync-Status",
+    "refresh": "Aktualisieren",
+    "loadFailed": "Sync-Status konnte nicht geladen werden.",
+    "notConnected": "GitHub ist nicht verbunden.",
+    "lastEvent": "Letztes Ereignis {{time}} empfangen",
+    "never": "Noch keine Ereignisse empfangen.",
+    "processed": "Verarbeitet (7 Tage)",
+    "pending": "Ausstehend",
+    "ignored": "Ignoriert",
+    "failed": "Fehlgeschlagen",
+    "failedEvents": "Fehlgeschlagene Ereignisse",
+    "noFailures": "Keine fehlgeschlagenen Ereignisse. Alles wird synchronisiert.",
+    "event": "Ereignis",
+    "error": "Fehler",
+    "received": "Empfangen",
+    "retry": "Wiederholen",
+    "retried": "Ereignis zur Wiederholung eingereiht.",
+    "retryFailed": "Ereignis konnte nicht wiederholt werden."
   }
 }

@@ -121,5 +121,58 @@
       "loadingBranches": "Chargement des branches…",
       "selectBranch": "Sélectionnez ou saisissez une branche"
     }
+  },
+  "import": {
+    "button": "Importer des tickets…",
+    "title": "Importer des tickets depuis {{name}}",
+    "stateOpen": "Ouverts",
+    "stateClosed": "Fermés",
+    "stateAll": "Tous",
+    "filterLabels": "Filtrer par étiquette",
+    "destination": "Ajouter à",
+    "backlog": "Backlog",
+    "submit_one": "Importer {{count}} ticket",
+    "submit_other": "Importer {{count}} tickets",
+    "imported": "Importé en tant que {{key}}",
+    "loadMore": "Charger plus",
+    "empty": "Aucun ticket trouvé",
+    "loadFailed": "Impossible de charger les tickets GitHub.",
+    "success_one": "{{count}} ticket importé.",
+    "success_other": "{{count}} tickets importés.",
+    "partial": "{{imported}} importés, {{skipped}} ignorés.",
+    "failed": "Impossible d’importer les tickets sélectionnés.",
+    "columnTitle": "Titre",
+    "columnStatus": "Statut"
+  },
+  "importSettings": {
+    "title": "Import de tickets",
+    "autoImport": "Importer automatiquement les nouveaux tickets",
+    "autoImportHint": "Les nouveaux tickets GitHub sont ajoutés automatiquement, filtrés par les étiquettes ci-dessous.",
+    "labels": "Uniquement les tickets avec ces étiquettes",
+    "labelsPlaceholder": "Tous les tickets",
+    "destination": "Ajouter les tickets importés à",
+    "closeOnClose": "Terminer le ticket lorsque son ticket GitHub est fermé",
+    "saveFailed": "Impossible de mettre à jour les paramètres d’import."
+  },
+  "sync": {
+    "button": "État de la synchronisation",
+    "title": "État de la synchronisation GitHub",
+    "refresh": "Actualiser",
+    "loadFailed": "Impossible de charger l’état de la synchronisation.",
+    "notConnected": "GitHub n’est pas connecté.",
+    "lastEvent": "Dernier événement reçu {{time}}",
+    "never": "Aucun événement reçu pour le moment.",
+    "processed": "Traités (7 jours)",
+    "pending": "En attente",
+    "ignored": "Ignorés",
+    "failed": "Échoués",
+    "failedEvents": "Événements échoués",
+    "noFailures": "Aucun événement échoué. Tout est synchronisé.",
+    "event": "Événement",
+    "error": "Erreur",
+    "received": "Reçu",
+    "retry": "Réessayer",
+    "retried": "Événement mis en file pour une nouvelle tentative.",
+    "retryFailed": "Impossible de réessayer l’événement."
   }
 }
