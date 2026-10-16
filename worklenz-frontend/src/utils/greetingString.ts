@@ -47,6 +47,12 @@ export const greetingString = (name: string): string => {
     morning = '早上好';
     afternoon = '下午好';
     evening = '晚上好';
+  } else if (language === 'zh_tw') {
+    greetingPrefix = '你好';
+    greetingSuffix = '';
+    morning = '早安';
+    afternoon = '午安';
+    evening = '晚安';
   }
 
   // Get the localized time period based on the current time
@@ -56,6 +62,9 @@ export const greetingString = (name: string): string => {
   else localizedTimePeriod = evening;
 
   // Handle Chinese language which has different structure
+  if (language === 'zh_tw') {
+    return `${name}，${localizedTimePeriod}！`;
+  }
   if (language === 'zh_cn') {
     return `${greetingPrefix} ${name}, ${localizedTimePeriod}!`;
   }

@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import 'dayjs/locale/zh-tw';
 import { getLanguageFromLocalStorage } from './language-utils';
 
 export const currentDateString = (): string => {
@@ -23,6 +24,9 @@ export const currentDateString = (): string => {
     case 'zh_cn':
       locale = 'zh-cn';
       break;
+    case 'zh_tw':
+      locale = 'zh-tw';
+      break;
     case 'alb':
       locale = 'sq'; // Albanian locale code for dayjs
       break;
@@ -46,6 +50,9 @@ export const currentDateString = (): string => {
       todayText = 'Heute ist';
       break;
     case 'zh_cn':
+      todayText = '今天是';
+      break;
+    case 'zh_tw':
       todayText = '今天是';
       break;
     case 'alb':

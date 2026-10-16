@@ -1,0 +1,143 @@
+{
+  "title": "Slack 整合",
+  "connectWorkspace": "連結 Slack 工作區",
+  "addChannelConfig": "新增頻道設定",
+  "manageConfigurations": "管理",
+  "manageTitle": "管理 Slack 設定",
+  "defaultWorkspaceName": "Slack 工作區",
+  "connectedDescription": "已連結團隊的 Slack 工作區。請為各專案設定接收通知的頻道。",
+  "status": {
+    "connected": "已連結"
+  },
+  "stats": {
+    "total": "總計",
+    "active": "啟用中",
+    "available": "可用"
+  },
+  "setup": {
+    "title": "設定說明",
+    "step1": {
+      "title": "1. 連結工作區",
+      "description": "點選下方的 [連結 Slack 工作區] 按鈕，授權 Worklenz 存取 Slack 工作區。"
+    },
+    "step2": {
+      "title": "2. 邀請機器人加入頻道",
+      "description": "在每個要接收通知的 Slack 頻道中輸入：",
+      "command": "/invite @Worklenz",
+      "note": "每個頻道僅需執行一次。"
+    },
+    "step3": {
+      "title": "3. 設定通知",
+      "description": "連結後，點選 [管理]，設定各專案要將通知傳送至哪些頻道。"
+    }
+  },
+  "instructions": {
+    "inviteBot": {
+      "title": "別忘了邀請機器人！",
+      "description": "必須先邀請 Worklenz 機器人加入 Slack 頻道，才能在該頻道接收通知。",
+      "step": "在 Slack 頻道中輸入：<code>/invite @Worklenz</code>",
+      "note": "每個頻道僅需執行一次。"
+    },
+    "getStarted": "新增頻道設定，即可開始接收專案通知。"
+  },
+  "disconnect": {
+    "title": "中斷 Slack 連結？",
+    "content": "這會移除所有 Slack 設定，並停止團隊通知。",
+    "okText": "中斷連結"
+  },
+  "deleteConfig": {
+    "title": "刪除設定？",
+    "content": "確定要移除此頻道設定嗎？",
+    "okText": "刪除"
+  },
+  "notConnected": {
+    "title": "連結 Slack 工作區",
+    "description": "將 Slack 與 Worklenz 團隊整合，接收即時通知、從 Slack 建立任務，並讓團隊在兩個平台上保持同步。"
+  },
+  "upgradeRequired": "升級至商務方案",
+  "features": {
+    "notifications": {
+      "title": "即時通知",
+      "description": "接收任務更新、留言及期限通知"
+    },
+    "createTasks": {
+      "title": "從 Slack 建立任務",
+      "description": "使用斜線指令，不必離開 Slack 即可快速建立任務"
+    },
+    "collaboration": {
+      "title": "團隊協作",
+      "description": "讓整個團隊在 Worklenz 與 Slack 上保持同步"
+    }
+  },
+  "table": {
+    "project": "專案",
+    "slackChannel": "Slack 頻道",
+    "notifications": "通知",
+    "status": "狀態",
+    "statusActive": "啟用中",
+    "statusInactive": "未啟用",
+    "active": "啟用中",
+    "actions": "操作",
+    "channelConfigs": "Slack 頻道設定",
+    "toggleStatus": "切換 {{channel}} 的狀態",
+    "editConfig": "編輯 {{channel}} 的設定",
+    "deleteConfig": "刪除 {{channel}} 的設定",
+    "reactivate": "重新啟用",
+    "reactivateConfig": "重新啟用 {{channel}}"
+  },
+  "modal": {
+    "configureChannel": "設定 Slack 頻道",
+    "editChannel": "編輯 Slack 頻道",
+    "project": "專案",
+    "selectProject": "請選取專案",
+    "slackChannel": "Slack 頻道",
+    "selectSlackChannel": "請選取 Slack 頻道",
+    "notificationTypes": "通知類型",
+    "selectNotificationTypes": "請選取通知類型",
+    "refreshChannels": "重新整理",
+    "scrollForMore": "捲動以檢視更多…",
+    "notificationOptions": {
+      "taskCreated": "任務建立",
+      "taskUpdated": "任務更新",
+      "taskCompleted": "任務完成",
+      "taskAssigned": "任務指派",
+      "commentAdded": "新增留言",
+      "statusChanged": "狀態變更",
+      "dueDateChanged": "到期日變更",
+      "dueDateReminder": "到期日提醒",
+      "assigneeChanged": "負責人變更",
+      "priorityChanged": "優先順序變更"
+    },
+    "addConfiguration": "新增設定",
+    "updateConfiguration": "更新設定"
+  },
+  "validation": {
+    "selectProject": "請選取專案",
+    "selectChannel": "請選取 Slack 頻道",
+    "selectNotifications": "請至少選取一種通知類型"
+  },
+  "messages": {
+    "connectedSuccess": "已連結 Slack 工作區！",
+    "installationCancelled": "已取消安裝 Slack 整合",
+    "disconnectedSuccess": "已中斷 Slack 工作區連結",
+    "configAdded": "已新增頻道設定",
+    "configUpdated": "已更新頻道設定",
+    "statusUpdated": "已更新頻道狀態",
+    "configRemoved": "已移除頻道設定",
+    "channelsRefreshed": "已重新整理頻道"
+  },
+  "errors": {
+    "connectionCheckFailed": "無法檢查 Slack 連線",
+    "loadConfigsFailed": "無法載入頻道設定",
+    "loadChannelsFailed": "無法載入可用頻道",
+    "loadProjectsFailed": "無法載入專案",
+    "initiateConnectionFailed": "無法開始連結 Slack",
+    "connectionFailed": "無法連結 Slack 工作區",
+    "disconnectFailed": "無法中斷 Slack 工作區連結",
+    "addConfigFailed": "無法新增頻道設定",
+    "updateConfigFailed": "無法更新頻道設定",
+    "updateStatusFailed": "無法更新頻道狀態",
+    "removeConfigFailed": "無法移除頻道設定",
+    "refreshChannelsFailed": "無法重新整理頻道"
+  }
+}

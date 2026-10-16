@@ -7,6 +7,10 @@ const STORAGE_KEY = 'i18nextLng';
  * @returns The detected supported language or English as fallback
  */
 export const getDefaultLanguage = (): ILanguageType => {
+  const browserLocale = navigator.language.toLowerCase().replace(/_/g, '-');
+  if (['zh-tw', 'zh-hant', 'zh-hant-tw'].includes(browserLocale)) {
+    return Language.ZH_TW;
+  }
   const browserLang = navigator.language.split('-')[0];
   if (Object.values(Language).includes(browserLang as Language)) {
     return browserLang as ILanguageType;

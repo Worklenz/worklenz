@@ -1,0 +1,157 @@
+{
+  "financeText": "財務",
+  "ratecardSingularText": "費率表",
+  "groupByText": "分組依據",
+  "statusText": "狀態",
+  "phaseText": "階段",
+  "priorityText": "優先順序",
+  "exportButton": "匯出",
+  "exportAsExcelButton": "匯出為 Excel",
+  "currencyText": "幣別",
+  "importButton": "匯入",
+  "filterText": "篩選",
+  "billableOnlyText": "僅顯示可計費任務",
+  "nonBillableOnlyText": "僅顯示不可計費任務",
+  "allTasksText": "所有任務",
+  "projectBudgetOverviewText": "專案預算總覽",
+
+  "taskColumn": "任務",
+  "membersColumn": "成員",
+  "hoursColumn": "預估時數",
+  "manDaysColumn": "預估人日",
+  "actualManDaysColumn": "實際人日",
+  "effortVarianceColumn": "投入差異",
+  "totalTimeLoggedColumn": "總記錄時間",
+  "costColumn": "實際成本",
+  "estimatedCostColumn": "預估成本",
+  "fixedCostColumn": "固定成本",
+  "totalBudgetedCostColumn": "總預算成本",
+  "totalActualCostColumn": "總實際成本",
+  "varianceColumn": "差異",
+  "totalText": "合計",
+  "noTasksFound": "找不到任務",
+
+  "addRoleButton": "+ 新增角色",
+  "ratecardImportantNotice": "* 此費率表以公司的標準職稱與費率為基礎建立。可依專案需求調整，這些變更不會影響組織的標準職稱與費率。",
+  "saveButton": "儲存",
+
+  "jobTitleColumn": "職稱",
+  "ratePerHourColumn": "每小時費率",
+  "ratePerManDayColumn": "每人日費率",
+  "calculationMethodText": "計算方式",
+  "hourlyRatesText": "時薪費率",
+  "manDaysText": "人日",
+  "hoursPerDayText": "每日時數",
+  "ratecardPluralText": "費率表",
+  "labourHoursColumn": "工時",
+  "actions": "操作",
+  "selectJobTitle": "選取職稱",
+  "ratecardsPluralText": "費率表範本",
+  "deleteConfirm": "確定要刪除嗎？",
+  "yes": "是",
+  "no": "否",
+  "alreadyImportedRateCardMessage": "已匯入費率表。請先清除所有已匯入的費率表，再新增其他費率表。",
+
+  "noCurrenciesFound": "找不到幣別",
+  "unknownProject": "未知專案",
+
+  "messages": {
+    "projectIdNotFound": "找不到專案 ID",
+    "financeDataExportedSuccessfully": "已匯出財務資料",
+    "failedToExportFinanceData": "無法匯出財務資料",
+    "noPermissionToChangeCurrency": "沒有變更專案幣別的權限",
+    "projectCurrencyUpdatedSuccessfully": "已更新專案幣別",
+    "failedToUpdateProjectCurrency": "無法更新專案幣別",
+    "noPermissionToChangeBudget": "沒有變更專案預算的權限",
+    "pleaseEnterValidBudgetAmount": "請輸入有效的預算金額",
+    "projectBudgetUpdatedSuccessfully": "已更新專案預算",
+    "failedToUpdateProjectBudget": "無法更新專案預算"
+  },
+
+  "alerts": {
+    "businessPlanRequired": {
+      "message": "需使用商務方案",
+      "description": "僅商務方案與企業方案可使用專案財務功能。請升級方案以使用這些功能。"
+    },
+    "limitedAccess": {
+      "message": "權限受限",
+      "financeDescription": "可檢視財務資料，但無法編輯固定成本。僅專案經理、團隊管理員與團隊擁有者可進行變更。",
+      "ratecardDescription": "可檢視費率表資料，但無法編輯費率或管理成員指派。僅專案經理、團隊管理員與團隊擁有者可進行變更。"
+    }
+  },
+
+  "tooltips": {
+    "availableOnlyOnBusinessPlan": "僅商務方案可使用",
+    "budgetCalculationSettings": "預算與計算設定"
+  },
+
+  "budgetOverviewTooltips": {
+    "manualBudget": "專案經理手動設定的專案預算金額",
+    "totalActualCost": "包含固定成本的總實際成本",
+    "variance": "手動設定預算與實際成本的差額",
+    "utilization": "手動設定預算的使用百分比",
+    "estimatedHours": "所有任務的預估總時數",
+    "fixedCosts": "所有任務的固定成本合計",
+    "timeBasedCost": "依時間追蹤記錄計算的實際成本（不含固定成本）",
+    "remainingBudget": "剩餘預算金額"
+  },
+
+  "budgetModal": {
+    "title": "編輯專案預算",
+    "description": "手動設定此專案的預算。所有財務計算都會使用此預算，金額應包含按時計算的成本與固定成本。",
+    "placeholder": "請輸入預算金額",
+    "saveButton": "儲存",
+    "cancelButton": "取消"
+  },
+
+  "budgetStatistics": {
+    "manualBudget": "手動設定預算",
+    "totalActualCost": "總實際成本",
+    "variance": "差異",
+    "budgetUtilization": "預算使用率",
+    "estimatedHours": "預估時數",
+    "fixedCosts": "固定成本",
+    "timeBasedCost": "按時計算成本",
+    "remainingBudget": "剩餘預算",
+    "noManualBudgetSet": "（尚未手動設定預算）"
+  },
+
+  "budgetSettingsDrawer": {
+    "title": "專案預算設定",
+    "budgetConfiguration": "預算設定",
+    "projectBudget": "專案預算",
+    "projectBudgetTooltip": "分配給此專案的總預算",
+    "currency": "幣別",
+    "currencyPlaceholder": "請選取幣別",
+    "costCalculationMethod": "成本計算方式",
+    "calculationMethod": "計算方式",
+    "workingHoursPerDay": "每日工作時數",
+    "workingHoursPerDayTooltip": "計算人日時使用的每日工作時數",
+    "hourlyCalculationInfo": "成本將以預估時數 × 時薪費率計算",
+    "manDaysCalculationInfo": "成本將以預估人日 × 日薪費率計算",
+    "importantNotes": "重要事項",
+    "calculationMethodChangeNote": "• 變更計算方式將影響此專案所有任務的成本計算",
+    "immediateEffectNote": "• 變更會立即生效，並重新計算所有專案合計金額",
+    "projectWideNote": "• 預算設定適用於整個專案及其所有任務",
+    "cancel": "取消",
+    "saveChanges": "儲存變更",
+    "budgetSettingsUpdated": "已更新預算設定",
+    "budgetSettingsUpdateFailed": "無法更新預算設定"
+  },
+
+  "columnTooltips": {
+    "hours": "所有任務的預估總時數，依任務預估時間計算。顯示格式：Xh Ym。",
+    "manDays": "所有任務的預估總人日，以每日 {{hoursPerDay}} 小時計算。",
+    "actualManDays": "依記錄時間計算的實際投入人日。計算方式：總記錄時間 ÷ 每日 {{hoursPerDay}} 小時。",
+    "effortVariance": "預估人日與實際人日的差異。正值表示高估，負值表示低估。",
+    "totalTimeLogged": "團隊成員在所有任務中實際記錄的總時間。顯示格式：Xh Ym。",
+    "estimatedCostHourly": "預估成本的計算方式：預估時數 × 指派團隊成員的時薪費率。",
+    "estimatedCostManDays": "預估成本的計算方式：預估人日 × 指派團隊成員的日薪費率。",
+    "actualCost": "依記錄時間計算的實際成本。計算方式：記錄時間 × 團隊成員的時薪費率。",
+    "fixedCost": "不隨投入時間變動的固定成本，需為各任務手動加入。",
+    "totalBudgetHourly": "總預算成本包含預估成本（時數 × 時薪費率）＋固定成本。",
+    "totalBudgetManDays": "總預算成本包含預估成本（人日 × 日薪費率）＋固定成本。",
+    "totalActual": "總實際成本包含按時計算成本＋固定成本。",
+    "variance": "成本差異：總預算成本－總實際成本。正值表示低於預算，負值表示超出預算。"
+  }
+}

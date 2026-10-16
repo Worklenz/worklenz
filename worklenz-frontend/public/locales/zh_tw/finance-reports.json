@@ -1,0 +1,171 @@
+{
+  "emptyValue": "—",
+  "noBudgetSet": "未設定預算",
+  "loadError": "無法載入此報表，請再試一次。",
+  "retry": "重試",
+  "searchPlaceholder": "搜尋",
+  "budgets": {
+    "pageTitle": "預算",
+    "pageSubTitle": "追蹤所有專案的預算與消耗率。完工尚需成本（ETC）以剩餘預估時數乘上已記錄工時的實際時薪計算。",
+    "empty": "尚無可顯示的專案。",
+    "table": {
+      "project": "專案",
+      "budget": "預算",
+      "spent": "已支出",
+      "remaining": "剩餘",
+      "burnRate": "消耗率",
+      "etc": "ETC",
+      "alert": "警示"
+    },
+    "alert": {
+      "high": "消耗偏高",
+      "watch": "需留意",
+      "ok": "正常",
+      "none": "無預算"
+    }
+  },
+  "invoices": {
+    "pageTitle": "發票",
+    "pageSubTitle": "在同一專案組合檢視中，傳送發票、追蹤付款並收取客戶款項。",
+    "empty": "尚無發票。請從客戶入口網站建立發票。",
+    "openInvoice": "開啟發票",
+    "kpi": {
+      "totalInvoiced": "發票總額",
+      "totalPaid": "已付款總額",
+      "totalOutstanding": "未付款總額"
+    },
+    "table": {
+      "invoice": "發票",
+      "client": "客戶",
+      "project": "專案",
+      "amount": "金額",
+      "paymentStatus": "付款狀態",
+      "paidAmount": "已付款金額",
+      "status": "狀態",
+      "issued": "開立日期",
+      "due": "到期日"
+    },
+    "status": {
+      "draft": "草稿",
+      "sent": "已傳送",
+      "paid": "已付款",
+      "overdue": "逾期",
+      "cancelled": "已取消",
+      "outstanding": "未付款"
+    }
+  },
+  "billableTime": {
+    "pageTitle": "可計費工時",
+    "pageSubTitle": "檢視團隊的已記錄工時、計費標記與依費率表計算的金額。無須核准工時表，每筆時間記錄都已納入。",
+    "empty": "此期間尚無時間記錄。",
+    "tableTitle": "時間記錄",
+    "range": {
+      "week": "本週",
+      "month": "本月",
+      "lastMonth": "上個月"
+    },
+    "kpi": {
+      "logged": "本期已記錄工時",
+      "billable": "可計費",
+      "nonBillable": "不可計費",
+      "value": "可計費金額"
+    },
+    "table": {
+      "member": "成員",
+      "project": "專案",
+      "task": "任務",
+      "date": "日期",
+      "time": "時間",
+      "billable": "可計費",
+      "rate": "費率",
+      "value": "金額"
+    },
+    "billable": "可計費",
+    "internal": "內部"
+  },
+  "utilization": {
+    "pageTitle": "利用率",
+    "pageSubTitle": "所選期間內團隊可計費工時占可用工時的比例。超過可用工時的 85% 即為超額分配。",
+    "empty": "沒有可顯示的團隊成員。",
+    "tableTitle": "各成員利用率",
+    "kpi": {
+      "team": "團隊利用率",
+      "billable": "可計費工時",
+      "nonBillable": "不可計費",
+      "overallocated": "超額分配"
+    },
+    "overallocatedCount_one": "{{count}} 位成員",
+    "overallocatedCount_other": "{{count}} 位成員",
+    "table": {
+      "member": "成員",
+      "role": "角色",
+      "billableHours": "可計費工時",
+      "totalHours": "總工時",
+      "utilization": "利用率",
+      "status": "狀態"
+    },
+    "status": {
+      "high": "超額分配",
+      "watch": "需留意",
+      "ok": "正常"
+    }
+  },
+  "profitability": {
+    "pageTitle": "獲利能力",
+    "pageSubTitle": "檢視專案組合的已付款發票營收、依時間記錄與固定成本計算的成本，以及各專案的可計費工時利用率。",
+    "empty": "尚無可顯示的專案。",
+    "revenueNote": "營收來自客戶入口網站中已付款的發票。目前尚未追蹤個別專案營收，因此表格僅顯示成本與利用率。",
+    "noRevenueNote": "尚無已付款發票；收到款項後才會顯示營收、利潤與利潤率。",
+    "kpi": {
+      "revenue": "營收",
+      "trackedCost": "已記錄成本",
+      "profit": "利潤",
+      "margin": "利潤率",
+      "billableUtil": "可計費工時利用率"
+    },
+    "trendTitle": "營收與利潤趨勢",
+    "costBreakdownTitle": "成本明細",
+    "tableTitle": "專案獲利能力",
+    "cost": {
+      "fixed": "固定成本",
+      "timeBased": "工時成本"
+    },
+    "table": {
+      "project": "專案",
+      "cost": "成本",
+      "utilization": "利用率",
+      "health": "健康狀態"
+    },
+    "health": {
+      "high": "消耗偏高",
+      "watch": "需留意",
+      "ok": "進展正常",
+      "none": "無預算"
+    },
+    "legend": {
+      "revenue": "營收",
+      "profit": "利潤",
+      "cost": "成本"
+    }
+  },
+  "forecasts": {
+    "pageTitle": "預測",
+    "pageSubTitle": "依最近 3 個月的發票營收與工時成本線性趨勢，預測未來 3 個月。",
+    "methodology": "預測方式：依前 3 個月的線性趨勢推算，並非依銷售商機預測。",
+    "kpi": {
+      "projectedRevenue": "預估營收（下個月）",
+      "projectedProfit": "預估利潤（下個月）"
+    },
+    "vsPrevious": "較本月 {{value}}%",
+    "noRevenueBaseline": "本月無營收可供比較",
+    "noProfitBaseline": "本月無利潤可供比較",
+    "chartTitle": "3 個月營收預測",
+    "legend": {
+      "revenue": "營收",
+      "profit": "利潤",
+      "actual": "實際",
+      "projected": "預估"
+    },
+    "empty": "歷史資料不足，尚無法預測。請記錄工時並傳送發票，以累積趨勢資料。"
+  }
+}

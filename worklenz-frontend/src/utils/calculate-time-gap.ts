@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from 'date-fns';
-import { enUS, es, pt, de, zhCN, sq } from 'date-fns/locale';
+import { enUS, es, pt, de, zhCN, sq, zhTW } from 'date-fns/locale';
 import i18n from '@/i18n';
 
 export function calculateTimeGap(timestamp: string | Date): string {
@@ -17,7 +17,9 @@ export function calculateTimeGap(timestamp: string | Date): string {
               ? zhCN
               : lng === 'alb'
                 ? sq
-                : enUS;
+                : lng === 'zh_tw'
+                  ? zhTW
+                  : enUS;
   const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
   return formatDistanceToNow(date, { addSuffix: true, locale });
 }

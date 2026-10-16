@@ -1,0 +1,11 @@
+{
+  "title": "分享專案",
+  "searchLabel": "輸入名稱或電子郵件以新增成員",
+  "searchPlaceholder": "請輸入名稱或電子郵件",
+  "inviteAsAMember": "以成員身分邀請",
+  "inviteNewMemberByEmail": "以電子郵件邀請新成員",
+  "members": "成員",
+  "copyProjectLink": "複製專案連結",
+  "inviteMember": "邀請成員",
+  "alsoInviteToProject": "同時邀請至專案"
+}

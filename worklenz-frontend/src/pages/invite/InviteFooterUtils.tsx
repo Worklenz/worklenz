@@ -16,6 +16,7 @@ const languages = [
   { key: Language.DE, label: 'Deutsch', flag: '🇩🇪' },
   { key: Language.ALB, label: 'Shqip', flag: '🇦🇱' },
   { key: Language.ZH, label: '简体中文', flag: '🇨🇳' },
+  { key: Language.ZH_TW, label: '繁體中文（台灣）', flag: '🇹🇼' },
 ];
 
 interface InviteFooterUtilsProps {

@@ -8,7 +8,7 @@ import {
   differenceInYears,
   formatDistanceToNow,
 } from 'date-fns';
-import { enUS, es, pt, de, zhCN, sq } from 'date-fns/locale';
+import { enUS, es, pt, de, zhCN, sq, zhTW } from 'date-fns/locale';
 import { getLanguageFromLocalStorage } from './language-utils';
 
 const JUST_NOW: Record<string, string> = {
@@ -18,6 +18,7 @@ const JUST_NOW: Record<string, string> = {
   de: 'Gerade jetzt',
   zh: '刚刚',
   zh_cn: '刚刚',
+  zh_tw: '剛剛',
   alb: 'Sapo tani',
 };
 
@@ -27,6 +28,7 @@ const DATE_FNS_LOCALE: Record<string, typeof enUS> = {
   pt: pt,
   de: de,
   zh_cn: zhCN,
+  zh_tw: zhTW,
   alb: sq,
 };
 

@@ -1,0 +1,42 @@
+{
+  "title": "階段詳細資料",
+  "overview": {
+    "title": "總覽",
+    "totalTasks": "任務總數",
+    "completion": "完成率",
+    "progress": "進度"
+  },
+  "timeline": {
+    "title": "時程",
+    "startDate": "開始日期",
+    "endDate": "結束日期",
+    "status": "狀態",
+    "notSet": "未設定",
+    "statusLabels": {
+      "upcoming": "即將開始",
+      "active": "進行中",
+      "overdue": "逾期",
+      "notScheduled": "未排程"
+    }
+  },
+  "taskBreakdown": {
+    "title": "任務分布",
+    "completed": "已完成",
+    "pending": "待處理",
+    "overdue": "逾期"
+  },
+  "phaseColor": {
+    "title": "階段顏色",
+    "description": "用於識別階段的顏色"
+  },
+  "tasksInPhase": {
+    "title": "此階段的任務",
+    "noTasks": "此階段沒有任務",
+    "priority": "優先順序",
+    "assignees": "負責人",
+    "dueDate": "到期日",
+    "startDate": "開始日期",
+    "noAssignees": "未指派",
+    "noDueDate": "無到期日"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "headline": "歡迎回來",
+  "headerDescription": "登入 Worklenz 工作區。",
+  "signInWithLabel": "登入方式",
+  "emailLabel": "電子郵件",
+  "emailPlaceholder": "you@company.com",
+  "nextButton": "下一步",
+  "changeEmailLink": "變更",
+  "emailRequired": "請輸入電子郵件！",
+  "passwordLabel": "密碼",
+  "passwordPlaceholder": "請輸入密碼",
+  "passwordRequired": "請輸入密碼！",
+  "rememberMe": "記住我",
+  "loginButton": "登入",
+  "signupButton": "註冊",
+  "forgotPasswordButton": "忘記密碼？",
+  "signInWithGoogleButton": "Google",
+  "signInWithGoogleAriaLabel": "使用 Google 登入",
+  "signInWithAppleButton": "Apple",
+  "signInWithAppleAriaLabel": "使用 Apple 登入",
+  "bySigningInText": "登入即表示已瞭解並同意我們的",
+  "andText": "與",
+  "termsOfServiceLink": "服務條款",
+  "privacyPolicyLink": "隱私權政策",
+  "appleLoginError": "Apple 登入失敗",
+  "dontHaveAccountText": "還沒有帳戶？",
+  "orText": "或",
+  "successMessage": "登入成功！",
+  "loginError": "登入失敗",
+  "googleLoginError": "Google 登入失敗",
+  "validationMessages": {
+    "email": "請輸入有效的電子郵件地址",
+    "password": "密碼長度至少需 8 個字元"
+  },
+  "errorMessages": {
+    "loginErrorTitle": "登入失敗",
+    "loginErrorMessage": "請檢查電子郵件和密碼後重試"
+  }
+}

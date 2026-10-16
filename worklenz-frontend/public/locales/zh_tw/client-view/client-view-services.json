@@ -1,0 +1,13 @@
+{
+  "title": "{{items}} 項服務",
+
+  "requestButton": "提出請求",
+
+  "modal": {
+    "title": "提出請求",
+    "submitButton": "提交"
+  },
+
+  "uploadLogoText": "點選或拖曳檔案至此區域以上傳",
+  "uploadLogoAltText": "可上傳單一或多個檔案。嚴禁上傳公司資料或其他禁止上傳的檔案"
+}

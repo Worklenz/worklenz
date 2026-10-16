@@ -1,0 +1,76 @@
+{
+  "title": "儲存為範本",
+  "templateName": "範本名稱",
+  "includes": "專案元素",
+  "includesOptions": {
+    "statuses": "狀態",
+    "phases": "階段",
+    "labels": "標籤",
+    "customColumns": "自訂欄位"
+  },
+  "taskIncludes": "任務元素",
+  "taskIncludesOptions": {
+    "statuses": "狀態",
+    "phases": "階段",
+    "labels": "標籤",
+    "name": "名稱",
+    "priority": "優先順序",
+    "status": "狀態",
+    "phase": "階段",
+    "label": "標籤",
+    "timeEstimate": "時間估計",
+    "description": "描述",
+    "subTasks": "子任務"
+  },
+  "cancel": "取消",
+  "save": "儲存",
+  "templateNamePlaceholder": "請輸入範本名稱",
+  "templateInfo": "範本資訊",
+  "creating": "正在建立範本…",
+  "created": "已建立範本！",
+  "quickSelect": "快速選取：",
+  "selectAll": "全選",
+  "essentialOnly": "僅必要項目",
+  "clearAll": "全部清除",
+  "itemsSelected": "個已選取項目",
+  "readyToSave": "可儲存",
+  "validName": "名稱有效",
+  "required": "必要",
+  "proTips": "實用提示",
+  "descriptions": {
+    "statuses": "專案狀態工作流程設定",
+    "phases": "專案階段與里程碑",
+    "labels": "用於分類的自訂標籤",
+    "customColumns": "自訂欄位與中繼資料",
+    "taskName": "任務名稱與標題",
+    "taskPriority": "任務的優先順序等級",
+    "taskStatus": "任務完成狀態",
+    "taskPhase": "關聯的專案階段",
+    "taskLabel": "任務標籤",
+    "timeEstimate": "預估時間與持續時間",
+    "description": "任務描述與詳細資訊",
+    "subTasks": "子任務與檢查清單項目"
+  },
+  "tooltips": {
+    "projectElements": "選擇要納入範本的專案元素",
+    "taskElements": "選擇要納入範本的任務元素",
+    "required": "此項目為必要項目，無法取消選取"
+  },
+  "tips": {
+    "line1": "範本會保留專案結構，方便快速重複使用",
+    "line2": "必要項目一律納入，無法移除",
+    "line3": "建立新專案時可自訂範本內容",
+    "line4": "選擇要納入範本的元素"
+  },
+  "validation": {
+    "nameRequired": "請輸入範本名稱",
+    "nameMinLength": "範本名稱至少需 3 個字元",
+    "nameMaxLength": "範本名稱必須少於 50 個字元"
+  },
+  "notifications": {
+    "createSuccess": "已建立範本",
+    "createSuccessDesc": "已建立專案範本，可立即使用。",
+    "createError": "無法建立範本",
+    "error": "錯誤"
+  }
+}

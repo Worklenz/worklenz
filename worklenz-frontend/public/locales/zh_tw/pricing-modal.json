@@ -1,0 +1,343 @@
+{
+  "title": "選擇最適合團隊的方案",
+  "subtitle": "選擇合適方案，提升團隊生產力",
+  "billingCycle": {
+    "label": "計費週期",
+    "monthly": "月繳",
+    "yearly": "年繳",
+    "savePercent": "節省 30%"
+  },
+  "pricingModel": {
+    "label": "計價模式",
+    "perUser": "按使用者計費",
+    "basePlan": "基本方案",
+    "default": "預設",
+    "explanation": {
+      "perUser": "僅為活躍使用者付費。適合小型團隊（1 至 5 位使用者），費用隨團隊人數彈性調整。",
+      "basePlan": "固定基本費用包含一定使用者人數，額外使用者另行計費。適合較大型團隊（6 位以上使用者），費用更容易預估。"
+    },
+    "autoPerUser": "已自動為 {{count}} 位使用者{{s}}採用按使用者計費",
+    "autoBase": "已自動為 {{count}} 位使用者{{s}}採用基本方案計價",
+    "additionalUserCharge": "包含 {{included}} 位使用者。每位額外使用者每月 ${{price}}。"
+  },
+  "teamSize": {
+    "label": "團隊人數",
+    "help": "請選擇目前或預期的團隊人數",
+    "user": "位使用者",
+    "users": "位使用者",
+    "helpDescription": "請輸入團隊使用者人數（1 至 500 位）",
+    "placeholder": "選擇團隊人數"
+  },
+  "plans": {
+    "free": {
+      "name": "免費方案",
+      "description": "適合剛開始使用的團隊",
+      "features": [
+        "3 個專案",
+        "基本任務管理",
+        "團隊協作",
+        "手動管理",
+        "社群支援"
+      ],
+      "forever": "永久"
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "適合專業團隊",
+      "features": [
+        "不限專案數",
+        "進階任務管理",
+        "甘特圖",
+        "時間追蹤",
+        "自訂欄位",
+        "電子郵件支援"
+      ],
+      "payPerUser": "按使用者計費（1 至 5 位使用者）",
+      "usersIncluded": "包含 {{count}} 位使用者",
+      "maxUsers": "最多 {{count}} 位使用者"
+    },
+    "business": {
+      "name": "商務方案",
+      "description": "適合成長中的組織",
+      "features": [
+        "Pro 的所有功能",
+        "進階報表",
+        "自訂工作流程",
+        "API 存取",
+        "優先支援",
+        "進階整合"
+      ],
+      "payPerUser": "按使用者計費（1 至 5 位使用者）",
+      "usersIncluded": "包含 {{count}} 位使用者",
+      "maxUsers": "最多 {{count}} 位使用者",
+      "maxUsersAppSumo": "最多 50 位使用者（AppSumo 優惠）"
+    },
+    "proSmall": {
+      "name": "Pro 小型團隊方案",
+      "description": "適合小型團隊",
+      "features": [
+        "不限專案數",
+        "進階任務管理",
+        "甘特圖",
+        "時間追蹤",
+        "自訂欄位",
+        "電子郵件支援"
+      ]
+    },
+    "businessSmall": {
+      "name": "商務小型團隊方案",
+      "description": "適合成長中的團隊",
+      "features": [
+        "Pro 小型團隊方案的所有功能",
+        "進階報表",
+        "自訂工作流程",
+        "API 存取",
+        "優先支援",
+        "進階整合"
+      ]
+    },
+    "proLarge": {
+      "name": "Pro 大型團隊方案",
+      "description": "適合較大型團隊",
+      "features": [
+        "Pro 小型團隊方案的所有功能",
+        "進階團隊管理",
+        "資源分配",
+        "專案組合管理",
+        "優先支援"
+      ]
+    },
+    "businessLarge": {
+      "name": "商務大型團隊方案",
+      "description": "適合企業團隊",
+      "features": [
+        "商務小型團隊方案的所有功能",
+        "進階分析",
+        "自訂品牌形象",
+        "SSO 整合",
+        "專屬支援",
+        "SLA 保證"
+      ]
+    },
+    "enterprise": {
+      "name": "企業方案",
+      "description": "適合大型組織",
+      "features": [
+        "商務大型團隊方案的所有功能",
+        "不限使用者人數",
+        "進階安全性",
+        "自訂整合",
+        "專屬客戶經理",
+        "地端部署"
+      ]
+    }
+  },
+  "badges": {
+    "mostPopular": "最受歡迎",
+    "recommended": "推薦",
+    "bestValue": "最划算",
+    "currentPlan": "目前方案"
+  },
+  "pricing": {
+    "perMonth": "/ 月",
+    "perUser": "每位使用者",
+    "forUsers": "供 {{count}} {{unit}}使用",
+    "basePrice": "基本費用 {{price}} + 額外使用者費用 {{additionalCost}}",
+    "upToUsers": "最多 {{count}} 位使用者",
+    "usersRange": "1 至 {{count}} 位使用者",
+    "savePerYear": "每年節省 ${{amount}}",
+    "originalPrice": "原價",
+    "discountPercent": "-{{percent}}%"
+  },
+  "buttons": {
+    "currentPlan": "目前方案",
+    "getStartedFree": "免費開始使用",
+    "contactSales": "聯絡業務",
+    "choosePlan": "選擇方案",
+    "viewDetails": "檢視詳細資料",
+    "chooseThisPlan": "選擇此方案",
+    "switchToMobile": "切換至行動版檢視",
+    "toggleTheme": "切換主題",
+    "switchToLight": "切換至淺色主題",
+    "switchToDark": "切換至深色主題",
+    "closeModal": "關閉方案價格視窗",
+    "loadingPlans": "正在載入方案…",
+    "selectPlan": "選擇方案",
+    "switchToFree": "切換至免費方案",
+    "planSummary": "{{planName}} 方案 - ${{total}}{{period}}{{userText}}",
+    "planSummaryNoName": "${{total}}{{period}}{{userText}}"
+  },
+  "userTypes": {
+    "trial": {
+      "title": "試用使用者：",
+      "message": "剩餘 {{days}} 天。立即升級以保留資料與功能！"
+    },
+    "appsumo": {
+      "title": "AppSumo 優惠：",
+      "message": "Business+ 方案享 5 折優惠！",
+      "countdown": "專屬優惠只剩 {{days}} 天。",
+      "standardPricing": "可依標準價格訂閱"
+    },
+    "free": {
+      "title": "目前方案：",
+      "message": "免費方案。準備好解鎖更多功能了嗎？"
+    },
+    "custom": {
+      "title": "從自訂方案移轉：",
+      "message": "移轉至新的標準方案時，仍可保留原有優惠價格。"
+    }
+  },
+  "recommendations": {
+    "switchModel": "每月節省 ${{amount}}：切換至 {{model}}，供 {{count}} 位使用者使用",
+    "perUserPricing": "按使用者計價",
+    "basePlanPricing": "基本方案計價",
+    "switch": "切換"
+  },
+  "planDetails": {
+    "title": "方案詳細資料",
+    "features": "功能",
+    "limits": "限制",
+    "projects": "專案",
+    "users": "使用者",
+    "storage": "儲存空間",
+    "unlimited": "無上限"
+  },
+  "tips": {
+    "switchAnytime": "💡 提醒：可隨時從帳務設定切換計價模式",
+    "smallTeamPricing": "💰 小型團隊可享更優惠的每位使用者費率",
+    "annualDiscount": "💸 按年計費最多可節省 30%",
+    "freeUpgrade": "🚀 免費使用者可隨時升級"
+  },
+  "errors": {
+    "loadingData": "載入價格資料時發生錯誤",
+    "loadingPlansRetry": "無法載入方案價格，請重新整理頁面。",
+    "calculating": "正在計算價格…",
+    "selectedPlan": "已選方案：{{plan}}"
+  },
+  "accessibility": {
+    "availablePlans": "可用方案",
+    "teamSizeHelp": "團隊人數說明",
+    "pricingUpdates": "價格更新"
+  },
+  "checkout": {
+    "title": "確認訂閱",
+    "subtitle": "繼續前請先確認方案詳細資料",
+    "summary": "訂閱摘要",
+    "plan": "方案",
+    "teamSize": "團隊人數",
+    "discount": "折扣",
+    "total": "合計",
+    "secureCheckout": "安全結帳",
+    "secureDescription": "Paddle 會安全地處理付款。可隨時取消或變更方案。",
+    "appsumoSpecial": "AppSumo 專屬價格",
+    "appsumoDescription": "前 12 個月享 5 折優惠。這是限時優惠！",
+    "proceedToPayment": "前往付款",
+    "cancel": "取消",
+    "processing": {
+      "title": "正在處理訂閱",
+      "subtitle": "請稍候，正在設定訂閱…",
+      "doNotClose": "請勿關閉此視窗",
+      "doNotCloseDescription": "正在處理付款，關閉此視窗可能會中斷處理程序。"
+    },
+    "success": {
+      "title": "訂閱建立成功！",
+      "subtitle": "已啟用訂閱，稍後將收到確認電子郵件。",
+      "withId": "訂閱編號為 {{id}}，稍後將收到確認電子郵件。",
+      "goToDashboard": "前往儀表板",
+      "viewBilling": "檢視帳務"
+    },
+    "error": {
+      "title": "訂閱失敗",
+      "subtitle": "訂閱過程發生錯誤。",
+      "tryAgain": "再試一次"
+    },
+    "steps": {
+      "confirm": "確認",
+      "payment": "付款",
+      "complete": "完成"
+    }
+  },
+  "ui": {
+    "loading": "正在載入價格選項…",
+    "selectTeamSize": "請選擇團隊人數",
+    "chooseBilling": "選擇計費頻率",
+    "planSelected": "已選擇方案",
+    "totalCost": "總費用",
+    "perUserCost": "每位使用者費用",
+    "included": "已包含",
+    "popular": "最受歡迎",
+    "recommended": "推薦",
+    "currentPlan": "目前方案",
+    "upgrade": "升級",
+    "downgrade": "降級",
+    "change": "變更方案",
+    "specialOffer": "特別優惠",
+    "limitedTime": "限時",
+    "saveAmount": "節省 ${{amount}}",
+    "freeForever": "永久免費",
+    "noCommitment": "無綁約，可隨時取消",
+    "instantActivation": "立即啟用",
+    "supportIncluded": "包含支援服務"
+  },
+  "features": {
+    "common": {
+      "taskManagement": "任務管理",
+      "projectTracking": "專案追蹤",
+      "teamCollaboration": "團隊協作",
+      "fileSharing": "檔案分享",
+      "basicReporting": "基本報表",
+      "mobileApp": "行動應用程式存取"
+    },
+    "advanced": {
+      "ganttCharts": "甘特圖",
+      "timeTracking": "時間追蹤",
+      "advancedReporting": "進階報表",
+      "customFields": "自訂欄位",
+      "apiAccess": "API 存取",
+      "prioritySupport": "優先支援"
+    },
+    "enterprise": {
+      "sso": "單一登入（SSO）",
+      "advancedSecurity": "進階安全性",
+      "customIntegrations": "自訂整合",
+      "dedicatedSupport": "專屬支援",
+      "onPremise": "地端部署",
+      "slaSupport": "SLA 支援"
+    }
+  },
+  "appsumo": {
+    "exclusiveTitle": "🎉 AppSumo 專屬優惠：商務方案享 3 折！",
+    "timeRemaining": "剩餘 {{days}} 天 {{hours}} 小時 {{minutes}} 分鐘",
+    "urgency": {
+      "finalHours": "最後幾小時",
+      "urgent": "即將截止",
+      "limitedTime": "限時優惠"
+    },
+    "specialPricing": "🎯 AppSumo 終身優惠會員專屬價格",
+    "businessUsers": "💪 商務方案最多可供 50 位使用者使用（一般為 25 位）",
+    "lifetimeTitle": "AppSumo 終身優惠會員",
+    "discountExpired": "3 折優惠期間已結束，仍可依標準價格升級至商務方案。",
+    "watchOffers": "💡 敬請留意後續活動與特別優惠！",
+    "discountApplied": "已套用 AppSumo 3 折優惠"
+  },
+  "billing": {
+    "billedAnnually": "（按年計費）",
+    "billedMonthly": "（按月計費）",
+    "perYear": "/ 年",
+    "perMonth": "/ 月",
+    "forUsers": "，供 {{count}} 位使用者{{s}}使用"
+  },
+  "ribbon": {
+    "recommended": "推薦",
+    "popular": "最受歡迎",
+    "bestValue": "最划算",
+    "appsumoSpecial": "AppSumo 優惠"
+  },
+  "customFields": {
+    "upgradeModalHeadline": "使用無上限的自訂欄位，掌握每個細節",
+    "upgradeModalSubCopy": "目前方案最多包含 {{limit}} 個自訂欄位。升級至商務方案，即可建立不限數量的欄位，追蹤團隊真正重視的資訊。",
+    "benefit1": "每個專案的自訂欄位數量無上限",
+    "benefit2": "欄位類型包含文字、數字、下拉選單、日期等",
+    "benefit3": "所有任務檢視中的欄位均會同步"
+  }
+}

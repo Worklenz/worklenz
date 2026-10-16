@@ -1,0 +1,13 @@
+{
+  "title": "未經授權！",
+  "subtitle": "您沒有權限存取此頁面",
+  "commentAccessTitle": "需要存取權限才能檢視此留言",
+  "commentAccessContactAdmin": "您尚未獲邀加入此專案，請聯絡管理員或專案擁有者以申請存取權限。",
+  "commentAccessDenied": "您尚未獲邀加入此專案，請聯絡管理員或專案擁有者以申請存取權限。",
+  "invalidCommentLink": "此留言連結無效。",
+  "commentNotFound": "找不到此留言。",
+  "commentLinkOpenFailed": "無法開啟此留言連結，請再試一次，或從任務中開啟留言。",
+  "unableToOpenComment": "無法開啟留言",
+  "openingComment": "正在開啟留言…",
+  "button": "回到首頁"
+}
