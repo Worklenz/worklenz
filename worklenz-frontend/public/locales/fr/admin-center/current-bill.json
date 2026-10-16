@@ -211,5 +211,18 @@
   "pricingModelNote": "Informations sur le modèle de tarification",
   "switchAnytime": "Vous pouvez basculer entre les modèles de tarification à tout moment à partir de vos paramètres de facturation",
   "flatRateLimit": "Les forfaits forfaitaires ont des limites d'utilisateurs : assurez-vous que la taille de votre équipe respecte cette limite.",
-  "perUserScaling": "Les forfaits par utilisateur évoluent automatiquement avec la croissance de votre équipe"
+  "perUserScaling": "Les forfaits par utilisateur évoluent automatiquement avec la croissance de votre équipe",
+  "paymentHistory": "Historique des paiements",
+  "receiptDownloadFailed": "Échec du téléchargement",
+  "receiptDownloadFailedDescription": "Impossible de générer le reçu. Veuillez réessayer.",
+  "date": "Date",
+  "card": "Carte",
+  "receipt": "Reçu",
+  "noPaymentHistory": "Aucun historique de paiement",
+  "flatRatePricingDescription": "Tarif forfaitaire pour un maximum de {{count}} utilisateurs",
+  "flatRateMonthlyPrice": "{{currency}} {{price}} par mois",
+  "upToUsers": "(jusqu’à {{count}} utilisateurs)",
+  "legacyPlanTitle": "Ancienne offre",
+  "legacyPlanDescription": "Votre offre n’est plus commercialisée et reste inchangée. Le passage à une offre actuelle par utilisateur est facultatif et votre abonnement sera remplacé uniquement après votre confirmation.",
+  "everythingInFree": "Tout ce que comprend Free, plus :"
 }

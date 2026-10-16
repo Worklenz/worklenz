@@ -5,6 +5,7 @@ import ClientPortalInvoicesController from "../../controllers/client-portal/clie
 import ClientPortalQuotesController from "../../controllers/client-portal/client-portal-quotes-controller";
 import ClientPortalCompanyUsersController from "../../controllers/client-portal/client-portal-company-users-controller";
 import ClientPortalOnboardingController from "../../controllers/client-portal/client-portal-onboarding-controller";
+import clientPortalV2AdminRouter from "./client-portal-v2-admin-router";
 
 import clientsBodyValidator from "../../middlewares/validators/clients-body-validator";
 import idParamValidator from "../../middlewares/validators/id-param-validator";
@@ -14,7 +15,7 @@ import safeControllerFunction from "../../shared/safe-controller-function";
 import projectManagerValidator from "../../middlewares/validators/project-manager-validator";
 import chatIdParamValidator from "../../middlewares/validators/chat-id-param-validator";
 import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
-import { requireBusinessPlan } from "../../middlewares/subscription-middleware";
+import { requireFeature } from "../../shared/entitlements/gates";
 
 const clientsApiRouter = express.Router();
 
@@ -29,8 +30,16 @@ clientsApiRouter.delete("/:id", teamOwnerOrAdminValidator, idParamValidator, saf
 
 // Client Portal is a Business Edition feature — every /portal/* route below requires
 // the requesting team to hold a Business plan. The plain client CRUD routes above stay free.
-clientsApiRouter.use("/portal", requireBusinessPlan);
-clientsApiRouter.use("/:clientId/invoices", requireBusinessPlan);
+clientsApiRouter.use("/portal", requireFeature("client_portal"));
+clientsApiRouter.use("/:clientId/invoices", requireFeature("client_portal_invoices"));
+
+// Every Client Portal admin route is Owner/Admin only. Most of /portal/* previously had no role check,
+// so any signed-in member could reach it by URL; the guard is applied once here for all of it.
+clientsApiRouter.use("/portal", teamOwnerOrAdminValidator);
+
+// Client Portal v2 admin API (roles, settings, projects, approvals, change requests, discussions,
+// audit log, preview). Namespaced under /v2 so it never collides with the v1 routes below.
+clientsApiRouter.use("/portal/v2", clientPortalV2AdminRouter);
 
 // Organization-side Client Portal Request Management
 clientsApiRouter.get("/portal/requests", safeControllerFunction(ClientsController.getClientRequests));

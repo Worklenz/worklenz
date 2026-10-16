@@ -1,0 +1,2349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Worklenz User Client Portal — Prototype (v2, spec-aligned)</title>
+<style>
+*{box-sizing:border-box}
+html,body,#root{height:100%;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+.wl-app{min-height:100vh;display:flex;flex-direction:column}
+
+/* LIGHT THEME VARS */
+body{
+  --bg:#f0f2f5;
+  --card:#ffffff;
+  --border:#e8e8e8;
+  --text:rgba(0,0,0,.88);
+  --text-sec:rgba(0,0,0,.45);
+  --hover:rgba(0,0,0,.04);
+  --sidebar-bg:#ffffff;
+  --topnav-bg:#ffffff;
+  --shadow:0 2px 8px rgba(0,0,0,.08);
+  --menu-bg:#ffffff;
+  --menu-hover:rgba(0,0,0,.05);
+}
+/* DARK THEME VARS */
+body.dark{
+  --bg:#141414;
+  --card:#1f1f1f;
+  --border:#303030;
+  --text:rgba(255,255,255,.88);
+  --text-sec:rgba(255,255,255,.45);
+  --hover:rgba(255,255,255,.06);
+  --sidebar-bg:#0d0d0d;
+  --topnav-bg:#1a1a1a;
+  --shadow:0 2px 8px rgba(0,0,0,.4);
+  --menu-bg:#1a1a1a;
+  --menu-hover:rgba(255,255,255,.08);
+}
+body{background:var(--bg);color:var(--text)}
+
+/* AUTH SCREENS */
+.auth-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px}
+.auth-card{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:36px 34px;box-shadow:var(--shadow)}
+.auth-logo-row{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:6px}
+.auth-logo-row img{height:32px;object-fit:contain}
+.auth-title{font-size:20px;font-weight:700;text-align:center;margin:6px 0 2px}
+.auth-sub{font-size:13px;opacity:.55;text-align:center;margin-bottom:22px}
+.auth-note{font-size:11.5px;opacity:.45;text-align:center;margin-top:18px;line-height:1.5}
+.auth-input-wrap{position:relative}
+.auth-input-wrap .pre-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.4;font-size:13px}
+.auth-input-wrap .post-icon{position:absolute;right:11px;top:50%;transform:translateY(-50%);opacity:.4;cursor:pointer;font-size:13px;background:none;border:none}
+.auth-input-wrap input{padding-left:32px}
+.auth-banner{display:flex;gap:8px;align-items:flex-start;background:rgba(22,119,255,.08);border:1px solid rgba(22,119,255,.25);border-radius:8px;padding:11px 13px;font-size:12.5px;margin-bottom:18px}
+
+/* TOP NAV */
+.wl-topnav{height:52px;display:flex;align-items:center;padding:0 18px;gap:10px;position:fixed;top:0;left:0;right:0;z-index:100;background:var(--topnav-bg);border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
+.wl-logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text);min-width:120px}
+.wl-logo img{height:24px;width:auto;object-fit:contain}
+.wl-logo span{font-weight:700;font-size:15px}
+.wl-page-title{font-size:13.5px;font-weight:600;opacity:.6}
+.wl-nav-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.wl-icon-btn{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;font-size:15px;position:relative;color:var(--text)}
+.wl-icon-btn:hover{background:var(--hover)}
+.wl-badge{position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:8px;background:#ff4d4f;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:600}
+
+/* LAYOUT */
+.wl-body{display:flex;flex:1;margin-top:52px;min-height:calc(100vh - 52px)}
+.wl-sidebar{width:80px;min-width:80px;background:var(--sidebar-bg);border-right:1px solid var(--border);padding:10px 0 0;display:flex;flex-direction:column;align-items:center;gap:0;position:fixed;top:52px;left:0;bottom:0;overflow-y:auto}
+.wl-sidebar-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:100%;padding:11px 4px 10px;cursor:pointer;border:none;background:transparent;transition:all .15s;position:relative;color:var(--text-sec)}
+.wl-sidebar-item .icon{display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.wl-sidebar-item .label{font-size:10px;font-weight:500;text-align:center;line-height:1.2;white-space:nowrap}
+.wl-sidebar-item.active{background:var(--accent-soft)}
+.wl-sidebar-item.active .icon,.wl-sidebar-item.active .label{color:var(--accent);font-weight:600}
+.wl-sidebar-item:hover:not(.active){background:var(--hover)}
+.wl-sidebar-item .badge{position:absolute;top:6px;right:10px;min-width:16px;height:16px;border-radius:8px;background:#ff4d4f;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;padding:0 4px}
+.wl-content{flex:1;margin-left:80px;min-height:calc(100vh - 52px);padding:24px;overflow-y:auto}
+
+/* DROPDOWN */
+.dropdown{position:relative;display:inline-block}
+.dropdown-menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--menu-bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.16);min-width:230px;z-index:999;padding:6px;color:var(--text)}
+.dropdown-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;cursor:pointer;font-size:13px;border-radius:7px;transition:background .1s}
+.dropdown-item:hover{background:var(--menu-hover)}
+.dropdown-divider{height:1px;background:var(--border);margin:5px 2px}
+
+/* CARDS / STATS / TABLES */
+.stat-card{border-radius:10px;padding:18px 20px;border:1px solid var(--border);background:var(--card)}
+.stat-card .label{font-size:12px;opacity:.55;margin-bottom:4px}
+.stat-card .value{font-size:26px;font-weight:700;line-height:1.2}
+.grid-stat-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px}
+.card-sm{padding:14px 16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:600}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.services-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.service-card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.service-card .thumb{height:110px;background:var(--hover);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--accent)}
+.service-card .body{padding:14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.service-card .name{font-size:13.5px;font-weight:600}
+.service-card .desc{font-size:12px;opacity:.55;line-height:1.4;flex:1}
+.service-card .foot{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+
+.wl-table{width:100%;border-collapse:collapse;font-size:13px}
+.wl-table th{padding:8px 12px;text-align:left;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;opacity:.55;border-bottom:1px solid var(--border)}
+.wl-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text)}
+.wl-table tr:hover td{background:var(--hover)}
+.wl-table tr:last-child td{border-bottom:none}
+
+.page-header{margin-bottom:20px}
+.page-header h1{font-size:22px;font-weight:700;margin:0 0 4px}
+.page-header p{font-size:13px;opacity:.55;margin:0}
+.page-header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.section-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.section-tab{padding:8px 14px;cursor:pointer;font-size:13px;font-weight:500;border:none;background:transparent;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--text)}
+.section-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.section-tab:hover:not(.active){opacity:.75}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;text-align:center;gap:10px;opacity:.6}
+.empty-state .icon-big{font-size:34px}
+
+/* TAGS */
+.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.tag-red{background:rgba(255,77,79,.12);color:#ff4d4f}
+.tag-green{background:rgba(82,196,26,.12);color:#52c41a}
+.tag-orange{background:rgba(250,173,20,.12);color:#d46b08}
+.tag-blue{background:rgba(22,119,255,.12);color:#1677ff}
+.tag-gray{background:rgba(128,128,128,.12);color:#888}
+.locked-note{display:flex;align-items:center;gap:6px;font-size:11.5px;opacity:.45;padding:8px 0}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{filter:brightness(.92)}
+.btn-default{background:var(--card);border-color:var(--border);color:var(--text)}
+.btn-default:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* FORMS */
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:12px;font-weight:600;margin-bottom:6px;opacity:.7}
+.form-input,.form-select,textarea.form-input{width:100%;padding:8px 10px;border-radius:7px;border:1px solid var(--border);font-size:13px;background:var(--card);color:var(--text);font-family:inherit}
+.form-input:focus,.form-select:focus{outline:none;border-color:var(--accent)}
+.form-hint{font-size:11px;opacity:.5;margin-top:5px}
+.toggle-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-row .t{font-size:13px;font-weight:600}
+.toggle-row .d{font-size:11.5px;opacity:.5;margin-top:2px}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:var(--card);border-radius:12px;width:480px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-header h3{margin:0;font-size:16px;font-weight:600}
+.modal-body{padding:20px 22px}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+/* CHAT */
+.chat-layout{display:grid;grid-template-columns:280px 1fr;height:calc(100vh - 160px);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.chat-sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column}
+.chat-list-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+.chat-list-item.active{background:var(--hover)}
+.chat-main{display:flex;flex-direction:column;min-width:0}
+.chat-main-head{padding:13px 18px;border-bottom:1px solid var(--border);font-weight:600;font-size:13.5px}
+.chat-messages{flex:1;padding:18px;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
+.chat-msg-row{display:flex;flex-direction:column;margin-bottom:14px;max-width:72%}
+.chat-msg-row.mine{align-self:flex-end;align-items:flex-end}
+.chat-msg-sender{font-size:11px;font-weight:600;opacity:.5;margin-bottom:4px}
+.chat-msg{display:inline-block;padding:8px 12px;border-radius:10px;font-size:13px;line-height:1.5}
+.chat-msg.mine{background:var(--accent);color:#fff;border-radius:10px 10px 2px 10px}
+.chat-msg.theirs{background:var(--hover);border-radius:10px 10px 10px 2px}
+.chat-msg-time{font-size:10px;opacity:.4;margin-top:4px}
+.chat-input-row{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
+.chat-input{flex:1;padding:9px 16px;border-radius:20px;border:1px solid var(--border);font-size:13px;background:var(--card);color:var(--text)}
+
+/* PROJECT WORKSPACE */
+.ws-layout{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.ws-rail{width:220px;flex:0 0 220px}
+
+/* PROTOTYPE CONTROLS (meta — not part of the spec'd product) */
+.proto-fab{position:fixed;bottom:20px;right:20px;z-index:120;display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:22px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow);cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text)}
+.proto-panel{position:fixed;bottom:70px;right:20px;width:340px;max-height:75vh;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.25);z-index:121;padding:16px}
+.proto-panel h4{margin:14px 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;opacity:.5}
+.proto-panel h4:first-child{margin-top:0}
+.swatch-row{display:flex;gap:6px}
+.swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.swatch.active{border-color:var(--text)}
+
+.toast-host{position:fixed;left:24px;bottom:24px;z-index:600;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:11px 15px;font-size:13px;box-shadow:0 12px 32px rgba(0,0,0,.18);max-width:340px;color:var(--text)}
+
+/* ─── v2 additions ─── */
+.tag-purple{background:rgba(114,46,209,.12);color:#722ed1}
+.tag{white-space:nowrap}
+.progress-bar{height:5px;border-radius:3px;background:var(--border);overflow:hidden}
+.progress-bar .fill{height:100%;border-radius:3px;transition:width .3s}
+.org-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:16px;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text);margin-left:6px;white-space:nowrap}
+.count-dot{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:8px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;margin-left:6px;padding:0 4px}
+
+.banner{display:flex;gap:8px;align-items:flex-start;border-radius:8px;padding:10px 12px;font-size:12.5px;margin:0 0 14px;line-height:1.5}
+.banner.info{background:rgba(22,119,255,.08);border:1px solid rgba(22,119,255,.25)}
+.banner.warn{background:rgba(250,173,20,.1);border:1px solid rgba(250,173,20,.35)}
+
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.seg button{padding:5px 12px;font-size:12px;font-weight:500;border:none;background:var(--card);color:var(--text);cursor:pointer;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--accent);color:#fff}
+.chip{padding:4px 11px;border-radius:14px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;cursor:pointer}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.action-row{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:6px}
+.action-row:last-child{border-bottom:none}
+.action-row:hover{background:var(--hover)}
+.notif-row{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+.notif-row:last-child{border-bottom:none}
+.notif-row:hover{background:var(--hover)}
+
+.project-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.project-card{cursor:pointer;transition:border-color .15s}
+.project-card:hover{border-color:var(--accent)}
+
+.phase-track{display:flex;margin-top:14px}
+.phase{flex:1;text-align:center;position:relative;font-size:11px;opacity:.45}
+.phase::before{content:'';position:absolute;top:5px;left:-50%;width:100%;height:2px;background:var(--border);z-index:0}
+.phase:first-child::before{display:none}
+.phase .dot{display:block;width:12px;height:12px;border-radius:50%;background:var(--card);border:2px solid var(--border);margin:0 auto 6px;position:relative;z-index:1}
+.phase.done{opacity:.8}.phase.done .dot{background:var(--accent);border-color:var(--accent)}.phase.done::before{background:var(--accent)}
+.phase.cur{opacity:1;font-weight:700}.phase.cur .dot{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}.phase.cur::before{background:var(--accent)}
+
+.ms-row{display:flex;gap:14px;cursor:pointer;padding:4px 8px;border-radius:8px}
+.ms-rail{display:flex;flex-direction:column;align-items:center;padding-top:4px}
+.ms-dot{width:14px;height:14px;border-radius:50%;border:2px solid;flex-shrink:0}
+.ms-line{flex:1;width:2px;background:var(--border);margin-top:4px}
+
+.file-preview{display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px dashed var(--border);border-radius:10px;padding:34px 10px;margin-bottom:14px;background:var(--hover)}
+
+.side-drawer{position:fixed;right:0;top:0;bottom:0;width:460px;max-width:92vw;background:var(--card);border-left:1px solid var(--border);z-index:499;box-shadow:-4px 0 24px rgba(0,0,0,.15);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .2s ease;color:var(--text)}
+.side-drawer.open{transform:translateX(0)}
+.side-drawer-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start}
+.side-drawer-body{padding:16px 20px 40px;overflow-y:auto;flex:1}
+.side-drawer-scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:498;opacity:0;pointer-events:none;transition:opacity .2s}
+.side-drawer-scrim.open{opacity:1;pointer-events:auto}
+
+.chat-layout{height:min(560px,calc(100vh - 270px));min-height:360px}
+.chat-list-item{display:block}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.timeline-note{font-size:11.5;opacity:.5}
+.wl-content{padding-bottom:90px}
+.proto-panel .btn{margin:0 6px 6px 0}
+.proto-note{font-size:11.5px;opacity:.55;margin:0 0 8px;line-height:1.5}
+@media (max-width:860px){.grid-2,.grid-3,.grid-stat-4{grid-template-columns:1fr!important}.chat-layout{grid-template-columns:1fr}.chat-sidebar{max-height:180px}}
+.mention{display:inline-block;padding:0 5px;border-radius:4px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.proto-log{font-size:11.5px;opacity:.75;padding:4px 0;border-bottom:1px solid var(--border)}
+.otp-input::placeholder{opacity:.22;font-weight:600}
+
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
+
+<script type="text/babel">
+// Rebuilt against the Client Portal Prototype Functional Specification. Invoices are unchanged.
+const { useState, useEffect, useRef } = React;
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+let _toastFn = null;
+const toast = (msg) => { if (_toastFn) _toastFn(msg); };
+const ToastHost = () => {
+  const [items, setItems] = useState([]);
+  useEffect(() => {
+    _toastFn = (msg) => {
+      const id = Date.now() + Math.random();
+      setItems(v => [...v, { id, msg }]);
+      setTimeout(() => setItems(v => v.filter(x => x.id !== id)), 3200);
+    };
+    return () => { _toastFn = null; };
+  }, []);
+  return <div className="toast-host">{items.map(t => <div key={t.id} className="toast">{t.msg}</div>)}</div>;
+};
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+// Same prototype "today" as the admin side, so dates line up across both prototypes.
+const TODAY = '2026-06-02';
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtDate = (iso, fallback='Not set') => {
+  if (!iso) return fallback;
+  const [y,m,d] = iso.split('-').map(Number);
+  return `${MONTHS[m-1]} ${d}, ${y}`;
+};
+const daysFromToday = (iso) => Math.round((new Date(iso+'T00:00:00') - new Date(TODAY+'T00:00:00')) / 86400000);
+const dueLabel = (iso) => { const d = daysFromToday(iso); return d<0 ? `${-d} day${d===-1?'':'s'} overdue` : d===0 ? 'Due today' : d===1 ? 'Due tomorrow' : `Due in ${d} days`; };
+const uid = (p='id') => p + Math.random().toString(36).slice(2,8);
+const initialsFromName = (name) => (name||'').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?';
+// "@First Last" in a message is shown as a mention chip.
+const renderMentions = (text) => String(text).split(/(@[A-Z][a-z]+ [A-Z][a-z]+)/g).map((p,i) => /^@[A-Z]/.test(p) ? <span key={i} className="mention">{p}</span> : p);
+const fmtEstimate = (e) => !e ? null : [e.hours!=null && e.hours!=='' ? `${e.hours} hours` : null, e.cost!=null && e.cost!=='' ? `$${Number(e.cost).toLocaleString()}` : null].filter(Boolean).join(' · ') || null;
+
+// ─── ROLES — Client Admin / Client Member / Client Viewer (spec 2.1) ───────────
+const ROLES = {
+  admin:  { label:'Client Admin',  tag:'tag-purple', can:{ view:true, comment:true, upload:true, submitCR:true, approve:true, manageUsers:true },
+            summary:'You can view your projects, comment, upload files, submit change requests and approve items. You can manage colleagues if your account manager enables it.' },
+  member: { label:'Client Member', tag:'tag-blue', can:{ view:true, comment:true, upload:true, submitCR:true, approve:false, manageUsers:false },
+            summary:'You can view your projects, comment, upload files and submit change requests. Approvals are made by a Client Admin.' },
+  viewer: { label:'Client Viewer', tag:'tag-gray', can:{ view:true, comment:false, upload:false, submitCR:false, approve:false, manageUsers:false },
+            summary:'You have read-only access to project information, milestones, tasks and files.' },
+};
+const CAPABILITIES = [
+  ['view','View assigned projects, milestones, tasks and files'],
+  ['comment','Comment and reply in discussions'],
+  ['upload','Upload files (where the project allows it)'],
+  ['submitCR','Submit and follow change requests'],
+  ['approve','Approve items or request changes'],
+  ['manageUsers','Manage users in your organization'],
+];
+
+const ORG = { id:1, name:'Brandbase' };
+const OPERATOR = 'Ceydigital';
+
+const PROJECT_STATUS = { on_track:'On track', at_risk:'At risk', on_hold:'On hold', completed:'Completed' };
+const PHASES = ['Discovery','Design','Development','UAT','Deployment'];
+const FILE_CATEGORIES = ['Proposal','Requirements','Agreement','Design','Report','Deliverable','Supporting Document','Other'];
+const CLIENT_TASK_STATUS = { todo:'Not started', in_progress:'In progress', done:'Done' };
+
+// ─── DUMMY DATA — the Brandbase slice of the admin prototype, client-visible items only ──
+// Internal-only items, internal comments, internal notes, assignees and draft approvals are never part of this data set.
+
+const ORG_USERS_SEED = [
+  { id:1, name:'Alex Chen', email:'alex@brandbase.com', phone:'+1 415 555 0142', jobTitle:'Creative Director', initials:'AC', color:'#1677ff', role:'admin', status:'Active' },
+  { id:2, name:'Jamie Wu', email:'jamie@brandbase.com', phone:'', jobTitle:'Marketing Manager', initials:'JW', color:'#13c2c2', role:'member', status:'Active' },
+  { id:3, name:'Sam Okafor', email:'sam@brandbase.com', phone:'', jobTitle:'Finance Lead', initials:'SO', color:'#fa8c16', role:'viewer', status:'Active' },
+  { id:4, name:'Taylor Reed', email:'taylor@brandbase.com', phone:'', jobTitle:'', initials:'TR', color:'#722ed1', role:'member', status:'Invited' },
+];
+const ASSIGN_SEED = { 1:[1,7], 2:[1,7], 3:[1], 4:[7] };
+
+const PROJECTS_SEED = [
+  { id:1, name:'Brandbase Website Relaunch', color:'#ff4d4f', portalEnabled:true, status:'at_risk', phase:'Development', progress:54, start:'2026-03-03', due:'2026-07-08', allowUploads:true,
+    contact:{ name:'Kasun Fernando', title:'Project Lead', email:'kasun@ceydigital.com' },
+    summary:'A full redesign and relaunch of the Brandbase marketing site: new information architecture, visual design and a CMS your team can run without developers.' },
+  { id:7, name:'Brandbase Q3 Content Refresh', color:'#722ed1', portalEnabled:true, status:'on_track', phase:'Discovery', progress:12, start:'2026-05-18', due:null, allowUploads:true,
+    contact:{ name:'Priya R.', title:'Content Lead', email:'priya@ceydigital.com' },
+    summary:'Refreshing twelve key pages and a new editorial calendar for Q3.' },
+];
+
+const UPDATES_SEED = [
+  { id:'u1', projectId:1, author:'Kasun F.', date:'2026-05-29', text:'Homepage wireframe v3 is ready for your review. We have sent an approval request. The CMS build moved by a few days, but the launch date is unchanged.' },
+  { id:'u2', projectId:1, author:'Kasun F.', date:'2026-05-20', text:'Brand Guidelines v3 is uploaded to Files. Design system work starts once the wireframes are approved.' },
+  { id:'u3', projectId:7, author:'Priya R.', date:'2026-05-29', text:'Content audit is complete. The editorial calendar draft is with you for approval.' },
+];
+
+const MILESTONES_SEED = [
+  { id:1, projectId:1, name:'Discovery & brand audit', description:'Stakeholder interviews and an audit of the current site.', target:'2026-03-20', completed:'2026-03-18', status:'completed', visibility:'client', completionNote:'Audit findings were shared in the kickoff deck.', taskIds:[108], fileIds:[4] },
+  { id:2, projectId:1, name:'Site architecture & wireframes', description:'Sitemap and page-level wireframes for your sign-off.', target:'2026-06-10', completed:null, status:'in_progress', visibility:'client', completionNote:'', taskIds:[102], fileIds:[2] },
+  { id:3, projectId:1, name:'Visual design & design system', description:'High-fidelity designs and a reusable component library.', target:'2026-06-24', completed:null, status:'upcoming', visibility:'client', completionNote:'', taskIds:[], fileIds:[1] },
+  { id:4, projectId:1, name:'Development & CMS build', description:'Front-end build and CMS configuration.', target:'2026-06-30', completed:null, status:'delayed', visibility:'client', completionNote:'', taskIds:[], fileIds:[] },
+  { id:5, projectId:1, name:'UAT & content migration', description:'Your team tests the site while we migrate content.', target:'2026-07-03', completed:null, status:'upcoming', visibility:'client', completionNote:'', taskIds:[106,107], fileIds:[] },
+  { id:6, projectId:1, name:'Launch', description:'Go-live and post-launch monitoring.', target:'2026-07-08', completed:null, status:'upcoming', visibility:'client', completionNote:'' },
+  { id:8, projectId:7, name:'Content audit', description:'Inventory and quality review of the twelve key pages.', target:'2026-05-30', completed:'2026-05-29', status:'completed', visibility:'client', completionNote:'Audit complete: eight pages need rewrites, four need light edits.' },
+  { id:9, projectId:7, name:'Editorial calendar approved', description:'Q3 calendar of articles and publishing dates.', target:'2026-06-12', completed:null, status:'in_progress', visibility:'client', completionNote:'', taskIds:[109], fileIds:[7] },
+  { id:10, projectId:7, name:'First six articles published', description:'First batch of articles live on the site.', target:'2026-06-30', completed:null, status:'upcoming', visibility:'client', completionNote:'' },
+];
+
+const TASKS_SEED = [
+  { id:101, projectId:1, title:'Landing page copy', desc:'Final copy for the homepage and the key landing pages.', status:'in_progress', due:'2026-06-05', visibility:'client', fileIds:[3] },
+  { id:102, projectId:1, title:'Homepage wireframe (v3)', desc:'Third round of the homepage wireframe, with your navigation feedback applied.', status:'in_progress', due:'2026-06-04', visibility:'client', fileIds:[2] },
+  { id:106, projectId:1, title:'Homepage quality review', desc:'We test the homepage across browsers and devices before it goes to UAT.', status:'todo', due:'2026-06-18', visibility:'client' },
+  { id:107, projectId:1, title:'Content migration plan', desc:'Plan for moving your existing pages and posts into the new CMS.', status:'todo', due:'2026-06-12', visibility:'client' },
+  { id:108, projectId:1, title:'Kickoff workshop', desc:'Half-day workshop to align on goals, audience and success measures.', status:'done', due:'2026-05-06', visibility:'client' },
+  { id:109, projectId:7, title:'Q3 editorial calendar', desc:'Calendar of articles and publishing dates for the quarter.', status:'in_progress', due:'2026-06-05', visibility:'client', fileIds:[7] },
+];
+
+const FILES_SEED = [
+  { id:1, projectId:1, name:'Brand Guidelines.pdf', category:'Design', visibility:'client', side:'internal', by:'Thakshila F.', date:'2026-05-28', size:'2.6 MB', version:3, versions:3 },
+  { id:2, projectId:1, name:'Homepage Wireframe.fig', category:'Design', visibility:'client', side:'internal', by:'Nimesh S.', date:'2026-06-01', size:'8.1 MB', version:3, versions:3 },
+  { id:3, projectId:1, name:'Website Requirements.docx', category:'Requirements', visibility:'client', side:'client', by:'Alex Chen', date:'2026-05-05', size:'184 KB', version:1, versions:1 },
+  { id:4, projectId:1, name:'Statement of Work.pdf', category:'Agreement', visibility:'client', side:'internal', by:'Thakshila F.', date:'2026-03-04', size:'412 KB', version:1, versions:1 },
+  { id:7, projectId:7, name:'Q3 Editorial Calendar.xlsx', category:'Deliverable', visibility:'client', side:'internal', by:'Priya R.', date:'2026-05-29', size:'74 KB', version:2, versions:2 },
+];
+
+// Only client-visible messages exist here. Internal comments are never sent through the portal API.
+const THREADS_SEED = [
+  { id:'th1', projectId:1, ctx:{ type:'project', label:'General' }, readBy:[2,3],
+    messages:[
+      { id:'m1', author:'Alex Chen', side:'client', text:'Hi team, can we confirm the launch date is still July 8?', time:'Jun 1, 9:12 AM' },
+      { id:'m2', author:'Kasun F.', side:'team', text:'Yes, launch is still July 8. The CMS build moved by a few days, so we marked that milestone as delayed. Nothing changes for launch.', time:'Jun 1, 10:03 AM' },
+      { id:'m4', author:'Alex Chen', side:'client', text:'Thanks for the heads-up. Appreciate it.', time:'Jun 1, 10:40 AM' },
+      { id:'m4b', author:'Kasun F.', side:'team', text:'@Alex Chen the staging site is up if your team wants to click around before Friday.', time:'Jun 2, 8:30 AM' },
+    ] },
+  { id:'th2', projectId:1, ctx:{ type:'task', refId:101, label:'Task: Landing page copy' }, readBy:[1],
+    messages:[
+      { id:'m5', author:'Jamie Wu', side:'client', text:'Can the pricing page copy go into this batch too?', time:'Jun 2, 8:50 AM' },
+      { id:'m6', author:'Kasun F.', side:'team', text:'Pricing copy sits outside this batch. If you want it included, please raise a change request and we will estimate it.', time:'Jun 2, 9:20 AM' },
+    ] },
+  { id:'th3', projectId:1, ctx:{ type:'approval', refId:'AP-000123', label:'Approval: AP-000123' }, readBy:[1,2,3],
+    messages:[
+      { id:'m7', author:'Kasun F.', side:'team', text:'Wireframe v3 is ready. We applied your navigation feedback from round two.', time:'Jun 1, 4:12 PM' },
+      { id:'m8', author:'Alex Chen', side:'client', text:'Thanks, will review tomorrow morning.', time:'Jun 1, 5:01 PM' },
+    ] },
+  { id:'th4', projectId:1, ctx:{ type:'file', refId:3, label:'File: Website Requirements.docx' }, readBy:[1,2,3],
+    messages:[
+      { id:'m9', author:'Alex Chen', side:'client', text:'I uploaded the latest requirements, including the Spanish section we discussed.', time:'May 5, 3:30 PM' },
+      { id:'m10', author:'Kasun F.', side:'team', text:'Got it, thank you. We will review it against the SOW.', time:'May 5, 4:15 PM' },
+    ] },
+  { id:'th5', projectId:7, ctx:{ type:'project', label:'General' }, readBy:[1,2],
+    messages:[
+      { id:'m11', author:'Priya R.', side:'team', text:'The editorial calendar draft is ready for approval. Let me know if you want to move any articles.', time:'May 29, 2:35 PM' },
+      { id:'m12', author:'Jamie Wu', side:'client', text:'Looking good. Alex will send consolidated feedback.', time:'May 30, 11:20 AM' },
+    ] },
+  // Direct chats: no project. Only the user who started the chat and the team can see them.
+  { id:'th6', projectId:null, ownerId:1, ctx:{ type:'direct', label:'Invoice timing' }, readBy:[1],
+    messages:[
+      { id:'m13', author:'Alex Chen', side:'client', text:'Can you send the June invoice to our finance lead, Sam Okafor, as well?', time:'May 28, 1:05 PM' },
+      { id:'m14', author:'Kasun F.', side:'team', text:'Done. Sam is now on the invoice email list for Brandbase.', time:'May 28, 2:40 PM' },
+    ] },
+  { id:'th7', projectId:null, ownerId:2, ctx:{ type:'direct', label:'Access for a new teammate' }, readBy:[2],
+    messages:[
+      { id:'m15', author:'Jamie Wu', side:'client', text:'Taylor Reed joins our marketing team next week. Can you give Taylor access to the Q3 content project?', time:'May 27, 9:50 AM' },
+      { id:'m16', author:'Kasun F.', side:'team', text:'Yes. Taylor has been invited to the Q3 Content Refresh project.', time:'May 27, 11:15 AM' },
+    ] },
+];
+
+const APPROVAL_STATUS = { awaiting:'Awaiting Approval', approved:'Approved', changes_requested:'Changes Requested', cancelled:'Cancelled' };
+
+const APPROVALS_SEED = [
+  { id:'AP-000123', projectId:1, title:'Approve homepage wireframe v3', linked:{ type:'file', id:2, name:'Homepage Wireframe.fig', version:3 }, approverId:1, approver:'Alex Chen', instructions:'Please check the navigation labels and the order of the homepage sections. Comment on anything that looks off.', due:'2026-06-06', status:'awaiting', revision:1, requestedBy:'Kasun F.', decision:null,
+    history:[{ ts:'Jun 1, 4:10 PM', actor:'Kasun F.', text:'Requested approval of Homepage Wireframe v3' }] },
+  { id:'AP-000122', projectId:1, title:'Approve Brand Guidelines v2', linked:{ type:'file', id:1, name:'Brand Guidelines.pdf', version:2 }, approverId:1, approver:'Alex Chen', instructions:'Confirm the colour palette and logo usage rules.', due:'2026-04-09', status:'approved', revision:1, requestedBy:'Kasun F.',
+    decision:{ by:'Alex Chen', at:'Apr 8, 11:42 AM', outcome:'approved', comment:'Looks great. Approved.' },
+    history:[{ ts:'Apr 2, 3:05 PM', actor:'Kasun F.', text:'Requested approval of Brand Guidelines v2' }, { ts:'Apr 8, 11:42 AM', actor:'Alex Chen', text:'Approved Brand Guidelines v2: “Looks great. Approved.”' }] },
+  { id:'AP-000121', projectId:7, title:'Approve Q3 editorial calendar', linked:{ type:'milestone', id:9, name:'Editorial calendar approved', version:null }, approverId:1, approver:'Alex Chen', instructions:'Review the article order and publishing dates.', due:'2026-06-03', status:'changes_requested', revision:1, requestedBy:'Priya R.',
+    decision:{ by:'Alex Chen', at:'May 31, 9:20 AM', outcome:'changes_requested', comment:'Please move the pricing article before the case study and swap the dates for weeks 3 and 4.' },
+    history:[{ ts:'May 29, 2:30 PM', actor:'Priya R.', text:'Requested approval of Q3 editorial calendar' }, { ts:'May 31, 9:20 AM', actor:'Alex Chen', text:'Requested changes: “Please move the pricing article before the case study and swap the dates for weeks 3 and 4.”' }] },
+  { id:'AP-000126', projectId:1, title:'Approve kickoff workshop outcomes', linked:{ type:'task', id:108, key:'WL-229', name:'Kickoff workshop', version:null }, approverId:1, approver:'Alex Chen', instructions:'Confirm the goals and success measures we agreed in the workshop.', due:'2026-05-12', status:'approved', revision:1, requestedBy:'Kasun F.',
+    decision:{ by:'Alex Chen', at:'May 9, 10:15 AM', outcome:'approved', comment:'Matches what we agreed.' },
+    history:[{ ts:'May 7, 2:00 PM', actor:'Kasun F.', text:'Requested approval of Kickoff workshop' }, { ts:'May 9, 10:15 AM', actor:'Alex Chen', text:'Approved: “Matches what we agreed.” (Kickoff workshop, revision 1)' }] },
+  { id:'AP-000127', projectId:1, title:'Approve launch rollout approach', linked:{ type:'freeform', id:null, name:'Launch rollout approach', version:null, description:'Soft launch to your staff first, then the public launch one week later. Staging stays open for your testing in between.', snapshots:[{ rev:1, description:'Soft launch to your staff first, then the public launch one week later. Staging stays open for your testing in between.' }] }, approverId:1, approver:'Alex Chen', instructions:'Tell us if the one-week gap between the two launches works for your team.', due:'2026-06-05', status:'changes_requested', revision:1, requestedBy:'Kasun F.',
+    decision:{ by:'Alex Chen', at:'Jun 1, 9:40 AM', outcome:'changes_requested', comment:'Two weeks would suit our support team better.' },
+    history:[{ ts:'May 29, 11:00 AM', actor:'Kasun F.', text:'Requested approval of Launch rollout approach' }, { ts:'Jun 1, 9:40 AM', actor:'Alex Chen', text:'Requested changes: “Two weeks would suit our support team better.” (Launch rollout approach, revision 1)' }] },
+];
+
+const LINK_ICON = { file:'file-text', milestone:'flag', task:'check-square', freeform:'clipboard-check' };
+const LINK_TYPE_LABEL = { file:'File', milestone:'Milestone', task:'Task', freeform:'Details from your team' };
+// What a decision is recorded against: the file version, or the revision for items that have no versions.
+const decisionRef = (a) => a.linked.version ? `${a.linked.name} v${a.linked.version}` : `${a.linked.name}, revision ${a.revision}`;
+
+const CR_STATUS = { submitted:'Submitted', under_review:'Under Review', more_info:'More Information Required', approved:'Approved', rejected:'Rejected', in_progress:'In Progress', completed:'Completed', cancelled:'Cancelled' };
+
+const CRS_SEED = [
+  { id:10, crNo:'CR-0043', projectId:1, title:'Rebuild the site on a different CMS', requesterId:1, requester:'Alex Chen', priority:'High', submitted:'2026-04-20', status:'rejected',
+    description:'We are considering moving to a different CMS. Can the relaunch be built on it instead?', notes:'', attachments:[], estimate:null,
+    thread:[{ from:'team', author:'Kasun F.', text:'We cannot switch the CMS this late without moving the launch date by about eight weeks. We suggest revisiting after launch.', ts:'Apr 23' }],
+    timeline:[{ ts:'Apr 20', text:'Submitted' }, { ts:'Apr 23', text:'Rejected' }] },
+  { id:4, crNo:'CR-0044', projectId:1, title:'Update footer legal links', requesterId:2, requester:'Jamie Wu', priority:'Low', submitted:'2026-05-12', status:'completed',
+    description:'Update the footer links to the new privacy and terms pages.', notes:'', attachments:[], estimate:{ hours:1, cost:80 },
+    thread:[{ from:'team', author:'Kavindu K.', text:'Done and live on staging.', ts:'May 14' }],
+    timeline:[{ ts:'May 12', text:'Submitted' }, { ts:'May 13', text:'Approved' }, { ts:'May 14', text:'Completed' }] },
+  { id:5, crNo:'CR-0045', projectId:1, title:'Extend blog template with author pages', requesterId:1, requester:'Alex Chen', priority:'Medium', submitted:'2026-05-15', status:'in_progress',
+    description:'We would like each article to link to an author page with a bio and the author\'s other posts.', notes:'Authors: Alex, Jamie and two guest writers.', attachments:['Author-page-sketch.png'], estimate:{ hours:16, cost:1280 },
+    thread:[{ from:'team', author:'Kasun F.', text:'Approved. Work has started.', ts:'May 19' }],
+    timeline:[{ ts:'May 15', text:'Submitted' }, { ts:'May 18', text:'Approved' }, { ts:'May 19', text:'In progress' }] },
+  { id:6, crNo:'CR-0046', projectId:1, title:'Add testimonials carousel to the homepage', requesterId:1, requester:'Alex Chen', priority:'Low', submitted:'2026-05-26', status:'approved',
+    description:'A rotating carousel of customer testimonials on the homepage, below the hero.', notes:'We will provide six quotes with logos.', attachments:[], estimate:{ hours:12, cost:960 },
+    thread:[{ from:'team', author:'Kasun F.', text:'Approved. Estimated 12 hours. We will schedule it after the wireframe sign-off.', ts:'May 28' }],
+    timeline:[{ ts:'May 26', text:'Submitted' }, { ts:'May 28', text:'Approved' }] },
+  { id:7, crNo:'CR-0047', projectId:1, title:'Integrate newsletter signup with Mailchimp', requesterId:2, requester:'Jamie Wu', priority:'Medium', submitted:'2026-05-29', status:'more_info',
+    description:'Add a newsletter signup form in the footer that sends subscribers to our Mailchimp audience.', notes:'', attachments:[], estimate:null,
+    thread:[{ from:'team', author:'Kavindu K.', text:'Which Mailchimp plan and audience will this connect to? And should we add a double opt-in step?', ts:'May 30' }],
+    timeline:[{ ts:'May 29', text:'Submitted' }, { ts:'May 30', text:'More information requested' }] },
+  { id:8, crNo:'CR-0048', projectId:1, title:'Add a Spanish language version of the site', requesterId:1, requester:'Alex Chen', priority:'High', submitted:'2026-06-01', status:'under_review',
+    description:'We are opening a Spanish-speaking market in Q3. We need the full site available in Spanish, with a language switcher.', notes:'Spanish copy will come from our agency in mid-June.', attachments:['Spanish-copy-draft.docx'], estimate:null,
+    thread:[], timeline:[{ ts:'Jun 1', text:'Submitted' }, { ts:'Jun 2', text:'Under review' }] },
+  { id:9, crNo:'CR-0049', projectId:1, title:'Add a cookie consent banner', requesterId:2, requester:'Jamie Wu', priority:'Medium', submitted:'2026-06-02', status:'submitted',
+    description:'Our legal team needs a cookie consent banner on the new site.', notes:'', attachments:[], estimate:null,
+    thread:[], timeline:[{ ts:'Jun 2', text:'Submitted' }] },
+];
+
+// `to` limits who receives it. A notification never carries internal-only content in its title or body.
+const NOTIFS_SEED = [
+  { id:'n1', type:'Approval', title:'New approval request', body:'Approve homepage wireframe v3 · due Jun 6', time:'Jun 1, 4:10 PM', unread:true, email:true, to:[1,2,3], route:{ page:'approvals', params:{ id:'AP-000123' } } },
+  { id:'n2', type:'Comment', title:'Kasun F. replied on Landing page copy', body:'Pricing copy sits outside this batch. If you want it included…', time:'Jun 2, 9:20 AM', unread:true, email:true, to:[1,2], route:{ page:'projects', params:{ id:1, tab:'discussions', thread:'th2' } } },
+  { id:'n3', type:'Change Request', title:'CR-0047 needs more information', body:'The team asked a question about Mailchimp.', time:'May 30, 3:10 PM', unread:true, email:true, to:[1,2], route:{ page:'change-requests', params:{ id:7 } } },
+  { id:'n4', type:'File', title:'New file shared', body:'Homepage Wireframe.fig (v3) in Brandbase Website Relaunch', time:'Jun 1, 3:58 PM', unread:false, email:false, to:[1,2,3], route:{ page:'projects', params:{ id:1, tab:'files', file:2 } } },
+  { id:'n5', type:'Milestone', title:'Milestone is now Delayed', body:'Development & CMS build · new target Jun 30', time:'May 28, 11:05 AM', unread:false, email:false, to:[1,2,3], route:{ page:'projects', params:{ id:1, tab:'milestones', ms:4 } } },
+  { id:'n6', type:'Project', title:'Project update from Kasun F.', body:'Homepage wireframe v3 is ready for your review.', time:'May 29, 5:00 PM', unread:false, email:false, to:[1,2,3], route:{ page:'projects', params:{ id:1 } } },
+  { id:'n8', type:'Comment', title:'Kasun F. mentioned you in General', body:'@Alex Chen the staging site is up if your team wants to click around…', time:'Jun 2, 8:30 AM', unread:true, email:true, to:[1], route:{ page:'projects', params:{ id:1, tab:'discussions', thread:'th1' } } },
+  { id:'n7', type:'Access', title:'You now have access to a project', body:'Brandbase Q3 Content Refresh', time:'May 12, 10:00 AM', unread:false, email:true, to:[1,2], route:{ page:'projects', params:{ id:7 } } },
+];
+const NOTIF_TYPES = ['Approval','Comment','File','Milestone','Project','Change Request','Access'];
+const NOTIF_ICON = { Approval:'clipboard-check', Comment:'message', File:'file-text', Milestone:'flag', Project:'briefcase', 'Change Request':'repeat', Access:'users' };
+
+const ACTIVITY_SEED = [
+  { id:'ac1', projectId:1, icon:'clipboard-check', text:'Kasun F. requested your approval: Approve homepage wireframe v3', time:'Jun 1, 4:10 PM', route:{ page:'approvals', params:{ id:'AP-000123' } } },
+  { id:'ac2', projectId:1, icon:'file-text', text:'Nimesh S. shared Homepage Wireframe.fig (v3)', time:'Jun 1, 3:58 PM', route:{ page:'projects', params:{ id:1, tab:'files', file:2 } }, ref:{ type:'file', id:2 } },
+  { id:'ac3', projectId:1, icon:'briefcase', text:'Kasun F. posted a project update', time:'May 29', route:{ page:'projects', params:{ id:1 } } },
+  { id:'ac4', projectId:7, icon:'flag', text:'Milestone completed: Content audit', time:'May 29', route:{ page:'projects', params:{ id:7, tab:'milestones', ms:8 } }, ref:{ type:'milestone', id:8 } },
+  { id:'ac5', projectId:1, icon:'flag', text:'Development & CMS build is now Delayed', time:'May 28', route:{ page:'projects', params:{ id:1, tab:'milestones', ms:4 } }, ref:{ type:'milestone', id:4 } },
+  { id:'ac6', projectId:1, icon:'file-text', text:'Thakshila F. shared Brand Guidelines.pdf (v3)', time:'May 28', route:{ page:'projects', params:{ id:1, tab:'files', file:1 } }, ref:{ type:'file', id:1 } },
+];
+
+const INITIAL_INVOICES = [
+  { id:'INV-042', amount:12600, status:'Paid', issued:'May 1, 2026', due:'May 15, 2026' },
+];
+
+// ─── OPERATOR CONFIG — what the internal team sets in Admin → Portal Settings ──
+const BRAND_COLORS = ['#1677ff','#722ed1','#52c41a','#faad14','#ff4d4f','#13c2c2'];
+const DEFAULT_BRANDING = { title:'Ceydigital Project Hub', color:'#1677ff', dark:false, logo:null };
+const DEFAULT_OP = { invoicesVisible:false, adminsInvite:false, adminsRemove:false,
+  emailTypes:{ Approval:true, Comment:true, File:false, Milestone:false, Project:false, 'Change Request':true, Access:true },
+  auth:{ magicLink:true, google:true, password:false } };
+
+// ─── PORTAL STATE — one place for everything the signed-in client can see or do ──
+
+const PortalCtx = React.createContext(null);
+const usePortal = () => React.useContext(PortalCtx);
+
+const PortalProvider = ({ userId, op, route, go, onRevoked, children }) => {
+  const [orgUsers, setOrgUsers] = useState(ORG_USERS_SEED);
+  const [assign, setAssign] = useState(ASSIGN_SEED);
+  const [projects, setProjects] = useState(PROJECTS_SEED);
+  const [updates, setUpdates] = useState(UPDATES_SEED);
+  const [milestones, setMilestones] = useState(MILESTONES_SEED);
+  const [tasks, setTasks] = useState(TASKS_SEED);
+  const [files, setFiles] = useState(FILES_SEED);
+  const [threads, setThreads] = useState(THREADS_SEED);
+  const [approvals, setApprovals] = useState(APPROVALS_SEED);
+  const [crs, setCrs] = useState(CRS_SEED);
+  const [notifs, setNotifs] = useState(NOTIFS_SEED);
+  const [activity, setActivity] = useState(ACTIVITY_SEED);
+  const [invoices] = useState(INITIAL_INVOICES);
+  const [prefs, setPrefs] = useState(() => Object.fromEntries(NOTIF_TYPES.map(t => [t, true])));
+  // What this client's actions write to the team's audit log (spec 16.2 to 16.5: "activity logged"). Shown in Prototype Controls.
+  const [clientLog, setClientLog] = useState([]);
+
+  const user = orgUsers.find(u => u.id===userId) || orgUsers[0];
+  const role = ROLES[user.role];
+  const can = role.can;
+  const myIds = assign[user.id] || [];
+  const myProjects = projects.filter(p => myIds.includes(p.id) && p.portalEnabled);
+  const myPids = myProjects.map(p => p.id);
+
+  const upd = (setter) => (id, patch) => setter(l => l.map(x => x.id===id ? { ...x, ...(typeof patch==='function' ? patch(x) : patch) } : x));
+  const updateThread = upd(setThreads), updateApproval = upd(setApprovals), updateCR = upd(setCrs), updateProject = upd(setProjects);
+
+  // Visibility is enforced in these selectors, never in the page components.
+  const msOf = (pid) => milestones.filter(m => m.projectId===pid && m.visibility==='client').sort((a,b) => a.target.localeCompare(b.target));
+  const tasksOf = (pid) => tasks.filter(t => t.projectId===pid && t.visibility==='client');
+  const filesOf = (pid) => files.filter(f => f.projectId===pid && f.visibility==='client');
+  const threadVisible = (t) => (t.ctx.type==='direct' ? t.ownerId===user.id : t.ctx.type==='task' ? tasks.some(x => x.id===t.ctx.refId && x.visibility==='client') : t.ctx.type==='file' ? files.some(x => x.id===t.ctx.refId && x.visibility==='client') : true);
+  const threadsOf = (pid) => threads.filter(t => t.projectId===pid && threadVisible(t));
+  const myApprovals = approvals.filter(a => myPids.includes(a.projectId));
+  const myCRs = crs.filter(c => myPids.includes(c.projectId));
+  const myNotifs = notifs.filter(n => n.to.includes(user.id));
+  const pendingApprovals = myApprovals.filter(a => a.status==='awaiting' && a.approverId===user.id && can.approve);
+  const infoNeeded = myCRs.filter(c => c.status==='more_info' && c.requesterId===user.id);
+  const unreadNotifs = myNotifs.filter(n => n.unread).length;
+  const unreadIn = (t) => !t.readBy.includes(user.id);
+  const myThreads = threads.filter(t => (t.projectId==null || myPids.includes(t.projectId)) && threadVisible(t));
+  const unreadThreads = myThreads.filter(unreadIn).length;
+
+  const refVisible = (ref) => !ref || (ref.type==='task' ? tasks.some(x => x.id===ref.id && x.visibility==='client')
+    : ref.type==='file' ? files.some(x => x.id===ref.id && x.visibility==='client')
+    : ref.type==='milestone' ? milestones.some(x => x.id===ref.id && x.visibility==='client') : true);
+  const notify = (n) => setNotifs(l => [{ id:uid('n'), time:'Just now', unread:true, to:[1,2,3], ...n, email:!!op.emailTypes[n.type] }, ...l]);
+  const logClient = (action, target) => setClientLog(l => [{ id:uid('lg'), who:user.name, action, target, time:'Just now' }, ...l].slice(0, 30));
+  const addActivity = (a) => setActivity(l => [{ id:uid('ac'), time:'Just now', ...a }, ...l]);
+  const markRead = (id, unread=false) => setNotifs(l => l.map(n => n.id===id ? { ...n, unread } : n));
+  const markAllRead = () => setNotifs(l => l.map(n => n.to.includes(user.id) ? { ...n, unread:false } : n));
+  const readThread = (id) => setThreads(l => l.map(t => t.id===id && !t.readBy.includes(user.id) ? { ...t, readBy:[...t.readBy, user.id] } : t));
+
+  const value = {
+    route, go, op, user, role, can, orgUsers, setOrgUsers, assign, setAssign, projects, setProjects, updateProject, updates, setUpdates,
+    milestones, setMilestones, tasks, setTasks, files, setFiles, threads, setThreads, updateThread, approvals, setApprovals, updateApproval,
+    crs, setCrs, updateCR, notifs, setNotifs, activity, setActivity, invoices, prefs, setPrefs, onRevoked,
+    myProjects, myPids, msOf, tasksOf, filesOf, threadsOf, threadVisible, myThreads, unreadThreads, myApprovals, myCRs, myNotifs, pendingApprovals, infoNeeded, unreadNotifs, unreadIn,
+    addActivity, markRead, markAllRead, readThread, refVisible, notify, clientLog, logClient,
+  };
+  return <PortalCtx.Provider value={value}>{children}</PortalCtx.Provider>;
+};
+
+// ─── ICONS ───────────────────────────────────────────────────────────────────
+const SVGS = {
+  grid:'M3 3h7v7H3z M14 3h7v7h-7z M14 14h7v7h-7z M3 14h7v7H3z',
+  building:'M3 9h18v12H3z M3 9V5a2 2 0 012-2h14a2 2 0 012 2v4 M9 21v-6h6v6',
+  mail:'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6',
+  receipt:'M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z M9 12h6 M9 16h6 M9 8h2',
+  message:'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
+  bell:'M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 01-3.46 0',
+  user:'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 3a4 4 0 100 8 4 4 0 000-8z',
+  users:'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M9 11a4 4 0 100-8 4 4 0 000 8z M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75',
+  moon:'M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z',
+  sun:'M12 1v2 M12 21v2 M4.22 4.22l1.42 1.42 M18.36 18.36l1.42 1.42 M1 12h2 M21 12h2 M4.22 19.78l1.42-1.42 M18.36 5.64l1.42-1.42 M12 6a6 6 0 100 12 6 6 0 000-12z',
+  globe:'M12 2a10 10 0 100 20 10 10 0 000-20z M2 12h20 M12 2a15.3 15.3 0 010 20 M12 2a15.3 15.3 0 000 20',
+  'log-out':'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4 M16 17l5-5-5-5 M21 12H9',
+  sliders:'M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6',
+  lock:'M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2z M7 11V7a5 5 0 0110 0v4',
+  'file-text':'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M9 13h6 M9 17h6 M9 9h1',
+  link:'M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71 M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71',
+  'bar-chart':'M12 20V10 M18 20V4 M6 20v-4',
+  'clipboard-check':'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2 M9 3h6v4H9z M9 14l2 2 4-4',
+  briefcase:'M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16',
+  repeat:'M17 1l4 4-4 4 M3 11V9a4 4 0 014-4h14 M7 23l-4-4 4-4 M21 13v2a4 4 0 01-4 4H3',
+  flag:'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z M4 22v-7',
+  folder:'M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z',
+  'check-square':'M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11',
+  download:'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10l5 5 5-5 M12 15V3',
+  upload:'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M17 8l-5-5-5 5 M12 3v12',
+  eye:'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 100 6 3 3 0 000-6z',
+  paperclip:'M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48',
+  calendar:'M19 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2z M16 2v4 M8 2v4 M3 10h18',
+  plus:'M12 5v14 M5 12h14',
+  x:'M18 6L6 18 M6 6l12 12',
+  check:'M20 6L9 17l-5-5',
+  shield:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+  clock:'M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z M12 6v6l4 2',
+  send:'M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z',
+  settings:'M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z',
+};
+const SvgIcon = ({ name, size=18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
+    <path d={SVGS[name] || SVGS.grid} />
+  </svg>
+);
+
+// ─── SHARED PRIMITIVES ───────────────────────────────────────────────────────
+const Av = ({ initials, color, size=30 }) => (
+  <span style={{ width:size, height:size, minWidth:size, borderRadius:'50%', background:color||'var(--accent)', color:'#fff', fontSize:size*.38, fontWeight:600, display:'inline-flex', alignItems:'center', justifyContent:'center' }}>{initials}</span>
+);
+
+const TAG_MAP = { Paid:'tag-green', Overdue:'tag-red', Pending:'tag-orange', Sent:'tag-blue', Draft:'tag-gray',
+  High:'tag-red', Medium:'tag-orange', Low:'tag-gray',
+  Active:'tag-green', Invited:'tag-orange',
+  'On track':'tag-green', 'At risk':'tag-orange', 'On hold':'tag-gray', Completed:'tag-green',
+  Upcoming:'tag-gray', 'In Progress':'tag-blue', 'In progress':'tag-blue', Delayed:'tag-orange', 'Not started':'tag-gray', Done:'tag-green',
+  'Awaiting Approval':'tag-orange', Approved:'tag-green', 'Changes Requested':'tag-red', Cancelled:'tag-gray',
+  Submitted:'tag-blue', 'Under Review':'tag-orange', 'More Information Required':'tag-red', Rejected:'tag-gray' };
+const Tag = ({ v, icon }) => <span className={`tag ${TAG_MAP[v]||'tag-gray'}`}>{icon && <SvgIcon name={icon} size={11}/>}{v}</span>;
+const RoleTag = ({ role }) => <span className={`tag ${ROLES[role].tag}`}>{ROLES[role].label}</span>;
+const MS_LABEL = { upcoming:'Upcoming', in_progress:'In Progress', completed:'Completed', delayed:'Delayed' };
+
+const Modal = ({ open, onClose, title, children, footer, width }) => {
+  if (!open) return null;
+  return (
+    <div className="modal-overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="modal-box" style={width ? { width } : undefined}>
+        <div className="modal-header"><h3>{title}</h3><button className="wl-icon-btn" onClick={onClose}>✕</button></div>
+        <div className="modal-body">{children}</div>
+        {footer && <div className="modal-footer">{footer}</div>}
+      </div>
+    </div>
+  );
+};
+
+const Banner = ({ kind='info', icon, children }) => (
+  <div className={`banner ${kind}`}>{icon && <span style={{ marginTop:1 }}><SvgIcon name={icon} size={15}/></span>}<div style={{ flex:1 }}>{children}</div></div>
+);
+const Progress = ({ value, color, width }) => (
+  <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:width||110 }}>
+    <div className="progress-bar" style={{ flex:1 }}><div className="fill" style={{ width:`${value}%`, background:color||'var(--accent)' }}></div></div>
+    <span style={{ fontSize:11.5, opacity:.6 }}>{value}%</span>
+  </div>
+);
+const PageHeader = ({ title, sub, children }) => (
+  <div className="page-header-row">
+    <div><h1 style={{ fontSize:22, fontWeight:700, margin:0 }}>{title}</h1>{sub && <p style={{ opacity:.5, fontSize:13, margin:'4px 0 0' }}>{sub}</p>}</div>
+    {children && <div style={{ display:'flex', gap:8, alignItems:'center' }}>{children}</div>}
+  </div>
+);
+const Stat = ({ label, value, color, sub, onClick }) => (
+  <div className="stat-card" style={{ cursor:onClick?'pointer':'default' }} onClick={onClick}>
+    <div className="label">{label}</div><div className="value" style={{ color:color||'var(--accent)' }}>{value}</div>
+    {sub && <div style={{ fontSize:11.5, opacity:.5, marginTop:4 }}>{sub}</div>}
+  </div>
+);
+const Field = ({ label, children, hint }) => (
+  <div className="form-group"><label className="form-label">{label}</label>{children}{hint && <div className="form-hint">{hint}</div>}</div>
+);
+const KV = ({ rows }) => (
+  <div>{rows.map(([k,v]) => (
+    <div key={k} style={{ display:'flex', justifyContent:'space-between', gap:12, padding:'7px 0', borderBottom:'1px solid var(--border)', fontSize:13 }}>
+      <span style={{ opacity:.55 }}>{k}</span><span style={{ fontWeight:600, textAlign:'right' }}>{v}</span>
+    </div>
+  ))}</div>
+);
+const Empty = ({ icon='folder', text, sub, action }) => (
+  <div className="card empty-state"><SvgIcon name={icon} size={30}/><div style={{ fontWeight:600 }}>{text}</div>{sub && <div style={{ fontSize:12.5, maxWidth:380 }}>{sub}</div>}{action}</div>
+);
+const LockedNote = ({ children }) => <div className="locked-note"><SvgIcon name="lock" size={12}/> {children}</div>;
+
+// What a client sees when a deep link points at something they can no longer reach. It never says whether the item exists.
+const Unavailable = ({ onBack, backLabel='Back to dashboard' }) => (
+  <div className="card empty-state" style={{ opacity:1 }}>
+    <SvgIcon name="lock" size={32}/>
+    <div style={{ fontWeight:700, fontSize:16 }}>This item isn't available</div>
+    <div style={{ fontSize:13, opacity:.65, maxWidth:420 }}>It may have been removed, or you may no longer have access to it. If you think this is a mistake, contact your project contact.</div>
+    <button className="btn btn-primary btn-sm" onClick={onBack}>{backLabel}</button>
+  </div>
+);
+
+const Drawer = ({ open, onClose, title, subtitle, children, footer, width=460 }) => (
+  <React.Fragment>
+    <div className={`side-drawer-scrim${open?' open':''}`} onClick={onClose}></div>
+    <div className={`side-drawer${open?' open':''}`} style={{ width }}>
+      <div className="side-drawer-head"><div><div style={{ fontWeight:700, fontSize:15 }}>{title}</div>{subtitle && <div style={{ fontSize:11.5, opacity:.5, marginTop:2 }}>{subtitle}</div>}</div><button className="wl-icon-btn" onClick={onClose}>✕</button></div>
+      <div className="side-drawer-body">{open && children}</div>
+      {footer && <div className="modal-footer">{footer}</div>}
+    </div>
+  </React.Fragment>
+);
+
+// ─── AUTH SCREENS ────────────────────────────────────────────────────────────
+const BrandLogo = ({ branding, size=32 }) => (
+  branding.logo
+    ? <img src={branding.logo} alt="" style={{ height:size, objectFit:'contain' }} />
+    : <div style={{ height:size, width:size, borderRadius:8, background:branding.color, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:size*.45 }}>
+        {branding.title.slice(0,1).toUpperCase()}
+      </div>
+);
+
+const SignInScreen = ({ branding, auth, returnTo, onSignIn, onGoInvite, onGoExpired, onGoInvalid, onGoEmailLink }) => {
+  const [showPw, setShowPw] = useState(false);
+  const authOptions = [auth.magicLink && 'Magic link', auth.google && 'Google sign-in', auth.password && 'Password'].filter(Boolean);
+  return (
+    <div className="auth-shell">
+      <div className="auth-card">
+        <div className="auth-logo-row"><BrandLogo branding={branding} /></div>
+        <div className="auth-title">{branding.title}</div>
+        <div className="auth-sub">Sign in to your client account</div>
+        {returnTo && <div className="auth-banner">🔗 <span>Sign in to open the item from your email. You will land on it right after.</span></div>}
+        <div className="form-group">
+          <label className="form-label">Email Address</label>
+          <div className="auth-input-wrap"><span className="pre-icon">✉</span><input className="form-input" placeholder="Email" defaultValue="alex@brandbase.com" /></div>
+        </div>
+        {auth.password && (
+          <div className="form-group">
+            <label className="form-label">Password</label>
+            <div className="auth-input-wrap">
+              <span className="pre-icon">🔒</span>
+              <input className="form-input" type={showPw?'text':'password'} placeholder="Password" defaultValue="••••••••" />
+              <button className="post-icon" onClick={()=>setShowPw(v=>!v)}>{showPw?'🙈':'👁'}</button>
+            </div>
+          </div>
+        )}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', margin:'2px 0 18px', fontSize:12.5 }}>
+          <label style={{ display:'flex', alignItems:'center', gap:6 }}><input type="checkbox" defaultChecked /> Remember me</label>
+          <a href="#" style={{ color:branding.color }} onClick={e=>e.preventDefault()}>Forgot password?</a>
+        </div>
+        <button className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'9px 0' }} onClick={onSignIn}>{auth.password ? 'Sign In' : 'Email me a sign-in link'}</button>
+        {authOptions.length>1 && <div style={{ fontSize:11, opacity:.5, textAlign:'center', margin:'12px 0 0' }}>or continue with {authOptions.filter(o=>o!=='Password').join(' / ')}</div>}
+        <div className="auth-note">
+          Access by invitation only. Contact your project contact for access.<br/>
+          <a href="#" style={{ color:branding.color }} onClick={e=>{ e.preventDefault(); onGoInvite(); }}>Have an invitation link? Preview it →</a><br/>
+          <a href="#" style={{ color:branding.color }} onClick={e=>{ e.preventDefault(); onGoExpired(); }}>Preview an expired invitation →</a><br/>
+          <a href="#" style={{ color:branding.color }} onClick={e=>{ e.preventDefault(); onGoInvalid(); }}>Preview an invalid or used invitation →</a><br/>
+          <a href="#" style={{ color:branding.color }} onClick={e=>{ e.preventDefault(); onGoEmailLink(); }}>Preview a link from an email notification →</a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Account activation is two steps: details, then a one-time code sent to the invited email address. The same flow applies to
+// every client user, whatever the role or organization (the first user of a new client organization included).
+const INVITEE = { name:'Taylor Reed', email:'taylor@brandbase.com', role:'member' };
+const OTP_LENGTH = 6, OTP_MINUTES = 10, OTP_MAX_TRIES = 5, OTP_RESEND_SECONDS = 30;
+const maskEmail = (e) => { const [l, d] = e.split('@'); return (l.length<=2 ? l[0]+'*' : l[0] + '*'.repeat(Math.min(l.length-2, 6)) + l[l.length-1]) + '@' + d; };
+const newOtp = () => String(Math.floor(100000 + Math.random()*900000));
+
+const AcceptInviteScreen = ({ branding, onAccept, onBackToSignIn }) => {
+  const [step, setStep] = useState('details');     // details | code
+  const [name, setName] = useState('');
+  const [pw, setPw] = useState(''); const [pw2, setPw2] = useState('');
+  const [code, setCode] = useState(null);          // the code "emailed" to the invited address; a new one replaces it
+  const [entry, setEntry] = useState('');
+  const [tries, setTries] = useState(0);
+  const [expired, setExpired] = useState(false);
+  const [wait, setWait] = useState(0);
+  const [error, setError] = useState('');
+  const ruleOk = pw.length>=8 && /[a-z]/.test(pw) && /[A-Z]/.test(pw) && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw);
+  const canSend = name.trim().length>0 && ruleOk && pw===pw2 && pw2.length>0;
+  const locked = tries>=OTP_MAX_TRIES;
+  useEffect(() => { if (wait<=0) return; const t = setTimeout(() => setWait(w => w-1), 1000); return () => clearTimeout(t); }, [wait]);
+
+  const send = (again) => {
+    setCode(newOtp()); setEntry(''); setTries(0); setExpired(false); setError(''); setWait(OTP_RESEND_SECONDS); setStep('code');
+    toast(again ? 'New code sent. The earlier code no longer works.' : `Code sent to ${maskEmail(INVITEE.email)}.`);
+  };
+  const verify = () => {
+    if (expired) { setError('This code has expired. Send a new code.'); return; }
+    if (locked) { setError('Too many incorrect codes. Send a new code.'); return; }
+    if (entry!==code) {
+      const n = tries+1; setTries(n);
+      setError(n>=OTP_MAX_TRIES ? 'Too many incorrect codes. Send a new code.' : `That code doesn't match. ${OTP_MAX_TRIES-n} attempt${OTP_MAX_TRIES-n===1?'':'s'} left.`);
+      return;
+    }
+    onAccept();
+  };
+  const canResend = wait<=0 || locked || expired;
+
+  return (
+    <div className="auth-shell">
+      <div className="auth-card">
+        <div className="auth-logo-row"><BrandLogo branding={branding} /></div>
+        <div className="auth-title">{branding.title}</div>
+
+        {step==='details' && <>
+          <div className="auth-sub">Activate your account</div>
+          <div className="auth-banner">ℹ️ <span>You've been invited to <b>{ORG.name}</b> as a <b>{ROLES[INVITEE.role].label}</b>. Set up your account to see the projects shared with you. Step 1 of 2.</span></div>
+          <div className="form-group"><label className="form-label">Full Name</label><input className="form-input" placeholder="Full Name" value={name} onChange={e=>setName(e.target.value)} /></div>
+          <div className="form-group"><label className="form-label">Email</label><input className="form-input" disabled value={INVITEE.email} style={{ opacity:.6 }} /></div>
+          <div className="form-group">
+            <label className="form-label">Create Password</label>
+            <input className="form-input" type="password" placeholder="Create Password" value={pw} onChange={e=>setPw(e.target.value)} />
+            <div className="form-hint">At least 8 characters, with uppercase and lowercase letters, a number and a special character.</div>
+          </div>
+          <div className="form-group"><label className="form-label">Confirm Password</label><input className="form-input" type="password" placeholder="Confirm Password" value={pw2} onChange={e=>setPw2(e.target.value)} /></div>
+          <button className="btn btn-primary" disabled={!canSend} style={{ width:'100%', justifyContent:'center', padding:'9px 0' }} onClick={()=>send(false)}>Send verification code</button>
+          <div className="form-hint" style={{ textAlign:'center', marginTop:8 }}>We email a one-time code to {maskEmail(INVITEE.email)} to confirm this address is yours.</div>
+          <div className="auth-note">Already have an account? <a href="#" style={{ color:branding.color }} onClick={e=>{ e.preventDefault(); onBackToSignIn(); }}>Sign In</a></div>
+        </>}
+
+        {step==='code' && <>
+          <div className="auth-sub">Verify your email</div>
+          <div className="auth-banner">✉️ <span>We sent a {OTP_LENGTH}-digit code to <b>{maskEmail(INVITEE.email)}</b>. It is valid for {OTP_MINUTES} minutes. Step 2 of 2.</span></div>
+          <div className="form-group">
+            <label className="form-label">Verification code</label>
+            <input className="form-input otp-input" inputMode="numeric" autoComplete="one-time-code" maxLength={OTP_LENGTH} placeholder="000000" value={entry}
+              style={{ fontSize:22, letterSpacing:10, textAlign:'center', fontWeight:700, borderColor:error ? '#ff4d4f' : undefined }}
+              onChange={e=>{ setEntry(e.target.value.replace(/\D/g, '').slice(0, OTP_LENGTH)); setError(''); }} onKeyDown={e=>{ if (e.key==='Enter' && entry.length===OTP_LENGTH) verify(); }} />
+            {error && <div className="form-hint" style={{ color:'#ff4d4f', opacity:1 }}>{error}</div>}
+          </div>
+          <button className="btn btn-primary" disabled={entry.length!==OTP_LENGTH} style={{ width:'100%', justifyContent:'center', padding:'9px 0', marginBottom:10 }} onClick={verify}>Verify and continue</button>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:12.5 }}>
+            <a href="#" style={{ color:branding.color }} onClick={e=>{ e.preventDefault(); setStep('details'); }}>← Back</a>
+            <button className="btn btn-default btn-sm" disabled={!canResend} onClick={()=>send(true)}>{canResend ? 'Resend code' : `Resend code in ${wait}s`}</button>
+          </div>
+          <div className="auth-note" style={{ marginTop:14 }}>The code goes to the address your invitation was sent to. To use a different address, ask your project contact.</div>
+
+          <div style={{ marginTop:16, border:'1px dashed var(--border)', borderRadius:8, padding:'10px 12px', background:'var(--hover)' }}>
+            <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:.6, textTransform:'uppercase', opacity:.55, marginBottom:6 }}>Prototype helper · the email arriving at {maskEmail(INVITEE.email)}</div>
+            <div style={{ fontSize:12 }}>Subject: Your {branding.title} verification code</div>
+            <div style={{ fontSize:12.5, margin:'4px 0 8px' }}>Your code is <b style={{ letterSpacing:2 }}>{code}</b>. It expires in {OTP_MINUTES} minutes. If you did not request it, ignore this email.</div>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              <button className="btn btn-default btn-sm" onClick={()=>setWait(0)}>Skip the resend wait</button>
+              <button className="btn btn-default btn-sm" onClick={()=>{ setExpired(true); toast(`${OTP_MINUTES} minutes passed. This code has expired.`); }}>Expire this code</button>
+            </div>
+          </div>
+        </>}
+      </div>
+    </div>
+  );
+};
+
+// Recovery flow (spec 16.1): the client asks for a new link and an authorized team member resends the invitation.
+const RecoveryRequest = () => {
+  const [asked, setAsked] = useState(false);
+  return asked
+    ? <div className="auth-banner" style={{ textAlign:'left', marginBottom:10 }}>✅ <span>Request sent. Your project contact resends the invitation from their side, and you get a new email with a fresh link.</span></div>
+    : <button className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'9px 0', marginBottom:10 }} onClick={()=>{ setAsked(true); toast('Request sent to your project contact.'); }}>Ask for a new invitation</button>;
+};
+
+const InviteExpiredScreen = ({ branding, onBackToSignIn }) => (
+  <div className="auth-shell">
+    <div className="auth-card" style={{ textAlign:'center' }}>
+      <div className="auth-logo-row"><BrandLogo branding={branding} /></div>
+      <div style={{ margin:'14px 0 6px', opacity:.6 }}><SvgIcon name="clock" size={34}/></div>
+      <div className="auth-title">This invitation has expired</div>
+      <div className="auth-sub" style={{ marginBottom:14 }}>Invitations are valid for 7 days. Ask your project contact for a new one.</div>
+      <RecoveryRequest/>
+      <button className="btn btn-default" style={{ width:'100%', justifyContent:'center', padding:'9px 0' }} onClick={onBackToSignIn}>Back to sign in</button>
+    </div>
+  </div>
+);
+
+const InviteInvalidScreen = ({ branding, onBackToSignIn }) => (
+  <div className="auth-shell">
+    <div className="auth-card" style={{ textAlign:'center' }}>
+      <div className="auth-logo-row"><BrandLogo branding={branding} /></div>
+      <div style={{ margin:'14px 0 6px', opacity:.6 }}><SvgIcon name="link" size={34}/></div>
+      <div className="auth-title">This invitation link isn't valid</div>
+      <div className="auth-sub" style={{ marginBottom:14 }}>It may have already been used, or a newer invitation replaced it. If you already set up your account, sign in instead.</div>
+      <button className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'9px 0', marginBottom:10 }} onClick={onBackToSignIn}>Go to sign in</button>
+      <RecoveryRequest/>
+    </div>
+  </div>
+);
+
+const AccessRevokedScreen = ({ branding, onBackToSignIn, onRestore }) => (
+  <div className="auth-shell">
+    <div className="auth-card" style={{ textAlign:'center' }}>
+      <div className="auth-logo-row"><BrandLogo branding={branding} /></div>
+      <div style={{ margin:'14px 0 6px', color:'#ff4d4f' }}><SvgIcon name="lock" size={34}/></div>
+      <div className="auth-title">Your access has been removed</div>
+      <div className="auth-sub" style={{ marginBottom:14 }}>Your request was blocked and you were signed out. Contact your project contact if you think this is a mistake.</div>
+      <button className="btn btn-default" style={{ width:'100%', justifyContent:'center', padding:'9px 0', marginBottom:10 }} onClick={onBackToSignIn}>Back to sign in</button>
+      <button className="btn btn-default btn-sm" style={{ borderStyle:'dashed' }} onClick={onRestore}>Prototype: restore my access</button>
+    </div>
+  </div>
+);
+
+// ─── SHELL: TOPNAV + SIDEBAR ─────────────────────────────────────────────────
+const LANGUAGES = ['English','Español','Français','Deutsch'];
+
+const NotifList = ({ items, onOpen, compact }) => (
+  <div>
+    {items.map(n => (
+      <div key={n.id} className="dropdown-item" style={{ display:'flex', gap:10, alignItems:'flex-start', whiteSpace:'normal', padding:'10px 14px', background:n.unread?'var(--accent-soft)':'transparent' }} onClick={()=>onOpen(n)}>
+        <span style={{ marginTop:2, color:'var(--accent)' }}><SvgIcon name={NOTIF_ICON[n.type]||'bell'} size={15}/></span>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:12.5, fontWeight:n.unread?700:500 }}>{n.title}</div>
+          <div style={{ fontSize:11.5, opacity:.6, marginTop:2 }}>{n.body}</div>
+          <div style={{ fontSize:10.5, opacity:.4, marginTop:3 }}>{n.type} · {n.time}</div>
+        </div>
+        {n.unread && <span style={{ width:7, height:7, borderRadius:'50%', background:'var(--accent)', marginTop:6 }}/>}
+      </div>
+    ))}
+  </div>
+);
+
+const TopNav = ({ branding, dark, setDark, onSignOut }) => {
+  const { route, go, user, myProjects, myNotifs, unreadNotifs, markRead } = usePortal();
+  const [open, setOpen] = useState(false);
+  const [bell, setBell] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const [lang, setLang] = useState('English');
+  const ref = useRef(null), bellRef = useRef(null);
+  useEffect(() => {
+    const close = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setLangOpen(false); }
+      if (bellRef.current && !bellRef.current.contains(e.target)) setBell(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
+  const inProject = route.page==='projects' && route.params.id;
+  const openNotif = (n) => { markRead(n.id); setBell(false); go(n.route.page, n.route.params); };
+
+  return (
+    <nav className="wl-topnav">
+      <a className="wl-logo" href="#" onClick={e=>{ e.preventDefault(); go('dashboard'); }}><BrandLogo branding={branding} size={26} /><span>{branding.title}</span></a>
+      <span className="org-chip" title="Your organization"><SvgIcon name="building" size={13}/> {ORG.name}</span>
+      {inProject && myProjects.length>1 && (
+        <select className="form-select" style={{ width:'auto', maxWidth:240, padding:'5px 8px', fontSize:12.5 }} value={route.params.id}
+          onChange={e=>go('projects', { id:Number(e.target.value), tab:route.params.tab })} title="Current project">
+          {myProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+      )}
+      <div className="wl-nav-right">
+        <div className="dropdown" ref={bellRef}>
+          <button className="wl-icon-btn" onClick={()=>setBell(v=>!v)} title="Notifications"><SvgIcon name="bell" size={18}/>{unreadNotifs>0 && <span className="wl-badge">{unreadNotifs}</span>}</button>
+          {bell && (
+            <div className="dropdown-menu" style={{ width:340, padding:0 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 14px', borderBottom:'1px solid var(--border)' }}>
+                <span style={{ fontWeight:700, fontSize:13 }}>Notifications</span>
+                <a href="#" style={{ fontSize:12, color:'var(--accent)' }} onClick={e=>{ e.preventDefault(); setBell(false); go('notifications'); }}>View all</a>
+              </div>
+              <div style={{ maxHeight:340, overflowY:'auto' }}>
+                {myNotifs.length ? <NotifList items={myNotifs.slice(0,5)} onOpen={openNotif}/> : <div style={{ padding:20, textAlign:'center', opacity:.5, fontSize:13 }}>You're all caught up.</div>}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="dropdown" ref={ref}>
+          <div style={{ cursor:'pointer' }} onClick={()=>setOpen(v=>!v)}><Av initials={user.initials} color={user.color} /></div>
+          {open && (
+            <div className="dropdown-menu">
+              <div style={{ padding:'8px 12px 10px', borderBottom:'1px solid var(--border)', marginBottom:4 }}>
+                <div style={{ fontWeight:600, fontSize:13 }}>{user.name}</div>
+                <div style={{ fontSize:11, opacity:.5, marginTop:2 }}>{user.email}</div>
+                <div style={{ marginTop:6 }}><RoleTag role={user.role}/></div>
+              </div>
+              <div className="dropdown-item" onClick={()=>setDark(v=>!v)}>
+                <span style={{ display:'flex', alignItems:'center', gap:8 }}><SvgIcon name={dark?'sun':'moon'} size={15}/> {dark?'Light Mode':'Dark Mode'}</span>
+              </div>
+              <div style={{ position:'relative' }}>
+                <div className="dropdown-item" onClick={()=>setLangOpen(v=>!v)}>
+                  <span style={{ display:'flex', alignItems:'center', gap:8 }}><SvgIcon name="globe" size={15}/> Language</span>
+                  <span style={{ fontSize:11.5, opacity:.5 }}>{lang} ▾</span>
+                </div>
+                {langOpen && (
+                  <div style={{ background:'var(--hover)', borderRadius:7, margin:'2px 6px 6px', overflow:'hidden' }}>
+                    {LANGUAGES.map(l => <div key={l} className="dropdown-item" style={{ borderRadius:0, fontSize:12.5 }} onClick={()=>{ setLang(l); setLangOpen(false); toast(`Language set to ${l} (display copy unchanged in this prototype).`); }}>{l}{l===lang && ' ✓'}</div>)}
+                  </div>
+                )}
+              </div>
+              <div className="dropdown-item" onClick={()=>{ go('account'); setOpen(false); }}>
+                <span style={{ display:'flex', alignItems:'center', gap:8 }}><SvgIcon name="user" size={15}/> Account</span>
+              </div>
+              <div className="dropdown-divider"></div>
+              <div className="dropdown-item" onClick={()=>{ setOpen(false); onSignOut(); }}>
+                <span style={{ display:'flex', alignItems:'center', gap:8 }}><SvgIcon name="log-out" size={15}/> Sign out</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+const Sidebar = () => {
+  const { route, go, op, pendingApprovals, infoNeeded, unreadNotifs, unreadThreads } = usePortal();
+  const items = [
+    { key:'dashboard', label:'Dashboard', icon:'bar-chart' },
+    { key:'projects', label:'Projects', icon:'briefcase' },
+    { key:'discussions', label:'Discussions', icon:'message', badge:unreadThreads },
+    { key:'approvals', label:'Approvals', icon:'clipboard-check', badge:pendingApprovals.length },
+    { key:'change-requests', label:'Change Req.', icon:'repeat', badge:infoNeeded.length },
+    ...(op.invoicesVisible ? [{ key:'invoices', label:'Invoices', icon:'receipt' }] : []),
+    { key:'notifications', label:'Notifications', icon:'bell', badge:unreadNotifs },
+    { key:'account', label:'Account', icon:'user' },
+  ];
+  return (
+    <aside className="wl-sidebar">
+      {items.map(item => (
+        <button key={item.key} className={`wl-sidebar-item${route.page===item.key?' active':''}`} onClick={()=>go(item.key)}>
+          <span className="icon"><SvgIcon name={item.icon} size={19}/></span>
+          <span className="label">{item.label}</span>
+          {item.badge>0 && <span className="badge">{item.badge}</span>}
+        </button>
+      ))}
+    </aside>
+  );
+};
+
+// ─── INVOICES ────────────────────────────────────────────────────────────────
+
+const Invoices = ({ invoices }) => {
+  const [openId, setOpenId] = useState(null);
+  const open = invoices.find(i=>i.id===openId);
+  return (
+    <div>
+      <div className="page-header"><h1>Invoices</h1><p>View and manage your invoices and payments.</p></div>
+      {invoices.length===0 ? (
+        <div className="card empty-state"><div className="icon-big">🧾</div><div>No invoices yet</div></div>
+      ) : (
+        <div className="card" style={{ padding:0 }}>
+          <table className="wl-table"><thead><tr><th>Invoice</th><th>Amount</th><th>Status</th><th>Issued</th><th>Due</th><th></th></tr></thead>
+          <tbody>{invoices.map(i => (
+            <tr key={i.id}>
+              <td style={{ color:'var(--accent)', fontWeight:600 }}>{i.id}</td>
+              <td>${i.amount.toLocaleString()}</td><td><Tag v={i.status} /></td>
+              <td style={{ fontSize:12, opacity:.6 }}>{i.issued}</td><td style={{ fontSize:12, opacity:.6 }}>{i.due}</td>
+              <td><button className="btn btn-default btn-sm" onClick={()=>setOpenId(i.id)}>View</button></td>
+            </tr>
+          ))}</tbody></table>
+        </div>
+      )}
+      <Modal open={!!open} onClose={()=>setOpenId(null)} title={open && open.id}
+        footer={<><button className="btn btn-default btn-sm" onClick={()=>window.print()}>Print</button><button className="btn btn-primary btn-sm" onClick={()=>toast('Invoice downloaded (prototype).')}>Download</button></>}>
+        {open && (<>
+          <div style={{ fontSize:13, marginBottom:10 }}><b>Brandbase</b><br/>123 Market St, San Francisco, CA</div>
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:13, marginBottom:14 }}><span>Amount</span><b>${open.amount.toLocaleString()}</b></div>
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:12.5, opacity:.6 }}><span>Issued {open.issued}</span><span>Due {open.due}</span></div>
+          <div style={{ marginTop:14 }}><Tag v={open.status} /></div>
+        </>)}
+      </Modal>
+    </div>
+  );
+};
+
+// ─── DASHBOARD (spec 5) — action-oriented summary of every project the user can access ──
+
+const dueTag = (iso) => { const d = daysFromToday(iso); return <span className={`tag ${d<0?'tag-red':d<=3?'tag-orange':'tag-gray'}`}>{dueLabel(iso)}</span>; };
+
+const Dashboard = () => {
+  const { user, role, can, myProjects, msOf, myApprovals, pendingApprovals, infoNeeded, activity, refVisible, myPids, go, op, invoices } = usePortal();
+  const upcoming = myProjects.flatMap(p => msOf(p.id).filter(m => m.status!=='completed').map(m => ({ ...m, project:p })))
+    .sort((a,b) => a.target.localeCompare(b.target)).slice(0,5);
+  const pending = [
+    ...pendingApprovals.map(a => ({ key:a.id, icon:'clipboard-check', title:a.title, sub:`${a.id} · ${(myProjects.find(p => p.id===a.projectId)||{}).name}`, due:a.due, tag:'Approve', cls:'tag-orange', go:()=>go('approvals', { id:a.id }) })),
+    ...infoNeeded.map(c => ({ key:c.crNo, icon:'repeat', title:c.title, sub:`${c.crNo} · Your team needs more information`, due:null, tag:'Reply', cls:'tag-red', go:()=>go('change-requests', { id:c.id }) })),
+  ];
+  const waiting = myApprovals.filter(a => a.status==='awaiting' && !pendingApprovals.includes(a));
+  const recent = activity.filter(a => myPids.includes(a.projectId) && refVisible(a.ref)).slice(0,6);
+  const activeCount = myProjects.filter(p => p.status!=='completed').length;
+  const unpaid = invoices.filter(i => i.status!=='Paid').reduce((s,i) => s+i.amount, 0);
+
+  if (myProjects.length===0) return (
+    <div>
+      <PageHeader title="Dashboard" sub={`Welcome, ${user.name.split(' ')[0]}.`}/>
+      <Empty icon="folder" text="No projects are shared with you yet" sub="When your project contact assigns you to a project, it appears here. Nothing from their workspace is shown until then."/>
+    </div>
+  );
+
+  return (
+    <div>
+      <PageHeader title="Dashboard" sub={`Welcome back, ${user.name.split(' ')[0]}. Here is where your projects stand.`}/>
+      <div className="grid-stat-4" style={{ gridTemplateColumns:`repeat(${op.invoicesVisible?4:3},1fr)` }}>
+        <Stat label="Active projects" value={activeCount}/>
+        <Stat label="Pending actions" value={pending.length} color={pending.length ? '#d46b08' : undefined} sub={pending.length ? 'Waiting on you' : 'Nothing waiting'}/>
+        <Stat label="Upcoming milestones" value={upcoming.length} color="#52c41a" sub={upcoming[0] ? `Next: ${fmtDate(upcoming[0].target)}` : undefined}/>
+        {op.invoicesVisible && <Stat label="Unpaid amount" value={'$'+unpaid.toLocaleString()} onClick={()=>go('invoices')}/>}
+      </div>
+
+      <div className="grid-2" style={{ marginBottom:16 }}>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Needs your action{pending.length>0 && <span className="count-dot">{pending.length}</span>}</span></div>
+          {pending.map(p => (
+            <div key={p.key} className="action-row" onClick={p.go}>
+              <span style={{ color:'#d46b08' }}><SvgIcon name={p.icon} size={17}/></span>
+              <div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:13, fontWeight:600 }}>{p.title}</div><div style={{ fontSize:11.5, opacity:.55 }}>{p.sub}</div></div>
+              {p.due && dueTag(p.due)}<span className={`tag ${p.cls}`}>{p.tag}</span>
+            </div>
+          ))}
+          {pending.length===0 && <div style={{ fontSize:13, opacity:.55, padding:'6px 0' }}>{can.approve ? 'You are all caught up.' : 'Nothing needs your action. Only a Client Admin can approve items.'}</div>}
+          {waiting.length>0 && (
+            <div style={{ marginTop:10, paddingTop:10, borderTop:'1px solid var(--border)' }}>
+              <div style={{ fontSize:11, fontWeight:700, opacity:.45, letterSpacing:.5, marginBottom:4 }}>WAITING ON SOMEONE ELSE</div>
+              {waiting.map(a => <div key={a.id} className="action-row" onClick={()=>go('approvals', { id:a.id })}><span style={{ opacity:.5 }}><SvgIcon name="clipboard-check" size={16}/></span><div style={{ flex:1, fontSize:12.5 }}>{a.title}<div style={{ fontSize:11, opacity:.5 }}>Waiting for {a.approver}</div></div><Tag v="Awaiting Approval"/></div>)}
+            </div>
+          )}
+        </div>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Upcoming milestones</span></div>
+          {upcoming.map(m => (
+            <div key={m.id} className="action-row" onClick={()=>go('projects', { id:m.projectId, tab:'milestones', ms:m.id })}>
+              <span style={{ color:m.status==='delayed' ? '#d46b08' : 'var(--accent)' }}><SvgIcon name="flag" size={16}/></span>
+              <div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:13, fontWeight:600 }}>{m.name}</div><div style={{ fontSize:11.5, opacity:.55 }}>{m.project.name}</div></div>
+              <div style={{ textAlign:'right' }}><div style={{ fontSize:12.5 }}>{fmtDate(m.target)}</div><Tag v={MS_LABEL[m.status]}/></div>
+            </div>
+          ))}
+          {upcoming.length===0 && <div style={{ fontSize:13, opacity:.55 }}>No upcoming milestones are shared with you.</div>}
+        </div>
+      </div>
+
+      <div className="card-title" style={{ fontSize:14, margin:'18px 0 10px' }}>Your projects</div>
+      <div className="project-grid">
+        {myProjects.map(p => {
+          const nm = msOf(p.id).filter(m => m.status!=='completed')[0];
+          return (
+            <div key={p.id} className="card project-card" onClick={()=>go('projects', { id:p.id })}>
+              <div style={{ display:'flex', justifyContent:'space-between', gap:8, alignItems:'flex-start' }}>
+                <div style={{ fontWeight:700, fontSize:14 }}>{p.name}</div><Tag v={PROJECT_STATUS[p.status]}/>
+              </div>
+              <div style={{ margin:'12px 0' }}><Progress value={p.progress} color={p.color} width={0}/></div>
+              <KV rows={[['Current phase', p.phase], ['Next milestone', nm ? nm.name : '—'], ['Expected completion', fmtDate(p.due)]]}/>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="card" style={{ marginTop:16 }}>
+        <div className="card-header"><span className="card-title">Recent activity</span></div>
+        {recent.map(a => (
+          <div key={a.id} className="action-row" onClick={()=>go(a.route.page, a.route.params)}>
+            <span style={{ opacity:.55 }}><SvgIcon name={a.icon} size={15}/></span><div style={{ flex:1, fontSize:13 }}>{a.text}</div><span style={{ fontSize:11.5, opacity:.45 }}>{a.time}</span>
+          </div>
+        ))}
+        {recent.length===0 && <div style={{ fontSize:13, opacity:.55 }}>No recent activity.</div>}
+      </div>
+    </div>
+  );
+};
+
+// ─── PROJECTS LIST ───────────────────────────────────────────────────────────
+
+const ProjectsList = () => {
+  const { myProjects, msOf, myApprovals, myCRs, go, can } = usePortal();
+  if (myProjects.length===0) return (
+    <div><PageHeader title="Projects" sub="The projects your team has shared with you."/>
+      <Empty icon="folder" text="No projects are shared with you yet" sub="Your project contact assigns projects to you. They show up here as soon as they do."/></div>
+  );
+  return (
+    <div>
+      <PageHeader title="Projects" sub="The projects your team has shared with you."/>
+      <div className="card" style={{ padding:0 }}>
+        <div style={{ overflowX:'auto' }}>
+          <table className="wl-table">
+            <thead><tr><th>Project</th><th>Status</th><th>Phase</th><th>Progress</th><th>Expected completion</th><th>Project contact</th><th>Open items</th><th></th></tr></thead>
+            <tbody>
+              {myProjects.map(p => {
+                const open = myApprovals.filter(a => a.projectId===p.id && a.status==='awaiting').length + myCRs.filter(c => c.projectId===p.id && ['submitted','under_review','more_info'].includes(c.status)).length;
+                return (
+                  <tr key={p.id} style={{ cursor:'pointer' }} onClick={()=>go('projects', { id:p.id })}>
+                    <td style={{ color:'var(--accent)', fontWeight:600 }}>{p.name}</td>
+                    <td><Tag v={PROJECT_STATUS[p.status]}/></td><td style={{ fontSize:12.5 }}>{p.phase}</td>
+                    <td><Progress value={p.progress} color={p.color}/></td>
+                    <td style={{ fontSize:12.5 }}>{fmtDate(p.due)}</td><td style={{ fontSize:12.5 }}>{p.contact.name}</td>
+                    <td>{open>0 ? <span className="tag tag-orange">{open}</span> : <span style={{ opacity:.35 }}>—</span>}</td>
+                    <td><button className="btn btn-default btn-sm" onClick={()=>go('projects', { id:p.id })}>Open</button></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── PROJECT WORKSPACE: Overview · Milestones · Tasks · Files · Discussions ──
+
+const P_TABS = [['overview','Overview'],['milestones','Milestones'],['tasks','Tasks'],['files','Files'],['discussions','Discussions']];
+
+const ProjectWorkspace = ({ projectId, params }) => {
+  const { myProjects, go, threadsOf, unreadIn, role } = usePortal();
+  const [tab, setTab] = useState(params.tab || 'overview');
+  useEffect(() => { setTab(params.tab || 'overview'); }, [params.tab, projectId]);
+  const project = myProjects.find(p => p.id===projectId);
+  if (!project) return <Unavailable onBack={()=>go('projects')} backLabel="Back to projects"/>;
+  const unread = threadsOf(project.id).filter(unreadIn).length;
+  return (
+    <div>
+      <button className="btn btn-default btn-sm" style={{ marginBottom:14 }} onClick={()=>go('projects')}>← Projects</button>
+      <div className="page-header-row" style={{ marginBottom:14 }}>
+        <div><h1 style={{ fontSize:22, fontWeight:700, margin:0 }}>{project.name}</h1>
+          <p style={{ opacity:.5, fontSize:13, margin:'4px 0 0' }}>{project.phase} · Expected completion {fmtDate(project.due)}</p></div>
+        <div style={{ display:'flex', gap:8, alignItems:'center' }}><Tag v={PROJECT_STATUS[project.status]}/><span className="tag tag-blue">Your role: {role.label}</span></div>
+      </div>
+      <div className="section-tabs">
+        {P_TABS.map(([k,l]) => <button key={k} className={`section-tab${tab===k?' active':''}`} onClick={()=>{ setTab(k); go('projects', { id:project.id, tab:k }); }}>{l}{k==='discussions' && unread>0 && <span className="count-dot">{unread}</span>}</button>)}
+      </div>
+      {tab==='overview' && <OverviewTab project={project}/>}
+      {tab==='milestones' && <MilestonesTab project={project} params={params}/>}
+      {tab==='tasks' && <TasksTab project={project} params={params}/>}
+      {tab==='files' && <FilesTab project={project} params={params}/>}
+      {tab==='discussions' && <DiscussionsTab project={project} params={params}/>}
+    </div>
+  );
+};
+
+const OverviewTab = ({ project }) => {
+  const { updates, msOf, tasksOf, filesOf, threadsOf, unreadIn, myApprovals, myCRs, go } = usePortal();
+  const latest = updates.filter(u => u.projectId===project.id).sort((a,b) => b.date.localeCompare(a.date))[0];
+  const phaseIdx = PHASES.indexOf(project.phase);
+  const links = [
+    ['Milestones', msOf(project.id).length, 'milestones', 'flag'], ['Tasks', tasksOf(project.id).length, 'tasks', 'check-square'],
+    ['Files', filesOf(project.id).length, 'files', 'file-text'], ['Discussions', threadsOf(project.id).filter(unreadIn).length || threadsOf(project.id).length, 'discussions', 'message'],
+  ];
+  const pendingAp = myApprovals.filter(a => a.projectId===project.id && a.status==='awaiting').length;
+  const openCR = myCRs.filter(c => c.projectId===project.id && ['submitted','under_review','more_info'].includes(c.status)).length;
+  return (
+    <div style={{ display:'flex', gap:20, alignItems:'flex-start', flexWrap:'wrap' }}>
+      <div style={{ flex:'3 1 460px', minWidth:0 }}>
+        <div className="card" style={{ marginBottom:16 }}>
+          <div style={{ fontSize:13.5, lineHeight:1.6, marginBottom:16 }}>{project.summary}</div>
+          <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:6 }}><span style={{ fontSize:12, opacity:.55, width:70 }}>Progress</span><div style={{ flex:1 }}><Progress value={project.progress} color={project.color} width={0}/></div></div>
+          <div className="phase-track">
+            {PHASES.map((ph,i) => <div key={ph} className={`phase${i<phaseIdx?' done':i===phaseIdx?' cur':''}`}><span className="dot"/><span className="lbl">{ph}</span></div>)}
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Latest update</span></div>
+          {latest ? <><div style={{ fontSize:12, fontWeight:600 }}>{latest.author} <span style={{ fontWeight:400, opacity:.5, marginLeft:6 }}>{fmtDate(latest.date)}</span></div><div style={{ fontSize:13.5, marginTop:5, lineHeight:1.6 }}>{latest.text}</div></> : <div style={{ fontSize:13, opacity:.5 }}>No updates have been published yet.</div>}
+        </div>
+      </div>
+      <div style={{ flex:'2 1 260px', minWidth:240 }}>
+        <div className="card" style={{ marginBottom:16 }}>
+          <div className="card-header"><span className="card-title">Key dates</span></div>
+          <KV rows={[['Start', fmtDate(project.start)], ['Expected completion', fmtDate(project.due)], ['Status', PROJECT_STATUS[project.status]], ['Current phase', project.phase]]}/>
+        </div>
+        <div className="card" style={{ marginBottom:16 }}>
+          <div className="card-header"><span className="card-title">Project contact</span></div>
+          <div style={{ display:'flex', gap:10, alignItems:'center' }}><Av initials={initialsFromName(project.contact.name)} color={project.color} size={36}/>
+            <div><div style={{ fontWeight:600, fontSize:13 }}>{project.contact.name}</div><div style={{ fontSize:11.5, opacity:.55 }}>{project.contact.title}</div><div style={{ fontSize:11.5, color:'var(--accent)' }}>{project.contact.email}</div></div></div>
+        </div>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Quick links</span></div>
+          {links.map(([l,n,tab,icon]) => <div key={l} className="action-row" onClick={()=>go('projects', { id:project.id, tab })}><span style={{ opacity:.55 }}><SvgIcon name={icon} size={15}/></span><div style={{ flex:1, fontSize:13 }}>{l}</div><span style={{ fontSize:12, opacity:.5 }}>{n}</span></div>)}
+          <div className="action-row" onClick={()=>go('approvals')}><span style={{ opacity:.55 }}><SvgIcon name="clipboard-check" size={15}/></span><div style={{ flex:1, fontSize:13 }}>Approvals</div>{pendingAp>0 ? <span className="tag tag-orange">{pendingAp} pending</span> : <span style={{ fontSize:12, opacity:.5 }}>None pending</span>}</div>
+          <div className="action-row" onClick={()=>go('change-requests')}><span style={{ opacity:.55 }}><SvgIcon name="repeat" size={15}/></span><div style={{ flex:1, fontSize:13 }}>Change requests</div><span style={{ fontSize:12, opacity:.5 }}>{openCR} open</span></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MilestonesTab = ({ project, params }) => {
+  const { msOf, myApprovals, go, milestones, tasksOf, filesOf } = usePortal();
+  const list = msOf(project.id);
+  // Linked work is filtered by each item's own visibility. A hidden task or file is never listed or counted.
+  const linkedOf = (m) => ({
+    tasks:(m.taskIds||[]).map(id => tasksOf(project.id).find(t => t.id===id)).filter(Boolean),
+    files:(m.fileIds||[]).map(id => filesOf(project.id).find(f => f.id===id)).filter(Boolean),
+  });
+  const [open, setOpen] = useState(params.ms || null);
+  useEffect(() => { if (params.ms) setOpen(params.ms); }, [params.ms]);
+  const missing = params.ms && !list.some(m => m.id===params.ms);
+  const dot = { completed:'#52c41a', in_progress:'var(--accent)', delayed:'#faad14', upcoming:'var(--border)' };
+  return (
+    <div>
+      {missing && <Banner kind="warn" icon="lock">The milestone you opened isn't available. It may have been removed or you may no longer have access to it.</Banner>}
+      <div className="card">
+        {list.map((m,i) => {
+          const aps = myApprovals.filter(a => a.linked.type==='milestone' && a.linked.id===m.id);
+          const isOpen = open===m.id;
+          return (
+            <div key={m.id} className="ms-row" style={{ background: isOpen ? 'var(--hover)' : undefined }} onClick={()=>setOpen(isOpen ? null : m.id)}>
+              <div className="ms-rail"><span className="ms-dot" style={{ background:dot[m.status], borderColor:m.status==='upcoming'?'var(--text-sec)':dot[m.status] }}/>{i<list.length-1 && <span className="ms-line"/>}</div>
+              <div style={{ flex:1, minWidth:0, paddingBottom:14 }}>
+                <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap' }}><span style={{ fontWeight:600, fontSize:13.5 }}>{m.name}</span><Tag v={MS_LABEL[m.status]}/></div>
+                <div style={{ fontSize:12, opacity:.55, marginTop:3 }}>Target {fmtDate(m.target)}{m.completed && ` · Completed ${fmtDate(m.completed)}`}</div>
+                {m.description && <div style={{ fontSize:12.5, opacity:.8, marginTop:5 }}>{m.description}</div>}
+                {isOpen && (
+                  <div style={{ marginTop:10 }}>
+                    {m.completionNote && <div className="card card-sm" style={{ marginBottom:8 }}><div style={{ fontSize:11, opacity:.5, fontWeight:700, marginBottom:3 }}>COMPLETION NOTE</div><div style={{ fontSize:13 }}>{m.completionNote}</div></div>}
+                    {m.status==='delayed' && <div style={{ fontSize:12, opacity:.65, marginBottom:8 }}>The target date has moved. Your project contact can share more detail.</div>}
+                    {(() => { const lk = linkedOf(m); return (lk.tasks.length+lk.files.length)>0 && (
+                      <div style={{ marginBottom:8 }}>
+                        <div style={{ fontSize:11, opacity:.5, fontWeight:700, marginBottom:3 }}>LINKED WORK</div>
+                        {lk.tasks.map(t => <div key={'t'+t.id} className="action-row" onClick={e=>{ e.stopPropagation(); go('projects', { id:project.id, tab:'tasks', task:t.id }); }}><span style={{ opacity:.55 }}><SvgIcon name="check-square" size={15}/></span><div style={{ flex:1, fontSize:12.5 }}>{t.title}</div><Tag v={CLIENT_TASK_STATUS[t.status]}/></div>)}
+                        {lk.files.map(f => <div key={'f'+f.id} className="action-row" onClick={e=>{ e.stopPropagation(); go('projects', { id:project.id, tab:'files', file:f.id }); }}><span style={{ opacity:.55 }}><SvgIcon name="file-text" size={15}/></span><div style={{ flex:1, fontSize:12.5 }}>{f.name} <span style={{ opacity:.5 }}>v{f.version}</span></div></div>)}
+                      </div>
+                    ); })()}
+                    {aps.map(a => <div key={a.id} className="action-row" onClick={e=>{ e.stopPropagation(); go('approvals', { id:a.id }); }}><span style={{ opacity:.55 }}><SvgIcon name="clipboard-check" size={15}/></span><div style={{ flex:1, fontSize:12.5 }}>{a.id} · {a.title}</div><Tag v={APPROVAL_STATUS[a.status]}/></div>)}
+                    {!m.completionNote && aps.length===0 && m.status!=='delayed' && (() => { const lk = linkedOf(m); return (lk.tasks.length+lk.files.length)===0; })() && <div style={{ fontSize:12, opacity:.5 }}>Nothing more to share on this milestone yet.</div>}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        {list.length===0 && <div style={{ fontSize:13, opacity:.55 }}>No milestones are shared with you yet.</div>}
+      </div>
+    </div>
+  );
+};
+
+const TasksTab = ({ project, params }) => {
+  const { tasksOf, filesOf, threads, can, user, setThreads, addActivity, logClient } = usePortal();
+  const list = tasksOf(project.id);
+  const downloadAttachment = (f) => filesOf(project.id).some(x => x.id===f.id)
+    ? (toast(`Downloading ${f.name}…`), logClient('Client file downloaded', `File: ${f.name} (v${f.version})`))
+    : toast('Download denied. This file is no longer shared with you.');
+  const [openId, setOpenId] = useState(params.task || null);
+  useEffect(() => { if (params.task) setOpenId(params.task); }, [params.task]);
+  const open = list.find(t => t.id===openId);
+  const missing = params.task && !list.some(t => t.id===params.task);
+  const thread = open && threads.find(t => t.ctx.type==='task' && t.ctx.refId===open.id);
+  const [draft, setDraft] = useState('');
+  const send = () => {
+    if (!draft.trim()) return;
+    const msg = { id:uid('m'), author:user.name, side:'client', text:draft.trim(), time:'Just now' };
+    if (thread) setThreads(l => l.map(t => t.id===thread.id ? { ...t, messages:[...t.messages, msg], readBy:[user.id] } : t));
+    else setThreads(l => [{ id:uid('th'), projectId:project.id, ctx:{ type:'task', refId:open.id, label:`Task: ${open.title}` }, readBy:[user.id], messages:[msg] }, ...l]);
+    addActivity({ projectId:project.id, icon:'message', text:`You commented on ${open.title}`, route:{ page:'projects', params:{ id:project.id, tab:'tasks', task:open.id } }, ref:{ type:'task', id:open.id } });
+    logClient('Client comment created', `${project.name} · Task: ${open.title}`);
+    setDraft(''); toast('Comment posted. Your team is notified.');
+  };
+  return (
+    <div>
+      {missing && <Banner kind="warn" icon="lock">The task you opened isn't available. It may have been removed or you may no longer have access to it.</Banner>}
+      <div className="card" style={{ padding:0 }}>
+        <div style={{ overflowX:'auto' }}>
+          <table className="wl-table">
+            <thead><tr><th>Task</th><th>Status</th><th>Due</th><th>About</th></tr></thead>
+            <tbody>
+              {list.map(t => (
+                <tr key={t.id} style={{ cursor:'pointer' }} onClick={()=>setOpenId(t.id)}>
+                  <td style={{ fontWeight:600, color:'var(--accent)' }}>{t.title}</td><td><Tag v={CLIENT_TASK_STATUS[t.status]}/></td>
+                  <td style={{ fontSize:12.5 }}>{t.due ? fmtDate(t.due) : '—'}</td><td style={{ fontSize:12.5, opacity:.7, maxWidth:360 }}>{t.desc}</td>
+                </tr>
+              ))}
+              {list.length===0 && <tr><td colSpan="4" style={{ textAlign:'center', padding:30, opacity:.45 }}>No tasks are shared with you yet. Your team shares the ones that matter to you.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p style={{ fontSize:11.5, opacity:.5, marginTop:10 }}>You see the tasks your team chose to share. You cannot edit them.</p>
+      <Drawer open={!!open} onClose={()=>setOpenId(null)} title={open ? open.title : ''} subtitle={open ? `${CLIENT_TASK_STATUS[open.status]}${open.due ? ` · Due ${fmtDate(open.due)}` : ''}` : ''}>
+        {open && <>
+          <div style={{ fontSize:13.5, lineHeight:1.6, marginBottom:16 }}>{open.desc}</div>
+          {(() => { const atts = (open.fileIds||[]).map(id => filesOf(project.id).find(f => f.id===id)).filter(Boolean); return atts.length>0 && (
+            <div style={{ marginBottom:16 }}>
+              <div className="form-label">ATTACHMENTS</div>
+              {atts.map(f => (
+                <div key={f.id} className="action-row" style={{ cursor:'default' }}>
+                  <span style={{ opacity:.55 }}><SvgIcon name="paperclip" size={14}/></span>
+                  <div style={{ flex:1, fontSize:12.5 }}>{f.name} <span style={{ opacity:.5 }}>v{f.version} · {f.size}</span></div>
+                  <button className="btn btn-default btn-sm" onClick={()=>downloadAttachment(f)}><SvgIcon name="download" size={12}/></button>
+                </div>
+              ))}
+            </div>
+          ); })()}
+          <div className="form-label">COMMENTS</div>
+          {(thread ? thread.messages : []).map(m => (
+            <div key={m.id} style={{ marginBottom:12 }}>
+              <div style={{ fontSize:12, fontWeight:600 }}>{m.author} {m.side==='team' && <span className="tag tag-blue" style={{ marginLeft:4 }}>Team</span>}<span style={{ fontWeight:400, opacity:.45, marginLeft:6 }}>{m.time}</span></div>
+              <div style={{ fontSize:13, marginTop:2 }}>{m.text}</div>
+            </div>
+          ))}
+          {(!thread || thread.messages.length===0) && <div style={{ fontSize:12.5, opacity:.45, marginBottom:10 }}>No comments yet.</div>}
+          {can.comment ? (
+            <div style={{ display:'flex', gap:8, marginTop:8 }}>
+              <input className="form-input" placeholder="Add a comment…" value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>e.key==='Enter' && send()}/>
+              <button className="btn btn-primary btn-sm" onClick={send}>Send</button>
+            </div>
+          ) : <LockedNote>Client Viewers can't comment.</LockedNote>}
+        </>}
+      </Drawer>
+    </div>
+  );
+};
+
+const FILE_ICON = { pdf:'file-text' };
+
+const FilesTab = ({ project, params }) => {
+  const { filesOf, can, user, setFiles, addActivity, logClient } = usePortal();
+  const list = filesOf(project.id);
+  const [cat, setCat] = useState('all');
+  const [preview, setPreview] = useState(null);
+  const [upload, setUpload] = useState(false);
+  const [hl, setHl] = useState(params.file || null);
+  useEffect(() => { if (params.file) { setHl(params.file); const t = setTimeout(() => setHl(null), 3500); return () => clearTimeout(t); } }, [params.file]);
+  const missing = params.file && !list.some(f => f.id===params.file);
+  const shown = list.filter(f => cat==='all' || f.category===cat);
+  const cats = [...new Set(list.map(f => f.category))];
+  const canUpload = can.upload && project.allowUploads;
+  // Opening, previewing and downloading are authorized per request and logged as client activity (spec 16.3).
+  const download = (f) => filesOf(project.id).some(x => x.id===f.id)
+    ? (toast(`Downloading ${f.name}…`), logClient('Client file downloaded', `File: ${f.name} (v${f.version})`))
+    : toast('Download denied. This file is no longer shared with you.');
+  const openPreview = (f) => { setPreview(f); logClient('Client file previewed', `File: ${f.name} (v${f.version})`); };
+  return (
+    <div>
+      {missing && <Banner kind="warn" icon="lock">The file you opened isn't available. It may have been removed or you may no longer have access to it.</Banner>}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:12 }}>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+          {['all', ...cats].map(c => <button key={c} className={`chip${cat===c?' on':''}`} onClick={()=>setCat(c)}>{c==='all' ? `All (${list.length})` : c}</button>)}
+        </div>
+        {canUpload ? <button className="btn btn-primary btn-sm" onClick={()=>setUpload(true)}><SvgIcon name="upload" size={13}/> Upload file</button>
+          : <LockedNote>{!can.upload ? "Client Viewers can't upload files." : 'Uploads are turned off for this project.'}</LockedNote>}
+      </div>
+      <div className="card" style={{ padding:0 }}>
+        <div style={{ overflowX:'auto' }}>
+          <table className="wl-table">
+            <thead><tr><th>File</th><th>Category</th><th>Version</th><th>Uploaded by</th><th>Date</th><th></th></tr></thead>
+            <tbody>
+              {shown.map(f => (
+                <tr key={f.id} style={{ background: hl===f.id ? 'var(--accent-soft)' : undefined }}>
+                  <td><div style={{ display:'flex', gap:8, alignItems:'center', fontWeight:600, fontSize:13 }}><SvgIcon name="file-text" size={15}/>{f.name}</div><div style={{ fontSize:11.5, opacity:.5, marginLeft:23 }}>{f.size}</div></td>
+                  <td style={{ fontSize:12.5 }}>{f.category}</td>
+                  <td style={{ fontSize:12.5 }}>v{f.version}{f.versions>1 && <span style={{ opacity:.5 }}> · {f.versions} versions</span>}{f.versions>1 && <div style={{ fontSize:11, opacity:.5 }}>Replaced {fmtDate(f.date)}</div>}</td>
+                  <td style={{ fontSize:12.5 }}>{f.by}{f.side==='client' && <span className="tag tag-purple" style={{ marginLeft:6 }}>{f.by===user.name ? 'You' : 'Client'}</span>}</td>
+                  <td style={{ fontSize:12, opacity:.65 }}>{fmtDate(f.date)}</td>
+                  <td style={{ whiteSpace:'nowrap' }}>
+                    <button className="btn btn-default btn-sm" onClick={()=>openPreview(f)}><SvgIcon name="eye" size={12}/> Preview</button>{' '}
+                    <button className="btn btn-default btn-sm" onClick={()=>download(f)}><SvgIcon name="download" size={12}/></button>
+                  </td>
+                </tr>
+              ))}
+              {shown.length===0 && <tr><td colSpan="6" style={{ textAlign:'center', padding:30, opacity:.45 }}>No files are shared with you yet.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <Modal open={!!preview} onClose={()=>setPreview(null)} width={560} title={preview ? preview.name : ''}
+        footer={<><button className="btn btn-default btn-sm" onClick={()=>setPreview(null)}>Close</button><button className="btn btn-primary btn-sm" onClick={()=>download(preview)}>Download</button></>}>
+        {preview && <>
+          <div className="file-preview"><SvgIcon name="file-text" size={42}/><div style={{ fontWeight:600, marginTop:8 }}>{preview.name}</div><div style={{ fontSize:12, opacity:.55 }}>Preview isn't rendered in this prototype</div></div>
+          <KV rows={[['Category', preview.category], ['Version', `v${preview.version}`], ['Uploaded by', preview.by], ['Date', fmtDate(preview.date)], ['Size', preview.size]]}/>
+        </>}
+      </Modal>
+      <UploadModal open={upload} project={project} onClose={()=>setUpload(false)}/>
+    </div>
+  );
+};
+
+const UploadModal = ({ open, project, onClose }) => {
+  const { setFiles, user, addActivity, logClient } = usePortal();
+  const [name, setName] = useState('');
+  const [cat, setCat] = useState('Supporting Document');
+  const ref = useRef(null);
+  useEffect(() => { if (open) { setName(''); setCat('Supporting Document'); } }, [open]);
+  const save = () => {
+    if (!name.trim()) { toast('Choose a file first.'); return; }
+    const id = uid('f');
+    setFiles(l => [{ id, projectId:project.id, name:name.trim(), category:cat, visibility:'client', side:'client', by:user.name, date:TODAY, size:'1.1 MB', version:1, versions:1 }, ...l]);
+    addActivity({ projectId:project.id, icon:'upload', text:`You uploaded ${name.trim()}`, route:{ page:'projects', params:{ id:project.id, tab:'files', file:id } }, ref:{ type:'file', id } });
+    logClient('Client file uploaded', `${name.trim()} (v1)`);
+    toast(`${name.trim()} uploaded. Your team can see it and is notified.`);
+    onClose();
+  };
+  return (
+    <Modal open={open} onClose={onClose} width={460} title="Upload a file"
+      footer={<><button className="btn btn-default btn-sm" onClick={onClose}>Cancel</button><button className="btn btn-primary btn-sm" onClick={save}>Upload</button></>}>
+      <div style={{ border:'1px dashed var(--border)', borderRadius:8, padding:'18px 10px', textAlign:'center', marginBottom:14 }}>
+        <input ref={ref} type="file" style={{ display:'none' }} onChange={e=>{ const f = e.target.files && e.target.files[0]; if (f) setName(f.name); }}/>
+        <button className="btn btn-default btn-sm" onClick={()=>ref.current && ref.current.click()}>Choose file</button>
+        <div style={{ fontSize:12.5, marginTop:8, fontWeight:600 }}>{name || 'No file chosen'}</div>
+        <input className="form-input" style={{ marginTop:10 }} placeholder="…or type a file name for the demo" value={name} onChange={e=>setName(e.target.value)}/>
+      </div>
+      <Field label="Category"><select className="form-select" value={cat} onChange={e=>setCat(e.target.value)}>{FILE_CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></Field>
+      <div className="form-hint">Files you upload are visible to your project team and recorded as client activity.</div>
+    </Modal>
+  );
+};
+
+const CTX_ICON = { project:'folder', task:'check-square', file:'file-text', approval:'clipboard-check', direct:'user' };
+
+// Top-level Discussions page: every project the user can open, plus direct chats with the team that belong to no project.
+const DiscussionsPage = () => {
+  const { route } = usePortal();
+  return (
+    <div>
+      <PageHeader title="Discussions" sub="Conversations from all your projects, and direct chats with your team."/>
+      <DiscussionsView project={null} params={route.params}/>
+    </div>
+  );
+};
+
+const DiscussionsTab = ({ project, params }) => <DiscussionsView project={project} params={params}/>;
+
+// One view for both entry points. With a project it is that project's tab. Without one it is the whole inbox.
+const DiscussionsView = ({ project, params }) => {
+  const { myThreads, threadsOf, myProjects, can, user, setThreads, readThread, unreadIn, addActivity, logClient, go } = usePortal();
+  const all = project ? threadsOf(project.id) : myThreads;
+  const [filter, setFilter] = useState('all');
+  const list = project ? all : all.filter(t => filter==='all' || (filter==='direct' ? t.projectId==null : String(t.projectId)===filter));
+  const [activeId, setActiveId] = useState(params.thread || (list[0] && list[0].id));
+  const [draft, setDraft] = useState('');
+  const [showNew, setShowNew] = useState(false);
+  useEffect(() => { if (params.thread) setActiveId(params.thread); }, [params.thread]);
+  const pOf = (id) => myProjects.find(p => p.id===id);
+  const active = list.find(t => t.id===activeId);
+  const missing = params.thread && !all.some(t => t.id===params.thread);
+  const current = active || list[0];
+  const currentProject = current && current.projectId!=null ? pOf(current.projectId) : null;
+  useEffect(() => { if (current) readThread(current.id); }, [current && current.id, current && current.messages.length]);
+  const send = () => {
+    if (!draft.trim() || !current) return;
+    setThreads(l => l.map(t => t.id===current.id ? { ...t, readBy:[user.id], messages:[...t.messages, { id:uid('m'), author:user.name, side:'client', text:draft.trim(), time:'Just now' }] } : t));
+    if (currentProject) {
+      addActivity({ projectId:currentProject.id, icon:'message', text:`You commented in ${current.ctx.label}`, route:{ page:'projects', params:{ id:currentProject.id, tab:'discussions', thread:current.id } }, ref: current.ctx.type==='task' ? { type:'task', id:current.ctx.refId } : current.ctx.type==='file' ? { type:'file', id:current.ctx.refId } : undefined });
+    }
+    logClient('Client comment created', `${currentProject ? currentProject.name : 'Direct chat'} · ${current.ctx.label}`);
+    setDraft(''); toast(currentProject ? 'Comment posted. Your team is notified.' : 'Message sent. Your team is notified.');
+  };
+  const emptyText = project || filter==='all' ? 'No discussions yet' : filter==='direct' ? 'No direct chats yet' : 'No discussions in this project yet';
+  return (
+    <div>
+      {missing && <Banner kind="warn" icon="lock">The discussion you opened isn't available. The item it was about may no longer be shared with you.</Banner>}
+      <div className="chat-layout">
+        <div className="chat-sidebar">
+          <div style={{ padding:'12px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid var(--border)' }}>
+            <span style={{ fontWeight:700, fontSize:13 }}>Discussions</span>
+            {can.comment && <button className="btn btn-default btn-sm" onClick={()=>setShowNew(true)}>+ New</button>}
+          </div>
+          {!project && (
+            <div style={{ padding:'8px 14px', borderBottom:'1px solid var(--border)' }}>
+              <select className="form-select" style={{ fontSize:12.5, padding:'5px 8px' }} value={filter} onChange={e=>setFilter(e.target.value)} title="Filter discussions">
+                <option value="all">All discussions</option>
+                <option value="direct">Direct chats (no project)</option>
+                {myProjects.map(p => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
+              </select>
+            </div>
+          )}
+          <div style={{ overflowY:'auto' }}>
+            {list.map(t => {
+              const last = t.messages[t.messages.length-1];
+              const tp = t.projectId!=null ? pOf(t.projectId) : null;
+              return (
+                <div key={t.id} className={`chat-list-item${current && current.id===t.id?' active':''}`} onClick={()=>setActiveId(t.id)}>
+                  <div style={{ display:'flex', gap:8, alignItems:'center' }}><span style={{ opacity:.55 }}><SvgIcon name={CTX_ICON[t.ctx.type]} size={14}/></span><span style={{ fontWeight:600, fontSize:13, flex:1 }}>{t.ctx.label}</span>{unreadIn(t) && <span style={{ width:8, height:8, borderRadius:'50%', background:'#ff4d4f' }}/>}</div>
+                  {!project && <div style={{ fontSize:11, marginTop:3 }}>{tp ? <span style={{ opacity:.5 }}>{tp.name}</span> : <span className="tag tag-purple">Direct</span>}</div>}
+                  <div style={{ fontSize:11.5, opacity:.5, marginTop:3, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{last ? `${last.author}: ${last.text}` : 'No messages yet'}</div>
+                </div>
+              );
+            })}
+            {list.length===0 && <div style={{ padding:20, fontSize:13, opacity:.5 }}>{emptyText}.</div>}
+          </div>
+        </div>
+        <div className="chat-main">
+          {current ? <>
+            <div className="chat-main-head" style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+              <span>{current.ctx.label}</span>
+              {current.ctx.type==='direct'
+                ? <span className="tag tag-purple">Direct chat with {OPERATOR}</span>
+                : !project && currentProject && <button className="btn btn-default btn-sm" onClick={()=>go('projects', { id:currentProject.id, tab:'discussions', thread:current.id })}>{currentProject.name} →</button>}
+            </div>
+            {current.ctx.type==='direct' && <div style={{ padding:'8px 18px', fontSize:12, opacity:.6, borderBottom:'1px solid var(--border)' }}>Not part of any project. Only you and the {OPERATOR} team can see this chat. Your colleagues cannot.</div>}
+            <div className="chat-messages">
+              {current.messages.map(m => (
+                <div key={m.id} className={`chat-msg-row${m.author===user.name?' mine':''}`}>
+                  <div className="chat-msg-sender">{m.author}{m.side==='team' && ' · Team'}</div>
+                  <div className={`chat-msg ${m.author===user.name?'mine':'theirs'}`}>{renderMentions(m.text)}</div>
+                  <div className="chat-msg-time">{m.time}</div>
+                </div>
+              ))}
+            </div>
+            {can.comment ? (
+              <div className="chat-input-row">
+                <input className="chat-input" placeholder="Write a reply…" value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>e.key==='Enter' && send()}/>
+                <button className="btn btn-primary btn-sm" onClick={send}>Send</button>
+              </div>
+            ) : <div style={{ padding:'12px 16px', borderTop:'1px solid var(--border)' }}><LockedNote>Client Viewers can read discussions but can't reply.</LockedNote></div>}
+          </> : <Empty icon="message" text={emptyText} sub={can.comment ? 'Start one with the New button.' : undefined}/>}
+        </div>
+      </div>
+      <NewThreadModal open={showNew} project={project} onClose={()=>setShowNew(false)} onCreated={(id)=>{ setFilter('all'); setActiveId(id); }}/>
+    </div>
+  );
+};
+
+// From a project's tab the discussion belongs to that project. From the Discussions page the user picks a project or "No project", which is a direct chat with the team.
+const NewThreadModal = ({ open, project, onClose, onCreated }) => {
+  const { tasksOf, myProjects, user, setThreads, logClient } = usePortal();
+  const [where, setWhere] = useState('direct');
+  const [about, setAbout] = useState('project');
+  const [subject, setSubject] = useState('');
+  const [text, setText] = useState('');
+  useEffect(() => { if (open) { setWhere(project ? String(project.id) : 'direct'); setAbout('project'); setSubject(''); setText(''); } }, [open]);
+  const direct = !project && where==='direct';
+  const proj = project || (direct ? null : myProjects.find(p => String(p.id)===where));
+  const ts = proj ? tasksOf(proj.id) : [];
+  const valid = text.trim() && (!direct || subject.trim());
+  const create = () => {
+    const task = proj && about!=='project' ? ts.find(t => t.id===Number(about)) : null;
+    const id = uid('th');
+    const ctx = direct ? { type:'direct', label:subject.trim() } : task ? { type:'task', refId:task.id, label:`Task: ${task.title}` } : { type:'project', label:'General' };
+    setThreads(l => [{ id, projectId: proj ? proj.id : null, ...(direct ? { ownerId:user.id } : {}), ctx, readBy:[user.id], messages:[{ id:uid('m'), author:user.name, side:'client', text:text.trim(), time:'Just now' }] }, ...l]);
+    logClient('Client comment created', `${proj ? proj.name : 'Direct chat'} · ${ctx.label}`);
+    toast(direct ? 'Message sent. Your team is notified.' : 'Discussion started. Your team is notified.'); onCreated(id); onClose();
+  };
+  return (
+    <Modal open={open} onClose={onClose} width={460} title={direct ? 'New direct message' : 'New discussion'}
+      footer={<><button className="btn btn-default btn-sm" onClick={onClose}>Cancel</button><button className="btn btn-primary btn-sm" disabled={!valid} onClick={create}>{direct ? 'Send message' : 'Start discussion'}</button></>}>
+      {!project && (
+        <Field label="Project" hint={direct ? `Only you and the ${OPERATOR} team can see a direct chat.` : 'Everyone assigned to this project can see the discussion.'}>
+          <select className="form-select" value={where} onChange={e=>{ setWhere(e.target.value); setAbout('project'); }}>
+            <option value="direct">No project: message your team directly</option>
+            {myProjects.map(p => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
+          </select>
+        </Field>
+      )}
+      {direct
+        ? <Field label="Subject"><input className="form-input" value={subject} onChange={e=>setSubject(e.target.value)} placeholder="What is this about?"/></Field>
+        : <Field label="About"><select className="form-select" value={about} onChange={e=>setAbout(e.target.value)}><option value="project">The project in general</option>{ts.map(t => <option key={t.id} value={t.id}>Task: {t.title}</option>)}</select></Field>}
+      <Field label="Message"><textarea className="form-input" rows={3} value={text} onChange={e=>setText(e.target.value)}/></Field>
+    </Modal>
+  );
+};
+
+// ─── APPROVALS (spec 11) — approve or request changes, with the exact version recorded ──
+
+const ApprovalsPage = () => {
+  const { route } = usePortal();
+  return route.params.id ? <ApprovalDetail id={route.params.id}/> : <ApprovalsList/>;
+};
+
+const ApprovalsList = () => {
+  const { myApprovals, myProjects, user, can, go, pendingApprovals } = usePortal();
+  const [tab, setTab] = useState('awaiting');
+  const awaiting = myApprovals.filter(a => a.status==='awaiting');
+  const done = myApprovals.filter(a => a.status!=='awaiting');
+  const rows = tab==='awaiting' ? awaiting : done;
+  const pName = (id) => (myProjects.find(p => p.id===id)||{}).name;
+  return (
+    <div>
+      <PageHeader title="Approvals" sub="Items your team needs you to approve, and the decisions already made."/>
+      {!can.approve && <Banner kind="info" icon="lock">As a {ROLES[user.role].label} you can see approvals but not decide them. Only a Client Admin can approve.</Banner>}
+      <div className="section-tabs">
+        <button className={`section-tab${tab==='awaiting'?' active':''}`} onClick={()=>setTab('awaiting')}>Awaiting approval{awaiting.length>0 && <span className="count-dot">{awaiting.length}</span>}</button>
+        <button className={`section-tab${tab==='completed'?' active':''}`} onClick={()=>setTab('completed')}>Completed ({done.length})</button>
+      </div>
+      {rows.length===0 ? <Empty icon="clipboard-check" text={tab==='awaiting' ? 'Nothing is waiting for approval' : 'No completed approvals yet'}/> : (
+        <div className="card" style={{ padding:0 }}>
+          <div style={{ overflowX:'auto' }}>
+            <table className="wl-table">
+              <thead><tr><th>Approval</th><th>Project</th><th>Linked item</th><th>{tab==='awaiting' ? 'Due' : 'Decision'}</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {rows.map(a => (
+                  <tr key={a.id} style={{ cursor:'pointer' }} onClick={()=>go('approvals', { id:a.id })}>
+                    <td><div style={{ color:'var(--accent)', fontWeight:600, fontSize:13 }}>{a.title}</div><div style={{ fontSize:11.5, opacity:.5 }}>{a.id}{a.revision>1 ? ` · Revision ${a.revision}` : ''}</div></td>
+                    <td style={{ fontSize:12.5 }}>{pName(a.projectId)}</td>
+                    <td style={{ fontSize:12.5 }}>{a.linked.name}{a.linked.version ? ` · v${a.linked.version}` : ''}<div style={{ fontSize:11, opacity:.5 }}>{LINK_TYPE_LABEL[a.linked.type]}</div></td>
+                    <td style={{ fontSize:12.5 }}>{tab==='awaiting' ? (a.due ? dueTag(a.due) : '—') : (a.decision ? `${a.decision.by} · ${a.decision.at}` : '—')}</td>
+                    <td><Tag v={APPROVAL_STATUS[a.status]}/></td>
+                    <td><button className={`btn btn-sm ${a.status==='awaiting' && pendingApprovals.includes(a) ? 'btn-primary' : 'btn-default'}`}>{a.status==='awaiting' && pendingApprovals.includes(a) ? 'Review' : 'View'}</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ApprovalDetail = ({ id }) => {
+  const { myApprovals, myProjects, user, can, files, go, updateApproval, addActivity, filesOf, tasksOf, logClient, threads, setThreads } = usePortal();
+  const [comment, setComment] = useState('');
+  const [cDraft, setCDraft] = useState('');        // a comment on the approval item itself, separate from the decision comment
+  const [nudge, setNudge] = useState(false);       // "Request changes" without a comment asks once before it records
+  const busy = useRef(false);
+  useEffect(() => { busy.current = false; setComment(''); setCDraft(''); setNudge(false); }, [id]);
+  const a = myApprovals.find(x => x.id===id);
+  if (!a) return <Unavailable onBack={()=>go('approvals')} backLabel="Back to approvals"/>;
+  const proj = myProjects.find(p => p.id===a.projectId);
+  const file = a.linked.type==='file' ? files.find(f => f.id===a.linked.id) : null;
+  const fileShared = file && filesOf(a.projectId).some(f => f.id===file.id);
+  const moved = fileShared && a.linked.version && file.version > a.linked.version;
+  const taskShared = a.linked.type==='task' && tasksOf(a.projectId).some(t => t.id===a.linked.id);
+  const isApprover = a.approverId===user.id;
+  const canDecide = can.approve && isApprover && a.status==='awaiting';
+  const thread = threads.find(t => t.ctx.type==='approval' && t.ctx.refId===a.id);
+  const sendComment = () => {
+    if (!cDraft.trim()) return;
+    const msg = { id:uid('m'), author:user.name, side:'client', text:cDraft.trim(), time:'Just now' };
+    if (thread) setThreads(l => l.map(t => t.id===thread.id ? { ...t, messages:[...t.messages, msg], readBy:[user.id] } : t));
+    else setThreads(l => [{ id:uid('th'), projectId:a.projectId, ctx:{ type:'approval', refId:a.id, label:`Approval: ${a.id}` }, readBy:[user.id], messages:[msg] }, ...l]);
+    addActivity({ projectId:a.projectId, icon:'message', text:`You commented on ${a.id}`, route:{ page:'approvals', params:{ id:a.id } } });
+    logClient('Client comment created', `${proj ? proj.name : ''} · Approval: ${a.id}`);
+    setCDraft(''); toast('Comment posted. Your team is notified.');
+  };
+
+  const decide = (outcome) => {
+    if (busy.current || a.status!=='awaiting') return;   // idempotent: one decision per request
+    // A comment is optional but recommended when asking for changes (spec 11), so ask once before recording an empty one.
+    if (outcome==='changes_requested' && !comment.trim() && !nudge) { setNudge(true); return; }
+    busy.current = true;
+    const text = outcome==='approved' ? 'Approved' : 'Requested changes';
+    updateApproval(a.id, x => ({ status:outcome, decision:{ by:user.name, at:'Just now', outcome, comment:comment.trim() }, history:[...x.history, { ts:'Just now', actor:user.name, text:`${text}${comment.trim() ? `: “${comment.trim()}”` : ''} (${decisionRef(a)})` }] }));
+    addActivity({ projectId:a.projectId, icon:'clipboard-check', text:`You ${outcome==='approved' ? 'approved' : 'requested changes on'} ${a.title}`, route:{ page:'approvals', params:{ id:a.id } } });
+    logClient(outcome==='approved' ? 'Approval: approved' : 'Approval: changes requested', `${a.id} · ${a.title} (${decisionRef(a)})`);
+    toast(outcome==='approved' ? `Approved. Your team is notified and ${a.linked.name}${a.linked.version ? ` v${a.linked.version}` : ''} is recorded as approved.` : 'Changes requested. Your team is notified and will send a new revision.');
+  };
+
+  return (
+    <div>
+      <button className="btn btn-default btn-sm" style={{ marginBottom:14 }} onClick={()=>go('approvals')}>← Approvals</button>
+      <div className="page-header-row" style={{ marginBottom:14 }}>
+        <div><h1 style={{ fontSize:20, fontWeight:700, margin:0 }}>{a.title}</h1><p style={{ opacity:.5, fontSize:13, margin:'4px 0 0' }}>{a.id} · {proj ? proj.name : ''} · Revision {a.revision}</p></div>
+        <Tag v={APPROVAL_STATUS[a.status]}/>
+      </div>
+      <div style={{ display:'flex', gap:20, alignItems:'flex-start', flexWrap:'wrap' }}>
+        <div style={{ flex:'3 1 440px', minWidth:0 }}>
+          <div className="card" style={{ marginBottom:16 }}>
+            <div className="card-header"><span className="card-title">What you are approving</span></div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, padding:'10px 12px', border:'1px solid var(--border)', borderRadius:8 }}>
+              <div style={{ display:'flex', gap:10, alignItems:'center' }}><SvgIcon name={LINK_ICON[a.linked.type]} size={18}/>
+                <div><div style={{ fontWeight:600, fontSize:13.5 }}>{a.linked.name}</div><div style={{ fontSize:11.5, opacity:.55 }}>{a.linked.type==='file' ? `Version ${a.linked.version}` : a.linked.type==='task' ? 'Task' : a.linked.type==='freeform' ? 'Details from your team' : 'Milestone'}</div></div></div>
+              {a.linked.type==='file' && (fileShared
+                ? <button className="btn btn-default btn-sm" onClick={()=>go('projects', { id:a.projectId, tab:'files', file:a.linked.id })}>Open file</button>
+                : <span className="tag tag-gray"><SvgIcon name="lock" size={11}/>No longer shared</span>)}
+              {a.linked.type==='milestone' && <button className="btn btn-default btn-sm" onClick={()=>go('projects', { id:a.projectId, tab:'milestones', ms:a.linked.id })}>Open milestone</button>}
+              {a.linked.type==='task' && (taskShared
+                ? <button className="btn btn-default btn-sm" onClick={()=>go('projects', { id:a.projectId, tab:'tasks', task:a.linked.id })}>Open task</button>
+                : <span className="tag tag-gray"><SvgIcon name="lock" size={11}/>No longer shared</span>)}
+            </div>
+            {a.linked.type==='freeform' && (
+              <div style={{ marginTop:10, fontSize:13.5, lineHeight:1.6 }}>
+                {a.linked.description ? <div style={{ whiteSpace:'pre-wrap' }}>{a.linked.description}</div> : <span style={{ opacity:.5 }}>Your team did not add a description. See the instructions below.</span>}
+                {(a.linked.snapshots || []).length>1 && (
+                  <div style={{ marginTop:10, paddingTop:8, borderTop:'1px solid var(--border)' }}>
+                    <div style={{ fontSize:11.5, opacity:.5, fontWeight:700, marginBottom:4, letterSpacing:.5 }}>EARLIER REVISIONS</div>
+                    {a.linked.snapshots.slice(0,-1).reverse().map(sn => <div key={sn.rev} style={{ fontSize:12.5, opacity:.7, marginBottom:4 }}><b>Revision {sn.rev}:</b> {sn.description || 'No description.'}</div>)}
+                  </div>
+                )}
+              </div>
+            )}
+            {moved && <div style={{ marginTop:10 }}><Banner kind="info" icon="clock">This approval covers <b>v{a.linked.version}</b>. The file is now <b>v{file.version}</b>, so your decision applies to the earlier version.</Banner></div>}
+            <div style={{ fontSize:11.5, opacity:.5, fontWeight:700, margin:'16px 0 6px', letterSpacing:.5 }}>INSTRUCTIONS</div>
+            <div style={{ fontSize:13.5, lineHeight:1.6 }}>{a.instructions || 'No instructions were added.'}</div>
+            <div style={{ display:'flex', gap:18, marginTop:14, fontSize:12.5, opacity:.7, flexWrap:'wrap' }}><span>Requested by {a.requestedBy}</span><span>Approver: {a.approver}</span>{a.due && <span>Due {fmtDate(a.due)}</span>}</div>
+          </div>
+
+          {a.decision && (
+            <div className="card" style={{ marginBottom:16, borderColor: a.decision.outcome==='approved' ? '#b7eb8f' : '#ffccc7' }}>
+              <div className="card-header"><span className="card-title">Decision</span></div>
+              <div style={{ fontSize:13.5, fontWeight:600 }}>{a.decision.outcome==='approved' ? 'Approved' : 'Changes requested'} by {a.decision.by}<span style={{ fontWeight:400, opacity:.5 }}> · {a.decision.at}</span></div>
+              {a.decision.comment && <div style={{ fontSize:13.5, marginTop:6 }}>“{a.decision.comment}”</div>}
+              <div style={{ fontSize:11.5, opacity:.5, marginTop:8 }}>A decision is final. Changing it needs a new revision from your team.</div>
+            </div>
+          )}
+
+          {a.status==='awaiting' && (
+            <div className="card">
+              <div className="card-header"><span className="card-title">Your decision</span></div>
+              {canDecide ? <>
+                <textarea className="form-input" rows={3} placeholder="Add a comment (optional, but helpful if you request changes)" value={comment} onChange={e=>{ setComment(e.target.value); setNudge(false); }}/>
+                {nudge && <div style={{ marginTop:10 }}><Banner kind="warn" icon="clock">Tell your team what to change. A comment is optional, but it saves a round of questions. Add one, or choose “Request changes without a comment”.</Banner></div>}
+                <div style={{ display:'flex', gap:10, marginTop:12 }}>
+                  <button className="btn btn-primary" onClick={()=>decide('approved')}><SvgIcon name="check" size={14}/> Approve</button>
+                  <button className="btn btn-default" onClick={()=>decide('changes_requested')}>{nudge ? 'Request changes without a comment' : 'Request changes'}</button>
+                </div>
+              </> : (
+                <Banner kind="info" icon="lock">{!can.approve ? `As a ${ROLES[user.role].label} you can view this approval but not decide it. Only a Client Admin can approve.` : `Only ${a.approver} was asked to decide this approval. You can follow along here.`}</Banner>
+              )}
+              {!canDecide && <div style={{ display:'flex', gap:10, opacity:.5 }}><button className="btn btn-primary" disabled>Approve</button><button className="btn btn-default" disabled>Request changes</button></div>}
+            </div>
+          )}
+
+          <div className="card" style={{ marginTop:16 }}>
+            <div className="card-header"><span className="card-title">Discussion about this approval</span></div>
+            {(thread ? thread.messages : []).map(m => (
+              <div key={m.id} style={{ marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:600 }}>{m.author} {m.side==='team' && <span className="tag tag-blue" style={{ marginLeft:4 }}>Team</span>}<span style={{ fontWeight:400, opacity:.45, marginLeft:6 }}>{m.time}</span></div>
+                <div style={{ fontSize:13, marginTop:2 }}>{renderMentions(m.text)}</div>
+              </div>
+            ))}
+            {(!thread || thread.messages.length===0) && <div style={{ fontSize:12.5, opacity:.5, marginBottom:10 }}>No comments yet. Ask your team a question here before you decide.</div>}
+            {can.comment ? (
+              <div style={{ display:'flex', gap:8 }}>
+                <input className="form-input" placeholder="Comment on this approval…" value={cDraft} onChange={e=>setCDraft(e.target.value)} onKeyDown={e=>e.key==='Enter' && sendComment()}/>
+                <button className="btn btn-primary btn-sm" onClick={sendComment}>Send</button>
+              </div>
+            ) : <LockedNote>Client Viewers can't comment.</LockedNote>}
+          </div>
+        </div>
+        <div style={{ flex:'1 1 260px', minWidth:240 }}>
+          <div className="card">
+            <div className="card-header"><span className="card-title">History</span></div>
+            {a.history.slice().reverse().map((h,i) => (
+              <div key={i} style={{ padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
+                <div style={{ fontSize:12.5 }}><b>{h.actor}</b> {h.text}</div><div style={{ fontSize:11, opacity:.45, marginTop:2 }}>{h.ts}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── CHANGE REQUESTS (spec 12) ───────────────────────────────────────────────
+
+const CR_STEPS = ['Submitted','Under review','Decision','In progress','Completed'];
+const crStep = (s) => ({ submitted:0, under_review:1, more_info:1, approved:2, rejected:2, in_progress:3, completed:4, cancelled:-1 }[s]);
+
+const CRStepper = ({ status }) => {
+  const idx = crStep(status);
+  return (
+    <div style={{ display:'flex', gap:4 }}>
+      {CR_STEPS.map((label,i) => {
+        const done = idx>=0 && i<idx, cur = i===idx, rej = cur && status==='rejected';
+        const lbl = i===2 ? (status==='rejected' ? 'Rejected' : idx>2 || status==='approved' ? 'Approved' : 'Decision') : label;
+        return (
+          <div key={label} style={{ flex:1 }}>
+            <div style={{ height:4, borderRadius:2, background: rej ? '#ff4d4f' : (done||cur) ? 'var(--accent)' : 'var(--border)', opacity: done ? .55 : 1 }}/>
+            <div style={{ fontSize:11, marginTop:5, fontWeight:cur?700:500, opacity:cur?1:done?.7:.4, color:rej?'#ff4d4f':undefined }}>{lbl}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const ChangeRequestsPage = () => {
+  const { route } = usePortal();
+  return route.params.id ? <CRDetail id={route.params.id}/> : <CRList/>;
+};
+
+const CRList = () => {
+  const { myCRs, myProjects, can, user, go, infoNeeded } = usePortal();
+  const [status, setStatus] = useState('all');
+  const [showNew, setShowNew] = useState(false);
+  const rows = myCRs.filter(c => status==='all' || c.status===status).sort((a,b) => b.id-a.id);
+  const count = (...s) => myCRs.filter(c => s.includes(c.status)).length;
+  const pName = (id) => (myProjects.find(p => p.id===id)||{}).name;
+  return (
+    <div>
+      <PageHeader title="Change Requests" sub="Ask for a change to scope, features or deliverables, and follow the answer.">
+        {can.submitCR ? <button className="btn btn-primary btn-sm" onClick={()=>setShowNew(true)}>+ New change request</button> : <LockedNote>Client Viewers can't submit change requests.</LockedNote>}
+      </PageHeader>
+      <div className="grid-stat-4">
+        <Stat label="Open" value={count('submitted','under_review','more_info')} color="#d46b08"/>
+        <Stat label="Needs your reply" value={infoNeeded.length} color={infoNeeded.length ? '#ff4d4f' : undefined}/>
+        <Stat label="Approved / in progress" value={count('approved','in_progress')}/>
+        <Stat label="Completed" value={count('completed')} color="#52c41a"/>
+      </div>
+      <div style={{ marginBottom:14 }}><select className="form-select" style={{ width:'auto' }} value={status} onChange={e=>setStatus(e.target.value)}><option value="all">All statuses</option>{Object.keys(CR_STATUS).map(k => <option key={k} value={k}>{CR_STATUS[k]}</option>)}</select></div>
+      {myCRs.length===0 ? <Empty icon="repeat" text="No change requests yet" sub="Need something added, changed or removed? Submit a change request and your team will review it." action={can.submitCR && <button className="btn btn-primary btn-sm" onClick={()=>setShowNew(true)}>Submit your first request</button>}/> : (
+        <div className="card" style={{ padding:0 }}>
+          <div style={{ overflowX:'auto' }}>
+            <table className="wl-table">
+              <thead><tr><th>Request</th><th>Project</th><th>Priority</th><th>Submitted</th><th>Estimate</th><th>Status</th></tr></thead>
+              <tbody>
+                {rows.map(c => (
+                  <tr key={c.id} style={{ cursor:'pointer' }} onClick={()=>go('change-requests', { id:c.id })}>
+                    <td><div style={{ color:'var(--accent)', fontWeight:600, fontSize:13 }}>{c.title}</div><div style={{ fontSize:11.5, opacity:.5 }}>{c.crNo} · {c.requester}</div></td>
+                    <td style={{ fontSize:12.5 }}>{pName(c.projectId)}</td><td><Tag v={c.priority}/></td>
+                    <td style={{ fontSize:12, opacity:.65 }}>{fmtDate(c.submitted)}</td>
+                    <td style={{ fontSize:12.5 }}>{fmtEstimate(c.estimate) || <span style={{ opacity:.35 }}>—</span>}</td>
+                    <td><Tag v={CR_STATUS[c.status]}/></td>
+                  </tr>
+                ))}
+                {rows.length===0 && <tr><td colSpan="6" style={{ textAlign:'center', padding:30, opacity:.45 }}>No change requests with this status.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      <NewCRModal open={showNew} onClose={()=>setShowNew(false)}/>
+    </div>
+  );
+};
+
+const NewCRModal = ({ open, onClose }) => {
+  const { myProjects, user, crs, setCrs, go, addActivity, logClient } = usePortal();
+  const [f, setF] = useState({ projectId:'', title:'', description:'', priority:'Medium', notes:'', attachments:[] });
+  const ref = useRef(null);
+  useEffect(() => { if (open) setF({ projectId:String(myProjects[0] ? myProjects[0].id : ''), title:'', description:'', priority:'Medium', notes:'', attachments:[] }); }, [open]);
+  const valid = f.projectId && f.title.trim() && f.description.trim();
+  const submit = () => {
+    const id = Math.max(...crs.map(c => c.id)) + 1;
+    const crNo = 'CR-' + String(Math.max(...crs.map(c => Number(c.crNo.slice(3)))) + 1).padStart(4, '0');
+    setCrs(l => [{ id, crNo, projectId:Number(f.projectId), title:f.title.trim(), description:f.description.trim(), notes:f.notes.trim(), priority:f.priority, requesterId:user.id, requester:user.name, submitted:TODAY, status:'submitted', attachments:f.attachments, estimate:null, thread:[], timeline:[{ ts:'Today', text:'Submitted' }] }, ...l]);
+    addActivity({ projectId:Number(f.projectId), icon:'repeat', text:`You submitted ${crNo}: ${f.title.trim()}`, route:{ page:'change-requests', params:{ id } } });
+    logClient('Change request created', `${crNo} · ${f.title.trim()}`);
+    toast(`${crNo} submitted. Your team reviews it first. It does not create a task by itself.`);
+    onClose(); go('change-requests', { id });
+  };
+  return (
+    <Modal open={open} onClose={onClose} width={540} title="New change request"
+      footer={<><button className="btn btn-default btn-sm" onClick={onClose}>Cancel</button><button className="btn btn-primary btn-sm" disabled={!valid} onClick={submit}>Submit request</button></>}>
+      <Field label="Project"><select className="form-select" value={f.projectId} onChange={e=>setF({ ...f, projectId:e.target.value })}>{myProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
+      <Field label="Title"><input className="form-input" value={f.title} onChange={e=>setF({ ...f, title:e.target.value })} placeholder="A short summary of the change"/></Field>
+      <Field label="Description"><textarea className="form-input" rows={4} value={f.description} onChange={e=>setF({ ...f, description:e.target.value })} placeholder="What do you need, and why?"/></Field>
+      <div className="form-row">
+        <Field label="Priority"><div className="seg">{['Low','Medium','High'].map(p => <button key={p} type="button" className={f.priority===p?'on':''} onClick={()=>setF({ ...f, priority:p })}>{p}</button>)}</div></Field>
+        <Field label="Attachments (optional)">
+          <input ref={ref} type="file" style={{ display:'none' }} onChange={e=>{ const fl = e.target.files && e.target.files[0]; if (fl) setF(s => ({ ...s, attachments:[...s.attachments, fl.name] })); }}/>
+          <button className="btn btn-default btn-sm" type="button" onClick={()=>ref.current && ref.current.click()}><SvgIcon name="paperclip" size={13}/> Add file</button>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginTop:6 }}>{f.attachments.map(a => <span key={a} className="tag tag-gray">{a}</span>)}</div>
+        </Field>
+      </div>
+      <Field label="Notes (optional)"><input className="form-input" value={f.notes} onChange={e=>setF({ ...f, notes:e.target.value })} placeholder="Anything else the team should know"/></Field>
+    </Modal>
+  );
+};
+
+const CRDetail = ({ id }) => {
+  const { myCRs, myProjects, user, can, go, updateCR, addActivity, logClient } = usePortal();
+  const [info, setInfo] = useState('');
+  const [confirm, setConfirm] = useState(false);
+  useEffect(() => { setInfo(''); }, [id]);
+  const c = myCRs.find(x => x.id===id);
+  if (!c) return <Unavailable onBack={()=>go('change-requests')} backLabel="Back to change requests"/>;
+  const proj = myProjects.find(p => p.id===c.projectId);
+  const est = fmtEstimate(c.estimate);
+  const mine = c.requesterId===user.id || can.manageUsers;
+  const canFollow = c.status==='more_info' && can.submitCR;
+  const canCancel = ['submitted','under_review','more_info'].includes(c.status) && can.submitCR && mine;
+
+  const sendInfo = () => {
+    if (!info.trim()) return;
+    updateCR(c.id, x => ({ status:'under_review', thread:[...x.thread, { from:'client', author:user.name, text:info.trim(), ts:'Just now' }], timeline:[...x.timeline, { ts:'Today', text:'Information provided' }, { ts:'Today', text:'Under review' }] }));
+    addActivity({ projectId:c.projectId, icon:'repeat', text:`You replied on ${c.crNo}`, route:{ page:'change-requests', params:{ id:c.id } } });
+    logClient('Change request status changed', `${c.crNo} · More Information Required → Under Review`);
+    toast('Thanks. Your team has the information and the request is back under review.'); setInfo('');
+  };
+
+  return (
+    <div>
+      <button className="btn btn-default btn-sm" style={{ marginBottom:14 }} onClick={()=>go('change-requests')}>← Change requests</button>
+      <div className="page-header-row" style={{ marginBottom:14 }}>
+        <div><h1 style={{ fontSize:20, fontWeight:700, margin:0 }}>{c.title}</h1><p style={{ opacity:.5, fontSize:13, margin:'4px 0 0' }}>{c.crNo} · {proj ? proj.name : ''} · Submitted {fmtDate(c.submitted)} by {c.requester}</p></div>
+        <div style={{ display:'flex', gap:8 }}><Tag v={c.priority}/><Tag v={CR_STATUS[c.status]}/></div>
+      </div>
+      <div className="card" style={{ marginBottom:16 }}>{c.status==='cancelled' ? <Banner kind="warn" icon="x">This request was cancelled.</Banner> : <CRStepper status={c.status}/>}</div>
+
+      <div style={{ display:'flex', gap:20, alignItems:'flex-start', flexWrap:'wrap' }}>
+        <div style={{ flex:'3 1 440px', minWidth:0 }}>
+          <div className="card" style={{ marginBottom:16 }}>
+            <div className="card-header"><span className="card-title">Your request</span></div>
+            <div style={{ fontSize:13.5, lineHeight:1.6 }}>{c.description}</div>
+            {c.notes && <div style={{ fontSize:12.5, opacity:.7, marginTop:10 }}><b>Notes:</b> {c.notes}</div>}
+            {c.attachments.length>0 && <div style={{ display:'flex', gap:8, marginTop:12, flexWrap:'wrap' }}>{c.attachments.map(a => <span key={a} className="tag tag-gray" style={{ padding:'4px 10px', gap:5 }}><SvgIcon name="paperclip" size={11}/>{a}</span>)}</div>}
+          </div>
+
+          <div className="card" style={{ marginBottom:16 }}>
+            <div className="card-header"><span className="card-title">Conversation with your team</span></div>
+            {c.thread.map((m,i) => (
+              <div key={i} style={{ display:'flex', gap:10, marginBottom:14 }}>
+                <Av initials={initialsFromName(m.author)} color={m.from==='client' ? 'var(--accent)' : '#52c41a'} size={30}/>
+                <div><div style={{ fontSize:12.5, fontWeight:600 }}>{m.author} {m.from==='team' && <span className="tag tag-blue" style={{ marginLeft:4 }}>Team</span>}<span style={{ fontWeight:400, opacity:.45, marginLeft:8 }}>{m.ts}</span></div>
+                  <div style={{ fontSize:13.5, marginTop:3 }}>{m.text}</div></div>
+              </div>
+            ))}
+            {c.thread.length===0 && <div style={{ fontSize:13, opacity:.5 }}>Your team has not responded yet. You are notified as soon as they do.</div>}
+            {c.status==='more_info' && (canFollow ? (
+              <div style={{ borderTop:'1px solid var(--border)', paddingTop:12 }}>
+                <Banner kind="warn" icon="clock">Your team needs more information before they can decide.</Banner>
+                <textarea className="form-input" rows={3} placeholder="Add the information they asked for…" value={info} onChange={e=>setInfo(e.target.value)}/>
+                <div style={{ marginTop:10 }}><button className="btn btn-primary btn-sm" disabled={!info.trim()} onClick={sendInfo}>Send information</button></div>
+              </div>
+            ) : <LockedNote>Client Viewers can't reply to change requests.</LockedNote>)}
+          </div>
+        </div>
+        <div style={{ flex:'1 1 260px', minWidth:240 }}>
+          <div className="card" style={{ marginBottom:16 }}>
+            <div className="card-header"><span className="card-title">Estimate</span></div>
+            {est ? <><div style={{ fontSize:20, fontWeight:700 }}>{est}</div><div style={{ fontSize:11.5, opacity:.5, marginTop:4 }}>Estimated additional time and cost.</div></>
+              : <div style={{ fontSize:13, opacity:.5 }}>No estimate yet. Your team adds one if it applies.</div>}
+          </div>
+          <div className="card" style={{ marginBottom:16 }}>
+            <div className="card-header"><span className="card-title">Progress</span></div>
+            {c.timeline.slice().reverse().map((t,i) => <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'7px 0', borderBottom:'1px solid var(--border)', fontSize:12.5 }}><span>{t.text}</span><span style={{ opacity:.45 }}>{t.ts}</span></div>)}
+          </div>
+          {canCancel && <button className="btn btn-default btn-sm" style={{ width:'100%', justifyContent:'center' }} onClick={()=>setConfirm(true)}>Cancel this request</button>}
+        </div>
+      </div>
+      <Modal open={confirm} onClose={()=>setConfirm(false)} width={420} title="Cancel this request?"
+        footer={<><button className="btn btn-default btn-sm" onClick={()=>setConfirm(false)}>Keep it</button><button className="btn btn-primary btn-sm" onClick={()=>{ updateCR(c.id, x => ({ status:'cancelled', timeline:[...x.timeline, { ts:'Today', text:'Cancelled' }] })); logClient('Change request status changed', `${c.crNo} · ${CR_STATUS[c.status]} → Cancelled`); setConfirm(false); toast(`${c.crNo} cancelled.`); }}>Cancel request</button></>}>
+        <div style={{ fontSize:13 }}>Your team stops working on <b>{c.crNo}</b>. You can submit a new request later.</div>
+      </Modal>
+    </div>
+  );
+};
+
+// ─── NOTIFICATIONS (spec 13) ─────────────────────────────────────────────────
+
+const NotificationsPage = () => {
+  const { myNotifs, markRead, markAllRead, go, op, unreadNotifs } = usePortal();
+  const [tab, setTab] = useState('all');
+  const rows = myNotifs.filter(n => tab==='all' || n.unread);
+  return (
+    <div>
+      <PageHeader title="Notifications" sub="Approvals, replies, shared files and updates from your team.">
+        <button className="btn btn-default btn-sm" disabled={unreadNotifs===0} onClick={markAllRead}>Mark all as read</button>
+      </PageHeader>
+      <div className="section-tabs">
+        <button className={`section-tab${tab==='all'?' active':''}`} onClick={()=>setTab('all')}>All ({myNotifs.length})</button>
+        <button className={`section-tab${tab==='unread'?' active':''}`} onClick={()=>setTab('unread')}>Unread ({unreadNotifs})</button>
+      </div>
+      {rows.length===0 ? <Empty icon="bell" text={tab==='unread' ? 'No unread notifications' : "You're all caught up"}/> : (
+        <div className="card" style={{ padding:0 }}>
+          {rows.map(n => (
+            <div key={n.id} className="notif-row" style={{ background:n.unread?'var(--accent-soft)':'transparent' }} onClick={()=>{ markRead(n.id); go(n.route.page, n.route.params); }}>
+              <span style={{ color:'var(--accent)', marginTop:2 }}><SvgIcon name={NOTIF_ICON[n.type]||'bell'} size={17}/></span>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}><span style={{ fontSize:13.5, fontWeight:n.unread?700:500 }}>{n.title}</span><span className="tag tag-gray">{n.type}</span>{n.email && op.emailTypes[n.type] && <span className="tag tag-blue"><SvgIcon name="mail" size={10}/>Emailed</span>}</div>
+                <div style={{ fontSize:12.5, opacity:.65, marginTop:3 }}>{n.body}</div>
+                <div style={{ fontSize:11, opacity:.4, marginTop:3 }}>{n.time}</div>
+              </div>
+              <button className="btn btn-default btn-sm" onClick={e=>{ e.stopPropagation(); markRead(n.id, !n.unread); }}>{n.unread ? 'Mark read' : 'Mark unread'}</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── ACCOUNT (spec 14) ───────────────────────────────────────────────────────
+
+const ACCOUNT_TABS = [['profile','Profile'],['organization','Organization'],['notifications','Notifications'],['security','Security']];
+
+const AccountPage = ({ onSignOut }) => {
+  const { user, role, can, op, orgUsers, setOrgUsers, myProjects, assign, prefs, setPrefs } = usePortal();
+  const [tab, setTab] = useState('profile');
+  const [showInvite, setShowInvite] = useState(false);
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState(user.name);
+  const [job, setJob] = useState(user.jobTitle);
+  useEffect(() => { setName(user.name); setJob(user.jobTitle); }, [user.id]);
+  const canInvite = can.manageUsers && op.adminsInvite;
+  const canRemove = can.manageUsers && op.adminsRemove;
+  const adminCount = orgUsers.filter(u => u.role==='admin').length;
+
+  return (
+    <div>
+      <PageHeader title="Account" sub="Your profile, your organization and how you are notified.">
+        <button className="btn btn-default btn-sm" onClick={onSignOut}><SvgIcon name="log-out" size={13}/> Sign out</button>
+      </PageHeader>
+      <div className="section-tabs">{ACCOUNT_TABS.map(([k,l]) => <button key={k} className={`section-tab${tab===k?' active':''}`} onClick={()=>setTab(k)}>{l}</button>)}</div>
+
+      {tab==='profile' && (
+        <div className="card" style={{ maxWidth:480 }}>
+          <div style={{ display:'flex', gap:14, alignItems:'center', marginBottom:18 }}><Av initials={user.initials} color={user.color} size={52}/><div><div style={{ fontWeight:700, fontSize:16 }}>{user.name}</div><div style={{ marginTop:4 }}><RoleTag role={user.role}/></div></div></div>
+          <Field label="Full name"><input className="form-input" value={name} onChange={e=>setName(e.target.value)}/></Field>
+          <Field label="Email" hint="Your sign-in address. Contact your project contact to change it."><input className="form-input" value={user.email} disabled style={{ opacity:.6 }}/></Field>
+          <Field label="Job title"><input className="form-input" value={job} onChange={e=>setJob(e.target.value)}/></Field>
+          <button className="btn btn-primary btn-sm" onClick={()=>toast('Profile saved.')}>Save changes</button>
+        </div>
+      )}
+
+      {tab==='organization' && (
+        <div>
+          <div className="grid-2" style={{ marginBottom:16 }}>
+            <div className="card">
+              <div className="card-header"><span className="card-title">Your role: {role.label}</span></div>
+              <p style={{ fontSize:12.5, opacity:.65, margin:'-6px 0 10px' }}>{role.summary}</p>
+              {CAPABILITIES.map(([k,label]) => <div key={k} style={{ display:'flex', gap:8, fontSize:12.5, padding:'5px 0', opacity:can[k]?1:.4 }}><span style={{ color:can[k]?'#52c41a':'inherit', width:14 }}>{can[k]?'✓':'—'}</span><span>{label}</span></div>)}
+            </div>
+            <div className="card">
+              <div className="card-header"><span className="card-title">{ORG.name}</span></div>
+              <div style={{ fontSize:12, opacity:.55, marginBottom:8 }}>Projects shared with you</div>
+              {myProjects.map(p => <div key={p.id} style={{ display:'flex', justifyContent:'space-between', padding:'7px 0', borderBottom:'1px solid var(--border)', fontSize:13 }}><span>{p.name}</span><Tag v={PROJECT_STATUS[p.status]}/></div>)}
+              {myProjects.length===0 && <div style={{ fontSize:13, opacity:.5 }}>No projects are assigned to you.</div>}
+              <div style={{ fontSize:11.5, opacity:.5, marginTop:10 }}>Managed by {OPERATOR}</div>
+            </div>
+          </div>
+
+          {can.manageUsers && !canInvite && !canRemove && <Banner kind="info" icon="lock">Inviting and removing colleagues isn't enabled for your portal yet. Ask your project contact to turn it on.</Banner>}
+          <div className="card" style={{ padding:0 }}>
+            <div style={{ padding:'14px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span className="card-title">People in {ORG.name}</span>
+              {canInvite && <button className="btn btn-default btn-sm" onClick={()=>setShowInvite(true)}><SvgIcon name="mail" size={13}/> Invite by email</button>}
+            </div>
+            <table className="wl-table">
+              <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Status</th>{canRemove && <th></th>}</tr></thead>
+              <tbody>{orgUsers.map(u => (
+                <tr key={u.id}>
+                  <td><div style={{ display:'flex', alignItems:'center', gap:8 }}><Av initials={u.initials} color={u.color} size={26}/>{u.name}{u.id===user.id && <span className="tag tag-gray">You</span>}</div></td>
+                  <td style={{ fontSize:12.5, opacity:.7 }}>{u.email}</td><td><RoleTag role={u.role}/></td><td><Tag v={u.status}/></td>
+                  {canRemove && <td>{u.id!==user.id && !(u.role==='admin' && adminCount<=1) ? <button className="btn btn-default btn-sm" onClick={()=>{ setOrgUsers(l => l.filter(x => x.id!==u.id)); toast(`${u.name} was removed. Their access ended immediately.`); }}>Remove</button> : <span style={{ fontSize:11, opacity:.4 }}>{u.id===user.id ? 'You' : 'Only admin'}</span>}</td>}
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          <p style={{ fontSize:11.5, opacity:.5, marginTop:10 }}>You only ever see people from your own organization.</p>
+          <Modal open={showInvite} onClose={()=>setShowInvite(false)} width={440} title="Invite a colleague"
+            footer={<><button className="btn btn-default btn-sm" onClick={()=>setShowInvite(false)}>Cancel</button><button className="btn btn-primary btn-sm" disabled={!email.trim()} onClick={()=>{ setOrgUsers(l => [...l, { id:Date.now(), name:email.split('@')[0], email:email.trim(), phone:'', jobTitle:'', initials:email.slice(0,2).toUpperCase(), color:'#722ed1', role:'viewer', status:'Invited' }]); toast(`Invitation sent to ${email.trim()}. They confirm their email with a one-time code when they activate, and join as a Client Viewer until your project contact assigns projects.`); setEmail(''); setShowInvite(false); }}>Send invite</button></>}>
+            <Field label="Email address" hint="New colleagues start as a Client Viewer with no projects. Your project contact assigns their projects and role. They verify this email address with a one-time code when they activate."><input className="form-input" placeholder="colleague@brandbase.com" value={email} onChange={e=>setEmail(e.target.value)}/></Field>
+          </Modal>
+        </div>
+      )}
+
+      {tab==='notifications' && (
+        <div className="card" style={{ padding:0, maxWidth:640 }}>
+          <div style={{ padding:'14px 16px' }}><span className="card-title">How you are notified</span><p style={{ fontSize:12.5, opacity:.55, margin:'4px 0 0' }}>In-app notifications are always on. Email is available for the events your project contact has enabled.</p></div>
+          <table className="wl-table">
+            <thead><tr><th>Event</th><th style={{ textAlign:'center' }}>In-app</th><th style={{ textAlign:'center' }}>Email</th></tr></thead>
+            <tbody>{NOTIF_TYPES.map(t => (
+              <tr key={t}><td style={{ fontSize:13 }}>{t}</td><td style={{ textAlign:'center' }}><input type="checkbox" checked disabled/></td>
+                <td style={{ textAlign:'center' }}>{op.emailTypes[t] ? <input type="checkbox" checked={prefs[t]} onChange={()=>setPrefs(p => ({ ...p, [t]:!p[t] }))} style={{ accentColor:'var(--accent)' }}/> : <span style={{ fontSize:11, opacity:.4 }}>Not offered</span>}</td></tr>
+            ))}</tbody>
+          </table>
+        </div>
+      )}
+
+      {tab==='security' && (
+        <div className="card" style={{ maxWidth:480 }}>
+          <p style={{ fontSize:12.5, opacity:.55, margin:'-4px 0 14px' }}>Sign-in methods available for your account. Your project contact sets these.</p>
+          {[['magicLink','Magic link sign-in'],['google','Google sign-in'],['password','Password sign-in']].filter(([k]) => op.auth[k]).map(([k,label]) => <div key={k} className="toggle-row"><span className="t">{label}</span><span className="tag tag-green">Enabled</span></div>)}
+          <div style={{ marginTop:16 }}><button className="btn btn-default btn-sm" onClick={onSignOut}>Sign out</button></div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── PROTOTYPE CONTROLS (meta panel) ─────────────────────────────────────────
+// Everything here stands in for something that happens somewhere else: the operator's settings in the admin
+// console, or an action by the internal project team. None of it is part of the client-facing product.
+
+const ProtoControls = ({ branding, setBranding, setOp, userId, setUserId, onRevoke }) => {
+  const P = usePortal();
+  const { op } = P;
+  const [open, setOpen] = useState(false);
+  const chk = { accentColor:'var(--accent)', width:15, height:15 };
+  const row = (label, checked, onChange) => (
+    <div className="toggle-row" style={{ padding:'6px 0' }}><span className="t" style={{ fontWeight:400, fontSize:12.5 }}>{label}</span><input type="checkbox" checked={checked} onChange={onChange} style={chk}/></div>
+  );
+  const taskVisible = P.tasks.find(t => t.id===101).visibility==='client';
+  const hasProject1 = (P.assign[P.user.id]||[]).includes(1);
+
+  const sim = {
+    update: () => {
+      const text = 'The staging site is live and the homepage build is on track for UAT.';
+      P.setUpdates(l => [{ id:uid('u'), projectId:1, author:'Kasun F.', date:TODAY, text }, ...l]);
+      P.notify({ type:'Project', title:'Project update from Kasun F.', body:text, route:{ page:'projects', params:{ id:1 } } });
+      P.addActivity({ projectId:1, icon:'briefcase', text:'Kasun F. posted a project update', route:{ page:'projects', params:{ id:1 } } });
+      toast('Team published a project update.');
+    },
+    approval: () => {
+      const n = Math.max(125, ...P.approvals.map(a => Number(a.id.slice(3)))) + 1;
+      const id = 'AP-' + String(n).padStart(6, '0');
+      P.setApprovals(l => [{ id, projectId:1, title:'Approve visual design direction', linked:{ type:'milestone', id:3, name:'Visual design & design system', version:null }, approverId:1, approver:'Alex Chen', instructions:'Review the three design directions and confirm the one we should develop.', due:'2026-06-12', status:'awaiting', revision:1, requestedBy:'Kasun F.', decision:null, history:[{ ts:'Just now', actor:'Kasun F.', text:'Requested approval of Visual design & design system' }] }, ...l]);
+      P.notify({ type:'Approval', title:'New approval request', body:'Approve visual design direction · due Jun 12', route:{ page:'approvals', params:{ id } } });
+      P.addActivity({ projectId:1, icon:'clipboard-check', text:'Kasun F. requested your approval: Approve visual design direction', route:{ page:'approvals', params:{ id } } });
+      toast(`Team sent ${id} to Alex Chen.`);
+    },
+    file: () => {
+      const id = uid('f');
+      P.setFiles(l => [{ id, projectId:1, name:'Sitemap v2.pdf', category:'Deliverable', visibility:'client', side:'internal', by:'Nimesh S.', date:TODAY, size:'640 KB', version:1, versions:1 }, ...l]);
+      P.notify({ type:'File', title:'New file shared', body:'Sitemap v2.pdf in Brandbase Website Relaunch', route:{ page:'projects', params:{ id:1, tab:'files', file:id } } });
+      P.addActivity({ projectId:1, icon:'file-text', text:'Nimesh S. shared Sitemap v2.pdf', route:{ page:'projects', params:{ id:1, tab:'files', file:id } }, ref:{ type:'file', id } });
+      toast('Team shared Sitemap v2.pdf.');
+    },
+    milestone: () => {
+      const m = P.milestones.find(x => x.id===2);
+      if (m.status==='completed') { toast('That milestone is already complete.'); return; }
+      P.setMilestones(l => l.map(x => x.id===2 ? { ...x, status:'completed', completed:TODAY, completionNote:'Sitemap and wireframes are signed off.' } : x));
+      P.notify({ type:'Milestone', title:'Milestone completed', body:'Site architecture & wireframes', route:{ page:'projects', params:{ id:1, tab:'milestones', ms:2 } } });
+      P.addActivity({ projectId:1, icon:'flag', text:'Milestone completed: Site architecture & wireframes', route:{ page:'projects', params:{ id:1, tab:'milestones', ms:2 } }, ref:{ type:'milestone', id:2 } });
+      toast('Team marked a milestone complete.');
+    },
+    askInfo: () => {
+      const c = P.crs.find(x => x.id===8);
+      if (c.status==='more_info') { toast('CR-0048 is already waiting on you.'); return; }
+      P.updateCR(8, x => ({ status:'more_info', thread:[...x.thread, { from:'team', author:'Kasun F.', text:'Do you want the Spanish site on a separate domain or under a /es path?', ts:'Just now' }], timeline:[...x.timeline, { ts:'Today', text:'More information requested' }] }));
+      P.notify({ type:'Change Request', title:'CR-0048 needs more information', body:'The team asked about the Spanish site setup.', to:[1], route:{ page:'change-requests', params:{ id:8 } } });
+      toast('Team asked Alex for more information on CR-0048.');
+    },
+    reply: () => {
+      P.updateThread('th1', x => ({ readBy:[], messages:[...x.messages, { id:uid('m'), author:'Kasun F.', side:'team', text:'Quick update: staging is ready for your team to click around.', time:'Just now' }] }));
+      P.notify({ type:'Comment', title:'Kasun F. replied in General', body:'Quick update: staging is ready for your team…', route:{ page:'projects', params:{ id:1, tab:'discussions', thread:'th1' } } });
+      toast('Team replied in the General discussion.');
+    },
+    replyDirect: () => {
+      P.updateThread('th6', x => ({ readBy:[], messages:[...x.messages, { id:uid('m'), author:'Kasun F.', side:'team', text:'The June invoice is also in the portal now if Sam wants to check it.', time:'Just now' }] }));
+      P.notify({ type:'Comment', title:'Kasun F. replied in Invoice timing', body:'The June invoice is also in the portal now…', to:[1], route:{ page:'discussions', params:{ thread:'th6' } } });
+      toast('Team replied in Alex\'s direct chat “Invoice timing”.');
+    },
+    status: () => {
+      const p = P.projects.find(x => x.id===1);
+      const next = p.status==='at_risk' ? 'on_track' : 'at_risk';
+      P.updateProject(1, { status:next });
+      P.notify({ type:'Project', title:`Project status is now ${PROJECT_STATUS[next]}`, body:'Brandbase Website Relaunch', route:{ page:'projects', params:{ id:1 } } });
+      P.addActivity({ projectId:1, icon:'briefcase', text:`Project status changed to ${PROJECT_STATUS[next]}`, route:{ page:'projects', params:{ id:1 } } });
+      toast(`Team changed the project status to ${PROJECT_STATUS[next]}.`);
+    },
+    task: () => {
+      P.setTasks(l => l.map(t => t.id===101 ? { ...t, visibility: t.visibility==='client' ? 'internal' : 'client' } : t));
+      toast(taskVisible ? 'Team set “Landing page copy” to Internal Only. It is gone from the portal immediately.' : 'Team shared “Landing page copy” again.');
+    },
+    revoke: () => {
+      P.setAssign(a => ({ ...a, [P.user.id]: hasProject1 ? (a[P.user.id]||[]).filter(x => x!==1) : [...(a[P.user.id]||[]), 1] }));
+      toast(hasProject1 ? 'Team removed your access to Brandbase Website Relaunch.' : 'Team gave you access to Brandbase Website Relaunch again.');
+    },
+  };
+
+  return (
+    <>
+      <button className="proto-fab" onClick={()=>setOpen(v=>!v)}><SvgIcon name="sliders" size={15}/> Prototype Controls</button>
+      {open && (
+        <div className="proto-panel">
+          <p className="proto-note">Stands in for the admin console's Portal Settings and for actions by your project team, so you can watch this portal react. Not part of the product.</p>
+
+          <h4>Signed in as</h4>
+          <select className="form-select" value={userId} onChange={e=>setUserId(Number(e.target.value))}>
+            {P.orgUsers.filter(u => u.status==='Active').map(u => <option key={u.id} value={u.id}>{u.name} · {ROLES[u.role].label}</option>)}
+          </select>
+
+          <h4>Branding</h4>
+          <div className="form-group"><label className="form-label">Portal title</label><input className="form-input" value={branding.title} onChange={e=>setBranding(b => ({ ...b, title:e.target.value }))}/></div>
+          <div className="swatch-row">{BRAND_COLORS.map(c => <button key={c} className={`swatch${branding.color===c?' active':''}`} style={{ background:c }} onClick={()=>setBranding(b => ({ ...b, color:c }))}/>)}</div>
+
+          <h4>Portal sections</h4>
+          {row('Show Invoices page', op.invoicesVisible, ()=>setOp(o => ({ ...o, invoicesVisible:!o.invoicesVisible })))}
+          {row('Client Admins can invite colleagues', op.adminsInvite, ()=>setOp(o => ({ ...o, adminsInvite:!o.adminsInvite })))}
+          {row('Client Admins can remove colleagues', op.adminsRemove, ()=>setOp(o => ({ ...o, adminsRemove:!o.adminsRemove })))}
+
+          <h4>Email offered for</h4>
+          {NOTIF_TYPES.map(t => row(t, op.emailTypes[t], ()=>setOp(o => ({ ...o, emailTypes:{ ...o.emailTypes, [t]:!o.emailTypes[t] } }))))}
+
+          <h4>Sign-in methods</h4>
+          {[['magicLink','Magic link'],['google','Google sign-in'],['password','Password']].map(([k,l]) => row(l, op.auth[k], ()=>setOp(o => ({ ...o, auth:{ ...o.auth, [k]:!o.auth[k] } }))))}
+
+          <h4>Simulate your project team</h4>
+          <button className="btn btn-default btn-sm" onClick={sim.update}>Publish update</button>
+          <button className="btn btn-default btn-sm" onClick={sim.approval}>Request approval</button>
+          <button className="btn btn-default btn-sm" onClick={sim.file}>Share a file</button>
+          <button className="btn btn-default btn-sm" onClick={sim.milestone}>Complete a milestone</button>
+          <button className="btn btn-default btn-sm" onClick={sim.askInfo}>Ask info on CR-0048</button>
+          <button className="btn btn-default btn-sm" onClick={sim.reply}>Reply in a discussion</button>
+          <button className="btn btn-default btn-sm" onClick={sim.replyDirect}>Reply in a direct chat</button>
+          <button className="btn btn-default btn-sm" onClick={sim.status}>Change project status</button>
+
+          <h4>Simulate access changes</h4>
+          <button className="btn btn-default btn-sm" onClick={sim.task}>{taskVisible ? 'Set “Landing page copy” to Internal Only' : 'Share “Landing page copy” again'}</button>
+          <button className="btn btn-default btn-sm" onClick={sim.revoke}>{hasProject1 ? 'Remove my access to Website Relaunch' : 'Restore access to Website Relaunch'}</button>
+          <button className="btn btn-default btn-sm" onClick={onRevoke}>Deactivate me</button>
+
+          <h4>Recorded for your team</h4>
+          <p className="proto-note">What your own actions write to the team's audit log as client activity. Internal-only content never appears here.</p>
+          {P.clientLog.length===0
+            ? <div className="proto-log">Nothing yet. Preview or download a file, post a comment, decide an approval or submit a change request.</div>
+            : P.clientLog.slice(0,8).map(l => <div key={l.id} className="proto-log"><b>{l.action}</b> · {l.target}</div>)}
+        </div>
+      )}
+    </>
+  );
+};
+
+// ─── APP ─────────────────────────────────────────────────────────────────────
+
+// Activating the invitation turns the invited user (Taylor) Active and signs in as that user, so the dashboard that opens
+// holds only Taylor's assigned projects (spec 16.1).
+const AcceptInviteFlow = ({ branding, onAccept, onBackToSignIn }) => {
+  const { setOrgUsers } = usePortal();
+  return <AcceptInviteScreen branding={branding} onBackToSignIn={onBackToSignIn}
+    onAccept={()=>{ setOrgUsers(l => l.map(u => u.id===4 ? { ...u, status:'Active' } : u)); onAccept(); }} />;
+};
+
+const Shell = ({ branding, dark, setDark, setBranding, setOp, userId, setUserId, onSignOut, onRevoke }) => {
+  const { route, op, invoices, go } = usePortal();
+  const content = (() => {
+    switch (route.page) {
+      case 'dashboard': return <Dashboard/>;
+      case 'projects': return route.params.id ? <ProjectWorkspace key={route.params.id} projectId={route.params.id} params={route.params}/> : <ProjectsList/>;
+      case 'discussions': return <DiscussionsPage/>;
+      case 'approvals': return <ApprovalsPage/>;
+      case 'change-requests': return <ChangeRequestsPage/>;
+      case 'invoices': return op.invoicesVisible ? <Invoices invoices={invoices}/> : <Unavailable onBack={()=>go('dashboard')}/>;
+      case 'notifications': return <NotificationsPage/>;
+      case 'account': return <AccountPage onSignOut={onSignOut}/>;
+      default: return <Dashboard/>;
+    }
+  })();
+  return (
+    <div className="wl-app">
+      <TopNav branding={branding} dark={dark} setDark={setDark} onSignOut={onSignOut}/>
+      <div className="wl-body"><Sidebar/><main className="wl-content">{content}</main></div>
+      <ProtoControls branding={branding} setBranding={setBranding} setOp={setOp} userId={userId} setUserId={setUserId} onRevoke={onRevoke}/>
+    </div>
+  );
+};
+
+const App = () => {
+  const [stage, setStage] = useState('signin'); // signin | invite | expired | invalid | app
+  const [returnTo, setReturnTo] = useState(null); // an email link that was opened before sign-in; the user lands on it afterwards
+  const [route, setRoute] = useState({ page:'dashboard', params:{}, n:0 });
+  const [dark, setDark] = useState(false);
+  const [branding, setBranding] = useState(DEFAULT_BRANDING);
+  const [op, setOp] = useState(DEFAULT_OP);
+  const [userId, setUserId] = useState(1);
+  const [revoked, setRevoked] = useState(false);
+  const go = (page, params={}) => { setRoute(r => ({ page, params, n:r.n+1 })); const m = document.querySelector('.wl-content'); if (m) m.scrollTop = 0; window.scrollTo(0, 0); };
+
+  useEffect(() => { document.body.className = dark ? 'dark' : ''; }, [dark]);
+  useEffect(() => { document.documentElement.style.setProperty('--accent', branding.color); document.documentElement.style.setProperty('--accent-soft', branding.color + '18'); }, [branding.color]);
+  useEffect(() => { go('dashboard'); }, [userId]);
+
+  const signOut = () => { setStage('signin'); setRevoked(false); setReturnTo(null); toast('Signed out.'); };
+
+  let screen;
+  if (stage==='signin') screen = (<SignInScreen branding={branding} auth={op.auth} returnTo={returnTo}
+      onSignIn={()=>{ setStage('app'); if (returnTo) { go(returnTo.page, returnTo.params); setReturnTo(null); toast('Signed in. Opened the item from your email.'); } else toast('Signed in.'); }}
+      onGoInvite={()=>setStage('invite')} onGoExpired={()=>setStage('expired')} onGoInvalid={()=>setStage('invalid')}
+      onGoEmailLink={()=>{ setReturnTo({ page:'approvals', params:{ id:'AP-000123' } }); toast('Email link opened. Sign in to continue.'); }} />);
+  else if (stage==='invalid') screen = (<InviteInvalidScreen branding={branding} onBackToSignIn={()=>setStage('signin')} />);
+  else if (stage==='invite') screen = (<AcceptInviteFlow branding={branding} onAccept={()=>{ setUserId(4); setStage('app'); toast('Email verified and account activated. You are signed in as Taylor Reed and see only the projects assigned to you.'); }} onBackToSignIn={()=>setStage('signin')} />);
+  else if (stage==='expired') screen = (<InviteExpiredScreen branding={branding} onBackToSignIn={()=>setStage('signin')} />);
+  else if (revoked) screen = (<AccessRevokedScreen branding={branding} onBackToSignIn={signOut} onRestore={()=>setRevoked(false)} />);
+  else screen = <Shell branding={branding} dark={dark} setDark={setDark} setBranding={setBranding} setOp={setOp} userId={userId} setUserId={setUserId} onSignOut={signOut} onRevoke={()=>setRevoked(true)}/>;
+
+  // One host for the whole app: a toast fired together with a stage change (sign in, activate, sign out) must outlive the screen that fired it.
+  return <PortalProvider userId={userId} op={op} route={route} go={go}>{screen}<ToastHost/></PortalProvider>;
+};
+
+document.documentElement.style.setProperty('--accent', DEFAULT_BRANDING.color);
+document.documentElement.style.setProperty('--accent-soft', DEFAULT_BRANDING.color + '18');
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+</script>
+</body>
+</html>

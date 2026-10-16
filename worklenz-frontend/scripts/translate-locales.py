@@ -122,7 +122,7 @@ KEEP_AS_IS = {
     "URL", "ID", "Pro", "AppSumo Special", "Deutsch", "Español", "Português", "Shqip", "简体中文", "English"
 }
 UNTRANSLATED_ALLOWLIST = {
-    "—", "...", "OK", "Ok", "ETC", "N/A", "UTIL", "% Used", "Total $",
+    "—", "...", "https://example.com", "OK", "Ok", "ETC", "N/A", "UTIL", "% Used", "Total $",
     "KB", "MB", "GB", "TB", "URL", "ID", "Pro", "AppSumo Special",
     "Slack", "Microsoft Teams", "Teams", "GitHub", "LinkedIn", "Google",
     "Apple", "Excel", "YouTube", "Discord", "Facebook", "Google Drive",

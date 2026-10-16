@@ -1,3 +1,4 @@
+import { planLiftsLtdMemberLimit } from "../shared/entitlements/gates";
 import moment from "moment";
 import Excel from "exceljs";
 import crypto from "crypto";
@@ -26,6 +27,7 @@ import {
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
 import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
+import { withTeamSeatLock } from "../shared/team-seat-lock";
 import {
   canAssignRole,
   canManageTargetRole,
@@ -377,11 +379,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
        * Only applies to users who are still on AppSumo lifetime deals (not upgraded to Business plans)
        * Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
        */
-      const isBusinessPlan =
-        subscriptionData.subscription_type === "ANNUAL_BUSINESS" ||
-        subscriptionData.plan_name?.toLowerCase().includes("business") ||
-        subscriptionData.business_plan_override === true ||
-        subscriptionData.appsumo_business_eligible === true;
+      const isBusinessPlan = planLiftsLtdMemberLimit(subscriptionData);
 
       if (
         incrementBy > 0 &&
@@ -1941,6 +1939,17 @@ export default class TeamMembersController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ) {
+    const teamId = req.user?.team_id;
+    // Reactivation checks the free seats and then flips the member; hold the team's lock across
+    // both so it cannot race with an invite taking the last seat.
+    if (!teamId || req.query.active !== "true") return this.toggleMemberActive(req, res);
+    return withTeamSeatLock(teamId, () => this.toggleMemberActive(req, res));
+  }
+
+  private static async toggleMemberActive(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ) {
     const targetManagementError = await this.ensureManageableTarget(
       req,
       req.params.id,
@@ -2020,10 +2029,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
         // Check AppSumo lifetime deal limit - only applies if not on Business plan
         // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
-        const isBusinessPlanAccept = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
-          subscriptionData.plan_name?.toLowerCase().includes("business") ||
-          subscriptionData.business_plan_override === true ||
-          subscriptionData.appsumo_business_eligible === true;
+        const isBusinessPlanAccept = planLiftsLtdMemberLimit(subscriptionData);
 
         if (
           subscriptionData.is_ltd &&
@@ -2132,10 +2138,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
         // Check AppSumo lifetime deal limit - only applies if not on Business plan
         // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
-        const isBusinessPlanReactivate = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
-          subscriptionData.plan_name?.toLowerCase().includes("business") ||
-          subscriptionData.business_plan_override === true ||
-          subscriptionData.appsumo_business_eligible === true;
+        const isBusinessPlanReactivate = planLiftsLtdMemberLimit(subscriptionData);
 
         if (
           subscriptionData.is_ltd &&
@@ -2315,11 +2318,57 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
     }
 
-    // if (subscriptionData.status === "trialing") break;
-    if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
+    // Per-user Paddle Billing plans sell a fixed number of seats that members fill later, so adding
+    // a member never changes the quantity here: it only has to fit the purchased seats.
+    // Paddle Classic subscriptions keep the original behavior below.
+    if (
+      subscriptionData.billing_provider === "paddle_billing" &&
+      subscriptionData.subscription_status === "active" &&
+      subscriptionData.team_member_limit_override !== true
+    ) {
+      const emailsToAdd = req.body.emails?.length || 1;
+      const teamId: string = req.body.team_id;
+      const user = req.user;
+
+      // The seat check and the insert run under one lock per team, on a fresh member count, so
+      // concurrent invites cannot both take the last seat.
+      return withTeamSeatLock(teamId, async () => {
+        const current = await checkTeamSubscriptionStatus(teamId);
+        const seatLimit = getTeamMemberSeatLimit(current);
+        const currentMembers = parseInt(current.current_count) || 0;
+        if (currentMembers + emailsToAdd > seatLimit) {
+          return res.status(200).send(
+            new ServerResponse(
+              false,
+              {
+                error_code: "SEAT_LIMIT_EXCEEDED",
+                seats_enough: false,
+                required_count: currentMembers + emailsToAdd - seatLimit,
+                current_members: currentMembers,
+                plan_seat_limit: seatLimit,
+                current_seat_amount: seatLimit,
+                subscription_type: current.subscription_type,
+              },
+              "Not enough seats. Add more seats to invite this member.",
+            ),
+          );
+        }
+
+        const invited = await this.createOrInviteMembers(req.body, user);
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(
+              true,
+              invited,
+              `Your teammates will get an email that gives them access to your team.`,
+            ).withTitle("Invitations sent"),
+          );
+      });
+    } else if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
       if (subscriptionData.subscription_status === "active") {
         const response = await updateUsers(
-          subscriptionData.subscription_id,
+          subscriptionData.subscription_ref ?? subscriptionData.subscription_id,
           subscriptionData.quantity + (req.body.emails.length || 1),
         );
         if (!response.body.subscription_id)
@@ -2482,11 +2531,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
 
       // Check LTD user limits - only applies if not on Business plan (check both subscription_type and plan_name)
-      const isBusinessPlan =
-        subscriptionData.subscription_type === "ANNUAL_BUSINESS" ||
-        subscriptionData.plan_name?.toLowerCase().includes("business") ||
-        subscriptionData.business_plan_override === true ||
-        subscriptionData.appsumo_business_eligible === true;
+      const isBusinessPlan = planLiftsLtdMemberLimit(subscriptionData);
       if (
         subscriptionData.is_ltd &&
         subscriptionData.current_count &&
@@ -2730,6 +2775,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
       const teamId = validation.team_id;
 
+      // Seat check and insert run under the team's lock so concurrent joins cannot both take the last seat.
+      return await withTeamSeatLock(teamId, async () => {
+
       // Get team owner ID for checking user existence
       const ownerQuery = `
         SELECT u.id, u.name, t.name as team_name, t.user_id as owner_id
@@ -2806,11 +2854,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
         // Check LTD user limits - only applies if not on Business plan
         // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
-        const isBusinessPlanLink =
-          subscriptionData.subscription_type === "ANNUAL_BUSINESS" ||
-          subscriptionData.plan_name?.toLowerCase().includes("business") ||
-          subscriptionData.business_plan_override === true ||
-          subscriptionData.appsumo_business_eligible === true;
+        const isBusinessPlanLink = planLiftsLtdMemberLimit(subscriptionData);
 
         if (
           incrementBy > 0 &&
@@ -2997,6 +3041,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
             "Successfully joined the team!",
           ),
         );
+      });
     } catch (error) {
       console.error("Error accepting team invitation:", error);
       return res

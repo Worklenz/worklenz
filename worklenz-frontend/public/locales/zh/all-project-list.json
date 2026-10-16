@@ -16,6 +16,8 @@
   "favorites": "收藏",
   "archived": "已归档",
   "placeholder": "按项目名称搜索",
+  "searchProjects": "搜索项目",
+  "rowsPerPage": "每页行数：",
   "archive": "归档",
   "unarchive": "取消归档",
   "archiveConfirm": "您确定要归档此项目吗？",

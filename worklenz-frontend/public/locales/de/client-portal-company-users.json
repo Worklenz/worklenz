@@ -147,7 +147,7 @@
     "emailInvalid": "Geben Sie eine gültige E-Mail-Adresse ein.",
     "emailLockedHint": "Dies ist ihre Anmelde-E-Mail-Adresse und kann daher nicht geändert werden, sobald sie Zugriff auf das Portal haben.",
     "jobTitleLabel": "Berufsbezeichnung",
-    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "jobTitlePlaceholder": "z.B. Marketingmanager",
     "jobTitleTooLong": "Die Berufsbezeichnung darf maximal 100 Zeichen lang sein.",
     "phoneLabel": "Telefonnummer (optional)",
     "phonePlaceholder": "+1 415 555 0142",

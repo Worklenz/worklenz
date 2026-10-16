@@ -30,6 +30,9 @@ const ProjectViewMembers = React.lazy(
 const ProjectViewUpdates = React.lazy(
   () => import('@/pages/projects/project-view-1/updates/project-view-updates')
 );
+const ProjectViewDocs = React.lazy(
+  () => import('@/pages/projects/project-view-1/docs/project-view-docs')
+);
 const ProjectViewRoadmap = React.lazy(
   () => import('@/pages/projects/projectView/gantt/ProjectViewGantt')
 );
@@ -75,6 +78,7 @@ const getTabLabel = (key: string): string => {
         files: 'Files',
         members: 'Members',
         updates: 'Updates',
+        docs: 'Docs',
         roadmap: 'Roadmap',
         workload: 'Workload',
         finance: 'Finance',
@@ -94,6 +98,7 @@ const getTabLabel = (key: string): string => {
       files: 'Files',
       members: 'Members',
       updates: 'Updates',
+      docs: 'Docs',
       finance: 'Finance',
     };
     return fallbacks[key] || key;
@@ -168,27 +173,38 @@ export const tabItems: TabItems[] = [
   },
   {
     index: 7,
+    key: 'docs',
+    defaultLabel: 'Docs',
+    label: getTabLabel('docs'),
+    element: React.createElement(
+      Suspense,
+      { fallback: React.createElement(InlineSuspenseFallback) },
+      React.createElement(ProjectViewDocs)
+    ),
+  },
+  {
+    index: 8,
     key: 'roadmap',
     defaultLabel: 'Roadmap',
     label: getTabLabel('roadmap'),
     element: React.createElement('div'), // Placeholder, actual element set in getFilteredTabItems
   },
   {
-    index: 8,
+    index: 9,
     key: 'workload',
     defaultLabel: 'Workload',
     label: getTabLabel('workload'),
     element: React.createElement('div'), // Placeholder, actual element set in getFilteredTabItems
   },
   {
-    index: 9,
+    index: 10,
     key: 'finance',
     defaultLabel: 'Finance',
     label: getTabLabel('finance'),
     element: React.createElement('div'), // Placeholder, actual element set in getFilteredTabItems
   },
   {
-    index: 10,
+    index: 11,
     key: 'releases',
     defaultLabel: 'Releases',
     label: getTabLabel('releases'),
@@ -199,7 +215,7 @@ export const tabItems: TabItems[] = [
     ),
   },
   {
-    index: 11,
+    index: 12,
     key: 'reports',
     defaultLabel: 'Reports',
     label: getTabLabel('reports'),
@@ -237,6 +253,9 @@ export const updateTabLabels = () => {
         case 'updates':
           item.label = getTabLabel('updates');
           break;
+        case 'docs':
+          item.label = getTabLabel('docs');
+          break;
         case 'roadmap':
           item.label = getTabLabel('roadmap');
           break;
@@ -269,6 +288,7 @@ const GUEST_RESTRICTED_VIEWS = [
   'updates',
   'all-attachments',
   'reports',
+  'docs',
 ];
 
 /**
@@ -319,6 +339,10 @@ export const getFilteredTabItems = (
       }
 
       if (isSoftware && SOFTWARE_HIDDEN_VIEWS.includes(item.key)) {
+        return null;
+      }
+
+      if (item.key === 'docs' && currentProject?.permissions && !currentProject.permissions.docs) {
         return null;
       }
 

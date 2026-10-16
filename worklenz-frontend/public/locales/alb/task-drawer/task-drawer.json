@@ -216,6 +216,10 @@
       "moveToTaskTooltip": "Ricakto këtë regjistër kohe në një detyrë tjetër",
       "selectTask": "Zgjidh detyrën...",
       "backdateLimitError": "Regjistrimet e kohës nuk mund të datohen më shumë se {{days}} ditë prapa. Data më e hershme që mund të regjistroni është {{earliestDate}}.",
+      "projectStartDateError": "Koha nuk mund të regjistrohet para datës së fillimit të projektit ({{date}}).",
+      "projectStartDateHint": "Data e fillimit të projektit: {{date}}",
+      "projectNotStartedWarningTitle": "Projekti nuk ka filluar ende",
+      "projectNotStartedWarningDesc": "Ky projekt është planifikuar të fillojë më {{date}}. Koha nuk mund të regjistrohet para datës së fillimit të projektit.",
       "saveError": "Regjistrimi i kohës nuk mund të ruhej. Ju lutemi provoni përsëri."
     },
     "rollupLoggedTooltip": "Shuma e kohës së regjistruar në nën-detyrat"

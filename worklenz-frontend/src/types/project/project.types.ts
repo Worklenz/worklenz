@@ -20,6 +20,8 @@ export interface IProject {
   status_id?: string;
   man_days?: number;
   hours_per_day?: number;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
 export interface IProjectUpdate {

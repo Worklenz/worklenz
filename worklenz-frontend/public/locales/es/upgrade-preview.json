@@ -147,36 +147,6 @@
           "Cuentas de clientes ilimitadas"
         ]
       },
-      "requests": {
-        "title": "Solicitudes",
-        "description": "Permita que los clientes envíen y realicen un seguimiento de las solicitudes de servicio sin salir de su portal.",
-        "features": [
-          "Solicitudes de servicio enviadas por el cliente",
-          "Aceptar, rechazar o dar seguimiento en un solo lugar",
-          "Seguimiento del estado desde el envío hasta la finalización",
-          "Vinculado directamente al servicio que se solicitó"
-        ]
-      },
-      "services": {
-        "title": "Servicios",
-        "description": "Publica los servicios que los clientes pueden solicitar y controla lo que pueden ver.",
-        "features": [
-          "Un catálogo de servicios solicitables.",
-          "Controles de visibilidad por servicio",
-          "Volumen de solicitudes por servicio",
-          "Asigne un propietario de servicio a su equipo"
-        ]
-      },
-      "chats": {
-        "title": "Mensajes",
-        "description": "Envíe mensajes a los clientes directamente desde el mismo portal que utilizan para todo lo demás.",
-        "features": [
-          "Mensajería directa con clientes.",
-          "Un hilo de conversación por cliente",
-          "Historial de conversaciones con capacidad de búsqueda",
-          "Notificaciones cuando un cliente responde"
-        ]
-      },
       "invoices": {
         "title": "Facturas",
         "description": "Cree, envíe y realice un seguimiento de las facturas de los clientes sin salir de Worklenz.",
@@ -195,6 +165,66 @@
           "Encabezado con marca en todo el portal",
           "Identidad visual consistente para los clientes.",
           "Detalles de la empresa que los clientes pueden ver"
+        ]
+      },
+      "projects": {
+        "title": "Proyectos de portales",
+        "description": "Elija qué proyectos pueden ver los clientes y qué se comparte dentro de cada uno.",
+        "features": [
+          "Switch the Client Portal on per project",
+          "Share tasks, files and milestones one by one",
+          "Everything stays Internal Only until you share it",
+          "Client-facing status, phase and progress"
+        ]
+      },
+      "approvals": {
+        "title": "Aprobaciones",
+        "description": "Obtenga la aprobación formal y grabada de los clientes sobre versiones exactas de los archivos.",
+        "features": [
+          "Ask a Client Admin to approve a file, milestone or task",
+          "The exact version or revision is recorded",
+          "Every decision is kept, with a full history",
+          "Overdue and awaiting approvals at a glance"
+        ]
+      },
+      "changeRequests": {
+        "title": "Solicitudes de cambio",
+        "description": "Revise, estime y decida sobre los cambios de alcance, luego convierta los aprobados en trabajo.",
+        "features": [
+          "Clients submit scope changes from their portal",
+          "Estimate, approve, reject or ask for more information",
+          "Convert approved requests into tasks",
+          "Create quotes and invoices from a request"
+        ]
+      },
+      "discussions": {
+        "title": "Discusiones",
+        "description": "Hable con los clientes sobre la tarea, el archivo o la aprobación exactos, manteniendo los comentarios internos en privado.",
+        "features": [
+          "Conversations attached to the work they are about",
+          "Client-visible replies and private internal comments",
+          "Mention client users, never by accident in internal notes",
+          "Unread tracking across your team"
+        ]
+      },
+      "auditLog": {
+        "title": "Registro de auditoría",
+        "description": "Un registro a prueba de manipulaciones de la actividad del cliente y del equipo.",
+        "features": [
+          "Access, sharing, file, approval and change request events",
+          "Every entry is timestamped and attributed",
+          "Filter by client, event type or who acted",
+          "Export the filtered view as CSV"
+        ]
+      },
+      "preview": {
+        "title": "Portal de Clientes",
+        "description": "Vea exactamente lo que ve un cliente antes de compartir algo.",
+        "features": [
+          "Preview as any active client user",
+          "Built from the same rules the portal enforces",
+          "See what is hidden from that user",
+          "Check what each role can do"
         ]
       }
     }

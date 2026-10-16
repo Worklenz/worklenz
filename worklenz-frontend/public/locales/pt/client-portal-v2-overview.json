@@ -1,0 +1,126 @@
+{
+  "page": {
+    "title": "Overview",
+    "description": "O que precisa de sua atenção em clientes, projetos e discussões.",
+    "editingHint": "Drag widgets to reorder them, change their size, or hide the ones you do not need.",
+    "loadFailed": "A visão geral não pôde ser carregada."
+  },
+  "widget": {
+    "viewAll": "Ver tudo",
+    "retry": "Tentar novamente",
+    "error": "Este widget não pôde ser carregado."
+  },
+  "edit": {
+    "customize": "Personalizar",
+    "done": "Concluído",
+    "cancel": "Cancel",
+    "reset": "Reset to default",
+    "resetConfirm": "Restaurar o layout padrão?",
+    "saveFailed": "Não foi possível salvar o layout.",
+    "resetFailed": "Não foi possível redefinir o layout.",
+    "drag": "Arraste para reordenar {{title}}",
+    "size": "Tamanho de {{title}}",
+    "size_s": "S",
+    "size_m": "M",
+    "size_l": "L",
+    "hide": "Ocultar widget",
+    "show": "Mostrar widget",
+    "hideNamed": "Ocultar {{title}}",
+    "showNamed": "Mostrar {{title}}",
+    "save": "Guardar",
+    "saved": "Visão geral salva",
+    "resetDone": "Visão geral redefinida para o layout padrão",
+    "resetConfirmHelp": "Seu arranjo salvo será removido.",
+    "addWidget": "Adicionar widget",
+    "emptyTitle": "Nenhum widget na sua visão geral",
+    "emptyHelp": "Escolha Personalizar e Adicionar widget para trazer alguns de volta.",
+    "widgetSettings": "{{name}} configurações",
+    "settingsFor": "Configurações para {{name}}",
+    "width": "Largura",
+    "widthQuarter": "Largura do quarto",
+    "widthThird": "Um terço",
+    "widthHalf": "Meia largura",
+    "widthTwoThirds": "Dois terços",
+    "widthThreeQuarters": "Três quartos",
+    "widthFull": "Largura total",
+    "moveEarlier": "Mova-se mais cedo",
+    "moveLater": "Mover mais tarde",
+    "leaveTitle": "Sair sem salvar?",
+    "leaveBody": "Suas alterações na visão geral não foram salvas e serão perdidas.",
+    "leave": "Sair",
+    "stay": "Fique"
+  },
+  "status": {
+    "awaiting": "Aguardando",
+    "approved": "Aprovado",
+    "changes_requested": "Alterações solicitadas",
+    "cr_submitted": "Enviado",
+    "cr_under_review": "Em revisão",
+    "cr_more_info": "Mais informações",
+    "cr_approved": "Aprovado",
+    "cr_in_progress": "Em andamento",
+    "cr_completed": "Concluído",
+    "cr_rejected": "Rejeitado",
+    "cr_cancelled": "Cancelado"
+  },
+  "widgets": {
+    "kpi_awaiting_approvals": {
+      "title": "Aprovações pendentes",
+      "sub": "{{count}} atrasado"
+    },
+    "kpi_open_change_requests": {
+      "title": "Solicitações de alteração para revisão",
+      "sub": "{{count}} aguardando cliente"
+    },
+    "kpi_delayed_milestones": {
+      "title": "Marcos atrasados",
+      "sub": "Em projetos de portal"
+    },
+    "kpi_unread_discussions": {
+      "title": "Discussões não lidas",
+      "sub": "Com novas mensagens de clientes"
+    },
+    "kpi_overdue_invoices": {
+      "title": "Faturas vencidas",
+      "none": "Nada atrasado"
+    },
+    "pending_approvals": {
+      "title": "Aprovações pendentes",
+      "empty": "Nenhuma aprovação está aguardando um cliente.",
+      "overdue": "Atrasado · {{date}}",
+      "due": "Vencimento {{date}}"
+    },
+    "change_requests": {
+      "title": "Solicitações de alteração para revisão",
+      "empty": "Nenhuma solicitação de mudança precisa de revisão."
+    },
+    "upcoming_milestones": {
+      "title": "Próximos marcos",
+      "empty": "Não há marcos abertos em projetos de portal."
+    },
+    "latest_discussions": {
+      "title": "Últimas discussões",
+      "empty": "Nenhuma discussão ainda."
+    },
+    "mentions_me": {
+      "title": "Menções sobre mim",
+      "empty": "Ninguém mencionou você em uma discussão.",
+      "row": "{{name}} em {{project}}"
+    },
+    "approvals_by_status": {
+      "title": "Aprovações por status",
+      "empty": "Nenhuma aprovação foi enviada ainda."
+    },
+    "cr_by_status": {
+      "title": "Pipeline de solicitação de alteração",
+      "empty": "Ainda não há solicitações de alteração."
+    },
+    "needs_attention": {
+      "title": "Precisa de atenção",
+      "empty": "Nada precisa de atenção. Bom trabalho.",
+      "approval_overdue": "Aprovação atrasada",
+      "change_request_review": "Solicitação de alta prioridade para revisão",
+      "milestone_late": "Marco tardio"
+    }
+  }
+}

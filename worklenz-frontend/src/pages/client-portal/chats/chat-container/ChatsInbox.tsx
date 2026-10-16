@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Flex, Spin, Typography } from '@/shared/antd-imports';
+import { Button, Flex, Typography } from '@/shared/antd-imports';
 import { InboxOutlined, MessageOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -10,6 +10,7 @@ import { useGetChatConversationsQuery } from '@/api/client-portal/client-portal-
 import ChatBox from './chat-box/chat-box';
 import { ChatsConversationList } from './ChatsConversationList';
 import { toOpenedChat } from '../chats-helpers';
+import { PortalLoader } from '@/components/client-portal/v2';
 
 // A new chat's id is "<clientId>-<YYYY-MM-DD>"; the conversation itself is one thread per client.
 const CHAT_ID_DATE_SUFFIX = /-\d{4}-\d{2}-\d{2}$/;
@@ -79,7 +80,7 @@ export const ChatsInbox: React.FC = () => {
   if (isLoading) {
     return renderStatePanel(
       <Flex vertical align="center" gap={12}>
-        <Spin />
+        <PortalLoader />
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
           {t('loadingChats', { defaultValue: 'Loading conversations...' })}
         </Typography.Text>

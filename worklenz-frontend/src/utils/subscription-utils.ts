@@ -63,6 +63,41 @@ export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean
 };
 
 /**
+ * Features the legacy UI gated behind Business. When the backend is not enforcing entitlements
+ * (session.entitlements.enforced is false), canUseFeature() falls back to
+ * hasBusinessFeatureAccess() for these and treats every other feature as open, exactly as before.
+ */
+const LEGACY_BUSINESS_FEATURES = new Set([
+  'client_portal',
+  'client_portal_branding',
+  'client_portal_invoices',
+  'finance_module',
+  'slack_integration',
+  'restrict_task_creation',
+  'planner_schedule',
+  'planner_timeline',
+  'planner_workload',
+  'task_export',
+]);
+
+/**
+ * Can the current session use a feature? Follows the backend's resolved entitlements once it is
+ * enforcing them; until then it reproduces the legacy plan checks, or the caller's `legacy` rule.
+ */
+export const canUseFeature = (
+  session: ILocalSession | null,
+  feature: string,
+  legacy?: (session: ILocalSession) => boolean
+): boolean => {
+  if (!session) return false;
+  const entitlements = session.entitlements;
+  if (entitlements?.enforced) return entitlements.features.includes(feature);
+  // `legacy` keeps today's behavior for gates that differ from "Business only" (not in the set above).
+  if (legacy) return legacy(session);
+  return LEGACY_BUSINESS_FEATURES.has(feature) ? hasBusinessFeatureAccess(session) : true;
+};
+
+/**
  * Checks if user is on a business plan specifically
  */
 export const isBusinessPlan = (session: ILocalSession | null): boolean => {
@@ -325,5 +360,21 @@ export const shouldShowAppSumoPromo = (
  * so it uses the same access check as those features.
  */
 export const shouldRestrictBillableFeature = (session: ILocalSession | null): boolean => {
+  return !hasBusinessFeatureAccess(session);
+};
+
+/**
+ * Has the team used every purchased seat? Per-user (Paddle Billing) plans are capped by what was
+ * bought on every tier, Business included. Other plans keep the older rule where Business is not
+ * blocked by the client-side count (the backend still enforces).
+ */
+export const hasReachedSeatLimit = (
+  session: ILocalSession | null,
+  billing: { total_used?: number | null; total_seats?: number | null; billing_provider?: string | null } | null | undefined
+): boolean => {
+  const seats = billing?.total_seats ?? 0;
+  if (!(seats > 0)) return false;
+  if ((billing?.total_used ?? 0) < seats) return false;
+  if (billing?.billing_provider === 'paddle_billing') return true;
   return !hasBusinessFeatureAccess(session);
 };

@@ -70,7 +70,9 @@ export const applyNavPreview = (
 // reordered after that are saved as usual. Bump only when the default order itself changes.
 const ORDER_VERSIONS: Partial<Record<SurfaceKey, number>> = {
   // v1: Clients, Requests, Services, Quotes, Invoices, Chats, Ticketing, ... Portal Settings
-  'client-portal': 1,
+  // v2: Clients, Projects, Approvals, Change Req., Discussions, Quotes, Invoices, Audit Log, Portal Settings, Client Portal
+  // v3: Overview, Clients, Projects, ... (Overview added as the landing page)
+  'client-portal': 3,
 };
 
 /** Drops the saved order of any surface whose default order was changed since it was saved. */

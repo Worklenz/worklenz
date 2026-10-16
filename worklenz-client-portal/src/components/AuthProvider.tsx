@@ -3,6 +3,9 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { refreshToken, logoutUser, initializeAuth } from '@/store/slices/authSlice';
 import { TokenManager } from '@/utils/tokenManager';
+import { ACCESS_REMOVED_EVENT } from '@/utils/accessRemoved';
+
+const ACCESS_REMOVED_PATH = '/access-removed';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -58,20 +61,18 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [dispatch, isAuthenticated]);
 
-  // Listen for client deactivation event
+  // The server said this client's access was removed (401, 403 ACCESS_REVOKED, deactivated).
+  // The token is already cleared by whoever raised the event.
   useEffect(() => {
-    const handleClientDeactivated = () => {
-      // Client has been deactivated, logout immediately
-      // Token is already cleared by the API interceptor
+    const handleAccessRemoved = () => {
       dispatch(logoutUser());
-      // Redirect to login page
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/auth/login') {
-        window.location.href = '/login';
+      if (window.location.pathname !== ACCESS_REMOVED_PATH) {
+        window.location.assign(ACCESS_REMOVED_PATH);
       }
     };
 
-    window.addEventListener('client-deactivated', handleClientDeactivated);
-    return () => window.removeEventListener('client-deactivated', handleClientDeactivated);
+    window.addEventListener(ACCESS_REMOVED_EVENT, handleAccessRemoved);
+    return () => window.removeEventListener(ACCESS_REMOVED_EVENT, handleAccessRemoved);
   }, [dispatch]);
 
   return <>{children}</>;

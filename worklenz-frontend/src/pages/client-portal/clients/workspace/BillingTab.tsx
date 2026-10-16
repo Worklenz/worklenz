@@ -1,86 +1,62 @@
-import { FileTextOutlined } from '@ant-design/icons';
-import { Alert, Button, Flex, Typography, message } from '@/shared/antd-imports';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useResendClientInvitationMutation } from '@/api/client-portal/client-portal-api';
-import type { WorkspacePortalStatus } from '@/api/client-portal/client-workspace-api';
+import { FileTextOutlined } from '@ant-design/icons';
+import { Alert, Button, Flex, Typography } from '@/shared/antd-imports';
+import type { OrganizationPortalAccess } from '@/types/client-portal/v2';
 import { InvoicesTable } from '../../invoices/Invoices-table/invoices-table';
-import { shouldWarnAboutPortalAccess } from './workspace-helpers';
-
-const { Title } = Typography;
+import type { WorkspaceTab } from './workspace-helpers';
 
 interface BillingTabProps {
-  clientId: string;
-  clientName: string;
-  portalStatus: WorkspacePortalStatus | undefined;
-  /** Called after an invitation is sent from here, so the header and rail pick up the new status. */
-  onInvited: () => void;
+  organizationId: string;
+  organizationName: string;
+  portalAccess: OrganizationPortalAccess;
+  onOpenTab: (tab: WorkspaceTab) => void;
 }
 
-/** This client's invoices, with an up-front warning when they cannot yet use their portal. */
-export const BillingTab = ({ clientId, clientName, portalStatus, onInvited }: BillingTabProps) => {
-  const { t } = useTranslation('client-portal-client-workspace');
+/** This client's invoices, with an up-front warning when nobody there can sign in to see them yet. */
+export const BillingTab = ({ organizationId, organizationName, portalAccess, onOpenTab }: BillingTabProps) => {
+  const { t } = useTranslation('client-portal-v2-clients');
   const navigate = useNavigate();
-  const [resendInvitation, { isLoading: isInviting }] = useResendClientInvitationMutation();
-
-  const showWarning = shouldWarnAboutPortalAccess(portalStatus);
-  const hasNeverBeenInvited = portalStatus === 'not_invited';
-
-  const handleInvite = async () => {
-    try {
-      await resendInvitation({ clientId }).unwrap();
-      message.success(
-        t('billing.inviteSent', { name: clientName, defaultValue: 'Invitation sent to {{name}}.' })
-      );
-      onInvited();
-    } catch (error) {
-      const serverMessage = (error as { data?: { message?: string } })?.data?.message;
-      message.error(
-        serverMessage ||
-          t('billing.inviteError', { defaultValue: 'Could not send the invitation.' })
-      );
-    }
-  };
+  const nobodyCanSignIn = portalAccess !== 'active';
 
   return (
     <Flex vertical gap={16}>
       {/* Shown before any billing action, not after one fails. */}
-      {showWarning && (
+      {nobodyCanSignIn && (
         <Alert
           type="warning"
           showIcon
-          message={t('billing.warningTitle', {
-            name: clientName,
+          message={t('workspace.billing.warningTitle', {
+            name: organizationName,
             defaultValue: '{{name}} can’t use their portal yet',
           })}
-          description={t('billing.warningDescription', {
+          description={t('workspace.billing.warningDescription', {
             defaultValue:
-              'They haven’t accepted an invitation, so they can’t view or pay invoices in their portal. You can still create invoices. Send the invitation first if they should see them.',
+              'None of their users has accepted an invitation, so they can’t view or pay invoices in their portal. You can still create invoices. Invite a user first if they should see them.',
           })}
           action={
-            <Button size="small" loading={isInviting} onClick={handleInvite}>
-              {hasNeverBeenInvited
-                ? t('billing.sendInvite', { defaultValue: 'Send invite' })
-                : t('billing.resendInvite', { defaultValue: 'Resend invite' })}
+            <Button size="small" onClick={() => onOpenTab('users')}>
+              {t('workspace.billing.manageUsers', { defaultValue: 'Manage users' })}
             </Button>
           }
         />
       )}
 
       <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
-        <Title level={5} style={{ margin: 0 }}>
-          {t('billing.title', { defaultValue: 'Invoices' })}
-        </Title>
+        <Typography.Title level={5} style={{ margin: 0 }}>
+          {t('workspace.billing.title', { defaultValue: 'Invoices' })}
+        </Typography.Title>
         <Button
           type="primary"
           icon={<FileTextOutlined />}
-          onClick={() => navigate(`/worklenz/client-portal/invoices/create?clientId=${clientId}`)}
+          onClick={() => navigate(`/worklenz/client-portal/invoices/create?clientId=${organizationId}`)}
         >
-          {t('billing.createInvoice', { defaultValue: 'Create invoice' })}
+          {t('workspace.billing.createInvoice', { defaultValue: 'Create invoice' })}
         </Button>
       </Flex>
 
-      <InvoicesTable clientId={clientId} embedded />
+      <InvoicesTable clientId={organizationId} embedded />
     </Flex>
   );
 };

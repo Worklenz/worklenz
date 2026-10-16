@@ -6,6 +6,12 @@ import ChunkErrorHandler from '@/utils/chunk-error-handler';
 import NavSurfaceIndexRedirect from '@/features/navigation/NavSurfaceIndexRedirect';
 
 // Lazy load all client portal components with chunk error handling
+const OverviewPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/overview/OverviewPage'),
+    'OverviewPage'
+  )
+);
 const ClientPortalClients = lazy(
   ChunkErrorHandler.wrapLazyImport(
     () => import('@/pages/client-portal/clients/ClientPortalClients'),
@@ -18,34 +24,73 @@ const ClientWorkspacePage = lazy(
     'ClientWorkspacePage'
   )
 );
-const ClientPortalRequests = lazy(
+const PortalProjectsPage = lazy(
   ChunkErrorHandler.wrapLazyImport(
-    () => import('@/pages/client-portal/requests/client-portal-requests'),
-    'ClientPortalRequests'
+    () => import('@/pages/client-portal/portal-projects/PortalProjectsPage'),
+    'PortalProjectsPage'
   )
 );
-const RequestDetailModal = lazy(
+const ProjectWorkspacePage = lazy(
   ChunkErrorHandler.wrapLazyImport(
-    () => import('@/pages/client-portal/requests/request-details/RequestDetailModal'),
-    'RequestDetailModal'
+    () => import('@/pages/client-portal/portal-projects/ProjectWorkspacePage'),
+    'ProjectWorkspacePage'
   )
 );
-const ClientPortalServices = lazy(
+const DiscussionsPage = lazy(
   ChunkErrorHandler.wrapLazyImport(
-    () => import('@/pages/client-portal/services/client-portal-services'),
-    'ClientPortalServices'
+    () => import('@/pages/client-portal/discussions/DiscussionsPage'),
+    'DiscussionsPage'
   )
 );
-const ServiceModal = lazy(
+const ApprovalsPage = lazy(
   ChunkErrorHandler.wrapLazyImport(
-    () => import('@/pages/client-portal/services/ServiceModal'),
-    'ServiceModal'
+    () => import('@/pages/client-portal/approvals/ApprovalsPage'),
+    'ApprovalsPage'
   )
 );
-const ClientPortalChats = lazy(
+const CreateApprovalModal = lazy(
   ChunkErrorHandler.wrapLazyImport(
-    () => import('@/pages/client-portal/chats/client-portal-chats'),
-    'ClientPortalChats'
+    () =>
+      import('@/pages/client-portal/approvals/CreateApprovalModal').then(module => ({
+        default: module.CreateApprovalModal,
+      })),
+    'CreateApprovalModal'
+  )
+);
+const ApprovalDetailModal = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () =>
+      import('@/pages/client-portal/approvals/ApprovalDetailModal').then(module => ({
+        default: module.ApprovalDetailModal,
+      })),
+    'ApprovalDetailModal'
+  )
+);
+const ChangeRequestsPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/change-requests/ChangeRequestsPage'),
+    'ChangeRequestsPage'
+  )
+);
+const ChangeRequestDetailModal = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () =>
+      import('@/pages/client-portal/change-requests/ChangeRequestDetailModal').then(module => ({
+        default: module.ChangeRequestDetailModal,
+      })),
+    'ChangeRequestDetailModal'
+  )
+);
+const AuditLogPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/audit-log/AuditLogPage'),
+    'AuditLogPage'
+  )
+);
+const ClientPortalPreviewPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/preview/ClientPortalPreviewPage'),
+    'ClientPortalPreviewPage'
   )
 );
 const ClientPortalSettings = lazy(
@@ -90,17 +135,11 @@ const CreateQuoteModal = lazy(
     'CreateQuoteModal'
   )
 );
-const ClientPortalTickets = lazy(
-  ChunkErrorHandler.wrapLazyImport(
-    () => import('@/pages/client-portal/tickets/client-portal-tickets'),
-    'ClientPortalTickets'
-  )
-);
-const TicketDetailModal = lazy(
-  ChunkErrorHandler.wrapLazyImport(
-    () => import('@/pages/client-portal/tickets/ticket-details/TicketDetailModal'),
-    'TicketDetailModal'
-  )
+
+const suspended = (node: React.ReactNode) => (
+  <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+    {node}
+  </Suspense>
 );
 
 const clientPortalRoutes: RouteObject[] = [
@@ -109,6 +148,7 @@ const clientPortalRoutes: RouteObject[] = [
     element: <ClientPortalLayout />,
     children: [
       { index: true, element: <NavSurfaceIndexRedirect surfaceKey="client-portal" /> },
+      { path: 'overview', element: suspended(<OverviewPage />) },
       {
         path: 'clients',
         element: (
@@ -135,75 +175,33 @@ const clientPortalRoutes: RouteObject[] = [
         ],
       },
       {
-        path: 'requests',
-        element: (
-          <Suspense
-            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
-          >
-            <ClientPortalRequests />
-          </Suspense>
-        ),
+        // One project opens as a modal over the list, like a client. The optional tab segment picks the open tab.
+        path: 'projects',
+        element: suspended(<PortalProjectsPage />),
         children: [
-          {
-            // One modal per request, opened over the list. Every way of opening a request
-            // links here, and a direct/shared link still works: the list (this route's
-            // parent) renders underneath it either way.
-            path: ':id',
-            element: (
-              <Suspense
-                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
-              >
-                <RequestDetailModal />
-              </Suspense>
-            ),
-          },
+          { path: ':projectId', element: suspended(<ProjectWorkspacePage />) },
+          { path: ':projectId/:tab', element: suspended(<ProjectWorkspacePage />) },
         ],
       },
       {
-        path: 'services',
-        element: (
-          <Suspense
-            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
-          >
-            <ClientPortalServices />
-          </Suspense>
-        ),
+        // Create and detail are modals opened over the list, like invoices: a direct or shared link still
+        // works because the list (this route's parent) renders underneath.
+        path: 'approvals',
+        element: suspended(<ApprovalsPage />),
         children: [
-          {
-            // Create / edit are modals opened over the list. Every way of opening a service
-            // links here, and a direct/shared link still works: the list (this route's parent)
-            // renders underneath it either way.
-            path: 'create',
-            element: (
-              <Suspense
-                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
-              >
-                <ServiceModal />
-              </Suspense>
-            ),
-          },
-          {
-            path: ':id/edit',
-            element: (
-              <Suspense
-                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
-              >
-                <ServiceModal />
-              </Suspense>
-            ),
-          },
+          { path: 'new', element: suspended(<CreateApprovalModal />) },
+          { path: ':approvalId', element: suspended(<ApprovalDetailModal />) },
         ],
       },
       {
-        path: 'chats',
-        element: (
-          <Suspense
-            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
-          >
-            <ClientPortalChats />
-          </Suspense>
-        ),
+        path: 'change-requests',
+        element: suspended(<ChangeRequestsPage />),
+        children: [{ path: ':changeRequestId', element: suspended(<ChangeRequestDetailModal />) }],
       },
+      { path: 'audit-log', element: suspended(<AuditLogPage />) },
+      { path: 'preview', element: suspended(<ClientPortalPreviewPage />) },
+      { path: 'discussions', element: suspended(<DiscussionsPage />) },
+      { path: 'discussions/:threadId', element: suspended(<DiscussionsPage />) },
       {
         path: 'invoices',
         element: (
@@ -278,31 +276,6 @@ const clientPortalRoutes: RouteObject[] = [
                 fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
               >
                 <QuoteDetailModal />
-              </Suspense>
-            ),
-          },
-        ],
-      },
-      {
-        path: 'ticketing',
-        element: (
-          <Suspense
-            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
-          >
-            <ClientPortalTickets />
-          </Suspense>
-        ),
-        children: [
-          {
-            // One modal per ticket, opened over the list/board. Every way of opening a
-            // ticket links here, and a direct/shared link still works: the queue (this
-            // route's parent) renders underneath it either way.
-            path: ':id',
-            element: (
-              <Suspense
-                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
-              >
-                <TicketDetailModal />
               </Suspense>
             ),
           },

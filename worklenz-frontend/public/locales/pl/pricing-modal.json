@@ -131,7 +131,9 @@
         "Niestandardowe integracje",
         "Dedykowany menadżer konta",
         "Wdrożenie lokalne"
-      ]
+      ],
+      "customPricing": "Indywidualnie",
+      "customPricingNote": "dopasowane do Twojego zespołu"
     },
     "additionalUsersCharged": "Dodatkowi użytkownicy poza uwzględnionymi: ${{price}}/użytkownik/miesiąc"
   },

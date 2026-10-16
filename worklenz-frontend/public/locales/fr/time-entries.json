@@ -68,6 +68,10 @@
   "timeLoggedPlaceholder": "par ex. 130, 13h30, 2,5",
   "startTimeLabel": "Heure de début",
   "endTimeLabel": "Heure de fin",
+  "hoursLabel": "Heures",
+  "hoursMinError": "Les heures doivent être supérieures ou égales à 0",
+  "minutesLabel": "Durée en minutes",
+  "minutesRangeError": "Les minutes doivent être comprises entre 0 et 59",
   "workDescriptionLabel": "Description du travail",
   "workDescriptionPlaceholder": "Sur quoi as-tu travaillé ?",
   "logTimeButton": "Heure de journalisation",
@@ -77,6 +81,10 @@
   "selectDateError": "Sélectionnez une date",
   "selectStartTimeError": "Sélectionnez une heure de début",
   "selectEndTimeError": "Sélectionnez une heure de fin",
+  "projectStartDateError": "Le temps ne peut pas être enregistré avant la date de début du projet ({{date}})",
+  "projectStartDateHint": "Date de début du projet : {{date}}",
+  "projectNotStartedWarningTitle": "Le projet n'a pas encore commencé",
+  "projectNotStartedWarningDesc": "Ce projet doit débuter le {{date}}. Le temps ne peut pas être enregistré avant la date de début du projet.",
   "logTimeError": "Échec de l'enregistrement de l'heure",
   "groupByButtonLabel": "Regrouper par : {{groupBy}}",
   "groupByNone": "Aucun",
@@ -119,9 +127,5 @@
     "week_total": "Total de cette semaine",
     "week_billable": "Semaine facturable",
     "week_non_billable": "Semaine non facturable"
-  },
-  "minutesRangeError": "0 – 59",
-  "hoursLabel": "Horaires",
-  "hoursMinError": "Les heures doivent être égales ou supérieures à 0",
-  "minutesLabel": "Procès-verbal"
+  }
 }

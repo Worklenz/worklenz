@@ -1,0 +1,33 @@
+/* Tablet and phone: a flowing grid. Wide widgets take the row; half-width ones pair up two across
+   (one across on a small phone). Summary tiles share an evenly filled row of their own. */
+.dashboard-stack {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-stack__item {
+  min-width: 0;
+}
+
+.dashboard-stack__item--wide,
+.dashboard-stack__tiles {
+  grid-column: 1 / -1;
+}
+
+.dashboard-stack__item--half {
+  grid-column: span 1;
+}
+
+/* Two across on a phone, three or four across on a tablet, never a lone tile stretched tall. */
+.dashboard-stack__tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 575px) {
+  .dashboard-stack__item--half {
+    grid-column: 1 / -1;
+  }
+}

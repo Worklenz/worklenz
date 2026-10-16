@@ -26,6 +26,8 @@ export interface IRecentProject {
   id: string;
   name: string;
   color_code: string;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
 export interface ITaskInProject {
@@ -79,6 +81,7 @@ export interface IRecentTimeLog {
   project_id: string;
   project_name: string;
   project_color?: string;
+  project_start_date?: string | null;
   parent_task_id?: string;
   parent_task_name?: string;
   created_at: string;

@@ -7,6 +7,11 @@ const local = isLocalServer() ? LOCAL_URL : PRODUCTION_SERVER_URL;
 const serverUrl = isTestServer() ? UAT_SERVER_URL : local;
 const jwtSecret: Secret = process.env.JWT_SECRET ?? "";
 
+/** False when requests to the license manager would go to the unset placeholder URL. */
+export function isPaddleServiceConfigured(): boolean {
+  return !/^https?:\/\/your-/.test(serverUrl);
+}
+
 async function post(endpoint: string, body: Record<string, unknown>) {
   const token = jwt.sign({serverId: "01"}, jwtSecret, {expiresIn: "1h"});
   try {
@@ -21,13 +26,20 @@ async function post(endpoint: string, body: Record<string, unknown>) {
   }
 }
 
-export async function generatePayLinkRequest(teamMemberData: any, plan: string, owner_id = "", user_id = "") {
+export async function generatePayLinkRequest(
+  teamMemberData: any,
+  plan: string,
+  owner_id = "",
+  user_id = "",
+  replaceLegacy = false
+) {
   return post("generate-pay-link", {
     plan,
     quantity: teamMemberData.user_count,
     customer_email: teamMemberData.email,
     owner_id,
     user_id,
+    replace_legacy: replaceLegacy,
   });
 }
 
