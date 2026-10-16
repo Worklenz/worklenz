@@ -31,7 +31,8 @@ import { IJobTitlesViewModel } from '@/types/job.types';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import { colors } from '@/styles/colors';
-import CreateJobTitlesDrawer from '@/features/settings/job/CreateJobTitlesDrawer';
+import { theme } from '@/shared/antd-imports';
+import CreateJobTitleModal from '@/components/common/create-job-title-modal/CreateJobTitleModal';
 import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from '@/shared/currencies';
 import { IOrganization } from '@/types/admin-center/admin-center.types';
 
@@ -62,6 +63,7 @@ const RateCardDrawer = ({
   const [addingRowIndex, setAddingRowIndex] = useState<number | null>(null);
   const [organization, setOrganization] = useState<IOrganization | null>(null);
   const { t } = useTranslation('settings/ratecard-settings');
+  const { token } = theme.useToken();
   const drawerLoading = useAppSelector(state => state.financeReducer.isFinanceDrawerloading);
   const drawerRatecard = useAppSelector(state => state.financeReducer.drawerRatecard);
   const isDrawerOpen = useAppSelector(state => state.financeReducer.isRatecardDrawerOpen);
@@ -315,7 +317,7 @@ const RateCardDrawer = ({
               showSearch
               autoFocus
               placeholder={t('selectJobTitle')}
-              style={{ minWidth: 150 }}
+              style={{ width: 200, minWidth: 200 }}
               value={record.job_title_id || undefined}
               onChange={value => {
                 if (roles.some((role, idx) => role.job_title_id === value && idx !== index)) {
@@ -329,18 +331,50 @@ const RateCardDrawer = ({
                 setEditingRowIndex(null);
                 setAddingRowIndex(null);
               }}
+              onSearch={val => setNewJobTitleName(val)}
               onBlur={() => {
-                if (roles[index].job_title_id === '') {
-                  handleDeleteRole(index);
+                if (!isCreatingJobTitle) {
+                  if (roles[index].job_title_id === '') {
+                    handleDeleteRole(index);
+                  }
+                  setEditingRowIndex(null);
+                  setAddingRowIndex(null);
                 }
-                setEditingRowIndex(null);
-                setAddingRowIndex(null);
               }}
               filterOption={(input, option) =>
                 String(option?.children || '')
                   .toLowerCase()
                   .includes(input.toLowerCase())
               }
+              popupRender={menu => (
+                <div>
+                  <div
+                    style={{
+                      padding: '4px 8px',
+                      borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                    }}
+                  >
+                    <Button
+                      type="text"
+                      icon={<PlusOutlined />}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: token.colorPrimary,
+                        fontWeight: 500,
+                        height: 32,
+                      }}
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => setIsCreatingJobTitle(true)}
+                    >
+                      {t('createJobTitleButtonText', { defaultValue: 'Create a Job Title' })}
+                    </Button>
+                  </div>
+                  {menu}
+                </div>
+              )}
             >
               {jobTitles.data
                 ?.filter(
@@ -587,7 +621,35 @@ const RateCardDrawer = ({
           )}
         </Flex>
       </Drawer>
-      <CreateJobTitlesDrawer />
+      <CreateJobTitleModal
+        open={isCreatingJobTitle}
+        initialName={newJobTitleName}
+        onClose={() => {
+          setIsCreatingJobTitle(false);
+          setNewJobTitleName('');
+        }}
+        onCancel={() => {
+          if (addingRowIndex !== null && roles[addingRowIndex]?.job_title_id === '') {
+            handleDeleteRole(addingRowIndex);
+          }
+          setEditingRowIndex(null);
+          setAddingRowIndex(null);
+        }}
+        onSuccess={async newJobTitle => {
+          if (!newJobTitle?.id) return;
+          await getJobTitles();
+          if (addingRowIndex !== null && roles[addingRowIndex]) {
+            const updatedRoles = [...roles];
+            updatedRoles[addingRowIndex].job_title_id = newJobTitle.id;
+            updatedRoles[addingRowIndex].jobtitle = newJobTitle.name || '';
+            setRoles(updatedRoles);
+            setAddingRowIndex(null);
+            setEditingRowIndex(null);
+          }
+          setIsCreatingJobTitle(false);
+          setNewJobTitleName('');
+        }}
+      />
     </>
   );
 };

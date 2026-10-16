@@ -135,7 +135,11 @@ const HomeMyTeam: React.FC = () => {
       setMembers(prev =>
         prev.map(m =>
           m.id === memberId
-            ? { ...m, reports_to_member_id: teamLeadId, current_team_lead_name: teamLeadName }
+            ? {
+                ...m,
+                reports_to_member_id: teamLeadId || undefined,
+                current_team_lead_name: teamLeadName || undefined,
+              }
             : m
         )
       );
@@ -144,53 +148,77 @@ const HomeMyTeam: React.FC = () => {
   );
 
   const getActionMenuItems = (record: ITeamMemberViewModel): MenuProps['items'] => {
+    const isCurrentUser =
+      currentUser?.team_member_id === record.id || currentUser?.email === record.email;
+    const isTargetOwner = record.role_name?.toLowerCase() === 'owner';
     const canManage = canManageUser(record.role_name);
+    const canEdit =
+      isCurrentUser || effectiveRole === ROLE_NAMES.OWNER || (canManage && !isTargetOwner);
+    const canChangeStatus = canManage && !isTargetOwner && !isCurrentUser;
+    const canDelete = canManage && !isTargetOwner && !isCurrentUser;
 
     return [
       {
         key: 'edit',
         label: t('myTeam.actionEdit', { defaultValue: 'Edit' }),
         icon: <EditOutlined />,
-        disabled: !canManage,
-        onClick: () => canManage && handleEditClick(record),
+        disabled: !canEdit,
+        onClick: () => canEdit && handleEditClick(record),
       },
-      {
-        key: 'status',
-        disabled: !canManage,
-        label: (
-          <Popconfirm
-            title={record.active ? t('myTeam.statusToggleConfirmDeactivate', { defaultValue: 'Are you sure you want to deactivate this member?' }) : t('myTeam.statusToggleConfirmActivate', { defaultValue: 'Are you sure you want to activate this member?' })}
-            icon={<ExclamationCircleFilled style={{ color: token.colorWarning }} />}
-            okText={t('myTeam.statusToggleOk', { defaultValue: 'Yes' })}
-            cancelText={t('myTeam.statusToggleCancel', { defaultValue: 'Cancel' })}
-            disabled={!canManage}
-            onConfirm={() => canManage && handleStatusChange(record)}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-               <UserSwitchOutlined /> {record.active ? t('myTeam.statusToggleLabelDeactivate', { defaultValue: 'Deactivate' }) : t('myTeam.statusToggleLabelActivate', { defaultValue: 'Activate' })}
-            </div>
-          </Popconfirm>
-        ),
-      },
-      {
-        key: 'delete',
-        danger: true,
-        disabled: !canManage,
-        label: (
-          <Popconfirm
-            title={t('myTeam.deleteConfirmTitle', { defaultValue: 'Are you sure you want to remove this member?' })}
-            icon={<ExclamationCircleFilled style={{ color: token.colorError }} />}
-            okText={t('myTeam.deleteOk', { defaultValue: 'Yes' })}
-            cancelText={t('myTeam.deleteCancel', { defaultValue: 'Cancel' })}
-            disabled={!canManage}
-            onConfirm={() => canManage && handleDeleteMember(record)}
-          >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-                <DeleteOutlined /> {t('myTeam.deleteLabel', { defaultValue: 'Remove' })}
-            </div>
-          </Popconfirm>
-        ),
-      },
+      ...(canChangeStatus
+        ? [
+            {
+              key: 'status',
+              label: (
+                <Popconfirm
+                  title={
+                    record.active
+                      ? t('myTeam.statusToggleConfirmDeactivate', {
+                          defaultValue: 'Are you sure you want to deactivate this member?',
+                        })
+                      : t('myTeam.statusToggleConfirmActivate', {
+                          defaultValue: 'Are you sure you want to activate this member?',
+                        })
+                  }
+                  icon={<ExclamationCircleFilled style={{ color: token.colorWarning }} />}
+                  okText={t('myTeam.statusToggleOk', { defaultValue: 'Yes' })}
+                  cancelText={t('myTeam.statusToggleCancel', { defaultValue: 'Cancel' })}
+                  onConfirm={() => handleStatusChange(record)}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                    <UserSwitchOutlined />{' '}
+                    {record.active
+                      ? t('myTeam.statusToggleLabelDeactivate', { defaultValue: 'Deactivate' })
+                      : t('myTeam.statusToggleLabelActivate', { defaultValue: 'Activate' })}
+                  </div>
+                </Popconfirm>
+              ),
+            },
+          ]
+        : []),
+      ...(canDelete
+        ? [
+            {
+              key: 'delete',
+              danger: true,
+              label: (
+                <Popconfirm
+                  title={t('myTeam.deleteConfirmTitle', {
+                    defaultValue: 'Are you sure you want to remove this member?',
+                  })}
+                  icon={<ExclamationCircleFilled style={{ color: token.colorError }} />}
+                  okText={t('myTeam.deleteOk', { defaultValue: 'Yes' })}
+                  cancelText={t('myTeam.deleteCancel', { defaultValue: 'Cancel' })}
+                  onConfirm={() => handleDeleteMember(record)}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                    <DeleteOutlined /> {t('myTeam.deleteLabel', { defaultValue: 'Remove' })}
+                  </div>
+                </Popconfirm>
+              ),
+            },
+          ]
+        : []),
     ];
   };
 
@@ -270,7 +298,13 @@ const HomeMyTeam: React.FC = () => {
               {members.map(m => {
                 const isTeamLeadRole =
                   m.role_name === 'Team Lead' || m.role_name === 'Admin' || m.role_name === 'Owner';
+                const isCurrentUser =
+                  currentUser?.team_member_id === m.id || currentUser?.email === m.email;
+                const isTargetOwner = m.role_name?.toLowerCase() === 'owner';
                 const canManage = canManageUser(m.role_name);
+                const canEdit =
+                  isCurrentUser || effectiveRole === ROLE_NAMES.OWNER || (canManage && !isTargetOwner);
+                const hasAnyAction = canEdit || canManage;
 
                 return (
                   <tr key={m.id} style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}>
@@ -289,7 +323,16 @@ const HomeMyTeam: React.FC = () => {
                       </div>
                     </td>
                     <td style={{ ...tdStyle, opacity: 0.75 }}>{m.email || '—'}</td>
-                    <td style={{ ...tdStyle, opacity: 0.65 }}>{m.job_title || '—'}</td>
+                    <td
+                      style={{
+                        ...tdStyle,
+                        opacity: 0.65,
+                        cursor: canEdit ? 'pointer' : 'default',
+                      }}
+                      onClick={() => canEdit && handleEditClick(m)}
+                    >
+                      {m.job_title || '—'}
+                    </td>
                     <td style={tdStyle}>
                       <span style={{ color: getRoleColor(m.role_name || ''), fontWeight: 500 }}>
                          {m.role_name || t('myTeam.defaultRole', { defaultValue: 'Member' })}
@@ -300,14 +343,13 @@ const HomeMyTeam: React.FC = () => {
                     </td>
                     <td style={{ ...tdStyle, fontWeight: 600 }}>{m.projects_count ?? 0}</td>
                     <td style={{ ...tdStyle, textAlign: 'right' }}>
-                      {isPrivilegedUser && (
+                      {isPrivilegedUser && hasAnyAction && (
                         <Dropdown
                           menu={{ items: getActionMenuItems(m) }}
                           trigger={['click']}
                           placement="bottomRight"
-                          disabled={!canManage}
                         >
-                          <Button size="small" icon={<MoreOutlined />} disabled={!canManage} />
+                          <Button size="small" icon={<MoreOutlined />} />
                         </Dropdown>
                       )}
                     </td>

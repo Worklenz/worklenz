@@ -5,6 +5,7 @@
   "deleteConfirmationCancel": "取消",
   "searchPlaceholder": "按名称搜索",
   "createJobTitleButton": "创建职位",
+  "createJobTitleButtonText": "创建职位",
   "pinTooltip": "点击将其固定到主菜单",
   "createJobTitleDrawerTitle": "创建职位",
   "updateJobTitleDrawerTitle": "更新职位",

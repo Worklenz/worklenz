@@ -5,6 +5,7 @@
   "deleteConfirmationCancel": "Abbrechen",
   "searchPlaceholder": "Nach Namen suchen",
   "createJobTitleButton": "Jobtitel erstellen",
+  "createJobTitleButtonText": "Berufsbezeichnung erstellen",
   "pinTooltip": "Zum Anheften an das Hauptmenü klicken",
   "createJobTitleDrawerTitle": "Jobtitel erstellen",
   "updateJobTitleDrawerTitle": "Jobtitel aktualisieren",
@@ -17,6 +18,9 @@
   "createJobTitleErrorMessage": "Erstellung des Jobtitels fehlgeschlagen!",
   "updateJobTitleSuccessMessage": "Jobtitel erfolgreich aktualisiert!",
   "updateJobTitleErrorMessage": "Aktualisierung des Jobtitels fehlgeschlagen!",
+  "paginationTotal": "{{start}}-{{end}} von {{total}} Einträgen",
+  "editTooltip": "Bearbeiten",
+  "deleteTooltip": "Löschen",
   "fetchJobTitleErrorMessage": "Berufsbezeichnung konnte nicht abgerufen werden. Bitte versuchen Sie es erneut.",
   "pageTitle": "Berufsbezeichnungen verwalten"
 }
