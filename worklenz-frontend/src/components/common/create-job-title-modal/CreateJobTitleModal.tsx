@@ -9,6 +9,7 @@ export interface CreateJobTitleModalProps {
   open: boolean;
   initialName?: string;
   onClose: () => void;
+  onCancel?: () => void;
   onSuccess: (newJobTitle: IJobTitle) => void;
 }
 
@@ -16,6 +17,7 @@ export const CreateJobTitleModal: React.FC<CreateJobTitleModalProps> = ({
   open,
   initialName = '',
   onClose,
+  onCancel,
   onSuccess,
 }) => {
   const { t } = useTranslation('settings/job-titles');
@@ -64,6 +66,7 @@ export const CreateJobTitleModal: React.FC<CreateJobTitleModalProps> = ({
 
   const handleCancel = () => {
     form.resetFields();
+    onCancel?.();
     onClose();
   };
 

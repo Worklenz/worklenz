@@ -628,6 +628,13 @@ const RateCardDrawer = ({
           setIsCreatingJobTitle(false);
           setNewJobTitleName('');
         }}
+        onCancel={() => {
+          if (addingRowIndex !== null && roles[addingRowIndex]?.job_title_id === '') {
+            handleDeleteRole(addingRowIndex);
+          }
+          setEditingRowIndex(null);
+          setAddingRowIndex(null);
+        }}
         onSuccess={async newJobTitle => {
           if (!newJobTitle?.id) return;
           await getJobTitles();

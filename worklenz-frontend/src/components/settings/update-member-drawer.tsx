@@ -709,7 +709,7 @@ const UpdateMemberDrawer = ({
               type="primary"
               style={{ width: '100%' }}
               htmlType="submit"
-              disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
+              disabled={!canEditMemberDetails}
             >
               {t('updateButton', { defaultValue: 'Save Changes' })}
             </Button>

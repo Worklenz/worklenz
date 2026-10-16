@@ -22,10 +22,20 @@ export default class JobTitlesController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(true, existing.rows[0]));
     }
 
-    const q = `INSERT INTO job_titles (name, team_id) VALUES ($1, (SELECT active_team FROM users WHERE id = $2::UUID)) RETURNING id, name;`;
-    const result = await db.query(q, [name, req.user?.id || null]);
-    const [data] = result.rows;
-    return res.status(200).send(new ServerResponse(true, data));
+    try {
+      const q = `INSERT INTO job_titles (name, team_id) VALUES ($1, (SELECT active_team FROM users WHERE id = $2::UUID)) RETURNING id, name;`;
+      const result = await db.query(q, [name, req.user?.id || null]);
+      const [data] = result.rows;
+      return res.status(200).send(new ServerResponse(true, data));
+    } catch (error: any) {
+      if (error?.code === "23505") {
+        const fallback = await db.query(checkQuery, [name, req.user?.id || null]);
+        if (fallback.rows.length > 0) {
+          return res.status(200).send(new ServerResponse(true, fallback.rows[0]));
+        }
+      }
+      throw error;
+    }
   }
 
   @HandleExceptions()

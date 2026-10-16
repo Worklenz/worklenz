@@ -157,8 +157,11 @@ const RateCardTable: React.FC = () => {
   };
 
   // In handleSelectJobTitle, after successful insert, update the rate if needed
-  const handleSelectJobTitle = async (jobTitleId: string) => {
-    const jobTitle = jobTitles.find(jt => jt.id === jobTitleId);
+  const handleSelectJobTitle = async (
+    jobTitleId: string,
+    knownJobTitle?: RatecardType | IJobTitle
+  ) => {
+    const jobTitle = knownJobTitle || jobTitles.find(jt => jt.id === jobTitleId);
     if (!jobTitle || !projectId) return;
     if (roles.some(r => r.job_title_id === jobTitleId)) return;
 
@@ -280,15 +283,15 @@ const RateCardTable: React.FC = () => {
               placeholder={t('selectJobTitle')}
               style={{ width: 200, minWidth: 200 }}
               value={record.job_title_id || undefined}
-              onChange={handleSelectJobTitle}
+              onChange={val => handleSelectJobTitle(val)}
               onSearch={val => setJobTitleSearchText(val)}
               onBlur={() => {
                 if (!isCreateModalOpen) {
                   setAddingRow(false);
                 }
               }}
-              filterOption={(input, option) =>
-                ((option?.children as unknown as string) || '')
+              filterOption={(input, option: any) =>
+                String(option?.children || '')
                   .toLowerCase()
                   .includes(input.toLowerCase())
               }
@@ -460,8 +463,10 @@ const RateCardTable: React.FC = () => {
           initialName={jobTitleSearchText}
           onClose={() => {
             setIsCreateModalOpen(false);
-            setAddingRow(false);
             setJobTitleSearchText('');
+          }}
+          onCancel={() => {
+            setAddingRow(false);
           }}
           onSuccess={async (newJobTitle: IJobTitle) => {
             if (!newJobTitle?.id) return;
@@ -471,7 +476,7 @@ const RateCardTable: React.FC = () => {
             });
             setIsCreateModalOpen(false);
             setJobTitleSearchText('');
-            await handleSelectJobTitle(newJobTitle.id);
+            await handleSelectJobTitle(newJobTitle.id, newJobTitle);
           }}
         />
       </>
