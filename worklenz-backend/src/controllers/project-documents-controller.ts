@@ -329,6 +329,9 @@ export default class ProjectDocumentsController extends WorklenzControllerBase {
       const projectName = sanitizePlainText(projectResult.rows[0]?.name || "project");
       const safeActor = sanitizePlainText(actorName || "Someone");
       const message = `<b>${safeActor}</b> mentioned you in a document on <b>${projectName}</b>`;
+      // Built from the sanitized parts directly; stripping tags from `message` with a
+      // regex can leave a reassembled tag behind.
+      const plainMessage = `${safeActor} mentioned you in a document on ${projectName}`;
 
       for (const userId of memberIds) {
         if (!userId || userId === actorId) continue;
@@ -362,7 +365,7 @@ export default class ProjectDocumentsController extends WorklenzControllerBase {
             summary: `${safeActor} mentioned you in a document on ${projectName}`,
             team: "",
             project_name: projectName,
-            comment: message.replace(/<[^>]+>/g, ""),
+            comment: plainMessage,
             settings_url: `${getBaseUrl()}/worklenz/settings/notifications`,
             project_url: `${getBaseUrl()}/worklenz/projects/${projectId}?tab=docs&doc=${documentId}`,
           };
