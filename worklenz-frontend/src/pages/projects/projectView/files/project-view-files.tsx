@@ -753,7 +753,7 @@ const ProjectViewFiles = () => {
       render: (_: unknown, record) => (
         <Typography.Text>
           {record.task_key && record.task_name
-            ? `${record.task_key} - ${record.task_name}`
+            ? `${record.task_key} ${record.task_name}`
             : record.task_name || '--'}
         </Typography.Text>
       ),

@@ -50,6 +50,13 @@ import './projects-reports-table.css';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import ProjectTeamFilterDropdown from '../projects-reports-filters/project-team-filter-dropdown';
+import ProjectStatusFilterDropdown from '../projects-reports-filters/project-status-filter-dropdown';
+import ProjectHealthFilterDropdown from '../projects-reports-filters/project-health-filter-dropdown';
+import ProjectCategoriesFilterDropdown from '../projects-reports-filters/project-categories-filter-dropdown';
+import ProjectManagersFilterDropdown from '../projects-reports-filters/project-managers-filter-dropdown';
+import ProjectClientFilterDropdown from '../projects-reports-filters/project-client-filter-dropdown';
+import ProjectPriorityFilterDropdown from '../projects-reports-filters/project-priority-filter-dropdown';
 import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
 
 const ProjectsReportsTable = () => {
@@ -61,6 +68,7 @@ const ProjectsReportsTable = () => {
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
     state => state.projectStatusesReducer
   );
+
 
   const {
     projectList,
@@ -75,6 +83,9 @@ const ProjectsReportsTable = () => {
     selectedProjectHealths,
     selectedProjectCategories,
     selectedProjectManagers,
+    selectedClients,
+    selectedProjectPriorities,
+    teams,
     archived,
   } = useAppSelector(state => state.projectReportsReducer);
 
@@ -208,8 +219,10 @@ const ProjectsReportsTable = () => {
         width: 200,
       },
       {
-        key: 'lastActivity',
+        key: 'last_activity',
+        dataIndex: 'last_activity',
         title: <CustomTableTitle title={t('lastActivityColumn')} />,
+        sorter: true,
         render: record => (
           <LastActivityCell activity={record.last_activity?.last_activity_string} />
         ),
@@ -218,18 +231,39 @@ const ProjectsReportsTable = () => {
       {
         key: 'status',
         dataIndex: 'status_id',
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
         title: <CustomTableTitle title={t('statusColumn')} />,
+        sorter: (a, b) => (a.status_id || '').localeCompare(b.status_id || ''),
+        filterDropdown: () => (
+          <div className="table-filter-menu-popup">
+            <ProjectStatusFilterDropdown inline />
+          </div>
+        ),
+        filtered: Boolean(selectedProjectStatuses?.length),
         render: (_, record: IRPTProject) => (
-          <ProjectStatusCell currentStatus={record.status_id} projectId={record.id} />
+          <ProjectStatusCell
+            currentStatus={record.status_id}
+            projectId={record.id}
+          />
         ),
         width: 200,
-        sorter: true,
       },
       {
         key: 'priority',
         dataIndex: 'priority_name',
-        title: <CustomTableTitle title={t('priorityColumn', { defaultValue: 'Priority' })} />,
+        title: (
+          <CustomTableTitle
+            title={t('priorityColumn', { defaultValue: 'Priority' })}
+          />
+        ),
+        sorter: (a, b) => (a.priority_name || '').localeCompare(b.priority_name || ''),
+
+        filterDropdown: () => (
+          <div className="table-filter-menu-popup">
+            <ProjectPriorityFilterDropdown inline />
+          </div>
+        ),
+
+        filtered: Boolean(selectedProjectPriorities?.length),
         render: (_, record: IRPTProject) =>
           record.priority_name ? (
             <Tag
@@ -243,7 +277,7 @@ const ProjectsReportsTable = () => {
               —
             </Typography.Text>
           ),
-        width: 130,
+        width: 140,
       },
       {
         key: 'dates',
@@ -259,9 +293,10 @@ const ProjectsReportsTable = () => {
         width: 275,
       },
       {
-        key: 'daysLeft',
+        key: 'days_left',
         dataIndex: 'days_left',
         title: <CustomTableTitle title={t('daysLeftColumn')} />,
+        sorter: true,
         render: (_, record: IRPTProject) => (
           <ProjectDaysLeftAndOverdueCell
             daysLeft={record.days_left}
@@ -273,10 +308,15 @@ const ProjectsReportsTable = () => {
       },
       {
         key: 'projectHealth',
-        dataIndex: 'project_health',
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
+        dataIndex: 'health_name',
         title: <CustomTableTitle title={t('projectHealthColumn')} />,
-        sorter: true,
+        sorter: (a, b) => (a.health_name || '').localeCompare(b.health_name || ''),
+        filterDropdown: () => (
+          <div className="table-filter-menu-popup">
+            <ProjectHealthFilterDropdown inline />
+          </div>
+        ),
+        filtered: Boolean(selectedProjectHealths?.length),
         render: (_, record: IRPTProject) => (
           <ProjectHealthCell
             value={record.project_health}
@@ -289,58 +329,106 @@ const ProjectsReportsTable = () => {
       },
       {
         key: 'category',
-        title: <CustomTableTitle title={t('categoryColumn')} />,
         dataIndex: 'category_name',
-        sorter: true,
-        // ← Add className on the <td> so our CSS can target it
-        onCell: () => ({ className: 'category-cell' }),
-        render: (_, record: IRPTProject) => (
-          <ProjectCategoryCell
-            projectId={record.id}
-            id={record.category_id || ''}
-            name={record.category_name || ''}
-            color_code={record.category_color || ''}
-          />
+        title: <CustomTableTitle title={t('categoryColumn')} />,
+        sorter: (a, b) => {
+          const nameA = a.category_name || (typeof (a as any).category === 'object' ? (a as any).category?.name : (a as any).category) || '';
+          const nameB = b.category_name || (typeof (b as any).category === 'object' ? (b as any).category?.name : (b as any).category) || '';
+          return nameA.localeCompare(nameB);
+        },
+        filterDropdown: () => (
+          <div className="table-filter-menu-popup">
+            <ProjectCategoriesFilterDropdown inline />
+          </div>
         ),
+        filtered: Boolean(selectedProjectCategories?.length),
+        onCell: () => ({ className: 'category-cell' }),
+        render: (_, record: IRPTProject) => {
+          const catName = record.category_name || (typeof (record as any).category === 'object' ? (record as any).category?.name : (record as any).category) || '';
+          return (
+            <ProjectCategoryCell
+              projectId={record.id}
+              id={record.category_id || ''}
+              name={catName}
+              color_code={record.category_color || ''}
+            />
+          );
+        },
         width: 200,
       },
       {
-        key: 'projectUpdate',
+        key: 'comment',
+        dataIndex: 'comment',
         title: <CustomTableTitle title={t('projectUpdateColumn')} />,
+        sorter: true,
         onCell: () => ({ className: 'project-update-cell' }),
         render: (_, record: IRPTProject) =>
           record.comment ? <ProjectUpdateCell updates={record.comment} /> : '-',
         width: 200,
       },
+
       {
         key: 'client',
         dataIndex: 'client',
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
         title: <CustomTableTitle title={t('clientColumn')} />,
-        render: (_, record: IRPTProject) =>
-          record?.client ? <ProjectClientCell client={record.client} /> : '-',
-        sorter: true,
+        sorter: (a, b) => {
+          const clientA = typeof a.client === 'object' ? (a.client?.name || (a.client as any)?.client_name) : a.client || '';
+          const clientB = typeof b.client === 'object' ? (b.client?.name || (b.client as any)?.client_name) : b.client || '';
+          return String(clientA).localeCompare(String(clientB));
+        },
+        filterDropdown: () => (
+          <div className="table-filter-menu-popup">
+            <ProjectClientFilterDropdown inline />
+          </div>
+        ),
+        filtered: Boolean(selectedClients?.length),
+        render: (_, record: IRPTProject) => {
+          const clientName = typeof record.client === 'object' ? (record.client?.name || (record.client as any)?.client_name) : record.client;
+          return clientName ? <ProjectClientCell client={clientName} /> : '-';
+        },
         width: 200,
       },
+
       {
         key: 'team',
         dataIndex: 'team_name',
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
         title: <CustomTableTitle title={t('teamColumn')} />,
+        sorter: (a, b) => (a.team_name || '').localeCompare(b.team_name || ''),
+        filterDropdown: () => (
+          <div className="table-filter-menu-popup">
+            <ProjectTeamFilterDropdown inline />
+          </div>
+        ),
+        filtered: Boolean(teams?.length),
         render: (_, record: IRPTProject) =>
           record.team_name ? <ProjectTeamCell team={record.team_name} /> : '-',
-        sorter: true,
         width: 200,
       },
       {
         key: 'projectManager',
         title: <CustomTableTitle title={t('projectManagerColumn')} />,
+        sorter: (a, b) => {
+          const nameA = typeof a.project_manager === 'object' ? a.project_manager?.name : a.project_manager || '';
+          const nameB = typeof b.project_manager === 'object' ? b.project_manager?.name : b.project_manager || '';
+          return String(nameA).localeCompare(String(nameB));
+        },
+        filterDropdown: () => (
+          <div className="table-filter-menu-popup">
+            <ProjectManagersFilterDropdown inline />
+          </div>
+        ),
+
+        filtered: Boolean(selectedProjectManagers?.length),
         render: (_, record: IRPTProject) =>
-          record.project_manager ? <ProjectManagerCell manager={record.project_manager} /> : '-',
+          record.project_manager ? (
+            <ProjectManagerCell manager={record.project_manager} />
+          ) : (
+            '-'
+          ),
         width: 200,
       },
     ],
-    [t, order, handleDrawerOpen]
+    [t, order, handleDrawerOpen, projectStatuses, selectedProjectStatuses, projectList]
   );
 
   const visibleColumns = useMemo(
@@ -349,18 +437,47 @@ const ProjectsReportsTable = () => {
   );
 
   const handleTableChange = useCallback(
-    (pagination: PaginationProps, filters: any, sorter: any) => {
-      if (sorter.order) dispatch(setOrder(sorter.order));
-      if (sorter.field) dispatch(setField(sorter.field));
-      dispatch(setIndex(pagination.current));
-      dispatch(setPageSize(pagination.pageSize));
+    (
+      pagination: PaginationProps,
+      _filters: Record<string, (React.Key | boolean)[] | null>,
+      sorter: any
+    ) => {
+      const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+
+      const columnKey = String(
+        activeSorter?.field ?? activeSorter?.columnKey ?? ''
+      );
+
+      const sortFieldMap: Record<string, string> = {
+        name: 'name',
+        last_activity: 'last_activity',
+        days_left: 'days_left',
+        comment: 'comment',
+      };
+
+      if (!activeSorter?.order) {
+        dispatch(setField('name'));
+        dispatch(setOrder('asc'));
+        dispatch(setIndex(1));
+      } else if (sortFieldMap[columnKey]) {
+        dispatch(setField(sortFieldMap[columnKey]));
+        dispatch(setOrder(activeSorter.order === 'ascend' ? 'asc' : 'desc'));
+        dispatch(setIndex(1));
+      } else {
+        dispatch(setIndex(pagination.current || 1));
+      }
+
+      dispatch(setPageSize(pagination.pageSize || 10));
     },
     [dispatch]
   );
 
   useEffect(() => {
     if (!isLoading) dispatch(fetchProjectData());
-    if (projectStatuses.length === 0 && !projectStatusesLoading) dispatch(fetchProjectStatuses());
+
+    if (projectStatuses.length === 0 && !projectStatusesLoading) {
+      dispatch(fetchProjectStatuses());
+    }
   }, [
     dispatch,
     searchQuery,
@@ -368,12 +485,16 @@ const ProjectsReportsTable = () => {
     selectedProjectHealths,
     selectedProjectCategories,
     selectedProjectManagers,
+    selectedClients,
+    selectedProjectPriorities,
+    teams,
     archived,
     index,
     pageSize,
     order,
     field,
   ]);
+
 
   useEffect(() => {
     return () => {

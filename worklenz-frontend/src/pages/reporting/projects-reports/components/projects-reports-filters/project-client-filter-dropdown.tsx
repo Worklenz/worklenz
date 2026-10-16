@@ -34,7 +34,13 @@ const SEARCH_DEBOUNCE_MS = 300;
 // Keeps the initial render fast and the list scannable.
 const INITIAL_DISPLAY_LIMIT = 50;
 
-const ProjectClientFilterDropdown = () => {
+interface ProjectClientFilterDropdownProps {
+  inline?: boolean;
+}
+
+const ProjectClientFilterDropdown = ({
+  inline = false,
+}: ProjectClientFilterDropdownProps) => {
   const { t } = useTranslation('reporting-projects-filters');
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
@@ -216,6 +222,10 @@ const ProjectClientFilterDropdown = () => {
       </Flex>
     </Card>
   );
+
+  if (inline) {
+  return dropdownContent;
+}
 
   return (
     <Dropdown
