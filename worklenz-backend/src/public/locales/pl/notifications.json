@@ -10,5 +10,6 @@
   "commentAdded": "<b>{{user}}</b> dodał(a) komentarz do <b>{{task}}</b>",
   "mentionedInComment": "<b>{{user}}</b> wspomniał(a) o Tobie w komentarzu do <b>{{task}}</b>",
   "mentionedInProjectComment": "<b>{{user}}</b> wspomniał(a) o Tobie w komentarzu do <b>{{project}}</b>",
+  "mentionedInProjectDocument": "<b>{{user}}</b> wspomniał(a) o Tobie w dokumencie w <b>{{project}}</b>",
   "phaseTaskAssigned": "Przypisano Ci zadanie w <b>{{phase}}</b>: <b>{{task}}</b>"
 }

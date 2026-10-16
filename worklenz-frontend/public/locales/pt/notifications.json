@@ -10,6 +10,7 @@
   "commentAdded": "<strong>{{user}}</strong> adicionou um comentário em <strong>{{task}}</strong>",
   "mentionedInComment": "<strong>{{user}}</strong> mencionou-o num comentário em <strong>{{task}}</strong>",
   "mentionedInProjectComment": "<strong>{{user}}</strong> mencionou-o num comentário em <strong>{{project}}</strong>",
+  "mentionedInProjectDocument": "<strong>{{user}}</strong> mencionou-o num documento em <strong>{{project}}</strong>",
   "phaseTaskAssigned": "Foi-lhe atribuída uma tarefa em <strong>{{phase}}</strong>: <strong>{{task}}</strong>",
   "orgSwapped": "A sua organização <strong>{{previousOrganization}}</strong> foi trocada por <strong>{{organization}}</strong>. Agora é o respetivo proprietário.",
   "teamOwnershipChanged": "A sua propriedade de <strong>{{team}}</strong> foi alterada."
