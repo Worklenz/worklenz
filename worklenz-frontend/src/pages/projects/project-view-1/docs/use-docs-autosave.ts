@@ -3,6 +3,7 @@ import { useCallback, useRef, useState } from 'react';
 import { projectDocumentsApiService } from '@/api/projects/docs/project-documents.api.service';
 import { IProjectDocument, ISectionDocument } from '@/types/project/project-documents.types';
 
+type FlushResult = 'idle' | 'saved' | 'conflict' | 'error';
 export type DocsSaveState = 'saved' | 'saving' | 'error' | 'conflict';
 
 interface AutosavePayload {
@@ -49,7 +50,9 @@ export const useDocsAutosave = (
     setSaveState('saved');
   }, []);
 
-  const flush = useCallback(async (): Promise<'idle' | 'saved' | 'conflict' | 'error'> => {
+  const inFlightRef = useRef<Promise<FlushResult> | null>(null);
+
+  const performFlush = useCallback(async (): Promise<FlushResult> => {
     clearTimer();
     const payload = payloadRef.current;
     const updatedAt = updatedAtRef.current;
@@ -87,6 +90,20 @@ export const useDocsAutosave = (
       return 'error';
     }
   }, []);
+
+  // Saves run one at a time: a second save would reuse the old `updated_at` and conflict
+  // with the first. Later calls wait, then save the latest payload with the new timestamp.
+  const flush = useCallback(async (): Promise<FlushResult> => {
+    clearTimer();
+    while (inFlightRef.current) await inFlightRef.current;
+    const run = performFlush();
+    inFlightRef.current = run;
+    try {
+      return await run;
+    } finally {
+      if (inFlightRef.current === run) inFlightRef.current = null;
+    }
+  }, [performFlush]);
 
   const schedule = useCallback(
     (documentId: string, title: string, content: ISectionDocument) => {

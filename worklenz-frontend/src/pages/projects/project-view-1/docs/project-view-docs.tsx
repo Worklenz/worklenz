@@ -84,12 +84,13 @@ const ProjectViewDocs = () => {
   }, []);
 
   const handleSaved = useCallback((document: IProjectDocument) => {
-    setActive(current => {
-      if (!current || current.id !== document.id) return current;
-      const next = { ...current, ...document };
+    // Update the ref synchronously so a rename right after a save sees the new timestamp.
+    const currentActive = activeRef.current;
+    if (currentActive && currentActive.id === document.id) {
+      const next = { ...currentActive, ...document };
       activeRef.current = next;
-      return next;
-    });
+      setActive(next);
+    }
     mentionStore.merge(document.mentions || EMPTY_MENTIONS);
     setPages(current =>
       current.some(page => page.id === document.id)

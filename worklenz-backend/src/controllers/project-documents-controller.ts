@@ -131,38 +131,55 @@ export default class ProjectDocumentsController extends WorklenzControllerBase {
     return mentions;
   }
 
+  /**
+   * Checks mentions that are new to the page. A target that is on the project passes, a
+   * target that exists elsewhere is rejected, and a target that no longer exists at all
+   * (deleted user or task) is reported in `gone` so the caller can drop it instead of
+   * failing the save or violating a foreign key.
+   */
   private static async assertMentionTargets(
     client: PoolClient,
     projectId: string,
     mentions: DocumentMentionRef[]
-  ): Promise<string | null> {
+  ): Promise<{ error: string | null; gone: Set<string> }> {
+    const gone = new Set<string>();
     const memberIds = mentions.filter(mention => mention.type === "member").map(mention => mention.id);
     const taskIds = mentions.filter(mention => mention.type === "task").map(mention => mention.id);
 
     if (memberIds.length > 0) {
-      const result = await client.query(
+      const onProject = await client.query(
         `SELECT tm.user_id
          FROM project_members pm
          INNER JOIN team_members tm ON tm.id = pm.team_member_id
          WHERE pm.project_id = $1 AND tm.user_id = ANY($2::uuid[])`,
         [projectId, memberIds]
       );
-      if (result.rows.length !== memberIds.length) {
-        return "A mentioned member is not on this project";
+      const found = new Set<string>(onProject.rows.map((row: { user_id: string }) => row.user_id));
+      const missing = memberIds.filter(id => !found.has(id));
+      if (missing.length > 0) {
+        const existing = await client.query(`SELECT id FROM users WHERE id = ANY($1::uuid[])`, [missing]);
+        const existingIds = new Set<string>(existing.rows.map((row: { id: string }) => row.id));
+        if (missing.some(id => existingIds.has(id))) return { error: "A mentioned member is not on this project", gone };
+        missing.forEach(id => gone.add(`member:${id}`));
       }
     }
 
     if (taskIds.length > 0) {
-      const result = await client.query(
+      const onProject = await client.query(
         `SELECT id FROM tasks WHERE project_id = $1 AND id = ANY($2::uuid[])`,
         [projectId, taskIds]
       );
-      if (result.rows.length !== taskIds.length) {
-        return "A mentioned task is not in this project";
+      const found = new Set<string>(onProject.rows.map((row: { id: string }) => row.id));
+      const missing = taskIds.filter(id => !found.has(id));
+      if (missing.length > 0) {
+        const existing = await client.query(`SELECT id FROM tasks WHERE id = ANY($1::uuid[])`, [missing]);
+        const existingIds = new Set<string>(existing.rows.map((row: { id: string }) => row.id));
+        if (missing.some(id => existingIds.has(id))) return { error: "A mentioned task is not in this project", gone };
+        missing.forEach(id => gone.add(`task:${id}`));
       }
     }
 
-    return null;
+    return { error: null, gone };
   }
 
   private static async replaceMentions(
@@ -572,15 +589,21 @@ export default class ProjectDocumentsController extends WorklenzControllerBase {
         }
       }
 
-      const nextMentions = content ? extractMentions(content) : null;
+      let nextMentions = content ? extractMentions(content) : null;
+      const previousMentions = nextMentions ? await this.loadMentionRefs(client, documentId) : [];
       if (nextMentions) {
-        const targetError = await this.assertMentionTargets(client, current.project_id, nextMentions);
+        // Mentions already stored on the page stay as they are, even if the member left
+        // the project or the task moved. Only mentions new to this save are validated.
+        const known = new Set(previousMentions.map(mention => `${mention.type}:${mention.id}`));
+        const added = nextMentions.filter(mention => !known.has(`${mention.type}:${mention.id}`));
+        const { error: targetError, gone } = await this.assertMentionTargets(client, current.project_id, added);
         if (targetError) {
           return { error: targetError, status: 400 as const };
         }
+        if (gone.size > 0) {
+          nextMentions = nextMentions.filter(mention => !gone.has(`${mention.type}:${mention.id}`));
+        }
       }
-
-      const previousMentions = nextMentions ? await this.loadMentionRefs(client, documentId) : [];
       const diff = nextMentions
         ? await this.replaceMentions(client, documentId, previousMentions, nextMentions)
         : null;
@@ -820,7 +843,7 @@ export default class ProjectDocumentsController extends WorklenzControllerBase {
        FROM project_documents
        WHERE project_id = $1
          AND deleted_at IS NULL
-         AND (title ILIKE $2 ESCAPE '\\\\' OR content_text ILIKE $2 ESCAPE '\\\\')
+         AND (title ILIKE $2 ESCAPE '\\' OR content_text ILIKE $2 ESCAPE '\\')
        ORDER BY updated_at DESC
        LIMIT 20`,
       [projectId, pattern]

@@ -1,5 +1,5 @@
 {
-  "pages": "Pages",
+  "pages": "Pages du projet",
   "newPage": "Nouvelle page",
   "newSubpage": "Ajouter une sous-page",
   "createPage": "Créer une page",
@@ -25,7 +25,7 @@
   "addSectionHere": "Ajouter une section ici",
   "paragraph": "Paragraphe",
   "heading": "Titre",
-  "code": "Code",
+  "code": "Bloc de code",
   "codePlaceholder": "Écrire du code",
   "listItem": "Élément de liste",
   "emptySections": "Ajoutez une section pour commencer à écrire.",
