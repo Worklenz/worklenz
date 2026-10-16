@@ -1,4 +1,6 @@
 import { forwardRef, useEffect, useId, useImperativeHandle, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { COMMAND_GROUPS, COMMAND_ICONS } from './DocsBlockMenu';
 import { theme } from '@/shared/antd-imports';
 
 export interface DocsSuggestionItem {
@@ -26,6 +28,7 @@ export interface DocsSuggestionMenuHandle {
 }
 
 interface DocsSuggestionMenuProps {
+  variant?: 'default' | 'block';
   ariaLabel: string;
   emptyLabel?: string;
   onDismiss?: () => void;
@@ -33,8 +36,10 @@ interface DocsSuggestionMenuProps {
 }
 
 export const DocsSuggestionMenu = forwardRef<DocsSuggestionMenuHandle, DocsSuggestionMenuProps>(
-  ({ ariaLabel, emptyLabel, onDismiss, onActiveOption }, ref) => {
+  ({ ariaLabel, emptyLabel, onDismiss, onActiveOption, variant = 'default' }, ref) => {
     const { token } = theme.useToken();
+    const { t } = useTranslation('project-view-docs');
+    const isBlockMenu = variant === 'block';
     const [menu, setMenu] = useState<MenuState | null>(null);
     const menuRef = useRef<MenuState | null>(null);
     const elementRef = useRef<HTMLDivElement>(null);
@@ -114,13 +119,26 @@ export const DocsSuggestionMenu = forwardRef<DocsSuggestionMenuHandle, DocsSugge
         id={menuId}
         role="listbox"
         aria-label={ariaLabel}
-        className="fixed z-[80] max-h-64 w-72 overflow-auto rounded-md border py-1 shadow-lg"
+        className={
+          isBlockMenu
+            ? 'docs-slash-menu'
+            : 'fixed z-[80] max-h-64 w-72 overflow-auto rounded-md border py-1 shadow-lg'
+        }
         style={{
           top: menu.top,
           left: menu.left,
           background: token.colorBgElevated,
           borderColor: token.colorBorderSecondary,
           color: token.colorText,
+          ...(isBlockMenu
+            ? {
+                borderRadius: token.borderRadiusLG,
+                boxShadow: token.boxShadowSecondary,
+                fontFamily: token.fontFamily,
+                fontSize: token.fontSize,
+                maxHeight: Math.min(420, window.innerHeight * 0.7, window.innerHeight - menu.top - 8),
+              }
+            : {}),
         }}
       >
         {!menu.items.length ? (
@@ -133,17 +151,26 @@ export const DocsSuggestionMenu = forwardRef<DocsSuggestionMenuHandle, DocsSugge
           </div>
         ) : null}
         {menu.items.map((item, index) => {
-          const showGroup = item.group && item.group !== previousGroup;
-          if (item.group) previousGroup = item.group;
+          const blockGroup = isBlockMenu
+            ? COMMAND_GROUPS.find(([, , kinds]) => kinds.includes(item.id))
+            : undefined;
+          const group = blockGroup ? t(blockGroup[0], { defaultValue: blockGroup[1] }) : item.group;
+          const showGroup = group && group !== previousGroup;
+          if (group) previousGroup = group;
           const selected = index === menu.selected;
           return (
-            <div key={`${item.group || 'item'}-${item.id}`}>
+            <div
+              key={`${group || 'item'}-${item.id}`}
+              className={isBlockMenu && showGroup ? 'docs-slash-group' : undefined}
+            >
               {showGroup ? (
                 <div
-                  className="px-3 pb-1 pt-2 text-xs font-medium"
+                  className={
+                    isBlockMenu ? 'docs-slash-group-title' : 'px-3 pb-1 pt-2 text-xs font-medium'
+                  }
                   style={{ color: token.colorTextSecondary }}
                 >
-                  {item.group}
+                  {group}
                 </div>
               ) : null}
               <button
@@ -151,9 +178,17 @@ export const DocsSuggestionMenu = forwardRef<DocsSuggestionMenuHandle, DocsSugge
                 id={`${menuId}-${index}`}
                 role="option"
                 aria-selected={selected}
-                className="mx-1 flex w-[calc(100%-8px)] items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-sm"
+                className={
+                  isBlockMenu
+                    ? 'docs-slash-menu-item'
+                    : 'mx-1 flex w-[calc(100%-8px)] items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-sm'
+                }
                 style={{
-                  background: selected ? token.colorFillSecondary : 'transparent',
+                  background: selected
+                    ? isBlockMenu
+                      ? token.controlItemBgHover
+                      : token.colorFillSecondary
+                    : 'transparent',
                   color: token.colorText,
                 }}
                 onMouseEnter={() => {
@@ -167,6 +202,11 @@ export const DocsSuggestionMenu = forwardRef<DocsSuggestionMenuHandle, DocsSugge
                   menu.command(item);
                 }}
               >
+                {isBlockMenu ? (
+                  <span className="docs-block-menu-icon" aria-hidden="true">
+                    {COMMAND_ICONS[item.id]}
+                  </span>
+                ) : null}
                 <span className="truncate">{item.label}</span>
                 {item.detail ? (
                   <span className="shrink-0 text-xs" style={{ color: token.colorTextSecondary }}>

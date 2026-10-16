@@ -99,5 +99,12 @@
   "favoriteFailed": "Të preferuarat nuk u përditësuan. Provo përsëri.",
   "groupText": "Teksti",
   "groupLists": "Listat",
-  "groupBlocks": "Blloqet"
+  "groupBlocks": "Blloqet",
+  "linkText": "Teksti për shfaqje",
+  "invalidLinkUrl": "Shkruani një adresë të vlefshme uebi, si https://example.com.",
+  "editLink": "Ndrysho lidhjen",
+  "copyLink": "Kopjo lidhjen",
+  "removeLink": "Hiq lidhjen",
+  "linkCopied": "Lidhja u kopjua",
+  "linkCopyFailed": "Kopjimi dështoi. Zgjidhni adresën për ta kopjuar."
 }

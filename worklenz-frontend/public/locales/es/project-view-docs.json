@@ -99,5 +99,12 @@
   "favoriteFailed": "No se pudieron actualizar tus favoritos. Inténtalo de nuevo.",
   "groupText": "Texto",
   "groupLists": "Listas",
-  "groupBlocks": "Bloques"
+  "groupBlocks": "Bloques",
+  "linkText": "Texto para mostrar",
+  "invalidLinkUrl": "Introduce una dirección web válida, como https://example.com.",
+  "editLink": "Editar enlace",
+  "copyLink": "Copiar enlace",
+  "removeLink": "Eliminar enlace",
+  "linkCopied": "Enlace copiado",
+  "linkCopyFailed": "No se pudo copiar. Selecciona la dirección para copiarla."
 }

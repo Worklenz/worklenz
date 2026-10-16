@@ -19,7 +19,7 @@ import {
   IProjectDocumentSummary,
 } from '@/types/project/project-documents.types';
 
-import DocsEditor from './docs-editor';
+import DocsEditor from './DocsEditor';
 import DocsSidebar from './docs-sidebar';
 import { mentionStore } from './mention-store';
 import { useDocsFavorites } from './use-docs-favorites';

@@ -1,18 +1,8 @@
 import { Editor } from '@tiptap/core';
 import { closeHistory } from '@tiptap/pm/history';
 import { Dropdown, Modal } from '@/shared/antd-imports';
-import {
-  CheckSquareOutlined,
-  CodeOutlined,
-  FontSizeOutlined,
-  HolderOutlined,
-  InfoCircleOutlined,
-  MinusOutlined,
-  OrderedListOutlined,
-  PlusOutlined,
-  UnorderedListOutlined,
-} from '@ant-design/icons';
-import type { ReactNode } from 'react';
+import { HolderOutlined, PlusOutlined } from '@ant-design/icons';
+import { COMMAND_GROUPS, COMMAND_ICONS } from './DocsBlockMenu';
 import { RefObject, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -23,26 +13,6 @@ import {
   moveDocumentBlock,
   turnBlockInto,
 } from './docs-block-commands';
-
-const headingIcon = (level: string) => <span className="docs-menu-glyph">{level}</span>;
-const COMMAND_ICONS: Record<string, ReactNode> = {
-  paragraph: <FontSizeOutlined />,
-  heading1: headingIcon('H1'),
-  heading2: headingIcon('H2'),
-  heading3: headingIcon('H3'),
-  bulletList: <UnorderedListOutlined />,
-  numberedList: <OrderedListOutlined />,
-  checklist: <CheckSquareOutlined />,
-  quote: <span className="docs-menu-glyph">”</span>,
-  code: <CodeOutlined />,
-  divider: <MinusOutlined />,
-  callout: <InfoCircleOutlined />,
-};
-const COMMAND_GROUPS: Array<[string, string, string[]]> = [
-  ['groupText', 'Text', ['paragraph', 'heading1', 'heading2', 'heading3']],
-  ['groupLists', 'Lists', ['bulletList', 'numberedList', 'checklist']],
-  ['groupBlocks', 'Blocks', ['quote', 'code', 'divider', 'callout']],
-];
 
 export const BLOCK_DRAG_TYPE = 'application/x-worklenz-doc-block';
 

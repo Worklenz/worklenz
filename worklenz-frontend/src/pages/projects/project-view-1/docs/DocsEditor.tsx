@@ -18,7 +18,6 @@ import {
   StarOutlined,
   CodeOutlined,
   ItalicOutlined,
-  LinkOutlined,
   UnorderedListOutlined,
   OrderedListOutlined,
   StrikethroughOutlined,
@@ -33,9 +32,10 @@ import './docs-editor.css';
 import { DocsBreadcrumbs, DocsOutline } from './docs-page-navigation';
 import { ToolbarButton, ToolbarDivider } from './docs-toolbar-button';
 import { DocsSaveState } from './use-docs-autosave';
-import { DocsDocumentEditor } from './docs-document-editor';
+import { DocsLinkControl } from './DocsLinkControl';
+import { DocsDocumentEditor } from './DocsDocumentEditor';
 import { toggleDocumentList } from './docs-block-commands';
-import { DocsSuggestionMenu, DocsSuggestionMenuHandle } from './docs-suggestion-menu';
+import { DocsSuggestionMenu, DocsSuggestionMenuHandle } from './DocsSuggestionMenu';
 import { insertMention, loadMentionItems, MentionHandlers } from './docs-mentions';
 
 interface DocsEditorProps {
@@ -82,8 +82,10 @@ const DocsEditor = ({
   const activeEditorRef = useRef<TiptapEditor | null>(null);
   const [, setFormatTick] = useState(0);
   const documentEditorRef = useRef<TiptapEditor | null>(null);
+  const [readyEditor, setReadyEditor] = useState<TiptapEditor | null>(null);
   const handleReady = useCallback((next: TiptapEditor | null) => {
     documentEditorRef.current = next;
+    setReadyEditor(next);
   }, []);
   const [isFullWidth, setIsFullWidth] = useState(() => {
     try {
@@ -122,8 +124,6 @@ const DocsEditor = ({
       element.scrollIntoView?.({ block: 'center', behavior: 'instant' });
   };
   const [isFormattingOpen, setIsFormattingOpen] = useState(false);
-  const [linkOpen, setLinkOpen] = useState(false);
-  const [linkValue, setLinkValue] = useState('');
   const handlersRef = useRef<MentionHandlers>({
     mentionItems: async () => [],
     applyMention: () => undefined,
@@ -154,13 +154,6 @@ const DocsEditor = ({
 
   const handleToggleList = (type: 'bulletList' | 'numberedList') => {
     if (editor) toggleDocumentList(editor, type);
-  };
-
-  const handleApplyLink = () => {
-    const href = linkValue.trim();
-    if (!editor || !/^https?:\/\//i.test(href)) return;
-    editor.chain().focus().extendMarkRange('link').setLink({ href }).run();
-    setLinkOpen(false);
   };
 
   const saveLabel =
@@ -386,36 +379,7 @@ const DocsEditor = ({
               <OrderedListOutlined />
             </ToolbarButton>
             <ToolbarDivider />
-            <Popover
-              open={linkOpen}
-              onOpenChange={open => {
-                setLinkOpen(open);
-                if (open) setLinkValue(editor?.getAttributes('link').href || 'https://');
-              }}
-              trigger="click"
-              content={
-                <Flex vertical gap={8} style={{ width: 260 }}>
-                  <Input
-                    value={linkValue}
-                    aria-label={t('linkUrl', { defaultValue: 'Link URL' })}
-                    onChange={event => setLinkValue(event.target.value)}
-                    onPressEnter={handleApplyLink}
-                  />
-                  <Button size="small" type="primary" onClick={handleApplyLink}>
-                    {t('apply', { defaultValue: 'Apply' })}
-                  </Button>
-                </Flex>
-              }
-            >
-              <ToolbarButton
-                label={t('link', { defaultValue: 'Link' })}
-                active={!!editor?.isActive('link')}
-                disabled={!editor}
-                onClick={() => setLinkOpen(true)}
-              >
-                <LinkOutlined />
-              </ToolbarButton>
-            </Popover>
+            <DocsLinkControl editor={readyEditor} />
             <Dropdown
               open={isFormattingOpen}
               onOpenChange={setIsFormattingOpen}

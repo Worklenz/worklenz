@@ -11,7 +11,7 @@ import { EMPTY_MENTIONS } from '@/types/project/project-documents.types';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ISectionDocument } from '@/types/project/project-documents.types';
-import DocsEditor from './docs-editor';
+import DocsEditor from './DocsEditor';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (_key: string, options: { defaultValue: string }) => options.defaultValue }),
@@ -381,7 +381,21 @@ describe.each([false, true])('phase 2 writing with dark theme = %s', dark => {
     const body = screen.getByLabelText('Page content');
     const editor = editorForBody();
     act(() => { body.focus(); editor.commands.insertContent('/'); });
-    await screen.findByRole('listbox', { name: 'Insert block' });
+    const slashMenu = await screen.findByRole('listbox', { name: 'Insert block' });
+    for (const group of ['Text', 'Lists', 'Blocks']) {
+      expect(within(slashMenu).getByText(group)).toBeInTheDocument();
+    }
+    expect(slashMenu.querySelectorAll('.docs-block-menu-icon')).toHaveLength(11);
+    // Compare the two entry points so block labels and icons cannot drift apart.
+    fireEvent.click(screen.getByRole('button', { name: 'Insert block' }));
+    const insertMenu = await screen.findByRole('menu');
+    expect(within(insertMenu).getAllByRole('menuitem').map(item => item.textContent)).toEqual(
+      within(slashMenu).getAllByRole('option').map(item => item.textContent)
+    );
+    expect(within(insertMenu).getAllByRole('menuitem').map(item => item.querySelector('svg')?.getAttribute('data-icon'))).toEqual(
+      within(slashMenu).getAllByRole('option').map(item => item.querySelector('svg')?.getAttribute('data-icon'))
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Insert block' }));
     expect(screen.getByRole('option', { name: 'Paragraph' })).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(body, { key: 'ArrowDown' });
     expect(screen.getByRole('option', { name: 'Heading 1' })).toHaveAttribute('aria-selected', 'true');
@@ -621,4 +635,106 @@ describe.each([false, true])('phase 3 navigation with dark theme = %s', dark => 
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Strikethrough' }));
     expect(body.querySelector('s')).toHaveTextContent('Project');
   });
+});
+
+describe.each([false, true])('hyperlinks with dark theme = %s', dark => {
+  const selectText = () => {
+    const body = screen.getByLabelText('Page content');
+    const editor = editorForBody();
+    act(() => { body.focus(); editor.commands.setTextSelection({ from: 1, to: 14 }); });
+    return { body, editor };
+  };
+
+  it('adds a link with the keyboard, validates addresses, and edits or removes it inline', async () => {
+    render(<ExampleDocument dark={dark} />);
+    const { body } = selectText();
+    fireEvent.keyDown(body, { key: 'k', ctrlKey: true });
+    const dialog = await screen.findByRole('dialog', { name: 'Link' });
+    fireEvent.change(within(dialog).getByLabelText('Link URL'), { target: { value: 'javascript:alert(1)' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Apply' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Enter a valid web address');
+    expect(body.querySelector('a')).toBeNull();
+    fireEvent.change(within(dialog).getByLabelText('Link URL'), { target: { value: 'example.com/brief' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(body.querySelector('a')).toHaveAttribute('href', 'https://example.com/brief'));
+    expect(body.querySelector('a')).toHaveTextContent('Project goals');
+    expect(onContentChange.mock.lastCall?.[0].sections[0].content[0].marks).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'link', attrs: expect.objectContaining({ href: 'https://example.com/brief' }) })]));
+    fireEvent.click(body.querySelector('a')!);
+    const preview = await screen.findByRole('dialog', { name: 'Link' });
+    expect(within(preview).getByRole('link')).toHaveAttribute('target', '_blank');
+    fireEvent.click(within(preview).getByRole('button', { name: 'Edit link' }));
+    fireEvent.change(within(preview).getByLabelText('Link URL'), { target: { value: 'https://example.org/updated' } });
+    fireEvent.click(within(preview).getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(body.querySelector('a')).toHaveAttribute('href', 'https://example.org/updated'));
+    fireEvent.click(body.querySelector('a')!);
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove link' }));
+    await waitFor(() => expect(body.querySelector('a')).toBeNull());
+    expect(body).toHaveTextContent('Project goals');
+  });
+
+  it('links selected text when pasting a URL and supports copying and modifier-click opening', async () => {
+    render(<ExampleDocument dark={dark} />);
+    const { body } = selectText();
+    fireEvent.paste(body, { clipboardData: { getData: () => 'https://example.com/brief' } });
+    const anchor = body.querySelector('a')!;
+    expect(anchor).toHaveTextContent('Project goals');
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    fireEvent.click(anchor, { metaKey: true });
+    expect(open).toHaveBeenCalledWith('https://example.com/brief', '_blank', 'noopener,noreferrer');
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    fireEvent.click(anchor);
+    fireEvent.click(await screen.findByRole('button', { name: 'Copy link' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('https://example.com/brief'));
+    expect(await within(screen.getByRole('dialog', { name: 'Link' })).findByRole('status')).toHaveTextContent('Link copied');
+  });
+
+  it('inserts display text at the cursor and restores focus when cancelling', async () => {
+    render(<ExampleDocument dark={dark} initialContent={emptyPage} />);
+    const body = screen.getByLabelText('Page content');
+    act(() => { body.focus(); editorForBody().commands.setTextSelection(1); });
+    fireEvent.click(screen.getByRole('button', { name: 'Link' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Link' });
+    fireEvent.change(within(dialog).getByLabelText('Text to display'), { target: { value: 'Read the brief' } });
+    fireEvent.change(within(dialog).getByLabelText('Link URL'), { target: { value: 'https://example.com' } });
+    fireEvent.submit(within(dialog).getByRole('button', { name: 'Apply' }).closest('form')!);
+    await waitFor(() => expect(body.querySelector('a')).toHaveTextContent('Read the brief'));
+    fireEvent.keyDown(body, { key: 'k', metaKey: true });
+    await screen.findByRole('dialog', { name: 'Link' });
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Link' })).not.toBeInTheDocument());
+    await waitFor(() => expect(body).toHaveFocus());
+  });
+});
+
+
+it('previews a loaded link on hover without changing the selection and reports copy failures', async () => {
+  render(<ExampleDocument dark={false} initialContent={{ version: 1, sections: [
+    { id: crypto.randomUUID(), type: 'paragraph', content: [{ type: 'text', text: 'Project brief', marks: [{ type: 'link', attrs: { href: 'https://example.com/brief' } }] }] },
+  ] }} />);
+  const body = screen.getByLabelText('Page content');
+  const selection = editorForBody().state.selection;
+  fireEvent.mouseOver(body.querySelector('a')!);
+  const preview = await screen.findByRole('dialog', { name: 'Link' });
+  expect(editorForBody().state.selection.eq(selection)).toBe(true);
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error('Not allowed')) } });
+  fireEvent.click(within(preview).getByRole('button', { name: 'Copy link' }));
+  expect(await within(preview).findByRole('status')).toHaveTextContent('Could not copy');
+  fireEvent.pointerDown(body);
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Link' })).not.toBeInTheDocument());
+});
+
+it('adds a link from the selection toolbar and preserves bold text', async () => {
+  render(<ExampleDocument dark={true} />);
+  const body = screen.getByLabelText('Page content');
+  const editor = editorForBody();
+  act(() => { body.focus(); editor.chain().setTextSelection({ from: 1, to: 14 }).toggleBold().run(); });
+  const bubbleToolbar = document.querySelector('.docs-bubble-toolbar')!;
+  fireEvent.click(within(bubbleToolbar as HTMLElement).getByRole('button', { name: 'Link' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Link' });
+  fireEvent.change(within(dialog).getByLabelText('Text to display'), { target: { value: 'Read brief' } });
+  fireEvent.change(within(dialog).getByLabelText('Link URL'), { target: { value: 'example.com/brief' } });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Apply' }));
+  await waitFor(() => expect(body.querySelector('a')).toHaveTextContent('Read brief'));
+  expect(body.querySelector('strong')).toHaveTextContent('Read brief');
 });

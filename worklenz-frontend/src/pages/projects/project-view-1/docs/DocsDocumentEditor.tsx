@@ -6,6 +6,7 @@ import { BubbleMenu } from '@tiptap/react/menus';
 import Suggestion, { exitSuggestion, SuggestionProps } from '@tiptap/suggestion';
 import {
   BoldOutlined,
+  LinkOutlined,
   ItalicOutlined,
   UnderlineOutlined,
   UnorderedListOutlined,
@@ -19,7 +20,7 @@ import {
   DocsSuggestionMenu,
   DocsSuggestionMenuHandle,
   suggestionPosition,
-} from './docs-suggestion-menu';
+} from './DocsSuggestionMenu';
 import { MentionHandlers } from './docs-mentions';
 import { ToolbarButton } from './docs-toolbar-button';
 import { fromEditorDocument, toEditorDocument } from './docs-document-format';
@@ -34,7 +35,7 @@ import { MemberMention } from './extensions/member-mention';
 import { TaskMention } from './extensions/task-mention';
 import { createSlashCommands, slashPluginKey } from './extensions/slash-commands';
 import { toggleDocumentList, useDocsBlockCommands } from './docs-block-commands';
-import { DocsBlockControls } from './docs-block-controls';
+import { DocsBlockControls } from './DocsBlockControls';
 
 interface DocsDocumentEditorProps {
   content: ISectionDocument;
@@ -70,6 +71,7 @@ export const DocsDocumentEditor = ({
         link: {
           openOnClick: false,
           autolink: true,
+          defaultProtocol: 'https',
           protocols: ['http', 'https'],
           HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' },
           validate: href => /^https?:\/\//i.test(href),
@@ -231,6 +233,13 @@ export const DocsDocumentEditor = ({
               <UnderlineOutlined />
             </ToolbarButton>
             <ToolbarButton
+              label={t('link', { defaultValue: 'Link' })}
+              active={editor.isActive('link')}
+              onClick={() => editor.view.dom.dispatchEvent(new Event('docs-edit-link'))}
+            >
+              <LinkOutlined />
+            </ToolbarButton>
+            <ToolbarButton
               label={t('bulletList', { defaultValue: 'Bullet list' })}
               active={editor.isActive('bulletList')}
               onClick={() => toggleDocumentList(editor, 'bulletList')}
@@ -252,6 +261,7 @@ export const DocsDocumentEditor = ({
       ) : null}
       <DocsSuggestionMenu
         ref={slashMenuRef}
+        variant="block"
         ariaLabel={t('slashMenu', { defaultValue: 'Insert block' })}
         emptyLabel={t('noCommands', { defaultValue: 'No matching commands' })}
         onDismiss={dismissSlash}

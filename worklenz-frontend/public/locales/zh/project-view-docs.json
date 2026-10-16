@@ -99,5 +99,12 @@
   "favoriteFailed": "无法更新收藏夹。请重试。",
   "groupText": "文本",
   "groupLists": "列表",
-  "groupBlocks": "区块"
+  "groupBlocks": "区块",
+  "linkText": "显示文本",
+  "invalidLinkUrl": "请输入有效的网址，例如 https://example.com。",
+  "editLink": "编辑链接",
+  "copyLink": "复制链接",
+  "removeLink": "移除链接",
+  "linkCopied": "链接已复制",
+  "linkCopyFailed": "无法复制。请选择地址进行复制。"
 }
