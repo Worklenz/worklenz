@@ -49,6 +49,9 @@ describe('renderImportedDescription', () => {
   it('handles an empty body and truncates very long bodies', () => {
     expect(renderImportedDescription(null, source)).toContain('Imported from GitHub');
     const long = renderImportedDescription('x'.repeat(10000), source);
-    expect(long.replace(/<[^>]+>/g, '').length).toBeLessThanOrEqual(5100);
+    const header = 'Imported from GitHub: acme/web#7 (https://github.com/acme/web/issues/7)';
+    // The header and two newline separators count toward the 5,000-character limit.
+    const expectedBody = 'x'.repeat(5000 - header.length - 2);
+    expect(long).toBe(`<p>${header}</p><p><br></p><p>${expectedBody}</p>`);
   });
 });
