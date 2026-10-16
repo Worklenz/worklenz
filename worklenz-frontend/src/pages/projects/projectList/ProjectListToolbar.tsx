@@ -12,6 +12,7 @@ import {
   Select,
   SyncOutlined,
   Tag,
+  theme,
   Tooltip,
   UnorderedListOutlined,
 } from '@/shared/antd-imports';
@@ -79,6 +80,7 @@ const ProjectListToolbarComponent: React.FC<ProjectListToolbarProps> = ({
   onClearFilters,
 }) => {
   const { t } = useTranslation('all-project-list');
+  const { token } = theme.useToken();
 
   const segmentOptions = useMemo(
     () =>
@@ -191,9 +193,10 @@ const ProjectListToolbarComponent: React.FC<ProjectListToolbarProps> = ({
 
       <ProjectListFieldsDropdown />
 
+
       <Input
+        prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
         placeholder={t('placeholder', { defaultValue: 'Search by project name' })}
-        suffix={<SearchOutlined />}
         type="text"
         value={searchValue}
         // Native truncation instead of silently rejecting the whole change —
@@ -203,7 +206,13 @@ const ProjectListToolbarComponent: React.FC<ProjectListToolbarProps> = ({
         onChange={event => onSearchChange(event.target.value)}
         aria-label={t('searchProjects', { defaultValue: 'Search by project name' })}
         allowClear
-        style={SEARCH_INPUT_STYLE}
+        style={{
+          width: 240,
+          maxWidth: '100%',
+          height: 32,
+          fontSize: 12,
+          borderRadius: 7,
+        }}
         onClear={() => onSearchChange('')}
       />
 

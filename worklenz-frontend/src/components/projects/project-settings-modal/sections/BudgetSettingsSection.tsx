@@ -16,14 +16,14 @@ import SettingsCard from '../components/settings-card';
 interface BudgetSettingsSectionProps {
   editMode: boolean;
   canManage: boolean;
-  hasBusinessAccess: boolean;
+  hasFinanceAccess: boolean;
   onUpgradeClick: () => void;
 }
 
 const BudgetSettingsSection = ({
   editMode,
   canManage,
-  hasBusinessAccess,
+  hasFinanceAccess,
   onUpgradeClick,
 }: BudgetSettingsSectionProps) => {
   const { t } = useTranslation('project-drawer');
@@ -31,7 +31,7 @@ const BudgetSettingsSection = ({
 
   return (
     <SettingsCard title={t('budgetSettingsTab', { defaultValue: 'Budget Settings' })}>
-      {!hasBusinessAccess && (
+      {!hasFinanceAccess && (
         <Alert
           type="info"
           showIcon

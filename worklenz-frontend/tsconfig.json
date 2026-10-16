@@ -17,13 +17,15 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
+      "@tiptap/react/menus": ["node_modules/@tiptap/react/dist/menus/index.d.ts"],
       "@/*": ["src/*"],
       "@components/*": ["src/components/*"],
       "@features/*": ["src/features/*"],
       "@assets/*": ["src/assets/*"],
       "@utils/*": ["src/utils/*"],
       "@api/*": ["src/api/*"],
-      "@services/*": ["src/services/*"]
+      "@services/*": ["src/services/*"],
+      "react-grid-layout/legacy": ["node_modules/react-grid-layout/dist/legacy.d.ts"]
     },
     "types": ["vitest", "node"]
   },

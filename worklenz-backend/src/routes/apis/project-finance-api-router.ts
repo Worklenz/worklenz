@@ -5,12 +5,12 @@ import idParamValidator from "../../middlewares/validators/id-param-validator";
 import { requireProjectPermission } from "../../middlewares/validators/require-project-permission";
 import requireFinanceFromRelatedEntity from "../../middlewares/validators/require-finance-from-related-entity";
 import safeControllerFunction from "../../shared/safe-controller-function";
-import { requireBusinessPlan } from "../../middlewares/subscription-middleware";
+import { requireFeature } from "../../shared/entitlements/gates";
 
 const projectFinanceApiRouter = express.Router();
 
 // Project finance is a Business Edition feature — gate every route server-side.
-projectFinanceApiRouter.use(requireBusinessPlan);
+projectFinanceApiRouter.use(requireFeature("finance_module"));
 const requireFinance = requireProjectPermission("finance", {
   sources: [
     "params.project_id",

@@ -629,7 +629,7 @@ export async function calculateStorage(prefix: string) {
   return calculateStorageS3(prefix);
 }
 
-async function createPresignedUrlWithS3Client(key: string, file: string) {
+async function createPresignedUrlWithS3Client(key: string, file: string, expiresInSeconds = 3600) {
   const fileExtension = path.extname(key).toLowerCase();
   const contentType = mimeTypes.lookup(fileExtension);
   const command = new GetObjectCommand({
@@ -638,10 +638,10 @@ async function createPresignedUrlWithS3Client(key: string, file: string) {
     ResponseContentType: `${contentType}`,
     ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(file)}`,
   });
-  return getSignedUrl(presignS3Client, command, { expiresIn: 3600 });
+  return getSignedUrl(presignS3Client, command, { expiresIn: expiresInSeconds });
 }
 
-async function createPresignedUrlWithAzureClient(key: string, file: string) {
+async function createPresignedUrlWithAzureClient(key: string, file: string, expiresInSeconds = 3600) {
   try {
     if (
       !azureContainerClient ||
@@ -668,7 +668,7 @@ async function createPresignedUrlWithAzureClient(key: string, file: string) {
       blobName: key,
       permissions: BlobSASPermissions.parse("r"), // Read permission
       startsOn: new Date(),
-      expiresOn: new Date(new Date().valueOf() + 3600 * 1000),
+      expiresOn: new Date(new Date().valueOf() + expiresInSeconds * 1000),
       contentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(file)}`,
       contentType: contentType || undefined,
     };
@@ -686,11 +686,15 @@ async function createPresignedUrlWithAzureClient(key: string, file: string) {
   }
 }
 
-export async function createPresignedUrlWithClient(key: string, file: string) {
+/**
+ * A presigned download URL. `expiresInSeconds` defaults to one hour (the staff Files tab). Client
+ * Portal downloads pass a much shorter value so a reused URL stops working soon after access is removed.
+ */
+export async function createPresignedUrlWithClient(key: string, file: string, expiresInSeconds = 3600) {
   if (STORAGE_PROVIDER === "azure") {
-    return createPresignedUrlWithAzureClient(key, file);
+    return createPresignedUrlWithAzureClient(key, file, expiresInSeconds);
   }
-  return createPresignedUrlWithS3Client(key, file);
+  return createPresignedUrlWithS3Client(key, file, expiresInSeconds);
 }
 
 // ---------------------------------------------------------------------------

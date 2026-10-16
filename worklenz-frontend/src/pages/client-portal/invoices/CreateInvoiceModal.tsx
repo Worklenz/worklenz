@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Alert,
-  AutoComplete,
   Button,
   Card,
   DatePicker,
@@ -12,7 +11,6 @@ import {
   InputNumber,
   Modal,
   Select,
-  Spin,
   Table,
   Typography,
   message,
@@ -25,11 +23,11 @@ import {
   useCreateInvoiceMutation,
   useGetClientsQuery,
   useGetInvoiceDetailsQuery,
-  useGetInvoicesByRequestQuery,
-  useGetOrganizationRequestsQuery,
-  useGetOrganizationServicesQuery,
   useUpdateInvoiceMutation,
 } from '../../../api/client-portal/client-portal-api';
+import { useGetBillableChangeRequestsQuery } from '../../../api/client-portal/portal-workflow-api';
+import { ChangeRequestPicker } from '../../../components/client-portal/v2/ChangeRequestPicker';
+import { portalPaths } from '../portal-paths';
 import type { ClientPortalInvoiceDetails } from '../../../api/client-portal/client-portal-api';
 import { CURRENCY_OPTIONS, DEFAULT_CURRENCY, getCurrencySymbol } from '../../../shared/currencies';
 import InvoicePreviewModal from './invoice-details/invoice-preview-modal';
@@ -38,10 +36,11 @@ import {
   formatMoney,
   getInvoiceDownloadUrl,
   getLineAmount,
-  isInvoiceableRequestStatus,
   type InvoiceDiscountType,
 } from './invoices-list-helpers';
 import './invoices.css';
+import { PortalLoader } from '@/components/client-portal/v2';
+import { RichTextField } from '../shared/rich-text/RichTextField';
 
 const INVOICES_PATH = '/worklenz/client-portal/invoices';
 
@@ -50,16 +49,6 @@ interface LineItemRow {
   description: string;
   quantity: number;
   rate: number;
-}
-
-interface RequestRow {
-  id: string;
-  req_no: string;
-  status: string;
-  service_name?: string;
-  client_id?: string;
-  client_name?: string;
-  request_data?: { title?: string };
 }
 
 const newKey = () => Math.random().toString(36).slice(2, 9);
@@ -72,7 +61,8 @@ const emptyLine = (description = ''): LineItemRow => ({
 
 /**
  * Create (invoices/create) and edit (invoices/:id/edit) an invoice, opened as a modal over the
- * list. `?requestId=` pre-links a request and `?clientId=` pre-selects / narrows to one client.
+ * list. `?changeRequestId=` starts it from a change request (its title becomes the first line, quantity 1,
+ * rate 0) and `?clientId=` pre-selects / narrows to one client.
  */
 const CreateInvoiceModal = () => {
   const { t } = useTranslation('client-portal-invoices');
@@ -81,11 +71,11 @@ const CreateInvoiceModal = () => {
   const location = useLocation();
   const { invoiceId } = useParams<{ invoiceId: string }>();
   const [searchParams] = useSearchParams();
-  const requestIdParam = searchParams.get('requestId');
+  const changeRequestIdParam = searchParams.get('changeRequestId');
   const clientIdParam = searchParams.get('clientId');
   const isEditMode = Boolean(invoiceId);
 
-  const [requestId, setRequestId] = useState<string | null>(requestIdParam);
+  const [changeRequestId, setChangeRequestId] = useState<string | null>(changeRequestIdParam);
   const [clientId, setClientId] = useState<string | null>(clientIdParam);
   const [projectName, setProjectName] = useState('');
   const [lineItems, setLineItems] = useState<LineItemRow[]>([emptyLine()]);
@@ -111,42 +101,25 @@ const CreateInvoiceModal = () => {
   );
   const existing = existingData?.body;
 
-  const { data: requestsData, isLoading: isLoadingRequests } = useGetOrganizationRequestsQuery(
-    { limit: 100, client_id: clientIdParam ?? undefined },
+  // Only approved, in-progress and completed change requests can be invoiced (narrowed to the client).
+  const { data: changeRequestsData, isLoading: isLoadingChangeRequests } = useGetBillableChangeRequestsQuery(
+    { organization_id: clientIdParam ?? undefined },
     { skip: isEditMode }
   );
   const { data: clientsData, isLoading: isLoadingClients } = useGetClientsQuery(
     { limit: 100 },
     { skip: isEditMode }
   );
-  // The service field is editable in both create and edit mode, so this is never skipped.
-  const { data: servicesData } = useGetOrganizationServicesQuery({ limit: 100 });
-  const { data: requestInvoicesData } = useGetInvoicesByRequestQuery(requestId ?? '', {
-    skip: !requestId || isEditMode,
-  });
 
   const [createInvoice] = useCreateInvoiceMutation();
   const [updateInvoice] = useUpdateInvoiceMutation();
 
-  // Only requests that staff have started acting on can be billed.
-  const requests: RequestRow[] = useMemo(
-    () =>
-      ((requestsData?.body?.data ?? []) as RequestRow[]).filter(request =>
-        isInvoiceableRequestStatus(request.status)
-      ),
-    [requestsData]
-  );
-  const selectedRequest = requests.find(request => request.id === requestId);
+  const changeRequests = useMemo(() => changeRequestsData?.body ?? [], [changeRequestsData]);
+  const selectedChangeRequest = changeRequests.find(item => item.id === changeRequestId);
   const clients = clientsData?.body?.clients ?? [];
-  const selectedClient = clients.find(client => client.id === (selectedRequest?.client_id ?? clientId));
-  const relatedInvoices = requestInvoicesData?.body?.invoices ?? [];
-
-  // Suggestions only: typing any other name is fine, it just won't match an existing service.
-  const serviceOptions = useMemo(() => {
-    const names = (servicesData?.body?.data ?? []) as Array<{ name?: string }>;
-    const uniqueNames = Array.from(new Set(names.map(service => service.name?.trim()).filter(Boolean)));
-    return uniqueNames.map(name => ({ value: name as string, label: name as string }));
-  }, [servicesData]);
+  const selectedClient = clients.find(
+    client => client.id === (selectedChangeRequest?.organization_id ?? clientId)
+  );
 
   // Populate from the invoice being edited (once).
   useEffect(() => {
@@ -170,7 +143,7 @@ const CreateInvoiceModal = () => {
         : [
             {
               key: newKey(),
-              description: existing.request?.service?.name || existing.projectName || '',
+              description: existing.projectName || existing.request?.service?.name || '',
               quantity: 1,
               rate: existing.subtotal || existing.amount,
             },
@@ -178,31 +151,31 @@ const CreateInvoiceModal = () => {
     );
   }, [existing, hasLoadedExisting]);
 
-  // Prefill from a linked request (URL param or picked): project + one line for its service.
-  const applyRequest = (request: RequestRow) => {
-    setProjectName(request.request_data?.title || request.service_name || '');
-    setLineItems([emptyLine(request.service_name || request.request_data?.title || '')]);
+  // Prefill from a change request (URL param or picked): its title is the project and the first line
+  // (quantity 1, rate 0). The estimate is deliberately not copied into the rate.
+  const applyChangeRequest = (title: string) => {
+    setProjectName(title);
+    setLineItems([emptyLine(title)]);
   };
 
   const [hasPrefilled, setHasPrefilled] = useState(false);
   useEffect(() => {
-    if (hasPrefilled || isEditMode || !requestIdParam || !selectedRequest) return;
+    if (hasPrefilled || isEditMode || !changeRequestIdParam || !selectedChangeRequest) return;
     setHasPrefilled(true);
-    applyRequest(selectedRequest);
-  }, [hasPrefilled, isEditMode, requestIdParam, selectedRequest]);
+    applyChangeRequest(selectedChangeRequest.title);
+  }, [hasPrefilled, isEditMode, changeRequestIdParam, selectedChangeRequest]);
 
-  const handlePickRequest = (value: string | undefined) => {
-    if (!value) {
+  const handlePickChangeRequest = (
+    changeRequest: { id: string; title: string; organization_id: string } | null
+  ) => {
+    if (!changeRequest) {
       // Clearing the request reverts to picking the client by hand.
-      setRequestId(null);
+      setChangeRequestId(null);
       return;
     }
-    setRequestId(value);
-    const request = requests.find(item => item.id === value);
-    if (request) {
-      applyRequest(request);
-      setClientId(request.client_id ?? null);
-    }
+    setChangeRequestId(changeRequest.id);
+    applyChangeRequest(changeRequest.title);
+    setClientId(changeRequest.organization_id);
   };
 
   const totals = useMemo(
@@ -301,7 +274,7 @@ const CreateInvoiceModal = () => {
 
   // Validates, returning a translated error or null.
   const validate = (): string | null => {
-    if (!isEditMode && !requestId && !clientId) {
+    if (!isEditMode && !changeRequestId && !clientId) {
       return t('selectClientRequired', { defaultValue: 'Please select a client' });
     }
     if (validLineItems.length === 0) {
@@ -348,8 +321,8 @@ const CreateInvoiceModal = () => {
 
       const result = await createInvoice({
         ...buildPayload(),
-        requestId: requestId ?? undefined,
-        clientId: requestId ? undefined : (clientId ?? undefined),
+        changeRequestId: changeRequestId ?? undefined,
+        clientId: changeRequestId ? undefined : (clientId ?? undefined),
         status: mode === 'sent' ? 'sent' : 'draft',
       }).unwrap();
       message.success(
@@ -359,7 +332,8 @@ const CreateInvoiceModal = () => {
       if (mode === 'sent' && result.body?.id) {
         window.open(getInvoiceDownloadUrl(result.body.id), '_blank', 'noopener,noreferrer');
       }
-      navigate(INVOICES_PATH);
+      // Started from a change request: go back to it, where the new invoice now shows under Linked work.
+      navigate(changeRequestIdParam ? portalPaths.changeRequest(changeRequestIdParam) : INVOICES_PATH);
     } catch (err) {
       const serverMessage = (err as { data?: { message?: string } })?.data?.message;
       message.error(
@@ -394,16 +368,17 @@ const CreateInvoiceModal = () => {
     discountType,
     discountValue,
     discountAmount: totals.discountAmount,
-    request: selectedRequest
+    request: existing?.request ?? null,
+    changeRequest: selectedChangeRequest
       ? {
-          id: selectedRequest.id,
-          requestNumber: selectedRequest.req_no,
-          requestData: selectedRequest.request_data,
-          service: { id: '', name: selectedRequest.service_name ?? '' },
+          id: selectedChangeRequest.id,
+          number: selectedChangeRequest.cr_no,
+          title: selectedChangeRequest.title,
+          status: selectedChangeRequest.status,
         }
-      : (existing?.request ?? null),
+      : (existing?.changeRequest ?? null),
     client: existing?.client ?? {
-      name: selectedRequest?.client_name ?? selectedClient?.name ?? '',
+      name: selectedClient?.name ?? '',
       companyName: selectedClient?.company_name,
       email: selectedClient?.email,
       phone: selectedClient?.phone,
@@ -412,11 +387,6 @@ const CreateInvoiceModal = () => {
     createdBy: existing?.createdBy ?? null,
     organization: existing?.organization,
   };
-
-  const requestOptions = requests.map(request => ({
-    value: request.id,
-    label: `${request.req_no} - ${request.request_data?.title || request.service_name} (${request.client_name})`,
-  }));
 
   const isPaid = existing?.paymentStatus === 'paid';
   const isLoading = isEditMode && isLoadingExisting;
@@ -472,7 +442,7 @@ const CreateInvoiceModal = () => {
       >
         {isLoading ? (
           <Flex justify="center" style={{ padding: 48 }}>
-            <Spin />
+            <PortalLoader />
           </Flex>
         ) : (
           <div className="invoices-columns">
@@ -488,48 +458,26 @@ const CreateInvoiceModal = () => {
                   />
                 )}
 
-                {/* Linked request: picker when creating, read-only reference when editing. */}
-                <Card size="small" title={t('selectRequestLabel', { defaultValue: 'Select Request' })}>
-                  {isEditMode ? (
+                {/* Linked change request: picker when creating, read-only reference when editing. */}
+                {isEditMode ? (
+                  <Card size="small" title={t('linkedChangeRequest', { defaultValue: 'Linked Change Request' })}>
                     <Typography.Text>
-                      {existing?.request
-                        ? `${existing.request.requestNumber} - ${existing.request.service?.name ?? ''}`
-                        : t('standaloneInvoice', { defaultValue: 'Standalone invoice (no request)' })}
+                      {existing?.changeRequest
+                        ? `${existing.changeRequest.number} - ${existing.changeRequest.title}`
+                        : existing?.request
+                          ? `${existing.request.requestNumber} - ${existing.request.service?.name ?? ''}`
+                          : t('standaloneInvoice', { defaultValue: 'Standalone invoice (no change request)' })}
                     </Typography.Text>
-                  ) : (
-                    <>
-                      <Select
-                        showSearch
-                        allowClear
-                        style={{ width: '100%' }}
-                        loading={isLoadingRequests}
-                        value={requestId ?? undefined}
-                        options={requestOptions}
-                        optionFilterProp="label"
-                        placeholder={t('searchRequestPlaceholder', {
-                          defaultValue: 'Search by request number or title',
-                        })}
-                        notFoundContent={t('noRequestsFound', { defaultValue: 'No requests found' })}
-                        onChange={value => handlePickRequest(value)}
-                        aria-label={t('selectRequestLabel', { defaultValue: 'Select Request' })}
-                      />
-                      <div className="invoices-help" style={{ color: token.colorTextSecondary, marginTop: 6 }}>
-                        {t('selectRequestHelp', {
-                          defaultValue:
-                            'Only accepted, in-progress, and completed requests can be invoiced. Leave blank to create a standalone invoice.',
-                        })}
-                      </div>
-                      {requestId && relatedInvoices.length > 0 && (
-                        <div className="invoices-help" style={{ marginTop: 8, color: token.colorWarning }}>
-                          {t('existingInvoicesWarning', {
-                            count: relatedInvoices.length,
-                            defaultValue: 'This request already has {{count}} invoice(s). You can create additional invoices for milestones or extra work.',
-                          })}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </Card>
+                  </Card>
+                ) : (
+                  <ChangeRequestPicker
+                    document="invoice"
+                    changeRequests={changeRequests}
+                    isLoading={isLoadingChangeRequests}
+                    value={changeRequestId}
+                    onChange={handlePickChangeRequest}
+                  />
+                )}
 
                 <Card size="small" title={t('billingDetails', { defaultValue: 'Billing Details' })}>
                   <Flex vertical gap={12}>
@@ -537,11 +485,9 @@ const CreateInvoiceModal = () => {
                       <div className="invoices-detail-label">
                         {t('clientLabel', { defaultValue: 'Client' })}
                       </div>
-                      {isEditMode || selectedRequest ? (
+                      {isEditMode || selectedChangeRequest ? (
                         <Typography.Text strong>
-                          {isEditMode
-                            ? existing?.client?.name
-                            : selectedRequest?.client_name}
+                          {isEditMode ? existing?.client?.name : (selectedClient?.name ?? '')}
                         </Typography.Text>
                       ) : (
                         <Select
@@ -561,16 +507,12 @@ const CreateInvoiceModal = () => {
                       <div className="invoices-detail-label">
                         {t('serviceLabel', { defaultValue: 'Service' })}
                       </div>
-                      <AutoComplete
-                        style={{ width: '100%' }}
+                      <Input
                         value={projectName}
-                        options={serviceOptions}
-                        filterOption={(inputValue, option) =>
-                          (option?.value as string)?.toLowerCase().includes(inputValue.toLowerCase())
-                        }
-                        onChange={setProjectName}
+                        maxLength={255}
+                        onChange={event => setProjectName(event.target.value)}
                         placeholder={t('serviceNamePlaceholder', {
-                          defaultValue: 'Select a service or type a custom name',
+                          defaultValue: 'Name the project or what this invoice is for',
                         })}
                         aria-label={t('serviceLabel', { defaultValue: 'Service' })}
                       />
@@ -600,13 +542,17 @@ const CreateInvoiceModal = () => {
                 </Card>
 
                 <Card size="small" title={t('notesLabel', { defaultValue: 'Notes' })}>
-                  <Input.TextArea
-                    rows={3}
+                  <RichTextField
                     value={notes}
-                    onChange={event => setNotes(event.target.value)}
+                    onChange={html => setNotes(html)}
                     placeholder={t('invoiceNotesPlaceholder', {
                       defaultValue: 'Add payment terms, thank you message, or any additional notes...',
                     })}
+                    ariaLabel={t('invoiceNotesPlaceholder', {
+                      defaultValue: 'Add payment terms, thank you message, or any additional notes...',
+                    })}
+                    tone="internal"
+                    toolbar="basic"
                   />
                 </Card>
               </Flex>

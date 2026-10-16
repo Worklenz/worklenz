@@ -1,0 +1,126 @@
+{
+  "page": {
+    "title": "Overview",
+    "description": "Was Ihre Aufmerksamkeit bei Kunden, Projekten und Diskussionen erfordert.",
+    "editingHint": "Drag widgets to reorder them, change their size, or hide the ones you do not need.",
+    "loadFailed": "Die Übersicht konnte nicht geladen werden."
+  },
+  "widget": {
+    "viewAll": "Alle anzeigen",
+    "retry": "Erneut versuchen",
+    "error": "Dieses Widget konnte nicht geladen werden."
+  },
+  "edit": {
+    "customize": "Anpassen",
+    "done": "Erledigt",
+    "cancel": "Cancel",
+    "reset": "Reset to default",
+    "resetConfirm": "Standardlayout wiederherstellen?",
+    "saveFailed": "Das Layout konnte nicht gespeichert werden.",
+    "resetFailed": "Das Layout konnte nicht zurückgesetzt werden.",
+    "drag": "Ziehen, um {{title}} neu anzuordnen",
+    "size": "Größe von {{title}}",
+    "size_s": "S",
+    "size_m": "M",
+    "size_l": "L",
+    "hide": "Widget ausblenden",
+    "show": "Widget anzeigen",
+    "hideNamed": "{{title}} ausblenden",
+    "showNamed": "{{title}} anzeigen",
+    "save": "Speichern",
+    "saved": "Übersicht gespeichert",
+    "resetDone": "Übersicht auf das Standardlayout zurückgesetzt",
+    "resetConfirmHelp": "Ihre gespeicherte Vereinbarung wird entfernt.",
+    "addWidget": "Widget hinzufügen",
+    "emptyTitle": "Keine Widgets in Ihrer Übersicht",
+    "emptyHelp": "Wählen Sie „Anpassen“ und dann „Widget hinzufügen“, um einige davon wiederherzustellen.",
+    "widgetSettings": "{{name}} Einstellungen",
+    "settingsFor": "Einstellungen für {{name}}",
+    "width": "Breite",
+    "widthQuarter": "Viertelbreite",
+    "widthThird": "Ein Drittel",
+    "widthHalf": "Halbe Breite",
+    "widthTwoThirds": "Zwei Drittel",
+    "widthThreeQuarters": "Drei Viertel",
+    "widthFull": "Volle Breite",
+    "moveEarlier": "Bewegen Sie sich früher",
+    "moveLater": "Später verschieben",
+    "leaveTitle": "Ohne zu sparen gehen?",
+    "leaveBody": "Ihre Änderungen an der Übersicht wurden nicht gespeichert und gehen verloren.",
+    "leave": "Geh",
+    "stay": "Bleib"
+  },
+  "status": {
+    "awaiting": "Warten",
+    "approved": "Genehmigt",
+    "changes_requested": "Änderungen erbeten",
+    "cr_submitted": "Eingereicht",
+    "cr_under_review": "Wird überprüft",
+    "cr_more_info": "Weitere Informationen",
+    "cr_approved": "Genehmigt",
+    "cr_in_progress": "In Bearbeitung",
+    "cr_completed": "Abgeschlossen",
+    "cr_rejected": "Abgelehnt",
+    "cr_cancelled": "Abgebrochen"
+  },
+  "widgets": {
+    "kpi_awaiting_approvals": {
+      "title": "Ausstehende Genehmigungen",
+      "sub": "{{count}} überfällig"
+    },
+    "kpi_open_change_requests": {
+      "title": "Änderungswünsche zur Prüfung",
+      "sub": "{{count}} wartet auf Client"
+    },
+    "kpi_delayed_milestones": {
+      "title": "Verzögerte Meilensteine",
+      "sub": "Über Portalprojekte hinweg"
+    },
+    "kpi_unread_discussions": {
+      "title": "Ungelesene Diskussionen",
+      "sub": "Mit neuen Kundennachrichten"
+    },
+    "kpi_overdue_invoices": {
+      "title": "Überfällige Rechnungen",
+      "none": "Nichts überfällig"
+    },
+    "pending_approvals": {
+      "title": "Ausstehende Genehmigungen",
+      "empty": "Auf einen Kunden warten keine Genehmigungen.",
+      "overdue": "Überfällig · {{date}}",
+      "due": "Fällig {{date}}"
+    },
+    "change_requests": {
+      "title": "Änderungswünsche zur Prüfung",
+      "empty": "Es müssen keine Änderungswünsche überprüft werden."
+    },
+    "upcoming_milestones": {
+      "title": "Kommende Meilensteine",
+      "empty": "Keine offenen Meilensteine für Portalprojekte."
+    },
+    "latest_discussions": {
+      "title": "Neueste Diskussionen",
+      "empty": "Noch keine Diskussionen."
+    },
+    "mentions_me": {
+      "title": "Erwähnungen von mir",
+      "empty": "Niemand hat Sie in einer Diskussion erwähnt.",
+      "row": "{{name}} in {{project}}"
+    },
+    "approvals_by_status": {
+      "title": "Genehmigungen nach Status",
+      "empty": "Es wurden noch keine Genehmigungen gesendet."
+    },
+    "cr_by_status": {
+      "title": "Änderungsanforderungspipeline",
+      "empty": "Noch keine Änderungswünsche."
+    },
+    "needs_attention": {
+      "title": "Braucht Aufmerksamkeit",
+      "empty": "Nichts braucht Aufmerksamkeit. Schöne Arbeit.",
+      "approval_overdue": "Überfällige Genehmigung",
+      "change_request_review": "Anfrage zur Überprüfung mit hoher Priorität",
+      "milestone_late": "Später Meilenstein"
+    }
+  }
+}

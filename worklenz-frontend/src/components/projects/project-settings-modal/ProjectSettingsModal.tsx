@@ -49,7 +49,7 @@ import { closeProjectSettingsModal } from '@/features/project/project-settings-m
 import { useAuthService } from '@/hooks/useAuth';
 import { hasTaskExportRoleAccess } from '@/utils/task-export-access';
 import { isTeamLeadRole } from '@/types/roles/role.types';
-import { hasBusinessFeatureAccess, isFreeUser } from '@/utils/subscription-utils';
+import { canUseFeature, isFreeUser } from '@/utils/subscription-utils';
 import {
   ProfileOutlined,
   SettingOutlined,
@@ -142,11 +142,12 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
   // Create mode (no project yet): Owner/Admin only. Edit mode: server permissions for that project.
   const isEditable = projectId ? permissions.settings : isOwnerorAdmin;
   const isFree = isFreeUser(currentSession);
-  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const hasFinanceAccess = canUseFeature(currentSession, 'finance_module');
+  const canRestrictTaskCreation = canUseFeature(currentSession, 'restrict_task_creation');
   const canViewExport = hasTaskExportRoleAccess(isOwnerorAdmin, isProjectManager, isTeamLead);
   const canManageBudgetSettings = projectId
-    ? hasBusinessAccess && permissions.finance && financeAccess
-    : hasBusinessAccess && isOwnerorAdmin;
+    ? hasFinanceAccess && permissions.finance && financeAccess
+    : hasFinanceAccess && isOwnerorAdmin;
   const canAssignPm = projectId ? permissions.assignPm : isOwnerorAdmin;
   const canDeleteProject = projectId ? permissions.delete : false;
 
@@ -163,7 +164,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     canAssignPm,
     canEditSettings: permissions.settings,
     isEditable,
-    hasBusinessAccess,
+    hasFinanceAccess,
     savedConfidenceRef,
     confidenceLoadedRef,
   });
@@ -414,7 +415,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
           <AdvancedSettingsSection
             form={form}
             disabled={disabledForNonManagers}
-            hasBusinessAccess={hasBusinessAccess}
+            canRestrictTaskCreation={canRestrictTaskCreation}
             onUpgradeClick={handleUpgradeClick}
           />
         ),
@@ -439,7 +440,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
                 <BudgetSettingsSection
                   editMode={editMode}
                   canManage={canManageBudgetSettings}
-                  hasBusinessAccess={hasBusinessAccess}
+                  hasFinanceAccess={hasFinanceAccess}
                   onUpgradeClick={handleUpgradeClick}
                 />
               ),
@@ -540,7 +541,8 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     disabledEndDate,
     handleStartDateChange,
     handleEndDateChange,
-    hasBusinessAccess,
+    hasFinanceAccess,
+    canRestrictTaskCreation,
     canManageBudgetSettings,
     projectId,
     isDeletingProject,

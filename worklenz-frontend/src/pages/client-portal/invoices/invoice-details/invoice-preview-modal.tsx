@@ -25,6 +25,8 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { getInvoiceDownloadUrl } from '../invoices-list-helpers';
 import { isInvoiceOverdue, normalizePaymentStatus } from '../invoices-list-helpers';
 import '../invoices.css';
+import { RichTextView } from '../../shared/rich-text/RichTextView';
+import { richTextToSafeHtml } from '../../shared/rich-text/richText';
 
 const { Title, Text } = Typography;
 
@@ -369,7 +371,8 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
               color: #666;
               margin-bottom: 10px;
             }
-            .notes-section p {
+            .notes-section p,
+            .notes-section .notes-body {
               font-size: 14px;
               color: #555;
               line-height: 1.6;
@@ -466,7 +469,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
                   </div>
                   <div class="detail-item">
                     <p class="label">${t('reference')}</p>
-                    <p class="value">${invoice.request?.requestNumber || '-'}</p>
+                    <p class="value">${invoice.changeRequest?.number || invoice.request?.requestNumber || '-'}</p>
                   </div>
                   <div class="detail-item">
                     <p class="label">${t('total')}</p>
@@ -538,7 +541,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
                 ? `
               <div class="notes-section">
                 <h3>${t('notes')}</h3>
-                <p>${escapeHtml(invoice.notes)}</p>
+                <div class="notes-body">${richTextToSafeHtml(invoice.notes)}</div>
               </div>
             `
                 : ''
@@ -880,7 +883,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
                   {t('reference')}
                 </Text>
                 <div style={{ marginTop: 4 }}>
-                  <Text strong>{invoice.request?.requestNumber || '-'}</Text>
+                  <Text strong>{invoice.changeRequest?.number || invoice.request?.requestNumber || '-'}</Text>
                 </div>
               </Col>
               <Col span={12}>
@@ -968,7 +971,9 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
               {t('notes')}
             </Text>
-            <Text type="secondary">{invoice.notes}</Text>
+            <Text type="secondary" style={{ display: 'block' }}>
+              <RichTextView value={invoice.notes} />
+            </Text>
           </div>
         )}
 

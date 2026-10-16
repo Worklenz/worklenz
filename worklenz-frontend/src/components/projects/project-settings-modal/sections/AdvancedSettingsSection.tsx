@@ -19,7 +19,7 @@ import SettingsCard from '../components/settings-card';
 interface AdvancedSettingsSectionProps {
   form: FormInstance;
   disabled: boolean;
-  hasBusinessAccess: boolean;
+  canRestrictTaskCreation: boolean;
   onUpgradeClick: () => void;
 }
 
@@ -33,7 +33,7 @@ const PROGRESS_FIELDS = [
 const AdvancedSettingsSection = ({
   form,
   disabled,
-  hasBusinessAccess,
+  canRestrictTaskCreation,
   onUpgradeClick,
 }: AdvancedSettingsSectionProps) => {
   const { t } = useTranslation('project-drawer');
@@ -131,7 +131,7 @@ const AdvancedSettingsSection = ({
           defaultValue: 'Control who can create and assign tasks in this project.',
         })}
       >
-        {!hasBusinessAccess && (
+        {!canRestrictTaskCreation && (
           <Alert
             type="info"
             showIcon
@@ -181,7 +181,7 @@ const AdvancedSettingsSection = ({
           }
           valuePropName="checked"
         >
-          <Switch disabled={disabled || !hasBusinessAccess} />
+          <Switch disabled={disabled || !canRestrictTaskCreation} />
         </Form.Item>
       </SettingsCard>
 

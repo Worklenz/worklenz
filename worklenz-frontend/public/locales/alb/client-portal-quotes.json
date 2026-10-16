@@ -111,5 +111,7 @@
   "deleteConfirmationDescription": "Jeni i sigurt që dëshironi të fshini {{number}}? Ky veprim nuk mund të zhbëhet.",
   "deleteConfirmationOk": "Fshi",
   "deleteQuoteSuccess": "Oferta u fshi me sukses",
-  "deleteQuoteError": "Fshirja e ofertës dështoi"
+  "deleteQuoteError": "Fshirja e ofertës dështoi",
+  "linkedChangeRequest": "Kërkesë e lidhur për ndryshim",
+  "openChangeRequest": "Hap kërkesën për ndryshim"
 }

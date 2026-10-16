@@ -216,6 +216,10 @@
       "moveToTaskTooltip": "Przypisz ponownie ten dziennik czasu do innego zadania.",
       "selectTask": "Wybierz zadanie...",
       "backdateLimitError": "Dzienniki czasu nie mogą mieć daty starszej niż {{days}} dni. Najwcześniejsza data, według której możesz się zalogować, to {{earliestDate}}.",
+      "projectStartDateError": "Nie można rejestrować czasu przed datą rozpoczęcia projektu ({{date}}).",
+      "projectStartDateHint": "Data rozpoczęcia projektu: {{date}}",
+      "projectNotStartedWarningTitle": "Projekt jeszcze się nie rozpoczął",
+      "projectNotStartedWarningDesc": "Ten projekt ma się rozpocząć {{date}}. Nie można rejestrować czasu przed datą rozpoczęcia projektu.",
       "saveError": "Nie można zapisać dziennika czasu. Spróbuj ponownie."
     },
     "rollupLoggedTooltip": "Suma czasu zalogowanego w podzadaniach"

@@ -216,6 +216,10 @@
       "moveToTaskTooltip": "Diesen Zeiteintrag einer anderen Aufgabe zuweisen",
       "selectTask": "Aufgabe auswählen...",
       "backdateLimitError": "Zeiterfassungen können nicht weiter als {{days}} Tage zurückdatiert werden. Das früheste mögliche Datum ist {{earliestDate}}.",
+      "projectStartDateError": "Zeit kann nicht vor dem Startdatum des Projekts erfasst werden ({{date}}).",
+      "projectStartDateHint": "Projektstartdatum: {{date}}",
+      "projectNotStartedWarningTitle": "Projekt hat noch nicht begonnen",
+      "projectNotStartedWarningDesc": "Dieses Projekt soll am {{date}} beginnen. Zeit kann nicht vor dem Startdatum des Projekts erfasst werden.",
       "saveError": "Die Zeiterfassung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
     },
     "rollupLoggedTooltip": "Summe der angemeldeten Zeit für Unteraufgaben"

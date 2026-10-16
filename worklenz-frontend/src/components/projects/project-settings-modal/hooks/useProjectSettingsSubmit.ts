@@ -31,7 +31,7 @@ interface UseProjectSettingsSubmitArgs {
   canAssignPm: boolean;
   canEditSettings: boolean;
   isEditable: boolean;
-  hasBusinessAccess: boolean;
+  hasFinanceAccess: boolean;
   savedConfidenceRef: MutableRefObject<SavedConfidence>;
   confidenceLoadedRef: MutableRefObject<boolean>;
 }
@@ -45,7 +45,7 @@ export const useProjectSettingsSubmit = ({
   canAssignPm,
   canEditSettings,
   isEditable,
-  hasBusinessAccess,
+  hasFinanceAccess,
   savedConfidenceRef,
   confidenceLoadedRef,
 }: UseProjectSettingsSubmitArgs) => {
@@ -118,7 +118,7 @@ export const useProjectSettingsSubmit = ({
           dispatch(mergeProject(response.data.body));
         }
 
-        if (editMode && projectId && hasBusinessAccess) {
+        if (editMode && projectId && hasFinanceAccess) {
           const selectedBudget = Number(values.budget ?? 0);
           const selectedCurrency = (values.currency || 'USD').toUpperCase();
           const currentBudget = Number(project?.budget ?? 0);

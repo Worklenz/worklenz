@@ -1,4 +1,5 @@
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
+import { cleanRichNotes } from "../../services/client-portal-v2/rich-text";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import db from "../../config/db";
@@ -31,6 +32,14 @@ import {
   snapshotFromRow,
   snapshotParams,
 } from "./client-portal-client-snapshot";
+import {
+  copyChangeRequestLink,
+  getChangeRequestNumbers,
+  getLinkedChangeRequest,
+  linkDocumentToChangeRequest,
+  resolveBillableChangeRequest,
+} from "../../services/client-portal-v2/change-request-billing";
+import { PortalError } from "../../services/client-portal-v2/errors";
 
 /**
  * Organization-side (admin) client portal quotes: pre-sale estimates that mirror invoices but with
@@ -218,6 +227,13 @@ export default class ClientPortalQuotesController {
 
       const totalsRow = totalsResult.rows[0] || {};
 
+      const changeRequestNumbers = await getChangeRequestNumbers(
+        db,
+        organizationId,
+        "client_portal_quotes",
+        listResult.rows.map((row: any) => row.id)
+      );
+
       const quotes = listResult.rows.map((row: any) => ({
         id: row.id,
         quoteNumber: row.quote_no,
@@ -229,6 +245,7 @@ export default class ClientPortalQuotesController {
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         requestNumber: row.request_number,
+        changeRequestNumber: changeRequestNumbers.get(row.id) ?? null,
         serviceName: row.service_name,
         clientId: row.client_id,
         clientName: row.client_name,
@@ -268,7 +285,8 @@ export default class ClientPortalQuotesController {
 
     // ---- validate input (nothing is written until all of it is good) ----
     const requestId = body.requestId ? String(body.requestId) : null;
-    const clientIdInput = body.clientId ? String(body.clientId) : null;
+    let clientIdInput = body.clientId ? String(body.clientId) : null;
+    const changeRequestIdInput = body.changeRequestId ? String(body.changeRequestId) : null;
     const status = body.status ?? "draft";
     if (!isNewQuoteStatus(status)) {
       return res
@@ -287,7 +305,9 @@ export default class ClientPortalQuotesController {
     }
 
     const projectName = cleanText(body.projectName, 255);
-    const notes = cleanText(body.notes, 5000);
+    const notesResult = cleanRichNotes(body.notes, 5000);
+    if (notesResult.error) return res.status(400).json(new ServerResponse(false, null, notesResult.error));
+    const notes = notesResult.value;
     const currency = normalizeCurrency(body.currency);
 
     const parsedLines = normalizeLineItems(body.lineItems);
@@ -308,12 +328,30 @@ export default class ClientPortalQuotesController {
         .json(new ServerResponse(false, null, "Quote total must be greater than 0"));
     }
 
-    // ---- resolve the client: from the linked request, or picked directly ----
+    // ---- resolve the client: from the linked change request / request, or picked directly ----
     let clientId: string;
     let clientName: string | null = null;
     let serviceName: string | null = null;
     // The client's details as they are now, kept on the quote so it always shows who it was prepared for.
     let clientSnapshot: ClientSnapshot;
+
+    // A quote starts from a change request: the request decides the client and must be billable.
+    let linkedChangeRequestId: string | null = null;
+    if (changeRequestIdInput) {
+      if (!isValidUuid(changeRequestIdInput)) {
+        return res.status(400).json(new ServerResponse(false, null, "Invalid change request ID"));
+      }
+      try {
+        const changeRequest = await resolveBillableChangeRequest(db, organizationId, changeRequestIdInput);
+        linkedChangeRequestId = changeRequest.id;
+        clientIdInput = changeRequest.client_id;
+      } catch (error) {
+        if (error instanceof PortalError) {
+          return res.status(error.status).json(new ServerResponse(false, null, error.message));
+        }
+        throw error;
+      }
+    }
 
     if (requestId) {
       if (!isValidUuid(requestId)) {
@@ -402,6 +440,9 @@ export default class ClientPortalQuotesController {
       newQuote = insertResult.rows[0];
 
       await ClientPortalQuotesController.insertLineItems(conn, newQuote.id, lineItems);
+      if (linkedChangeRequestId) {
+        await linkDocumentToChangeRequest(conn, "client_portal_quotes", newQuote.id, linkedChangeRequestId);
+      }
       await conn.query("COMMIT");
     } catch (error) {
       await conn.query("ROLLBACK");
@@ -425,6 +466,7 @@ export default class ClientPortalQuotesController {
           createdAt: newQuote.created_at,
           clientName,
           serviceName,
+          changeRequestId: linkedChangeRequestId,
           taxRate: parseFloat(newQuote.tax_rate || "0"),
           taxAmount: parseFloat(newQuote.tax_amount || "0"),
           discountType: newQuote.discount_type,
@@ -451,9 +493,10 @@ export default class ClientPortalQuotesController {
         return res.status(404).json(new ServerResponse(false, null, "Quote not found"));
       }
 
-      const [lineItems, organization] = await Promise.all([
+      const [lineItems, organization, changeRequest] = await Promise.all([
         ClientPortalQuotesController.getLineItems(quote.id),
         ClientPortalQuotesController.getOrganizationInfo(organizationId),
+        getLinkedChangeRequest(db, organizationId, "client_portal_quotes", quote.id),
       ]);
 
       return res.json(
@@ -477,6 +520,9 @@ export default class ClientPortalQuotesController {
             discountAmount: parseFloat(quote.discount_amount || "0"),
             subtotal: parseFloat(quote.subtotal || "0"),
             lineItems,
+            changeRequest: changeRequest
+              ? { id: changeRequest.id, number: changeRequest.cr_no, title: changeRequest.title, status: changeRequest.status }
+              : null,
             request: quote.request_id
               ? {
                   id: quote.request_id,
@@ -632,6 +678,7 @@ export default class ClientPortalQuotesController {
          WHERE quote_id = $2`,
         [copy.id, id]
       );
+      await copyChangeRequestLink(conn, "client_portal_quotes", id, copy.id);
 
       await conn.query("COMMIT");
 

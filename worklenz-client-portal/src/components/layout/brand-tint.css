@@ -1,0 +1,31 @@
+/* Hover / selected surfaces share the branding colour at a fixed strength, set on :root by ClientLayout
+   (--portal-brand-tint for the selected item, --portal-brand-tint-soft for hover). They are applied to
+   Ant Design's own lists so every menu, select and table in the portal reads the same. */
+.portal-brand-hover:hover {
+  background: var(--portal-brand-tint-soft);
+}
+
+/* Dropdown menus (account menu, Add new, table row actions) */
+:root .ant-dropdown-menu-item:not(.portal-profile-header-item):not(.ant-dropdown-menu-item-disabled):hover,
+:root .ant-dropdown-menu-item-active:not(.portal-profile-header-item):not(.ant-dropdown-menu-item-disabled),
+:root .ant-dropdown-menu-submenu-title:not(.ant-dropdown-menu-submenu-title-disabled):hover {
+  background: var(--portal-brand-tint-soft);
+}
+
+/* Select / dropdown option lists (time zone, language, filters) */
+:root .ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background: var(--portal-brand-tint-soft);
+}
+
+:root .ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background: var(--portal-brand-tint);
+}
+
+/* Table rows */
+:root .ant-table-wrapper .ant-table-tbody > tr.ant-table-row:hover > td {
+  background: var(--portal-brand-tint-soft);
+}
+
+:root .ant-table-wrapper .ant-table-tbody > tr.ant-table-row-selected > td {
+  background: var(--portal-brand-tint);
+}
