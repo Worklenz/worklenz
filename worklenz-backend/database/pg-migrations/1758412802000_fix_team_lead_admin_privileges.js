@@ -160,11 +160,6 @@ BEGIN
 END
 $$;
 
--- Step 8: Grant necessary permissions
-GRANT EXECUTE ON FUNCTION is_team_lead_by_hierarchy(uuid, uuid) TO PUBLIC;
-GRANT EXECUTE ON FUNCTION get_team_lead_managed_members(uuid, uuid) TO PUBLIC;
-GRANT EXECUTE ON FUNCTION can_team_lead_access_member(uuid, uuid, uuid) TO PUBLIC;
-GRANT EXECUTE ON FUNCTION has_management_privileges(uuid, uuid) TO PUBLIC;
 
   `);
 };

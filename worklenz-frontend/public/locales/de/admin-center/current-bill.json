@@ -211,5 +211,18 @@
   "pricingModelNote": "Informationen zum Preismodell",
   "switchAnytime": "Sie können in Ihren Abrechnungseinstellungen jederzeit zwischen den Preismodellen wechseln",
   "flatRateLimit": "Flatrate-Pläne haben Benutzerlimits – stellen Sie sicher, dass die Größe Ihres Teams innerhalb des Limits liegt",
-  "perUserScaling": "Pläne pro Benutzer passen sich automatisch dem Wachstum Ihres Teams an"
+  "perUserScaling": "Pläne pro Benutzer passen sich automatisch dem Wachstum Ihres Teams an",
+  "paymentHistory": "Zahlungsverlauf",
+  "receiptDownloadFailed": "Download fehlgeschlagen",
+  "receiptDownloadFailedDescription": "Der Beleg konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+  "date": "Datum",
+  "card": "Karte",
+  "receipt": "Beleg",
+  "noPaymentHistory": "Kein Zahlungsverlauf",
+  "flatRatePricingDescription": "Pauschalpreis für bis zu {{count}} Benutzer",
+  "flatRateMonthlyPrice": "{{currency}} {{price}} pro Monat",
+  "upToUsers": "(bis zu {{count}} Benutzer)",
+  "legacyPlanTitle": "Bisheriger Tarif",
+  "legacyPlanDescription": "Ihr Tarif wird nicht mehr angeboten und bleibt unverändert. Der Wechsel zu einem aktuellen Tarif pro Benutzer ist freiwillig. Ihr bestehendes Abonnement wird erst nach Ihrer Bestätigung ersetzt.",
+  "everythingInFree": "Alles aus Free, plus:"
 }

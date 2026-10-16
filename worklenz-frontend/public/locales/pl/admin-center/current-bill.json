@@ -211,5 +211,18 @@
   "pricingModelNote": "Informacje o modelu cenowym",
   "switchAnytime": "W dowolnym momencie możesz przełączać się między modelami cenowymi w ustawieniach rozliczeń",
   "flatRateLimit": "Plany ryczałtowe mają limity użytkowników — upewnij się, że wielkość Twojego zespołu mieści się w limicie",
-  "perUserScaling": "Plany na użytkownika automatycznie skalują się wraz z rozwojem zespołu"
+  "perUserScaling": "Plany na użytkownika automatycznie skalują się wraz z rozwojem zespołu",
+  "paymentHistory": "Historia płatności",
+  "receiptDownloadFailed": "Pobieranie nie powiodło się",
+  "receiptDownloadFailedDescription": "Nie udało się wygenerować potwierdzenia. Spróbuj ponownie.",
+  "date": "Data",
+  "card": "Karta",
+  "receipt": "Potwierdzenie",
+  "noPaymentHistory": "Brak historii płatności",
+  "flatRatePricingDescription": "Stała cena dla maksymalnie {{count}} użytkowników",
+  "flatRateMonthlyPrice": "{{currency}} {{price}} miesięcznie",
+  "upToUsers": "(do {{count}} użytkowników)",
+  "legacyPlanTitle": "Poprzedni plan",
+  "legacyPlanDescription": "Twój plan nie jest już oferowany i pozostaje bez zmian. Przejście na aktualny plan rozliczany za użytkownika jest opcjonalne, a obecna subskrypcja zostanie zastąpiona dopiero po potwierdzeniu.",
+  "everythingInFree": "Wszystko z Free oraz:"
 }
