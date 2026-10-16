@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Button, DatePicker, Form, Input, TimePicker, Flex, InputNumber, Segmented, message } from '@/shared/antd-imports';
+import { Button, DatePicker, Form, Input, TimePicker, Flex, InputNumber, Segmented, Tag, Alert, theme } from '@/shared/antd-imports';
 import { ClockCircleOutlined, InfoCircleOutlined } from '@/shared/antd-imports';
 
 import dayjs, { Dayjs } from 'dayjs';
@@ -8,6 +8,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { fetchOrgConfig } from '@/features/org-config/org-config.slice';
 import { themeWiseColor } from '@/utils/themeWiseColor';
+import { computeTimeRangeSplits, TimeRangeSplitResult } from '@/utils/timeUtils';
 import { useAuthService } from '@/hooks/useAuth';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -20,6 +21,13 @@ import { API_BASE_URL } from '@/shared/constants';
 import { useTranslation } from 'react-i18next';
 
 
+/**
+ * TimeLogForm provides time tracking entry input in either duration mode (hours + minutes)
+ * or time-range mode (start date & time, end date & time).
+ * 
+ * Supports overnight entries across midnight where the end date falls on a later calendar day
+ * than the start date.
+ */
 interface TimeLogFormProps {
   onCancel: () => void;
   onSubmitSuccess?: () => void;
@@ -34,13 +42,14 @@ interface TimeLogFormProps {
   /** Rendered inside a dialog: drops the divider/top padding that separate the inline form from the
    * content above it, uses regular-size controls, and right-aligns the buttons like a modal footer. */
   inModal?: boolean;
-  projectStartDate?: string | null;
 }
 
 type TimeLogInputMode = 'duration' | 'timeRange';
 
 interface TimeLogFormValues {
   date: Dayjs | null;
+  startDate?: Dayjs | null;
+  endDate?: Dayjs | null;
   startTime: Dayjs | null;
   endTime: Dayjs | null;
   hours: number | null;
@@ -98,6 +107,7 @@ const TimeLogForm = ({
   });
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const { token } = theme.useToken();
   const { taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
 
   const dispatch = useAppDispatch();
@@ -120,7 +130,7 @@ const TimeLogForm = ({
     return dayjs().startOf('day').subtract(backdateLimitDays, 'day');
   }, [backdateLimitDays]);
 
-  const currentProjectInStore = useAppSelector(state => state.projectReducer.project);
+  const currentProjectInStore = useAppSelector(state => state.projectReducer?.project);
 
   // In edit mode the log's own date must stay selectable even once it ages past
   // the limit, so description/duration edits remain possible. The backend applies
@@ -150,7 +160,8 @@ const TimeLogForm = ({
   const isDateDisabled = React.useCallback(
     (current: Dayjs) => {
       if (!current) return false;
-      if (current.toDate() > new Date()) return true;
+      // Allow future dates. Only enforce organization backdate limits for past dates.
+      if (!minLogDate) return false;
       if (originalLogDate && current.isSame(originalLogDate, 'day')) return false;
       if (minLogDate && current.isBefore(minLogDate, 'day')) return true;
       if (effectiveProjectStartDate && current.isBefore(effectiveProjectStartDate, 'day')) return true;
@@ -163,17 +174,43 @@ const TimeLogForm = ({
     return dayjs().second(0).millisecond(0);
   }, []);
 
-  const getDurationFromRange = React.useCallback((startTime?: Dayjs | null, endTime?: Dayjs | null) => {
-    if (!startTime || !endTime || endTime.isBefore(startTime)) {
-      return { hours: 0, minutes: 0 };
-    }
+  const getDurationFromRange = React.useCallback(
+    (
+      dateValue?: Dayjs | null,
+      startTimeValue?: Dayjs | null,
+      endTimeValue?: Dayjs | null
+    ) => {
+      if (!startTimeValue || !endTimeValue) {
+        return { hours: 0, minutes: 0 };
+      }
 
-    const totalMinutes = endTime.diff(startTime, 'minute');
-    return {
-      hours: Math.floor(totalMinutes / 60),
-      minutes: totalMinutes % 60,
-    };
-  }, []);
+      const base = dateValue || dayjs();
+
+      const fullStart = dayjs(base)
+        .hour(startTimeValue.hour())
+        .minute(startTimeValue.minute())
+        .second(0)
+        .millisecond(0);
+
+      let fullEnd = dayjs(base)
+        .hour(endTimeValue.hour())
+        .minute(endTimeValue.minute())
+        .second(0)
+        .millisecond(0);
+
+      // If end time is before start time, it rolls over to next day
+      if (fullEnd.isBefore(fullStart)) {
+        fullEnd = fullEnd.add(1, 'day');
+      }
+
+      const totalMinutes = fullEnd.diff(fullStart, 'minute');
+      return {
+        hours: Math.floor(totalMinutes / 60),
+        minutes: totalMinutes % 60,
+      };
+    },
+    []
+  );
 
   const getRangeFromDuration = React.useCallback(
     (
@@ -191,9 +228,12 @@ const TimeLogForm = ({
         .second(0)
         .millisecond(0);
 
+      const normalizedEnd = normalizedStart.add(totalMinutes, 'minute');
+
       return {
+        date: dayjs(normalizedStart).startOf('day'),
         startTime: normalizedStart,
-        endTime: normalizedStart.add(totalMinutes, 'minute'),
+        endTime: normalizedEnd,
       };
     },
     [getNowRoundedToMinute]
@@ -208,14 +248,15 @@ const TimeLogForm = ({
       if (initialValues.end_time) {
         endTime = dayjs(initialValues.end_time);
       } else if (initialValues.time_spent) {
-        endTime = dayjs(startTime).add(initialValues.time_spent, 'second');
+        endTime = dayjs(startTime).add(Number(initialValues.time_spent), 'second');
       } else {
         endTime = dayjs(initialValues.created_at);
       }
 
-      const { hours, minutes } = getDurationFromRange(startTime, endTime);
+      const logDate = dayjs(startTime).startOf('day');
+      const { hours, minutes } = getDurationFromRange(logDate, startTime, endTime);
       const nextValues: TimeLogFormValues = {
-        date: createdAt,
+        date: logDate,
         startTime,
         endTime,
         hours,
@@ -230,9 +271,10 @@ const TimeLogForm = ({
       minutesAutoClearedRef.current = false;
       const now = getNowRoundedToMinute();
       const nextHalfHour = now.add(30, 'minute');
+      const today = dayjs().startOf('day');
       setInputMode('duration');
       form.setFieldsValue({
-        date: dayjs(),
+        date: today,
         startTime: now,
         endTime: nextHalfHour,
         hours: 0,
@@ -334,10 +376,9 @@ const TimeLogForm = ({
     if (nextMode === inputMode) return;
 
     // Prefer form store, then React state, then the log being edited.
-    // Duration mode unmounts start/end fields; getFieldValue alone can be empty
-    // and getRangeFromDuration would incorrectly fall back to the current clock.
     const currentDate =
-      (form.getFieldValue('date') as Dayjs | null) || formValues.date;
+      (form.getFieldValue('date') as Dayjs | null) ||
+      formValues.date;
     const currentStartTime =
       (form.getFieldValue('startTime') as Dayjs | null) ||
       formValues.startTime ||
@@ -352,55 +393,57 @@ const TimeLogForm = ({
       (form.getFieldValue('minutes') as number | null) ?? formValues.minutes;
 
     if (nextMode === 'duration') {
-      const { hours, minutes } = getDurationFromRange(currentStartTime, currentEndTime);
-      form.setFieldsValue({ hours, minutes });
-      setFormValues(prev => ({ ...prev, hours, minutes }));
+      const { hours, minutes } = getDurationFromRange(
+        currentDate,
+        currentStartTime,
+        currentEndTime
+      );
+      form.setFieldsValue({
+        date: currentDate,
+        hours,
+        minutes,
+      });
+      setFormValues(prev => ({
+        ...prev,
+        date: currentDate,
+        hours,
+        minutes,
+      }));
     } else {
-      const { startTime, endTime } = getRangeFromDuration(
+      const { date, startTime, endTime } = getRangeFromDuration(
         currentDate,
         currentStartTime,
         currentHours,
         currentMinutes
       );
-      form.setFieldsValue({ startTime, endTime });
-      setFormValues(prev => ({ ...prev, startTime, endTime }));
+      form.setFieldsValue({ date, startTime, endTime });
+      setFormValues(prev => ({ ...prev, date, startTime, endTime }));
     }
 
     setInputMode(nextMode);
   };
 
-  const createReqBody = (values: TimeLogFormValues) => {
-    if (!values.date) return;
+  const createReqBodies = (values: TimeLogFormValues) => {
+    const dateValue = values.date;
+    if (!dateValue) return [];
 
-    const dateValue = dayjs(values.date);
     const startTimeValue = values.startTime || getNowRoundedToMinute();
+    const targetTaskId = (taskIdProp ?? taskFormViewModel?.task?.id ?? initialValues?.task_id) as string;
+    const targetId = mode === 'edit' && initialValues?.id ? initialValues.id : targetTaskId;
+    const targetProjectId = (projectIdProp ?? taskFormViewModel?.task?.project_id ?? (initialValues as any)?.project_id) as string;
 
     if (inputMode === 'timeRange') {
-      if (!values.startTime || !values.endTime) return;
+      if (!values.startTime || !values.endTime) return [];
 
-      const formattedStartTime = dayjs(dateValue)
-        .hour(values.startTime.hour())
-        .minute(values.startTime.minute())
-        .second(0)
-        .millisecond(0);
-
-      const formattedEndTime = dayjs(dateValue)
-        .hour(values.endTime.hour())
-        .minute(values.endTime.minute())
-        .second(0)
-        .millisecond(0);
-
-      const diff = formattedEndTime.diff(formattedStartTime, 'seconds');
-
-      return {
-        id: mode === 'edit' && initialValues?.id ? initialValues.id : (taskIdProp ?? taskFormViewModel?.task?.id),
-        project_id: (projectIdProp ?? taskFormViewModel?.task?.project_id) as string,
-        formatted_start: formattedStartTime.toISOString(),
-        seconds_spent: Math.floor(Math.abs(diff)),
+      const splitInfo = computeTimeRangeSplits(dateValue, values.startTime, values.endTime);
+      return splitInfo.splits.map(split => ({
+        id: targetId,
+        project_id: targetProjectId,
+        formatted_start: split.formatted_start,
+        seconds_spent: split.seconds_spent,
         description: values.description,
-        // Only include new_task_id if user explicitly selected a different task
         ...(mode === 'edit' && selectedReassignTaskId ? { new_task_id: selectedReassignTaskId } : {}),
-      };
+      }));
     }
 
     const hours = Math.max(0, Number(values.hours || 0));
@@ -413,32 +456,93 @@ const TimeLogForm = ({
       .second(0)
       .millisecond(0);
 
-    return {
-      id: mode === 'edit' && initialValues?.id ? initialValues.id : (taskIdProp ?? taskFormViewModel?.task?.id),
-      project_id: (projectIdProp ?? taskFormViewModel?.task?.project_id) as string,
-      formatted_start: formattedStartTime.toISOString(),
-      seconds_spent: secondsSpent,
-      description: values.description,
-      // Only include new_task_id if user explicitly selected a different task
-      ...(mode === 'edit' && selectedReassignTaskId ? { new_task_id: selectedReassignTaskId } : {}),
-    };
+    return [
+      {
+        id: targetId,
+        project_id: targetProjectId,
+        formatted_start: formattedStartTime.toISOString(),
+        seconds_spent: secondsSpent,
+        description: values.description,
+        ...(mode === 'edit' && selectedReassignTaskId ? { new_task_id: selectedReassignTaskId } : {}),
+      },
+    ];
   };
 
   const onFinish = async (values: TimeLogFormValues) => {
-    const { startTime, endTime } = values;
+    const { date, startTime, endTime } = values;
 
-    if (inputMode === 'timeRange' && startTime && endTime && startTime.isAfter(endTime)) {
+    if (!date) {
       form.setFields([
         {
-          name: 'endTime',
+          name: 'date',
           errors: [
-            t('taskTimeLogTab.timeLogForm.endTimeAfterStartError', {
-              defaultValue: 'End time must be after start time',
+            t('taskTimeLogTab.timeLogForm.selectDateError', {
+              defaultValue: 'Please select date',
             }),
           ],
         },
       ]);
       return;
+    }
+
+    if (inputMode === 'timeRange') {
+      if (!startTime) {
+        form.setFields([
+          {
+            name: 'startTime',
+            errors: [
+              t('taskTimeLogTab.timeLogForm.selectStartTimeError', {
+                defaultValue: 'Please select start time',
+              }),
+            ],
+          },
+        ]);
+        return;
+      }
+
+      if (!endTime) {
+        form.setFields([
+          {
+            name: 'endTime',
+            errors: [
+              t('taskTimeLogTab.timeLogForm.selectEndTimeError', {
+                defaultValue: 'Please select end time',
+              }),
+            ],
+          },
+        ]);
+        return;
+      }
+
+      const fullStart = dayjs(date)
+        .hour(startTime.hour())
+        .minute(startTime.minute())
+        .second(0)
+        .millisecond(0);
+      let fullEnd = dayjs(date)
+        .hour(endTime.hour())
+        .minute(endTime.minute())
+        .second(0)
+        .millisecond(0);
+
+      if (fullEnd.isBefore(fullStart)) {
+        fullEnd = fullEnd.add(1, 'day');
+      }
+
+      const diffMinutes = fullEnd.diff(fullStart, 'minute');
+      if (diffMinutes <= 0) {
+        form.setFields([
+          {
+            name: 'endTime',
+            errors: [
+              t('taskTimeLogTab.timeLogForm.durationGreaterThanZeroError', {
+                defaultValue: 'Duration must be greater than 0 minutes',
+              }),
+            ],
+          },
+        ]);
+        return;
+      }
     }
 
     if (inputMode === 'duration') {
@@ -507,11 +611,12 @@ const TimeLogForm = ({
 
     // Client-side mirror of the org backdate limit, so the user sees the problem
     // before a round trip. The server enforces the same rule regardless.
+    const activeDate = values.date;
     if (
       minLogDate &&
-      values.date &&
-      values.date.isBefore(minLogDate, 'day') &&
-      !(originalLogDate && values.date.isSame(originalLogDate, 'day'))
+      activeDate &&
+      activeDate.isBefore(minLogDate, 'day') &&
+      !(originalLogDate && activeDate.isSame(originalLogDate, 'day'))
     ) {
       form.setFields([
         {
@@ -529,17 +634,48 @@ const TimeLogForm = ({
       return;
     }
 
-    const requestBody = createReqBody(values);
-    if (!requestBody) return;
+    const requestBodies = createReqBodies(values);
+    if (!requestBodies || requestBodies.length === 0) return;
 
     setSubmitting(true);
     try {
       if (mode === 'edit' && initialValues?.id) {
-        await (asTimeEntry
-          ? taskTimeLogsApiService.updateEntry(initialValues.id, requestBody)
-          : taskTimeLogsApiService.update(initialValues.id, requestBody));
+        const partIds =
+          initialValues.part_log_ids && initialValues.part_log_ids.length > 0
+            ? initialValues.part_log_ids
+            : [initialValues.id];
+        const targetTaskId =
+          (taskIdProp ?? taskFormViewModel?.task?.id ?? initialValues.task_id ?? '') as string;
+
+        const doUpdate = (id: string, body: any) =>
+          asTimeEntry
+            ? taskTimeLogsApiService.updateEntry(id, body)
+            : taskTimeLogsApiService.update(id, body);
+        const doDelete = (id: string) =>
+          asTimeEntry
+            ? taskTimeLogsApiService.deleteEntry(id, targetTaskId)
+            : taskTimeLogsApiService.delete(id, targetTaskId);
+
+        if (partIds.length === 2) {
+          if (requestBodies.length === 2) {
+            await doUpdate(partIds[0], requestBodies[0]);
+            await doUpdate(partIds[1], requestBodies[1]);
+          } else {
+            await doUpdate(partIds[0], requestBodies[0]);
+            await doDelete(partIds[1]);
+          }
+        } else {
+          if (requestBodies.length === 2) {
+            await doUpdate(initialValues.id, requestBodies[0]);
+            await taskTimeLogsApiService.create({ ...requestBodies[1], id: targetTaskId });
+          } else {
+            await doUpdate(initialValues.id, requestBodies[0]);
+          }
+        }
       } else {
-        await taskTimeLogsApiService.create(requestBody);
+        for (const body of requestBodies) {
+          await taskTimeLogsApiService.create(body);
+        }
       }
 
       // Call onSubmitSuccess if provided, otherwise just cancel
@@ -571,7 +707,23 @@ const TimeLogForm = ({
 
     if (inputMode === 'timeRange') {
       if (!formValues.startTime || !formValues.endTime) return false;
-      return !formValues.startTime.isAfter(formValues.endTime);
+
+      const fullStart = dayjs(formValues.date)
+        .hour(formValues.startTime.hour())
+        .minute(formValues.startTime.minute())
+        .second(0)
+        .millisecond(0);
+      let fullEnd = dayjs(formValues.date)
+        .hour(formValues.endTime.hour())
+        .minute(formValues.endTime.minute())
+        .second(0)
+        .millisecond(0);
+
+      if (fullEnd.isBefore(fullStart)) {
+        fullEnd = fullEnd.add(1, 'day');
+      }
+
+      return fullEnd.diff(fullStart, 'minute') > 0;
     }
 
     const hours = Number(formValues.hours || 0);
@@ -579,6 +731,48 @@ const TimeLogForm = ({
     if (minutes < 0 || minutes > 59 || hours < 0) return false;
     return hours * 60 + minutes > 0;
   };
+
+  // Live calculation of duration and multi-day status for UI summary feedback
+  const activeDurationInfo = React.useMemo(() => {
+    if (inputMode === 'duration') {
+      const h = Number(formValues.hours || 0);
+      const m = Number(formValues.minutes || 0);
+      const totalMins = h * 60 + m;
+      return {
+        hours: h,
+        minutes: m,
+        totalMinutes: totalMins,
+        isOvernight: false,
+        daySpan: 0,
+        exceedsDay: totalMins > 24 * 60,
+        splits: [] as TimeRangeSplitResult[],
+      };
+    }
+
+    if (!formValues.date || !formValues.startTime || !formValues.endTime) {
+      return {
+        hours: 0,
+        minutes: 0,
+        totalMinutes: 0,
+        isOvernight: false,
+        daySpan: 0,
+        exceedsDay: false,
+        splits: [] as TimeRangeSplitResult[],
+      };
+    }
+
+    const splitInfo = computeTimeRangeSplits(formValues.date, formValues.startTime, formValues.endTime);
+
+    return {
+      hours: splitInfo.totalHours,
+      minutes: splitInfo.remainingMinutes,
+      totalMinutes: splitInfo.totalMinutes,
+      isOvernight: splitInfo.isOvernight,
+      daySpan: splitInfo.isOvernight ? 1 : 0,
+      exceedsDay: splitInfo.totalMinutes > 24 * 60,
+      splits: splitInfo.splits,
+    };
+  }, [inputMode, formValues]);
 
   return (
     <Flex
@@ -635,7 +829,7 @@ const TimeLogForm = ({
               return;
             }
           }
-          setFormValues(values as TimeLogFormValues);
+          setFormValues({ ...values } as TimeLogFormValues);
         }}
       >
         {effectiveProjectStartDate && effectiveProjectStartDate.isAfter(dayjs(), 'day') && (
@@ -745,21 +939,16 @@ const TimeLogForm = ({
           <>
             <Form.Item
               name="date"
-              label={t('taskTimeLogTab.timeLogForm.date')}
-              extra={
-                effectiveProjectStartDate
-                  ? t('taskTimeLogTab.timeLogForm.projectStartDateHint', {
-                      date: effectiveProjectStartDate.format('MMM DD, YYYY'),
-                      defaultValue: 'Project start date: {{date}}',
-                    })
-                  : undefined
-              }
+              label={t('taskTimeLogTab.timeLogForm.date', { defaultValue: 'Date' })}
               rules={[
                 {
                   required: true,
-                  message: t('taskTimeLogTab.timeLogForm.selectDateError'),
+                  message: t('taskTimeLogTab.timeLogForm.selectDateError', {
+                    defaultValue: 'Please select date',
+                  }),
                 },
               ]}
+              style={{ marginBlockEnd: 6 }}
             >
               <DatePicker
                 size={controlSize}
@@ -769,33 +958,41 @@ const TimeLogForm = ({
             </Form.Item>
 
             <Form.Item style={{ marginBlockEnd: 6 }}>
-              <Flex gap={8} wrap="wrap" style={{ width: '100%' }}>
+              <Flex gap={8} style={{ width: '100%' }}>
                 <Form.Item
                   name="startTime"
-                  label={t('taskTimeLogTab.timeLogForm.startTime')}
+                  label={t('taskTimeLogTab.timeLogForm.startTime', { defaultValue: 'Start Time' })}
                   rules={[
                     {
                       required: true,
-                      message: t('taskTimeLogTab.timeLogForm.selectStartTimeError'),
+                      message: t('taskTimeLogTab.timeLogForm.selectStartTimeError', {
+                        defaultValue: 'Please select start time',
+                      }),
                     },
                   ]}
-                  style={{ flex: 1, minWidth: 140, marginBlockEnd: 0 }}
+                  style={{ flex: 1, minWidth: 120, marginBlockEnd: 0 }}
                 >
                   <TimePicker size={controlSize} format="HH:mm" style={{ width: '100%' }} />
                 </Form.Item>
 
                 <Form.Item
                   name="endTime"
-                  label={t('taskTimeLogTab.timeLogForm.endTime')}
+                  label={t('taskTimeLogTab.timeLogForm.endTime', { defaultValue: 'End Time' })}
                   rules={[
                     {
                       required: true,
-                      message: t('taskTimeLogTab.timeLogForm.selectEndTimeError'),
+                      message: t('taskTimeLogTab.timeLogForm.selectEndTimeError', {
+                        defaultValue: 'Please select end time',
+                      }),
                     },
                   ]}
-                  style={{ flex: 1, minWidth: 140, marginBlockEnd: 0 }}
+                  style={{ flex: 1, minWidth: 120, marginBlockEnd: 0 }}
                 >
-                  <TimePicker size={controlSize} format="HH:mm" style={{ width: '100%' }} />
+                  <TimePicker
+                    size={controlSize}
+                    format="HH:mm"
+                    style={{ width: '100%' }}
+                  />
                 </Form.Item>
               </Flex>
             </Form.Item>
@@ -902,6 +1099,30 @@ const TimeLogForm = ({
             autoSize={{ minRows: 2, maxRows: 6 }}
           />
         </Form.Item>
+        {/* Live duration summary (pure hours and minutes like Clockify/Toggl, no overnight/OT badges) */}
+        {activeDurationInfo.totalMinutes > 0 && (
+          <div style={{ marginBlockEnd: 10, width: '100%' }}>
+            <Flex align="center" gap={6} wrap="wrap">
+              <Tag color="blue" icon={<ClockCircleOutlined />}>
+                {t('taskTimeLogTab.timeLogForm.totalDurationBadge', {
+                  duration: `${activeDurationInfo.hours}h ${activeDurationInfo.minutes}m`,
+                  defaultValue: `Total: ${activeDurationInfo.hours}h ${activeDurationInfo.minutes}m`,
+                })}
+              </Tag>
+            </Flex>
+
+            {activeDurationInfo.exceedsDay && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginTop: 8 }}
+                message={t('taskTimeLogTab.timeLogForm.durationExceedsDayWarning', {
+                  defaultValue: 'This session exceeds 24 hours. Please verify the start and end dates.',
+                })}
+              />
+            )}
+          </div>
+        )}
 
         <Form.Item style={{ marginBlockEnd: 0 }}>
           <Flex gap={8} justify={inModal ? 'flex-end' : undefined}>

@@ -56,12 +56,14 @@ export const EditTimeEntryModal: React.FC<EditTimeEntryModalProps> = ({ entry, o
       id
         ? {
             id,
+            task_id: shown.task_id,
+            project_id: shown.project_id,
             time_spent: Number(timeSpent) || 0,
             description: description ?? undefined,
             created_at: createdAt,
           }
         : undefined,
-    [id, timeSpent, description, createdAt]
+    [id, shown?.task_id, shown?.project_id, timeSpent, description, createdAt]
   );
 
   if (!shown) return null;
