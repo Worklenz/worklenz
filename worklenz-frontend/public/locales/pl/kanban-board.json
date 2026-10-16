@@ -57,6 +57,7 @@
   "newIssueNamePlaceholder": "Napisz tytuł problemu",
   "loadingFilters": "Ładowanie filtrów...",
   "failedToUpdateColumnOrder": "Nie udało się zaktualizować kolejności kolumn",
+  "projectIdRequired": "Identyfikator projektu jest wymagany",
   "failedToUpdatePhaseOrder": "Nie udało się zaktualizować kolejności faz",
   "pleaseTryAgain": "Spróbuj ponownie",
   "taskNotCompleted": "Zadanie nie zostało ukończone",

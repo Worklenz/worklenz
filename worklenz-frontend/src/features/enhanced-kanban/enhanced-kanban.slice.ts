@@ -1385,6 +1385,8 @@ const enhancedKanbanSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchEnhancedKanbanGroups.fulfilled, (state, action) => {
+        if (state.projectId !== action.meta.arg) return;
+
         state.loadingGroups = false;
         const groups = toArray(action.payload);
         state.taskGroups = groups;
@@ -1421,6 +1423,8 @@ const enhancedKanbanSlice = createSlice({
         }
       })
       .addCase(fetchEnhancedKanbanGroups.rejected, (state, action) => {
+        if (state.projectId !== action.meta.arg) return;
+
         state.loadingGroups = false;
         state.error = action.payload as string;
       })
