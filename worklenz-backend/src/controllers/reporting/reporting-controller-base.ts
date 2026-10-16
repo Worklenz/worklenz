@@ -105,11 +105,14 @@ export default abstract class ReportingControllerBase extends WorklenzController
   /**
    * Build project filter clause for Team Leads
    */
-  public static async buildProjectFilterForTeamLead(req: IWorkLenzRequest): Promise<string> {
+  public static async buildProjectFilterForTeamLead(
+    req: IWorkLenzRequest,
+    paramOffset = 1
+  ): Promise<{ clause: string; params: string[][] }> {
     const userId = req.user?.id;
     const teamId = req.user?.team_id;
 
-    if (!userId || !teamId) return "";
+    if (!userId || !teamId) return { clause: "", params: [] };
 
     // Check if user is Team Lead
     const isUserTeamLead = await isTeamLead(userId, teamId);
@@ -118,19 +121,22 @@ export default abstract class ReportingControllerBase extends WorklenzController
 
     // Owners and Admins see all projects
     if (isOwner || isAdmin) {
-      return "";
+      return { clause: "", params: [] };
     }
 
     // Team Leads see only assigned projects
     if (isUserTeamLead) {
       const assignedProjects = await this.getTeamLeadProjects(userId, teamId);
       if (assignedProjects.length === 0) {
-        return "AND FALSE"; // No projects assigned, block access
+        return { clause: "AND FALSE", params: [] };
       }
-      return `AND p.id = ANY(ARRAY[${assignedProjects.map(id => `'${id}'::UUID`).join(',')}])`;
+      return {
+        clause: `AND p.id = ANY($${paramOffset}::UUID[])`,
+        params: [assignedProjects],
+      };
     }
 
-    return "";
+    return { clause: "", params: [] };
   }
 
   /**

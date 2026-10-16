@@ -401,7 +401,10 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     }
 
     // Add project filtering for Team Leads
-    const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
+    const projectFilter = await this.buildProjectFilterForTeamLead(req, paramOffset);
+    const projectFilterClause = projectFilter.clause;
+    filterParams.push(...projectFilter.params);
+    paramOffset += projectFilter.params.length;
     const teamFilterClause = `in_organization(p.team_id, $1) ${projectFilterClause} ${teamsClause} ${clientsClause} ${prioritiesClause}`;
     let groupField = "";
     let groupName = "";

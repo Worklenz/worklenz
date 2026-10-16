@@ -157,8 +157,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     let memberFilterClause = "";
     let projectParams: any[] = [];
     if (req) {
-      const projectFilter = await ReportingControllerBase.buildProjectFilterForTeamLead(req);
-      if (projectFilter && projectFilter !== "") {
+      const projectFilter = await ReportingControllerBase.getTeamLeadFilter(req);
+      if (projectFilter.isTeamLead) {
         // Team Lead: only show members who work on their assigned projects
         const assignedProjects = await ReportingControllerBase.getTeamLeadProjects(req.user?.id, teamId);
         if (assignedProjects.length > 0) {
@@ -1050,8 +1050,9 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     // Add project filtering for Team Leads
     let projectFilterClause = "";
     if (req) {
-      const filter = await ReportingControllerBase.buildProjectFilterForTeamLead(req);
-      projectFilterClause = filter.replace('p.id', 'pm.project_id');
+      const filter = await ReportingControllerBase.buildProjectFilterForTeamLead(req, paramOffset);
+      projectFilterClause = filter.clause.replace('p.id', 'pm.project_id');
+      queryParams.push(...filter.params);
     }
 
     const q = `SELECT p.id, p.name, pm.team_member_id,

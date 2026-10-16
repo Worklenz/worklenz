@@ -24,8 +24,11 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
   protected static async getTeamsCounts(teamId: string | null, archivedQuery = "", req?: any) {
     // Add project filtering for Team Leads
     let projectFilterClause = "";
+    let projectFilterParams: string[][] = [];
     if (req) {
-      projectFilterClause = await this.buildProjectFilterForTeamLead(req);
+      const projectFilter = await this.buildProjectFilterForTeamLead(req, 2);
+      projectFilterClause = projectFilter.clause;
+      projectFilterParams = projectFilter.params;
       // Replace 'p.id' with 'projects.id' for this query context
       projectFilterClause = projectFilterClause.replace('p.id', 'projects.id');
     }
@@ -52,7 +55,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
         'team_members', (SELECT count FROM team_member_count)
     ) AS counts;`;
 
-    const res = await db.query(q, [teamId]);
+    const res = await db.query(q, [teamId, ...projectFilterParams]);
     const [data] = res.rows;
 
     return {
@@ -65,8 +68,11 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
   protected static async getProjectsCounts(teamId: string | null, archivedQuery = "", req?: any) {
     // Add project filtering for Team Leads
     let projectFilterClause = "";
+    let projectFilterParams: string[][] = [];
     if (req) {
-      projectFilterClause = await this.buildProjectFilterForTeamLead(req);
+      const projectFilter = await this.buildProjectFilterForTeamLead(req, 2);
+      projectFilterClause = projectFilter.clause;
+      projectFilterParams = projectFilter.params;
       // Replace 'p.id' with 'projects.id' for this query context
       projectFilterClause = projectFilterClause.replace('p.id', 'projects.id');
     }
@@ -86,7 +92,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
                ) AS counts;
     `;
 
-    const res = await db.query(q, [teamId]);
+    const res = await db.query(q, [teamId, ...projectFilterParams]);
     const [data] = res.rows;
 
     return {

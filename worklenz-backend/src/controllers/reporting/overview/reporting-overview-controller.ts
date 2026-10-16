@@ -27,7 +27,9 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
     }
 
     // Compute once — avoids two separate isTeamLead() DB lookups
-    const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
+    const projectFilter = await this.buildProjectFilterForTeamLead(req, queryParams.length + 1);
+    const projectFilterClause = projectFilter.clause;
+    queryParams.push(...projectFilter.params);
 
     // Single consolidated query replaces 3 sequential round-trips.
     // Key optimisations:
