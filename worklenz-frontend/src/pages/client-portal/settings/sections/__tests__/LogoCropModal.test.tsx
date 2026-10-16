@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { LogoCropModal } from '../LogoCropModal';
+import { LogoCropModal, getCroppedImg } from '../LogoCropModal';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -128,5 +128,123 @@ describe('LogoCropModal', () => {
       window.Image = originalImage;
       vi.restoreAllMocks();
     }
+  });
+
+  describe('getCroppedImg', () => {
+    it('scales dimensions down when crop area exceeds 512px', async () => {
+      let canvasWidth = 0;
+      let canvasHeight = 0;
+      let drawArgs: unknown[] = [];
+
+      const originalCreateElement = document.createElement.bind(document);
+      vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'canvas') {
+          return {
+            set width(val: number) {
+              canvasWidth = val;
+            },
+            get width() {
+              return canvasWidth;
+            },
+            set height(val: number) {
+              canvasHeight = val;
+            },
+            get height() {
+              return canvasHeight;
+            },
+            getContext: () => ({
+              drawImage: (...args: unknown[]) => {
+                drawArgs = args;
+              },
+            }),
+            toDataURL: () => 'data:image/png;base64,scaled',
+          } as unknown as HTMLCanvasElement;
+        }
+        return originalCreateElement(tagName);
+      });
+
+      const originalImage = window.Image;
+      class MockImage {
+        onload: (() => void) | null = null;
+        src = '';
+        addEventListener(event: string, callback: () => void) {
+          if (event === 'load') setTimeout(callback, 0);
+        }
+      }
+      window.Image = MockImage as unknown as typeof Image;
+
+      try {
+        const result = await getCroppedImg('data:image/png;base64,large', {
+          x: 0,
+          y: 0,
+          width: 1024,
+          height: 1024,
+        });
+
+        expect(result).toBe('data:image/png;base64,scaled');
+        expect(canvasWidth).toBe(512);
+        expect(canvasHeight).toBe(512);
+        expect(drawArgs[7]).toBe(512);
+        expect(drawArgs[8]).toBe(512);
+      } finally {
+        window.Image = originalImage;
+        vi.restoreAllMocks();
+      }
+    });
+
+    it('does not upscale when crop area is smaller than 512px', async () => {
+      let canvasWidth = 0;
+      let canvasHeight = 0;
+
+      const originalCreateElement = document.createElement.bind(document);
+      vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'canvas') {
+          return {
+            set width(val: number) {
+              canvasWidth = val;
+            },
+            get width() {
+              return canvasWidth;
+            },
+            set height(val: number) {
+              canvasHeight = val;
+            },
+            get height() {
+              return canvasHeight;
+            },
+            getContext: () => ({
+              drawImage: vi.fn(),
+            }),
+            toDataURL: () => 'data:image/png;base64,original',
+          } as unknown as HTMLCanvasElement;
+        }
+        return originalCreateElement(tagName);
+      });
+
+      const originalImage = window.Image;
+      class MockImage {
+        onload: (() => void) | null = null;
+        src = '';
+        addEventListener(event: string, callback: () => void) {
+          if (event === 'load') setTimeout(callback, 0);
+        }
+      }
+      window.Image = MockImage as unknown as typeof Image;
+
+      try {
+        await getCroppedImg('data:image/png;base64,small', {
+          x: 0,
+          y: 0,
+          width: 250,
+          height: 250,
+        });
+
+        expect(canvasWidth).toBe(250);
+        expect(canvasHeight).toBe(250);
+      } finally {
+        window.Image = originalImage;
+        vi.restoreAllMocks();
+      }
+    });
   });
 });

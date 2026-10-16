@@ -95,7 +95,7 @@
   "logoUploadFailedError": "Falha ao carregar o logo.",
   "cropLogoModalTitle": "Recortar logotipo",
   "cropApplyButton": "Aplicar recorte",
-  "cropZoomLabel": "Zoom",
+  "cropZoomLabel": "Nível de zoom",
   "cropInstructionText": "Arraste para reposicionar · Role ou use o controle deslizante para ampliar",
   "portalLogoLabel": "Logo do Portal",
   "portalTitleLabel": "Título do Portal",

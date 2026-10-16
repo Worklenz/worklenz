@@ -13,16 +13,30 @@ export interface LogoCropModalProps {
   onCropComplete: (croppedBase64: string) => void;
 }
 
+const MAX_DIMENSION = 512;
+
 /**
  * Extracts the pixelCrop area from the image via an HTML canvas.
+ * Scales the output so its longest dimension is capped at 512px to keep
+ * file size optimal, while preserving aspect ratio and avoiding upscaling smaller crops.
  */
-export const getCroppedImg = (src: string, pixelCrop: Area): Promise<string> =>
+export const getCroppedImg = (
+  src: string,
+  pixelCrop: Area,
+  maxDimension = MAX_DIMENSION
+): Promise<string> =>
   new Promise((resolve, reject) => {
     const img = new Image();
     img.addEventListener('load', () => {
       const canvas = document.createElement('canvas');
-      canvas.width = pixelCrop.width;
-      canvas.height = pixelCrop.height;
+      const longestSide = Math.max(pixelCrop.width, pixelCrop.height);
+      const scale = longestSide > maxDimension ? maxDimension / longestSide : 1;
+      const targetWidth = Math.round(pixelCrop.width * scale);
+      const targetHeight = Math.round(pixelCrop.height * scale);
+
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         return reject(new Error('Canvas context not available'));
@@ -35,8 +49,8 @@ export const getCroppedImg = (src: string, pixelCrop: Area): Promise<string> =>
         pixelCrop.height,
         0,
         0,
-        pixelCrop.width,
-        pixelCrop.height
+        targetWidth,
+        targetHeight
       );
       resolve(canvas.toDataURL('image/png'));
     });
@@ -76,6 +90,9 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
     try {
       const base64 = await getCroppedImg(imageSrc, croppedAreaPixels);
       onCropComplete(base64);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
     } catch (err) {
       console.error('Failed to crop image', err);
     } finally {

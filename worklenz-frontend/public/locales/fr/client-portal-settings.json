@@ -95,7 +95,7 @@
   "logoUploadFailedError": "Échec du téléversement du logo.",
   "cropLogoModalTitle": "Recadrer le logo",
   "cropApplyButton": "Appliquer le recadrage",
-  "cropZoomLabel": "Zoom",
+  "cropZoomLabel": "Niveau de zoom",
   "cropInstructionText": "Faites glisser pour repositionner · Faites défiler ou utilisez le curseur pour zoomer",
   "portalLogoLabel": "Logo du portail",
   "portalTitleLabel": "Titre du portail",
