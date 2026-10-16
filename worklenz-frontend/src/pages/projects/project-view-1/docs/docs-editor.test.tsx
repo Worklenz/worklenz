@@ -16,8 +16,6 @@ vi.mock('react-i18next', () => ({
 }));
 vi.mock('@/api/projects/comments/project-comments.api.service', () => ({ projectCommentsApiService: { getMentionMembers: vi.fn() } }));
 vi.mock('@/api/tasks/tasks.api.service', () => ({ tasksApiService: { searchTask: vi.fn() } }));
-// The v3 BubbleMenu runs a floating-ui positioning loop that never settles in jsdom; render its toolbar inline.
-vi.mock('@tiptap/react/menus', () => ({ BubbleMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 vi.mock('./extensions/member-mention', async () => {
   const { Node } = await import('@tiptap/core');
   return { MemberMention: Node.create({ name: 'memberMention', group: 'inline', inline: true, atom: true, addAttributes: () => ({ id: { default: null } }), renderHTML: ({ HTMLAttributes }) => ['span', HTMLAttributes, '@member'] }) };
