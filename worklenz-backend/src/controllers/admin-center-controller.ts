@@ -22,6 +22,7 @@ import {
   getOwnerIdByTeam,
   getTeamMemberCount,
   getUsedStorage,
+  getCurrentSubscriptionRef,
 } from "../shared/paddle-utils";
 import { appSumoService } from "../shared/private-extensions";
 import { PlanTrialService } from "../services/plan-trial-service";
@@ -56,9 +57,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
   } as const;
 
   private static async getSubscriptionId(ownerId: string): Promise<string> {
-    const q = `SELECT subscription_id FROM licensing_user_subscriptions WHERE user_id = $1;`;
-    const result = await db.query(q, [ownerId]);
-    return result.rows[0]?.subscription_id?.toString();
+    return (await getCurrentSubscriptionRef(ownerId)) as string;
   }
 
   private static async checkIfUserActiveInOtherTeams(
@@ -825,6 +824,8 @@ export default class AdminCenterController extends WorklenzControllerBase {
       : (subscriptionData?.quantity ?? null);
     data.billing_info.redeemed_codes_count = subscriptionData?.redeemed_codes_count ?? 0;
     data.billing_info.appsumo_business_eligible = subscriptionData?.appsumo_business_eligible === true;
+    data.billing_info.billing_provider = subscriptionData?.billing_provider ?? null;
+    data.billing_info.subscription_ref = subscriptionData?.subscription_ref ?? null;
 
     return res.status(200).send(new ServerResponse(true, data.billing_info));
   }
@@ -1492,7 +1493,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
 
         if (!userActiveInOtherTeams) {
           const response = await updateUsers(
-            subscriptionData.subscription_id,
+            subscriptionData.subscription_ref ?? subscriptionData.subscription_id,
             obj.user_count
           );
           if (!response.body.subscription_id)

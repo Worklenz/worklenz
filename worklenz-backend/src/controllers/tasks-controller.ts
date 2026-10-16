@@ -47,6 +47,7 @@ import {
 } from "../services/activity-logs/interfaces";
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
 import { isRestrictedFromProPlanFeatures } from "../middlewares/subscription-middleware";
+import { isEnforceMode, teamCanUseFeature } from "../shared/entitlements/gates";
 
 export default class TasksController extends TasksControllerBase {
   private static async getTaskDrawerCustomColumns(projectId: string | null) {
@@ -246,7 +247,11 @@ export default class TasksController extends TasksControllerBase {
 
     // Check if user is trying to set billable and if they're restricted
     if (req.body.billable === true) {
-      const isRestricted = await isRestrictedFromProPlanFeatures(teamId);
+      // Matrix: billable marking is available on every plan. Until ENTITLEMENTS_ENFORCE is on,
+      // keep the legacy Pro/AppSumo restriction.
+      const isRestricted = isEnforceMode()
+        ? !(await teamCanUseFeature(teamId, "billable_marking"))
+        : await isRestrictedFromProPlanFeatures(teamId);
 
       if (isRestricted) {
         return res

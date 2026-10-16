@@ -10,5 +10,6 @@
   "commentAdded": "<b>{{user}}</b> 在 <b>{{task}}</b> 上添加了评论",
   "mentionedInComment": "<b>{{user}}</b> 在 <b>{{task}}</b> 的评论中提及了您",
   "mentionedInProjectComment": "<b>{{user}}</b> 在 <b>{{project}}</b> 的评论中提及了您",
+  "mentionedInProjectDocument": "<b>{{user}}</b> 在 <b>{{project}}</b> 的文档中提及了您",
   "phaseTaskAssigned": "在 <b>{{phase}}</b> 中已将一项任务指派给您：<b>{{task}}</b>"
 }

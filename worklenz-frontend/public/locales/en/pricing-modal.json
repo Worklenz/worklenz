@@ -131,7 +131,9 @@
         "Custom integrations",
         "Dedicated account manager",
         "On-premises deployment"
-      ]
+      ],
+      "customPricing": "Custom",
+      "customPricingNote": "tailored to your team"
     },
     "additionalUsersCharged": "Additional users beyond included: ${{price}}/user/month"
   },

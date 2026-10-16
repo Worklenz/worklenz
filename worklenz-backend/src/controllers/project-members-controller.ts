@@ -1,3 +1,4 @@
+import { planLiftsLtdMemberLimit } from "../shared/entitlements/gates";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { IPassportSession } from "../interfaces/passport-session";
@@ -463,10 +464,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         }
 
         // Check AppSumo lifetime limits - only applies if not on Business plan
-        const isBusinessPlan = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
-          subscriptionData.plan_name?.toLowerCase().includes("business") ||
-          subscriptionData.business_plan_override === true ||
-          subscriptionData.appsumo_business_eligible === true;
+        const isBusinessPlan = planLiftsLtdMemberLimit(subscriptionData);
         if (!userExists && subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlan && (parseInt(subscriptionData.current_count) + 1 > parseInt(subscriptionData.ltd_users))) {
           const ltdLimit = parseInt(subscriptionData.ltd_users);
           const obj = {
@@ -780,10 +778,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         }
 
         // Check LTD user limits - only applies if not on Business plan (check both subscription_type and plan_name)
-        const isBusinessPlan = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
-          subscriptionData.plan_name?.toLowerCase().includes("business") ||
-          subscriptionData.business_plan_override === true ||
-          subscriptionData.appsumo_business_eligible === true;
+        const isBusinessPlan = planLiftsLtdMemberLimit(subscriptionData);
         if (subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlan) {
           const currentCount = parseInt(subscriptionData.current_count) || 0;
           const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
@@ -1061,10 +1056,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
           // Check LTD user limits - only applies if not on Business plan
           // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
-          const isBusinessPlanProjectLink = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
-            subscriptionData.plan_name?.toLowerCase().includes("business") ||
-            subscriptionData.business_plan_override === true ||
-            subscriptionData.appsumo_business_eligible === true;
+          const isBusinessPlanProjectLink = planLiftsLtdMemberLimit(subscriptionData);
 
           if (incrementBy > 0 && subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlanProjectLink) {
             const currentCount = parseInt(subscriptionData.current_count) || 0;

@@ -131,7 +131,9 @@
         "Intégrations personnalisées",
         "Gestionnaire de comptes dédié",
         "Déploiement sur site"
-      ]
+      ],
+      "customPricing": "Sur mesure",
+      "customPricingNote": "adapté à votre équipe"
     },
     "additionalUsersCharged": "Utilisateurs supplémentaires au-delà inclus : {{price}} $/utilisateur/mois"
   },

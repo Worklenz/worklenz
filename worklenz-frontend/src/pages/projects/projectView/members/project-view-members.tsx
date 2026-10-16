@@ -56,7 +56,7 @@ import { toggleUpdateMemberDrawer } from '@/features/settings/member/memberSlice
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { fetchBoardTaskGroups } from '@/features/board/board-slice';
-import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { hasReachedSeatLimit as hasReachedSeatLimitForPlan } from '@/utils/subscription-utils';
 import {
   canManageUserRole,
   getSessionRoleName,
@@ -136,8 +136,11 @@ const ProjectViewMembers = () => {
   const totalUsedSeats = billingInfo?.total_used ?? members?.total ?? 0;
   const totalAvailableSeats = billingInfo?.total_seats ?? 0;
   const remainingSeats = Math.max(0, totalAvailableSeats - totalUsedSeats);
-  const hasReachedSeatLimit =
-    !hasBusinessFeatureAccess(user) && totalAvailableSeats > 0 && totalUsedSeats >= totalAvailableSeats;
+  const hasReachedSeatLimit = hasReachedSeatLimitForPlan(user, {
+    total_used: totalUsedSeats,
+    total_seats: totalAvailableSeats,
+    billing_provider: billingInfo?.billing_provider,
+  });
   const seatUsageText = useMemo(() => {
     if (!totalAvailableSeats) {
       return t('seatUsageText', {

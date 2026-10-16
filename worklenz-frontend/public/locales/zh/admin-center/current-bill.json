@@ -211,5 +211,18 @@
   "pricingModelNote": "定价模型信息",
   "switchAnytime": "您可以随时通过结算设置在定价模式之间切换",
   "flatRateLimit": "统一费率计划有用户限制 - 确保您的团队规模符合限制",
-  "perUserScaling": "每用户计划会随着团队的成长而自动扩展"
+  "perUserScaling": "每用户计划会随着团队的成长而自动扩展",
+  "paymentHistory": "付款记录",
+  "receiptDownloadFailed": "下载失败",
+  "receiptDownloadFailedDescription": "无法生成收据，请重试。",
+  "date": "日期",
+  "card": "银行卡",
+  "receipt": "收据",
+  "noPaymentHistory": "暂无付款记录",
+  "flatRatePricingDescription": "适用于最多 {{count}} 位用户的固定价格",
+  "flatRateMonthlyPrice": "每月 {{currency}} {{price}}",
+  "upToUsers": "（最多 {{count}} 位用户）",
+  "legacyPlanTitle": "旧版套餐",
+  "legacyPlanDescription": "您使用的是已停售的套餐，该套餐将保持不变。您可以选择切换到当前按用户计费的套餐，只有在您确认后才会替换现有订阅。",
+  "everythingInFree": "包含 Free 的所有功能，另加："
 }

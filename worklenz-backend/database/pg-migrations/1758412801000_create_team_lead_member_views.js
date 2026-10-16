@@ -162,11 +162,6 @@ ON task_work_log (user_id, task_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_tasks_assignees_member_task 
 ON tasks_assignees (team_member_id, task_id);
 
--- Grant necessary permissions
-GRANT SELECT ON team_lead_managed_members TO PUBLIC;
-GRANT SELECT ON team_lead_member_stats TO PUBLIC;
-GRANT SELECT ON team_lead_member_performance TO PUBLIC;
-GRANT SELECT ON team_lead_time_logs TO PUBLIC;
 
   `);
 };

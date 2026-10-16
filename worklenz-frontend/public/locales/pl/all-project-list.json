@@ -17,6 +17,8 @@
   "favorites": "Ulubione",
   "archived": "Zarchiwizowane",
   "placeholder": "Wyszukaj według nazwy projektu",
+  "searchProjects": "Szukaj projektów",
+  "rowsPerPage": "Wiersze na stronę:",
   "archive": "Archiwum",
   "unarchive": "Cofnij archiwizację",
   "archiveConfirm": "Czy na pewno chcesz zarchiwizować ten projekt?",

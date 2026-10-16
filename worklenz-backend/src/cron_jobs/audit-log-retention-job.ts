@@ -1,7 +1,7 @@
 import { CronJob } from "cron";
 import { PoolClient } from "pg";
 
-import db from "../config/db";
+import { getAuditRetentionPool } from "../config/audit-retention-db";
 import { log_error } from "../shared/utils";
 
 /**
@@ -36,7 +36,7 @@ export async function runAuditLogRetentionPurge(): Promise<number | null> {
   let lockClient: PoolClient | null = null;
 
   try {
-    lockClient = await db.pool.connect();
+    lockClient = await getAuditRetentionPool().connect();
     locked = await acquireAdvisoryLock(lockClient);
     if (!locked) return null;
 
