@@ -170,6 +170,9 @@
   padding-left: 1.4rem;
 }
 
+.docs-prose .ProseMirror ul { list-style-type: disc; }
+.docs-prose .ProseMirror ol { list-style-type: decimal; }
+
 .docs-prose .ProseMirror ul[data-type='taskList'] {
   list-style: none;
   padding-left: 0.15rem;
@@ -262,183 +265,6 @@ button.docs-mention-chip:disabled,
   white-space: nowrap;
 }
 
-.docs-sections-empty {
-  margin: 12px 0 16px;
-  color: var(--docs-muted);
-  font-size: 14px;
-}
-
-.docs-section {
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
-  margin: 2px 0;
-  border-radius: 8px;
-}
-
-.docs-section.is-quote .docs-section-body {
-  border-left: 3px solid var(--docs-border);
-  padding-left: 12px;
-}
-
-.docs-section.is-h1 .ProseMirror { font-size: 28px; font-weight: 650; line-height: 1.25; }
-.docs-section.is-h2 .ProseMirror { font-size: 22px; font-weight: 650; line-height: 1.3; }
-.docs-section.is-h3 .ProseMirror { font-size: 18px; font-weight: 650; line-height: 1.35; }
-
-.docs-section-body {
-  min-width: 0;
-  flex: 1;
-}
-
-.docs-section-handle,
-.docs-section-remove,
-.docs-section-insert-btn,
-.docs-heading-levels button,
-.docs-add-item {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  color: var(--docs-muted);
-  cursor: pointer;
-}
-
-.docs-section-handle,
-.docs-section-remove {
-  width: 24px;
-  height: 24px;
-  margin-top: 2px;
-  border-radius: 6px;
-  opacity: 0.55;
-}
-
-.docs-section:hover .docs-section-handle,
-.docs-section:focus-within .docs-section-handle,
-.docs-list-item:hover .docs-section-handle,
-.docs-list-item:focus-within .docs-section-handle {
-  opacity: 1;
-}
-
-.docs-section-remove {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.docs-section:hover > .docs-section-remove,
-.docs-list-item:hover > .docs-section-remove,
-.docs-section-remove:focus-visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-@media (hover: none) {
-  .docs-section:focus-within > .docs-section-remove,
-  .docs-list-item:focus-within > .docs-section-remove {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-
-.docs-section-handle:hover,
-.docs-section-remove:hover,
-.docs-section-insert-btn:hover,
-.docs-heading-levels button:hover,
-.docs-add-item:hover {
-  background: var(--docs-hover);
-  color: var(--docs-text);
-}
-
-.docs-section-handle:focus-visible,
-.docs-section-remove:focus-visible,
-.docs-section-insert-btn:focus-visible,
-.docs-heading-levels button:focus-visible,
-.docs-add-item:focus-visible,
-.docs-add-section:focus-visible {
-  outline: 2px solid var(--docs-link);
-  outline-offset: 1px;
-}
-
-.docs-heading-levels {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 2px;
-}
-
-.docs-heading-levels button {
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 650;
-}
-
-.docs-heading-levels button.is-active {
-  background: var(--docs-active);
-  color: var(--docs-link);
-}
-
-.docs-section-insert {
-  display: flex;
-  justify-content: center;
-  height: 18px;
-}
-
-.docs-section-insert-btn {
-  width: 22px;
-  height: 18px;
-  border-radius: 999px;
-  opacity: 0;
-}
-
-.docs-section-insert:hover .docs-section-insert-btn,
-.docs-section-insert:focus-within .docs-section-insert-btn {
-  opacity: 1;
-}
-
-.docs-add-section {
-  margin-top: 12px;
-}
-
-.docs-list-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.docs-list-marker {
-  width: 1.4rem;
-  padding-top: 2px;
-  color: var(--docs-muted);
-  text-align: right;
-  flex: none;
-}
-
-.docs-inline-item {
-  min-width: 0;
-  flex: 1;
-}
-
-.docs-add-item {
-  gap: 6px;
-  margin: 4px 0 8px 28px;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 13px;
-}
-
-.docs-code-input.ant-input {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  background: var(--docs-code-bg);
-  color: var(--docs-text);
-}
-
-.docs-section-divider {
-  border: 0;
-  border-top: 1px solid var(--docs-border);
-  margin: 12px 0;
-}
-
 .docs-tool-btn:disabled {
   opacity: 0.4;
   cursor: default;
@@ -450,6 +276,58 @@ button.docs-mention-chip:disabled,
   .docs-tool-btn { width: 32px; height: 32px; }
 }
 
-.docs-list-item .ant-checkbox-wrapper {
-  margin-top: 4px;
+.docs-page-content {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+.docs-document-editor {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.docs-document-editor .ProseMirror:focus-visible {
+  outline: 1px solid var(--docs-border);
+  outline-offset: 6px;
+  border-radius: 6px;
+}
+
+.docs-writing-tail {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-height: 120px;
+  border: 0;
+  background: transparent;
+  cursor: text;
+}
+
+.docs-writing-tail:focus-visible {
+  outline: 2px solid var(--docs-link);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.docs-document-editor .ProseMirror pre {
+  overflow-x: auto;
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: var(--docs-code-bg);
+}
+
+.docs-document-editor .ProseMirror pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.docs-document-editor li > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.docs-document-editor li[data-checked='true'] > div {
+  color: var(--docs-muted);
+  text-decoration: line-through;
 }

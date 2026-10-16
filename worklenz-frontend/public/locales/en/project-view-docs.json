@@ -74,5 +74,8 @@
   "unavailableMember": "Unavailable member",
   "unavailableTask": "Unavailable task",
   "mentionedIn": "Mentioned in",
-  "openDocument": "Open {{title}}"
+  "openDocument": "Open {{title}}",
+  "continueWriting": "Continue writing",
+  "blockActions": "Block actions",
+  "deleteBlockConfirm": "Delete this block?"
 }

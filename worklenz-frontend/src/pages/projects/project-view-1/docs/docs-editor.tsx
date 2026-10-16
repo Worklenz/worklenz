@@ -1,7 +1,10 @@
 import { Editor as TiptapEditor } from '@tiptap/core';
-import { Alert, Button, Flex, Input, Popover, Typography, theme } from '@/shared/antd-imports';
+import { TextSelection } from '@tiptap/pm/state';
+import { Alert, Button, Dropdown, Flex, Input, Modal, Popover, Typography, theme } from '@/shared/antd-imports';
 import {
   BoldOutlined,
+  MoreOutlined,
+  PlusOutlined,
   CodeOutlined,
   ItalicOutlined,
   LinkOutlined,
@@ -13,15 +16,15 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ISectionDocument } from '@/types/project/project-documents.types';
+import { createSection, ISectionDocument, SectionKind } from '@/types/project/project-documents.types';
 
 import './docs-editor.css';
 import { ToolbarButton, ToolbarDivider } from './docs-toolbar-button';
-import { findFormattingSection, toggleSectionList } from './docs-formatting';
 import { DocsSaveState } from './use-docs-autosave';
-import DocsSectionList from './docs-section-list';
+import { DocsDocumentEditor } from './docs-document-editor';
+import { toEditorDocument } from './docs-document-format';
 import { DocsSuggestionMenu, DocsSuggestionMenuHandle } from './docs-suggestion-menu';
-import { insertMention, loadMentionItems, MentionHandlers } from './docs-inline-editor';
+import { insertMention, loadMentionItems, MentionHandlers } from './docs-mentions';
 
 interface DocsEditorProps {
   documentId: string;
@@ -55,16 +58,13 @@ const DocsEditor = ({
   const mentionMenuRef = useRef<DocsSuggestionMenuHandle>(null);
   const membersRef = useRef<Array<{ id: string; name: string }>>([]);
   const activeEditorRef = useRef<TiptapEditor | null>(null);
-  const [formatTick, setFormatTick] = useState(0);
-  const [focusRequest, setFocusRequest] = useState<{ fieldKey: string } | null>(null);
+  const [, setFormatTick] = useState(0);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkValue, setLinkValue] = useState('');
   const handlersRef = useRef<MentionHandlers>({
     mentionItems: async () => [],
     applyMention: () => undefined,
     mentionMenu: null,
-    toggleList: () => undefined,
-    listTypeForField: () => undefined,
   });
 
   useEffect(() => {
@@ -82,9 +82,6 @@ const DocsEditor = ({
   handlersRef.current.applyMention = insertMention;
 
   const editor = activeEditorRef.current?.isDestroyed ? null : activeEditorRef.current;
-  const fieldKey = editor?.view.dom.getAttribute('data-docs-field-key');
-  const activeSection = findFormattingSection(content.sections, fieldKey);
-  void formatTick;
 
   const handleActivity = (next: TiptapEditor) => {
     if (!next.isFocused && activeEditorRef.current !== next) return;
@@ -92,17 +89,68 @@ const DocsEditor = ({
     setFormatTick(tick => tick + 1);
   };
 
-  const handleToggleList = (type: 'bulletList' | 'numberedList', targetFieldKey = fieldKey) => {
-    if (!targetFieldKey) return;
-    const next = toggleSectionList(content, targetFieldKey, type);
-    if (next !== content) {
-      setFocusRequest({ fieldKey: targetFieldKey });
-      onContentChange(next);
-    }
+  const handleToggleList = (type: 'bulletList' | 'numberedList') => {
+    if (type === 'bulletList') editor?.chain().focus().toggleBulletList().run();
+    else editor?.chain().focus().toggleOrderedList().run();
   };
 
-  handlersRef.current.toggleList = (key, type) => handleToggleList(type, key);
-  handlersRef.current.listTypeForField = key => findFormattingSection(content.sections, key)?.type;
+  const blockKinds: Array<{ key: SectionKind; label: string }> = [
+    { key: 'paragraph', label: t('paragraph', { defaultValue: 'Paragraph' }) },
+    { key: 'heading1', label: t('heading1', { defaultValue: 'Heading 1' }) },
+    { key: 'heading2', label: t('heading2', { defaultValue: 'Heading 2' }) },
+    { key: 'heading3', label: t('heading3', { defaultValue: 'Heading 3' }) },
+    { key: 'bulletList', label: t('bulletList', { defaultValue: 'Bullet list' }) },
+    { key: 'numberedList', label: t('numberedList', { defaultValue: 'Numbered list' }) },
+    { key: 'checklist', label: t('taskList', { defaultValue: 'To-do list' }) },
+    { key: 'quote', label: t('quote', { defaultValue: 'Quote' }) },
+    { key: 'code', label: t('code', { defaultValue: 'Code' }) },
+    { key: 'divider', label: t('divider', { defaultValue: 'Divider' }) },
+  ];
+
+  const insertBlock = (key: string) => {
+    const kind = blockKinds.find(item => item.key === key)?.key;
+    if (!editor || !kind) return;
+    const { $from } = editor.state.selection;
+    const position = $from.depth ? $from.after(1) : $from.pos + ($from.nodeAfter?.nodeSize || 0);
+    const node = toEditorDocument({ version: 1, sections: [createSection(kind)] }).content?.[0];
+    if (!node) return;
+    editor.chain().focus().insertContentAt(position, node, { updateSelection: true }).run();
+  };
+
+  const blockAction = (action: string) => {
+    if (!editor) return;
+    const { $from } = editor.state.selection;
+    const position = $from.depth ? $from.before(1) : $from.pos;
+    const node = editor.state.doc.nodeAt(position);
+    if (!node) return;
+    const end = position + node.nodeSize;
+    if (action === 'duplicate') editor.chain().focus().insertContentAt(end, node.toJSON()).run();
+    if (action === 'moveUp' && position > 0) {
+      const previous = editor.state.doc.resolve(position).nodeBefore;
+      if (previous) {
+        const transaction = editor.state.tr.delete(position, end).insert(position - previous.nodeSize, node);
+        transaction.setSelection(TextSelection.near(transaction.doc.resolve(position - previous.nodeSize)));
+        editor.view.dispatch(transaction.scrollIntoView());
+        editor.commands.focus();
+      }
+    }
+    if (action === 'moveDown' && end < editor.state.doc.content.size) {
+      const next = editor.state.doc.nodeAt(end);
+      if (next) {
+        const transaction = editor.state.tr.delete(position, end).insert(position + next.nodeSize, node);
+        transaction.setSelection(TextSelection.near(transaction.doc.resolve(position + next.nodeSize)));
+        editor.view.dispatch(transaction.scrollIntoView());
+        editor.commands.focus();
+      }
+    }
+    if (action === 'delete') Modal.confirm({
+      title: t('deleteBlockConfirm', { defaultValue: 'Delete this block?' }),
+      okText: t('delete', { defaultValue: 'Delete' }), cancelText: t('cancel', { defaultValue: 'Cancel' }), okButtonProps: { danger: true },
+      onOk: () => {
+        if (!editor.isDestroyed) editor.chain().focus().deleteRange({ from: position, to: end }).run();
+      },
+    });
+  };
 
   const handleApplyLink = () => {
     const href = linkValue.trim();
@@ -220,10 +268,10 @@ const DocsEditor = ({
               <CodeOutlined />
             </ToolbarButton>
             <ToolbarDivider />
-            <ToolbarButton label={t('bulletList', { defaultValue: 'Bullet list' })} active={activeSection?.type === 'bulletList'} disabled={!activeSection} onClick={() => handleToggleList('bulletList')}>
+            <ToolbarButton label={t('bulletList', { defaultValue: 'Bullet list' })} active={!!editor?.isActive('bulletList')} disabled={!editor} onClick={() => handleToggleList('bulletList')}>
               <UnorderedListOutlined />
             </ToolbarButton>
-            <ToolbarButton label={t('numberedList', { defaultValue: 'Numbered list' })} active={activeSection?.type === 'numberedList'} disabled={!activeSection} onClick={() => handleToggleList('numberedList')}>
+            <ToolbarButton label={t('numberedList', { defaultValue: 'Numbered list' })} active={!!editor?.isActive('orderedList')} disabled={!editor} onClick={() => handleToggleList('numberedList')}>
               <OrderedListOutlined />
             </ToolbarButton>
             <ToolbarDivider />
@@ -252,12 +300,25 @@ const DocsEditor = ({
                 <LinkOutlined />
               </ToolbarButton>
             </Popover>
+            <ToolbarDivider />
+            <Dropdown trigger={['click']} menu={{ items: blockKinds, onClick: ({ key }) => insertBlock(key) }} disabled={!editor}>
+              <button type="button" className="docs-tool-btn" disabled={!editor} aria-label={t('slashMenu', { defaultValue: 'Insert block' })} onMouseDown={event => event.preventDefault()}><PlusOutlined /></button>
+            </Dropdown>
+            <Dropdown trigger={['click']} disabled={!editor} menu={{
+              items: [
+                { key: 'duplicate', label: t('duplicate', { defaultValue: 'Duplicate' }) },
+                { key: 'moveUp', label: t('moveUp', { defaultValue: 'Move up' }) },
+                { key: 'moveDown', label: t('moveDown', { defaultValue: 'Move down' }) },
+                { key: 'delete', label: t('delete', { defaultValue: 'Delete' }), danger: true },
+              ],
+              onClick: ({ key }) => blockAction(key),
+            }}>
+              <button type="button" className="docs-tool-btn" disabled={!editor} aria-label={t('blockActions', { defaultValue: 'Block actions' })} onMouseDown={event => event.preventDefault()}><MoreOutlined /></button>
+            </Dropdown>
           </div>
 
-          <DocsSectionList
-            focusRequest={focusRequest}
-            projectId={projectId}
-            content={content.version === 1 && Array.isArray(content.sections) ? content : { version: 1, sections: [] }}
+          <DocsDocumentEditor
+            content={content}
             handlersRef={handlersRef}
             onChange={onContentChange}
             onActivity={handleActivity}
