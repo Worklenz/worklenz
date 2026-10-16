@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useTranslation } from 'react-i18next';
 import { Tooltip, theme } from '@/shared/antd-imports';
 import { PushpinFilled, PushpinOutlined } from '@/shared/antd-imports';
 import type { NavItem } from '@/features/navigation/nav-registry.types';
@@ -41,9 +42,12 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
   onTogglePin,
 }) => {
   const { token } = theme.useToken();
+  const { t } = useTranslation('home');
   const {
+    attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
     transform,
     transition,
     isDragging,
@@ -178,6 +182,18 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
     e.stopPropagation();
   }, []);
 
+  const handleReorderKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLButtonElement>) => {
+      listeners?.onKeyDown?.(e);
+    },
+    [listeners],
+  );
+
+  const reorderLabel = t('customize.dragHandle', {
+    defaultValue: 'Reorder {{name}}. Press space to pick up, then use the arrow keys.',
+    name: typeof item.label === 'string' ? item.label : item.label.defaultValue,
+  });
+
   return (
     <div ref={setNodeRef} style={wrapperStyle} className="nav-rail-item-wrapper">
       {/* ── Pin affordance (top-left, visible when active/pinned or hovered) ──
@@ -199,6 +215,29 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
           <PushpinOutlined style={pinIconStyle} />
         )}
       </span>
+
+      {draggable && (
+        <button
+          ref={setActivatorNodeRef}
+          type="button"
+          {...attributes}
+          aria-label={reorderLabel}
+          title={reorderLabel}
+          className="nav-rail-affordance"
+          onKeyDown={handleReorderKeyDown}
+          style={{
+            ...pinWrapperStyle,
+            left: 'auto',
+            right: 4,
+            border: 'none',
+            padding: 0,
+            background: 'transparent',
+            color: isDark ? 'rgba(255,255,255,.40)' : 'rgba(0,0,0,.35)',
+            fontSize: 10,
+            cursor: 'grab',
+          }}
+        />
+      )}
 
       {/* ── Navigation item (navigates on click/Enter/Space; whole item supports mouse drag) ── */}
       <Tooltip
