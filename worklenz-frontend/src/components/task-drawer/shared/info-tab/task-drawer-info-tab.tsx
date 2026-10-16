@@ -46,6 +46,7 @@ import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
+import TaskDrawerDevelopment from './TaskDrawerDevelopment';
 
 interface TaskDrawerInfoTabProps {
   t: TFunction;
@@ -100,7 +101,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   const dragCounterRef = useRef(0);
 
   // Controlled collapse keys so we can auto-expand attachments on drop
-  const defaultCollapseKeys = ['details', 'description', 'subTasks', 'dependencies', 'attachments', 'comments'];
+  const defaultCollapseKeys = ['details', 'description', 'subTasks', 'dependencies', 'attachments', 'development', 'comments'];
   const [collapseActiveKeys, setCollapseActiveKeys] = useState<string[]>(defaultCollapseKeys);
   const [expandedCustomFieldsByTask, setExpandedCustomFieldsByTask] = useState<Record<string, boolean>>({});
 
@@ -361,6 +362,23 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     };
   }, [socket, selectedTaskId, fetchSubTasks]);
 
+  // GitHub activity (new PR/commit/branch or automated status change) for this task.
+  const [githubRefreshToken, setGithubRefreshToken] = useState(0);
+  useEffect(() => {
+    if (!socket || !selectedTaskId || !isSoftwareProject) return;
+
+    const handleGithubActivity = (payload: { task_ids?: string[] }) => {
+      if (payload?.task_ids?.includes(selectedTaskId)) {
+        setGithubRefreshToken(previous => previous + 1);
+      }
+    };
+
+    socket.on(SocketEvents.GITHUB_TASK_ACTIVITY.toString(), handleGithubActivity);
+    return () => {
+      socket.off(SocketEvents.GITHUB_TASK_ACTIVITY.toString(), handleGithubActivity);
+    };
+  }, [socket, selectedTaskId, isSoftwareProject]);
+
   const fetchTaskDependencies = useCallback(async () => {
     if (!selectedTaskId) return;
     try {
@@ -569,6 +587,20 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
       className: 'custom-task-drawer-info-collapse',
     },
     {
+      key: 'development',
+      label: <Typography.Text strong>{t('taskInfoTab.development.title', { defaultValue: 'Development' })}</Typography.Text>,
+      children: (
+        <TaskDrawerDevelopment
+          taskId={selectedTaskId || ''}
+          taskKey={(taskFormViewModel?.task as ITaskViewModel | undefined)?.task_key}
+          refreshToken={githubRefreshToken}
+          canCreateBranch={canCreateTask && !isGuest}
+        />
+      ),
+      style: panelStyle,
+      className: 'custom-task-drawer-info-collapse',
+    },
+    {
       key: 'comments',
       label: <Typography.Text strong>{t('taskInfoTab.comments.title', { defaultValue: 'Comments' })}</Typography.Text>,
       style: panelStyle,
@@ -577,10 +609,15 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     },
   ];
 
+  // The Development (GitHub) section only applies to software projects.
+  const scopedInfoItems = isSoftwareProject
+    ? allInfoItems
+    : allInfoItems.filter(item => item.key !== 'development');
+
   const levelInfoItems =
     (taskFormViewModel?.task?.task_level ?? 0) >= 2
-      ? allInfoItems.filter(item => item.key !== 'subTasks')
-      : allInfoItems;
+      ? scopedInfoItems.filter(item => item.key !== 'subTasks')
+      : scopedInfoItems;
 
   const infoItems = isSoftwareProject
     ? levelInfoItems
@@ -696,7 +733,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
 };
 
 /** Sections shown in the software issue drawer, in display order. */
-const SOFTWARE_SECTION_ORDER = ['description', 'details', 'comments'];
+const SOFTWARE_SECTION_ORDER = ['description', 'details', 'development', 'comments'];
 
 /** Small uppercase section heading used by the software issue drawer. */
 const SoftwareSectionLabel = ({ children }: { children: React.ReactNode }) => (

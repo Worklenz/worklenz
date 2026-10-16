@@ -1,0 +1,178 @@
+{
+  "title": "GitHub",
+  "description": "将 GitHub 仓库关联到软件项目，即可在问题上查看分支、拉取请求和提交。",
+  "viewOnly": "仅查看",
+  "connectedHint": "打开软件项目，然后前往“设置 > 集成”来关联仓库。",
+  "repositoryCount_one": "{{count}} 个可用仓库",
+  "repositoryCount_other": "{{count}} 个可用仓库",
+  "connect": {
+    "button": "连接 GitHub",
+    "adminOnly": "只有团队所有者和管理员可以连接 GitHub。"
+  },
+  "status": {
+    "connected": "已连接",
+    "suspended": "已暂停"
+  },
+  "notConfigured": {
+    "title": "未配置",
+    "description": "此 Worklenz 部署尚未设置 GitHub 应用。请联系管理员进行配置。"
+  },
+  "actions": {
+    "retry": "重试",
+    "refresh": "刷新仓库",
+    "cancel": "取消"
+  },
+  "disconnect": {
+    "title": "断开 GitHub 连接？",
+    "description": "同步将暂停。现有关联和历史记录会保留，重新连接后继续使用。",
+    "confirm": "断开连接",
+    "button": "断开连接"
+  },
+  "messages": {
+    "connected": "GitHub 连接成功。",
+    "requested": "已提交安装请求，需要组织所有者批准。",
+    "refreshed": "仓库列表已更新。",
+    "disconnected": "GitHub 已断开连接。"
+  },
+  "errors": {
+    "invalidState": "连接请求已过期，请重试。",
+    "forbidden": "您需要拥有此 GitHub 安装的访问权限，并且是团队所有者或管理员。",
+    "alreadyConnected": "此 GitHub 账号已连接到另一个 Worklenz 团队。",
+    "teamAlreadyConnected": "此团队已连接到其他 GitHub 账号，请先断开连接。",
+    "connectFailed": "无法连接 GitHub，请重试。",
+    "loadFailed": "无法加载 GitHub 状态。",
+    "refreshFailed": "无法刷新仓库。",
+    "disconnectFailed": "无法断开 GitHub 连接。"
+  },
+  "project": {
+    "subtitle": "在此项目的问题上查看分支、拉取请求和提交。",
+    "linked": "仓库已关联。",
+    "linkFailed": "无法关联仓库。",
+    "unlinked": "仓库已取消关联。",
+    "unlinkFailed": "无法取消关联仓库。",
+    "updateFailed": "无法更新基础分支。",
+    "notConnected": "请先在团队设置中连接 GitHub 账号，然后再关联仓库。",
+    "openIntegrations": "前往集成",
+    "selectPlaceholder": "选择要关联的仓库",
+    "noRepositories": "没有更多可用仓库",
+    "link": "关联",
+    "emptyManage": "尚未关联任何仓库。请在上方选择一个开始。",
+    "empty": "此项目尚未关联仓库。",
+    "private": "私有",
+    "unavailable": "已无法访问",
+    "baseBranch": "基础分支",
+    "editBaseBranch": "编辑基础分支",
+    "unlinkTitle": "取消关联此仓库？",
+    "unlinkDescription": "问题上已有的关联会保留，但不再跟踪新的活动。",
+    "unlink": "取消关联",
+    "unlinkAria": "取消关联 {{name}}",
+    "howItWorks": "在分支名称、提交信息或拉取请求标题中包含问题编号（如 {{example}}），即可将其关联到该问题。",
+    "automation": {
+      "title": "状态自动化",
+      "description": "根据 GitHub 活动自动移动问题。问题不会后退，也不会移出已完成状态。",
+      "branchCreated": "创建分支",
+      "prOpened": "打开拉取请求",
+      "prMerged": "合并拉取请求",
+      "noChange": "不更改状态",
+      "saveFailed": "无法更新自动化设置。"
+    },
+    "connectPrompt": "为整个团队连接一次 GitHub 账号，然后将仓库关联到此项目。",
+    "askOwnerNamed": "GitHub 尚未连接。请让 {{name}} 或其他团队管理员进行连接。",
+    "askOwner": "GitHub 尚未连接。请让团队所有者或管理员进行连接。"
+  },
+  "development": {
+    "pr": {
+      "merged": "已合并",
+      "closed": "已关闭",
+      "draft": "草稿",
+      "approved": "已批准",
+      "changesRequested": "需要修改",
+      "open": "打开"
+    },
+    "loadFailed": "无法加载 GitHub 活动。",
+    "empty": "暂无 GitHub 活动。在分支名称、提交或拉取请求标题中包含 {{key}} 即可在此关联。",
+    "noRepositories": "此项目尚未关联仓库。请在“项目设置 > 集成”中关联。",
+    "pullRequests": "拉取请求",
+    "branches": "分支",
+    "commits": "提交",
+    "branchDeleted": "已删除",
+    "showFewer": "收起",
+    "showAll": "显示全部 {{count}} 个提交",
+    "createBranch": {
+      "button": "创建分支",
+      "title": "创建分支",
+      "repository": "仓库",
+      "name": "分支名称",
+      "type": "类型",
+      "baseBranch": "基础分支",
+      "invalidName": "请使用字母、数字、点、短横线、下划线或斜杠。",
+      "created": "分支已创建。",
+      "checkoutHint": "运行以下命令即可在本地开始工作：",
+      "copy": "复制命令",
+      "copied": "已复制到剪贴板。",
+      "done": "完成",
+      "errors": {
+        "generic": "无法创建分支。",
+        "exists": "已存在同名分支。",
+        "baseMissing": "在此仓库中找不到基础分支。",
+        "permission": "GitHub 应用无权创建分支。请让管理员授予其内容写入权限。"
+      },
+      "branchesFailed": "无法加载分支。你仍然可以手动输入基础分支。",
+      "loadingBranches": "正在加载分支…",
+      "selectBranch": "选择或输入分支"
+    }
+  },
+  "import": {
+    "button": "导入问题…",
+    "title": "从 {{name}} 导入问题",
+    "stateOpen": "打开",
+    "stateClosed": "已关闭",
+    "stateAll": "全部",
+    "filterLabels": "按标签筛选",
+    "destination": "添加到",
+    "backlog": "待办列表",
+    "submit_one": "导入 {{count}} 个问题",
+    "submit_other": "导入 {{count}} 个问题",
+    "imported": "已导入为 {{key}}",
+    "loadMore": "加载更多",
+    "empty": "未找到问题",
+    "loadFailed": "无法加载 GitHub 问题。",
+    "success_one": "已导入 {{count}} 个问题。",
+    "success_other": "已导入 {{count}} 个问题。",
+    "partial": "已导入 {{imported}} 个，跳过 {{skipped}} 个。",
+    "failed": "无法导入所选问题。",
+    "columnTitle": "标题",
+    "columnStatus": "状态"
+  },
+  "importSettings": {
+    "title": "问题导入",
+    "autoImport": "自动导入新问题",
+    "autoImportHint": "新的 GitHub 问题会按下方标签筛选后自动添加。",
+    "labels": "仅包含这些标签的问题",
+    "labelsPlaceholder": "所有问题",
+    "destination": "将导入的问题添加到",
+    "closeOnClose": "GitHub 问题关闭时完成对应问题",
+    "saveFailed": "无法更新导入设置。"
+  },
+  "sync": {
+    "button": "同步状态",
+    "title": "GitHub 同步状态",
+    "refresh": "刷新",
+    "loadFailed": "无法加载同步状态。",
+    "notConnected": "GitHub 未连接。",
+    "lastEvent": "最近一次事件接收于 {{time}}",
+    "never": "尚未收到任何事件。",
+    "processed": "已处理（7 天）",
+    "pending": "待处理",
+    "ignored": "已忽略",
+    "failed": "失败",
+    "failedEvents": "失败的事件",
+    "noFailures": "没有失败的事件。一切同步正常。",
+    "event": "事件",
+    "error": "错误",
+    "received": "接收时间",
+    "retry": "重试",
+    "retried": "事件已加入重试队列。",
+    "retryFailed": "无法重试该事件。"
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "title": "GitHub",
+  "description": "Vincula repositorios de GitHub a proyectos de software para ver ramas, pull requests y commits en tus incidencias.",
+  "viewOnly": "Solo lectura",
+  "connectedHint": "Abre un proyecto de software y ve a Ajustes > Integraciones para vincular repositorios.",
+  "repositoryCount_one": "{{count}} repositorio disponible",
+  "repositoryCount_other": "{{count}} repositorios disponibles",
+  "connect": {
+    "button": "Conectar GitHub",
+    "adminOnly": "Solo los propietarios y administradores del equipo pueden conectar GitHub."
+  },
+  "status": {
+    "connected": "Conectado",
+    "suspended": "Suspendido"
+  },
+  "notConfigured": {
+    "title": "No configurado",
+    "description": "La aplicación de GitHub no se ha configurado para esta instalación de Worklenz. Pide a tu administrador que la configure."
+  },
+  "actions": {
+    "retry": "Reintentar",
+    "refresh": "Actualizar repositorios",
+    "cancel": "Cancelar"
+  },
+  "disconnect": {
+    "title": "¿Desconectar GitHub?",
+    "description": "La sincronización se pausará. Los vínculos y el historial existentes se conservan y se reanudan si vuelves a conectar.",
+    "confirm": "Desconectar",
+    "button": "Desconectar"
+  },
+  "messages": {
+    "connected": "GitHub conectado correctamente.",
+    "requested": "Se solicitó la instalación. Un propietario de la organización debe aprobarla.",
+    "refreshed": "Lista de repositorios actualizada.",
+    "disconnected": "GitHub desconectado."
+  },
+  "errors": {
+    "invalidState": "La solicitud de conexión expiró. Inténtalo de nuevo.",
+    "forbidden": "Necesitas acceso a esta instalación de GitHub y ser propietario o administrador del equipo.",
+    "alreadyConnected": "Esta cuenta de GitHub ya está conectada a otro equipo de Worklenz.",
+    "teamAlreadyConnected": "Este equipo ya está conectado a otra cuenta de GitHub. Desconéctala primero.",
+    "connectFailed": "No se pudo conectar GitHub. Inténtalo de nuevo.",
+    "loadFailed": "No se pudo cargar el estado de GitHub.",
+    "refreshFailed": "No se pudieron actualizar los repositorios.",
+    "disconnectFailed": "No se pudo desconectar GitHub."
+  },
+  "project": {
+    "subtitle": "Consulta ramas, pull requests y commits en las incidencias de este proyecto.",
+    "linked": "Repositorio vinculado.",
+    "linkFailed": "No se pudo vincular el repositorio.",
+    "unlinked": "Repositorio desvinculado.",
+    "unlinkFailed": "No se pudo desvincular el repositorio.",
+    "updateFailed": "No se pudo actualizar la rama base.",
+    "notConnected": "Conecta tu cuenta de GitHub en los ajustes del equipo antes de vincular repositorios.",
+    "openIntegrations": "Ir a Integraciones",
+    "selectPlaceholder": "Selecciona un repositorio para vincular",
+    "noRepositories": "No hay más repositorios disponibles",
+    "link": "Vincular",
+    "emptyManage": "Aún no hay repositorios vinculados. Elige uno arriba para empezar.",
+    "empty": "No hay repositorios vinculados a este proyecto.",
+    "private": "Privado",
+    "unavailable": "Ya no accesible",
+    "baseBranch": "Rama base",
+    "editBaseBranch": "Editar rama base",
+    "unlinkTitle": "¿Desvincular este repositorio?",
+    "unlinkDescription": "Los vínculos existentes en las incidencias se conservan, pero la nueva actividad ya no se registrará.",
+    "unlink": "Desvincular",
+    "unlinkAria": "Desvincular {{name}}",
+    "howItWorks": "Incluye una clave de incidencia como {{example}} en el nombre de una rama, un mensaje de commit o el título de un pull request para vincularlo a esa incidencia.",
+    "automation": {
+      "title": "Automatización de estados",
+      "description": "Mueve las incidencias automáticamente cuando hay actividad en GitHub. Las incidencias nunca retroceden ni salen de un estado finalizado.",
+      "branchCreated": "Rama creada",
+      "prOpened": "Pull request abierto",
+      "prMerged": "Pull request fusionado",
+      "noChange": "No cambiar el estado",
+      "saveFailed": "No se pudo actualizar la automatización."
+    },
+    "connectPrompt": "Conecta tu cuenta de GitHub una vez para todo el equipo y luego vincula repositorios a este proyecto.",
+    "askOwnerNamed": "GitHub aún no está conectado. Pide a {{name}} u otro administrador del equipo que lo conecte.",
+    "askOwner": "GitHub aún no está conectado. Pide a un propietario o administrador del equipo que lo conecte."
+  },
+  "development": {
+    "pr": {
+      "merged": "Fusionado",
+      "closed": "Cerrado",
+      "draft": "Borrador",
+      "approved": "Aprobado",
+      "changesRequested": "Cambios solicitados",
+      "open": "Abierto"
+    },
+    "loadFailed": "No se pudo cargar la actividad de GitHub.",
+    "empty": "Aún no hay actividad de GitHub. Incluye {{key}} en el nombre de una rama, un commit o el título de un pull request para vincularla aquí.",
+    "noRepositories": "No hay ningún repositorio vinculado a este proyecto. Vincula uno en Ajustes del proyecto > Integraciones.",
+    "pullRequests": "Solicitudes de incorporación",
+    "branches": "Ramas",
+    "commits": "Confirmaciones",
+    "branchDeleted": "Eliminada",
+    "showFewer": "Mostrar menos",
+    "showAll": "Mostrar los {{count}} commits",
+    "createBranch": {
+      "button": "Crear rama",
+      "title": "Crear rama",
+      "repository": "Repositorio",
+      "name": "Nombre de la rama",
+      "type": "Tipo",
+      "baseBranch": "Rama base",
+      "invalidName": "Usa letras, números, puntos, guiones, guiones bajos o barras.",
+      "created": "Rama creada.",
+      "checkoutHint": "Ejecuta esto para empezar a trabajar en local:",
+      "copy": "Copiar comando",
+      "copied": "Copiado al portapapeles.",
+      "done": "Listo",
+      "errors": {
+        "generic": "No se pudo crear la rama.",
+        "exists": "Ya existe una rama con este nombre.",
+        "baseMissing": "No se encontró la rama base en este repositorio.",
+        "permission": "La aplicación de GitHub no puede crear ramas. Pide a un administrador que le conceda acceso de escritura a Contenido."
+      },
+      "branchesFailed": "No se pudieron cargar las ramas. Aún puedes escribir la rama base.",
+      "loadingBranches": "Cargando ramas…",
+      "selectBranch": "Selecciona o escribe una rama"
+    }
+  },
+  "import": {
+    "button": "Importar incidencias…",
+    "title": "Importar incidencias de {{name}}",
+    "stateOpen": "Abiertas",
+    "stateClosed": "Cerradas",
+    "stateAll": "Todas",
+    "filterLabels": "Filtrar por etiqueta",
+    "destination": "Añadir a",
+    "backlog": "Trabajo pendiente",
+    "submit_one": "Importar {{count}} incidencia",
+    "submit_other": "Importar {{count}} incidencias",
+    "imported": "Importada como {{key}}",
+    "loadMore": "Cargar más",
+    "empty": "No se encontraron incidencias",
+    "loadFailed": "No se pudieron cargar las incidencias de GitHub.",
+    "success_one": "Se importó {{count}} incidencia.",
+    "success_other": "Se importaron {{count}} incidencias.",
+    "partial": "{{imported}} importadas, {{skipped}} omitidas.",
+    "failed": "No se pudieron importar las incidencias seleccionadas.",
+    "columnTitle": "Título",
+    "columnStatus": "Estado"
+  },
+  "importSettings": {
+    "title": "Importación de incidencias",
+    "autoImport": "Importar automáticamente las nuevas incidencias",
+    "autoImportHint": "Las nuevas incidencias de GitHub se añaden automáticamente, filtradas por las etiquetas de abajo.",
+    "labels": "Solo incidencias con estas etiquetas",
+    "labelsPlaceholder": "Todas las incidencias",
+    "destination": "Añadir las incidencias importadas a",
+    "closeOnClose": "Finalizar la incidencia cuando se cierre en GitHub",
+    "saveFailed": "No se pudieron actualizar los ajustes de importación."
+  },
+  "sync": {
+    "button": "Estado de sincronización",
+    "title": "Estado de sincronización de GitHub",
+    "refresh": "Actualizar",
+    "loadFailed": "No se pudo cargar el estado de sincronización.",
+    "notConnected": "GitHub no está conectado.",
+    "lastEvent": "Último evento recibido {{time}}",
+    "never": "Aún no se han recibido eventos.",
+    "processed": "Procesados (7 días)",
+    "pending": "Pendientes",
+    "ignored": "Ignorados",
+    "failed": "Fallidos",
+    "failedEvents": "Eventos fallidos",
+    "noFailures": "No hay eventos fallidos. Todo se está sincronizando.",
+    "event": "Evento",
+    "error": "Error",
+    "received": "Recibido",
+    "retry": "Reintentar",
+    "retried": "Evento en cola para reintento.",
+    "retryFailed": "No se pudo reintentar el evento."
+  }
+}

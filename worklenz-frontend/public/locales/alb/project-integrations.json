@@ -7,7 +7,7 @@
   "cancel": "Anulo",
   "slack": {
     "title": "I plogët",
-    "description": "Dërgo njoftime në kanalet e Slack",
+    "description": "Merr përditësime për detyrat, statusin dhe komentet në kanalet e tua Slack",
     "notConnected": "Ju lutemi lidhni hapësirën tuaj të punës së Slack në Cilësimet fillimisht",
     "quickAddTitle": "Shto Slack në Projekt",
     "currentProject": "Projekti",
@@ -21,11 +21,14 @@
   },
   "teams": {
     "title": "Ekipet e Microsoft",
-    "description": "Dërgo njoftime në kanalet e Teams"
+    "description": "Posto përditësime për detyrat dhe statusin në kanalet e tua Teams"
   },
   "github": {
     "title": "GitHub",
-    "description": "Sinkronizo detyrat me çështjet e GitHub"
+    "description": "Ndiq degët, pull request-et dhe commit-et te detyrat",
+    "softwareDescription": "Degë, pull request-e dhe commit-e në çdo detyrë, me përditësim automatik të statusit",
+    "softwareOnly": "Projekte softuerike",
+    "connectDescription": "Lidh GitHub për të lidhur depot, ndjekur pull request-et dhe automatizuar statusin e detyrave"
   },
   "notificationTypes": {
     "taskCreated": "Detyra u krijua",

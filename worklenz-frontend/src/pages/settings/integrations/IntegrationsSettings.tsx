@@ -1,11 +1,10 @@
 import { Card, Badge, Button } from 'antd';
-import { GithubOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { SlackIntegration } from '@/components/settings/integrations/SlackIntegration';
+import { GithubIntegrationCard } from '@/components/github/GithubIntegrationCard';
 import {
   MSTeamsIcon,
   SlackIcon,
-  GitHubIcon,
   GoogleDriveIcon,
   GoogleCalendarIcon,
 } from '@/components/settings/integrations/IntegrationIcons';
@@ -83,6 +82,9 @@ function IntegrationsSettings() {
           <SlackIntegration />
         </IntegrationCard>
 
+        {/* GitHub Integration - Active (software projects) */}
+        <GithubIntegrationCard />
+
         {/* MS Teams Integration - Coming Soon */}
         <IntegrationCard
           icon={<MSTeamsIcon />}
@@ -90,17 +92,6 @@ function IntegrationsSettings() {
           description={t('teams.description', {
             defaultValue:
               'Integrate Microsoft Teams with your Worklenz team to receive real-time notifications, create tasks from Teams, and keep your team synchronized across both platforms.',
-          })}
-          available={false}
-        />
-
-        {/* GitHub Integration - Coming Soon */}
-        <IntegrationCard
-          icon={<GithubOutlined />}
-          title={t('github.title', { defaultValue: 'GitHub' })}
-          description={t('github.description', {
-            defaultValue:
-              'Link GitHub repositories to track commits, pull requests, and issues alongside your tasks.',
           })}
           available={false}
         />

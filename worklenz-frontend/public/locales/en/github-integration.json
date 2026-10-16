@@ -1,0 +1,178 @@
+{
+  "title": "GitHub",
+  "description": "Link GitHub repositories to software projects to see branches, pull requests and commits on your issues.",
+  "viewOnly": "View only",
+  "connectedHint": "Open a software project, then go to Settings > Integrations to link repositories.",
+  "repositoryCount_one": "{{count}} repository available",
+  "repositoryCount_other": "{{count}} repositories available",
+  "connect": {
+    "button": "Connect GitHub",
+    "adminOnly": "Only team owners and admins can connect GitHub."
+  },
+  "status": {
+    "connected": "Connected",
+    "suspended": "Suspended"
+  },
+  "notConfigured": {
+    "title": "Not configured",
+    "description": "The GitHub App has not been set up for this Worklenz installation. Ask your administrator to configure it."
+  },
+  "actions": {
+    "retry": "Retry",
+    "refresh": "Refresh repositories",
+    "cancel": "Cancel"
+  },
+  "disconnect": {
+    "title": "Disconnect GitHub?",
+    "description": "Syncing will pause. Existing links and history are kept and resume if you reconnect.",
+    "confirm": "Disconnect",
+    "button": "Disconnect"
+  },
+  "messages": {
+    "connected": "GitHub connected successfully.",
+    "requested": "Installation was requested. An organization owner needs to approve it.",
+    "refreshed": "Repository list updated.",
+    "disconnected": "GitHub disconnected."
+  },
+  "errors": {
+    "invalidState": "The connection request expired. Please try connecting again.",
+    "forbidden": "You need access to this GitHub installation and must be a team owner or admin.",
+    "alreadyConnected": "This GitHub account is already connected to another Worklenz team.",
+    "teamAlreadyConnected": "This team is already connected to a different GitHub account. Disconnect it first.",
+    "connectFailed": "Could not connect GitHub. Please try again.",
+    "loadFailed": "Could not load GitHub status.",
+    "refreshFailed": "Could not refresh repositories.",
+    "disconnectFailed": "Could not disconnect GitHub."
+  },
+  "project": {
+    "subtitle": "See branches, pull requests and commits on this project’s issues.",
+    "linked": "Repository linked.",
+    "linkFailed": "Could not link repository.",
+    "unlinked": "Repository unlinked.",
+    "unlinkFailed": "Could not unlink repository.",
+    "updateFailed": "Could not update the base branch.",
+    "notConnected": "Connect your GitHub account in team settings before linking repositories.",
+    "openIntegrations": "Go to Integrations",
+    "selectPlaceholder": "Select a repository to link",
+    "noRepositories": "No more repositories available",
+    "link": "Link",
+    "emptyManage": "No repositories linked yet. Pick one above to get started.",
+    "empty": "No repositories linked to this project.",
+    "private": "Private",
+    "unavailable": "No longer accessible",
+    "baseBranch": "Base branch",
+    "editBaseBranch": "Edit base branch",
+    "unlinkTitle": "Unlink this repository?",
+    "unlinkDescription": "Existing links on issues stay, but new activity will no longer be tracked.",
+    "unlink": "Unlink",
+    "unlinkAria": "Unlink {{name}}",
+    "howItWorks": "Include an issue key such as {{example}} in a branch name, commit message or pull request title to link it to that issue.",
+    "automation": {
+      "title": "Status automation",
+      "description": "Move issues automatically as GitHub activity happens. Issues never move backwards or out of a done status.",
+      "branchCreated": "Branch created",
+      "prOpened": "Pull request opened",
+      "prMerged": "Pull request merged",
+      "noChange": "Don’t change status",
+      "saveFailed": "Could not update automation."
+    },
+    "connectPrompt": "Connect your GitHub account once for the whole team, then link repositories to this project.",
+    "askOwnerNamed": "GitHub isn’t connected yet. Ask {{name}} or another team admin to connect it.",
+    "askOwner": "GitHub isn’t connected yet. Ask a team owner or admin to connect it."
+  },
+  "development": {
+    "pr": {
+      "merged": "Merged",
+      "closed": "Closed",
+      "draft": "Draft",
+      "approved": "Approved",
+      "changesRequested": "Changes requested",
+      "open": "Open"
+    },
+    "loadFailed": "Could not load GitHub activity.",
+    "empty": "No GitHub activity yet. Include {{key}} in a branch name, commit or pull request title to link it here.",
+    "noRepositories": "No repository is linked to this project. Link one in Project Settings > Integrations.",
+    "pullRequests": "Pull requests",
+    "branches": "Branches",
+    "commits": "Commits",
+    "branchDeleted": "Deleted",
+    "showFewer": "Show fewer",
+    "showAll": "Show all {{count}} commits",
+    "createBranch": {
+      "button": "Create branch",
+      "title": "Create branch",
+      "repository": "Repository",
+      "name": "Branch name",
+      "type": "Type",
+      "baseBranch": "Base branch",
+      "invalidName": "Use letters, numbers, dots, dashes, underscores or slashes.",
+      "created": "Branch created.",
+      "checkoutHint": "Run this to start working on it locally:",
+      "copy": "Copy command",
+      "copied": "Copied to clipboard.",
+      "done": "Done",
+      "errors": {
+        "generic": "Could not create the branch.",
+        "exists": "A branch with this name already exists.",
+        "baseMissing": "The base branch was not found in this repository.",
+        "permission": "The GitHub App is not allowed to create branches. Ask an admin to grant it Contents write access."
+      },
+      "branchesFailed": "Could not load branches. You can still type the base branch.",
+      "loadingBranches": "Loading branches…",
+      "selectBranch": "Select or type a branch"
+    }
+  },
+  "import": {
+    "button": "Import issues…",
+    "title": "Import issues from {{name}}",
+    "stateOpen": "Open",
+    "stateClosed": "Closed",
+    "stateAll": "All",
+    "filterLabels": "Filter by label",
+    "destination": "Add to",
+    "backlog": "Backlog",
+    "submit_one": "Import {{count}} issue",
+    "submit_other": "Import {{count}} issues",
+    "imported": "Imported as {{key}}",
+    "loadMore": "Load more",
+    "empty": "No issues found",
+    "loadFailed": "Could not load GitHub issues.",
+    "success_one": "Imported {{count}} issue.",
+    "success_other": "Imported {{count}} issues.",
+    "partial": "{{imported}} imported, {{skipped}} skipped.",
+    "failed": "Could not import the selected issues.",
+    "columnTitle": "Title",
+    "columnStatus": "Status"
+  },
+  "importSettings": {
+    "title": "Issue import",
+    "autoImport": "Auto-import new issues",
+    "autoImportHint": "New GitHub issues are added automatically, filtered by the labels below.",
+    "labels": "Only issues with these labels",
+    "labelsPlaceholder": "All issues",
+    "destination": "Add imported issues to",
+    "closeOnClose": "Finish the issue when its GitHub issue is closed",
+    "saveFailed": "Could not update import settings."
+  },
+  "sync": {
+    "button": "Sync status",
+    "title": "GitHub sync status",
+    "refresh": "Refresh",
+    "loadFailed": "Could not load sync status.",
+    "notConnected": "GitHub is not connected.",
+    "lastEvent": "Last event received {{time}}",
+    "never": "No events received yet.",
+    "processed": "Processed (7 days)",
+    "pending": "Pending",
+    "ignored": "Ignored",
+    "failed": "Failed",
+    "failedEvents": "Failed events",
+    "noFailures": "No failed events. Everything is syncing.",
+    "event": "Event",
+    "error": "Error",
+    "received": "Received",
+    "retry": "Retry",
+    "retried": "Event queued for retry.",
+    "retryFailed": "Could not retry the event."
+  }
+}

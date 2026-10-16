@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { theme } from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
 
-import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/project-settings-modal';
+import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/ProjectSettingsModal';
 import HomeLeftSidebar, { HomeView } from './home-left-sidebar/HomeLeftSidebar';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';

@@ -60,7 +60,7 @@ import { getGroupIdByGroupedColumn } from '@/services/task-list/taskList.service
 import logger from '@/utils/errorLogger';
 import ImportTaskTemplate from '@/components/task-templates/import-task-template';
 import ImportSourceModal from '@/pages/settings/import-export/ImportSourceModal';
-import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/project-settings-modal';
+import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/ProjectSettingsModal';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import useProjectPermissions from '@/hooks/useProjectPermissions';
