@@ -108,7 +108,7 @@ const MultiSelectFilterDropdown = ({
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => dropdownContent}
+      popupRender={() => dropdownContent}
       placement="bottomLeft"
     >
       <Button size="small">

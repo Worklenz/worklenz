@@ -70,5 +70,17 @@
   "sprintGoal": "Objetivo do sprint",
   "sprintGoalPlaceholder": "O que esse sprint deve alcançar?",
   "sprintDatesRequired": "Defina datas de início e término para iniciar o sprint",
-  "sprintEndBeforeStart": "A data de término deve ser posterior à data de início"
+  "sprintEndBeforeStart": "A data de término deve ser posterior à data de início",
+  "start": "Começar",
+  "completeSprint": "Sprint completo",
+  "manageAssignee": "Gerenciar responsável",
+  "assignMember": "Atribuir membro",
+  "deleteSprintTitle": "Excluir {{name}}?",
+  "deleteSprintContentWithItems": "{{count}} itens de trabalho deste sprint serão movidos para {{backlog}}. Esta ação não pode ser desfeita.",
+  "deleteSprintContent": "Esta ação não pode ser desfeita.",
+  "deleteSprint": "Excluir sprint",
+  "sprintDeleted": "Sprint excluído",
+  "sprintDeleteError": "Não foi possível excluir o sprint",
+  "completeSprintAutoStartHint": "O próximo sprint planejado começará hoje e manterá sua duração prevista.",
+  "nextSprintStarted": "{{name}} iniciado ({{start}} – {{end}})"
 }

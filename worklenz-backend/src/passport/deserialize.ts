@@ -2,8 +2,10 @@ import moment from "moment";
 import db from "../config/db";
 import {IDeserializeCallback} from "../interfaces/deserialize-callback";
 import {IPassportSession} from "../interfaces/passport-session";
-import {enrichSessionWithTemplateCreateAccess} from "../shared/template-create-access";
+import {resolveEntitlements, runShadowComparison} from "../shared/entitlements";
+import {isEnforceMode} from "../shared/entitlements/gates";
 import { getDeploymentMode, isSelfHostedDeployment } from "../shared/deployment-mode";
+import {enrichSessionWithTemplateCreateAccess} from "../shared/template-create-access";
 
 async function setLastActive(id: string) {
   try {
@@ -58,6 +60,24 @@ export async function deserialize(user: { id: string | null }, done: IDeserializ
         }
 
         await enrichSessionWithTemplateCreateAccess(data.user as IPassportSession);
+
+        try {
+          // Additive: resolved plan entitlements, plus shadow comparison against the legacy checks.
+          // Gates still use the legacy fields until Phase 2; this must never affect authentication.
+          const entitlements = resolveEntitlements(data.user);
+          data.user.entitlements = {
+            tier: entitlements.tier,
+            features: entitlements.features,
+            guest_limit: entitlements.guestLimit,
+            seat_limit: entitlements.seatLimit,
+            primary_source: entitlements.primarySource,
+            enforced: isEnforceMode(),
+          };
+          runShadowComparison(data.user, entitlements);
+        } catch {
+          // ignored
+        }
+
         // This UI hint is derived server-side. Protected APIs independently
         // enforce the same rule, so browser storage cannot elevate access.
         data.user.business_features_enabled = isSelfHostedDeployment();

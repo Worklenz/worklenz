@@ -2,5 +2,10 @@
   "inputPlaceholder": "Agregar un comentario..",
   "addButton": "Agregar",
   "cancelButton": "Cancelar",
-  "deleteButton": "Eliminar"
+  "deleteButton": "Eliminar",
+  "deleteSuccess": "Comentario eliminado con éxito",
+  "editSuccess": "Comentario actualizado exitosamente",
+  "deleteError": "No se pudo eliminar el comentario",
+  "editError": "No se pudo editar el comentario",
+  "commentError": "No se pudo enviar el comentario"
 }

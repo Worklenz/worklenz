@@ -1,0 +1,126 @@
+{
+  "page": {
+    "title": "Overview",
+    "description": "Ce qui nécessite votre attention dans les clients, les projets et les discussions.",
+    "editingHint": "Drag widgets to reorder them, change their size, or hide the ones you do not need.",
+    "loadFailed": "L'aperçu n'a pas pu être chargé."
+  },
+  "widget": {
+    "viewAll": "Voir tout",
+    "retry": "Réessayer",
+    "error": "Ce widget n'a pas pu être chargé."
+  },
+  "edit": {
+    "customize": "Personnaliser",
+    "done": "Terminé",
+    "cancel": "Cancel",
+    "reset": "Reset to default",
+    "resetConfirm": "Restaurer la mise en page par défaut ?",
+    "saveFailed": "Impossible d'enregistrer la mise en page.",
+    "resetFailed": "Impossible de réinitialiser la mise en page.",
+    "drag": "Faites glisser pour réorganiser {{title}}",
+    "size": "Taille de {{title}}",
+    "size_s": "S",
+    "size_m": "M",
+    "size_l": "L",
+    "hide": "Masquer le widget",
+    "show": "Afficher le widget",
+    "hideNamed": "Masquer {{title}}",
+    "showNamed": "Afficher {{title}}",
+    "save": "Enregistrer",
+    "saved": "Aperçu enregistré",
+    "resetDone": "Présentation réinitialisée à la présentation par défaut",
+    "resetConfirmHelp": "Votre arrangement enregistré sera supprimé.",
+    "addWidget": "Ajouter un widget",
+    "emptyTitle": "Aucun widget sur votre aperçu",
+    "emptyHelp": "Choisissez Personnaliser, puis Ajouter un widget pour en récupérer.",
+    "widgetSettings": "Paramètres {{name}}",
+    "settingsFor": "Paramètres pour {{name}}",
+    "width": "Largeur",
+    "widthQuarter": "Quart de largeur",
+    "widthThird": "Un tiers",
+    "widthHalf": "Demi-largeur",
+    "widthTwoThirds": "Deux tiers",
+    "widthThreeQuarters": "Trois quarts",
+    "widthFull": "Pleine largeur",
+    "moveEarlier": "Déplacez-vous plus tôt",
+    "moveLater": "Déménager plus tard",
+    "leaveTitle": "Partir sans économiser ?",
+    "leaveBody": "Vos modifications apportées à l'aperçu n'ont pas été enregistrées et seront perdues.",
+    "leave": "Partir",
+    "stay": "Rester"
+  },
+  "status": {
+    "awaiting": "En attente",
+    "approved": "Approuvé",
+    "changes_requested": "Modifications demandées",
+    "cr_submitted": "Soumis",
+    "cr_under_review": "En cours de révision",
+    "cr_more_info": "Plus d'informations",
+    "cr_approved": "Approuvé",
+    "cr_in_progress": "En cours",
+    "cr_completed": "Terminé",
+    "cr_rejected": "Rejeté",
+    "cr_cancelled": "Annulé"
+  },
+  "widgets": {
+    "kpi_awaiting_approvals": {
+      "title": "Approbations en attente",
+      "sub": "{{count}} en retard"
+    },
+    "kpi_open_change_requests": {
+      "title": "Demandes de modification à examiner",
+      "sub": "{{count}} attend le client"
+    },
+    "kpi_delayed_milestones": {
+      "title": "Jalons retardés",
+      "sub": "Dans tous les projets de portail"
+    },
+    "kpi_unread_discussions": {
+      "title": "Discussions non lues",
+      "sub": "Avec les nouveaux messages clients"
+    },
+    "kpi_overdue_invoices": {
+      "title": "Factures en souffrance",
+      "none": "Rien de retard"
+    },
+    "pending_approvals": {
+      "title": "Approbations en attente",
+      "empty": "Aucune approbation n’est en attente pour un client.",
+      "overdue": "En retard · {{date}}",
+      "due": "Échéant {{date}}"
+    },
+    "change_requests": {
+      "title": "Demandes de modification à examiner",
+      "empty": "Aucune demande de modification ne nécessite un examen."
+    },
+    "upcoming_milestones": {
+      "title": "Jalons à venir",
+      "empty": "Aucun jalon ouvert sur les projets de portail."
+    },
+    "latest_discussions": {
+      "title": "Dernières discussions",
+      "empty": "Aucune discussion pour l'instant."
+    },
+    "mentions_me": {
+      "title": "Mentions de moi",
+      "empty": "Personne ne vous a mentionné dans une discussion.",
+      "row": "{{name}} dans {{project}}"
+    },
+    "approvals_by_status": {
+      "title": "Approbations par statut",
+      "empty": "Aucune approbation n'a encore été envoyée."
+    },
+    "cr_by_status": {
+      "title": "Pipeline de demandes de modification",
+      "empty": "Aucune demande de modification pour l'instant."
+    },
+    "needs_attention": {
+      "title": "A besoin d'attention",
+      "empty": "Rien n'a besoin d'attention. Beau travail.",
+      "approval_overdue": "Approbation en retard",
+      "change_request_review": "Demande d'examen hautement prioritaire",
+      "milestone_late": "Jalon tardif"
+    }
+  }
+}

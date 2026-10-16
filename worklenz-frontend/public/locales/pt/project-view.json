@@ -75,6 +75,7 @@
   "files": "Arquivos",
   "members": "Membros",
   "updates": "Atualizações",
+  "docs": "Documentos",
   "roadmap": "Roteiro",
   "workload": "Carga de Trabalho",
   "projectView": "Visualização do Projeto",
@@ -437,5 +438,11 @@
   "releaseAddSelected": "Adicionar selecionado",
   "releaseItemsAdded_one": "{{count}} item de trabalho adicionado",
   "releaseItemsAdded_other": "{{count}} itens de trabalho adicionados",
-  "releaseItemsAddError": "Não foi possível adicionar os itens de trabalho"
+  "releaseItemsAddError": "Não foi possível adicionar os itens de trabalho",
+  "You do not have permission to access this project": "Você não tem permissão para acessar este projeto",
+  "Failed to load project": "Falha ao carregar o projeto",
+  "issueTypeSaveError": "Não foi possível alterar o tipo de item. Tente novamente.",
+  "changeIssueType": "Alterar tipo de item",
+  "unpinTabFromHeader": "Remover do cabeçalho",
+  "pinTabToHeader": "Mostrar no cabeçalho"
 }

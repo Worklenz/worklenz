@@ -34,5 +34,6 @@
   "errorMessages": {
     "loginErrorTitle": "Logowanie nie powiodło się",
     "loginErrorMessage": "Sprawdź swój adres e-mail i hasło, a następnie spróbuj ponownie"
-  }
+  },
+  "rememberMe": "Pamiętaj mnie"
 }

@@ -107,7 +107,8 @@ export async function createCompanyWithFirstContact(
     email,
     phone: input.phone,
     jobTitle: input.jobTitle,
-    role: "poc",
+    // The first user of a new organization is a Client Admin.
+    role: "admin",
   });
 
   return { client, contact };
@@ -399,7 +400,7 @@ export async function commitImport(teamId: string, rows: unknown): Promise<Impor
 
         for (const row of groupRows) {
           if (!clientId) {
-            // A new company: its first row is the POC.
+            // A new company: its first row is the Client Admin.
             const { client } = await createCompanyWithFirstContact(tx, {
               teamId,
               companyName: row.companyName,

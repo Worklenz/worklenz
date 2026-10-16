@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, ColorPicker, Flex, Tag, Typography, theme } from '@/shared/antd-imports';
+import { Button, ColorPicker, Flex, Switch, Tag, Typography, theme } from '@/shared/antd-imports';
 import {
   UploadOutlined,
   DeleteOutlined,
@@ -221,6 +221,27 @@ export const BrandingSection: React.FC<BrandingSectionProps> = ({
             </Button>
           </Flex>
         </div>
+
+        {/* Powered by Worklenz footer visibility */}
+        <div style={{ marginTop: 20 }}>
+          <Flex align="center" justify="space-between" gap={16}>
+            <div>
+              <div id="show-powered-by-label" style={{ fontSize: 13, fontWeight: 600 }}>
+                {t('poweredByLabel', { defaultValue: 'Show "Powered by Worklenz"' })}
+              </div>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {t('poweredByDescription', {
+                  defaultValue: 'Display a "Powered by Worklenz" note at the bottom right of the client portal.',
+                })}
+              </Typography.Text>
+            </div>
+            <Switch
+              checked={settings.show_powered_by !== false}
+              onChange={checked => onChange({ show_powered_by: checked })}
+              aria-labelledby="show-powered-by-label"
+            />
+          </Flex>
+        </div>
       </SectionCard>
 
       {/* Live preview — pure local draft state, no save/reload needed to see it update. */}
@@ -288,6 +309,18 @@ export const BrandingSection: React.FC<BrandingSectionProps> = ({
           >
             {t('previewViewTasksButton', { defaultValue: 'View my tasks' })}
           </button>
+          {settings.show_powered_by !== false && (
+            <div
+              style={{
+                marginTop: 14,
+                textAlign: 'right',
+                fontSize: 11,
+                color: isDarkPreview ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)',
+              }}
+            >
+              {t('poweredByPreview', { defaultValue: 'Powered by Worklenz' })}
+            </div>
+          )}
         </div>
       </div>
     </div>

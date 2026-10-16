@@ -8,7 +8,7 @@ import { IProject } from '@/types/project/project.types';
 import { TASK_FIXED_COST_CHANGED_EVENT } from '@/shared/constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { canUseFeature } from '@/utils/subscription-utils';
 import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
 
 interface AddExpenseModalProps {
@@ -21,7 +21,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ open, onClose,
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
   const authService = useAuthService();
-  const hasBusinessAccess = hasBusinessFeatureAccess(authService.getCurrentSession());
+  const hasBusinessAccess = canUseFeature(authService.getCurrentSession(), 'finance_module');
   const { t } = useTranslation('home');
   const te = (key: string, defaultValue: string) => t(`addExpense.${key}`, { defaultValue });
 
@@ -128,7 +128,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ open, onClose,
   };
 
   return (
-    <Modal open={open} onCancel={onClose} title={te('modalTitle', 'Add Expense')} footer={null} width={440} destroyOnClose>
+    <Modal open={open} onCancel={onClose} title={te('modalTitle', 'Add Expense')} footer={null} width={440} destroyOnHidden>
       <div style={{ marginBottom: 14 }}>
         <label style={fldLbl}>{te('projectLabel', 'Project')}</label>
         <Select

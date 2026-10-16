@@ -24,6 +24,7 @@ const mockedConnect = db.connect as jest.Mock;
 const QUOTE_ID = "33333333-3333-4333-8333-333333333333";
 const CLIENT_ID = "22222222-2222-4222-8222-222222222222";
 const REQUEST_ID = "44444444-4444-4444-8444-444444444444";
+const CHANGE_REQUEST_ID = "55555555-5555-4555-8555-555555555555";
 
 /** A pooled client whose statements are answered by `answer` and recorded in `calls`. */
 const mockTransaction = (answer: (sql: string, params?: unknown[]) => unknown[] = () => []) => {
@@ -218,6 +219,78 @@ describe("ClientPortalQuotesController.createQuote", () => {
     }
   });
 
+  describe("starting from a change request", () => {
+    const clientRow = {
+      id: CLIENT_ID,
+      name: "Acme",
+      snapshot_name: "Acme",
+      snapshot_company_name: "Acme Ltd",
+      snapshot_email: "billing@acme.test",
+      snapshot_phone: null,
+      snapshot_address: null,
+      snapshot_contact_person: null,
+    };
+
+    it("takes the client from the change request and stores the link in the same transaction", async () => {
+      mockedQuery
+        .mockResolvedValueOnce(
+          createQueryResult([
+            { id: CHANGE_REQUEST_ID, cr_no: "CR-0048", title: "Live chat", client_id: CLIENT_ID, status: "approved" },
+          ])
+        )
+        .mockResolvedValueOnce(createQueryResult([clientRow]));
+      const { calls } = mockTransaction((sql: string) =>
+        sql.includes("INSERT INTO client_portal_quotes")
+          ? [{ id: QUOTE_ID, quote_no: "QUO-1", amount: "2000", currency: "USD", status: "draft" }]
+          : []
+      );
+
+      // No clientId is sent: the change request decides who the quote is for.
+      const res = await create({ changeRequestId: CHANGE_REQUEST_ID, lineItems: goodLines });
+
+      expect(res.body.done).toBe(true);
+      expect(res.body.body.changeRequestId).toBe(CHANGE_REQUEST_ID);
+      expect(mockedQuery.mock.calls[0][1]).toEqual([CHANGE_REQUEST_ID, "team-123"]);
+      expect(mockedQuery.mock.calls[1][1]).toEqual([CLIENT_ID, "team-123"]);
+
+      const statements = sqlOf(calls);
+      const link = statements.findIndex(sql => sql.includes("UPDATE client_portal_quotes SET change_request_id"));
+      expect(link).toBeGreaterThan(statements.findIndex(sql => sql.includes("INSERT INTO client_portal_quotes")));
+      expect(statements[statements.length - 1]).toBe("COMMIT");
+      expect(calls[link].params).toEqual([QUOTE_ID, CHANGE_REQUEST_ID]);
+    });
+
+    it("refuses a change request that is not approved, in progress or completed", async () => {
+      mockedQuery.mockResolvedValueOnce(
+        createQueryResult([
+          { id: CHANGE_REQUEST_ID, cr_no: "CR-0048", title: "Live chat", client_id: CLIENT_ID, status: "under_review" },
+        ])
+      );
+
+      const res = await create({ changeRequestId: CHANGE_REQUEST_ID, lineItems: goodLines });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toMatch(/approved, in-progress or completed/);
+      expect(mockedConnect).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 for a change request that is not this team's", async () => {
+      mockedQuery.mockResolvedValueOnce(createQueryResult([]));
+
+      const res = await create({ changeRequestId: CHANGE_REQUEST_ID, lineItems: goodLines });
+
+      expect(res.statusCode).toBe(404);
+      expect(mockedConnect).not.toHaveBeenCalled();
+    });
+
+    it("rejects a malformed change request id before touching the database", async () => {
+      const res = await create({ changeRequestId: "not-a-uuid", lineItems: goodLines });
+
+      expect(res.statusCode).toBe(400);
+      expect(mockedQuery).not.toHaveBeenCalled();
+    });
+  });
+
   it("rejects a client that belongs to another team", async () => {
     mockedQuery.mockResolvedValueOnce(createQueryResult([]));
     const res = await create({ clientId: CLIENT_ID, lineItems: goodLines });
@@ -387,7 +460,9 @@ describe("ClientPortalQuotesController.getQuotes", () => {
             client_name: "Brandbase",
           },
         ])
-      );
+      )
+      // The change request numbers for the rows on this page.
+      .mockResolvedValueOnce(createQueryResult([{ id: QUOTE_ID, cr_no: "CR-0048" }]));
     const res = createMockResponse();
     await ClientPortalQuotesController.getQuotes(createMockRequest({ query }), res);
     return res;
@@ -397,7 +472,13 @@ describe("ClientPortalQuotesController.getQuotes", () => {
     const res = await list();
     expect(res.body.body.totals).toEqual({ totalQuoted: 20000, totalAccepted: 600, totalPending: 12600 });
     expect(res.body.body.quotes[0]).toEqual(
-      expect.objectContaining({ quoteNumber: "QUO-1", status: "sent", validUntil: "2026-05-18", clientName: "Brandbase" })
+      expect.objectContaining({
+        quoteNumber: "QUO-1",
+        status: "sent",
+        validUntil: "2026-05-18",
+        clientName: "Brandbase",
+        changeRequestNumber: "CR-0048",
+      })
     );
   });
 

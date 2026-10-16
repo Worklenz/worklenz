@@ -2493,7 +2493,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           }
 
           .tasklist-backlog .epic-inline-select .ant-select-selection-item {
-            color: ${themeToken.purple};
+            color: ${themeToken.colorText};
             font-size: 11px;
           }
 
@@ -2681,7 +2681,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                               key="insert-divider-bottom"
                               isVisible={true}
                               isNearGroupHeader={false}
-                              title={t('insertTaskText', { defaultValue: 'Insert Task at Bottom' })}
+                              title={t('insertTaskAtBottomText', { defaultValue: 'Insert Task at Bottom' })}
                               onInsert={() => {
                                 setInsertAnchor({
                                   groupId: group.id,

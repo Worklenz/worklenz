@@ -115,5 +115,17 @@
   "unknown": "Nieznany",
   "totalLogged": "Łącznie zalogowane",
   "varianceUnder": "(pod)",
-  "varianceOver": "(koniec)"
+  "varianceOver": "(koniec)",
+  "practiceFilterLabel": "Ćwicz",
+  "holidaysExcluded": "Święta wyłączone",
+  "noPracticeOption": "Brak praktyki",
+  "noDepartments": "Nie znaleziono żadnych działów",
+  "departmentFilterLabel": "Dział",
+  "searchByPractice": "Praktyka wyszukiwania",
+  "noDepartmentOption": "Brak działu",
+  "noDataMatchingFilters": "Brak danych pasujących do wybranych filtrów",
+  "noPractices": "Nie znaleziono żadnych praktyk",
+  "reportSettings": "Ustawienia raportu",
+  "Members Time Sheet": "Arkusz czasu pracy członków",
+  "searchByDepartment": "Dział wyszukiwania"
 }

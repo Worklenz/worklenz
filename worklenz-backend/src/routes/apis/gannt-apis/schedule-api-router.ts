@@ -7,11 +7,14 @@ import verifyProjectAccess from "../../../middlewares/verify-project-access";
 import teamOwnerOrAdminValidator from "../../../middlewares/validators/team-owner-or-admin-validator";
 import verifyMemberAllocationAccess from "../../../middlewares/verify-member-allocation-access";
 import verifyNonGuestPlannerAccess from "../../../middlewares/verify-non-guest-planner-access";
+import { requireAnyFeature } from "../../../shared/entitlements/gates";
+import { PLANNER_FEATURES } from "../../../shared/entitlements/feature-registry";
 
 const scheduleApiRouter = express.Router();
 
 // Guests do not have access to the Planner (Schedule/Timeline/Workload) at all.
 scheduleApiRouter.use(verifyNonGuestPlannerAccess);
+scheduleApiRouter.use(requireAnyFeature(PLANNER_FEATURES));
 
 function getList(req: Request, res: Response) {
   if (ScheduleControllerV2.isTasksOnlyReq(req.query))

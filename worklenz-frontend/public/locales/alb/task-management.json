@@ -8,7 +8,7 @@
   "currentSprintName": "Sprint aktual · {{name}}",
   "sprintCompletedCount": "{{done}}/{{total}} përfunduar",
   "sprintCompletedPoints": "{{done}}/{{total}} pikë të përfunduara",
-  "sprintPointsTotal": "{{total}} pikë gjithsej",
+  "sprintPointsTotal": "{{points}} pikë gjithsej",
   "sprintScopeAdded": "+{{count}} fushëveprimi",
   "sprintScopeAddedTooltip": "Çështjet u shtuan pas fillimit të sprintit",
   "sprintItemCount_one": "{{count}} element",

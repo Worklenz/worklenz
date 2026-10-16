@@ -10,5 +10,8 @@
   "refreshButtonTooltip": "Mitglieder aktualisieren",
   "memberCount": "Mitglied",
   "membersCountPlural": "Mitglieder",
-  "emptyText": "Es gibt keine Anhänge in diesem Projekt."
+  "emptyText": "Es gibt keine Anhänge in diesem Projekt.",
+  "removeFromProject": "Aus Projekt entfernen",
+  "assignFailedMessage": "Die Aufgabenverantwortlichen konnten nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
+  "assignFailedTitle": "Zuweisung fehlgeschlagen"
 }

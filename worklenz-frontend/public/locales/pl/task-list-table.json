@@ -13,6 +13,7 @@
   "labelsColumn": "Etykiety",
   "attachmentsColumn": "Załączniki",
   "commentsColumn": "Najnowszy komentarz",
+  "openLatestComment": "Otwórz najnowszy komentarz",
   "attachmentsAdd": "Dodaj",
   "attachmentsOpen": "Otwórz",
   "attachmentsDownload": "Pobierz",
@@ -224,7 +225,21 @@
       "labels": "Etykiety",
       "addLabel": "+ Dodaj etykietę",
       "keyLabelPlaceholder": "np.: MK"
-    }
+    },
+    "newColumn": "Nowa kolumna",
+    "projectNotFound": "Nie znaleziono projektu",
+    "columnCreated": "Kolumna utworzona. Kliknij w nagłówek, aby edytować.",
+    "columnCreationFailed": "Nie udało się utworzyć kolumny",
+    "guestCannotAddColumn": "Goście nie mogą dodawać kolumn niestandardowych",
+    "columnNameRequired": "Nazwa kolumny jest wymagana",
+    "columnNotFound": "Nie znaleziono kolumny",
+    "columnIdNotFound": "Nie znaleziono identyfikatora kolumny - odśwież i spróbuj ponownie",
+    "columnUpdated": "Zaktualizowano nazwę kolumny",
+    "updateFailed": "Nie udało się zaktualizować nazwy kolumny",
+    "enterColumnName": "Wprowadź nazwę kolumny",
+    "clickToEdit": "Kliknij, aby edytować nazwę kolumny",
+    "columnSettings": "Ustawienia kolumny",
+    "textPlaceholder": "Wpisz tekst"
   },
   "indicators": {
     "tooltips": {
@@ -249,5 +264,16 @@
     "completeTaskDependencies": "Przed kontynuowaniem uzupełnij zależności zadań",
     "incompleteDependencies": "Niekompletne zależności!",
     "someDependenciesNotCompleted": "Niektóre zadania nie zostały zaktualizowane. Przed kontynuowaniem upewnij się, że wszystkie zależne zadania zostały zakończone."
-  }
+  },
+  "insertTaskText": "Wstaw zadanie",
+  "insertTaskAtBottomText": "Wstaw zadanie na dole",
+  "untitledTaskName": "Zadanie bez tytułu",
+  "openTask": "Otwórz zadanie",
+  "descriptionPlaceholder": "Dodaj opis…",
+  "descriptionDisabledTooltip": "Tylko do odczytu - nie można edytować",
+  "descriptionRichTooltip": "Zawiera formatowanie tekstu — kliknij, aby edytować w panelu zadania",
+  "setDueTime": "Ustaw czas wykonania",
+  "save": "Zapisz",
+  "cancel": "Anuluj",
+  "changeStatus": "Zmień status: {{status}}"
 }

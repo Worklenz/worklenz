@@ -1,0 +1,21 @@
+{
+  "projectNotFound": "Projekti nuk u gjet",
+  "backToProjects": "Kthehu te projektet",
+  "projectOverview": "Pasqyrë e projektit",
+  "status": "Statusi",
+  "progress": "Progresi",
+  "totalTasks": "Detyra gjithsej",
+  "completedTasks": "E përfunduar",
+  "lastUpdated": "Përditësuar së fundmi",
+  "projectDescription": "Përshkrimi i projektit",
+  "noDescription": "Pa përshkrim",
+  "recentActivity": "Aktiviteti i fundit",
+  "noRecentActivity": "Asnjë aktivitet i fundit",
+  "projectTeam": "Ekipi i projektit",
+  "projectTimeline": "Afati kohor i projektit",
+  "startDate": "Data e fillimit",
+  "notSet": "I pa caktuar",
+  "endDate": "Data e përfundimit",
+  "projectFiles": "Skedarët e projektit",
+  "noFiles": "Nuk ka skedarë"
+}

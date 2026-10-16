@@ -10,5 +10,12 @@
   "passwordRequired": "Ju lutemi vendosni fjalëkalimin e ri",
   "returnToLoginButton": "Kthehu te Hyrja",
   "confirmPasswordRequired": "Ju lutemi konfirmoni fjalëkalimin e ri",
-  "passwordMismatch": "Fjalëkalimet nuk përputhen"
+  "passwordMismatch": "Fjalëkalimet nuk përputhen",
+  "passwordChecklist": {
+    "lowercase": "Një shkronjë e vogël",
+    "number": "Një numër",
+    "uppercase": "Një shkronjë e madhe",
+    "minLength": "Së paku 8 karaktere",
+    "special": "Një simbol"
+  }
 }

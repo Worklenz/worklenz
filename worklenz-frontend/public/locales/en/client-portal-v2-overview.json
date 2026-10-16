@@ -1,0 +1,126 @@
+{
+  "page": {
+    "title": "Overview",
+    "description": "What needs your attention across clients, projects and discussions.",
+    "editingHint": "Drag widgets to move them, resize from the corner, or hide the ones you do not need.",
+    "loadFailed": "The overview could not be loaded."
+  },
+  "widget": {
+    "viewAll": "View all",
+    "retry": "Retry",
+    "error": "This widget could not be loaded."
+  },
+  "edit": {
+    "customize": "Customize",
+    "done": "Done",
+    "cancel": "Cancel",
+    "reset": "Reset",
+    "resetConfirm": "Restore the default layout?",
+    "saveFailed": "Could not save the layout.",
+    "resetFailed": "Could not reset the layout.",
+    "drag": "Drag to reorder {{title}}",
+    "size": "Size of {{title}}",
+    "size_s": "S",
+    "size_m": "M",
+    "size_l": "L",
+    "hide": "Hide widget",
+    "show": "Show widget",
+    "hideNamed": "Hide {{title}}",
+    "showNamed": "Show {{title}}",
+    "save": "Save",
+    "saved": "Overview saved",
+    "resetDone": "Overview reset to the default layout",
+    "resetConfirmHelp": "Your saved arrangement will be removed.",
+    "addWidget": "Add widget",
+    "emptyTitle": "No widgets on your overview",
+    "emptyHelp": "Choose Customize, then Add widget to bring some back.",
+    "widgetSettings": "{{name}} settings",
+    "settingsFor": "Settings for {{name}}",
+    "width": "Width",
+    "widthQuarter": "Quarter width",
+    "widthThird": "One third",
+    "widthHalf": "Half width",
+    "widthTwoThirds": "Two thirds",
+    "widthThreeQuarters": "Three quarters",
+    "widthFull": "Full width",
+    "moveEarlier": "Move earlier",
+    "moveLater": "Move later",
+    "leaveTitle": "Leave without saving?",
+    "leaveBody": "Your changes to the overview have not been saved and will be lost.",
+    "leave": "Leave",
+    "stay": "Stay"
+  },
+  "status": {
+    "awaiting": "Awaiting",
+    "approved": "Approved",
+    "changes_requested": "Changes requested",
+    "cr_submitted": "Submitted",
+    "cr_under_review": "Under review",
+    "cr_more_info": "More info",
+    "cr_approved": "Approved",
+    "cr_in_progress": "In progress",
+    "cr_completed": "Completed",
+    "cr_rejected": "Rejected",
+    "cr_cancelled": "Cancelled"
+  },
+  "widgets": {
+    "kpi_awaiting_approvals": {
+      "title": "Pending approvals",
+      "sub": "{{count}} overdue"
+    },
+    "kpi_open_change_requests": {
+      "title": "Change requests to review",
+      "sub": "{{count}} waiting on client"
+    },
+    "kpi_delayed_milestones": {
+      "title": "Delayed milestones",
+      "sub": "Across portal projects"
+    },
+    "kpi_unread_discussions": {
+      "title": "Unread discussions",
+      "sub": "With new client messages"
+    },
+    "kpi_overdue_invoices": {
+      "title": "Overdue invoices",
+      "none": "Nothing overdue"
+    },
+    "pending_approvals": {
+      "title": "Pending approvals",
+      "empty": "No approvals are waiting on a client.",
+      "overdue": "Overdue · {{date}}",
+      "due": "Due {{date}}"
+    },
+    "change_requests": {
+      "title": "Change requests to review",
+      "empty": "No change requests need review."
+    },
+    "upcoming_milestones": {
+      "title": "Upcoming milestones",
+      "empty": "No open milestones on portal projects."
+    },
+    "latest_discussions": {
+      "title": "Latest discussions",
+      "empty": "No discussions yet."
+    },
+    "mentions_me": {
+      "title": "Mentions of me",
+      "empty": "Nobody has mentioned you in a discussion.",
+      "row": "{{name}} in {{project}}"
+    },
+    "approvals_by_status": {
+      "title": "Approvals by status",
+      "empty": "No approvals have been sent yet."
+    },
+    "cr_by_status": {
+      "title": "Change request pipeline",
+      "empty": "No change requests yet."
+    },
+    "needs_attention": {
+      "title": "Needs attention",
+      "empty": "Nothing needs attention. Nice work.",
+      "approval_overdue": "Overdue approval",
+      "change_request_review": "High-priority request to review",
+      "milestone_late": "Late milestone"
+    }
+  }
+}

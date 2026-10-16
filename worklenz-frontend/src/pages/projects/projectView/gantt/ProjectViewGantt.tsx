@@ -28,6 +28,7 @@ import {
 } from './services/roadmap-api.service';
 import { UnifiedTimelineCalculator } from './utils/unified-timeline-calculator';
 import { formatDateLocal } from './utils/date-utils';
+import { createHorizontalScrollSync } from './utils/horizontal-scroll-sync';
 import { getColumnWidth } from './constants/gantt-constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -674,15 +675,18 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
   // where the two panels' scrollable heights aren't pixel-identical.
   const isSyncingScrollRef = useRef(false);
 
-  const handleChartScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    if (isSyncingScrollRef.current) return;
-    isSyncingScrollRef.current = true;
+  // Horizontal chart/header sync has its own echo handling and deliberately bypasses
+  // isSyncingScrollRef: that frame-based flag can't tell the header's delayed echo apart
+  // from a genuine header scroll.
+  const horizontalScrollSyncRef = useRef(createHorizontalScrollSync());
 
+  const handleChartScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const target = e.target as HTMLDivElement;
 
-    if (timelineRef.current) {
-      timelineRef.current.scrollLeft = target.scrollLeft;
-    }
+    horizontalScrollSyncRef.current.syncFromChart(target, timelineRef.current);
+
+    if (isSyncingScrollRef.current) return;
+    isSyncingScrollRef.current = true;
 
     if (taskListRef.current) {
       taskListRef.current.scrollTop = target.scrollTop;
@@ -711,20 +715,9 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
   // Mirrors handleChartScroll in the other direction — the date header (GanttTimeline) is
   // independently overflow-x-auto/scrollable (trackpad horizontal swipe, shift+wheel while
   // hovering the header), and without this the header could scroll away from the grid with
-  // nothing to bring it back. Same isSyncingScrollRef re-entrancy guard as the other panels.
+  // nothing to bring it back.
   const handleTimelineScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    if (isSyncingScrollRef.current) return;
-    isSyncingScrollRef.current = true;
-
-    const target = e.target as HTMLDivElement;
-
-    if (chartRef.current) {
-      chartRef.current.scrollLeft = target.scrollLeft;
-    }
-
-    requestAnimationFrame(() => {
-      isSyncingScrollRef.current = false;
-    });
+    horizontalScrollSyncRef.current.syncFromTimeline(e.target as HTMLDivElement, chartRef.current);
   }, []);
 
   const handleRefresh = useCallback(() => {
@@ -1216,13 +1209,6 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
           left: scrollPosition,
           behavior: 'smooth',
         });
-
-        if (timelineRef.current) {
-          timelineRef.current.scrollTo({
-            left: scrollPosition,
-            behavior: 'smooth',
-          });
-        }
 
         // Highlight the task's own date span in the header, matching how the "Today"
         // button focuses its column, so the scroll reads as landing on this task's bar.

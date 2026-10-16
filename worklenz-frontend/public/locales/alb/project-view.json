@@ -75,6 +75,7 @@
   "files": "Skedarë",
   "members": "Anëtarë",
   "updates": "Përditësime",
+  "docs": "Dokumente",
   "roadmap": "Udhërrëfyes",
   "workload": "Ngarkesa e Punës",
   "projectView": "Pamja e Projektit",
@@ -437,5 +438,11 @@
   "releaseAddSelected": "Shto të zgjedhurit",
   "releaseItemsAdded_one": "{{count}} artikull pune u shtua",
   "releaseItemsAdded_other": "{{count}} artikuj pune u shtuan",
-  "releaseItemsAddError": "Artikujt e punës nuk mund të shtoheshin"
+  "releaseItemsAddError": "Artikujt e punës nuk mund të shtoheshin",
+  "You do not have permission to access this project": "Ju nuk keni leje për të hyrë në këtë projekt",
+  "Failed to load project": "Ngarkimi i projektit dështoi",
+  "issueTypeSaveError": "Nuk mund të ndryshohej lloji i elementit. Ju lutemi provoni përsëri.",
+  "changeIssueType": "Ndrysho llojin e elementit",
+  "unpinTabFromHeader": "Hiq nga kreu",
+  "pinTabToHeader": "Shfaq në krye"
 }

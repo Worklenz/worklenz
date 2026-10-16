@@ -2,17 +2,12 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import {
   ApiResponse,
-  ClientRequest,
   ClientSettings,
-  ClientUser,
-  ClientService,
-  ClientProject,
   ClientInvoice,
-  ClientChat,
-  ClientNotification,
-  DashboardStats,
+  ClientOrganization,
   PaginatedResponse
 } from '@/types';
+import { isAccessRemovedResponse, signalAccessRemoved } from '@/utils/accessRemoved';
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/client-portal',
@@ -25,172 +20,32 @@ const rawBaseQuery = fetchBaseQuery({
   },
 });
 
-// Wrap the base query to handle 403 deactivation responses.
+// Wrap the base query to handle "your access has been removed" responses.
 // fetchBaseQuery doesn't go through the ApiService axios interceptor, so RTK Query
-// requests that receive "account is deactivated" 403s would otherwise be silently
-// swallowed — the already-logged-in client could keep browsing indefinitely.
+// requests that receive these would otherwise be silently swallowed — the already-logged-in
+// client could keep browsing indefinitely. A 404 is NOT access removal: it stays a per-page
+// "unavailable" state so the portal never says whether an item exists.
 const baseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
   args,
   api,
   extraOptions
 ) => {
   const result = await rawBaseQuery(args, api, extraOptions);
-  if (result.error?.status === 403) {
-    const message: string =
-      (result.error.data as any)?.message || '';
-    const isDeactivated =
-      message.toLowerCase().includes('deactivated') ||
-      message.toLowerCase().includes('portal access is disabled');
-    if (isDeactivated) {
-      localStorage.removeItem('clientToken');
-      localStorage.removeItem('clientTokenExpiry');
-      window.dispatchEvent(new CustomEvent('client-deactivated'));
-    }
+  if (result.error && isAccessRemovedResponse(result.error.status, result.error.data)) {
+    signalAccessRemoved();
   }
   return result;
 };
 
-// Create the API slice
+// Create the API slice. The v2 endpoints are injected from `api-v2.ts`; what stays here is the
+// shared base query, invoices, the operator's branding settings and organization switching.
+// (Services, Requests, Chats, v1 dashboard/projects/notifications/profile were retired in v2.)
 export const clientPortalApi = createApi({
   reducerPath: 'clientPortalApi',
   baseQuery,
-  tagTypes: [
-    'Dashboard',
-    'Services',
-    'Requests',
-    'Projects',
-    'Invoices',
-    'Chats',
-    'Settings',
-    'Profile',
-    'Notifications',
-    'Organizations'
-  ],
+  // 'V2Dashboard' is declared here because paying an invoice changes the dashboard's unpaid amount.
+  tagTypes: ['Invoices', 'Settings', 'Organizations', 'V2Dashboard'],
   endpoints: (builder) => ({
-    // Dashboard
-    getDashboard: builder.query<ApiResponse<DashboardStats>, void>({
-      query: () => '/dashboard',
-      providesTags: ['Dashboard'],
-    }),
-
-    // Services
-    getServices: builder.query<ApiResponse<ClientService[]>, void>({
-      query: () => '/services',
-      providesTags: ['Services'],
-    }),
-
-    getServiceDetails: builder.query<ApiResponse<ClientService>, string>({
-      query: (id) => `/services/${id}`,
-      providesTags: (_result, _error, id) => [{ type: 'Services', id }],
-    }),
-
-    // Requests
-    getRequests: builder.query<ApiResponse<PaginatedResponse<ClientRequest>>, { page?: number; limit?: number }>({
-      query: (params) => ({
-        url: '/requests',
-        params,
-      }),
-      providesTags: ['Requests'],
-    }),
-
-    createRequest: builder.mutation<
-      ApiResponse<ClientRequest>,
-      { serviceId: string; requestData?: any; notes?: string }
-    >({
-      query: (data) => ({
-        url: '/requests',
-        method: 'POST',
-        body: data,
-      }),
-      invalidatesTags: ['Requests', 'Dashboard'],
-    }),
-
-    getRequestDetails: builder.query<ApiResponse<ClientRequest>, string>({
-      query: (id) => `/requests/${id}`,
-      providesTags: (_result, _error, id) => [{ type: 'Requests', id }],
-    }),
-
-    getRequestStatusHistory: builder.query<ApiResponse<Array<{
-      id: string;
-      previous_status: string | null;
-      new_status: string;
-      notes: string | null;
-      changed_at: string;
-      changed_by_name: string | null;
-      changed_by_client_name: string | null;
-    }>>, string>({
-      query: (id) => `/requests/${id}/history`,
-      providesTags: (_result, _error, id) => [{ type: 'Requests', id }],
-    }),
-
-    getRequestComments: builder.query<ApiResponse<Array<{
-      id: string;
-      comment: string;
-      sender_type: 'client' | 'team_member';
-      sender_id: string;
-      sender_name: string;
-      created_at: string;
-      updated_at: string;
-    }>>, string>({
-      query: (id) => `/requests/${id}/comments`,
-      providesTags: (_result, _error, id) => [{ type: 'Requests', id: `${id}-comments` }],
-    }),
-
-    addRequestComment: builder.mutation<ApiResponse<{
-      id: string;
-      comment: string;
-      sender_type: 'client' | 'team_member';
-      sender_id: string;
-      sender_name: string;
-      created_at: string;
-      updated_at: string;
-    }>, { id: string; comment: string }>({
-      query: ({ id, comment }) => ({
-        url: `/requests/${id}/comments`,
-        method: 'POST',
-        body: { comment },
-      }),
-      invalidatesTags: (_result, _error, { id }) => [
-        { type: 'Requests', id: `${id}-comments` },
-        { type: 'Requests', id },
-      ],
-    }),
-
-    updateRequest: builder.mutation<ApiResponse<ClientRequest>, { id: string; data: Partial<ClientRequest> }>({
-      query: ({ id, data }) => ({
-        url: `/requests/${id}`,
-        method: 'PUT',
-        body: data,
-      }),
-      invalidatesTags: (_result, _error, { id }) => [
-        { type: 'Requests', id },
-        'Requests',
-        'Dashboard'
-      ],
-    }),
-
-    deleteRequest: builder.mutation<ApiResponse<void>, string>({
-      query: (id) => ({
-        url: `/requests/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Requests', 'Dashboard'],
-    }),
-
-    // Projects
-    getProjects: builder.query<ApiResponse<PaginatedResponse<ClientProject>>, { page?: number; limit?: number }>({
-      query: (params) => ({
-        url: '/projects',
-        params,
-      }),
-      providesTags: ['Projects'],
-    }),
-
-    getProjectDetails: builder.query<ApiResponse<ClientProject>, string>({
-      query: (id) => `/projects/${id}`,
-      providesTags: (_result, _error, id) => [{ type: 'Projects', id }],
-    }),
-
     // Invoices
     getInvoices: builder.query<ApiResponse<PaginatedResponse<ClientInvoice>>, { page?: number; limit?: number }>({
       query: (params) => ({
@@ -214,7 +69,7 @@ export const clientPortalApi = createApi({
       invalidatesTags: (_result, _error, { id }) => [
         { type: 'Invoices', id },
         'Invoices',
-        'Dashboard'
+        'V2Dashboard',
       ],
     }),
 
@@ -225,110 +80,15 @@ export const clientPortalApi = createApi({
       }),
     }),
 
-    // Chats
-    getChats: builder.query<ApiResponse<ClientChat[]>, void>({
-      query: () => '/chats',
-      providesTags: ['Chats'],
-    }),
-
-    getChatDetails: builder.query<ApiResponse<ClientChat>, string>({
-      query: (id) => `/chats/${id}`,
-      providesTags: (_result, _error, id) => [{ type: 'Chats', id }],
-    }),
-
-    sendMessage: builder.mutation<ApiResponse<void>, { chatId: string; messageData: { content: string; attachments?: string[] } }>({
-      query: ({ chatId, messageData }) => ({
-        url: `/chats/${chatId}/messages`,
-        method: 'POST',
-        body: messageData,
-      }),
-      invalidatesTags: (_result, _error, { chatId }) => [
-        { type: 'Chats', chatId },
-        'Chats'
-      ],
-    }),
-
-    getMessages: builder.query<ApiResponse<unknown[]>, string>({
-      query: (chatId) => `/chats/${chatId}/messages`,
-      providesTags: (_result, _error, chatId) => [{ type: 'Chats', id: chatId }],
-    }),
-
-    // Settings (organization-side - requires team_id)
-    getSettings: builder.query<ApiResponse<ClientSettings>, void>({
-      query: () => '/settings',
-      providesTags: ['Settings'],
-    }),
-
-    updateSettings: builder.mutation<ApiResponse<ClientSettings>, Partial<ClientSettings>>({
-      query: (settingsData) => ({
-        url: '/settings',
-        method: 'PUT',
-        body: settingsData,
-      }),
-      invalidatesTags: ['Settings'],
-    }),
-
     // Organization Settings (client-side - uses organizationId from token)
     getOrganizationSettings: builder.query<ApiResponse<ClientSettings>, void>({
       query: () => '/organization-settings',
       providesTags: ['Settings'],
     }),
 
-    // Profile
-    getProfile: builder.query<ApiResponse<ClientUser>, void>({
-      query: () => '/profile',
-      providesTags: ['Profile'],
-    }),
-
-    updateProfile: builder.mutation<ApiResponse<ClientUser>, Partial<ClientUser>>({
-      query: (profileData) => ({
-        url: '/profile',
-        method: 'PUT',
-        body: profileData,
-      }),
-      invalidatesTags: ['Profile'],
-    }),
-
-    // Notifications
-    getNotifications: builder.query<ApiResponse<PaginatedResponse<ClientNotification>>, { page?: number; limit?: number }>({
-      query: (params) => ({
-        url: '/notifications',
-        params,
-      }),
-      providesTags: ['Notifications'],
-    }),
-
-    markNotificationRead: builder.mutation<ApiResponse<void>, string>({
-      query: (id) => ({
-        url: `/notifications/${id}/read`,
-        method: 'PUT',
-      }),
-      invalidatesTags: ['Notifications', 'Dashboard'],
-    }),
-
-    markAllNotificationsRead: builder.mutation<ApiResponse<void>, void>({
-      query: () => ({
-        url: '/notifications/read-all',
-        method: 'PUT',
-      }),
-      invalidatesTags: ['Notifications', 'Dashboard'],
-    }),
-
-    // File upload
-    uploadFile: builder.mutation<{ url: string; filename: string }, File>({
-      query: (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return {
-          url: '/upload',
-          method: 'POST',
-          body: formData,
-        };
-      },
-    }),
-
     // Organizations
-    getOrganizations: builder.query<ApiResponse<{ organizations: any[] }>, void>({
+    // The teams (workspaces) this login can act in, read live so a revoked team drops out.
+    getOrganizations: builder.query<ApiResponse<{ organizations: ClientOrganization[] }>, void>({
       query: () => '/organizations',
       providesTags: ['Organizations'],
     }),
@@ -340,64 +100,36 @@ export const clientPortalApi = createApi({
         body: { organizationId },
       }),
       // Invalidate all tags when switching organizations to refetch all data
-      invalidatesTags: ['Dashboard', 'Services', 'Requests', 'Projects', 'Invoices', 'Chats', 'Settings', 'Profile', 'Notifications'],
+      invalidatesTags: ['Invoices', 'Settings', 'Organizations'],
+    }),
+
+    // An invitation link opened while already signed in: joins that portal with no sign-in code.
+    acceptInvite: builder.mutation<
+      ApiResponse<{ token: string; organizationId: string; clientId: string; organizationName: string | null; expiresAt: string }>,
+      string
+    >({
+      query: (inviteToken) => ({
+        url: '/organizations/accept-invite',
+        method: 'POST',
+        body: { inviteToken },
+      }),
     }),
   }),
 });
 
 // Export hooks
 export const {
-  // Dashboard
-  useGetDashboardQuery,
-  
-  // Services
-  useGetServicesQuery,
-  useGetServiceDetailsQuery,
-  
-  // Requests
-  useGetRequestsQuery,
-  useCreateRequestMutation,
-  useGetRequestDetailsQuery,
-  useGetRequestStatusHistoryQuery,
-  useGetRequestCommentsQuery,
-  useAddRequestCommentMutation,
-  useUpdateRequestMutation,
-  useDeleteRequestMutation,
-  
-  // Projects
-  useGetProjectsQuery,
-  useGetProjectDetailsQuery,
-  
   // Invoices
   useGetInvoicesQuery,
   useGetInvoiceDetailsQuery,
   usePayInvoiceMutation,
   useLazyDownloadInvoiceQuery,
-  
-  // Chats
-  useGetChatsQuery,
-  useGetChatDetailsQuery,
-  useSendMessageMutation,
-  useGetMessagesQuery,
-  
-  // Settings
-  useGetSettingsQuery,
-  useUpdateSettingsMutation,
+
+  // Operator branding (logo, colour, portal title)
   useGetOrganizationSettingsQuery,
-  
-  // Profile
-  useGetProfileQuery,
-  useUpdateProfileMutation,
-  
-  // Notifications
-  useGetNotificationsQuery,
-  useMarkNotificationReadMutation,
-  useMarkAllNotificationsReadMutation,
-  
-  // File upload
-  useUploadFileMutation,
 
   // Organizations
   useGetOrganizationsQuery,
   useSwitchOrganizationMutation,
-} = clientPortalApi; 
+  useAcceptInviteMutation,
+} = clientPortalApi;

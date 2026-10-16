@@ -17,8 +17,10 @@ export function getBaseUrl() {
 }
 
 export function getClientPortalBaseUrl() {
-  if (isLocalServer()) return `http://${process.env.CLIENT_PORTAL_HOSTNAME}`;
-  return `https://${process.env.CLIENT_PORTAL_HOSTNAME}`;
+  const hostname = process.env.CLIENT_PORTAL_HOSTNAME || "";
+  const isLocalHostname = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(hostname);
+  if (isLocalServer() || isLocalHostname) return `http://${hostname}`;
+  return `https://${hostname}`;
 }
 
 function mapMembers(project: ITaskAssignmentModelProject) {

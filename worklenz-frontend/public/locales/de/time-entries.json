@@ -68,6 +68,10 @@
   "timeLoggedPlaceholder": "z.B. 130, 1:30, 2.5",
   "startTimeLabel": "Startzeit",
   "endTimeLabel": "Endzeit",
+  "hoursLabel": "Stunden",
+  "hoursMinError": "Stunden müssen 0 oder größer sein",
+  "minutesLabel": "Minuten",
+  "minutesRangeError": "Minuten müssen zwischen 0 und 59 liegen",
   "workDescriptionLabel": "Arbeitsbeschreibung",
   "workDescriptionPlaceholder": "Woran haben Sie gearbeitet?",
   "logTimeButton": "Zeit erfassen",
@@ -77,6 +81,10 @@
   "selectDateError": "Wählen Sie ein Datum",
   "selectStartTimeError": "Wählen Sie eine Startzeit",
   "selectEndTimeError": "Wählen Sie eine Endzeit",
+  "projectStartDateError": "Zeit kann nicht vor dem Startdatum des Projekts erfasst werden ({{date}})",
+  "projectStartDateHint": "Projektstartdatum: {{date}}",
+  "projectNotStartedWarningTitle": "Projekt hat noch nicht begonnen",
+  "projectNotStartedWarningDesc": "Dieses Projekt soll am {{date}} beginnen. Zeit kann nicht vor dem Startdatum des Projekts erfasst werden.",
   "logTimeError": "Zeiterfassung fehlgeschlagen",
   "groupByButtonLabel": "Gruppieren nach: {{groupBy}}",
   "groupByNone": "Keine",
@@ -119,5 +127,9 @@
     "week_total": "Diese Woche Gesamt",
     "week_billable": "Woche abrechenbar",
     "week_non_billable": "Woche nicht abrechenbar"
-  }
+  },
+  "minutesRangeError": "0 – 59",
+  "hoursLabel": "Stunden",
+  "hoursMinError": "Stunden müssen 0 oder größer sein",
+  "minutesLabel": "Minuten"
 }

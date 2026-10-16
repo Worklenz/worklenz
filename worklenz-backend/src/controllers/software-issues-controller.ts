@@ -152,6 +152,35 @@ export default class SoftwareIssuesController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, result.rows[0]));
   }
 
+  /** Changes the issue type of a top-level work item (subtasks derive their type from the parent link). */
+  @HandleExceptions()
+  public static async updateType(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const taskId = req.params.taskId;
+    const projectId = req.body?.project_id;
+    const issueType = req.body?.issue_type;
+
+    if (!isUuid(taskId) || !isUuid(projectId)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid request"));
+    }
+    if (issueType === "subtask" || !this.ISSUE_TYPES.includes(issueType)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid issue type"));
+    }
+
+    const q = `
+      UPDATE tasks
+      SET issue_type = $3
+      WHERE id = $1
+        AND project_id = $2
+        AND parent_task_id IS NULL
+      RETURNING id, issue_type;`;
+    const result = await db.query(q, [taskId, projectId, issueType]);
+    const [data] = result.rows;
+    if (!data) {
+      return res.status(404).send(new ServerResponse(false, null, "Issue not found"));
+    }
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
   /** Flat list of the project's work items in creation order (List tab). */
   @HandleExceptions()
   public static async list(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {

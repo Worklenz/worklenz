@@ -34,5 +34,6 @@
   "errorMessages": {
     "loginErrorTitle": "Iniciar sesión falló",
     "loginErrorMessage": "Por favor verifica tu correo electrónico y contraseña y vuelve a intentarlo"
-  }
+  },
+  "rememberMe": "Recuérdame"
 }

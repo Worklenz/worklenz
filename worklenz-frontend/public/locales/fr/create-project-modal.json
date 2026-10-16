@@ -43,5 +43,6 @@
   "csvImportSelected": "Importation de tâches CSV sélectionnée",
   "csvImportHint": "Mappez les champs CSV et importez les tâches après avoir configuré ce projet.",
   "csvImportFooterHint": "Vous mapperez les champs CSV avant la création de ce projet.",
-  "continueToCsvImport": "Continuer l'importation CSV"
+  "continueToCsvImport": "Continuer l'importation CSV",
+  "templateRequired": "Sélectionnez un modèle pour créer un projet."
 }

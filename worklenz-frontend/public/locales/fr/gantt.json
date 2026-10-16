@@ -37,7 +37,8 @@
     "failedToRemoveDependency": "Échec de la suppression de la dépendance.",
     "taskAddedToRoadmap": "Tâche ajoutée à la feuille de route pour les 5 prochains jours.",
     "failedToAddTaskToRoadmap": "Échec de l'ajout de la tâche à la feuille de route.",
-    "unscheduledTaskNotFound": "Impossible de trouver la tâche sélectionnée."
+    "unscheduledTaskNotFound": "Impossible de trouver la tâche sélectionnée.",
+    "undatedTaskReadOnly": "Tâche sans dates (lecture seule pour les invités)"
   },
   "common": {
     "noStart": "Pas de démarrage",

@@ -66,6 +66,8 @@
   "dateLabel": "Date",
   "timeLoggedLabel": "Time Logged",
   "timeLoggedPlaceholder": "e.g. 130, 1:30, 2.5",
+  "hoursLabel": "Hours",
+  "minutesLabel": "Minutes",
   "startTimeLabel": "Start Time",
   "endTimeLabel": "End Time",
   "workDescriptionLabel": "Work Description",
@@ -73,10 +75,16 @@
   "logTimeButton": "Log Time",
   "selectProjectAndTaskError": "Please select a project and a task",
   "invalidTimeLoggedError": "Enter a valid duration (e.g. 130, 1:30, 2.5)",
+  "hoursMinError": "Hours must be 0 or greater",
+  "minutesRangeError": "Minutes must be between 0 and 59",
   "endTimeAfterStartError": "End time must be after start time",
   "selectDateError": "Select a date",
   "selectStartTimeError": "Select a start time",
   "selectEndTimeError": "Select an end time",
+  "projectStartDateError": "Time cannot be logged before the project start date ({{date}})",
+  "projectStartDateHint": "Project start date: {{date}}",
+  "projectNotStartedWarningTitle": "Project has not started yet",
+  "projectNotStartedWarningDesc": "This project is scheduled to start on {{date}}. Time cannot be logged before the project start date.",
   "logTimeError": "Failed to log time",
   "groupByButtonLabel": "Group by: {{groupBy}}",
   "groupByNone": "None",
@@ -119,5 +127,9 @@
     "week_total": "This Week Total",
     "week_billable": "Week Billable",
     "week_non_billable": "Week Non-Billable"
-  }
+  },
+  "minutesRangeError": "0 – 59",
+  "hoursLabel": "Hours",
+  "hoursMinError": "Hours must be 0 or greater",
+  "minutesLabel": "Minutes"
 }

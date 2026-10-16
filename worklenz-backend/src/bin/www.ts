@@ -14,15 +14,18 @@ import {getLoggedInUserIdFromSocket} from "../socket.io/util";
 import {startCronJobs} from "../cron_jobs";
 import {startRecurringTasksJob} from "../cron_jobs/recurring-tasks";
 import {startProjectFilesCleanupJob} from "../cron_jobs/project-files-cleanup-job";
+import {startSprintAutoScheduleJob} from "../cron_jobs/sprint-auto-schedule-job";
 import {startTaskExportCleanupJob} from "../cron_jobs/task-export-cleanup-job";
 import {startAuditLogExportCleanupJob} from "../cron_jobs/audit-log-export-cleanup-job";
 import {startAuditLogRetentionJob} from "../cron_jobs/audit-log-retention-job";
+import {startSeatReconciliationJob} from "../cron_jobs/seat-reconciliation-job";
 import FileConstants from "../shared/file-constants";
 import {initRedis} from "../redis/client";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
-import { initializeI18n } from "../config/i18n";
 import { getEmailConfigurationErrors } from "../shared/email";
 import { getDeploymentMode } from "../shared/deployment-mode";
+import { isPaddleServiceConfigured } from "../shared/paddle-requests";
+import { initializeI18n } from "../config/i18n";
 
 function normalizePort(val?: string) {
   const p = parseInt(val || "0", 10);
@@ -122,9 +125,14 @@ function onListening() {
   startBackgroundWorkers();
   process.env.ENABLE_RECURRING_JOBS === "true" && startRecurringTasksJob();
   startProjectFilesCleanupJob();
+  startSprintAutoScheduleJob();
   startTaskExportCleanupJob();
   startAuditLogExportCleanupJob();
   startAuditLogRetentionJob();
+  startSeatReconciliationJob();
+  if (getDeploymentMode() === "cloud" && !isPaddleServiceConfigured()) {
+    console.error("[config] The license manager URL is not set (PRODUCTION_SERVER_URL or UAT_SERVER_URL); Paddle checkout will fail.");
+  }
   // void initRedis();
   FileConstants.init();
   void DbTaskStatusChangeListener.connect();

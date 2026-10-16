@@ -42,5 +42,6 @@
   "moreOptions": "Më shumë opsione",
   "changeMemberStatusConfirmation": "Jeni të sigurt që dëshironi të ndryshoni statusin e këtij anëtari?",
   "yesProceed": "Po, vazhdo",
-  "cancel": "Anulo"
+  "cancel": "Anulo",
+  "removeFromProject": "Hiq nga Projekti"
 }

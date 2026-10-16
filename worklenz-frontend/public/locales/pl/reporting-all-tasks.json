@@ -148,5 +148,9 @@
   "noPhases": "Nie znaleziono faz",
   "todoStatus": "Do zrobienia",
   "doingStatus": "Robię",
-  "doneStatus": "Gotowe"
+  "doneStatus": "Gotowe",
+  "clientFilter": "Klient",
+  "searchLabels": "Wyszukaj etykiety...",
+  "noLabels": "Nie znaleziono etykiet",
+  "labelFilter": "Etykiety"
 }

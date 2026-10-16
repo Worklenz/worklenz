@@ -70,5 +70,17 @@
   "sprintGoal": "冲刺目标",
   "sprintGoalPlaceholder": "这次冲刺应该实现什么目标？",
   "sprintDatesRequired": "设置开始和结束日期以开始冲刺",
-  "sprintEndBeforeStart": "结束日期必须晚于开始日期"
+  "sprintEndBeforeStart": "结束日期必须晚于开始日期",
+  "start": "开始",
+  "completeSprint": "完成冲刺",
+  "manageAssignee": "管理受让人",
+  "assignMember": "指定成员",
+  "deleteSprintTitle": "删除 {{name}}？",
+  "deleteSprintContentWithItems": "此迭代中的 {{count}} 个工作项将移至 {{backlog}}。此操作无法撤销。",
+  "deleteSprintContent": "此操作无法撤销。",
+  "deleteSprint": "删除迭代",
+  "sprintDeleted": "已删除迭代",
+  "sprintDeleteError": "无法删除迭代",
+  "completeSprintAutoStartHint": "下一个计划迭代将于今天开始，并保持原计划时长。",
+  "nextSprintStarted": "{{name}} 已开始（{{start}} – {{end}}）"
 }

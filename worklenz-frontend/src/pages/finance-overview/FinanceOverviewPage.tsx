@@ -8,6 +8,7 @@ import {
     Card,
     Input,
     SearchOutlined,
+    theme,
     Badge,
     Col,
     Empty,
@@ -59,7 +60,7 @@ const calcUtilization = (cost: number, budget: number): number =>
 
 const utilizationColor = (pct: number): string => {
     if (pct > 100) return '#ff4d4f';
-    if (pct > 80)  return '#faad14';
+    if (pct > 80) return '#faad14';
     return '#52c41a';
 };
 
@@ -97,6 +98,7 @@ const FinanceOverviewPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation('finance-overview');
     const themeMode = useAppSelector(s => s.themeReducer.mode);
+    const { token } = theme.useToken();
 
     const { projects, loading } = useAppSelector(s => s.financeOverviewReducer);
     const orgConfig = useAppSelector(s => s.orgConfigReducer);
@@ -166,10 +168,10 @@ const FinanceOverviewPage = () => {
             ?? projects.reduce((s, p) => s + (p.budget ?? 0), 0);
         const totalActual = convertedTotals?.actual
             ?? projects.reduce((s, p) => s + (p.actual_cost ?? 0), 0);
-        const totalFixed    = projects.reduce((s, p) => s + (p.fixed_cost ?? 0), 0);
+        const totalFixed = projects.reduce((s, p) => s + (p.fixed_cost ?? 0), 0);
         const totalTimeBased = projects.reduce((s, p) => s + (p.time_based_cost ?? 0), 0);
-        const totalHours    = projects.reduce((s, p) => s + (p.estimated_hours ?? 0), 0);
-        const budgetUtil    = totalBudget > 0 ? Math.round((totalActual / totalBudget) * 100) : 0;
+        const totalHours = projects.reduce((s, p) => s + (p.estimated_hours ?? 0), 0);
+        const budgetUtil = totalBudget > 0 ? Math.round((totalActual / totalBudget) * 100) : 0;
         return { totalFixed, totalTimeBased, totalHours, budgetUtil };
     }, [convertedTotals, projects]);
 
@@ -186,17 +188,17 @@ const FinanceOverviewPage = () => {
 
     // ── Budget Status Distribution ────────────────────────────────────────
     const distribution = useMemo(() => {
-        const total   = projects.length || 1;
+        const total = projects.length || 1;
         const onTrack = projects.filter(p => calcUtilization(p.actual_cost, p.budget) <= 65).length;
-        const watch   = projects.filter(p => { const u = calcUtilization(p.actual_cost, p.budget); return u > 65 && u <= 100; }).length;
-        const over    = projects.filter(p => p.actual_cost > p.budget && p.budget > 0).length;
+        const watch = projects.filter(p => { const u = calcUtilization(p.actual_cost, p.budget); return u > 65 && u <= 100; }).length;
+        const over = projects.filter(p => p.actual_cost > p.budget && p.budget > 0).length;
         return { onTrack, watch, over, total };
     }, [projects]);
 
     const distributionBuckets = useMemo(() => [
         { key: 'onTrack', label: t('distribution.onTrack'), count: distribution.onTrack, color: '#52c41a' },
-        { key: 'watch',   label: t('distribution.watch'),   count: distribution.watch,   color: '#faad14' },
-        { key: 'over',    label: t('distribution.overBudget'), count: distribution.over, color: '#ff4d4f' },
+        { key: 'watch', label: t('distribution.watch'), count: distribution.watch, color: '#faad14' },
+        { key: 'over', label: t('distribution.overBudget'), count: distribution.over, color: '#ff4d4f' },
     ], [distribution, t]);
 
     const distributionChartData = useMemo(() => ({
@@ -244,9 +246,9 @@ const FinanceOverviewPage = () => {
                 message.error(t('exportFailed'));
                 return;
             }
-            const url  = URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href  = url;
+            link.href = url;
             link.download = `finance-overview-${new Date().toISOString().split('T')[0]}.xlsx`;
             document.body.appendChild(link);
             link.click();
@@ -362,7 +364,7 @@ const FinanceOverviewPage = () => {
 
     // ── Render ────────────────────────────────────────────────────────────
     const kpiLoading = loading || ratesLoading || !convertedTotals;
-    const variance   = convertedTotals?.variance ?? 0;
+    const variance = convertedTotals?.variance ?? 0;
     return (
         <Flex vertical gap={16}>
 
@@ -485,15 +487,21 @@ const FinanceOverviewPage = () => {
                         styles={{ header: { padding: '12px 24px', minHeight: 56 } }}
                         extra={
                             <Input
+                                prefix={
+                                    <SearchOutlined
+                                        style={{ color: token.colorTextTertiary }}
+                                    />
+                                }
                                 placeholder={t('table.searchPlaceholder')}
-                                suffix={<SearchOutlined style={{ color: 'rgba(128,128,128,0.7)' }} />}
                                 value={searchText}
                                 onChange={e => setSearchText(e.target.value)}
                                 allowClear
                                 style={{
                                     width: 280,
-                                    borderColor: themeMode === 'dark' ? '#424242' : '#bfbfbf',
-                                    backgroundColor: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
+                                    maxWidth: '100%',
+                                    height: 32,
+                                    fontSize: 12,
+                                    borderRadius: 7,
                                 }}
                             />
                         }
@@ -534,7 +542,7 @@ const FinanceOverviewPage = () => {
                                 <div style={{ maxHeight: 240, overflowY: 'auto', paddingRight: 8, scrollbarWidth: 'thin', scrollbarColor: '#ccc transparent' }}>
                                     <Flex vertical gap={12}>
                                         {attentionProjects.map(p => {
-                                            const pct    = calcUtilization(p.actual_cost, p.budget);
+                                            const pct = calcUtilization(p.actual_cost, p.budget);
                                             const isOver = p.actual_cost > p.budget;
                                             return (
                                                 <Flex key={p.id} vertical gap={4}>

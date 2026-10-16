@@ -68,6 +68,10 @@
   "timeLoggedPlaceholder": "np. 130, 1:30, 2,5",
   "startTimeLabel": "Czas rozpoczęcia",
   "endTimeLabel": "Czas zakończenia",
+  "hoursLabel": "Godziny",
+  "hoursMinError": "Godziny muszą wynosić 0 lub więcej",
+  "minutesLabel": "Minuty",
+  "minutesRangeError": "Minuty muszą mieścić się w przedziale od 0 do 59",
   "workDescriptionLabel": "Opis pracy",
   "workDescriptionPlaceholder": "Nad czym pracowałeś?",
   "logTimeButton": "Rejestruj czas",
@@ -77,6 +81,10 @@
   "selectDateError": "Wybierz datę",
   "selectStartTimeError": "Wybierz godzinę rozpoczęcia",
   "selectEndTimeError": "Wybierz godzinę zakończenia",
+  "projectStartDateError": "Nie można rejestrować czasu przed datą rozpoczęcia projektu ({{date}})",
+  "projectStartDateHint": "Data rozpoczęcia projektu: {{date}}",
+  "projectNotStartedWarningTitle": "Projekt jeszcze się nie rozpoczął",
+  "projectNotStartedWarningDesc": "Ten projekt ma się rozpocząć {{date}}. Nie można rejestrować czasu przed datą rozpoczęcia projektu.",
   "logTimeError": "Nie udało się zarejestrować czasu",
   "groupByButtonLabel": "Grupuj według: {{groupBy}}",
   "groupByNone": "Żadne",
@@ -119,5 +127,9 @@
     "week_total": "Łącznie w tym tygodniu",
     "week_billable": "Tydzień płatny",
     "week_non_billable": "Tydzień niepodlegający rozliczeniu"
-  }
+  },
+  "minutesRangeError": "0 – 59",
+  "hoursLabel": "Godziny",
+  "hoursMinError": "Godziny muszą wynosić 0 lub więcej",
+  "minutesLabel": "Minuty"
 }

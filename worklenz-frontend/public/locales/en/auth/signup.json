@@ -35,5 +35,7 @@
     "lowercase": "One lowercase letter",
     "number": "One number",
     "special": "One special character"
-  }
+  },
+  "strongPasswordPlaceholder": "Enter a strong password",
+  "passwordValidationAltText": "Password requirements"
 }

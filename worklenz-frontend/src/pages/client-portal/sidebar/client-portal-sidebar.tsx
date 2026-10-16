@@ -12,8 +12,18 @@ import { colors } from '../../../styles/colors';
 import NavRail from '@/components/nav-rail/NavRail';
 import { useNavPreferences } from '@/features/navigation/useNavPreferences';
 import type { NavItem } from '@/features/navigation/nav-registry.types';
+import { useGetPortalCountsQuery } from '@/api/client-portal/portal-counts-api';
+
+// Sidebar badges (Change Req., Discussions) refresh on this interval and on focus.
+const PORTAL_COUNTS_POLL_MS = 60_000;
 
 const ClientPortalSidebar = () => {
+  // Keeps the cached counts query alive; the nav badges read it through their badgeSelector.
+  useGetPortalCountsQuery(undefined, {
+    pollingInterval: PORTAL_COUNTS_POLL_MS,
+    refetchOnFocus: true,
+  });
+
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation('client-portal-common');

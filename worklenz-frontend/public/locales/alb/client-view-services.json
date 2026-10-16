@@ -1,0 +1,10 @@
+{
+  "modal": {
+    "title": "Kërkoni shërbim",
+    "submitButton": "Paraqisni kërkesë"
+  },
+  "uploadLogoText": "Klikoni ose tërhiqni një skedar për të ngarkuar",
+  "uploadLogoAltText": "Ngarko skedarin",
+  "title": "Shërbimet",
+  "requestButton": "Bëni një kërkesë"
+}

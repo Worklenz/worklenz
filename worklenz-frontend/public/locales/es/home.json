@@ -20,7 +20,8 @@
     "showDone": "Mostrar Completadas",
     "created": "Creada",
     "finished": "Finalizada",
-    "tasks": "tareas"
+    "tasks": "tareas",
+    "loading": "Cargando..."
   },
   "projects": {
     "title": "Proyectos",
@@ -39,7 +40,13 @@
     "assignedToMe": "Asignadas a mí",
     "assignedByMe": "Asignadas por mí",
     "dueTasks": "tareas por vencer",
-    "priority": "Prioridad",
+    "dueTask": "tarea vencida",
+    "total": "totales",
+    "on": "el",
+    "totalDue": "Total vencidas",
+    "todo": "Por hacer",
+    "doing": "Haciendo",
+    "done": "Hecho",
     "all": "Todas",
     "today": "Hoy",
     "upcoming": "Próximas",
@@ -48,15 +55,18 @@
     "noTasks": "No hay tareas para mostrar.",
     "addTask": "+ Agregar tarea",
     "addTaskButton": "Agregar tarea",
+    "markTimeOff": "Marcar Ausencia / Permiso",
     "name": "Nombre",
     "project": "Proyecto",
     "status": "Estado",
+    "priority": "Prioridad",
     "dueDate": "Fecha de vencimiento",
     "dueDatePlaceholder": "Establecer fecha de vencimiento",
     "tomorrow": "Mañana",
     "nextWeek": "La semana que viene",
     "nextMonth": "El próximo mes",
     "projectRequired": "Por favor selecciona un proyecto",
+    "pressTabToSelectDueDateAndProject": "Presiona Tab para seleccionar fecha de vencimiento y proyecto",
     "dueOn": "Tareas vencidas el",
     "taskRequired": "Por favor agrega una tarea",
     "list": "Lista",
@@ -79,14 +89,6 @@
     "timeLoggedTaskAriaLabel": "Tarea con tiempo registrado:",
     "errorLoadingRecentTasks": "Error al cargar tareas recientes",
     "errorLoadingTimeLoggedTasks": "Error al cargar tareas con tiempo registrado",
-    "dueTask": "tarea vencida",
-    "total": "totales",
-    "on": "el",
-    "totalDue": "Total vencidas",
-    "todo": "Por hacer",
-    "doing": "Haciendo",
-    "done": "Hecho",
-    "pressTabToSelectDueDateAndProject": "Presiona Tab para seleccionar fecha de vencimiento y proyecto",
     "newTask": "Nueva tarea",
     "assignTask": "Asignar tarea",
     "createTask": "Crear tarea",
@@ -103,7 +105,6 @@
     "searchMembers": "Buscar por nombre o correo…",
     "noMembersFound": "No se encontraron miembros",
     "time": "Tiempo",
-    "markTimeOff": "Marcar Ausencia / Permiso",
     "pinned": "Fijadas",
     "tabsLabel": "Filtrar tareas",
     "pinTask": "Fijar tarea",
@@ -136,7 +137,9 @@
     "weekdayMiniThu": "J",
     "weekdayMiniFri": "V",
     "weekdayMiniSat": "S",
-    "weekdayMiniSun": "D"
+    "weekdayMiniSun": "D",
+    "clientsSearchPlaceholder": "Buscar clientes...",
+    "projectsSearchPlaceholder": "Buscar proyectos..."
   },
   "activityLogs": {
     "title": "Actividad Reciente",
@@ -154,9 +157,9 @@
       "statusChanged": "{{userName}} cambió el estado del proyecto {{projectName}}",
       "managerAssigned": "{{userName}} asignó un gerente de proyecto a {{projectName}}",
       "managerRemoved": "{{userName}} removió el gerente del proyecto {{projectName}}",
+      "managerFinanceChanged": "{{userName}} cambió el acceso financiero del gerente de proyecto en {{projectName}}",
       "memberAdded": "{{userName}} añadió a {{memberName}} al proyecto {{projectName}}",
-      "memberRemoved": "{{userName}} eliminó a {{memberName}} del proyecto {{projectName}}",
-      "managerFinanceChanged": "{{userName}} cambió el acceso financiero del gerente de proyecto en {{projectName}}"
+      "memberRemoved": "{{userName}} eliminó a {{memberName}} del proyecto {{projectName}}"
     },
     "task": {
       "created": "{{userName}} creó la tarea {{taskName}}",
@@ -236,6 +239,10 @@
     "no": "No",
     "timeColumn": "Tiempo",
     "dateColumn": "Fecha",
+    "projectStartDateError": "No se puede registrar tiempo antes de la fecha de inicio del proyecto ({{date}})",
+    "projectStartDateHint": "Fecha de inicio del proyecto: {{date}}",
+    "projectNotStartedWarningTitle": "El proyecto aún no ha comenzado",
+    "projectNotStartedWarningDesc": "Este proyecto está programado para comenzar el {{date}}. No se puede registrar tiempo antes de la fecha de inicio del proyecto.",
     "failedToLogTime": "Error al registrar tiempo",
     "today": "Hoy",
     "yesterday": "Ayer",
@@ -245,7 +252,9 @@
     "weekdayThu": "Jue",
     "weekdayFri": "Vie",
     "weekdaySat": "Sáb",
-    "weekdaySun": "Dom"
+    "weekdaySun": "Dom",
+    "createdTimeColumn": "Hora de creación",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "Aún no hay gastos registrados",
@@ -259,7 +268,8 @@
     "columnAssignee": "Asignado",
     "columnDate": "Fecha",
     "openTask": "Abrir la tarea",
-    "rowsPerPage": "Filas por página:"
+    "rowsPerPage": "Filas por página:",
+    "addExpense": "Agregar gasto"
   },
   "addExpense": {
     "modalTitle": "Agregar gasto",
@@ -526,5 +536,7 @@
     "viewAllMore": "Ver todas ({{remaining}} más)",
     "addFailed": "No se pudo agregar esa tarea. Inténtalo de nuevo.",
     "completeFailed": "No se pudo actualizar esa tarea. Inténtalo de nuevo."
-  }
+  },
+  "projectsAtRisk": "Proyectos en riesgo",
+  "flagged": "marcado"
 }

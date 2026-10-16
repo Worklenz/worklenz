@@ -13,6 +13,7 @@
   "labelsColumn": "Etiquetas",
   "attachmentsColumn": "Anexos",
   "commentsColumn": "Último comentário",
+  "openLatestComment": "Abrir o comentário mais recente",
   "attachmentsAdd": "Adicionar",
   "attachmentsOpen": "Abrir",
   "attachmentsDownload": "Baixar",
@@ -224,7 +225,21 @@
       "labels": "Rótulos",
       "addLabel": "+ Adicionar um rótulo",
       "keyLabelPlaceholder": "ex: MK"
-    }
+    },
+    "newColumn": "Nova coluna",
+    "projectNotFound": "Projeto não encontrado",
+    "columnCreated": "Coluna criada. Clique no cabeçalho para editar.",
+    "columnCreationFailed": "Falha ao criar coluna",
+    "guestCannotAddColumn": "Usuários convidados não podem adicionar colunas personalizadas",
+    "columnNameRequired": "O nome da coluna é obrigatório",
+    "columnNotFound": "Coluna não encontrada",
+    "columnIdNotFound": "ID da coluna não encontrado - atualize e tente novamente",
+    "columnUpdated": "Nome da coluna atualizado",
+    "updateFailed": "Falha ao atualizar o nome da coluna",
+    "enterColumnName": "Digite o nome da coluna",
+    "clickToEdit": "Clique para editar o nome da coluna",
+    "columnSettings": "Configurações da coluna",
+    "textPlaceholder": "Digite o texto"
   },
   "indicators": {
     "tooltips": {
@@ -249,5 +264,16 @@
     "completeTaskDependencies": "Por favor, complete as dependências da tarefa antes de prosseguir",
     "incompleteDependencies": "Dependências incompletas!",
     "someDependenciesNotCompleted": "Algumas tarefas não foram atualizadas. Certifique-se de que todas as tarefas dependentes sejam concluídas antes de continuar."
-  }
+  },
+  "insertTaskText": "Inserir tarefa",
+  "insertTaskAtBottomText": "Inserir tarefa no final",
+  "untitledTaskName": "Tarefa sem título",
+  "openTask": "Abrir tarefa",
+  "descriptionPlaceholder": "Adicionar descrição…",
+  "descriptionDisabledTooltip": "Apenas visualização - não é possível editar",
+  "descriptionRichTooltip": "Contém formatação rica — clique para editar no painel de tarefas",
+  "setDueTime": "Definir hora de vencimento",
+  "save": "Salvar",
+  "cancel": "Cancelar",
+  "changeStatus": "Alterar status: {{status}}"
 }

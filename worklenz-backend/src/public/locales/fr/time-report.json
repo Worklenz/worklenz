@@ -115,5 +115,17 @@
   "unknown": "Inconnu",
   "totalLogged": "Total enregistré",
   "varianceUnder": "(sous)",
-  "varianceOver": "(terminé)"
+  "varianceOver": "(terminé)",
+  "practiceFilterLabel": "Pratique",
+  "holidaysExcluded": "Jours fériés exclus",
+  "noPracticeOption": "Aucune pratique",
+  "noDepartments": "Aucun département trouvé",
+  "departmentFilterLabel": "Département",
+  "searchByPractice": "Pratique de recherche",
+  "noDepartmentOption": "Aucun département",
+  "noDataMatchingFilters": "Aucune donnée correspondant aux filtres sélectionnés",
+  "noPractices": "Aucune pratique trouvée",
+  "reportSettings": "Paramètres du rapport",
+  "Members Time Sheet": "Feuille de temps des membres",
+  "searchByDepartment": "Département de recherche"
 }

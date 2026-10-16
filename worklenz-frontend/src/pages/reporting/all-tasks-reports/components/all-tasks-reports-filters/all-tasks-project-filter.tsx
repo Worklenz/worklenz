@@ -183,7 +183,7 @@ const AllTasksProjectFilter = () => {
   return (
     <Dropdown
       overlayClassName="custom-dropdown"
-      dropdownRender={() => dropdownContent}
+      popupRender={() => dropdownContent}
       trigger={['click']}
       placement="bottomLeft"
     >

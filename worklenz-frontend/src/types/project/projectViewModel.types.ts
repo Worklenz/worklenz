@@ -23,6 +23,7 @@ export interface IProjectPermissions {
   insights: boolean;
   files: boolean;
   updates: boolean;
+  docs: boolean;
   roadmap: boolean;
   workload: boolean;
 }
@@ -36,13 +37,15 @@ export interface IProjectViewModel extends IProject {
   status?: string;
   status_color?: string;
   status_icon?: string;
-  start_date?: string;
-  end_date?: string;
+  start_date?: string | null;
+  end_date?: string | null;
   phase_label?: string;
   /** Delivery mode: general PM vs software (issues/sprints/backlog). */
   project_type?: ProjectType;
   /** Software projects: archive Done issues when a sprint is completed. */
   auto_archive_on_sprint_complete?: boolean;
+  /** Software projects: start / complete sprints automatically on their dates. */
+  auto_start_complete_sprints?: boolean;
   /** Software projects: allowed story point values. */
   story_point_scale?: number[];
   category_name?: string;

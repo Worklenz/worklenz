@@ -20,7 +20,8 @@
     "showDone": "Afficher terminé",
     "created": "Créé",
     "finished": "Terminé",
-    "tasks": "tâches"
+    "tasks": "tâches",
+    "loading": "Chargement..."
   },
   "projects": {
     "title": "Projets",
@@ -136,7 +137,9 @@
     "weekdayMiniThu": "T",
     "weekdayMiniFri": "F",
     "weekdayMiniSat": "S",
-    "weekdayMiniSun": "S"
+    "weekdayMiniSun": "S",
+    "clientsSearchPlaceholder": "Rechercher des clients...",
+    "projectsSearchPlaceholder": "Rechercher des projets..."
   },
   "activityLogs": {
     "title": "Activité récente",
@@ -236,6 +239,10 @@
     "no": "Non",
     "timeColumn": "Temps",
     "dateColumn": "Date de saisie",
+    "projectStartDateError": "Le temps ne peut pas être enregistré avant la date de début du projet ({{date}})",
+    "projectStartDateHint": "Date de début du projet : {{date}}",
+    "projectNotStartedWarningTitle": "Le projet n'a pas encore commencé",
+    "projectNotStartedWarningDesc": "Ce projet doit débuter le {{date}}. Le temps ne peut pas être enregistré avant la date de début du projet.",
     "failedToLogTime": "Échec de l'enregistrement de l'heure",
     "today": "Aujourd'hui",
     "yesterday": "Hier",
@@ -245,7 +252,9 @@
     "weekdayThu": "jeu.",
     "weekdayFri": "vendredi",
     "weekdaySat": "Samedi",
-    "weekdaySun": "Soleil"
+    "weekdaySun": "Soleil",
+    "createdTimeColumn": "Temps de création",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "Aucune dépense enregistrée pour l'instant",
@@ -259,7 +268,8 @@
     "columnAssignee": "Cessionnaire",
     "columnDate": "Date de saisie",
     "openTask": "Ouvrir la tâche",
-    "rowsPerPage": "Lignes par page :"
+    "rowsPerPage": "Lignes par page :",
+    "addExpense": "Ajouter une dépense"
   },
   "addExpense": {
     "modalTitle": "Ajouter une dépense",
@@ -526,5 +536,7 @@
     "viewAllMore": "Tout voir ({{remaining}} de plus)",
     "addFailed": "Impossible d'ajouter cette tâche. Veuillez réessayer.",
     "completeFailed": "Impossible de mettre à jour cette tâche. Veuillez réessayer."
-  }
+  },
+  "projectsAtRisk": "Projets à risque",
+  "flagged": "signalé"
 }

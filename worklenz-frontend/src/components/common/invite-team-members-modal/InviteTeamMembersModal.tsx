@@ -286,7 +286,7 @@ const InviteTeamMembersModal = () => {
       open={isModalOpen}
       onCancel={handleClose}
       width={520}
-      destroyOnClose
+      destroyOnHidden
       styles={{ body: { padding: '16px 20px' } }}
       footer={
         <Flex justify="end">

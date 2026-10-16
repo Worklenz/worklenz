@@ -111,5 +111,7 @@
   "deleteConfirmationDescription": "确定要删除 {{number}} 吗？此操作无法撤销。",
   "deleteConfirmationOk": "删除",
   "deleteQuoteSuccess": "报价单删除成功",
-  "deleteQuoteError": "删除报价单失败"
+  "deleteQuoteError": "删除报价单失败",
+  "linkedChangeRequest": "链接的变更请求",
+  "openChangeRequest": "打开变更请求"
 }

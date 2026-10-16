@@ -302,8 +302,6 @@ FROM pg_views
 WHERE schemaname = 'public' 
   AND viewname LIKE 'team_lead_%';
 
--- Step 9: Grant permissions on verification view
-GRANT SELECT ON team_lead_implementation_verification TO PUBLIC;
 
 -- Step 10: Final verification summary
 DO $$

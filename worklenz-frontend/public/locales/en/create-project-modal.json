@@ -43,5 +43,6 @@
   "csvImportSelected": "CSV task import selected",
   "csvImportHint": "Map CSV fields and import tasks after configuring this project.",
   "csvImportFooterHint": "You will map CSV fields before this project is created.",
-  "continueToCsvImport": "Continue to CSV import"
+  "continueToCsvImport": "Continue to CSV import",
+  "templateRequired": "Select a template to create a project."
 }

@@ -75,6 +75,7 @@
   "files": "Fichiers",
   "members": "Membres",
   "updates": "Mises à jour",
+  "docs": "Documents",
   "roadmap": "Feuille de route",
   "workload": "Charge de travail",
   "projectView": "Vue du projet",
@@ -437,5 +438,11 @@
   "releaseAddSelected": "Ajouter la sélection",
   "releaseItemsAdded_one": "{{count}} élément de travail ajouté",
   "releaseItemsAdded_other": "{{count}} éléments de travail ajoutés",
-  "releaseItemsAddError": "Impossible d'ajouter les éléments de travail"
+  "releaseItemsAddError": "Impossible d'ajouter les éléments de travail",
+  "You do not have permission to access this project": "Vous n'êtes pas autorisé à accéder à ce projet",
+  "Failed to load project": "Échec du chargement du projet",
+  "issueTypeSaveError": "Impossible de modifier le type d’élément. Veuillez réessayer.",
+  "changeIssueType": "Modifier le type d’élément",
+  "unpinTabFromHeader": "Retirer de l’en-tête",
+  "pinTabToHeader": "Afficher dans l’en-tête"
 }

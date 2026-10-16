@@ -68,6 +68,10 @@
   "timeLoggedPlaceholder": "p.sh. 130, 1:30, 2.5",
   "startTimeLabel": "Koha e fillimit",
   "endTimeLabel": "Koha e përfundimit",
+  "hoursLabel": "Orë",
+  "hoursMinError": "Orët duhet të jenë 0 ose më shumë",
+  "minutesLabel": "Minuta",
+  "minutesRangeError": "Minutat duhet të jenë midis 0 dhe 59",
   "workDescriptionLabel": "Përshkrimi i punës",
   "workDescriptionPlaceholder": "Në çfarë punove?",
   "logTimeButton": "Regjistro kohë",
@@ -77,6 +81,10 @@
   "selectDateError": "Zgjidh një datë",
   "selectStartTimeError": "Zgjidh një kohë fillimi",
   "selectEndTimeError": "Zgjidh një kohë përfundimi",
+  "projectStartDateError": "Koha nuk mund të regjistrohet para datës së fillimit të projektit ({{date}})",
+  "projectStartDateHint": "Data e fillimit të projektit: {{date}}",
+  "projectNotStartedWarningTitle": "Projekti nuk ka filluar ende",
+  "projectNotStartedWarningDesc": "Ky projekt është planifikuar të fillojë më {{date}}. Koha nuk mund të regjistrohet para datës së fillimit të projektit.",
   "logTimeError": "Dështoi regjistrimi i kohës",
   "groupByButtonLabel": "Grupo sipas: {{groupBy}}",
   "groupByNone": "Asnjë",
@@ -119,5 +127,9 @@
     "week_total": "Total këtë javë",
     "week_billable": "Këtë javë e faturueshme",
     "week_non_billable": "Këtë javë jo e faturueshme"
-  }
+  },
+  "minutesRangeError": "0 – 59",
+  "hoursLabel": "Orë",
+  "hoursMinError": "Orët duhet të jenë 0 ose më shumë",
+  "minutesLabel": "Minuta"
 }

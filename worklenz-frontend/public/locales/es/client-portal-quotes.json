@@ -111,5 +111,7 @@
   "deleteConfirmationDescription": "¿Seguro que quieres eliminar {{number}}? Esta acción no se puede deshacer.",
   "deleteConfirmationOk": "Eliminar",
   "deleteQuoteSuccess": "Presupuesto eliminado correctamente",
-  "deleteQuoteError": "No se pudo eliminar el presupuesto"
+  "deleteQuoteError": "No se pudo eliminar el presupuesto",
+  "linkedChangeRequest": "Solicitud de cambio vinculada",
+  "openChangeRequest": "Abrir solicitud de cambio"
 }

@@ -10,5 +10,9 @@
   "deleteConfirmationOk": "Po",
   "deleteConfirmationCancel": "Anulo",
   "segmentedTooltip": "Së shpejti! Kaloni midis pamjes listë dhe pamjes miniaturash.",
-  "emptyText": "Nuk ka bashkëngjitje në projekt."
+  "emptyText": "Nuk ka bashkëngjitje në projekt.",
+  "uploadExpired": "Sesioni i ngarkimit skadoi. Ju lutemi provoni përsëri.",
+  "fileTooLargePopoverBody": "Skedarët më të mëdhenj se 25 MB kërkojnë planin e biznesit. Ky skedar është {{sizeMb}} MB. Përmirëso për të ngarkuar skedarë më të mëdhenj.",
+  "linksPaginationSummary": "{{start}}–{{end}} nga lidhjet {{count}}",
+  "fileTooLargePopoverTitle": "Skedari shumë i madh"
 }

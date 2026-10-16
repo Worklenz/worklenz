@@ -78,7 +78,8 @@
         "selectDate": "Selecionar data",
         "selectOption": "Selecionar opção",
         "selectPeople": "Selecionar pessoas",
-        "updateError": "Falha ao atualizar o campo personalizado"
+        "updateError": "Falha ao atualizar o campo personalizado",
+        "enterText": "Digite o texto"
       },
       "recurring": "Recorrente"
     },
@@ -215,6 +216,10 @@
       "moveToTaskTooltip": "Reatribuir este registro de tempo a uma tarefa diferente",
       "selectTask": "Selecionar tarefa...",
       "backdateLimitError": "Os registos de tempo não podem ser retroagidos mais de {{days}} dias. A data mais antiga que pode registar é {{earliestDate}}.",
+      "projectStartDateError": "Não é possível registrar tempo antes da data de início do projeto ({{date}}).",
+      "projectStartDateHint": "Data de início do projeto: {{date}}",
+      "projectNotStartedWarningTitle": "O projeto ainda não começou",
+      "projectNotStartedWarningDesc": "Este projeto está programado para começar em {{date}}. Não é possível registrar tempo antes da data de início do projeto.",
       "saveError": "Não foi possível guardar o registo de tempo. Por favor, tente novamente."
     },
     "rollupLoggedTooltip": "Soma do tempo logado nas subtarefas"

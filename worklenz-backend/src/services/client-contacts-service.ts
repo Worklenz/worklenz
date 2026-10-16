@@ -5,10 +5,13 @@ import { IEmailTemplateType } from "../interfaces/email-template-type";
 import { getClientPortalBaseUrl } from "../cron_jobs/helpers";
 import { generatePrefixedToken } from "../utils/base62";
 import {
+  CLIENT_ROLE_DEFINITIONS,
   ClientContactRole,
   ClientPermissionLevel,
   isClientPermissionLevel,
 } from "../shared/client-portal-permissions";
+import { recordAuditEvent } from "./client-portal-v2/audit.service";
+import { notifyStaff } from "./client-portal-v2/notify.service";
 
 /**
  * Company Users ("client contacts"): one row per person at a client company.
@@ -331,7 +334,7 @@ export async function ensureContactForClient(
     name: input.name,
     email: input.email,
     phone: input.phone,
-    role: input.role ?? "poc",
+    role: input.role ?? "admin",
   });
 }
 
@@ -359,7 +362,7 @@ export async function ensureContactIdForClient(
       email: client.email,
       name: client.contact_person?.trim() || client.name,
       phone: client.phone,
-      role: "poc",
+      role: "admin",
     });
     return contact?.id ?? null;
   } catch (error) {
@@ -420,7 +423,66 @@ export async function linkContactToLogin(
     [input.clientUserId, contactId]
   );
 
+  await markContactActivated(q, contactId, input.name);
+
   return contactId;
+}
+
+/**
+ * First activation of a client user (Client Portal v2). Accepting an emailed invitation proves the
+ * invited address, so the user is stamped verified and activated, any "asked for a new link" request
+ * is cleared, and the activation is audited and announced to staff.
+ *
+ * Interim (plan assumption A9): the spec also wants a 6-digit one-time code at this step. That
+ * belongs to the client portal's sign-in follow-up; until it ships, the emailed invitation link is
+ * the verification. Only the first activation writes events, so re-linking an active user is silent.
+ */
+async function markContactActivated(q: Queryable, contactId: string, fallbackName: string): Promise<void> {
+  const activation = await q.query(
+    `UPDATE client_contacts cc
+        SET email_verified_at = COALESCE(cc.email_verified_at, NOW()),
+            activated_at = COALESCE(cc.activated_at, NOW()),
+            new_link_requested_at = NULL,
+            updated_at = NOW()
+      WHERE cc.id = $1
+        AND cc.activated_at IS NULL
+    RETURNING cc.team_id, cc.client_id, cc.name, cc.email, cc.role,
+              (SELECT COALESCE(NULLIF(TRIM(c.company_name), ''), c.name)
+                 FROM clients c WHERE c.id = cc.client_id) AS organization_name`,
+    [contactId]
+  );
+
+  const row = activation.rows[0];
+  if (!row) return;
+
+  const name: string = row.name || fallbackName;
+  const organizationName: string = row.organization_name ?? "";
+  const actor = { side: "client" as const, name, contactId };
+  const base = { teamId: row.team_id, clientId: row.client_id, clientName: organizationName, actor };
+
+  await recordAuditEvent(q, {
+    ...base,
+    event: "Client email verified",
+    targetType: "client_user",
+    targetId: contactId,
+    targetLabel: `${name} · ${row.email}`,
+  });
+  await recordAuditEvent(q, {
+    ...base,
+    event: "Client activated",
+    targetType: "client_user",
+    targetId: contactId,
+    targetLabel: `${name} · ${organizationName}`,
+  });
+
+  const roleLabel = CLIENT_ROLE_DEFINITIONS.find(definition => definition.role === row.role)?.label ?? row.role;
+  void notifyStaff({
+    teamId: row.team_id,
+    kind: "Access",
+    title: `${name} verified their email and activated their account`,
+    body: `${organizationName} · ${roleLabel}`,
+    url: `/worklenz/client-portal/clients/${row.client_id}?tab=users`,
+  });
 }
 
 /** True when the contact tied to this login (for this company) has been disabled by an admin. */
@@ -530,7 +592,9 @@ export interface ContactInviteResult {
 export async function inviteContact(input: {
   teamId: string;
   contactId: string;
-  invitedBy: string;
+  /** The staff user who invited. Null when a Client Admin created the link (then `invitedByContactId` is set). */
+  invitedBy: string | null;
+  invitedByContactId?: string | null;
   delivery: InviteDelivery;
 }): Promise<ContactInviteResult> {
   const contactResult = await db.query(
@@ -550,7 +614,9 @@ export async function inviteContact(input: {
   if (contact.disabled_at) {
     throw new ContactServiceError("DISABLED", "This user is disabled. Enable them before inviting.");
   }
-  if (contact.is_active) {
+  // An active user needs no invitation email, but a staff member may still want a fresh sign-in link
+  // for them: opening it emails a code, exactly like typing their address on the sign-in page.
+  if (contact.is_active && input.delivery !== "link") {
     throw new ContactServiceError("ALREADY_ACTIVE", "This user already has portal access");
   }
   if (!isValidContactEmail(contact.email)) {
@@ -565,6 +631,7 @@ export async function inviteContact(input: {
          name = $2,
          email = $3,
          invited_by = $4,
+         invited_by_contact_id = $6,
          status = 'pending',
          created_at = NOW(),
          expires_at = NOW() + INTERVAL '${INVITATION_TTL_INTERVAL}',
@@ -576,7 +643,7 @@ export async function inviteContact(input: {
        LIMIT 1
      )
      RETURNING expires_at`,
-    [token, contact.name, contact.email, input.invitedBy, input.contactId]
+    [token, contact.name, contact.email, input.invitedBy, input.contactId, input.invitedByContactId ?? null]
   );
 
   let expiresAt: string | undefined = refreshed.rows[0]?.expires_at;
@@ -584,10 +651,11 @@ export async function inviteContact(input: {
   if (!expiresAt) {
     const inserted = await db.query(
       `INSERT INTO client_invitations (
-         client_id, email, name, role, invited_by, token, status, created_at, expires_at, client_contact_id
-       ) VALUES ($1, $2, $3, 'member', $4, $5, 'pending', NOW(), NOW() + INTERVAL '${INVITATION_TTL_INTERVAL}', $6)
+         client_id, email, name, role, invited_by, token, status, created_at, expires_at, client_contact_id,
+         invited_by_contact_id
+       ) VALUES ($1, $2, $3, 'member', $4, $5, 'pending', NOW(), NOW() + INTERVAL '${INVITATION_TTL_INTERVAL}', $6, $7)
        RETURNING expires_at`,
-      [contact.client_id, contact.email, contact.name, input.invitedBy, token, input.contactId]
+      [contact.client_id, contact.email, contact.name, input.invitedBy, token, input.contactId, input.invitedByContactId ?? null]
     );
     expiresAt = inserted.rows[0].expires_at;
   }

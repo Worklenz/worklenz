@@ -9,8 +9,37 @@ import { IAuditLogQueryParams } from '@/types/admin-center/audit-log.types';
 export const AUDIT_LOG_PAGE_SIZE_OPTIONS = [20, 50, 100];
 export const DEFAULT_AUDIT_LOG_PAGE_SIZE = 20;
 
-/** The audit log opens on the last 7 days by default. */
-export const DEFAULT_AUDIT_LOG_DATE_PRESET: TimeLogsDatePreset = 'last_7_days';
+/** The audit log opens on today's events by default. */
+export const DEFAULT_AUDIT_LOG_DATE_PRESET: TimeLogsDatePreset = 'today';
+
+export const AUDIT_LOG_DATE_PRESETS: TimeLogsDatePreset[] = [
+  'today',
+  'last_7_days',
+  'last_30_days',
+  'last_90_days',
+  'all_time',
+];
+
+/**
+ * The current moment as a local `Dayjs` whose calendar date is today's date in `timezone`.
+ * The backend reads `start_date`/`end_date` as calendar days in the viewer's profile timezone,
+ * so "today" has to be that zone's date, not the browser's. Falls back to the browser clock
+ * when the zone is missing or unknown.
+ */
+export const getAuditLogNow = (timezone?: string | null, instant: Date = new Date()): Dayjs => {
+  if (!timezone) return dayjs(instant);
+  try {
+    const date = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(instant);
+    return dayjs(date);
+  } catch {
+    return dayjs(instant);
+  }
+};
 
 export interface IAuditLogFilterState {
   datePreset: TimeLogsDatePreset;

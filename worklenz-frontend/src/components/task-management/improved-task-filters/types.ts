@@ -46,4 +46,6 @@ export interface ImprovedTaskFiltersProps {
   className?: string;
   /** Backlog mode hides sprint/phase and group-by filters. */
   mode?: 'default' | 'backlog';
+  /** Rendered at the right end of the toolbar row. */
+  extraActions?: React.ReactNode;
 }

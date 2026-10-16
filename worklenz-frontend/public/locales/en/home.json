@@ -20,7 +20,8 @@
     "showDone": "Show Done",
     "created": "Created",
     "finished": "Finished",
-    "tasks": "tasks"
+    "tasks": "tasks",
+    "loading": "Loading..."
   },
   "projects": {
     "title": "Projects",
@@ -136,7 +137,9 @@
     "weekdayMiniThu": "T",
     "weekdayMiniFri": "F",
     "weekdayMiniSat": "S",
-    "weekdayMiniSun": "S"
+    "weekdayMiniSun": "S",
+    "clientsSearchPlaceholder": "Search clients...",
+    "projectsSearchPlaceholder": "Search projects..."
   },
   "activityLogs": {
     "title": "Recent Activity",
@@ -236,6 +239,10 @@
     "no": "No",
     "timeColumn": "Time",
     "dateColumn": "Date",
+    "projectStartDateError": "Time cannot be logged before the project start date ({{date}})",
+    "projectStartDateHint": "Project start date: {{date}}",
+    "projectNotStartedWarningTitle": "Project has not started yet",
+    "projectNotStartedWarningDesc": "This project is scheduled to start on {{date}}. Time cannot be logged before the project start date.",
     "failedToLogTime": "Failed to log time",
     "today": "Today",
     "yesterday": "Yesterday",
@@ -245,7 +252,9 @@
     "weekdayThu": "Thu",
     "weekdayFri": "Fri",
     "weekdaySat": "Sat",
-    "weekdaySun": "Sun"
+    "weekdaySun": "Sun",
+    "createdTimeColumn": "Created Time",
+    "minutesPlaceholder": "0"
   },
   "expenses": {
     "emptyTitle": "No expenses logged yet",
@@ -259,7 +268,8 @@
     "columnAssignee": "Assignee",
     "columnDate": "Date",
     "openTask": "Open the task",
-    "rowsPerPage": "Rows per page:"
+    "rowsPerPage": "Rows per page:",
+    "addExpense": "Add Expense"
   },
   "addExpense": {
     "modalTitle": "Add Expense",
@@ -526,5 +536,7 @@
     "viewAllMore": "View all ({{remaining}} more)",
     "addFailed": "Couldn't add that to-do. Please try again.",
     "completeFailed": "Couldn't update that to-do. Please try again."
-  }
+  },
+  "projectsAtRisk": "Projects at Risk",
+  "flagged": "flagged"
 }

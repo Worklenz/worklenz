@@ -1,0 +1,84 @@
+{
+  "access": {
+    "introExisting": "Choisissez les projets que cet utilisateur peut ouvrir. Si le portail client est désactivé pour un projet que vous choisissez, il est activé.",
+    "introNew": "Choisissez les projets que ce client devrait voir. Les projets sans client sont liés à la nouvelle organisation et le portail client est activé pour chacun d'entre eux que vous choisissez.",
+    "loadFailed": "Les projets n'ont pas pu être chargés.",
+    "noClientYet": "Pas encore de client",
+    "noProjectsExisting": "Cette organisation n'a pas encore de projets. L'utilisateur peut se voir attribuer des projets ultérieurement.",
+    "noProjectsNew": "Chaque projet d'espace de travail a déjà un client. Liez-en un plus tard à partir des projets du portail.",
+    "portalOff": "Portail éteint, sera allumé",
+    "search": "Rechercher des projets…",
+    "title": "Accès aux projets"
+  },
+  "details": {
+    "email": "Adresse e-mail",
+    "emailHint": "Il s'agit de l'adresse de connexion et d'invitation. Cela doit être unique.",
+    "emailInvalid": "Saisissez une adresse e-mail valide.",
+    "firstName": "Prénom",
+    "firstNamePlaceholder": "Marie",
+    "firstUserNotice": "Le premier utilisateur d'une nouvelle organisation est un administrateur client. Ils peuvent approuver des éléments et, si vous l'activez dans les paramètres du portail, gérer leurs propres collègues. Comme tout utilisateur client, il se connecte avec un code à usage unique envoyé par e-mail à cette adresse.",
+    "jobTitle": "Titre du poste",
+    "jobTitlePlaceholder": "p. ex. Responsable marketing",
+    "lastName": "Nom",
+    "lastNamePlaceholder": "Dupont",
+    "noOrganizations": "Aucune organisation trouvée.",
+    "organization": "Organisation",
+    "organizationName": "Nom de l'organisation",
+    "organizationNamePlaceholder": "p. ex. Beacon Logistics",
+    "phone": "Téléphone (facultatif)",
+    "role": "Role",
+    "selectOrganization": "Sélectionnez une organisation…"
+  },
+  "footer": {
+    "addUser": "Ajouter un utilisateur",
+    "back": "Retour",
+    "continue": "Continuer",
+    "sendInvitation": "Envoyer une invitation"
+  },
+  "method": {
+    "existingOrganization": {
+      "description": "Invitez une autre personne dans une organisation qui dispose déjà d’un accès au portail.",
+      "name": "Ajouter un utilisateur à une organisation existante"
+    },
+    "groupLabel": "Comment ajouter ce client",
+    "intro": "Chaque utilisateur client appartient à une organisation et voit uniquement les projets que vous lui attribuez.",
+    "newOrganization": {
+      "description": "Créez l'organisation et invitez son premier utilisateur en tant qu'administrateur client.",
+      "name": "Nouvelle organisation client"
+    }
+  },
+  "result": {
+    "activationHint": "Ils ouvrent le lien dans l'e-mail et se connectent avec un code à 6 chiffres envoyé à leur adresse. Il n'y a pas de mot de passe.",
+    "addedNoInvite": "{{name}} a été ajouté sous le nom {{role}}. Aucune invitation n'a encore été envoyée.",
+    "emailNotSent": "{{name}} a été enregistré, mais l'e-mail d'invitation n'a pas pu être envoyé. Partagez plutôt le lien.",
+    "failed": "Le client n'a pas pu être ajouté.",
+    "invited": "Invitation envoyée à {{email}}.",
+    "portalsSwitchedOn": "Portail client activé pour {{count}} projet(s).",
+    "portalsSwitchedOn_one": "Portail client activé pour le projet {{count}}.",
+    "portalsSwitchedOn_other": "Portail client activé pour les projets {{count}}."
+  },
+  "review": {
+    "email": "Email",
+    "name": "Name",
+    "organization": "Organisation",
+    "projects": "Projets",
+    "projectsAssigned": "{{count}} attribué",
+    "projectsAssigned_one": "{{count}} attribué",
+    "projectsAssigned_other": "{{count}} attribué",
+    "projectsNone": "Aucun pour l'instant",
+    "role": "Role",
+    "sendInvitation": "Envoyez l'invitation maintenant",
+    "sendInvitationHint": "Le lien contient leur adresse e-mail ; l'ouvrir leur envoie un code à 6 chiffres, il n'y a donc pas de mot de passe à définir. Le lien expire après 7 jours. S'il expire, renvoyez-le à partir de la liste des utilisateurs ou ils peuvent se connecter en saisissant leur adresse e-mail."
+  },
+  "steps": {
+    "access": "Accès",
+    "details": "Details",
+    "method": "Méthode"
+  },
+  "title": {
+    "access": "Accès et révision",
+    "detailsExisting": "Choisissez l'organisation et l'utilisateur",
+    "detailsNew": "Parlez-nous de l'organisation",
+    "method": "Comment souhaitez-vous ajouter ce client ?"
+  }
+}

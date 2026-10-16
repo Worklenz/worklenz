@@ -51,5 +51,10 @@
   "editedTooltip": "由 {{author}} 于 {{time}} 编辑",
   "unknown": "未知",
   "you": "你",
-  "attachment": "附件"
+  "attachment": "附件",
+  "commentError": "无法发送评论",
+  "deleteSuccess": "评论删除成功",
+  "deleteError": "删除评论失败",
+  "editSuccess": "评论更新成功",
+  "editError": "无法编辑评论"
 }

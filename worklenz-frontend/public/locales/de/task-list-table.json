@@ -13,6 +13,7 @@
   "labelsColumn": "Bezeichnungen",
   "attachmentsColumn": "Anhänge",
   "commentsColumn": "Neuester Kommentar",
+  "openLatestComment": "Neuesten Kommentar öffnen",
   "attachmentsAdd": "Hinzufügen",
   "attachmentsOpen": "Öffnen",
   "attachmentsDownload": "Herunterladen",
@@ -224,7 +225,21 @@
       "labels": "Beschriftungen",
       "addLabel": "+ Beschriftung hinzufügen",
       "keyLabelPlaceholder": "z. B.: MK"
-    }
+    },
+    "newColumn": "Neue Spalte",
+    "projectNotFound": "Projekt nicht gefunden",
+    "columnCreated": "Spalte erstellt. Klicken Sie auf die Kopfzeile zum Bearbeiten.",
+    "columnCreationFailed": "Fehler beim Erstellen der Spalte",
+    "guestCannotAddColumn": "Gastbenutzer können keine benutzerdefinierten Spalten hinzufügen",
+    "columnNameRequired": "Spaltenname ist erforderlich",
+    "columnNotFound": "Spalte nicht gefunden",
+    "columnIdNotFound": "Spalten-ID nicht gefunden - bitte aktualisieren und erneut versuchen",
+    "columnUpdated": "Spaltenname aktualisiert",
+    "updateFailed": "Fehler beim Aktualisieren des Spaltennamens",
+    "enterColumnName": "Spaltennamen eingeben",
+    "clickToEdit": "Klicken zum Bearbeiten des Spaltennamens",
+    "columnSettings": "Spalteneinstellungen",
+    "textPlaceholder": "Text eingeben"
   },
   "indicators": {
     "tooltips": {
@@ -249,5 +264,16 @@
     "completeTaskDependencies": "Bitte schließen Sie die Aufgabenabhängigkeiten ab, bevor Sie fortfahren",
     "incompleteDependencies": "Unvollständige Abhängigkeiten!",
     "someDependenciesNotCompleted": "Einige Aufgaben wurden nicht aktualisiert. Bitte stellen Sie sicher, dass alle abhängigen Aufgaben abgeschlossen sind, bevor Sie fortfahren."
-  }
+  },
+  "insertTaskText": "Aufgabe einfügen",
+  "insertTaskAtBottomText": "Aufgabe unten einfügen",
+  "untitledTaskName": "Unbenannte Aufgabe",
+  "openTask": "Aufgabe öffnen",
+  "descriptionPlaceholder": "Beschreibung hinzufügen…",
+  "descriptionDisabledTooltip": "Nur Ansicht - kann nicht bearbeitet werden",
+  "descriptionRichTooltip": "Enthält erweiterte Formatierung — klicken zum Bearbeiten in der Aufgabenansicht",
+  "setDueTime": "Fälligkeitszeit festlegen",
+  "save": "Speichern",
+  "cancel": "Abbrechen",
+  "changeStatus": "Status ändern: {{status}}"
 }

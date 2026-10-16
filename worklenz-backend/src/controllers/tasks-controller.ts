@@ -47,6 +47,7 @@ import {
 } from "../services/activity-logs/interfaces";
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
 import { isRestrictedFromProPlanFeatures } from "../middlewares/subscription-middleware";
+import { isEnforceMode, teamCanUseFeature } from "../shared/entitlements/gates";
 
 export default class TasksController extends TasksControllerBase {
   private static async getTaskDrawerCustomColumns(projectId: string | null) {
@@ -246,7 +247,11 @@ export default class TasksController extends TasksControllerBase {
 
     // Check if user is trying to set billable and if they're restricted
     if (req.body.billable === true) {
-      const isRestricted = await isRestrictedFromProPlanFeatures(teamId);
+      // Matrix: billable marking is available on every plan. Until ENTITLEMENTS_ENFORCE is on,
+      // keep the legacy Pro/AppSumo restriction.
+      const isRestricted = isEnforceMode()
+        ? !(await teamCanUseFeature(teamId, "billable_marking"))
+        : await isRestrictedFromProPlanFeatures(teamId);
 
       if (isRestricted) {
         return res
@@ -963,6 +968,14 @@ export default class TasksController extends TasksControllerBase {
 
     if (task) {
       task.custom_column_values = customColumnValues;
+      if (projectId) {
+        const projDates = await db.query(
+          "SELECT start_date, end_date FROM projects WHERE id = $1 LIMIT 1;",
+          [projectId]
+        );
+        task.project_start_date = projDates.rows[0]?.start_date ?? null;
+        task.project_end_date = projDates.rows[0]?.end_date ?? null;
+      }
     }
 
     for (const member of data.view_model?.team_members || []) {

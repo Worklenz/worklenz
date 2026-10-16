@@ -27,5 +27,6 @@
     "accept": "接受",
     "acceptAndJoin": "接受并加入",
     "noNotifications": "没有通知"
-  }
+  },
+  "guestRole": "访客"
 }

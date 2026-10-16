@@ -1,9 +1,8 @@
-import { Form, InputNumber, Tooltip, Modal } from '@/shared/antd-imports';
+import { Form, InputNumber, Tooltip, Modal, Flex } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { QuestionCircleOutlined } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { ITaskViewModel } from '@/types/tasks/task.types';
-import Flex from 'antd/lib/flex';
 import { SocketEvents } from '@/shared/socket-events';
 import { useState, useEffect } from 'react';
 import { useSocket } from '@/socket/socketContext';

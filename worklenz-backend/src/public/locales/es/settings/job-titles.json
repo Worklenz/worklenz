@@ -16,5 +16,7 @@
   "createJobTitleSuccessMessage": "¡Cargo creado exitosamente!",
   "createJobTitleErrorMessage": "¡Error al crear el cargo!",
   "updateJobTitleSuccessMessage": "¡Cargo actualizado exitosamente!",
-  "updateJobTitleErrorMessage": "¡Error al actualizar el cargo!"
+  "updateJobTitleErrorMessage": "¡Error al actualizar el cargo!",
+  "fetchJobTitleErrorMessage": "No se pudo recuperar el puesto de trabajo. Por favor inténtalo de nuevo.",
+  "pageTitle": "Administrar títulos de trabajo"
 }

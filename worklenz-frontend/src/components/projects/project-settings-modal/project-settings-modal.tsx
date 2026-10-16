@@ -79,7 +79,7 @@ import { isTeamLeadRole } from '@/types/roles/role.types';
 import { evt_projects_create } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { progressTrackingApiService } from '@/api/reporting/progress-tracking.api.service';
-import { hasBusinessFeatureAccess, isFreeUser } from '@/utils/subscription-utils';
+import { canUseFeature, isFreeUser } from '@/utils/subscription-utils';
 import {
   CrownOutlined,
   InfoCircleOutlined,
@@ -226,15 +226,16 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
   // Create mode (no project yet): Owner/Admin only. Edit mode: server permissions for that project.
   const isEditable = projectId ? permissions.settings : isOwnerorAdmin;
   const isFree = isFreeUser(currentSession);
-  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const hasFinanceAccess = canUseFeature(currentSession, 'finance_module');
+  const canRestrictTaskCreation = canUseFeature(currentSession, 'restrict_task_creation');
   const canViewExport = hasTaskExportRoleAccess(
     isOwnerorAdmin,
     isProjectManager,
     isTeamLead
   );
   const canManageBudgetSettings = projectId
-    ? hasBusinessAccess && permissions.finance && financeAccess
-    : hasBusinessAccess && isOwnerorAdmin;
+    ? hasFinanceAccess && permissions.finance && financeAccess
+    : hasFinanceAccess && isOwnerorAdmin;
   const canAssignPm = projectId ? permissions.assignPm : isOwnerorAdmin;
   const canDeleteProject = projectId ? permissions.delete : false;
 
@@ -547,7 +548,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
 
       if (!csrfToken) {
         notification.error({
-          message: tCommon('error'),
+          message: tCommon('error.title', { defaultValue: 'Error' }),
           description: t('securityTokenValidationFailed', {
             defaultValue: 'Security token validation failed. Please try again.',
           }),
@@ -599,7 +600,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
           dispatch(mergeProject(response.data.body));
         }
 
-        if (editMode && projectId && hasBusinessAccess) {
+        if (editMode && projectId && hasFinanceAccess) {
           const selectedBudget = Number(values.budget ?? 0);
           const selectedCurrency = (values.currency || 'USD').toUpperCase();
           const currentBudget = Number(project?.budget ?? 0);
@@ -1188,7 +1189,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
                 defaultValue: 'Control who can create and assign tasks in this project.',
               })}
             >
-              {!hasBusinessAccess && (
+              {!canRestrictTaskCreation && (
               <Alert
                 type="info"
                 showIcon
@@ -1238,7 +1239,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
               }
               valuePropName="checked"
             >
-              <Switch disabled={disabledForNonManagers || !hasBusinessAccess} />
+              <Switch disabled={disabledForNonManagers || !canRestrictTaskCreation} />
             </Form.Item>
             </SettingsCard>
 
@@ -1294,7 +1295,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
           <SettingsCard
             title={t('budgetSettingsTab', { defaultValue: 'Budget Settings' })}
           >
-            {!hasBusinessAccess && (
+            {!hasFinanceAccess && (
               <Alert
                 type="info"
                 showIcon
@@ -1491,7 +1492,8 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     disabledEndDate,
     handleStartDateChange,
     handleEndDateChange,
-    hasBusinessAccess,
+    hasFinanceAccess,
+    canRestrictTaskCreation,
     canManageBudgetSettings,
     projectId,
     isDeletingProject,
@@ -1533,7 +1535,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
       style={{ top: 24 }}
       open={isProjectSettingsModalOpen}
       onCancel={handleModalClose}
-      destroyOnClose
+      destroyOnHidden
       afterOpenChange={handleVisibilityChange}
       styles={{
         content: { padding: 0, borderRadius: 12, overflow: 'hidden' },

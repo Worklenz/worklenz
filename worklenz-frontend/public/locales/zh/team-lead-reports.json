@@ -1,7 +1,6 @@
 {
   "title": "我的团队报告",
   "subtitle": "团队成员的时间跟踪和绩效洞察",
-
   "dateRange": {
     "label": "日期范围",
     "showing": "显示",
@@ -17,7 +16,6 @@
     "custom": "自定义范围",
     "apply": "应用"
   },
-
   "summary": {
     "totalMembers": "总成员数",
     "totalMembersTooltip": "在所选日期范围内记录时间的团队成员总数。",
@@ -28,7 +26,6 @@
     "avgCompletionRate": "平均完成率",
     "hours": "小时"
   },
-
   "timeTracking": {
     "title": "时间跟踪摘要",
     "chartTitle": "团队时间跟踪图表",
@@ -51,7 +48,6 @@
     "projectsTooltip": "该成员在所选日期范围内记录时间的不同项目数量。",
     "activeDaysTooltip": "该成员在所选日期范围内记录时间的不同天数。"
   },
-
   "performance": {
     "title": "团队绩效",
     "member": "成员",
@@ -70,7 +66,6 @@
     "projectsInvolved": "参与项目",
     "noData": "无可用绩效数据"
   },
-
   "detailedLogs": {
     "title": "详细时间日志",
     "for": "为",
@@ -86,20 +81,18 @@
     "timer": "计时器",
     "noLogs": "未找到详细日志",
     "close": "关闭",
-    "timeLogsRange": "时间日志"
+    "timeLogsRange": "时间日志",
+    "of": "的"
   },
-
   "errors": {
     "failedToLoad": "加载团队报告失败",
     "tryAgain": "请重试",
     "noTeamMembers": "未找到团队成员",
     "loadingError": "加载数据错误"
   },
-
   "loading": {
     "fetchingData": "正在加载团队报告...",
     "fetchingLogs": "正在加载详细日志..."
   },
-
   "export": "导出"
 }
