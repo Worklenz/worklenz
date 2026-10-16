@@ -200,6 +200,7 @@
   "noActiveInviteLink": "Nenhum link de convite ativo",
   "linkExpiredPlaceholder": "Link expirado",
   "inviteLinkCopied": "Link de convite copiado para a área de transferência",
+  "inviteLinkCopyFailed": "Link de convite gerado. Copie-o manualmente a partir do campo abaixo.",
   "inviteLinkGenerateError": "Falha ao gerar o link de convite",
   "inviteLinkDeactivated": "Link de convite desativado",
   "inviteLinkDeactivateError": "Falha ao desativar o link",

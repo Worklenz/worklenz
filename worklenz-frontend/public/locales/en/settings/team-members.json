@@ -200,6 +200,7 @@
   "noActiveInviteLink": "No active invite link",
   "linkExpiredPlaceholder": "Link expired",
   "inviteLinkCopied": "Invitation link copied to clipboard",
+  "inviteLinkCopyFailed": "Invitation link generated. Copy it manually from the field below.",
   "inviteLinkGenerateError": "Failed to generate invitation link",
   "inviteLinkDeactivated": "Invitation link deactivated",
   "inviteLinkDeactivateError": "Failed to deactivate link",
