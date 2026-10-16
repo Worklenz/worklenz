@@ -46,7 +46,7 @@ Legend: `[x]` done, `[ ]` pending, `[~]` in progress.
 - [x] Project settings UI: status automation selects per linked repository
 - [x] i18n for all locales
 - [ ] GitHub identity link for members (OAuth user flow). Until built, the actor for automated changes is the PR author when a link exists, otherwise the user who linked the repository
-- [ ] Task activity log text mentions the PR (log currently shows the standard status change attributed to the actor)
+- [x] Task activity log shows the source of automated status changes (PR, branch or closed issue)
 - [ ] Notifications to assignees on automated transitions (deliberately skipped to avoid noise; decide)
 - [ ] Event processor / automation integration tests against a DB fixture
 
@@ -68,7 +68,7 @@ Legend: `[x]` done, `[ ]` pending, `[~]` in progress.
 
 ## Follow-ups noticed during Phase 1
 - [x] Project integrations quick dropdown: GitHub enabled for software projects (opens project settings > Integrations); button no longer Business-gated on software projects, Slack shows locked inside
-- [ ] Add `GITHUB_*` vars to docker env templates / SELF_HOSTING.md
+- [x] Add `GITHUB_*` vars to `.env.example` / SELF_HOSTING.md (docker compose reads `.env`)
 - [x] Real-time socket push so the drawer refreshes when a webhook lands
 - [ ] Backend tests for event processor and controller (need DB fixture)
 - [x] Connect GitHub inline from project settings (install returns to the project's Integrations section; non-admins see who to ask)

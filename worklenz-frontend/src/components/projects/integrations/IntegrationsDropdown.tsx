@@ -118,17 +118,23 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
         isSoftwareProject
           ? status?.github?.connected
             ? t('github.softwareDescription', {
-                defaultValue: 'Link repositories to see branches, pull requests and commits',
+                defaultValue:
+                  'Branches, pull requests and commits on every task, with automatic status updates',
               })
             : t('github.connectDescription', {
-                defaultValue: 'Connect GitHub to link repositories to this project',
+                defaultValue:
+                  'Connect GitHub to link repositories, track pull requests and automate task status',
               })
-          : t('github.softwareOnly', {
-              defaultValue: 'Available for software projects',
+          : t('github.description', {
+              defaultValue: 'Track branches, pull requests and commits on tasks',
             })
       }
       badge={status?.github?.repositoryCount}
-      comingSoon={!isSoftwareProject}
+      note={
+        isSoftwareProject
+          ? undefined
+          : t('github.softwareOnly', { defaultValue: 'Software projects' })
+      }
       onClick={isSoftwareProject ? handleOpenGithubSettings : undefined}
     />
   );
@@ -138,7 +144,7 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
       icon={<TeamOutlined style={{ color: '#6264A7' }} />}
       title={t('teams.title', { defaultValue: 'Microsoft Teams' })}
       description={t('teams.description', {
-        defaultValue: 'Send notifications to Teams channels',
+        defaultValue: 'Post task and status updates to your Teams channels',
       })}
       comingSoon
     />
@@ -167,17 +173,16 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
             icon={<SlackIcon />}
             title={t('slack.title', { defaultValue: 'Slack' })}
             description={t('slack.description', {
-              defaultValue: 'Send notifications to Slack channels',
+              defaultValue: 'Get task, status and comment updates in your Slack channels',
             })}
             locked
             onClick={handleUpgradeClick}
           />
         )}
 
-        {/* Enabled integrations first, coming soon last */}
-        {isSoftwareProject && githubItem}
+        {/* Coming soon last */}
+        {githubItem}
         {teamsItem}
-        {!isSoftwareProject && githubItem}
       </div>
 
       {/* Footer */}

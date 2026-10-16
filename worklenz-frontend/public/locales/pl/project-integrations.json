@@ -7,7 +7,7 @@
   "cancel": "Anuluj",
   "slack": {
     "title": "Luz",
-    "description": "Wysyłaj powiadomienia do kanałów Slack",
+    "description": "Otrzymuj aktualizacje zadań, statusów i komentarzy w kanałach Slack",
     "notConnected": "Najpierw połącz swój obszar roboczy Slack w Ustawieniach",
     "quickAddTitle": "Dodaj Slacka do projektu",
     "currentProject": "Projekt",
@@ -21,11 +21,14 @@
   },
   "teams": {
     "title": "Zespoły Microsoftu",
-    "description": "Wysyłaj powiadomienia do kanałów Teams"
+    "description": "Publikuj aktualizacje zadań i statusów w kanałach Teams"
   },
   "github": {
     "title": "GitHub",
-    "description": "Synchronizuj zadania z problemami z GitHubem"
+    "description": "Śledź gałęzie, pull requesty i commity przy zadaniach",
+    "softwareDescription": "Gałęzie, pull requesty i commity przy każdym zadaniu, z automatyczną aktualizacją statusu",
+    "softwareOnly": "Projekty programistyczne",
+    "connectDescription": "Połącz GitHub, aby powiązać repozytoria, śledzić pull requesty i automatyzować status zadań"
   },
   "notificationTypes": {
     "taskCreated": "Zadanie utworzone",

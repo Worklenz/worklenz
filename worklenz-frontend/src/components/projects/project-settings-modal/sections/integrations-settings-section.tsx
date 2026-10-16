@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flex, Typography, TeamOutlined, theme, message } from '@/shared/antd-imports';
+import { GithubOutlined } from '@ant-design/icons';
 import { GithubProjectRepositories } from '@/components/github/GithubProjectRepositories';
 import { useProjectPermissions } from '@/hooks/useProjectPermissions';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
@@ -115,7 +116,7 @@ const IntegrationsSettingsSection = ({
         </Typography.Title>
         <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 0 }}>
           {t('integrationsSectionDescription', {
-            defaultValue: 'Connect this project to external tools like Slack.',
+            defaultValue: 'Connect this project to external tools like Slack and GitHub.',
           })}
         </Typography.Paragraph>
       </div>
@@ -131,7 +132,7 @@ const IntegrationsSettingsSection = ({
           icon={<SlackIcon />}
           title={t('slackTitle', { defaultValue: 'Slack' })}
           description={t('slackDescription', {
-            defaultValue: 'Send notifications to Slack channels',
+            defaultValue: 'Get task, status and comment updates in your Slack channels',
           })}
           badge={integrationStatus?.slack?.channelCount}
           channels={integrationStatus?.slack?.channels?.map(ch => `#${ch.name}`)}
@@ -140,12 +141,29 @@ const IntegrationsSettingsSection = ({
         />
       </div>
 
-      {projectId && isSoftwareProject && (
+      {projectId && isSoftwareProject ? (
         <GithubProjectRepositories
           projectId={projectId}
           projectKey={projectKey}
           canManage={permissions.settings}
         />
+      ) : (
+        <div
+          style={{
+            borderRadius: 10,
+            border: `1px solid ${token.colorBorderSecondary}`,
+            overflow: 'hidden',
+          }}
+        >
+          <IntegrationItem
+            icon={<GithubOutlined style={{ color: token.colorText }} />}
+            title={t('githubTitle', { defaultValue: 'GitHub' })}
+            description={t('githubDescription', {
+              defaultValue: 'Track branches, pull requests and commits on tasks',
+            })}
+            note={t('githubSoftwareOnly', { defaultValue: 'Software projects' })}
+          />
+        </div>
       )}
 
       {/* Coming soon integrations stay at the bottom */}
@@ -160,7 +178,7 @@ const IntegrationsSettingsSection = ({
           icon={<TeamOutlined style={{ color: '#6264A7' }} />}
           title={t('teamsTitle', { defaultValue: 'Microsoft Teams' })}
           description={t('teamsDescription', {
-            defaultValue: 'Send notifications to Teams channels',
+            defaultValue: 'Post task and status updates to your Teams channels',
           })}
           comingSoon
         />

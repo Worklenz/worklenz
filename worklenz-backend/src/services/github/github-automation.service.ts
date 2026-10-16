@@ -13,6 +13,7 @@ import {
 } from "../activity-logs/interfaces";
 import {
   GithubStatusMap,
+  GithubTransitionEvent,
   ITaskGitState,
   resolveReachedEvent,
   resolveTargetStatus,
@@ -76,11 +77,53 @@ async function resolveActorId(
   return fallback.rows[0]?.connected_by ?? null;
 }
 
+/** Short label for what triggered an automated change, shown in the activity log. */
+async function describeTransitionSource(
+  taskId: string,
+  event: GithubTransitionEvent | null,
+): Promise<string> {
+  try {
+    if (event === "pr_merged" || event === "pr_opened") {
+      const result = await db.query(
+        `SELECT r.full_name, p.number
+         FROM github_task_links l
+         JOIN github_pull_requests p ON p.id = l.pull_request_id
+         JOIN github_repositories r ON r.id = p.repository_id
+         WHERE l.task_id = $1 AND l.link_type = 'pull_request'
+           AND ($2 = 'pr_opened' AND p.state = 'open' OR $2 = 'pr_merged' AND p.merged)
+         ORDER BY p.last_event_at DESC
+         LIMIT 1`,
+        [taskId, event],
+      );
+      const row = result.rows[0];
+      if (row) return `GitHub: ${row.full_name}#${row.number} ${event === "pr_merged" ? "merged" : "opened"}`;
+    }
+    if (event === "branch_created") {
+      const result = await db.query(
+        `SELECT r.full_name, b.name
+         FROM github_task_links l
+         JOIN github_branches b ON b.id = l.branch_id
+         JOIN github_repositories r ON r.id = b.repository_id
+         WHERE l.task_id = $1 AND l.link_type = 'branch' AND NOT b.is_deleted
+         ORDER BY b.updated_at DESC
+         LIMIT 1`,
+        [taskId],
+      );
+      const row = result.rows[0];
+      if (row) return `GitHub: branch ${row.name} created in ${row.full_name}`;
+    }
+  } catch (error) {
+    log_error(error);
+  }
+  return "GitHub";
+}
+
 /** Socket-less equivalent of the on_task_status_change flow. */
 async function applyStatusTransition(
   context: ITaskContext,
   statusId: string,
   actorId: string,
+  source: string,
 ): Promise<void> {
   const result = await db.query(`SELECT handle_on_task_status_change($1, $2, $3) AS res;`, [
     actorId,
@@ -109,6 +152,7 @@ async function applyStatusTransition(
     log_type: IActivityLogChangeType.UPDATE,
     old_value: context.status_id,
     new_value: statusId,
+    next_string: source,
   });
 
   const ratio = await TasksControllerV2.getTaskCompleteRatio(context.parent_task_id || context.id);
@@ -170,8 +214,9 @@ export async function reconcileTasks(
       );
       const doneIds = new Set<string>(doneRows.rows.map(r => r.id));
 
+      const gitState = await loadGitState(taskId);
       const target = resolveTargetStatus({
-        event: resolveReachedEvent(await loadGitState(taskId)),
+        event: resolveReachedEvent(gitState),
         statusMap,
         currentStatusId: context.status_id,
         currentStatusIsDone: context.status_is_done,
@@ -188,7 +233,8 @@ export async function reconcileTasks(
       const actorId = await resolveActorId(context, repositoryId, authorLogin);
       if (!actorId) continue;
 
-      await applyStatusTransition(context, target, actorId);
+      const event = resolveReachedEvent(gitState);
+      await applyStatusTransition(context, target, actorId, await describeTransitionSource(taskId, event));
     } catch (error) {
       log_error(error);
     }
@@ -255,7 +301,19 @@ export async function closeTaskForClosedIssue(taskId: string, repositoryId: stri
 
     const actorId = await resolveActorId(context, repositoryId);
     if (!actorId) return;
-    await applyStatusTransition(context, target, actorId);
+    const issue = await db.query(
+      `SELECT l.issue_number, r.full_name
+       FROM github_issue_links l JOIN github_repositories r ON r.id = l.repository_id
+       WHERE l.task_id = $1 AND l.repository_id = $2`,
+      [taskId, repositoryId],
+    );
+    const ref = issue.rows[0];
+    await applyStatusTransition(
+      context,
+      target,
+      actorId,
+      ref ? `GitHub: ${ref.full_name}#${ref.issue_number} closed` : "GitHub",
+    );
   } catch (error) {
     log_error(error);
   }
