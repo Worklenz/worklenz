@@ -95,6 +95,10 @@
   "invalidLogoFileTypeError": "Please select an image file.",
   "logoFileTooLargeError": "Logo must be smaller than 2MB.",
   "logoUploadFailedError": "Failed to upload logo.",
+  "cropLogoModalTitle": "Crop Logo",
+  "cropApplyButton": "Apply Crop",
+  "cropZoomLabel": "Zoom",
+  "cropInstructionText": "Drag to reposition · Scroll or use slider to zoom",
 
   "portalLogoLabel": "Portal Logo",
   "portalTitleLabel": "Portal Title",
