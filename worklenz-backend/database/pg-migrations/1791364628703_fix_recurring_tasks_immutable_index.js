@@ -12,7 +12,8 @@
  *     at a fixed reference point, making ((end_date AT TIME ZONE 'UTC')::DATE) IMMUTABLE.
  *
  * This migration idempotently ensures idx_tasks_schedule_end_date_unique exists
- * with the correct immutable UTC expression.
+ * with the correct immutable UTC expression, and restores the prior baseline
+ * uniqueness constraint on tasks (schedule_id, end_date) upon rollback.
  */
 
 /** @type {import('node-pg-migrate').ColumnDefinitions | undefined} */
@@ -38,6 +39,16 @@ WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL;
 /** @param {import('node-pg-migrate').MigrationBuilder} pgm */
 exports.down = async (pgm) => {
   pgm.sql(`
+-- ============================================================================
+-- Restore preceding baseline idx_tasks_schedule_end_date_unique
+-- Recreate the prior unique index using the baseline raw timestamp key
+-- from database/sql/1_tables.sql to maintain uniqueness on rollback.
+-- ============================================================================
+
 DROP INDEX IF EXISTS idx_tasks_schedule_end_date_unique;
+
+CREATE UNIQUE INDEX idx_tasks_schedule_end_date_unique
+ON tasks (schedule_id, end_date)
+WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL;
   `);
 };
