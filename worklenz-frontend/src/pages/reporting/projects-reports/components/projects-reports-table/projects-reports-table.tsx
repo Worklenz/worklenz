@@ -224,7 +224,21 @@ const ProjectsReportsTable = () => {
           <ProjectStatusCell currentStatus={record.status_id} projectId={record.id} />
         ),
         width: 200,
-        sorter: true,
+        // Custom client‑side sorter that follows the required lifecycle order
+        sorter: (a: IRPTProject, b: IRPTProject) => {
+          const STATUS_ORDER: Record<string, number> = {
+            Proposed: 1,
+            'In Planning': 2,
+            'In Progress': 3,
+            Completed: 4,
+            'On Hold': 5,
+            Blocked: 6,
+            Cancelled: 7,
+          };
+          const aOrder = STATUS_ORDER[a.status_name] ?? 0;
+          const bOrder = STATUS_ORDER[b.status_name] ?? 0;
+          return aOrder - bOrder;
+        },
       },
       {
         key: 'priority',
