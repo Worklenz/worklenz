@@ -19,11 +19,15 @@ import {
   DollarCircleOutlined,
   ApiOutlined,
   UsergroupAddOutlined,
+  ImportOutlined,
 } from '@/shared/antd-imports';
 import { MobileOutlined, SwapOutlined } from '@ant-design/icons';
 import React, { ReactNode, lazy } from 'react';
 import { ILocalSession } from '@/types/auth/local-session.types';
 import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+const ImportExportSettings = lazy(
+  () => import('@/pages/settings/import-export/ImportExportSettings')
+);
 const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-settings'));
 const NotificationsSettings = lazy(
   () => import('../../pages/settings/notifications/notifications-settings')
@@ -314,6 +318,17 @@ export const settingsItems: SettingMenuItem[] = [
     groupDefaultValue: 'System & Integrations',
     icon: React.createElement(ApiOutlined),
     element: React.createElement(IntegrationsSettings),
+    adminOnly: true,
+  },
+  {
+    key: 'import-export',
+    name: 'import-export',
+    defaultValue: 'Import & Export',
+    endpoint: 'import-export',
+    groupKey: 'system-integrations',
+    groupDefaultValue: 'System & Integrations',
+    icon: React.createElement(ImportOutlined),
+    element: React.createElement(ImportExportSettings),
     adminOnly: true,
   },
   {
