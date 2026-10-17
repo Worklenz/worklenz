@@ -21,6 +21,7 @@ import clientPortalAPI from '@/services/api';
 import { setError, verifySignInCode } from '@/store/slices/authSlice';
 import type { RootState } from '@/store';
 import { clearReturnTo, peekReturnTo } from '@/utils/returnTo';
+import { isAccessRemovedReason, type AccessRemovedReason } from '@/utils/accessRemoved';
 
 type Step = 'email' | 'code';
 
@@ -34,14 +35,33 @@ interface EmailFormValues {
 const CODE_LENGTH = 6;
 
 /** The server's error code and message, from an axios error. */
-const readApiError = (error: unknown): { code: string | null; status: number | null; message: string | null } => {
-  const response = (error as { response?: { status?: number; data?: { message?: string; body?: { code?: string } } } })
-    ?.response;
+const readApiError = (
+  error: unknown
+): { code: string | null; reason: AccessRemovedReason | null; status: number | null; message: string | null } => {
+  const response = (
+    error as {
+      response?: { status?: number; data?: { message?: string; body?: { code?: string; reason?: string } } };
+    }
+  )?.response;
+  const reason = response?.data?.body?.reason;
   return {
     code: response?.data?.body?.code ?? null,
+    reason: isAccessRemovedReason(reason) ? reason : null,
     status: response?.status ?? null,
     message: response?.data?.message ?? null,
   };
+};
+
+/**
+ * What a person holding their invitation link is told when they cannot sign in. Holding the link proves they
+ * were invited, so unlike the typed-address path (which answers every address the same way) it can say why.
+ */
+const UNAVAILABLE_COPY: Record<AccessRemovedReason, string> = {
+  organization_unavailable: 'This portal is no longer available. Contact your project team.',
+  account_deleted:
+    'This account was deleted. If that was a mistake, contact a Client Admin of your organization or your project team: a deleted account can be restored for 30 days.',
+  access_disabled: 'Your access was deactivated. Contact a Client Admin of your organization or your project team.',
+  access_removed: 'Your access was removed. Contact a Client Admin of your organization or your project team.',
 };
 
 /**
@@ -77,6 +97,7 @@ const SignInPage: React.FC = () => {
   const [requesting, setRequesting] = useState(Boolean(inviteToken));
   const [requestError, setRequestError] = useState<string | null>(null);
   const [linkProblem, setLinkProblem] = useState<LinkProblem>(null);
+  const [unavailableReason, setUnavailableReason] = useState<AccessRemovedReason | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [verifying, setVerifying] = useState(false);
   // Changing the key empties the code boxes after a wrong code.
@@ -123,11 +144,12 @@ const SignInPage: React.FC = () => {
         setStep('code');
         if (announce) message.success(t('signIn.resent', { defaultValue: 'A new code is on its way.' }));
       } catch (error) {
-        const { code, status, message: serverMessage } = readApiError(error);
+        const { code, reason, status, message: serverMessage } = readApiError(error);
         if (code === 'LINK_INVALID') {
           setLinkProblem('invalid');
           setStep('email');
         } else if (code === 'ACCESS_UNAVAILABLE') {
+          setUnavailableReason(reason);
           setLinkProblem('unavailable');
           setStep('email');
         } else if (status === 429) {
@@ -215,9 +237,13 @@ const SignInPage: React.FC = () => {
           type="error"
           showIcon
           style={{ marginBottom: 24 }}
-          message={t('signIn.linkUnavailable', {
-            defaultValue: 'Your access is not available right now. Please contact your project team.',
-          })}
+          message={
+            unavailableReason
+              ? t(`signIn.unavailable.${unavailableReason}`, { defaultValue: UNAVAILABLE_COPY[unavailableReason] })
+              : t('signIn.linkUnavailable', {
+                  defaultValue: 'Your access is not available right now. Please contact your project team.',
+                })
+          }
         />
       )}
 
@@ -314,6 +340,14 @@ const SignInPage: React.FC = () => {
           </Button>
         )}
       </Flex>
+
+      {/* The same for every address: it never says whether this one belongs to a client. */}
+      <Typography.Paragraph type="secondary" style={{ textAlign: 'center', fontSize: 13, marginBottom: 0 }}>
+        {t('signIn.noCodeHint', {
+          defaultValue:
+            'Nothing arrived? Check your spam folder. If your access was deactivated or removed you will not receive a code: contact a Client Admin of your organization or your project team.',
+        })}
+      </Typography.Paragraph>
     </Flex>
   );
 

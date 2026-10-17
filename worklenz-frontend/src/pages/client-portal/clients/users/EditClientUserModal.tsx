@@ -44,7 +44,9 @@ export const EditClientUserModal = ({ user, onClose }: EditClientUserModalProps)
           phone: values.phone.trim() || null,
           job_title: values.job_title.trim() || null,
           role,
+          // One confirmation covers both warnings the server can raise (last Client Admin, only approver).
           confirm_last_admin: confirmLastAdmin || undefined,
+          confirm_pending_approvals: confirmLastAdmin || undefined,
         },
       }).unwrap();
 
@@ -63,7 +65,8 @@ export const EditClientUserModal = ({ user, onClose }: EditClientUserModalProps)
       setLastAdminWarning(null);
       onClose();
     } catch (error) {
-      if (getPortalErrorCode(error) === 'LAST_CLIENT_ADMIN') {
+      const code = getPortalErrorCode(error);
+      if (code === 'LAST_CLIENT_ADMIN' || code === 'PENDING_APPROVALS') {
         setLastAdminWarning(getPortalErrorMessage(error, ''));
         return;
       }

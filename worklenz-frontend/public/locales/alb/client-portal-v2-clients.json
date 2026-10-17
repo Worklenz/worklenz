@@ -9,7 +9,9 @@
     "removeFailed": "Përdoruesi nuk mund të hiqej.",
     "removed": "{{name}} u hoq nga portali.",
     "resendFailed": "Ftesa nuk mund të dërgohej përsëri.",
-    "resent": "Ftesa u ridërgua te {{email}}. Lidhja është e vlefshme për 7 ditë."
+    "resent": "Ftesa u ridërgua te {{email}}. Lidhja është e vlefshme për 7 ditë.",
+    "accountRestored": "Llogaria e {{name}} u rikthye. Mund të kyçet përsëri.",
+    "restoreAccountFailed": "Llogaria nuk mund të rikthehej."
   },
   "assign": {
     "description": "Një përdorues sheh vetëm projekte të caktuara këtu, edhe pse ato i përkasin {{organization}}. Ajo që ata mund të bëjnë brenda secilit projekt varet nga roli i tyre:",
@@ -59,7 +61,8 @@
     "remove": "Hiq përdoruesin",
     "resend": "Ridërgo ftesën",
     "resendShort": "Ridërgoje",
-    "view": "Shiko profilin"
+    "view": "Shiko profilin",
+    "restoreAccount": "Rikthe llogarinë"
   },
   "organizations": {
     "accessFilter": {
@@ -110,6 +113,14 @@
       "contactName": "Administratori i parë i portalit aktiv i këtij klienti.",
       "projects": "Projektet e ndara me këtë klient në portal.",
       "users": "Përdoruesit që janë identifikuar, nga të gjithë përdoruesit për këtë klient."
+    },
+    "deleted": {
+      "show": "Të fshirë ({{count}})",
+      "hide": "Kthehu te klientët",
+      "banner": "Një klient i fshirë mund të rikthehet brenda {{days}} ditëve. Pas kësaj hiqet përgjithmonë.",
+      "columnDeleted": "Fshirë më",
+      "columnRemoval": "Hiqet përgjithmonë më",
+      "empty": "Nuk ka klientë të fshirë. Një klient që fshini qëndron këtu {{days}} ditë, që të mund ta riktheni."
     }
   },
   "overview": {
@@ -333,5 +344,60 @@
       "description": "Personat në {{name}} që mund të identifikohen. Secili sheh vetëm projektet që u janë caktuar.",
       "invite": "Fto përdorues"
     }
+  },
+  "orgActions": {
+    "menu": {
+      "deactivate": "Çaktivizo klientin",
+      "reactivate": "Riaktivizo klientin",
+      "delete": "Fshi klientin",
+      "restore": "Rikthe klientin"
+    },
+    "deactivate": {
+      "title": "Të çaktivizohet {{name}}?",
+      "body": "Të gjithë personat e {{name}} humbasin menjëherë qasjen në portal dhe ata që janë të kyçur çkyçen me kërkesën e radhës. Të gjitha të dhënat ruhen dhe klientin mund ta riaktivizoni kurdo.",
+      "confirm": "Çaktivizo klientin",
+      "success": "{{name}} u çaktivizua. Përdoruesit e tij nuk mund të kyçen më.",
+      "failed": "Klienti nuk mund të çaktivizohej."
+    },
+    "reactivate": {
+      "title": "Të riaktivizohet {{name}}?",
+      "body": "Përdoruesit e tij mund të kyçen përsëri, me të njëjtën qasje që kishin më parë.",
+      "confirm": "Riaktivizo klientin",
+      "success": "{{name}} u riaktivizua.",
+      "failed": "Klienti nuk mund të riaktivizohej."
+    },
+    "delete": {
+      "title": "Të fshihet {{name}}?",
+      "checking": "Po kontrollohet çfarë prek fshirja e këtij klienti…",
+      "checkFailed": "Nuk mundëm të kontrollonim çfarë prek fshirja e këtij klienti.",
+      "usersAffected": "Përdorues që humbasin menjëherë qasjen: {{count}}",
+      "effect": "Kërkesa e tyre e radhës dështon dhe ata çkyçen. Ende nuk hiqet asgjë: klienti, përdoruesit, projektet, miratimet, diskutimet dhe faturat e tij ruhen për {{days}} ditë.",
+      "restorable": "Deri atëherë mund ta riktheni klientin nga pamja “Të fshirë”, me të gjithë historikun. Pas kësaj hiqet përgjithmonë; faturat ruhen si dokumente.",
+      "blockedTitle": "Fatura të papaguara",
+      "blocked": "{{numbers}}. Shlyeni ose anulojini këto fatura para se ta fshini këtë klient.",
+      "approvals": "Miratime që ende presin një vendim: {{refs}}.",
+      "approvalsAck": "E kuptoj që për këto miratime nuk do të mund të merret më vendim.",
+      "changeRequests": "Kërkesa për ndryshim të hapura: {{titles}}.",
+      "changeRequestsAck": "E kuptoj që këto kërkesa për ndryshim nuk do të mund të trajtohen më.",
+      "warningsTitle": "Konfirmoni para fshirjes",
+      "confirm": "Fshi klientin",
+      "success": "{{name}} u fshi. Mund ta riktheni deri më {{date}}.",
+      "failed": "Klienti nuk mund të fshihej."
+    },
+    "restore": {
+      "title": "Të rikthehet {{name}}?",
+      "body": "Përdoruesit e tij mund të kyçen përsëri dhe projektet, miratimet, diskutimet, faturat e historiku kthehen saktësisht siç ishin.",
+      "confirm": "Rikthe klientin",
+      "success": "{{name}} u rikthye.",
+      "failed": "Klienti nuk mund të rikthehej.",
+      "nameTaken": "Një klient tjetër quhet tashmë “{{name}}”. Jepini këtij klienti një emër të ri për ta rikthyer.",
+      "newName": "Emri i ri i klientit",
+      "newNameRequired": "Shkruani një emër për klientin."
+    }
+  },
+  "restoreAccount": {
+    "title": "Të rikthehet kjo llogari?",
+    "body": "Kjo llogari u fshi nga {{name}}. Rikthejeni vetëm nëse ky person e ka kërkuar; ai mund të kyçet përsëri me rolin dhe projektet e mëparshme.",
+    "confirm": "Rikthe llogarinë"
   }
 }

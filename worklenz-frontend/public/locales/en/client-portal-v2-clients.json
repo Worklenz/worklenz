@@ -9,7 +9,9 @@
     "removeFailed": "The user could not be removed.",
     "removed": "{{name}} was removed from the portal.",
     "resendFailed": "The invitation could not be resent.",
-    "resent": "Invitation resent to {{email}}. The link is valid for 7 days."
+    "resent": "Invitation resent to {{email}}. The link is valid for 7 days.",
+    "accountRestored": "{{name}}’s account was restored. They can sign in again.",
+    "restoreAccountFailed": "The account could not be restored."
   },
   "assign": {
     "description": "A user only ever sees projects assigned here, even though they belong to {{organization}}. What they can do inside each project depends on their role:",
@@ -59,7 +61,8 @@
     "remove": "Remove user",
     "resend": "Resend invitation",
     "resendShort": "Resend",
-    "view": "View profile"
+    "view": "View profile",
+    "restoreAccount": "Restore account"
   },
   "organizations": {
     "accessFilter": {
@@ -109,6 +112,14 @@
       "contactName": "The first active portal admin of this client.",
       "projects": "Projects shared with this client in the portal.",
       "users": "Users who have signed in, out of all users for this client."
+    },
+    "deleted": {
+      "show": "Deleted ({{count}})",
+      "hide": "Back to clients",
+      "banner": "A deleted client can be restored for {{days}} days. After that it is removed permanently.",
+      "columnDeleted": "Deleted",
+      "columnRemoval": "Removed permanently",
+      "empty": "No deleted clients. A client you delete stays here for {{days}} days, so you can restore it."
     }
   },
   "overview": {
@@ -332,5 +343,60 @@
       "description": "People at {{name}} who can sign in. Each sees only the projects assigned to them.",
       "invite": "Invite user"
     }
+  },
+  "orgActions": {
+    "menu": {
+      "deactivate": "Deactivate client",
+      "reactivate": "Reactivate client",
+      "delete": "Delete client",
+      "restore": "Restore client"
+    },
+    "deactivate": {
+      "title": "Deactivate {{name}}?",
+      "body": "Everyone at {{name}} loses portal access right away, and anyone signed in is signed out on their next request. All data is kept, and you can reactivate the client at any time.",
+      "confirm": "Deactivate client",
+      "success": "{{name}} was deactivated. Its users can no longer sign in.",
+      "failed": "The client could not be deactivated."
+    },
+    "reactivate": {
+      "title": "Reactivate {{name}}?",
+      "body": "Its users can sign in again, with the same access they had before.",
+      "confirm": "Reactivate client",
+      "success": "{{name}} was reactivated.",
+      "failed": "The client could not be reactivated."
+    },
+    "delete": {
+      "title": "Delete {{name}}?",
+      "checking": "Checking what deleting this client affects…",
+      "checkFailed": "We could not check what deleting this client affects.",
+      "usersAffected": "Users who lose access right away: {{count}}",
+      "effect": "Their next request fails and they are signed out. Nothing is removed yet: the client, its users, projects, approvals, discussions and invoices are kept for {{days}} days.",
+      "restorable": "Until then you can restore the client from the Deleted view with all its history. After that it is removed permanently; invoices are kept as records.",
+      "blockedTitle": "Unpaid invoices",
+      "blocked": "{{numbers}}. Settle or cancel these invoices before deleting this client.",
+      "approvals": "Approvals still waiting for a decision: {{refs}}.",
+      "approvalsAck": "I understand these approvals can no longer be decided.",
+      "changeRequests": "Open change requests: {{titles}}.",
+      "changeRequestsAck": "I understand these change requests can no longer be worked on.",
+      "warningsTitle": "Confirm before deleting",
+      "confirm": "Delete client",
+      "success": "{{name}} was deleted. You can restore it until {{date}}.",
+      "failed": "The client could not be deleted."
+    },
+    "restore": {
+      "title": "Restore {{name}}?",
+      "body": "Its users can sign in again, and its projects, approvals, discussions, invoices and history come back exactly as they were.",
+      "confirm": "Restore client",
+      "success": "{{name}} was restored.",
+      "failed": "The client could not be restored.",
+      "nameTaken": "Another client is already named “{{name}}”. Give this client a new name to restore it.",
+      "newName": "New client name",
+      "newNameRequired": "Enter a name for the client."
+    }
+  },
+  "restoreAccount": {
+    "title": "Restore this account?",
+    "body": "This account was deleted by {{name}}. Only restore it if they asked you to; they can then sign in again with their previous role and projects.",
+    "confirm": "Restore account"
   }
 }

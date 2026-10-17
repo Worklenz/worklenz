@@ -50,6 +50,15 @@ const auditEvents = () =>
     .filter(([sql]) => /INSERT INTO client_portal_audit_events/.test(String(sql)))
     .map(([, params]) => (params as unknown[])[8] as string);
 
+/** What the shared user lookup (`getUserRef`) and the organization lock read. */
+const USER_LOOKUP = /JOIN client_contacts cc ON cc\.id = u\.id/;
+const ORGANIZATION_LOCK = /FROM clients\s+WHERE id = \$1 AND team_id = \$2\s+FOR UPDATE/;
+const ORGANIZATION_ROW = { id: "client-1", name: "Brandbase", display_name: "Brandbase", status: "active", deleted_at: null };
+const userRef = (overrides: Record<string, unknown> = {}) => ({
+  id: "jamie", name: "Jamie Wu", email: "j@x.io", client_id: "client-1", organization_name: "Brandbase",
+  role: "member", status_key: "active", has_login: true, login_id: null, ...overrides,
+});
+
 const subject = (role: ClientSubject["role"] = "admin", overrides: Partial<ClientSubject> = {}): ClientSubject => ({
   contactId: "alex",
   clientId: "client-1",
@@ -536,12 +545,57 @@ describe("organization people, invites and removal", () => {
     stubTx([]);
     await expect(removeOrganizationUser(subject("admin"), "stranger")).rejects.toMatchObject({ status: 404 });
 
+    // A person of another organization of the same workspace looks exactly like nobody, and that
+    // organization is never locked on a stranger's behalf.
+    stubTx([[USER_LOOKUP, createQueryResult([userRef({ id: "other", client_id: "client-2" })])]]);
+    await expect(removeOrganizationUser(subject("admin"), "other")).rejects.toMatchObject({ status: 404 });
+    expect(txRan(/FOR UPDATE/)).toBe(false);
+
     stubTx([
-      [/FOR UPDATE OF cc/, createQueryResult([{ id: "boss", name: "Boss", email: "b@x.io", role: "admin", client_name: "Brandbase" }])],
+      [USER_LOOKUP, createQueryResult([userRef({ id: "boss", name: "Boss", role: "admin" })])],
+      [ORGANIZATION_LOCK, createQueryResult([ORGANIZATION_ROW])],
       [/COUNT\(\*\)::int AS n/, createQueryResult([{ n: 0 }])],
     ]);
     await expect(removeOrganizationUser(subject("admin"), "boss")).rejects.toMatchObject({ status: 409, code: "LAST_ADMIN" });
     expect(txRan(/DELETE FROM client_contacts/)).toBe(false);
+  });
+
+  it("won't remove someone staff deactivated or who deleted their own account", async () => {
+    stubDb([settings(true, true)]);
+    stubTx([
+      [USER_LOOKUP, createQueryResult([userRef({ status_key: "deactivated" })])],
+      [ORGANIZATION_LOCK, createQueryResult([ORGANIZATION_ROW])],
+    ]);
+    await expect(removeOrganizationUser(subject("admin"), "jamie")).rejects.toMatchObject({ status: 409, code: "DEACTIVATED_BY_STAFF" });
+
+    stubTx([
+      [USER_LOOKUP, createQueryResult([userRef({ status_key: "deleted" })])],
+      [ORGANIZATION_LOCK, createQueryResult([ORGANIZATION_ROW])],
+    ]);
+    await expect(removeOrganizationUser(subject("admin"), "jamie")).rejects.toMatchObject({ status: 409, code: "ACCOUNT_DELETED" });
+    expect(txRan(/DELETE FROM client_contacts/)).toBe(false);
+  });
+
+  it("won't strand an approval only this person can decide, and a Client Admin cannot confirm past it", async () => {
+    stubDb([settings(true, true)]);
+    stubTx([
+      [USER_LOOKUP, createQueryResult([userRef()])],
+      [ORGANIZATION_LOCK, createQueryResult([ORGANIZATION_ROW])],
+      [/FROM client_portal_approvals a\s+JOIN client_portal_approval_approvers ap/, createQueryResult([{ id: "ap1", ref_no: "AP-000001", revision: 1 }])],
+    ]);
+    await expect(removeOrganizationUser(subject("admin"), "jamie")).rejects.toMatchObject({ status: 409, code: "PENDING_APPROVALS" });
+    expect(txRan(/DELETE FROM client_contacts/)).toBe(false);
+  });
+
+  it("answers 404 and writes no second audit entry when staff already removed the person", async () => {
+    stubDb([settings(true, true)]);
+    stubTx([
+      [USER_LOOKUP, createQueryResult([userRef()])],
+      [ORGANIZATION_LOCK, createQueryResult([ORGANIZATION_ROW])],
+      [/DELETE FROM client_contacts/, createQueryResult([], 0)],
+    ]);
+    await expect(removeOrganizationUser(subject("admin"), "jamie")).rejects.toMatchObject({ status: 404, code: "ALREADY_REMOVED" });
+    expect(auditEvents()).toEqual([]);
   });
 
   it("edits a colleague only with the capability, inside the caller's organization, with valid input", async () => {
@@ -590,13 +644,22 @@ describe("organization people, invites and removal", () => {
 
   it("removes a colleague, scoped to the caller's organization, and audits it", async () => {
     stubDb([settings(true, true)]);
-    stubTx([[/FOR UPDATE OF cc/, createQueryResult([{ id: "jamie", name: "Jamie Wu", email: "j@x.io", role: "member", client_name: "Brandbase" }])]]);
+    stubTx([
+      [USER_LOOKUP, createQueryResult([userRef({ login_id: "login-2" })])],
+      [ORGANIZATION_LOCK, createQueryResult([ORGANIZATION_ROW])],
+      [/DELETE FROM client_contacts/, createQueryResult([], 1)],
+    ]);
     await removeOrganizationUser(subject("admin"), "jamie");
 
-    const find = mockTxQuery.mock.calls.find(([sql]) => /FOR UPDATE OF cc/.test(String(sql)))!;
-    expect(find[1]).toEqual(["jamie", "client-1", "team-1"]);
-    const del = mockTxQuery.mock.calls.find(([sql]) => /DELETE FROM client_contacts/.test(String(sql)))!;
-    expect(del[1]).toEqual(["jamie", "client-1", "team-1"]);
+    // The organization is locked before anything else is read or written.
+    const sql = txSql();
+    expect(sql.findIndex(text => /FOR UPDATE/.test(text))).toBeLessThan(sql.findIndex(text => /DELETE FROM client_contacts/.test(text)));
+    const lock = mockTxQuery.mock.calls.find(([text]) => /FOR UPDATE/.test(String(text)))!;
+    expect(lock[1]).toEqual(["client-1", "team-1"]);
+    const del = mockTxQuery.mock.calls.find(([text]) => /DELETE FROM client_contacts/.test(String(text)))!;
+    expect(del[1]).toEqual(["jamie", "team-1"]);
+    // The login's link to this portal goes with them, like a removal by staff.
+    expect(txRan(/DELETE FROM client_user_organizations/)).toBe(true);
     expect(auditEvents()).toEqual(["Client removed"]);
   });
 });

@@ -9,9 +9,32 @@ import { sendEmail, sendEmailEnhanced, EmailRequest } from "../../shared/email";
 import TokenService from "../../services/token-service";
 import { getClientPortalBaseUrl } from "../../cron_jobs/helpers";
 import { ensureContactIdForClient } from "../../services/client-contacts-service";
+import { PortalError } from "../../services/client-portal-v2/errors";
+import {
+  deactivateOrganization,
+  reactivateOrganization,
+} from "../../services/client-portal-v2/organization-lifecycle.service";
 import FileConstants from "../../shared/file-constants";
 import { IEmailTemplateType } from "../../interfaces/email-template-type";
 import crypto from "crypto";
+
+/** The signed-in staff member as the v2 lifecycle service and its audit trail expect them. */
+const legacyActor = (req: AuthenticatedClientRequest) => ({
+  side: "internal" as const,
+  name: (req.user as any)?.name || "Team member",
+  userId: (req.user as any)?.id as string | undefined,
+});
+
+/** Turns a v2 service failure (a 404, a 409 CLIENT_DELETED, ...) into the response a v1 caller expects. */
+const sendLegacyLifecycleError = (res: IWorkLenzResponse, error: unknown, fallback: string) => {
+  if (error instanceof PortalError) {
+    return res
+      .status(error.status)
+      .json(new ServerResponse(false, { code: error.code, ...(error.details ?? {}) }, error.message));
+  }
+  console.error(fallback, error);
+  return res.status(500).json(new ServerResponse(false, null, fallback));
+};
 
 type PortalStatusKey = "active" | "invited" | "not_invited" | "expired";
 
@@ -129,7 +152,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             ORDER BY m.created_at DESC
             LIMIT 1
           ) lm ON true
-          WHERE c.team_id = $1
+          WHERE c.team_id = $1 AND c.deleted_at IS NULL
             AND EXISTS (SELECT 1 FROM projects p WHERE p.client_id = c.id)
         ) AS base
         ORDER BY base.last_message_at DESC NULLS LAST, base.display_name ASC, base.id ASC
@@ -405,7 +428,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             c.id,
             ${PORTAL_STATE_COLUMNS_SQL}
           FROM clients c
-          WHERE c.team_id = $1
+          WHERE c.team_id = $1 AND c.deleted_at IS NULL
         ),
         classified AS (
           SELECT id, (${PORTAL_STATUS_SQL}) AS portal_status
@@ -511,7 +534,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         const existingClientQuery = `
           SELECT id, name, email, company_name, phone, phone_country_code, address, contact_person, status, created_at, updated_at
           FROM clients 
-          WHERE LOWER(email) = LOWER($1) AND team_id = $2
+          WHERE LOWER(email) = LOWER($1) AND team_id = $2 AND deleted_at IS NULL
         `;
         const existingClientResult = await db.query(existingClientQuery, [clientData.email, teamId]);
         
@@ -727,9 +750,9 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Get client information
       const clientQuery = `
-        SELECT id, name, email, company_name, phone, contact_person
+        SELECT id, name, email, company_name, phone, contact_person, status
         FROM clients
-        WHERE id = $1 AND team_id = $2
+        WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL
       `;
       const clientResult = await db.query(clientQuery, [clientId, teamId]);
 
@@ -740,6 +763,12 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       }
 
       const client = clientResult.rows[0];
+
+      if (client.status === "inactive") {
+        return res
+          .status(409)
+          .json(new ServerResponse(false, { code: "CLIENT_INACTIVE" }, "This client is deactivated. Reactivate it before sending an invitation."));
+      }
 
       if (!client.email) {
         return res
@@ -837,7 +866,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           COUNT(DISTINCT p.id) as assigned_projects_count
         FROM clients c
         LEFT JOIN projects p ON c.id = p.client_id
-        WHERE c.id = $1 AND c.team_id = $2
+        WHERE c.id = $1 AND c.team_id = $2 AND c.deleted_at IS NULL
         GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.phone_country_code, c.address, c.address_line_1, c.city, c.state, c.zip_code, c.country, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
       `;
 
@@ -900,7 +929,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Verify client exists and belongs to team
       const clientCheck = await db.query(
-        "SELECT id FROM clients WHERE id = $1 AND team_id = $2",
+        "SELECT id FROM clients WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL",
         [id, teamId]
       );
 
@@ -933,7 +962,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           COUNT(DISTINCT p.id) as assigned_projects_count
         FROM clients c
         LEFT JOIN projects p ON c.id = p.client_id
-        WHERE c.id = $1 AND c.team_id = $2
+        WHERE c.id = $1 AND c.team_id = $2 AND c.deleted_at IS NULL
         GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.phone_country_code, c.address, c.address_line_1, c.city, c.state, c.zip_code, c.country, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
       `;
 
@@ -1055,9 +1084,9 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       const updateData = req.body;
       const teamId = (req.user as any)?.team_id;
 
-      // Verify client exists and belongs to team
+      // Verify client exists and belongs to team. A deleted client cannot be edited: restore it first.
       const clientCheck = await db.query(
-        "SELECT id FROM clients WHERE id = $1 AND team_id = $2",
+        "SELECT id FROM clients WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL",
         [id, teamId]
       );
 
@@ -1065,6 +1094,21 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         return res
           .status(404)
           .json(new ServerResponse(false, null, "Client not found"));
+      }
+
+      // Only these two states can be requested here, and they go through the lifecycle service below, so
+      // they are locked, audited and never touch the logins shared with other workspaces.
+      const requestedStatus: unknown = updateData.status;
+      if (
+        requestedStatus !== undefined &&
+        requestedStatus !== null &&
+        requestedStatus !== "" &&
+        requestedStatus !== "active" &&
+        requestedStatus !== "inactive"
+      ) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Status must be active or inactive"));
       }
 
       // Update client data
@@ -1145,13 +1189,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         paramIndex++;
       }
 
-      if (updateData.status) {
-        updateFields.push(`status = $${paramIndex}`);
-        updateValues.push(updateData.status);
-        paramIndex++;
-      }
-
-      if (updateFields.length === 0) {
+      if (updateFields.length === 0 && !requestedStatus) {
         return res
           .status(400)
           .json(new ServerResponse(false, null, "No valid fields to update"));
@@ -1163,7 +1201,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       const query = `
         UPDATE clients
         SET ${updateFields.join(", ")}
-        WHERE id = $${paramIndex} AND team_id = $${paramIndex + 1}
+        WHERE id = $${paramIndex} AND team_id = $${paramIndex + 1} AND deleted_at IS NULL
         RETURNING id, name, email, company_name, phone, phone_country_code, address, address_line_1, city, state, zip_code, country, contact_person, status, created_at, updated_at
       `;
 
@@ -1177,20 +1215,13 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       const updatedClient = result.rows[0];
 
-      // If status was updated, also update related tables
-      if (updateData.status) {
-        // Update client_users status
-        await db.query(
-          "UPDATE client_users SET status = $1 WHERE client_id = $2",
-          [updateData.status, id]
-        );
-
-        // Update client_portal_access is_active based on status
-        const isActive = updateData.status === "active";
-        await db.query(
-          "UPDATE client_portal_access SET is_active = $1, updated_at = NOW() WHERE client_id = $2",
-          [isActive, id]
-        );
+      if (requestedStatus === "active" || requestedStatus === "inactive") {
+        const lifecycleInput = { teamId, organizationId: id, actor: legacyActor(req) };
+        const next =
+          requestedStatus === "inactive"
+            ? await deactivateOrganization(lifecycleInput)
+            : await reactivateOrganization(lifecycleInput);
+        updatedClient.status = next.status;
       }
 
       return res.json(new ServerResponse(true, {
@@ -1212,6 +1243,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         updated_at: updatedClient.updated_at
       }, "Client updated successfully"));
     } catch (error) {
+      if (error instanceof PortalError) return sendLegacyLifecycleError(res, error, "Failed to update client");
       console.error("Error updating client:", error);
       return res
         .status(500)
@@ -1227,7 +1259,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Verify client exists and belongs to team
       const clientCheck = await db.query(
-        "SELECT id, name, company_name FROM clients WHERE id = $1 AND team_id = $2",
+        "SELECT id, name, company_name FROM clients WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL",
         [id, teamId]
       );
 
@@ -1289,7 +1321,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Get client information
       const client = await db.query(
-        "SELECT id, name, company_name FROM clients WHERE id = $1 AND team_id = $2",
+        "SELECT id, name, company_name FROM clients WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL",
         [id, teamId]
       );
 
@@ -1321,116 +1353,38 @@ export default class ClientPortalClientsController extends ClientPortalControlle
     }
   }
 
+  /**
+   * Deprecated: `DELETE /portal/clients/:id` always meant "deactivate" (the client stayed in the list). It now
+   * delegates to the v2 lifecycle service, which locks the client, audits the change, and never writes the
+   * logins shared with other workspaces. A real delete is `DELETE /portal/v2/organizations/:id`.
+   */
   static async deleteClient(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
-    const dbClient = await db.pool.connect();
     try {
-      const { id } = req.params;
-      const teamId = (req.user as any)?.team_id;
-
-      // Verify client exists and belongs to team
-      const clientCheck = await dbClient.query(
-        "SELECT id FROM clients WHERE id = $1 AND team_id = $2",
-        [id, teamId]
-      );
-
-      if (clientCheck.rows.length === 0) {
-        return res
-          .status(404)
-          .json(new ServerResponse(false, null, "Client not found"));
-      }
-
-      await dbClient.query("BEGIN");
-
-      // Deactivate the client instead of deleting (soft delete)
-      const deactivateResult = await dbClient.query(
-        "UPDATE clients SET status = 'inactive', updated_at = NOW() WHERE id = $1 AND team_id = $2",
-        [id, teamId]
-      );
-
-      if (deactivateResult.rowCount === 0) {
-        await dbClient.query("ROLLBACK");
-        return res
-          .status(404)
-          .json(new ServerResponse(false, null, "Client not found"));
-      }
-
-      // Also deactivate all client users for this client
-      await dbClient.query(
-        "UPDATE client_users SET status = 'inactive' WHERE client_id = $1",
-        [id]
-      );
-
-      // Deactivate client portal access
-      await dbClient.query(
-        "UPDATE client_portal_access SET is_active = FALSE, updated_at = NOW() WHERE client_id = $1",
-        [id]
-      );
-
-      await dbClient.query("COMMIT");
-
+      await deactivateOrganization({
+        teamId: (req.user as any)?.team_id,
+        organizationId: req.params.id,
+        actor: legacyActor(req),
+      });
       return res.json(new ServerResponse(true, null, "Client deactivated successfully"));
     } catch (error) {
-      await dbClient.query("ROLLBACK").catch(() => void 0);
-      console.error("Error deactivating client:", error);
-      return res
-        .status(500)
-        .json(new ServerResponse(false, null, "Failed to deactivate client"));
-    } finally {
-      dbClient.release();
+      return sendLegacyLifecycleError(res, error, "Failed to deactivate client");
     }
   }
 
+  /** Deprecated: delegates to the v2 lifecycle service (see `deleteClient`). */
   static async activateClient(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
-    const dbClient = await db.pool.connect();
     try {
-      const { id } = req.params;
-      const teamId = (req.user as any)?.team_id;
-
-      // Verify client exists and belongs to team
-      const clientCheck = await dbClient.query(
-        "SELECT id FROM clients WHERE id = $1 AND team_id = $2",
-        [id, teamId]
-      );
-
-      if (clientCheck.rows.length === 0) {
-        return res
-          .status(404)
-          .json(new ServerResponse(false, null, "Client not found"));
-      }
-
-      await dbClient.query("BEGIN");
-
-      // Reactivate the client
-      await dbClient.query(
-        "UPDATE clients SET status = 'active', updated_at = NOW() WHERE id = $1 AND team_id = $2",
-        [id, teamId]
-      );
-
-      // Reactivate all client users for this client
-      await dbClient.query(
-        "UPDATE client_users SET status = 'active' WHERE client_id = $1",
-        [id]
-      );
-
-      // Reactivate client portal access
-      await dbClient.query(
-        "UPDATE client_portal_access SET is_active = TRUE, updated_at = NOW() WHERE client_id = $1",
-        [id]
-      );
-
-      await dbClient.query("COMMIT");
-
+      await reactivateOrganization({
+        teamId: (req.user as any)?.team_id,
+        organizationId: req.params.id,
+        actor: legacyActor(req),
+      });
       return res.json(new ServerResponse(true, null, "Client activated successfully"));
     } catch (error) {
-      await dbClient.query("ROLLBACK").catch(() => void 0);
-      console.error("Error activating client:", error);
-      return res
-        .status(500)
-        .json(new ServerResponse(false, null, "Failed to activate client"));
-    } finally {
-      dbClient.release();
+      return sendLegacyLifecycleError(res, error, "Failed to activate client");
     }
   }
+
 
   static async getClientProjects(
     req: AuthenticatedClientRequest,
@@ -1443,7 +1397,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Verify client exists and belongs to team
       const clientCheck = await db.query(
-        "SELECT id FROM clients WHERE id = $1 AND team_id = $2",
+        "SELECT id FROM clients WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL",
         [id, teamId]
       );
 
@@ -1575,7 +1529,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Verify client exists and belongs to team
       const clientCheck = await db.query(
-        "SELECT id, name FROM clients WHERE id = $1 AND team_id = $2",
+        "SELECT id, name FROM clients WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL",
         [id, teamId]
       );
 
@@ -1679,7 +1633,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Verify client exists and belongs to team
       const clientCheck = await db.query(
-        "SELECT id, name FROM clients WHERE id = $1 AND team_id = $2",
+        "SELECT id, name FROM clients WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL",
         [id, teamId]
       );
 
@@ -1773,7 +1727,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Verify client exists and belongs to team
       const clientCheck = await db.query(
-        "SELECT id FROM clients WHERE id = $1 AND team_id = $2",
+        "SELECT id FROM clients WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL",
         [id, teamId]
       );
 
@@ -1873,7 +1827,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
            FROM (
              SELECT c.id, ${PORTAL_STATE_COLUMNS_SQL}
              FROM clients c
-             WHERE c.id = $1 AND c.team_id = $2
+             WHERE c.id = $1 AND c.team_id = $2 AND c.deleted_at IS NULL
            ) AS base`,
           [id, teamId]
         ),
@@ -1942,7 +1896,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Verify client exists and belongs to team
       const clientCheck = await db.query(
-        "SELECT id, name FROM clients WHERE id = $1 AND team_id = $2",
+        "SELECT id, name FROM clients WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL",
         [id, teamId]
       );
 
@@ -2116,7 +2070,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Verify client exists and belongs to team
       const clientCheck = await db.query(
-        "SELECT * FROM clients WHERE id = $1 AND team_id = $2",
+        "SELECT * FROM clients WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL",
         [id, teamId]
       );
 

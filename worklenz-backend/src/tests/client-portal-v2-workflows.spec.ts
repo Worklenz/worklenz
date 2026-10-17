@@ -48,6 +48,11 @@ const auditEvents = () =>
 const TEAM = "team-1";
 const staff = { side: "internal" as const, name: "Kasun F.", userId: "user-1" };
 
+/** What `lockOrganization` reads: a live, active organization. */
+const ORGANIZATION_LOCK_ROW = {
+  id: "client-1", name: "Brandbase", display_name: "Brandbase", status: "active", deleted_at: null,
+};
+
 beforeEach(() => {
   mockedQuery.mockReset();
   mockTxQuery.mockReset();
@@ -293,6 +298,9 @@ describe("client user lifecycle", () => {
   });
 
   const handlers = (user: Record<string, unknown>, otherActiveAdmins: number): Handler[] => [
+    // Every change that depends on who else is an admin locks the organization row first.
+    [/FROM clients\s+WHERE id = \$1 AND team_id = \$2\s+FOR UPDATE/, createQueryResult([ORGANIZATION_LOCK_ROW])],
+    [/UPDATE client_contacts SET disabled_at/, createQueryResult([], 1)],
     [/JOIN client_contacts cc ON cc\.id = u\.id/, createQueryResult([userRef(user)])],
     [/SELECT COUNT\(\*\)::int AS n/, createQueryResult([{ n: otherActiveAdmins }])],
   ];

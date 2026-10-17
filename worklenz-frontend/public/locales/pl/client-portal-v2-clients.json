@@ -9,7 +9,9 @@
     "removeFailed": "Nie można usunąć użytkownika.",
     "removed": "{{name}} został usunięty z portalu.",
     "resendFailed": "Nie można ponownie wysłać zaproszenia.",
-    "resent": "Zaproszenie wysłane ponownie do {{email}}. Link jest ważny przez 7 dni."
+    "resent": "Zaproszenie wysłane ponownie do {{email}}. Link jest ważny przez 7 dni.",
+    "accountRestored": "Konto użytkownika {{name}} zostało przywrócone. Może się znów logować.",
+    "restoreAccountFailed": "Nie udało się przywrócić konta."
   },
   "assign": {
     "description": "Użytkownik widzi tylko projekty przypisane tutaj, mimo że należą one do {{organization}}. To, co mogą zrobić w każdym projekcie, zależy od ich roli:",
@@ -59,7 +61,8 @@
     "remove": "Usuń użytkownika",
     "resend": "Wyślij ponownie zaproszenie",
     "resendShort": "Wyślij ponownie",
-    "view": "Zobacz profil"
+    "view": "Zobacz profil",
+    "restoreAccount": "Przywróć konto"
   },
   "organizations": {
     "accessFilter": {
@@ -110,6 +113,14 @@
       "contactName": "Pierwszy aktywny administrator portalu tego klienta.",
       "projects": "Projekty udostępnione temu klientowi w portalu.",
       "users": "Użytkownicy, którzy się zalogowali spośród wszystkich użytkowników tego klienta."
+    },
+    "deleted": {
+      "show": "Usunięte ({{count}})",
+      "hide": "Wróć do klientów",
+      "banner": "Usuniętego klienta można przywrócić przez {{days}} dni. Potem zostanie trwale usunięty.",
+      "columnDeleted": "Usunięto",
+      "columnRemoval": "Trwałe usunięcie",
+      "empty": "Brak usuniętych klientów. Usunięty klient pozostaje tutaj przez {{days}} dni, aby można go było przywrócić."
     }
   },
   "overview": {
@@ -333,5 +344,60 @@
       "description": "Osoby w {{name}}, które mogą się zalogować. Każdy widzi tylko projekty do niego przypisane.",
       "invite": "Zaproś użytkownika"
     }
+  },
+  "orgActions": {
+    "menu": {
+      "deactivate": "Dezaktywuj klienta",
+      "reactivate": "Aktywuj klienta ponownie",
+      "delete": "Usuń klienta",
+      "restore": "Przywróć klienta"
+    },
+    "deactivate": {
+      "title": "Dezaktywować {{name}}?",
+      "body": "Wszyscy użytkownicy {{name}} natychmiast tracą dostęp do portalu, a zalogowani zostaną wylogowani przy następnym żądaniu. Wszystkie dane zostają zachowane, a klienta można ponownie aktywować w dowolnej chwili.",
+      "confirm": "Dezaktywuj klienta",
+      "success": "Klient {{name}} został zdezaktywowany. Jego użytkownicy nie mogą się już logować.",
+      "failed": "Nie udało się zdezaktywować klienta."
+    },
+    "reactivate": {
+      "title": "Aktywować ponownie {{name}}?",
+      "body": "Użytkownicy będą mogli znów się logować, z takim samym dostępem jak wcześniej.",
+      "confirm": "Aktywuj klienta ponownie",
+      "success": "Klient {{name}} został ponownie aktywowany.",
+      "failed": "Nie udało się ponownie aktywować klienta."
+    },
+    "delete": {
+      "title": "Usunąć {{name}}?",
+      "checking": "Sprawdzanie, czego dotyczy usunięcie tego klienta…",
+      "checkFailed": "Nie udało się sprawdzić, czego dotyczy usunięcie tego klienta.",
+      "usersAffected": "Użytkownicy, którzy natychmiast tracą dostęp: {{count}}",
+      "effect": "Ich następne żądanie się nie powiedzie i zostaną wylogowani. Nic nie jest jeszcze usuwane: klient, jego użytkownicy, projekty, zatwierdzenia, dyskusje i faktury są przechowywane przez {{days}} dni.",
+      "restorable": "Do tego czasu możesz przywrócić klienta z widoku Usunięte wraz z całą historią. Potem zostanie trwale usunięty; faktury są zachowywane jako dokumentacja.",
+      "blockedTitle": "Nieopłacone faktury",
+      "blocked": "{{numbers}}. Rozlicz lub anuluj te faktury przed usunięciem tego klienta.",
+      "approvals": "Zatwierdzenia nadal oczekujące na decyzję: {{refs}}.",
+      "approvalsAck": "Rozumiem, że nie będzie można już podjąć decyzji w sprawie tych zatwierdzeń.",
+      "changeRequests": "Otwarte żądania zmiany: {{titles}}.",
+      "changeRequestsAck": "Rozumiem, że nie będzie można już pracować nad tymi żądaniami zmiany.",
+      "warningsTitle": "Potwierdź przed usunięciem",
+      "confirm": "Usuń klienta",
+      "success": "Klient {{name}} został usunięty. Możesz go przywrócić do {{date}}.",
+      "failed": "Nie udało się usunąć klienta."
+    },
+    "restore": {
+      "title": "Przywrócić {{name}}?",
+      "body": "Użytkownicy będą mogli znów się logować, a projekty, zatwierdzenia, dyskusje, faktury i historia wrócą dokładnie takie, jakie były.",
+      "confirm": "Przywróć klienta",
+      "success": "Klient {{name}} został przywrócony.",
+      "failed": "Nie udało się przywrócić klienta.",
+      "nameTaken": "Inny klient ma już nazwę „{{name}}”. Nadaj temu klientowi nową nazwę, aby go przywrócić.",
+      "newName": "Nowa nazwa klienta",
+      "newNameRequired": "Wpisz nazwę klienta."
+    }
+  },
+  "restoreAccount": {
+    "title": "Przywrócić to konto?",
+    "body": "To konto zostało usunięte przez użytkownika {{name}}. Przywróć je tylko wtedy, gdy ta osoba o to poprosiła; będzie mogła znów się logować z poprzednią rolą i projektami.",
+    "confirm": "Przywróć konto"
   }
 }

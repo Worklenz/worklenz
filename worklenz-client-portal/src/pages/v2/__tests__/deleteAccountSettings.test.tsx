@@ -15,13 +15,13 @@ const startDeletion = async () => {
 
 describe('Settings > Delete Account', () => {
   it('lists the section under a Danger Zone group', async () => {
-    open('u-jamie');
+    open();
     expect(await screen.findByText('Danger Zone', {}, { timeout: 10000 })).toBeInTheDocument();
     expect(await screen.findByText(/permanently deleted within 30 days of your request/)).toBeInTheDocument();
   });
 
   it('keeps the confirm button disabled until DELETE is typed exactly', async () => {
-    open('u-jamie');
+    open();
     await startDeletion();
     const confirm = screen.getByRole('button', { name: 'Yes, delete my account' });
     expect(confirm).toBeDisabled();
@@ -32,13 +32,12 @@ describe('Settings > Delete Account', () => {
     expect(confirm).toBeEnabled();
   });
 
-  it('submits and then offers to sign out', async () => {
+  it('gives a Client Member a request instead of a delete button', async () => {
     open('u-jamie');
-    await startDeletion();
-    await userEvent.type(screen.getByLabelText('Type DELETE to confirm'), 'DELETE');
-    await userEvent.click(screen.getByRole('button', { name: 'Yes, delete my account' }));
-    expect(await screen.findByText('Request submitted')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
+    expect(await screen.findByText('Only a Client Admin can delete an account here.', {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Delete My Account/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Request account deletion' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Request account deletion' })).toBeDisabled());
   });
 
   it('shows why a deletion is refused when the person is the only Client Admin', async () => {

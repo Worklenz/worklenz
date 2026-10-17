@@ -9,7 +9,9 @@
     "removeFailed": "Der Benutzer konnte nicht entfernt werden.",
     "removed": "{{name}} wurde aus dem Portal entfernt.",
     "resendFailed": "Die Einladung konnte nicht erneut gesendet werden.",
-    "resent": "Einladung erneut an {{email}} gesendet. Der Link ist 7 Tage gültig."
+    "resent": "Einladung erneut an {{email}} gesendet. Der Link ist 7 Tage gültig.",
+    "accountRestored": "Das Konto von {{name}} wurde wiederhergestellt. Die Person kann sich wieder anmelden.",
+    "restoreAccountFailed": "Das Konto konnte nicht wiederhergestellt werden."
   },
   "assign": {
     "description": "Ein Benutzer sieht hier immer nur Projekte, die ihm zugeordnet sind, auch wenn diese zu {{organization}} gehören. Was sie in jedem Projekt tun können, hängt von ihrer Rolle ab:",
@@ -59,7 +61,8 @@
     "remove": "Benutzer entfernen",
     "resend": "Einladung erneut senden",
     "resendShort": "Erneut senden",
-    "view": "Profil anzeigen"
+    "view": "Profil anzeigen",
+    "restoreAccount": "Konto wiederherstellen"
   },
   "organizations": {
     "accessFilter": {
@@ -110,6 +113,14 @@
       "contactName": "Der erste aktive Portaladministrator dieses Kunden.",
       "projects": "Mit diesem Kunden im Portal geteilte Projekte.",
       "users": "Benutzer, die sich angemeldet haben, von allen Benutzern für diesen Client."
+    },
+    "deleted": {
+      "show": "Gelöscht ({{count}})",
+      "hide": "Zurück zu den Kunden",
+      "banner": "Ein gelöschter Kunde kann {{days}} Tage lang wiederhergestellt werden. Danach wird er endgültig entfernt.",
+      "columnDeleted": "Gelöscht",
+      "columnRemoval": "Endgültig entfernt",
+      "empty": "Keine gelöschten Kunden. Ein gelöschter Kunde bleibt hier {{days}} Tage, damit Sie ihn wiederherstellen können."
     }
   },
   "overview": {
@@ -333,5 +344,60 @@
       "description": "Personen bei {{name}}, die sich anmelden können. Jeder sieht nur die ihm zugewiesenen Projekte.",
       "invite": "Benutzer einladen"
     }
+  },
+  "orgActions": {
+    "menu": {
+      "deactivate": "Kunden deaktivieren",
+      "reactivate": "Kunden reaktivieren",
+      "delete": "Kunden löschen",
+      "restore": "Kunden wiederherstellen"
+    },
+    "deactivate": {
+      "title": "{{name}} deaktivieren?",
+      "body": "Alle Personen bei {{name}} verlieren sofort den Portalzugang, und angemeldete Personen werden bei ihrer nächsten Anfrage abgemeldet. Alle Daten bleiben erhalten, und Sie können den Kunden jederzeit reaktivieren.",
+      "confirm": "Kunden deaktivieren",
+      "success": "{{name}} wurde deaktiviert. Die Benutzer können sich nicht mehr anmelden.",
+      "failed": "Der Kunde konnte nicht deaktiviert werden."
+    },
+    "reactivate": {
+      "title": "{{name}} reaktivieren?",
+      "body": "Die Benutzer können sich wieder anmelden, mit demselben Zugriff wie zuvor.",
+      "confirm": "Kunden reaktivieren",
+      "success": "{{name}} wurde reaktiviert.",
+      "failed": "Der Kunde konnte nicht reaktiviert werden."
+    },
+    "delete": {
+      "title": "{{name}} löschen?",
+      "checking": "Es wird geprüft, was das Löschen dieses Kunden betrifft …",
+      "checkFailed": "Wir konnten nicht prüfen, was das Löschen dieses Kunden betrifft.",
+      "usersAffected": "Benutzer, die sofort den Zugriff verlieren: {{count}}",
+      "effect": "Ihre nächste Anfrage schlägt fehl, und sie werden abgemeldet. Noch wird nichts entfernt: Der Kunde, seine Benutzer, Projekte, Genehmigungen, Diskussionen und Rechnungen bleiben {{days}} Tage erhalten.",
+      "restorable": "Bis dahin können Sie den Kunden in der Ansicht „Gelöscht“ mit seinem gesamten Verlauf wiederherstellen. Danach wird er endgültig entfernt; Rechnungen bleiben als Belege erhalten.",
+      "blockedTitle": "Unbezahlte Rechnungen",
+      "blocked": "{{numbers}}. Begleichen oder stornieren Sie diese Rechnungen, bevor Sie diesen Kunden löschen.",
+      "approvals": "Genehmigungen, die noch auf eine Entscheidung warten: {{refs}}.",
+      "approvalsAck": "Mir ist bewusst, dass über diese Genehmigungen nicht mehr entschieden werden kann.",
+      "changeRequests": "Offene Änderungswünsche: {{titles}}.",
+      "changeRequestsAck": "Mir ist bewusst, dass diese Änderungswünsche nicht mehr bearbeitet werden können.",
+      "warningsTitle": "Vor dem Löschen bestätigen",
+      "confirm": "Kunden löschen",
+      "success": "{{name}} wurde gelöscht. Sie können den Kunden bis {{date}} wiederherstellen.",
+      "failed": "Der Kunde konnte nicht gelöscht werden."
+    },
+    "restore": {
+      "title": "{{name}} wiederherstellen?",
+      "body": "Die Benutzer können sich wieder anmelden, und Projekte, Genehmigungen, Diskussionen, Rechnungen und der Verlauf sind genau so wieder da, wie sie waren.",
+      "confirm": "Kunden wiederherstellen",
+      "success": "{{name}} wurde wiederhergestellt.",
+      "failed": "Der Kunde konnte nicht wiederhergestellt werden.",
+      "nameTaken": "Ein anderer Kunde heißt bereits „{{name}}“. Geben Sie diesem Kunden einen neuen Namen, um ihn wiederherzustellen.",
+      "newName": "Neuer Kundenname",
+      "newNameRequired": "Geben Sie einen Namen für den Kunden ein."
+    }
+  },
+  "restoreAccount": {
+    "title": "Dieses Konto wiederherstellen?",
+    "body": "Dieses Konto wurde von {{name}} gelöscht. Stellen Sie es nur wieder her, wenn die Person Sie darum gebeten hat; sie kann sich dann wieder mit ihrer bisherigen Rolle und ihren Projekten anmelden.",
+    "confirm": "Konto wiederherstellen"
   }
 }

@@ -9,7 +9,9 @@
     "removeFailed": "L'utilisateur n'a pas pu être supprimé.",
     "removed": "{{name}} a été supprimé du portail.",
     "resendFailed": "L'invitation ne pouvait pas être refusée.",
-    "resent": "Invitation renvoyée à {{email}}. Le lien est valable 7 jours."
+    "resent": "Invitation renvoyée à {{email}}. Le lien est valable 7 jours.",
+    "accountRestored": "Le compte de {{name}} a été restauré. Cette personne peut de nouveau se connecter.",
+    "restoreAccountFailed": "Le compte n’a pas pu être restauré."
   },
   "assign": {
     "description": "Un utilisateur ne voit que les projets attribués ici, même s'ils appartiennent à {{organization}}. Ce qu'ils peuvent faire dans chaque projet dépend de leur rôle :",
@@ -59,7 +61,8 @@
     "remove": "Supprimer l'utilisateur",
     "resend": "Renvoyer l'invitation",
     "resendShort": "Renvoyer",
-    "view": "Voir le profil"
+    "view": "Voir le profil",
+    "restoreAccount": "Restaurer le compte"
   },
   "organizations": {
     "accessFilter": {
@@ -110,6 +113,14 @@
       "contactName": "Le premier administrateur de portail actif de ce client.",
       "projects": "Projets partagés avec ce client dans le portail.",
       "users": "Utilisateurs connectés, parmi tous les utilisateurs de ce client."
+    },
+    "deleted": {
+      "show": "Supprimés ({{count}})",
+      "hide": "Retour aux clients",
+      "banner": "Un client supprimé peut être restauré pendant {{days}} jours. Ensuite, il est supprimé définitivement.",
+      "columnDeleted": "Supprimé",
+      "columnRemoval": "Suppression définitive",
+      "empty": "Aucun client supprimé. Un client que vous supprimez reste ici {{days}} jours afin que vous puissiez le restaurer."
     }
   },
   "overview": {
@@ -333,5 +344,60 @@
       "description": "Personnes de {{name}} qui peuvent se connecter. Chacune ne voit que les projets qui lui sont assignés.",
       "invite": "Inviter un utilisateur"
     }
+  },
+  "orgActions": {
+    "menu": {
+      "deactivate": "Désactiver le client",
+      "reactivate": "Réactiver le client",
+      "delete": "Supprimer le client",
+      "restore": "Restaurer le client"
+    },
+    "deactivate": {
+      "title": "Désactiver {{name}} ?",
+      "body": "Toutes les personnes de {{name}} perdent immédiatement l’accès au portail, et celles qui sont connectées sont déconnectées à leur prochaine requête. Toutes les données sont conservées et vous pouvez réactiver le client à tout moment.",
+      "confirm": "Désactiver le client",
+      "success": "{{name}} a été désactivé. Ses utilisateurs ne peuvent plus se connecter.",
+      "failed": "Le client n’a pas pu être désactivé."
+    },
+    "reactivate": {
+      "title": "Réactiver {{name}} ?",
+      "body": "Ses utilisateurs peuvent de nouveau se connecter, avec le même accès qu’auparavant.",
+      "confirm": "Réactiver le client",
+      "success": "{{name}} a été réactivé.",
+      "failed": "Le client n’a pas pu être réactivé."
+    },
+    "delete": {
+      "title": "Supprimer {{name}} ?",
+      "checking": "Vérification de ce que la suppression de ce client concerne…",
+      "checkFailed": "Impossible de vérifier ce que la suppression de ce client concerne.",
+      "usersAffected": "Utilisateurs qui perdent l’accès immédiatement : {{count}}",
+      "effect": "Leur prochaine requête échoue et ils sont déconnectés. Rien n’est encore supprimé : le client, ses utilisateurs, projets, approbations, discussions et factures sont conservés pendant {{days}} jours.",
+      "restorable": "D’ici là, vous pouvez restaurer le client depuis la vue Supprimés avec tout son historique. Ensuite, il est supprimé définitivement ; les factures sont conservées comme archives.",
+      "blockedTitle": "Factures impayées",
+      "blocked": "{{numbers}}. Réglez ou annulez ces factures avant de supprimer ce client.",
+      "approvals": "Approbations en attente d’une décision : {{refs}}.",
+      "approvalsAck": "Je comprends qu’il ne sera plus possible de statuer sur ces approbations.",
+      "changeRequests": "Demandes de modification ouvertes : {{titles}}.",
+      "changeRequestsAck": "Je comprends qu’il ne sera plus possible de traiter ces demandes de modification.",
+      "warningsTitle": "À confirmer avant de supprimer",
+      "confirm": "Supprimer le client",
+      "success": "{{name}} a été supprimé. Vous pouvez le restaurer jusqu’au {{date}}.",
+      "failed": "Le client n’a pas pu être supprimé."
+    },
+    "restore": {
+      "title": "Restaurer {{name}} ?",
+      "body": "Ses utilisateurs peuvent de nouveau se connecter, et ses projets, approbations, discussions, factures et historique reviennent exactement comme avant.",
+      "confirm": "Restaurer le client",
+      "success": "{{name}} a été restauré.",
+      "failed": "Le client n’a pas pu être restauré.",
+      "nameTaken": "Un autre client s’appelle déjà « {{name}} ». Donnez un nouveau nom à ce client pour le restaurer.",
+      "newName": "Nouveau nom du client",
+      "newNameRequired": "Saisissez un nom pour le client."
+    }
+  },
+  "restoreAccount": {
+    "title": "Restaurer ce compte ?",
+    "body": "Ce compte a été supprimé par {{name}}. Ne le restaurez que si cette personne vous l’a demandé ; elle pourra alors se reconnecter avec son rôle et ses projets précédents.",
+    "confirm": "Restaurer le compte"
   }
 }
