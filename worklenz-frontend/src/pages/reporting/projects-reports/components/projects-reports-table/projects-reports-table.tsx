@@ -232,7 +232,7 @@ const ProjectsReportsTable = () => {
         key: 'status',
         dataIndex: 'status_id',
         title: <CustomTableTitle title={t('statusColumn')} />,
-        sorter: (a, b) => (a.status_id || '').localeCompare(b.status_id || ''),
+        sorter: (a, b) => (a.status_name || '').localeCompare(b.status_name || ''),
         filterDropdown: () => (
           <div className="table-filter-menu-popup">
             <ProjectStatusFilterDropdown inline />
@@ -399,7 +399,7 @@ const ProjectsReportsTable = () => {
             <ProjectTeamFilterDropdown inline />
           </div>
         ),
-        filtered: Boolean(teams?.length),
+        filtered: Boolean(teams?.some(team => team.selected)),
         render: (_, record: IRPTProject) =>
           record.team_name ? <ProjectTeamCell team={record.team_name} /> : '-',
         width: 200,
@@ -428,7 +428,20 @@ const ProjectsReportsTable = () => {
         width: 200,
       },
     ],
-    [t, order, handleDrawerOpen, projectStatuses, selectedProjectStatuses, projectList]
+    [
+      t,
+      order,
+      handleDrawerOpen,
+      projectStatuses,
+      selectedProjectStatuses,
+      selectedProjectHealths,
+      selectedProjectCategories,
+      selectedProjectManagers,
+      selectedClients,
+      selectedProjectPriorities,
+      teams,
+      projectList,
+    ]
   );
 
   const visibleColumns = useMemo(

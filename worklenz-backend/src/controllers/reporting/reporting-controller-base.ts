@@ -593,6 +593,12 @@ export default abstract class ReportingControllerBase extends WorklenzController
                                   ORDER BY pu.updated_at DESC
                                   LIMIT 1) AS rec) AS update,
 
+                           (SELECT pu.content
+                            FROM project_comments pu
+                            WHERE pu.project_id = p.id
+                            ORDER BY pu.updated_at DESC
+                            LIMIT 1) AS comment,
+
                      (SELECT ROW_TO_JSON(rec)
                       FROM (SELECT attribute_type,
                                    log_type,
