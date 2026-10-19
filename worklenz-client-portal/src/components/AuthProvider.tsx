@@ -1,11 +1,15 @@
 import React, { useEffect, useCallback } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { refreshToken, logoutUser, initializeAuth } from '@/store/slices/authSlice';
+import { refreshToken, logoutUser, initializeAuth, clearAuth } from '@/store/slices/authSlice';
 import { TokenManager } from '@/utils/tokenManager';
-import { ACCESS_REMOVED_EVENT } from '@/utils/accessRemoved';
-
-const ACCESS_REMOVED_PATH = '/access-removed';
+import {
+  ACCESS_REMOVED_EVENT,
+  ACCESS_REMOVED_PATH,
+  accessRemovedPath,
+  type AccessRemovedEventDetail,
+} from '@/utils/accessRemoved';
+import { clientPortalAPI } from '@/services/api';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -62,12 +66,15 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [dispatch, isAuthenticated]);
 
   // The server said this client's access was removed (401, 403 ACCESS_REVOKED, deactivated).
-  // The token is already cleared by whoever raised the event.
+  // The token is already cleared by whoever raised the event. The session is dropped locally: asking the
+  // server to log out would only be refused again, and a refused request must not raise this event twice.
   useEffect(() => {
-    const handleAccessRemoved = () => {
-      dispatch(logoutUser());
+    const handleAccessRemoved = (event: Event) => {
+      const reason = (event as CustomEvent<AccessRemovedEventDetail>).detail?.reason ?? null;
+      clientPortalAPI.clearToken();
+      dispatch(clearAuth());
       if (window.location.pathname !== ACCESS_REMOVED_PATH) {
-        window.location.assign(ACCESS_REMOVED_PATH);
+        window.location.assign(accessRemovedPath(reason));
       }
     };
 

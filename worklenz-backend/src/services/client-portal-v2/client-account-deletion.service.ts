@@ -1,8 +1,10 @@
 import axios from "axios";
 import { withTransaction } from "../client-contacts-service";
+import { clientRoleCan } from "../../shared/client-portal-permissions";
 import { log_error } from "../../shared/utils";
 import { recordAuditEvent } from "./audit.service";
 import { PortalError, badRequest, conflict } from "./errors";
+import { notifyStaff } from "./notify.service";
 import { ClientSubject } from "./subject";
 import { Queryable } from "./types";
 
@@ -14,6 +16,12 @@ import { Queryable } from "./types";
  * The login (`client_users`) is shared by every portal the person belongs to, so deleting the account
  * leaves all of them. Access ends on the next request: every client request re-checks the person and
  * an Active user needs `client_users.deleted_at` to be NULL. Sign-in and the staff user lists honor it too.
+ *
+ * Only a Client Admin can do this themselves. In a company account the Client Admins decide who has an
+ * identity in the workspace, so a Member or Viewer asks instead (`submitAccountDeletionRequest`): the request
+ * is audited and reaches the team that controls the data, and a Client Admin can remove them at once under
+ * Members. The person's own profile stays in each workspace's admin console with the status "Account
+ * deleted", and the audit entry written here is the history staff see.
  */
 
 export const ACCOUNT_DELETION_CONFIRMATION = "DELETE";
@@ -86,6 +94,13 @@ export async function requestAccountDeletion(
   subject: ClientSubject,
   input: { confirmation?: unknown }
 ): Promise<AccountDeletionResult> {
+  if (!clientRoleCan(subject.role, "manage_users")) {
+    throw new PortalError(
+      403,
+      "Only a Client Admin can delete an account here. Ask a Client Admin to remove you, or send a deletion request.",
+      "ADMIN_ONLY"
+    );
+  }
   if (input.confirmation !== ACCOUNT_DELETION_CONFIRMATION) {
     throw badRequest(`Type ${ACCOUNT_DELETION_CONFIRMATION} to confirm`, "INVALID_CONFIRMATION");
   }
@@ -133,7 +148,7 @@ export async function requestAccountDeletion(
 
     // One audit entry per portal they belonged to, so every operator can see why the user went away.
     const memberships = await tx.query(
-      `SELECT cc.id, cc.team_id, cc.client_id, cc.name,
+      `SELECT cc.id, cc.team_id, cc.client_id, cc.name, cc.role,
               COALESCE(NULLIF(TRIM(c.company_name), ''), c.name) AS client_name
          FROM client_contacts cc
          JOIN clients c ON c.id = cc.client_id
@@ -150,12 +165,44 @@ export async function requestAccountDeletion(
         targetType: "client_user",
         targetId: row.id,
         targetLabel: `${row.name} · ${row.client_name}`,
+        // The role and the end of the restore window help staff; no email, because the log is append-only.
+        metadata: { role: row.role, restorable_until: scheduled.toISOString() },
       });
     }
-    return { name: login.rows[0].name as string, email: login.rows[0].email as string, portals: memberships.rowCount ?? 0 };
+    return {
+      name: login.rows[0].name as string,
+      email: login.rows[0].email as string,
+      portals: memberships.rowCount ?? 0,
+      memberships: memberships.rows as Array<{
+        id: string;
+        team_id: string;
+        client_id: string;
+        name: string;
+        client_name: string;
+      }>,
+    };
   });
 
-  await notifySupport({ clientUserId, ...deleted, requestedAt, scheduled });
+  // Every workspace the person belonged to hears about it in its activity bell. Their profile stays in
+  // that workspace's admin console as "Account deleted" until the window ends.
+  for (const row of deleted.memberships) {
+    void notifyStaff({
+      teamId: row.team_id,
+      kind: "Access",
+      title: `${row.name} deleted their own account`,
+      body: `${row.client_name} · they can no longer sign in. Their profile stays here for ${ACCOUNT_DELETION_RETENTION_DAYS} days.`,
+      url: `/worklenz/client-portal/clients/${row.client_id}?tab=users`,
+    });
+  }
+
+  await notifySupport({
+    clientUserId,
+    name: deleted.name,
+    email: deleted.email,
+    portals: deleted.portals,
+    requestedAt,
+    scheduled,
+  });
   return { scheduled_deletion_date: scheduled.toISOString() };
 }
 
@@ -213,4 +260,63 @@ async function notifySupport(input: {
   } catch (error: any) {
     log_error("Teams webhook error:", error?.response?.data || error?.message);
   }
+}
+
+export interface AccountDeletionRequestResult {
+  /** False when they had already asked in the last 24 hours, so nothing was sent twice. */
+  sent: boolean;
+}
+
+/**
+ * A Member or Viewer asking for their account to be deleted. They cannot delete it themselves (a Client Admin
+ * owns who has an identity in the workspace), but they never need to go outside the product to ask: the
+ * request is audited and the workspace's Owners and Admins are notified, who can remove them from Members
+ * straight away or arrange the erasure with them. Asking again within 24 hours is a no-op.
+ */
+export async function submitAccountDeletionRequest(subject: ClientSubject): Promise<AccountDeletionRequestResult> {
+  if (clientRoleCan(subject.role, "manage_users")) {
+    throw conflict("As a Client Admin you can delete your account yourself.", "USE_DELETE");
+  }
+
+  const sent = await withTransaction(async tx => {
+    // Serialize the same person's repeat clicks so a double submit cannot notify twice.
+    await tx.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`account-deletion-request:${subject.contactId}`]);
+    const recent = await tx.query(
+      `SELECT 1 FROM client_portal_audit_events
+        WHERE actor_contact_id = $1 AND event_key = 'Account deletion requested'
+          AND created_at > NOW() - INTERVAL '24 hours'
+        LIMIT 1`,
+      [subject.contactId]
+    );
+    if (recent.rows.length > 0) return false;
+
+    const org = await tx.query(
+      `SELECT COALESCE(NULLIF(TRIM(company_name), ''), name) AS name FROM clients WHERE id = $1`,
+      [subject.clientId]
+    );
+    const organizationName: string = org.rows[0]?.name ?? "";
+    await recordAuditEvent(tx, {
+      teamId: subject.teamId,
+      event: "Account deletion requested",
+      actor: { side: "client", name: subject.name, contactId: subject.contactId },
+      clientId: subject.clientId,
+      clientName: organizationName,
+      targetType: "client_user",
+      targetId: subject.contactId,
+      targetLabel: `${subject.name} · ${organizationName}`,
+      metadata: { role: subject.role },
+    });
+    return true;
+  });
+
+  if (sent) {
+    void notifyStaff({
+      teamId: subject.teamId,
+      kind: "Access",
+      title: `${subject.name} asked to delete their account`,
+      body: "Remove them from Client Users now, or arrange the deletion with them.",
+      url: `/worklenz/client-portal/clients/${subject.clientId}?tab=users`,
+    });
+  }
+  return { sent };
 }

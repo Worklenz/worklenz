@@ -78,6 +78,11 @@ const MembersSettings: React.FC = () => {
       await remove(user.id).unwrap();
       void message.success(t('account.org.removed', { name: user.name, defaultValue: '{{name}} was removed. Their access ended immediately.' }));
     } catch (error) {
+      // Someone else (your project team, or another Client Admin) removed them first: the row on screen is
+      // stale, so show the list as it is now instead of leaving a person who is already gone.
+      if ((error as { data?: { body?: { code?: string } } })?.data?.body?.code === 'ALREADY_REMOVED') {
+        void users.refetch();
+      }
       void message.error(errorMessage(error) ?? t('account.org.removeFailed', { defaultValue: 'We could not remove this person.' }));
     }
   };
@@ -153,7 +158,9 @@ const MembersSettings: React.FC = () => {
           icon: <DeleteOutlined />,
           danger: true,
           label: t('account.org.remove', { defaultValue: 'Remove' }),
-          disabled: user.isYou || isLastAdmin,
+          // Your project team owns a deactivated person, and a person who deleted their own account stays in
+          // their records for 30 days: neither can be removed from here.
+          disabled: user.isYou || isLastAdmin || user.status === 'Deactivated' || user.status === 'Deleted',
           onClick: () => setRemoving(user),
         }
       );
@@ -170,6 +177,7 @@ const MembersSettings: React.FC = () => {
     { value: 'Active', text: t('status.user.Active', { defaultValue: 'Active' }) },
     { value: 'Invited', text: t('status.user.Invited', { defaultValue: 'Invited' }) },
     { value: 'Deactivated', text: t('status.user.Deactivated', { defaultValue: 'Deactivated' }) },
+    { value: 'Deleted', text: t('status.user.Deleted', { defaultValue: 'Account deleted' }) },
   ];
 
   const columns: TableColumnsType<ClientOrgUserV2> = [
@@ -320,7 +328,10 @@ const MembersSettings: React.FC = () => {
           setRemoving(null);
         }}
       >
-        {t('account.org.removeBody', { defaultValue: 'Their access ends immediately.' })}
+        {t('account.org.removeBody', {
+          defaultValue:
+            'Their access ends immediately and you cannot undo it. Comments and approvals they made stay in the history. If they are the only person who can decide an approval that is still waiting, ask your project team to name another approver first.',
+        })}
       </Modal>
     </>
   );

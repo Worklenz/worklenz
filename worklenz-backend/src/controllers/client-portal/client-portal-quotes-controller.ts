@@ -384,7 +384,7 @@ export default class ClientPortalQuotesController {
         return res.status(400).json(new ServerResponse(false, null, "Invalid client ID"));
       }
       const clientResult = await db.query(
-        `SELECT c.id, c.name, ${CLIENT_SNAPSHOT_SELECT} FROM clients c WHERE c.id = $1 AND c.team_id = $2`,
+        `SELECT c.id, c.name, ${CLIENT_SNAPSHOT_SELECT} FROM clients c WHERE c.id = $1 AND c.team_id = $2 AND c.deleted_at IS NULL`,
         [clientIdInput, organizationId]
       );
       if (clientResult.rows.length === 0) {
