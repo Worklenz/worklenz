@@ -21,6 +21,16 @@
   line-height: 1.5;
 }
 
+/* Heading font-weight fix for Tailwind preflight */
+.rich-text-editor .ql-editor h1,
+.rich-text-editor .ql-editor h2,
+.rich-text-editor .ql-editor h3,
+.rich-text-editor .ql-editor h4,
+.rich-text-editor .ql-editor h5,
+.rich-text-editor .ql-editor h6 {
+  font-weight: 600;
+}
+
 .rich-text-editor.dark .ql-toolbar.ql-snow {
   border-color: #3a3a3a;
   background: #262626;
