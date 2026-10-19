@@ -33,6 +33,7 @@ import { adminCenterApiService } from '@/api/admin-center/admin-center.api.servi
 import { colors } from '@/styles/colors';
 import { theme } from '@/shared/antd-imports';
 import CreateJobTitleModal from '@/components/common/create-job-title-modal/CreateJobTitleModal';
+import { useAuthService } from '@/hooks/useAuth';
 import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from '@/shared/currencies';
 import { IOrganization } from '@/types/admin-center/admin-center.types';
 
@@ -87,6 +88,18 @@ const RateCardDrawer = ({
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
   const [showUnsavedAlert, setShowUnsavedAlert] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+  const auth = useAuthService();
+  const currentSession = auth.getCurrentSession();
+  const canCreateJobTitle = useMemo(() => {
+    const role = currentSession?.role_name?.toLowerCase();
+    return Boolean(
+      currentSession?.owner ||
+      currentSession?.is_admin ||
+      role === 'owner' ||
+      role === 'admin'
+    );
+  }, [currentSession]);
+
   const [isCreatingJobTitle, setIsCreatingJobTitle] = useState(false);
   const [newJobTitleName, setNewJobTitleName] = useState('');
 
@@ -348,30 +361,32 @@ const RateCardDrawer = ({
               }
               popupRender={menu => (
                 <div>
-                  <div
-                    style={{
-                      padding: '4px 8px',
-                      borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                    }}
-                  >
-                    <Button
-                      type="text"
-                      icon={<PlusOutlined />}
+                  {canCreateJobTitle && (
+                    <div
                       style={{
-                        width: '100%',
-                        textAlign: 'left',
-                        display: 'flex',
-                        alignItems: 'center',
-                        color: token.colorPrimary,
-                        fontWeight: 500,
-                        height: 32,
+                        padding: '4px 8px',
+                        borderBottom: `1px solid ${token.colorBorderSecondary}`,
                       }}
-                      onMouseDown={e => e.preventDefault()}
-                      onClick={() => setIsCreatingJobTitle(true)}
                     >
-                      {t('createJobTitleButtonText', { defaultValue: 'Create a Job Title' })}
-                    </Button>
-                  </div>
+                      <Button
+                        type="text"
+                        icon={<PlusOutlined />}
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          display: 'flex',
+                          alignItems: 'center',
+                          color: token.colorPrimary,
+                          fontWeight: 500,
+                          height: 32,
+                        }}
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => setIsCreatingJobTitle(true)}
+                      >
+                        {t('createJobTitleButtonText', { defaultValue: 'Create a Job Title' })}
+                      </Button>
+                    </div>
+                  )}
                   {menu}
                 </div>
               )}
@@ -622,7 +637,7 @@ const RateCardDrawer = ({
         </Flex>
       </Drawer>
       <CreateJobTitleModal
-        open={isCreatingJobTitle}
+        open={isCreatingJobTitle && canCreateJobTitle}
         initialName={newJobTitleName}
         onClose={() => {
           setIsCreatingJobTitle(false);

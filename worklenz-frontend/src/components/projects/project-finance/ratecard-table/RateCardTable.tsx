@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Avatar,
   Button,
@@ -60,6 +60,15 @@ const RateCardTable: React.FC = () => {
   const { project } = useAppSelector(state => state.projectReducer);
   const hasEditPermission = canEditRateCard(currentSession, project);
   const canAddMembers = canAddMembersToRateCard(currentSession, project);
+  const canCreateJobTitle = useMemo(() => {
+    const role = currentSession?.role_name?.toLowerCase();
+    return Boolean(
+      currentSession?.owner ||
+      currentSession?.is_admin ||
+      role === 'owner' ||
+      role === 'admin'
+    );
+  }, [currentSession]);
 
   // Local state for editing
   const { token } = theme.useToken();
@@ -297,30 +306,32 @@ const RateCardTable: React.FC = () => {
               }
               popupRender={menu => (
                 <div>
-                  <div
-                    style={{
-                      padding: '4px 8px',
-                      borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                    }}
-                  >
-                    <Button
-                      type="text"
-                      icon={<PlusOutlined />}
+                  {canCreateJobTitle && (
+                    <div
                       style={{
-                        width: '100%',
-                        textAlign: 'left',
-                        display: 'flex',
-                        alignItems: 'center',
-                        color: token.colorPrimary,
-                        fontWeight: 500,
-                        height: 32,
+                        padding: '4px 8px',
+                        borderBottom: `1px solid ${token.colorBorderSecondary}`,
                       }}
-                      onMouseDown={e => e.preventDefault()}
-                      onClick={() => setIsCreateModalOpen(true)}
                     >
-                      {t('createJobTitleButtonText', { defaultValue: 'Create a Job Title' })}
-                    </Button>
-                  </div>
+                      <Button
+                        type="text"
+                        icon={<PlusOutlined />}
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          display: 'flex',
+                          alignItems: 'center',
+                          color: token.colorPrimary,
+                          fontWeight: 500,
+                          height: 32,
+                        }}
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => setIsCreateModalOpen(true)}
+                      >
+                        {t('createJobTitleButtonText', { defaultValue: 'Create a Job Title' })}
+                      </Button>
+                    </div>
+                  )}
                   {menu}
                 </div>
               )}
@@ -459,7 +470,7 @@ const RateCardTable: React.FC = () => {
           )}
         />
         <CreateJobTitleModal
-          open={isCreateModalOpen}
+          open={isCreateModalOpen && canCreateJobTitle}
           initialName={jobTitleSearchText}
           onClose={() => {
             setIsCreateModalOpen(false);

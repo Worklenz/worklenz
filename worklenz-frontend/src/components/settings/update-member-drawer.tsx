@@ -129,6 +129,20 @@ const UpdateMemberDrawer = ({
     return false;
   }, [currentUserRole, isOwnAccount, canManageTarget]);
 
+  const canCreateJobTitle = useMemo(() => {
+    return currentUserRole === ROLE_NAMES.OWNER || currentUserRole === ROLE_NAMES.ADMIN;
+  }, [currentUserRole]);
+
+  const canEditRole = useMemo(() => {
+    if (isOwnAccount) return false;
+    return Boolean(canManageTarget);
+  }, [isOwnAccount, canManageTarget]);
+
+  const canEditManager = useMemo(() => {
+    if (isOwnAccount) return false;
+    return Boolean(canManageTarget);
+  }, [isOwnAccount, canManageTarget]);
+
   const canEditOwnAccount = useMemo(() => {
     return isOwnAccount;
   }, [isOwnAccount]);
@@ -260,9 +274,32 @@ const UpdateMemberDrawer = ({
         }
       }
 
-      // For team owner editing their own details, skip the role/admin update
-      // since they can't change their own role
-      if (!isOwnerEditingOwnDetails) {
+      // For any user editing their own details, protect role/admin fields
+      // and only update basic details (job title, department, practice).
+      if (isOwnAccount) {
+        const currentJobTitle = teamMember?.job_title;
+        const newJobTitle = form.getFieldValue('jobTitle');
+        const newDepartmentId = form.getFieldValue('departmentId');
+        const newPracticeId = form.getFieldValue('practiceId');
+        const basicInfoChanged =
+          newJobTitle !== currentJobTitle ||
+          newDepartmentId !== teamMember?.department_id ||
+          newPracticeId !== teamMember?.practice_id;
+        if (basicInfoChanged) {
+          const body: ITeamMemberCreateRequest = {
+            job_title: newJobTitle,
+            department_id: newDepartmentId,
+            practice_id: newPracticeId,
+            emails: [teamMember.email],
+            is_admin: Boolean(teamMember.is_admin || teamMember.role_name === ROLE_NAMES.ADMIN),
+            role_name: teamMember.role_name || ROLE_NAMES.MEMBER,
+          };
+          const res = await teamMembersApiService.update(selectedMemberId, body);
+          if (!res.done) {
+            throw new Error(res.message || t('updateError'));
+          }
+        }
+      } else {
         const body: ITeamMemberCreateRequest = {
           job_title: form.getFieldValue('jobTitle'),
           department_id: form.getFieldValue('departmentId'),
@@ -283,38 +320,13 @@ const UpdateMemberDrawer = ({
         if (!res.done) {
           throw new Error(res.message || t('updateError'));
         }
-      } else {
-        // For owner, only update the non-privileged fields (job title, department,
-        // practice) they're allowed to touch on their own account; role/admin stay put.
-        const currentJobTitle = teamMember?.job_title;
-        const newJobTitle = form.getFieldValue('jobTitle');
-        const newDepartmentId = form.getFieldValue('departmentId');
-        const newPracticeId = form.getFieldValue('practiceId');
-        const basicInfoChanged =
-          newJobTitle !== currentJobTitle ||
-          newDepartmentId !== teamMember?.department_id ||
-          newPracticeId !== teamMember?.practice_id;
-        if (basicInfoChanged) {
-          const body: ITeamMemberCreateRequest = {
-            job_title: newJobTitle,
-            department_id: newDepartmentId,
-            practice_id: newPracticeId,
-            emails: [teamMember.email],
-            is_admin: false,
-            role_name: ROLE_NAMES.OWNER,
-          };
-          const res = await teamMembersApiService.update(selectedMemberId, body);
-          if (!res.done) {
-            throw new Error(res.message || t('updateError'));
-          }
-        }
       }
 
       const currentManagerId = teamMember?.reports_to_member_id;
       const newManagerId = values.manager;
 
-      // Handle team lead assignment changes and notify parent immediately
-      if (currentManagerId !== newManagerId) {
+      // Handle team lead assignment changes only when managing another member
+      if (!isOwnAccount && currentManagerId !== newManagerId) {
         if (newManagerId) {
           await teamManagementApiService.assignManager(selectedMemberId, newManagerId);
           // Find the selected team lead's name so the table cell updates right away
@@ -345,7 +357,7 @@ const UpdateMemberDrawer = ({
               : 'Member';
 
       onNameUpdate?.(selectedMemberId, resolvedName);
-      if (!isOwnerEditingOwnDetails) {
+      if (!isOwnAccount) {
         onRoleUpdate?.(selectedMemberId, newRoleName);
       }
       onJobTitleUpdate?.(selectedMemberId, resolvedJobTitle);
@@ -528,30 +540,32 @@ const UpdateMemberDrawer = ({
             loading={jobTitlesLoading}
             popupRender={menu => (
               <div>
-                <div
-                  style={{
-                    padding: '4px 8px',
-                    borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                  }}
-                >
-                  <Button
-                    type="text"
-                    icon={<PlusOutlined />}
+                {canCreateJobTitle && (
+                  <div
                     style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      display: 'flex',
-                      alignItems: 'center',
-                      color: token.colorPrimary,
-                      fontWeight: 500,
-                      height: 32,
+                      padding: '4px 8px',
+                      borderBottom: `1px solid ${token.colorBorderSecondary}`,
                     }}
-                    onMouseDown={e => e.preventDefault()}
-                    onClick={() => setIsCreateJobTitleOpen(true)}
                   >
-                    {t('createJobTitleButtonText', { defaultValue: 'Create a Job Title' })}
-                  </Button>
-                </div>
+                    <Button
+                      type="text"
+                      icon={<PlusOutlined />}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: token.colorPrimary,
+                        fontWeight: 500,
+                        height: 32,
+                      }}
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => setIsCreateJobTitleOpen(true)}
+                    >
+                      {t('createJobTitleButtonText', { defaultValue: 'Create a Job Title' })}
+                    </Button>
+                  </div>
+                )}
                 {menu}
               </div>
             )}
@@ -565,7 +579,7 @@ const UpdateMemberDrawer = ({
         </Form.Item>
 
         <CreateJobTitleModal
-          open={isCreateJobTitleOpen}
+          open={isCreateJobTitleOpen && canCreateJobTitle}
           initialName={jobTitleSearchText}
           onClose={() => setIsCreateJobTitleOpen(false)}
           onSuccess={newJobTitle => {
@@ -643,7 +657,7 @@ const UpdateMemberDrawer = ({
             rules={[{ required: true }]}
           >
             <Select
-              disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
+              disabled={!canEditRole}
               options={translatedRoleOptions}
               optionRender={option => (
                 <Flex vertical gap={2} style={{ whiteSpace: 'normal', lineHeight: 1.4 }}>
@@ -681,7 +695,7 @@ const UpdateMemberDrawer = ({
               allowClear
               placeholder={t('selectManagerPlaceholder', { defaultValue: 'Select a Team Lead as manager' })}
               loading={loadingTeamLeads}
-              disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
+              disabled={!canEditManager}
               showSearch
               filterOption={(input, option) =>
                 (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
