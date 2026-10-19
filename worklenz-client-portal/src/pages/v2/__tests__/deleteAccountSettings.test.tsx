@@ -36,8 +36,8 @@ describe('Settings > Delete Account', () => {
     open('u-jamie');
     expect(await screen.findByText('Only a Client Admin can delete an account here.', {}, { timeout: 10000 })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Delete My Account/ })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Request account deletion' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Request account deletion' })).toBeDisabled());
+    await userEvent.click(screen.getByRole('button', { name: /Request account deletion/ }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Request account deletion/ })).toBeDisabled());
   });
 
   it('shows why a deletion is refused when the person is the only Client Admin', async () => {
