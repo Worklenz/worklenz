@@ -116,7 +116,7 @@ export const RolesAndPermissionsPage: React.FC = () => {
   const { token } = theme.useToken();
 
   const { data: schemes = [], isLoading: schemesLoading } = useListSchemesQuery();
-  const [isProjectsExpanded, setIsProjectsExpanded] = useState(false);
+  const [isProjectsExpanded, setIsProjectsExpanded] = useState(true);
 
   const sectionStyle: React.CSSProperties = {
     marginBottom: token.marginLG,
