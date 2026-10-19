@@ -27,6 +27,14 @@ The v1 admin screens and the old password sign-in answer 410 after step 2, so a 
 - Rolling back `1791298000000` turns every Client Viewer into a Client Member (v1 has no read-only role), which gives them comment, upload and change-request rights. Before running it, list the viewers (`SELECT id, email FROM client_contacts WHERE role = 'viewer'`) and deactivate any that must stay read-only.
 - Removing or deactivating the only named approver of a waiting approval now asks staff to confirm (API: `confirm_pending_approvals`).
 
+## Deleting clients and the retention purge
+
+- Deleting a client is a soft delete: it can be restored for 30 days. After that it can no longer be restored (`RETENTION_EXPIRED`).
+- Its data is removed only when `CLIENT_PURGE_ENABLED=true`. With it unset (the default) the daily job only logs how many clients are past retention, so a deleted client's data stays in the database indefinitely. `CLIENT_PURGE_INTERVAL` sets the cron schedule (default `30 3 * * *`).
+- The purge deletes the client row, except where it has invoices, quotes or legacy requests/tickets/chat, or a login that another organization still uses; those clients are kept as a tombstone with their contact details removed.
+- Before enabling the purge, list the foreign keys to `clients` and confirm any that do not cascade are covered by the `must_keep` check in `organization-purge.service.ts`:
+  `SELECT conrelid::regclass, conname, confdeltype FROM pg_constraint WHERE contype = 'f' AND confrelid = 'clients'::regclass;`
+
 ## Sharing rules to know about
 
 - **File versions.** Sharing a file shares the version that was current at that moment and later ones (`project_files.first_shared_version`). Earlier versions stay Internal Only. Migration `1791798944695` backfills files staff already shared to their current version, so internal drafts uploaded before the share stop being downloadable by clients. Files a client uploaded start at version 1. Returning a file to Internal Only clears the value; sharing it again starts from the then-current version.

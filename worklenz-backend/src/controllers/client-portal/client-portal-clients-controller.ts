@@ -1356,9 +1356,12 @@ export default class ClientPortalClientsController extends ClientPortalControlle
   /**
    * Deprecated: `DELETE /portal/clients/:id` always meant "deactivate" (the client stayed in the list). It now
    * delegates to the v2 lifecycle service, which locks the client, audits the change, and never writes the
-   * logins shared with other workspaces. A real delete is `DELETE /portal/v2/organizations/:id`.
+   * logins shared with other workspaces. A real delete is `DELETE /api/v1/clients/portal/v2/organizations/:id`.
    */
   static async deleteClient(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    // Tell script and integration callers that this route is going away and that "delete" now has a v2 meaning.
+    res.setHeader("Deprecation", "true");
+    res.setHeader("Link", `</api/v1/clients/portal/v2/organizations/${req.params.id}>; rel="successor-version"`);
     try {
       await deactivateOrganization({
         teamId: (req.user as any)?.team_id,

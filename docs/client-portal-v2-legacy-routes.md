@@ -29,6 +29,16 @@ request, even with a token that has not expired.
 | `/auth/logout`, `/organizations`, `/organizations/switch`, `/organizations/accept-invite` | GET, POST | Authenticated (includes the Active company user check). Deliberately not behind `requireClientSubject`, because they must work for the portal switcher and invitations. |
 | `/v2/*` | all | `requireClientSubject` first, then per-route capabilities. Items are further scoped by the gating chain in `services/client-portal-v2/scope.ts`. |
 
+## Breaking changes for integrations
+
+These admin routes no longer do what they did and answer 410 `MOVED_IN_V2`: `bulk-update`, `bulk-delete`, the company-user
+`role` / `status` / delete routes and the team write routes. The admin console no longer calls them. Anything else that does
+(scripts, mobile, third-party integrations) must move to `/api/v1/clients/portal/v2/*`.
+
+`DELETE /api/v1/clients/portal/clients/:id` still means **deactivate** (the client stays in the list) and now sends
+`Deprecation: true` and a `Link: <...>; rel="successor-version"` header pointing at the v2 organization route. A real delete,
+restorable for 30 days, is `DELETE /api/v1/clients/portal/v2/organizations/:id`.
+
 ## How this is tested
 
 `src/tests/client-portal-revocation-matrix.spec.ts` mounts the real routers and calls **every** protected route (read from the router

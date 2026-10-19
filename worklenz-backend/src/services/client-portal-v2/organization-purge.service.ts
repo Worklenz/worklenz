@@ -14,7 +14,7 @@ import { Queryable } from "./types";
  *   - Invoices or quotes exist: they are financial records the business may have to keep, and they already
  *     carry the issued-to snapshot, so the `clients` row stays as a tombstone with its contact details
  *     scrubbed, and everything else about the portal is removed.
- *   - Legacy requests, tickets or chat messages exist (their foreign keys do not cascade), or a login homed on
+ *   - Legacy requests, tickets, chat messages, task comments or uploads exist (their foreign keys do not cascade), or a login homed on
  *     this client is still used by another organization: the row is tombstoned as well, never hard-deleted.
  *
  * The login (`client_users`) is shared by every portal its owner belongs to, so a login is only removed
@@ -65,6 +65,8 @@ export async function purgeOrganization(candidate: PurgeCandidate): Promise<Purg
             OR EXISTS (SELECT 1 FROM client_portal_requests WHERE client_id = $1)
             OR EXISTS (SELECT 1 FROM client_portal_tickets WHERE client_id = $1)
             OR EXISTS (SELECT 1 FROM client_portal_chat_messages WHERE client_id = $1)
+            OR EXISTS (SELECT 1 FROM client_portal_task_comments WHERE client_id = $1)
+            OR EXISTS (SELECT 1 FROM client_portal_attachments WHERE uploaded_by_client_id = $1)
             OR EXISTS (
               SELECT 1 FROM client_users cu
                WHERE cu.client_id = $1
