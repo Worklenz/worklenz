@@ -19,11 +19,18 @@ const HTML_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot
 /** Turns the sanitized rich-text notes HTML into plain text for a PDF <Text> node. */
 export const htmlToPlainText = (html: string | null | undefined): string => {
   if (!html) return "";
-  return html
+  const withBreaks = html
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<li[^>]*>/gi, "\n• ")
-    .replace(/<\/(p|div|h[1-6]|ul|ol|li)>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
+    .replace(/<\/(p|div|h[1-6]|ul|ol|li)>/gi, "\n");
+  // Repeat until stable so nested fragments like "<scr<b>ipt>" can't reassemble into a tag.
+  let text = withBreaks;
+  let previous: string;
+  do {
+    previous = text;
+    text = text.replace(/<[^>]*>/g, "");
+  } while (text !== previous);
+  return text
     .replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (_, entity: string) => HTML_ENTITIES[entity])
     .replace(/\n{3,}/g, "\n\n")
     .trim();
