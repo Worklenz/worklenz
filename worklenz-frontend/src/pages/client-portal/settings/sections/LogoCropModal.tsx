@@ -10,7 +10,12 @@ import ReactCrop, {
 import 'react-image-crop/dist/ReactCrop.css';
 import { Modal, Flex, Typography, Button, Segmented } from '@/shared/antd-imports';
 
-export type AspectMode = '1:1' | 'free';
+export type AspectMode = '1:1' | '250x100';
+
+const ASPECT_RATIOS: Record<AspectMode, number> = {
+  '1:1': 1,
+  '250x100': 250 / 100, // 2.5
+};
 
 export interface LogoCropModalProps {
   open: boolean;
@@ -47,11 +52,13 @@ function centerAspectCrop(
  * Extracts the pixelCrop area from the image via an HTML canvas.
  * Scales the output so its longest dimension is capped at 512px to keep
  * file size optimal, while preserving aspect ratio and avoiding upscaling smaller crops.
+ * If targetDimensions is provided, scales directly to the specified target width and height.
  */
 export function getCroppedImg(
   image: HTMLImageElement | string,
   pixelCrop: { x: number; y: number; width: number; height: number },
-  maxDimension = MAX_DIMENSION
+  maxDimension = MAX_DIMENSION,
+  targetDimensions?: { width: number; height: number }
 ): Promise<string> | string {
   if (typeof image !== 'string') {
     const canvas = document.createElement('canvas');
@@ -68,10 +75,18 @@ export function getCroppedImg(
     const naturalCropWidth = pixelCrop.width * scaleX;
     const naturalCropHeight = pixelCrop.height * scaleY;
 
-    const longestSide = Math.max(naturalCropWidth, naturalCropHeight);
-    const scale = longestSide > maxDimension ? maxDimension / longestSide : 1;
-    const targetWidth = Math.max(1, Math.round(naturalCropWidth * scale));
-    const targetHeight = Math.max(1, Math.round(naturalCropHeight * scale));
+    let targetWidth: number;
+    let targetHeight: number;
+
+    if (targetDimensions) {
+      targetWidth = targetDimensions.width;
+      targetHeight = targetDimensions.height;
+    } else {
+      const longestSide = Math.max(naturalCropWidth, naturalCropHeight);
+      const scale = longestSide > maxDimension ? maxDimension / longestSide : 1;
+      targetWidth = Math.max(1, Math.round(naturalCropWidth * scale));
+      targetHeight = Math.max(1, Math.round(naturalCropHeight * scale));
+    }
 
     canvas.width = targetWidth;
     canvas.height = targetHeight;
@@ -95,7 +110,7 @@ export function getCroppedImg(
     const img = new Image();
     img.addEventListener('load', () => {
       try {
-        const result = getCroppedImg(img, pixelCrop, maxDimension);
+        const result = getCroppedImg(img, pixelCrop, maxDimension, targetDimensions);
         resolve(result as string);
       } catch (e) {
         reject(e);
@@ -125,21 +140,10 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
     (e: React.SyntheticEvent<HTMLImageElement>) => {
       const { width, height } = e.currentTarget;
       imgRef.current = e.currentTarget;
-      if (aspectMode === '1:1') {
-        const initialCrop = centerAspectCrop(width, height, aspect || 1);
-        setCrop(initialCrop);
-        setCompletedCrop(convertToPixelCrop(initialCrop, width, height));
-      } else {
-        const initialCrop: Crop = {
-          unit: '%',
-          x: 10,
-          y: 10,
-          width: 80,
-          height: 80,
-        };
-        setCrop(initialCrop);
-        setCompletedCrop(convertToPixelCrop(initialCrop, width, height));
-      }
+      const targetAspect = aspectMode === '1:1' ? (aspect ?? 1) : ASPECT_RATIOS['250x100'];
+      const initialCrop = centerAspectCrop(width, height, targetAspect);
+      setCrop(initialCrop);
+      setCompletedCrop(convertToPixelCrop(initialCrop, width, height));
     },
     [aspect, aspectMode]
   );
@@ -148,22 +152,24 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
     setAspectMode(mode);
     if (!imgRef.current) return;
     const { width, height } = imgRef.current;
-    if (mode === '1:1') {
-      const newCrop = centerAspectCrop(width, height, aspect || 1);
-      setCrop(newCrop);
-      setCompletedCrop(convertToPixelCrop(newCrop, width, height));
-    } else {
-      if (crop) {
-        setCrop({ ...crop });
-      }
-    }
+    const targetAspect = mode === '1:1' ? (aspect ?? 1) : ASPECT_RATIOS['250x100'];
+    const newCrop = centerAspectCrop(width, height, targetAspect);
+    setCrop(newCrop);
+    setCompletedCrop(convertToPixelCrop(newCrop, width, height));
   };
 
   const handleApply = async () => {
     if (!completedCrop || !imgRef.current) return;
     setApplying(true);
     try {
-      const base64 = (await getCroppedImg(imgRef.current, completedCrop)) as string;
+      const targetDimensions =
+        aspectMode === '250x100' ? { width: 250, height: 100 } : undefined;
+      const base64 = (await getCroppedImg(
+        imgRef.current,
+        completedCrop,
+        MAX_DIMENSION,
+        targetDimensions
+      )) as string;
       onCropComplete(base64);
       setCrop(undefined);
       setCompletedCrop(null);
@@ -223,7 +229,8 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
             crop={crop}
             onChange={(_, percentCrop) => setCrop(percentCrop)}
             onComplete={c => setCompletedCrop(c)}
-            aspect={aspectMode === '1:1' ? (aspect ?? 1) : undefined}
+            aspect={aspectMode === '1:1' ? (aspect ?? 1) : ASPECT_RATIOS['250x100']}
+            locked={aspectMode === '250x100'}
             ruleOfThirds={showGrid}
             keepSelection
           >
@@ -260,7 +267,7 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
             onChange={val => handleAspectModeChange(val as AspectMode)}
             options={[
               { label: t('cropAspectSquare', { defaultValue: '1:1 Square' }), value: '1:1' },
-              { label: t('cropAspectFree', { defaultValue: 'Free' }), value: 'free' },
+              { label: t('cropAspect250x100', { defaultValue: '250x100' }), value: '250x100' },
             ]}
           />
         </Flex>
@@ -270,9 +277,13 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
         type="secondary"
         style={{ display: 'block', textAlign: 'center', fontSize: 12, marginTop: 10 }}
       >
-        {t('cropInstructionText', {
-          defaultValue: 'Drag corners or sides to resize · Move selection to reposition',
-        })}
+        {aspectMode === '250x100'
+          ? t('cropInstructionLockedText', {
+              defaultValue: 'Move selection to reposition',
+            })
+          : t('cropInstructionText', {
+              defaultValue: 'Drag corners or sides to resize · Move selection to reposition',
+            })}
       </Typography.Text>
     </Modal>
   );

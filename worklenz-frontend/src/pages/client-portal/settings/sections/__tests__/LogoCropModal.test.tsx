@@ -20,17 +20,20 @@ vi.mock('react-image-crop', async importOriginal => {
       onChange,
       onComplete,
       aspect,
+      locked,
       ruleOfThirds,
     }: {
       children: React.ReactNode;
       onChange?: (crop: unknown, percentCrop: unknown) => void;
       onComplete?: (crop: unknown, percentCrop: unknown) => void;
       aspect?: number;
+      locked?: boolean;
       ruleOfThirds?: boolean;
     }) => (
       <div
         data-testid="mock-react-crop"
         data-aspect={aspect !== undefined ? String(aspect) : 'free'}
+        data-locked={String(locked)}
         data-rule-of-thirds={String(ruleOfThirds)}
       >
         {children}
@@ -71,35 +74,46 @@ describe('LogoCropModal', () => {
     expect(screen.getByText('Apply Crop')).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
     expect(screen.getByText('1:1 Square')).toBeInTheDocument();
-    expect(screen.getByText('Free')).toBeInTheDocument();
+    expect(screen.getByText('250x100')).toBeInTheDocument();
     expect(screen.getByTestId('mock-react-crop')).toBeInTheDocument();
     expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-rule-of-thirds', 'true');
     expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-aspect', '1');
+    expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-locked', 'false');
     expect(
       screen.getByText('Drag corners or sides to resize · Move selection to reposition')
     ).toBeInTheDocument();
   });
 
-  it('toggles between 1:1 Square and Free aspect ratio', async () => {
+  it('toggles between 1:1 Square and 250x100 aspect ratio and locks 250x100', async () => {
     const user = userEvent.setup();
     render(<LogoCropModal {...defaultProps} />);
 
-    // Initially aspect is 1
+    // Initially aspect is 1 and not locked
     expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-aspect', '1');
+    expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-locked', 'false');
+    expect(
+      screen.getByText('Drag corners or sides to resize · Move selection to reposition')
+    ).toBeInTheDocument();
 
-    // Click "Free"
-    const freeOption = screen.getByText('Free');
-    await user.click(freeOption);
+    // Click "250x100"
+    const bannerOption = screen.getByText('250x100');
+    await user.click(bannerOption);
 
-    // Aspect becomes free (undefined)
-    expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-aspect', 'free');
+    // Aspect becomes 2.5 and locked
+    expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-aspect', '2.5');
+    expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-locked', 'true');
+    expect(screen.getByText('Move selection to reposition')).toBeInTheDocument();
 
     // Click "1:1 Square"
     const squareOption = screen.getByText('1:1 Square');
     await user.click(squareOption);
 
-    // Aspect changes back to 1
+    // Aspect changes back to 1 and unlocked
     expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-aspect', '1');
+    expect(screen.getByTestId('mock-react-crop')).toHaveAttribute('data-locked', 'false');
+    expect(
+      screen.getByText('Drag corners or sides to resize · Move selection to reposition')
+    ).toBeInTheDocument();
   });
 
   it('does not render modal content when open is false', () => {
@@ -285,6 +299,66 @@ describe('LogoCropModal', () => {
 
         expect(canvasWidth).toBe(250);
         expect(canvasHeight).toBe(250);
+      } finally {
+        window.Image = originalImage;
+        vi.restoreAllMocks();
+      }
+    });
+
+    it('scales dimensions directly to targetDimensions when provided', async () => {
+      let canvasWidth = 0;
+      let canvasHeight = 0;
+
+      const originalCreateElement = document.createElement.bind(document);
+      vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'canvas') {
+          return {
+            set width(val: number) {
+              canvasWidth = val;
+            },
+            get width() {
+              return canvasWidth;
+            },
+            set height(val: number) {
+              canvasHeight = val;
+            },
+            get height() {
+              return canvasHeight;
+            },
+            getContext: () => ({
+              drawImage: vi.fn(),
+            }),
+            toDataURL: () => 'data:image/png;base64,exact250x100',
+          } as unknown as HTMLCanvasElement;
+        }
+        return originalCreateElement(tagName);
+      });
+
+      const originalImage = window.Image;
+      class MockImage {
+        onload: (() => void) | null = null;
+        src = '';
+        width = 800;
+        height = 320;
+        naturalWidth = 800;
+        naturalHeight = 320;
+        addEventListener(event: string, callback: () => void) {
+          if (event === 'load') setTimeout(callback, 0);
+        }
+      }
+      window.Image = MockImage as unknown as typeof Image;
+
+      try {
+        const result = await getCroppedImg(
+          'data:image/png;base64,banner',
+          { x: 0, y: 0, width: 800, height: 320 },
+          512,
+          { width: 250, height: 100 }
+        );
+
+        expect(result).toBe('data:image/png;base64,exact250x100');
+        expect(canvasWidth).toBe(250);
+        expect(canvasHeight).toBe(100);
       } finally {
         window.Image = originalImage;
         vi.restoreAllMocks();
