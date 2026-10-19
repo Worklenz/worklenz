@@ -182,21 +182,33 @@ const HomeLogTime: React.FC = () => {
     return dayjs().startOf('day').subtract(backdateLimitDays, 'day');
   }, [backdateLimitDays]);
 
+  const [selProjectId, setSelProjectId] = useState<string | undefined>(undefined);
+  const [selTaskId, setSelTaskId] = useState<string | undefined>(undefined);
+
+  const selectedProject = useMemo(
+    () => (selProjectId ? projects.find((p: IProject) => p.id === selProjectId) || null : null),
+    [projects, selProjectId]
+  );
+
   const isDateDisabled = useCallback(
     (current: Dayjs) => {
       if (!current) return false;
-      if (!minLogDate) return false;
-      return current.isBefore(minLogDate, 'day');
+      if (minLogDate && current.isBefore(minLogDate, 'day')) return true;
+      if (
+        selectedProject?.start_date &&
+        current.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')
+      ) {
+        return true;
+      }
+      return false;
     },
-    [minLogDate]
+    [minLogDate, selectedProject]
   );
 
   useEffect(() => {
     dispatch(fetchPriorities());
   }, [dispatch]);
 
-  const [selProjectId, setSelProjectId] = useState<string | undefined>(undefined);
-  const [selTaskId, setSelTaskId] = useState<string | undefined>(undefined);
   const [tasks, setTasks] = useState<ITaskInProject[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [taskSearch, setTaskSearch] = useState('');
@@ -489,6 +501,20 @@ const HomeLogTime: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!isFormValid || !selTaskId) return;
+
+    if (
+      selectedProject?.start_date &&
+      date.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')
+    ) {
+      notification.warning({
+        key: 'home-log-time-project-start-date',
+        message: t('logTime.projectStartDateError', {
+          date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+          defaultValue: 'Time cannot be logged before the project start date ({{date}})',
+        }),
+      });
+      return;
+    }
     setSubmitting(true);
     try {
       if (
@@ -921,6 +947,14 @@ const HomeLogTime: React.FC = () => {
                   onChange={d => d && setDate(d)}
                   disabledDate={isDateDisabled}
                 />
+                {selectedProject?.start_date && (
+                  <div style={{ fontSize: 11, color: token.colorTextDescription, marginTop: 4 }}>
+                    {t('logTime.projectStartDateHint', {
+                      date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+                      defaultValue: 'Project start date: {{date}}',
+                    })}
+                  </div>
+                )}
               </div>
               <div style={{ flex: 1, minWidth: 72 }}>
                  <label style={fldLbl}>{t('logTime.hoursLabel', { defaultValue: 'Hours' })}</label>
@@ -966,6 +1000,14 @@ const HomeLogTime: React.FC = () => {
                   onChange={d => d && setDate(d)}
                   disabledDate={isDateDisabled}
                 />
+                {selectedProject?.start_date && (
+                  <div style={{ fontSize: 11, color: token.colorTextDescription, marginTop: 4 }}>
+                    {t('logTime.projectStartDateHint', {
+                      date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+                      defaultValue: 'Project start date: {{date}}',
+                    })}
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
                 <div style={{ flex: 1, minWidth: 140 }}>

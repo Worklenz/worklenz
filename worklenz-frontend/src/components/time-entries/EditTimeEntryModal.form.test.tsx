@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   updateEntry: vi.fn(),
   update: vi.fn(),
   create: vi.fn(),
+  splitEntry: vi.fn(),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -45,6 +46,7 @@ vi.mock('@/api/tasks/task-time-logs.api.service', () => ({
     updateEntry: (...args: unknown[]) => mocks.updateEntry(...args),
     update: (...args: unknown[]) => mocks.update(...args),
     create: (...args: unknown[]) => mocks.create(...args),
+    splitEntry: (...args: unknown[]) => mocks.splitEntry(...args),
     getMyRecentProjects: vi.fn().mockResolvedValue({ done: true, body: [] }),
   },
 }));
@@ -70,6 +72,7 @@ describe('EditTimeEntryModal with the real time-log form', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.updateEntry.mockResolvedValue({ done: true });
+    mocks.splitEntry.mockResolvedValue({ done: true });
   });
 
   it('shows the entry\'s saved values in a regular-size form with right-aligned buttons', async () => {
@@ -126,6 +129,88 @@ describe('EditTimeEntryModal with the real time-log form', () => {
     expect(await within(dialog).findByText('You can only edit your own time entries.')).toBeInTheDocument();
     expect(onSaved).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('preserves the calendar span when reopening an existing 25-hour log without collapsing to 1 hour', async () => {
+    const user = userEvent.setup();
+    const ENTRY_25H: EditableTimeEntry = {
+      id: 'log-25h',
+      task_id: 'task-1',
+      task_name: 'Write the report',
+      project_id: 'project-1',
+      project_name: 'Project One',
+      user_id: 'u-me',
+      user_name: 'Me',
+      time_spent: '90000', // 25 hours (10:00 Day 1 to 11:00 Day 2)
+      description: 'Long run',
+      created_at: '2026-09-24T10:00:00.000Z',
+    };
+
+    render(<EditTimeEntryModal entry={ENTRY_25H} onClose={onClose} onSaved={onSaved} />);
+
+    const dialog = await screen.findByRole('dialog');
+    const update = await within(dialog).findByRole('button', { name: /Update/ });
+    await waitFor(() => expect(update).toBeEnabled());
+    await user.click(update);
+
+    await waitFor(() => expect(mocks.splitEntry).toHaveBeenCalledTimes(1));
+    expect(mocks.splitEntry).toHaveBeenCalledWith(
+      'log-25h',
+      expect.objectContaining({
+        seconds_spent: expect.any(Number),
+        description: 'Long run',
+      }),
+      expect.objectContaining({
+        seconds_spent: expect.any(Number),
+      })
+    );
+    const call1Args = mocks.splitEntry.mock.calls[0];
+    expect(call1Args[1].seconds_spent + call1Args[2].seconds_spent).toBe(90000);
+    // Crucially: never collapsed to 3,600 seconds!
+    expect(mocks.updateEntry).not.toHaveBeenCalledWith(
+      'log-25h',
+      expect.objectContaining({ seconds_spent: 3600 })
+    );
+  });
+
+  it('preserves the original author when an admin turns another member\'s entry into an overnight split', async () => {
+    const user = userEvent.setup();
+    const MEMBER_ENTRY: EditableTimeEntry = {
+      id: 'log-member-1',
+      task_id: 'task-1',
+      task_name: 'Member Task',
+      project_id: 'project-1',
+      project_name: 'Project One',
+      user_id: 'u-other-member',
+      user_name: 'Alice Member',
+      time_spent: '90000',
+      description: 'Overnight work by Alice',
+      created_at: '2026-09-24T10:00:00.000Z',
+    };
+
+    render(<EditTimeEntryModal entry={MEMBER_ENTRY} onClose={onClose} onSaved={onSaved} />);
+
+    const dialog = await screen.findByRole('dialog');
+    const update = await within(dialog).findByRole('button', { name: /Update/ });
+    await waitFor(() => expect(update).toBeEnabled());
+    await user.click(update);
+
+    // Uses splitEntry rather than creating a new log via ordinary create route
+    // (which would attribute the second day to req.user.id).
+    await waitFor(() => expect(mocks.splitEntry).toHaveBeenCalledTimes(1));
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.splitEntry).toHaveBeenCalledWith(
+      'log-member-1',
+      expect.objectContaining({
+        seconds_spent: expect.any(Number),
+        description: 'Overnight work by Alice',
+      }),
+      expect.objectContaining({
+        seconds_spent: expect.any(Number),
+      })
+    );
+    const call2Args = mocks.splitEntry.mock.calls[0];
+    expect(call2Args[1].seconds_spent + call2Args[2].seconds_spent).toBe(90000);
   });
 });
 
@@ -271,5 +356,40 @@ describe('TimeLogForm used by the task drawer (no inModal)', () => {
         seconds_spent: 7200, // 2 hours on Day 2
       })
     );
+  });
+
+  it('preserves 25-hour elapsed duration when switching between timeRange and duration modes', async () => {
+    render(
+      <TimeLogForm
+        mode="edit"
+        projectId="project-1"
+        initialValues={{
+          id: 'log-25h-drawer',
+          project_id: 'project-1',
+          created_at: '2026-09-24T10:00:00.000Z',
+          start_time: '2026-09-24T10:00:00.000Z',
+          end_time: '2026-09-25T11:00:00.000Z',
+          time_spent: 90000,
+          description: '25h drawer',
+        }}
+        onCancel={vi.fn()}
+      />
+    );
+
+    // Initial timeRange shows 25h 0m tag
+    expect(await screen.findByText(/25h 0m/)).toBeInTheDocument();
+
+    // Switch to Duration mode
+    fireEvent.click(screen.getByText('Duration'));
+
+    // Hours input should have value 25
+    const inputs = screen.getAllByRole('spinbutton');
+    // inputs[0] is hours, inputs[1] is minutes
+    expect(inputs[0]).toHaveValue('25');
+    expect(inputs[1]).toHaveValue('0');
+
+    // Switch back to Time Range mode
+    fireEvent.click(screen.getByText('Time Range'));
+    expect(await screen.findByText(/25h 0m/)).toBeInTheDocument();
   });
 });

@@ -47,15 +47,25 @@ export function computeTimeRangeSplits(
     .second(0)
     .millisecond(0);
 
-  let fullEnd = dayjs(dateValue)
-    .hour(endTimeValue.hour())
-    .minute(endTimeValue.minute())
-    .second(0)
-    .millisecond(0);
+  // If endTimeValue already carries a calendar date that is strictly later than dateValue
+  // (e.g. loaded from an existing overnight log), preserve that date so a 10:00→11:00+1d
+  // entry stays 25 h instead of collapsing to 1 h.
+  const endCarriesLaterDate = endTimeValue.startOf('day').isAfter(dayjs(dateValue).startOf('day'));
+  let fullEnd: dayjs.Dayjs;
+  if (endCarriesLaterDate) {
+    // Use the end datetime as-is (seconds/ms already zeroed by the form).
+    fullEnd = endTimeValue.second(0).millisecond(0);
+  } else {
+    fullEnd = dayjs(dateValue)
+      .hour(endTimeValue.hour())
+      .minute(endTimeValue.minute())
+      .second(0)
+      .millisecond(0);
 
-  // If end time is before start time, it rolls over to next day
-  if (fullEnd.isBefore(fullStart)) {
-    fullEnd = fullEnd.add(1, 'day');
+    // If end time is before start time, it rolls over to next day
+    if (fullEnd.isBefore(fullStart)) {
+      fullEnd = fullEnd.add(1, 'day');
+    }
   }
 
   const isOvernight = !fullStart.isSame(fullEnd, 'day');

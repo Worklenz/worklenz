@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, DatePicker, Form, Input, TimePicker, Flex, InputNumber, Segmented, Tag, Alert, theme } from '@/shared/antd-imports';
+import { Button, DatePicker, Form, Input, TimePicker, Flex, InputNumber, Segmented, Tag, Alert, theme, message } from '@/shared/antd-imports';
 import { ClockCircleOutlined, InfoCircleOutlined } from '@/shared/antd-imports';
 
 import dayjs, { Dayjs } from 'dayjs';
@@ -42,6 +42,9 @@ interface TimeLogFormProps {
   /** Rendered inside a dialog: drops the divider/top padding that separate the inline form from the
    * content above it, uses regular-size controls, and right-aligns the buttons like a modal footer. */
   inModal?: boolean;
+  /** Project start date boundary — prevents logging time before the project started.
+   * Passed by EditTimeEntryModal from the entry's project_start_date field. */
+  projectStartDate?: string | null;
 }
 
 type TimeLogInputMode = 'duration' | 'timeRange';
@@ -192,15 +195,22 @@ const TimeLogForm = ({
         .second(0)
         .millisecond(0);
 
-      let fullEnd = dayjs(base)
-        .hour(endTimeValue.hour())
-        .minute(endTimeValue.minute())
-        .second(0)
-        .millisecond(0);
-
-      // If end time is before start time, it rolls over to next day
-      if (fullEnd.isBefore(fullStart)) {
-        fullEnd = fullEnd.add(1, 'day');
+      // Preserve the end date when endTimeValue already carries a later calendar day
+      // (e.g. switching from timeRange→duration for an existing overnight log).
+      const endCarriesLaterDate = endTimeValue.startOf('day').isAfter(dayjs(base).startOf('day'));
+      let fullEnd: Dayjs;
+      if (endCarriesLaterDate) {
+        fullEnd = endTimeValue.second(0).millisecond(0);
+      } else {
+        fullEnd = dayjs(base)
+          .hour(endTimeValue.hour())
+          .minute(endTimeValue.minute())
+          .second(0)
+          .millisecond(0);
+        // If end time is before start time, it rolls over to next day
+        if (fullEnd.isBefore(fullStart)) {
+          fullEnd = fullEnd.add(1, 'day');
+        }
       }
 
       const totalMinutes = fullEnd.diff(fullStart, 'minute');
@@ -519,14 +529,22 @@ const TimeLogForm = ({
         .minute(startTime.minute())
         .second(0)
         .millisecond(0);
-      let fullEnd = dayjs(date)
-        .hour(endTime.hour())
-        .minute(endTime.minute())
-        .second(0)
-        .millisecond(0);
-
-      if (fullEnd.isBefore(fullStart)) {
-        fullEnd = fullEnd.add(1, 'day');
+      // Preserve the end date when endTime already carries a later calendar day
+      // (e.g. an existing overnight log loaded into the form). Re-anchoring to
+      // `date` would collapse a 10:00→11:00+1d (25 h) entry to 1 h.
+      const endCarriesLaterDate = endTime.startOf('day').isAfter(dayjs(date).startOf('day'));
+      let fullEnd: Dayjs;
+      if (endCarriesLaterDate) {
+        fullEnd = endTime.second(0).millisecond(0);
+      } else {
+        fullEnd = dayjs(date)
+          .hour(endTime.hour())
+          .minute(endTime.minute())
+          .second(0)
+          .millisecond(0);
+        if (fullEnd.isBefore(fullStart)) {
+          fullEnd = fullEnd.add(1, 'day');
+        }
       }
 
       const diffMinutes = fullEnd.diff(fullStart, 'minute');
@@ -666,8 +684,25 @@ const TimeLogForm = ({
           }
         } else {
           if (requestBodies.length === 2) {
-            await doUpdate(initialValues.id, requestBodies[0]);
-            await taskTimeLogsApiService.create({ ...requestBodies[1], id: targetTaskId });
+            if (asTimeEntry) {
+              // Use the atomic split endpoint so the new segment is credited to the
+              // ORIGINAL member, not the editing admin. Both writes are transactional.
+              await taskTimeLogsApiService.splitEntry(
+                initialValues.id,
+                {
+                  seconds_spent: requestBodies[0].seconds_spent,
+                  formatted_start: requestBodies[0].formatted_start,
+                  description: requestBodies[0].description,
+                },
+                {
+                  seconds_spent: requestBodies[1].seconds_spent,
+                  formatted_start: requestBodies[1].formatted_start,
+                }
+              );
+            } else {
+              await doUpdate(initialValues.id, requestBodies[0]);
+              await taskTimeLogsApiService.create({ ...requestBodies[1], id: targetTaskId });
+            }
           } else {
             await doUpdate(initialValues.id, requestBodies[0]);
           }
@@ -713,14 +748,22 @@ const TimeLogForm = ({
         .minute(formValues.startTime.minute())
         .second(0)
         .millisecond(0);
-      let fullEnd = dayjs(formValues.date)
-        .hour(formValues.endTime.hour())
-        .minute(formValues.endTime.minute())
-        .second(0)
-        .millisecond(0);
-
-      if (fullEnd.isBefore(fullStart)) {
-        fullEnd = fullEnd.add(1, 'day');
+      // Preserve the end date when endTime already carries a later calendar day
+      const endCarriesLaterDate = formValues.endTime
+        .startOf('day')
+        .isAfter(dayjs(formValues.date).startOf('day'));
+      let fullEnd: Dayjs;
+      if (endCarriesLaterDate) {
+        fullEnd = formValues.endTime.second(0).millisecond(0);
+      } else {
+        fullEnd = dayjs(formValues.date)
+          .hour(formValues.endTime.hour())
+          .minute(formValues.endTime.minute())
+          .second(0)
+          .millisecond(0);
+        if (fullEnd.isBefore(fullStart)) {
+          fullEnd = fullEnd.add(1, 'day');
+        }
       }
 
       return fullEnd.diff(fullStart, 'minute') > 0;

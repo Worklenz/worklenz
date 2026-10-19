@@ -25,6 +25,10 @@ taskWorkLogApiRouter.put("/:id", taskTimeLogValidator, idParamValidator, verifyT
 // members' entries (see TaskWorklogController.updateTimeEntry). The task drawer keeps using the
 // author-only `PUT|DELETE /:id` routes below, which are intentionally unchanged.
 taskWorkLogApiRouter.put("/entries/:id", verifyNonGuestTimeEntriesAccess, idParamValidator, timeEntryUpdateValidator, verifyTaskAccessViaWorkLog('params', 'id'), safeControllerFunction(TaskWorklogController.updateTimeEntry));
+// Atomic split: turns one log into an overnight pair, preserving the original member's user_id
+// on the inserted segment. Must be declared BEFORE DELETE /entries/:id so "split" isn't captured
+// as a work-log id parameter.
+taskWorkLogApiRouter.post("/entries/:id/split", verifyNonGuestTimeEntriesAccess, idParamValidator, safeControllerFunction(TaskWorklogController.splitTimeEntry));
 taskWorkLogApiRouter.delete("/entries/:id", verifyNonGuestTimeEntriesAccess, idParamValidator, verifyTaskAccessViaWorkLog('params', 'id'), safeControllerFunction(TaskWorklogController.deleteTimeEntry));
 
 taskWorkLogApiRouter.delete("/:id", idParamValidator, verifyTaskAccessViaWorkLog('params', 'id'), safeControllerFunction(TaskWorklogController.deleteById));
