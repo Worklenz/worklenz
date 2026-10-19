@@ -240,5 +240,19 @@
   "noManagedProjectsFound": "No hay proyectos en los que seas Project Manager",
   "projectInvite_guestLimitExceeded": "Se superó el límite de invitados para este plan. Actualice para agregar más invitados.",
   "license-expired-subtitle": "Su suscripción de Worklenz ha terminado. Por favor renueve para continuar disfrutando de todas las funciones.",
-  "Failed to fetch job titles": "Error al obtener los cargos"
+  "Failed to fetch job titles": "Error al obtener los cargos",
+  "assign_department": "Asignar departamento",
+  "assign_practice": "Asignar práctica",
+  "select_department": "Seleccionar departamento",
+  "select_practice": "Seleccionar práctica",
+  "no_departments_found": "No se encontraron departamentos",
+  "no_practices_found": "No se encontraron prácticas",
+  "please_select_assignment_and_members": "Selecciona un departamento o una práctica y los miembros del equipo",
+  "bulk_organization_assignment_success": "{{count}} miembro(s) del equipo asignado(s) a {{organization}}",
+  "bulk_organization_assignment_failed": "No se pudo asignar {{organization}}",
+  "bulk_assignment_member_missing_id": "Un miembro seleccionado no tiene ID",
+  "bulk_assignment_member_load_failed": "No se pudo cargar: {{member}}",
+  "bulk_assignment_role_verify_failed": "No se pudo verificar el rol de {{member}}",
+  "bulk_assignment_member_update_failed": "No se pudo actualizar: {{member}}",
+  "member": "miembro"
 }

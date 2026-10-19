@@ -23,6 +23,7 @@ import {
   Table,
   TableProps,
   Tag,
+  theme,
   Tooltip,
   Typography,
 } from '@/shared/antd-imports';
@@ -159,6 +160,7 @@ const writeTeamMembersSortPreference = (field: string, order: string): void => {
 };
 
 const TeamMembersSettings = () => {
+  const { token } = theme.useToken();
   const { t } = useTranslation('settings/team-members');
   const { t: tCommon } = useTranslation('common');
   const dispatch = useAppDispatch();
@@ -1136,7 +1138,7 @@ const TeamMembersSettings = () => {
             zIndex: 1000,
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
             borderRadius: '8px',
-            background: 'white',
+            background: token.colorBgContainer,
             padding: '8px',
           }}
         >
@@ -1157,7 +1159,7 @@ const TeamMembersSettings = () => {
               size="large"
               onClick={handleBulkAssignPractice}
             >
-              Assign Practice ({selectedMembers.length})
+              {t('assign_practice')} ({selectedMembers.length})
             </Button>
 
             <Button
@@ -1165,7 +1167,7 @@ const TeamMembersSettings = () => {
               size="large"
               onClick={handleBulkAssignDepartment}
             >
-              Assign Department ({selectedMembers.length})
+              {t('assign_department')} ({selectedMembers.length})
             </Button>
           </Flex>
         </div>
