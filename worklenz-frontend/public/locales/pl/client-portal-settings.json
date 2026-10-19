@@ -199,5 +199,6 @@
     "defaultStatusesLabel": "Statusy domyślne",
     "defaultStatusesHint": "Te zawsze istnieją i nie można ich usunąć.",
     "customStatusesLabel": "Statusy niestandardowe"
-  }
+  },
+  "defaultInvoiceFooter": "Dziękujemy za współpracę. W razie pytań dotyczących tej faktury prosimy o kontakt przy użyciu danych podanych powyżej."
 }

@@ -199,5 +199,6 @@
     "defaultStatusesLabel": "默认状态",
     "defaultStatusesHint": "这些状态始终存在，且无法移除。",
     "customStatusesLabel": "自定义状态"
-  }
+  },
+  "defaultInvoiceFooter": "感谢您的惠顾。如对本发票有任何疑问，请通过上方信息联系我们。"
 }

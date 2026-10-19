@@ -113,5 +113,6 @@
   "deleteQuoteSuccess": "Oferta u fshi me sukses",
   "deleteQuoteError": "Fshirja e ofertës dështoi",
   "linkedChangeRequest": "Kërkesë e lidhur për ndryshim",
-  "openChangeRequest": "Hap kërkesën për ndryshim"
+  "openChangeRequest": "Hap kërkesën për ndryshim",
+  "downloadFailed": "Shkarkimi i PDF dështoi. Ju lutemi provoni përsëri."
 }

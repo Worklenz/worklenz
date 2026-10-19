@@ -3,6 +3,7 @@ import {
   formatCityStateZip,
   formatCurrency,
   formatDate,
+  htmlToPlainText,
   getClientAddressParts,
   getStatusBadgeColors,
   getStatusText,
@@ -296,7 +297,7 @@ export const InvoiceDocument = ({ data, documentType, logo }: InvoiceDocumentPro
           {data.notes ? (
             <View style={styles.notes} wrap={false}>
               <Text style={styles.notesTitle}>NOTES</Text>
-              <Text style={styles.notesText}>{data.notes}</Text>
+              <Text style={styles.notesText}>{htmlToPlainText(data.notes)}</Text>
             </View>
           ) : null}
 

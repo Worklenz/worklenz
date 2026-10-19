@@ -17,7 +17,7 @@ const BLOCKED_HOSTNAMES = new Set([
   "ip6-loopback",
 ]);
 
-function isPrivateIPv4(ip: string): boolean {
+export function isPrivateIPv4(ip: string): boolean {
   const parts = ip.split(".").map(Number);
   if (parts.length !== 4 || parts.some(p => Number.isNaN(p) || p < 0 || p > 255)) return true;
   const [a, b] = parts;
@@ -32,7 +32,7 @@ function isPrivateIPv4(ip: string): boolean {
   return false;
 }
 
-function isPrivateIPv6(ip: string): boolean {
+export function isPrivateIPv6(ip: string): boolean {
   const normalized = ip.toLowerCase().replace(/^\[|\]$/g, "");
   if (normalized === "::1" || normalized === "::") return true;
   if (normalized.startsWith("fe80") || normalized.startsWith("fc") || normalized.startsWith("fd")) return true;

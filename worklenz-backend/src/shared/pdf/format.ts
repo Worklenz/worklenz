@@ -1,12 +1,32 @@
 import { InvoiceData } from "./types";
 
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
 export const formatDate = (dateString: string | null | undefined): string => {
   if (!dateString) return "-";
-  return new Date(dateString).toLocaleDateString("en-US", {
+  // A date-only value is a calendar day, not an instant: build it locally so a server west of UTC doesn't show the day before.
+  const dateOnly = DATE_ONLY.exec(dateString);
+  const date = dateOnly ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3])) : new Date(dateString);
+  return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+};
+
+const HTML_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", nbsp: " " };
+
+/** Turns the sanitized rich-text notes HTML into plain text for a PDF <Text> node. */
+export const htmlToPlainText = (html: string | null | undefined): string => {
+  if (!html) return "";
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "\n• ")
+    .replace(/<\/(p|div|h[1-6]|ul|ol|li)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (_, entity: string) => HTML_ENTITIES[entity])
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 };
 
 export const formatCurrency = (amount: number, currency = "USD"): string =>
