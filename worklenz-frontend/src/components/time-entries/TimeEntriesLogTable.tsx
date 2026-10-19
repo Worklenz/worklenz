@@ -228,7 +228,7 @@ export const TimeEntriesLogTable: React.FC<TimeEntriesLogTableProps> = ({
   );
 
   const projectFilterOptions = useMemo(
-    () => projectOptions.map(p => ({ text: p.name, value: p.id })),
+    () => projectOptions.map(p => ({ text: decodeHtmlEntities(p.name), value: p.id })),
     [projectOptions]
   );
   const statusFilterOptions = useMemo(
