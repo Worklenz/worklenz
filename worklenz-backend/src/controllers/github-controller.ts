@@ -575,34 +575,37 @@ export default class GithubController extends WorklenzControllerBase {
       return res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
     }
 
+    const projectId = task.rows[0].project_id;
+    // Links to repositories that were unlinked from the project are kept in the database
+    // but hidden here; re-linking the repository brings them back.
     const [branches, pullRequests, commits, repos] = await Promise.all([
       db.query(
-        `SELECT b.id, b.name, b.is_deleted, r.full_name AS repository,
+        `SELECT l.id AS link_id, b.id, b.name, b.is_deleted, r.full_name AS repository,
                 'https://github.com/' || r.full_name || '/tree/' || b.name AS html_url
          FROM github_task_links l
          JOIN github_branches b ON b.id = l.branch_id
          JOIN github_repositories r ON r.id = b.repository_id
-         WHERE l.task_id = $1 ORDER BY b.updated_at DESC`,
-        [taskId],
+         WHERE l.task_id = $1 AND EXISTS (SELECT 1 FROM github_project_repositories pr WHERE pr.project_id = $2 AND pr.repository_id = r.id) ORDER BY b.updated_at DESC`,
+        [taskId, projectId],
       ),
       db.query(
-        `SELECT p.id, p.number, p.title, p.state, p.is_draft, p.merged, p.review_state,
+        `SELECT l.id AS link_id, p.id, p.number, p.title, p.state, p.is_draft, p.merged, p.review_state,
                 p.head_branch, p.base_branch, p.author_login, p.author_avatar_url, p.html_url,
                 p.opened_at, p.merged_at, p.closed_at, l.closes, r.full_name AS repository
          FROM github_task_links l
          JOIN github_pull_requests p ON p.id = l.pull_request_id
          JOIN github_repositories r ON r.id = p.repository_id
-         WHERE l.task_id = $1 ORDER BY p.last_event_at DESC`,
-        [taskId],
+         WHERE l.task_id = $1 AND EXISTS (SELECT 1 FROM github_project_repositories pr WHERE pr.project_id = $2 AND pr.repository_id = r.id) ORDER BY p.last_event_at DESC`,
+        [taskId, projectId],
       ),
       db.query(
-        `SELECT c.id, c.sha, c.message, c.author_name, c.author_login, c.html_url, c.committed_at,
+        `SELECT l.id AS link_id, c.id, c.sha, c.message, c.author_name, c.author_login, c.html_url, c.committed_at,
                 r.full_name AS repository
          FROM github_task_links l
          JOIN github_commits c ON c.id = l.commit_id
          JOIN github_repositories r ON r.id = c.repository_id
-         WHERE l.task_id = $1 ORDER BY c.committed_at DESC NULLS LAST LIMIT 50`,
-        [taskId],
+         WHERE l.task_id = $1 AND EXISTS (SELECT 1 FROM github_project_repositories pr WHERE pr.project_id = $2 AND pr.repository_id = r.id) ORDER BY c.committed_at DESC NULLS LAST LIMIT 50`,
+        [taskId, projectId],
       ),
       db.query(
         `SELECT pr.repository_id, r.full_name,
@@ -626,6 +629,31 @@ export default class GithubController extends WorklenzControllerBase {
         commits: commits.rows,
       }),
     );
+  }
+
+  /** Remove a branch, pull request or commit link from a task (does not touch GitHub). */
+  @HandleExceptions()
+  public static async removeTaskLink(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { id: taskId, linkId } = req.params;
+
+    const task = await db.query(
+      `SELECT t.project_id FROM tasks t JOIN projects p ON p.id = t.project_id
+       WHERE t.id = $1 AND p.team_id = $2`,
+      [taskId, req.user?.team_id],
+    );
+    if (!task.rowCount) return res.status(404).send(new ServerResponse(false, null, "Task not found"));
+
+    const access = await getProjectAccessForRequest(req, task.rows[0].project_id);
+    if (!access.permissions.tasks) {
+      return res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
+    }
+
+    const result = await db.query(`DELETE FROM github_task_links WHERE id = $1 AND task_id = $2 RETURNING id`, [
+      linkId,
+      taskId,
+    ]);
+    if (!result.rowCount) return res.status(404).send(new ServerResponse(false, null, "Link not found"));
+    return res.status(200).send(new ServerResponse(true, null));
   }
 
   /** Create a branch on GitHub from the issue and link it. */

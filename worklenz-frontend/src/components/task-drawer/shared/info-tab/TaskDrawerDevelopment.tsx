@@ -1,9 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Avatar, Button, Empty, Flex, Skeleton, Tag, Tooltip, Typography, theme } from '@/shared/antd-imports';
+import {
+  Alert,
+  Avatar,
+  Button,
+  Empty,
+  Flex,
+  Popconfirm,
+  Skeleton,
+  Tag,
+  Tooltip,
+  Typography,
+  message,
+  theme,
+} from '@/shared/antd-imports';
 import {
   BranchesOutlined,
   CodeOutlined,
+  DeleteOutlined,
   GithubOutlined,
   PullRequestOutlined,
 } from '@ant-design/icons';
@@ -26,6 +40,7 @@ interface TaskDrawerDevelopmentProps {
   /** Bump to re-fetch (e.g. when a GitHub webhook lands for this task). */
   refreshToken?: number;
   canCreateBranch?: boolean;
+  canRemoveLinks?: boolean;
 }
 
 const MAX_COMMITS_SHOWN = 5;
@@ -36,6 +51,7 @@ export const TaskDrawerDevelopment = ({
   taskKey,
   refreshToken = 0,
   canCreateBranch = false,
+  canRemoveLinks = false,
 }: TaskDrawerDevelopmentProps) => {
   const { t } = useTranslation('github-integration');
   const { token } = theme.useToken();
@@ -74,6 +90,48 @@ export const TaskDrawerDevelopment = ({
     if (refreshToken > 0) void load(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshToken]);
+
+  const removeLink = async (linkId: string) => {
+    try {
+      await githubApiService.removeTaskLink(taskId, linkId);
+      message.success(t('development.remove.success', { defaultValue: 'Link removed.' }));
+      await load(true);
+    } catch (error) {
+      logger.error('Failed to remove GitHub link', error);
+      message.error(t('development.remove.failed', { defaultValue: 'Could not remove the link.' }));
+    }
+  };
+
+  const renderRemoveButton = (
+    linkId: string,
+    kind: 'branch' | 'pullRequest' | 'commit',
+    label: string
+  ) => {
+    if (!canRemoveLinks) return null;
+    return (
+      <Popconfirm
+        title={t(`development.remove.${kind}.title`, { defaultValue: 'Remove this link?' })}
+        description={t(`development.remove.${kind}.description`, {
+          defaultValue: '{{name}} will no longer be shown on this task. Nothing is changed on GitHub.',
+          name: label,
+        })}
+        okText={t('development.remove.confirm', { defaultValue: 'Remove' })}
+        cancelText={t('development.remove.cancel', { defaultValue: 'Cancel' })}
+        okButtonProps={{ danger: true }}
+        onConfirm={() => removeLink(linkId)}
+      >
+        <Tooltip title={t('development.remove.button', { defaultValue: 'Remove link' })}>
+          <Button
+            type="text"
+            size="small"
+            danger
+            icon={<DeleteOutlined />}
+            aria-label={t('development.remove.button', { defaultValue: 'Remove link' })}
+          />
+        </Tooltip>
+      </Popconfirm>
+    );
+  };
 
   const renderPullRequestStatus = (pr: IGithubPullRequest) => {
     if (pr.merged) {
@@ -205,6 +263,7 @@ export const TaskDrawerDevelopment = ({
                   </Avatar>
                 </Tooltip>
               )}
+              {renderRemoveButton(pr.link_id, 'pullRequest', `#${pr.number} ${pr.title}`)}
             </Flex>
           ))}
         </Flex>
@@ -234,6 +293,7 @@ export const TaskDrawerDevelopment = ({
               {branch.is_deleted && (
                 <Tag>{t('development.branchDeleted', { defaultValue: 'Deleted' })}</Tag>
               )}
+              {renderRemoveButton(branch.link_id, 'branch', branch.name)}
             </Flex>
           ))}
         </Flex>
@@ -271,6 +331,7 @@ export const TaskDrawerDevelopment = ({
                     {commit.sha.slice(0, 7)}
                   </Typography.Text>
                 )}
+                {renderRemoveButton(commit.link_id, 'commit', commit.sha.slice(0, 7))}
               </Flex>
             );
           })}

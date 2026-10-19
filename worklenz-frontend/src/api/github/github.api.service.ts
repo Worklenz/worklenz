@@ -113,6 +113,8 @@ export type GithubReviewState = 'approved' | 'changes_requested' | 'review_requi
 
 export interface IGithubBranch {
   id: string;
+  /** Id of the task link row; used to remove the link from the task. */
+  link_id: string;
   name: string;
   repository: string;
   is_deleted: boolean;
@@ -121,6 +123,8 @@ export interface IGithubBranch {
 
 export interface IGithubPullRequest {
   id: string;
+  /** Id of the task link row; used to remove the link from the task. */
+  link_id: string;
   number: number;
   title: string;
   state: 'open' | 'closed';
@@ -141,6 +145,8 @@ export interface IGithubPullRequest {
 
 export interface IGithubCommit {
   id: string;
+  /** Id of the task link row; used to remove the link from the task. */
+  link_id: string;
   sha: string;
   message: string;
   author_name: string | null;
@@ -298,6 +304,13 @@ export const githubApiService = {
     const response = await apiClient.post<IServerResponse<IGithubCreatedBranch>>(
       `${rootUrl}/tasks/${taskId}/branches`,
       body
+    );
+    return response.data;
+  },
+
+  removeTaskLink: async (taskId: string, linkId: string) => {
+    const response = await apiClient.delete<IServerResponse<null>>(
+      `${rootUrl}/tasks/${taskId}/links/${linkId}`
     );
     return response.data;
   },

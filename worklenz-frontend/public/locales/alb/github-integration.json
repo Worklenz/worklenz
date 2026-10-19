@@ -98,6 +98,16 @@
     "branchDeleted": "E fshirë",
     "showFewer": "Shfaq më pak",
     "showAll": "Shfaq të gjitha {{count}} commit-et",
+    "remove": {
+      "button": "Hiq lidhjen",
+      "confirm": "Hiq",
+      "cancel": "Anulo",
+      "success": "Lidhja u hoq.",
+      "failed": "Lidhja nuk u hoq dot.",
+      "branch": { "title": "Të hiqet dega nga kjo detyrë?", "description": "{{name}} nuk do të shfaqet më në këtë detyrë. Dega nuk fshihet në GitHub." },
+      "pullRequest": { "title": "Të hiqet pull request nga kjo detyrë?", "description": "{{name}} nuk do të shfaqet më në këtë detyrë. Pull request nuk ndryshohet në GitHub." },
+      "commit": { "title": "Të hiqet commit nga kjo detyrë?", "description": "{{name}} nuk do të shfaqet më në këtë detyrë. Commit nuk ndryshohet në GitHub." }
+    },
     "createBranch": {
       "button": "Krijo degë",
       "title": "Krijo degë",

@@ -98,6 +98,16 @@
     "branchDeleted": "Supprimée",
     "showFewer": "Afficher moins",
     "showAll": "Afficher les {{count}} commits",
+    "remove": {
+      "button": "Retirer le lien",
+      "confirm": "Retirer",
+      "cancel": "Annuler",
+      "success": "Lien retiré.",
+      "failed": "Impossible de retirer le lien.",
+      "branch": { "title": "Retirer la branche de cette tâche ?", "description": "{{name}} ne sera plus affichée sur cette tâche. La branche n’est pas supprimée sur GitHub." },
+      "pullRequest": { "title": "Retirer la pull request de cette tâche ?", "description": "{{name}} ne sera plus affichée sur cette tâche. La pull request n’est pas modifiée sur GitHub." },
+      "commit": { "title": "Retirer le commit de cette tâche ?", "description": "{{name}} ne sera plus affiché sur cette tâche. Le commit n’est pas modifié sur GitHub." }
+    },
     "createBranch": {
       "button": "Créer une branche",
       "title": "Créer une branche",

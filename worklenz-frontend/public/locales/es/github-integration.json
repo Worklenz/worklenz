@@ -98,6 +98,16 @@
     "branchDeleted": "Eliminada",
     "showFewer": "Mostrar menos",
     "showAll": "Mostrar los {{count}} commits",
+    "remove": {
+      "button": "Quitar vínculo",
+      "confirm": "Quitar",
+      "cancel": "Cancelar",
+      "success": "Vínculo eliminado.",
+      "failed": "No se pudo quitar el vínculo.",
+      "branch": { "title": "¿Quitar la rama de esta tarea?", "description": "{{name}} ya no se mostrará en esta tarea. La rama no se elimina en GitHub." },
+      "pullRequest": { "title": "¿Quitar el pull request de esta tarea?", "description": "{{name}} ya no se mostrará en esta tarea. El pull request no se modifica en GitHub." },
+      "commit": { "title": "¿Quitar el commit de esta tarea?", "description": "{{name}} ya no se mostrará en esta tarea. El commit no se modifica en GitHub." }
+    },
     "createBranch": {
       "button": "Crear rama",
       "title": "Crear rama",

@@ -595,6 +595,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
           taskKey={(taskFormViewModel?.task as ITaskViewModel | undefined)?.task_key}
           refreshToken={githubRefreshToken}
           canCreateBranch={canCreateTask && !isGuest}
+          canRemoveLinks={canCreateTask && !isGuest}
         />
       ),
       style: panelStyle,
