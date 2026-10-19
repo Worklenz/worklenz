@@ -59,8 +59,11 @@ describe('EditClientUserModal warnings', () => {
     const onClose = vi.fn();
     render(<EditClientUserModal user={USER} onClose={onClose} />);
 
+    // The backend only raises these warnings when an admin is demoted.
+    await user.click(screen.getByRole('radio', { name: /Client Member/ }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('This is the last Client Admin')).toBeTruthy();
+    expect(lastBody().role).toBe('member');
     expect(lastBody().confirm_last_admin).toBeUndefined();
     expect(lastBody().confirm_pending_approvals).toBeUndefined();
 
@@ -69,10 +72,12 @@ describe('EditClientUserModal warnings', () => {
     // Confirming the first warning must not pre-confirm the second one.
     expect(state.update.mock.calls[1][0].body.confirm_last_admin).toBe(true);
     expect(state.update.mock.calls[1][0].body.confirm_pending_approvals).toBeUndefined();
+    expect(state.update.mock.calls[1][0].body.role).toBe('member');
 
     await user.click(screen.getByRole('button', { name: 'Continue anyway' }));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(lastBody().confirm_last_admin).toBe(true);
     expect(lastBody().confirm_pending_approvals).toBe(true);
+    expect(lastBody().role).toBe('member');
   });
 });
