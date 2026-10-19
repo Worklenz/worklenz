@@ -328,18 +328,6 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
         ) : null,
       },
       {
-        key: 'customFields',
-        group: 'configuration',
-        icon: <TableOutlined />,
-        label: t('softwareSettings.customFieldsTab', { defaultValue: 'Custom fields' }),
-        content: (
-          <CustomColumnsSettingsSection
-            projectId={projectId}
-            disabled={!canEditSettings && !permissions.customColumns}
-          />
-        ),
-      },
-      {
         key: 'integrations',
         group: 'configuration',
         icon: <ApiOutlined />,
