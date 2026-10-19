@@ -49,6 +49,7 @@
   },
   "lastAdmin": {
     "confirm": "Continuer quand même",
+    "pendingApprovalsTitle": "Cela laisse une approbation sans approbateur",
     "title": "Ceci est le dernier administrateur client"
   },
   "menu": {

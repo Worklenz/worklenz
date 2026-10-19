@@ -49,6 +49,7 @@
   },
   "lastAdmin": {
     "confirm": "Kontynuuj mimo to",
+    "pendingApprovalsTitle": "To pozostawia zatwierdzenie bez zatwierdzającego",
     "title": "To jest ostatni administrator klienta"
   },
   "menu": {

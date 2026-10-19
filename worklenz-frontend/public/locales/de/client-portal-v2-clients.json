@@ -49,6 +49,7 @@
   },
   "lastAdmin": {
     "confirm": "Machen Sie trotzdem weiter",
+    "pendingApprovalsTitle": "Dadurch bleibt eine Freigabe ohne Genehmiger",
     "title": "Dies ist der letzte Client-Administrator"
   },
   "menu": {

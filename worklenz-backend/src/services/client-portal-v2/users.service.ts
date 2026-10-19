@@ -327,8 +327,10 @@ async function assertNoOrphanedApprovals(
           SELECT 1
             FROM client_portal_approval_approvers other
             JOIN client_contacts oc ON oc.id = other.contact_id
+            JOIN client_users ou ON ou.id = oc.client_user_id
            WHERE other.approval_id = a.id AND other.contact_id <> $2
-             AND oc.disabled_at IS NULL AND oc.activated_at IS NOT NULL)`,
+             AND oc.disabled_at IS NULL AND oc.activated_at IS NOT NULL
+             AND ou.status = 'active' AND ou.deleted_at IS NULL)`,
     [teamId, user.id]
   );
   if (orphaned.rows.length === 0) return;

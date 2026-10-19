@@ -46,6 +46,8 @@ exports.up = (pgm) => {
         _def := pg_get_functiondef(to_regprocedure('create_project(json)'));
         IF position(_old in _def) > 0 THEN
           EXECUTE replace(_def, _old, _new);
+        ELSIF position(_new in _def) = 0 THEN
+          RAISE WARNING 'create_project(json): client lookup not patched; inspect the function body';
         END IF;
       END IF;
 
@@ -53,6 +55,8 @@ exports.up = (pgm) => {
         _def := pg_get_functiondef(to_regprocedure('update_project(json)'));
         IF position(_old in _def) > 0 THEN
           EXECUTE replace(_def, _old, _new);
+        ELSIF position(_new in _def) = 0 THEN
+          RAISE WARNING 'update_project(json): client lookup not patched; inspect the function body';
         END IF;
       END IF;
     END

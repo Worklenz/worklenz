@@ -49,6 +49,7 @@
   },
   "lastAdmin": {
     "confirm": "仍然继续",
+    "pendingApprovalsTitle": "这将使一项审批没有审批人",
     "title": "这是最后一个客户端管理员"
   },
   "menu": {

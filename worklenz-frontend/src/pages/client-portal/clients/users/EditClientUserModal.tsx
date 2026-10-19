@@ -18,6 +18,8 @@ interface EditFormValues {
   phone: string;
 }
 
+type WarningCode = 'LAST_CLIENT_ADMIN' | 'PENDING_APPROVALS';
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Name, contact details and role for one client user. A role change applies on the user's next request. */
@@ -26,14 +28,18 @@ export const EditClientUserModal = ({ user, onClose }: EditClientUserModalProps)
   const { t: tShared } = useTranslation('client-portal-v2');
   const [form] = Form.useForm<EditFormValues>();
   const [role, setRole] = useState<ClientRole>(user?.role ?? 'member');
-  const [lastAdminWarning, setLastAdminWarning] = useState<string | null>(null);
+  const [warning, setWarning] = useState<{ code: WarningCode; message: string } | null>(null);
+  const [confirmedCodes, setConfirmedCodes] = useState<WarningCode[]>([]);
   const [updateUser, { isLoading }] = useUpdatePortalClientUserMutation();
 
   if (!user) return null;
 
   const roleChanged = role !== user.role;
 
-  const save = async (confirmLastAdmin: boolean) => {
+  /** Saves the user. Each server warning is overridden only after the user confirmed that very warning. */
+  const save = async (confirmCode?: WarningCode) => {
+    const confirmed = confirmCode ? [...new Set([...confirmedCodes, confirmCode])] : confirmedCodes;
+    setConfirmedCodes(confirmed);
     const values = await form.validateFields();
     try {
       await updateUser({
@@ -44,9 +50,8 @@ export const EditClientUserModal = ({ user, onClose }: EditClientUserModalProps)
           phone: values.phone.trim() || null,
           job_title: values.job_title.trim() || null,
           role,
-          // One confirmation covers both warnings the server can raise (last Client Admin, only approver).
-          confirm_last_admin: confirmLastAdmin || undefined,
-          confirm_pending_approvals: confirmLastAdmin || undefined,
+          confirm_last_admin: confirmed.includes('LAST_CLIENT_ADMIN') || undefined,
+          confirm_pending_approvals: confirmed.includes('PENDING_APPROVALS') || undefined,
         },
       }).unwrap();
 
@@ -62,12 +67,13 @@ export const EditClientUserModal = ({ user, onClose }: EditClientUserModalProps)
       } else {
         message.success(t('edit.updated', { name: values.name.trim(), defaultValue: '{{name}} updated.' }));
       }
-      setLastAdminWarning(null);
+      setWarning(null);
+      setConfirmedCodes([]);
       onClose();
     } catch (error) {
       const code = getPortalErrorCode(error);
       if (code === 'LAST_CLIENT_ADMIN' || code === 'PENDING_APPROVALS') {
-        setLastAdminWarning(getPortalErrorMessage(error, ''));
+        setWarning({ code, message: getPortalErrorMessage(error, '') });
         return;
       }
       message.error(
@@ -83,8 +89,11 @@ export const EditClientUserModal = ({ user, onClose }: EditClientUserModalProps)
         title={t('edit.title', { organization: user.organization_name, defaultValue: 'Edit user · {{organization}}' })}
         okText={t('edit.save', { defaultValue: 'Save' })}
         cancelText={tShared('cancel', { defaultValue: 'Cancel' })}
-        onOk={() => void save(false)}
-        onCancel={onClose}
+        onOk={() => void save()}
+        onCancel={() => {
+          setConfirmedCodes([]);
+          onClose();
+        }}
         okButtonProps={{ loading: isLoading }}
         maskClosable={!isLoading}
         width={520}
@@ -160,15 +169,22 @@ export const EditClientUserModal = ({ user, onClose }: EditClientUserModalProps)
       </Modal>
 
       <ConfirmEffectModal
-        open={lastAdminWarning !== null}
+        open={warning !== null}
         danger
-        title={t('lastAdmin.title', { defaultValue: 'This is the last Client Admin' })}
+        title={
+          warning?.code === 'PENDING_APPROVALS'
+            ? t('lastAdmin.pendingApprovalsTitle', { defaultValue: 'This leaves an approval without an approver' })
+            : t('lastAdmin.title', { defaultValue: 'This is the last Client Admin' })
+        }
         confirmLabel={t('lastAdmin.confirm', { defaultValue: 'Continue anyway' })}
         loading={isLoading}
-        onClose={() => setLastAdminWarning(null)}
-        onConfirm={() => void save(true)}
+        onClose={() => {
+          setWarning(null);
+          setConfirmedCodes([]);
+        }}
+        onConfirm={() => warning && void save(warning.code)}
       >
-        {lastAdminWarning}
+        {warning?.message}
       </ConfirmEffectModal>
     </>
   );

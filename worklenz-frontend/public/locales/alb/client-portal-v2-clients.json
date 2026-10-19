@@ -49,6 +49,7 @@
   },
   "lastAdmin": {
     "confirm": "Vazhdo gjithsesi",
+    "pendingApprovalsTitle": "Kjo lë një miratim pa miratues",
     "title": "Ky është administratori i fundit i klientit"
   },
   "menu": {

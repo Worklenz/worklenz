@@ -14,6 +14,8 @@ import { Queryable } from "./types";
  *   - Invoices or quotes exist: they are financial records the business may have to keep, and they already
  *     carry the issued-to snapshot, so the `clients` row stays as a tombstone with its contact details
  *     scrubbed, and everything else about the portal is removed.
+ *   - Legacy requests, tickets or chat messages exist (their foreign keys do not cascade), or a login homed on
+ *     this client is still used by another organization: the row is tombstoned as well, never hard-deleted.
  *
  * The login (`client_users`) is shared by every portal its owner belongs to, so a login is only removed
  * once nothing else references it.
@@ -54,12 +56,24 @@ export async function purgeOrganization(candidate: PurgeCandidate): Promise<Purg
     );
     if (locked.rows.length === 0) return "skipped";
 
-    const financial = await tx.query(
+    // Rows that must be kept (invoices, quotes) or that reference the client without ON DELETE CASCADE
+    // (legacy requests, tickets and chat), plus a login whose home client is this one but that is still
+    // used by another organization (client_users.client_id cascades, so deleting the client would remove it).
+    const keep = await tx.query(
       `SELECT (EXISTS (SELECT 1 FROM client_portal_invoices WHERE client_id = $1)
-            OR EXISTS (SELECT 1 FROM client_portal_quotes WHERE client_id = $1)) AS has_financial`,
+            OR EXISTS (SELECT 1 FROM client_portal_quotes WHERE client_id = $1)
+            OR EXISTS (SELECT 1 FROM client_portal_requests WHERE client_id = $1)
+            OR EXISTS (SELECT 1 FROM client_portal_tickets WHERE client_id = $1)
+            OR EXISTS (SELECT 1 FROM client_portal_chat_messages WHERE client_id = $1)
+            OR EXISTS (
+              SELECT 1 FROM client_users cu
+               WHERE cu.client_id = $1
+                 AND (EXISTS (SELECT 1 FROM client_contacts cc
+                               WHERE cc.client_user_id = cu.id AND cc.client_id <> $1)
+                   OR EXISTS (SELECT 1 FROM client_user_organizations cuo
+                               WHERE cuo.client_user_id = cu.id AND cuo.client_id <> $1)))) AS must_keep`,
       [candidate.id]
     );
-
     // The logins that belonged to this organization, to remove the ones nothing else needs afterwards.
     const logins = await tx.query(
       `SELECT DISTINCT client_user_id FROM client_contacts WHERE client_id = $1 AND client_user_id IS NOT NULL`,
@@ -68,7 +82,7 @@ export async function purgeOrganization(candidate: PurgeCandidate): Promise<Purg
     const loginIds = logins.rows.map(row => row.client_user_id as string);
 
     let outcome: PurgeOutcome;
-    if (financial.rows[0]?.has_financial === true) {
+    if (keep.rows[0]?.must_keep === true) {
       await tombstone(tx, candidate.id);
       outcome = "tombstoned";
     } else {
