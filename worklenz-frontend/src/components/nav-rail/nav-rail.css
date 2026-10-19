@@ -77,17 +77,24 @@
 }
 
 /* ── Reorder handle affordance ─────────────────────────────────────────────
-   Always in DOM for accessibility. Shown when item is hovered or focused. */
+   Keyboard-only reorder control (mouse users drag the whole item). It never
+   takes pointer events, so it can't cover the unread badge or Soon tag; it is
+   revealed only while it has keyboard focus. */
 .nav-rail-affordance {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
 }
 
-.nav-rail-item-wrapper:hover .nav-rail-affordance,
-.nav-rail-item-wrapper:focus-within .nav-rail-affordance,
-.nav-rail-affordance.nav-rail-affordance-visible {
+.nav-rail-affordance:focus-visible {
   opacity: 1;
-  pointer-events: auto;
+  outline: 2px solid var(--nav-rail-color-primary, #1890ff);
+  outline-offset: 1px;
+}
+
+.nav-rail-affordance:focus-visible::before {
+  content: '\22EE\22EE';
+  letter-spacing: -2px;
+  line-height: 1;
 }
 

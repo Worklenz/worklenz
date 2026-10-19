@@ -227,7 +227,9 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
           onKeyDown={handleReorderKeyDown}
           style={{
             ...pinWrapperStyle,
+            top: 'auto',
             left: 'auto',
+            bottom: 4,
             right: 4,
             border: 'none',
             padding: 0,
