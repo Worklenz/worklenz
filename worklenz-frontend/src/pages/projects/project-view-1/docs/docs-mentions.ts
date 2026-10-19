@@ -3,7 +3,7 @@ import { MutableRefObject } from 'react';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { mentionStore } from './mention-store';
-import { DocsSuggestionItem, DocsSuggestionMenuHandle } from './docs-suggestion-menu';
+import { DocsSuggestionItem, DocsSuggestionMenuHandle } from './DocsSuggestionMenu';
 
 const EMPTY_TASK_ID = '00000000-0000-4000-8000-000000000000';
 

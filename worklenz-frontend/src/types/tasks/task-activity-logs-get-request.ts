@@ -41,6 +41,8 @@ export interface IActivityLog {
   current?: string;
   log_text?: string;
   log_type?: string;
+  /** Set when the change was automated, e.g. by a GitHub pull request. */
+  source?: string | null;
   previous?: string;
   task_id?: string;
   done_by?: IActivityLogsUser;

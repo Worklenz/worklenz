@@ -58,7 +58,7 @@ vi.mock('./docs-sidebar', () => ({
     </>
   ),
 }));
-vi.mock('./docs-editor', () => ({
+vi.mock('./DocsEditor', () => ({
   default: ({
     title,
     saveState,

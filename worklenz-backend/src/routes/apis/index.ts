@@ -91,6 +91,7 @@ import plansApiRouter from "./plans-api-router";
 import usersApiRouter from "./users-api-router";
 import clientPortalApiRouter from "../../routes/apis/client-portal-api-router";
 import slackApiRouter from "../../routes/apis/slack-api-router";
+import githubApiRouter from "../../routes/apis/github-api-router";
 import onboardingApiRouter from "./onboarding-api-router";
 import importsApiRouter from "./imports-api-router";
 import digestApiRouter from "./digest-api-router";
@@ -223,6 +224,9 @@ api.use("/client-portal", clientPortalApiRouter);
 
 // Slack integration APIs
 api.use("/slack", slackApiRouter);
+
+// GitHub integration APIs
+api.use("/github", githubApiRouter);
 
 // Digest preferences (auth required)
 api.use("/digest", digestApiRouter);

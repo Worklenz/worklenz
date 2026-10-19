@@ -7,7 +7,7 @@ import {
   DocsSuggestionItem,
   DocsSuggestionMenuHandle,
   suggestionPosition,
-} from '../docs-suggestion-menu';
+} from '../DocsSuggestionMenu';
 
 export const slashPluginKey = new PluginKey('docs-slash-commands');
 

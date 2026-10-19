@@ -7,7 +7,7 @@
   "cancel": "取消",
   "slack": {
     "title": "松弛",
-    "description": "向 Slack 频道发送通知",
+    "description": "在 Slack 频道中接收任务、状态和评论更新",
     "notConnected": "请先在设置中连接您的 Slack 工作区",
     "quickAddTitle": "将 Slack 添加到项目",
     "currentProject": "项目",
@@ -21,11 +21,14 @@
   },
   "teams": {
     "title": "微软团队",
-    "description": "向 Teams 频道发送通知"
+    "description": "将任务和状态更新发布到 Teams 频道"
   },
   "github": {
     "title": "GitHub",
-    "description": "与 GitHub 问题同步任务"
+    "description": "在任务上跟踪分支、拉取请求和提交",
+    "softwareDescription": "每个任务上显示分支、拉取请求和提交，并自动更新状态",
+    "softwareOnly": "软件项目",
+    "connectDescription": "连接 GitHub 以关联仓库、跟踪拉取请求并自动更新任务状态"
   },
   "notificationTypes": {
     "taskCreated": "任务已创建",

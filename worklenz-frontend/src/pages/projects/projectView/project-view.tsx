@@ -81,7 +81,10 @@ import {
   setProjectId as setDrawerProjectId,
   setProjectData,
 } from '@/features/project/project-drawer.slice';
-import { openProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
+import {
+  openProjectSettingsModal,
+  setActiveSettingsSection,
+} from '@/features/project/project-settings-modal.slice';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -880,10 +883,15 @@ const ProjectView = React.memo(() => {
 
     dispatch(setDrawerProjectId(projectId));
     dispatch(setProjectData(selectedProject));
+    // Optional deep link to a section, e.g. coming back from the GitHub install.
+    if (searchParams.get('settings_section') === 'integrations') {
+      dispatch(setActiveSettingsSection('integrations'));
+    }
     dispatch(openProjectSettingsModal());
 
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('open_settings');
+    nextParams.delete('settings_section');
     setSearchParams(nextParams, { replace: true });
   }, [projectId, searchParams, selectedProject, dispatch, setSearchParams]);
 

@@ -1,0 +1,188 @@
+{
+  "title": "GitHub",
+  "description": "Verknüpfen Sie GitHub-Repositories mit Softwareprojekten, um Branches, Pull Requests und Commits an Ihren Vorgängen zu sehen.",
+  "viewOnly": "Nur Ansicht",
+  "connectedHint": "Öffnen Sie ein Softwareprojekt und gehen Sie zu Einstellungen > Integrationen, um Repositories zu verknüpfen.",
+  "repositoryCount_one": "{{count}} Repository verfügbar",
+  "repositoryCount_other": "{{count}} Repositories verfügbar",
+  "connect": {
+    "button": "GitHub verbinden",
+    "adminOnly": "Nur Team-Inhaber und Admins können GitHub verbinden."
+  },
+  "status": {
+    "connected": "Verbunden",
+    "suspended": "Gesperrt"
+  },
+  "notConfigured": {
+    "title": "Nicht konfiguriert",
+    "description": "Die GitHub-App wurde für diese Worklenz-Installation nicht eingerichtet. Bitten Sie Ihren Administrator, sie zu konfigurieren."
+  },
+  "actions": {
+    "retry": "Erneut versuchen",
+    "refresh": "Repositories aktualisieren",
+    "cancel": "Abbrechen"
+  },
+  "disconnect": {
+    "title": "GitHub trennen?",
+    "description": "Die Synchronisierung wird pausiert. Bestehende Verknüpfungen und der Verlauf bleiben erhalten und werden bei erneuter Verbindung fortgesetzt.",
+    "confirm": "Trennen",
+    "button": "Trennen"
+  },
+  "messages": {
+    "connected": "GitHub erfolgreich verbunden.",
+    "requested": "Die Installation wurde angefragt. Ein Organisationsinhaber muss sie genehmigen.",
+    "refreshed": "Repository-Liste aktualisiert.",
+    "disconnected": "GitHub getrennt."
+  },
+  "errors": {
+    "invalidState": "Die Verbindungsanfrage ist abgelaufen. Bitte versuchen Sie es erneut.",
+    "forbidden": "Sie benötigen Zugriff auf diese GitHub-Installation und müssen Team-Inhaber oder Admin sein.",
+    "alreadyConnected": "Dieses GitHub-Konto ist bereits mit einem anderen Worklenz-Team verbunden.",
+    "teamAlreadyConnected": "Dieses Team ist bereits mit einem anderen GitHub-Konto verbunden. Trennen Sie es zuerst.",
+    "connectFailed": "GitHub konnte nicht verbunden werden. Bitte versuchen Sie es erneut.",
+    "loadFailed": "GitHub-Status konnte nicht geladen werden.",
+    "refreshFailed": "Repositories konnten nicht aktualisiert werden.",
+    "disconnectFailed": "GitHub konnte nicht getrennt werden."
+  },
+  "project": {
+    "subtitle": "Sehen Sie Branches, Pull Requests und Commits an den Vorgängen dieses Projekts.",
+    "linked": "Repository verknüpft.",
+    "linkFailed": "Repository konnte nicht verknüpft werden.",
+    "unlinked": "Repository getrennt.",
+    "unlinkFailed": "Repository konnte nicht getrennt werden.",
+    "updateFailed": "Basis-Branch konnte nicht aktualisiert werden.",
+    "notConnected": "Verbinden Sie Ihr GitHub-Konto in den Team-Einstellungen, bevor Sie Repositories verknüpfen.",
+    "openIntegrations": "Zu Integrationen",
+    "selectPlaceholder": "Repository zum Verknüpfen auswählen",
+    "noRepositories": "Keine weiteren Repositories verfügbar",
+    "link": "Verknüpfen",
+    "emptyManage": "Noch keine Repositories verknüpft. Wählen Sie oben eines aus.",
+    "empty": "Diesem Projekt sind keine Repositories zugeordnet.",
+    "private": "Privat",
+    "unavailable": "Nicht mehr zugänglich",
+    "baseBranch": "Basis-Branch",
+    "editBaseBranch": "Basis-Branch bearbeiten",
+    "unlinkTitle": "Dieses Repository trennen?",
+    "unlinkDescription": "Bestehende Verknüpfungen an Vorgängen bleiben, neue Aktivitäten werden jedoch nicht mehr erfasst.",
+    "unlink": "Trennen",
+    "unlinkAria": "{{name}} trennen",
+    "howItWorks": "Fügen Sie einen Vorgangsschlüssel wie {{example}} in einen Branch-Namen, eine Commit-Nachricht oder einen Pull-Request-Titel ein, um ihn mit dem Vorgang zu verknüpfen.",
+    "automation": {
+      "title": "Status-Automatisierung",
+      "description": "Vorgänge automatisch verschieben, wenn GitHub-Aktivität eintritt. Vorgänge gehen nie zurück oder aus einem erledigten Status heraus.",
+      "branchCreated": "Branch erstellt",
+      "prOpened": "Pull Request geöffnet",
+      "prMerged": "Pull Request zusammengeführt",
+      "noChange": "Status nicht ändern",
+      "saveFailed": "Automatisierung konnte nicht aktualisiert werden."
+    },
+    "connectPrompt": "Verbinden Sie Ihr GitHub-Konto einmal für das ganze Team und verknüpfen Sie dann Repositories mit diesem Projekt.",
+    "askOwnerNamed": "GitHub ist noch nicht verbunden. Bitten Sie {{name}} oder einen anderen Team-Admin, es zu verbinden.",
+    "askOwner": "GitHub ist noch nicht verbunden. Bitten Sie einen Team-Inhaber oder Admin, es zu verbinden."
+  },
+  "development": {
+    "pr": {
+      "merged": "Zusammengeführt",
+      "closed": "Geschlossen",
+      "draft": "Entwurf",
+      "approved": "Genehmigt",
+      "changesRequested": "Änderungen angefordert",
+      "open": "Offen"
+    },
+    "loadFailed": "GitHub-Aktivität konnte nicht geladen werden.",
+    "empty": "Noch keine GitHub-Aktivität. Fügen Sie {{key}} in einen Branch-Namen, Commit oder Pull-Request-Titel ein, um sie hier zu verknüpfen.",
+    "noRepositories": "Diesem Projekt ist kein Repository zugeordnet. Verknüpfen Sie eines unter Projekteinstellungen > Integrationen.",
+    "pullRequests": "Pull Requests",
+    "branches": "Zweige",
+    "commits": "Revisionen",
+    "branchDeleted": "Gelöscht",
+    "showFewer": "Weniger anzeigen",
+    "showAll": "Alle {{count}} Commits anzeigen",
+    "remove": {
+      "button": "Verknüpfung entfernen",
+      "confirm": "Entfernen",
+      "cancel": "Abbrechen",
+      "success": "Verknüpfung entfernt.",
+      "failed": "Die Verknüpfung konnte nicht entfernt werden.",
+      "branch": { "title": "Branch von dieser Aufgabe entfernen?", "description": "{{name}} wird nicht mehr bei dieser Aufgabe angezeigt. Der Branch wird auf GitHub nicht gelöscht." },
+      "pullRequest": { "title": "Pull Request von dieser Aufgabe entfernen?", "description": "{{name}} wird nicht mehr bei dieser Aufgabe angezeigt. Der Pull Request wird auf GitHub nicht geändert." },
+      "commit": { "title": "Commit von dieser Aufgabe entfernen?", "description": "{{name}} wird nicht mehr bei dieser Aufgabe angezeigt. Der Commit wird auf GitHub nicht geändert." }
+    },
+    "createBranch": {
+      "button": "Branch erstellen",
+      "title": "Branch erstellen",
+      "repository": "Quellcode-Repository",
+      "name": "Branch-Name",
+      "type": "Typ",
+      "baseBranch": "Basis-Branch",
+      "invalidName": "Verwenden Sie Buchstaben, Zahlen, Punkte, Bindestriche, Unterstriche oder Schrägstriche.",
+      "created": "Branch erstellt.",
+      "checkoutHint": "Führen Sie dies aus, um lokal daran zu arbeiten:",
+      "copy": "Befehl kopieren",
+      "copied": "In die Zwischenablage kopiert.",
+      "done": "Fertig",
+      "errors": {
+        "generic": "Der Branch konnte nicht erstellt werden.",
+        "exists": "Ein Branch mit diesem Namen existiert bereits.",
+        "baseMissing": "Der Basis-Branch wurde in diesem Repository nicht gefunden.",
+        "permission": "Die GitHub-App darf keine Branches erstellen. Bitten Sie einen Admin, ihr Schreibzugriff auf Inhalte zu geben."
+      },
+      "branchesFailed": "Branches konnten nicht geladen werden. Sie können den Basis-Branch trotzdem eingeben.",
+      "loadingBranches": "Branches werden geladen …",
+      "selectBranch": "Branch auswählen oder eingeben"
+    }
+  },
+  "import": {
+    "button": "Vorgänge importieren…",
+    "title": "Vorgänge aus {{name}} importieren",
+    "stateOpen": "Offen",
+    "stateClosed": "Geschlossen",
+    "stateAll": "Alle",
+    "filterLabels": "Nach Label filtern",
+    "destination": "Hinzufügen zu",
+    "backlog": "Rückstand",
+    "submit_one": "{{count}} Vorgang importieren",
+    "submit_other": "{{count}} Vorgänge importieren",
+    "imported": "Importiert als {{key}}",
+    "loadMore": "Mehr laden",
+    "empty": "Keine Vorgänge gefunden",
+    "loadFailed": "GitHub-Vorgänge konnten nicht geladen werden.",
+    "success_one": "{{count}} Vorgang importiert.",
+    "success_other": "{{count}} Vorgänge importiert.",
+    "partial": "{{imported}} importiert, {{skipped}} übersprungen.",
+    "failed": "Die ausgewählten Vorgänge konnten nicht importiert werden.",
+    "columnTitle": "Titel",
+    "columnStatus": "Status"
+  },
+  "importSettings": {
+    "title": "Vorgangsimport",
+    "autoImport": "Neue Vorgänge automatisch importieren",
+    "autoImportHint": "Neue GitHub-Vorgänge werden automatisch hinzugefügt, gefiltert nach den Labels unten.",
+    "labels": "Nur Vorgänge mit diesen Labels",
+    "labelsPlaceholder": "Alle Vorgänge",
+    "destination": "Importierte Vorgänge hinzufügen zu",
+    "closeOnClose": "Vorgang abschließen, wenn der GitHub-Vorgang geschlossen wird",
+    "saveFailed": "Importeinstellungen konnten nicht aktualisiert werden."
+  },
+  "sync": {
+    "button": "Sync-Status",
+    "title": "GitHub-Sync-Status",
+    "refresh": "Aktualisieren",
+    "loadFailed": "Sync-Status konnte nicht geladen werden.",
+    "notConnected": "GitHub ist nicht verbunden.",
+    "lastEvent": "Letztes Ereignis {{time}} empfangen",
+    "never": "Noch keine Ereignisse empfangen.",
+    "processed": "Verarbeitet (7 Tage)",
+    "pending": "Ausstehend",
+    "ignored": "Ignoriert",
+    "failed": "Fehlgeschlagen",
+    "failedEvents": "Fehlgeschlagene Ereignisse",
+    "noFailures": "Keine fehlgeschlagenen Ereignisse. Alles wird synchronisiert.",
+    "event": "Ereignis",
+    "error": "Fehler",
+    "received": "Empfangen",
+    "retry": "Wiederholen",
+    "retried": "Ereignis zur Wiederholung eingereiht.",
+    "retryFailed": "Ereignis konnte nicht wiederholt werden."
+  }
+}
