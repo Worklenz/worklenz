@@ -113,8 +113,8 @@ describe("purging a deleted client", () => {
     expect(check).toMatch(/FROM client_portal_requests WHERE client_id = \$1/);
     expect(check).toMatch(/FROM client_portal_tickets WHERE client_id = \$1/);
     expect(check).toMatch(/FROM client_portal_chat_messages WHERE client_id = \$1/);
-    expect(check).toMatch(/FROM client_portal_task_comments WHERE client_id = $1/);
-    expect(check).toMatch(/FROM client_portal_attachments WHERE uploaded_by_client_id = $1/);
+    expect(check).toMatch(/FROM client_portal_task_comments WHERE client_id = \$1/);
+    expect(check).toMatch(/FROM client_portal_attachments WHERE uploaded_by_client_id = \$1/);
     expect(check).toMatch(/cu\.client_id = \$1/);
     expect(check).toMatch(/cc\.client_id <> \$1/);
     expect(check).toMatch(/cuo\.client_id <> \$1/);
