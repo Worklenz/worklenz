@@ -68,6 +68,9 @@ const PROJECT_PERMISSION_KEYS = [
   'Delete project',
 ] as const;
 
+/** Built-in schemes that cannot be deleted (Default + Task/Project Access). */
+const BUILT_IN_SCHEME_NAMES = new Set(['Default', 'Task Access', 'Project Access']);
+
 const PROJECTS_SECTION_ID = 'roles-permissions-projects-section';
 
 // Organization-wide permissions only apply to the default scheme
@@ -408,8 +411,10 @@ const SchemesSection: React.FC<SchemesSectionProps> = ({ schemes, loading }) => 
     ...roleColumns,
   ];
 
-  const isCustomScheme = !!activeScheme && !activeScheme.is_default;
+  const isCustomScheme =
+    !!activeScheme && !activeScheme.is_default && !BUILT_IN_SCHEME_NAMES.has(activeScheme.name);
   const canEditPermissionList = isCustomScheme && !activeScheme?.is_locked;
+  const canDeleteScheme = isCustomScheme && !activeScheme?.is_locked;
 
   const removeColumn: TableColumnsType<{ permission: string }>[number] = {
     key: 'remove',
@@ -525,6 +530,29 @@ const SchemesSection: React.FC<SchemesSectionProps> = ({ schemes, loading }) => 
           >
             {t('newSchemeButton', { defaultValue: 'New Scheme' })}
           </Button>
+          {canDeleteScheme && activeScheme && (
+            <Popconfirm
+              title={t('schemeDeleteConfirm', {
+                defaultValue: 'Delete this scheme? This cannot be undone.',
+              })}
+              onConfirm={() => handleDelete(activeScheme.id)}
+              okText={t('schemeDeleteButton', { defaultValue: 'Delete' })}
+              cancelText={t('cancel', { defaultValue: 'Cancel' })}
+              okButtonProps={{ danger: true }}
+            >
+              <Button
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                aria-label={t('schemeDeleteAriaLabel', {
+                  name: activeScheme.name,
+                  defaultValue: 'Delete {{name}}',
+                })}
+              >
+                {t('schemeDeleteButton', { defaultValue: 'Delete' })}
+              </Button>
+            </Popconfirm>
+          )}
         </Flex>
       </Flex>
 

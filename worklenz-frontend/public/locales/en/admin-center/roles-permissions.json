@@ -15,6 +15,7 @@
   "schemeCreateTitle": "Create Permission Scheme",
   "schemeDeleteConfirm": "Delete this scheme? This cannot be undone.",
   "schemeDeleteButton": "Delete",
+  "schemeDeleteAriaLabel": "Delete {{name}}",
   "schemeLockedTooltip": "This scheme is locked and cannot be edited.",
   "schemeDefaultBadge": "Default",
   "schemeCustomBadge": "Custom",

@@ -347,7 +347,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     const { id } = req.params;
 
     const schemeRes = await db.query(
-      'SELECT team_id, is_default, is_locked FROM permission_schemes WHERE id = $1',
+      'SELECT team_id, name, is_default, is_locked FROM permission_schemes WHERE id = $1',
       [id]
     );
     if (schemeRes.rowCount === 0)
@@ -356,8 +356,16 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     const row = schemeRes.rows[0];
     if (row.team_id !== teamId)
       return res.status(403).send(new ServerResponse(false, null, 'Forbidden'));
-    if (row.is_default)
-      return res.status(200).send(new ServerResponse(false, null, 'Cannot delete the default scheme'));
+    if (
+      row.is_default ||
+      row.name === 'Default' ||
+      row.name === 'Task Access' ||
+      row.name === 'Project Access'
+    ) {
+      return res.status(200).send(
+        new ServerResponse(false, null, 'Cannot delete a built-in permission scheme')
+      );
+    }
     if (row.is_locked)
       return res.status(200).send(new ServerResponse(false, null, 'Scheme is locked and cannot be deleted'));
 
