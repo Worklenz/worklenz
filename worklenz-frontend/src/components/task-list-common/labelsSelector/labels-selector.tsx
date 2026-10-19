@@ -21,6 +21,7 @@ import { nanoid } from '@reduxjs/toolkit';
 import { addLabel } from '@features/settings/label/labelSlice';
 import { useTranslation } from 'react-i18next';
 import { ITaskLabel, LabelType } from '@/types/label.type';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface LabelsSelectorProps {
   taskId: string | null;
@@ -112,7 +113,7 @@ const LabelsSelector = ({ taskId, labels }: LabelsSelectorProps) => {
 
                 <Flex gap={8}>
                   <Badge color={label.color_code} />
-                  {label.name}
+                  {decodeHtmlEntities(label.name)}
                 </Flex>
               </List.Item>
             ))

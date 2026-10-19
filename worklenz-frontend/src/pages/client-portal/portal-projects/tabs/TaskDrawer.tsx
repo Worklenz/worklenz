@@ -9,6 +9,7 @@ import { StatusTag, VisibilityTag, formatPortalDate, useVisibilityToast } from '
 import type { PortalProject, PortalTask, PortalVisibility } from '@/types/client-portal/v2';
 import { useTaskStatusLabels } from './task-labels';
 import { RichTextField } from '../../shared/rich-text/RichTextField';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface TaskDrawerProps {
   project: PortalProject;
@@ -50,7 +51,7 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
           attached_file_ids: fileIds,
         },
       }).unwrap();
-      if (visibility !== task.visibility) showVisibilityToast('task', clientTitle.trim() || task.title, visibility);
+      if (visibility !== task.visibility) showVisibilityToast('task', clientTitle.trim() || decodeHtmlEntities(task.title), visibility);
       else message.success(t('tasks.drawer.saved', { defaultValue: 'Client-facing wording and attachments saved.' }));
       onClose();
     } catch (error) {
@@ -88,7 +89,7 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
       destroyOnHidden
       title={
         <div>
-          <div>{task.title}</div>
+          <div>{decodeHtmlEntities(task.title)}</div>
           <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
             {t('tasks.drawer.subtitle', { key: task.key, defaultValue: '{{key}} · Client Portal sharing' })}
           </Typography.Text>
@@ -125,7 +126,7 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
           <Input
             value={clientTitle}
             maxLength={200}
-            placeholder={task.title}
+            placeholder={decodeHtmlEntities(task.title)}
             aria-label={t('tasks.drawer.clientTitle', { defaultValue: 'Client-facing title' })}
             onChange={event => setClientTitle(event.target.value)}
           />
@@ -185,7 +186,7 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
       </Typography.Text>
       {visibility === 'client' ? (
         <Card size="small" style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 600, fontSize: 13 }}>{clientTitle.trim() || task.title}</div>
+          <div style={{ fontWeight: 600, fontSize: 13 }}>{clientTitle.trim() || decodeHtmlEntities(task.title)}</div>
           <div style={{ fontSize: 12, color: token.colorTextSecondary, margin: '3px 0 6px' }}>
             {labels.client[task.status]}
             {task.due_date

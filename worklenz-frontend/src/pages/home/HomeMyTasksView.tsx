@@ -38,6 +38,7 @@ import {
   setNavigationContext,
 } from '@/features/task-drawer/task-drawer.slice';
 import { setProjectId } from '@/features/project/project.slice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
@@ -253,7 +254,11 @@ const HomeMyTasksView: React.FC = () => {
   const totalCount = activeBody?.total ?? 0;
 
   const projectFilterOptions = useMemo(
-    () => (filterOptionsData?.body?.projects || []).map(p => ({ value: p.project_id, label: p.project_name || p.project_id || '' })),
+    () =>
+      (filterOptionsData?.body?.projects || []).map(p => ({
+        value: p.project_id,
+        label: decodeHtmlEntities(p.project_name || p.project_id || ''),
+      })),
     [filterOptionsData?.body?.projects]
   );
 
@@ -376,7 +381,7 @@ const HomeMyTasksView: React.FC = () => {
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, cursor: 'pointer' }}
           >
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-              {record.name}
+              {decodeHtmlEntities(record.name)}
             </span>
             <div className="row-action-button" style={{ flexShrink: 0 }}>
               <Tooltip title={t('myTasksView.openTask', { defaultValue: 'Open task' })} placement="right">
@@ -400,7 +405,7 @@ const HomeMyTasksView: React.FC = () => {
               flexShrink: 0, display: 'inline-block',
             }} />
             <span style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
-              {record.project_name || '—'}
+              {decodeHtmlEntities(record.project_name) || '—'}
             </span>
           </div>
         ),

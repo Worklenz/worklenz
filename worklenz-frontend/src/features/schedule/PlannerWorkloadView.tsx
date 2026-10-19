@@ -25,6 +25,7 @@ import { SettingOutlined, SearchOutlined, BranchesOutlined } from '@ant-design/i
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@/utils/themeWiseColor';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import CustomAvatar from '@/components/CustomAvatar';
 import {
   useFetchScheduleMembersQuery,
@@ -511,7 +512,7 @@ const PlannerWorkloadView: React.FC = () => {
           memberId: a.id,
           projectId: task.project_id,
           day,
-          title: task.name,
+          title: decodeHtmlEntities(task.name),
           estHours: task.total_minutes != null ? Math.round((task.total_minutes / 60) * 10) / 10 : null,
           color: task.project_color || projectById[task.project_id]?.color || token.colorPrimary,
           multiAssignee: assignees.length > 1,
@@ -520,7 +521,7 @@ const PlannerWorkloadView: React.FC = () => {
           phaseName: task.phase_name,
           assigneeNames: assignees.map((x: any) => x.name).filter(Boolean),
           isSubTask: !!task.parent_task_id,
-          parentTaskName: task.parent_task_name,
+          parentTaskName: decodeHtmlEntities(task.parent_task_name),
           parentTaskId: task.parent_task_id ?? null,
         });
       });
@@ -690,7 +691,7 @@ const PlannerWorkloadView: React.FC = () => {
     return wlProjects.map(p => ({
       axis: 'project' as Axis,
       key: p.id,
-      label: p.name,
+      label: decodeHtmlEntities(p.name),
       sub: p.client,
       meterColor: p.color,
       avatar: (
@@ -1774,7 +1775,7 @@ const WorkloadAddPopover: React.FC<{
         })
       );
       const memberId = ctx.axis === 'member' ? ctx.rowKey : otherAxisVal;
-      onScheduleTask(task.id, taskProjectId, memberId, dateStr, task.name);
+      onScheduleTask(task.id, taskProjectId, memberId, dateStr, decodeHtmlEntities(task.name));
       onClose();
     });
   };
@@ -1843,7 +1844,7 @@ const WorkloadAddPopover: React.FC<{
                 optionFilterProp="label"
                 placeholder={t('selectProject', { defaultValue: 'Select project…' })}
                 style={{ width: '100%' }}
-                options={projects.map(p => ({ value: p.id, label: p.name }))}
+                options={projects.map(p => ({ value: p.id, label: decodeHtmlEntities(p.name) }))}
               />
             </Form.Item>
           )}
@@ -1893,7 +1894,7 @@ const WorkloadAddPopover: React.FC<{
                 optionFilterProp="label"
                 placeholder={t('selectProject', { defaultValue: 'Select project…' })}
                 style={{ width: '100%' }}
-                options={projects.map(p => ({ value: p.id, label: p.name }))}
+                options={projects.map(p => ({ value: p.id, label: decodeHtmlEntities(p.name) }))}
               />
             </Form.Item>
           )}
@@ -2002,7 +2003,7 @@ const WorkloadAddPopover: React.FC<{
                 value={otherAxisVal}
                 onChange={setOtherAxisVal}
                 style={{ width: '100%' }}
-                options={projects.map(p => ({ value: p.id, label: p.name }))}
+                options={projects.map(p => ({ value: p.id, label: decodeHtmlEntities(p.name) }))}
               />
             </Form.Item>
           ) : (

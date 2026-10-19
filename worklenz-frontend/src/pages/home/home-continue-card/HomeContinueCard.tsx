@@ -18,6 +18,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useNavigate } from 'react-router-dom';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { IHomeTasksConfig } from '@/types/home/home-page.types';
 import {
   setSelectedTaskId,
@@ -266,7 +267,7 @@ const HomeContinueCard: React.FC = () => {
                         flexShrink: 0,
                       }}
                     />
-                    <Tooltip title={p.name} placement="right">
+                    <Tooltip title={decodeHtmlEntities(p.name)} placement="right">
                       <span
                         style={{
                           flex: 1,
@@ -276,12 +277,12 @@ const HomeContinueCard: React.FC = () => {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {p.name}
+                        {decodeHtmlEntities(p.name)}
                       </span>
                     </Tooltip>
                     {p.client_name && (
                       <span style={{ fontSize: 11, opacity: 0.55, flexShrink: 0 }}>
-                        {p.client_name}
+                        {decodeHtmlEntities(p.client_name)}
                       </span>
                     )}
                     {typeof p.tasks_progress === 'number' && (
@@ -328,7 +329,7 @@ const HomeContinueCard: React.FC = () => {
                 activeTasks.map(t => (
                   <div key={t.id} style={ROW_STYLE}>
                     <Badge color={t.project_color || '#8c8c8c'} />
-                    <Tooltip title={t.name} placement="right">
+                    <Tooltip title={decodeHtmlEntities(t.name)} placement="right">
                       <span
                         style={{
                           flex: 1,
@@ -341,10 +342,10 @@ const HomeContinueCard: React.FC = () => {
                         onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                         onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                       >
-                        {t.name}
+                        {decodeHtmlEntities(t.name)}
                       </span>
                     </Tooltip>
-                    <Tooltip title={t.project_name} placement="right">
+                    <Tooltip title={decodeHtmlEntities(t.project_name)} placement="right">
                       <span
                         style={{
                           fontSize: 11,
@@ -357,7 +358,7 @@ const HomeContinueCard: React.FC = () => {
                         onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                         onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                       >
-                        {t.project_name}
+                        {decodeHtmlEntities(t.project_name)}
                       </span>
                     </Tooltip>
                   </div>
@@ -387,7 +388,7 @@ const HomeContinueCard: React.FC = () => {
                       }}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <Tooltip title={t.task_name} placement="right">
+                      <Tooltip title={decodeHtmlEntities(t.task_name)} placement="right">
                         <div
                           style={{
                             overflow: 'hidden',
@@ -402,10 +403,10 @@ const HomeContinueCard: React.FC = () => {
                           onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                           onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                         >
-                          {t.task_name}
+                          {decodeHtmlEntities(t.task_name)}
                         </div>
                       </Tooltip>
-                      <Tooltip title={t.project_name} placement="right">
+                      <Tooltip title={decodeHtmlEntities(t.project_name)} placement="right">
                         <div
                           style={{
                             fontSize: 11,
@@ -421,7 +422,7 @@ const HomeContinueCard: React.FC = () => {
                           onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                           onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                         >
-                          {t.project_name}
+                          {decodeHtmlEntities(t.project_name)}
                         </div>
                       </Tooltip>
                     </div>
@@ -460,7 +461,7 @@ const HomeContinueCard: React.FC = () => {
                       }}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <Tooltip title={t.task_name} placement="right">
+                      <Tooltip title={decodeHtmlEntities(t.task_name)} placement="right">
                         <div
                           style={{
                             overflow: 'hidden',
@@ -475,10 +476,10 @@ const HomeContinueCard: React.FC = () => {
                           onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                           onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                         >
-                          {t.task_name}
+                          {decodeHtmlEntities(t.task_name)}
                         </div>
                       </Tooltip>
-                      <Tooltip title={t.project_name} placement="right">
+                      <Tooltip title={decodeHtmlEntities(t.project_name)} placement="right">
                         <div
                           style={{
                             fontSize: 11,
@@ -494,7 +495,7 @@ const HomeContinueCard: React.FC = () => {
                           onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                           onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                         >
-                          {t.project_name}
+                          {decodeHtmlEntities(t.project_name)}
                         </div>
                       </Tooltip>
                     </div>

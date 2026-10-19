@@ -35,6 +35,7 @@ import { fetchOrgConfig } from '@/features/org-config/org-config.slice';
 import { IFinanceOverviewProject } from '@/api/finance-overview/finance-overview.api.service';
 import { financeOverviewApiService } from '@/api/finance-overview/finance-overview.api.service';
 import { currencyRatesApiService } from '@/api/settings/currency-rates/currency-rates.api.service';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Text } = Typography;
 
@@ -272,9 +273,9 @@ const FinanceOverviewPage = () => {
             render: (name: string, record) => (
                 <Flex align="center" gap={8} style={{ minWidth: 0 }}>
                     <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', backgroundColor: record.color_code || '#1890ff', flexShrink: 0 }} />
-                    <Tooltip title={name}>
+                    <Tooltip title={decodeHtmlEntities(name)}>
                         <Text style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 170, display: 'block' }}>
-                            {name}
+                            {decodeHtmlEntities(name)}
                         </Text>
                     </Tooltip>
                 </Flex>
@@ -548,7 +549,7 @@ const FinanceOverviewPage = () => {
                                                 <Flex key={p.id} vertical gap={4}>
                                                     <Flex align="center" gap={6}>
                                                         <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', backgroundColor: p.color_code || '#1890ff', flexShrink: 0 }} />
-                                                        <Text style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</Text>
+                                                        <Text style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{decodeHtmlEntities(p.name)}</Text>
                                                     </Flex>
                                                     <Flex align="center" justify="space-between" gap={8}>
                                                         <Text type="secondary" style={{ fontSize: 12 }}>

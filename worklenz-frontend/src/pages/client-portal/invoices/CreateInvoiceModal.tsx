@@ -28,6 +28,7 @@ import {
 import { useGetBillableChangeRequestsQuery } from '../../../api/client-portal/portal-workflow-api';
 import { ChangeRequestPicker } from '../../../components/client-portal/v2/ChangeRequestPicker';
 import { portalPaths } from '../portal-paths';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import type { ClientPortalInvoiceDetails } from '../../../api/client-portal/client-portal-api';
 import { CURRENCY_OPTIONS, DEFAULT_CURRENCY, getCurrencySymbol } from '../../../shared/currencies';
 import InvoicePreviewModal from './invoice-details/invoice-preview-modal';
@@ -487,7 +488,9 @@ const CreateInvoiceModal = () => {
                       </div>
                       {isEditMode || selectedChangeRequest ? (
                         <Typography.Text strong>
-                          {isEditMode ? existing?.client?.name : (selectedClient?.name ?? '')}
+                          {isEditMode
+                            ? decodeHtmlEntities(existing?.client?.name)
+                            : decodeHtmlEntities(selectedClient?.name) ?? ''}
                         </Typography.Text>
                       ) : (
                         <Select
@@ -497,7 +500,10 @@ const CreateInvoiceModal = () => {
                           value={clientId ?? undefined}
                           optionFilterProp="label"
                           placeholder={t('selectClientPlaceholder', { defaultValue: 'Select a client' })}
-                          options={clients.map(client => ({ value: client.id, label: client.name }))}
+                          options={clients.map(client => ({
+                            value: client.id,
+                            label: decodeHtmlEntities(client.name),
+                          }))}
                           onChange={value => setClientId(value)}
                           aria-label={t('clientLabel', { defaultValue: 'Client' })}
                         />

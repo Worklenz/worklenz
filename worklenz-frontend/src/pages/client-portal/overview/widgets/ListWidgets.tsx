@@ -5,6 +5,7 @@ import { StatusTag } from '@/components/client-portal/v2/StatusTag';
 import { PriorityTag } from '@/components/client-portal/v2/portal-tags';
 import { formatPortalDate, formatRelativeTime } from '@/components/client-portal/v2/format';
 import { OVERVIEW_NS, resolveStatus, WidgetFrame, WidgetRow, type WidgetProps } from './WidgetFrame';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 export const PendingApprovalsWidget = ({ result, loading, onRetry }: WidgetProps<'pending_approvals'>) => {
   const { t, i18n } = useTranslation(OVERVIEW_NS);
@@ -93,7 +94,7 @@ export const UpcomingMilestonesWidget = ({ result, loading, onRetry }: WidgetPro
             key={item.id}
             to={portalPaths.project(item.project_id, 'milestones')}
             title={item.name}
-            subtitle={[item.project_name, item.organization_name].filter(Boolean).join(' · ')}
+            subtitle={[decodeHtmlEntities(item.project_name), item.organization_name].filter(Boolean).join(' · ')}
             right={
               <StatusTag tone={item.is_late ? 'red' : 'gray'}>
                 {formatPortalDate(item.target_date, i18n.language) ?? ''}
@@ -152,7 +153,7 @@ export const MentionsMeWidget = ({ result, loading, onRetry }: WidgetProps<'ment
             unread={item.unread}
             title={t('widgets.mentions_me.row', {
               name: item.author_name,
-              project: item.project_name,
+              project: decodeHtmlEntities(item.project_name),
               defaultValue: '{{name}} in {{project}}',
             })}
             subtitle={item.excerpt}

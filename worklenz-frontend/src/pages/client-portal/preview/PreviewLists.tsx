@@ -19,6 +19,7 @@ import {
   theme,
 } from '@/shared/antd-imports';
 import type { TableColumnsType } from 'antd';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useGetPreviewProjectQuery } from '@/api/client-portal/portal-workflow-api';
 import {
   ApprovalStatusTag,
@@ -301,7 +302,7 @@ const ProjectModal = ({ contactId, project, onClose }: { contactId: string; proj
                     pagination={false}
                     dataSource={detail.milestones}
                     columns={[
-                      { title: t('project.name', { defaultValue: 'Name' }), key: 'name', render: (_: unknown, row) => <Typography.Text strong>{row.name}</Typography.Text> },
+                      { title: t('project.name', { defaultValue: 'Name' }), key: 'name', render: (_: unknown, row) => <Typography.Text strong>{decodeHtmlEntities(row.name)}</Typography.Text> },
                       {
                         title: t('project.targetDate', { defaultValue: 'Target date' }),
                         key: 'date',
@@ -371,7 +372,7 @@ const ProjectModal = ({ contactId, project, onClose }: { contactId: string; proj
                     pagination={false}
                     dataSource={detail.files}
                     columns={[
-                      { title: t('project.name', { defaultValue: 'Name' }), key: 'name', render: (_: unknown, row) => <Typography.Text strong>{row.name}</Typography.Text> },
+                      { title: t('project.name', { defaultValue: 'Name' }), key: 'name', render: (_: unknown, row) => <Typography.Text strong>{decodeHtmlEntities(row.name)}</Typography.Text> },
                       { title: t('project.category', { defaultValue: 'Category' }), key: 'category', dataIndex: 'category' },
                       {
                         title: t('project.version', { defaultValue: 'Version' }),

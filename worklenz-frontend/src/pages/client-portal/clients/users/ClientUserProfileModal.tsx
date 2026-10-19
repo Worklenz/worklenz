@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Descriptions, Flex, Modal, Typography, theme } from '@/shared/antd-imports';
 import { PortalAvatar, RoleTag, UserStatusTag, formatPortalDateTime } from '@/components/client-portal/v2';
 import type { ClientRole, ClientUser } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface ClientUserProfileModalProps {
   user: ClientUser | null;
@@ -103,7 +104,7 @@ export const ClientUserProfileModal = ({ user, onClose }: ClientUserProfileModal
               fontWeight: 600,
             }}
           >
-            {project.name}
+            {decodeHtmlEntities(project.name)}
           </div>
         ))
       )}

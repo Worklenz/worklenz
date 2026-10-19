@@ -17,6 +17,7 @@ import {
   useCreateOrganizationChatMutation,
   useGetClientsQuery,
 } from '@/api/client-portal/client-portal-api';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { TextArea } = Input;
 
@@ -169,7 +170,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({
                 label: (
                   <Space>
                     <UserOutlined />
-                    <span>{client.name}</span>
+                    <span>{decodeHtmlEntities(client.name)}</span>
                     {client.company_name && (
                       <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
                         ({client.company_name})

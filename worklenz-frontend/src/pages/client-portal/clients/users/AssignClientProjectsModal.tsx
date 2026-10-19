@@ -7,6 +7,7 @@ import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
 import { ClientProjectStatusTag, RoleTag } from '@/components/client-portal/v2';
 import type { ClientUser } from '@/types/client-portal/v2';
 import { PortalLoader } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface AssignClientProjectsModalProps {
   user: ClientUser | null;
@@ -113,7 +114,7 @@ export const AssignClientProjectsModal = ({ user, onClose }: AssignClientProject
             onChange={() => toggle(project.id)}
           />
           <span style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontWeight: 600, fontSize: 13 }}>{project.name}</span>
+            <span style={{ fontWeight: 600, fontSize: 13 }}>{decodeHtmlEntities(project.name)}</span>
             {!project.portal_enabled && (
               <span style={{ display: 'block', fontSize: 11.5, color: token.colorTextSecondary }}>
                 {t('assign.portalOff', {

@@ -22,6 +22,7 @@ import {
 import { TimeLogsEmptyState, TimeLogsTotalValue } from './time-logs-states';
 import { useScrollbarGutter } from './useScrollbarGutter';
 import './time-logs.css';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Text } = Typography;
 
@@ -160,7 +161,7 @@ export const TimeLogsTable: React.FC<TimeLogsTableProps> = ({
         onHeaderCell: sortHeaderCell('task'),
         width: COLUMN_WIDTHS.task,
         ellipsis: { showTitle: false },
-        render: (_, record) => <TextCell value={record.task_name} />,
+        render: (_, record) => <TextCell value={decodeHtmlEntities(record.task_name)} />,
       },
       {
         key: 'member',
@@ -184,7 +185,9 @@ export const TimeLogsTable: React.FC<TimeLogsTableProps> = ({
         onHeaderCell: sortHeaderCell('project'),
         width: COLUMN_WIDTHS.project,
         ellipsis: true,
-        render: (_, record) => <span style={{ fontWeight: 500 }}>{record.project_name}</span>,
+        render: (_, record) => (
+          <span style={{ fontWeight: 500 }}>{decodeHtmlEntities(record.project_name)}</span>
+        ),
       },
       {
         key: 'client',
@@ -192,7 +195,9 @@ export const TimeLogsTable: React.FC<TimeLogsTableProps> = ({
         onHeaderCell: sortHeaderCell('client'),
         width: COLUMN_WIDTHS.client,
         ellipsis: { showTitle: false },
-        render: (_, record) => <TextCell value={record.client_name} />,
+        render: (_, record) => (
+          <TextCell value={decodeHtmlEntities(record.client_name)} />
+        ),
       },
       {
         key: 'description',

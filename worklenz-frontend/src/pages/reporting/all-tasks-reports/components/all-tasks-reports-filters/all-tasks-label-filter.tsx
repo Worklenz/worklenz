@@ -16,6 +16,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { labelsApiService } from '@/api/taskAttributes/labels/labels.api.service';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   setSelectedLabels,
   toggleLabel,
@@ -142,7 +143,7 @@ const AllTasksLabelFilter = () => {
                     color: getLabelTextColor(label.color_code),
                   }}
                 >
-                  {label.name}
+                  {decodeHtmlEntities(label.name)}
                 </Tag>
 
               </Checkbox>

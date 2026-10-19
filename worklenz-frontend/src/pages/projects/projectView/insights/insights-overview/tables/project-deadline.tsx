@@ -8,6 +8,7 @@ import ProjectStatsCard from '@/components/projects/project-stats-card';
 import warningIcon from '@assets/icons/insightsIcons/warning.png';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { format } from 'date-fns';
 import { IDeadlineTaskStats } from '@/types/project/project-insights.types';
 import { IInsightTasks } from '@/types/project/projectInsights.types';
@@ -81,7 +82,7 @@ const ProjectDeadline = () => {
       key: 'name',
       title: t('common.name', { defaultValue: 'Name' }),
       dataIndex: 'name',
-      render: (_: any, record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
+      render: (_: any, record: IInsightTasks) => <Typography.Text>{decodeHtmlEntities(record.name)}</Typography.Text>,
     },
     {
       key: 'status',

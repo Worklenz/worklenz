@@ -23,6 +23,7 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_reporting_progress_tracking } from '@/shared/worklenz-analytics-events';
 import { fromNow } from '@/utils/dateUtils';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { progressTrackingApiService } from '@/api/reporting/progress-tracking.api.service';
 import {
   DeliveryConfidenceFilter,
@@ -194,10 +195,10 @@ const ProgressTrackingPage = () => {
           type="button"
           className="block w-full truncate bg-transparent p-0 text-left font-semibold"
           style={{ color: token.colorText }}
-          title={record.name}
+          title={decodeHtmlEntities(record.name)}
           onClick={() => handleOpenInsights(record.id)}
         >
-          {record.name}
+          {decodeHtmlEntities(record.name)}
         </button>
       ),
     },
@@ -213,9 +214,10 @@ const ProgressTrackingPage = () => {
         if (!value) {
           return <Typography.Text type="secondary">—</Typography.Text>;
         }
+        const decoded = decodeHtmlEntities(value);
         return (
-          <Typography.Text ellipsis={{ tooltip: value }} style={{ color: token.colorText }}>
-            {value}
+          <Typography.Text ellipsis={{ tooltip: decoded }} style={{ color: token.colorText }}>
+            {decoded}
           </Typography.Text>
         );
       },
