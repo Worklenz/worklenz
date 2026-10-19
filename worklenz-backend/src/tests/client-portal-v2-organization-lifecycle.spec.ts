@@ -63,7 +63,7 @@ const deletable = (extra: Handler[] = []): Handler[] => [
   ...extra,
   [LOCK, lockRow()],
   [ORGANIZATION, createQueryResult([organizationRow()])],
-  [/UPDATE clients SET deleted_at = NOW\(\)/, createQueryResult([{ deleted_at: new Date("2026-10-01T00:00:00Z") }], 1)],
+  [/UPDATE clients SET deleted_at = NOW\(\)/, createQueryResult([{ deleted_at: new Date("2026-10-01T00:00:00Z"), purge_on: new Date("2026-10-31T00:00:00Z") }], 1)],
 ];
 
 beforeEach(() => {
@@ -206,7 +206,7 @@ describe("restoring a deleted client organization", () => {
 
     const update = mockTxQuery.mock.calls.find(([sql]) => /SET deleted_at = NULL/.test(String(sql)))!;
     expect(update).toBeDefined();
-    expect(update[1]).toEqual([ORG, TEAM, "Brandbase"]);
+    expect(update[1]).toEqual([ORG, TEAM, "Brandbase", true]);
     expect(auditEvents()).toEqual(["Client organization restored"]);
   });
 
@@ -241,7 +241,44 @@ describe("restoring a deleted client organization", () => {
     ]);
     await restoreOrganization({ teamId: TEAM, organizationId: ORG, actor: staff, newName: "  Brandbase Group  " });
     const update = mockTxQuery.mock.calls.find(([sql]) => /SET deleted_at = NULL/.test(String(sql)))!;
-    expect(update[1]).toEqual([ORG, TEAM, "Brandbase Group"]);
+    expect(update[1]).toEqual([ORG, TEAM, "Brandbase Group", true]);
+  });
+
+  it("reports NAME_TAKEN when a live client wins the name between the check and the update", async () => {
+    const violation = Object.assign(new Error("duplicate key"), {
+      code: "23505",
+      constraint: "clients_name_team_id_uindex",
+    });
+    mockTxQuery.mockImplementation(async (sql: string) => {
+      if (LOCK.test(sql)) return deleted();
+      if (/SELECT \(deleted_at > NOW\(\)/.test(sql)) return createQueryResult([{ restorable: true }]);
+      if (/SET deleted_at = NULL/.test(sql)) throw violation;
+      return createQueryResult([]);
+    });
+    await expect(restoreOrganization({ teamId: TEAM, organizationId: ORG, actor: staff })).rejects.toMatchObject({
+      status: 409,
+      code: "NAME_TAKEN",
+    });
+    expect(ranTx(/ROLLBACK TO SAVEPOINT restore_client/)).toBe(true);
+    expect(auditEvents()).toEqual([]);
+  });
+
+  it("drops the sign-in slug and still restores when a live client takes it between the check and the update", async () => {
+    const violation = Object.assign(new Error("duplicate key"), {
+      code: "23505",
+      constraint: "clients_invite_slug_unique",
+    });
+    let attempts = 0;
+    mockTxQuery.mockImplementation(async (sql: string) => {
+      if (LOCK.test(sql)) return deleted();
+      if (/SELECT \(deleted_at > NOW\(\)/.test(sql)) return createQueryResult([{ restorable: true }]);
+      if (/SET deleted_at = NULL/.test(sql) && attempts++ === 0) throw violation;
+      return createQueryResult([]);
+    });
+    await restoreOrganization({ teamId: TEAM, organizationId: ORG, actor: staff });
+    const updates = mockTxQuery.mock.calls.filter(([sql]) => /SET deleted_at = NULL/.test(String(sql)));
+    expect(updates.map(([, params]) => (params as unknown[])[3])).toEqual([true, false]);
+    expect(auditEvents()).toEqual(["Client organization restored"]);
   });
 
   it("refuses a client that is not deleted, and an empty new name", async () => {
@@ -267,7 +304,8 @@ describe("deactivating and reactivating a client organization", () => {
     await deactivateOrganization({ teamId: TEAM, organizationId: ORG, actor: staff });
 
     expect(ranTx(/UPDATE clients SET status = 'inactive'/)).toBe(true);
-    expect(ranTx(/UPDATE client_portal_access SET is_active = FALSE/)).toBe(true);
+    // Portal access is its own switch; a later reactivation must not turn it back on.
+    expect(ranTx(/UPDATE client_portal_access/)).toBe(false);
     // Writing client_users.status by client would lock the person out of other workspaces' portals too.
     expect(ranTx(/UPDATE client_users/)).toBe(false);
     expect(auditEvents()).toEqual(["Client organization deactivated"]);
@@ -284,7 +322,7 @@ describe("deactivating and reactivating a client organization", () => {
     stubTx([[LOCK, lockRow({ status: "inactive" })]]);
     await reactivateOrganization({ teamId: TEAM, organizationId: ORG, actor: staff });
     expect(ranTx(/UPDATE clients SET status = 'active'/)).toBe(true);
-    expect(ranTx(/UPDATE client_portal_access SET is_active = TRUE/)).toBe(true);
+    expect(ranTx(/UPDATE client_portal_access/)).toBe(false);
     expect(ranTx(/UPDATE client_users/)).toBe(false);
     expect(auditEvents()).toEqual(["Client organization reactivated"]);
   });

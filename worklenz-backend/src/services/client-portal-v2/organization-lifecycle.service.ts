@@ -99,12 +99,6 @@ async function assessDeletion(q: Queryable, teamId: string, organizationId: stri
 
 const listForMessage = (items: string[]): string => items.slice(0, 5).join(", ") + (items.length > 5 ? ", ..." : "");
 
-const purgeDate = (deletedAt: Date): Date => {
-  const purge = new Date(deletedAt);
-  purge.setDate(purge.getDate() + CLIENT_DELETION_RETENTION_DAYS);
-  return purge;
-};
-
 /** What the Delete dialog shows before anything happens, so staff are never surprised by a refusal. */
 export async function getDeletePreview(q: Queryable, teamId: string, organizationId: string): Promise<DeletePreview> {
   const organization = await getOrganization(q, teamId, organizationId);
@@ -176,11 +170,12 @@ export async function deleteOrganization(input: {
     const updated = await tx.query(
       `UPDATE clients SET deleted_at = NOW(), updated_at = NOW()
         WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL
-        RETURNING deleted_at`,
+        RETURNING deleted_at, deleted_at + INTERVAL '${CLIENT_DELETION_RETENTION_DAYS} days' AS purge_on`,
       [organizationId, teamId]
     );
     const deletedAt: Date = updated.rows[0].deleted_at;
-    const purgeOn = purgeDate(deletedAt);
+    // Computed by the database, with the same interval the restore window and the purge job use.
+    const purgeOn: Date = updated.rows[0].purge_on;
 
     await recordAuditEvent(tx, {
       teamId,
@@ -257,22 +252,45 @@ export async function restoreOrganization(input: {
 
     // A custom sign-in slug is unique among live clients; if someone took it meanwhile, drop it
     // rather than refuse the restore (staff can set a new one).
-    await tx.query(
-      `UPDATE clients c
-          SET deleted_at = NULL,
-              name = $3,
-              company_name = CASE WHEN c.company_name = c.name THEN $3 ELSE c.company_name END,
-              invite_slug = CASE
-                WHEN c.invite_slug IS NOT NULL AND EXISTS (
-                  SELECT 1 FROM clients o
-                   WHERE o.id <> c.id AND o.deleted_at IS NULL AND LOWER(o.invite_slug) = LOWER(c.invite_slug)
-                ) THEN NULL
-                ELSE c.invite_slug
-              END,
-              updated_at = NOW()
-        WHERE c.id = $1 AND c.team_id = $2`,
-      [organizationId, teamId, name]
-    );
+    const restore = (keepSlug: boolean) =>
+      tx.query(
+        `UPDATE clients c
+            SET deleted_at = NULL,
+                name = $3,
+                company_name = CASE WHEN c.company_name = c.name THEN $3 ELSE c.company_name END,
+                invite_slug = CASE
+                  WHEN NOT $4 THEN NULL
+                  WHEN c.invite_slug IS NOT NULL AND EXISTS (
+                    SELECT 1 FROM clients o
+                     WHERE o.id <> c.id AND o.deleted_at IS NULL AND LOWER(o.invite_slug) = LOWER(c.invite_slug)
+                  ) THEN NULL
+                  ELSE c.invite_slug
+                END,
+                updated_at = NOW()
+          WHERE c.id = $1 AND c.team_id = $2`,
+        [organizationId, teamId, name, keepSlug]
+      );
+
+    // The checks above are not enough on their own: a live client created in the meantime wins the unique
+    // index. A savepoint keeps that failure from aborting the whole transaction.
+    await tx.query("SAVEPOINT restore_client");
+    try {
+      await restore(true);
+    } catch (error) {
+      await tx.query("ROLLBACK TO SAVEPOINT restore_client");
+      const violation = error as { code?: string; constraint?: string };
+      if (violation?.code !== "23505") throw error;
+      if (violation.constraint === "clients_invite_slug_unique") {
+        await restore(false);
+      } else {
+        throw conflict(
+          `Another client is already named "${name}". Give this client a new name to restore it.`,
+          "NAME_TAKEN",
+          { name }
+        );
+      }
+    }
+    await tx.query("RELEASE SAVEPOINT restore_client");
 
     await recordAuditEvent(tx, {
       teamId,
@@ -291,7 +309,9 @@ export async function restoreOrganization(input: {
 }
 
 /**
- * Suspends an organization. Staff can reverse it at any time. Pending approvals stay where they are; the
+ * Suspends an organization. Staff can reverse it at any time. Only `clients.status` changes: portal access
+ * (`client_portal_access.is_active`) is a separate switch that every sign-in and session check reads next to
+ * the status, so leaving it alone is what lets a reactivation bring back exactly the access there was. Pending approvals stay where they are; the
  * client simply cannot reach them until the organization is reactivated.
  */
 export async function deactivateOrganization(input: {
@@ -309,9 +329,6 @@ export async function deactivateOrganization(input: {
       organizationId,
       teamId,
     ]);
-    await tx.query(`UPDATE client_portal_access SET is_active = FALSE, updated_at = NOW() WHERE client_id = $1`, [
-      organizationId,
-    ]);
     await recordAuditEvent(tx, {
       teamId,
       event: "Client organization deactivated",
@@ -327,7 +344,7 @@ export async function deactivateOrganization(input: {
   return getOrganization(db, teamId, organizationId);
 }
 
-/** Ends a suspension: the organization's users can sign in again, with the access they had. */
+/** Ends a suspension: the organization's users can sign in again, with the access they had. Portal access is not touched. */
 export async function reactivateOrganization(input: {
   teamId: string;
   organizationId: string;
@@ -342,9 +359,6 @@ export async function reactivateOrganization(input: {
     await tx.query(`UPDATE clients SET status = 'active', updated_at = NOW() WHERE id = $1 AND team_id = $2`, [
       organizationId,
       teamId,
-    ]);
-    await tx.query(`UPDATE client_portal_access SET is_active = TRUE, updated_at = NOW() WHERE client_id = $1`, [
-      organizationId,
     ]);
     await recordAuditEvent(tx, {
       teamId,
