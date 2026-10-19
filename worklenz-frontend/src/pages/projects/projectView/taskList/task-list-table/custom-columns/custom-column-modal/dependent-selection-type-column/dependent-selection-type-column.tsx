@@ -18,11 +18,7 @@ import { CloseCircleOutlined, WarningOutlined } from '@/shared/antd-imports';
 import { PhaseColorCodes } from '@/shared/constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import {
-  NEW_PARENT_COLUMN_ID,
-  setSelectionsList,
-} from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
-import { NewParentFieldEditor } from './new-parent-field-editor';
+import { setSelectionsList } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import { ITaskCustomColumn, ITaskCustomColumnSelectionOption } from '@/types/tasks/task.types';
 import { getTaskCustomFieldDisplayName } from '@/utils/task-custom-columns';
 import { SelectionType } from '../selection-type-column/selection-type-column';
@@ -37,9 +33,6 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
   const selections = useAppSelector(state => state.taskListCustomColumnsReducer.selectionsList);
-  const isNewParent = useAppSelector(
-    state => state.taskListCustomColumnsReducer.parentColumnId === NEW_PARENT_COLUMN_ID
-  );
   const inputRefs = useRef<Record<string, InputRef | null>>({});
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
   const [collapsedGroupIds, setCollapsedGroupIds] = useState<string[]>([]);
@@ -260,7 +253,6 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
 
   return (
     <Flex vertical gap={8} style={{ maxWidth: '100%' }}>
-      {isNewParent && <NewParentFieldEditor />}
       <Flex vertical gap={2}>
         <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>
           {t('customColumns.dependentSelection.title', {

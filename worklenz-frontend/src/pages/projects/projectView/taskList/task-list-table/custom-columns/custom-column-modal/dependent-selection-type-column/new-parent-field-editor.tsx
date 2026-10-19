@@ -14,8 +14,8 @@ import {
 import { SelectionType } from '../selection-type-column/selection-type-column';
 
 /**
- * Inline editor for a brand-new Selection field that will become the parent of the field being
- * edited. It is created as its own column when the modal is saved.
+ * Inline editor for "+ Create new parent field": name + flat options for a standalone parent
+ * Selection column. Saved as its own column; child columns are added later via Depends on.
  */
 export const NewParentFieldEditor = () => {
   const { t } = useTranslation('task-list-table');

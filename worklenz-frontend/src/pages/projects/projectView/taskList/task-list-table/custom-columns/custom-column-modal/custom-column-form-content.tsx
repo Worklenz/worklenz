@@ -16,6 +16,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import SelectionTypeColumn from './selection-type-column/selection-type-column';
 import { DependentSelectionTypeColumn } from './dependent-selection-type-column/dependent-selection-type-column';
+import { NewParentFieldEditor } from './dependent-selection-type-column/new-parent-field-editor';
 import NumberTypeColumn from './number-type-column/number-type-column';
 import LabelTypeColumn from './label-type-column/label-type-column';
 import FormulaTypeColumn from './formula-type-column/formula-type-column';
@@ -138,25 +139,9 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     [projectCustomColumns, editingColumnUuid]
   );
   const selectedParentColumn = useMemo((): ITaskCustomColumn | null => {
-    if (!parentColumnId) return null;
-    if (parentColumnId === NEW_PARENT_COLUMN_ID) {
-      // Stand-in for the not-yet-created parent so the grouped editor can show its options.
-      return {
-        id: NEW_PARENT_COLUMN_ID,
-        key: NEW_PARENT_COLUMN_ID,
-        name:
-          newParentField?.name.trim() ||
-          t('customColumns.dependentSelection.newParentTitle', { defaultValue: 'New parent field' }),
-        custom_column_obj: {
-          fieldType: 'selection',
-          selectionsList: (newParentField?.selections || []).filter(
-            selection => selection.selection_name.trim() !== ''
-          ),
-        },
-      };
-    }
+    if (!parentColumnId || parentColumnId === NEW_PARENT_COLUMN_ID) return null;
     return (projectCustomColumns || []).find(column => column.id === parentColumnId) || null;
-  }, [projectCustomColumns, parentColumnId, newParentField, t]);
+  }, [projectCustomColumns, parentColumnId]);
   const dependentColumnNames = useMemo(
     () =>
       editingColumnUuid
@@ -170,12 +155,14 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     [projectCustomColumns, editingColumnUuid]
   );
   const hasDependentColumns = dependentColumnNames.length > 0;
-  const isDependentSelection = customFieldType === 'selection' && !!parentColumnId;
+  // "+ Create new parent field" only creates a standalone parent column (no child in this step).
+  const isCreatingNewParent = parentColumnId === NEW_PARENT_COLUMN_ID;
+  const isDependentSelection =
+    customFieldType === 'selection' && !!parentColumnId && !isCreatingNewParent;
 
-  // In edit mode, "+ Create new parent field" builds a separate child column and leaves the
-  // opened column untouched, so its own options are set aside while the new child is drafted.
+  // In edit mode, stash the opened column's options while drafting a new parent so Cancel /
+  // switching away can restore them without touching the opened column.
   const stashedSelectionsRef = useRef<typeof selectionsList | null>(null);
-  const isCreatingChildFromExisting = isEditMode && parentColumnId === NEW_PARENT_COLUMN_ID;
 
   const selectParentColumn = (nextParentColumnId: string | null) => {
     const isNextNew = nextParentColumnId === NEW_PARENT_COLUMN_ID;
@@ -440,49 +427,18 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       }));
   };
 
-  // Survives a failed child save so a retry does not create the parent twice.
-  const createdNewParentIdRef = useRef<string | null>(null);
-
   /**
-   * Edit-mode "+ Create new parent field": creates the parent and a new child column named by
-   * the Field title, leaving the opened column untouched.
+   * "+ Create new parent field": creates only the standalone parent Selection column.
+   * Child columns are added later via Depends on → this parent.
    */
-  const createChildForNewParent = async (childName: string) => {
+  const createNewParentOnly = async () => {
     try {
-      let newParentId = createdNewParentIdRef.current;
+      const newParentId = await createNewParentColumn();
       if (!newParentId) {
-        newParentId = await createNewParentColumn();
-        if (!newParentId) {
-          setIsSubmitting(false);
-          return;
-        }
-        createdNewParentIdRef.current = newParentId;
-      }
-
-      const res = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
-        name: childName,
-        key: nanoid(),
-        field_type: 'selection',
-        width: 120,
-        is_visible: true,
-        configuration: {
-          field_title: childName,
-          field_type: 'selection',
-          parent_column_id: newParentId,
-          selections_list: buildSelectionsPayload('selection', newParentId),
-          labels_list: [],
-        },
-      });
-
-      if (!res.done) {
-        if (res.message) message.error(res.message);
-        if (projectId) dispatch(fetchTaskListColumns(projectId));
         setIsSubmitting(false);
         return;
       }
 
-      socket?.emit(SocketEvents.CUSTOM_COLUMN_CREATED.toString(), JSON.stringify({ project_id: projectId }));
-      createdNewParentIdRef.current = null;
       stashedSelectionsRef.current = null;
       resetModalData();
       message.success(t('customColumns.modal.createSuccessMessage'));
@@ -493,7 +449,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       setIsSubmitting(false);
       onDone();
     } catch (error) {
-      logger.error('Error creating child column for new parent:', error);
+      logger.error('Error creating parent custom column:', error);
       message.error(t('customColumns.modal.createErrorMessage'));
       if (projectId) dispatch(fetchTaskListColumns(projectId));
       setIsSubmitting(false);
@@ -510,29 +466,14 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     setIsSubmitting(true);
 
     const resolvedTypeForParent = isEditMode && !canChangeColumnType ? originalFieldType : value.fieldType;
-    let effectiveParentId: string | null =
-      resolvedTypeForParent === 'selection' ? parentColumnId : null;
+    const effectiveParentId: string | null =
+      resolvedTypeForParent === 'selection' && parentColumnId !== NEW_PARENT_COLUMN_ID
+        ? parentColumnId
+        : null;
 
-    if (isCreatingChildFromExisting) {
-      await createChildForNewParent(String(value.fieldTitle || '').trim());
+    if (isCreatingNewParent) {
+      await createNewParentOnly();
       return;
-    }
-
-    if (effectiveParentId === NEW_PARENT_COLUMN_ID) {
-      try {
-        effectiveParentId = await createNewParentColumn();
-      } catch (error) {
-        logger.error('Error creating parent custom column:', error);
-        effectiveParentId = null;
-      }
-      if (!effectiveParentId) {
-        setIsSubmitting(false);
-        return;
-      }
-      // Point at the real column so a failed child save can be retried without re-creating it.
-      dispatch(setParentColumnId(effectiveParentId));
-      dispatch(setNewParentField(null));
-      if (projectId) dispatch(fetchTaskListColumns(projectId));
     }
 
     try {
@@ -715,22 +656,24 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         }
       >
         <Flex gap={16}>
-          <Form.Item
-            name={'fieldTitle'}
-            label={<Typography.Text>{t('customColumns.modal.fieldTitle')}</Typography.Text>}
-            layout="vertical"
-            rules={[{ required: true, message: t('customColumns.modal.fieldTitleRequired') }]}
-            required={false}
-            style={{ flex: 1, minWidth: 0 }}
-          >
-            <Input placeholder={t('customColumns.modal.columnTitlePlaceholder')} />
-          </Form.Item>
+          {!isCreatingNewParent && (
+            <Form.Item
+              name={'fieldTitle'}
+              label={<Typography.Text>{t('customColumns.modal.fieldTitle')}</Typography.Text>}
+              layout="vertical"
+              rules={[{ required: true, message: t('customColumns.modal.fieldTitleRequired') }]}
+              required={false}
+              style={{ flex: 1, minWidth: 0 }}
+            >
+              <Input placeholder={t('customColumns.modal.columnTitlePlaceholder')} />
+            </Form.Item>
+          )}
 
           <Form.Item
             name={'fieldType'}
             label={<Typography.Text>{t('customColumns.modal.type')}</Typography.Text>}
             layout="vertical"
-            style={{ width: 180, flexShrink: 0 }}
+            style={{ width: isCreatingNewParent ? '100%' : 180, flexShrink: 0 }}
             extra={
               isEditMode && !canChangeColumnType ? (
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -808,7 +751,20 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         {customFieldType === 'number' && <NumberTypeColumn />}
         {customFieldType === 'formula' && <FormulaTypeColumn />}
         {customFieldType === 'labels' && <LabelTypeColumn />}
-        {customFieldType === 'selection' && !isDependentSelection && <SelectionTypeColumn />}
+        {isCreatingNewParent && (
+          <Flex vertical gap={8}>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              {t('customColumns.dependentSelection.newParentOnlyHint', {
+                defaultValue:
+                  'Creates a main Selection column only. Add a child column later and set Depends on to this field.',
+              })}
+            </Typography.Text>
+            <NewParentFieldEditor />
+          </Flex>
+        )}
+        {customFieldType === 'selection' && !isDependentSelection && !isCreatingNewParent && (
+          <SelectionTypeColumn />
+        )}
         {isDependentSelection && <DependentSelectionTypeColumn parentColumn={selectedParentColumn} />}
 
         <Divider style={{ margin: '20px 0 16px' }} />

@@ -48,7 +48,7 @@ type TaskListCustomColumnsState = {
   labelsList: LabelType[];
   selectionsList: SelectionType[];
   // Selection field whose value scopes this Selection field's options (cascading field).
-  // NEW_PARENT_COLUMN_ID means the parent is `newParentField`, created on save.
+  // NEW_PARENT_COLUMN_ID means save creates only `newParentField` as a standalone parent column.
   parentColumnId: string | null;
   newParentField: INewParentFieldDraft | null;
   hiddenCustomColumnIds: string[]; // IDs of custom columns the user has hidden
