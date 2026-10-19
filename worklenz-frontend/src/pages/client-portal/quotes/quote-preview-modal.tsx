@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { Button, Flex, Modal, Tag, Typography } from '@/shared/antd-imports';
 import { DownloadOutlined, PrinterOutlined } from '@ant-design/icons';
 import type { ClientPortalQuoteDetails } from '../../../api/client-portal/client-portal-quotes-api';
@@ -106,7 +107,7 @@ const QuotePreviewModal = ({ open, onClose, quote }: QuotePreviewModalProps) => 
   };
 
   const handleDownload = () => {
-    window.open(getQuoteDownloadUrl(quote.id), '_blank', 'noopener,noreferrer');
+    downloadPortalPdf(getQuoteDownloadUrl(quote.id), 'quote.pdf', t('downloadFailed', { defaultValue: 'Failed to download the PDF. Please try again.' }));
   };
 
   return (

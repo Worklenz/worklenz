@@ -14,6 +14,7 @@ import crypto from "crypto";
 import { isIP } from "net";
 import { log_error } from "../shared/utils";
 import { sendEmail } from "../shared/email";
+import { buildReceiptPdf } from "../shared/pdf";
 
 interface IDirectPaySessionOwner {
   userId: string | null;
@@ -1263,35 +1264,20 @@ export default class BillingController extends WorklenzControllerBase {
       ? `${row.plan_name.charAt(0).toUpperCase() + row.plan_name.slice(1)} Plan — ${currency} ${amount.toFixed(2)} / month`
       : null;
 
-    const { LkrReceiptTemplate } = require('../shared/lkr-receipt-template');
-    const html = LkrReceiptTemplate.generate({
-      receiptNumber,
-      date,
-      amount,
-      currency,
-      transactionId: row.transaction_id ?? null,
-      orderId: row.order_id ?? null,
-      cardNumber: row.card_number ?? null,
-      planName: planLabel,
-      userName: row.user_name ?? null,
-      userEmail: row.user_email ?? null,
-      orgName: row.org_name ?? null,
-    });
-
-    const puppeteer = require('puppeteer');
     try {
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      const pdfBuffer = await buildReceiptPdf({
+        receiptNumber,
+        date,
+        amount,
+        currency,
+        transactionId: row.transaction_id ?? null,
+        orderId: row.order_id ?? null,
+        cardNumber: row.card_number ?? null,
+        planName: planLabel,
+        userName: row.user_name ?? null,
+        userEmail: row.user_email ?? null,
+        orgName: row.org_name ?? null,
       });
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: { top: '0', right: '0', bottom: '0', left: '0' },
-      });
-      await browser.close();
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="receipt-${receiptNumber}.pdf"`);

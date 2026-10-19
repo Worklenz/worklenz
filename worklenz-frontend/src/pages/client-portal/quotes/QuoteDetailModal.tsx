@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
@@ -93,7 +94,7 @@ const QuoteDetailModal = () => {
   };
 
   const handleDownload = () => {
-    if (quoteId) window.open(getQuoteDownloadUrl(quoteId), '_blank', 'noopener,noreferrer');
+    if (quoteId) downloadPortalPdf(getQuoteDownloadUrl(quoteId), 'quote.pdf', t('downloadFailed', { defaultValue: 'Failed to download the PDF. Please try again.' }));
   };
 
   const field = (label: string, value: React.ReactNode) => (
