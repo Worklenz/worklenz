@@ -8,6 +8,7 @@ import { colors } from '@/styles/colors';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { useTranslation } from 'react-i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface AssignedTasksListTableProps {
   memberId: string;
@@ -65,8 +66,8 @@ const AssignedTasksListTable: React.FC<AssignedTasksListTableProps> = ({
     switch (key) {
       case 'name':
         return (
-          <Tooltip title={task.name}>
-            <Typography.Text>{task.name}</Typography.Text>
+          <Tooltip title={decodeHtmlEntities(task.name)}>
+            <Typography.Text>{decodeHtmlEntities(task.name)}</Typography.Text>
           </Tooltip>
         );
       case 'status':

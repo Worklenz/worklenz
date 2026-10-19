@@ -3,6 +3,7 @@ import Card from 'antd/es/card';
 import Skeleton from 'antd/es/skeleton';
 import { useGetUserRecentTasksQuery } from '@/api/home-page/user-activity.api.service';
 import dayjs from 'dayjs';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
 dayjs.extend(relativeTime);
@@ -45,7 +46,8 @@ const HomeActivityFeed: React.FC = () => {
       ) : (
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {tasks.map((t: any, idx: number) => {
-            const initials = (t.task_name || '')
+            const decodedTaskName = decodeHtmlEntities(t.task_name);
+            const initials = (decodedTaskName || '')
               .split(' ')
               .slice(0, 2)
               .map((w: string) => w[0])
@@ -77,9 +79,9 @@ const HomeActivityFeed: React.FC = () => {
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, lineHeight: 1.4 }}>
-                    <b>{t.task_name}</b>
+                    <b>{decodedTaskName}</b>
                     {t.project_name && (
-                      <span style={{ color: 'var(--colorTextSecondary, rgba(0,0,0,.45))' }}> · {t.project_name}</span>
+                      <span style={{ color: 'var(--colorTextSecondary, rgba(0,0,0,.45))' }}> · {decodeHtmlEntities(t.project_name)}</span>
                     )}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--colorTextDisabled, rgba(0,0,0,.25))', marginTop: 1 }}>

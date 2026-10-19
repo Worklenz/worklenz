@@ -6,6 +6,7 @@ import i18n from '@/i18n';
 import { Tooltip } from '@/shared/antd-imports';
 
 import { mentionStore } from '../mention-store';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const TaskMentionView = ({ node }: NodeViewProps) => {
   const mentions = useSyncExternalStore(mentionStore.subscribe, mentionStore.get, mentionStore.get);
@@ -18,7 +19,7 @@ const TaskMentionView = ({ node }: NodeViewProps) => {
   });
   const label = unavailable
     ? unavailableLabel
-    : [task.task_key, task.name].filter(Boolean).join(' ');
+    : [task.task_key, decodeHtmlEntities(task.name)].filter(Boolean).join(' ');
 
   useEffect(() => {
     const handleLanguageChange = (nextLanguage: string) => setLanguage(nextLanguage);

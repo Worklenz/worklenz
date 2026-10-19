@@ -430,8 +430,11 @@ const HomeLogTime: React.FC = () => {
       .finally(() => setTasksLoading(false));
   }, [selProjectId, taskSearch]);
 
-  const projectOptions = projects.map((p: IProject) => ({ value: p.id, label: p.name }));
-  const taskOptions = tasks.map(t => ({ value: t.id, label: t.name }));
+  const projectOptions = projects.map((p: IProject) => ({
+    value: p.id,
+    label: decodeHtmlEntities(p.name),
+  }));
+  const taskOptions = tasks.map(t => ({ value: t.id, label: decodeHtmlEntities(t.name) }));
 
   const loggedSeconds = useMemo(() => {
     if (inputMode === 'Duration') {
@@ -537,7 +540,10 @@ const HomeLogTime: React.FC = () => {
     recentLogs.forEach(l => {
       if (l.project_id && l.project_name && !seen.has(l.project_id)) seen.set(l.project_id, l.project_name);
     });
-    return Array.from(seen.entries()).map(([value, text]) => ({ text, value }));
+    return Array.from(seen.entries()).map(([value, text]) => ({
+      text: decodeHtmlEntities(text),
+      value,
+    }));
   }, [recentLogs]);
 
   const logStatusFilterOptions = useMemo(() => {
@@ -650,7 +656,7 @@ const HomeLogTime: React.FC = () => {
       // Pre-populate Redux with available task data to prevent loading flash
       dispatch(updateTask({
         id: record.task_id,
-        title: record.task_name,
+        title: decodeHtmlEntities(record.task_name),
         projectId: record.project_id,
       } as Partial<Task> as Task));
 
@@ -685,7 +691,7 @@ const HomeLogTime: React.FC = () => {
             onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }}
             onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}
           >
-            {record.task_name}
+            {decodeHtmlEntities(record.task_name)}
           </span>
         ),
       },
@@ -702,7 +708,7 @@ const HomeLogTime: React.FC = () => {
             onClick={() => record.project_id && navigate(`/worklenz/projects/${record.project_id}?tab=tasks-list&pinned_tab=tasks-list`)}
           >
             <Badge color={record.project_color || token.colorPrimary} />
-            <span style={{ fontWeight: 500 }}>{record.project_name}</span>
+            <span style={{ fontWeight: 500 }}>{decodeHtmlEntities(record.project_name)}</span>
           </span>
         ),
       },

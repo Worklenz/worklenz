@@ -22,6 +22,7 @@ import {
   useCreatePersonalTaskMutation,
 } from '@/api/home-page/home-page.api.service';
 import { useResponsive } from '@/hooks/useResponsive';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 // Mirrors the left "Views" filter rail on the My Tasks page (HomeMyTasksView)
 // so Todo List's period switcher lives in the same place visually.
@@ -114,7 +115,7 @@ const TodoList = () => {
           minWidth: 0,
         }}
       >
-        {task.name}
+        {decodeHtmlEntities(task.name)}
       </span>
       <span style={{ fontStyle: 'italic', color: colors.lightGray, whiteSpace: 'nowrap', textDecoration: task.done ? 'line-through' : 'none', flexShrink: 0 }}>
         {t('home:todoList.created')}: {formatDate(task.created_at)}

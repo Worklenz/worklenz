@@ -15,6 +15,7 @@ import {
 import { ClientPortalClient, useGetClientsQuery } from '@/api/client-portal/client-portal-api';
 import dayjs from 'dayjs';
 import PortalStatusTag from '@/components/client-portal/PortalStatusTag';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Option } = Select;
 
@@ -97,7 +98,9 @@ const HomeClientsTable: React.FC<HomeClientsTableProps> = ({ onCreateClick }) =>
       sorter: true,
       render: (_name: string, record) => (
         <Flex vertical gap={2}>
-          <Typography.Text strong>{record.company_name?.trim() || record.name}</Typography.Text>
+          <Typography.Text strong>
+            {decodeHtmlEntities(record.company_name?.trim() || record.name)}
+          </Typography.Text>
           {record.email?.trim() && (
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               {record.email}

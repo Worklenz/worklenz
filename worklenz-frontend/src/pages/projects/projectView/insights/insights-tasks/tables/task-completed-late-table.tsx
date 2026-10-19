@@ -7,6 +7,7 @@ import logger from '@/utils/errorLogger';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const TaskCompletedLateTable = ({
   projectId,
@@ -46,7 +47,7 @@ const TaskCompletedLateTable = ({
     {
       key: 'name',
       title: t('common.name', { defaultValue: 'Name' }),
-      render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
+      render: (record: IInsightTasks) => <Typography.Text>{decodeHtmlEntities(record.name)}</Typography.Text>,
     },
     {
       key: 'status',

@@ -22,6 +22,7 @@ import {
   CaretDownFilled,
 } from '@/shared/antd-imports';
 import './TaskCard.css';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import dayjs, { Dayjs } from 'dayjs';
 import AddMembersDropdown from '../../add-members-dropdown/add-members-dropdown';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -197,7 +198,7 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
                             themeMode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : colors.darkGray,
                         }}
                       >
-                        {label.name}
+                        {decodeHtmlEntities(label.name)}
                       </span>
                     </Tag>
                   ))}

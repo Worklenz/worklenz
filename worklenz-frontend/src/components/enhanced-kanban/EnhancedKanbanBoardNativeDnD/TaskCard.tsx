@@ -9,6 +9,7 @@ import AvatarGroup from '@/components/AvatarGroup';
 import LazyAssigneeSelectorWrapper from '@/components/task-management/lazy-assignee-selector';
 import { format } from 'date-fns';
 import logger from '@/utils/errorLogger';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { createPortal } from 'react-dom';
 
 // Format date as local date to avoid timezone issues
@@ -710,7 +711,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                         minWidth: 0,
                       }}
                     >
-                      {label.name}
+                      {decodeHtmlEntities(label.name)}
                     </div>
                   );
                 })}
@@ -719,8 +720,8 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                 {!task.is_parent_container &&
                   !isSoftwareProject &&
                   renderPriorityIcon(task.priority_value, task.priority_color, task.priority_color_dark)}
-                <div className="task-title" title={task.name} style={{ marginLeft: 0 }}>
-                  {task.name}
+                <div className="task-title" title={decodeHtmlEntities(task.name)} style={{ marginLeft: 0 }}>
+                  {decodeHtmlEntities(task.name)}
                 </div>
               </div>
 
@@ -993,9 +994,9 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                         {!sub.is_parent_container && renderPriorityIcon(sub.priority_value, sub.priority_color, sub.priority_color_dark)}
                         <span
                           className="flex-1 truncate text-xs text-gray-800 dark:text-gray-100"
-                          title={sub.name}
+                          title={decodeHtmlEntities(sub.name)}
                         >
-                          {sub.name}
+                          {decodeHtmlEntities(sub.name)}
                         </span>
                         <span className="task-due-date ml-2 text-[10px] text-gray-500 dark:text-gray-400">
                           {sub.end_date ? formatDate(sub.end_date) : ''}

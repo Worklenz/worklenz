@@ -7,6 +7,7 @@ import { ClientProjectStatusTag, ROLE_LABEL_COPY, StatusTag, useDebouncedValue }
 import type { ClientRole } from '@/types/client-portal/v2';
 import { getFullName, getOrganizationLabel, type WizardState } from './wizard-state';
 import { PortalLoader } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface AccessStepProps {
   state: WizardState;
@@ -81,7 +82,7 @@ export const AccessStep = ({ state, role, onToggleProject, onSendInvitation }: A
       >
         <Checkbox checked={state.projectIds.includes(project.id)} onChange={() => onToggleProject(project.id)} />
         <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600 }}>
-          {project.name}
+          {decodeHtmlEntities(project.name)}
           {project.organization_id === null && (
             <span style={{ marginLeft: 8 }}>
               <StatusTag tone="blue">{t('access.noClientYet', { defaultValue: 'No client yet' })}</StatusTag>
