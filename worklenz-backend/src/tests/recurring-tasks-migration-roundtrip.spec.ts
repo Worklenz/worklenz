@@ -20,8 +20,9 @@ describe("1791364628703_fix_recurring_tasks_immutable_index migration round-trip
 
     expect(sql).toContain("DROP INDEX IF EXISTS idx_tasks_schedule_end_date_unique;");
     expect(sql).toContain("CREATE UNIQUE INDEX idx_tasks_schedule_end_date_unique");
-    expect(sql).toContain("ON tasks (schedule_id, ((end_date AT TIME ZONE 'UTC')::DATE))");
-    expect(sql).toContain("WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL;");
+    expect(sql).toContain("((end_date AT TIME ZONE ''UTC'')::DATE)");
+    expect(sql).toContain("(end_date::DATE)");
+    expect(sql).toContain("WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL");
   });
 
   it("restores baseline unique index on rollback to preserve uniqueness guard", async () => {
@@ -46,7 +47,7 @@ describe("1791364628703_fix_recurring_tasks_immutable_index migration round-trip
     const downSql = downStatements.join("\n");
 
     // up creates immutable index
-    expect(upSql).toMatch(/CREATE UNIQUE INDEX idx_tasks_schedule_end_date_unique\s+ON tasks \(schedule_id, \(\(end_date AT TIME ZONE 'UTC'\)::DATE\)\)/);
+    expect(upSql).toContain("CREATE UNIQUE INDEX idx_tasks_schedule_end_date_unique ON tasks (schedule_id, %s)");
     // down restores preceding baseline index
     expect(downSql).toMatch(/CREATE UNIQUE INDEX idx_tasks_schedule_end_date_unique\s+ON tasks \(schedule_id, end_date\)/);
   });

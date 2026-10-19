@@ -30,9 +30,30 @@ exports.up = async (pgm) => {
 
 DROP INDEX IF EXISTS idx_tasks_schedule_end_date_unique;
 
-CREATE UNIQUE INDEX idx_tasks_schedule_end_date_unique
-ON tasks (schedule_id, ((end_date AT TIME ZONE 'UTC')::DATE))
-WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL;
+-- The expression must be IMMUTABLE, and that depends on the actual column type:
+--   timestamptz           -> (end_date AT TIME ZONE 'UTC')::DATE  (timestamp -> date, immutable)
+--   timestamp (no tz)     -> end_date::DATE                       (AT TIME ZONE would yield
+--                            timestamptz, whose ::DATE cast is only STABLE)
+DO $$
+DECLARE
+    _type TEXT;
+    _expr TEXT;
+BEGIN
+    SELECT data_type INTO _type
+    FROM information_schema.columns
+    WHERE table_schema = current_schema() AND table_name = 'tasks' AND column_name = 'end_date';
+
+    IF _type = 'timestamp with time zone' THEN
+        _expr := '((end_date AT TIME ZONE ''UTC'')::DATE)';
+    ELSE
+        _expr := '(end_date::DATE)';
+    END IF;
+
+    EXECUTE format(
+        'CREATE UNIQUE INDEX idx_tasks_schedule_end_date_unique ON tasks (schedule_id, %s) WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL',
+        _expr
+    );
+END $$;
   `);
 };
 
