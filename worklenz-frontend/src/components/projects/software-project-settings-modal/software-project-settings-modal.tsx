@@ -15,7 +15,6 @@ import {
   NumberOutlined,
   ProfileOutlined,
   Skeleton,
-  TableOutlined,
   Tag,
   TeamOutlined,
   ThunderboltOutlined,
@@ -54,7 +53,6 @@ import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 import ManageStatusContent from '@/components/task-management/ManageStatusContent';
-import CustomColumnsSettingsSection from '../project-settings-modal/sections/custom-columns-settings-section';
 import IntegrationsSettingsSection from '../project-settings-modal/sections/integrations-settings-section';
 import TaskExportSettingsSection from '../project-settings-modal/sections/task-export-settings-section';
 import DangerZoneSection from '../project-settings-modal/sections/danger-zone-section';
