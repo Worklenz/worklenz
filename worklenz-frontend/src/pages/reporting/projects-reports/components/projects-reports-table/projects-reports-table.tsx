@@ -219,12 +219,12 @@ const ProjectsReportsTable = () => {
         width: 200,
       },
       {
-        key: 'last_activity',
+        key: 'lastActivity',
         dataIndex: 'last_activity',
         title: <CustomTableTitle title={t('lastActivityColumn')} />,
         sorter: true,
-        render: record => (
-          <LastActivityCell activity={record.last_activity?.last_activity_string} />
+        render: (_, record: IRPTProject) => (
+          <LastActivityCell activity={record.last_activity?.last_activity_string ?? ''} />
         ),
         width: 200,
       },
@@ -293,7 +293,7 @@ const ProjectsReportsTable = () => {
         width: 275,
       },
       {
-        key: 'days_left',
+        key: 'daysLeft',
         dataIndex: 'days_left',
         title: <CustomTableTitle title={t('daysLeftColumn')} />,
         sorter: true,
@@ -357,7 +357,7 @@ const ProjectsReportsTable = () => {
         width: 200,
       },
       {
-        key: 'comment',
+        key: 'projectUpdate',
         dataIndex: 'comment',
         title: <CustomTableTitle title={t('projectUpdateColumn')} />,
         sorter: true,
@@ -440,8 +440,15 @@ const ProjectsReportsTable = () => {
     (
       pagination: PaginationProps,
       _filters: Record<string, (React.Key | boolean)[] | null>,
-      sorter: any
+      sorter: any,
+      extra?: { action?: string }
     ) => {
+      if (extra?.action === 'paginate') {
+        dispatch(setIndex(pagination.current || 1));
+        dispatch(setPageSize(pagination.pageSize || 10));
+        return;
+      }
+
       const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
 
       const columnKey = String(
