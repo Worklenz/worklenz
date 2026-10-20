@@ -24,7 +24,7 @@
         "Projetos ilimitados",
         "Registo de tempo e relatórios",
         "Campos personalizados e modelos",
-        "Até 5 convidados"
+        "Convidados ilimitados e portal de clientes"
       ]
     },
     "business": {
@@ -33,8 +33,8 @@
       "features": [
         "Tudo do Pro",
         "Planeador, cronograma e carga de trabalho",
-        "Finanças e portal de clientes",
-        "Convidados ilimitados e Slack"
+        "Finanças e marca do portal",
+        "Integração com Slack"
       ]
     },
     "expansion": {

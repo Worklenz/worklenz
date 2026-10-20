@@ -30,7 +30,7 @@
         "Unlimited projects",
         "Time tracking and reports",
         "Custom fields and templates",
-        "Up to 5 guests"
+        "Unlimited guests and client portal"
       ]
     },
     "business": {
@@ -39,8 +39,8 @@
       "features": [
         "Everything in Pro",
         "Planner, timeline, workload",
-        "Finance and client portal",
-        "Unlimited guests and Slack"
+        "Finance and portal branding",
+        "Slack integration"
       ]
     },
     "expansion": {
