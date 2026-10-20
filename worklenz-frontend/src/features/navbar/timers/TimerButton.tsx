@@ -134,9 +134,9 @@ const RecentTimeLogItem = ({
                 flex: 1,
                 minWidth: 0,
               }}
-              title={log.task_name || t('timerButton.unnamedTask')}
+              title={decodeHtmlEntities(log.task_name) || t('timerButton.unnamedTask')}
             >
-              {log.task_name || t('timerButton.unnamedTask')}
+              {decodeHtmlEntities(log.task_name) || t('timerButton.unnamedTask')}
             </Text>
             <Text
               style={{
@@ -152,14 +152,14 @@ const RecentTimeLogItem = ({
                 maxWidth: '40%',
                 flexShrink: 0,
               }}
-              title={log.project_name || t('timerButton.unnamedProject')}
+              title={decodeHtmlEntities(log.project_name) || t('timerButton.unnamedProject')}
             >
-              {log.project_name || t('timerButton.unnamedProject')}
+              {decodeHtmlEntities(log.project_name) || t('timerButton.unnamedProject')}
             </Text>
           </div>
           {log.parent_task_name && (
             <Text type="secondary" style={{ fontSize: 11 }}>
-              {t('timerButton.parent')}: {log.parent_task_name}
+              {t('timerButton.parent')}: {decodeHtmlEntities(log.parent_task_name)}
             </Text>
           )}
           <div
@@ -602,9 +602,9 @@ const TimerButton = () => {
                                 flex: 1,
                                 minWidth: 0,
                               }}
-                              title={timer.task_name || t('timerButton.unnamedTask')}
+                              title={decodeHtmlEntities(timer.task_name) || t('timerButton.unnamedTask')}
                             >
-                              {timer.task_name || t('timerButton.unnamedTask')}
+                              {decodeHtmlEntities(timer.task_name) || t('timerButton.unnamedTask')}
                             </Text>
                             <Text
                               style={{
@@ -620,14 +620,14 @@ const TimerButton = () => {
                                 maxWidth: '40%',
                                 flexShrink: 0,
                               }}
-                              title={timer.project_name || t('timerButton.unnamedProject')}
+                              title={decodeHtmlEntities(timer.project_name) || t('timerButton.unnamedProject')}
                             >
-                              {timer.project_name || t('timerButton.unnamedProject')}
+                              {decodeHtmlEntities(timer.project_name) || t('timerButton.unnamedProject')}
                             </Text>
                           </div>
                           {timer.parent_task_name && (
                             <Text type="secondary" style={{ fontSize: 11 }}>
-                              {t('timerButton.parent')}: {timer.parent_task_name}
+                              {t('timerButton.parent')}: {decodeHtmlEntities(timer.parent_task_name)}
                             </Text>
                           )}
                           <div

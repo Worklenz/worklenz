@@ -7,7 +7,6 @@ import {
   ClockCircleOutlined,
   UnorderedListOutlined,
   TeamOutlined,
-  UserAddOutlined,
   TableOutlined,
   BarChartOutlined,
   DashboardOutlined,
@@ -84,12 +83,6 @@ export const HOME_NAV_SURFACE: NavSurface = {
           key: 'my-team',
           label: { i18nNs: 'home-sidebar', i18nKey: 'myTeam', defaultValue: 'My Team' },
           icon: <TeamOutlined />,
-        },
-        {
-          key: 'add-client',
-          label: { i18nNs: 'home-sidebar', i18nKey: 'addClient', defaultValue: 'Add\nClient' },
-          icon: <UserAddOutlined />,
-          adminOnly: true, // Owner/Admin only — Members must not manage clients
         },
       ],
     },

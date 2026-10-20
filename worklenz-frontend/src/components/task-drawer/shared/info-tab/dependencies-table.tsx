@@ -18,6 +18,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 import { colors } from '@/styles/colors';
 import { TFunction } from 'i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { IDependencyType, ITaskDependency } from '@/types/tasks/task-dependency.types';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { taskDependenciesApiService } from '@/api/tasks/task-dependencies.api.service';
@@ -136,8 +137,8 @@ const DependenciesTable = ({
       key: 'name',
       render: (record: ITaskDependency) => (
         <Flex align="center" gap={8}>
-          <Typography.Text ellipsis={{ tooltip: record.task_name }}>
-            {record.task_name}
+          <Typography.Text ellipsis={{ tooltip: decodeHtmlEntities(record.task_name) }}>
+            {decodeHtmlEntities(record.task_name)}
           </Typography.Text>
           <Tag>{record.task_key}</Tag>
         </Flex>

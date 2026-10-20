@@ -5,6 +5,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import { reportingTimesheetApiService } from '@/api/reporting/reporting.timesheet.api.service';
 import { IAllocationProject } from '@/types/reporting/reporting-allocation.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import './TimeSheetTable.css';
 
 const TimeSheetTable: React.FC = () => {
@@ -112,7 +113,7 @@ const TimeSheetTable: React.FC = () => {
             <div className="project-name"></div>
             {members.map(item => (
               <div key={item.id} className="member-name f-500">
-                {item.name}
+                {decodeHtmlEntities(item.name)}
               </div>
             ))}
             <div className="total-time text-center">{t('total')}</div>
@@ -128,7 +129,7 @@ const TimeSheetTable: React.FC = () => {
                   <span className="anticon" style={{ color: item.status_color_code }}>
                     <i className={item.status_icon}></i>
                   </span>
-                  <span className="ms-1">{item.name}</span>
+                  <span className="ms-1">{decodeHtmlEntities(item.name)}</span>
                   <div className="d-block">
                     <Progress percent={item.progress} strokeColor={item.color_code} size="small" />
                   </div>

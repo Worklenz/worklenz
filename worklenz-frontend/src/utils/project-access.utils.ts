@@ -58,6 +58,7 @@ export const legacyProjectAccessFromManager = (
       insights: true,
       files: true,
       updates: true,
+      docs: true,
       roadmap: true,
       workload: true,
     };
@@ -95,6 +96,7 @@ export const legacyProjectAccessFromManager = (
       insights: true,
       files: true,
       updates: true,
+      docs: true,
       roadmap: true,
       workload: true,
     },

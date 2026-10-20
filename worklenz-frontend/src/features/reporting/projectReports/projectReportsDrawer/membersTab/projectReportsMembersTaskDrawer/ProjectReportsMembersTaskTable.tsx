@@ -18,6 +18,7 @@ import CustomTableTitle from '@components/CustomTableTitle';
 import { colors } from '@/styles/colors';
 import { lazy } from 'react';
 import { openReportingTaskDrawer, ReportingTaskRow } from '@/utils/reporting/openReportingTaskDrawer';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const TaskDrawer = lazy(() => import('@components/task-drawer/task-drawer'));
 
@@ -67,7 +68,7 @@ const ProjectReportsMembersTasksTable = ({
       render: record => (
         <Flex>
           {Number(record.sub_tasks_count) > 0 && <DoubleRightOutlined />}
-          <Typography.Text className="group-hover:text-[#1890ff]">{record.name}</Typography.Text>
+          <Typography.Text className="group-hover:text-[#1890ff]">{decodeHtmlEntities(record.name)}</Typography.Text>
         </Flex>
       ),
       width: 260,
@@ -79,7 +80,7 @@ const ProjectReportsMembersTasksTable = ({
       render: record => (
         <Flex gap={8} align="center">
           <Badge color={record.project_color} />
-          <Typography.Text>{record.project_name}</Typography.Text>
+          <Typography.Text>{decodeHtmlEntities(record.project_name)}</Typography.Text>
         </Flex>
       ),
       width: 120,

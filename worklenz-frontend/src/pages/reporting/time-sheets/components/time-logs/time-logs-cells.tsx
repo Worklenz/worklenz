@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { TimeEntryMemberAvatars } from '@/components/time-entries/TimeEntryMemberAvatars';
 import { avatarNamesMap } from '@/shared/constants';
 import { ITimeLogTaskMember, TimeLogMemberStatus } from '@/types/reporting/time-logs.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 /** Single-line text that ends in an ellipsis instead of wrapping. */
 export const ELLIPSIS_STYLE: React.CSSProperties = {
@@ -28,14 +29,16 @@ interface TextCellProps {
 }
 
 /** A cell of text that is cut to one line, with the full text on hover — or a dash when empty. */
-export const TextCell: React.FC<TextCellProps> = ({ value }) =>
-  value ? (
-    <Tooltip title={value}>
-      <span style={ELLIPSIS_STYLE}>{value}</span>
+export const TextCell: React.FC<TextCellProps> = ({ value }) => {
+  const decoded = decodeHtmlEntities(value ?? undefined);
+  return decoded ? (
+    <Tooltip title={decoded}>
+      <span style={ELLIPSIS_STYLE}>{decoded}</span>
     </Tooltip>
   ) : (
     <EmptyCell />
   );
+};
 
 /** The "Deactivated" / "Removed" tag a member who is no longer active carries. */
 export const MemberStatusTag: React.FC<{ status: TimeLogMemberStatus }> = ({ status }) => {

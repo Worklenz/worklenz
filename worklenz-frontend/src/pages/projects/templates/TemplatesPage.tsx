@@ -785,7 +785,7 @@ const TemplatesPage: React.FC = () => {
     // Members cannot create projects — only allow the import/confirm step for owner/admin.
     const resolvedStep = step === 'confirm' && !canCreateProject ? 'preview' : step;
     setPreviewTemplateId(template.id);
-    setPreviewTemplateName(template.name || '');
+    setPreviewTemplateName(decodeHtmlEntities(template.name || ''));
     setPreviewInitialStep(resolvedStep);
     setPreviewModalVisible(true);
   };
@@ -798,7 +798,7 @@ const TemplatesPage: React.FC = () => {
   const openRename = (template: ICustomTemplate) => {
     if (!template.id) return;
     setSelectedTemplateId(template.id);
-    setSelectedTemplateName(template.name || '');
+    setSelectedTemplateName(decodeHtmlEntities(template.name || ''));
     setRenameModalVisible(true);
   };
 
@@ -806,7 +806,7 @@ const TemplatesPage: React.FC = () => {
     if (!template.id) return;
     setDefinitionMode('edit');
     setEditCustomTemplateId(template.id);
-    setEditSeedName(template.name || '');
+    setEditSeedName(decodeHtmlEntities(template.name || ''));
     setCopyWorklenzTemplateId(null);
     setCopyWorklenzTemplateName('');
     setDefinitionModalVisible(true);
@@ -826,7 +826,7 @@ const TemplatesPage: React.FC = () => {
     setEditCustomTemplateId(null);
     setEditSeedName('');
     setCopyWorklenzTemplateId(template.id);
-    setCopyWorklenzTemplateName(template.name || '');
+    setCopyWorklenzTemplateName(decodeHtmlEntities(template.name || ''));
     setDefinitionModalVisible(true);
   };
 

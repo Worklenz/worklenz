@@ -3,6 +3,7 @@ import { GanttTask, DragState } from '../../types/advanced-gantt.types';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { themeWiseColor } from '../../utils/themeWiseColor';
 import { useDateCalculations } from '../../utils/gantt-performance';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface DraggableTaskBarProps {
   task: GanttTask;
@@ -244,7 +245,7 @@ const DraggableTaskBar: React.FC<DraggableTaskBarProps> = ({
         {/* Task content */}
         <div className="task-content relative z-10 h-full flex items-center px-2">
           <span className="task-name text-xs font-medium truncate" style={{ color: colors.text }}>
-            {task.name}
+            {decodeHtmlEntities(task.name)}
           </span>
 
           {/* Duration display for smaller tasks */}

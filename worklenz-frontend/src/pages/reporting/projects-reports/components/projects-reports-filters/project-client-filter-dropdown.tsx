@@ -19,6 +19,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { clientsApiService } from '@/api/clients/clients.api.service';
 import { IClient } from '@/types/client.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   setSelectedClients,
   toggleClient,
@@ -176,7 +177,7 @@ const ProjectClientFilterDropdown = () => {
                       checked={selectedClients.includes(client.id || '')}
                       onChange={() => handleToggle(client.id || '')}
                     >
-                      {client.name}
+                      {decodeHtmlEntities(client.name)}
                     </Checkbox>
                   </List.Item>
                 ))

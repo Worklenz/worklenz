@@ -130,6 +130,11 @@ const TaskDrawerActivityLog = () => {
             >
               {truncateText(activity.next_status?.name) || t('taskActivityLogTab.none')}
             </Tag>
+            {activity.source && (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {activity.source}
+              </Typography.Text>
+            )}
           </Flex>
         );
 

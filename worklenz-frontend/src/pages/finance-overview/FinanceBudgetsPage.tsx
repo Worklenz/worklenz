@@ -20,6 +20,7 @@ import {
 } from '@/api/finance-overview/finance-overview.api.service';
 import { alertColor, burnColor, fmtMoney } from './finance-report-utils';
 import { useFinanceReportFetch } from './useFinanceReportFetch';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Text, Title } = Typography;
 
@@ -39,7 +40,9 @@ export const FinanceBudgetsPage = () => {
         title: t('budgets.table.project', { defaultValue: 'Project' }),
         dataIndex: 'name',
         key: 'name',
-        render: (name: string, record) => (
+        render: (name: string, record) => {
+          const decodedName = decodeHtmlEntities(name);
+          return (
           <Flex align="center" gap={8} style={{ minWidth: 0 }}>
             <span
               style={{
@@ -51,13 +54,14 @@ export const FinanceBudgetsPage = () => {
                 flexShrink: 0,
               }}
             />
-            <Tooltip title={name}>
+            <Tooltip title={decodedName}>
               <Text ellipsis style={{ maxWidth: 220 }}>
-                {name}
+                {decodedName}
               </Text>
             </Tooltip>
           </Flex>
-        ),
+          );
+        },
       },
       {
         title: t('budgets.table.budget', { defaultValue: 'Budget' }),

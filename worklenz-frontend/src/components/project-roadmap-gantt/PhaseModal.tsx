@@ -39,6 +39,7 @@ import {
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { themeWiseColor } from '../../utils/themeWiseColor';
 import dayjs from 'dayjs';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { TabPane } = Tabs;
 const { TextArea } = Input;
@@ -328,7 +329,7 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ visible, phase, onClose, onUpda
                     avatar={getTaskStatusIcon(task.status)}
                     title={
                       <div className="flex justify-between items-center">
-                        <Typography.Text strong>{task.name}</Typography.Text>
+                        <Typography.Text strong>{decodeHtmlEntities(task.name)}</Typography.Text>
                         <Space>
                           <Tag color={getPriorityColor(task.priority)}>{task.priority}</Tag>
                           <Progress percent={task.progress} size="small" style={{ width: 100 }} />

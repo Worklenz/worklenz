@@ -18,6 +18,7 @@ import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import { openReportingTaskDrawer, ReportingTaskRow } from '@/utils/reporting/openReportingTaskDrawer';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 type ProjectReportsTasksTableProps = {
   tasksData: Array<Record<string, unknown>>;
@@ -62,7 +63,7 @@ const ProjectReportsTasksTable = ({
       render: (_, record) => (
         <Flex>
           {Number(record.sub_tasks_count) > 0 && <DoubleRightOutlined />}
-          <Typography.Text className="group-hover:text-[#1890ff]">{record.name}</Typography.Text>
+          <Typography.Text className="group-hover:text-[#1890ff]">{decodeHtmlEntities(record.name)}</Typography.Text>
         </Flex>
       ),
       width: 260,

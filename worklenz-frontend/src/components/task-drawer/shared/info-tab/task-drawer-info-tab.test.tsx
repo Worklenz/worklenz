@@ -3,6 +3,8 @@ import { render, fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import type { TFunction } from 'i18next';
 
+const mockDrawerState = vi.hoisted(() => ({ targetCommentId: null as string | null }));
+
 // Heavy drawer children are irrelevant to paste handling.
 vi.mock('./description-editor', () => ({ default: () => <div data-testid="description-editor" /> }));
 vi.mock('./subtask-table', () => ({ default: () => <div data-testid="subtask-table" /> }));
@@ -21,6 +23,7 @@ vi.mock('@/hooks/useAppSelector', () => ({
       taskDrawerReducer: {
         loadingTask: false,
         selectedTaskId: 'task-1',
+        targetCommentId: mockDrawerState.targetCommentId,
         taskFormViewModel: {
           task: { id: 'task-1', name: 'Test task', task_level: 0, sub_tasks_count: 0 },
         },
@@ -88,7 +91,7 @@ const pasteFile = (target: Element) => {
   fireEvent(target, event);
 };
 
-describe('TaskDrawerInfoTab paste handling', () => {
+describe('TaskDrawerInfoTab', () => {
   it('reveals the attachments section after a valid paste', async () => {
     const { container } = render(<TaskDrawerInfoTab t={t} canCreateTask />);
 
@@ -106,5 +109,21 @@ describe('TaskDrawerInfoTab paste handling', () => {
     pasteFile(grid);
 
     await waitFor(() => expect(panel).toHaveClass('ant-collapse-item-active'));
+  });
+
+  it('expands the Comments section when a comment navigation target arrives', async () => {
+    mockDrawerState.targetCommentId = null;
+    const { rerender } = render(<TaskDrawerInfoTab t={t} canCreateTask />);
+
+    const header = await screen.findByText('Comments');
+    const panel = header.closest('.ant-collapse-item') as HTMLElement;
+    fireEvent.click(header);
+    await waitFor(() => expect(panel).not.toHaveClass('ant-collapse-item-active'));
+
+    mockDrawerState.targetCommentId = 'comment-1';
+    rerender(<TaskDrawerInfoTab t={t} canCreateTask />);
+
+    await waitFor(() => expect(panel).toHaveClass('ant-collapse-item-active'));
+    mockDrawerState.targetCommentId = null;
   });
 });

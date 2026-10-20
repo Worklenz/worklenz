@@ -26,6 +26,7 @@ import { useCreateQuoteMutation } from '../../../api/client-portal/client-portal
 import type { ClientPortalQuoteDetails } from '../../../api/client-portal/client-portal-quotes-api';
 import { CURRENCY_OPTIONS, DEFAULT_CURRENCY, getCurrencySymbol } from '../../../shared/currencies';
 import QuotePreviewModal from './quote-preview-modal';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   computeInvoiceTotals,
   formatMoney,
@@ -356,7 +357,9 @@ const CreateQuoteModal = () => {
                       {t('clientLabel', { defaultValue: 'Client' })}
                     </div>
                     {selectedChangeRequest ? (
-                      <Typography.Text strong>{selectedClient?.name ?? ''}</Typography.Text>
+                      <Typography.Text strong>
+                        {decodeHtmlEntities(selectedClient?.name) ?? ''}
+                      </Typography.Text>
                     ) : (
                       <Select
                         showSearch
@@ -365,7 +368,10 @@ const CreateQuoteModal = () => {
                         value={clientId ?? undefined}
                         optionFilterProp="label"
                         placeholder={t('selectClientPlaceholder', { defaultValue: 'Select a client' })}
-                        options={clients.map(client => ({ value: client.id, label: client.name }))}
+                        options={clients.map(client => ({
+                          value: client.id,
+                          label: decodeHtmlEntities(client.name),
+                        }))}
                         onChange={value => setClientId(value)}
                         aria-label={t('clientLabel', { defaultValue: 'Client' })}
                       />

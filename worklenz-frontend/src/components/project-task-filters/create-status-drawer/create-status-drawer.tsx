@@ -18,6 +18,7 @@ import {
 import { ITaskStatusCategory } from '@/types/status.types';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { evt_project_board_create_status } from '@/shared/worklenz-analytics-events';
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 import { fetchBoardTaskGroups } from '@/features/board/board-slice';
@@ -69,7 +70,7 @@ const StatusDrawer: React.FC = () => {
     value: category.id,
     label: (
       <Flex gap={4}>
-        <Badge color={category.color_code} /> {category.name}
+        <Badge color={category.color_code} /> {decodeHtmlEntities(category.name)}
       </Flex>
     ),
   }));

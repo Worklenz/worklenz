@@ -5,6 +5,7 @@ import Skeleton from 'antd/es/skeleton';
 import { useGetProjectsQuery } from '@/api/home-page/home-page.api.service';
 import { useTranslation } from 'react-i18next';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const AT_RISK_PATTERNS = ['risk', 'block', 'watch'];
 
@@ -69,10 +70,12 @@ const HomeProjectsAtRisk: React.FC = () => {
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {p.name}
+                  {decodeHtmlEntities(p.name)}
                 </div>
                 {p.client_name && (
-                  <div style={{ fontSize: 11, color: 'var(--colorTextSecondary, rgba(0,0,0,.45))' }}>{p.client_name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--colorTextSecondary, rgba(0,0,0,.45))' }}>
+                    {decodeHtmlEntities(p.client_name)}
+                  </div>
                 )}
               </div>
               {p.health_name && (

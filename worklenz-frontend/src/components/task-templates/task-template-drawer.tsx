@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { taskTemplatesApiService } from '@/api/task-templates/task-templates.api.service';
 import logger from '@/utils/errorLogger';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   ITaskTemplateGetResponse,
   ITaskTemplateSubTask,
@@ -114,7 +115,7 @@ const SubTaskRow: React.FC<{ subtask: ITaskTemplateSubTask }> = ({ subtask }) =>
       >
         <span style={{ color: token.colorTextQuaternary }}>↳</span>
         <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-          {subtask.name}
+          {decodeHtmlEntities(subtask.name)}
         </Typography.Text>
         {subtask.sub_tasks && subtask.sub_tasks.length > 0 && (
           <Tag color="geekblue" style={{ cursor: 'default', fontSize: 11, padding: '0 4px' }}>
@@ -138,7 +139,7 @@ const SubTaskRow: React.FC<{ subtask: ITaskTemplateSubTask }> = ({ subtask }) =>
             >
               <span style={{ color: token.colorTextQuaternary }}>↳</span>
               <Typography.Text type="secondary" style={{ fontSize: 12, opacity: 0.75 }}>
-                {grandchild.name}
+                {decodeHtmlEntities(grandchild.name)}
               </Typography.Text>
             </div>
           ))}
@@ -397,7 +398,7 @@ const TaskTemplateDrawer = ({
                       justifyContent: 'space-between',
                     }}
                   >
-                    <span style={{ fontWeight: 500 }}>{item.name}</span>
+                    <span style={{ fontWeight: 500 }}>{decodeHtmlEntities(item.name)}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {item.sub_tasks && item.sub_tasks.length > 0 && (
                         <Tooltip
