@@ -152,6 +152,13 @@ const ProjectsReportsTable = () => {
     [dispatch]
   );
 
+  const getColumnSortOrder = (sortField: string): 'ascend' | 'descend' | null => {
+    if (field !== sortField || !order) return null;
+    // `order` holds Ant Design's own values (ascend/descend) in this table,
+    // unlike the overview drawer table which normalises them to asc/desc.
+    return String(order).toLowerCase().startsWith('desc') ? 'descend' : 'ascend';
+  };
+
   const columns: TableColumnsType<IRPTProject> = useMemo(
     () => [
       {
@@ -160,7 +167,7 @@ const ProjectsReportsTable = () => {
         title: <CustomTableTitle title={t('projectColumn')} />,
         width: 300,
         sorter: true,
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
+        sortOrder: getColumnSortOrder('name'),
         fixed: 'left' as const,
         onCell: record => ({
           onClick: () => handleDrawerOpen(record as IRPTProject),
@@ -217,8 +224,13 @@ const ProjectsReportsTable = () => {
       },
       {
         key: 'status',
-        dataIndex: 'status_id',
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
+        // `dataIndex` doubles as the server-side sort key (sent as `field`).
+        // The API maps `status_name` to the custom project-status workflow
+        // order (Proposed -> In Planning -> In Progress -> Completed ->
+        // On Hold -> Blocked -> Cancelled); `status_id` is a UUID, so sorting
+        // on it only groups equal values and leaves the groups in a random order.
+        dataIndex: 'status_name',
+        sortOrder: getColumnSortOrder('status_name'),
         title: <CustomTableTitle title={t('statusColumn')} />,
         render: (_, record: IRPTProject) => (
           <ProjectStatusCell currentStatus={record.status_id} projectId={record.id} />
@@ -288,7 +300,7 @@ const ProjectsReportsTable = () => {
       {
         key: 'projectHealth',
         dataIndex: 'project_health',
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
+        sortOrder: getColumnSortOrder('project_health'),
         title: <CustomTableTitle title={t('projectHealthColumn')} />,
         sorter: true,
         render: (_, record: IRPTProject) => (
@@ -306,6 +318,7 @@ const ProjectsReportsTable = () => {
         title: <CustomTableTitle title={t('categoryColumn')} />,
         dataIndex: 'category_name',
         sorter: true,
+        sortOrder: getColumnSortOrder('category_name'),
         // ← Add className on the <td> so our CSS can target it
         onCell: () => ({ className: 'category-cell' }),
         render: (_, record: IRPTProject) => (
@@ -329,7 +342,7 @@ const ProjectsReportsTable = () => {
       {
         key: 'client',
         dataIndex: 'client',
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
+        sortOrder: getColumnSortOrder('client'),
         title: <CustomTableTitle title={t('clientColumn')} />,
         render: (_, record: IRPTProject) =>
           record?.client ? <ProjectClientCell client={record.client} /> : '-',
@@ -339,7 +352,7 @@ const ProjectsReportsTable = () => {
       {
         key: 'team',
         dataIndex: 'team_name',
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
+        sortOrder: getColumnSortOrder('team_name'),
         title: <CustomTableTitle title={t('teamColumn')} />,
         render: (_, record: IRPTProject) =>
           record.team_name ? <ProjectTeamCell team={record.team_name} /> : '-',
@@ -354,7 +367,7 @@ const ProjectsReportsTable = () => {
         width: 200,
       },
     ],
-    [t, order, handleDrawerOpen]
+    [t, order, field, handleDrawerOpen]
   );
 
   const visibleColumns = useMemo(
@@ -363,13 +376,33 @@ const ProjectsReportsTable = () => {
   );
 
   const handleTableChange = useCallback(
-    (pagination: PaginationProps, filters: any, sorter: any) => {
-      if (sorter.order) dispatch(setOrder(sorter.order));
-      if (sorter.field) dispatch(setField(sorter.field));
-      dispatch(setIndex(pagination.current));
-      dispatch(setPageSize(pagination.pageSize));
+    (
+      pagination: PaginationProps,
+      filters: any,
+      sorter: any,
+      extra?: { action: string }
+    ) => {
+      if (extra?.action === 'sort') {
+        const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+        if (!activeSorter?.order) {
+          // A third click clears the sort; return to normal default state
+          dispatch(setField('name'));
+          dispatch(setOrder(''));
+        } else {
+          const sortField = (Array.isArray(activeSorter.field)
+            ? activeSorter.field[0]
+            : activeSorter.field) as string;
+          dispatch(setField(sortField || 'name'));
+          dispatch(setOrder(activeSorter.order));
+        }
+        dispatch(setIndex(1));
+        return;
+      }
+
+      dispatch(setIndex(pagination.current ?? 1));
+      dispatch(setPageSize(pagination.pageSize ?? pageSize));
     },
-    [dispatch]
+    [dispatch, pageSize]
   );
 
   useEffect(() => {
