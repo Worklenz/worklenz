@@ -172,6 +172,22 @@ describe("guest limit under enforcement", () => {
     expect(result.guest_limit).toBe(-1);
     expect(result.plan_tier).toBe("PROFESSIONAL");
   });
+
+  it.each([
+    [1, "APPSUMO_LTD"],
+    [4, "APPSUMO_LTD"],
+    [5, "APPSUMO_BUSINESS"],
+  ])("labels %s redeemed AppSumo codes as %s under enforcement", async (codes, expectedTier) => {
+    process.env.ENTITLEMENTS_ENFORCE = "on";
+    status.mockResolvedValue({ subscription_type: "LIFE_TIME_DEAL", is_ltd: true, redeemed_codes_count: codes });
+    guests.mockResolvedValue(0);
+
+    const result = await getGuestSeatLimit("t1");
+
+    expect(result.plan_tier).toBe(expectedTier);
+    expect(result.guest_limit).toBe(-1);
+    expect(result.can_add_guest).toBe(true);
+  });
 });
 
 describe("requireAnyFeature", () => {
