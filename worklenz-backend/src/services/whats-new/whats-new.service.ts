@@ -1,10 +1,9 @@
 import moment from "moment";
-import matter from "gray-matter";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 
 import db from "../../config/db";
-import ReleaseNotesConstants from "../../shared/release-notes-constants";
+import { DEFAULT_RELEASE_NOTE_LOCALE, normalizeReleaseNoteLocale } from "../../shared/release-note-locales";
 import { log_error, sanitizePlainText } from "../../shared/utils";
 import { ICurrentRelease, IReleaseNote } from "../../interfaces/whats-new";
 
@@ -43,63 +42,61 @@ function isValidChangelogUrl(value: unknown): value is string {
   return typeof value === "string" && /^https?:\/\//i.test(value.trim());
 }
 
-/** YAML parses an unquoted `YYYY-MM-DD` scalar into a native Date, but a
- * quoted value stays a string — accept either. */
-function parsePublishedAt(value: unknown): moment.Moment | null {
-  if (value instanceof Date) {
-    const parsed = moment(value);
-    return parsed.isValid() ? parsed : null;
-  }
-  if (typeof value === "string") {
-    const parsed = moment(value, DATE_FORMAT, true);
-    return parsed.isValid() ? parsed : null;
-  }
-  return null;
+/** Loads releases from the DB (authored in the admin app), each with the title/body
+ * in the user's locale, falling back to English. Releases with no English row are skipped. */
+async function loadReleaseNotes(locale: string = DEFAULT_RELEASE_NOTE_LOCALE): Promise<IReleaseNote[]> {
+  const result = await db.query(
+    `SELECT rn.slug, TO_CHAR(rn.published_at, 'YYYY-MM-DD') AS published_at, rn.changelog_url, rn.is_active,
+            COALESCE(loc.title, en.title) AS title,
+            COALESCE(loc.body_markdown, en.body_markdown) AS body_markdown
+     FROM release_notes rn
+              JOIN release_note_translations en ON en.release_note_id = rn.id AND en.locale = $1
+              LEFT JOIN release_note_translations loc ON loc.release_note_id = rn.id AND loc.locale = $2`,
+    [DEFAULT_RELEASE_NOTE_LOCALE, locale]
+  );
+
+  return result.rows.map(row => ({
+    id: row.slug,
+    title: String(row.title).slice(0, 120),
+    body_markdown: row.body_markdown,
+    published_at: row.published_at,
+    changelog_url: isValidChangelogUrl(row.changelog_url) ? row.changelog_url.trim() : null,
+    is_active: row.is_active === true,
+  }));
 }
 
-function loadReleaseNotes(): IReleaseNote[] {
-  const releases: IReleaseNote[] = [];
-
-  for (const fileName of ReleaseNotesConstants.listMarkdownFiles()) {
-    try {
-      const raw = ReleaseNotesConstants.readMarkdownFile(fileName);
-      const { data, content } = matter(raw);
-
-      const id = fileName.replace(/\.md$/i, "");
-      const title = typeof data.title === "string" ? data.title.trim() : "";
-      const body = content.trim();
-      const publishedAt = parsePublishedAt(data.published_at);
-
-      if (!title || !body || !publishedAt) {
-        // A malformed frontmatter field is a content-authoring mistake, not a
-        // system error — log it for visibility without paging anyone via Slack.
-        log_error(new Error(`Skipping malformed release note "${fileName}": missing/invalid title, body, or published_at`), null, false);
-        continue;
-      }
-
-      releases.push({
-        id,
-        title: title.slice(0, 120),
-        body_markdown: body,
-        published_at: publishedAt.format(DATE_FORMAT),
-        changelog_url: isValidChangelogUrl(data.changelog_url) ? (data.changelog_url as string).trim() : null,
-        is_active: data.is_active === true,
-      });
-    } catch (error) {
-      // A read/parse failure on one release file (e.g. invalid YAML) is also
-      // a content mistake, not a system error — same reasoning as above.
-      log_error(error, null, false);
-    }
+async function getUserLocale(userId?: string): Promise<string> {
+  if (!userId) return DEFAULT_RELEASE_NOTE_LOCALE;
+  try {
+    const result = await db.query("SELECT language FROM users WHERE id = $1", [userId]);
+    return normalizeReleaseNoteLocale(result.rows[0]?.language) ?? DEFAULT_RELEASE_NOTE_LOCALE;
+  } catch (error) {
+    log_error(error, null, false);
+    return DEFAULT_RELEASE_NOTE_LOCALE;
   }
-
-  return releases;
 }
 
-function getEligibleReleases(): IReleaseNote[] {
+/** Records that the user opened a release (feeds the admin app's viewer list). Never throws. */
+async function recordView(userId: string, releaseId: string): Promise<void> {
+  if (!userId || !releaseId) return;
+  try {
+    await db.query(
+      `INSERT INTO user_release_views (user_id, release_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, release_id)
+         DO UPDATE SET view_count = user_release_views.view_count + 1, last_viewed_at = NOW()`,
+      [userId, releaseId]
+    );
+  } catch (error) {
+    log_error(error, null, false);
+  }
+}
+
+function getEligibleReleases(releases: IReleaseNote[]): IReleaseNote[] {
   const now = moment();
   const windowStart = moment().subtract(WINDOW_DAYS, "days");
 
-  return loadReleaseNotes()
+  return releases
     .filter(release => {
       if (!release.is_active) return false;
       const publishedAt = moment(release.published_at, DATE_FORMAT);
@@ -131,7 +128,8 @@ function toCurrentRelease(release: IReleaseNote): ICurrentRelease {
 
 async function getCurrentReleaseForUser(userId: string): Promise<ICurrentRelease | null> {
   const dismissed = await getDismissedReleaseIds(userId);
-  const release = getEligibleReleases().find(candidate => !dismissed.has(candidate.id));
+  const releases = await loadReleaseNotes(await getUserLocale(userId));
+  const release = getEligibleReleases(releases).find(candidate => !dismissed.has(candidate.id));
   if (!release) return null;
 
   return toCurrentRelease(release);
@@ -150,11 +148,15 @@ async function getCurrentReleaseForUser(userId: string): Promise<ICurrentRelease
 // attacker-controlled id. Fails closed on a DB error.
 async function getReleaseById(releaseId: string, userId?: string): Promise<ICurrentRelease | null> {
   if (!releaseId) return null;
-  const release = loadReleaseNotes().find(candidate => candidate.id === releaseId);
+  const releases = await loadReleaseNotes(await getUserLocale(userId));
+  const release = releases.find(candidate => candidate.id === releaseId);
   if (!release) return null;
 
-  const isCurrentlyEligible = getEligibleReleases().some(candidate => candidate.id === releaseId);
-  if (isCurrentlyEligible) return toCurrentRelease(release);
+  const isCurrentlyEligible = getEligibleReleases(releases).some(candidate => candidate.id === releaseId);
+  if (isCurrentlyEligible) {
+    await recordView(userId as string, releaseId);
+    return toCurrentRelease(release);
+  }
 
   if (!userId) return null;
 
@@ -169,6 +171,7 @@ async function getReleaseById(releaseId: string, userId?: string): Promise<ICurr
     return null;
   }
 
+  await recordView(userId, releaseId);
   return toCurrentRelease(release);
 }
 
@@ -185,7 +188,7 @@ async function getReleaseById(releaseId: string, userId?: string): Promise<ICurr
 // and zero INSERTs instead of N guaranteed-to-conflict INSERTs forever.
 async function ensureNotificationsForEligibleReleases(userId?: string, teamId?: string): Promise<void> {
   if (!userId || !teamId) return;
-  const eligibleReleases = getEligibleReleases();
+  const eligibleReleases = getEligibleReleases(await loadReleaseNotes());
   if (!eligibleReleases.length) return;
 
   let existingReleaseIds = new Set<string>();
