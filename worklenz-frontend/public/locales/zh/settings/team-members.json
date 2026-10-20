@@ -241,5 +241,19 @@
   "noManagedProjectsFound": "没有您担任项目经理的项目",
   "projectInvite_guestLimitExceeded": "超出了该计划的宾客限制。请升级以添加更多客人。",
   "license-expired-subtitle": "您的 Worklenz 试用期已结束。请升级以继续享受所有功能。",
-  "Failed to fetch job titles": "获取职位失败"
+  "Failed to fetch job titles": "获取职位失败",
+  "assign_department": "分配部门",
+  "assign_practice": "分配实践领域",
+  "select_department": "选择部门",
+  "select_practice": "选择实践领域",
+  "no_departments_found": "未找到部门",
+  "no_practices_found": "未找到实践领域",
+  "please_select_assignment_and_members": "请选择部门或实践领域以及团队成员",
+  "bulk_organization_assignment_success": "已将 {{count}} 名团队成员分配至{{organization}}",
+  "bulk_organization_assignment_failed": "分配{{organization}}失败",
+  "bulk_assignment_member_missing_id": "所选团队成员没有 ID",
+  "bulk_assignment_member_load_failed": "无法加载团队成员：{{member}}",
+  "bulk_assignment_role_verify_failed": "无法验证 {{member}} 的角色",
+  "bulk_assignment_member_update_failed": "无法更新团队成员：{{member}}",
+  "member": "成员"
 }
