@@ -138,6 +138,8 @@ export interface ITaskState {
   members: string[];
   activeTimers: Record<string, number | null>;
   convertToSubtaskDrawerOpen: boolean;
+  /** 'convert' turns a task into a subtask; 'move' reassigns an existing subtask's parent */
+  convertToSubtaskDrawerMode: 'convert' | 'move';
   customColumns: ITaskListColumn[];
   customColumnValues: Record<string, Record<string, any>>;
   allTasks: IProjectTask[];
@@ -169,6 +171,7 @@ const initialState: ITaskState = {
   members: [],
   activeTimers: {},
   convertToSubtaskDrawerOpen: false,
+  convertToSubtaskDrawerMode: 'convert',
   customColumns: [],
   customColumnValues: {},
   allTasks: [],
@@ -595,6 +598,13 @@ const taskSlice = createSlice({
 
     setConvertToSubtaskDrawerOpen: (state, action: PayloadAction<boolean>) => {
       state.convertToSubtaskDrawerOpen = action.payload;
+      if (!action.payload) {
+        state.convertToSubtaskDrawerMode = 'convert';
+      }
+    },
+
+    setConvertToSubtaskDrawerMode: (state, action: PayloadAction<'convert' | 'move'>) => {
+      state.convertToSubtaskDrawerMode = action.payload;
     },
 
     setTaskListProjectId: (state, action: PayloadAction<string | null>) => {
@@ -1461,6 +1471,7 @@ export const {
   updateTaskStatusColor,
   updateTaskGroupColor,
   setConvertToSubtaskDrawerOpen,
+  setConvertToSubtaskDrawerMode,
   setTaskListProjectId,
   reorderTasks,
   updateTaskDescription,

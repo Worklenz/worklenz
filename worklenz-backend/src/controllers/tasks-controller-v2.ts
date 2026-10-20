@@ -1480,6 +1480,164 @@ export default class TasksControllerV2 extends TasksControllerBase {
     return res.status(200).send(new ServerResponse(true, model));
   }
 
+  /**
+   * Move an existing subtask under a different parent task in the same project.
+   * Preserves all subtask details (title, description, assignee, dates, status, logged hours, etc.).
+   */
+  @HandleExceptions()
+  public static async moveSubtask(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const taskId = req.body?.id as string | undefined;
+    const projectId = req.body?.project_id as string | undefined;
+    const newParentTaskId = req.body?.parent_task_id as string | undefined;
+
+    if (!taskId || !projectId || !newParentTaskId) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Missing required parameters"));
+    }
+
+    if (!isValidUuid(taskId) || !isValidUuid(projectId) || !isValidUuid(newParentTaskId)) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Invalid identifiers"));
+    }
+
+    if (taskId === newParentTaskId) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "A task cannot be its own parent"));
+    }
+
+    const taskResult = await db.query(
+      `
+      SELECT id, parent_task_id, project_id, archived
+      FROM tasks
+      WHERE id = $1
+      `,
+      [taskId]
+    );
+    const [task] = taskResult.rows;
+
+    if (!task) {
+      return res.status(404).send(new ServerResponse(false, null, "Task not found"));
+    }
+
+    if (task.project_id !== projectId) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Task does not belong to this project"));
+    }
+
+    if (!task.parent_task_id) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Only subtasks can be moved to another parent"));
+    }
+
+    if (task.parent_task_id === newParentTaskId) {
+      const currentResult = await db.query("SELECT get_single_task($1) AS task;", [taskId]);
+      const [currentData] = currentResult.rows;
+      const currentModel = TasksControllerV2.updateTaskViewModel(currentData.task);
+      return res.status(200).send(new ServerResponse(true, currentModel));
+    }
+
+    const parentResult = await db.query(
+      `
+      SELECT id, parent_task_id, project_id, archived
+      FROM tasks
+      WHERE id = $1
+      `,
+      [newParentTaskId]
+    );
+    const [newParent] = parentResult.rows;
+
+    if (!newParent) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Parent task not found"));
+    }
+
+    if (newParent.project_id !== projectId) {
+      return res
+        .status(400)
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "Parent task must belong to the same project"
+          )
+        );
+    }
+
+    if (newParent.archived) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Cannot move subtask under an archived parent"));
+    }
+
+    // Prevent cycles: new parent must not be a descendant of the subtask being moved
+    const cycleResult = await db.query(
+      `
+      WITH RECURSIVE task_descendants AS (
+        SELECT id
+        FROM tasks
+        WHERE parent_task_id = $1 AND archived IS FALSE
+
+        UNION ALL
+
+        SELECT child.id
+        FROM tasks child
+        INNER JOIN task_descendants td ON child.parent_task_id = td.id
+        WHERE child.archived IS FALSE
+      )
+      SELECT EXISTS(
+        SELECT 1 FROM task_descendants WHERE id = $2
+      ) AS is_descendant;
+      `,
+      [taskId, newParentTaskId]
+    );
+
+    if (cycleResult.rows[0]?.is_descendant) {
+      return res
+        .status(400)
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "Cannot move a subtask under one of its own descendants"
+          )
+        );
+    }
+
+    const oldParentTaskId = task.parent_task_id as string;
+
+    // sort_order is unique per (project_id, sort_order), so use project-wide MAX
+    // (same pattern as convertToSubtask / convertToTask), not per-parent siblings.
+    await db.query(
+      `
+      UPDATE tasks
+      SET parent_task_id = $2,
+          sort_order = COALESCE(
+            (SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = $3),
+            0
+          )
+      WHERE id = $1 AND project_id = $3;
+      `,
+      [taskId, newParentTaskId, projectId]
+    );
+
+    await this.resetParentTaskManualProgress(oldParentTaskId);
+    await this.resetParentTaskManualProgress(newParentTaskId);
+
+    const result = await db.query("SELECT get_single_task($1) AS task;", [taskId]);
+    const [data] = result.rows;
+    const model = TasksControllerV2.updateTaskViewModel(data.task);
+    return res.status(200).send(new ServerResponse(true, model));
+  }
+
   public static async getTaskSubscribers(taskId: string) {
     const q = `
       SELECT u.name, u.avatar_url, ts.user_id, ts.team_member_id, ts.task_id
