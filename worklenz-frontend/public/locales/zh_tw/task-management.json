@@ -1,0 +1,39 @@
+{
+  "noTasksInGroup": "此群組中沒有任務",
+  "noTasksInGroupDescription": "新增一項任務以開始使用",
+  "addFirstTask": "新增第一項任務",
+  "openTask": "開啟",
+  "subtask": "個子任務",
+  "subtasks": "個子任務",
+  "comment": "則留言",
+  "comments": "則留言",
+  "attachment": "個附件",
+  "attachments": "個附件",
+  "enterSubtaskName": "請輸入子任務名稱…",
+  "add": "新增",
+  "cancel": "取消",
+  "renameGroup": "重新命名群組",
+  "renameStatus": "重新命名狀態",
+  "renamePhase": "重新命名階段",
+  "changeCategory": "變更類別",
+  "clickToEditGroupName": "按一下以編輯群組名稱",
+  "enterGroupName": "請輸入群組名稱",
+  "todo": "待辦",
+  "inProgress": "進行中",
+  "done": "已完成",
+  "defaultTaskName": "未命名任務",
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} 個子任務",
+      "subtasks_plural": "{{count}} 個子任務",
+      "comments": "{{count}} 則留言",
+      "comments_plural": "{{count}} 則留言",
+      "attachments": "{{count}} 個附件",
+      "attachments_plural": "{{count}} 個附件",
+      "subscribers": "此任務有訂閱者",
+      "dependencies": "此任務有相依任務",
+      "recurring": "週期性任務"
+    }
+  }
+}

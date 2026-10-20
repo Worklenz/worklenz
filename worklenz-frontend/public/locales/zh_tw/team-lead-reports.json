@@ -1,0 +1,105 @@
+{
+  "title": "報表",
+  "subtitle": "團隊成員的時間追蹤與績效分析",
+
+  "dateRange": {
+    "label": "日期範圍",
+    "showing": "顯示",
+    "today": "今天",
+    "yesterday": "昨天",
+    "thisWeek": "本週",
+    "lastWeek": "上週",
+    "last7Days": "過去 7 天",
+    "thisMonth": "本月",
+    "lastMonth": "上個月",
+    "last30Days": "過去 30 天",
+    "last90Days": "過去 90 天",
+    "custom": "自訂範圍",
+    "apply": "套用"
+  },
+
+  "summary": {
+    "totalMembers": "成員總數",
+    "totalMembersTooltip": "在所選日期範圍內有記錄時間的團隊成員總數。",
+    "totalTimeLogged": "記錄總時間",
+    "totalTimeLoggedTooltip": "所有團隊成員在所選日期範圍內記錄的總時間。",
+    "activeProjects": "進行中專案",
+    "activeProjectsTooltip": "在所選日期範圍內，單一團隊成員參與的最多專案數。",
+    "avgCompletionRate": "平均完成率",
+    "hours": "小時"
+  },
+
+  "timeTracking": {
+    "title": "時間追蹤摘要",
+    "chartTitle": "團隊時間追蹤圖表",
+    "member": "成員",
+    "teamMembers": "團隊成員",
+    "totalTime": "總時間",
+    "totalHours": "總工時",
+    "loggedTime": "已記錄時間",
+    "logsCount": "記錄筆數",
+    "activeDays": "活動天數",
+    "lastActivity": "最近活動",
+    "actions": "操作",
+    "manualLogs": "手動記錄",
+    "timerLogs": "計時器記錄",
+    "projects": "專案",
+    "viewDetails": "檢視詳細資訊",
+    "noData": "找不到所選期間的時間記錄",
+    "totalTimeTooltip": "此成員在所選日期範圍內記錄的總時間，包含所有專案與任務的時間記錄。",
+    "logsCountTooltip": "此成員在所選日期範圍內建立的時間記錄總筆數。",
+    "projectsTooltip": "此成員在所選日期範圍內有記錄時間的不重複專案數。",
+    "activeDaysTooltip": "此成員在所選日期範圍內有記錄時間的不重複天數。"
+  },
+
+  "performance": {
+    "title": "團隊績效",
+    "member": "成員",
+    "tasks": "任務",
+    "assigned": "已指派",
+    "completed": "已完成",
+    "overdue": "已逾期",
+    "tasksCompleted": "已完成任務",
+    "tasksOverdue": "逾期任務",
+    "completionRate": "完成率",
+    "completionRateTooltip": "已完成任務占已指派任務總數的百分比。計算方式：（已完成任務 ÷ 已指派任務）× 100",
+    "timeLogged": "已記錄時間",
+    "timeLoggedTooltip": "此成員在所選日期範圍內記錄的總時間，包含所有專案與任務的時間記錄。",
+    "activeProjects": "進行中專案",
+    "activeProjectsTooltip": "此成員在所選日期範圍內有記錄時間的不重複專案數。",
+    "projectsInvolved": "參與專案",
+    "noData": "沒有績效資料"
+  },
+
+  "detailedLogs": {
+    "title": "詳細時間記錄",
+    "for": "成員：",
+    "dateTime": "日期與時間",
+    "date": "日期",
+    "project": "專案",
+    "task": "任務",
+    "duration": "持續時間",
+    "description": "描述",
+    "method": "方式",
+    "type": "類型",
+    "manual": "手動",
+    "timer": "計時器",
+    "noLogs": "找不到詳細記錄",
+    "close": "關閉",
+    "timeLogsRange": "筆時間記錄"
+  },
+
+  "errors": {
+    "failedToLoad": "無法載入團隊報表",
+    "tryAgain": "請再試一次",
+    "noTeamMembers": "找不到團隊成員",
+    "loadingError": "載入資料時發生錯誤"
+  },
+
+  "loading": {
+    "fetchingData": "正在載入團隊報表…",
+    "fetchingLogs": "正在載入詳細記錄…"
+  },
+
+  "export": "匯出"
+}

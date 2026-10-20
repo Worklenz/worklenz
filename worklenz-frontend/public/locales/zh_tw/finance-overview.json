@@ -1,0 +1,60 @@
+{
+  "pageTitle": "財務總覽",
+  "pageSubTitle": "彙整所有專案的預算、實際成本與差異。點選專案即可檢視完整的 [財務] 分頁。",
+  "noBudgetSet": "尚未設定預算",
+  "emptyValue": "—",
+  "viewFinanceButton": "檢視財務",
+  "viewButton": "檢視",
+  "exportButton": "匯出為 Excel",
+  "exportSuccess": "匯出成功。",
+  "exportFailed": "匯出失敗。",
+  "kpiCard": {
+    "totalManualBudget": "手動設定預算總額",
+    "totalActualCost": "實際成本總額",
+    "totalVariance": "差異總額",
+    "budgetUtilization": "預算使用率",
+    "estimatedHours": "預估工時",
+    "mixedCurrencyWarning": "專案使用不同幣別，此總額未經匯率換算。",
+    "mixedCurrencyNote": "顯示 {{total}} 個專案中 {{count}} 個專案使用的 {{dominant}}，另包含：{{others}}。",
+    "prevCurrency": "上一個幣別",
+    "nextCurrency": "下一個幣別"
+  },
+  "attention": {
+    "title": "需關注的專案",
+    "emptyState": "所有專案皆未超出預算。",
+    "overBudget": "超出預算",
+    "watch": "需留意",
+    "ofBudgetSpent": "的預算已使用"
+  },
+  "distribution": {
+    "title": "預算狀態分布",
+    "onTrack": "正常（已使用 ≤65%）",
+    "watch": "需留意（已使用 65–100%）",
+    "overBudget": "超出預算（已使用 >100%）",
+    "projects": "個專案",
+    "total": "總計",
+    "breakdown": "實際成本明細：固定費用 {{fixed}} · 按工時計費 {{timeBased}}"
+  },
+  "tableCard": {
+    "title": "專案財務狀況"
+  },
+  "currencyNote": {
+    "convertedPrefix": "KPI 總額已換算為",
+    "convertedSuffix": "，採用即時匯率。匯率更新時間：{{time}}。",
+    "changeCurrency": "變更幣別",
+    "unavailable": "無法取得匯率，無法換算 KPI 總額。",
+    "checkSettings": "檢查幣別設定",
+    "fetchUnavailable": "匯率服務無法使用。",
+    "fetchFailed": "無法取得匯率。"
+  },
+  "table": {
+    "project": "專案",
+    "client": "客戶",
+    "manualBudget": "手動設定預算",
+    "actualCost": "實際成本",
+    "variance": "差異",
+    "budgetUtilization": "預算使用率",
+    "estHours": "預估工時",
+    "searchPlaceholder": "搜尋專案"
+  }
+}

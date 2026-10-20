@@ -1,0 +1,42 @@
+{
+  "duplicateTask": "複製任務",
+  "duplicateTaskDescription": "選擇要複製到新任務的項目：",
+  "duplicateOptions": {
+    "subtasks": "子任務",
+    "attachments": "附件",
+    "dates": "日期",
+    "dependencies": "相依關係",
+    "assignees": "受指派者",
+    "labels": "標籤",
+    "customFields": "自訂欄位值",
+    "subscribers": "訂閱者"
+  },
+  "duplicate": "複製",
+  "cancel": "取消",
+  "copyToProject": {
+    "title": "複製任務至專案",
+    "selectProject": "請選擇目標專案",
+    "confirm": "複製任務",
+    "copyTask": "複製任務",
+    "checkDifferences": "檢查差異",
+    "check": "檢查差異",
+    "checking": "正在檢查差異…",
+    "confirmDifferences": "新增並複製任務",
+    "differencesFound": "目標專案缺少以下欄位。",
+    "missingPhasesFound": "系統將在目標專案中建立以下階段。",
+    "statusMissing": "目標專案沒有「{{sourceStatus}}」狀態。任務將指派至主要的「{{destinationStatus}}」狀態。",
+    "createMissingItems": "建立缺少的欄位與階段",
+    "createMissingColumns": "建立缺少的欄位",
+    "cancel": "取消",
+    "cancelDifferences": "取消複製",
+    "success": "已複製任務",
+    "openTask": "開啟任務",
+    "loadError": "無法載入可存取的專案。",
+    "noProjects": "找不到其他可存取的專案。",
+    "noDifferencesFound": "目標專案已有所有必要欄位與階段。",
+    "copyDependencies": "複製相依任務",
+    "copyDependenciesDescription": "將此任務複製到目標專案時，一併複製所有相依任務。",
+    "dependenciesInfo": "此任務有相依關係。系統也會將相依任務複製到目標專案。",
+    "error": "無法複製任務"
+  }
+}

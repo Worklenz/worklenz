@@ -1,0 +1,17 @@
+{
+  "configurationTitle": "組織設定",
+  "configurationDescription": "管理適用於所有專案的組織層級設定。",
+  "businessPlanRequired": "需要 Business 方案",
+  "businessPlanRequiredDescription": "Business 與 Enterprise 方案可使用組織層級的任務限制設定。",
+  "upgradePlan": "升級方案",
+  "taskManagementSection": "任務管理",
+  "restrictTaskCreation": "僅允許管理員與團隊主管指派任務",
+  "restrictTaskCreationTooltip": "啟用後，僅管理員與團隊主管可在所有專案中建立及指派任務。團隊成員只能檢視指派給自己的任務。專案層級設定會覆寫此組織層級設定。",
+  "restrictTaskCreationNote": "注意：專案層級設定優先於此組織層級設定。變更會立即生效。",
+  "timeTrackingSection": "時間追蹤",
+  "limitTimelogBackdating": "限制時間記錄可補登的天數",
+  "limitTimelogBackdatingTooltip": "啟用後，成員無法建立早於允許天數的時間記錄。此限制適用於所有人，包含擁有者與管理員。計時中的計時器與匯入的記錄不受影響。",
+  "timelogBackdateLimitDays": "時間記錄可補登的最長天數",
+  "timelogBackdateLimitNote": "注意：系統不會變更現有的時間記錄。只要不變更日期，仍可編輯超過補登期限的既有記錄。",
+  "days": "天"
+}

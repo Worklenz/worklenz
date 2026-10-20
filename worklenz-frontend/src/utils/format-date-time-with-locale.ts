@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { enUS, es, pt, de, zhCN, sq } from 'date-fns/locale';
+import { enUS, es, pt, de, zhCN, sq, zhTW } from 'date-fns/locale';
 import { getLanguageFromLocalStorage } from './language-utils';
 
 const DATE_FNS_LOCALE: Record<string, typeof enUS> = {
@@ -8,6 +8,7 @@ const DATE_FNS_LOCALE: Record<string, typeof enUS> = {
   pt: pt,
   de: de,
   zh_cn: zhCN,
+  zh_tw: zhTW,
   alb: sq,
 };
 

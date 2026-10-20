@@ -1,0 +1,337 @@
+{
+  "upgradeNowButton": "立即升級",
+  "comingSoonTag": "即將推出",
+  "clientPortalMockups": {
+    "requests": {
+      "statusAccepted": "已接受",
+      "statusPending": "待處理",
+      "statusRejected": "已拒絕"
+    },
+    "services": {
+      "statusActive": "啟用中"
+    }
+  },
+  "cards": {
+    "finance": {
+      "overview": {
+        "title": "財務總覽",
+        "description": "集中彙整所有專案的預算、實際成本與差異。",
+        "features": [
+          "各專案的預算與實際成本比較",
+          "整體專案組合的差異與使用率",
+          "自動標示需要關注的專案",
+          "可匯出為 Excel"
+        ]
+      },
+      "expenses": {
+        "title": "費用",
+        "description": "集中追蹤團隊在各專案任務中加入的所有固定成本。",
+        "features": [
+          "為任何任務記錄固定成本",
+          "依專案與負責人檢視支出",
+          "納入各專案的財務彙總",
+          "可匯出費用記錄"
+        ]
+      },
+      "profitability": {
+        "title": "獲利能力",
+        "description": "功能推出後，即可依專案與團隊檢視利潤率。",
+        "features": [
+          "各專案的收入與成本比較",
+          "利潤率的歷史趨勢",
+          "團隊層級的獲利能力分析",
+          "可匯出的獲利能力報表"
+        ]
+      },
+      "budgets": {
+        "title": "預算",
+        "description": "為各專案設定預算，即時追蹤支出與預算的差異。",
+        "features": [
+          "專案預算規劃",
+          "即時追蹤支出",
+          "超出預算警示",
+          "預算與實際支出比較報表"
+        ]
+      },
+      "invoices": {
+        "title": "發票",
+        "description": "不必離開 Worklenz，即可開立、傳送及追蹤客戶發票。",
+        "features": [
+          "依記錄時間與費用開立發票",
+          "追蹤已付款、待付款及逾期發票",
+          "供客戶使用的發票入口",
+          "一眼掌握付款狀態"
+        ]
+      },
+      "billableTime": {
+        "title": "計費時間",
+        "description": "追蹤每個專案與團隊成員的計費及非計費時數。",
+        "features": [
+          "計費與非計費時數分析",
+          "計費時數帶來的收入",
+          "各團隊成員的計費費率",
+          "可匯出工時表以進行帳務處理"
+        ]
+      },
+      "utilization": {
+        "title": "利用率",
+        "description": "瞭解團隊時間在進行中專案的分配程度。",
+        "features": [
+          "每週或每月的團隊利用率",
+          "工作分配過多或不足的團隊成員",
+          "一眼掌握產能規劃",
+          "利用率的歷史趨勢"
+        ]
+      },
+      "forecasts": {
+        "title": "預測",
+        "description": "依據進行中的業務機會，預測未來收入與成本。",
+        "features": [
+          "收入與成本預測",
+          "預估利潤率",
+          "依業務機會預測",
+          "逐月預測趨勢"
+        ]
+      },
+      "generic": {
+        "title": "財務",
+        "description": "集中追蹤各專案的獲利能力、預算、發票及費用。",
+        "features": [
+          "追蹤專案獲利能力",
+          "預算與預測",
+          "發票與費用追蹤",
+          "計費時間與利用率報表"
+        ]
+      }
+    },
+    "planner": {
+      "schedule": {
+        "title": "排程",
+        "description": "一眼掌握整個團隊的排程並指派工作。",
+        "features": [
+          "全團隊每週與每月排程表",
+          "拖曳以安排工作",
+          "自動標示產能衝突",
+          "指派工作時即時更新"
+        ]
+      },
+      "timeline": {
+        "title": "時間軸",
+        "description": "在可縮放的單一時間軸上規劃所有專案。",
+        "features": [
+          "甘特圖式專案時間軸",
+          "拖曳以調整開始與結束日期",
+          "跨專案相依關係檢視",
+          "縮放範圍涵蓋天至年"
+        ]
+      },
+      "workload": {
+        "title": "工作負載",
+        "description": "在承諾過多工作前，先平衡團隊產能。",
+        "features": [
+          "各成員已分配與可用時數比較",
+          "工作分配過多或不足警示",
+          "跨進行中專案的產能規劃",
+          "工作負載的歷史趨勢"
+        ]
+      }
+    },
+    "clientPortal": {
+      "clients": {
+        "title": "客戶",
+        "description": "提供專屬品牌的客戶入口，讓客戶追蹤專案進度、分享檔案並掌握最新狀況。",
+        "features": [
+          "以專屬品牌客戶入口分享專案進度",
+          "客戶申請、核准與訊息交流",
+          "供客戶使用的發票功能",
+          "不限數量的客戶帳戶"
+        ]
+      },
+      "requests": {
+        "title": "申請",
+        "description": "讓客戶直接在入口提交並追蹤服務申請。",
+        "features": [
+          "由客戶提交服務申請",
+          "集中接受、拒絕或追蹤申請",
+          "從提交到完成的狀態追蹤",
+          "直接連結所申請的服務"
+        ]
+      },
+      "services": {
+        "title": "服務",
+        "description": "發布客戶可申請的服務，並決定顯示哪些內容。",
+        "features": [
+          "可申請的服務目錄",
+          "各項服務的顯示設定",
+          "各項服務的申請量",
+          "從團隊指派服務負責人"
+        ]
+      },
+      "chats": {
+        "title": "訊息",
+        "description": "直接在客戶日常使用的入口中與客戶傳送訊息。",
+        "features": [
+          "與客戶直接傳送訊息",
+          "每位客戶各有一個對話串",
+          "可搜尋對話記錄",
+          "客戶回覆時發出通知"
+        ]
+      },
+      "invoices": {
+        "title": "發票",
+        "description": "不必離開 Worklenz，即可開立、傳送及追蹤客戶發票。",
+        "features": [
+          "依記錄時間與費用開立發票",
+          "追蹤已付款、待付款及逾期發票",
+          "供客戶使用的發票入口",
+          "一眼掌握付款狀態"
+        ]
+      },
+      "ticketing": {
+        "title": "支援單",
+        "description": "讓客戶直接在入口提出並追蹤支援單。",
+        "features": [
+          "由客戶提交支援單",
+          "支援單狀態追蹤與更新",
+          "內部備註與指派",
+          "優先順序與 SLA 標籤"
+        ]
+      },
+      "settings": {
+        "title": "入口設定",
+        "description": "以專屬品牌自訂客戶入口。",
+        "features": [
+          "上傳專屬商標",
+          "入口各頁面的品牌頁首",
+          "讓客戶看見一致的視覺識別",
+          "向客戶顯示公司資訊"
+        ]
+      }
+    }
+  },
+  "financeMockups": {
+    "overview": {
+      "paginationText": "第 {{from}}-{{to}} 筆，共 {{total}} 筆",
+      "perPageText": "每頁 {{count}} 筆"
+    },
+    "profitability": {
+      "totalRevenue": "總收入",
+      "totalCost": "總成本",
+      "netProfit": "淨利",
+      "avgMargin": "平均利潤率",
+      "marginByProjectCard": "各專案利潤率"
+    },
+    "budgets": {
+      "totalBudget": "總預算",
+      "spent": "已支出",
+      "remaining": "剩餘預算",
+      "overBudget": "超出預算",
+      "budgetVsSpendCard": "各專案預算與支出比較"
+    },
+    "invoices": {
+      "totalInvoiced": "發票總額",
+      "paid": "已付款",
+      "pending": "待付款",
+      "overdue": "已逾期",
+      "invoicesCard": "發票",
+      "invoiceNoColumn": "發票號碼",
+      "clientColumn": "客戶",
+      "amountColumn": "金額",
+      "statusColumn": "狀態"
+    },
+    "billableTime": {
+      "billableHours": "計費時數",
+      "nonBillableHours": "非計費時數",
+      "billablePercent": "計費比例",
+      "billableRevenue": "計費收入",
+      "byTeamMemberCard": "各團隊成員計費時間",
+      "teamMemberColumn": "團隊成員",
+      "billableHoursColumn": "計費時數"
+    },
+    "utilization": {
+      "avgUtilization": "平均利用率",
+      "teamSize": "團隊人數",
+      "overutilized": "利用率過高",
+      "underutilized": "利用率過低",
+      "byTeamMemberCard": "各團隊成員利用率",
+      "teamMemberColumn": "團隊成員"
+    },
+    "forecasts": {
+      "forecastedRevenue": "預測收入",
+      "forecastedCost": "預測成本",
+      "projectedMargin": "預估利潤率",
+      "forecastWindow": "預測期間",
+      "revenueTrendCard": "收入預測趨勢"
+    },
+    "expenses": {
+      "pageTitle": "專案費用",
+      "pageSubtitle": "團隊在各專案任務中加入的所有固定成本。",
+      "projectColumn": "專案",
+      "taskColumn": "任務",
+      "amountColumn": "金額",
+      "assigneeColumn": "負責人",
+      "dateColumn": "日期",
+      "rowsPerPage": "每頁列數：{{count}}"
+    }
+  },
+  "ticketingMockup": {
+    "openTickets": "未結案支援單",
+    "inProgress": "處理中",
+    "resolvedToday": "今日已解決",
+    "avgResponseTime": "平均回應時間",
+    "ticketsCard": "支援單",
+    "ticketNoColumn": "支援單編號",
+    "clientColumn": "客戶",
+    "subjectColumn": "主旨",
+    "priorityColumn": "優先順序",
+    "statusColumn": "狀態",
+    "priorityHigh": "高",
+    "priorityMedium": "中",
+    "priorityLow": "低",
+    "statusOpen": "未結案",
+    "statusResolved": "已解決"
+  },
+  "plannerMockup": {
+    "chrome": {
+      "daysOption": "天",
+      "weeksOption": "週",
+      "monthsOption": "月",
+      "quartersOption": "季",
+      "yearsOption": "年",
+      "dayOption": "日",
+      "weekOption": "週",
+      "monthOption": "月",
+      "membersOption": "成員",
+      "projectsOption": "專案",
+      "priority": "優先順序",
+      "category": "類別",
+      "projectStatus": "專案狀態",
+      "projectPriority": "專案優先順序",
+      "taskLegend": "任務",
+      "projectBlockLegend": "專案區塊"
+    },
+    "schedule": {
+      "scheduledHours": "已排程時數",
+      "membersScheduled": "已排程成員",
+      "unassignedHours": "未指派時數",
+      "overbookedMembers": "排程超量成員",
+      "memberColumn": "成員",
+      "thisWeekCard": "本週"
+    },
+    "timeline": {
+      "activeProjects": "進行中專案",
+      "onTrack": "進度正常",
+      "atRisk": "有風險",
+      "avgCompletion": "平均完成率",
+      "projectTimelineCard": "專案時間軸"
+    },
+    "workload": {
+      "totalCapacity": "總產能",
+      "allocatedHours": "已分配時數",
+      "availableHours": "可用時數",
+      "overallocatedMembers": "分配超量成員",
+      "utilColumn": "利用率",
+      "teamTotalRow": "團隊合計"
+    }
+  }
+}

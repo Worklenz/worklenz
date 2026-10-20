@@ -1,0 +1,15 @@
+{
+  "pageTitle": "組織幣別",
+  "pageSubtitle": "設定組織的基準幣別。財務總額會依即時匯率換算為此幣別。",
+  "save": "儲存",
+  "saveChanges": "儲存變更",
+  "adminOnly": "僅組織擁有者與管理員可變更此設定。",
+  "successMessage": "已將組織基準幣別設為 {{currency}}",
+  "errorMessage": "無法儲存幣別設定",
+  "selectAriaLabel": "組織基準幣別",
+  "ratesCardTitle": "即時匯率 - 1 {{currency}} =",
+  "ratesUpdated": "更新時間：{{time}}",
+  "refreshRatesTooltip": "重新整理匯率",
+  "refreshRatesAriaLabel": "重新整理匯率",
+  "noRateData": "無可用匯率資料。"
+}

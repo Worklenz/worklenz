@@ -1,0 +1,12 @@
+{
+  "title": "請求",
+
+  "table": {
+    "header": {
+      "service": "服務",
+      "status": "狀態",
+      "time": "時間",
+      "lastChat": "最近對話"
+    }
+  }
+}

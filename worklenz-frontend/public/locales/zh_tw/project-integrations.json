@@ -1,0 +1,58 @@
+{
+  "title": "整合",
+  "tooltip": "管理專案整合",
+  "upgradeRequired": "商務方案可使用整合功能",
+  "manageAll": "管理所有整合",
+  "comingSoon": "即將推出",
+  "cancel": "取消",
+
+  "slack": {
+    "title": "Slack",
+    "description": "傳送通知至 Slack 頻道",
+    "notConnected": "請先在 [設定] 中連線至 Slack 工作區",
+    "quickAddTitle": "將 Slack 加入專案",
+    "currentProject": "專案",
+    "selectChannel": "Slack 頻道",
+    "selectChannelPlaceholder": "請選擇 Slack 頻道…",
+    "selectNotifications": "通知類型",
+    "selectNotificationsPlaceholder": "請選擇通知類型…",
+    "refresh": "重新整理",
+    "addButton": "新增整合",
+    "inviteBotTip": "提醒：請務必先邀請 @Worklenz 機器人加入 Slack 頻道！"
+  },
+
+  "teams": {
+    "title": "Microsoft Teams",
+    "description": "傳送通知至 Teams 頻道"
+  },
+
+  "github": {
+    "title": "GitHub",
+    "description": "將任務與 GitHub 議題同步"
+  },
+
+  "notificationTypes": {
+    "taskCreated": "任務已建立",
+    "taskAssigned": "任務已指派",
+    "statusChanged": "狀態已變更",
+    "taskCompleted": "任務已完成",
+    "commentAdded": "已新增留言",
+    "dueDateChanged": "到期日已變更"
+  },
+
+  "validation": {
+    "selectChannel": "請選擇 Slack 頻道",
+    "selectNotifications": "請至少選擇一種通知類型"
+  },
+
+  "messages": {
+    "integrationAdded": "Slack 整合新增成功！",
+    "channelsRefreshed": "頻道重新整理成功"
+  },
+
+  "errors": {
+    "loadChannelsFailed": "無法載入頻道",
+    "refreshChannelsFailed": "無法重新整理頻道",
+    "addIntegrationFailed": "無法新增整合"
+  }
+}

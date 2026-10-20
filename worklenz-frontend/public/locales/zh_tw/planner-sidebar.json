@@ -1,0 +1,10 @@
+{
+  "getMobileApp": "取得行動應用程式",
+  "helpSupport": "說明與支援",
+  "schedule": "排程",
+  "settingsTooltip": "設定",
+  "timeline": "時間軸",
+  "trialDaysLeft": "試用期剩餘 {{count}} 天",
+  "upgradeToPro": "升級至專業方案",
+  "workload": "工作負載"
+}

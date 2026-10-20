@@ -1,0 +1,22 @@
+{
+  "title": "管理部門",
+  "nameColumn": "名稱",
+  "search": "搜尋部門",
+  "createDepartmentButton": "建立部門",
+  "createDepartmentDrawerTitle": "建立部門",
+  "updateDepartmentDrawerTitle": "更新部門",
+  "nameLabel": "名稱",
+  "namePlaceholder": "請輸入部門名稱",
+  "nameRequiredError": "請輸入部門名稱",
+  "createButton": "建立",
+  "updateButton": "更新",
+  "editTooltip": "編輯",
+  "deleteTooltip": "刪除",
+  "deleteConfirmationTitle": "確定要刪除此部門嗎？",
+  "deleteConfirmationOk": "刪除",
+  "deleteConfirmationCancel": "取消",
+  "fetchDepartmentErrorMessage": "無法取得部門資料",
+  "createDepartmentErrorMessage": "無法建立部門",
+  "updateDepartmentErrorMessage": "無法更新部門",
+  "pinTooltip": "釘選至導覽列"
+}

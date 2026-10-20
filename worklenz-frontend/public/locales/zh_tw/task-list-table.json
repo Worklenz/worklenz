@@ -1,0 +1,231 @@
+{
+  "keyColumn": "編號",
+  "taskColumn": "任務",
+  "descriptionColumn": "描述",
+  "descriptionSaveOffline": "目前離線，尚未儲存描述。請重新連線後再試一次。",
+  "descriptionSaveTimeout": "儲存描述逾時，請再試一次。",
+  "descriptionSaveFailed": "無法儲存描述，請再試一次。",
+  "progressColumn": "進度",
+  "membersColumn": "成員",
+  "assigneesColumn": "指派對象",
+  "labelsColumn": "標籤",
+  "phasesColumn": "階段",
+  "phaseColumn": "階段",
+  "statusColumn": "狀態",
+  "priorityColumn": "優先順序",
+  "timeTrackingColumn": "時間",
+  "timetrackingColumn": "時間",
+  "estimationColumn": "估計",
+  "startDateColumn": "開始日期",
+  "startdateColumn": "開始日期",
+  "dueDateColumn": "到期日",
+  "duedateColumn": "到期日",
+  "completedDateColumn": "完成日期",
+  "completeddateColumn": "完成日期",
+  "createdDateColumn": "建立日期",
+  "createddateColumn": "建立日期",
+  "lastUpdatedColumn": "最後更新",
+  "lastupdatedColumn": "最後更新",
+  "reporterColumn": "回報者",
+  "moveColumnHandle": "移動欄位",
+  "dueTimeColumn": "到期時間",
+  "activeParentBadge": "未封存母任務",
+  "activeParentTooltip": "母任務尚未封存",
+  "todoSelectorText": "待辦",
+  "doingSelectorText": "進行中",
+  "doneSelectorText": "已完成",
+
+  "lowSelectorText": "低",
+  "mediumSelectorText": "中",
+  "highSelectorText": "高",
+
+  "selectText": "選擇",
+  "labelsSelectorInputTip": "按 Enter 鍵即可建立！",
+
+  "addTaskText": "新增任務",
+  "addSubTaskText": "新增子任務",
+  "addTaskInputPlaceholder": "輸入任務名稱並按 Enter 鍵",
+  "addSubTaskInputPlaceholder": "請輸入子任務名稱，並按 Enter 儲存",
+  "noTasksInGroup": "此群組中沒有任務",
+  "dropTaskHere": "將任務拖放到這裡",
+
+  "openButton": "開啟",
+  "okButton": "確定",
+
+  "noLabelsFound": "找不到任何標籤",
+  "searchInputPlaceholder": "搜尋或建立",
+  "assigneeSelectorInviteButton": "以電子郵件邀請新成員",
+  "labelInputPlaceholder": "搜尋或建立",
+  "searchLabelsPlaceholder": "搜尋標籤…",
+  "createLabelButton": "建立「{{name}}」",
+  "manageLabelsPath": "設定 → 標籤",
+
+  "pendingInvitation": "待接受邀請",
+
+  "contextMenu": {
+    "duplicateTask": "複製任務",
+    "assignToMe": "指派給我",
+    "copyLink": "複製任務連結",
+    "linkCopied": "連結已複製到剪貼簿",
+    "linkCopyFailed": "複製連結失敗",
+    "moveTo": "移動至",
+    "unarchive": "解除封存",
+    "archive": "封存",
+    "convertToSubTask": "轉換為子任務",
+    "convertToTask": "轉換為任務",
+    "delete": "刪除",
+    "searchByNameInputPlaceholder": "依名稱搜尋",
+    "deleteConfirmTitle": "刪除任務",
+    "deleteConfirmMessage": "確定要刪除此任務嗎？此操作無法復原。",
+    "deleteSubtaskConfirmMessage": "確定要刪除此子任務嗎？此操作無法復原。",
+    "deleteConfirmOk": "刪除",
+    "deleteConfirmCancel": "取消"
+  },
+  "setDueDate": "設定到期日",
+  "setStartDate": "設定開始日期",
+  "clearDueDate": "清除到期日",
+  "clearStartDate": "清除開始日期",
+  "dueDatePlaceholder": "到期日",
+  "startDatePlaceholder": "開始日期",
+
+  "exampleTasks": {
+    "prefix": "例如：",
+    "task1": "定義專案範圍與目標",
+    "task2": "與利害關係人一同審查並達成共識",
+    "task3": "安排啟動會議"
+  },
+
+  "emptyStates": {
+    "noTaskGroups": "找不到任何任務群組",
+    "noTaskGroupsDescription": "當任務被建立或套用篩選條件時，任務會顯示在這裡。",
+    "errorPrefix": "錯誤：",
+    "dragTaskFallback": "任務"
+  },
+
+  "customColumns": {
+    "addCustomColumn": "新增自訂欄位",
+    "customColumnHeader": "自訂欄位",
+    "customColumnSettings": "自訂欄位設定",
+    "noCustomValue": "無值",
+    "peopleField": "人員欄位",
+    "noDate": "無日期",
+    "unsupportedField": "不支援的欄位類型",
+    "datePlaceholder": "設定日期",
+    "numberPlaceholder": "0",
+    "percentagePlaceholder": "0%",
+    "selectOption": "選擇選項",
+    "noOptionsAvailable": "無可用選項",
+    "updating": "正在更新…",
+    "peopleDropdown": {
+      "searchMembers": "搜尋成員…",
+      "pending": "待處理",
+      "loadingMembers": "正在載入成員…",
+      "noMembersFound": "找不到成員",
+      "inviteMember": "邀請成員"
+    },
+
+    "limitPopover": {
+      "title": "已達自訂欄位上限",
+      "body": "已用完方案提供的 {{limit}} 個自訂欄位。升級即可在專案中新增不限數量的自訂欄位。",
+      "appSumoTitle": "需要升級方案",
+      "appSumoBody": "如需新增超出目前方案上限的自訂欄位，須升級至商務方案。",
+      "cta": "立即升級"
+    },
+
+    "modal": {
+      "addFieldTitle": "新增欄位",
+      "editFieldTitle": "編輯欄位",
+      "fieldTitle": "欄位標題",
+      "fieldTitleRequired": "欄位標題為必填",
+      "columnTitlePlaceholder": "欄位標題",
+      "type": "類型",
+      "deleteConfirmTitle": "確定要刪除此自訂欄位嗎？",
+      "deleteConfirmDescription": "此操作無法復原，與此欄位相關的所有資料將被永久刪除。",
+      "deleteButton": "刪除",
+      "cancelButton": "取消",
+      "createButton": "建立",
+      "updateButton": "更新",
+      "createSuccessMessage": "自訂欄位建立成功",
+      "updateSuccessMessage": "自訂欄位更新成功",
+      "deleteSuccessMessage": "自訂欄位刪除成功",
+      "deleteErrorMessage": "刪除自訂欄位失敗",
+      "deleteErrorMissingId": "無法刪除欄位：缺少 UUID",
+      "hideFromTaskList": "從任務清單中隱藏",
+      "showInTaskList": "在任務清單中顯示",
+      "createErrorMessage": "建立自訂欄位失敗",
+      "updateErrorMessage": "更新自訂欄位失敗",
+      "typeCannotBeChanged": "建立後無法變更欄位類型。"
+    },
+
+    "fieldTypes": {
+      "people": "人員",
+      "text": "文字",
+      "number": "數字",
+      "date": "日期",
+      "selection": "選擇",
+      "checkbox": "核取方塊",
+      "labels": "標籤",
+      "key": "編號",
+      "formula": "公式"
+    },
+
+    "fieldTypeForms": {
+      "numberType": "數字類型",
+      "numberTypeOptions": {
+        "unformatted": "不套用格式",
+        "percentage": "百分比",
+        "withLabel": "附標籤",
+        "formatted": "套用格式"
+      },
+      "decimals": "小數位數",
+      "preview": "預覽",
+      "label": "標籤",
+      "position": "位置",
+      "left": "左側",
+      "right": "右側",
+      "firstColumn": "第一個欄位",
+      "secondColumn": "第二個欄位",
+      "expression": "運算式",
+      "selectFirstColumn": "選擇第一個欄位",
+      "selectSecondColumn": "選擇第二個欄位",
+      "expressionOptions": {
+        "add": "+ 加",
+        "subtract": "- 減",
+        "divide": "/ 除",
+        "multiply": "x 乘"
+      },
+      "selections": "選項",
+      "addSelection": "+ 新增選項",
+      "labels": "標籤",
+      "addLabel": "+ 新增標籤",
+      "keyLabelPlaceholder": "例如：MK"
+    }
+  },
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} 個子任務",
+      "subtasks_plural": "{{count}} 個子任務",
+      "comments": "{{count}} 則留言",
+      "comments_plural": "{{count}} 則留言",
+      "attachments": "{{count}} 個附件",
+      "attachments_plural": "{{count}} 個附件",
+      "subscribers": "此任務有訂閱者",
+      "dependencies": "此任務有相依任務",
+      "recurring": "週期性任務"
+    }
+  },
+
+  "timer": {
+    "conflictTitle": "計時器正在執行中",
+    "conflictMessage": "任務「{{taskName}}」（專案「{{projectName}}」）有一個正在執行的計時器。是否要停止該計時器並為此任務啟動新的計時器？",
+    "stopAndStart": "停止並啟動新計時器"
+  },
+
+  "errors": {
+    "taskNotCompleted": "任務尚未完成",
+    "completeTaskDependencies": "請先完成相依任務再繼續",
+    "incompleteDependencies": "相依任務尚未完成！",
+    "someDependenciesNotCompleted": "部分任務未更新，請確認所有相依任務皆已完成再繼續。"
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "task": {
+    "open": "開啟",
+    "clickViewPhaseDetails": "點選以檢視階段詳細資訊",
+    "clickNavigateTimeline": "點選以前往時間軸中的任務",
+    "clickTimelineSetDates": "點選時間軸以設定此任務的日期",
+    "clickTimelineAddDates": "點選時間軸以新增日期",
+    "setTaskDate": "設定任務日期",
+    "setTaskDateHint": "點選時間軸，為此任務設定 {{duration}} 的日期範圍",
+    "addTask": "新增任務",
+    "resizeStartDate": "調整開始日期",
+    "resizeEndDate": "調整結束日期",
+    "dragToMove": "拖曳以移動任務",
+    "addTaskFor": "新增 {{date}} 的任務",
+    "enterTaskName": "請輸入任務名稱…",
+    "pressEnterToCreate": "按 Enter 建立，按 Esc 取消",
+    "phaseTitle": "階段：{{name}}－{{startDate}} 至 {{endDate}}",
+    "taskTitle": "{{name}}－{{startDate}} 至 {{endDate}}",
+    "datesUpdatedSuccessfully": "已更新任務日期",
+    "failedToUpdateDates": "無法更新任務日期",
+    "addSubtask": "新增子任務",
+    "addTaskInputPlaceholder": "輸入任務名稱並按 Enter 儲存",
+    "writeTaskName": "請輸入任務名稱",
+    "writeSubtaskName": "請輸入子任務名稱",
+    "expandSubtasks": "展開子任務",
+    "collapseSubtasks": "收合子任務",
+    "finishToStartDependency": "完成後才能開始的相依關係",
+    "startToFinishDependency": "開始後才能完成的相依關係",
+    "dependencyType": "相依關係類型",
+    "removeDependency": "移除",
+    "removeDependencyTooltip": "移除相依關係",
+    "circularDependencyError": "此操作將造成循環相依。",
+    "dependencyCreatedSuccessfully": "已建立相依關係。",
+    "dependencyRemovedSuccessfully": "已移除相依關係。",
+    "failedToCreateDependency": "無法建立相依關係。",
+    "failedToRemoveDependency": "無法移除相依關係。",
+    "taskAddedToRoadmap": "已將任務加入路線圖，排程為接下來 5 天。",
+    "failedToAddTaskToRoadmap": "無法將任務加入路線圖。",
+    "unscheduledTaskNotFound": "找不到所選任務。"
+  },
+  "common": {
+    "noStart": "無開始日期",
+    "noEnd": "無結束日期"
+  },
+  "sections": {
+    "unmapped": "未對應"
+  },
+  "grouping": {
+    "phase": "階段",
+    "status": "狀態",
+    "priority": "優先順序"
+  },
+  "toolbar": {
+    "zoomIn": "放大",
+    "zoomOut": "縮小",
+    "expandAll": "全部展開",
+    "collapseAll": "全部收合",
+    "today": "今天",
+    "fullscreen": "全螢幕",
+    "noDate": "無日期",
+    "viewBy": "檢視單位",
+    "sortBy": "排序方式",
+    "sortManual": "手動",
+    "sortChronological": "依時間順序"
+  },
+  "viewMode": {
+    "day": "日",
+    "week": "週",
+    "month": "月",
+    "quarter": "季",
+    "year": "年"
+  },
+  "businessPlan": {
+    "phaseCreationRestricted": "僅 Business 方案使用者可建立階段",
+    "taskCreationRestricted": "僅 Business 方案使用者可建立任務",
+    "phaseEditingRestricted": "僅 Business 方案使用者可編輯階段",
+    "taskEditingRestricted": "僅 Business 方案使用者可編輯任務",
+    "phaseReorderingRestricted": "僅 Business 方案使用者可重新排列階段"
+  },
+  "list": {
+    "taskNameColumn": "任務名稱",
+    "addNewPhase": "新增階段",
+    "addNewStatus": "新增狀態",
+    "noTasksAvailable": "沒有任務",
+    "setDates": "設定日期",
+    "clickToEditDates": "點選以編輯日期"
+  },
+  "roadmap": {
+    "phasesAndTasks": "階段與任務",
+    "tasksCount": "個任務",
+    "complete": "已完成",
+    "dragDisabledInChronological": "切換至手動排序，即可拖曳以重新排列階段"
+  },
+  "unscheduledTasksTitle": "未排程任務",
+  "noUnscheduledTasks": "沒有未排程任務。"
+}

@@ -3,6 +3,11 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import HttpApi from 'i18next-http-backend';
 
+const normalizeDetectedLanguage = (language: string): string => {
+  const browserLocale = language.toLowerCase().replace(/_/g, '-');
+  return ['zh-tw', 'zh-hant', 'zh-hant-tw'].includes(browserLocale) ? 'zh_tw' : language;
+};
+
 i18n
   .use(HttpApi)
   .use(LanguageDetector)
@@ -19,6 +24,7 @@ i18n
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
+      convertDetectedLanguage: normalizeDetectedLanguage,
     },
 
     debug: false,
