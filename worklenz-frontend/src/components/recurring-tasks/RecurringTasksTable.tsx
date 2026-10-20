@@ -14,6 +14,7 @@ import {
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import AvatarGroup from '@/components/AvatarGroup';
@@ -238,10 +239,10 @@ export const RecurringTasksTable: React.FC<RecurringTasksTableProps> = ({
             }}
           >
             <Typography.Text
-              ellipsis={{ tooltip: record.name }}
+              ellipsis={{ tooltip: decodeHtmlEntities(record.name) }}
               style={{ flex: 1, minWidth: 0, marginRight: 8 }}
             >
-              {record.name}
+              {decodeHtmlEntities(record.name)}
             </Typography.Text>
             <div className="row-action-button">
               <Tooltip title="Open the task" placement="right">
@@ -285,8 +286,8 @@ export const RecurringTasksTable: React.FC<RecurringTasksTableProps> = ({
             }
           >
             <Badge color={record.project_color || token.colorPrimary} />
-            <Typography.Text ellipsis={{ tooltip: record.project_name }} style={{ maxWidth: 130 }}>
-              {record.project_name}
+            <Typography.Text ellipsis={{ tooltip: decodeHtmlEntities(record.project_name) }} style={{ maxWidth: 130 }}>
+              {decodeHtmlEntities(record.project_name)}
             </Typography.Text>
           </span>
         ),

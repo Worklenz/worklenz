@@ -20,6 +20,7 @@ import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { useTooltipTheme } from '@/hooks/useTooltipTheme';
 import { useTranslation } from 'react-i18next';
 import '@/features/navbar/navbar-icon-hover.css';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { useToken } = theme;
 
@@ -97,7 +98,7 @@ const GlobalSearchButton: React.FC = () => {
             next.push({
               type: 'Task',
               id: t.id,
-              name: t.name,
+              name: decodeHtmlEntities(t.name),
               sub: t.project_name,
               projectId: t.project_id,
             });
@@ -212,10 +213,12 @@ const GlobalSearchButton: React.FC = () => {
                 <span style={{ color: token.colorTextSecondary }}>{TYPE_ICON[r.type]}</span>
                 <span style={{ fontSize: 13 }}>
                   <span style={{ opacity: 0.45, fontSize: 11 }}>{r.type} · </span>
-                  {r.name}
+                  {r.type === 'Project' ? decodeHtmlEntities(r.name) : r.name}
                 </span>
                 {r.sub && (
-                  <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.45 }}>{r.sub}</span>
+                  <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.45 }}>
+                    {r.type === 'Task' ? decodeHtmlEntities(r.sub) : r.sub}
+                  </span>
                 )}
               </div>
             ))}

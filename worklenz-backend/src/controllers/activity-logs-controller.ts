@@ -17,7 +17,20 @@ export default class ActivitylogsController extends WorklenzControllerBase {
     const result = await db.query(q, [id]);
     const [data] = result.rows;
 
+    // Automated status changes (e.g. from GitHub) carry their source in next_string.
+    const sources = await db.query(
+      `SELECT created_at, next_string FROM task_activity_logs
+       WHERE task_id = $1 AND attribute_type = 'status' AND next_string IS NOT NULL`,
+      [id],
+    );
+    const sourceByTime = new Map<number, string>(
+      sources.rows.map(r => [new Date(r.created_at).getTime(), r.next_string]),
+    );
+
     for (const log of data.activity_logs.logs) {
+      if (log.attribute_type === "status") {
+        log.source = sourceByTime.get(new Date(log.created_at).getTime()) ?? null;
+      }
       if (log.attribute_type === "estimation") {
         log.previous = formatDuration(moment.duration(log.previous, "minutes"));
         log.current = formatDuration(moment.duration(log.current, "minutes"));

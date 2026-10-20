@@ -17,6 +17,7 @@ import { Avatar, Button, Dropdown, Empty, Flex, Input, Segmented, Tag, Typograph
 import { formatPortalDateTime } from '@/components/client-portal/v2';
 import type { ClientThreadView, ThreadContextType } from '@/types/client-portal/v2';
 import { PageHeader, useContainerWidth } from './PreviewShared';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 type InboxFilter = 'all' | 'unread';
 type TypeFilter = ThreadContextType | 'all';
@@ -131,14 +132,14 @@ export const PreviewDiscussions = ({ threads, canComment }: PreviewDiscussionsPr
           aria-label={thread.unread ? t('discussions.unread', { defaultValue: 'Unread' }) : undefined}
           style={{ width: 8, height: 8, borderRadius: '50%', marginTop: 11, flexShrink: 0, background: thread.unread ? token.colorError : 'transparent' }}
         />
-        <ThreadAvatar name={thread.project_name} />
+        <ThreadAvatar name={decodeHtmlEntities(thread.project_name)} />
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'block', fontWeight: thread.unread ? 700 : 600, fontSize: 13, overflowWrap: 'anywhere' }}>
             {thread.context.label}
           </span>
           <span style={{ display: 'block', fontSize: 11.5, color: token.colorTextSecondary }}>
             {thread.ref_no ? `${thread.ref_no} · ` : ''}
-            {thread.project_name}
+            {decodeHtmlEntities(thread.project_name)}
           </span>
           <span style={{ display: 'block', fontSize: 12, color: token.colorTextTertiary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {preview}
@@ -287,7 +288,7 @@ const ThreadPane = ({ thread, language, canComment, onBack }: ThreadPaneProps) =
           </div>
           <div style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 2 }}>
             {thread.ref_no ? `${thread.ref_no} · ` : ''}
-            {thread.project_name}
+            {decodeHtmlEntities(thread.project_name)}
           </div>
         </div>
       </Flex>

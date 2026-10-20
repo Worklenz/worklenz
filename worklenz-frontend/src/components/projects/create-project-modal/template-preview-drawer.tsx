@@ -18,6 +18,7 @@ import { projectTemplatesApiService } from '@/api/project-templates/project-temp
 import { IProjectTemplate } from '@/types/project-templates/project-templates.types';
 import { getTemplateIcon } from './template-icon';
 import logger from '@/utils/errorLogger';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -116,7 +117,7 @@ export const TemplatePreviewDrawer = ({
     <Text type="secondary" style={{ fontSize: 13 }}>{msg}</Text>
   );
 
-  const displayName = template?.name ?? templateName ?? '';
+  const displayName = decodeHtmlEntities(template?.name ?? templateName ?? '');
   const taskCount   = template?.tasks?.length ?? 0;
   const phaseCount  = template?.phases?.length ?? 0;
   const labelCount  = template?.labels?.length ?? 0;
@@ -226,7 +227,7 @@ export const TemplatePreviewDrawer = ({
                   <Image
                     preview={false}
                     src={template.image_url}
-                    alt={template.name}
+                    alt={decodeHtmlEntities(template.name)}
                     style={{ width: '100%', borderRadius: 8 }}
                   />
                 </div>
@@ -246,7 +247,7 @@ export const TemplatePreviewDrawer = ({
                   {template.phases?.length
                     ? template.phases.map(p => (
                         <Tag key={p.name} color={p.color_code} style={tagStyle(p.color_code)}>
-                          {p.name}
+                          {decodeHtmlEntities(p.name)}
                         </Tag>
                       ))
                     : noValue(t('noPhases', { defaultValue: 'No phases' }))}
@@ -257,7 +258,7 @@ export const TemplatePreviewDrawer = ({
                   {template.status?.length
                     ? template.status.map(s => (
                         <Tag key={s.name} color={s.color_code} style={tagStyle(s.color_code)}>
-                          {s.name}
+                          {decodeHtmlEntities(s.name)}
                         </Tag>
                       ))
                     : noValue(t('noStatuses', { defaultValue: 'No statuses' }))}
@@ -268,7 +269,7 @@ export const TemplatePreviewDrawer = ({
                   {template.priorities?.length
                     ? template.priorities.map(p => (
                         <Tag key={p.name} color={p.color_code} style={tagStyle(p.color_code)}>
-                          {p.name}
+                          {decodeHtmlEntities(p.name)}
                         </Tag>
                       ))
                     : noValue(t('noPriorities', { defaultValue: 'No priorities' }))}
@@ -279,7 +280,7 @@ export const TemplatePreviewDrawer = ({
                   {template.labels?.length
                     ? template.labels.map(l => (
                         <Tag key={l.name} color={l.color_code} style={tagStyle(l.color_code)}>
-                          {l.name}
+                          {decodeHtmlEntities(l.name)}
                         </Tag>
                       ))
                     : noValue(t('noLabels', { defaultValue: 'No labels' }))}
@@ -300,7 +301,7 @@ export const TemplatePreviewDrawer = ({
                           }}
                         >
                           <Text style={{ fontSize: 13, color: token.colorText }}>
-                            {item.name}
+                            {decodeHtmlEntities(item.name)}
                           </Text>
                         </List.Item>
                       )}

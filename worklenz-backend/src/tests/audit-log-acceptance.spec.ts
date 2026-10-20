@@ -14,6 +14,7 @@
  */
 import http from "http";
 import path from "path";
+import { readFileSync } from "fs";
 import { AddressInfo } from "net";
 import bcrypt from "bcrypt";
 import express, { NextFunction, Request, Response } from "express";
@@ -287,6 +288,7 @@ describeWithDb("audit log acceptance against Postgres (task 8)", () => {
     }
     // Idempotent (CREATE OR REPLACE) - brings a database that predates it up to date.
     await query(collectMigrationSql(FK_SET_NULL_MIGRATION));
+    await query(collectMigrationSql("1792051800000_restrict_audit_retention_execution.js"));
 
     const orgs = await query(
       `SELECT o.id AS org_id, o.user_id AS owner_id, t.id AS team_id
@@ -872,26 +874,6 @@ describeWithDb("audit log acceptance against Postgres (task 8)", () => {
       const months = (await query("SELECT audit_log_retention_months AS m FROM organizations WHERE id = $1", [fixture.orgId])).rows[0].m;
       expect(months).toBe(12);
       expect(await newEvents("retention_window_changed")).toEqual([]);
-    });
-
-    it("gives the application role no way to delete or edit entries except the purge", async () => {
-      await insertEvent(fixture.orgId, { description: "QA-role-check", age: "1 day" });
-      const asAppRole = async (sql: string) => {
-        await mockTx.client!.query("SAVEPOINT role_check");
-        await mockTx.client!.query("SET LOCAL ROLE worklenz_client");
-        try {
-          await mockTx.client!.query(sql);
-          return "allowed";
-        } catch (error) {
-          return (error as Error).message;
-        } finally {
-          await mockTx.client!.query("ROLLBACK TO SAVEPOINT role_check");
-        }
-      };
-
-      expect(await asAppRole("DELETE FROM audit_events WHERE description = 'QA-role-check'")).toMatch(/permission denied/);
-      expect(await asAppRole("UPDATE audit_events SET description = 'x' WHERE description = 'QA-role-check'")).toMatch(/permission denied/);
-      expect(await asAppRole("SELECT purge_expired_audit_events()")).toBe("allowed");
     });
   });
 

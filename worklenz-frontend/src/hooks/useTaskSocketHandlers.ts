@@ -1385,6 +1385,7 @@ export const useTaskSocketHandlers = () => {
             taskId,
             comment: latest
               ? {
+                  id: latest.id,
                   text: latest.content ?? '',
                   at: latest.created_at ?? null,
                   author: latest.member_name ?? null,

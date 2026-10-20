@@ -23,6 +23,7 @@ import {
   ITaskInProject,
 } from '@/api/tasks/task-time-logs.api.service';
 import { projectsApiService } from '@/api/projects/projects.api.service';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { TextArea } = Input;
 
@@ -144,12 +145,15 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     () =>
       projects.map(p => ({
         value: p.id,
-        label: p.name,
+        label: decodeHtmlEntities(p.name),
       })),
     [projects]
   );
 
-  const taskOptions = tasks.map(task => ({ value: task.id, label: task.name }));
+  const taskOptions = tasks.map(task => ({
+    value: task.id,
+    label: decodeHtmlEntities(task.name),
+  }));
 
   const handleProjectChange = (projectId: string | undefined) => {
     const found = projects.find(p => p.id === projectId) || null;

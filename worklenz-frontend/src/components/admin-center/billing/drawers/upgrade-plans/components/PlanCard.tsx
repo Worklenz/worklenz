@@ -65,14 +65,14 @@ export const PlanCard: React.FC<PlanCardProps> = ({
     <div className="upgrade-plan-card__price">{priceDisplay}</div>
 
     <div className="upgrade-plan-card__action">
-      {footerNote && (
-        <Typography.Text
-          type="secondary"
-          style={{ display: 'block', textAlign: 'center', marginBottom: 8, fontSize: '12px' }}
-        >
-          {footerNote}
-        </Typography.Text>
-      )}
+      {/* Always reserve the note slot so the action buttons line up across cards */}
+      <Typography.Text
+        type="secondary"
+        className="upgrade-plan-card__note"
+        style={{ display: 'block', textAlign: 'center', marginBottom: 8, fontSize: '12px' }}
+      >
+        {footerNote}
+      </Typography.Text>
       <Button
         type="primary"
         block

@@ -5,7 +5,7 @@ import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import { getTeamMemberCount } from "../shared/paddle-utils";
+import { getActiveTeamMemberCount, getCurrentSubscriptionRef, getTeamMemberCount } from "../shared/paddle-utils";
 import { generatePayLinkRequest, updateUsers } from "../shared/paddle-requests";
 
 import axios from "axios";
@@ -35,28 +35,92 @@ export default class BillingController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async upgradeToPaidPlan(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { plan, seatCount } = req.query;
+    const { plan, seatCount, replaceLegacy } = req.query;
 
-    const teamMemberData = await getTeamMemberCount(req.user?.owner_id ?? "");
+    const ownerId = req.user?.owner_id ?? "";
+    const teamMemberData = await getTeamMemberCount(ownerId);
     if (seatCount) {
       teamMemberData.user_count = parseInt(seatCount as string, 10);
     }
-    const axiosResponse = await generatePayLinkRequest(teamMemberData, plan as string, req.user?.owner_id, req.user?.id);
+    // Never sell fewer seats than the team already uses (active, non-guest members), whatever the
+    // client sent. Buying more than that is allowed: the extra seats are for members added later.
+    const activeMembers = (await getActiveTeamMemberCount(ownerId))?.user_count ?? 0;
+    teamMemberData.user_count = Math.max(Number(teamMemberData.user_count) || 0, activeMembers, 1);
+    const axiosResponse = await generatePayLinkRequest(
+      teamMemberData,
+      plan as string,
+      req.user?.owner_id,
+      req.user?.id,
+      replaceLegacy === "true"
+    );
 
     return res.status(200).send(new ServerResponse(true, axiosResponse.body));
+  }
+
+  /**
+   * Per-user plans sold on Paddle Billing. Empty until the plans are activated, which is what
+   * switches the upgrade modal over from the legacy plans. AppSumo Expansion plans are only offered
+   * to organizations that hold a redeemed AppSumo code.
+   */
+  @HandleExceptions()
+  public static async getPerUserPlans(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const ownerId = req.user?.owner_id ?? "";
+
+    const [plansResult, ownerResult] = await Promise.all([
+      db.query(
+        `SELECT id, name, plan_key, billing_type, recurring_price::NUMERIC AS price
+           FROM licensing_pricing_plans
+          WHERE billing_provider = 'paddle_billing' AND active IS TRUE AND is_legacy IS FALSE
+            AND paddle_price_id IS NOT NULL
+          ORDER BY plan_key, billing_type;`
+      ),
+      db.query(
+        `SELECT EXISTS(SELECT 1 FROM licensing_coupon_codes
+                        WHERE redeemed_by = $1 AND is_redeemed = TRUE AND is_refunded = FALSE) AS has_ltd_codes,
+                EXISTS(SELECT 1 FROM licensing_user_subscriptions
+                        WHERE user_id = $1 AND active IS TRUE AND COALESCE(status, '') <> 'deleted'
+                          AND billing_provider = 'paddle_classic' AND subscription_id IS NOT NULL) AS has_legacy_subscription,
+                EXISTS(SELECT 1 FROM licensing_user_subscriptions
+                        WHERE user_id = $1 AND active IS TRUE AND COALESCE(status, '') <> 'deleted'
+                          AND billing_provider = 'paddle_billing') AS has_billing_subscription;`,
+        [ownerId]
+      ),
+    ]);
+
+    const owner = ownerResult.rows[0] ?? {};
+    const plans = plansResult.rows
+      .filter((plan) => plan.plan_key !== "business_appsumo_expansion" || owner.has_ltd_codes === true)
+      .map((plan) => ({ ...plan, price: Number(plan.price) }));
+
+    return res.status(200).send(
+      new ServerResponse(true, {
+        plans,
+        has_ltd_codes: owner.has_ltd_codes === true,
+        has_legacy_subscription: owner.has_legacy_subscription === true,
+        has_billing_subscription: owner.has_billing_subscription === true,
+      })
+    );
   }
 
   @HandleExceptions()
   public static async addMoreSeats(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { seatCount } = req.body;
 
-    const q = `SELECT subscription_id
-    FROM licensing_user_subscriptions lus
-    WHERE user_id = $1;`;
-    const result = await db.query(q, [req.user?.owner_id]);
-    const [data] = result.rows;
+    const subscriptionRef = await getCurrentSubscriptionRef(req.user?.owner_id ?? "");
+    if (!subscriptionRef) {
+      return res.status(200).send(new ServerResponse(false, null, "Please check your subscription."));
+    }
 
-    const response = await updateUsers(data.subscription_id, seatCount);
+    // Seats can never be set below the number of members already using them.
+    const activeMembers = (await getActiveTeamMemberCount(req.user?.owner_id ?? ""))?.user_count ?? 0;
+    const seats = Math.floor(Number(seatCount));
+    if (!Number.isSafeInteger(seats) || seats < Math.max(activeMembers, 1)) {
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, `Seats cannot be fewer than your ${activeMembers} active members.`));
+    }
+
+    const response = await updateUsers(subscriptionRef, seats);
 
     if (!response.body.subscription_id) {
       return res.status(200).send(new ServerResponse(false, null, response.message || "Please check your subscription."));

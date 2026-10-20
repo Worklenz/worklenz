@@ -33,6 +33,7 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import logger from '@/utils/errorLogger';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_settings_clients_visit } from '@/shared/worklenz-analytics-events';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const ClientsSettings: React.FC = () => {
   const { t } = useTranslation('settings/clients');
@@ -95,7 +96,9 @@ const ClientsSettings: React.FC = () => {
         onCell: record => ({
           onClick: () => handleClientSelect(record),
         }),
-        render: (record: IClientViewModel) => <Typography.Text>{record.name}</Typography.Text>,
+        render: (record: IClientViewModel) => (
+          <Typography.Text>{decodeHtmlEntities(record.name)}</Typography.Text>
+        ),
       },
       {
         key: 'project',

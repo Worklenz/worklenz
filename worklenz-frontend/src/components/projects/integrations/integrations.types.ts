@@ -36,6 +36,8 @@ export interface IntegrationItemProps {
   badge?: number;
   channels?: string[];
   comingSoon?: boolean;
+  /** Short label for an integration that exists but does not apply here (e.g. "Software projects"). */
+  note?: string;
   /** Shown with a "Business" lock badge; still clickable (onClick should prompt an upgrade). */
   locked?: boolean;
   onClick?: () => void;

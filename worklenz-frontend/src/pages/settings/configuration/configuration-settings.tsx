@@ -17,7 +17,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchOrgConfig, updateOrgConfig } from '@/features/org-config/org-config.slice';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { canUseFeature, hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 const ConfigurationSettings = () => {
@@ -27,7 +27,9 @@ const ConfigurationSettings = () => {
   const auth = useAuthService();
   const session = auth.getCurrentSession();
   const isOwnerOrAdmin = auth.isOwnerOrAdmin();
+  // Time-log backdating has no registry feature yet, so it keeps the Business check.
   const hasBusinessAccess = hasBusinessFeatureAccess(session);
+  const canRestrictTaskCreation = canUseFeature(session, 'restrict_task_creation');
 
   const orgConfig = useAppSelector(state => state.orgConfigReducer);
   const [form] = Form.useForm();
@@ -46,7 +48,7 @@ const ConfigurationSettings = () => {
   }, [form, orgConfig.restrict_task_creation, orgConfig.timelog_backdate_limit_days]);
 
   const handleRestrictTaskCreationChange = async (checked: boolean) => {
-    if (!hasBusinessAccess) return;
+    if (!canRestrictTaskCreation) return;
     await dispatch(updateOrgConfig({ restrict_task_creation: checked }));
   };
 
@@ -68,7 +70,7 @@ const ConfigurationSettings = () => {
     dispatch(toggleUpgradeModal());
   };
 
-  const businessPlanAlert = !hasBusinessAccess && (
+  const renderBusinessPlanAlert = (locked: boolean) => locked && (
     <Alert
       type="info"
       showIcon
@@ -114,7 +116,7 @@ const ConfigurationSettings = () => {
           </Typography.Text>
         }
       >
-        {businessPlanAlert}
+        {renderBusinessPlanAlert(!canRestrictTaskCreation)}
 
         <Form form={form} layout="vertical">
           <Form.Item
@@ -145,7 +147,7 @@ const ConfigurationSettings = () => {
             }
           >
             <Switch
-              disabled={!isOwnerOrAdmin || !hasBusinessAccess}
+              disabled={!isOwnerOrAdmin || !canRestrictTaskCreation}
               loading={orgConfig.isLoading}
               onChange={handleRestrictTaskCreationChange}
               aria-label={t('restrictTaskCreation', {
@@ -170,7 +172,7 @@ const ConfigurationSettings = () => {
           </Typography.Text>
         }
       >
-        {businessPlanAlert}
+        {renderBusinessPlanAlert(!hasBusinessAccess)}
 
         <Form form={form} layout="vertical">
           <Form.Item

@@ -94,21 +94,9 @@ exports.up = (pgm) => {
     -- --------------------------------------------------------------------------------------
     -- 1.2 Append-only enforcement
     -- --------------------------------------------------------------------------------------
-    -- database/sql/5_database_user.sql blanket-grants INSERT/SELECT/UPDATE/DELETE on ALL
-    -- TABLES to worklenz_client (the app runtime role) and that bootstrap already carries
-    -- precedent for narrowing specific tables with a REVOKE + targeted GRANT (see
-    -- task_priorities, timezones, etc. in that same file). This migration applies that same
-    -- override to audit_events, and - because migrate:up always runs after the sql/ bootstrap
-    -- for both fresh installs and upgrades - this REVOKE is guaranteed to land after, and
-    -- therefore win over, that blanket grant in every environment.
-    REVOKE UPDATE, DELETE ON audit_events FROM worklenz_client;
-    GRANT INSERT, SELECT ON audit_events TO worklenz_client;
-
-    -- Defense in depth: even if a future blanket GRANT (e.g. a careless "GRANT ALL ON ALL
-    -- TABLES") re-adds UPDATE/DELETE to worklenz_client, this trigger still blocks every
-    -- UPDATE/DELETE on this table unless it originates from the retention purge function
-    -- (task 1.3), which flips a transaction-local flag immediately before it deletes, or
-    -- from the organization's ON DELETE CASCADE foreign-key action.
+    -- Enforce append-only behavior independently of deployment-specific role privileges.
+    -- The retention purge function temporarily opens the trigger within its transaction;
+    -- organization deletion may also remove events through its foreign-key cascade.
     CREATE OR REPLACE FUNCTION prevent_audit_events_mutation()
     RETURNS trigger
     LANGUAGE plpgsql

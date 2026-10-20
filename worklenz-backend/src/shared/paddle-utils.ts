@@ -57,11 +57,38 @@ export async function getActiveTeamMemberCount(userId: string) {
   return data;
 }
 
+/**
+ * Reference to hand to the license manager for a subscription action: the integer Paddle Classic
+ * subscription id, or the Paddle Billing id (sub_...). Prefers the live subscription; falls back to
+ * any row so behavior for accounts without one is unchanged.
+ */
+export async function getCurrentSubscriptionRef(ownerId: string): Promise<string | undefined> {
+  if (!ownerId) return undefined;
+  const live = await db.query(
+    `SELECT COALESCE(subscription_id::TEXT, paddle_billing_subscription_id) AS subscription_ref
+       FROM licensing_user_subscriptions
+      WHERE user_id = $1 AND active IS TRUE AND COALESCE(status, '') <> 'deleted'
+      ORDER BY NULLIF(next_bill_date, '')::DATE DESC NULLS LAST, event_time DESC NULLS LAST
+      LIMIT 1;`,
+    [ownerId]
+  );
+  if (live.rows[0]?.subscription_ref) return live.rows[0].subscription_ref;
+
+  const any = await db.query(
+    `SELECT COALESCE(subscription_id::TEXT, paddle_billing_subscription_id) AS subscription_ref
+       FROM licensing_user_subscriptions WHERE user_id = $1 LIMIT 1;`,
+    [ownerId]
+  );
+  return any.rows[0]?.subscription_ref ?? undefined;
+}
+
 export async function checkTeamSubscriptionStatus(team_id: string) {
   try {
     const q = `SELECT trial_expire_date,
                       subscription_status,
                       subscription_id,
+                      COALESCE(lus.subscription_id::TEXT, lus.paddle_billing_subscription_id) AS subscription_ref,
+                      lus.billing_provider,
                       quantity::INT,
                       ud.business_plan_override,
                       ud.team_member_limit_override,
@@ -128,7 +155,15 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
                               )
                           )) AS current_count
                     FROM organizations ud
-                LEFT JOIN licensing_user_subscriptions lus ON lus.user_id = ud.user_id
+                -- A user can have several subscription rows (e.g. a cancelled one and its replacement).
+                -- Prefer the live row so quantity and ids describe the current subscription.
+                LEFT JOIN LATERAL (SELECT *
+                                   FROM licensing_user_subscriptions
+                                   WHERE user_id = ud.user_id
+                                   ORDER BY (active IS TRUE AND COALESCE(status, '') <> 'deleted') DESC,
+                                            NULLIF(next_bill_date, '')::DATE DESC NULLS LAST,
+                                            event_time DESC NULLS LAST
+                                   LIMIT 1) lus ON TRUE
         WHERE ud.user_id = (SELECT user_id FROM teams WHERE id = $1);`;
     const result = await db.query(q, [team_id]);
     const [data] = result.rows;

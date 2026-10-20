@@ -4,6 +4,7 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { themeWiseColor } from '../../utils/themeWiseColor';
 import { ChevronRightIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { CalendarIcon, UserIcon, FlagIcon } from '@heroicons/react/24/solid';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface GanttGridProps {
   tasks: GanttTask[];
@@ -183,7 +184,7 @@ const GanttGrid: React.FC<GanttGridProps> = ({
                 style={{ paddingLeft: `${(task.level || 0) * 16}px` }}
               >
                 {getTaskTypeIcon(task.type)}
-                <span className="truncate font-medium">{task.name}</span>
+                <span className="truncate font-medium">{decodeHtmlEntities(task.name)}</span>
               </div>
             </div>
           );

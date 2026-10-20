@@ -131,7 +131,9 @@
         "Integrime të personalizuara",
         "Menaxheri i llogarisë së dedikuar",
         "Vendosja on-premises"
-      ]
+      ],
+      "customPricing": "I personalizuar",
+      "customPricingNote": "përshtatur për ekipin tuaj"
     },
     "additionalUsersCharged": "Përdorues shtesë përtej përfshirjes: {{price}} $/përdorues/muaj"
   },

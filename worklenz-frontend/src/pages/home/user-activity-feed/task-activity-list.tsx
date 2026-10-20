@@ -10,6 +10,7 @@ import {
   fetchTask,
 } from '@/features/task-drawer/task-drawer.slice';
 import { setProjectId } from '@/features/project/project.slice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { IUserRecentTask } from '@/types/home/user-activity.types';
 
 const { Text } = Typography;
@@ -63,12 +64,12 @@ const TaskActivityList: React.FC<TaskActivityListProps> = React.memo(({ tasks })
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ marginBottom: 4 }}>
               <Text strong style={{ fontSize: 14 }}>
-                {record.task_name}
+                {decodeHtmlEntities(record.task_name)}
               </Text>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                {record.project_name}
+                {decodeHtmlEntities(record.project_name)}
               </Text>
               <Tooltip
                 title={formatDate(record.last_activity_at, 'MMMM Do YYYY, h:mm:ss a')}

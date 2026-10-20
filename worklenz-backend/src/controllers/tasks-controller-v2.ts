@@ -1,6 +1,7 @@
 import { ParsedQs } from "qs";
 
 import db from "../config/db";
+import { buildTaskSearchQuery } from "../shared/task-search-query-builder";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
@@ -879,6 +880,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       `latest_comment_agg AS (
         SELECT DISTINCT ON (tc.task_id)
                tc.task_id,
+           tc.id AS latest_comment_id,
                tcc.text_content AS latest_comment,
                tc.created_at AS latest_comment_at,
                COALESCE(u.name, '') AS latest_comment_author
@@ -1025,6 +1027,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
              COALESCE(cma.comments_count, 0) AS comments_count,
              COALESCE(ata.attachments_count, 0) AS attachments_count,
              COALESCE(ata.attachments, '[]'::JSON) AS attachments,
+             lc.latest_comment_id,
              lc.latest_comment,
              lc.latest_comment_at,
              lc.latest_comment_author,
@@ -1531,25 +1534,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
     taskId: string,
     assigneeScope?: AssigneeTaskScope
   ) {
-    const queryParams: unknown[] = [`%${searchString}%`, projectId, taskId];
     const scopeFilter = buildAssigneeScopeFilter(
       assigneeScope || { applyFilter: false, teamMemberId: null },
       "t.id",
       4
     );
-    if (scopeFilter.params.length > 0) {
-      queryParams.push(...scopeFilter.params);
-    }
-
-    const q = `SELECT id AS value ,
-       name AS label,
-       CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) AS task_key
-      FROM tasks t
-      WHERE t.name ILIKE $1
-        AND t.project_id = $2 AND t.id != $3
-        ${scopeFilter.clause ? `AND ${scopeFilter.clause}` : ""}
-      LIMIT 15;`;
-    const result = await db.query(q, queryParams);
+    const { query, params } = buildTaskSearchQuery(searchString, projectId, taskId, scopeFilter);
+    const result = await db.query(query, params);
 
     return result.rows;
   }
@@ -2178,6 +2169,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
           ...attachment,
           size: humanFileSize(Number(attachment.size || 0)),
         })),
+        latest_comment_id: task.latest_comment_id || null,
         latest_comment: task.latest_comment || null,
         latest_comment_at: task.latest_comment_at || null,
         latest_comment_author: task.latest_comment_author || null,

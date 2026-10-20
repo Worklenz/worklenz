@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import dayjs, { Dayjs } from 'dayjs';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -106,7 +107,7 @@ const TaskTimelineFilters: React.FC<TaskTimelineFiltersProps> = ({
       >
         {projects.map(project => (
           <Option key={project.id} value={project.id}>
-            {project.name}
+            {decodeHtmlEntities(project.name)}
           </Option>
         ))}
       </Select>

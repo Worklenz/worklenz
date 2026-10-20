@@ -17,6 +17,8 @@
   "favorites": "Favorites",
   "archived": "Archived",
   "placeholder": "Search by project name",
+  "searchProjects": "Search by project name",
+  "rowsPerPage": "Rows per page:",
   "archive": "Archive",
   "unarchive": "Unarchive",
   "archiveConfirm": "Are you sure you want to archive this project?",

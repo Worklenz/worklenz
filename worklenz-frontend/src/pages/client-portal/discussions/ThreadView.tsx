@@ -16,6 +16,7 @@ import type { ThreadContextType } from '@/types/client-portal/v2';
 import { ThreadComposer } from './ThreadComposer';
 import { ThreadMessages } from './ThreadMessages';
 import { PortalLoader } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface ThreadViewProps {
   threadId: string;
@@ -109,7 +110,7 @@ export const ThreadView = ({ threadId, onBack }: ThreadViewProps) => {
               </Typography.Text>
               <span aria-hidden>·</span>
               <span>
-                {thread.organization_name} · {thread.project_name}
+                {thread.organization_name} · {decodeHtmlEntities(thread.project_name)}
               </span>
             </Flex>
           </div>

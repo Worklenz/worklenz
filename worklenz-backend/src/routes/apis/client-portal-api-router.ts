@@ -12,7 +12,7 @@ import ClientPortalProfileController from "../../controllers/client-portal/clien
 import ClientPortalAttachmentController from "../../controllers/client-portal-attachment-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { authenticateClient, requireClientPermission } from "../../middlewares/client-auth-middleware";
-import { requireBusinessPlanForOrganization } from "../../middlewares/subscription-middleware";
+import { requireFeatureForOrganization } from "../../shared/entitlements/gates";
 import { requireClientCapability, requireClientSubject } from "../../middlewares/client-subject-middleware";
 import { requireInvoicesVisible } from "../../middlewares/client-invoices-visible-middleware";
 import { ServerResponse } from "../../models/server-response";
@@ -89,7 +89,7 @@ router.post("/organizations/switch", safeControllerFunction(ClientPortalAuthCont
 router.post("/organizations/accept-invite", ClientSignInController.acceptInvite);
 
 // Client Portal authorization
-router.use(requireBusinessPlanForOrganization);
+router.use(requireFeatureForOrganization("client_portal"));
 
 // Client Portal v2: project-centred, item-level sharing. Runs its own per-request subject check
 // (Active user, fresh role) and applies the gating chain in the read/write services.

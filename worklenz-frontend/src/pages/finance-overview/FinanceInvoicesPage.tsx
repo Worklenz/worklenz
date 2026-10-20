@@ -23,6 +23,7 @@ import {
 } from '@/api/finance-overview/finance-overview.api.service';
 import { FinanceKpiCard } from './FinanceKpiCard';
 import { fmtMoney } from './finance-report-utils';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useFinanceReportFetch } from './useFinanceReportFetch';
 
 const { Text, Title } = Typography;
@@ -95,9 +96,9 @@ export const FinanceInvoicesPage = () => {
                   display: 'inline-block',
                 }}
               />
-              <Tooltip title={value}>
+              <Tooltip title={decodeHtmlEntities(value)}>
                 <Text ellipsis style={{ maxWidth: 160 }}>
-                  {value}
+                  {decodeHtmlEntities(value)}
                 </Text>
               </Tooltip>
             </Flex>

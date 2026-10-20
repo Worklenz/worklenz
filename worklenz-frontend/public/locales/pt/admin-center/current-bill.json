@@ -211,5 +211,18 @@
   "pricingModelNote": "Informações do modelo de preços",
   "switchAnytime": "Você pode alternar entre modelos de preços a qualquer momento nas configurações de faturamento",
   "flatRateLimit": "Os planos de taxa fixa têm limites de usuários – certifique-se de que o tamanho da sua equipe esteja dentro do limite",
-  "perUserScaling": "Os planos por usuário são dimensionados automaticamente de acordo com o crescimento da sua equipe"
+  "perUserScaling": "Os planos por usuário são dimensionados automaticamente de acordo com o crescimento da sua equipe",
+  "paymentHistory": "Histórico de pagamentos",
+  "receiptDownloadFailed": "Falha no download",
+  "receiptDownloadFailedDescription": "Não foi possível gerar o recibo. Tente novamente.",
+  "date": "Data",
+  "card": "Cartão",
+  "receipt": "Recibo",
+  "noPaymentHistory": "Sem histórico de pagamentos",
+  "flatRatePricingDescription": "Preço fixo para até {{count}} usuários",
+  "flatRateMonthlyPrice": "{{currency}} {{price}} por mês",
+  "upToUsers": "(até {{count}} usuários)",
+  "legacyPlanTitle": "Plano anterior",
+  "legacyPlanDescription": "Seu plano não é mais oferecido e permanece como está. A mudança para um plano atual por usuário é opcional e sua assinatura só será substituída quando você confirmar.",
+  "everythingInFree": "Tudo do Free, mais:"
 }

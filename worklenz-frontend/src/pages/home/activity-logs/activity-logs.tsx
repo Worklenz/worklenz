@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useGetActivityLogsQuery } from '@/api/activity-logs/activity-logs.api.service';
 import moment from 'moment';
 import { renderActivityMessage, ActivityLogItem } from '@/utils/activity-log-i18n';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const ActivityLogs = () => {
   const { t } = useTranslation('home');
@@ -78,11 +79,11 @@ const ActivityLogs = () => {
                       <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                         {item.project_deleted ? (
                           <span style={{ color: '#ff4d4f' }}>
-                            {item.project_name}{' '}
+                            {decodeHtmlEntities(item.project_name)}{' '}
                             {t('activityLogs.deletedProject', { defaultValue: '(Deleted)' })}
                           </span>
                         ) : (
-                          item.project_name
+                          decodeHtmlEntities(item.project_name)
                         )}
                       </Typography.Text>
                       <Typography.Text type="secondary" style={{ fontSize: 11 }}>
