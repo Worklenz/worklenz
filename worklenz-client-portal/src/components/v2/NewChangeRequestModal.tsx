@@ -36,15 +36,24 @@ export const NewChangeRequestModal = ({ open, onClose }: { open: boolean; onClos
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // Reset only when the modal opens. Do not depend on `projects`: confirming an
+  // attachment upload invalidates V2Projects, and a refetch would wipe the form.
   useEffect(() => {
     if (!open) return;
-    setProjectId(projects?.[0]?.id ?? '');
+    setProjectId('');
     setTitle('');
     setDescription('');
     setNotes('');
     setPriority('medium');
     setAttachments([]);
     setBusy(false);
+    setUploading(false);
+  }, [open]);
+
+  // Seed the default project after open (or when the list arrives) without clearing draft fields.
+  useEffect(() => {
+    if (!open) return;
+    setProjectId(current => current || projects?.[0]?.id || '');
   }, [open, projects]);
 
   const attach = async (file: File | undefined) => {
@@ -162,10 +171,18 @@ export const NewChangeRequestModal = ({ open, onClose }: { open: boolean; onClos
           <Button size="small" icon={<PaperClipOutlined />} loading={uploading} disabled={!projectId} onClick={() => fileInput.current?.click()}>
             {t('changeRequests.addFile', { defaultValue: 'Add file' })}
           </Button>
-          <Flex gap={6} wrap="wrap" style={{ marginTop: 6 }}>
+          <Flex gap={6} wrap="wrap" style={{ marginTop: 6, maxWidth: '100%', minWidth: 0 }}>
             {attachments.map(item => (
-              <Tag key={item.fileId} closable onClose={() => setAttachments(list => list.filter(entry => entry.fileId !== item.fileId))}>
-                {item.name}
+              <Tag
+                key={item.fileId}
+                closable
+                title={item.name}
+                style={{ maxWidth: '100%', marginInlineEnd: 0, display: 'inline-flex', alignItems: 'center' }}
+                onClose={() => setAttachments(list => list.filter(entry => entry.fileId !== item.fileId))}
+              >
+                <Typography.Text ellipsis style={{ maxWidth: 200 }}>
+                  {item.name}
+                </Typography.Text>
               </Tag>
             ))}
           </Flex>
@@ -187,7 +204,7 @@ export const NewChangeRequestModal = ({ open, onClose }: { open: boolean; onClos
 };
 
 const FormRow = ({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) => (
-  <div style={{ marginBottom: 14, flex: 1, minWidth: 180 }}>
+  <div style={{ marginBottom: 14, flex: 1, minWidth: 180, maxWidth: '100%', overflow: 'hidden' }}>
     <Typography.Text strong style={{ display: 'block', marginBottom: 4 }}>
       {label}
       {required && <span aria-hidden style={{ color: 'var(--ant-color-error, #ff4d4f)' }}> *</span>}
