@@ -16,6 +16,17 @@ exports.shorthands = undefined;
  * @param {import('node-pg-migrate').MigrationBuilder} pgm
  */
 exports.up = async (pgm) => {
+  // This migration replaces shared signup functions and repairs organization
+  // licenses. Require an explicit mode rather than the application's default:
+  // a missing cloud configuration must never apply self-hosted licensing.
+  const deploymentMode = process.env.WORKLENZ_DEPLOYMENT_MODE?.trim().toLowerCase();
+  if (deploymentMode === 'cloud') return;
+  if (deploymentMode !== 'self_hosted') {
+    throw new Error(
+      'Set WORKLENZ_DEPLOYMENT_MODE explicitly to cloud or self_hosted before running the self-hosted license migration.'
+    );
+  }
+
   pgm.sql(`
 -- Register user
 CREATE OR REPLACE FUNCTION register_user(_body json) returns json
