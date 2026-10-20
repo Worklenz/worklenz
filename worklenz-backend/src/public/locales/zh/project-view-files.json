@@ -10,5 +10,9 @@
   "deleteConfirmationOk": "是",
   "deleteConfirmationCancel": "取消",
   "segmentedTooltip": "即将推出！在列表视图和缩略图视图之间切换。",
-  "emptyText": "项目中没有附件。"
+  "emptyText": "项目中没有附件。",
+  "uploadExpired": "上传会话已过期。请再试一次。",
+  "fileTooLargePopoverBody": "大于 25MB 的文件需要商业计划。该文件大小为 {{sizeMb}} MB。升级以上传更大的文件。",
+  "linksPaginationSummary": "{{start}}–{{end}}（共 {{count}} 个链接）",
+  "fileTooLargePopoverTitle": "文件太大"
 }

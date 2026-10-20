@@ -2,17 +2,19 @@ import {
   Collapse,
   CollapseProps,
   Flex,
+  message,
   Skeleton,
   Typography,
 } from '@/shared/antd-imports';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { InboxOutlined } from '@ant-design/icons';
 import DescriptionEditor from './description-editor';
+import MentionedInDocs from './mentioned-in-docs';
 import SubTaskTable from './subtask-table';
 import DependenciesTable from './dependencies-table';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import TaskDetailsForm from './task-details-form';
-import { fetchTask } from '@/features/tasks/tasks.slice';
+import { fetchTask } from '@/features/task-drawer/task-drawer.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { updateTaskCounts } from '@/features/task-management/task-management.slice';
@@ -38,11 +40,13 @@ import { ITaskViewModel } from '@/types/tasks/task.types';
 import TaskDrawerCustomFields from './details/task-drawer-custom-fields/task-drawer-custom-fields';
 import { hasDrawerSupportedCustomFields, getDrawerSupportedCustomFields } from '@/utils/task-custom-columns';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import TaskDrawerDevelopment from './TaskDrawerDevelopment';
 
 interface TaskDrawerInfoTabProps {
   t: TFunction;
@@ -65,7 +69,10 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   const attachmentSizeLimitBytes = attachmentSizeLimitMb * 1024 * 1024;
 
   const { projectId } = useAppSelector(state => state.projectReducer);
-  const { taskFormViewModel, loadingTask, selectedTaskId } = useAppSelector(
+  const isSoftwareProject = useAppSelector(state =>
+    isSoftwareProjectType(state.projectReducer.project?.project_type)
+  );
+  const { taskFormViewModel, loadingTask, selectedTaskId, targetCommentId } = useAppSelector(
     state => state.taskDrawerReducer
   );
   const [subTasks, setSubTasks] = useState<ISubTask[]>([]);
@@ -94,9 +101,16 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   const dragCounterRef = useRef(0);
 
   // Controlled collapse keys so we can auto-expand attachments on drop
-  const defaultCollapseKeys = ['details', 'description', 'subTasks', 'dependencies', 'attachments', 'comments'];
+  const defaultCollapseKeys = ['details', 'description', 'subTasks', 'dependencies', 'attachments', 'development', 'comments'];
   const [collapseActiveKeys, setCollapseActiveKeys] = useState<string[]>(defaultCollapseKeys);
   const [expandedCustomFieldsByTask, setExpandedCustomFieldsByTask] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!targetCommentId) return;
+    setCollapseActiveKeys(previousKeys =>
+      previousKeys.includes('comments') ? previousKeys : [...previousKeys, 'comments']
+    );
+  }, [targetCommentId]);
 
   // Keep the custom fields section expanded when fields exist or the user can add one.
   useEffect(() => {
@@ -131,6 +145,11 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   const handleFilesSelected = async (files: File[]) => {
     if (!taskFormViewModel?.task?.id || !projectId) return;
 
+    // Reveal the attachments panel so pasted or dropped files are visible.
+    setCollapseActiveKeys(prev =>
+      prev.includes('attachments') ? prev : [...prev, 'attachments']
+    );
+
     const oversizedFiles = files.filter(file => file.size > attachmentSizeLimitBytes);
     if (oversizedFiles.length > 0) {
       if (!hasBusinessAccess) {
@@ -141,6 +160,15 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
           });
         }
         dispatch(toggleUpgradeModal());
+      } else {
+        message.error(
+          t('taskInfoTab.attachments.filesTooLarge', {
+            defaultValue:
+              'These files exceed the {{maxSize}}MB limit and were not added: {{names}}',
+            maxSize: attachmentSizeLimitMb,
+            names: oversizedFiles.map(file => file.name).join(', '),
+          })
+        );
       }
       return;
     }
@@ -334,6 +362,23 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     };
   }, [socket, selectedTaskId, fetchSubTasks]);
 
+  // GitHub activity (new PR/commit/branch or automated status change) for this task.
+  const [githubRefreshToken, setGithubRefreshToken] = useState(0);
+  useEffect(() => {
+    if (!socket || !selectedTaskId || !isSoftwareProject) return;
+
+    const handleGithubActivity = (payload: { task_ids?: string[] }) => {
+      if (payload?.task_ids?.includes(selectedTaskId)) {
+        setGithubRefreshToken(previous => previous + 1);
+      }
+    };
+
+    socket.on(SocketEvents.GITHUB_TASK_ACTIVITY.toString(), handleGithubActivity);
+    return () => {
+      socket.off(SocketEvents.GITHUB_TASK_ACTIVITY.toString(), handleGithubActivity);
+    };
+  }, [socket, selectedTaskId, isSoftwareProject]);
+
   const fetchTaskDependencies = useCallback(async () => {
     if (!selectedTaskId) return;
     try {
@@ -444,12 +489,15 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
       key: 'description',
       label: <Typography.Text strong>{t('taskInfoTab.description.title', { defaultValue: 'Description' })}</Typography.Text>,
       children: (
-        <DescriptionEditor
-          description={taskFormViewModel?.task?.description || null}
-          taskId={taskFormViewModel?.task?.id || ''}
-          parentTaskId={taskFormViewModel?.task?.parent_task_id || ''}
-          isGuest={isGuest}
-        />
+        <Flex vertical>
+          <DescriptionEditor
+            description={taskFormViewModel?.task?.description || null}
+            taskId={taskFormViewModel?.task?.id || ''}
+            parentTaskId={taskFormViewModel?.task?.parent_task_id || ''}
+            isGuest={isGuest}
+          />
+          {selectedTaskId ? <MentionedInDocs taskId={selectedTaskId} isGuest={isGuest} /> : null}
+        </Flex>
       ),
       style: panelStyle,
       className: 'custom-task-drawer-info-collapse',
@@ -539,6 +587,21 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
       className: 'custom-task-drawer-info-collapse',
     },
     {
+      key: 'development',
+      label: <Typography.Text strong>{t('taskInfoTab.development.title', { defaultValue: 'Development' })}</Typography.Text>,
+      children: (
+        <TaskDrawerDevelopment
+          taskId={selectedTaskId || ''}
+          taskKey={(taskFormViewModel?.task as ITaskViewModel | undefined)?.task_key}
+          refreshToken={githubRefreshToken}
+          canCreateBranch={canCreateTask && !isGuest}
+          canRemoveLinks={canCreateTask && !isGuest}
+        />
+      ),
+      style: panelStyle,
+      className: 'custom-task-drawer-info-collapse',
+    },
+    {
       key: 'comments',
       label: <Typography.Text strong>{t('taskInfoTab.comments.title', { defaultValue: 'Comments' })}</Typography.Text>,
       style: panelStyle,
@@ -547,10 +610,26 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     },
   ];
 
-  const infoItems =
+  // The Development (GitHub) section only applies to software projects.
+  const scopedInfoItems = isSoftwareProject
+    ? allInfoItems
+    : allInfoItems.filter(item => item.key !== 'development');
+
+  const levelInfoItems =
     (taskFormViewModel?.task?.task_level ?? 0) >= 2
-      ? allInfoItems.filter(item => item.key !== 'subTasks')
-      : allInfoItems;
+      ? scopedInfoItems.filter(item => item.key !== 'subTasks')
+      : scopedInfoItems;
+
+  const infoItems = isSoftwareProject
+    ? levelInfoItems
+        .filter(item => SOFTWARE_SECTION_ORDER.includes(String(item.key)))
+        .sort(
+          (first, second) =>
+            SOFTWARE_SECTION_ORDER.indexOf(String(first.key)) -
+            SOFTWARE_SECTION_ORDER.indexOf(String(second.key))
+        )
+        .map(item => ({ ...item, label: <SoftwareSectionLabel>{item.label}</SoftwareSectionLabel> }))
+    : levelInfoItems;
 
   useEffect(() => {
     // FIX: Only fetch and reset data when selectedTaskId changes to a REAL
@@ -606,16 +685,34 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
       selectedFilesRef.current = [];
       setTaskComments([]);
     };
-  }, [selectedTaskId, projectId, fetchSubTasks]);
+  }, [selectedTaskId, projectId, fetchSubTasks, loadingTask, taskFormViewModel?.task?.id, taskFormViewModel?.task?.name]);
+
+  useEffect(() => {
+    if (!selectedTaskId || !projectId || loadingTask) return;
+
+    const hasIncompleteTaskData =
+      taskFormViewModel?.task?.id === selectedTaskId && !taskFormViewModel.task?.name;
+
+    if (hasIncompleteTaskData) {
+      dispatch(fetchTask({ taskId: selectedTaskId, projectId }));
+    }
+  }, [
+    selectedTaskId,
+    projectId,
+    loadingTask,
+    taskFormViewModel?.task?.id,
+    taskFormViewModel?.task?.name,
+    dispatch,
+  ]);
 
   return (
     <Skeleton active loading={loadingTask}>
       <div
         className="task-drawer-info-tab-drop-zone"
-        onDragEnter={handleTabDragEnter}
-        onDragOver={handleTabDragOver}
-        onDragLeave={handleTabDragLeave}
-        onDrop={handleTabDrop}
+        onDragEnter={isSoftwareProject ? undefined : handleTabDragEnter}
+        onDragOver={isSoftwareProject ? undefined : handleTabDragOver}
+        onDragLeave={isSoftwareProject ? undefined : handleTabDragLeave}
+        onDrop={isSoftwareProject ? undefined : handleTabDrop}
       >
         {isTabDragOver && (
           <div className="task-drawer-info-tab-drop-overlay">
@@ -625,17 +722,23 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
             </div>
           </div>
         )}
-        <Flex vertical>
-          <Collapse
-            items={infoItems}
-            bordered={false}
-            activeKey={collapseActiveKeys}
-            onChange={keys => setCollapseActiveKeys(keys as string[])}
-          />
-        </Flex>
+        <Collapse
+          items={infoItems}
+          bordered={false}
+          activeKey={collapseActiveKeys}
+          onChange={keys => setCollapseActiveKeys(keys as string[])}
+        />
       </div>
     </Skeleton>
   );
 };
+
+/** Sections shown in the software issue drawer, in display order. */
+const SOFTWARE_SECTION_ORDER = ['description', 'details', 'development', 'comments'];
+
+/** Small uppercase section heading used by the software issue drawer. */
+const SoftwareSectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <span className="uppercase tracking-wide text-xs opacity-70">{children}</span>
+);
 
 export default TaskDrawerInfoTab;

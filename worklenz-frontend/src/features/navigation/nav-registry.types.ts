@@ -36,6 +36,8 @@ export interface NavItem {
   lockedOrder?: boolean;
   // Hide from guest-only users
   guestExcluded?: boolean;
+  // Hide from users who are not team Owner or Admin (e.g. Members, Team Leads)
+  adminOnly?: boolean;
 }
 
 export interface NavGroup {

@@ -16,7 +16,7 @@ import {
   canAccessTaskExport,
   hasTaskExportRoleAccess,
 } from '@/utils/task-export-access';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/utils/subscription-utils';
 import logger from '@/utils/errorLogger';
 import { isTeamLeadRole } from '@/types/roles/role.types';
 
@@ -75,7 +75,7 @@ export const FilteredTaskExportButton = ({
   const isOwnerOrAdmin = auth.isOwnerOrAdmin();
   const isProjectManager = useIsProjectManager();
   const isTeamLead = isTeamLeadRole(auth.role);
-  const hasBusinessAccess = hasBusinessFeatureAccess(auth.getCurrentSession());
+  const hasBusinessAccess = canUseFeature(auth.getCurrentSession(), 'task_export');
   const canViewExport = hasTaskExportRoleAccess(
     isOwnerOrAdmin,
     isProjectManager,

@@ -1,0 +1,122 @@
+{
+  "auditRecorded": "Berechtigungsänderung im Überwachungsprotokoll aufgezeichnet.",
+  "loadEmpty": "Es wurden keine Portaleinstellungen zurückgegeben.",
+  "loadFailed": "Die Portaleinstellungen konnten nicht geladen werden.",
+  "nav": {
+    "notifications": "Notifications",
+    "roles": "Kundenrollen",
+    "sharing": "Teilen und Sichtbarkeit"
+  },
+  "notifications": {
+    "banner": "An Kunden gesendete Benachrichtigungen enthalten niemals ausschließlich interne Inhalte im Titel oder Text. In-App-Benachrichtigungen sind immer aktiviert. E-Mail ist pro Veranstaltung optional.",
+    "client": {
+      "accessChanges": "Zugriffsänderungen",
+      "accessChangesDescription": "Einladung, Rollenwechsel oder Projektzuweisung.",
+      "approvalRequest": "Neue Genehmigungsanfrage",
+      "approvalRequestDescription": "Ein Kundengenehmiger wird gebeten, einen Artikel zu genehmigen.",
+      "changeRequestUpdate": "Aktualisierung der Änderungsanforderung",
+      "changeRequestUpdateDescription": "Status-, Antwort- oder Schätzungsänderungen bei einer Anfrage.",
+      "commentOrReply": "Kommentieren oder antworten Sie",
+      "commentOrReplyDescription": "Jemand antwortet in einer für den Kunden sichtbaren Diskussion.",
+      "fileShared": "Datei geteilt",
+      "fileSharedDescription": "Eine Datei wird als „Client Visible“ markiert oder eine neue Version wird hochgeladen.",
+      "milestoneChange": "Meilensteinänderung",
+      "milestoneChangeDescription": "Ein für den Kunden sichtbarer Meilenstein ändert den Status oder das Datum.",
+      "projectUpdate": "Projektaktualisierung",
+      "projectUpdateDescription": "Der Projektstatus ändert sich oder ein Update wird veröffentlicht.",
+      "title": "Benachrichtigungen an Kunden"
+    },
+    "emailColumn": "Email",
+    "emailLabel": "E-Mail: {{event}}",
+    "eventColumn": "Ereignis",
+    "inAppColumn": "In-App",
+    "inAppLabel": "In-App: {{event}} (immer aktiv)",
+    "team": {
+      "approvalDecision": "Entscheidung über die Genehmigung des Kunden",
+      "approvalDecisionDescription": "Ein Kunde genehmigt oder fordert Änderungen an.",
+      "changeRequest": "Neue Änderungsanfrage oder Nachverfolgung",
+      "changeRequestDescription": "Ein Kunde sendet eine Anfrage oder antwortet auf eine Frage.",
+      "clientComment": "Neuer Kundenkommentar",
+      "clientCommentDescription": "Ein Kunde äußert sich in einer Diskussion.",
+      "clientFileUpload": "Hochladen der Kundendatei",
+      "clientFileUploadDescription": "Ein Kunde lädt eine Datei in ein Projekt hoch.",
+      "title": "Benachrichtigungen an Ihr Team"
+    }
+  },
+  "retry": "Erneut versuchen",
+  "roles": {
+    "allowed": "Erlaubt",
+    "alwaysTrue": {
+      "nextRequest": "Das Deaktivieren eines Benutzers oder das Entfernen einer Projektzuweisung wird bei seiner nächsten Anfrage wirksam, nicht bei seiner nächsten Anmeldung.",
+      "noTeamDirectory": "Ein Kundenbenutzer sieht niemals Ihr internes Teamverzeichnis und kann niemals Administrator Ihres Arbeitsbereichs werden.",
+      "oneOrganization": "Ein Kundenbenutzer gehört genau einer Organisation an und sieht nur die ihm zugeordneten Projekte.",
+      "ownOrganizationOnly": "Ein Kundenadministrator kann nur Benutzer in seiner eigenen Organisation sehen und verwalten, niemals die Benutzer eines anderen Kunden.",
+      "title": "Immer wahr"
+    },
+    "capability": {
+      "approve": "Genehmigen Sie Elemente oder fordern Sie Änderungen an",
+      "comment": "Kommentieren und antworten Sie in für den Kunden sichtbaren Diskussionen",
+      "manageUsers": "Benutzer in ihrer eigenen Organisation verwalten (falls unten aktiviert)",
+      "submitChangeRequest": "Änderungswünsche einreichen und befolgen",
+      "upload": "Dateien hochladen (sofern das Projekt dies zulässt)",
+      "view": "Zeigen Sie zugewiesene Projekte, Meilensteine, für den Kunden sichtbare Aufgaben und Dateien an"
+    },
+    "capabilityColumn": "Fähigkeit",
+    "matrixDescription": "Drei Rollen, kein Berechtigungsgenerator. Eine Rolle gilt für jedes Projekt, dem der Benutzer zugewiesen ist.",
+    "matrixError": "Die Rollenberechtigungen konnten nicht geladen werden.",
+    "matrixTitle": "Was jede Rolle tun kann",
+    "notAllowed": "Nicht erlaubt",
+    "selfManagement": {
+      "description": "Lassen Sie einen Kundenadministrator verwalten, wer aus seiner eigenen Organisation Zugriff auf das Portal hat, anstatt jede Änderung durch Ihr Team weiterzuleiten.",
+      "invite": {
+        "description": "Ein Kundenadministrator kann einen Kollegen aus seiner eigenen Organisation einladen.",
+        "label": "Erlauben Sie Client-Administratoren, Benutzer einzuladen"
+      },
+      "remove": {
+        "description": "Ein Kundenadministrator kann einen anderen Benutzer aus seiner eigenen Organisation entfernen.",
+        "label": "Lassen Sie Kundenadministratoren Benutzer entfernen"
+      },
+      "title": "Selbstverwaltung des Kundenadministrators"
+    },
+    "signIn": {
+      "addedOnly": "Nur eine Adresse, die Sie oder ein von Ihnen zugelassener Kundenadministrator hinzugefügt haben, kann einen Code erhalten. Alle anderen bekommen nichts.",
+      "code": "Es gibt keine Passwörter. Ein Kunde meldet sich mit einem 6-stelligen Code an, der an seine E-Mail-Adresse gesendet wird. Es funktioniert einmal und läuft nach 10 Minuten ab.",
+      "description": "Nichts zu konfigurieren. Jeder Kunde unterschreibt auf die gleiche Weise.",
+      "direct": "Kunden können das Portal auch ohne Link öffnen, ihre Adresse eingeben und einen Code erhalten.",
+      "link": "Eine Einladungs-E-Mail enthält einen Anmeldelink mit der integrierten Adresse. Beim Öffnen wird der Code sofort gesendet. Links verfallen nach 7 Tagen und können von Benutzern erneut gesendet werden.",
+      "title": "So melden sich Kunden an"
+    }
+  },
+  "saveFailed": "Die Portaleinstellungen konnten nicht gespeichert werden.",
+  "sharing": {
+    "defaults": {
+      "clientUploads": {
+        "description": "Kundenadministratoren und Kundenmitglieder können Dateien hinzufügen. Client-Betrachter können das niemals. Sie können dies pro Projekt überschreiben.",
+        "label": "Erlauben Sie Client-Uploads für neue Portalprojekte"
+      },
+      "showInvoices": {
+        "description": "Fügt eine Rechnungsseite für Kunden hinzu. Standardmäßig ausgeblendet.",
+        "label": "Rechnungen im Kundenportal anzeigen"
+      },
+      "title": "Abschnitte und Standardeinstellungen"
+    },
+    "rules": {
+      "defaultInternal": "Aufgaben, Dateien, Meilensteine und Kommentare sind standardmäßig nur intern, für bestehende und neue Elemente.",
+      "explicitShare": "Nichts erreicht das Portal, bis ein autorisiertes Teammitglied es als „Client Visible“ markiert.",
+      "fixedTag": "Feste Regeln",
+      "neverExposed": "Interne Kommentare, Zeitprotokolle, Schätzungen, Kosten und Abhängigkeiten werden niemals offengelegt, egal was Sie teilen.",
+      "noHints": "Ein ausgeblendetes Element wird in Dashboards, Listen oder Benachrichtigungen niemals gezählt oder darauf hingewiesen.",
+      "revertImmediate": "Wenn Sie ein Element wieder in „Nur intern“ umwandeln, wird es sofort aus dem Portal entfernt und sein interner Verlauf bleibt erhalten.",
+      "title": "So funktioniert das Teilen"
+    },
+    "shared": {
+      "count": "{{shared}} von {{total}} Client sichtbar",
+      "description": "Gezählt über Projekte, bei denen das Kundenportal aktiviert ist.",
+      "files": "Dateien",
+      "milestones": "Meilensteine",
+      "tasks": "Aufgaben",
+      "title": "Wird derzeit von Portalprojekten gemeinsam genutzt"
+    }
+  },
+  "subtitle": "Branding, was standardmäßig geteilt wird, Rollen und Benachrichtigungen für Ihr Kundenportal."
+}

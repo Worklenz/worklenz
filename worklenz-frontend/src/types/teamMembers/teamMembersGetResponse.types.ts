@@ -34,8 +34,13 @@ export interface ITeamMemberViewModel extends ITeamMember {
   total_logged_time?: string;
   member_teams?: string[];
   is_pending?: boolean;
+  is_guest?: boolean;
   reports_to_member_id?: string;
   current_team_lead_name?: string;
+  /** Present on project_manager nested in project GET (Phase 4). */
+  finance_access?: boolean;
+  /** Phase 5 — Owner/Admin toggle: may create projects from templates. */
+  can_create_projects_from_templates?: boolean;
 }
 
 export interface ITeamMemberOverviewGetResponse extends ITeamMember {

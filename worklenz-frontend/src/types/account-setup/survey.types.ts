@@ -31,6 +31,13 @@ export interface ISurveyResponse {
   answers: ISurveyAnswer[];
 }
 
+export interface ISurveyStatusResponse {
+  is_completed: boolean;
+  completed_at?: string;
+  is_new_user?: boolean;
+  joined_via_invitation?: boolean;
+}
+
 export interface ISurveySubmissionRequest {
   survey_id: string;
   answers: ISurveyAnswer[];

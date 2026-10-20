@@ -1,0 +1,10 @@
+{
+  "title": "{{items}} Services",
+  "requestButton": "Faire une demande",
+  "modal": {
+    "title": "Faire une demande",
+    "submitButton": "Soumettre"
+  },
+  "uploadLogoText": "Cliquez ou faites glisser le fichier vers cette zone pour le télécharger",
+  "uploadLogoAltText": "Prise en charge d'un téléchargement unique ou groupé. Interdire strictement de télécharger des données d'entreprise ou d'autres fichiers de groupe"
+}

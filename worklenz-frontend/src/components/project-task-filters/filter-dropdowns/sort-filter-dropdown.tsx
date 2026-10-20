@@ -114,7 +114,7 @@ const SortFilterDropdown = () => {
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => sortDropdownContent}
+      popupRender={() => sortDropdownContent}
     >
       <Button
         icon={<CaretDownFilled />}

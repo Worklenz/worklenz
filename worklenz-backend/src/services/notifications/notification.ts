@@ -12,12 +12,21 @@ export default class WorklenzNotification {
   private params?: Params;
   private task_id?: string;
   private project_id?: string;
+  private message_key?: string;
+  private message_params?: Params;
+  private notification_type_key?: string;
 
   constructor(teamName: string, teamId: string, message: string, url: string | null) {
     this.team = teamName;
     this.team_id = teamId;
     this.message = message;
     this.url = url;
+  }
+
+  public setTranslation(key: string, params?: Params, typeKey?: string) {
+    this.message_key = key;
+    this.message_params = params;
+    this.notification_type_key = typeKey;
   }
 
   public setProject(name: string) {

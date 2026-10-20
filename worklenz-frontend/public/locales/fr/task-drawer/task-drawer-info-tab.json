@@ -1,0 +1,32 @@
+{
+  "details": {
+    "task-key": "Clé de tâche",
+    "phase": "Phase",
+    "assignees": "Destinataires",
+    "due-date": "Date d'échéance",
+    "time-estimation": "Estimation du temps",
+    "priority": "Priorité",
+    "labels": "Étiquettes",
+    "billable": "Facturable",
+    "notify": "Notifier",
+    "when-done-notify": "Une fois terminé, prévenez",
+    "start-date": "Date de début",
+    "end-date": "Date de fin",
+    "hide-start-date": "Masquer la date de début",
+    "show-start-date": "Afficher la date de début",
+    "hours": "Horaires",
+    "minutes": "Procès-verbal",
+    "recurring": "Récurrent"
+  },
+  "description": {
+    "title": "Descriptif",
+    "placeholder": "Ajoutez une description plus détaillée...",
+    "clickToAdd": "Cliquez pour ajouter une description...",
+    "loadingEditor": "Chargement de l'éditeur..."
+  },
+  "subTasks": {
+    "title": "Sous-tâches",
+    "add-sub-task": "Ajouter une sous-tâche",
+    "refresh-sub-tasks": "Actualiser les sous-tâches"
+  }
+}

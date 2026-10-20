@@ -20,12 +20,14 @@ import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
 import { RootState } from '@/app/store';
 import { Task } from '@/types/task-management.types';
+import { toQuickFiltersParam } from '@/features/projects/singleProject/quick-filters/software-quick-filters.slice';
 
 export enum IGroupBy {
   STATUS = 'status',
   PRIORITY = 'priority',
   PHASE = 'phase',
   MEMBERS = 'members',
+  ASSIGNEE = 'assignee',
 }
 
 export const GROUP_BY_OPTIONS: IGroupByOption[] = [
@@ -298,6 +300,9 @@ const transformV3TaskToProjectTask = (task: V3ApiTask, projectId: string): IProj
   schedule_id: task.schedule_id || undefined,
   reporter: task.reporter || undefined,
   sort_order: task.order || 0,
+  story_points: task.story_points ?? null,
+  issue_type: task.issue_type ?? 'task',
+  is_blocked: task.is_blocked === true,
 });
 
 // Transform V3 API group to ITaskListGroup format
@@ -320,7 +325,7 @@ export const fetchEnhancedKanbanGroups = createAsyncThunk(
   'enhancedKanban/fetchGroups',
   async (projectId: string, { rejectWithValue, getState }) => {
     try {
-      const state = getState() as { enhancedKanbanReducer: EnhancedKanbanState };
+      const state = getState() as RootState;
       const { enhancedKanbanReducer } = state;
       const selectedMembers = enhancedKanbanReducer.taskAssignees
         .filter(member => member.selected)
@@ -343,6 +348,7 @@ export const fetchEnhancedKanbanGroups = createAsyncThunk(
         search: enhancedKanbanReducer.search || '',
         statuses: enhancedKanbanReducer.statuses.map((s: ITaskStatusViewModel) => s.id || '').join(' '),
         phases: enhancedKanbanReducer.phases.join(' '),
+        quick_filters: toQuickFiltersParam(state.softwareQuickFiltersReducer.active),
         members: selectedMembers,
         projects: '',
         isSubtasksInclude: enhancedKanbanReducer.isSubtasksInclude,
@@ -508,7 +514,9 @@ export const fetchBoardSubTasks = createAsyncThunk(
         start_date: task.startDate || task.start_date,
         complete_ratio: task.complete_ratio || task.progress || 0,
         manual_progress: false,
-        assignees: task.assignees || [],
+        assignees: (task.assignees || []).map((a: string | ITaskAssignee) =>
+          typeof a === 'string' ? { team_member_id: a, id: a, project_member_id: '', name: '' } : a
+        ),
         names: task.assignee_names || task.names || [],
         labels: task.labels || [],
         sub_tasks_count: task.sub_tasks_count || 0,
@@ -1037,6 +1045,28 @@ const enhancedKanbanSlice = createSlice({
       }
     },
 
+    updateEnhancedKanbanTaskStoryPoints: (
+      state,
+      action: PayloadAction<{ taskId: string; storyPoints: number | null }>
+    ) => {
+      const { taskId, storyPoints } = action.payload;
+      const result = findTaskInAllGroups(state.taskGroups, taskId);
+      if (!result) return;
+      result.task.story_points = storyPoints;
+      state.taskCache[taskId] = result.task;
+    },
+
+    updateEnhancedKanbanTaskBlocked: (
+      state,
+      action: PayloadAction<{ taskId: string; isBlocked: boolean }>
+    ) => {
+      const { taskId, isBlocked } = action.payload;
+      const result = findTaskInAllGroups(state.taskGroups, taskId);
+      if (!result) return;
+      result.task.is_blocked = isBlocked;
+      state.taskCache[taskId] = result.task;
+    },
+
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
       if (!action.payload) return;
       const { id: task_id, priority_id } = action.payload;
@@ -1546,6 +1576,8 @@ export const {
   updateEnhancedKanbanTaskLabels,
   updateEnhancedKanbanTaskProgress,
   updateEnhancedKanbanTaskName,
+  updateEnhancedKanbanTaskStoryPoints,
+  updateEnhancedKanbanTaskBlocked,
   updateEnhancedKanbanTaskEndDate,
   updateEnhancedKanbanTaskStartDate,
   updateEnhancedKanbanSubtask,

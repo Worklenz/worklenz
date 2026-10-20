@@ -1,11 +1,9 @@
 {
   "pageTitle": "Të gjitha detyrat",
   "pageDescription": "Shiko të gjitha detyrat e organizatës suaj",
-
   "searchPlaceholder": "Kërko sipas emrit, çelësit ose përshkrimit të detyrës",
   "searchProjectsPlaceholder": "Kërko projekte...",
   "searchMembersPlaceholder": "Kërko anëtarë...",
-
   "filtersTitle": "Filtra",
   "teamsFilter": "Ekipet",
   "projectsFilter": "Projektet",
@@ -23,7 +21,6 @@
   "healthFilter": "Shëndeti",
   "projectStatusFilter": "Statusi i projektit",
   "archivedFilter": "Përfshi të arkivuarat",
-
   "allTeams": "Të gjitha ekipet",
   "allProjects": "Të gjitha projektet",
   "allStatuses": "Të gjitha statuset",
@@ -33,7 +30,6 @@
   "assignedToMe": "Caktuar për mua",
   "selectAll": "Zgjidh të gjitha",
   "clearAll": "Pastro të gjitha",
-
   "today": "Sot",
   "thisWeek": "Këtë javë",
   "thisMonth": "Këtë muaj",
@@ -47,23 +43,18 @@
   "startDateField": "Data e fillimit",
   "createdDateField": "Data e krijimit",
   "completedDateField": "Data e përfundimit",
-
   "allTasks": "Të gjitha detyrat",
   "parentTasksOnly": "Vetëm detyrat prind",
   "subtasksOnly": "Vetëm nëndetyrat",
-
   "all": "Të gjitha",
   "incompleteOnly": "Vetëm të paplotësuara",
   "completedOnly": "Vetëm të përfunduara",
   "overdueOnly": "Vetëm të vonuara",
-
   "withTimeLogged": "Me kohë të regjistruar",
   "withoutTimeLogged": "Pa kohë të regjistruar",
   "overEstimatedTime": "Kohë mbi të parashikuarën",
-
   "billableOnly": "Vetëm faturueshme",
   "nonBillableOnly": "Vetëm jo-faturueshme",
-
   "taskNameColumn": "Detyra",
   "taskKeyColumn": "Çelësi",
   "projectColumn": "Projekti",
@@ -87,11 +78,9 @@
   "attachmentsColumn": "Bashkëngjitjet",
   "reporterColumn": "Raportuesi",
   "billableColumn": "Faturueshme",
-
   "sortBy": "Rendit sipas",
   "ascending": "Ngritës",
   "descending": "Zbritës",
-
   "groupBy": "Grupo sipas",
   "noGrouping": "Asnjë",
   "groupByProject": "Projekti",
@@ -102,27 +91,22 @@
   "groupByPhase": "Faza",
   "groupByTeam": "Ekipi",
   "groupByCategory": "Kategoria",
-
   "dueToday": "Afati sot",
   "dueThisWeek": "Afati këtë javë",
   "dueThisMonth": "Afati këtë muaj",
   "dueLater": "Afati më vonë",
   "noDueDate": "Pa datë afati",
-
   "viewMode": "Pamja",
   "tableView": "Tabela",
   "boardView": "Tabela kanban",
   "listView": "Lista",
-
   "showFields": "Shfaq fushat",
-
   "totalTasks": "Gjithsej detyra",
   "completedTasks": "Të përfunduara",
   "inProgressTasks": "Në progres",
   "overdueTasks": "Të vonuara",
   "unassignedTasks": "Të pa caktuar",
   "dueThisWeekTasks": "Afati këtë javë",
-
   "exportButton": "Eksporto",
   "exportToCsv": "Eksporto në CSV",
   "exportToExcel": "Eksporto në Excel",
@@ -131,7 +115,6 @@
   "saveViewButton": "Ruaj pamjen",
   "savedViews": "Pamjet e ruajtura",
   "manageViews": "Menaxho pamjet",
-
   "bulkActions": "Veprime në masë",
   "selectedCount": "{{count}} të zgjedhura",
   "changeStatus": "Ndrysho statusin",
@@ -139,28 +122,22 @@
   "assignMembers": "Cakto anëtarë",
   "addLabels": "Shto etiketa",
   "archiveTasks": "Arkivo detyrat",
-
   "showingResults": "Po shfaqen {{from}}-{{to}} nga {{total}} detyra",
   "tasksPerPage": "Detyra për faqe",
   "page": "Faqja",
   "of": "nga",
-
   "noTasksFound": "Asnjë detyrë e gjetur",
   "noTasksDescription": "Provo të rregullosh filtrat ose kriteret e kërkimit",
   "clearFilters": "Pastro filtrat",
-
   "loadingTasks": "Duke ngarkuar detyrat...",
   "applyingFilters": "Duke aplikuar filtrat...",
-
   "errorLoadingTasks": "Gabim gjatë ngarkimit të detyrave",
   "tryAgain": "Provo përsëri",
-
   "expandAllGroups": "Zgjero të gjitha grupet",
   "collapseAllGroups": "Mbyll të gjitha grupet",
   "openTaskDetails": "Hap detajet e detyrës",
   "moreFilters": "Më shumë filtra",
   "lessFilters": "Më pak filtra",
-
   "quickFilters": "Filtra të shpejta",
   "filterButton": "Filtro",
   "searchClients": "Kërko klientë...",
@@ -169,8 +146,11 @@
   "searchPhases": "Kërko faza...",
   "selectProjectFirst": "Zgjidh një projekt për të parë fazat",
   "noPhases": "Asnjë fazë e gjetur",
-
   "todoStatus": "Për të bërë",
   "doingStatus": "Duke u bërë",
-  "doneStatus": "U bë"
+  "doneStatus": "U bë",
+  "clientFilter": "Klienti",
+  "searchLabels": "Kërko etiketa...",
+  "noLabels": "Nuk u gjetën etiketa",
+  "labelFilter": "Etiketat"
 }

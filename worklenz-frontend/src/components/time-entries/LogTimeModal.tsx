@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Alert,
   Modal,
   Flex,
   Select,
@@ -21,8 +22,8 @@ import {
   IRecentProject,
   ITaskInProject,
 } from '@/api/tasks/task-time-logs.api.service';
-import apiClient from '@/api/api-client';
-import { API_BASE_URL } from '@/shared/constants';
+import { projectsApiService } from '@/api/projects/projects.api.service';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { TextArea } = Input;
 
@@ -39,9 +40,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
   const [form] = Form.useForm();
   const minutesAutoClearedRef = React.useRef(false);
 
-  const [recentProjects, setRecentProjects] = React.useState<IRecentProject[]>([]);
-  const [projectSearchResults, setProjectSearchResults] = React.useState<IRecentProject[]>([]);
-  const [projectSearchTerm, setProjectSearchTerm] = React.useState('');
+  const [projects, setProjects] = React.useState<IRecentProject[]>([]);
   const [projectLoading, setProjectLoading] = React.useState(false);
   const [selectedProject, setSelectedProject] = React.useState<IRecentProject | null>(null);
 
@@ -60,7 +59,6 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     endTime?: Dayjs;
   }>({});
 
-  const projectSearchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const taskSearchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => {
@@ -79,72 +77,86 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     setSelectedProject(null);
     setSelectedTaskId(null);
     setTasks([]);
-    setProjectSearchTerm('');
     setTaskSearchTerm('');
     setInputMode('duration');
-    taskTimeLogsApiService.getMyRecentProjects().then(res => {
-      if (res.done) setRecentProjects(res.body as IRecentProject[]);
-    });
+
+    setProjectLoading(true);
+    projectsApiService
+      .getMyProjectsToTasks()
+      .then(res => {
+        if (res.done && Array.isArray(res.body)) {
+          setProjects(
+            res.body
+              .filter(p => Boolean(p.id && p.name))
+              .map(p => ({
+                id: p.id!,
+                name: p.name!,
+                color_code: p.color_code || '',
+                start_date: p.start_date,
+                end_date: p.end_date,
+              }))
+          );
+        } else {
+          setProjects([]);
+        }
+      })
+      .catch(() => {
+        setProjects([]);
+      })
+      .finally(() => {
+        setProjectLoading(false);
+      });
   }, [open, form]);
 
   React.useEffect(() => {
-    if (projectSearchTimerRef.current) clearTimeout(projectSearchTimerRef.current);
-    if (!projectSearchTerm.trim()) {
-      setProjectSearchResults([]);
+    if (!selectedProject) {
+      setTasks([]);
       return;
     }
-    projectSearchTimerRef.current = setTimeout(async () => {
-      setProjectLoading(true);
-      try {
-        const res = await apiClient.get(`${API_BASE_URL}/projects/my-task-projects`);
-        const list: any[] = res.data?.body || [];
-        const q = projectSearchTerm.toLowerCase();
-        setProjectSearchResults(
-          list
-            .filter((p: any) => p.name?.toLowerCase().includes(q))
-            .map((p: any) => ({ id: p.id, name: p.name, color_code: p.color_code }))
-        );
-      } catch {
-        setProjectSearchResults([]);
-      } finally {
-        setProjectLoading(false);
-      }
-    }, 300);
-  }, [projectSearchTerm]);
-
-  React.useEffect(() => {
-    if (!selectedProject) return;
     if (taskSearchTimerRef.current) clearTimeout(taskSearchTimerRef.current);
-    taskSearchTimerRef.current = setTimeout(async () => {
+
+    const fetchTasks = async () => {
       setTaskLoading(true);
       try {
-        const res = await taskTimeLogsApiService.getMyTasksInProject(selectedProject.id, taskSearchTerm || undefined);
+        const res = await taskTimeLogsApiService.getMyTasksInProject(
+          selectedProject.id,
+          taskSearchTerm || undefined
+        );
         if (res.done) setTasks(res.body as ITaskInProject[]);
       } catch {
         setTasks([]);
       } finally {
         setTaskLoading(false);
       }
-    }, 200);
+    };
+
+    if (!taskSearchTerm) {
+      fetchTasks();
+    } else {
+      taskSearchTimerRef.current = setTimeout(fetchTasks, 200);
+    }
   }, [selectedProject, taskSearchTerm]);
 
   React.useEffect(() => () => {
-    if (projectSearchTimerRef.current) clearTimeout(projectSearchTimerRef.current);
     if (taskSearchTimerRef.current) clearTimeout(taskSearchTimerRef.current);
   }, []);
 
-  const projectOptions = (projectSearchTerm.trim() ? projectSearchResults : recentProjects).map(p => ({
-    value: p.id,
-    label: p.name,
+  const projectOptions = React.useMemo(
+    () =>
+      projects.map(p => ({
+        value: p.id,
+        label: decodeHtmlEntities(p.name),
+      })),
+    [projects]
+  );
+
+  const taskOptions = tasks.map(task => ({
+    value: task.id,
+    label: decodeHtmlEntities(task.name),
   }));
 
-  const taskOptions = tasks.map(task => ({ value: task.id, label: task.name }));
-
   const handleProjectChange = (projectId: string | undefined) => {
-    const found =
-      projectSearchResults.find(p => p.id === projectId) ||
-      recentProjects.find(p => p.id === projectId) ||
-      null;
+    const found = projects.find(p => p.id === projectId) || null;
     setSelectedProject(found);
     setSelectedTaskId(null);
     setTasks([]);
@@ -152,8 +164,23 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     form.setFieldsValue({ taskId: undefined });
   };
 
+  const isDateDisabled = React.useCallback(
+    (current: Dayjs) => {
+      if (!current) return false;
+      if (current.toDate() > new Date()) return true;
+      if (selectedProject?.start_date && current.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')) {
+        return true;
+      }
+      return false;
+    },
+    [selectedProject]
+  );
+
   const isFormValid = () => {
     if (!selectedProject || !selectedTaskId || !formValues.date) return false;
+    if (selectedProject.start_date && formValues.date.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')) {
+      return false;
+    }
     if (inputMode === 'duration') {
       const h = Math.max(0, Number(formValues.hours || 0));
       const m = Math.max(0, Math.min(59, Number(formValues.minutes || 0)));
@@ -170,6 +197,28 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     }
 
     const date: Dayjs = values.date;
+
+    if (
+      selectedProject.start_date &&
+      date.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')
+    ) {
+      const errorMsg = t('projectStartDateError', {
+        date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+        defaultValue: 'Time cannot be logged before the project start date ({{date}})',
+      });
+      appMessage.warning({
+        content: errorMsg,
+        key: 'log-time-modal-project-start-date',
+      });
+      form.setFields([
+        {
+          name: 'date',
+          errors: [errorMsg],
+        },
+      ]);
+      return;
+    }
+
     let secondsSpent = 0;
     let formattedStart: Dayjs;
 
@@ -216,8 +265,9 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
       await taskTimeLogsApiService.create(requestBody);
       onSuccess();
       onClose();
-    } catch {
-      appMessage.error(t('logTimeError', { defaultValue: 'Failed to log time' }));
+    } catch (error: any) {
+      const serverMessage = error?.response?.data?.message;
+      appMessage.error(serverMessage || t('logTimeError', { defaultValue: 'Failed to log time' }));
     } finally {
       setSubmitting(false);
     }
@@ -227,6 +277,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     <Modal
       open={open}
       onCancel={onClose}
+      centered
       title={t('modalTitle', { defaultValue: 'Quick Time Entry' })}
       footer={null}
       width={440}
@@ -253,23 +304,26 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
         }}
         requiredMark={false}
       >
-        <Form.Item label={t('projectLabel', { defaultValue: 'Project' })} style={{ marginBottom: 16 }}>
+        <Form.Item label={t('projectLabel', { defaultValue: 'Project' })} style={{ marginBottom: 12 }}>
           <Select
+            aria-label={t('projectLabel', { defaultValue: 'Project' })}
             showSearch
             allowClear
-            filterOption={false}
+            optionFilterProp="label"
+            filterOption={(input, option) =>
+              String(option?.label ?? '').toLowerCase().includes(input.toLowerCase().trim())
+            }
             placeholder={t('selectProjectPlaceholder', { defaultValue: 'Select project...' })}
             value={selectedProject?.id}
             options={projectOptions}
             loading={projectLoading}
             notFoundContent={projectLoading ? <Spin size="small" /> : null}
-            onSearch={setProjectSearchTerm}
             onChange={handleProjectChange}
             style={{ width: '100%' }}
           />
         </Form.Item>
 
-        <Form.Item name="taskId" label={t('taskLabel', { defaultValue: 'Task' })} style={{ marginBottom: 16 }}>
+        <Form.Item name="taskId" label={t('taskLabel', { defaultValue: 'Task' })} style={{ marginBottom: 12 }}>
           <Select
             showSearch
             allowClear
@@ -289,7 +343,20 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
           />
         </Form.Item>
 
-        <Form.Item label={t('inputModeLabel', { defaultValue: 'Input Mode' })} style={{ marginBottom: 16 }}>
+        {selectedProject?.start_date && dayjs(selectedProject.start_date).isAfter(dayjs(), 'day') && (
+          <Alert
+            type="warning"
+            showIcon
+            message={t('projectNotStartedWarningDesc', {
+              date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+              defaultValue:
+                'This project is scheduled to start on {{date}}. Time cannot be logged before the project start date.',
+            })}
+            style={{ marginBottom: 12 }}
+          />
+        )}
+
+        <Form.Item label={t('inputModeLabel', { defaultValue: 'Input Mode' })} style={{ marginBottom: 12 }}>
           <Segmented
             block
             value={inputMode}
@@ -306,12 +373,20 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
             <Form.Item
               name="date"
               label={t('dateLabel', { defaultValue: 'Date' })}
+              extra={
+                selectedProject?.start_date
+                  ? t('projectStartDateHint', {
+                      date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+                      defaultValue: 'Project start date: {{date}}',
+                    })
+                  : undefined
+              }
               rules={[{ required: true, message: t('selectDateError', { defaultValue: 'Select a date' }) }]}
-              style={{ flex: 1.4, minWidth: 160, marginBottom: 16 }}
+              style={{ flex: 1.4, minWidth: 160, marginBottom: 12 }}
             >
               <DatePicker
                 style={{ width: '100%' }}
-                disabledDate={current => current && current.toDate() > new Date()}
+                disabledDate={isDateDisabled}
               />
             </Form.Item>
 
@@ -319,7 +394,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
               name="hours"
               label={t('hoursLabel', { defaultValue: 'Hours' })}
               rules={[{ type: 'number', min: 0, message: t('hoursMinError', { defaultValue: 'Hours must be 0 or greater' }) }]}
-              style={{ flex: 1, minWidth: 80, marginBottom: 16 }}
+              style={{ flex: 1, minWidth: 80, marginBottom: 12 }}
             >
               <InputNumber min={0} precision={0} placeholder="0" style={{ width: '100%' }} />
             </Form.Item>
@@ -328,7 +403,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
               name="minutes"
               label={t('minutesLabel', { defaultValue: 'Minutes' })}
               rules={[{ type: 'number', min: 0, max: 59, message: t('minutesRangeError', { defaultValue: '0 – 59' }) }]}
-              style={{ flex: 1, minWidth: 80, marginBottom: 16 }}
+              style={{ flex: 1, minWidth: 80, marginBottom: 12 }}
             >
               <InputNumber min={0} max={59} precision={0} placeholder="0" style={{ width: '100%' }} />
             </Form.Item>
@@ -338,12 +413,20 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
             <Form.Item
               name="date"
               label={t('dateLabel', { defaultValue: 'Date' })}
+              extra={
+                selectedProject?.start_date
+                  ? t('projectStartDateHint', {
+                      date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
+                      defaultValue: 'Project start date: {{date}}',
+                    })
+                  : undefined
+              }
               rules={[{ required: true, message: t('selectDateError', { defaultValue: 'Select a date' }) }]}
-              style={{ marginBottom: 16 }}
+              style={{ marginBottom: 12 }}
             >
               <DatePicker
                 style={{ width: '100%' }}
-                disabledDate={current => current && current.toDate() > new Date()}
+                disabledDate={isDateDisabled}
               />
             </Form.Item>
 
@@ -352,7 +435,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
                 name="startTime"
                 label={t('startTimeLabel', { defaultValue: 'Start Time' })}
                 rules={[{ required: true, message: t('selectStartTimeError', { defaultValue: 'Select a start time' }) }]}
-                style={{ flex: 1, marginBottom: 16 }}
+                style={{ flex: 1, marginBottom: 12 }}
               >
                 <TimePicker format="HH:mm" style={{ width: '100%' }} />
               </Form.Item>
@@ -361,7 +444,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
                 name="endTime"
                 label={t('endTimeLabel', { defaultValue: 'End Time' })}
                 rules={[{ required: true, message: t('selectEndTimeError', { defaultValue: 'Select an end time' }) }]}
-                style={{ flex: 1, marginBottom: 16 }}
+                style={{ flex: 1, marginBottom: 12 }}
               >
                 <TimePicker format="HH:mm" style={{ width: '100%' }} />
               </Form.Item>
@@ -372,24 +455,23 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
         <Form.Item
           name="description"
           label={t('workDescriptionLabel', { defaultValue: 'Work Description' })}
-          style={{ marginBottom: 20 }}
+          style={{ marginBottom: 16 }}
         >
           <TextArea
             placeholder={t('workDescriptionPlaceholder', { defaultValue: 'What did you work on?' })}
             maxLength={500}
             showCount
-            autoSize={{ minRows: 2, maxRows: 5 }}
+            autoSize={{ minRows: 2, maxRows: 3 }}
           />
         </Form.Item>
 
-        <Form.Item style={{ marginBottom: 0 }}>
+        <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
           <Button
             type="primary"
             htmlType="submit"
-            block
-            size="large"
             loading={submitting}
             disabled={!isFormValid()}
+            style={{ height: 30, fontSize: 12, borderRadius: 7, paddingInline: 12 }}
           >
             {t('logTimeButton', { defaultValue: 'Log Time' })}
           </Button>

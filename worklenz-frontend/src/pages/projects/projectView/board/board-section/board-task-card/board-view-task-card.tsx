@@ -34,6 +34,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@/utils/themeWiseColor';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import BoardSubTaskCard from '../board-sub-task-card/board-sub-task-card';
 import CustomAvatarGroup from '@/components/board/custom-avatar-group';
 import CustomDueDatePicker from '@/components/board/custom-due-date-picker';
@@ -272,7 +273,7 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
               color: getContrastColor(label?.color_code),
             }}
           >
-            {label.name}
+            {decodeHtmlEntities(label.name)}
           </Tag>
         ))}
         {task.labels.length > 2 && <Tag>+ {task.labels.length - 2}</Tag>}
@@ -319,8 +320,8 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
           <Flex gap={4} align="center">
             {/* Action Icons */}
             <PrioritySection task={task} />
-            <Typography.Text style={{ fontWeight: 500 }} ellipsis={{ tooltip: task.name }}>
-              {task.name}
+            <Typography.Text style={{ fontWeight: 500 }} ellipsis={{ tooltip: decodeHtmlEntities(task.name) }}>
+              {decodeHtmlEntities(task.name)}
             </Typography.Text>
           </Flex>
           <Flex

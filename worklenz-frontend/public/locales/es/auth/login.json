@@ -14,9 +14,9 @@
   "loginButton": "Iniciar sesión",
   "signupButton": "Registrarse",
   "forgotPasswordButton": "¿Olvidaste tu contraseña?",
-  "signInWithGoogleButton": "Google",
+  "signInWithGoogleButton": "google",
   "signInWithGoogleAriaLabel": "Iniciar sesión con Google",
-  "signInWithAppleButton": "Apple",
+  "signInWithAppleButton": "manzana",
   "signInWithAppleAriaLabel": "Iniciar sesión con Apple",
   "dontHaveAccountText": "¿No tienes una cuenta?",
   "bySigningInText": "Al iniciar sesión, aceptas nuestros",
@@ -34,5 +34,6 @@
   "errorMessages": {
     "loginErrorTitle": "Iniciar sesión falló",
     "loginErrorMessage": "Por favor verifica tu correo electrónico y contraseña y vuelve a intentarlo"
-  }
+  },
+  "rememberMe": "Recuérdame"
 }

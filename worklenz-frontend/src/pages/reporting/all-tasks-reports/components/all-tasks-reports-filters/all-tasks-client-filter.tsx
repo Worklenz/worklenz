@@ -15,6 +15,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { clientsApiService } from '@/api/clients/clients.api.service';
 import { IClient } from '@/types/client.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   setSelectedClients,
   toggleClient,
@@ -95,7 +96,7 @@ const AllTasksClientFilter = () => {
                 checked={selectedClients.includes(client.id || '')}
                 onChange={() => handleToggle(client.id || '')}
               >
-                <Typography.Text>{client.name}</Typography.Text>
+                <Typography.Text>{decodeHtmlEntities(client.name)}</Typography.Text>
               </Checkbox>
             ))}
           </Flex>
@@ -107,7 +108,7 @@ const AllTasksClientFilter = () => {
   return (
     <Dropdown
       overlayClassName="custom-dropdown"
-      dropdownRender={() => dropdownContent}
+      popupRender={() => dropdownContent}
       trigger={['click']}
       placement="bottomLeft"
     >

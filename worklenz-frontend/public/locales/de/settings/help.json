@@ -1,0 +1,29 @@
+{
+  "pageTitle": "Hilfe",
+  "pageDescription": "Dokumentation, Versionshinweise, Community-Links und Versionsinformationen.",
+  "opensInNewTab": "öffnet sich in einem neuen Tab",
+  "opensEmailApp": "öffnet deine E-Mail-App",
+  "items": {
+    "documentation": "Dokumentation",
+    "releaseNotes": "Versionshinweise",
+    "changelog": "Änderungsprotokoll",
+    "emailSupport": "E-Mail-Support",
+    "youtube": "YouTube",
+    "discord": "Zwietracht",
+    "github": "GitHub",
+    "facebook": "Facebook",
+    "linkedin": "LinkedIn",
+    "x": "X",
+    "privacyPolicy": "Datenschutzerklärung",
+    "about": "Über"
+  },
+  "releaseNotes": {
+    "unavailable": "Noch keine Versionshinweise veröffentlicht",
+    "loadFailed": "Versionshinweise konnten nicht geladen werden. Klicke, um es erneut zu versuchen.",
+    "loadFailedMessage": "Versionshinweise konnten nicht geladen werden. Bitte versuche es erneut."
+  },
+  "about": {
+    "version": "Version",
+    "lastUpdated": "Zuletzt aktualisiert"
+  }
+}

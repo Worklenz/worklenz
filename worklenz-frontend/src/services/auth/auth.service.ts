@@ -41,6 +41,11 @@ class AuthService {
     return currentRole === ROLE_NAMES.OWNER || currentRole === ROLE_NAMES.ADMIN;
   }
 
+  /** Only Owner/Admin may create projects from templates. */
+  public canCreateProjectsFromTemplates(): boolean {
+    return this.isOwnerOrAdmin();
+  }
+
   // Sign out methods
   public async signOut(): Promise<void> {
     try {

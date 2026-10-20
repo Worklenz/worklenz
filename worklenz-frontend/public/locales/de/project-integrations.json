@@ -5,10 +5,9 @@
   "manageAll": "Alle Integrationen verwalten",
   "comingSoon": "Demnächst",
   "cancel": "Abbrechen",
-
   "slack": {
-    "title": "Slack",
-    "description": "Benachrichtigungen an Slack-Kanäle senden",
+    "title": "Locker",
+    "description": "Erhalten Sie Updates zu Aufgaben, Status und Kommentaren in Ihren Slack-Kanälen",
     "notConnected": "Bitte verbinden Sie zuerst Ihren Slack-Arbeitsbereich in den Einstellungen",
     "quickAddTitle": "Slack zum Projekt hinzufügen",
     "currentProject": "Projekt",
@@ -20,17 +19,17 @@
     "addButton": "Integration hinzufügen",
     "inviteBotTip": "Tipp: Stellen Sie sicher, dass Sie den @Worklenz-Bot zuerst zu Ihrem Slack-Kanal einladen!"
   },
-
   "teams": {
-    "title": "Microsoft Teams",
-    "description": "Benachrichtigungen an Teams-Kanäle senden"
+    "title": "Microsoft-Teams",
+    "description": "Senden Sie Aufgaben- und Statusupdates an Ihre Teams-Kanäle"
   },
-
   "github": {
     "title": "GitHub",
-    "description": "Aufgaben mit GitHub-Issues synchronisieren"
+    "description": "Branches, Pull Requests und Commits an Aufgaben verfolgen",
+    "softwareDescription": "Branches, Pull Requests und Commits an jeder Aufgabe, mit automatischen Statusupdates",
+    "softwareOnly": "Softwareprojekte",
+    "connectDescription": "Verbinden Sie GitHub, um Repositories zu verknüpfen, Pull Requests zu verfolgen und den Aufgabenstatus zu automatisieren"
   },
-
   "notificationTypes": {
     "taskCreated": "Aufgabe erstellt",
     "taskAssigned": "Aufgabe zugewiesen",
@@ -39,20 +38,18 @@
     "commentAdded": "Kommentar hinzugefügt",
     "dueDateChanged": "Fälligkeitsdatum geändert"
   },
-
   "validation": {
     "selectChannel": "Bitte wählen Sie einen Slack-Kanal aus",
     "selectNotifications": "Bitte wählen Sie mindestens einen Benachrichtigungstyp aus"
   },
-
   "messages": {
     "integrationAdded": "Slack-Integration erfolgreich hinzugefügt!",
     "channelsRefreshed": "Kanäle erfolgreich aktualisiert"
   },
-
   "errors": {
     "loadChannelsFailed": "Laden der Kanäle fehlgeschlagen",
     "refreshChannelsFailed": "Aktualisierung der Kanäle fehlgeschlagen",
     "addIntegrationFailed": "Hinzufügen der Integration fehlgeschlagen"
-  }
+  },
+  "businessPlan": "Geschäft"
 }

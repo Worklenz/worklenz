@@ -237,6 +237,12 @@ apiClient.interceptors.response.use(
     const { message, code, name } = error || {};
     const errorResponse = error.response;
 
+    // Same opt-out as the success path: callers that show their own error
+    // toast for a failed action set this header so the interceptor doesn't
+    // also show a generic one for the same failure. Session/CSRF handling
+    // (retry, forced re-login) still applies to silent requests.
+    const isSilentRequest = error.config?.headers?.['X-Silent-Request'] === '1';
+
     // Handle CSRF token errors
     // Check for CSRF errors in multiple ways to ensure we catch them
     const isCsrfError =
@@ -311,9 +317,18 @@ apiClient.interceptors.response.use(
           const retryResponse = await apiClient(retryConfig);
           return retryResponse;
         } catch (retryError: any) {
-          // If retry also fails, show error and handle
-          if (retryError.response?.status === 403) {
-            // Still CSRF error after retry - likely session issue
+          // A 403 on retry is only a session problem if it is still a CSRF failure;
+          // permission 403s are already surfaced by the nested interceptor call.
+          const retryData = retryError.response?.data;
+          const isRetryCsrfError =
+            retryError.response?.status === 403 &&
+            (retryError.code === 'EBADCSRFTOKEN' ||
+              (typeof retryData === 'object' &&
+                retryData !== null &&
+                typeof retryData.message === 'string' &&
+                retryData.message.toLowerCase().includes('csrf')) ||
+              (typeof retryData === 'string' && retryData.toLowerCase().includes('csrf')));
+          if (isRetryCsrfError) {
             alertService.error('Security Error', 'Session expired. Please log in again.');
             window.location.href = '/auth/login';
           }
@@ -380,18 +395,14 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      // For other 403 errors, show alert
-      alertService.error('Access Denied', errorMessage);
+      if (!isSilentRequest) {
+        alertService.error('Access Denied', errorMessage);
+      }
       return Promise.reject(error);
     }
 
     const errorMessage = (errorResponse?.data as any)?.message || message || 'An unexpected error occurred';
     const errorTitle = 'Error';
-
-    // Same opt-out as the success path: callers that show their own error
-    // toast for a failed action set this header so the interceptor doesn't
-    // also show a generic one for the same failure.
-    const isSilentRequest = error.config?.headers?.['X-Silent-Request'] === '1';
 
     if (error.code !== 'ERR_NETWORK' && !isSilentRequest) {
       alertService.error(errorTitle, errorMessage);

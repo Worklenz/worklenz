@@ -22,7 +22,7 @@ import {
 } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { colors } from '@/styles/colors';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { useTranslation } from 'react-i18next';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { safeTextDisplay } from '@/utils/html-entities';
@@ -165,7 +165,7 @@ const ProjectCategorySection = ({ form, t, disabled }: ProjectCategorySectionPro
             loading={creating}
             allowClear
             onDropdownVisibleChange={handleDropdownVisibleChange}
-            dropdownRender={menu => (
+            popupRender={menu => (
               <>
                 {menu}
                 <Divider style={{ margin: '8px 0' }} />

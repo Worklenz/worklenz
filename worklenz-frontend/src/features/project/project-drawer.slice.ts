@@ -1,6 +1,13 @@
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { cacheProjectAccess } from '@/features/project/project.slice';
+import { extractProjectAccess } from '@/utils/project-access.utils';
+
+interface MergeProjectDataPayload {
+  projectId: string;
+  changes: Partial<IProjectViewModel>;
+}
 
 interface IProjectDrawerState {
   projectId: string | null;
@@ -22,7 +29,6 @@ export const fetchProjectData = createAsyncThunk(
         throw new Error('Project ID is required');
       }
 
-      console.log(`Fetching project data for ID: ${projectId}`);
       const response = await projectsApiService.getProject(projectId);
 
       if (!response) {
@@ -37,7 +43,11 @@ export const fetchProjectData = createAsyncThunk(
         throw new Error('No project data in response body');
       }
 
-      console.log(`Successfully fetched project data:`, response.body);
+      const access = extractProjectAccess(response.body);
+      if (access && response.body.id) {
+        dispatch(cacheProjectAccess({ projectId: response.body.id, access }));
+      }
+
       return response.body;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch project';
@@ -54,6 +64,11 @@ const projectDrawerSlice = createSlice({
     setProjectId: (state, action) => {
       state.projectId = action.payload;
     },
+    mergeProjectData: (state, action: PayloadAction<MergeProjectDataPayload>) => {
+      if (state.project?.id === action.payload.projectId) {
+        Object.assign(state.project, action.payload.changes);
+      }
+    },
     setProjectData: (state, action) => {
       state.project = action.payload;
     },
@@ -61,23 +76,19 @@ const projectDrawerSlice = createSlice({
   extraReducers: builder => {
     builder
       .addCase(fetchProjectData.pending, state => {
-        console.log('Starting project data fetch...');
         state.projectLoading = true;
-        state.project = null; // Clear existing data while loading
+        state.project = null;
       })
       .addCase(fetchProjectData.fulfilled, (state, action) => {
-        console.log('Project data fetch completed successfully:', action.payload);
         state.project = action.payload;
         state.projectLoading = false;
       })
       .addCase(fetchProjectData.rejected, (state, action) => {
-        console.error('Project data fetch failed:', action.payload);
         state.projectLoading = false;
         state.project = null;
-        // You could add an error field to the state if needed for UI feedback
       });
   },
 });
 
-export const { setProjectId, setProjectData } = projectDrawerSlice.actions;
+export const { setProjectId, setProjectData, mergeProjectData } = projectDrawerSlice.actions;
 export default projectDrawerSlice.reducer;

@@ -13,6 +13,7 @@ import { DownOutlined } from '@/shared/antd-imports';
 // custom css file
 import './custom-column-label-cell.css';
 import { useTranslation } from 'react-i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { colors } from '../../../../../../../../styles/colors';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 
@@ -49,7 +50,7 @@ const CustomColumnLabelCell = ({
             key: label.id as string, // Assert that id is a string
             label: (
               <Flex gap={4}>
-                <Badge color={label.color_code} /> {label.name}
+                <Badge color={label.color_code} /> {decodeHtmlEntities(label.name)}
               </Flex>
             ),
             type: 'item' as const,

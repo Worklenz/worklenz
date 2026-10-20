@@ -1,5 +1,5 @@
 {
-  "title": "Teams",
+  "title": "Mannschaften",
   "subtitle": "Teams",
   "tooltip": "Teams aktualisieren",
   "placeholder": "Nach Namen suchen",
@@ -31,5 +31,6 @@
   "admin": "Administrator",
   "member": "Mitglied",
   "cannotChangeOwnerRole": "Die Eigentümerrolle kann nicht geändert werden",
-  "pendingInvitation": "Ausstehende Einladung"
+  "pendingInvitation": "Ausstehende Einladung",
+  "clickToEditName": "Klicken Sie, um den Namen zu bearbeiten"
 }

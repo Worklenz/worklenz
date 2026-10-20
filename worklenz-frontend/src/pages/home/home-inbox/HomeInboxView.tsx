@@ -6,9 +6,9 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@utils/themeWiseColor';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useInboxConversations, InboxConversation } from './hooks/useInboxConversations';
@@ -16,7 +16,7 @@ import ConversationList from './components/ConversationList';
 import InboxThreadPanel from './components/InboxThreadPanel';
 import PinnedMessagesPanel from './components/PinnedMessagesPanel';
 import NewChatModal, { NewChatMode } from './components/NewChatModal';
-import ClientPortalNewChatModal from '@/ee/components/client-portal/NewChatModal';
+import ClientPortalNewChatModal from '@/components/client-portal/NewChatModal';
 
 export type { InboxCategory, InboxConversation } from './hooks/useInboxConversations';
 
@@ -32,7 +32,7 @@ const HomeInboxView: React.FC = () => {
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
-  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const hasBusinessAccess = canUseFeature(currentSession, 'client_portal_chats');
   const { trackAppSumoEvent } = useAppSumoTracking();
   const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
   const [activeTab, setActiveTab] = useState<InboxTab>('all');

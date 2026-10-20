@@ -9,8 +9,8 @@ import {
   RocketOutlined,
 } from '@ant-design/icons';
 import { useAuthService } from '@/hooks/useAuth';
-import { isOnBusinessTrial, getPlanTrialDaysRemaining } from '@/ee/utils/subscription-utils';
-import { PlanTrialApiService } from '@/ee/api/admin-center/plan-trial.api.service';
+import { isOnBusinessTrial, getPlanTrialDaysRemaining } from '@/utils/subscription-utils';
+import { PlanTrialApiService } from '@/api/admin-center/plan-trial.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
@@ -318,7 +318,7 @@ export const BusinessPlanTrialAlert = () => {
 
       return `${base} — ${t('business-trial-then-plan', {
         plan: postTrialPlanName,
-        defaultValue: `you'll continue on ${postTrialPlanName} after that`,
+        defaultValue: "you'll continue on {{plan}} after that",
       })}`;
     };
 

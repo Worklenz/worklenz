@@ -26,5 +26,8 @@
   "navigateBackTooltip": "Volver a la lista de proyectos",
   "projectStatusTooltip": "Estado del proyecto",
   "projectDatesInfo": "Información de cronograma del proyecto",
-  "projectCategoryTooltip": "Categoría del proyecto"
+  "projectCategoryTooltip": "Categoría del proyecto",
+  "softwareProjectTooltip": "Proyecto de software: problemas, trabajos pendientes y sprints",
+  "settingsDisabledForGuest": "La configuración del proyecto no es accesible para los usuarios invitados",
+  "softwareProjectTag": "programas"
 }

@@ -15,9 +15,11 @@ import {
   fetchBillingInfo,
 } from '@/features/admin-center/admin-center.slice';
 import logger from '@/utils/errorLogger';
-import { tr } from 'date-fns/locale';
+import { tr } from 'date-fns/locale/tr';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_admin_center_overview_visit } from '@/shared/worklenz-analytics-events';
+import { AuditLogRetentionControl } from '@/components/admin-center/audit-log/AuditLogRetentionControl';
+import { useAuditLogPermissions } from '@/hooks/useAuditLogPermissions';
 
 const { Text } = Typography;
 
@@ -31,6 +33,7 @@ const Overview: React.FC = () => {
 
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
   const { t } = useTranslation('admin-center/overview');
+  const { canEditRetention } = useAuditLogPermissions();
 
   const getOrganizationDetails = async () => {
     try {
@@ -109,6 +112,8 @@ const Overview: React.FC = () => {
             </Col>
           </Row>
         </Card>
+
+        {canEditRetention && <AuditLogRetentionControl variant="card" />}
 
         {/* Organization Admins Section */}
         <Card

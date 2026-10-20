@@ -1,0 +1,23 @@
+{
+  "uploadError": "Vous ne pouvez télécharger que des fichiers JPG/PNG !",
+  "uploadSizeError": "L'image doit être inférieure à 2 Mo !",
+  "upload": "Télécharger",
+  "nameLabel": "Nom",
+  "nameRequiredError": "Le nom est requis",
+  "emailLabel": "Courriel",
+  "emailRequiredError": "L'e-mail est requis",
+  "saveChanges": "Enregistrer les modifications",
+  "save": "Enregistrer",
+  "profileJoinedText": "A rejoint {{date}}",
+  "profileLastUpdatedText": "Dernière mise à jour {{date}}",
+  "avatarTooltip": "Cliquez pour télécharger un avatar",
+  "removeAvatar": "Supprimer la photo",
+  "removeAvatarConfirmTitle": "Supprimer la photo de profil ?",
+  "removeAvatarConfirmDescription": "Votre avatar sera supprimé et vos initiales seront affichées à la place.",
+  "cancel": "Annuler",
+  "justNow": "Juste maintenant",
+  "cropProfilePicture": "Photo de profil de culture",
+  "title": "Paramètres du profil",
+  "nameMinLengthError": "Le nom doit comporter au moins 2 caractères",
+  "nameMaxLengthError": "Le nom ne peut pas dépasser 50 caractères"
+}

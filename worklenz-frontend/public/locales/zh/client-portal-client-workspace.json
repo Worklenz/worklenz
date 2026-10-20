@@ -1,0 +1,84 @@
+{
+  "retry": "重试",
+  "tabs": {
+    "overview": "Overview",
+    "messages": "Messages",
+    "members": "公司成员",
+    "projects": "项目",
+    "billing": "计费"
+  },
+  "portalStatus": {
+    "active": "活跃",
+    "invited": "受邀",
+    "expired": "已过期",
+    "not_invited": "未受邀"
+  },
+  "header": {
+    "back": "客户",
+    "edit": "编辑客户",
+    "actionsLabel": "客户操作",
+    "lastSignedIn": "最后登录于 {{time}}",
+    "invited": "已邀请 {{time}}",
+    "neverSignedIn": "从未登录过"
+  },
+  "rail": {
+    "contact": "联系方式",
+    "email": "Email",
+    "company": "Company",
+    "projects": "项目",
+    "balance": "平衡",
+    "portalHealth": "门户健康状况",
+    "signInMethod": "登录方式",
+    "signInPassword": "密码",
+    "signInNone": "尚未登录",
+    "lastSignIn": "上次登录",
+    "never": "从来没有",
+    "quickActions": "快速行动",
+    "sendMessage": "发送消息",
+    "createInvoice": "创建发票",
+    "assignTask": "分配任务"
+  },
+  "overview": {
+    "tasksOpen": "任务开放",
+    "invoicesDue": "应付发票",
+    "unansweredMessages": "未回复的消息",
+    "statsError": "无法加载该客户的号码。",
+    "recentActivity": "最近的活动",
+    "activityError": "无法加载最近的活动。",
+    "noActivity": "尚未记录 {{name}} 的任何内容。"
+  },
+  "members": {
+    "title": "公司成员",
+    "addUser": "添加用户"
+  },
+  "projects": {
+    "title": "项目",
+    "project": "项目",
+    "openProject": "打开{{name}}",
+    "health": "健康",
+    "progress": "进展",
+    "progressLabel": "{{name}} 的进度",
+    "due": "由于",
+    "assign": "分配项目",
+    "loadError": "无法加载该客户的项目。",
+    "empty": "{{name}} 还没有项目。",
+    "truncated": "显示 {{total}} 项目中的第一个 {{shown}}。"
+  },
+  "billing": {
+    "title": "发票",
+    "createInvoice": "创建发票",
+    "warningTitle": "{{name}} 还无法使用他们的门户",
+    "warningDescription": "他们尚未接受邀请，因此无法在门户中查看或支付发票。���仍然可以创建发票。如果他们应该见到他们，请先发送邀请。",
+    "sendInvite": "发送邀请",
+    "resendInvite": "重新发送邀请",
+    "inviteSent": "邀请已发送至 {{name}}。",
+    "inviteError": "无法发送邀请。"
+  },
+  "errors": {
+    "notFoundTitle": "找不到客户端",
+    "notFoundDescription": "可能已被删除，或者链接有误。",
+    "loadTitle": "无法加载此客户端",
+    "loadDescription": "请再试一次。",
+    "backToClients": "返回客户"
+  }
+}

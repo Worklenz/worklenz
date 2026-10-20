@@ -1,0 +1,84 @@
+{
+  "access": {
+    "introExisting": "Pick the projects this user can open. If the Client Portal is off for a project you pick, it is switched on.",
+    "introNew": "Pick the projects this client should see. Projects without a client are linked to the new organization, and the Client Portal is switched on for each one you pick.",
+    "loadFailed": "The projects could not be loaded.",
+    "noClientYet": "No client yet",
+    "noProjectsExisting": "This organization has no projects yet. The user can be assigned projects later.",
+    "noProjectsNew": "Every workspace project already has a client. Link one later from Portal Projects.",
+    "portalOff": "Portal off, will be switched on",
+    "search": "Search projects…",
+    "title": "Project access"
+  },
+  "details": {
+    "email": "Email address",
+    "emailHint": "This is the login and invitation address. It must be unique.",
+    "emailInvalid": "Enter a valid email address.",
+    "firstName": "First name",
+    "firstNamePlaceholder": "Jane",
+    "firstUserNotice": "The first user of a new organization is a Client Admin. They can approve items and, if you enable it in Portal Settings, manage their own colleagues. Like every client user, they sign in with a one-time code emailed to this address.",
+    "jobTitle": "Job title",
+    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "lastName": "Last name",
+    "lastNamePlaceholder": "Doe",
+    "noOrganizations": "No organizations found.",
+    "organization": "Organization",
+    "organizationName": "Organization name",
+    "organizationNamePlaceholder": "e.g. Beacon Logistics",
+    "phone": "Phone (optional)",
+    "role": "Role",
+    "selectOrganization": "Select an organization…"
+  },
+  "footer": {
+    "addUser": "Add user",
+    "back": "Back",
+    "continue": "Continue",
+    "sendInvitation": "Send invitation"
+  },
+  "method": {
+    "existingOrganization": {
+      "description": "Invite another person to an organization that already has portal access.",
+      "name": "Add a user to an existing organization"
+    },
+    "groupLabel": "How to add this client",
+    "intro": "Every client user belongs to an organization, and sees only the projects you assign to them.",
+    "newOrganization": {
+      "description": "Create the organization and invite its first user as Client Admin.",
+      "name": "New client organization"
+    }
+  },
+  "result": {
+    "activationHint": "They open the link in the email and sign in with a 6-digit code sent to their address. There is no password.",
+    "addedNoInvite": "{{name}} was added as {{role}}. No invitation was sent yet.",
+    "emailNotSent": "{{name}} was saved, but the invitation email could not be sent. Share the link instead.",
+    "failed": "The client could not be added.",
+    "invited": "Invitation sent to {{email}}.",
+    "portalsSwitchedOn": "Client Portal switched on for {{count}} project(s).",
+    "portalsSwitchedOn_one": "Client Portal switched on for {{count}} project.",
+    "portalsSwitchedOn_other": "Client Portal switched on for {{count}} projects."
+  },
+  "review": {
+    "email": "Email",
+    "name": "Name",
+    "organization": "Organization",
+    "projects": "Projects",
+    "projectsAssigned": "{{count}} assigned",
+    "projectsAssigned_one": "{{count}} assigned",
+    "projectsAssigned_other": "{{count}} assigned",
+    "projectsNone": "None yet",
+    "role": "Role",
+    "sendInvitation": "Send the invitation now",
+    "sendInvitationHint": "The link carries their email address; opening it sends them a 6-digit code, so there is no password to set. The link expires after 7 days. If it expires, resend it from the Users list, or they can sign in by entering their email."
+  },
+  "steps": {
+    "access": "Access",
+    "details": "Details",
+    "method": "Method"
+  },
+  "title": {
+    "access": "Access & review",
+    "detailsExisting": "Choose the organization and the user",
+    "detailsNew": "Tell us about the organization",
+    "method": "How do you want to add this client?"
+  }
+}

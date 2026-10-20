@@ -5,7 +5,7 @@ import {
   notification,
   Tooltip,
 } from '@/shared/antd-imports';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -29,6 +29,7 @@ import {
   navigateToPreviousTask,
   fetchTask,
   syncNavigationIndex,
+  setLastDeletedTaskId,
 } from '@/features/task-drawer/task-drawer.slice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -46,11 +47,15 @@ import {
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import TaskDrawerNavigation from '../task-drawer-navigation/task-drawer-navigation';
+import { TaskDrawerIssueIdentity } from './task-drawer-issue-identity';
+import { useTaskDrawerStatuses } from '@/hooks/useTaskDrawerStatuses';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import logger from '@/utils/errorLogger';
 import homePageApi from '@/api/home-page/home-page.api.service';
 import CopyTaskToProjectModal from '@/components/task-list-v2/components/CopyTaskToProjectModal';
 import { duplicateTask } from '@/features/task-management/task-management.slice';
 import taskDuplicateApiService from '@/api/tasks/task-duplicate.api.service';
+import { StickyTaskName } from './sticky-task-name';
 
 type TaskDrawerHeaderProps = {
   t: TFunction;
@@ -76,6 +81,11 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
     selectedTaskId,
     navigationContext,
   } = useAppSelector(state => state.taskDrawerReducer);
+
+  const statusesForDropdown = useTaskDrawerStatuses();
+  const isSoftwareProject = useAppSelector(state =>
+    isSoftwareProjectType(state.projectReducer.project?.project_type)
+  );
 
   const currentSession = useAuthService().getCurrentSession();
 
@@ -113,15 +123,23 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
   };
 
   const handleDeleteTask = async () => {
-    if (!selectedTaskId) return;
+    if (!selectedTaskId || isDeleting.current) return;
 
     isDeleting.current = true;
     setDropdownOpen(false);
     setShowDeleteConfirm(false);
 
-    const res = await tasksApiService.deleteTask(selectedTaskId);
+    let res: Awaited<ReturnType<typeof tasksApiService.deleteTask>>;
+    try {
+      res = await tasksApiService.deleteTask(selectedTaskId);
+    } catch (error) {
+      logger.error('Error deleting task:', error);
+      isDeleting.current = false;
+      return;
+    }
 
     if (res.done) {
+      dispatch(setLastDeletedTaskId(selectedTaskId));
       dispatch(deleteTask({ taskId: selectedTaskId }));
       dispatch(deleteTaskFromManagement(selectedTaskId));
       dispatch(deselectTask(selectedTaskId));
@@ -168,7 +186,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
     } else {
       isDeleting.current = false;
     }
-  };
+  };                 
 
   const renderPopup = () => {
     return (
@@ -326,11 +344,19 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
     <Flex
       align="center"
       justify="space-between"
-      style={{ width: '100%' }}
+      style={{ width: '100%', gap: 12 }}
     >
-      <div />
+      {isSoftwareProject ? (
+        <TaskDrawerIssueIdentity
+          taskKey={taskFormViewModel?.task?.task_key}
+          issueType={taskFormViewModel?.task?.issue_type}
+          isSubTask={isSubTask}
+        />
+      ) : (
+        <div />
+      )}
 
-      <Flex gap={6} align="center">
+      <Flex gap={6} align="center" style={{ flexShrink: 0 }}>
         {!isSubTask &&
           navigationContext &&
           navigationContext.taskIds.length > 1 && (
@@ -347,15 +373,17 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
             />
           )}
 
-        <TaskDrawerStatusDropdown
-          statuses={taskFormViewModel?.statuses ?? []}
-          task={
-            taskFormViewModel?.task ??
-            ({} as ITaskViewModel)
-          }
-          teamId={currentSession?.team_id ?? ''}
-          disabled={isGuest}
-        />
+        {!isSoftwareProject && (
+          <TaskDrawerStatusDropdown
+            statuses={statusesForDropdown}
+            task={
+              taskFormViewModel?.task ??
+              ({} as ITaskViewModel)
+            }
+            teamId={currentSession?.team_id ?? ''}
+            disabled={isGuest}
+          />
+        )}
 
         <Dropdown
           overlayClassName={'task-drawer-actions-dropdown'}
@@ -382,7 +410,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
 
       <CopyTaskToProjectModal
         open={copyToProjectOpen}
-        sourceProjectId={sourceProjectId}
+        sourceProjectId={sourceProjectId ?? undefined}
         taskTitle={taskFormViewModel?.task?.name}
         hasDependencies={taskFormViewModel?.task?.has_dependencies || false}
         confirmLoading={copyToProjectLoading}
@@ -454,4 +482,4 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
   );
 };
 
-export default TaskDrawerHeader;
+export default React.memo(TaskDrawerHeader);

@@ -6,7 +6,8 @@
     "noTasks": "Nenhuma tarefa",
     "pressEnter": "Pressione",
     "toCreate": "para criar.",
-    "markAsDone": "Marcar como feito"
+    "markAsDone": "Marcar como feito",
+    "loading": "Carregando..."
   },
   "projects": {
     "title": "Projetos",
@@ -41,5 +42,23 @@
     "calendar": "Calendário",
     "tasks": "Tarefas",
     "refresh": "Atualizar"
-  }
+  },
+  "projectsAtRisk": "Projetos em risco",
+  "logTime": {
+    "minutesPlaceholder": "0",
+    "createdTimeColumn": "Hora de criação"
+  },
+  "customize": {
+    "tabs": {
+      "layout": "Disposição"
+    }
+  },
+  "expenses": {
+    "addExpense": "Adicionar despesa"
+  },
+  "homeCalendar": {
+    "clientsSearchPlaceholder": "Pesquisar clientes...",
+    "projectsSearchPlaceholder": "Pesquisar projetos..."
+  },
+  "flagged": "sinalizado"
 }

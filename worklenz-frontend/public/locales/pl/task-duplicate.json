@@ -1,0 +1,42 @@
+{
+  "duplicateTask": "Zduplikowane zadanie",
+  "duplicateTaskDescription": "Wybierz elementy, które chcesz skopiować do nowego zadania:",
+  "duplicateOptions": {
+    "subtasks": "Podzadania",
+    "attachments": "Załączniki",
+    "dates": "Daty",
+    "dependencies": "Zależności",
+    "assignees": "Osoby przypisane",
+    "labels": "Etykiety",
+    "customFields": "Niestandardowe wartości pól",
+    "subscribers": "Abonenci"
+  },
+  "duplicate": "Duplikat",
+  "cancel": "Anuluj",
+  "copyToProject": {
+    "title": "Skopiuj zadanie do projektu",
+    "selectProject": "Wybierz projekt docelowy",
+    "confirm": "Skopiuj zadanie",
+    "copyTask": "Skopiuj zadanie",
+    "checkDifferences": "Sprawdź różnice",
+    "check": "Sprawdź różnice",
+    "checking": "Sprawdzanie różnic...",
+    "confirmDifferences": "Dodaj i skopiuj zadanie",
+    "differencesFound": "W projekcie docelowym brakuje tych kolumn.",
+    "missingPhasesFound": "Fazy te zostaną utworzone w projekcie docelowym.",
+    "statusMissing": "Status „{{sourceStatus}}” nie występuje w projekcie docelowym. Zadanie zostanie przypisane do statusu głównego „{{destinationStatus}}”.",
+    "createMissingItems": "Utwórz brakujące kolumny i fazy",
+    "createMissingColumns": "Utwórz brakujące kolumny",
+    "cancel": "Anuluj",
+    "cancelDifferences": "Anuluj kopiowanie",
+    "success": "Zadanie zostało pomyślnie skopiowane",
+    "openTask": "Otwórz zadanie",
+    "loadError": "Nie można wczytać dostępnych projektów.",
+    "noProjects": "Nie znaleziono innych dostępnych projektów.",
+    "noDifferencesFound": "Projekt docelowy zawiera wszystkie wymagane kolumny i fazy.",
+    "copyDependencies": "Kopiuj zadania zależności",
+    "copyDependenciesDescription": "Kopiując to zadanie do projektu docelowego, uwzględnij wszystkie zadania zależne.",
+    "dependenciesInfo": "To zadanie ma zależności. Zadania zależne zostaną również skopiowane do projektu docelowego.",
+    "error": "Nie udało się skopiować zadania"
+  }
+}

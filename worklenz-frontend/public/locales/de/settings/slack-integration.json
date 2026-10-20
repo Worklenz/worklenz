@@ -73,7 +73,7 @@
     "project": "Projekt",
     "slackChannel": "Slack-Kanal",
     "notifications": "Benachrichtigungen",
-    "status": "Status",
+    "status": "Alle Status",
     "statusActive": "Aktiv",
     "statusInactive": "Inaktiv",
     "active": "Aktiv",
@@ -139,5 +139,10 @@
     "updateStatusFailed": "Aktualisierung des Kanal-Status fehlgeschlagen",
     "removeConfigFailed": "Entfernung der Kanal-Konfiguration fehlgeschlagen",
     "refreshChannelsFailed": "Aktualisierung der Kanäle fehlgeschlagen"
+  },
+  "connection": {
+    "success": "Slack-Arbeitsbereich erfolgreich verbunden!",
+    "error": "Verbindung zum Slack-Arbeitsbereich fehlgeschlagen",
+    "cancelled": "Slack-Installation abgebrochen"
   }
 }

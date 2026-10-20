@@ -10,6 +10,7 @@ export interface ITaskStatus {
   category_id?: string;
   category_name?: string;
   category_color_code?: string;
+  is_done?: boolean;
   team_id?: string;
   default_status?: boolean;
   date_created?: string;

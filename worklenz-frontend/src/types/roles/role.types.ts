@@ -177,19 +177,19 @@ export function isTeamLeadRole(roleName: string): boolean {
 }
 
 /**
- * Get color for a role - improved visibility for light theme
+ * Get color for a role - with dark mode support for proper contrast
  */
-export function getRoleColor(roleName: string): string {
+export function getRoleColor(roleName: string, isDarkMode = false): string {
   switch (roleName?.toLowerCase()) {
     case 'owner':
-      return ROLE_COLORS[ROLE_NAMES.OWNER];
+      return isDarkMode ? '#4cc2ff' : ROLE_COLORS[ROLE_NAMES.OWNER];
     case 'admin':
-      return ROLE_COLORS[ROLE_NAMES.ADMIN];
+      return isDarkMode ? '#f5d914' : ROLE_COLORS[ROLE_NAMES.ADMIN];
     case 'team lead':
-      return ROLE_COLORS[ROLE_NAMES.TEAM_LEAD];
+      return isDarkMode ? '#ff8c2b' : ROLE_COLORS[ROLE_NAMES.TEAM_LEAD];
     case 'member':
-      return ROLE_COLORS[ROLE_NAMES.MEMBER];
+      return isDarkMode ? '#b0b0b0' : ROLE_COLORS[ROLE_NAMES.MEMBER];
     default:
-      return colors.darkGray; // Dark gray fallback
+      return isDarkMode ? '#b0b0b0' : colors.darkGray;
   }
 }

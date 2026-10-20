@@ -30,18 +30,26 @@ const AttachmentsUpload = ({
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { trackMixpanelEvent } = useMixpanelTracking();
 
+  const busy = loadingTask || uploading;
+
+  const emitFiles = (files: File[]) => {
+    if (files.length === 0) return;
+    files.forEach(file => {
+      trackMixpanelEvent(evt_file_uploaded, { file_type: getFileType(file.name) });
+    });
+    onFilesSelected(files);
+  };
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
-      const filesArray = Array.from(event.target.files);
-      filesArray.forEach(file => {
-        trackMixpanelEvent(evt_file_uploaded, { file_type: getFileType(file.name) });
-      });
-      onFilesSelected(filesArray);
+      emitFiles(Array.from(event.target.files));
+      // Reset so the same file can be picked again in a later interaction.
+      event.target.value = '';
     }
   };
 
   const handleClick = () => {
-    if (!loadingTask && !uploading && fileInputRef.current) {
+    if (!busy && fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
@@ -63,7 +71,7 @@ const AttachmentsUpload = ({
             ref={fileInputRef}
             style={{ display: 'none' }}
             onChange={handleFileChange}
-            disabled={loadingTask || uploading}
+            disabled={busy}
             multiple
           />
           <div>
@@ -108,6 +116,11 @@ const AttachmentsUpload = ({
                   })}
                 </button>
               )}
+            </div>
+            <div style={{ marginTop: 2, fontSize: 11, color: '#8c8c8c' }}>
+              {t('taskInfoTab.attachments.pasteHint', {
+                defaultValue: 'You can also paste a file with Ctrl+V',
+              })}
             </div>
           </div>
         </div>

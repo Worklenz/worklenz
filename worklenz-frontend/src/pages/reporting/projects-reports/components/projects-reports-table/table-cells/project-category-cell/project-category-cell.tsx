@@ -15,8 +15,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';
 import './project-category-cell.css';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { addCategory } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
+import {
+  addCategory,
+  fetchProjectCategories,
+} from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { themeWiseColor } from '@utils/themeWiseColor';
 import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { useTranslation } from 'react-i18next';
@@ -43,11 +47,19 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
     color_code,
   });
 
-  const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
+  const { projectCategories, loading: categoriesLoading } = useAppSelector(
+    state => state.projectCategoriesReducer
+  );
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (projectCategories.length === 0 && !categoriesLoading) {
+      dispatch(fetchProjectCategories());
+    }
+  }, [dispatch, projectCategories.length, categoriesLoading]);
 
   const filteredCategoriesData = useMemo(() => {
     return projectCategories.filter(category =>
@@ -59,7 +71,7 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
     key: category.id as string,
     label: (
       <Typography.Text style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <Badge color={category.color_code} /> {category.name}
+        <Badge color={category.color_code} /> {decodeHtmlEntities(category.name)}
       </Typography.Text>
     ),
   }));
@@ -140,7 +152,7 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
                 }}
               />
             </div>
-            {filteredCategoriesData.length === 0 && (
+            {!categoriesLoading && searchQuery.trim().length > 0 && filteredCategoriesData.length === 0 && (
               <Typography.Text style={{ color: colors.lightGray }}>
                 Hit enter to create!
               </Typography.Text>
@@ -169,6 +181,9 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
 
   const handleCategoryDropdownOpen = (open: boolean) => {
     if (open) {
+      if (projectCategories.length === 0 && !categoriesLoading) {
+        dispatch(fetchProjectCategories());
+      }
       setTimeout(() => categoryInputRef.current?.focus(), 0);
     }
   };
@@ -184,14 +199,14 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
 
   // Compute pill colors
   const bgColor = selectedCategory.id
-    ? themeWiseColor(`${selectedCategory.color_code}33`, `${selectedCategory.color_code}55`, themeMode)
+    ? selectedCategory.color_code
     : colors.transparent;
   const textColor = themeWiseColor(colors.darkGray, colors.white, themeMode);
   const borderStyle = selectedCategory.id ? 'none' : `1px solid ${colors.deepLightGray}`;
 
   return (
     <Dropdown
-      overlayClassName="custom-dropdown"
+      overlayClassName="custom-dropdown project-category-dropdown"
       menu={{ items: projectCategoryCellItems }}
       placement="bottomRight"
       trigger={['click']}
@@ -211,7 +226,7 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
         }}
       >
         <span className="category-pill-text">
-          {selectedCategory.id ? selectedCategory.name : t('setCategoryText')}
+          {selectedCategory.id ? decodeHtmlEntities(selectedCategory.name) : t('setCategoryText')}
         </span>
         <DownOutlined className="category-pill-icon" />
       </div>

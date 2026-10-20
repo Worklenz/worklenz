@@ -11,6 +11,7 @@ import { sanitizeInput } from '@/utils/sanitizeInput';
 
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
 import logger from '@/utils/errorLogger';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 import { IProjectTemplate } from '@/types/project-templates/project-templates.types';
 
@@ -222,7 +223,8 @@ export const ProjectStep: React.FC<Props> = ({ onEnter, styles, token }) => {
                       className="block text-xs"
                       style={{ color: token?.colorText, marginBottom: 4 }}
                     >
-                      {template.name || t('untitledTemplate', 'Untitled Template')}
+                      {decodeHtmlEntities(template.name) ||
+                        t('untitledTemplate', 'Untitled Template')}
                     </Text>
                     <div className="flex flex-wrap gap-1">
                       {template.phases?.slice(0, 3).map((phase, index) => (
@@ -231,7 +233,7 @@ export const ProjectStep: React.FC<Props> = ({ onEnter, styles, token }) => {
                           color={phase.color_code || 'blue'}
                           style={{ fontSize: 10, lineHeight: '16px', margin: 0, padding: '0 4px' }}
                         >
-                          {phase.name}
+                          {decodeHtmlEntities(phase.name)}
                         </Tag>
                       ))}
                       {(template.phases?.length || 0) > 3 && (

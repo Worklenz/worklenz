@@ -2251,14 +2251,16 @@ BEGIN
     INTO _tasks
     FROM (SELECT id,
                  name,
-                 (SELECT name FROM task_statuses WHERE status_id = task_statuses.id) AS status,
+                 (SELECT name FROM task_statuses WHERE id = tasks.status_id) AS status,
+                 (SELECT name FROM task_statuses WHERE id = tasks.status_id) AS status_name,
                  status_id,
                  end_date,
                  priority_id AS priority,
                  updated_at,
-                 (SELECT color_code
-                  FROM sys_task_status_categories
-                  WHERE id = (SELECT category_id FROM task_statuses WHERE id = status_id)) AS status_color
+                 (SELECT COALESCE(task_statuses.color_code, sys_task_status_categories.color_code)
+                  FROM task_statuses
+                  INNER JOIN sys_task_status_categories ON sys_task_status_categories.id = task_statuses.category_id
+                  WHERE task_statuses.id = tasks.status_id) AS status_color
           FROM tasks
           WHERE project_id = _project_id
             AND CASE
@@ -2587,9 +2589,11 @@ BEGIN
                                start_date,
                                end_date,
                                (SELECT name FROM task_statuses WHERE id = tasks.status_id) AS status,
-                               (SELECT color_code
-                                FROM sys_task_status_categories
-                                WHERE id = (SELECT category_id FROM task_statuses WHERE id = status_id)) AS status_color
+                               (SELECT name FROM task_statuses WHERE id = tasks.status_id) AS status_name,
+                               (SELECT COALESCE(task_statuses.color_code, sys_task_status_categories.color_code)
+                                FROM task_statuses
+                                INNER JOIN sys_task_status_categories ON sys_task_status_categories.id = task_statuses.category_id
+                                WHERE task_statuses.id = tasks.status_id) AS status_color
 
                         FROM tasks
                         WHERE project_id = _project_id
@@ -5654,7 +5658,7 @@ BEGIN
             WHERE team_id = (_body ->> 'team')::UUID
               AND team_member_id = (_body ->> 'member_id')::UUID;
 
-            UPDATE users SET active_team = (_body ->> 'team')::UUID WHERE id = _user_id;
+            UPDATE users SET active_team = (_body ->> 'team')::UUID, setup_completed = TRUE WHERE id = _user_id;
         END IF;
     END IF;
 
@@ -5721,7 +5725,7 @@ BEGIN
         THEN
             RAISE 'ERROR_INVALID_JOINING_EMAIL';
         END IF;
-        UPDATE users SET active_team = (_body ->> 'invited_team_id')::UUID WHERE id = _user_id;
+        UPDATE users SET active_team = (_body ->> 'invited_team_id')::UUID, setup_completed = TRUE WHERE id = _user_id;
     END IF;
 
     -- insert default roles

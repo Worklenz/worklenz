@@ -108,7 +108,8 @@
       "high": "Overallocated",
       "watch": "Watch",
       "ok": "OK"
-    }
+    },
+    "overallocatedCount": "{{count}} members"
   },
   "profitability": {
     "pageTitle": "Profitability",

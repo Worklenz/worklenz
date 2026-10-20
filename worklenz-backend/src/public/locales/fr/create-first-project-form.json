@@ -1,0 +1,14 @@
+{
+  "formTitle": "Créez votre premier projet",
+  "inputLabel": "Sur quel projet travaillez-vous en ce moment ?",
+  "or": "ou",
+  "templateButton": "Importer à partir d'un modèle",
+  "createFromTemplate": "Créer à partir d'un modèle",
+  "importTasks": "Tâches d'importation",
+  "goBack": "Retourner",
+  "continue": "Continuer",
+  "cancel": "Annuler",
+  "create": "Créer",
+  "templateDrawerTitle": "Sélectionnez parmi les modèles",
+  "createProject": "Créer un projet"
+}

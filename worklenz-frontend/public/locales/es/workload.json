@@ -124,7 +124,7 @@
     "endDateHeader": "Fecha de fin",
     "progressHeader": "Progreso (%)",
     "taskFallback": "Tarea {{id}}",
-    "defaultPriority": "Normal",
+    "defaultPriority": "normales",
     "memberLabel": "Miembro: {{name}}",
     "emailLabel": "Correo electrónico: {{email}}",
     "capacityLabel": "Capacidad: {{value}}",

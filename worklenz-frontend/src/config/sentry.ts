@@ -72,14 +72,32 @@ export const initSentry = () => {
 
     // Filter out certain errors
     ignoreErrors: [
-      // Network errors that are expected
+      // Network and transient server/proxy errors
       'Network Error',
       'Failed to fetch',
-      // ResizeObserver errors (common in modern browsers)
+      'NetworkError when attempting to fetch resource.',
+      'Load failed',
+      /Request failed with status code 50[234]/i,
+      'AbortError',
+      'The user aborted a request.',
+      'canceled',
+
+      // ResizeObserver errors (common and harmless in modern browsers)
       'ResizeObserver loop limit exceeded',
-      // Chunk loading errors (handled by our error boundary)
+      'ResizeObserver loop completed with undelivered notifications.',
+
+      // Chunk and asset loading errors (handled gracefully or caused by redeployments)
       'Loading chunk',
       'ChunkLoadError',
+      'Failed to fetch dynamically imported module',
+
+      // Browser extension noise and injected scripts
+      /LibraryDetectorTests_detect/i,
+      'Script error.',
+      /safari-extension:/i,
+      /chrome-extension:/i,
+      /Object Not Found Matching Id/i,
+      /antifingerprint/i,
     ],
 
     // Deny certain URLs from being sent
@@ -90,6 +108,11 @@ export const initSentry = () => {
       /^chrome-extension:\/\//i,
       // Firefox extensions
       /^moz-extension:\/\//i,
+      // Safari extensions
+      /^safari-extension:\/\//i,
+      /^safari-web-extension:\/\//i,
+      // Edge extensions
+      /^edge-extension:\/\//i,
       // Local files
       /^file:\/\//i,
     ],

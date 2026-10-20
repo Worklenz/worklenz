@@ -1,15 +1,16 @@
-import { ExpandAltOutlined } from '@/shared/antd-imports';
-import SortArrows from '@/components/SortArrows';
 import {
   Badge,
   Button,
   Card,
+  ExpandAltOutlined,
   Flex,
+  message,
+  PushpinFilled,
+  PushpinOutlined,
   Table,
   TableProps,
   Tooltip,
   Typography,
-  Pagination,
   theme,
   PlusOutlined,
 } from '@/shared/antd-imports';
@@ -21,11 +22,15 @@ import { useDebouncedMediaQuery } from '@/hooks/useDebouncedMediaQuery';
 import ListView from './ListView';
 import HomeAddTaskModal from './HomeAddTaskModal';
 import PillToggle from '../PillToggle';
+import { TaskTableSettingsMenu } from './TaskTableSettings';
+import { WIDGET_DATA_ATTRIBUTE } from '../home-widgets/widgetInteraction';
+import { MAX_ROWS, useRowsViewport } from '../home-widgets/useRowsViewport';
 import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import EmptyListPlaceholder from '@components/EmptyListPlaceholder';
 import { setHomeTasksConfig } from '@/features/home-page/home-page.slice';
+import { selectHomeSort, type HomeSortField } from '@/features/home-page/homePreferences.slice';
 import { IMyTask } from '@/types/home/my-tasks.types';
 import {
   setSelectedTaskId,
@@ -33,7 +38,13 @@ import {
   fetchTask,
   setNavigationContext,
 } from '@/features/task-drawer/task-drawer.slice';
-import homePageApi, { useGetMyTasksQuery, useGetTaskFilterOptionsQuery } from '@/api/home-page/home-page.api.service';
+import homePageApi, {
+  applyPinToCachedTasks,
+  useGetMyTasksQuery,
+  useGetTaskFilterOptionsQuery,
+  usePinHomeTaskMutation,
+  useUnpinHomeTaskMutation,
+} from '@/api/home-page/home-page.api.service';
 import './tasks-list.css';
 import HomeTasksStatusDropdown from '@/components/home-tasks/statusDropdown/HomeTasksStatusDropdown';
 import HomeTasksDatePicker from '@/components/home-tasks/taskDatePicker/home-tasks-date-picker';
@@ -43,12 +54,21 @@ import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { setProjectId } from '@/features/project/project.slice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
+
+/** However few tasks there are, the table area keeps room for this many rows. */
+const MIN_ROWS = 5;
+const FALLBACK_ROW_HEIGHT = 45;
+const FALLBACK_HEADER_HEIGHT = 29;
+/** Room kept for the loading and empty states, which have no rows to size the area by. */
+const MIN_BODY_HEIGHT = 280;
+const MY_TASKS_PATH = '/worklenz/home/my-tasks';
 
 interface TasksListProps {
   cardTitle?: string;
 }
 
-type SortField = 'name' | 'project_name' | 'end_date' | 'priority' | null;
+type SortField = HomeSortField | null;
 
 const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
   const dispatch = useAppDispatch();
@@ -59,46 +79,31 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
   // without this the timer button below would show "not started" until a socket event arrives.
   useTimerInitialization();
 
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize] = useState<number>(10);
-  const [sortField, setSortField] = useState<SortField>(null);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedProjectIds, setSelectedProjectIds] = useState<React.Key[]>([]);
   const [selectedPriorityIds, setSelectedPriorityIds] = useState<React.Key[]>([]);
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
+  const savedSort = useAppSelector(selectHomeSort);
+  const sortField: SortField = savedSort?.field ?? null;
+  const sortOrder = savedSort?.order ?? 'asc';
+  const isPinnedTab = homeTasksConfig.current_tab === 'Pinned';
 
-  // Reset to page 1 whenever the active tab, group_by, filters, or sort
-  // change. Adjusted during render (React's documented pattern) rather than
-  // in a useEffect: an effect would let queryArg below fire one request with
-  // the stale page and a second, corrected one right after. Comparing
-  // against a ref and calling setCurrentPage synchronously here means the
-  // page is already 1 by the time queryArg is computed in this same render.
-  const filtersSignature = JSON.stringify([
-    homeTasksConfig.current_tab, homeTasksConfig.tasks_group_by,
-    selectedProjectIds, selectedPriorityIds, sortField, sortOrder,
-  ]);
-  const prevFiltersSignatureRef = useRef(filtersSignature);
-  if (prevFiltersSignatureRef.current !== filtersSignature) {
-    prevFiltersSignatureRef.current = filtersSignature;
-    if (currentPage !== 1) setCurrentPage(1);
-  }
-
-  // Pagination/filter/sort stay local to this component rather than being
-  // written into the shared homeTasksConfig slice — HomeStatCards also reads
-  // tasks_group_by off that same slice, and mutating its shape risks
-  // rippling into that unrelated consumer.
+  // Filter/sort stay local to this component rather than being written into the shared
+  // homeTasksConfig slice — HomeStatCards also reads tasks_group_by off that same slice, and
+  // mutating its shape risks rippling into that unrelated consumer. There is one page only: the
+  // first MAX_ROWS tasks, scrolled inside the table, with View all for the rest.
   const queryArg = useMemo(() => ({
     ...homeTasksConfig,
-    index: currentPage,
-    size: pageSize,
+    index: 1,
+    size: MAX_ROWS,
+    pinFirst: true,
     projectIds: selectedProjectIds.length ? (selectedProjectIds as string[]) : undefined,
     priorityIds: selectedPriorityIds.length ? (selectedPriorityIds as string[]) : undefined,
     sortField: sortField || undefined,
     sortOrder,
-  }), [homeTasksConfig, currentPage, pageSize, selectedProjectIds, selectedPriorityIds, sortField, sortOrder]);
+  }), [homeTasksConfig, selectedProjectIds, selectedPriorityIds, sortField, sortOrder]);
 
   const {
     data,
@@ -120,7 +125,11 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
   const { data: filterOptionsData } = useGetTaskFilterOptionsQuery({ group_by: homeTasksConfig.tasks_group_by });
 
   const projectFilterOptions = useMemo(
-    () => (filterOptionsData?.body?.projects || []).map(p => ({ text: p.project_name, value: p.project_id })),
+    () =>
+      (filterOptionsData?.body?.projects || []).map(p => ({
+        text: decodeHtmlEntities(p.project_name),
+        value: p.project_id,
+      })),
     [filterOptionsData?.body?.projects]
   );
 
@@ -129,9 +138,11 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
     [priorities]
   );
 
-  // Server-filtered, server-sorted, server-paginated already — this is
-  // exactly the page of rows to render, no client-side work needed.
-  const tasks: IMyTask[] = data?.body?.tasks || [];
+  // Server-filtered, server-sorted and limited to MAX_ROWS already — these are
+  // exactly the rows to render, no client-side work needed. The
+  // server also puts the user's pinned tasks first within each tab (and the
+  // Pinned tab lists only them), so the order here is final.
+  const tasks: IMyTask[] = useMemo(() => data?.body?.tasks || [], [data?.body?.tasks]);
   const totalCount = data?.body?.total ?? 0;
 
   useEffect(() => {
@@ -144,9 +155,8 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
 
   const handleSelectTask = useCallback(
     (task: IMyTask) => {
-      // Prev/next navigation in the task drawer is scoped to the currently
-      // loaded page (server-paginated — the full tab's task list no longer
-      // exists client-side).
+      // Prev/next navigation in the task drawer is scoped to the rows loaded
+      // here (the full tab's task list doesn't exist client-side).
       const allTaskIds = tasks.map(t => t.id || '').filter(Boolean);
       const currentIndex = allTaskIds.indexOf(task.id || '');
 
@@ -177,49 +187,48 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
     dispatch(homePageApi.util.invalidateTags(['taskCounts']));
   }, [originalRefetch, dispatch]);
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
+  const [pinTask] = usePinHomeTaskMutation();
+  const [unpinTask] = useUnpinHomeTaskMutation();
 
-  // Clicking a sortable header cycles asc -> desc for that column; clicking a
-  // different column switches to it starting at asc.
-  const handleSortClick = useCallback(
-    (field: SortField) => {
-      setCurrentPage(1);
-      setSortOrder(prev => (sortField === field && prev === 'asc' ? 'desc' : 'asc'));
-      setSortField(field);
+  // The pin icon flips at once (optimistic); the list is then refetched so the task moves to its
+  // real place across all pages. If the request fails the icon is put back.
+  const handleTogglePin = useCallback(
+    async (task: IMyTask) => {
+      const taskId = task.id;
+      if (!taskId) return;
+      const willPin = !task.is_pinned;
+
+      const undo = dispatch((d, getState) => applyPinToCachedTasks(d, getState, taskId, willPin));
+      const result = await (willPin ? pinTask(taskId) : unpinTask(taskId));
+      if (!('error' in result)) return;
+
+      undo();
+      const body = (result.error as { data?: { body?: { code?: string; limit?: number } | null } }).data?.body;
+      if (willPin && body?.code === 'PIN_LIMIT_REACHED') {
+        message.warning(
+          t('tasks.pinLimitReached', {
+            defaultValue: 'You can pin up to {{limit}} tasks. Unpin one to pin another.',
+            limit: body.limit ?? 25,
+          })
+        );
+      } else {
+        message.error(t('tasks.pinFailed', { defaultValue: "Couldn't update the pin. Please try again." }));
+      }
+      // The task may have changed since the list loaded (completed, unassigned): show what is true now.
+      refetch();
     },
-    [sortField]
-  );
-
-  const renderSortableTitle = useCallback(
-    (label: string, field: SortField) => (
-      <span
-        onClick={() => handleSortClick(field)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-          cursor: 'pointer',
-          userSelect: 'none',
-        }}
-      >
-        <span>{label}</span>
-        <SortArrows active={sortField === field ? sortOrder : null} />
-      </span>
-    ),
-    [sortField, sortOrder, handleSortClick]
+    [dispatch, pinTask, unpinTask, refetch, t]
   );
 
   const columns: TableProps<IMyTask>['columns'] = useMemo(
     () => [
       {
         key: 'name',
-        title: renderSortableTitle(t('tasks.name', { defaultValue: 'Task Name' }), 'name'),
+        title: t('tasks.name', { defaultValue: 'Task Name' }),
         width: isMobile ? '30%' : '32%',
         render: (_, record) => (
           <div
+            className="task-name-cell"
             onClick={() => handleSelectTask(record)}
             style={{
               display: 'flex',
@@ -228,8 +237,49 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
               cursor: 'pointer',
             }}
           >
+            {/* The pin sits before the name. It always takes up its space so rows don't shift, but
+                stays invisible until the name cell is hovered or the button is focused; a pinned
+                row keeps its filled pin visible as the persistent indicator. */}
+            <div
+              className={
+                record.is_pinned === true ? 'row-pin-button row-pin-button--active' : 'row-pin-button'
+              }
+              style={{ display: 'flex', alignItems: 'center', flexShrink: 0, marginRight: 4 }}
+            >
+              <Tooltip
+                title={
+                  record.is_pinned === true
+                    ? t('tasks.unpinTask', { defaultValue: 'Unpin task' })
+                    : t('tasks.pinTask', { defaultValue: 'Pin task' })
+                }
+                placement="top"
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  aria-pressed={record.is_pinned === true}
+                  aria-label={
+                    record.is_pinned === true
+                      ? t('tasks.unpinTask', { defaultValue: 'Unpin task' })
+                      : t('tasks.pinTask', { defaultValue: 'Pin task' })
+                  }
+                  icon={
+                    record.is_pinned === true ? (
+                      <PushpinFilled style={{ fontSize: 14, color: token.colorPrimary }} />
+                    ) : (
+                      <PushpinOutlined style={{ fontSize: 14, color: token.colorTextSecondary }} />
+                    )
+                  }
+                  onClick={event => {
+                    // The cell itself opens the task drawer — pinning must not.
+                    event.stopPropagation();
+                    handleTogglePin(record);
+                  }}
+                />
+              </Tooltip>
+            </div>
             <Typography.Text ellipsis style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
-              {record.name}
+              {decodeHtmlEntities(record.name)}
             </Typography.Text>
             <div className="row-action-button">
               {/* No custom `color`/`styles` override — antd's default Tooltip
@@ -251,7 +301,7 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
       },
       {
         key: 'project',
-        title: renderSortableTitle(t('tasks.project', { defaultValue: 'Project' }), 'project_name'),
+        title: t('tasks.project', { defaultValue: 'Project' }),
         width: isMobile ? '20%' : '18%',
         filters: projectFilterOptions,
         filteredValue: selectedProjectIds,
@@ -262,7 +312,7 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
             style={{ margin: 0, paddingInlineEnd: 6, cursor: 'pointer' }}
           >
             <Badge color={record.project_color || 'blue'} style={{ marginInlineEnd: 4 }} />
-            {record.project_name}
+            {decodeHtmlEntities(record.project_name)}
           </Typography.Paragraph>
         ),
       },
@@ -279,14 +329,14 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
       },
       {
         key: 'dueDate',
-        title: renderSortableTitle(t('tasks.dueDate', { defaultValue: 'Due Date' }), 'end_date'),
+        title: t('tasks.dueDate', { defaultValue: 'Due Date' }),
         width: '14%',
         dataIndex: 'end_date',
         render: (_, record) => <HomeTasksDatePicker record={record} />,
       },
       {
         key: 'priority',
-        title: renderSortableTitle(t('tasks.priority', { defaultValue: 'Priority' }), 'priority'),
+        title: t('tasks.priority', { defaultValue: 'Priority' }),
         width: '12%',
         filters: priorityFilterOptions,
         filteredValue: selectedPriorityIds,
@@ -318,12 +368,23 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
         ),
       },
     ],
-    [t, currentPage, pageSize, handleSelectTask, isMobile, themeMode, renderSortableTitle, projectFilterOptions, priorityFilterOptions, selectedProjectIds, selectedPriorityIds]
+    [t, handleSelectTask, handleTogglePin, isMobile, themeMode, projectFilterOptions, priorityFilterOptions, selectedProjectIds, selectedPriorityIds]
   );
+
+  // Stable, so the menu that holds it doesn't rebuild its items on every render of this table.
+  const handleOpenCreateTask = useCallback(() => setAddTaskOpen(true), []);
+
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const viewportLimits = useRowsViewport(scrollerRef, tasks.length, {
+    rowSelector: 'tbody > tr.ant-table-row',
+    headerSelector: 'thead',
+    minRows: MIN_ROWS,
+    fallbackRowHeight: FALLBACK_ROW_HEIGHT,
+    fallbackHeaderHeight: FALLBACK_HEADER_HEIGHT,
+  });
 
   const handleTaskModeChange = (value: number) => {
     dispatch(setHomeTasksConfig({ ...homeTasksConfig, tasks_group_by: value }));
-    setCurrentPage(1);
   };
 
   return (
@@ -357,9 +418,12 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
           justifyContent: 'space-between',
           marginBottom: 16,
           flexShrink: 0,
+          position: 'relative',
         }}
       >
-        <div style={{ fontSize: 14, fontWeight: 600 }}>{cardTitle || t('tasks.tasks', { defaultValue: 'Tasks' })}</div>
+        <div className="task-list-title" style={{ fontSize: 14, fontWeight: 600 }}>
+          {cardTitle || t('tasks.tasks', { defaultValue: 'Tasks' })}
+        </div>
         <Flex gap={8} align="center" className="task-list-mobile-controls">
           <PillToggle<'to' | 'by'>
             value={homeTasksConfig.tasks_group_by === 1 ? 'by' : 'to'}
@@ -369,13 +433,17 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
                { value: 'by', label: ready ? t('tasks.assignedByMe', { defaultValue: 'Assigned by me' }) : 'Assigned by me' },
              ]}
           />
+          {/* Sits after the toggle on a wide card; pinned to the card's corner on a narrow one (see tasks-list.css). */}
+          <span className="task-list-menu">
+            <TaskTableSettingsMenu onCreateTask={handleOpenCreateTask} />
+          </span>
         </Flex>
       </div>
 
       <div
         style={{
           flex: 1,
-          minHeight: 0,
+          minHeight: !data?.body || isLoading ? MIN_BODY_HEIGHT : 0,
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
@@ -401,7 +469,7 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
         ) : (
           <>
             {/* Tabs stay fixed above the scroll area — only the table body below scrolls */}
-            <div style={{ flexShrink: 0, marginBottom: 12 }}>
+            <div {...{ [WIDGET_DATA_ATTRIBUTE]: '' }} style={{ flexShrink: 0, marginBottom: 12 }}>
               <ListView refetch={refetch} />
             </div>
 
@@ -409,21 +477,44 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
             {totalCount === 0 && !homeTasksFetching ? (
               // Guard with !homeTasksFetching to avoid flashing the empty state
               // while the new tab response is still in-flight
+              <div style={{ minHeight: MIN_BODY_HEIGHT - 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <EmptyListPlaceholder
                 imageSrc="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/empty-box.webp"
-                text={t('tasks.noTasks', { defaultValue: 'No tasks found' })}
+                text={
+                  isPinnedTab
+                    ? t('tasks.noPinnedTasks', {
+                        defaultValue:
+                          'No pinned tasks yet. Hover over any task and click the pin icon to keep it here.',
+                      })
+                    : t('tasks.noTasks', { defaultValue: 'No tasks found' })
+                }
                 action={
-                  <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddTaskOpen(true)}>
-                    {t('tasks.addTaskButton', { defaultValue: 'Add Task' })}
-                  </Button>
+                  isPinnedTab ? undefined : (
+                    <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddTaskOpen(true)}>
+                      {t('tasks.addTaskButton', { defaultValue: 'Add Task' })}
+                    </Button>
+                  )
                 }
               />
+              </div>
             ) : (
               <>
                 {/* Only this panel scrolls — header row stays stuck to its top via plain
                     CSS `position: sticky` on the header cells (see tasks-list.css); antd's
                     own `sticky` prop kept losing track of this custom scroll container. */}
-                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', position: 'relative' }}>
+                <div
+                  ref={scrollerRef}
+                  {...{ [WIDGET_DATA_ATTRIBUTE]: '' }}
+                  style={{
+                    // Ten rows tall at most, then it scrolls (up to MAX_ROWS rows); never shorter
+                    // than MIN_ROWS, so the card doesn't collapse around a short list. It does not
+                    // stretch to its column, so adding a widget beside or below it changes nothing.
+                    maxHeight: viewportLimits?.max,
+                    minHeight: viewportLimits?.min,
+                    overflowY: 'auto',
+                    position: 'relative',
+                  }}
+                >
                   {/* dataSource is never blanked on `homeTasksFetching` — that flag is also
                       true for background revalidations (e.g. a status change echoed back
                       over the socket), and clearing rows + covering the table for those
@@ -439,34 +530,21 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
                     pagination={false}
                     tableLayout="fixed"
                     onChange={(_pagination, filters) => {
-                      setCurrentPage(1);
                       setSelectedProjectIds((filters.project as React.Key[]) || []);
                       setSelectedPriorityIds((filters.priority as React.Key[]) || []);
                     }}
                   />
                 </div>
 
-                {/* Only render pagination when the set has more tasks than one
-                    page can show — not gated on `homeTasksFetching` (see note above). */}
-                {totalCount > pageSize && (
-                  <div
-                    style={{
-                      flexShrink: 0,
-                      marginTop: 16,
-                      textAlign: 'right',
-                      display: 'flex',
-                      justifyContent: 'flex-end',
-                    }}
-                  >
-                    <Pagination
-                      current={currentPage}
-                      pageSize={pageSize}
-                      total={totalCount}
-                      onChange={handlePageChange}
-                      showSizeChanger={false}
-                    />
-                  </div>
-                )}
+                {/* Past the rows shown, the rest of the list is on the My Tasks page. */}
+                <div
+                  {...{ [WIDGET_DATA_ATTRIBUTE]: '' }}
+                  style={{ flexShrink: 0, marginTop: 8, display: 'flex', justifyContent: 'flex-end' }}
+                >
+                  <Button type="link" size="small" onClick={() => navigate(MY_TASKS_PATH)}>
+                    {t('tasks.viewAll', { defaultValue: 'View all ({{total}})', total: totalCount })}
+                  </Button>
+                </div>
               </>
             )}
           </>

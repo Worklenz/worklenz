@@ -37,7 +37,8 @@
         "selectDate": "Seleccionar fecha",
         "selectOption": "Seleccionar opción",
         "selectPeople": "Seleccionar personas",
-        "updateError": "Error al actualizar el campo personalizado"
+        "updateError": "Error al actualizar el campo personalizado",
+        "enterText": "Ingresar texto"
       },
       "recurring": "Recurrente"
     },

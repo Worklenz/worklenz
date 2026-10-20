@@ -10,5 +10,9 @@
   "deleteConfirmationOk": "Yes",
   "deleteConfirmationCancel": "Cancel",
   "segmentedTooltip": "Coming soon! Switch between list view and thumbnail view.",
-  "emptyText": "There are no attachments in the project."
+  "emptyText": "There are no attachments in the project.",
+  "uploadExpired": "Upload session expired. Please try again.",
+  "fileTooLargePopoverBody": "Files larger than 25MB require the Business plan. This file is {{sizeMb}} MB. Upgrade to upload larger files.",
+  "linksPaginationSummary": "{{start}}–{{end}} of {{count}} links",
+  "fileTooLargePopoverTitle": "File Too Large"
 }

@@ -1,7 +1,6 @@
 {
   "title": "Raportet e Ekipit Tim",
   "subtitle": "Ndjekja e kohës dhe njohuri mbi performancën për anëtarët e ekipit tuaj",
-
   "dateRange": {
     "label": "Periudha Kohore",
     "showing": "Duke Treguar",
@@ -17,7 +16,6 @@
     "custom": "Periudhë Personalizuar",
     "apply": "Apliko"
   },
-
   "summary": {
     "totalMembers": "Anëtarët Totalë",
     "totalMembersTooltip": "Numri total i anëtarëve të ekipit që kanë regjistruar kohë gjatë periudhës së zgjedhur.",
@@ -28,7 +26,6 @@
     "avgCompletionRate": "Norma Mesatare e Përfundimit",
     "hours": "orë"
   },
-
   "timeTracking": {
     "title": "Përmbledhja e Ndjekjes së Kohës",
     "chartTitle": "Grafiku i Ndjekjes së Kohës së Ekipit",
@@ -51,7 +48,6 @@
     "projectsTooltip": "Numri i projekteve të ndryshme në të cilat ky anëtar ka regjistruar kohë gjatë periudhës së zgjedhur.",
     "activeDaysTooltip": "Numri i ditëve të ndryshme në të cilat ky anëtar ka regjistruar kohë gjatë periudhës së zgjedhur."
   },
-
   "performance": {
     "title": "Performanca e Ekipit",
     "member": "Anëtari",
@@ -70,7 +66,6 @@
     "projectsInvolved": "Projektet e Përfshira",
     "noData": "Nuk ka të dhëna performancë të disponueshme"
   },
-
   "detailedLogs": {
     "title": "Regjistrimet e Detajuara të Kohës",
     "for": "për",
@@ -86,20 +81,18 @@
     "timer": "Kohëmatës",
     "noLogs": "Nuk u gjetën regjistrues të detajuara",
     "close": "Mbyll",
-    "timeLogsRange": "regjistrues kohe"
+    "timeLogsRange": "regjistrues kohe",
+    "of": "nga"
   },
-
   "errors": {
     "failedToLoad": "Dështoi ngarkimi i raporteve të ekipit",
     "tryAgain": "Ju lutemi provoni përsëri",
     "noTeamMembers": "Nuk u gjetën anëtarë të ekipit",
     "loadingError": "Gabim në ngarkimin e të dhënave"
   },
-
   "loading": {
     "fetchingData": "Duke ngarkuar raportet e ekipit...",
     "fetchingLogs": "Duke ngarkuar regjistruesit e detajuar..."
   },
-
   "export": "Eksporto"
 }

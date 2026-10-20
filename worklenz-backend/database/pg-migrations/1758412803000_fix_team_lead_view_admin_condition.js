@@ -152,15 +152,6 @@ LEFT JOIN projects p ON t.project_id = p.id
 LEFT JOIN archived_projects ap ON p.id = ap.project_id
 WHERE ap.project_id IS NULL;  -- Exclude archived projects
 
--- Grant appropriate permissions if role exists
-DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'worklenz_user') THEN
-        GRANT SELECT ON team_lead_managed_members TO worklenz_user;
-        GRANT SELECT ON team_lead_member_stats TO worklenz_user;
-        GRANT SELECT ON team_lead_member_performance TO worklenz_user;
-        GRANT SELECT ON team_lead_time_logs TO worklenz_user;
-    END IF;
-END $$;
 
 
 

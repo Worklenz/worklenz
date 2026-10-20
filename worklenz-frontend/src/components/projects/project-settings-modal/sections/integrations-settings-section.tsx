@@ -2,12 +2,16 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flex, Typography, TeamOutlined, theme, message } from '@/shared/antd-imports';
 import { GithubOutlined } from '@ant-design/icons';
+import { GithubProjectRepositories } from '@/components/github/GithubProjectRepositories';
+import { useProjectPermissions } from '@/hooks/useProjectPermissions';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { IntegrationItem } from '@/components/projects/integrations/IntegrationItem';
 import { SlackIcon } from '@/components/settings/integrations/IntegrationIcons';
-import { SlackProjectQuickAddModal } from '@/ee/components/projects/integrations/SlackProjectQuickAddModal';
-import { slackApiService } from '@/ee/api/slack/slack.api.service';
+import { SlackProjectQuickAddModal } from '@/components/projects/integrations/SlackProjectQuickAddModal';
+import { slackApiService } from '@/api/slack/slack.api.service';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import type { ProjectIntegrationStatus } from '@/components/projects/integrations/integrations.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
@@ -26,7 +30,15 @@ const IntegrationsSettingsSection = ({
   const dispatch = useAppDispatch();
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
-  const hasBusinessAccess = useMemo(() => hasBusinessFeatureAccess(currentSession), [currentSession]);
+  const hasBusinessAccess = useMemo(
+    () => hasBusinessFeatureAccess(currentSession),
+    [currentSession]
+  );
+
+  const projectType = useAppSelector(state => state.projectDrawerReducer.project?.project_type);
+  const projectKey = useAppSelector(state => state.projectDrawerReducer.project?.key);
+  const { permissions } = useProjectPermissions(projectId ?? null);
+  const isSoftwareProject = isSoftwareProjectType(projectType);
 
   const [integrationStatus, setIntegrationStatus] = useState<ProjectIntegrationStatus | null>(null);
   const [slackModalOpen, setSlackModalOpen] = useState(false);
@@ -104,7 +116,7 @@ const IntegrationsSettingsSection = ({
         </Typography.Title>
         <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 0 }}>
           {t('integrationsSectionDescription', {
-            defaultValue: 'Connect this project to external tools like Slack.',
+            defaultValue: 'Connect this project to external tools like Slack and GitHub.',
           })}
         </Typography.Paragraph>
       </div>
@@ -120,25 +132,54 @@ const IntegrationsSettingsSection = ({
           icon={<SlackIcon />}
           title={t('slackTitle', { defaultValue: 'Slack' })}
           description={t('slackDescription', {
-            defaultValue: 'Send notifications to Slack channels',
+            defaultValue: 'Get task, status and comment updates in your Slack channels',
           })}
           badge={integrationStatus?.slack?.channelCount}
           channels={integrationStatus?.slack?.channels?.map(ch => `#${ch.name}`)}
           locked={!hasBusinessAccess}
           onClick={handleSlackClick}
         />
+      </div>
+
+      {projectId && isSoftwareProject ? (
+        <GithubProjectRepositories
+          projectId={projectId}
+          projectKey={projectKey}
+          canManage={permissions.settings}
+        />
+      ) : (
+        <div
+          style={{
+            borderRadius: 10,
+            border: `1px solid ${token.colorBorderSecondary}`,
+            overflow: 'hidden',
+          }}
+        >
+          <IntegrationItem
+            icon={<GithubOutlined style={{ color: token.colorText }} />}
+            title={t('githubTitle', { defaultValue: 'GitHub' })}
+            description={t('githubDescription', {
+              defaultValue: 'Track branches, pull requests and commits on tasks',
+            })}
+            note={t('githubSoftwareOnly', { defaultValue: 'Software projects' })}
+          />
+        </div>
+      )}
+
+      {/* Coming soon integrations stay at the bottom */}
+      <div
+        style={{
+          borderRadius: 10,
+          border: `1px solid ${token.colorBorderSecondary}`,
+          overflow: 'hidden',
+        }}
+      >
         <IntegrationItem
           icon={<TeamOutlined style={{ color: '#6264A7' }} />}
           title={t('teamsTitle', { defaultValue: 'Microsoft Teams' })}
           description={t('teamsDescription', {
-            defaultValue: 'Send notifications to Teams channels',
+            defaultValue: 'Post task and status updates to your Teams channels',
           })}
-          comingSoon
-        />
-        <IntegrationItem
-          icon={<GithubOutlined style={{ color: '#24292e' }} />}
-          title={t('githubTitle', { defaultValue: 'GitHub' })}
-          description={t('githubDescription', { defaultValue: 'Sync tasks with GitHub issues' })}
           comingSoon
         />
       </div>

@@ -46,5 +46,15 @@
   "convertToTaskError": "Aufgabe konnte nicht erstellt werden",
   "convertToTaskEmpty": "Die Nachricht enthält keinen Text für einen Aufgabennamen",
   "attachFile": "Datei anhängen",
-  "attachmentUploadError": "Anhang konnte nicht hochgeladen werden"
+  "attachmentUploadError": "Anhang konnte nicht hochgeladen werden",
+  "edited": "(bearbeitet)",
+  "editedTooltip": "Bearbeitet {{time}} von {{author}}",
+  "unknown": "Unbekannt",
+  "you": "Du",
+  "attachment": "Anhang",
+  "commentError": "Kommentar konnte nicht gesendet werden",
+  "deleteSuccess": "Kommentar erfolgreich gelöscht",
+  "deleteError": "Kommentar konnte nicht gelöscht werden",
+  "editSuccess": "Kommentar erfolgreich aktualisiert",
+  "editError": "Kommentar konnte nicht bearbeitet werden"
 }

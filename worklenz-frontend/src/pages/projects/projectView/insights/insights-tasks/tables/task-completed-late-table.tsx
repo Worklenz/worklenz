@@ -1,13 +1,13 @@
-import { Flex, Table, Typography } from '@/shared/antd-imports';
+import { Flex, Table, Typography, TableProps } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { colors } from '@/styles/colors';
-import { TableProps } from 'antd/lib';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import { IInsightTasks } from '@/types/project/projectInsights.types';
 import logger from '@/utils/errorLogger';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const TaskCompletedLateTable = ({
   projectId,
@@ -47,7 +47,7 @@ const TaskCompletedLateTable = ({
     {
       key: 'name',
       title: t('common.name', { defaultValue: 'Name' }),
-      render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
+      render: (record: IInsightTasks) => <Typography.Text>{decodeHtmlEntities(record.name)}</Typography.Text>,
     },
     {
       key: 'status',

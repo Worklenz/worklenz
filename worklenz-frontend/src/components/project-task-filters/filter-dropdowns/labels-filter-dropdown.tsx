@@ -18,6 +18,7 @@ import { useMemo, useRef, useState, useEffect } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { fetchLabelsByProject, fetchTaskGroups, setLabels } from '@/features/tasks/tasks.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setBoardLabels } from '@/features/board/board-slice';
@@ -126,7 +127,7 @@ const LabelsFilterDropdown = () => {
                 >
                   <Flex gap={8}>
                     <Badge color={label.color_code} />
-                    {label.name}
+                    {decodeHtmlEntities(label.name)}
                   </Flex>
                 </Checkbox>
               </List.Item>
@@ -143,7 +144,7 @@ const LabelsFilterDropdown = () => {
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => labelsDropdownContent}
+      popupRender={() => labelsDropdownContent}
       onOpenChange={handleLabelsDropdownOpen}
     >
       <Button

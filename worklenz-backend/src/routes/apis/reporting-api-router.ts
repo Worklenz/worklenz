@@ -8,7 +8,14 @@ import ReportingInfoController from "../../controllers/reporting/reporting-info-
 import ReportingAllocationController from "../../controllers/reporting/reporting-allocation-controller";
 import ReportingProjectsController from "../../controllers/reporting/projects/reporting-projects-controller";
 import ReportingMembersController from "../../controllers/reporting/reporting-members-controller";
+import ReportingTimeLogsController from "../../controllers/reporting/reporting-time-logs-controller";
 import ReportingAllTasksController from "../../controllers/reporting/reporting-all-tasks-controller";
+import ProgressTrackingController from "../../controllers/reporting/progress-tracking/progress-tracking-controller";
+import {
+  CONFIDENCE_FILTERS,
+  PERCENT_RANGE_FILTERS,
+  SORT_FIELDS,
+} from "../../controllers/reporting/progress-tracking/progress-tracking-query";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import {
   validateUuidParam,
@@ -148,7 +155,13 @@ reportingApiRouter.get("/members/single-member-projects", teamOwnerOrAdminValida
 reportingApiRouter.get("/member-projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberProjects));
 reportingApiRouter.post("/members/single-member-activities", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberActivities));
 reportingApiRouter.post("/members/single-member-timelogs", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberTimelogs));
+// Superseded by /time-logs below (server-side pagination, totals, user/project/practice filters).
+// Kept as-is so a client still running an older frontend build keeps working.
 reportingApiRouter.post("/members/timelogs-flat", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getTimelogsFlat));
+reportingApiRouter.post("/time-logs", teamOwnerOrAdminValidator, safeControllerFunction(ReportingTimeLogsController.getTimeLogs));
+reportingApiRouter.post("/time-logs/groups", teamOwnerOrAdminValidator, safeControllerFunction(ReportingTimeLogsController.getTimeLogGroups));
+reportingApiRouter.get("/time-logs/members", teamOwnerOrAdminValidator, safeControllerFunction(ReportingTimeLogsController.getTimeLogMembers));
+reportingApiRouter.get("/time-logs/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingTimeLogsController.getTimeLogProjects));
 
 reportingApiRouter.post("/time-reports/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getProjectTimeSheets));
 reportingApiRouter.post("/time-reports/members", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getMemberTimeSheets));
@@ -159,6 +172,17 @@ reportingApiRouter.post("/time-reports/estimated-vs-actual", teamOwnerOrAdminVal
 reportingApiRouter.post("/all-tasks/export/csv", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllTasksController.exportCSV));
 reportingApiRouter.post("/all-tasks/export/excel", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllTasksController.exportExcel));
 reportingApiRouter.post("/all-tasks", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllTasksController.getReportingAllTasks));
+
+reportingApiRouter.get("/progress-tracking",
+  teamOwnerOrAdminValidator,
+  validateEnumParam("confidence", [...CONFIDENCE_FILTERS]),
+  validateEnumParam("percent_range", [...PERCENT_RANGE_FILTERS]),
+  validateEnumParam("has_blockers", ["true", "false"]),
+  validateEnumParam("field", [...SORT_FIELDS]),
+  validateEnumParam("order", ["asc", "desc", "ascend", "descend"], false),
+  validatePaginationParams("page", "page_size", 100),
+  safeControllerFunction(ProgressTrackingController.get)
+);
 
 
 export default reportingApiRouter;

@@ -1,0 +1,22 @@
+/* react-grid-layout ships a red placeholder and fixed-colour resize handle; tie both to the portal theme. */
+.dashboard-grid .react-grid-item.react-grid-placeholder {
+  background: var(--portal-brand-tint, rgba(24, 144, 255, 0.35));
+  opacity: 0.5;
+  border-radius: 8px;
+}
+
+.dashboard-grid .react-grid-item > .react-resizable-handle::after {
+  border-color: currentColor;
+  opacity: 0.55;
+}
+
+.dashboard-grid .react-grid-item > .react-resizable-handle {
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-grid .react-grid-item,
+  .dashboard-grid {
+    transition: none;
+  }
+}

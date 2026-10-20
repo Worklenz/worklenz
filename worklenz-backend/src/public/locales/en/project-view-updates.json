@@ -2,5 +2,10 @@
   "inputPlaceholder": "Add a comment..",
   "addButton": "Add",
   "cancelButton": "Cancel",
-  "deleteButton": "Delete"
+  "deleteButton": "Delete",
+  "deleteSuccess": "Comment deleted successfully",
+  "editSuccess": "Comment updated successfully",
+  "deleteError": "Failed to delete comment",
+  "editError": "Failed to edit comment",
+  "commentError": "Failed to send comment"
 }

@@ -1,0 +1,15 @@
+{
+  "pageTitle": "Modèles de tâches",
+  "nameColumn": "Nom",
+  "createdColumn": "Créé",
+  "editToolTip": "Modifier",
+  "deleteToolTip": "Supprimer",
+  "confirmText": "Es-tu sûr?",
+  "okText": "Oui",
+  "cancelText": "Annuler",
+  "noTemplatesYet": "Aucun modèle de tâche pour l'instant",
+  "step1": "Accédez à un projet et ouvrez-le.",
+  "step2": "Sélectionnez des tâches à l'aide de l'option Modification groupée.",
+  "step3": "Cliquez sur Plus d'options dans la barre d'actions groupées et choisissez Créer un modèle de tâche.",
+  "totalItems": "Total des articles"
+}

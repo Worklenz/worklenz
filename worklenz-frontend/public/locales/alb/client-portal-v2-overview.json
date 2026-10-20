@@ -1,0 +1,126 @@
+{
+  "page": {
+    "title": "Overview",
+    "description": "Çfarë ka nevojë për vëmendjen tuaj për klientët, projektet dhe diskutimet.",
+    "editingHint": "Drag widgets to reorder them, change their size, or hide the ones you do not need.",
+    "loadFailed": "Pamja e përgjithshme nuk mund të ngarkohej."
+  },
+  "widget": {
+    "viewAll": "Shiko të gjitha",
+    "retry": "Provo përsëri",
+    "error": "Ky miniaplikacion nuk mund të ngarkohej."
+  },
+  "edit": {
+    "customize": "Personalizo",
+    "done": "Përfunduar",
+    "cancel": "Cancel",
+    "reset": "Reset to default",
+    "resetConfirm": "Të rivendoset faqosja e paracaktuar?",
+    "saveFailed": "Struktura nuk mund të ruhej.",
+    "resetFailed": "Struktura nuk mund të rivendosej.",
+    "drag": "Zvarrit për të rirenditur {{title}}",
+    "size": "Madhësia e {{title}}",
+    "size_s": "S",
+    "size_m": "M",
+    "size_l": "L",
+    "hide": "Fshih miniaplikacionin",
+    "show": "Shfaq miniaplikacionin",
+    "hideNamed": "Fshih {{title}}",
+    "showNamed": "Shfaq {{title}}",
+    "save": "Ruaj",
+    "saved": "Pamja e përgjithshme u ruajt",
+    "resetDone": "Rivendosja e përmbledhjes në paraqitjen e paracaktuar",
+    "resetConfirmHelp": "Marrëveshja juaj e ruajtur do të hiqet.",
+    "addWidget": "Shto widget",
+    "emptyTitle": "Nuk ka miniaplikacione në pasqyrën tuaj",
+    "emptyHelp": "Zgjidhni Personalizo, më pas Shto miniaplikacion për të sjellë disa.",
+    "widgetSettings": "Cilësimet {{name}}",
+    "settingsFor": "Cilësimet për {{name}}",
+    "width": "Gjerësia",
+    "widthQuarter": "Gjerësia e tremujorit",
+    "widthThird": "Një e treta",
+    "widthHalf": "Gjysma e gjerësisë",
+    "widthTwoThirds": "Dy të tretat",
+    "widthThreeQuarters": "Tre të katërtat",
+    "widthFull": "Gjerësia e plotë",
+    "moveEarlier": "Lëvizni më herët",
+    "moveLater": "Lëvizni më vonë",
+    "leaveTitle": "Të largohesh pa kursyer?",
+    "leaveBody": "Ndryshimet tuaja në pasqyrën e përgjithshme nuk janë ruajtur dhe do të humbasin.",
+    "leave": "Largohu",
+    "stay": "Qëndro"
+  },
+  "status": {
+    "awaiting": "në pritje",
+    "approved": "Miratuar",
+    "changes_requested": "Kërkohen ndryshime",
+    "cr_submitted": "dorëzuar",
+    "cr_under_review": "Në shqyrtim",
+    "cr_more_info": "Më shumë informacion",
+    "cr_approved": "Miratuar",
+    "cr_in_progress": "Në progres",
+    "cr_completed": "E përfunduar",
+    "cr_rejected": "Refuzuar",
+    "cr_cancelled": "Anuluar"
+  },
+  "widgets": {
+    "kpi_awaiting_approvals": {
+      "title": "Miratimet në pritje",
+      "sub": "{{count}} i vonuar"
+    },
+    "kpi_open_change_requests": {
+      "title": "Ndryshoni kërkesat për shqyrtim",
+      "sub": "{{count}} në pritje të klientit"
+    },
+    "kpi_delayed_milestones": {
+      "title": "Pika të vonuara",
+      "sub": "Përmes projekteve të portaleve"
+    },
+    "kpi_unread_discussions": {
+      "title": "Diskutimet e palexuara",
+      "sub": "Me mesazhe të reja klientësh"
+    },
+    "kpi_overdue_invoices": {
+      "title": "Faturat e vonuara",
+      "none": "Asgjë e vonuar"
+    },
+    "pending_approvals": {
+      "title": "Miratimet në pritje",
+      "empty": "Asnjë miratim nuk është duke pritur për një klient.",
+      "overdue": "I vonuar · {{date}}",
+      "due": "Afati {{date}}"
+    },
+    "change_requests": {
+      "title": "Ndryshoni kërkesat për shqyrtim",
+      "empty": "Asnjë kërkesë për ndryshim nuk ka nevojë për rishikim."
+    },
+    "upcoming_milestones": {
+      "title": "Piketat e ardhshme",
+      "empty": "Asnjë moment historik i hapur në projektet e portalit."
+    },
+    "latest_discussions": {
+      "title": "Diskutimet e fundit",
+      "empty": "Ende nuk ka diskutime."
+    },
+    "mentions_me": {
+      "title": "Më përmend mua",
+      "empty": "Askush nuk ju ka përmendur në një diskutim.",
+      "row": "{{name}} në {{project}}"
+    },
+    "approvals_by_status": {
+      "title": "Miratime sipas statusit",
+      "empty": "Asnjë miratim nuk është dërguar ende."
+    },
+    "cr_by_status": {
+      "title": "Ndrysho tubacionin e kërkesës",
+      "empty": "Nuk ka ende kërkesa për ndryshim."
+    },
+    "needs_attention": {
+      "title": "Ka nevojë për vëmendje",
+      "empty": "Asgjë nuk ka nevojë për vëmendje. Punë e bukur.",
+      "approval_overdue": "Miratimi i vonuar",
+      "change_request_review": "Kërkesë me prioritet të lartë për rishikim",
+      "milestone_late": "Një moment historik i vonë"
+    }
+  }
+}

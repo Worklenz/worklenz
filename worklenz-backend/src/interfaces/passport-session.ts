@@ -13,7 +13,10 @@ export interface IPassportSession extends IUser {
   is_member?: boolean;
   is_guest?: boolean;
   role_name?: string;
+  /** Phase 5 — may create projects from templates (Owner/Admin always true). */
+  can_create_projects_from_templates?: boolean;
   is_google?: boolean;
+  has_password?: boolean;
   build_v?: string;
   timezone?: string;
   timezone_name?: string;
@@ -23,6 +26,14 @@ export interface IPassportSession extends IUser {
   subscription_status?: string;
   mobile_app_banner_dismissed?: boolean;
   appsumo_popup_frequency_days?: number;
+  entitlements?: {
+    tier: "free" | "pro" | "business" | "enterprise";
+    features: string[];
+    guest_limit: number; // -1 = unlimited
+    seat_limit: number | null; // -1 = unlimited, null = unknown
+    primary_source: string;
+    enforced: boolean; // true when gates follow entitlements (ENTITLEMENTS_ENFORCE=on)
+  };
   business_features_enabled?: boolean;
   deployment_mode?: "cloud" | "self_hosted";
 }

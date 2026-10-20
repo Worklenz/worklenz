@@ -11,6 +11,8 @@ import { useAuthService } from '@/hooks/useAuth';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { addTaskToGroup } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { assignTaskToMember } from '@/utils/assign-task-to-member';
 
 interface EnhancedKanbanCreateTaskCardProps {
   sectionId: string;
@@ -40,6 +42,12 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const groupBy = useAppSelector(state => state.enhancedKanbanReducer.groupBy);
+  const kanbanPhases = useAppSelector(state => state.enhancedKanbanReducer.phases);
+  const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+  const isSoftwareProject = isSoftwareProjectType(projectType);
+  const addTaskLabel = isSoftwareProject
+    ? t('createIssue', { defaultValue: 'Create Issue' })
+    : t('addTask', { defaultValue: 'Add Task' });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -71,6 +79,11 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
     if (groupBy === 'status') body.status_id = sectionId;
     else if (groupBy === 'priority') body.priority_id = sectionId;
     else if (groupBy === 'phase') body.phase_id = sectionId;
+
+    // Software board filtered to one sprint: new issues join that sprint so they stay visible
+    if (groupBy !== 'phase' && isSoftwareProject && kanbanPhases.length === 1) {
+      body.phase_id = kanbanPhases[0];
+    }
     return body;
   };
 
@@ -112,6 +125,16 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
       pendingRequestRef.current = null;
       // Only reset the form - the global handler will add the task to Redux
       socket?.off(SocketEvents.QUICK_TASK.toString(), eventHandler);
+      if (groupBy === 'assignee' && task?.id) {
+        assignTaskToMember({
+          socket,
+          taskId: task.id,
+          projectId,
+          teamMemberId: sectionId,
+          reporterId: currentSession.id,
+          teamId: currentSession.team_id,
+        });
+      }
       resetForNextTask();
     };
     pendingRequestRef.current = { eventHandler, timeout: responseTimeout };
@@ -159,7 +182,11 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
         onChange={e => setNewTaskName(e.target.value)}
         onPressEnter={handleAddTask}
         onBlur={handleBlur}
-        placeholder={t('newTaskNamePlaceholder')}
+        placeholder={
+          isSoftwareProject
+            ? t('newIssueNamePlaceholder', { defaultValue: 'Write an issue title' })
+            : t('newTaskNamePlaceholder')
+        }
         style={{
           width: '100%',
           borderRadius: 6,
@@ -173,7 +200,7 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
             {t('cancel')}
           </Button>
           <Button type="primary" size="small" onClick={handleAddTask} loading={creatingTask}>
-            {t('addTask')}
+            {addTaskLabel}
           </Button>
         </Flex>
       )}

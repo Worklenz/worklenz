@@ -34,6 +34,9 @@ import TaskContextMenu from './TaskContextMenu';
 import CopyTaskToProjectModal from './CopyTaskToProjectModal';
 import taskDuplicateApiService from '@/api/tasks/task-duplicate.api.service';
 import logger from '@/utils/errorLogger';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { IssueTypeBadge } from '@/components/projects/software/issue-type-badge';
+import { IssueTypePicker } from './IssueTypePicker';
 
 interface TitleColumnProps {
   width: string;
@@ -78,6 +81,9 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
     const [copyToProjectOpen, setCopyToProjectOpen] = useState(false);
     const [copyToProjectLoading, setCopyToProjectLoading] = useState(false);
     const groups = useAppSelector(selectGroups);
+    const isSoftwareProject = useAppSelector(state =>
+      isSoftwareProjectType(state.projectReducer.project?.project_type)
+    );
     const { showTaskDrawer, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
 
     // True nesting depth for rendering the hierarchy chevron icon.
@@ -275,6 +281,17 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
                       </span>
                     )}
 
+                    {isSoftwareProject &&
+                      (task.parent_task_id ? (
+                        <IssueTypeBadge type="subtask" />
+                      ) : (
+                        <IssueTypePicker
+                          task={task}
+                          projectId={projectId}
+                          disabled={isGuest || !canCreateTask}
+                        />
+                      ))}
+
                     <span
                       className={`text-sm text-gray-700 dark:text-gray-300 truncate ${canCreateTask ? 'cursor-text' : 'cursor-default'} flex-shrink min-w-0`}
                       style={{
@@ -296,6 +313,16 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
                   </div>
 
                   <div className="flex items-center gap-1 flex-shrink-0">
+                    {task.is_blocked && (
+                      <Tooltip
+                        title={t('blockedTooltip', { defaultValue: 'This issue is flagged as blocked' })}
+                      >
+                        <div className="px-1.5 py-0.5 rounded text-[11px] leading-4 font-medium bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                          {t('blockedBadge', { defaultValue: 'Blocked' })}
+                        </div>
+                      </Tooltip>
+                    )}
+
                     {depth < 2 && task.sub_tasks_count != null && task.sub_tasks_count > 0 && (
                       <Tooltip
                         title={t(

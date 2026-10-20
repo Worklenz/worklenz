@@ -50,7 +50,7 @@ const DepartmentsSettings = () => {
     field: 'name',
     order: 'desc',
     total: 0,
-    pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
+    pageSizeOptions: ['10', '20', '50', '100'],
     size: 'small',
   });
 

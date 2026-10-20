@@ -3,23 +3,60 @@ import { useTranslation } from 'react-i18next';
 import {
   Avatar,
   CheckOutlined,
-  DownOutlined,
   SearchOutlined,
   SettingOutlined,
 } from '@/shared/antd-imports';
 import { AvatarNamesMap } from '@/shared/constants';
 import { useAuthService } from '@/hooks/useAuth';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { FilterSection, ThemeClasses } from './types';
+
+const MANAGE_BUTTON_BASE_CLASS =
+  'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2';
+
+const getManageButtonThemeClass = (isDarkMode: boolean) =>
+  isDarkMode
+    ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
+    : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white';
+
+interface ManagePhasesButtonProps {
+  isDarkMode: boolean;
+  onClick: () => void;
+}
+
+/** "Manage Phases" action; reads "Manage Sprints" in software projects. */
+export const ManagePhasesButton: React.FC<ManagePhasesButtonProps> = ({ isDarkMode, onClick }) => {
+  const { t } = useTranslation('task-list-filters');
+  const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+  const label = isSoftwareProjectType(projectType)
+    ? t('manageSprints', { defaultValue: 'Manage Sprints' })
+    : `${t('manage', { defaultValue: 'Manage' })} ${t('phasesText', { defaultValue: 'Phases' })}`;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`${MANAGE_BUTTON_BASE_CLASS} ${getManageButtonThemeClass(isDarkMode)}`}
+    >
+      <SettingOutlined className="w-3.5 h-3.5" />
+      {label}
+    </button>
+  );
+};
 
 interface FilterDropdownProps {
   section: FilterSection;
   onSelectionChange: (sectionId: string, values: string[]) => void;
   isOpen: boolean;
   onToggle: () => void;
+  onClose?: () => void;
   themeClasses: ThemeClasses;
   isDarkMode: boolean;
   className?: string;
+  dropdownAlign?: 'left' | 'right';
   onManageStatus?: () => void;
   onManagePhase?: () => void;
 }
@@ -29,9 +66,11 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
   onSelectionChange,
   isOpen,
   onToggle,
+  onClose,
   themeClasses,
   isDarkMode,
   className = '',
+  dropdownAlign = 'left',
   onManageStatus,
   onManagePhase,
 }) => {
@@ -40,10 +79,9 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
   const isProjectManager = useIsProjectManager();
   const canConfigure = isOwnerOrAdmin || isProjectManager;
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredOptions, setFilteredOptions] = useState(section.options);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const filteredOptionsMemo = useMemo(() => {
+  const filteredOptions = useMemo(() => {
     if (!section.searchable || !searchTerm.trim()) {
       return section.options;
     }
@@ -53,19 +91,21 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
   }, [searchTerm, section.options, section.searchable]);
 
   useEffect(() => {
-    setFilteredOptions(filteredOptionsMemo);
-  }, [filteredOptionsMemo]);
+    if (!isOpen) return;
 
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        if (isOpen) onToggle();
+        if (onClose) {
+          onClose();
+        } else {
+          onToggle();
+        }
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, onToggle]);
+  }, [isOpen, onClose, onToggle]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -108,9 +148,16 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
       }
 
       onSelectionChange(section.id, [optionValue]);
-      onToggle();
+      // Close instead of toggling: selecting a value already closes the dropdown
+      // when the section lives inside the "Filters" popover, and toggling would
+      // re-open it (the shared openDropdown id is still the section's id).
+      if (onClose) {
+        onClose();
+      } else {
+        onToggle();
+      }
     },
-    [section, onSelectionChange, onToggle]
+    [section, onSelectionChange, onToggle, onClose]
   );
 
   const selectedCount = section.selectedValues.length;
@@ -145,40 +192,27 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
             {section.options.find(opt => opt.value === section.selectedValues[0])?.label}
           </span>
         )}
-        {section.id !== 'groupBy' && selectedCount > 0 && (
+        {section.id !== 'groupBy' && selectedCount === 1 && (
+          <span className={`text-xs ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} font-normal`}>
+            {section.options.find(opt => opt.value === section.selectedValues[0])?.label}
+          </span>
+        )}
+        {section.id !== 'groupBy' && selectedCount > 1 && (
           <span className="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-gray-500 rounded-full">
             {selectedCount}
           </span>
         )}
-        <DownOutlined
-          className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        />
       </button>
 
       {section.id === 'groupBy' && canConfigure && (
         <div className="inline-flex items-center gap-1 ml-2">
-          {section.selectedValues[0] === 'phase' && (
-            <button
-              onClick={onManagePhase}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                isDarkMode
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
-                  : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
-              }`}
-            >
-              <SettingOutlined className="w-3.5 h-3.5" />
-              {t('manage', { defaultValue: 'Manage' })}{' '}
-              {t('phasesText', { defaultValue: 'Phases' })}
-            </button>
+          {section.selectedValues[0] === 'phase' && onManagePhase && (
+            <ManagePhasesButton isDarkMode={isDarkMode} onClick={onManagePhase} />
           )}
           {section.selectedValues[0] === 'status' && (
             <button
               onClick={onManageStatus}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                isDarkMode
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
-                  : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
-              }`}
+              className={`${MANAGE_BUTTON_BASE_CLASS} ${getManageButtonThemeClass(isDarkMode)}`}
             >
               <SettingOutlined className="w-3.5 h-3.5" />
               {t('manageStatuses', { defaultValue: 'Manage Statuses' })}
@@ -189,7 +223,9 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
 
       {isOpen && (
         <div
-          className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
+          className={`absolute top-full ${
+            dropdownAlign === 'right' ? 'right-0' : 'left-0'
+          } z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
         >
           {section.searchable && (
             <div className={`p-2 border-b ${themeClasses.dividerBorder}`}>

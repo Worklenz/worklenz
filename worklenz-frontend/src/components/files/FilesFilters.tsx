@@ -1,5 +1,6 @@
-import React from 'react';
-import { Flex, Select, ConfigProvider } from '@/shared/antd-imports';
+import React, { useMemo } from 'react';
+import { Flex, Select, ConfigProvider, theme } from '@/shared/antd-imports';
+import type { DefaultOptionType } from 'antd/es/select';
 import { useTranslation } from 'react-i18next';
 import { useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
@@ -19,12 +20,56 @@ interface FilesFiltersProps {
   showFileType?: boolean;
 }
 
+interface UploadedByOption extends DefaultOptionType {
+  value: string;
+  label: string;
+  member: ITeamMemberViewModel;
+}
+
 const FILE_TYPE_OPTIONS = Object.keys(IconsMap)
   .filter(type => type !== 'search')
   .map(type => ({ value: type, label: type.toUpperCase() }));
 
-export const FilesFilters: React.FC<FilesFiltersProps> = ({ value, onChange, showFileType = true }) => {
+/** Avatar row height used by optionRender — Ant Design virtual list defaults to 24px. */
+const UPLOADED_BY_OPTION_HEIGHT = 36;
+
+const buildUploadedByOptions = (members: ITeamMemberViewModel[]): UploadedByOption[] => {
+  const seenUserIds = new Set<string>();
+  const options: UploadedByOption[] = [];
+
+  for (const member of members) {
+    // Guests cannot upload project files, so they are not valid Uploaded By filters.
+    if (member.is_guest === true) continue;
+
+    const userId = member.user_id?.trim();
+    // uploaded_by filters against users.id — skip pending invites / missing user_id.
+    // Duplicate values break Ant Design Select virtualization (items clone / disappear on scroll).
+    if (!userId || seenUserIds.has(userId)) continue;
+
+    seenUserIds.add(userId);
+    options.push({
+      value: userId,
+      label: member.name || member.email || userId,
+      member,
+    });
+  }
+
+  return options;
+};
+
+export const FilesFilters: React.FC<FilesFiltersProps> = ({
+  value,
+  onChange,
+  showFileType = true,
+}) => {
   const { t } = useTranslation('team-files');
+
+  const { token } = theme.useToken();
+
+  const dropdownScrollbarStyle = {
+    '--files-scrollbar-thumb': token.colorTextQuaternary,
+    '--files-scrollbar-thumb-hover': token.colorTextTertiary,
+  } as React.CSSProperties;
 
   const { data: projectsData } = useGetProjectsQuery({
     index: 1,
@@ -48,6 +93,8 @@ export const FilesFilters: React.FC<FilesFiltersProps> = ({ value, onChange, sho
       .catch(() => setMembers([]));
   }, []);
 
+  const uploadedByOptions = useMemo(() => buildUploadedByOptions(members), [members]);
+
   return (
     <Flex gap={12} wrap="wrap" align="center">
       <ConfigProvider
@@ -58,6 +105,8 @@ export const FilesFilters: React.FC<FilesFiltersProps> = ({ value, onChange, sho
         }}
       >
         <Select
+          classNames={{ popup: { root: 'files-filter-dropdown' } }}
+          styles={{ popup: { root: dropdownScrollbarStyle } }}
           allowClear
           showSearch
           placeholder={t('filterProject', { defaultValue: 'All Projects' })}
@@ -74,6 +123,8 @@ export const FilesFilters: React.FC<FilesFiltersProps> = ({ value, onChange, sho
         />
         {showFileType && (
           <Select
+            classNames={{ popup: { root: 'files-filter-dropdown' } }}
+            styles={{ popup: { root: dropdownScrollbarStyle } }}
             allowClear
             showSearch
             placeholder={t('filterFileType', { defaultValue: 'File Type' })}
@@ -87,6 +138,8 @@ export const FilesFilters: React.FC<FilesFiltersProps> = ({ value, onChange, sho
           />
         )}
         <Select
+          classNames={{ popup: { root: 'files-filter-dropdown' } }}
+          styles={{ popup: { root: dropdownScrollbarStyle } }}
           allowClear
           showSearch
           placeholder={t('filterUploadedBy', { defaultValue: 'Uploaded By' })}
@@ -96,17 +149,22 @@ export const FilesFilters: React.FC<FilesFiltersProps> = ({ value, onChange, sho
             (opt?.label as string)?.toLowerCase().includes(input.toLowerCase())
           }
           optionLabelProp="label"
-          options={members.map(m => ({
-            value: m.user_id as string,
-            label: m.name as string,
-            member: m,
-          }))}
-          optionRender={option => (
-            <Flex align="center" gap={8}>
-              <SingleAvatar avatarUrl={option.data.member?.avatar_url} name={option.data.label} />
-              {option.data.label}
-            </Flex>
-          )}
+          options={uploadedByOptions}
+          listItemHeight={UPLOADED_BY_OPTION_HEIGHT}
+          // Custom avatar rows are taller than the virtual-list default (24px); wrong
+          // item height also causes options to scramble/duplicate while scrolling.
+          virtual={false}
+          optionRender={option => {
+            const optionData = option.data as UploadedByOption;
+            const label = optionData.label || String(optionData.value ?? '');
+
+            return (
+              <Flex align="center" gap={8}>
+                <SingleAvatar avatarUrl={optionData.member?.avatar_url} name={label} />
+                {label}
+              </Flex>
+            );
+          }}
           style={{ width: 200, flexShrink: 0 }}
         />
       </ConfigProvider>

@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DownOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@/shared/antd-imports';
+import { SortAscendingOutlined, SortDescendingOutlined } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchTasksV3, setSort } from '@/features/task-management/task-management.slice';
@@ -43,6 +43,7 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({ themeClasses, isDark
       { label: t('taskText', { defaultValue: 'Task' }), key: 'name' },
       { label: t('statusText', { defaultValue: 'Status' }), key: 'status' },
       { label: t('priorityText', { defaultValue: 'Priority' }), key: 'priority' },
+      { label: t('attachmentsText', { defaultValue: 'Attachments' }), key: 'attachments_count' },
       { label: t('startDateText', { defaultValue: 'Start Date' }), key: 'start_date' },
       { label: t('dueDateText', { defaultValue: 'Due Date' }), key: 'end_date' },
       { label: t('completedDateText', { defaultValue: 'Completed Date' }), key: 'completed_at' },
@@ -133,9 +134,6 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({ themeClasses, isDark
             {currentFieldLabel}
           </span>
         )}
-        <DownOutlined
-          className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-        />
       </button>
 
       {open && (

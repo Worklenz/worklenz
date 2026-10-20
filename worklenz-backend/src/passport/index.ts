@@ -20,8 +20,8 @@ export default (passport: PassportStatic) => {
   if (GoogleLogin) {
     passport.use(GoogleLogin);
   }
-  passport.use("google-mobile", GoogleMobileLogin);
-  passport.use("apple-mobile", AppleMobileLogin);
+  passport.use("google-mobile", GoogleMobileLogin as any);
+  passport.use("apple-mobile", AppleMobileLogin as any);
 
   // Only register Apple Web strategy if it's configured
   if (AppleWebLogin) {

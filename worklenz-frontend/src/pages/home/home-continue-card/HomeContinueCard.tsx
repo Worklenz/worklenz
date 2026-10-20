@@ -6,14 +6,19 @@ import { useTranslation } from 'react-i18next';
 import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader';
 import { Button, theme, PlusOutlined } from '@/shared/antd-imports';
 import HomeAddTaskModal from '../task-list/HomeAddTaskModal';
+import { ContinueTabsMenu } from './ContinueTabsMenu';
+import { resolveActiveContinueTab, type HomeContinueTab } from '../home-layout/homeContinueTabs';
+import { WIDGET_DATA_ATTRIBUTE } from '../home-widgets/widgetInteraction';
 import { useGetProjectsQuery, useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
 import {
   useGetUserRecentTasksQuery,
   useGetUserTimeLoggedTasksQuery,
 } from '@/api/home-page/user-activity.api.service';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { useNavigate } from 'react-router-dom';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { IHomeTasksConfig } from '@/types/home/home-page.types';
 import {
   setSelectedTaskId,
@@ -35,7 +40,7 @@ const TASKS_TAB_CONFIG: IHomeTasksConfig = {
   time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
 };
 
-type ContinueTab = 'projects' | 'tasks' | 'activity' | 'time';
+type ContinueTab = HomeContinueTab;
 
 const ContinueEmptyState: React.FC<{ title: string; subtitle?: string; action?: React.ReactNode }> = ({
   title,
@@ -61,19 +66,25 @@ const ContinueEmptyState: React.FC<{ title: string; subtitle?: string; action?: 
 );
 
 const HomeContinueCard: React.FC = () => {
-  const [tab, setTab] = useState<ContinueTab>('projects');
+  const [selectedTab, setTab] = useState<ContinueTab>('projects');
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
   const { t } = useTranslation('home');
 
-  const TABS: { key: ContinueTab; label: string }[] = [
+  // The user can switch some of the toggles off from the widget's menu. If the one being viewed is
+  // switched off, the first one still shown takes over.
+  const continueTabs = useAppSelector(state => state.homePreferencesReducer.continueTabs);
+  const tab = resolveActiveContinueTab(continueTabs, selectedTab);
+
+  const ALL_TABS: { key: ContinueTab; label: string }[] = [
     { key: 'projects', label: t('continueCardTabs.projects', { defaultValue: 'Projects' }) },
     { key: 'tasks', label: t('continueCardTabs.tasks', { defaultValue: 'Tasks' }) },
     { key: 'activity', label: t('continueCardTabs.activity', { defaultValue: 'Activity' }) },
     { key: 'time', label: t('continueCardTabs.timeLogged', { defaultValue: 'Time Logged' }) },
   ];
+  const TABS = ALL_TABS.filter(({ key }) => !continueTabs.hidden.includes(key));
 
   const handleOpenProject = useCallback(
     (e: React.MouseEvent, projectId: string) => {
@@ -181,6 +192,7 @@ const HomeContinueCard: React.FC = () => {
         }}
       >
         <div style={{ fontSize: 14, fontWeight: 600 }}>{t('continueCardTabs.title', { defaultValue: 'Continue' })}</div>
+        <ContinueTabsMenu />
       </div>
 
       {/* Tab bar */}
@@ -225,7 +237,7 @@ const HomeContinueCard: React.FC = () => {
           <WorklenzLogoLoader />
         </div>
       ) : (
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <div {...{ [WIDGET_DATA_ATTRIBUTE]: '' }} style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {/* Projects tab */}
           {tab === 'projects' && (
             <div>
@@ -255,7 +267,7 @@ const HomeContinueCard: React.FC = () => {
                         flexShrink: 0,
                       }}
                     />
-                    <Tooltip title={p.name} placement="right">
+                    <Tooltip title={decodeHtmlEntities(p.name)} placement="right">
                       <span
                         style={{
                           flex: 1,
@@ -265,12 +277,12 @@ const HomeContinueCard: React.FC = () => {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {p.name}
+                        {decodeHtmlEntities(p.name)}
                       </span>
                     </Tooltip>
                     {p.client_name && (
                       <span style={{ fontSize: 11, opacity: 0.55, flexShrink: 0 }}>
-                        {p.client_name}
+                        {decodeHtmlEntities(p.client_name)}
                       </span>
                     )}
                     {typeof p.tasks_progress === 'number' && (
@@ -317,7 +329,7 @@ const HomeContinueCard: React.FC = () => {
                 activeTasks.map(t => (
                   <div key={t.id} style={ROW_STYLE}>
                     <Badge color={t.project_color || '#8c8c8c'} />
-                    <Tooltip title={t.name} placement="right">
+                    <Tooltip title={decodeHtmlEntities(t.name)} placement="right">
                       <span
                         style={{
                           flex: 1,
@@ -330,10 +342,10 @@ const HomeContinueCard: React.FC = () => {
                         onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                         onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                       >
-                        {t.name}
+                        {decodeHtmlEntities(t.name)}
                       </span>
                     </Tooltip>
-                    <Tooltip title={t.project_name} placement="right">
+                    <Tooltip title={decodeHtmlEntities(t.project_name)} placement="right">
                       <span
                         style={{
                           fontSize: 11,
@@ -346,7 +358,7 @@ const HomeContinueCard: React.FC = () => {
                         onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                         onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                       >
-                        {t.project_name}
+                        {decodeHtmlEntities(t.project_name)}
                       </span>
                     </Tooltip>
                   </div>
@@ -376,7 +388,7 @@ const HomeContinueCard: React.FC = () => {
                       }}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <Tooltip title={t.task_name} placement="right">
+                      <Tooltip title={decodeHtmlEntities(t.task_name)} placement="right">
                         <div
                           style={{
                             overflow: 'hidden',
@@ -391,10 +403,10 @@ const HomeContinueCard: React.FC = () => {
                           onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                           onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                         >
-                          {t.task_name}
+                          {decodeHtmlEntities(t.task_name)}
                         </div>
                       </Tooltip>
-                      <Tooltip title={t.project_name} placement="right">
+                      <Tooltip title={decodeHtmlEntities(t.project_name)} placement="right">
                         <div
                           style={{
                             fontSize: 11,
@@ -410,7 +422,7 @@ const HomeContinueCard: React.FC = () => {
                           onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                           onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                         >
-                          {t.project_name}
+                          {decodeHtmlEntities(t.project_name)}
                         </div>
                       </Tooltip>
                     </div>
@@ -449,7 +461,7 @@ const HomeContinueCard: React.FC = () => {
                       }}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <Tooltip title={t.task_name} placement="right">
+                      <Tooltip title={decodeHtmlEntities(t.task_name)} placement="right">
                         <div
                           style={{
                             overflow: 'hidden',
@@ -464,10 +476,10 @@ const HomeContinueCard: React.FC = () => {
                           onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                           onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                         >
-                          {t.task_name}
+                          {decodeHtmlEntities(t.task_name)}
                         </div>
                       </Tooltip>
-                      <Tooltip title={t.project_name} placement="right">
+                      <Tooltip title={decodeHtmlEntities(t.project_name)} placement="right">
                         <div
                           style={{
                             fontSize: 11,
@@ -483,7 +495,7 @@ const HomeContinueCard: React.FC = () => {
                           onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                           onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                         >
-                          {t.project_name}
+                          {decodeHtmlEntities(t.project_name)}
                         </div>
                       </Tooltip>
                     </div>

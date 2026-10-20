@@ -30,6 +30,7 @@ import { useParams } from 'react-router-dom';
 import AvatarGroup from '@/components/AvatarGroup';
 import { GanttTask } from '../../types/gantt-types';
 import { useUpdatePhaseMutation } from '../../services/roadmap-api.service';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Title, Text } = Typography;
 
@@ -700,9 +701,9 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
                             strong
                             className="text-sm truncate flex-1"
                             style={{ color: token.colorText }}
-                            title={task.name}
+                            title={decodeHtmlEntities(task.name)}
                           >
-                            {task.name}
+                            {decodeHtmlEntities(task.name)}
                           </Text>
 
                           {/* Priority Icon */}

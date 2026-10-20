@@ -1,0 +1,55 @@
+{
+  "title": "Integracje",
+  "tooltip": "Zarządzaj integracjami projektów",
+  "upgradeRequired": "Integracje dostępne w planie Biznes",
+  "manageAll": "Zarządzaj wszystkimi integracjami",
+  "comingSoon": "Już wkrótce",
+  "cancel": "Anuluj",
+  "slack": {
+    "title": "Luz",
+    "description": "Otrzymuj aktualizacje zadań, statusów i komentarzy w kanałach Slack",
+    "notConnected": "Najpierw połącz swój obszar roboczy Slack w Ustawieniach",
+    "quickAddTitle": "Dodaj Slacka do projektu",
+    "currentProject": "Projekt",
+    "selectChannel": "Slackowy kanał",
+    "selectChannelPlaceholder": "Wybierz kanał Slack...",
+    "selectNotifications": "Typy powiadomień",
+    "selectNotificationsPlaceholder": "Wybierz typy powiadomień...",
+    "refresh": "Odśwież",
+    "addButton": "Dodaj integrację",
+    "inviteBotTip": "Wskazówka: pamiętaj, aby najpierw zaprosić bota @Worklenz na swój kanał Slack!"
+  },
+  "teams": {
+    "title": "Zespoły Microsoftu",
+    "description": "Publikuj aktualizacje zadań i statusów w kanałach Teams"
+  },
+  "github": {
+    "title": "GitHub",
+    "description": "Śledź gałęzie, pull requesty i commity przy zadaniach",
+    "softwareDescription": "Gałęzie, pull requesty i commity przy każdym zadaniu, z automatyczną aktualizacją statusu",
+    "softwareOnly": "Projekty programistyczne",
+    "connectDescription": "Połącz GitHub, aby powiązać repozytoria, śledzić pull requesty i automatyzować status zadań"
+  },
+  "notificationTypes": {
+    "taskCreated": "Zadanie utworzone",
+    "taskAssigned": "Zadanie przydzielone",
+    "statusChanged": "Stan zmieniony",
+    "taskCompleted": "Zadanie ukończone",
+    "commentAdded": "Komentarz dodano",
+    "dueDateChanged": "Zmieniono termin płatności"
+  },
+  "validation": {
+    "selectChannel": "Wybierz kanał Slack",
+    "selectNotifications": "Proszę wybrać przynajmniej jeden typ powiadomienia"
+  },
+  "messages": {
+    "integrationAdded": "Integracja ze Slackiem została pomyślnie dodana!",
+    "channelsRefreshed": "Kanały zostały odświeżone pomyślnie"
+  },
+  "errors": {
+    "loadChannelsFailed": "Nie udało się załadować kanałów",
+    "refreshChannelsFailed": "Nie udało się odświeżyć kanałów",
+    "addIntegrationFailed": "Nie udało się dodać integracji"
+  },
+  "businessPlan": "Biznes"
+}

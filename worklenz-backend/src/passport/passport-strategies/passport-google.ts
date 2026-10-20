@@ -3,6 +3,7 @@ import { sendWelcomeEmail } from "../../shared/email-templates";
 import { log_error } from "../../shared/utils";
 import db from "../../config/db";
 import { ERROR_KEY } from "./passport-constants";
+import { BLOCKED_SIGNUP_EMAIL_MESSAGE, isSignupEmailDomainBlocked } from "../../shared/signup-email-domain-policy";
 import { Request } from "express";
 
 async function handleGoogleLogin(req: Request, _accessToken: string, _refreshToken: string, profile: GoogleStrategy.Profile, done: GoogleStrategy.VerifyCallback) {
@@ -20,7 +21,7 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
 
     const q1 = `SELECT id, google_id, name, email, active_team
                 FROM users
-                WHERE (google_id = $1 OR email = $2)
+                WHERE (google_id = $1 OR LOWER(email) = LOWER(TRIM($2)))
                   AND is_deleted = FALSE;`;
     const result1 = await db.query(q1, [body.id, body.email]);
 
@@ -50,29 +51,18 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
       return done(null, false, { message: "User not found" });
     }
 
-    // Check if a soft-deleted user exists with this email
+    // Suspended accounts must only be restored through a support-led review.
     const deletedCheck = await db.query(
       "SELECT id, email FROM users WHERE LOWER(email) = LOWER($1) AND is_deleted = TRUE;",
       [body.email]
     );
 
     if (deletedCheck.rowCount) {
-      // Reactivate the soft-deleted account and link Google ID
-      const [deletedUser] = deletedCheck.rows;
-      await db.query(
-        "UPDATE users SET is_deleted = FALSE, google_id = $1, name = COALESCE($2, name) WHERE id = $3;",
-        [body.id, body.displayName, deletedUser.id]
-      );
-
-      // Update active team if from invitation
-      try {
-        await db.query("SELECT set_active_team($1, $2);", [deletedUser.id, state.team || null]);
-      } catch (error) {
-        log_error(error);
-      }
-
-      return done(null, { id: deletedUser.id, email: deletedUser.email, google_id: body.id });
+      return done(null, false, { message: req.flash(ERROR_KEY, "This account is unavailable. Please contact support.") });
     }
+
+    if (await isSignupEmailDomainBlocked(body.email))
+      return done(null, false, { message: req.flash(ERROR_KEY, BLOCKED_SIGNUP_EMAIL_MESSAGE) });
 
     // Register new user
     const q2 = `SELECT register_google_user($1) AS user;`;
@@ -82,6 +72,8 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
     sendWelcomeEmail(data.user.email, body.displayName);
     return done(null, data.user, { message: "User successfully logged in" });
   } catch (error: any) {
+    if (error.message?.includes("ERROR_SIGNUP_EMAIL_DOMAIN_BLOCKED"))
+      return done(null, false, { message: req.flash(ERROR_KEY, BLOCKED_SIGNUP_EMAIL_MESSAGE) });
     console.error("[Google OAuth] handleGoogleLogin CAUGHT ERROR:");
     console.error("[Google OAuth] error:", error);
     console.error("[Google OAuth] message:", error?.message);

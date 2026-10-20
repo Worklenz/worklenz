@@ -26,5 +26,8 @@
   "navigateBackTooltip": "Kthehu tek lista e projekteve",
   "projectStatusTooltip": "Statusi i projektit",
   "projectDatesInfo": "Informacion për kohëzgjatjen e projektit",
-  "projectCategoryTooltip": "Kategoria e projektit"
+  "projectCategoryTooltip": "Kategoria e projektit",
+  "softwareProjectTooltip": "Projekt softuerësh - probleme, prapambetje dhe sprinte",
+  "settingsDisabledForGuest": "Cilësimet e projektit nuk janë të aksesueshme për përdoruesit e ftuar",
+  "softwareProjectTag": "Softuer"
 }

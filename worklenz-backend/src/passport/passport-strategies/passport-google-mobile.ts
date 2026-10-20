@@ -4,6 +4,7 @@ import { Request } from "express";
 import db from "../../config/db";
 import { log_error } from "../../shared/utils";
 import { ERROR_KEY } from "./passport-constants";
+import { BLOCKED_SIGNUP_EMAIL_MESSAGE, isSignupEmailDomainBlocked } from "../../shared/signup-email-domain-policy";
 
 interface GoogleTokenProfile {
   sub: string;
@@ -101,6 +102,13 @@ async function handleMobileGoogleAuth(req: Request, done: any) {
       });
     }
 
+    if (await isSignupEmailDomainBlocked(normalizedEmail)) {
+      return done(null, false, {
+        message: BLOCKED_SIGNUP_EMAIL_MESSAGE,
+        [ERROR_KEY]: "EMAIL_DOMAIN_NOT_SUPPORTED"
+      });
+    }
+
     // Sign-up flow - validate team_name
     if (!team_name || !team_name.trim()) {
       return done(null, false, {
@@ -139,6 +147,13 @@ async function handleMobileGoogleAuth(req: Request, done: any) {
           });
         }
 
+        if (error.message?.includes("ERROR_SIGNUP_EMAIL_DOMAIN_BLOCKED")) {
+          return done(null, false, {
+            message: BLOCKED_SIGNUP_EMAIL_MESSAGE,
+            [ERROR_KEY]: "EMAIL_DOMAIN_NOT_SUPPORTED"
+          });
+        }
+
         if (error.message?.includes("TEAM_NAME_EXISTS_ERROR")) {
           const [, teamName] = error.message.split(":");
           return done(null, false, {
@@ -163,4 +178,5 @@ async function handleMobileGoogleAuth(req: Request, done: any) {
   }
 }
 
-export default new CustomStrategy(handleMobileGoogleAuth);
+// Cast needed: passport-custom ships @types/express@5 while the app uses @types/express@4
+export default new CustomStrategy(handleMobileGoogleAuth as never) as any;

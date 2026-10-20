@@ -1,5 +1,6 @@
 import { Request, Express } from "express";
 import { IPassportSession } from "./passport-session";
+import { IProjectAccess } from "../shared/project-access.types";
 
 export interface IMemberScope {
   memberIds: string[];
@@ -14,4 +15,6 @@ export interface IWorkLenzRequest extends Request {
   memberScope?: IMemberScope;
   file?: Express.Multer.File;
   projectFileMeta?: IProjectFileMeta;
+  /** Per-request cache for getProjectAccessForRequest (keyed by project id). */
+  projectAccessCache?: Map<string, IProjectAccess>;
 }

@@ -25,7 +25,7 @@ import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
 import alertService from '@/services/alerts/alertService';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/utils/subscription-utils';
 import logger from '@/utils/errorLogger';
 import { TaskExportPublicJob } from '@/types/project/task-export.types';
 
@@ -60,7 +60,7 @@ const TaskExportSettingsSection = ({ projectId }: TaskExportSettingsSectionProps
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
   const authService = useAuthService();
-  const hasBusinessAccess = hasBusinessFeatureAccess(authService.getCurrentSession());
+  const hasBusinessAccess = canUseFeature(authService.getCurrentSession(), 'task_export');
 
   const [selection, setSelection] = useState<ExportSelection>({
     includeTasks: true,

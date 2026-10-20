@@ -18,6 +18,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   fetchTask,
@@ -106,9 +107,9 @@ export const FinanceBillableTimePage = () => {
                 display: 'inline-block',
               }}
             />
-            <Tooltip title={value}>
+            <Tooltip title={decodeHtmlEntities(value)}>
               <Text ellipsis style={{ maxWidth: 160 }}>
-                {value}
+                {decodeHtmlEntities(value)}
               </Text>
             </Tooltip>
           </Flex>
@@ -118,19 +119,22 @@ export const FinanceBillableTimePage = () => {
         title: t('billableTime.table.task', { defaultValue: 'Task' }),
         dataIndex: 'task_name',
         key: 'task_name',
-        render: (value: string, record) => (
+        render: (value: string, record) => {
+          const taskName = decodeHtmlEntities(value);
+          return (
           <Button
             type="link"
             style={{ padding: 0, height: 'auto' }}
             onClick={() => handleTaskClick(record.task_id, record.project_id)}
           >
-            <Tooltip title={value}>
+            <Tooltip title={taskName}>
               <Text ellipsis style={{ maxWidth: 180 }}>
-                {value}
+                {taskName}
               </Text>
             </Tooltip>
           </Button>
-        ),
+          );
+        },
       },
       {
         title: t('billableTime.table.date', { defaultValue: 'Date' }),
@@ -277,7 +281,7 @@ export const FinanceBillableTimePage = () => {
             pageSize,
             total,
             showSizeChanger: true,
-            pageSizeOptions: [5, 10, 20, 50],
+            pageSizeOptions: [10, 20, 50, 100],
             onChange: (nextPage, nextSize) => {
               setPage(nextPage);
               setPageSize(nextSize);

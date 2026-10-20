@@ -26,6 +26,7 @@
   "CHANGE_STATUS": "Cambiar Estado",
   "CHANGE_PRIORITY": "Cambiar Prioridad",
   "CHANGE_PHASE": "Cambiar Fase",
+  "MOVE_TO_SPRINT": "Mover al sprint",
   "ADD_LABELS": "Agregar Etiquetas",
   "ASSIGN_TO_ME": "Asignar a Mí",
   "ASSIGN_MEMBERS": "Asignar Miembros",
@@ -43,5 +44,8 @@
   "DUE_DATE_UPDATED": "Fecha de vencimiento actualizada correctamente",
   "DUE_DATE_CLEARED": "Fecha de vencimiento borrada correctamente",
   "archiveSuccessTitle": "Actualización masiva completada",
-  "archiveSuccessMessage": "Se {{action}}ron {{parentCount}} tareas y {{subtaskCount}} subtareas."
+  "archiveSuccessMessage": "Se {{action}}ron {{parentCount}} tareas y {{subtaskCount}} subtareas.",
+  "SET_START_DATE": "Establecer Fecha de Inicio",
+  "Unarchive": "Desarchivar",
+  "Archive": "Archivar"
 }

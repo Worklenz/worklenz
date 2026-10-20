@@ -1,0 +1,84 @@
+{
+  "access": {
+    "introExisting": "Wählen Sie die Projekte aus, die dieser Benutzer öffnen kann. Wenn das Kundenportal für ein von Ihnen ausgewähltes Projekt ausgeschaltet ist, wird es eingeschaltet.",
+    "introNew": "Wählen Sie die Projekte aus, die dieser Kunde sehen soll. Projekte ohne Kunden werden mit der neuen Organisation verknüpft und das Kundenportal wird für jedes von Ihnen ausgewählte Projekt aktiviert.",
+    "loadFailed": "Die Projekte konnten nicht geladen werden.",
+    "noClientYet": "Noch kein Kunde",
+    "noProjectsExisting": "Diese Organisation hat noch keine Projekte. Dem Benutzer können später Projekte zugewiesen werden.",
+    "noProjectsNew": "Jedes Workspace-Projekt hat bereits einen Kunden. Verlinken Sie später eines von Portal Projects.",
+    "portalOff": "Portal aus, wird eingeschaltet",
+    "search": "Projekte suchen…",
+    "title": "Projektzugriff"
+  },
+  "details": {
+    "email": "E-Mail-Adresse",
+    "emailHint": "Dies ist die Login- und Einladungsadresse. Es muss einzigartig sein.",
+    "emailInvalid": "Geben Sie eine gültige E-Mail-Adresse ein.",
+    "firstName": "Vorname",
+    "firstNamePlaceholder": "Jana",
+    "firstUserNotice": "Der erste Benutzer einer neuen Organisation ist ein Kundenadministrator. Sie können Elemente genehmigen und, wenn Sie dies in den Portaleinstellungen aktivieren, ihre eigenen Kollegen verwalten. Wie jeder Client-Benutzer melden sie sich mit einem Einmalcode an, der per E-Mail an diese Adresse gesendet wird.",
+    "jobTitle": "Berufsbezeichnung",
+    "jobTitlePlaceholder": "z.B. Marketingmanager",
+    "lastName": "Nachname",
+    "lastNamePlaceholder": "Müller",
+    "noOrganizations": "Keine Organisationen gefunden.",
+    "organization": "Organisation",
+    "organizationName": "Organisationsname",
+    "organizationNamePlaceholder": "z.B. Leuchtfeuerlogistik",
+    "phone": "Telefon (optional)",
+    "role": "Role",
+    "selectOrganization": "Wählen Sie eine Organisation aus…"
+  },
+  "footer": {
+    "addUser": "Benutzer hinzufügen",
+    "back": "Zurück",
+    "continue": "Weiter",
+    "sendInvitation": "Einladung senden"
+  },
+  "method": {
+    "existingOrganization": {
+      "description": "Laden Sie eine andere Person zu einer Organisation ein, die bereits über Portalzugriff verfügt.",
+      "name": "Fügen Sie einen Benutzer zu einer vorhandenen Organisation hinzu"
+    },
+    "groupLabel": "So fügen Sie diesen Kunden hinzu",
+    "intro": "Jeder Client-Benutzer gehört einer Organisation an und sieht nur die Projekte, die Sie ihm zuweisen.",
+    "newOrganization": {
+      "description": "Erstellen Sie die Organisation und laden Sie ihren ersten Benutzer als Kundenadministrator ein.",
+      "name": "Neue Kundenorganisation"
+    }
+  },
+  "result": {
+    "activationHint": "Sie öffnen den Link in der E-Mail und melden sich mit einem 6-stelligen Code an, der an ihre Adresse gesendet wird. Es gibt kein Passwort.",
+    "addedNoInvite": "{{name}} wurde als {{role}} hinzugefügt. Es wurde noch keine Einladung verschickt.",
+    "emailNotSent": "{{name}} wurde gespeichert, aber die Einladungs-E-Mail konnte nicht gesendet werden. Teilen Sie stattdessen den Link.",
+    "failed": "Der Kunde konnte nicht hinzugefügt werden.",
+    "invited": "Einladung an {{email}} gesendet.",
+    "portalsSwitchedOn": "Kundenportal für {{count}} Projekt(e) aktiviert.",
+    "portalsSwitchedOn_one": "Kundenportal für {{count}}-Projekt aktiviert.",
+    "portalsSwitchedOn_other": "Kundenportal für {{count}} Projekte aktiviert."
+  },
+  "review": {
+    "email": "Email",
+    "name": "Name",
+    "organization": "Organisation",
+    "projects": "Projekte",
+    "projectsAssigned": "{{count}} zugewiesen",
+    "projectsAssigned_one": "{{count}} zugewiesen",
+    "projectsAssigned_other": "{{count}} zugewiesen",
+    "projectsNone": "Noch keine",
+    "role": "Role",
+    "sendInvitation": "Senden Sie jetzt die Einladung",
+    "sendInvitationHint": "Der Link enthält ihre E-Mail-Adresse; Beim Öffnen wird ihnen ein 6-stelliger Code gesendet, sodass kein Passwort festgelegt werden muss. Der Link läuft nach 7 Tagen ab. Wenn es abläuft, senden Sie es erneut aus der Benutzerliste, oder sie können sich durch Eingabe ihrer E-Mail-Adresse anmelden."
+  },
+  "steps": {
+    "access": "Zugriff",
+    "details": "Details",
+    "method": "Methode"
+  },
+  "title": {
+    "access": "Zugriff und Überprüfung",
+    "detailsExisting": "Wählen Sie die Organisation und den Benutzer aus",
+    "detailsNew": "Erzählen Sie uns etwas über die Organisation",
+    "method": "Wie möchten Sie diesen Kunden hinzufügen?"
+  }
+}

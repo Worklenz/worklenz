@@ -3,12 +3,19 @@ import { BankOutlined } from '@/shared/antd-imports';
 import { IWorklenzNotification } from '@/types/notifications/notifications.types';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleDrawer } from '../../../../../features/navbar/notificationSlice';
+import { toggleDrawer } from '@/features/navbar/notificationSlice';
 import { useTranslation } from 'react-i18next';
 import { teamsApiService } from '@/api/teams/teams.api.service';
 import { formatDistanceToNow } from 'date-fns';
+import { de } from 'date-fns/locale/de';
+import { enUS } from 'date-fns/locale/en-US';
+import { es } from 'date-fns/locale/es';
+import { fr } from 'date-fns/locale/fr';
+import { pl } from 'date-fns/locale/pl';
+import { pt } from 'date-fns/locale/pt';
+import { zhCN } from 'date-fns/locale/zh-CN';
 import { tagBackground } from '@/utils/colorUtils';
-import DOMPurify from 'dompurify';
+import { renderNotificationMessage } from '@/utils/notification-message-renderer';
 
 interface NotificationTemplateProps {
   item: IWorklenzNotification;
@@ -24,7 +31,8 @@ const NotificationTemplate: React.FC<NotificationTemplateProps> = ({
   loadersMap,
 }) => {
   const navigate = useNavigate();
-  const { t } = useTranslation('navbar');
+  const { t, i18n } = useTranslation('navbar');
+  const { t: tNotifications } = useTranslation('notifications');
   const dispatch = useAppDispatch();
 
   const goToUrl = async (event: React.MouseEvent) => {
@@ -48,7 +56,10 @@ const NotificationTemplate: React.FC<NotificationTemplateProps> = ({
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
-    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    return formatDistanceToNow(new Date(dateString), {
+      addSuffix: true,
+      locale: DATE_LOCALES[i18n.language] || enUS,
+    });
   };
 
   const handleMarkAsRead = (e: React.MouseEvent) => {
@@ -57,16 +68,8 @@ const NotificationTemplate: React.FC<NotificationTemplateProps> = ({
     markNotificationAsRead(item.id);
   };
 
-  // Sanitize notification message to prevent XSS attacks
-  // Allow only safe formatting tags (b, strong, i, em) and no attributes
-  // Additional security options to prevent any XSS vectors
-  const sanitizedMessage = DOMPurify.sanitize(item.message, {
-    ALLOWED_TAGS: ['b', 'strong', 'i', 'em'],
-    ALLOWED_ATTR: [],
-    KEEP_CONTENT: true,
-    ALLOW_DATA_ATTR: false,
-    SAFE_FOR_TEMPLATES: true,
-  });
+  // Sanitize notification message to prevent XSS attacks and support localization
+  const sanitizedMessageHtml = renderNotificationMessage(item, tNotifications);
 
   return (
     <div
@@ -79,7 +82,7 @@ const NotificationTemplate: React.FC<NotificationTemplateProps> = ({
           <Typography.Text type="secondary" className="mb-1">
             <BankOutlined /> {item.team}
           </Typography.Text>
-          <div className="mb-1" dangerouslySetInnerHTML={{ __html: sanitizedMessage }} />
+          <div className="mb-1" dangerouslySetInnerHTML={{ __html: sanitizedMessageHtml }} />
           {item.project && item.color && (
             <Tag style={{ backgroundColor: tagBackground(item.color) }}>{item.project}</Tag>
           )}
@@ -107,3 +110,15 @@ const NotificationTemplate: React.FC<NotificationTemplateProps> = ({
 };
 
 export default NotificationTemplate;
+
+const DATE_LOCALES = {
+  de,
+  en: enUS,
+  es,
+  fr,
+  pl,
+  pt,
+  zh: zhCN,
+  zh_cn: zhCN,
+  alb: enUS,
+};

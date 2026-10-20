@@ -5,6 +5,7 @@ import db from "../config/db";
 import {ServerResponse} from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
+import {allocateCopyName} from "../shared/template-copy-name";
 
 export default class TasktemplatesController extends WorklenzControllerBase {
   protected static async getTaskTemplateAccess(
@@ -219,6 +220,119 @@ export default class TasktemplatesController extends WorklenzControllerBase {
       return res.status(404).send(new ServerResponse(false, null, "Template not found"));
     }
     return res.status(200).send(new ServerResponse(true, result.rows, "Template deleted."));
+  }
+
+  /**
+   * Duplicate a task template into the caller's team library.
+   * One-click; name is "Copy of …" with numbering to avoid prefix chains.
+   */
+  @HandleExceptions({
+    raisedExceptions: {
+      "TASK_TEMPLATE_EXISTS_ERROR": `A template with the name "{0}" already exists. Please choose a different name.`
+    }
+  })
+  public static async duplicate(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const {id} = req.params;
+    const teamId = req.user?.team_id;
+    if (!id || !teamId) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid request."));
+    }
+
+    const access = await TasktemplatesController.getTaskTemplateAccess(id, teamId);
+    if (!access?.canManage) {
+      return res.status(404).send(new ServerResponse(false, null, "Template not found"));
+    }
+
+    const q = `
+      SELECT
+        t.id,
+        t.name,
+        (
+          SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(all_tasks))), '[]'::JSON)
+          FROM (
+            SELECT
+              ttt.name,
+              ttt.total_minutes,
+              ttt.parent_task_name
+            FROM task_templates_tasks ttt
+            WHERE ttt.template_id = t.id
+          ) all_tasks
+        ) AS flat_tasks
+      FROM task_templates t
+      WHERE t.id = $1
+    `;
+    const result = await db.query(q, [id]);
+    if (!result.rows.length) {
+      return res.status(404).send(new ServerResponse(false, null, "Template not found"));
+    }
+
+    const row = result.rows[0];
+    const flatTasks: Array<{ name: string; total_minutes: number; parent_task_name: string | null }> =
+      row.flat_tasks || [];
+
+    type L3Entry = { name: string; total_minutes: number };
+    type L2Entry = { name: string; total_minutes: number; sub_tasks: L3Entry[] };
+    type L1Entry = { name: string; total_minutes: number; sub_tasks: L2Entry[] };
+
+    const level1Map = new Map<string, L1Entry>();
+    const level1Order: string[] = [];
+    const level2Map = new Map<string, L2Entry>();
+
+    for (const task of flatTasks) {
+      if (task.parent_task_name === null || task.parent_task_name === undefined) {
+        if (!level1Map.has(task.name)) {
+          const entry: L1Entry = { name: task.name, total_minutes: task.total_minutes, sub_tasks: [] };
+          level1Map.set(task.name, entry);
+          level1Order.push(task.name);
+        }
+      }
+    }
+
+    for (const task of flatTasks) {
+      if (task.parent_task_name !== null && task.parent_task_name !== undefined) {
+        const l1Parent = level1Map.get(task.parent_task_name);
+        if (l1Parent) {
+          if (!level2Map.has(task.name)) {
+            const entry: L2Entry = { name: task.name, total_minutes: task.total_minutes, sub_tasks: [] };
+            l1Parent.sub_tasks.push(entry);
+            level2Map.set(task.name, entry);
+          }
+        }
+      }
+    }
+
+    for (const task of flatTasks) {
+      if (task.parent_task_name !== null && task.parent_task_name !== undefined) {
+        const l2Parent = level2Map.get(task.parent_task_name);
+        if (l2Parent) {
+          l2Parent.sub_tasks.push({ name: task.name, total_minutes: task.total_minutes });
+        }
+      }
+    }
+
+    const tasks = level1Order.map(name => level1Map.get(name)!);
+
+    const namesResult = await db.query(
+      `SELECT name FROM task_templates WHERE team_id = $1;`,
+      [teamId]
+    );
+    const existingNames = namesResult.rows.map((r: { name: string }) => r.name);
+    const copyName = allocateCopyName(row.name || "Template", existingNames);
+
+    const createResult = await db.query(
+      `SELECT create_task_template($1, $2, $3);`,
+      [copyName, teamId, JSON.stringify(tasks)]
+    );
+    const [created] = createResult.rows;
+    const newId = created?.create_task_template?.id;
+
+    return res.status(200).send(
+      new ServerResponse(
+        true,
+        { id: newId, name: copyName },
+        "Template duplicated successfully."
+      )
+    );
   }
 
   @HandleExceptions()

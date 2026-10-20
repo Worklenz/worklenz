@@ -37,6 +37,7 @@ import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import PillToggle from '@/pages/home/PillToggle';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface HomeAddTaskModalProps {
   open: boolean;
@@ -347,7 +348,7 @@ const HomeAddTaskModal = ({ open, defaultDate, onClose, onTaskCreated }: HomeAdd
         loading: submitting,
         disabled: createMode === 'unassigned' && !selectedUnassignedTask,
       }}
-      destroyOnClose
+      destroyOnHidden
     >
       <PillToggle<CreateMode>
         value={createMode}
@@ -465,7 +466,7 @@ const HomeAddTaskModal = ({ open, defaultDate, onClose, onTaskCreated }: HomeAdd
                             <span style={{ opacity: 0.5, fontWeight: 400, flexShrink: 0 }}>{task.task_key}</span>
                           )}
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {task.name}
+                            {decodeHtmlEntities(task.name)}
                           </span>
                         </div>
                       );
