@@ -21,6 +21,7 @@ import { useState, useEffect } from 'react';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
 import { CopyOutlined, CheckOutlined } from '@ant-design/icons';
+import { copyToClipboard } from '@/utils/copy-to-clipboard';
 import { ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role.types';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_team_invite_sent } from '@/shared/worklenz-analytics-events';
@@ -190,8 +191,9 @@ const InviteTeamMembers = () => {
         setLinkExpiry(res.body.expires_at);
         setHasActiveLink(true);
         
-        // Copy to clipboard
-        await navigator.clipboard.writeText(res.body.invitation_url);
+        // Copy to clipboard (may be unavailable on non-HTTPS origins); the link is
+        // already generated and shown, so a copy failure must not read as a generation failure.
+        const copied = await copyToClipboard(res.body.invitation_url);
 
         // Track team invitation link copy
         trackMixpanelEvent(evt_team_invite_sent, {
@@ -200,12 +202,19 @@ const InviteTeamMembers = () => {
           has_job_title: !!selectedJobTitle,
         });
 
-        setLinkCopied(true);
-        message.success(
-          t('inviteLinkCopied', { defaultValue: 'Invitation link copied to clipboard' })
-        );
-        
-        setTimeout(() => setLinkCopied(false), 2000);
+        if (copied) {
+          setLinkCopied(true);
+          message.success(
+            t('inviteLinkCopied', { defaultValue: 'Invitation link copied to clipboard' })
+          );
+          setTimeout(() => setLinkCopied(false), 2000);
+        } else {
+          message.warning(
+            t('inviteLinkCopyFailed', {
+              defaultValue: 'Invitation link generated. Copy it manually from the field below.',
+            })
+          );
+        }
       }
     } catch (error) {
       message.error(
@@ -449,7 +458,7 @@ const InviteTeamMembers = () => {
               </Typography.Text>
             <Input
               value={invitationLink}
-              disabled
+              readOnly
               placeholder={
                 hasActiveLink && isLinkExpired(linkExpiry)
                   ? t('linkExpiredPlaceholder', { defaultValue: 'Link expired' })
