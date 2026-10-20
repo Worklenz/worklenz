@@ -86,7 +86,9 @@ export function resolveEntitlementGuestPlan(subscriptionData: any): { guestLimit
       planTier = "SELF_HOSTED";
       break;
     case "appsumo_ltd":
-      planTier = entitlements.guestLimit === BUSINESS_GUEST_LIMIT ? "APPSUMO_BUSINESS" : "APPSUMO_LTD";
+      planTier = subscriptionData?.redeemed_codes_count >= APPSUMO_BUSINESS_UNLOCK_CODE_COUNT
+        ? "APPSUMO_BUSINESS"
+        : "APPSUMO_LTD";
       break;
     default:
       planTier = entitlements.tier === "pro" ? "PROFESSIONAL" : entitlements.tier.toUpperCase();

@@ -19,7 +19,7 @@ Before running pending migrations, explicitly set `WORKLENZ_DEPLOYMENT_MODE` in 
 - Cloud: `WORKLENZ_DEPLOYMENT_MODE=cloud npm run migrate:up`
 - Self-hosted: `WORKLENZ_DEPLOYMENT_MODE=self_hosted npm run migrate:up`
 
-Migration `1790780400000_register_functions_self_hosted_license` runs its signup-function replacements and organization-license repair only for `self_hosted`. In `cloud` mode it executes no SQL and is recorded as applied. A missing, blank, or invalid mode stops this migration before any SQL executes; it does not use the application's default deployment mode. Confirm the deployment mode matches the target database before running migrations.
+Migration `1790780400000_register_functions_self_hosted_license` runs its signup-function replacements and organization-license repair only for `self_hosted`. The shared `create_team_member` duplicate-prevention update runs in both deployment modes. In `cloud` mode the registration-function replacements and organization-license repair are skipped, and the migration is recorded as applied. A missing, blank, or invalid mode stops this migration before any SQL executes; it does not use the application's default deployment mode. Confirm the deployment mode matches the target database before running migrations.
 
 This guard prevents future execution on cloud. It does not restore functions or organization licenses if an earlier unguarded version already ran; the migration has no automatic rollback.
 

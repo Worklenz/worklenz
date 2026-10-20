@@ -21,13 +21,19 @@ describe("self-hosted license migration deployment guard", () => {
     else process.env.WORKLENZ_DEPLOYMENT_MODE = originalMode;
   });
 
-  it.each(["cloud", " CLOUD "])("executes no SQL in %s mode", async mode => {
+  it.each(["cloud", " CLOUD "])("applies only shared duplicate prevention in %s mode", async mode => {
     process.env.WORKLENZ_DEPLOYMENT_MODE = mode;
     const sql = jest.fn();
 
     await migration.up({ sql });
 
-    expect(sql).not.toHaveBeenCalled();
+    expect(sql).toHaveBeenCalledTimes(1);
+    const statements = sql.mock.calls.map(([statement]: [string]) => statement).join("\n");
+    expect(statements).toContain("CREATE OR REPLACE FUNCTION create_team_member");
+    expect(statements).toContain("CONTINUE WHEN EXISTS");
+    expect(statements).not.toContain("CREATE OR REPLACE FUNCTION register_");
+    expect(statements).not.toContain("UPDATE organizations");
+    expect(statements).not.toContain("SELF_HOSTED");
   });
 
   it.each(["self_hosted", " SELF_HOSTED "])("applies the repair in %s mode", async mode => {
@@ -36,7 +42,8 @@ describe("self-hosted license migration deployment guard", () => {
 
     await migration.up({ sql });
 
-    expect(sql).toHaveBeenCalledTimes(1);
+    expect(sql).toHaveBeenCalledTimes(3);
+    expect(sql).toHaveBeenCalledWith(expect.stringContaining("CREATE OR REPLACE FUNCTION create_team_member"));
     expect(sql).toHaveBeenCalledWith(expect.stringContaining("CREATE OR REPLACE FUNCTION register_user"));
     expect(sql).toHaveBeenCalledWith(expect.stringContaining("UPDATE organizations o"));
   });
