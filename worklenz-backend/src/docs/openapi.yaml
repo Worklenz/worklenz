@@ -72,6 +72,8 @@ tags:
     description: Project member management and invitation links
   - name: Reporting
     description: Reporting and analytics endpoints
+  - name: Release Notes
+    description: Published product updates displayed in Settings Help
   - name: Admin Center
     description: Organization and billing administration endpoints
 
@@ -80,6 +82,66 @@ security:
     csrfToken: []
 
 paths:
+  /whats-new/latest:
+    get:
+      operationId: getLatestRelease
+      tags:
+        - Release Notes
+      summary: Get the latest published release for Settings Help
+      description: |
+        Returns the newest active release published today or earlier, even after
+        the seven-day New window expires or the user dismisses it. Same-day
+        releases are ordered by release ID descending. Returns a null body when
+        no releases are published. Does not read or write user dismissals.
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Latest published release, or null when none is available
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: object
+                        nullable: true
+                        required: [id, title, body_markdown, published_at, changelog_url, preview_text, is_new]
+                        properties:
+                          id:
+                            type: string
+                            description: Release Markdown file name without its extension
+                          title:
+                            type: string
+                          body_markdown:
+                            type: string
+                          published_at:
+                            type: string
+                            format: date
+                          changelog_url:
+                            type: string
+                            nullable: true
+                          preview_text:
+                            type: string
+                          is_new:
+                            type: boolean
+                            description: True while the release is inside the seven-day New window
+              example:
+                done: true
+                body:
+                  id: '2026-10-20-example-release'
+                  title: 'October update'
+                  body_markdown: '## Improvements'
+                  published_at: '2026-10-20'
+                  changelog_url: null
+                  preview_text: 'Improvements'
+                  is_new: true
+                title: null
+                message: null
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /csrf-token:
     get:
       operationId: getCsrfToken

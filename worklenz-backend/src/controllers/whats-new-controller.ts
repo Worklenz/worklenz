@@ -18,6 +18,11 @@ export default class WhatsNewController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+  public static async getLatest(_req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    return res.status(200).send(new ServerResponse(true, whatsNewService.getLatestRelease()));
+  }
+
+  @HandleExceptions()
   public static async dismiss(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     await whatsNewService.recordDismissal(req.user?.id as string, req.body?.release_id);
     return res.status(200).send(new ServerResponse(true, null));

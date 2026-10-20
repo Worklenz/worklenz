@@ -6,7 +6,7 @@ import sanitizeHtml from "sanitize-html";
 import db from "../../config/db";
 import ReleaseNotesConstants from "../../shared/release-notes-constants";
 import { log_error, sanitizePlainText } from "../../shared/utils";
-import { ICurrentRelease, IReleaseNote } from "../../interfaces/whats-new";
+import { ICurrentRelease, ILatestRelease, IReleaseNote } from "../../interfaces/whats-new";
 
 const WINDOW_DAYS = 7;
 const PREVIEW_LENGTH = 150;
@@ -95,17 +95,31 @@ function loadReleaseNotes(): IReleaseNote[] {
   return releases;
 }
 
-function getEligibleReleases(): IReleaseNote[] {
-  const now = moment();
+// The single definition of "inside the 7-day window", shared by the nav tag's
+// eligibility and the `is_new` flag on the latest release so the two can't drift.
+function isWithinWindow(release: IReleaseNote): boolean {
   const windowStart = moment().subtract(WINDOW_DAYS, "days");
+  return moment(release.published_at, DATE_FORMAT).isAfter(windowStart, "day");
+}
+
+// Active releases whose published_at is today or earlier, newest first. Ties on
+// published_at fall back to id (descending) so "latest" is deterministic.
+function getPublishedReleases(): IReleaseNote[] {
+  const now = moment();
 
   return loadReleaseNotes()
     .filter(release => {
       if (!release.is_active) return false;
-      const publishedAt = moment(release.published_at, DATE_FORMAT);
-      return publishedAt.isSameOrBefore(now, "day") && publishedAt.isAfter(windowStart, "day");
+      return moment(release.published_at, DATE_FORMAT).isSameOrBefore(now, "day");
     })
-    .sort((a, b) => (a.published_at < b.published_at ? 1 : a.published_at > b.published_at ? -1 : 0));
+    .sort((a, b) => {
+      if (a.published_at !== b.published_at) return a.published_at < b.published_at ? 1 : -1;
+      return a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
+    });
+}
+
+function getEligibleReleases(): IReleaseNote[] {
+  return getPublishedReleases().filter(isWithinWindow);
 }
 
 function buildPreviewText(markdown: string): string {
@@ -135,6 +149,18 @@ async function getCurrentReleaseForUser(userId: string): Promise<ICurrentRelease
   if (!release) return null;
 
   return toCurrentRelease(release);
+}
+
+// The most recently published release, ignoring both the 7-day window and any
+// per-user dismissal — backs the Settings > Help "Release notes" entry, which
+// must keep working after the nav tag has expired or been dismissed. Touches no
+// DB tables (release notes are files), so it can't fail on an un-migrated
+// instance and returns null on a fresh install with nothing published.
+function getLatestRelease(): ILatestRelease | null {
+  const [release] = getPublishedReleases();
+  if (!release) return null;
+
+  return { ...toCurrentRelease(release), is_new: isWithinWindow(release) };
 }
 
 // Ignores is_active and the 7-day window for a release the requesting user has
@@ -218,6 +244,7 @@ async function ensureNotificationsForEligibleReleases(userId?: string, teamId?: 
 
 export default {
   getCurrentReleaseForUser,
+  getLatestRelease,
   recordDismissal,
   getReleaseById,
   ensureNotificationsForEligibleReleases,
