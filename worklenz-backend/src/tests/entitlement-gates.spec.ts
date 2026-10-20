@@ -47,6 +47,34 @@ describe("canUseFeature: legacy mode (default)", () => {
   });
 });
 
+describe("canUseFeature: client portal (enforced even in legacy mode)", () => {
+  it("allows Pro and Business, denies Free, and keeps branding Business-only", () => {
+    for (const feature of ["client_portal", "client_portal_requests", "client_portal_invoices"] as const) {
+      expect(canUseFeature(proClassic, feature)).toBe(true);
+      expect(canUseFeature(business, feature)).toBe(true);
+      expect(canUseFeature(free, feature)).toBe(false);
+    }
+    expect(canUseFeature(proClassic, "client_portal_branding")).toBe(false);
+    expect(canUseFeature(business, "client_portal_branding")).toBe(true);
+  });
+});
+
+describe("canUseFeature: client portal in self-hosted deployments", () => {
+  afterEach(() => {
+    process.env.WORKLENZ_DEPLOYMENT_MODE = "cloud";
+  });
+
+  it("grants the portal and branding even to a Free subscription row", () => {
+    process.env.WORKLENZ_DEPLOYMENT_MODE = "self_hosted";
+    for (const feature of [
+      "client_portal", "client_portal_requests", "client_portal_chats", "client_portal_services",
+      "client_portal_invoices", "client_portal_branding",
+    ] as const) {
+      expect(canUseFeature(free, feature)).toBe(true);
+    }
+  });
+});
+
 describe("canUseFeature: enforce mode", () => {
   beforeEach(() => {
     process.env.ENTITLEMENTS_ENFORCE = "on";
@@ -134,14 +162,14 @@ describe("guest limit under enforcement", () => {
   const status = paddleUtils.checkTeamSubscriptionStatus as jest.Mock;
   const guests = paddleUtils.getActiveGuestCount as jest.Mock;
 
-  it("gives a plan named 'Pro' 5 guests, in legacy mode and when enforcing", async () => {
+  it("gives a plan named 'Pro' unlimited guests, in legacy mode and when enforcing", async () => {
     status.mockResolvedValue(proClassic);
     guests.mockResolvedValue(0);
-    expect((await getGuestSeatLimit("t1")).guest_limit).toBe(5);
+    expect((await getGuestSeatLimit("t1")).guest_limit).toBe(-1);
 
     process.env.ENTITLEMENTS_ENFORCE = "on";
     const result = await getGuestSeatLimit("t1");
-    expect(result.guest_limit).toBe(5);
+    expect(result.guest_limit).toBe(-1);
     expect(result.plan_tier).toBe("PROFESSIONAL");
   });
 });

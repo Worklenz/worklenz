@@ -32,6 +32,16 @@ const paddle = (plan_name: string, extra: Record<string, unknown> = {}) => ({
 });
 
 describe("feature registry", () => {
+  it("gates the client portal at pro, always enforced, with branding left at business", () => {
+    for (const key of [
+      "client_portal", "client_portal_requests", "client_portal_chats", "client_portal_services", "client_portal_invoices",
+    ] as const) {
+      expect(FEATURE_REGISTRY[key].minTier).toBe("pro");
+      expect((FEATURE_REGISTRY[key] as { alwaysEnforce?: boolean }).alwaysEnforce).toBe(true);
+    }
+    expect(FEATURE_REGISTRY.client_portal_branding.minTier).toBe("business");
+  });
+
   it("has a valid minimum tier for every feature", () => {
     for (const key of FEATURE_KEYS) {
       expect(PLAN_TIER_RANK[FEATURE_REGISTRY[key].minTier as keyof typeof PLAN_TIER_RANK]).toBeDefined();
@@ -40,7 +50,7 @@ describe("feature registry", () => {
 
   it("gates the Business-only matrix rows at business", () => {
     for (const key of [
-      "finance_module", "billable_reporting", "client_portal", "client_portal_invoices", "slack_integration",
+      "finance_module", "billable_reporting", "client_portal_branding", "slack_integration",
       "advanced_reporting", "priority_support", "gantt_edit", "planner_schedule", "planner_timeline", "planner_workload",
     ] as const) {
       expect(FEATURE_REGISTRY[key].minTier).toBe("business");
@@ -63,7 +73,7 @@ describe("resolveEntitlements", () => {
     expect(resolveEntitlements(null, NOW).tier).toBe("free");
   });
 
-  it("classic Pro: pro features, 5 guests, no Planner, no Business features", () => {
+  it("classic Pro: pro features, client portal, unlimited guests, no Planner, no Branding or other Business features", () => {
     const e = resolveEntitlements(paddle("Pro", { quantity: 8 }), NOW);
     expect(e.tier).toBe("pro");
     expect(e.primarySource).toBe("paddle_classic");
@@ -71,7 +81,10 @@ describe("resolveEntitlements", () => {
     expect(hasFeature(e, "reports_export")).toBe(true);
     expect(hasFeature(e, "planner_schedule")).toBe(false);
     expect(hasFeature(e, "finance_module")).toBe(false);
-    expect(e.guestLimit).toBe(5);
+    expect(hasFeature(e, "client_portal")).toBe(true);
+    expect(hasFeature(e, "client_portal_invoices")).toBe(true);
+    expect(hasFeature(e, "client_portal_branding")).toBe(false);
+    expect(e.guestLimit).toBe(-1);
     expect(e.seatLimit).toBe(8);
   });
 
@@ -87,7 +100,7 @@ describe("resolveEntitlements", () => {
   it("business: everything Business, unlimited guests", () => {
     const e = resolveEntitlements(paddle("Business Plan"), NOW);
     expect(e.tier).toBe("business");
-    for (const key of ["finance_module", "client_portal", "planner_schedule", "slack_integration", "advanced_reporting"] as const) {
+    for (const key of ["finance_module", "client_portal", "client_portal_branding", "planner_schedule", "slack_integration", "advanced_reporting"] as const) {
       expect(hasFeature(e, key)).toBe(true);
     }
     expect(e.guestLimit).toBe(-1);
@@ -260,7 +273,7 @@ describe("shadow comparison", () => {
   });
 
   it("flags known legacy inconsistencies", () => {
-    // A plan named "Pro" now gets 5 guests from the legacy check too, so it agrees with the matrix.
+    // A plan named "Pro" gets unlimited guests from the legacy check too, so it agrees with the matrix.
     expect(compare(paddle("Pro"))).toEqual([]);
     // Custom/DirectPay Business never passes the legacy business check.
     expect(compare({ subscription_type: "CUSTOM", plan_name: "Business Plan" })).toEqual([

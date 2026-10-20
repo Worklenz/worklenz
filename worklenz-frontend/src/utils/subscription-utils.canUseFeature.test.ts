@@ -37,6 +37,28 @@ describe('canUseFeature', () => {
     expect(canUseFeature(ltd, 'finance_module')).toBe(false);
   });
 
+  it('client portal follows the resolved features even when the backend is not enforcing', () => {
+    const entitlements = (features: string[]) => ({
+      tier: 'pro' as const,
+      features,
+      guest_limit: -1,
+      seat_limit: 5,
+      primary_source: 'paddle_classic',
+      enforced: false,
+    });
+    const pro = session({
+      subscription_type: 'PADDLE',
+      plan_name: 'Pro',
+      entitlements: entitlements(['client_portal', 'client_portal_invoices']),
+    });
+    const free = session({ subscription_type: 'FREE', entitlements: entitlements([]) });
+
+    expect(canUseFeature(pro, 'client_portal')).toBe(true);
+    expect(canUseFeature(pro, 'client_portal_invoices')).toBe(true);
+    expect(canUseFeature(pro, 'client_portal_branding')).toBe(false);
+    expect(canUseFeature(free, 'client_portal')).toBe(false);
+  });
+
   it('ignores the feature list when the backend is not enforcing', () => {
     const pro = session({
       subscription_type: 'PADDLE',

@@ -13,6 +13,8 @@ export interface IFeatureDef {
   allowSources?: PlanSourceKind[];
   denySources?: PlanSourceKind[];
   grandfathered?: boolean;
+  /** Decide from the registry even while ENTITLEMENTS_ENFORCE is off (legacy checks never covered this feature). */
+  alwaysEnforce?: boolean;
 }
 
 const free = (extra: Partial<IFeatureDef> = {}): IFeatureDef => ({ minTier: "free", ...extra });
@@ -105,13 +107,15 @@ export const FEATURE_REGISTRY = {
   theme_switch: free(),
   language_selection: free(),
 
-  // Client portal
-  client_portal: business(),
+  // Client portal. Pro and Business get the portal; branding stays Business-only. The portal
+  // features are alwaysEnforce because the legacy gate treats every non-Business feature as open,
+  // which would hand the portal to Free workspaces.
+  client_portal: pro({ alwaysEnforce: true }),
   client_portal_branding: business(),
-  client_portal_requests: business(),
-  client_portal_chats: business(),
-  client_portal_services: business(),
-  client_portal_invoices: business(),
+  client_portal_requests: pro({ alwaysEnforce: true }),
+  client_portal_chats: pro({ alwaysEnforce: true }),
+  client_portal_services: pro({ alwaysEnforce: true }),
+  client_portal_invoices: pro({ alwaysEnforce: true }),
 
   // Integrations & support
   slack_integration: business(),
@@ -138,7 +142,7 @@ export const UNLIMITED = -1;
 /** Default guest allowance per tier (-1 = unlimited). */
 export const TIER_GUEST_LIMIT: Record<PlanTier, number> = {
   free: 0,
-  pro: 5,
+  pro: UNLIMITED,
   business: UNLIMITED,
   enterprise: UNLIMITED,
 };

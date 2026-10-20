@@ -81,6 +81,19 @@ const LEGACY_BUSINESS_FEATURES = new Set([
 ]);
 
 /**
+ * Features the backend decides from resolved entitlements even while it is not enforcing them
+ * (mirrors `alwaysEnforce` in the backend feature registry). The client portal is Pro and
+ * Business, which the legacy "Business only" check cannot express.
+ */
+const ALWAYS_ENFORCED_FEATURES = new Set([
+  'client_portal',
+  'client_portal_requests',
+  'client_portal_chats',
+  'client_portal_services',
+  'client_portal_invoices',
+]);
+
+/**
  * Can the current session use a feature? Follows the backend's resolved entitlements once it is
  * enforcing them; until then it reproduces the legacy plan checks, or the caller's `legacy` rule.
  */
@@ -91,7 +104,9 @@ export const canUseFeature = (
 ): boolean => {
   if (!session) return false;
   const entitlements = session.entitlements;
-  if (entitlements?.enforced) return entitlements.features.includes(feature);
+  if (entitlements && (entitlements.enforced || ALWAYS_ENFORCED_FEATURES.has(feature))) {
+    return entitlements.features.includes(feature);
+  }
   // `legacy` keeps today's behavior for gates that differ from "Business only" (not in the set above).
   if (legacy) return legacy(session);
   return LEGACY_BUSINESS_FEATURES.has(feature) ? hasBusinessFeatureAccess(session) : true;
