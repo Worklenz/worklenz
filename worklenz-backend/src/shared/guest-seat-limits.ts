@@ -7,6 +7,8 @@ import {
   SELF_HOSTED_GUEST_LIMIT
 } from "./constants";
 import { log_error } from "./utils";
+import { isEnforceMode } from "./entitlements/gates";
+import { resolveEntitlements } from "./entitlements/resolve-entitlements";
 
 const APPSUMO_BUSINESS_UNLOCK_CODE_COUNT = 5;
 
@@ -20,6 +22,79 @@ export interface IGuestLimitInfo {
 }
 
 /**
+ * Pure guest-limit decision for a subscription-status row (checkTeamSubscriptionStatus) or a
+ * session user. Exported so the entitlements shadow comparison runs the exact production logic.
+ */
+export function resolveLegacyGuestPlan(subscriptionData: any): { guestLimit: number; planTier: string } {
+  let guestLimit = FREE_GUEST_LIMIT;
+  let planTier = "FREE";
+
+  if (subscriptionData?.subscription_type === "SELF_HOSTED") {
+    guestLimit = SELF_HOSTED_GUEST_LIMIT;
+    planTier = "SELF_HOSTED";
+  } else if (
+    subscriptionData?.subscription_type === "ANNUAL_BUSINESS" ||
+    subscriptionData?.business_plan_override === true ||
+    subscriptionData?.plan_name?.toLowerCase().includes("business")
+  ) {
+    guestLimit = BUSINESS_GUEST_LIMIT;
+    planTier = "BUSINESS";
+  } else if (
+    subscriptionData?.subscription_type === "LIFE_TIME_DEAL" &&
+    subscriptionData?.redeemed_codes_count >= APPSUMO_BUSINESS_UNLOCK_CODE_COUNT
+  ) {
+    // AppSumo LTD users with 5+ redeemed codes get Business plan features (unlimited guests)
+    guestLimit = BUSINESS_GUEST_LIMIT; // -1 = unlimited
+    planTier = "APPSUMO_BUSINESS";
+  } else if (
+    subscriptionData?.subscription_type === "LIFE_TIME_DEAL"
+  ) {
+    // AppSumo LTD users with 1-4 codes get limited guest access (5 guests)
+    // Guests don't count towards seat limits, but are limited to 5
+    guestLimit = APPSUMO_LTD_GUEST_LIMIT; // 5 guests
+    planTier = "APPSUMO_LTD";
+  } else if (
+    subscriptionData?.subscription_type === "PADDLE" &&
+    // "Professional" (Classic) or "Pro (per user, ...)" (Paddle Billing)
+    /^pro\b|professional/.test(String(subscriptionData?.plan_name ?? "").toLowerCase())
+  ) {
+    guestLimit = PRO_GUEST_LIMIT;
+    planTier = "PROFESSIONAL";
+  } else if (
+    subscriptionData?.subscription_status === "trialing" ||
+    subscriptionData?.subscription_type === "TRIAL"
+  ) {
+    guestLimit = FREE_GUEST_LIMIT;
+    planTier = "TRIAL";
+  } else {
+    guestLimit = FREE_GUEST_LIMIT;
+    planTier = "FREE";
+  }
+
+  return { guestLimit, planTier };
+}
+
+/**
+ * Entitlements-based equivalent of resolveLegacyGuestPlan. Tier labels match the legacy ones so
+ * error messages and getGuestLimitByTier keep working.
+ */
+export function resolveEntitlementGuestPlan(subscriptionData: any): { guestLimit: number; planTier: string } {
+  const entitlements = resolveEntitlements(subscriptionData);
+  let planTier: string;
+  switch (entitlements.primarySource) {
+    case "self_hosted":
+      planTier = "SELF_HOSTED";
+      break;
+    case "appsumo_ltd":
+      planTier = entitlements.guestLimit === BUSINESS_GUEST_LIMIT ? "APPSUMO_BUSINESS" : "APPSUMO_LTD";
+      break;
+    default:
+      planTier = entitlements.tier === "pro" ? "PROFESSIONAL" : entitlements.tier.toUpperCase();
+  }
+  return { guestLimit: entitlements.guestLimit, planTier };
+}
+
+/**
  * Get guest seat limit information for a workspace
  * Determines the guest limit based on subscription tier and current guest count
  *
@@ -28,7 +103,7 @@ export interface IGuestLimitInfo {
  * 
  * Plan-based guest limits:
  * - FREE/TRIAL: 0 guests (no guest access)
- * - PROFESSIONAL: 5 guests
+ * - PROFESSIONAL: Unlimited guests
  * - APPSUMO_LTD (1-4 codes): 5 guests
  * - APPSUMO_BUSINESS (5+ codes): Unlimited guests
  * - BUSINESS/SELF_HOSTED: Unlimited guests
@@ -41,50 +116,10 @@ export async function getGuestSeatLimit(teamId: string): Promise<IGuestLimitInfo
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
     const currentGuestCount = await getActiveGuestCount(teamId);
 
-    // Determine limit based on subscription type
-    let guestLimit = FREE_GUEST_LIMIT;
-    let planTier = "FREE";
-
-    if (subscriptionData?.subscription_type === "SELF_HOSTED") {
-      guestLimit = SELF_HOSTED_GUEST_LIMIT;
-      planTier = "SELF_HOSTED";
-    } else if (
-      subscriptionData?.subscription_type === "ANNUAL_BUSINESS" ||
-      subscriptionData?.business_plan_override === true ||
-      subscriptionData?.plan_name?.toLowerCase().includes("business")
-    ) {
-      guestLimit = BUSINESS_GUEST_LIMIT;
-      planTier = "BUSINESS";
-    } else if (
-      subscriptionData?.subscription_type === "LIFE_TIME_DEAL" &&
-      subscriptionData?.redeemed_codes_count >= APPSUMO_BUSINESS_UNLOCK_CODE_COUNT
-    ) {
-      // AppSumo LTD users with 5+ redeemed codes get Business plan features (unlimited guests)
-      guestLimit = BUSINESS_GUEST_LIMIT; // -1 = unlimited
-      planTier = "APPSUMO_BUSINESS";
-    } else if (
-      subscriptionData?.subscription_type === "LIFE_TIME_DEAL"
-    ) {
-      // AppSumo LTD users with 1-4 codes get limited guest access (5 guests)
-      // Guests don't count towards seat limits, but are limited to 5
-      guestLimit = APPSUMO_LTD_GUEST_LIMIT; // 5 guests
-      planTier = "APPSUMO_LTD";
-    } else if (
-      subscriptionData?.subscription_type === "PADDLE" &&
-      subscriptionData?.plan_name?.toLowerCase().includes("professional")
-    ) {
-      guestLimit = PRO_GUEST_LIMIT;
-      planTier = "PROFESSIONAL";
-    } else if (
-      subscriptionData?.subscription_status === "trialing" ||
-      subscriptionData?.subscription_type === "TRIAL"
-    ) {
-      guestLimit = FREE_GUEST_LIMIT;
-      planTier = "TRIAL";
-    } else {
-      guestLimit = FREE_GUEST_LIMIT;
-      planTier = "FREE";
-    }
+    // Determine limit: from entitlements when enforcing, else the legacy subscription_type chain
+    const { guestLimit, planTier } = isEnforceMode()
+      ? resolveEntitlementGuestPlan(subscriptionData)
+      : resolveLegacyGuestPlan(subscriptionData);
 
     const remaining =
       guestLimit === -1 ? -1 : Math.max(0, guestLimit - currentGuestCount);

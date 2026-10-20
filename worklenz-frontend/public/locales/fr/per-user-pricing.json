@@ -1,0 +1,105 @@
+{
+  "title": "Choisissez une offre",
+  "subtitle": "Payez uniquement pour les membres de votre équipe. Prix par utilisateur en USD.",
+  "monthly": "Mensuel",
+  "annual": "Annuel",
+  "saveUpTo": "Économisez {{percent}} % avec la facturation annuelle",
+  "annualBadge": "Économisez jusqu’à {{percent}} %",
+  "mostPopular": "Le plus populaire",
+  "billingPeriod": "Période de facturation",
+  "seats": "Utilisateurs",
+  "seatsHelp_one": "Minimum {{count}} (votre utilisateur actif actuel)",
+  "seatsHelp_other": "Minimum {{count}} (vos utilisateurs actifs actuels)",
+  "perUserPerMonth": "par utilisateur / mois",
+  "billedAnnually": "facturé annuellement ({{total}} par utilisateur / an)",
+  "totalMonthly_one": "{{total}} par mois pour {{count}} utilisateur",
+  "totalMonthly_other": "{{total}} par mois pour {{count}} utilisateurs",
+  "totalAnnual_one": "{{total}} par an pour {{count}} utilisateur",
+  "totalAnnual_other": "{{total}} par an pour {{count}} utilisateurs",
+  "currentPlan": "Offre actuelle",
+  "select": "Choisir cette offre",
+  "switch": "Passer à cette offre",
+  "updateSeats": "Mettre à jour les places",
+  "unavailable": "Cette offre n’est pas disponible pour la période de facturation sélectionnée.",
+  "plans": {
+    "pro": {
+      "name": "Pro",
+      "description": "Tout pour gérer vos projets et suivre le temps.",
+      "features": [
+        "Tout ce que comprend Free",
+        "Projets illimités",
+        "Suivi du temps et rapports",
+        "Champs et modèles personnalisés",
+        "Invités illimités et portail client"
+      ]
+    },
+    "business": {
+      "name": "Business",
+      "description": "Planification, finances et outils clients pour les équipes en croissance.",
+      "features": [
+        "Tout ce que comprend Pro",
+        "Planificateur, chronologie, charge de travail",
+        "Finances et personnalisation du portail",
+        "Intégration Slack"
+      ]
+    },
+    "expansion": {
+      "name": "Extension AppSumo",
+      "description": "Ajoutez des places Business à vos codes AppSumo.",
+      "features": [
+        "Fonctionnalités Business",
+        "Places supplémentaires facturées par utilisateur",
+        "Pour les clients AppSumo"
+      ]
+    },
+    "free": {
+      "name": "Gratuit",
+      "description": "Parfait pour démarrer.",
+      "features": [
+        "3 projets",
+        "Jusqu’à 5 utilisateurs",
+        "Liste de tâches et tableau Kanban",
+        "Fichiers et commentaires"
+      ]
+    },
+    "enterprise": {
+      "name": "Entreprise",
+      "description": "Pour les grandes organisations.",
+      "features": [
+        "Tout ce que comprend Business",
+        "Utilisateurs illimités sans coût supplémentaire",
+        "Sécurité avancée",
+        "Intégrations personnalisées",
+        "Assistance prioritaire"
+      ]
+    }
+  },
+  "legacyConfirm": {
+    "title": "Remplacer votre offre actuelle ?",
+    "content": "Vous utilisez une ancienne offre. Souscrire une nouvelle offre met fin à votre ancien tarif. Votre abonnement actuel sera annulé au démarrage du nouveau.",
+    "ok": "Continuer",
+    "cancel": "Conserver l’offre actuelle"
+  },
+  "messages": {
+    "success": "Abonnement mis à jour !",
+    "changed": "Offre d’abonnement modifiée !",
+    "seatsUpdated": "Places mises à jour. Le nouveau nombre s’affichera sous peu.",
+    "error": "Impossible de démarrer le paiement. Veuillez réessayer.",
+    "checkoutError": "Erreur lors du paiement : {{message}}"
+  },
+  "trustLine": "Annulation à tout moment. Taxes calculées lors du paiement. Paiement sécurisé par Paddle.",
+  "contactSales": "Contacter le service commercial",
+  "freeForever": "pour toujours",
+  "switchToFree": "Passer à l’offre gratuite",
+  "custom": "Sur mesure",
+  "customNote": "tarification",
+  "freeConfirm": {
+    "title": "Passer à l’offre gratuite ?",
+    "content": "Votre offre payante prendra fin et vous perdrez ses fonctionnalités, y compris les projets au-delà des limites de l’offre gratuite. Cette action ne peut pas être annulée ici.",
+    "ok": "Passer à l’offre gratuite",
+    "cancel": "Conserver l’offre actuelle"
+  },
+  "decreaseUsers": "Réduire le nombre d’utilisateurs",
+  "increaseUsers": "Augmenter le nombre d’utilisateurs",
+  "freeLimitHint": "L’offre gratuite accepte jusqu’à {{count}} utilisateurs. Supprimez des utilisateurs pour y passer."
+}

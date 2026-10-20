@@ -6,6 +6,7 @@ import type { ISlackChannelConfig, ISlackChannel } from '@/api/slack/slack.api.s
 import { slackApiService } from '@/api/slack/slack.api.service';
 import apiClient from '@api/api-client';
 import logger from '@/utils/errorLogger';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface Project {
   id: string;
@@ -254,7 +255,7 @@ export function SlackChannelFormModal({
           >
             {projects.map(project => (
               <Select.Option key={project.id} value={project.id}>
-                {project.name}
+                {decodeHtmlEntities(project.name)}
               </Select.Option>
             ))}
           </Select>

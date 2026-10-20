@@ -1,0 +1,188 @@
+{
+  "title": "GitHub",
+  "description": "Vincule repositórios do GitHub a projetos de software para ver branches, pull requests e commits nas suas issues.",
+  "viewOnly": "Somente leitura",
+  "connectedHint": "Abra um projeto de software e vá em Configurações > Integrações para vincular repositórios.",
+  "repositoryCount_one": "{{count}} repositório disponível",
+  "repositoryCount_other": "{{count}} repositórios disponíveis",
+  "connect": {
+    "button": "Conectar GitHub",
+    "adminOnly": "Apenas proprietários e administradores da equipe podem conectar o GitHub."
+  },
+  "status": {
+    "connected": "Conectado",
+    "suspended": "Suspenso"
+  },
+  "notConfigured": {
+    "title": "Não configurado",
+    "description": "O aplicativo do GitHub não foi configurado para esta instalação do Worklenz. Peça ao administrador para configurá-lo."
+  },
+  "actions": {
+    "retry": "Tentar novamente",
+    "refresh": "Atualizar repositórios",
+    "cancel": "Cancelar"
+  },
+  "disconnect": {
+    "title": "Desconectar o GitHub?",
+    "description": "A sincronização será pausada. Os vínculos e o histórico existentes são mantidos e retomados se você reconectar.",
+    "confirm": "Desconectar",
+    "button": "Desconectar"
+  },
+  "messages": {
+    "connected": "GitHub conectado com sucesso.",
+    "requested": "A instalação foi solicitada. Um proprietário da organização precisa aprová-la.",
+    "refreshed": "Lista de repositórios atualizada.",
+    "disconnected": "GitHub desconectado."
+  },
+  "errors": {
+    "invalidState": "A solicitação de conexão expirou. Tente novamente.",
+    "forbidden": "Você precisa de acesso a esta instalação do GitHub e ser proprietário ou administrador da equipe.",
+    "alreadyConnected": "Esta conta do GitHub já está conectada a outra equipe do Worklenz.",
+    "teamAlreadyConnected": "Esta equipe já está conectada a outra conta do GitHub. Desconecte-a primeiro.",
+    "connectFailed": "Não foi possível conectar o GitHub. Tente novamente.",
+    "loadFailed": "Não foi possível carregar o status do GitHub.",
+    "refreshFailed": "Não foi possível atualizar os repositórios.",
+    "disconnectFailed": "Não foi possível desconectar o GitHub."
+  },
+  "project": {
+    "subtitle": "Veja branches, pull requests e commits nas issues deste projeto.",
+    "linked": "Repositório vinculado.",
+    "linkFailed": "Não foi possível vincular o repositório.",
+    "unlinked": "Repositório desvinculado.",
+    "unlinkFailed": "Não foi possível desvincular o repositório.",
+    "updateFailed": "Não foi possível atualizar a branch base.",
+    "notConnected": "Conecte sua conta do GitHub nas configurações da equipe antes de vincular repositórios.",
+    "openIntegrations": "Ir para Integrações",
+    "selectPlaceholder": "Selecione um repositório para vincular",
+    "noRepositories": "Não há mais repositórios disponíveis",
+    "link": "Vincular",
+    "emptyManage": "Nenhum repositório vinculado ainda. Escolha um acima para começar.",
+    "empty": "Nenhum repositório vinculado a este projeto.",
+    "private": "Privado",
+    "unavailable": "Não está mais acessível",
+    "baseBranch": "Branch base",
+    "editBaseBranch": "Editar branch base",
+    "unlinkTitle": "Desvincular este repositório?",
+    "unlinkDescription": "Os vínculos existentes nas issues são mantidos, mas novas atividades deixarão de ser rastreadas.",
+    "unlink": "Desvincular",
+    "unlinkAria": "Desvincular {{name}}",
+    "howItWorks": "Inclua uma chave de issue como {{example}} em um nome de branch, mensagem de commit ou título de pull request para vinculá-la a essa issue.",
+    "automation": {
+      "title": "Automação de status",
+      "description": "Mova as issues automaticamente conforme a atividade no GitHub. As issues nunca retrocedem nem saem de um status concluído.",
+      "branchCreated": "Branch criada",
+      "prOpened": "Pull request aberto",
+      "prMerged": "Pull request mesclado",
+      "noChange": "Não alterar o status",
+      "saveFailed": "Não foi possível atualizar a automação."
+    },
+    "connectPrompt": "Conecte sua conta do GitHub uma vez para toda a equipe e depois vincule repositórios a este projeto.",
+    "askOwnerNamed": "O GitHub ainda não está conectado. Peça a {{name}} ou a outro administrador da equipe para conectá-lo.",
+    "askOwner": "O GitHub ainda não está conectado. Peça a um proprietário ou administrador da equipe para conectá-lo."
+  },
+  "development": {
+    "pr": {
+      "merged": "Mesclado",
+      "closed": "Fechado",
+      "draft": "Rascunho",
+      "approved": "Aprovado",
+      "changesRequested": "Alterações solicitadas",
+      "open": "Aberto"
+    },
+    "loadFailed": "Não foi possível carregar a atividade do GitHub.",
+    "empty": "Ainda não há atividade do GitHub. Inclua {{key}} em um nome de branch, commit ou título de pull request para vinculá-la aqui.",
+    "noRepositories": "Nenhum repositório está vinculado a este projeto. Vincule um em Configurações do projeto > Integrações.",
+    "pullRequests": "Solicitações de incorporação",
+    "branches": "Ramificações",
+    "commits": "Confirmações",
+    "branchDeleted": "Excluída",
+    "showFewer": "Mostrar menos",
+    "showAll": "Mostrar todos os {{count}} commits",
+    "remove": {
+      "button": "Remover vínculo",
+      "confirm": "Remover",
+      "cancel": "Cancelar",
+      "success": "Vínculo removido.",
+      "failed": "Não foi possível remover o vínculo.",
+      "branch": { "title": "Remover a branch desta tarefa?", "description": "{{name}} deixará de ser exibida nesta tarefa. A branch não é excluída no GitHub." },
+      "pullRequest": { "title": "Remover o pull request desta tarefa?", "description": "{{name}} deixará de ser exibido nesta tarefa. O pull request não é alterado no GitHub." },
+      "commit": { "title": "Remover o commit desta tarefa?", "description": "{{name}} deixará de ser exibido nesta tarefa. O commit não é alterado no GitHub." }
+    },
+    "createBranch": {
+      "button": "Criar branch",
+      "title": "Criar branch",
+      "repository": "Repositório",
+      "name": "Nome da branch",
+      "type": "Tipo",
+      "baseBranch": "Branch base",
+      "invalidName": "Use letras, números, pontos, hífens, sublinhados ou barras.",
+      "created": "Branch criada.",
+      "checkoutHint": "Execute isto para começar a trabalhar localmente:",
+      "copy": "Copiar comando",
+      "copied": "Copiado para a área de transferência.",
+      "done": "Concluído",
+      "errors": {
+        "generic": "Não foi possível criar a branch.",
+        "exists": "Já existe uma branch com este nome.",
+        "baseMissing": "A branch base não foi encontrada neste repositório.",
+        "permission": "O aplicativo do GitHub não pode criar branches. Peça a um administrador para conceder acesso de gravação ao conteúdo."
+      },
+      "branchesFailed": "Não foi possível carregar as branches. Você ainda pode digitar a branch base.",
+      "loadingBranches": "Carregando branches…",
+      "selectBranch": "Selecione ou digite uma branch"
+    }
+  },
+  "import": {
+    "button": "Importar issues…",
+    "title": "Importar issues de {{name}}",
+    "stateOpen": "Abertas",
+    "stateClosed": "Fechadas",
+    "stateAll": "Todas",
+    "filterLabels": "Filtrar por etiqueta",
+    "destination": "Adicionar a",
+    "backlog": "Pendências",
+    "submit_one": "Importar {{count}} issue",
+    "submit_other": "Importar {{count}} issues",
+    "imported": "Importada como {{key}}",
+    "loadMore": "Carregar mais",
+    "empty": "Nenhuma issue encontrada",
+    "loadFailed": "Não foi possível carregar as issues do GitHub.",
+    "success_one": "{{count}} issue importada.",
+    "success_other": "{{count}} issues importadas.",
+    "partial": "{{imported}} importadas, {{skipped}} ignoradas.",
+    "failed": "Não foi possível importar as issues selecionadas.",
+    "columnTitle": "Título",
+    "columnStatus": "Status"
+  },
+  "importSettings": {
+    "title": "Importação de issues",
+    "autoImport": "Importar novas issues automaticamente",
+    "autoImportHint": "As novas issues do GitHub são adicionadas automaticamente, filtradas pelas etiquetas abaixo.",
+    "labels": "Apenas issues com estas etiquetas",
+    "labelsPlaceholder": "Todas as issues",
+    "destination": "Adicionar issues importadas a",
+    "closeOnClose": "Concluir a issue quando a issue do GitHub for fechada",
+    "saveFailed": "Não foi possível atualizar as configurações de importação."
+  },
+  "sync": {
+    "button": "Status de sincronização",
+    "title": "Status de sincronização do GitHub",
+    "refresh": "Atualizar",
+    "loadFailed": "Não foi possível carregar o status de sincronização.",
+    "notConnected": "O GitHub não está conectado.",
+    "lastEvent": "Último evento recebido {{time}}",
+    "never": "Nenhum evento recebido ainda.",
+    "processed": "Processados (7 dias)",
+    "pending": "Pendentes",
+    "ignored": "Ignorados",
+    "failed": "Com falha",
+    "failedEvents": "Eventos com falha",
+    "noFailures": "Nenhum evento com falha. Tudo está sincronizando.",
+    "event": "Evento",
+    "error": "Erro",
+    "received": "Recebido",
+    "retry": "Tentar novamente",
+    "retried": "Evento enfileirado para nova tentativa.",
+    "retryFailed": "Não foi possível tentar o evento novamente."
+  }
+}

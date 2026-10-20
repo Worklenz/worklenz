@@ -213,7 +213,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           })),
           selectedValues: filterData.kanbanStatuses.map((s: any) => s.id || '').filter(Boolean),
           multiSelect: true,
-          searchable: false,
+          searchable: true,
           icon: CheckCircleOutlined,
         },
         {
@@ -227,7 +227,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           })),
           selectedValues: filterData.kanbanPhases,
           multiSelect: true,
-          searchable: false,
+          searchable: true,
           icon: AppstoreOutlined,
         },
         {
@@ -308,7 +308,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
         })),
         selectedValues: filterData.selectedStatuses.map((s: any) => s.id || '').filter(Boolean),
         multiSelect: true,
-        searchable: false,
+        searchable: true,
         icon: CheckCircleOutlined,
       },
       {
@@ -322,7 +322,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
         })),
         selectedValues: filterData.selectedPhases,
         multiSelect: true,
-        searchable: false,
+        searchable: true,
         icon: AppstoreOutlined,
       },
       {

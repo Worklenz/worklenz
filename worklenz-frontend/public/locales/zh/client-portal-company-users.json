@@ -147,7 +147,7 @@
     "emailInvalid": "输入有效的电子邮件地址。",
     "emailLockedHint": "这是他们的登录电子邮件，因此一旦获得门户访问权限就无法更改。",
     "jobTitleLabel": "职称",
-    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "jobTitlePlaceholder": "例如营销经理",
     "jobTitleTooLong": "职位名称最多可包含 100 个字符。",
     "phoneLabel": "电话号码（可选）",
     "phonePlaceholder": "+1 415 555 0142",

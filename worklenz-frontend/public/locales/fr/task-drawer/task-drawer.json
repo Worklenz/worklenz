@@ -216,6 +216,10 @@
       "moveToTaskTooltip": "Réaffectez ce journal de temps à une autre tâche.",
       "selectTask": "Sélectionnez une tâche...",
       "backdateLimitError": "Les journaux de temps ne peuvent pas être antidatés de plus de {{days}} jours. La première date à laquelle vous pouvez vous connecter est le {{earliestDate}}.",
+      "projectStartDateError": "Le temps ne peut pas être enregistré avant la date de début du projet ({{date}}).",
+      "projectStartDateHint": "Date de début du projet : {{date}}",
+      "projectNotStartedWarningTitle": "Le projet n'a pas encore commencé",
+      "projectNotStartedWarningDesc": "Ce projet doit débuter le {{date}}. Le temps ne peut pas être enregistré avant la date de début du projet.",
       "saveError": "Impossible d'enregistrer le journal de temps. Veuillez réessayer."
     },
     "rollupLoggedTooltip": "Somme du temps passé sur les sous-tâches"

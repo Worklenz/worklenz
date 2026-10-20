@@ -81,7 +81,10 @@ import {
   setProjectId as setDrawerProjectId,
   setProjectData,
 } from '@/features/project/project-drawer.slice';
-import { openProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
+import {
+  openProjectSettingsModal,
+  setActiveSettingsSection,
+} from '@/features/project/project-settings-modal.slice';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -90,6 +93,7 @@ import { verifyAuthentication } from '@/features/auth/authSlice';
 import { setUser } from '@/features/user/userSlice';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
 import { setProjectMemberDefaultView } from '@/features/projects/projectsSlice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
@@ -141,7 +145,7 @@ const ProjectView = React.memo(() => {
   const [translationsReady, setTranslationsReady] = useState(false);
 
   // Optimize document title updates
-  useDocumentTitle(selectedProject?.name || t('projectView'));
+  useDocumentTitle(decodeHtmlEntities(selectedProject?.name) || t('projectView'));
 
   // Get auth service and current session
   const authService = useAuthService();
@@ -987,10 +991,15 @@ const ProjectView = React.memo(() => {
 
     dispatch(setDrawerProjectId(projectId));
     dispatch(setProjectData(selectedProject));
+    // Optional deep link to a section, e.g. coming back from the GitHub install.
+    if (searchParams.get('settings_section') === 'integrations') {
+      dispatch(setActiveSettingsSection('integrations'));
+    }
     dispatch(openProjectSettingsModal());
 
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('open_settings');
+    nextParams.delete('settings_section');
     setSearchParams(nextParams, { replace: true });
   }, [projectId, searchParams, selectedProject, dispatch, setSearchParams]);
 
@@ -1014,7 +1023,7 @@ const ProjectView = React.memo(() => {
               createPortal(
                 <InviteProjectMembers
                   projectId={selectedProject.id || ''}
-                  projectName={selectedProject.name || ''}
+                  projectName={decodeHtmlEntities(selectedProject.name) || ''}
                 />,
                 document.body,
                 'project-member-drawer'

@@ -1,7 +1,7 @@
 import apiClient from '@api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
-import { IWhatsNewRelease } from '@/types/whats-new/whats-new.types';
+import { ILatestWhatsNewRelease, IWhatsNewRelease } from '@/types/whats-new/whats-new.types';
 
 const rootUrl = `${API_BASE_URL}/whats-new`;
 
@@ -9,6 +9,13 @@ export const whatsNewApiService = {
   getCurrent: async (): Promise<IServerResponse<IWhatsNewRelease | null>> => {
     const response = await apiClient.get<IServerResponse<IWhatsNewRelease | null>>(
       `${rootUrl}/current`
+    );
+    return response.data;
+  },
+
+  getLatest: async (): Promise<IServerResponse<ILatestWhatsNewRelease | null>> => {
+    const response = await apiClient.get<IServerResponse<ILatestWhatsNewRelease | null>>(
+      `${rootUrl}/latest`
     );
     return response.data;
   },

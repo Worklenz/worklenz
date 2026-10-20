@@ -1,0 +1,84 @@
+{
+  "access": {
+    "introExisting": "选择该用户可以打开的项目。如果您选择的项目的客户端门户关闭，它将打开。",
+    "introNew": "选择该客户应该看到的项目。没有客户的项目将链接到新组织，并且为您选择的每个项目打开客户门户。",
+    "loadFailed": "无法加载项目。",
+    "noClientYet": "还没有客户",
+    "noProjectsExisting": "该组织还没有项目。稍后可以为用户分配项目。",
+    "noProjectsNew": "每个工作区项目都已经有一个客户。稍后从 Portal Projects 链接一个。",
+    "portalOff": "门户关闭，将打开",
+    "search": "搜索项目...",
+    "title": "项目接入"
+  },
+  "details": {
+    "email": "电子邮件地址",
+    "emailHint": "这是登录地址和邀请地址。它必须是独一无二的。",
+    "emailInvalid": "输入有效的电子邮件地址。",
+    "firstName": "名",
+    "firstNamePlaceholder": "张三",
+    "firstUserNotice": "新组织的第一个用户是客户端管理员。他们可以批准项目，如果您在门户设置中启用它，还可以管理他们自己的同事。与每个客户端用户一样，他们使用通过电子邮件发送到此地址的一次性代码进行登录。",
+    "jobTitle": "职位名称",
+    "jobTitlePlaceholder": "例如营销经理",
+    "lastName": "姓氏",
+    "lastNamePlaceholder": "李四",
+    "noOrganizations": "没有找到组织。",
+    "organization": "组织",
+    "organizationName": "组织名称",
+    "organizationNamePlaceholder": "例如灯塔物流",
+    "phone": "电话（可选）",
+    "role": "Role",
+    "selectOrganization": "选择一个组织..."
+  },
+  "footer": {
+    "addUser": "添加用户",
+    "back": "返回",
+    "continue": "继续",
+    "sendInvitation": "发送邀请"
+  },
+  "method": {
+    "existingOrganization": {
+      "description": "邀请其他人加入已具有门户访问权限的组织。",
+      "name": "将用户添加到现有组织"
+    },
+    "groupLabel": "如何添加该客户端",
+    "intro": "每个客户端用户都属于一个组织，并且只能看到您分配给他们的项目。",
+    "newOrganization": {
+      "description": "创建组织并邀请其第一个用户作为客户端管理员。",
+      "name": "新客户组织"
+    }
+  },
+  "result": {
+    "activationHint": "他们打开电子邮件中的链接，并使用发送到其地址的 6 位数代码登录。没有密码。",
+    "addedNoInvite": "{{name}} 添加为 {{role}}。尚未发送邀请。",
+    "emailNotSent": "{{name}} 已保存，但无法发送邀请电子邮件。而是分享链接。",
+    "failed": "无法添加客户端。",
+    "invited": "邀请已发送至 {{email}}。",
+    "portalsSwitchedOn": "为 {{count}} 项目启用了客户端。",
+    "portalsSwitchedOn_one": "{{count}} 项目的客户端已打开。",
+    "portalsSwitchedOn_other": "为 {{count}} 项目打开了客户端。"
+  },
+  "review": {
+    "email": "Email",
+    "name": "Name",
+    "organization": "组织",
+    "projects": "项目",
+    "projectsAssigned": "已分配 {{count}}",
+    "projectsAssigned_one": "已分配 {{count}}",
+    "projectsAssigned_other": "已分配 {{count}}",
+    "projectsNone": "还没有",
+    "role": "Role",
+    "sendInvitation": "立即发送邀请",
+    "sendInvitationHint": "该链接带有他们的电子邮件地址；打开它会向他们发送一个 6 位代码，因此无需设置密码。该链接将在 7 天后过期。如果过期，请从用户列表中重新发送，或者他们可以通过输入电子邮件登录。"
+  },
+  "steps": {
+    "access": "访问权限",
+    "details": "Details",
+    "method": "方法"
+  },
+  "title": {
+    "access": "访问和审查",
+    "detailsExisting": "选择组织和用户",
+    "detailsNew": "告诉我们有关该组织的信息",
+    "method": "您想如何添加该客户端？"
+  }
+}

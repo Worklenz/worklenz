@@ -245,7 +245,7 @@ export const APPSUMO_PLAN_LIMIT = 50;
 
 // Guest seat limits per plan tier
 export const FREE_GUEST_LIMIT = 0;
-export const PRO_GUEST_LIMIT = 5; // Professional plan: 5 guest members limit
+export const PRO_GUEST_LIMIT = -1; // Professional plan: unlimited guests (-1)
 export const APPSUMO_LTD_GUEST_LIMIT = 5; // Limited guest access for LTD users with 1-4 codes
 export const BUSINESS_GUEST_LIMIT = -1; // -1 means unlimited
 export const SELF_HOSTED_GUEST_LIMIT = -1;

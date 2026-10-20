@@ -22,7 +22,10 @@ export interface ClientPortalQuote {
   /** Issued: when the quote was created. */
   createdAt: string;
   updatedAt: string;
+  /** Older quotes link to a retired service request; they keep showing it, read-only. */
   requestNumber?: string | null;
+  /** The change request this quote was started from, e.g. CR-0048. */
+  changeRequestNumber?: string | null;
   serviceName?: string | null;
   clientId?: string;
   clientName?: string;
@@ -45,13 +48,15 @@ export interface ClientPortalQuoteDetails extends ClientPortalQuote {
   discountValue?: number;
   discountAmount?: number;
   subtotal?: number;
-  /** Null for a standalone quote. */
+  /** Null for a standalone quote. A legacy link to a retired service request, shown read-only. */
   request: {
     id: string;
     requestNumber: string;
     notes?: string | null;
     service?: { id?: string; name?: string; description?: string };
   } | null;
+  /** Null when the quote was not started from a change request. */
+  changeRequest?: { id: string; number: string; title: string; status: string } | null;
   client: {
     id?: string;
     name?: string;
@@ -91,8 +96,9 @@ export interface GetQuotesParams {
 }
 
 export interface CreateQuoteRequest {
-  /** Optional: a quote without a request is a standalone quote and needs `clientId`. */
-  requestId?: string;
+  /** Start from a change request (Approved, In Progress or Completed); it decides the client. */
+  changeRequestId?: string;
+  /** Without a change request the quote is standalone and needs `clientId`. */
   clientId?: string;
   projectName?: string;
   currency?: string;

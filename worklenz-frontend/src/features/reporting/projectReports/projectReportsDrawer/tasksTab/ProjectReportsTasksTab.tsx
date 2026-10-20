@@ -11,6 +11,7 @@ import { IGroupByOption, ITaskListGroup } from '@/types/tasks/taskList.types';
 import { GROUP_BY_STATUS_VALUE, IGroupBy } from '@/features/board/board-slice';
 import { createPortal } from 'react-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'));
 
@@ -89,7 +90,7 @@ const ProjectReportsTasksTab = ({ projectId = null }: ProjectReportsTasksTabProp
           <ProjectReportsTasksTable
             key={item.id}
             tasksData={item.tasks}
-            title={item.name}
+            title={decodeHtmlEntities(item.name)}
             color={item.color_code}
             type={groupBy}
             projectId={projectId || ''}

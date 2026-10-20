@@ -4,7 +4,7 @@ import logoLight from '@/assets/images/worklenz-light-mode.png';
 import logoDark from '@/assets/images/worklenz-dark-mode.png';
 
 type AuthPageHeaderProp = {
-  description: string;
+  description?: string;
 };
 
 // This page header is used only in auth pages for client portal
@@ -24,13 +24,15 @@ const AuthPageHeader = ({ description }: AuthPageHeaderProp) => {
       }}>
         Client Portal
       </Typography.Title>
-      <Typography.Text style={{ 
-        color: '#8c8c8c', 
-        maxWidth: 400, 
-        textAlign: 'center' 
-      }}>
-        {description}
-      </Typography.Text>
+      {description && (
+        <Typography.Text style={{ 
+          color: '#8c8c8c', 
+          maxWidth: 400, 
+          textAlign: 'center' 
+        }}>
+          {description}
+        </Typography.Text>
+      )}
     </Flex>
   );
 };

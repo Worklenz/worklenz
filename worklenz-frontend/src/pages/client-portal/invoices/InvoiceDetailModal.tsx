@@ -3,14 +3,12 @@ import DOMPurify from 'dompurify';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-  Avatar,
   Button,
   Card,
   Flex,
   Image,
   Modal,
   Result,
-  Skeleton,
   Tag,
   Typography,
   message,
@@ -24,7 +22,6 @@ import {
   FilePdfOutlined,
   FileTextOutlined,
   SendOutlined,
-  UserOutlined,
 } from '@ant-design/icons';
 import {
   useDeleteInvoiceMutation,
@@ -32,7 +29,10 @@ import {
   useSendInvoiceMutation,
 } from '../../../api/client-portal/client-portal-api';
 import { formatDate } from '../../../utils/dateUtils';
+import { PortalAvatar } from '@/components/client-portal/v2';
+import { portalPaths } from '../portal-paths';
 import InvoicePreviewModal from './invoice-details/invoice-preview-modal';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { RecordPaymentModal } from './RecordPaymentModal';
 import {
   formatMoney,
@@ -41,6 +41,8 @@ import {
   normalizePaymentStatus,
 } from './invoices-list-helpers';
 import './invoices.css';
+import { PortalLoader } from '@/components/client-portal/v2';
+import { RichTextView } from './../shared/rich-text/RichTextView';
 
 const INVOICES_PATH = '/worklenz/client-portal/invoices';
 
@@ -203,7 +205,7 @@ const InvoiceDetailModal = () => {
 
   let body: React.ReactNode;
   if (isLoading) {
-    body = <Skeleton active paragraph={{ rows: 8 }} />;
+    body = <PortalLoader />;
   } else if (isError || !invoice) {
     body = (
       <Result
@@ -308,8 +310,10 @@ const InvoiceDetailModal = () => {
                   {field(
                     t('clientLabel', { defaultValue: 'Client' }),
                     <Flex align="center" gap={6}>
-                      <Avatar size={20} icon={<UserOutlined />} />
-                      {invoice.client?.name || '-'}
+                      {invoice.client?.name && (
+                        <PortalAvatar name={decodeHtmlEntities(invoice.client.name)} />
+                      )}
+                      {decodeHtmlEntities(invoice.client?.name) || '-'}
                     </Flex>
                   )}
                   {field(t('companyName', { defaultValue: 'Company' }), invoice.client?.companyName || '-')}
@@ -317,6 +321,25 @@ const InvoiceDetailModal = () => {
                 </div>
               </Card>
 
+              {invoice.changeRequest && (
+                <Card size="small" title={t('linkedChangeRequest', { defaultValue: 'Linked Change Request' })}>
+                  <Flex justify="space-between" align="center" gap={12} wrap="wrap">
+                    <div>
+                      <Typography.Text strong>{invoice.changeRequest.number}</Typography.Text>
+                      <div style={{ color: token.colorTextSecondary, fontSize: 12.5 }}>{invoice.changeRequest.title}</div>
+                    </div>
+                    <Button
+                      size="small"
+                      onClick={() => navigate(portalPaths.changeRequest(invoice.changeRequest?.id ?? ''))}
+                    >
+                      {t('openChangeRequest', { defaultValue: 'Open change request' })}
+                    </Button>
+                  </Flex>
+                </Card>
+              )}
+
+              {/* Older invoices link to a retired service request. It stays visible, read-only. */}
+              {invoice.request && (
               <Card size="small" title={t('requestDetails', { defaultValue: 'Request Details' })}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 12 }}>
                   {/* A standalone invoice has no request; these read "-" rather than erroring. */}
@@ -340,9 +363,10 @@ const InvoiceDetailModal = () => {
                   ) : null
                 )}
               </Card>
+              )}
 
               <Card size="small" title={t('notes', { defaultValue: 'Notes' })}>
-                {boxedText(invoice.notes)}
+                {boxedText(invoice.notes ? <RichTextView value={invoice.notes} /> : undefined)}
               </Card>
             </Flex>
           </div>
@@ -378,7 +402,7 @@ const InvoiceDetailModal = () => {
 
               <Card size="small" title={t('createdBy', { defaultValue: 'Created By' })}>
                 <Flex align="center" gap={8}>
-                  <Avatar size={26} icon={<UserOutlined />} />
+                  {invoice.createdBy?.name && <PortalAvatar name={invoice.createdBy.name} />}
                   <Typography.Text strong>{invoice.createdBy?.name || '-'}</Typography.Text>
                 </Flex>
               </Card>

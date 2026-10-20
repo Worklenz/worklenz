@@ -33,6 +33,59 @@ async function releaseAdvisoryLock(client: PoolClient): Promise<void> {
   await client.query("SELECT pg_advisory_unlock($1);", [ADVISORY_LOCK_ID]);
 }
 
+/**
+ * Client Portal file versions: a "new version" upload that was presigned but never confirmed leaves a
+ * pending project_file_versions row and possibly an object. Same rule as pending files. Skipped on a
+ * database that has not run the versions migration yet (undefined_table).
+ */
+async function cleanupStalePendingVersions(client: PoolClient): Promise<void> {
+  try {
+    const stale = await client.query(
+      `SELECT id, storage_key
+       FROM project_file_versions
+       WHERE status = 'pending'
+         AND created_at < (NOW() - ($1 || ' minutes')::interval)
+       ORDER BY created_at ASC
+       LIMIT $2;`,
+      [STALE_PENDING_MINUTES, MAX_CLEANUP_PER_TICK],
+    );
+    if (!stale.rowCount) return;
+
+    for (const row of stale.rows) void deleteObject(row.storage_key);
+    await client.query("DELETE FROM project_file_versions WHERE id = ANY($1::uuid[]);", [
+      stale.rows.map((row) => row.id),
+    ]);
+    log(`Cleaned up ${stale.rowCount} orphaned pending file version record(s).`);
+  } catch (error) {
+    if ((error as { code?: string })?.code === "42P01") return;
+    throw error;
+  }
+}
+
+/**
+ * Client sign-in codes are single use and live 10 minutes, but every request leaves a row (including for
+ * addresses with no access) that carries the requesting IP. Purge them a day after they expire or were used.
+ * Skipped on a database that has not run the sign-in migration yet (undefined_table).
+ */
+const SIGN_IN_CODE_RETENTION_HOURS = 24;
+
+async function cleanupSignInCodes(client: PoolClient): Promise<void> {
+  try {
+    const purged = await client.query(
+      `DELETE FROM client_login_codes
+        WHERE id IN (
+          SELECT id FROM client_login_codes
+           WHERE GREATEST(expires_at, COALESCE(consumed_at, expires_at)) < (NOW() - ($1 || ' hours')::interval)
+           LIMIT $2)`,
+      [SIGN_IN_CODE_RETENTION_HOURS, MAX_CLEANUP_PER_TICK * 10],
+    );
+    if (purged.rowCount) log(`Purged ${purged.rowCount} expired client sign-in code record(s).`);
+  } catch (error) {
+    if ((error as { code?: string })?.code === "42P01") return;
+    throw error;
+  }
+}
+
 async function onCleanupTick(): Promise<void> {
   let locked = false;
   let lockClient: PoolClient | null = null;
@@ -51,25 +104,28 @@ async function onCleanupTick(): Promise<void> {
       [STALE_PENDING_MINUTES, MAX_CLEANUP_PER_TICK],
     );
 
-    if (!staleResult.rowCount) return;
+    if (staleResult.rowCount) {
+      const ids: string[] = [];
+      for (const row of staleResult.rows) {
+        ids.push(row.id);
+        // The object may or may not exist (the browser may have uploaded but
+        // never confirmed). deleteObject is a no-op/log on a missing key.
+        const storageKey = getProjectFileStorageKey(
+          row.team_id,
+          row.project_id,
+          row.id,
+          row.type,
+        );
+        void deleteObject(storageKey);
+      }
 
-    const ids: string[] = [];
-    for (const row of staleResult.rows) {
-      ids.push(row.id);
-      // The object may or may not exist (the browser may have uploaded but
-      // never confirmed). deleteObject is a no-op/log on a missing key.
-      const storageKey = getProjectFileStorageKey(
-        row.team_id,
-        row.project_id,
-        row.id,
-        row.type,
-      );
-      void deleteObject(storageKey);
+      await lockClient.query("DELETE FROM project_files WHERE id = ANY($1::uuid[]);", [ids]);
+
+      log(`Cleaned up ${ids.length} orphaned pending upload record(s).`);
     }
 
-    await lockClient.query("DELETE FROM project_files WHERE id = ANY($1::uuid[]);", [ids]);
-
-    log(`Cleaned up ${ids.length} orphaned pending upload record(s).`);
+    await cleanupStalePendingVersions(lockClient);
+    await cleanupSignInCodes(lockClient);
   } catch (error) {
     log_error(error);
   } finally {

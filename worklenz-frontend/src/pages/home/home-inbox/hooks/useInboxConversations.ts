@@ -11,6 +11,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 export type InboxCategory = 'project' | 'client';
 
@@ -42,7 +43,7 @@ const stripHtml = (html: string) => {
 const toProjectConversation = (row: IInboxProjectConversation): InboxConversation => ({
   id: row.id,
   category: 'project',
-  name: row.name || 'Untitled project',
+  name: decodeHtmlEntities(row.name) || 'Untitled project',
   chats_data: [],
   status: (row.unread_count > 0 ? 'unread' : 'read') as 'read' | 'unread',
   lastMessage: row.last_preview || '',
@@ -232,7 +233,9 @@ export const useInboxConversations = () => {
       return {
         id: chat.id || '',
         category: 'client' as const,
-        name: chat.clientName || chat.title || chat.participants?.join(', ') || 'Unknown',
+        name:
+          decodeHtmlEntities(chat.clientName || chat.title || chat.participants?.join(', ')) ||
+          'Unknown',
         chats_data: [],
         status: (chat.unreadCount > 0 ? 'unread' : 'read') as 'read' | 'unread',
         lastMessage: chat.lastMessage || '',
@@ -312,7 +315,7 @@ export const useInboxConversations = () => {
       const draft: InboxConversation = {
         id: project.id,
         category: 'project',
-        name: project.name || 'Untitled project',
+        name: decodeHtmlEntities(project.name) || 'Untitled project',
         chats_data: [],
         status: 'read',
         lastMessage: '',

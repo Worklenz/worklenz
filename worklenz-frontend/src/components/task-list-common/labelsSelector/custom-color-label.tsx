@@ -1,5 +1,6 @@
 import { Tag, Typography } from '@/shared/antd-imports';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const CustomColorLabel = ({ label }: { label: ITaskLabel | null }) => {
   const getContrastColor = (hexColor: string): string => {
@@ -32,7 +33,7 @@ const CustomColorLabel = ({ label }: { label: ITaskLabel | null }) => {
           color: textColor,
         }}
       >
-        {label?.name}
+        {decodeHtmlEntities(label?.name)}
       </Typography.Text>
     </Tag>
   );

@@ -153,7 +153,7 @@ export const tasksApiService = {
     taskId: string | undefined,
     projectId: string,
     searchQuery: string
-  ): Promise<IServerResponse<{ label: string; value: string }[]>> => {
+  ): Promise<IServerResponse<{ label: string; value: string; task_key?: string }[]>> => {
     const q = toQueryString({ taskId, projectId, searchQuery });
     const response = await apiClient.get(`${rootUrl}/search${q}`);
     return response.data;

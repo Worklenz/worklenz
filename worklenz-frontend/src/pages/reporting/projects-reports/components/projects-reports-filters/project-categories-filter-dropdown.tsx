@@ -8,6 +8,7 @@ import {
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { CaretDownFilled } from '@/shared/antd-imports';
 import {
   Badge,
@@ -134,7 +135,7 @@ const ProjectCategoriesFilterDropdown = () => {
                 >
                   <Flex gap={8}>
                     <Badge color={category.color_code} />
-                    {category.name}
+                    {decodeHtmlEntities(category.name)}
                   </Flex>
                 </Checkbox>
               </List.Item>

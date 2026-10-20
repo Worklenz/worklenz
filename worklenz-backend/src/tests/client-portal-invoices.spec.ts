@@ -46,6 +46,7 @@ const mockedConnect = db.connect as jest.Mock;
 const INVOICE_ID = "33333333-3333-4333-8333-333333333333";
 const CLIENT_ID = "22222222-2222-4222-8222-222222222222";
 const REQUEST_ID = "44444444-4444-4444-8444-444444444444";
+const CHANGE_REQUEST_ID = "55555555-5555-4555-8555-555555555555";
 
 /** A pooled client whose statements are answered by `answer` and recorded in `calls`. */
 const mockTransaction = (answer: (sql: string, params?: unknown[]) => unknown[] = () => []) => {
@@ -490,6 +491,60 @@ describe("ClientPortalInvoicesController.createInvoice", () => {
     const res = await create({ requestId: REQUEST_ID, lineItems: goodLines });
 
     expect(res.body.done).toBe(true);
+  });
+
+  describe("starting from a change request", () => {
+    it("takes the client from the change request and links it in the same transaction", async () => {
+      mockedQuery
+        .mockResolvedValueOnce(
+          createQueryResult([
+            { id: CHANGE_REQUEST_ID, cr_no: "CR-0048", title: "Live chat", client_id: CLIENT_ID, status: "in_progress" },
+          ])
+        )
+        .mockResolvedValueOnce(createQueryResult([{ id: CLIENT_ID, name: "TechFlow Inc" }]));
+      const { calls } = mockTransaction((sql: string) =>
+        sql.includes("INSERT INTO client_portal_invoices")
+          ? [{ id: INVOICE_ID, invoice_no: "INV-1", amount: "2000", currency: "USD", status: "draft",
+               payment_status: "unpaid", paid_amount: "0", tax_rate: "0", tax_amount: "0",
+               discount_type: "percentage", discount_value: "0", discount_amount: "0", subtotal: "2000" }]
+          : []
+      );
+
+      // No clientId is sent: the change request decides who the invoice is for.
+      const res = await create({ changeRequestId: CHANGE_REQUEST_ID, lineItems: goodLines });
+
+      expect(res.body.done).toBe(true);
+      expect(mockedQuery.mock.calls[0][1]).toEqual([CHANGE_REQUEST_ID, "team-123"]);
+      expect(mockedQuery.mock.calls[1][1]).toEqual([CLIENT_ID, "team-123"]);
+
+      const statements = sqlOf(calls);
+      const link = statements.findIndex(sql => sql.includes("UPDATE client_portal_invoices SET change_request_id"));
+      expect(link).toBeGreaterThan(statements.findIndex(sql => sql.includes("INSERT INTO client_portal_invoices")));
+      expect(calls[link].params).toEqual([INVOICE_ID, CHANGE_REQUEST_ID]);
+      expect(statements[statements.length - 1]).toBe("COMMIT");
+    });
+
+    it("refuses a change request that is still being reviewed", async () => {
+      mockedQuery.mockResolvedValueOnce(
+        createQueryResult([
+          { id: CHANGE_REQUEST_ID, cr_no: "CR-0048", title: "Live chat", client_id: CLIENT_ID, status: "submitted" },
+        ])
+      );
+
+      const res = await create({ changeRequestId: CHANGE_REQUEST_ID, lineItems: goodLines });
+
+      expect(res.statusCode).toBe(400);
+      expect(mockedConnect).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 for a change request that is not this team's", async () => {
+      mockedQuery.mockResolvedValueOnce(createQueryResult([]));
+
+      const res = await create({ changeRequestId: CHANGE_REQUEST_ID, lineItems: goodLines });
+
+      expect(res.statusCode).toBe(404);
+      expect(mockedConnect).not.toHaveBeenCalled();
+    });
   });
 
   it("rejects a client that belongs to another team", async () => {

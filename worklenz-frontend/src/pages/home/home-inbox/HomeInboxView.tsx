@@ -6,7 +6,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@utils/themeWiseColor';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { canUseFeature } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
@@ -32,7 +32,7 @@ const HomeInboxView: React.FC = () => {
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
-  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const hasBusinessAccess = canUseFeature(currentSession, 'client_portal_chats');
   const { trackAppSumoEvent } = useAppSumoTracking();
   const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
   const [activeTab, setActiveTab] = useState<InboxTab>('all');

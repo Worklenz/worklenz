@@ -5,7 +5,6 @@ import {
   Avatar,
   Tag,
   Button,
-  Spin,
   Alert,
   message,
   Dropdown,
@@ -35,6 +34,8 @@ import PhoneInput from '@/components/PhoneInput/PhoneInput';
 import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
 import { getCountries } from 'libphonenumber-js';
 import type { CountryCode } from 'libphonenumber-js';
+import { PortalLoadingOverlay } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Title, Text } = Typography;
 
@@ -264,7 +265,7 @@ const ClientDetailsDrawer = () => {
             />
             <div>
               <Title level={4} style={{ margin: 0, lineHeight: 1.3 }}>
-                {client?.name || t('loadingText') || 'Loading…'}
+                {decodeHtmlEntities(client?.name) || t('loadingText') || 'Loading…'}
               </Title>
               <Flex gap={8} align="center" style={{ marginTop: 2 }}>
                 <Text type="secondary" style={{ fontSize: 13 }}>
@@ -300,7 +301,7 @@ const ClientDetailsDrawer = () => {
         </Flex>
       }
     >
-      <Spin spinning={isLoadingClient}>
+      <PortalLoadingOverlay loading={isLoadingClient}>
         {clientError && (
           <Alert
             message={t('errorTitle') || 'Error'}
@@ -458,7 +459,7 @@ const ClientDetailsDrawer = () => {
           </Row>
         </Form>
 
-      </Spin>
+      </PortalLoadingOverlay>
     </Modal>
   );
 };

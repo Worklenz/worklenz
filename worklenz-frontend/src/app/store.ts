@@ -112,7 +112,6 @@ import projectWorkloadReducer from '@features/project-workload/projectWorkloadSl
 import clientsPortalReducer from '../features/clients-portal';
 
 //client view
-import clientViewReducer from '../features/client-view';
 
 // Client Portal API
 import { clientPortalApi } from '@/api/client-portal/client-portal-api';
@@ -237,8 +236,6 @@ const coreReducers = {
   //clients portal
   clientsPortalReducer: clientsPortalReducer,
 
-  //client view
-  clientViewReducer: clientViewReducer,
   // Finance
   projectFinanceRateCardReducer: projectFinanceRateCardReducer,
   projectFinancesReducer: projectFinancesReducer,

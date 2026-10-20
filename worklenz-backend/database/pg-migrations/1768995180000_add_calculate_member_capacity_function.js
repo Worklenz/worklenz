@@ -208,8 +208,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE;
 
--- Grant execute permission
-GRANT EXECUTE ON FUNCTION calculate_member_capacity(UUID, DATE, DATE) TO postgres;
 
 COMMENT ON FUNCTION calculate_member_capacity IS 'Calculates daily capacity for a team member based on task assignments and estimations - Final fix for same-day tasks';
   `);

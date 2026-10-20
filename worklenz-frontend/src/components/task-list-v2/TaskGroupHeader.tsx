@@ -10,6 +10,7 @@ import { Checkbox, Dropdown, Input, Badge } from '@/shared/antd-imports';
 import GroupProgressBar from './GroupProgressBar';
 import { useTranslation } from 'react-i18next';
 import { getContrastColor } from '@/utils/colorUtils';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
@@ -408,7 +409,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
         label: (
           <div className="flex items-center gap-2">
             <Badge color={category.color_code} />
-            <span>{category.name}</span>
+            <span>{decodeHtmlEntities(category.name)}</span>
           </div>
         ),
         onClick: (info: any) => {

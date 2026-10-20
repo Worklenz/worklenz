@@ -37,7 +37,7 @@ After it runs, from the output directory:
 | `worklenz-backend/src/private/` | Loaded optionally via `shared/private-extensions.ts` — falls back to no-ops when absent. |
 | `database/migrations-private/`, `database/pg-migrations-private/` | `scripts/migrate.js` skips these dirs when they don't exist. |
 | DirectPay / AppSumo strategy docs, licensing proposal, security remediation plan | Internal only. |
-| `docs/`, `worklenz-backend/docs/`, `worklenz-backend/doc/` | Internal engineering notes and feature specs. Allowlist rescues `docs/SELF_HOSTING.md`. |
+| `docs/`, `worklenz-backend/docs/`, `worklenz-backend/doc/` | Internal engineering notes and feature specs. `docs/` is a private submodule (worklenz-internal-docs); `.gitmodules` is excluded too. Allowlist rescues `SELF_HOSTING.md`. |
 | `.github/workflows/azure-static-web-apps-*.yml` | CI wired to our Azure infra and a client branch. |
 | `.cursorrules`, `.windsurfrules`, `.coderabbit.yaml`, `.claude/` | Our editor / assistant config. |
 

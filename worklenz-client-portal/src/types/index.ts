@@ -2,10 +2,17 @@
 
 export interface ClientOrganization {
   id: string;
+  /** Team (workspace) name. */
   name: string;
+  /** The client company the user acts for in this team. */
+  clientName?: string;
+  /** The team's Portal Title (Portal Settings > Branding): the portal's name as the client sees it. */
+  portalTitle?: string | null;
   teamId: string;
   clientId: string;
   isDefault: boolean;
+  /** Set by `GET /organizations`: the team the current token is acting in. */
+  isCurrent?: boolean;
 }
 
 export interface ClientUser {
@@ -14,6 +21,8 @@ export interface ClientUser {
   name: string;
   organizationId: string;
   permissions: string[];
+  /** v2 client role. Absent on tokens issued before the v2 sign-in. */
+  role?: 'admin' | 'member' | 'viewer';
   organizations?: ClientOrganization[];
   currentOrganizationId?: string;
 }
@@ -211,6 +220,8 @@ export interface ClientSettings {
   primary_color?: string | null;
   portal_title?: string | null;
   portal_theme?: 'light' | 'dark';
+  /** Org-controlled "Powered by Worklenz" footer; shown unless explicitly false. */
+  show_powered_by?: boolean;
   visible_project_plan?: boolean;
   visible_gantt_timeline?: boolean;
   visible_files_documents?: boolean;
@@ -234,6 +245,16 @@ export interface ClientNotification {
 }
 
 // API Response Types
+export interface SignInCodeRequested {
+  email: string;
+  /** a***@example.com, safe to show on the code screen. */
+  maskedEmail: string;
+  expiresInSeconds: number;
+  resendAfterSeconds: number;
+  /** Set when the request came from an invitation link. */
+  organizationName: string | null;
+}
+
 export interface ApiResponse<T> {
   done: boolean;
   body: T;

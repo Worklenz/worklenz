@@ -47,6 +47,8 @@ import {
 } from './quotes-list-helpers';
 // Quotes share the invoices module's type scale and table/modal styling.
 import '../invoices/invoices.css';
+import { PortalLoadingOverlay } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Text } = Typography;
 
@@ -331,17 +333,26 @@ export const QuotesTable = () => {
             style={{ textTransform: 'capitalize' }}
             onClick={event => event.stopPropagation()}
           >
-            {record.clientName || '-'}
+            {decodeHtmlEntities(record.clientName) || '-'}
           </Link>
         ) : (
-          <Text style={{ textTransform: 'capitalize' }}>{record.clientName || '-'}</Text>
+          <Text style={{ textTransform: 'capitalize' }}>
+            {decodeHtmlEntities(record.clientName) || '-'}
+          </Text>
         ),
     },
     {
       key: 'project',
       title: t('projectColumn', { defaultValue: 'Project' }),
       render: (_v, record) => (
-        <Text type="secondary">{record.projectName || record.serviceName || '-'}</Text>
+        <div>
+          <Text type="secondary">{record.projectName || record.serviceName || '-'}</Text>
+          {record.changeRequestNumber && (
+            <div>
+              <Text style={{ fontSize: 12 }}>{record.changeRequestNumber}</Text>
+            </div>
+          )}
+        </div>
       ),
     },
     {
@@ -571,6 +582,7 @@ export const QuotesTable = () => {
         styles={{ body: { padding: 0 } }}
       >
         {showsTable ? (
+          <PortalLoadingOverlay loading={isFetching}>
           <Table
             columns={columns}
             dataSource={quotes}
@@ -578,7 +590,6 @@ export const QuotesTable = () => {
             size="middle"
             sticky
             pagination={false}
-            loading={isFetching}
             onChange={handleTableChange}
             scroll={{ x: 'max-content', y: tableScrollY }}
             onRow={record => ({
@@ -586,6 +597,7 @@ export const QuotesTable = () => {
               style: { cursor: 'pointer' },
             })}
           />
+          </PortalLoadingOverlay>
         ) : (
           renderEmptyState()
         )}

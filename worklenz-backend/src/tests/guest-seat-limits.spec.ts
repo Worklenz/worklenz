@@ -132,7 +132,20 @@ describe("guest-seat-limits", () => {
       });
     });
 
-    it("should return PROFESSIONAL tier with 5 guest limit", async () => {
+    it("should treat per-user Paddle Billing Pro plans as PROFESSIONAL", async () => {
+      (paddleUtils.checkTeamSubscriptionStatus as jest.Mock).mockResolvedValue({
+        subscription_type: "PADDLE",
+        plan_name: "Pro (per user, monthly)"
+      });
+      (paddleUtils.getActiveGuestCount as jest.Mock).mockResolvedValue(0);
+
+      const result = await getGuestSeatLimit(teamId);
+
+      expect(result.plan_tier).toBe("PROFESSIONAL");
+      expect(result.guest_limit).toBe(-1);
+    });
+
+    it("should return PROFESSIONAL tier with unlimited guests", async () => {
       (paddleUtils.checkTeamSubscriptionStatus as jest.Mock).mockResolvedValue({
         subscription_type: "PADDLE",
         plan_name: "Worklenz Professional Annual"
@@ -143,9 +156,9 @@ describe("guest-seat-limits", () => {
 
       expect(result).toEqual({
         plan_tier: "PROFESSIONAL",
-        guest_limit: 5,
+        guest_limit: -1,
         current_guest_count: 4,
-        remaining_slots: 1,
+        remaining_slots: -1,
         can_add_guest: true,
         error_message: undefined
       });
@@ -240,8 +253,8 @@ describe("guest-seat-limits", () => {
       expect(getGuestLimitByTier("APPSUMO_BUSINESS")).toBe(-1);
     });
 
-    it("should return 5 for PROFESSIONAL and APPSUMO_LTD", () => {
-      expect(getGuestLimitByTier("PROFESSIONAL")).toBe(5);
+    it("should return -1 for PROFESSIONAL and 5 for APPSUMO_LTD", () => {
+      expect(getGuestLimitByTier("PROFESSIONAL")).toBe(-1);
       expect(getGuestLimitByTier("APPSUMO_LTD")).toBe(5);
     });
 
@@ -253,7 +266,7 @@ describe("guest-seat-limits", () => {
 
     it("should be case-insensitive", () => {
       expect(getGuestLimitByTier("business")).toBe(-1);
-      expect(getGuestLimitByTier("professional")).toBe(5);
+      expect(getGuestLimitByTier("professional")).toBe(-1);
       expect(getGuestLimitByTier("appsumo_ltd")).toBe(5);
     });
   });

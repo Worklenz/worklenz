@@ -58,7 +58,7 @@
     "email": "Adresa e emailit",
     "emailPlaceholder": "jane@company.com",
     "jobTitle": "Titulli i punës",
-    "jobTitlePlaceholder": "e.g. Marketing Manager",
+    "jobTitlePlaceholder": "p.sh. Menaxher marketingu",
     "phone": "Telefoni (opsionale)",
     "phonePlaceholder": "+1 415 555 0142"
   },
@@ -141,7 +141,7 @@
     },
     "columns": {
       "row": "Rreshti",
-      "person": "Person",
+      "person": "Personi",
       "problem": "Problem"
     },
     "summary": {

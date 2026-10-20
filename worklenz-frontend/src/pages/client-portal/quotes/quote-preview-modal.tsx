@@ -12,6 +12,8 @@ import {
   normalizeQuoteStatus,
 } from './quotes-list-helpers';
 import '../invoices/invoices.css';
+import { RichTextView } from '../shared/rich-text/RichTextView';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 // The quote renders as a sheet of paper, so it keeps paper colours in both app themes: what is
 // previewed is what prints and downloads.
@@ -194,7 +196,9 @@ const QuotePreviewModal = ({ open, onClose, quote }: QuotePreviewModalProps) => 
         >
           <div>
             <div style={labelStyle}>{t('preparedFor', { defaultValue: 'Prepared for' })}</div>
-            <div style={{ fontWeight: 700, fontSize: 14 }}>{quote.client?.name || '-'}</div>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>
+              {decodeHtmlEntities(quote.client?.name) || '-'}
+            </div>
             {[quote.client?.companyName, quote.client?.address, quote.client?.email, quote.client?.phone]
               .filter(Boolean)
               .map(line => (
@@ -216,7 +220,7 @@ const QuotePreviewModal = ({ open, onClose, quote }: QuotePreviewModalProps) => 
           <div>
             <div style={labelStyle}>{t('reference', { defaultValue: 'Reference' })}</div>
             <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 12 }}>
-              {quote.request?.requestNumber || '-'}
+              {quote.changeRequest?.number || quote.request?.requestNumber || '-'}
             </div>
             <div style={labelStyle}>{t('total', { defaultValue: 'Total' })}</div>
             <div style={{ fontWeight: 700, fontSize: 16, color: accent }}>{money(quote.amount)}</div>
@@ -314,10 +318,10 @@ const QuotePreviewModal = ({ open, onClose, quote }: QuotePreviewModalProps) => 
         {quote.notes && (
           <div style={{ marginTop: 20, padding: 14, background: '#fafafa', borderRadius: 6 }}>
             <div style={labelStyle}>{t('notes', { defaultValue: 'Notes' })}</div>
-            {/* Plain text only: React escapes it, and pre-wrap keeps the author's line breaks. */}
-            <Typography.Text style={{ color: PAPER.secondary, whiteSpace: 'pre-wrap' }}>
-              {quote.notes}
-            </Typography.Text>
+            {/* Sanitized rich text; legacy plain text keeps its line breaks. */}
+            <div style={{ color: PAPER.secondary }}>
+              <RichTextView value={quote.notes} />
+            </div>
           </div>
         )}
       </div>

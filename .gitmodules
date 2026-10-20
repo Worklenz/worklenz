@@ -1,0 +1,3 @@
+[submodule "docs"]
+	path = docs
+	url = https://github.com/Worklenz/worklenz-internal-docs.git

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import TimeLogForm from '@/components/task-drawer/shared/time-log/time-log-form';
 import { useAuthService } from '@/hooks/useAuth';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Text } = Typography;
 
@@ -15,6 +16,7 @@ export interface EditableTimeEntry {
   project_id: string;
   project_name: string;
   project_color?: string | null;
+  project_start_date?: string | null;
   user_id?: string;
   user_name?: string | null;
   /** Seconds. Postgres NUMERIC can arrive as a string at runtime, so it is coerced below. */
@@ -90,13 +92,13 @@ export const EditTimeEntryModal: React.FC<EditTimeEntryModalProps> = ({ entry, o
           background: token.colorFillQuaternary,
         }}
       >
-        <Text strong ellipsis={{ tooltip: shown.task_name }}>
-          {shown.task_name}
+        <Text strong ellipsis={{ tooltip: decodeHtmlEntities(shown.task_name) }}>
+          {decodeHtmlEntities(shown.task_name)}
         </Text>
         <Flex align="center" gap={6} style={{ minWidth: 0 }}>
           <Badge color={shown.project_color || token.colorPrimary} />
           <Text type="secondary" ellipsis style={{ fontSize: 12 }}>
-            {shown.project_name}
+            {decodeHtmlEntities(shown.project_name)}
           </Text>
         </Flex>
         {isSomeoneElses && (
@@ -113,6 +115,7 @@ export const EditTimeEntryModal: React.FC<EditTimeEntryModalProps> = ({ entry, o
         initialValues={initialValues}
         taskId={shown.task_id}
         projectId={shown.project_id}
+        projectStartDate={shown.project_start_date}
         onCancel={onClose}
         onSubmitSuccess={onSaved}
       />

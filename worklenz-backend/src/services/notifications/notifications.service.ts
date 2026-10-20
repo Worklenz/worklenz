@@ -120,9 +120,16 @@ export class NotificationsService {
   }
 
   public static sendNotification(receiver: IReceiver): void {
-    const url = receiver.project_id
-      ? `/worklenz/projects/${receiver.project_id}`
-      : null;
+    const documentId = receiver.message_params?.documentId;
+    const url =
+      receiver.url ??
+      (receiver.project_id
+        ? receiver.notification_type_key === "PROJECT_DOCUMENT_MENTION" &&
+          typeof documentId === "string" &&
+          documentId
+          ? `/worklenz/projects/${receiver.project_id}?tab=docs&doc=${encodeURIComponent(documentId)}`
+          : `/worklenz/projects/${receiver.project_id}`
+        : null);
     const notification = new WorklenzNotification(
       receiver.team,
       receiver.team_id,
@@ -233,12 +240,16 @@ export class NotificationsService {
 
   public static async createNotification(request: ICreateNotificationRequest) {
     try {
+      // `url` is only written when the caller supplies one (Client Portal notifications), so every
+      // existing notification keeps working on a database that has not run the url migration yet.
+      const urlColumn = request.url ? ", url" : "";
+      const urlValue = request.url ? ", $10" : "";
       const q = `
         INSERT INTO user_notifications (
           message, user_id, team_id, task_id, project_id, comment_id,
-          message_key, message_params, notification_type_key
+          message_key, message_params, notification_type_key${urlColumn}
         )
-        VALUES ($5, $1, $2, $3, $4, $6, $7, $8, $9)
+        VALUES ($5, $1, $2, $3, $4, $6, $7, $8, $9${urlValue})
         RETURNING (SELECT name FROM teams WHERE id = $2) AS team,
                   (SELECT name FROM projects WHERE id = $4) AS project,
                   (SELECT color_code FROM projects WHERE id = $4) AS project_color;
@@ -253,6 +264,7 @@ export class NotificationsService {
         request.messageKey ?? null,
         request.messageParams ? JSON.stringify(request.messageParams) : null,
         request.notificationTypeKey ?? null,
+        ...(request.url ? [request.url] : []),
       ]);
       const [response] = result.rows;
 
@@ -270,6 +282,7 @@ export class NotificationsService {
           team_id: request.teamId,
           task_id: request.taskId ?? undefined,
           comment_id: request.commentId ?? undefined,
+          url: request.url,
         });
       }
 

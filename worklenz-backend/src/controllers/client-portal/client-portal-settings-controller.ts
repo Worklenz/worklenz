@@ -7,6 +7,7 @@ import db from "../../config/db";
 import { uploadBase64, getClientPortalLogoKey, deleteObject } from "../../shared/storage";
 import { log_error } from "../../shared/utils";
 import { getClientPortalBaseUrl } from "../../cron_jobs/helpers";
+import { teamCanUseFeature } from "../../shared/entitlements/gates";
 
 /** `portal_theme` / `invoice_template_style` are stored as free TEXT with a DB CHECK constraint — validate here too so a bad value fails fast with a clear message instead of a raw constraint-violation error. */
 const PORTAL_THEMES = ["light", "dark"];
@@ -41,7 +42,7 @@ export default class ClientPortalSettingsController extends ClientPortalControll
                visible_project_updates, visible_chat,
                notify_new_message, notify_task_status_change, notify_file_uploaded,
                poc_can_add_users, poc_can_remove_users,
-               invoice_template_style, invoice_show_logo,
+               invoice_template_style, invoice_show_logo, show_powered_by,
                created_at, updated_at
         FROM client_portal_settings
         WHERE organization_team_id = $1
@@ -82,6 +83,7 @@ export default class ClientPortalSettingsController extends ClientPortalControll
         poc_can_remove_users: false,
         invoice_template_style: "classic",
         invoice_show_logo: true,
+        show_powered_by: true,
       };
 
       // Get organization logo if client portal logo is not set
@@ -128,8 +130,6 @@ export default class ClientPortalSettingsController extends ClientPortalControll
       const organizationTeamId = teamId;
 
       const {
-        logo_url,
-        primary_color,
         welcome_message,
         contact_email,
         contact_phone,
@@ -146,7 +146,9 @@ export default class ClientPortalSettingsController extends ClientPortalControll
         portal_title,
       } = req.body;
 
-      const portal_theme = PORTAL_THEMES.includes(req.body.portal_theme)
+      let logo_url = req.body.logo_url;
+      let primary_color = req.body.primary_color;
+      let portal_theme = PORTAL_THEMES.includes(req.body.portal_theme)
         ? req.body.portal_theme
         : "light";
       const invoice_template_style = INVOICE_TEMPLATE_STYLES.includes(req.body.invoice_template_style)
@@ -156,7 +158,11 @@ export default class ClientPortalSettingsController extends ClientPortalControll
       const visible_project_plan = toBool(req.body.visible_project_plan, true);
       const visible_gantt_timeline = toBool(req.body.visible_gantt_timeline, true);
       const visible_files_documents = toBool(req.body.visible_files_documents, true);
+      // visible_invoices and the two Client Admin switches are owned by the v2 Portal Settings API.
+      // This v1 save is also used by Company Details / Branding, which do not send them, so an omitted
+      // value must leave the stored one alone instead of resetting it to the default.
       const visible_invoices = toBool(req.body.visible_invoices, false);
+      const keepVisibleInvoices = req.body.visible_invoices === undefined;
       const visible_feedback_forms = toBool(req.body.visible_feedback_forms, false);
       const visible_team_members = toBool(req.body.visible_team_members, true);
       const visible_project_updates = toBool(req.body.visible_project_updates, true);
@@ -166,11 +172,27 @@ export default class ClientPortalSettingsController extends ClientPortalControll
       const notify_file_uploaded = toBool(req.body.notify_file_uploaded, false);
       const poc_can_add_users = toBool(req.body.poc_can_add_users, false);
       const poc_can_remove_users = toBool(req.body.poc_can_remove_users, false);
+      const keepPocCanAddUsers = req.body.poc_can_add_users === undefined;
+      const keepPocCanRemoveUsers = req.body.poc_can_remove_users === undefined;
       const invoice_show_logo = toBool(req.body.invoice_show_logo, true);
+      // Omitted (e.g. by a caller that predates the Branding toggle) must leave the stored value alone.
+      let show_powered_by = toBool(req.body.show_powered_by, true);
+      let keepShowPoweredBy = req.body.show_powered_by === undefined;
 
       // Check if settings exist
-      const checkQ = `SELECT id FROM client_portal_settings WHERE organization_team_id = $1`;
+      const checkQ = `SELECT * FROM client_portal_settings WHERE organization_team_id = $1`;
       const existingResult = await db.query(checkQ, [organizationTeamId]);
+
+      // Portal branding (logo, colors, theme, hiding the Worklenz footer) is Business-only. Other
+      // plans keep whatever is stored, or the defaults, regardless of what the request sends.
+      if (!(await teamCanUseFeature(teamId, "client_portal_branding"))) {
+        const stored = existingResult.rows[0];
+        logo_url = stored ? stored.logo_url : null;
+        primary_color = stored ? stored.primary_color : "#3b7ad4";
+        portal_theme = stored ? stored.portal_theme : "light";
+        show_powered_by = true;
+        keepShowPoweredBy = !!stored;
+      }
 
       let result;
       if (existingResult.rows.length > 0) {
@@ -183,11 +205,14 @@ export default class ClientPortalSettingsController extends ClientPortalControll
               city = $11, state = $12, zip_code = $13, country = $14,
               invoice_footer_message = $15, portal_title = $16, portal_theme = $17,
               visible_project_plan = $18, visible_gantt_timeline = $19, visible_files_documents = $20,
-              visible_invoices = $21, visible_feedback_forms = $22, visible_team_members = $23,
+              visible_invoices = CASE WHEN $34::boolean THEN visible_invoices ELSE $21 END,
+              visible_feedback_forms = $22, visible_team_members = $23,
               visible_project_updates = $24, visible_chat = $25,
               notify_new_message = $26, notify_task_status_change = $27, notify_file_uploaded = $28,
-              poc_can_add_users = $29, poc_can_remove_users = $30,
+              poc_can_add_users = CASE WHEN $35::boolean THEN poc_can_add_users ELSE $29 END,
+              poc_can_remove_users = CASE WHEN $36::boolean THEN poc_can_remove_users ELSE $30 END,
               invoice_template_style = $31, invoice_show_logo = $32,
+              show_powered_by = CASE WHEN $38::boolean THEN show_powered_by ELSE $37 END,
               updated_at = CURRENT_TIMESTAMP
           WHERE organization_team_id = $33
           RETURNING *
@@ -226,6 +251,11 @@ export default class ClientPortalSettingsController extends ClientPortalControll
           invoice_template_style,
           invoice_show_logo,
           organizationTeamId,
+          keepVisibleInvoices,
+          keepPocCanAddUsers,
+          keepPocCanRemoveUsers,
+          show_powered_by,
+          keepShowPoweredBy,
         ]);
       } else {
         // Create new settings
@@ -240,10 +270,10 @@ export default class ClientPortalSettingsController extends ClientPortalControll
            visible_project_updates, visible_chat,
            notify_new_message, notify_task_status_change, notify_file_uploaded,
            poc_can_add_users, poc_can_remove_users,
-           invoice_template_style, invoice_show_logo)
+           invoice_template_style, invoice_show_logo, show_powered_by)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
                   $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31,
-                  $32, $33, $34)
+                  $32, $33, $34, $35)
           RETURNING *
         `;
         result = await db.query(insertQ, [
@@ -281,6 +311,7 @@ export default class ClientPortalSettingsController extends ClientPortalControll
           poc_can_remove_users,
           invoice_template_style,
           invoice_show_logo,
+          show_powered_by,
         ]);
       }
 
@@ -311,6 +342,12 @@ export default class ClientPortalSettingsController extends ClientPortalControll
       // For client portal settings, we use the team_id as both team_id and organization_team_id
       // since client portal settings are organization-wide
       const organizationTeamId = teamId;
+
+      if (!(await teamCanUseFeature(teamId, "client_portal_branding"))) {
+        return res
+          .status(403)
+          .json(new ServerResponse(false, null, "This feature requires a Business plan"));
+      }
 
       const { logoData } = req.body;
       if (!logoData) {
@@ -405,7 +442,7 @@ export default class ClientPortalSettingsController extends ClientPortalControll
                invoice_footer_message, portal_title, portal_theme,
                visible_project_plan, visible_gantt_timeline, visible_files_documents,
                visible_invoices, visible_feedback_forms, visible_team_members,
-               visible_project_updates, visible_chat,
+               visible_project_updates, visible_chat, show_powered_by,
                created_at, updated_at
         FROM client_portal_settings
         WHERE organization_team_id = $1
@@ -439,7 +476,16 @@ export default class ClientPortalSettingsController extends ClientPortalControll
         visible_team_members: true,
         visible_project_updates: true,
         visible_chat: true,
+        show_powered_by: true,
       };
+
+      // Stored branding is kept for a future upgrade, but only Business workspaces show it to clients.
+      if (!(await teamCanUseFeature(organizationId, "client_portal_branding"))) {
+        settings.logo_url = null;
+        settings.primary_color = "#3b7ad4";
+        settings.portal_theme = "light";
+        settings.show_powered_by = true;
+      }
 
       return res.json(new ServerResponse(true, settings, null));
     } catch (error) {

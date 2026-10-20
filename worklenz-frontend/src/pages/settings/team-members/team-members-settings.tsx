@@ -58,7 +58,7 @@ import {
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
 import { message } from '@/shared/antd-imports';
 import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { hasReachedSeatLimit as hasReachedSeatLimitForPlan } from '@/utils/subscription-utils';
 import { SeatLimitModal } from '@/components/common/seat-limit-modal/SeatLimitModal';
 import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
@@ -206,10 +206,7 @@ const TeamMembersSettings = () => {
 
   const totalUsedSeats = billingInfo?.total_used ?? 0;
   const totalAvailableSeats = billingInfo?.total_seats ?? 0;
-  const hasReachedSeatLimit =
-    !hasBusinessFeatureAccess(currentSession) &&
-    totalAvailableSeats > 0 &&
-    totalUsedSeats >= totalAvailableSeats;
+  const hasReachedSeatLimit = hasReachedSeatLimitForPlan(currentSession, billingInfo);
   const isSeatUsageOverLimit =
     totalAvailableSeats > 0 && (model.total ?? 0) > totalAvailableSeats;
 

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  AutoComplete,
   Button,
   Card,
   DatePicker,
@@ -19,24 +18,24 @@ import {
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import {
-  useGetClientsQuery,
-  useGetOrganizationRequestsQuery,
-  useGetOrganizationServicesQuery,
-} from '../../../api/client-portal/client-portal-api';
+import { useGetClientsQuery } from '../../../api/client-portal/client-portal-api';
+import { useGetBillableChangeRequestsQuery } from '../../../api/client-portal/portal-workflow-api';
+import { ChangeRequestPicker } from '../../../components/client-portal/v2/ChangeRequestPicker';
+import { portalPaths } from '../portal-paths';
 import { useCreateQuoteMutation } from '../../../api/client-portal/client-portal-quotes-api';
 import type { ClientPortalQuoteDetails } from '../../../api/client-portal/client-portal-quotes-api';
 import { CURRENCY_OPTIONS, DEFAULT_CURRENCY, getCurrencySymbol } from '../../../shared/currencies';
 import QuotePreviewModal from './quote-preview-modal';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   computeInvoiceTotals,
   formatMoney,
   getLineAmount,
   getQuoteDownloadUrl,
-  isInvoiceableRequestStatus,
   type InvoiceDiscountType,
 } from './quotes-list-helpers';
 import '../invoices/invoices.css';
+import { RichTextField } from '../shared/rich-text/RichTextField';
 
 const QUOTES_PATH = '/worklenz/client-portal/quotes';
 
@@ -45,16 +44,6 @@ interface LineItemRow {
   description: string;
   quantity: number;
   rate: number;
-}
-
-interface RequestRow {
-  id: string;
-  req_no: string;
-  status: string;
-  service_name?: string;
-  client_id?: string;
-  client_name?: string;
-  request_data?: { title?: string };
 }
 
 const newKey = () => Math.random().toString(36).slice(2, 9);
@@ -66,8 +55,9 @@ const emptyLine = (description = ''): LineItemRow => ({
 });
 
 /**
- * Create a quote (quotes/create), opened as a modal over the list. `?requestId=` pre-links a
- * request and `?clientId=` pre-selects / narrows to one client.
+ * Create a quote (quotes/create), opened as a modal over the list. `?changeRequestId=` starts it from a
+ * change request (its title becomes the first line, quantity 1, rate 0) and `?clientId=` pre-selects /
+ * narrows to one client.
  */
 const CreateQuoteModal = () => {
   const { t } = useTranslation('client-portal-quotes');
@@ -75,10 +65,10 @@ const CreateQuoteModal = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const requestIdParam = searchParams.get('requestId');
+  const changeRequestIdParam = searchParams.get('changeRequestId');
   const clientIdParam = searchParams.get('clientId');
 
-  const [requestId, setRequestId] = useState<string | null>(requestIdParam);
+  const [changeRequestId, setChangeRequestId] = useState<string | null>(changeRequestIdParam);
   const [clientId, setClientId] = useState<string | null>(clientIdParam);
   const [projectName, setProjectName] = useState('');
   const [lineItems, setLineItems] = useState<LineItemRow[]>([emptyLine()]);
@@ -98,58 +88,42 @@ const CreateQuoteModal = () => {
     else navigate(QUOTES_PATH);
   };
 
-  const { data: requestsData, isLoading: isLoadingRequests } = useGetOrganizationRequestsQuery({
-    limit: 100,
-    client_id: clientIdParam ?? undefined,
+  // Only approved, in-progress and completed change requests can be quoted (and the list is narrowed to the client).
+  const { data: changeRequestsData, isLoading: isLoadingChangeRequests } = useGetBillableChangeRequestsQuery({
+    organization_id: clientIdParam ?? undefined,
   });
   const { data: clientsData, isLoading: isLoadingClients } = useGetClientsQuery({ limit: 100 });
-  const { data: servicesData } = useGetOrganizationServicesQuery({ limit: 100 });
 
   const [createQuote] = useCreateQuoteMutation();
 
-  // Only requests that staff have started acting on can be quoted (same rule as invoicing).
-  const requests: RequestRow[] = useMemo(
-    () =>
-      ((requestsData?.body?.data ?? []) as RequestRow[]).filter(request =>
-        isInvoiceableRequestStatus(request.status)
-      ),
-    [requestsData]
-  );
-  const selectedRequest = requests.find(request => request.id === requestId);
+  const changeRequests = useMemo(() => changeRequestsData?.body ?? [], [changeRequestsData]);
+  const selectedChangeRequest = changeRequests.find(item => item.id === changeRequestId);
   const clients = clientsData?.body?.clients ?? [];
-  const selectedClient = clients.find(client => client.id === (selectedRequest?.client_id ?? clientId));
+  const selectedClient = clients.find(
+    client => client.id === (selectedChangeRequest?.organization_id ?? clientId)
+  );
 
-  // Suggestions only: typing any other name is fine, it just won't match an existing service.
-  const serviceOptions = useMemo(() => {
-    const names = (servicesData?.body?.data ?? []) as Array<{ name?: string }>;
-    const uniqueNames = Array.from(new Set(names.map(service => service.name?.trim()).filter(Boolean)));
-    return uniqueNames.map(name => ({ value: name as string, label: name as string }));
-  }, [servicesData]);
-
-  // Prefill from a linked request: project + one line for its service.
-  const applyRequest = (request: RequestRow) => {
-    setProjectName(request.request_data?.title || request.service_name || '');
-    setLineItems([emptyLine(request.service_name || request.request_data?.title || '')]);
+  // Prefill from a change request: its title is the project and the first line (quantity 1, rate 0).
+  const applyChangeRequest = (title: string) => {
+    setProjectName(title);
+    setLineItems([emptyLine(title)]);
   };
 
   useEffect(() => {
-    if (hasPrefilled || !requestIdParam || !selectedRequest) return;
+    if (hasPrefilled || !changeRequestIdParam || !selectedChangeRequest) return;
     setHasPrefilled(true);
-    applyRequest(selectedRequest);
-  }, [hasPrefilled, requestIdParam, selectedRequest]);
+    applyChangeRequest(selectedChangeRequest.title);
+  }, [hasPrefilled, changeRequestIdParam, selectedChangeRequest]);
 
-  const handlePickRequest = (value: string | undefined) => {
-    if (!value) {
+  const handlePickChangeRequest = (changeRequest: { id: string; title: string; organization_id: string } | null) => {
+    if (!changeRequest) {
       // Clearing the request reverts to picking the client by hand.
-      setRequestId(null);
+      setChangeRequestId(null);
       return;
     }
-    setRequestId(value);
-    const request = requests.find(item => item.id === value);
-    if (request) {
-      applyRequest(request);
-      setClientId(request.client_id ?? null);
-    }
+    setChangeRequestId(changeRequest.id);
+    applyChangeRequest(changeRequest.title);
+    setClientId(changeRequest.organization_id);
   };
 
   const totals = useMemo(
@@ -246,7 +220,7 @@ const CreateQuoteModal = () => {
 
   // Validates, returning a translated error or null.
   const validate = (): string | null => {
-    if (!requestId && !clientId) {
+    if (!changeRequestId && !clientId) {
       return t('selectClientRequired', { defaultValue: 'Please select a client' });
     }
     if (validLineItems.length === 0) {
@@ -267,8 +241,8 @@ const CreateQuoteModal = () => {
     setSavingAs(mode);
     try {
       const result = await createQuote({
-        requestId: requestId ?? undefined,
-        clientId: requestId ? undefined : (clientId ?? undefined),
+        changeRequestId: changeRequestId ?? undefined,
+        clientId: changeRequestId ? undefined : (clientId ?? undefined),
         projectName: projectName.trim() || undefined,
         currency,
         validUntil: validUntil ? validUntil.format('YYYY-MM-DD') : null,
@@ -284,7 +258,8 @@ const CreateQuoteModal = () => {
       if (mode === 'sent' && result.body?.id) {
         window.open(getQuoteDownloadUrl(result.body.id), '_blank', 'noopener,noreferrer');
       }
-      navigate(QUOTES_PATH);
+      // Started from a change request: go back to it, where the new quote now shows under Linked work.
+      navigate(changeRequestIdParam ? portalPaths.changeRequest(changeRequestIdParam) : QUOTES_PATH);
     } catch (err) {
       const serverMessage = (err as { data?: { message?: string } })?.data?.message;
       message.error(
@@ -314,15 +289,17 @@ const CreateQuoteModal = () => {
     discountType,
     discountValue,
     discountAmount: totals.discountAmount,
-    request: selectedRequest
+    request: null,
+    changeRequest: selectedChangeRequest
       ? {
-          id: selectedRequest.id,
-          requestNumber: selectedRequest.req_no,
-          service: { id: '', name: selectedRequest.service_name ?? '' },
+          id: selectedChangeRequest.id,
+          number: selectedChangeRequest.cr_no,
+          title: selectedChangeRequest.title,
+          status: selectedChangeRequest.status,
         }
       : null,
     client: {
-      name: selectedRequest?.client_name ?? selectedClient?.name ?? '',
+      name: selectedClient?.name ?? '',
       companyName: selectedClient?.company_name,
       email: selectedClient?.email,
       phone: selectedClient?.phone,
@@ -330,11 +307,6 @@ const CreateQuoteModal = () => {
     },
     createdBy: null,
   };
-
-  const requestOptions = requests.map(request => ({
-    value: request.id,
-    label: `${request.req_no} - ${request.request_data?.title || request.service_name} (${request.client_name})`,
-  }));
 
   return (
     <>
@@ -370,29 +342,13 @@ const CreateQuoteModal = () => {
         <div className="invoices-columns">
           <div className="invoices-column-main">
             <Flex vertical gap={16}>
-              <Card size="small" title={t('selectRequestLabel', { defaultValue: 'Select Request' })}>
-                <Select
-                  showSearch
-                  allowClear
-                  style={{ width: '100%' }}
-                  loading={isLoadingRequests}
-                  value={requestId ?? undefined}
-                  options={requestOptions}
-                  optionFilterProp="label"
-                  placeholder={t('searchRequestPlaceholder', {
-                    defaultValue: 'Search by request number or title',
-                  })}
-                  notFoundContent={t('noRequestsFound', { defaultValue: 'No requests found' })}
-                  onChange={value => handlePickRequest(value)}
-                  aria-label={t('selectRequestLabel', { defaultValue: 'Select Request' })}
-                />
-                <div className="invoices-help" style={{ color: token.colorTextSecondary, marginTop: 6 }}>
-                  {t('selectRequestHelp', {
-                    defaultValue:
-                      "Pending and rejected requests can't be quoted. Leave blank to create a standalone quote.",
-                  })}
-                </div>
-              </Card>
+              <ChangeRequestPicker
+                document="quote"
+                changeRequests={changeRequests}
+                isLoading={isLoadingChangeRequests}
+                value={changeRequestId}
+                onChange={handlePickChangeRequest}
+              />
 
               <Card size="small" title={t('billingDetails', { defaultValue: 'Billing Details' })}>
                 <Flex vertical gap={12}>
@@ -400,8 +356,10 @@ const CreateQuoteModal = () => {
                     <div className="invoices-detail-label">
                       {t('clientLabel', { defaultValue: 'Client' })}
                     </div>
-                    {selectedRequest ? (
-                      <Typography.Text strong>{selectedRequest.client_name}</Typography.Text>
+                    {selectedChangeRequest ? (
+                      <Typography.Text strong>
+                        {decodeHtmlEntities(selectedClient?.name) ?? ''}
+                      </Typography.Text>
                     ) : (
                       <Select
                         showSearch
@@ -410,7 +368,10 @@ const CreateQuoteModal = () => {
                         value={clientId ?? undefined}
                         optionFilterProp="label"
                         placeholder={t('selectClientPlaceholder', { defaultValue: 'Select a client' })}
-                        options={clients.map(client => ({ value: client.id, label: client.name }))}
+                        options={clients.map(client => ({
+                          value: client.id,
+                          label: decodeHtmlEntities(client.name),
+                        }))}
                         onChange={value => setClientId(value)}
                         aria-label={t('clientLabel', { defaultValue: 'Client' })}
                       />
@@ -420,16 +381,12 @@ const CreateQuoteModal = () => {
                     <div className="invoices-detail-label">
                       {t('projectLabel', { defaultValue: 'Project / Description' })}
                     </div>
-                    <AutoComplete
-                      style={{ width: '100%' }}
+                    <Input
                       value={projectName}
-                      options={serviceOptions}
-                      filterOption={(inputValue, option) =>
-                        (option?.value as string)?.toLowerCase().includes(inputValue.toLowerCase())
-                      }
-                      onChange={setProjectName}
+                      maxLength={255}
+                      onChange={event => setProjectName(event.target.value)}
                       placeholder={t('projectPlaceholder', {
-                        defaultValue: 'Select a service or type a custom name',
+                        defaultValue: 'Name the project or what this quote is for',
                       })}
                       aria-label={t('projectLabel', { defaultValue: 'Project / Description' })}
                     />
@@ -459,13 +416,17 @@ const CreateQuoteModal = () => {
               </Card>
 
               <Card size="small" title={t('notesLabel', { defaultValue: 'Notes' })}>
-                <Input.TextArea
-                  rows={3}
+                <RichTextField
                   value={notes}
-                  onChange={event => setNotes(event.target.value)}
+                  onChange={html => setNotes(html)}
                   placeholder={t('quoteNotesPlaceholder', {
                     defaultValue: 'Add validity terms, thank you message, or any additional notes...',
                   })}
+                  ariaLabel={t('quoteNotesPlaceholder', {
+                    defaultValue: 'Add validity terms, thank you message, or any additional notes...',
+                  })}
+                  tone="internal"
+                  toolbar="basic"
                 />
               </Card>
             </Flex>

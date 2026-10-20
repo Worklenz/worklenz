@@ -4,6 +4,7 @@ import { Button, Flex, Input, message, theme } from '@/shared/antd-imports';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import type { IHomeMention } from '@/api/home-page/home-page.api.service';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 /** The same ceiling the task drawer's comment box applies. */
 const MAX_COMMENT_LENGTH = 5000;
@@ -48,7 +49,7 @@ export const MentionReplyForm: React.FC<MentionReplyFormProps> = ({ mention, onC
         attachments: [],
       });
       if (!response.done) throw new Error(response.message);
-      message.success(t('mentions.replySent', { defaultValue: 'Reply added to “{{task}}”.', task: mention.task_name }));
+      message.success(t('mentions.replySent', { defaultValue: 'Reply added to “{{task}}”.', task: decodeHtmlEntities(mention.task_name) }));
       // Lets an open task drawer for this task show the new comment.
       document.dispatchEvent(new CustomEvent('task-comment-create', { detail: { taskId: mention.task_id } }));
       onClose();
@@ -76,7 +77,7 @@ export const MentionReplyForm: React.FC<MentionReplyFormProps> = ({ mention, onC
         }}
       />
       <span style={{ fontSize: 11, color: token.colorTextTertiary }}>
-        {t('mentions.replyHint', { defaultValue: 'Posted as a comment on “{{task}}”.', task: mention.task_name })}
+        {t('mentions.replyHint', { defaultValue: 'Posted as a comment on “{{task}}”.', task: decodeHtmlEntities(mention.task_name) })}
       </span>
       <Flex gap={8} justify="flex-end">
         <Button size="small" type="text" disabled={isSending} onClick={onClose}>

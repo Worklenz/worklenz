@@ -15,6 +15,7 @@ import {
   Tag,
   Tooltip,
   Typography,
+  SearchOutlined,
   theme,
 } from '@/shared/antd-imports';
 import type { TableProps } from '@/shared/antd-imports';
@@ -22,6 +23,7 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_reporting_progress_tracking } from '@/shared/worklenz-analytics-events';
 import { fromNow } from '@/utils/dateUtils';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { progressTrackingApiService } from '@/api/reporting/progress-tracking.api.service';
 import {
   DeliveryConfidenceFilter,
@@ -193,10 +195,10 @@ const ProgressTrackingPage = () => {
           type="button"
           className="block w-full truncate bg-transparent p-0 text-left font-semibold"
           style={{ color: token.colorText }}
-          title={record.name}
+          title={decodeHtmlEntities(record.name)}
           onClick={() => handleOpenInsights(record.id)}
         >
-          {record.name}
+          {decodeHtmlEntities(record.name)}
         </button>
       ),
     },
@@ -212,9 +214,10 @@ const ProgressTrackingPage = () => {
         if (!value) {
           return <Typography.Text type="secondary">—</Typography.Text>;
         }
+        const decoded = decodeHtmlEntities(value);
         return (
-          <Typography.Text ellipsis={{ tooltip: value }} style={{ color: token.colorText }}>
-            {value}
+          <Typography.Text ellipsis={{ tooltip: decoded }} style={{ color: token.colorText }}>
+            {decoded}
           </Typography.Text>
         );
       },
@@ -462,12 +465,22 @@ const ProgressTrackingPage = () => {
       <Card>
         <Flex gap={8} wrap="wrap" align="center" className="mb-4">
           <Input
+            prefix={
+              <SearchOutlined
+                style={{ color: token.colorTextTertiary }}
+              />
+            }
             allowClear
             value={searchInput}
             onChange={event => setSearchInput(event.target.value)}
             placeholder={t('searchPlaceholder', { defaultValue: 'Search project or client…' })}
             aria-label={t('searchLabel', { defaultValue: 'Search projects or clients' })}
             className="max-w-[280px]"
+            style={{
+              height: 32,
+              fontSize: 12,
+              borderRadius: 7,
+            }}
           />
           <Flex gap={6} wrap="wrap" role="group" aria-label={t('columnConfidence', { defaultValue: 'Delivery Confidence' })}>
             {chipItems.map(item => {
