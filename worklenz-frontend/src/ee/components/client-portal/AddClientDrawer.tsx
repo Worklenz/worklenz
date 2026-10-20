@@ -23,9 +23,6 @@ import {
 import { refreshCsrfToken } from '../../../api/api-client';
 import PhoneInput from '@/components/PhoneInput/PhoneInput';
 import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
-import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
-import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
 
 const getCreateClientErrorMessage = (
   errorMessage: string,
@@ -58,8 +55,6 @@ const AddClientDrawer = () => {
   );
 
   const dispatch = useAppDispatch();
-  const authService = useAuthService();
-  const hasBusinessAccess = hasBusinessFeatureAccess(authService.getCurrentSession());
   const [createClient, { isLoading }] = useCreateClientMutation();
   const [form] = Form.useForm();
   const [alertMessage, setAlertMessage] = useState<{
@@ -77,17 +72,6 @@ const AddClientDrawer = () => {
   }, [isOpen]);
 
   const handleFormSubmit = async (values: CreateClientRequest) => {
-    if (!hasBusinessAccess) {
-      dispatch(
-        showUpgradePrompt({
-          title: 'Clients',
-          description:
-            'Give clients a branded portal to track project progress. Available on the Business plan.',
-        })
-      );
-      return;
-    }
-
     try {
       await refreshCsrfToken();
       const result = await createClient({

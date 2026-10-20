@@ -63,6 +63,20 @@ export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean
 };
 
 /**
+ * Checks if the user can use the Client Portal.
+ *
+ * The Client Portal is available on every plan, including Free, so this only
+ * requires a signed-in session. It is deliberately separate from
+ * hasBusinessFeatureAccess(), which still gates the Business-only features
+ * (project finance, rate cards, Slack, etc.). Keeping a dedicated check gives
+ * one place to change if the portal is ever gated again. The backend mirrors
+ * this: the client-portal routes no longer require a Business plan.
+ */
+export const hasClientPortalAccess = (session: ILocalSession | null): boolean => {
+  return session !== null;
+};
+
+/**
  * Checks if user is on a business plan specifically
  */
 export const isBusinessPlan = (session: ILocalSession | null): boolean => {

@@ -6,7 +6,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@utils/themeWiseColor';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasClientPortalAccess } from '@/ee/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
@@ -32,7 +32,7 @@ const HomeInboxView: React.FC = () => {
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
-  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const hasClientChatAccess = hasClientPortalAccess(currentSession);
   const { trackAppSumoEvent } = useAppSumoTracking();
   const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
   const [activeTab, setActiveTab] = useState<InboxTab>('all');
@@ -69,12 +69,13 @@ const HomeInboxView: React.FC = () => {
     refetchClients,
   } = useInboxConversations();
 
-  // Client chat is a Business-plan feature — keep it out of every list (not
-  // just the "Clients" tab) so a gated user can't reach it via "All" either.
-  const effectiveClientConversations = hasBusinessAccess ? clientConversations : [];
-  const effectiveAllConversations = hasBusinessAccess ? allConversations : projectConversations;
-  const effectiveClientBadge = hasBusinessAccess ? clientBadge : 0;
-  const isClientsTabLocked = activeTab === 'clients' && !hasBusinessAccess;
+  // Client chat is part of the Client Portal, which is available on all plans.
+  // If access is ever withheld, keep it out of every list (not just the
+  // "Clients" tab) so a gated user can't reach it via "All" either.
+  const effectiveClientConversations = hasClientChatAccess ? clientConversations : [];
+  const effectiveAllConversations = hasClientChatAccess ? allConversations : projectConversations;
+  const effectiveClientBadge = hasClientChatAccess ? clientBadge : 0;
+  const isClientsTabLocked = activeTab === 'clients' && !hasClientChatAccess;
 
   const visibleConversations = useMemo(() => {
     if (activeTab === 'projects') return projectConversations;
@@ -90,7 +91,7 @@ const HomeInboxView: React.FC = () => {
 
   // "New chat" browses whichever list matches the active tab; "All" defaults
   // to projects (its prior behavior) since it isn't a client-specific view.
-  const newChatMode: NewChatMode = activeTab === 'clients' && hasBusinessAccess ? 'client' : 'project';
+  const newChatMode: NewChatMode = activeTab === 'clients' && hasClientChatAccess ? 'client' : 'project';
 
   useEffect(() => {
     if (isClientsTabLocked && isAppSumoUser) {
@@ -148,7 +149,7 @@ const HomeInboxView: React.FC = () => {
 
   const tabBtn = (tab: { key: InboxTab; label: string; badge: number }, isLast: boolean) => {
     const isActive = activeTab === tab.key;
-    const isLocked = tab.key === 'clients' && !hasBusinessAccess;
+    const isLocked = tab.key === 'clients' && !hasClientChatAccess;
     const button = (
       <button
         key={tab.key}

@@ -10,7 +10,6 @@ import safeControllerFunction from "../../shared/safe-controller-function";
 import projectManagerValidator from "../../middlewares/validators/project-manager-validator";
 import chatIdParamValidator from "../../middlewares/validators/chat-id-param-validator";
 import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
-import { requireBusinessPlan } from "../../ee/middlewares/subscription-middleware";
 
 const clientsApiRouter = express.Router();
 
@@ -23,10 +22,8 @@ clientsApiRouter.get("/:id", teamOwnerOrAdminValidator, idParamValidator, safeCo
 clientsApiRouter.put("/:id", teamOwnerOrAdminValidator, clientsBodyValidator, idParamValidator, safeControllerFunction(ClientsController.update));
 clientsApiRouter.delete("/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(ClientsController.deleteById));
 
-// Client Portal is a Business Edition feature — every /portal/* route below requires
-// the requesting team to hold a Business plan. The plain client CRUD routes above stay free.
-clientsApiRouter.use("/portal", requireBusinessPlan);
-clientsApiRouter.use("/:clientId/invoices", requireBusinessPlan);
+// Client Portal is available on every plan (including Free), so the /portal/* routes
+// below no longer require a Business plan.
 
 // Organization-side Client Portal Request Management
 clientsApiRouter.get("/portal/requests", safeControllerFunction(ClientsController.getClientRequests));
