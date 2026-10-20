@@ -27,6 +27,7 @@ import { isInvoiceOverdue, normalizePaymentStatus } from '../invoices-list-helpe
 import '../invoices.css';
 import { RichTextView } from '../../shared/rich-text/RichTextView';
 import { richTextToSafeHtml } from '../../shared/rich-text/richText';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Title, Text } = Typography;
 
@@ -452,7 +453,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
             <div class="meta-section">
               <div class="bill-to">
                 <p class="section-label">${t('billedTo')}</p>
-                <p class="bill-to-name">${invoice.client?.name || '-'}</p>
+                <p class="bill-to-name">${decodeHtmlEntities(invoice.client?.name) || '-'}</p>
                 <div class="bill-to-details">
                   ${clientAddressParts.map(part => `<p>${part}</p>`).join('')}
                 </div>
@@ -815,7 +816,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
             </Text>
             <div style={{ marginTop: 8 }}>
               <Text strong style={{ fontSize: 14, display: 'block' }}>
-                {invoice.client?.name || '-'}
+                {decodeHtmlEntities(invoice.client?.name) || '-'}
               </Text>
               {invoice.client?.companyName && (
                 <Text style={{ display: 'block' }}>{invoice.client.companyName}</Text>

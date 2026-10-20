@@ -10,6 +10,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { Alert, Button, Card, Col, Descriptions, Flex, Form, Modal, Result, Row, Timeline, Typography, message, theme } from '@/shared/antd-imports';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
 import {
   useCancelApprovalMutation,
@@ -134,7 +135,7 @@ export const ApprovalDetailModal = () => {
             {item.title}
           </Typography.Title>
           <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 14 }}>
-            {item.organization_name} · {item.project_name}
+            {item.organization_name} · {decodeHtmlEntities(item.project_name)}
           </Typography.Text>
 
           <Card size="small" style={{ marginBottom: 12 }} title={t('detail.linkedItem', { defaultValue: 'Linked item' })}>

@@ -23,6 +23,7 @@ import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
 import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
 import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { themeWiseColor } from '@/utils/themeWiseColor';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import PlannerMultiFilterDropdown from '@/features/schedule/PlannerMultiFilterDropdown';
 import {
   useFetchProjectsTimelineQuery,
@@ -167,7 +168,7 @@ const TimelineProjectInfoRow: React.FC<TimelineRowProps> = ({
           accidentally navigates away. */}
       <div
         onClick={goToProject}
-        title={project.name}
+        title={decodeHtmlEntities(project.name)}
         style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, cursor: 'pointer', flex: 1 }}
         onMouseEnter={e => {
           const nameEl = e.currentTarget.querySelector('[data-project-name]') as HTMLDivElement | null;
@@ -184,7 +185,7 @@ const TimelineProjectInfoRow: React.FC<TimelineRowProps> = ({
             data-project-name
             style={{ fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
           >
-            {project.name}
+            {decodeHtmlEntities(project.name)}
           </div>
           <div style={{ fontSize: 12, color: token.colorTextSecondary }}>
             {hasDates ? `${startDateStr} - ${endDateStr}` : t('noDatesSet', { defaultValue: 'No dates set' })}
@@ -365,7 +366,7 @@ const TimelineProjectBarRow: React.FC<TimelineBarRowProps> = ({
   // label/value layout of Schedule's own task tooltip (opacity-dimmed label, plain value).
   const projectTooltip = (
     <div style={{ minWidth: 170 }}>
-      <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>{project.name}</div>
+      <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>{decodeHtmlEntities(project.name)}</div>
       {isOverdue && (
         <div style={{ fontSize: 12, fontWeight: 700, color: token.colorError, marginBottom: 6 }}>
           ⚠ {t('overdue', { defaultValue: 'Overdue' })}
@@ -730,7 +731,7 @@ const TimelineTaskInfoRow: React.FC<TimelineTaskInfoRowProps> = ({ task, borderC
   return (
     <div
       onClick={onClick}
-      title={task.name}
+      title={decodeHtmlEntities(task.name)}
       style={{
         height: MAIN_ROW_HEIGHT,
         minHeight: MAIN_ROW_HEIGHT,
@@ -755,7 +756,7 @@ const TimelineTaskInfoRow: React.FC<TimelineTaskInfoRowProps> = ({ task, borderC
           opacity: task.is_done_status ? 0.6 : 1,
         }}
       >
-        {task.name}
+        {decodeHtmlEntities(task.name)}
       </div>
       {task.subtask_count > 0 && (
         <span style={{ fontSize: 11, opacity: 0.5, flexShrink: 0 }}>
@@ -933,7 +934,7 @@ const TimelineTaskBarRow: React.FC<TimelineTaskBarRowProps> = ({
         <Tooltip
           title={
             <div style={{ minWidth: 170 }}>
-              <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>{task.name}</div>
+              <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>{decodeHtmlEntities(task.name)}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12 }}>
                 <div>
                   <span style={{ opacity: 0.65 }}>{t('dates', { defaultValue: 'Dates' })}: </span>
@@ -1570,7 +1571,7 @@ const PlannerTimelineView: React.FC = () => {
       <Flex align="center" gap={8} wrap="wrap" style={{ padding: '10px 12px' }}>
         <PlannerMultiFilterDropdown
           label={t('allProjects', { defaultValue: 'Projects' })}
-          options={allProjects.map(p => ({ value: p.id, label: p.name || '' }))}
+          options={allProjects.map(p => ({ value: p.id, label: decodeHtmlEntities(p.name) || '' }))}
           selected={filterProjects}
           onChange={setFilterProjects}
         />

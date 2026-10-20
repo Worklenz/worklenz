@@ -16,6 +16,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import './finance-expenses.css';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import Avatars from '@/components/avatars/avatars';
 import {
   financeOverviewApiService,
@@ -135,7 +136,7 @@ const FinanceExpensesPage: React.FC = () => {
             }}
           />
           <Typography.Text style={{ fontWeight: 500 }} ellipsis>
-            {record.project_name}
+            {decodeHtmlEntities(record.project_name)}
           </Typography.Text>
         </div>
       ),
@@ -155,7 +156,7 @@ const FinanceExpensesPage: React.FC = () => {
           }}
         >
           <Typography.Text ellipsis style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
-            {record.task_name}
+            {decodeHtmlEntities(record.task_name)}
           </Typography.Text>
           <div className="expense-row-action">
             <Tooltip title={t('expenses.openTask')} placement="right">

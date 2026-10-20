@@ -120,8 +120,16 @@ export class NotificationsService {
   }
 
   public static sendNotification(receiver: IReceiver): void {
+    const documentId = receiver.message_params?.documentId;
     const url =
-      receiver.url ?? (receiver.project_id ? `/worklenz/projects/${receiver.project_id}` : null);
+      receiver.url ??
+      (receiver.project_id
+        ? receiver.notification_type_key === "PROJECT_DOCUMENT_MENTION" &&
+          typeof documentId === "string" &&
+          documentId
+          ? `/worklenz/projects/${receiver.project_id}?tab=docs&doc=${encodeURIComponent(documentId)}`
+          : `/worklenz/projects/${receiver.project_id}`
+        : null);
     const notification = new WorklenzNotification(
       receiver.team,
       receiver.team_id,

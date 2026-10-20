@@ -54,10 +54,21 @@ type WhatsNewReleaseModalProps = {
   release: IWhatsNewRelease | null;
   loading?: boolean;
   notFound?: boolean;
+  // Hide the "New" badge for a release that is no longer inside the 7-day
+  // window (Settings > Help can open older releases). Defaults to shown so the
+  // nav tag and notification drawer callers are unchanged.
+  showNewBadge?: boolean;
   onClose: () => void;
 };
 
-const WhatsNewReleaseModal = ({ open, release, loading, notFound, onClose }: WhatsNewReleaseModalProps) => {
+const WhatsNewReleaseModal = ({
+  open,
+  release,
+  loading,
+  notFound,
+  showNewBadge = true,
+  onClose,
+}: WhatsNewReleaseModalProps) => {
   const { t } = useTranslation('navbar');
 
   return (
@@ -77,16 +88,16 @@ const WhatsNewReleaseModal = ({ open, release, loading, notFound, onClose }: Wha
       title={
         release ? (
           <div>
-            <Tag
-              style={{
-                backgroundColor: '#52c41a',
-                color: '#fff',
-                border: 'none',
-                marginInlineEnd: 8,
-              }}
-            >
-              {t('whatsNew.newBadge', { defaultValue: 'New' })}
-            </Tag>
+            {showNewBadge && (
+              <Tag
+                color="success"
+                style={{
+                  marginInlineEnd: 8,
+                }}
+              >
+                {t('whatsNew.newBadge', { defaultValue: 'New' })}
+              </Tag>
+            )}
             {t('whatsNew.modalHeading', {
               defaultValue: "What's New — {{title}}",
               title: release.title,

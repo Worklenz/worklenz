@@ -13,6 +13,7 @@ import {
 } from './quotes-list-helpers';
 import '../invoices/invoices.css';
 import { RichTextView } from '../shared/rich-text/RichTextView';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 // The quote renders as a sheet of paper, so it keeps paper colours in both app themes: what is
 // previewed is what prints and downloads.
@@ -195,7 +196,9 @@ const QuotePreviewModal = ({ open, onClose, quote }: QuotePreviewModalProps) => 
         >
           <div>
             <div style={labelStyle}>{t('preparedFor', { defaultValue: 'Prepared for' })}</div>
-            <div style={{ fontWeight: 700, fontSize: 14 }}>{quote.client?.name || '-'}</div>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>
+              {decodeHtmlEntities(quote.client?.name) || '-'}
+            </div>
             {[quote.client?.companyName, quote.client?.address, quote.client?.email, quote.client?.phone]
               .filter(Boolean)
               .map(line => (

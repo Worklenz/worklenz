@@ -18,6 +18,7 @@ import { evt_project_board_column_setting_click } from '@/shared/worklenz-analyt
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   deleteStatusToggleDrawer,
   seletedStatusCategory,
@@ -484,7 +485,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
           label: (
             <div className="flex items-center gap-2">
               <Badge color={category.color_code} />
-              <span>{category.name}</span>
+              <span>{decodeHtmlEntities(category.name)}</span>
             </div>
           ),
           onClick: (info: any) => {

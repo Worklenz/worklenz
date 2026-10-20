@@ -15,6 +15,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';
 import './project-category-cell.css';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   addCategory,
@@ -77,7 +78,7 @@ const ProjectCategoryCell = ({
     key: category.id as string,
     label: (
       <Typography.Text style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <Badge color={category.color_code} /> {category.name}
+        <Badge color={category.color_code} /> {decodeHtmlEntities(category.name)}
       </Typography.Text>
     ),
   }));
@@ -245,7 +246,7 @@ const ProjectCategoryCell = ({
         }}
       >
         <span className="category-pill-text">
-          {selectedCategory.id ? selectedCategory.name : t('setCategoryText')}
+          {selectedCategory.id ? decodeHtmlEntities(selectedCategory.name) : t('setCategoryText')}
         </span>
         <DownOutlined className="category-pill-icon" />
       </div>

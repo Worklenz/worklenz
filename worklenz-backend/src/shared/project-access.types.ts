@@ -24,6 +24,7 @@ export interface IProjectPermissions {
   insights: boolean;
   files: boolean;
   updates: boolean;
+  docs: boolean;
   roadmap: boolean;
   workload: boolean;
 }

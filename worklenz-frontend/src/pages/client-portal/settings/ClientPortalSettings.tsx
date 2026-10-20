@@ -1,5 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuthService } from '@/hooks/useAuth';
+import { canUseFeature } from '@/utils/subscription-utils';
 import { Alert, Button, Flex, Typography, message, theme } from '@/shared/antd-imports';
 import {
   BankOutlined,
@@ -454,7 +456,24 @@ const ClientPortalSettings = () => {
           {section === 'company' && (
             <CompanyDetailsSection settings={settings} onChange={handleSettingsChange} />
           )}
+          {section === 'branding' && !canBrand && (
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={t('brandingBusinessOnly', {
+                defaultValue:
+                  'Portal logo, colors and removing the Worklenz footer are available on the Business plan.',
+              })}
+            />
+          )}
           {section === 'branding' && (
+            <div
+              style={canBrand ? undefined : { pointerEvents: 'none', opacity: 0.55 }}
+              aria-disabled={!canBrand}
+              // React 18 only forwards `inert` as a string attribute; it blocks keyboard focus too.
+              {...(canBrand ? {} : { inert: '' as unknown as boolean })}
+            >
             <BrandingSection
               settings={settings}
               onChange={handleSettingsChange}
@@ -469,6 +488,7 @@ const ClientPortalSettings = () => {
               onCancelLogoRemoval={handleCancelLogoRemoval}
               onUseOrganizationLogo={handleUseOrganizationLogo}
             />
+            </div>
           )}
           {section === 'invoiceTemplate' && (
             <InvoiceTemplateSection settings={settings} onChange={handleSettingsChange} />

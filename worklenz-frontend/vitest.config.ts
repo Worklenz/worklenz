@@ -8,6 +8,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    server: {
+      deps: {
+        // Transform Tiptap's Tippy import with Vite's CommonJS interoperability.
+        inline: [/@tiptap\//],
+      },
+    },
     setupFiles: ['./src/test/setup.ts'],
     css: true,
     reporters: ['verbose'],

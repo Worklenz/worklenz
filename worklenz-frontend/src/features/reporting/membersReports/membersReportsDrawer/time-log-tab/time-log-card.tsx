@@ -10,6 +10,7 @@ import {
 import { ISingleMemberLogs } from '@/types/reporting/reporting.types';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { setProjectId } from '@/features/project/project.slice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 type TimeLogCardProps = {
   data: ISingleMemberLogs;
@@ -53,7 +54,7 @@ const TimeLogCard = ({ data }: TimeLogCardProps) => {
                 onClick={() => handleUpdateTaskDrawer(log.task_id, log.project_id)}
               >
                 {t('loggedText')} <strong>{log.time_spent_string}</strong> {t('forText')}{' '}
-                <strong>{log.task_name}</strong> {t('inText')} <strong>{log.project_name}</strong>{' '}
+                <strong>{decodeHtmlEntities(log.task_name)}</strong> {t('inText')} <strong>{decodeHtmlEntities(log.project_name)}</strong>{' '}
                 <Tag>{log.task_key}</Tag>
               </Typography.Text>
             </Timeline.Item>

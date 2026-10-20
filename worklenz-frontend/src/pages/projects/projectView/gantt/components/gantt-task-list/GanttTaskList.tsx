@@ -22,6 +22,7 @@ import {
 } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { getUserSession } from '@/utils/session-helper';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GanttTask, GanttViewMode, GanttGroupingMode } from '../../types/gantt-types';
@@ -420,9 +421,9 @@ const TaskRow: React.FC<
                         : 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors'
                       }`}
                     onClick={!isPhase ? handleTaskNameClick : undefined}
-                    title={task.name}
+                    title={decodeHtmlEntities(task.name)}
                   >
-                    {task.name}
+                    {decodeHtmlEntities(task.name)}
                   </span>
                 </div>
               </div>

@@ -110,6 +110,7 @@
   "previewInvoiceSampleText": "USD 2.500,00 · fällig in 6 Tagen",
   "previewViewTasksButton": "Meine Aufgaben anzeigen",
   "brandingTitle": "Branding",
+  "brandingBusinessOnly": "Portal-Logo, Farben und das Ausblenden der Worklenz-Fußzeile sind im Business-Tarif verfügbar.",
   "invoiceTemplateTitle": "Rechnungsvorlage",
   "invoiceTemplateDescription": "Legen Sie fest, wie Rechnungen beim Herunterladen oder in der Vorschau für Ihr Team und Ihre Kunden aussehen.",
   "invoiceMoreCustomizationTitle": "Weitere Anpassungen folgen in Kürze",

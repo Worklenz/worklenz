@@ -54,6 +54,7 @@ export interface Task {
   comments_count?: number;
   attachments_count?: number;
   attachments?: ITaskAttachmentViewModel[];
+  latest_comment_id?: string | null;
   latest_comment?: string | null;
   latest_comment_at?: string | null;
   latest_comment_author?: string | null;

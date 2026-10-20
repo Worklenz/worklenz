@@ -1,6 +1,7 @@
 import React from 'react';
 import { Drawer, Empty, Typography, List } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { RoadmapTasksResponse } from '../../services/roadmap-api.service';
 
 interface UnscheduledTasksDrawerProps {
@@ -49,7 +50,7 @@ const UnscheduledTasksDrawer: React.FC<UnscheduledTasksDrawerProps> = ({
                   className="w-full rounded-lg px-3 py-3 bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 shadow-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-800 transition"
                   onClick={() => onTaskAdd(task)}
                 >
-                  <div className="font-medium">{task.name}</div>
+                  <div className="font-medium">{decodeHtmlEntities(task.name)}</div>
                 </div>
               </List.Item>
             )}

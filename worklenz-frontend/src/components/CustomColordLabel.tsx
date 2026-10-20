@@ -2,6 +2,7 @@ import React from 'react';
 import { Tooltip } from '@/shared/antd-imports';
 import { Label } from '@/types/task-management.types';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface CustomColordLabelProps {
   label: Label | ITaskLabel;
@@ -31,9 +32,10 @@ const CustomColordLabel = React.forwardRef<HTMLSpanElement, CustomColordLabelPro
     };
 
     const textColor = getTextColor(backgroundColor);
+    const decodedName = decodeHtmlEntities(label.name);
 
     return (
-      <Tooltip title={label.name}>
+      <Tooltip title={decodedName}>
         <span
           ref={ref}
           className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium shrink-0"
@@ -52,7 +54,7 @@ const CustomColordLabel = React.forwardRef<HTMLSpanElement, CustomColordLabelPro
               whiteSpace: 'nowrap',
             }}
           >
-            {label.name}
+            {decodedName}
           </span>
         </span>
       </Tooltip>

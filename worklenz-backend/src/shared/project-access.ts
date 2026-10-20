@@ -46,6 +46,7 @@ const DENIED_PERMISSIONS: IProjectPermissions = {
   insights: false,
   files: false,
   updates: false,
+  docs: false,
   roadmap: false,
   workload: false,
 };
@@ -74,6 +75,7 @@ const orPermissions = (
   insights: a.insights || b.insights,
   files: a.files || b.files,
   updates: a.updates || b.updates,
+  docs: a.docs || b.docs,
   roadmap: a.roadmap || b.roadmap,
   workload: a.workload || b.workload,
 });
@@ -99,6 +101,7 @@ const adminPermissions = (): IProjectPermissions => ({
   insights: true,
   files: true,
   updates: true,
+  docs: true,
   roadmap: true,
   workload: true,
 });
@@ -129,6 +132,7 @@ const projectManagerPermissions = (
   insights: true,
   files: true,
   updates: true,
+  docs: true,
   roadmap: true,
   workload: true,
 });
@@ -157,6 +161,7 @@ const teamLeadPermissions = (): IProjectPermissions => ({
   insights: true,
   files: true,
   updates: true,
+  docs: true,
   roadmap: true,
   workload: true,
 });
@@ -169,6 +174,7 @@ const memberPermissions = (): IProjectPermissions => ({
   insights: true,
   files: true,
   updates: true,
+  docs: true,
   roadmap: true,
   workload: true,
 });

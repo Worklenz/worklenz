@@ -122,11 +122,18 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
   const maxAnnualSavings = Math.max(0, ...groups.map(group => annualSavingsPercent(group) ?? 0));
 
   const [frequency, setFrequency] = useState<PricingFrequency>('monthly');
-  const [seats, setSeats] = useState<number>(activeUsers);
+  // Seats already paid for on a Paddle Billing subscription; the stepper starts there.
+  const purchasedSeats = data.has_billing_subscription ? billingInfo?.total_seats || 0 : 0;
+  const [seats, setSeats] = useState<number>(Math.max(activeUsers, purchasedSeats));
   // Billing info can arrive after this mounts: never leave the seat count below the team's usage.
   useEffect(() => {
     setSeats(current => Math.max(current, activeUsers));
   }, [activeUsers]);
+  // Once the purchased seats are known, start from them (until the user edits the count).
+  const [seatsEdited, setSeatsEdited] = useState(false);
+  useEffect(() => {
+    if (!seatsEdited && purchasedSeats) setSeats(Math.max(activeUsers, purchasedSeats));
+  }, [purchasedSeats, activeUsers, seatsEdited]);
   const [expansionSeats, setExpansionSeats] = useState<number>(1);
   const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
   const [switchingToFree, setSwitchingToFree] = useState(false);
@@ -135,6 +142,15 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
   const exceedsFreeLimit = activeUsers > FREE_USER_LIMIT;
   // AppSumo customers keep their codes' plan, so a Free downgrade is not offered to them.
   const showFreeCard = !data.has_ltd_codes;
+  // The team's current plan, in either billing period, gets the highlight; "Most popular" only
+  // takes it when no listed plan is the current one.
+  const currentGroupKey =
+    groups.find(
+      group =>
+        !!billingInfo?.plan_id &&
+        (group.monthly?.id === billingInfo.plan_id || group.annual?.id === billingInfo.plan_id)
+    )?.key ?? null;
+  const hasCurrentCard = currentGroupKey !== null || isFreeUser;
   const cardCount = groups.length + 1 + (showFreeCard ? 1 : 0);
   const cardColumns = cardCount >= 5 ? 8 : cardCount === 4 ? 6 : 8;
 
@@ -180,35 +196,44 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
     }, POST_CHECKOUT_REFRESH_DELAY_MS);
   };
 
-  const handleCheckoutEvent = (plan: IPerUserPlan, seatCount: number) => (event: ILegacyCheckoutEvent) => {
-    switch (event.event) {
-      case 'Checkout.Loaded':
-        setBusyPlanId(null);
-        break;
-      case 'Checkout.Complete':
-        finishCheckout(plan, seatCount);
-        break;
-      case 'Checkout.Close':
-        setBusyPlanId(null);
-        trackMixpanelEvent(MixpanelBillingEvents.CHECKOUT_ABANDONED, trackingProps(plan, seatCount));
-        break;
-      case 'Checkout.Error':
-        setBusyPlanId(null);
-        message.error(t('messages.checkoutError', { message: event.error?.message ?? '' }));
-        trackMixpanelEvent(MixpanelBillingEvents.CHECKOUT_FAILED, {
-          ...trackingProps(plan, seatCount),
-          error: event.error?.message,
-        });
-        logger.error('Paddle Billing checkout error', event.error);
-        break;
-    }
-  };
+  const handleCheckoutEvent =
+    (plan: IPerUserPlan, seatCount: number) => (event: ILegacyCheckoutEvent) => {
+      switch (event.event) {
+        case 'Checkout.Loaded':
+          setBusyPlanId(null);
+          break;
+        case 'Checkout.Complete':
+          finishCheckout(plan, seatCount);
+          break;
+        case 'Checkout.Close':
+          setBusyPlanId(null);
+          trackMixpanelEvent(
+            MixpanelBillingEvents.CHECKOUT_ABANDONED,
+            trackingProps(plan, seatCount)
+          );
+          break;
+        case 'Checkout.Error':
+          setBusyPlanId(null);
+          message.error(t('messages.checkoutError', { message: event.error?.message ?? '' }));
+          trackMixpanelEvent(MixpanelBillingEvents.CHECKOUT_FAILED, {
+            ...trackingProps(plan, seatCount),
+            error: event.error?.message,
+          });
+          logger.error('Paddle Billing checkout error', event.error);
+          break;
+      }
+    };
 
   const startCheckout = async (plan: IPerUserPlan, seatCount: number, replaceLegacy: boolean) => {
     setBusyPlanId(plan.id);
     trackMixpanelEvent(MixpanelBillingEvents.CHECKOUT_INITIATED, trackingProps(plan, seatCount));
     try {
-      const response = await billingApiService.upgradeToPaidPlan(plan.id, 'per_user', seatCount, replaceLegacy);
+      const response = await billingApiService.upgradeToPaidPlan(
+        plan.id,
+        'per_user',
+        seatCount,
+        replaceLegacy
+      );
       if (!response.done || !isPaddleBillingCheckout(response.body)) {
         throw new Error(response.message || 'Unexpected checkout response');
       }
@@ -232,6 +257,29 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
     } catch (error) {
       message.error(t('messages.error'));
       logger.error('Failed to change plan', error);
+    } finally {
+      setBusyPlanId(null);
+    }
+  };
+
+  const updateSeats = async (plan: IPerUserPlan, seatCount: number) => {
+    setBusyPlanId(plan.id);
+    try {
+      const response = await billingApiService.purchaseMoreSeats(seatCount);
+      if (!response.done) throw new Error(response.message || 'Seat update failed');
+      trackMixpanelEvent(MixpanelBillingEvents.PLAN_SELECTED, {
+        ...trackingProps(plan, seatCount),
+        change: 'seats',
+      });
+      message.success(t('messages.seatsUpdated'));
+      // The new seat count lands once the webhook is processed.
+      dispatch(fetchBillingInfo());
+      POST_CHECKOUT_REFRESH_STEPS_MS.forEach(delay =>
+        setTimeout(() => dispatch(fetchBillingInfo()), delay)
+      );
+    } catch (error) {
+      message.error(t('messages.error'));
+      logger.error('Failed to update seats', error);
     } finally {
       setBusyPlanId(null);
     }
@@ -299,8 +347,15 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
     const cardSeats = isExpansion ? expansionSeats : seats;
     const savings = annualSavingsPercent(group);
     const features = t(`plans.${planCopy}.features`, { returnObjects: true }) as string[];
+    // Exact plan (this billing period): disables the button. Same tier in the other period only
+    // marks the card, so switching billing period stays possible.
     const isCurrent = !!plan && billingInfo?.plan_id === plan.id;
+    const isCurrentTier = group.key === currentGroupKey;
     const isPopular = group.key === MOST_POPULAR_KEY;
+    // Same plan, different seat count: the button updates seats instead of being disabled.
+    const seatsChanged =
+      isCurrent && !isExpansion && purchasedSeats > 0 && cardSeats !== purchasedSeats;
+    const isHighlighted = isCurrentTier || (isPopular && !hasCurrentCard);
     const nameId = `per-user-plan-${group.key}`;
 
     return (
@@ -310,18 +365,18 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
           aria-labelledby={nameId}
           style={{
             height: '100%',
-            borderColor: isPopular ? '#1890ff' : undefined,
-            boxShadow: isPopular ? '0 4px 16px rgba(24, 144, 255, 0.18)' : undefined,
+            borderColor: isHighlighted ? '#1890ff' : undefined,
+            boxShadow: isHighlighted ? '0 4px 16px rgba(24, 144, 255, 0.18)' : undefined,
           }}
           styles={{ body: { height: '100%' } }}
         >
-          <Flex vertical gap={12} style={{ height: "100%" }}>
+          <Flex vertical gap={12} style={{ height: '100%' }}>
             <Flex vertical gap={8}>
               <Flex justify="space-between" align="center">
                 <Typography.Title level={3} id={nameId} style={{ margin: 0 }}>
                   {t(`plans.${planCopy}.name`)}
                 </Typography.Title>
-                {isCurrent ? (
+                {isCurrentTier ? (
                   <Tag color="green">{t('currentPlan')}</Tag>
                 ) : (
                   isPopular && <Tag color="blue">{t('mostPopular')}</Tag>
@@ -393,14 +448,27 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
                     })}
                 </Typography.Text>
                 <Button
-                  type={isPopular || isExpansion ? 'primary' : 'default'}
+                  type={
+                    (isHighlighted && !isCurrent) || seatsChanged || isExpansion
+                      ? 'primary'
+                      : 'default'
+                  }
                   size="large"
                   block
-                  disabled={!plan || isCurrent}
+                  disabled={!plan || (isCurrent && !seatsChanged)}
                   loading={!!plan && busyPlanId === plan.id}
-                  onClick={() => plan && handleSelect(plan, cardSeats)}
+                  onClick={() =>
+                    plan &&
+                    (seatsChanged ? updateSeats(plan, cardSeats) : handleSelect(plan, cardSeats))
+                  }
                 >
-                  {data.has_billing_subscription ? t('switch') : t('select')}
+                  {seatsChanged
+                    ? t('updateSeats')
+                    : isCurrent
+                      ? t('currentPlan')
+                      : data.has_billing_subscription
+                        ? t('switch')
+                        : t('select')}
                 </Button>
               </Flex>
               <Space direction="vertical" size={6} style={{ marginTop: 4 }}>
@@ -430,8 +498,13 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
     const features = t(`plans.${key}.features`, { returnObjects: true }) as string[];
     return (
       <Col xs={24} md={12} xl={cardColumns} key={key}>
-        <Card role="group" aria-labelledby={nameId} style={{ height: '100%' }} styles={{ body: { height: '100%' } }}>
-          <Flex vertical gap={12} style={{ height: "100%" }}>
+        <Card
+          role="group"
+          aria-labelledby={nameId}
+          style={{ height: '100%' }}
+          styles={{ body: { height: '100%' } }}
+        >
+          <Flex vertical gap={12} style={{ height: '100%' }}>
             <Flex vertical gap={8}>
               <Flex justify="space-between" align="center">
                 <Typography.Title level={3} id={nameId} style={{ margin: 0 }}>
@@ -474,7 +547,13 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
       'free',
       formatUsd(0),
       t('freeForever'),
-      <Tooltip title={exceedsFreeLimit && !isFreeUser ? t('freeLimitHint', { count: FREE_USER_LIMIT }) : undefined}>
+      <Tooltip
+        title={
+          exceedsFreeLimit && !isFreeUser
+            ? t('freeLimitHint', { count: FREE_USER_LIMIT })
+            : undefined
+        }
+      >
         <Button
           size="large"
           block
@@ -493,13 +572,7 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
       'enterprise',
       t('custom'),
       t('customNote'),
-      <Button
-        size="large"
-        block
-        href={SALES_MAILTO}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <Button size="large" block href={SALES_MAILTO} target="_blank" rel="noopener noreferrer">
         {t('contactSales')}
       </Button>
     );
@@ -538,8 +611,18 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
         </Flex>
         <Flex align="center" gap={8} wrap>
           <Typography.Text id="per-user-seats-label">{t('seats')}</Typography.Text>
-          <SeatStepper value={seats} min={activeUsers} labelId="per-user-seats-label" onChange={setSeats} />
-          <Typography.Text type="secondary">{t('seatsHelp', { count: activeUsers })}</Typography.Text>
+          <SeatStepper
+            value={seats}
+            min={activeUsers}
+            labelId="per-user-seats-label"
+            onChange={next => {
+              setSeatsEdited(true);
+              setSeats(next);
+            }}
+          />
+          <Typography.Text type="secondary">
+            {t('seatsHelp', { count: activeUsers })}
+          </Typography.Text>
         </Flex>
       </Flex>
 

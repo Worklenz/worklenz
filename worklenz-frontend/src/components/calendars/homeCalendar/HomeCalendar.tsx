@@ -28,6 +28,7 @@ import {
 import { setProjectId } from '@/features/project/project.slice';
 import { IHomeCalendarTask } from '@/types/home/home-page.types';
 import HomeAddTaskModal from '@/pages/home/task-list/HomeAddTaskModal';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import PillToggle from '@/pages/home/PillToggle';
 import MultiSelectFilterDropdown from './MultiSelectFilterDropdown';
 import './homeCalendar.css';
@@ -165,7 +166,7 @@ const HomeCalendar: React.FC<HomeCalendarProps> = ({ onTimeOffClick }) => {
       .filter(project => project.id && project.name)
       .map(project => ({
         value: project.id as string,
-        label: project.name as string,
+        label: decodeHtmlEntities(project.name as string),
         color: project.color_code,
       }));
   }, [teamProjectsData]);
@@ -254,9 +255,9 @@ const HomeCalendar: React.FC<HomeCalendarProps> = ({ onTimeOffClick }) => {
                 className="home-calendar-day-popover-item-dot"
                 style={{ backgroundColor: task.status_color || '#8c8c8c' }}
               />
-              <span className="home-calendar-day-popover-item-name">{task.name}</span>
+              <span className="home-calendar-day-popover-item-name">{decodeHtmlEntities(task.name)}</span>
               {task.project_name && (
-                <span className="home-calendar-day-popover-item-project">{task.project_name}</span>
+                <span className="home-calendar-day-popover-item-project">{decodeHtmlEntities(task.project_name)}</span>
               )}
             </div>
           ))}

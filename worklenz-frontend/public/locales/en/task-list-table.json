@@ -13,6 +13,7 @@
   "labelsColumn": "Labels",
   "attachmentsColumn": "Attachments",
   "commentsColumn": "Latest Comment",
+  "openLatestComment": "Open latest comment",
   "attachmentsAdd": "Add",
   "attachmentsOpen": "Open",
   "attachmentsDownload": "Download",
