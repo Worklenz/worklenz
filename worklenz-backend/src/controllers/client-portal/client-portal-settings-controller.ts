@@ -479,6 +479,14 @@ export default class ClientPortalSettingsController extends ClientPortalControll
         show_powered_by: true,
       };
 
+      // Stored branding is kept for a future upgrade, but only Business workspaces show it to clients.
+      if (!(await teamCanUseFeature(organizationId, "client_portal_branding"))) {
+        settings.logo_url = null;
+        settings.primary_color = "#3b7ad4";
+        settings.portal_theme = "light";
+        settings.show_powered_by = true;
+      }
+
       return res.json(new ServerResponse(true, settings, null));
     } catch (error) {
       log_error(error);

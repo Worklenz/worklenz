@@ -468,7 +468,12 @@ const ClientPortalSettings = () => {
             />
           )}
           {section === 'branding' && (
-            <div style={canBrand ? undefined : { pointerEvents: 'none', opacity: 0.55 }} aria-disabled={!canBrand}>
+            <div
+              style={canBrand ? undefined : { pointerEvents: 'none', opacity: 0.55 }}
+              aria-disabled={!canBrand}
+              // React 18 only forwards `inert` as a string attribute; it blocks keyboard focus too.
+              {...(canBrand ? {} : { inert: '' as unknown as boolean })}
+            >
             <BrandingSection
               settings={settings}
               onChange={handleSettingsChange}
