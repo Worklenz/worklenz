@@ -18,8 +18,8 @@ export default class WhatsNewController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async getLatest(_req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    return res.status(200).send(new ServerResponse(true, whatsNewService.getLatestRelease()));
+  public static async getLatest(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    return res.status(200).send(new ServerResponse(true, await whatsNewService.getLatestRelease(req.user?.id)));
   }
 
   @HandleExceptions()

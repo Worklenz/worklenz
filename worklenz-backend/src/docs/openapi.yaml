@@ -92,7 +92,8 @@ paths:
         Returns the newest active release published today or earlier, even after
         the seven-day New window expires or the user dismisses it. Same-day
         releases are ordered by release ID descending. Returns a null body when
-        no releases are published. Does not read or write user dismissals.
+        no releases are published. Uses the user's language with English fallback.
+        Does not read or write user dismissals.
       security:
         - sessionAuth: []
       responses:
@@ -112,7 +113,7 @@ paths:
                         properties:
                           id:
                             type: string
-                            description: Release Markdown file name without its extension
+                            description: Release slug stored in the database
                           title:
                             type: string
                           body_markdown:
