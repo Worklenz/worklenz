@@ -114,6 +114,7 @@
   "previewViewTasksButton": "View my tasks",
 
   "brandingTitle": "Branding",
+  "brandingBusinessOnly": "Portal logo, colors and removing the Worklenz footer are available on the Business plan.",
 
   "invoiceTemplateTitle": "Invoice Template",
   "invoiceTemplateDescription": "Choose how invoices look when downloaded or previewed by your team and clients.",

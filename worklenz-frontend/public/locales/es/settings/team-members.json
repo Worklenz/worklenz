@@ -200,6 +200,7 @@
   "noActiveInviteLink": "No hay enlace de invitación activo",
   "linkExpiredPlaceholder": "Enlace expirado",
   "inviteLinkCopied": "Enlace de invitación copiado al portapapeles",
+  "inviteLinkCopyFailed": "Enlace de invitación generado. Cópielo manualmente desde el campo de abajo.",
   "inviteLinkGenerateError": "Error al generar el enlace de invitación",
   "inviteLinkDeactivated": "Enlace de invitación desactivado",
   "inviteLinkDeactivateError": "Error al desactivar el enlace",

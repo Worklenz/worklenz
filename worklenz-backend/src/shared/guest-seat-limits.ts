@@ -103,7 +103,7 @@ export function resolveEntitlementGuestPlan(subscriptionData: any): { guestLimit
  * 
  * Plan-based guest limits:
  * - FREE/TRIAL: 0 guests (no guest access)
- * - PROFESSIONAL: 5 guests
+ * - PROFESSIONAL: Unlimited guests
  * - APPSUMO_LTD (1-4 codes): 5 guests
  * - APPSUMO_BUSINESS (5+ codes): Unlimited guests
  * - BUSINESS/SELF_HOSTED: Unlimited guests
