@@ -7,6 +7,7 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { LICENSING_SETTINGS } from "../shared/licensing_settings";
+import { canUseFeature, isEnforceMode } from "../shared/entitlements/gates";
 import {
   getDependentColumnNames,
   validateParentColumn,
