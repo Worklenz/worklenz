@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { projectDocumentsApiService } from '@/api/projects/docs/project-documents.api.service';
 import { teamDocumentsApiService } from '@/api/projects/docs/team-documents.api.service';
+import { message, Modal } from '@/shared/antd-imports';
 import { EMPTY_MENTIONS, IProjectDocument } from '@/types/project/project-documents.types';
 
 import TeamDocsPage from './team-docs-page';
@@ -33,6 +34,7 @@ vi.mock('@/api/projects/docs/project-documents.api.service', () => ({
   projectDocumentsApiService: {
     getById: vi.fn(),
     update: vi.fn(),
+    remove: vi.fn(),
   },
 }));
 vi.mock('@/api/projects/docs/team-documents.api.service', () => ({
@@ -43,10 +45,17 @@ vi.mock('@/api/projects/docs/team-documents.api.service', () => ({
   },
 }));
 vi.mock('@/pages/projects/project-view-1/docs/docs-sidebar', () => ({
-  default: ({ onSelect }: { onSelect: (id: string) => void }) => (
+  default: ({
+    onSelect,
+    onDelete,
+  }: {
+    onSelect: (id: string) => void;
+    onDelete: (id: string) => void;
+  }) => (
     <>
       <button onClick={() => onSelect('page-b')}>Open page B</button>
       <button onClick={() => onSelect('page-c')}>Open page C</button>
+      <button onClick={() => onDelete('first')}>Delete page</button>
     </>
   ),
 }));
@@ -190,4 +199,51 @@ it('ignores the initial document fetch when a newer page was selected', async ()
     'first',
     expect.anything()
   );
+});
+
+it('shows a list error when the latest list fails after another page was selected', async () => {
+  let resolveList: (value: { done: boolean; body: [] }) => void = () => undefined;
+  vi.mocked(teamDocumentsApiService.list).mockImplementation(
+    () =>
+      new Promise(resolve => {
+        resolveList = resolve;
+      })
+  );
+  vi.mocked(projectDocumentsApiService.getById).mockImplementation(async id => ({
+    done: true,
+    body: documents[id],
+  }));
+
+  render(<TeamDocsPage />);
+  fireEvent.click(screen.getByRole('button', { name: 'Open page C' }));
+  await screen.findByDisplayValue('Page C');
+
+  resolveList({ done: false, body: [] });
+  expect(await screen.findByText("Couldn't load pages")).toBeInTheDocument();
+});
+
+it.each([
+  ['returns no page', { done: false, body: null }],
+  ['is rejected', new Error('offline')],
+] as const)('shows an error when deleting a page %s', async (_label, failure) => {
+  vi.mocked(projectDocumentsApiService.getById).mockResolvedValue({ done: true, body: first });
+  if (failure instanceof Error) {
+    vi.mocked(projectDocumentsApiService.remove).mockRejectedValue(failure);
+  } else {
+    vi.mocked(projectDocumentsApiService.remove).mockResolvedValue(failure);
+  }
+  const error = vi.spyOn(message, 'error').mockImplementation(() => ({}) as never);
+  vi.spyOn(Modal, 'confirm').mockImplementation(options => {
+    void options.onOk?.(vi.fn());
+    return { destroy: vi.fn(), update: vi.fn() };
+  });
+
+  render(<TeamDocsPage />);
+  await screen.findByDisplayValue('First page');
+  fireEvent.click(screen.getByRole('button', { name: 'Delete page' }));
+
+  await waitFor(() => expect(error).toHaveBeenCalled());
+  expect(screen.getByLabelText('Page title')).toHaveValue('First page');
+  error.mockRestore();
+  vi.mocked(Modal.confirm).mockRestore();
 });

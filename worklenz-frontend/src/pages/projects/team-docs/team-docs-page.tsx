@@ -63,6 +63,7 @@ const TeamDocsPage = () => {
   const titleRef = useRef(title);
   const searchParamsRef = useRef(searchParams);
   const selectionRequestRef = useRef(0);
+  const listRequestRef = useRef(0);
   const isMountedRef = useRef(true);
   activeRef.current = active;
   pagesRef.current = pages;
@@ -80,6 +81,9 @@ const TeamDocsPage = () => {
 
   const isCurrentSelection = (generation: number) =>
     isMountedRef.current && generation === selectionRequestRef.current;
+
+  const isLatestList = (requestId: number) =>
+    isMountedRef.current && requestId === listRequestRef.current;
 
   const applyDocument = useCallback((document: IProjectDocument, mark: (document: IProjectDocument) => void) => {
     setActive(document);
@@ -169,14 +173,15 @@ const TeamDocsPage = () => {
   );
 
   const loadPages = useCallback(async () => {
+    const requestId = ++listRequestRef.current;
     const generation = selectionRequestRef.current;
     setListLoading(true);
     setListError(false);
     try {
       const response = await teamDocumentsApiService.list();
-      if (!isMountedRef.current) return;
+      if (!isLatestList(requestId)) return;
       if (!response.done) {
-        if (isCurrentSelection(generation)) setListError(true);
+        setListError(true);
         return;
       }
       const nextPages = response.body || [];
@@ -211,9 +216,9 @@ const TeamDocsPage = () => {
         }
       }
     } catch {
-      if (isCurrentSelection(generation)) setListError(true);
+      if (isLatestList(requestId)) setListError(true);
     } finally {
-      if (isMountedRef.current) setListLoading(false);
+      if (isLatestList(requestId)) setListLoading(false);
     }
   }, [applyDocument, replaceDocsSearch]);
 
@@ -333,21 +338,28 @@ const TeamDocsPage = () => {
       cancelText: t('cancel', { defaultValue: 'Cancel' }),
       okButtonProps: { danger: true },
       onOk: async () => {
-        const response = await projectDocumentsApiService.remove(id);
-        if (!response.done || !response.body) return;
-        const deleted = new Set(response.body.deleted_ids || [id]);
-        const remaining = pagesRef.current.filter(page => !deleted.has(page.id));
-        setPages(remaining);
-        if (activeRef.current && deleted.has(activeRef.current.id)) {
-          markClean(activeRef.current);
-          const next = remaining[0];
-          if (next) {
-            await openDocument(next.id);
-          } else {
-            setActive(null);
-            mentionStore.set(EMPTY_MENTIONS);
-            writeDocParam(null);
+        try {
+          const response = await projectDocumentsApiService.remove(id);
+          if (!response.done || !response.body) {
+            message.error(t('actionFailed', { defaultValue: "Couldn't delete the page" }));
+            return;
           }
+          const deleted = new Set(response.body.deleted_ids || [id]);
+          const remaining = pagesRef.current.filter(page => !deleted.has(page.id));
+          setPages(remaining);
+          if (activeRef.current && deleted.has(activeRef.current.id)) {
+            markClean(activeRef.current);
+            const next = remaining[0];
+            if (next) {
+              await openDocument(next.id);
+            } else {
+              setActive(null);
+              mentionStore.set(EMPTY_MENTIONS);
+              writeDocParam(null);
+            }
+          }
+        } catch {
+          message.error(t('actionFailed', { defaultValue: "Couldn't delete the page" }));
         }
       },
     });
