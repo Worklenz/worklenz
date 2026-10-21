@@ -256,7 +256,7 @@ describe('ProgressTrackingPage filter buttons and dropdown button', { timeout: 1
     const allBtn = screen.getByRole('button', { name: /^All/i });
     expect(allBtn).toHaveAttribute('aria-pressed', 'true');
 
-    const dropdownBtn = screen.getByRole('button', { name: /Percent complete/i });
+    const dropdownBtn = screen.getByRole('button', { name: /Any % complete/i });
     expect(dropdownBtn).toBeInTheDocument();
     expect(dropdownBtn).not.toHaveClass('ant-btn-round');
     expect(dropdownBtn).toHaveTextContent('Any % complete');
@@ -289,10 +289,10 @@ describe('ProgressTrackingPage filter buttons and dropdown button', { timeout: 1
     expect(allBtn).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('filters by percent range using the dropdown button and clears it', async () => {
+  it('filters by percent range using the dropdown button and clears it with mouse or keyboard', async () => {
     await renderPage();
 
-    const dropdownBtn = screen.getByRole('button', { name: /Percent complete/i });
+    const dropdownBtn = screen.getByRole('button', { name: /Any % complete/i });
     fireEvent.click(dropdownBtn);
 
     const option = await screen.findByText('0–25%');
@@ -300,11 +300,24 @@ describe('ProgressTrackingPage filter buttons and dropdown button', { timeout: 1
 
     await expectLastQuery({ percent_range: '0_25', page: 1 });
     expect(dropdownBtn).toHaveTextContent('Percent complete: 0–25%');
+    expect(dropdownBtn).toHaveAttribute('aria-label', 'Percent complete: 0–25%');
 
-    // Click clear icon to reset percent range
-    const clearIcon = screen.getByRole('img', { name: /Any % complete/i });
-    fireEvent.click(clearIcon);
+    // Clear via keyboard Enter on the separate clear button
+    const clearBtn = screen.getByRole('button', { name: /Any % complete/i });
+    fireEvent.keyDown(clearBtn, { key: 'Enter' });
 
+    await expectLastQuery({ percent_range: undefined, page: 1 });
+    expect(dropdownBtn).toHaveTextContent('Any % complete');
+    expect(dropdownBtn).toHaveAttribute('aria-label', 'Any % complete');
+
+    // Select again and clear via mouse click
+    fireEvent.click(dropdownBtn);
+    const option2 = await screen.findByText('26–50%');
+    fireEvent.click(option2);
+    await expectLastQuery({ percent_range: '26_50', page: 1 });
+
+    const clearBtn2 = screen.getByRole('button', { name: /Any % complete/i });
+    fireEvent.click(clearBtn2);
     await expectLastQuery({ percent_range: undefined, page: 1 });
     expect(dropdownBtn).toHaveTextContent('Any % complete');
   });

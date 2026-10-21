@@ -242,7 +242,7 @@ const ProgressTrackingPage = () => {
     setPage(1);
   };
 
-  const handleClearPercentRange = (e: React.MouseEvent) => {
+  const handleClearPercentRange = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     setPercentRange(undefined);
     setPage(1);
@@ -660,7 +660,7 @@ const ProgressTrackingPage = () => {
             }}
           >
             <Button
-              aria-label={t('percentRangeLabel', { defaultValue: 'Percent complete' })}
+              aria-label={selectedPercentRangeLabel || t('percentRangeLabel', { defaultValue: 'Percent complete' })}
               aria-haspopup="true"
               aria-expanded={dropdownOpen}
               style={
@@ -677,11 +677,28 @@ const ProgressTrackingPage = () => {
               <Flex align="center" gap={6}>
                 <span>{selectedPercentRangeLabel}</span>
                 {percentRange && (
-                  <CloseCircleOutlined
-                    style={{ fontSize: 11, color: token.colorPrimary }}
-                    onClick={handleClearPercentRange}
+                  <span
+                    role="button"
+                    tabIndex={0}
                     aria-label={t('percentRangeAll', { defaultValue: 'Any % complete' })}
-                  />
+                    onClick={handleClearPercentRange}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleClearPercentRange(e);
+                      }
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: token.colorPrimary,
+                      lineHeight: 1,
+                    }}
+                  >
+                    <CloseCircleOutlined style={{ fontSize: 11 }} />
+                  </span>
                 )}
                 <CaretDownFilled
                   style={{
