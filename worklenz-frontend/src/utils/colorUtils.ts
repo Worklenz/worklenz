@@ -14,9 +14,10 @@ export const toSolidTagColor = (color?: string): string | undefined => {
 /**
  * Calculate the contrast color (black or white) for a given background color
  * @param hexColor - Hex color code (e.g., '#FF5733', '#F53', or '#FF573369')
+ * @param backgroundColor - Optional solid surface behind a translucent color
  * @returns The foreground color with the higher WCAG contrast ratio
  */
-export function getContrastColor(hexColor: string): string {
+export function getContrastColor(hexColor: string, backgroundColor?: string): string {
   const color = hexColor.trim().replace(/^#/, '');
   const expandedColor =
     color.length === 3
@@ -32,9 +33,30 @@ export function getContrastColor(hexColor: string): string {
     return '#FFFFFF';
   }
 
-  const [red, green, blue] = [0, 2, 4].map(offset =>
+  let [red, green, blue] = [0, 2, 4].map(offset =>
     parseInt(expandedColor.substring(offset, offset + 2), 16)
   );
+  if (color.length === 8 && backgroundColor) {
+    const backdrop = backgroundColor.trim().replace(/^#/, '');
+    const expandedBackdrop =
+      backdrop.length === 3
+        ? backdrop
+            .split('')
+            .map(channel => `${channel}${channel}`)
+            .join('')
+        : backdrop.slice(0, 6);
+
+    if (/^[0-9a-f]{6}$/i.test(expandedBackdrop)) {
+      const alpha = parseInt(color.substring(6, 8), 16) / 255;
+      const [backdropRed, backdropGreen, backdropBlue] = [0, 2, 4].map(offset =>
+        parseInt(expandedBackdrop.substring(offset, offset + 2), 16)
+      );
+      red = Math.round(red * alpha + backdropRed * (1 - alpha));
+      green = Math.round(green * alpha + backdropGreen * (1 - alpha));
+      blue = Math.round(blue * alpha + backdropBlue * (1 - alpha));
+    }
+  }
+
   const linearizeChannel = (value: number): number => {
     const channel = value / 255;
     return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;

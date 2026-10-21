@@ -142,7 +142,10 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId, disabled = false }: 
     task.status_color_dark,
     themeMode,
   ]);
-  const resolvedStatusTextColor = getContrastColor(resolvedStatusBackground);
+  const resolvedStatusTextColor = getContrastColor(
+    resolvedStatusBackground,
+    themeMode === 'dark' ? '#1f1f1f' : '#ffffff'
+  );
 
   return (
     <>

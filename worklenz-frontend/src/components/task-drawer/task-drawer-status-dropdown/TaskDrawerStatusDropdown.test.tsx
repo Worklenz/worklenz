@@ -84,6 +84,11 @@ const statuses: ITaskStatus[] = [
     color_code: '#154C9B',
     color_code_dark: '#B22222',
   },
+  {
+    id: 'translucent-status',
+    name: 'Review',
+    color_code: '#00000080',
+  },
 ];
 
 const renderDropdown = (statusId: string) => {
@@ -127,5 +132,29 @@ describe('TaskDrawerStatusDropdown', () => {
       '--task-drawer-status-fg': '#FFFFFF',
     });
     expect(screen.getByText('Blocked')).toHaveStyle({ color: '#FFFFFF' });
+  });
+
+  it('composites translucent status colors over the drawer surface', () => {
+    mocks.themeMode = 'light';
+    const { container, rerender } = renderDropdown('translucent-status');
+
+    expect(container.querySelector('.task-drawer-status-select')).toHaveStyle({
+      '--task-drawer-status-bg': '#00000080',
+      '--task-drawer-status-fg': '#000000',
+    });
+
+    mocks.themeMode = 'dark';
+    rerender(
+      <TaskDrawerStatusDropdown
+        statuses={statuses}
+        task={{ id: 'task-1', status_id: 'translucent-status' } as ITaskViewModel}
+        teamId="team-1"
+      />
+    );
+
+    expect(container.querySelector('.task-drawer-status-select')).toHaveStyle({
+      '--task-drawer-status-bg': '#00000080',
+      '--task-drawer-status-fg': '#FFFFFF',
+    });
   });
 });
