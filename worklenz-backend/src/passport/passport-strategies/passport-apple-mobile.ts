@@ -5,7 +5,7 @@ import jwksClient from "jwks-rsa";
 import db from "../../config/db";
 import { log_error } from "../../shared/utils";
 import { ERROR_KEY } from "./passport-constants";
-import { BLOCKED_SIGNUP_EMAIL_MESSAGE, isSignupEmailDomainBlocked } from "../../shared/signup-email-domain-policy";
+import { getBlockedSignupEmailMessage, isSignupEmailDomainBlocked } from "../../shared/signup-email-domain-policy";
 
 /**
  * Apple ID Token Payload Interface
@@ -225,7 +225,7 @@ async function handleAppleMobileAuth(req: Request, done: any) {
 
     if (await isSignupEmailDomainBlocked(email)) {
       return done(null, false, {
-        message: BLOCKED_SIGNUP_EMAIL_MESSAGE,
+        message: getBlockedSignupEmailMessage(req.headers["accept-language"]),
         [ERROR_KEY]: "EMAIL_DOMAIN_NOT_SUPPORTED"
       });
     }
@@ -264,7 +264,7 @@ async function handleAppleMobileAuth(req: Request, done: any) {
 
       if (error.message?.includes("ERROR_SIGNUP_EMAIL_DOMAIN_BLOCKED")) {
         return done(null, false, {
-          message: BLOCKED_SIGNUP_EMAIL_MESSAGE,
+          message: getBlockedSignupEmailMessage(req.headers["accept-language"]),
           [ERROR_KEY]: "EMAIL_DOMAIN_NOT_SUPPORTED"
         });
       }

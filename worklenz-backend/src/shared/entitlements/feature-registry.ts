@@ -151,4 +151,4 @@ export const TIER_GUEST_LIMIT: Record<PlanTier, number> = {
 export const APPSUMO_SEATS_PER_CODE = 5;
 export const APPSUMO_MAX_SEATS = 50;
 export const APPSUMO_UNLIMITED_GUEST_CODE_COUNT = 5;
-export const APPSUMO_LTD_GUEST_LIMIT = 5;
+export const APPSUMO_LTD_GUEST_LIMIT = UNLIMITED;

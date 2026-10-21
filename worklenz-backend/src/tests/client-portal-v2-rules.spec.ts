@@ -93,7 +93,8 @@ describe("applySettingsPatch", () => {
     expect(defaults.allow_client_uploads_default).toBe(true);
     expect(defaults.admins_can_invite_users).toBe(false);
     expect(defaults).not.toHaveProperty("authentication");
-    expect(defaults.team_email_events.client_file_upload).toBe(false);
+    expect(Object.values(defaults.client_email_events).every(v => v === false)).toBe(true);
+    expect(Object.values(defaults.team_email_events).every(v => v === false)).toBe(true);
   });
 
   it("merges a partial patch and leaves everything else alone", () => {
@@ -103,7 +104,7 @@ describe("applySettingsPatch", () => {
     });
     expect(next.show_invoices).toBe(true);
     expect(next.client_email_events.file_shared).toBe(true);
-    expect(next.client_email_events.approval_request).toBe(true);
+    expect(next.client_email_events.approval_request).toBe(false);
     expect(next.admins_can_remove_users).toBe(false);
   });
 

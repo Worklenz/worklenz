@@ -121,7 +121,7 @@ describe("resolveEntitlements", () => {
     expect(expired.tier).toBe("free");
   });
 
-  it("AppSumo LTD (1 code): Pro features, 5 seats, 5 guests, Timeline and Workload only, no Business features", () => {
+  it("AppSumo LTD (1 code): Pro features, 5 seats, unlimited guests, client portal, Timeline and Workload only, no Business features", () => {
     const e = resolveEntitlements({ subscription_type: "LIFE_TIME_DEAL", is_ltd: true, redeemed_codes_count: 1 }, NOW);
     expect(e.tier).toBe("pro");
     expect(e.primarySource).toBe("appsumo_ltd");
@@ -131,10 +131,12 @@ describe("resolveEntitlements", () => {
     expect(hasFeature(e, "finance_module")).toBe(false);
     expect(hasFeature(e, "members_progress")).toBe(false); // matrix: AppSumo No
     expect(e.seatLimit).toBe(5);
-    expect(e.guestLimit).toBe(5);
+    expect(e.guestLimit).toBe(-1);
+    expect(hasFeature(e, "client_portal")).toBe(true);
+    expect(hasFeature(e, "client_portal_branding")).toBe(false);
   });
 
-  it("AppSumo LTD: 5 seats per code capped at 50; 5+ codes unlimited guests", () => {
+  it("AppSumo LTD: 5 seats per code capped at 50; any code count has unlimited guests", () => {
     const five = resolveEntitlements({ subscription_type: "LIFE_TIME_DEAL", is_ltd: true, redeemed_codes_count: 5 }, NOW);
     expect(five.seatLimit).toBe(25);
     expect(five.guestLimit).toBe(-1);
@@ -158,7 +160,7 @@ describe("resolveEntitlements", () => {
 
   it("AppSumo Expansion: LTD seats plus paid seats, Business features", () => {
     const e = resolveEntitlementsFromSources([
-      { kind: "appsumo_ltd", tier: "pro", seats: 10, guests: 5, redeemedCodes: 2 },
+      { kind: "appsumo_ltd", tier: "pro", seats: 10, guests: -1, redeemedCodes: 2 },
       { kind: "appsumo_expansion", tier: "business", seats: 7 },
     ]);
     expect(e.tier).toBe("business");

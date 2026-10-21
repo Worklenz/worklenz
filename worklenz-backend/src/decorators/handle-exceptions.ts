@@ -4,6 +4,7 @@ import {DEFAULT_ERROR_MESSAGE} from "../shared/constants";
 import {DB_CONSTRAINS} from "../shared/constraints";
 import {log_error} from "../shared/utils";
 import {Response} from "express";
+import { handleSecurityPolicyError } from "../services/security-policy.service";
 
 interface IExceptionHandlerConfig {
   message?: string;
@@ -58,7 +59,13 @@ function withDevCause(message: string, error: any): string {
   return cause ? `${message} [${cause}]` : message;
 }
 
-function handleError(error: any, res: Response, opt: any, req: any) {
+async function handleError(error: any, res: Response, opt: any, req: any) {
+  const securityRejection = await handleSecurityPolicyError(error, req.user?.team_id, req.user?.id);
+  if (securityRejection) {
+    return res.status(securityRejection.status).send(new ServerResponse(
+      false, { error_code: securityRejection.code }, securityRejection.message,
+    ));
+  }
   const constraint = getConstraint(error);
   if (typeof constraint === "string") {
     const response = getConstraintResponse(constraint);
