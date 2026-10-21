@@ -27,6 +27,19 @@ import type { MenuProps } from '@/shared/antd-imports';
 import type { PortalField, PortalFilterGroup } from '@/components/client-portal/v2';
 import { parseAuditTarget } from './target-details';
 import type { AuditEvent, AuditEventType, PortalSide } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
+
+/** Target detail keys whose values are display names (not refs, emails, versions, or file names). */
+const AUDIT_NAME_TARGET_KEYS = new Set([
+  'target.approvalTitle',
+  'target.crTitle',
+  'target.milestone',
+  'target.task',
+  'target.project',
+  'target.client',
+  'target.name',
+  'target.generic',
+]);
 
 const TYPE_OPTIONS: { value: AuditEventType; key: string; defaultValue: string }[] = [
   { value: 'access', key: 'types.access', defaultValue: 'Access' },
@@ -111,7 +124,10 @@ const AuditLogPage = () => {
     {
       key: 'client',
       label: t('clientLabel', { defaultValue: 'Client' }),
-      options: (organizations.data?.body?.items ?? []).map(item => ({ value: item.id, label: item.name })),
+      options: (organizations.data?.body?.items ?? []).map(item => ({
+        value: item.id,
+        label: decodeHtmlEntities(item.name),
+      })),
       value: organizationIds,
       onChange: setOrganizationIds,
       searchPlaceholder: t('searchClients', { defaultValue: 'Search clients…' }),
@@ -194,7 +210,7 @@ const AuditLogPage = () => {
       render: (_value, event) => {
         const details = parseAuditTarget(event).map(item => ({
           label: t(item.key, { defaultValue: item.defaultValue }),
-          value: item.value,
+          value: AUDIT_NAME_TARGET_KEYS.has(item.key) ? decodeHtmlEntities(item.value) : item.value,
         }));
         const fullText = details.map(item => `${item.label}: ${item.value}`).join(' · ');
         // One line, clipped with an ellipsis; hovering shows the whole value.
@@ -216,7 +232,7 @@ const AuditLogPage = () => {
     {
       key: 'client',
       title: t('columns.client', { defaultValue: 'Client' }),
-      render: (_value, event) => event.organization_name ?? '—',
+      render: (_value, event) => decodeHtmlEntities(event.organization_name) || '—',
     },
   ];
 

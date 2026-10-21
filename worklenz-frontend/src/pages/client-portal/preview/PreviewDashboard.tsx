@@ -230,7 +230,7 @@ const NeedsActionCard = ({ dashboard, canApprove }: { dashboard: ClientDashboard
         <ActionRow
           key={`${item.kind}-${item.id}`}
           icon={item.kind === 'approval' ? <AuditOutlined /> : <SwapOutlined />}
-          title={item.title}
+          title={decodeHtmlEntities(item.title)}
           subtitle={`${item.ref_no} · ${decodeHtmlEntities(item.project_name)}`}
           right={
             <>
@@ -260,7 +260,7 @@ const NeedsActionCard = ({ dashboard, canApprove }: { dashboard: ClientDashboard
             <ActionRow
               key={item.id}
               icon={<AuditOutlined />}
-              title={item.title}
+              title={decodeHtmlEntities(item.title)}
               subtitle={t('dashboard.waitingFor', { name: item.waiting_for, defaultValue: 'Waiting for {{name}}' })}
               right={<ApprovalStatusTag status="awaiting" />}
             />
@@ -284,7 +284,7 @@ const UpcomingMilestonesCard = ({ dashboard }: { dashboard: ClientDashboardView 
         <ActionRow
           key={milestone.id}
           icon={<FlagOutlined />}
-          title={milestone.name}
+          title={decodeHtmlEntities(milestone.name)}
           subtitle={decodeHtmlEntities(milestone.project_name)}
           right={
             <Flex vertical align="flex-end" gap={2}>

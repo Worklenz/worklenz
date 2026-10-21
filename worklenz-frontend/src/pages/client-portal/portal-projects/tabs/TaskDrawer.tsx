@@ -29,7 +29,7 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
   const showVisibilityToast = useVisibilityToast();
 
   const [visibility, setVisibility] = useState<PortalVisibility>(task.visibility);
-  const [clientTitle, setClientTitle] = useState(task.client_title);
+  const [clientTitle, setClientTitle] = useState(decodeHtmlEntities(task.client_title));
   const [clientDescription, setClientDescription] = useState(task.client_description);
   const [fileIds, setFileIds] = useState<string[]>(task.attached_file_ids);
   const [updateTask, { isLoading }] = useUpdatePortalTaskMutation();
@@ -51,7 +51,9 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
           attached_file_ids: fileIds,
         },
       }).unwrap();
-      if (visibility !== task.visibility) showVisibilityToast('task', clientTitle.trim() || decodeHtmlEntities(task.title), visibility);
+      if (visibility !== task.visibility) {
+        showVisibilityToast('task', decodeHtmlEntities(clientTitle.trim() || task.title), visibility);
+      }
       else message.success(t('tasks.drawer.saved', { defaultValue: 'Client-facing wording and attachments saved.' }));
       onClose();
     } catch (error) {
@@ -186,7 +188,9 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
       </Typography.Text>
       {visibility === 'client' ? (
         <Card size="small" style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 600, fontSize: 13 }}>{clientTitle.trim() || decodeHtmlEntities(task.title)}</div>
+          <div style={{ fontWeight: 600, fontSize: 13 }}>
+            {decodeHtmlEntities(clientTitle.trim() || task.title)}
+          </div>
           <div style={{ fontSize: 12, color: token.colorTextSecondary, margin: '3px 0 6px' }}>
             {labels.client[task.status]}
             {task.due_date

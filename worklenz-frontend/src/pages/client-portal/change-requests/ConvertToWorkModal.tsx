@@ -6,6 +6,7 @@ import { useGetPortalStaffQuery } from '@/api/client-portal/portal-access-api';
 import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
 import { useConvertChangeRequestMutation, useGetLinkableTasksQuery } from '@/api/client-portal/portal-workflow-api';
 import type { ChangeRequest, ConvertToWorkRequest, PortalVisibility } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface ConvertToWorkModalProps {
   changeRequest: ChangeRequest;
@@ -162,7 +163,11 @@ export const ConvertToWorkModal = ({ changeRequest, onClose }: ConvertToWorkModa
                 placeholder={t('convert.chooseTask', { defaultValue: 'Choose a task…' })}
                 options={linkable.map(task => ({
                   value: task.id,
-                  label: t('convert.taskOption', { key: task.key, title: task.title, defaultValue: '{{key}} · {{title}}' }),
+                  label: t('convert.taskOption', {
+                    key: task.key,
+                    title: decodeHtmlEntities(task.title),
+                    defaultValue: '{{key}} · {{title}}',
+                  }),
                 }))}
               />
             </Form.Item>
