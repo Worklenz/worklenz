@@ -19,6 +19,7 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { colors } from '@/styles/colors';
 import dayjs from 'dayjs';
 import React from 'react';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import AssigneeSelector from '@/components/AssigneeSelector';
 import AvatarGroup from '@/components/AvatarGroup';
@@ -172,8 +173,8 @@ const AllTasksReportsTable = () => {
             {Number(record.sub_tasks_count) > 0 && (
               <DoubleRightOutlined style={{ fontSize: 10, flexShrink: 0 }} />
             )}
-            <Typography.Text ellipsis={{ tooltip: record.name }} style={{ maxWidth: 160 }}>
-              {record.name}
+            <Typography.Text ellipsis={{ tooltip: decodeHtmlEntities(record.name) }} style={{ maxWidth: 160 }}>
+              {decodeHtmlEntities(record.name)}
             </Typography.Text>
           </Flex>
         ),
@@ -206,8 +207,8 @@ const AllTasksReportsTable = () => {
         render: (_, record) => (
           <Flex align="center" gap={6}>
             <Badge color={record.color_code || '#1890ff'} />
-            <Typography.Text ellipsis={{ tooltip: record.project_name }} style={{ maxWidth: 110 }}>
-              {record.project_name || '-'}
+            <Typography.Text ellipsis={{ tooltip: decodeHtmlEntities(record.project_name) }} style={{ maxWidth: 110 }}>
+              {decodeHtmlEntities(record.project_name) || '-'}
             </Typography.Text>
           </Flex>
         ),
@@ -462,14 +463,14 @@ const AllTasksReportsTable = () => {
             <Flex gap={2} wrap="nowrap">
               {labels.slice(0, 1).map((label, idx) => (
                 <Tag key={idx} color={label.color_code} style={{ margin: 0, fontSize: 11 }}>
-                  {label.name}
+                  {decodeHtmlEntities(label.name)}
                 </Tag>
               ))}
               {labels.length > 1 && (
                 <Tooltip
                   title={labels
                     .slice(1)
-                    .map(l => l.name)
+                    .map(l => decodeHtmlEntities(l.name))
                     .join(', ')}
                 >
                   <Tag style={{ fontSize: 11, margin: 0 }}>+{labels.length - 1}</Tag>
@@ -508,11 +509,17 @@ const AllTasksReportsTable = () => {
         width: 120,
         ellipsis: true,
         sorter: true,
-        render: (value: string) => (
-          <Typography.Text ellipsis={{ tooltip: value }} style={{ maxWidth: 100, fontSize: 12 }}>
-            {value || '-'}
-          </Typography.Text>
-        ),
+        render: (value: string) => {
+          const decoded = decodeHtmlEntities(value);
+          return (
+            <Typography.Text
+              ellipsis={{ tooltip: decoded }}
+              style={{ maxWidth: 100, fontSize: 12 }}
+            >
+              {decoded || '-'}
+            </Typography.Text>
+          );
+        },
       },
     ],
     [t, filterOptions, selectedProjects, selectedStatuses, selectedPriorities, selectedAssignees, isDarkMode]
@@ -565,7 +572,7 @@ const AllTasksReportsTable = () => {
           total={total}
           showSizeChanger
           showQuickJumper
-          pageSizeOptions={['25', '50', '100', '200']}
+          pageSizeOptions={['10', '20', '50', '100']}
           onChange={handlePaginationChange}
           showTotal={(total, range) =>
             t('showingResults', {

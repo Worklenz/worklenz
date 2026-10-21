@@ -1,0 +1,25 @@
+{
+  "connect": "Połącz",
+  "comingSoon": "Już wkrótce",
+  "availableSoon": "Dostępne wkrótce",
+  "slack": {
+    "title": "Luz",
+    "description": "Zintegruj Slack, aby otrzymywać powiadomienia w czasie rzeczywistym, tworzyć zadania i synchronizować swój zespół."
+  },
+  "teams": {
+    "title": "Zespoły Microsoftu",
+    "description": "Zintegruj Microsoft Teams ze swoim zespołem Worklenz, aby otrzymywać powiadomienia w czasie rzeczywistym, tworzyć zadania w aplikacji Teams i synchronizować swój zespół na obu platformach."
+  },
+  "github": {
+    "title": "GitHub",
+    "description": "Połącz repozytoria GitHub, aby śledzić zatwierdzenia, żądania ściągnięcia i problemy wraz z zadaniami."
+  },
+  "googleDrive": {
+    "title": "Dysk Google",
+    "description": "Połącz się z Dyskiem Google, aby dołączać pliki, udostępniać dokumenty i bezproblemowo współpracować z zespołem nad wynikami projektu."
+  },
+  "googleCalendar": {
+    "title": "Kalendarz Google",
+    "description": "Synchronizuj swoje zadania i terminy z Kalendarzem Google, aby zarządzać harmonogramem, ustawiać przypomnienia i nigdy nie przegapić ważnych kamieni milowych projektu."
+  }
+}

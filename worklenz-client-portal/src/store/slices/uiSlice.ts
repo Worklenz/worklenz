@@ -8,6 +8,10 @@ interface UIState {
     unreadCount: number;
     showNotificationPanel: boolean;
   };
+  /** The organization's Branding — fetched via getOrganizationSettings once the client is
+   * authenticated, so these start null and are filled in by ClientPortalSidebar. */
+  orgPrimaryColor: string | null;
+  orgPortalTitle: string | null;
 }
 
 const initialState: UIState = {
@@ -18,6 +22,8 @@ const initialState: UIState = {
     unreadCount: 0,
     showNotificationPanel: false,
   },
+  orgPrimaryColor: null,
+  orgPortalTitle: null,
 };
 
 const uiSlice = createSlice({
@@ -33,6 +39,13 @@ const uiSlice = createSlice({
     setTheme: (state, action: PayloadAction<'light' | 'dark'>) => {
       state.theme = action.payload;
       localStorage.setItem('theme', action.payload);
+    },
+    setOrgBranding: (
+      state,
+      action: PayloadAction<{ primaryColor: string | null; portalTitle: string | null }>
+    ) => {
+      state.orgPrimaryColor = action.payload.primaryColor;
+      state.orgPortalTitle = action.payload.portalTitle;
     },
     setLanguage: (state, action: PayloadAction<string>) => {
       state.language = action.payload;
@@ -54,6 +67,7 @@ export const {
   toggleSidebar,
   setSidebarCollapsed,
   setTheme,
+  setOrgBranding,
   setLanguage,
   setUnreadNotifications,
   toggleNotificationPanel,

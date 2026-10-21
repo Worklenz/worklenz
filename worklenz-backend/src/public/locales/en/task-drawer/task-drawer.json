@@ -37,7 +37,8 @@
         "selectDate": "Select date",
         "selectOption": "Select option",
         "selectPeople": "Select people",
-        "updateError": "Failed to update custom field"
+        "updateError": "Failed to update custom field",
+        "enterText": "Enter text"
       },
       "recurring": "Recurring"
     },
@@ -112,6 +113,11 @@
     "totalLogged": "Total Logged",
     "exportToExcel": "Export to Excel",
     "noTimeLogsFound": "No time logs found",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this time log?",
+    "confirmDeleteYes": "Yes",
+    "confirmDeleteNo": "No",
     "timeLogForm": {
       "date": "Date",
       "startTime": "Start Time",

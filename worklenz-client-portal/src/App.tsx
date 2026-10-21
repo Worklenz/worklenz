@@ -1,27 +1,20 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { ConfigProvider } from '@/shared/antd-imports';
-import { App as AntdApp } from 'antd';
+import AntdApp from 'antd/es/app';
 
 import { store } from '@/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { socketManager } from '@/utils/socket';
 import { getThemeConfig } from '@/config/theme.config';
 import { AppRoutes } from '@/config/routes.config';
 import AuthProvider from '@/components/AuthProvider';
 
 const AppContent: React.FC = () => {
-  const { theme: currentTheme } = useAppSelector((state) => state.ui);
-
-  useEffect(() => {
-    return () => {
-      socketManager.disconnect();
-    };
-  }, []);
+  const { theme: currentTheme, orgPrimaryColor } = useAppSelector((state) => state.ui);
 
   return (
-    <ConfigProvider theme={getThemeConfig(currentTheme)}>
+    <ConfigProvider theme={getThemeConfig(currentTheme, orgPrimaryColor)}>
       <AntdApp>
         <AuthProvider>
           <Router>

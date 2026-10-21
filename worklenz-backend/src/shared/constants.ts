@@ -20,6 +20,7 @@ export const LOG_DESCRIPTIONS = {
   PROJECT_STATUS_CHANGED: "Project status changed by @user",
   PROJECT_MANAGER_ASSIGNED: "Project manager assigned by @user",
   PROJECT_MANAGER_REMOVED: "Project manager removed by @user",
+  PROJECT_MANAGER_FINANCE_CHANGED: "Project manager finance access changed by @user",
   TASK_CREATED: "Task created by @user",
   TASK_UPDATED: "Task updated by @user",
   PROJECT_MEMBER_ADDED: "was added to the project by",
@@ -38,6 +39,7 @@ export const LOG_I18N_KEYS = {
   PROJECT_STATUS_CHANGED: "activityLogs.project.statusChanged",
   PROJECT_MANAGER_ASSIGNED: "activityLogs.project.managerAssigned",
   PROJECT_MANAGER_REMOVED: "activityLogs.project.managerRemoved",
+  PROJECT_MANAGER_FINANCE_CHANGED: "activityLogs.project.managerFinanceChanged",
   TASK_CREATED: "activityLogs.task.created",
   TASK_UPDATED: "activityLogs.task.updated",
   PROJECT_MEMBER_ADDED: "activityLogs.project.memberAdded",
@@ -243,8 +245,8 @@ export const APPSUMO_PLAN_LIMIT = 50;
 
 // Guest seat limits per plan tier
 export const FREE_GUEST_LIMIT = 0;
-export const PRO_GUEST_LIMIT = 5; // Professional plan: 5 guest members limit
-export const APPSUMO_LTD_GUEST_LIMIT = 5; // Limited guest access for LTD users with 1-4 codes
+export const PRO_GUEST_LIMIT = -1; // Professional plan: unlimited guests (-1)
+export const APPSUMO_LTD_GUEST_LIMIT = -1; // LTD users are treated as Pro: unlimited guests (-1)
 export const BUSINESS_GUEST_LIMIT = -1; // -1 means unlimited
 export const SELF_HOSTED_GUEST_LIMIT = -1;
 

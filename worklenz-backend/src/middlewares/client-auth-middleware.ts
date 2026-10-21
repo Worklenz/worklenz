@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { ServerResponse } from "../models/server-response";
 import TokenService from "../services/token-service";
+import { getLoginAccessState } from "../services/client-contacts-service";
 import db from "../config/db";
+import { loadClientSubject } from "../services/client-portal-v2/subject";
 
 export interface AuthenticatedClientRequest extends Request {
   clientId?: string;
@@ -27,19 +29,25 @@ export const authenticateClient = async (
     
     if (isStateChanging) {
       const origin = req.headers.origin || req.headers.referer;
+      // Environment hostnames come from configuration (CLIENT_PORTAL_ALLOWED_ORIGINS, comma separated),
+      // never from code. Local dev servers are only allowed outside production.
+      const configuredOrigins = (process.env.CLIENT_PORTAL_ALLOWED_ORIGINS ?? "")
+        .split(",")
+        .map(value => value.trim());
+      const localOrigins =
+        process.env.NODE_ENV === "production"
+          ? []
+          : ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"];
       const allowedOrigins = [
         process.env.CLIENT_PORTAL_URL,
         process.env.FRONTEND_URL,
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:3000',
-        'https://clients.worklenz.com',
-        'https://dev.worklenz.com', // Add dev environment
-        'http://dev.worklenz.com',  // Add dev environment (http)
+        ...configuredOrigins,
+        ...localOrigins,
       ].filter((url): url is string => Boolean(url));
       
       // Only validate if we have origin/referer AND explicitly configured allowed origins
-      // If no origin header is present, allow (some clients don't send it)
+      // If no origin header is present, allow (some clients don't send it); the client token is the
+      // primary control here, this check is defense-in-depth only.
       // If origin is present but no allowed origins configured, allow (development mode)
       if (origin && typeof origin === 'string' && allowedOrigins.length > 0) {
         try {
@@ -106,14 +114,14 @@ export const authenticateClient = async (
     // Block access if client is inactive
     if (clientData.client_status === 'inactive') {
       return res.status(403).json(
-        new ServerResponse(false, null, "Client account is deactivated. Please contact your administrator.")
+        new ServerResponse(false, { code: "ACCESS_REVOKED" }, "Client account is deactivated. Please contact your administrator.")
       );
     }
 
     // Block access if portal access is explicitly disabled
     if (clientData.portal_access_active === false) {
       return res.status(403).json(
-        new ServerResponse(false, null, "Portal access is disabled for this client. Please contact your administrator.")
+        new ServerResponse(false, { code: "ACCESS_REVOKED" }, "Portal access is disabled for this client. Please contact your administrator.")
       );
     }
 
@@ -140,7 +148,41 @@ export const authenticateClient = async (
 
       if (!hasAccess) {
         return res.status(403).json(
-          new ServerResponse(false, null, "Access denied to this organization")
+          new ServerResponse(false, { code: "ACCESS_REVOKED" }, "Access denied to this organization")
+        );
+      }
+    }
+
+    // The token outlives changes made by an admin, so re-check this person on every request: the
+    // login must still exist and be active, and their company user must not be disabled.
+    if (tokenPayload.clientUserId) {
+      const access = await getLoginAccessState(db, tokenPayload.clientUserId, tokenPayload.clientId);
+
+      if (!access.exists) {
+        return res.status(401).json(
+          new ServerResponse(false, { code: "ACCESS_REVOKED" }, "Your access has been removed. Please contact your administrator.")
+        );
+      }
+
+      if (access.loginStatus !== "active" || access.isDisabled) {
+        return res.status(403).json(
+          new ServerResponse(false, { code: "ACCESS_REVOKED" }, "Your access has been disabled. Please contact your administrator.")
+        );
+      }
+    }
+
+    // The login can outlive the company user: removing a contact deletes the contact, not the login. So a
+    // token only works while this person is still an Active company user of this client (the same check the
+    // v2 routes make), which also stops a removed user from using or refreshing a still-valid token.
+    if (tokenPayload.clientUserId && tokenPayload.organizationId) {
+      const subject = await loadClientSubject(db, {
+        clientUserId: tokenPayload.clientUserId,
+        clientId: tokenPayload.clientId,
+        teamId: tokenPayload.organizationId,
+      });
+      if (!subject) {
+        return res.status(403).json(
+          new ServerResponse(false, { code: "ACCESS_REVOKED" }, "Your access has been removed. Please contact your administrator.")
         );
       }
     }

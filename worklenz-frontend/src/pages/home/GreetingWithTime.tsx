@@ -46,6 +46,8 @@ const getGreetingLabel = (tod: 'morning' | 'afternoon' | 'evening'): string => {
     pt: { morning: 'Bom dia', afternoon: 'Boa tarde', evening: 'Boa noite' },
     de: { morning: 'Guten Morgen', afternoon: 'Guten Tag', evening: 'Guten Abend' },
     zh_cn: { morning: '早上好', afternoon: '下午好', evening: '晚上好' },
+    pl: { morning: 'Dzień dobry', afternoon: 'Dzień dobry', evening: 'Dobry wieczór' },
+    fr: { morning: 'Bonjour', afternoon: 'Bon après-midi', evening: 'Bonsoir' },
   };
   return (map[lang] || map.en)[tod] || map.en[tod];
 };

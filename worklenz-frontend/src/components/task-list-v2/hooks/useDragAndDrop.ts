@@ -299,7 +299,7 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       setOverGroupId(null);
       setDropPosition(null);
 
-      if (!over) {
+      if (!over || currentGrouping === 'assignee') {
         return;
       }
 
@@ -359,6 +359,7 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
     },
     [
       allTasks,
+      currentGrouping,
       dispatch,
       emitTaskSortChange,
       getOverGroup,

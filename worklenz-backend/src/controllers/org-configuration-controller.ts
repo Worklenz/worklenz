@@ -4,7 +4,7 @@ import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
-import { hasBusinessPlanAccess } from "../ee/middlewares/subscription-middleware";
+import { canUseFeature } from "../shared/entitlements/gates";
 
 export default class OrgConfigurationController extends WorklenzControllerBase {
 
@@ -59,7 +59,7 @@ export default class OrgConfigurationController extends WorklenzControllerBase {
     const { restrict_task_creation, base_currency, timelog_backdate_limit_days } = req.body;
 
     // restrict_task_creation requires Business Plan
-    if (restrict_task_creation !== undefined && !hasBusinessPlanAccess(req.user)) {
+    if (restrict_task_creation !== undefined && !canUseFeature(req.user, "restrict_task_creation")) {
       return res.status(403).send(
         new ServerResponse(false, null, "This feature requires a Business plan.")
       );

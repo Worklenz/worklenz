@@ -13,7 +13,7 @@ import ProfileButton from './user-profile/ProfileButton';
 import SwitchTeamButton from './switch-team/SwitchTeamButton';
 import UpgradePlanButton from './upgrade-plan/UpgradePlanButton';
 import NotificationDrawer from '../../components/navbar/notifications/notifications-drawer/notification/notfication-drawer';
-import AddClientDrawer from '@/ee/components/client-portal/AddClientDrawer';
+import AddClientDrawer from '@/components/client-portal/AddClientDrawer';
 import UpgradePromptModal from '@/components/upgrade/UpgradePromptModal';
 import { TrialDaysBadge } from './trial-badge/TrialDaysBadge';
 

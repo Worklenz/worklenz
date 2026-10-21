@@ -27,29 +27,32 @@ import { themeWiseColor } from '@/utils/themeWiseColor';
 import { colors } from '@/styles/colors';
 import AttachmentsGrid from '../attachments/attachments-grid';
 import { TFunction } from 'i18next';
+import { formatDate } from '@/utils/dateUtils';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { sanitizeCommentContent, stripHtmlTags } from '@/utils/sanitizeInput';
 import { REACTION_CONFIGS } from '@/shared/reaction-config';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMember } from '@/types/teamMembers/teamMember.types';
 import CustomMentionsInput, { MentionOption } from './custom-mentions-input';
 import '../info-tab-footer.css';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 // Helper function to format date for time separators
-const formatDateForSeparator = (date: string) => {
+const formatDateForSeparator = (date: string, t?: TFunction) => {
   const today = dayjs();
   const commentDate = dayjs(date);
 
   if (commentDate.isSame(today, 'day')) {
-    return 'Today';
+    return t ? t('today', { defaultValue: 'Today' }) : 'Today';
   } else if (commentDate.isSame(today.subtract(1, 'day'), 'day')) {
-    return 'Yesterday';
+    return t ? t('yesterday', { defaultValue: 'Yesterday' }) : 'Yesterday';
   } else {
-    return commentDate.format('MMMM D, YYYY');
+    return formatDate(commentDate, 'LL');
   }
 };
 
@@ -169,6 +172,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
   const { targetCommentId } = useAppSelector(state => state.taskDrawerReducer);
   const dispatch = useAppDispatch();
   const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(null);
+  const { socket } = useSocket();
 
 
   // Inline-edit state
@@ -311,6 +315,23 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
       document.removeEventListener('task-comment-update', handleCommentUpdate);
     };
   }, [taskId, getComments, scrollIntoView]);
+
+  // Real-time sync for other members viewing the same task (Inbox / Project Updates pattern)
+  useEffect(() => {
+    if (!socket || !taskId) return;
+
+    const handleCommentsUpdated = (data: string | { task_id?: string }) => {
+      const updatedTaskId = typeof data === 'string' ? data : data?.task_id;
+      if (!updatedTaskId || updatedTaskId !== taskId) return;
+      getComments(false);
+    };
+
+    socket.on(SocketEvents.TASK_COMMENTS_UPDATED.toString(), handleCommentsUpdated);
+
+    return () => {
+      socket.off(SocketEvents.TASK_COMMENTS_UPDATED.toString(), handleCommentsUpdated);
+    };
+  }, [socket, taskId, getComments]);
 
   const canEdit = (userId?: string) => {
     if (!userId) return false;
@@ -557,7 +578,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
           backgroundColor: themeWiseColor('#fff', '#1e1e1e', themeMode),
         }}
       >
-        {formatDateForSeparator(date)}
+        {formatDateForSeparator(date, t)}
       </span>
     </div>
   );

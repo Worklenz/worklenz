@@ -138,7 +138,7 @@ export default class GanttController extends WorklenzControllerBase {
         t.parent_task_id,
         CASE WHEN t.done THEN 100 ELSE 0 END as progress,
         ts.name as status_name,
-        COALESCE(tsc.color_code, '#1890ff') as status_color,
+        COALESCE(ts.color_code, tsc.color_code, '#1890ff') as status_color,
         tp.name as priority_name,
         tp.value as priority_value,
         tp.color_code as priority_color,

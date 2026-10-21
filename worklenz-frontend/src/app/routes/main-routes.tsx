@@ -8,7 +8,7 @@ import settingsRoutes from './settings-routes';
 import adminCenterRoutes from './admin-center-routes';
 import { addonRoutes } from 'virtual:addons-registry';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/utils/subscription-utils';
 import FeatureUpgradePreview from '@/components/upgrade/FeatureUpgradePreview';
 import { useFinanceFeaturePreviews } from '@/components/upgrade/financeFeaturePreviews';
 import { Navigate, useLocation } from 'react-router-dom';
@@ -115,7 +115,7 @@ const GanttDemoPage = lazy(
 );
 const LicenseExpiredPage = lazy(
   ChunkErrorHandler.wrapLazyImport(
-    () => import('@/ee/pages/license-expired/LicenseExpired'),
+    () => import('@/pages/license-expired/LicenseExpired'),
     'LicenseExpiredPage'
   )
 );
@@ -256,7 +256,7 @@ const FINANCE_BASE_PATH = '/worklenz/finance';
 const FinanceRailLayout = () => {
   const authService = useAuthService();
   const location = useLocation();
-  const hasBusinessAccess = hasBusinessFeatureAccess(authService.getCurrentSession());
+  const hasBusinessAccess = canUseFeature(authService.getCurrentSession(), 'finance_module');
   const financePreviews = useFinanceFeaturePreviews();
   const { resolved: financeNavResolved } = useNavPreferences('finance');
 
@@ -388,9 +388,11 @@ const mainRoutes: RouteObject[] = [
           {
             path: 'add-client',
             element: (
-              <Suspense fallback={<SuspenseFallback />}>
-                <HomeAddClient />
-              </Suspense>
+              <AdminGuard>
+                <Suspense fallback={<SuspenseFallback />}>
+                  <HomeAddClient />
+                </Suspense>
+              </AdminGuard>
             ),
           },
         ],
@@ -451,9 +453,11 @@ const mainRoutes: RouteObject[] = [
           {
             path: 'templates',
             element: (
-              <Suspense fallback={<SuspenseFallback />}>
-                <TemplatesPage />
-              </Suspense>
+              <AdminGuard>
+                <Suspense fallback={<SuspenseFallback />}>
+                  <TemplatesPage />
+                </Suspense>
+              </AdminGuard>
             ),
           },
           {

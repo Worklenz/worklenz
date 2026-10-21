@@ -260,7 +260,7 @@ const Members: React.FC = () => {
       trigger={['click']}
       open={isDropdownOpen}
       onOpenChange={setIsDropdownOpen}
-      dropdownRender={() => (
+      popupRender={() => (
         <div
           style={{
             background: colors.dropdownBg,

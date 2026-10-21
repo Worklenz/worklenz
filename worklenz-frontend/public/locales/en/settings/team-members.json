@@ -38,6 +38,8 @@
   "jobTitleLabel": "Job Title",
   "jobTitlePlaceholder": "Select or search job title (Optional)",
   "memberAccessLabel": "Access Level",
+  "createFromTemplatesLabel": "Create projects from templates",
+  "createFromTemplatesHint": "Allows this member to create projects from templates. They become Project Manager of the new project without finance access. Does not allow blank project create.",
   "addToTeamButton": "Send Invitation",
   "updateButton": "Save Changes",
   "resendInvitationButton": "Resend Invitation Email",
@@ -233,5 +235,11 @@
   "guestInviteFailed": "Failed to invite guests: {{emails}}",
   "guestInviteError": "An error occurred while inviting guests",
   "partialSuccess": "{{count}} guest(s) invited successfully. Failed: {{emails}}",
-  "selectProjectFirst": "Select a project first"
+  "selectProjectFirst": "Select a project first",
+  "inviteLinkGeneratedCopyFailed": "Invitation link generated, but could not be copied automatically. Please copy it manually.",
+  "noManagedProjectsFound": "No projects where you are Project Manager",
+  "projectInvite_guestLimitExceeded": "Guest limit exceeded for this plan. Please upgrade to add more guests.",
+  "license-expired-subtitle": "Your Worklenz subscription has ended. Please renew to continue enjoying all features.",
+  "Failed to fetch job titles": "Failed to fetch job titles",
+  "assign_team_lead": "Assign team lead"
 }

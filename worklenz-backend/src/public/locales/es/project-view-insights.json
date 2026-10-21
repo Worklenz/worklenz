@@ -36,6 +36,7 @@
     "overdueTasksTooltip": "Tareas que están más allá de su fecha límite",
     "totalLoggedHoursTooltip": "Estimación de tareas y tiempo registrado para las tareas.",
     "includeArchivedTasks": "Incluir Tareas Archivadas",
-    "export": "Exportar"
+    "export": "Exportar",
+    "paginationRange": "{{from}}–{{to}} de {{total}}"
   }
 }

@@ -5,7 +5,7 @@ import sanitizeHtml from "sanitize-html";
 
 import { customAlphabet } from "nanoid";
 import { AvatarNamesMap, NumbersColorMap, WorklenzColorCodes } from "./constants";
-import { send_to_slack } from "../ee/shared/slack";
+import { send_to_slack } from "../shared/slack";
 import { IActivityLogChangeType } from "../services/activity-logs/interfaces";
 import { IRecurringSchedule } from "../interfaces/recurring-tasks";
 
@@ -193,6 +193,45 @@ const RICH_TEXT_SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
 export function sanitizeRichTextDescription(value: string | null): string {
   if (!value) return "";
   return sanitizeHtml(value, RICH_TEXT_SANITIZE_OPTIONS);
+}
+
+// Client Portal discussion messages are authored in a Tiptap editor: paragraphs, headings, bold /
+// italic / underline / strike, lists, links and @mention chips (span[data-type=mention]). Anything
+// else is dropped. Links are forced to open safely and only http(s)/mailto are kept.
+const DISCUSSION_SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
+  allowedTags: ["p", "br", "h1", "h2", "h3", "strong", "b", "em", "i", "u", "s", "ul", "ol", "li", "a", "blockquote", "code", "pre", "span"],
+  allowedAttributes: {
+    a: ["href", "target", "rel"],
+    span: ["class", "data-type", "data-id", "data-label"],
+  },
+  allowedSchemes: ["http", "https", "mailto"],
+  allowedClasses: { span: ["mention"] },
+  transformTags: {
+    a: sanitizeHtml.simpleTransform("a", { target: "_blank", rel: "noopener noreferrer nofollow" }),
+  },
+};
+
+/** Sanitizes a discussion message body authored in the rich-text composer. */
+export function sanitizeDiscussionHtml(value: string | null): string {
+  if (!value) return "";
+  return sanitizeHtml(value, DISCUSSION_SANITIZE_OPTIONS);
+}
+
+/** Sanitizes a Client Portal long-text field (notes, descriptions, responses) authored in the shared rich-text editor. */
+export function sanitizePortalRichText(value: string | null | undefined): string {
+  return sanitizeDiscussionHtml((value ?? "").trim());
+}
+
+/** Flattens HTML to text. Set preserveWhitespace for plain-text fields whose line breaks must be retained. */
+export function htmlToPlainText(value: string | null, preserveWhitespace = false): string {
+  if (!value) return "";
+  const spaced = preserveWhitespace ? value : value.replace(/<\/(p|li|h[1-6]|blockquote|pre)>|<br\s*\/?>/gi, " ");
+  const text = sanitizeHtml(spaced, { allowedTags: [], allowedAttributes: {} })
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&");
+  return (preserveWhitespace ? text : text.replace(/\s+/g, " ")).trim();
 }
 
 /**

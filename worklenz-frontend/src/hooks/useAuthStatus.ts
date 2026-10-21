@@ -1,11 +1,22 @@
 import { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuthService } from '@/hooks/useAuth';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
+
+const isFreePlanSession = (session: {
+  subscription_type?: string;
+  subscription_status?: string;
+} | null | undefined) =>
+  session?.subscription_type === ISUBSCRIPTION_TYPE.FREE ||
+  session?.subscription_status?.toLowerCase() === 'free';
 
 export const useAuthStatus = () => {
   const authService = useAuthService();
   const location = useLocation();
+  // Recompute after verify/login replaces the session. authService itself is stable,
+  // so a plan change (trial -> free, Google signup) would otherwise stay stale.
+  const authUser = useAppSelector(state => state.auth.user);
 
   const status = useMemo(() => {
     try {
@@ -29,12 +40,12 @@ export const useAuthStatus = () => {
       }
 
       const currentSession = authService.getCurrentSession();
-      const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
+      const isFreePlan = isFreePlanSession(currentSession);
       const isAdmin = authService.isOwnerOrAdmin() && !isFreePlan;
       const isSetupComplete = currentSession?.setup_completed ?? false;
 
       const isLicenseExpired = () => {
-        if (!currentSession) return false;
+        if (!currentSession || isFreePlan) return false;
         if (currentSession.is_expired) return true;
 
         // Check using valid_till_date for subscription types that can expire
@@ -74,7 +85,7 @@ export const useAuthStatus = () => {
         isSetupComplete: false,
       };
     }
-  }, [authService]);
+  }, [authService, authUser]);
 
   return { ...status, location };
 };

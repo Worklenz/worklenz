@@ -147,36 +147,6 @@
           "Llogari të klientëve të pakufizuar"
         ]
       },
-      "requests": {
-        "title": "Kërkesat",
-        "description": "Lërini klientët të paraqesin dhe të gjurmojnë kërkesat e shërbimit pa u larguar nga portali i tyre.",
-        "features": [
-          "Kërkesat për shërbime të paraqitura nga klienti",
-          "Pranoni, refuzoni ose ndiqni në një vend",
-          "Ndjekja e statusit nga paraqitja deri në përfundim",
-          "Lidhur direkt me shërbimin që u kërkua"
-        ]
-      },
-      "services": {
-        "title": "Shërbimet",
-        "description": "Publikoni shërbimet që klientët mund të kërkojnë dhe kontrolloni atë që mund të shohin.",
-        "features": [
-          "Një katalog i shërbimeve të kërkuara",
-          "Kontrollet e dukshmërisë për shërbim",
-          "Vëllimi i kërkesës për shërbim",
-          "Caktoni një pronar shërbimi në ekipin tuaj"
-        ]
-      },
-      "chats": {
-        "title": "Mesazhet",
-        "description": "Dërgojini mesazhe klientëve direkt nga i njëjti portal që përdorin për gjithçka tjetër.",
-        "features": [
-          "Mesazhe direkte me klientët",
-          "Një fije bisede për klient",
-          "Historia e bisedave e kërkueshme",
-          "Njoftimet kur një klient përgjigjet"
-        ]
-      },
       "invoices": {
         "title": "Faturat",
         "description": "Krijoni, dërgoni dhe gjurmoni faturat e klientit pa u larguar nga Worklenz.",
@@ -187,16 +157,6 @@
           "Statusi i pagesës me një shikim"
         ]
       },
-      "ticketing": {
-        "title": "Tiketimi",
-        "description": "Lërini klientët të mbledhin dhe të gjurmojnë biletat e mbështetjes direkt nga portali i tyre.",
-        "features": [
-          "Bileta mbështetëse të dorëzuara nga klienti",
-          "Ndjekja dhe përditësimet e statusit të biletave",
-          "Shënime dhe detyra të brendshme",
-          "Etiketimi me përparësi dhe SLA"
-        ]
-      },
       "settings": {
         "title": "Cilësimet e Portalit",
         "description": "Personalizoni portalin tuaj të klientit me markën tuaj.",
@@ -205,6 +165,66 @@
           "Titulli i markës nëpër portal",
           "Identiteti vizual i qëndrueshëm për klientët",
           "Detajet e kompanisë që klientët mund t'i shohin"
+        ]
+      },
+      "projects": {
+        "title": "Projektet e portalit",
+        "description": "Zgjidhni cilat projekte mund të shohin klientët dhe çfarë ndahet brenda secilit prej tyre.",
+        "features": [
+          "Switch the Client Portal on per project",
+          "Share tasks, files and milestones one by one",
+          "Everything stays Internal Only until you share it",
+          "Client-facing status, phase and progress"
+        ]
+      },
+      "approvals": {
+        "title": "Miratimet",
+        "description": "Merrni një regjistrim zyrtar dhe të regjistruar nga klientët në versionet e sakta të skedarëve.",
+        "features": [
+          "Ask a Client Admin to approve a file, milestone or task",
+          "The exact version or revision is recorded",
+          "Every decision is kept, with a full history",
+          "Overdue and awaiting approvals at a glance"
+        ]
+      },
+      "changeRequests": {
+        "title": "Kërkesat për ndryshim",
+        "description": "Rishikoni, vlerësoni dhe vendosni për ndryshimet e fushëveprimit, më pas kthejini ato të miratuara në punë.",
+        "features": [
+          "Clients submit scope changes from their portal",
+          "Estimate, approve, reject or ask for more information",
+          "Convert approved requests into tasks",
+          "Create quotes and invoices from a request"
+        ]
+      },
+      "discussions": {
+        "title": "Diskutimet",
+        "description": "Flisni me klientët për detyrën, dosjen ose miratimin e saktë, me komentet e brendshme të mbajtura private.",
+        "features": [
+          "Conversations attached to the work they are about",
+          "Client-visible replies and private internal comments",
+          "Mention client users, never by accident in internal notes",
+          "Unread tracking across your team"
+        ]
+      },
+      "auditLog": {
+        "title": "Regjistri i auditimit",
+        "description": "Një rekord i pandryshueshëm i aktivitetit të klientit dhe ekipit.",
+        "features": [
+          "Access, sharing, file, approval and change request events",
+          "Every entry is timestamped and attributed",
+          "Filter by client, event type or who acted",
+          "Export the filtered view as CSV"
+        ]
+      },
+      "preview": {
+        "title": "Portali i Klientit",
+        "description": "Shihni saktësisht se çfarë sheh një klient përpara se të ndani diçka.",
+        "features": [
+          "Preview as any active client user",
+          "Built from the same rules the portal enforces",
+          "See what is hidden from that user",
+          "Check what each role can do"
         ]
       }
     }
@@ -274,23 +294,6 @@
       "rowsPerPage": "Rreshtat për faqe: {{count}}"
     }
   },
-  "ticketingMockup": {
-    "openTickets": "Hap Biletat",
-    "inProgress": "Në progres",
-    "resolvedToday": "Zgjidhet sot",
-    "avgResponseTime": "Mesatar Koha e përgjigjes",
-    "ticketsCard": "Biletat",
-    "ticketNoColumn": "Bileta nr",
-    "clientColumn": "Klienti",
-    "subjectColumn": "Subjekti",
-    "priorityColumn": "Prioriteti",
-    "statusColumn": "Statusi",
-    "priorityHigh": "E lartë",
-    "priorityMedium": "Mesatar",
-    "priorityLow": "E ulët",
-    "statusOpen": "Hap",
-    "statusResolved": "E zgjidhur"
-  },
   "plannerMockup": {
     "chrome": {
       "daysOption": "Ditë",
@@ -333,5 +336,7 @@
       "utilColumn": "UTIL",
       "teamTotalRow": "Totali i ekipit"
     }
-  }
+  },
+  "paginationText": "{{from}}-{{to}} nga {{total}}",
+  "perPageText": "{{count}} / faqe"
 }

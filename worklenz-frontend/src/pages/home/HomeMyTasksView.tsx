@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import Skeleton from 'antd/es/skeleton';
 import Tooltip from 'antd/es/tooltip';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import {
   theme,
   Button,
@@ -37,6 +38,7 @@ import {
   setNavigationContext,
 } from '@/features/task-drawer/task-drawer.slice';
 import { setProjectId } from '@/features/project/project.slice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
@@ -74,6 +76,9 @@ const SIDE_ITEMS: { key: SideFilter; svg: string }[] = [
     svg: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
   },
 ];
+
+const isSideFilter = (value: string | null): value is SideFilter =>
+  SIDE_ITEMS.some(item => item.key === value);
 
 const BASE_QUERY_CONFIG: IHomeTasksConfig = {
   tasks_group_by: 0,
@@ -115,7 +120,12 @@ const HomeMyTasksView: React.FC = () => {
     'no-due': t('tasks.noDueDate', { defaultValue: 'No due date' }),
   }), [t]);
 
-  const [sideFilter, setSideFilter] = useState<SideFilter>('everything');
+  // A link can open this page on one of the side filters, e.g. `?filter=assigned-by-me`.
+  const [searchParams] = useSearchParams();
+  const [sideFilter, setSideFilter] = useState<SideFilter>(() => {
+    const requested = searchParams.get('filter');
+    return isSideFilter(requested) ? requested : 'everything';
+  });
   const [search,     setSearch]     = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortField, setSortField] = useState<SortField>(null);
@@ -244,7 +254,11 @@ const HomeMyTasksView: React.FC = () => {
   const totalCount = activeBody?.total ?? 0;
 
   const projectFilterOptions = useMemo(
-    () => (filterOptionsData?.body?.projects || []).map(p => ({ value: p.project_id, label: p.project_name || p.project_id || '' })),
+    () =>
+      (filterOptionsData?.body?.projects || []).map(p => ({
+        value: p.project_id,
+        label: decodeHtmlEntities(p.project_name || p.project_id || ''),
+      })),
     [filterOptionsData?.body?.projects]
   );
 
@@ -367,7 +381,7 @@ const HomeMyTasksView: React.FC = () => {
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, cursor: 'pointer' }}
           >
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-              {record.name}
+              {decodeHtmlEntities(record.name)}
             </span>
             <div className="row-action-button" style={{ flexShrink: 0 }}>
               <Tooltip title={t('myTasksView.openTask', { defaultValue: 'Open task' })} placement="right">
@@ -391,7 +405,7 @@ const HomeMyTasksView: React.FC = () => {
               flexShrink: 0, display: 'inline-block',
             }} />
             <span style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
-              {record.project_name || '—'}
+              {decodeHtmlEntities(record.project_name) || '—'}
             </span>
           </div>
         ),
@@ -866,7 +880,7 @@ const HomeMyTasksView: React.FC = () => {
                 <Dropdown
                   trigger={['click']}
                   menu={{
-                    items: [10, 20, 50].map(n => ({ key: String(n), label: String(n) })),
+                     items: [10, 20, 50, 100].map(n => ({ key: String(n), label: String(n) })),
                     selectedKeys: [String(pageSize)],
                     onClick: info => { setPageSize(Number(info.key)); setPage(1); },
                   }}

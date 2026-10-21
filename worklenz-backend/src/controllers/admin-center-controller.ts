@@ -22,9 +22,10 @@ import {
   getOwnerIdByTeam,
   getTeamMemberCount,
   getUsedStorage,
-} from "../ee/shared/paddle-utils";
+  getCurrentSubscriptionRef,
+} from "../shared/paddle-utils";
 import { appSumoService } from "../shared/private-extensions";
-import { PlanTrialService } from "../ee/services/plan-trial-service";
+import { PlanTrialService } from "../services/plan-trial-service";
 import {
   addModifier,
   cancelSubscription,
@@ -32,12 +33,14 @@ import {
   generatePayLinkRequest,
   pauseOrResumeSubscription,
   updateUsers,
-} from "../ee/shared/paddle-requests";
+} from "../shared/paddle-requests";
 import { statusExclude } from "../shared/constants";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
 import { uploadBase64, getOrganizationLogoKey, deleteObject, getRootDir } from "../shared/storage";
+import { actorFromSessionUser, logAuditEvent } from "../services/audit-log.service";
+import { AUDIT_EVENT_TYPE } from "../shared/audit-log-constants";
 
 export default class AdminCenterController extends WorklenzControllerBase {
   private static readonly TEAM_DELETE_BLOCKERS = {
@@ -54,9 +57,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
   } as const;
 
   private static async getSubscriptionId(ownerId: string): Promise<string> {
-    const q = `SELECT subscription_id FROM licensing_user_subscriptions WHERE user_id = $1;`;
-    const result = await db.query(q, [ownerId]);
-    return result.rows[0]?.subscription_id?.toString();
+    return (await getCurrentSubscriptionRef(ownerId)) as string;
   }
 
   private static async checkIfUserActiveInOtherTeams(
@@ -221,10 +222,32 @@ export default class AdminCenterController extends WorklenzControllerBase {
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const { name } = req.body;
+
+    // captured before the UPDATE so the audit entry can record a real
+    // old → new transition.
+    const previousNameResult = await db.query(
+      `SELECT organization_name FROM organizations WHERE user_id = $1`,
+      [req.user?.owner_id]
+    );
+    const previousName = previousNameResult.rows[0]?.organization_name;
+
     const q = `UPDATE organizations
                SET organization_name = $1
                WHERE user_id = $2;`;
     const result = await db.query(q, [name, req.user?.owner_id]);
+
+    if (req.user?.organization_id && previousName !== name) {
+      logAuditEvent({
+        organizationId: req.user.organization_id,
+        teamId: req.user.team_id || null,
+        actor: actorFromSessionUser(req.user),
+        eventType: AUDIT_EVENT_TYPE.WORKSPACE_RENAMED.id,
+        description: `Workspace renamed from "${previousName}" to "${name}"`,
+        oldValue: previousName,
+        newValue: name,
+      });
+    }
+
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
@@ -234,10 +257,31 @@ export default class AdminCenterController extends WorklenzControllerBase {
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const { contact_number } = req.body;
+
+    // captured before the UPDATE for the old → new audit entry.
+    const previousContactResult = await db.query(
+      `SELECT contact_number FROM organizations WHERE user_id = $1`,
+      [req.user?.owner_id]
+    );
+    const previousContactNumber = previousContactResult.rows[0]?.contact_number;
+
     const q = `UPDATE organizations
                SET contact_number = $1
                WHERE user_id = $2;`;
     const result = await db.query(q, [contact_number, req.user?.owner_id]);
+
+    if (req.user?.organization_id && previousContactNumber !== contact_number) {
+      logAuditEvent({
+        organizationId: req.user.organization_id,
+        teamId: req.user.team_id || null,
+        actor: actorFromSessionUser(req.user),
+        eventType: AUDIT_EVENT_TYPE.WORKSPACE_SETTING_CHANGED.id,
+        description: `Workspace owner contact number updated`,
+        oldValue: previousContactNumber,
+        newValue: contact_number,
+      });
+    }
+
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
@@ -430,6 +474,13 @@ export default class AdminCenterController extends WorklenzControllerBase {
         );
     }
 
+    // captured before the UPDATE for the old → new audit entry.
+    const previousCalcResult = await db.query(
+      `SELECT calculation_method, hours_per_day FROM organizations WHERE user_id = $1`,
+      [req.user?.owner_id]
+    );
+    const previousCalc = previousCalcResult.rows[0];
+
     const updateQuery = `
       UPDATE organizations 
       SET calculation_method = $1, 
@@ -449,6 +500,29 @@ export default class AdminCenterController extends WorklenzControllerBase {
       return res
         .status(404)
         .send(new ServerResponse(false, null, "Organization not found"));
+    }
+
+    if (
+      req.user?.organization_id &&
+      previousCalc &&
+      (previousCalc.calculation_method !== result.rows[0].calculation_method ||
+        previousCalc.hours_per_day !== result.rows[0].hours_per_day)
+    ) {
+      logAuditEvent({
+        organizationId: req.user.organization_id,
+        teamId: req.user.team_id || null,
+        actor: actorFromSessionUser(req.user),
+        eventType: AUDIT_EVENT_TYPE.WORKSPACE_SETTING_CHANGED.id,
+        description: `Workspace time calculation method changed to "${result.rows[0].calculation_method}"`,
+        oldValue: JSON.stringify({
+          calculation_method: previousCalc.calculation_method,
+          hours_per_day: previousCalc.hours_per_day,
+        }),
+        newValue: JSON.stringify({
+          calculation_method: result.rows[0].calculation_method,
+          hours_per_day: result.rows[0].hours_per_day,
+        }),
+      });
     }
 
     return res.status(200).send(
@@ -750,6 +824,8 @@ export default class AdminCenterController extends WorklenzControllerBase {
       : (subscriptionData?.quantity ?? null);
     data.billing_info.redeemed_codes_count = subscriptionData?.redeemed_codes_count ?? 0;
     data.billing_info.appsumo_business_eligible = subscriptionData?.appsumo_business_eligible === true;
+    data.billing_info.billing_provider = subscriptionData?.billing_provider ?? null;
+    data.billing_info.subscription_ref = subscriptionData?.subscription_ref ?? null;
 
     return res.status(200).send(new ServerResponse(true, data.billing_info));
   }
@@ -1321,6 +1397,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
         .send(new ServerResponse(false, null, blocker.message).withTitle(blocker.title));
     }
 
+    // captured before the DELETE purely for a readable description.
+    const teamNameResult = await db.query(`SELECT name FROM teams WHERE id = $1`, [id]);
+    const teamName = teamNameResult.rows[0]?.name;
+
     const q = `DELETE FROM teams
                WHERE id = $1
                  AND user_id = $2
@@ -1331,6 +1411,23 @@ export default class AdminCenterController extends WorklenzControllerBase {
       return res
         .status(200)
         .send(new ServerResponse(false, null, "Team not found").withTitle("Unable to delete team"));
+    }
+
+    // teamId is deliberately omitted/null here: audit_events.team_id
+    // writes land asynchronously (logAuditEvent is fire-and-forget via queueMicrotask), by
+    // which time the just-deleted team row above no longer exists, so passing its id would
+    // fail the FK constraint and the entry would silently be dropped. The organization
+    // itself is unaffected by deleting one of its teams (organizations.user_id = team's
+    // owner user_id, not teams.id — see the scope note in
+    // 1791193625587_create-audit-events-table.js), so organizationId is still valid.
+    if (req.user?.organization_id) {
+      logAuditEvent({
+        organizationId: req.user.organization_id,
+        teamId: null,
+        actor: actorFromSessionUser(req.user),
+        eventType: AUDIT_EVENT_TYPE.TEAM_DELETED.id,
+        description: `Deleted team "${teamName || id}"`,
+      });
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));
@@ -1396,7 +1493,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
 
         if (!userActiveInOtherTeams) {
           const response = await updateUsers(
-            subscriptionData.subscription_id,
+            subscriptionData.subscription_ref ?? subscriptionData.subscription_id,
             obj.user_count
           );
           if (!response.body.subscription_id)
@@ -1432,7 +1529,9 @@ export default class AdminCenterController extends WorklenzControllerBase {
         removedUserId: data.member.id,
       }
     );
-    return res.status(200).send(new ServerResponse(true, result.rows));
+    return res
+      .status(200)
+      .send(new ServerResponse(true, result.rows, "Team member deleted successfully."));
   }
 
   @HandleExceptions()
@@ -1570,6 +1669,19 @@ export default class AdminCenterController extends WorklenzControllerBase {
         state_code,
         auto_sync_holidays,
       ]);
+    }
+
+    // Audit log
+    if (req.user?.organization_id && previousCountryCode !== country_code) {
+      logAuditEvent({
+        organizationId: req.user.organization_id,
+        teamId: req.user.team_id || null,
+        actor: actorFromSessionUser(req.user),
+        eventType: AUDIT_EVENT_TYPE.WORKSPACE_SETTING_CHANGED.id,
+        description: `Workspace holiday country changed`,
+        oldValue: previousCountryCode || null,
+        newValue: country_code || null,
+      });
     }
 
     // When country changes, remove previously auto-synced official holidays from

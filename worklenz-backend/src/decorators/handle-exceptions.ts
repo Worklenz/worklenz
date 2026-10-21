@@ -4,6 +4,7 @@ import {DEFAULT_ERROR_MESSAGE} from "../shared/constants";
 import {DB_CONSTRAINS} from "../shared/constraints";
 import {log_error} from "../shared/utils";
 import {Response} from "express";
+import { handleSecurityPolicyError } from "../services/security-policy.service";
 
 interface IExceptionHandlerConfig {
   message?: string;
@@ -44,7 +45,27 @@ function getKeys(error: any) {
   return ((error?.message) || "").split(":");
 }
 
-function handleError(error: any, res: Response, opt: any, req: any) {
+/**
+ * The generic "Unknown error has occurred." hides the real exception, which is
+ * otherwise only printed in the server terminal (log_error). In development,
+ * append its code + message so the cause is visible right in the browser's
+ * Network preview / toast. Explicitly gated on NODE_ENV === "development" (the
+ * same rule app.ts uses for stack traces) so no other environment ever exposes
+ * internal error text.
+ */
+function withDevCause(message: string, error: any): string {
+  if (process.env.NODE_ENV !== "development") return message;
+  const cause = [error?.code, error?.message].filter(Boolean).join(": ");
+  return cause ? `${message} [${cause}]` : message;
+}
+
+async function handleError(error: any, res: Response, opt: any, req: any) {
+  const securityRejection = await handleSecurityPolicyError(error, req.user?.team_id, req.user?.id);
+  if (securityRejection) {
+    return res.status(securityRejection.status).send(new ServerResponse(
+      false, { error_code: securityRejection.code }, securityRejection.message,
+    ));
+  }
   const constraint = getConstraint(error);
   if (typeof constraint === "string") {
     const response = getConstraintResponse(constraint);
@@ -60,7 +81,7 @@ function handleError(error: any, res: Response, opt: any, req: any) {
   }
 
   log_error(error, (opt.logWithError && req[opt.logWithError]) || null);
-  return res.status(200).send(new ServerResponse(false, null, opt.message));
+  return res.status(200).send(new ServerResponse(false, null, withDevCause(opt.message, error)));
 }
 
 /** HandleExceptions can only be used with an instance of WorklenzControllerBase. */

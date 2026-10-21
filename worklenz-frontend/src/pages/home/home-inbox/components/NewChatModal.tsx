@@ -3,10 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { Flex, Input, Modal, Spin, Typography } from '@/shared/antd-imports';
 import { SearchOutlined, UserOutlined } from '@ant-design/icons';
 import { useGetProjectsByTeamQuery } from '@/api/home-page/home-page.api.service';
-import { useGetClientsQuery } from '@/ee/api/client-portal/client-portal-api';
+import { useGetClientsQuery } from '@/api/client-portal/client-portal-api';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@utils/themeWiseColor';
 import { InboxConversation } from '../hooks/useInboxConversations';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 export type NewChatMode = 'project' | 'client';
 
@@ -109,7 +110,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({
       footer={null}
       title={t('newChat', { defaultValue: 'New chat' })}
       width={420}
-      destroyOnClose
+      destroyOnHidden
     >
       <Input
         placeholder={
@@ -162,7 +163,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({
                     background: (project as any).color_code || '#1677ff',
                   }}
                 />
-                <span style={nameStyle}>{project.name}</span>
+                <span style={nameStyle}>{decodeHtmlEntities(project.name)}</span>
                 {existingConversationIds.includes(project.id as string) && (
                   <Typography.Text type="secondary" style={{ fontSize: 11, flexShrink: 0 }}>
                     {t('alreadyStarted', { defaultValue: 'Has messages' })}
@@ -186,14 +187,17 @@ const NewChatModal: React.FC<NewChatModalProps> = ({
                 onClick={() =>
                   existing
                     ? onSelectClientConversation(existing)
-                    : onStartClientChat({ id: client.id, name: client.name })
+                    : onStartClientChat({
+                        id: client.id,
+                        name: decodeHtmlEntities(client.name),
+                      })
                 }
                 style={rowStyle}
                 onMouseEnter={e => (e.currentTarget.style.background = hoverBg)}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
                 <UserOutlined style={{ flexShrink: 0, color: iconColor }} />
-                <span style={nameStyle}>{client.name}</span>
+                <span style={nameStyle}>{decodeHtmlEntities(client.name)}</span>
                 {existing && (
                   <Typography.Text type="secondary" style={{ fontSize: 11, flexShrink: 0 }}>
                     {t('alreadyStarted', { defaultValue: 'Has messages' })}

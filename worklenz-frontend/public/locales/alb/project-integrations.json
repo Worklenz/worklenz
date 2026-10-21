@@ -5,10 +5,9 @@
   "manageAll": "Menaxho të gjitha integrimet",
   "comingSoon": "Së shpejti",
   "cancel": "Anulo",
-
   "slack": {
-    "title": "Slack",
-    "description": "Dërgo njoftime në kanalet e Slack",
+    "title": "I plogët",
+    "description": "Merr përditësime për detyrat, statusin dhe komentet në kanalet e tua Slack",
     "notConnected": "Ju lutemi lidhni hapësirën tuaj të punës së Slack në Cilësimet fillimisht",
     "quickAddTitle": "Shto Slack në Projekt",
     "currentProject": "Projekti",
@@ -20,17 +19,17 @@
     "addButton": "Shto Integrimin",
     "inviteBotTip": "Këshillë: Sigurohuni që të ftoni bot-in @Worklenz në kanalin tuaj të Slack fillimisht!"
   },
-
   "teams": {
-    "title": "Microsoft Teams",
-    "description": "Dërgo njoftime në kanalet e Teams"
+    "title": "Ekipet e Microsoft",
+    "description": "Posto përditësime për detyrat dhe statusin në kanalet e tua Teams"
   },
-
   "github": {
     "title": "GitHub",
-    "description": "Sinkronizo detyrat me çështjet e GitHub"
+    "description": "Ndiq degët, pull request-et dhe commit-et te detyrat",
+    "softwareDescription": "Degë, pull request-e dhe commit-e në çdo detyrë, me përditësim automatik të statusit",
+    "softwareOnly": "Projekte softuerike",
+    "connectDescription": "Lidh GitHub për të lidhur depot, ndjekur pull request-et dhe automatizuar statusin e detyrave"
   },
-
   "notificationTypes": {
     "taskCreated": "Detyra u krijua",
     "taskAssigned": "Detyra e caktuar",
@@ -39,20 +38,18 @@
     "commentAdded": "Koment i shtuar",
     "dueDateChanged": "Afati i ndryshuar"
   },
-
   "validation": {
     "selectChannel": "Ju lutemi zgjidhni një kanal të Slack",
     "selectNotifications": "Ju lutemi zgjidhni të paktën një lloj njoftimi"
   },
-
   "messages": {
     "integrationAdded": "Integrimi i Slack u shtua me sukses!",
     "channelsRefreshed": "Kanalet u rifreskuan me sukses"
   },
-
   "errors": {
     "loadChannelsFailed": "Dështoi ngarkimi i kanaleve",
     "refreshChannelsFailed": "Dështoi rifreskimi i kanaleve",
     "addIntegrationFailed": "Dështoi shtimi i integrimit"
-  }
+  },
+  "businessPlan": "Biznes"
 }

@@ -47,7 +47,7 @@
   "taskAttachmentsEmptyText": "Nenhum anexo de tarefa encontrado.",
   "taskAttachmentDeleteSuccess": "Anexo excluído com sucesso.",
   "taskAttachmentDeleteFailed": "Não foi possível excluir o anexo.",
-  "linksTab": "Links",
+  "linksTab": "Ligações",
   "addLink": "Adicionar Link",
   "editLink": "Editar Link",
   "linkTitle": "Título",
@@ -63,5 +63,9 @@
   "deleteLink": "Excluir link",
   "openTask": "Abrir tarefa",
   "fromTask": "De: {{taskName}}",
-  "noLinks": "Ainda não há links. Clique em \"Adicionar Link\" para adicionar seu primeiro link."
+  "noLinks": "Ainda não há links. Clique em \"Adicionar Link\" para adicionar seu primeiro link.",
+  "linksPaginationSummary": "{{start}}–{{end}} de {{count}} links",
+  "uploadExpired": "A sessão de upload expirou. Por favor, tente novamente.",
+  "fileTooLargePopoverTitle": "Arquivo muito grande",
+  "fileTooLargePopoverBody": "Arquivos maiores que 25 MB exigem o plano Business. Este arquivo tem {{sizeMb}} MB. Atualize para fazer upload de arquivos maiores."
 }

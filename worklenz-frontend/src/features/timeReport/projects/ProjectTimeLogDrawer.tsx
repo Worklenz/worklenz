@@ -17,6 +17,7 @@ import jsonData from './ProjectTimeLog.json';
 import { AvatarNamesMap, durations } from '../../../shared/constants';
 import './ProjectTimeLogDrawer.css';
 import { useTranslation } from 'react-i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import TimeWiseFilter from '@/components/reporting/time-wise-filter';
 import { IProjectLogsBreakdown, ITimeLogBreakdownReq } from '@/types/reporting/reporting.types';
 import { reportingTimesheetApiService } from '@/api/reporting/reporting.timesheet.api.service';
@@ -83,7 +84,7 @@ const ProjectTimeLogDrawer: React.FC = () => {
           <TimeWiseFilter />
         </div>
       }
-      destroyOnClose
+      destroyOnHidden
       afterOpenChange={() => {
         handleDrawerOpen();
       }}
@@ -120,7 +121,7 @@ const ProjectTimeLogDrawer: React.FC = () => {
                     </Avatar>
                     <Typography.Text>
                       <b>{log.user_name}</b> {t('logged')} <b>{log.time_spent_string}</b> {t('for')}{' '}
-                      <b>{log.task_name}</b> <Tag>{log.task_key}</Tag>
+                      <b>{decodeHtmlEntities(log.task_name)}</b> <Tag>{log.task_key}</Tag>
                     </Typography.Text>
                   </div>
                 </Timeline.Item>

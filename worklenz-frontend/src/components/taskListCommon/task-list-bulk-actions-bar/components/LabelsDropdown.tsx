@@ -13,6 +13,7 @@ import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 import { InputRef } from 'antd/es/input';
 import { useEffect, useMemo } from 'react'; // Add useMemo for filtering
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface LabelsDropdownProps {
   labelsList: ITaskLabel[];
@@ -95,7 +96,7 @@ const LabelsDropdown = ({
                   checked={selectedLabels.some(l => l.id === label.id)}
                   onChange={e => onLabelChange(e, label)}
                 >
-                  <Badge color={label.color_code} text={label.name} />
+                  <Badge color={label.color_code} text={decodeHtmlEntities(label.name)} />
                 </Checkbox>
               </List.Item>
             ))

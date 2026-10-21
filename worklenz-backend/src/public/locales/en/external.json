@@ -1,0 +1,64 @@
+{
+  "slack": {
+    "task_created": {
+      "title": "Task Created"
+    },
+    "task_assigned": {
+      "title": "Task Assigned"
+    },
+    "task_completed": {
+      "title": "Task Completed"
+    },
+    "comment_added": {
+      "title": "Comment Added"
+    },
+    "priority_changed": {
+      "title": "Priority Changed"
+    },
+    "due_date_changed": {
+      "title": "Due Date Changed"
+    },
+    "task_updated": {
+      "title": "Task Updated"
+    },
+    "task_status_changed": {
+      "title": "Task Status Changed"
+    },
+    "viewTask": "View Task",
+    "assignedTo": "👥 Assigned To",
+    "assignedBy": "👤 Assigned By",
+    "statusChange": "📊 Status Change",
+    "changedBy": "👤 Changed By",
+    "createdBy": "👤 Created By",
+    "commentedBy": "💬 Commented By",
+    "updatedBy": "👤 Updated By",
+    "status": "📊 Status",
+    "currentStatus": "📊 Current Status",
+    "priority": "Priority",
+    "dueDate": "Due Date",
+    "assignees": "👥 Assignees",
+    "comment": "Comment",
+    "priorityChanged": "🔺 Priority Changed",
+    "dueDateChanged": "📅 Due Date Changed",
+    "updatedByWithUser": "Updated by {{user}}"
+  },
+  "teams": {
+    "task": "Task",
+    "project": "Project",
+    "assignees": "Assignees",
+    "assignedBy": "Assigned By",
+    "createdBy": "Created By",
+    "commentedBy": "Commented By",
+    "updatedBy": "Updated By",
+    "status": "Status",
+    "priority": "Priority",
+    "dueDate": "Due Date",
+    "previousStatus": "Previous Status",
+    "newStatus": "New Status",
+    "previousPriority": "Previous Priority",
+    "newPriority": "New Priority",
+    "statusChange": "Status Change",
+    "changedBy": "Changed By",
+    "viewTask": "View Task"
+  }
+}

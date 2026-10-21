@@ -4,6 +4,7 @@ import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSocket } from '@/socket/socketContext';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import dayjs from 'dayjs';
 import GanttTimeline from './components/gantt-timeline/GanttTimeline';
 import GanttTaskList from './components/gantt-task-list/GanttTaskList';
@@ -27,6 +28,7 @@ import {
 } from './services/roadmap-api.service';
 import { UnifiedTimelineCalculator } from './utils/unified-timeline-calculator';
 import { formatDateLocal } from './utils/date-utils';
+import { createHorizontalScrollSync } from './utils/horizontal-scroll-sync';
 import { getColumnWidth } from './constants/gantt-constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -111,6 +113,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const statusCategories = useAppSelector(state => state.taskStatusReducer?.statusCategories || []);
   const priorities = useAppSelector(state => state.priorityReducer?.priorities || []);
   const currentProject = useAppSelector(state => state.projectReducer?.project);
+  const isSoftwareProject = isSoftwareProjectType(currentProject?.project_type);
 
   // RTK Query hooks
   const {
@@ -122,10 +125,8 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     { projectId: projectId || '', groupBy: groupingMode },
     {
       skip: !projectId,
-      // No socket listener covers another user's edits landing on this
-      // project while this view is open (the socket usage here is all
-      // emit+once for this user's own actions) — polling is the only thing
-      // that surfaces those, so it stays on despite the cache tuning below.
+      // Socket listeners below refetch on phase/date/status/priority changes.
+      // Polling remains as a safety net for edits that do not emit those events.
       pollingInterval: 30000,
     }
   );
@@ -142,6 +143,39 @@ const ProjectViewGantt: React.FC = React.memo(() => {
       pollingInterval: 30000,
     }
   );
+
+  // Keep roadmap phase grouping in sync when a task's phase (or dates/status/
+  // priority) changes — e.g. assigning a dated task to a phase from the drawer.
+  // Without this, the view only updates on the 30s poll.
+  useEffect(() => {
+    if (!socket || !projectId) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleRoadmapRelevantChange = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        refetchTasks();
+        refetchPhases();
+      }, 150);
+    };
+
+    const events = [
+      SocketEvents.TASK_PHASE_CHANGE.toString(),
+      SocketEvents.TASK_START_DATE_CHANGE.toString(),
+      SocketEvents.TASK_END_DATE_CHANGE.toString(),
+      SocketEvents.TASK_STATUS_CHANGE.toString(),
+      SocketEvents.TASK_PRIORITY_CHANGE.toString(),
+      SocketEvents.PROJECT_UPDATES_AVAILABLE.toString(),
+    ];
+
+    events.forEach(event => socket.on(event, handleRoadmapRelevantChange));
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      events.forEach(event => socket.off(event, handleRoadmapRelevantChange));
+    };
+  }, [socket, projectId, refetchTasks, refetchPhases]);
 
   const [reorderPhases, { isLoading: isReordering }] = useReorderPhasesMutation();
 
@@ -170,6 +204,10 @@ const ProjectViewGantt: React.FC = React.memo(() => {
               if (task.type === 'milestone' || task.is_milestone) {
                 const taskCopy: GanttTask = {
                   ...task,
+                  name:
+                    task.id === 'phase-unmapped' && isSoftwareProject
+                      ? t('backlogGroupName', { defaultValue: 'Backlog' })
+                      : task.name,
                   start_date: task.start_date ? new Date(task.start_date) : null,
                   end_date: task.end_date ? new Date(task.end_date) : null,
                   children: task.children ? [...task.children] : undefined,
@@ -263,7 +301,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
       }
     }
     return [];
-  }, [tasksResponse, phasesResponse, statusCategories, statuses, groupingMode, phaseSortMode, currentProject, priorities, themeMode])
+  }, [tasksResponse, phasesResponse, statusCategories, statuses, groupingMode, phaseSortMode, currentProject, priorities, themeMode, isSoftwareProject, t])
 
   // Ids of top-level sections that actually exist right now (phase/status/priority
   // groups) for the active grouping mode. Used below instead of raw `expandedTasks.size`
@@ -637,15 +675,18 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
   // where the two panels' scrollable heights aren't pixel-identical.
   const isSyncingScrollRef = useRef(false);
 
-  const handleChartScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    if (isSyncingScrollRef.current) return;
-    isSyncingScrollRef.current = true;
+  // Horizontal chart/header sync has its own echo handling and deliberately bypasses
+  // isSyncingScrollRef: that frame-based flag can't tell the header's delayed echo apart
+  // from a genuine header scroll.
+  const horizontalScrollSyncRef = useRef(createHorizontalScrollSync());
 
+  const handleChartScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const target = e.target as HTMLDivElement;
 
-    if (timelineRef.current) {
-      timelineRef.current.scrollLeft = target.scrollLeft;
-    }
+    horizontalScrollSyncRef.current.syncFromChart(target, timelineRef.current);
+
+    if (isSyncingScrollRef.current) return;
+    isSyncingScrollRef.current = true;
 
     if (taskListRef.current) {
       taskListRef.current.scrollTop = target.scrollTop;
@@ -674,20 +715,9 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
   // Mirrors handleChartScroll in the other direction — the date header (GanttTimeline) is
   // independently overflow-x-auto/scrollable (trackpad horizontal swipe, shift+wheel while
   // hovering the header), and without this the header could scroll away from the grid with
-  // nothing to bring it back. Same isSyncingScrollRef re-entrancy guard as the other panels.
+  // nothing to bring it back.
   const handleTimelineScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    if (isSyncingScrollRef.current) return;
-    isSyncingScrollRef.current = true;
-
-    const target = e.target as HTMLDivElement;
-
-    if (chartRef.current) {
-      chartRef.current.scrollLeft = target.scrollLeft;
-    }
-
-    requestAnimationFrame(() => {
-      isSyncingScrollRef.current = false;
-    });
+    horizontalScrollSyncRef.current.syncFromTimeline(e.target as HTMLDivElement, chartRef.current);
   }, []);
 
   const handleRefresh = useCallback(() => {
@@ -701,6 +731,50 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
       dispatch(fetchTaskGroups(projectId));
     }
   }, [refetchTasks, refetchPhases, dispatch, projectId]);
+
+  // Listen for task date changes via socket so the roadmap timeline/bars update in
+  // real-time when start or end dates are added, changed, or removed — without waiting
+  // for the 30-second polling interval. The socket response payload for these events
+  // contains the updated task, so we use it to directly patch the RTK Query cache so
+  // the bar disappears (or updates) immediately without a full refetch round-trip.
+  useEffect(() => {
+    if (!socket || !projectId) return;
+
+    const handleDateChange = (data: { id: string; start_date?: string | null; end_date?: string | null }) => {
+      if (!data?.id) return;
+
+      // Patch the RTK Query cache for all active groupBy variants so whichever
+      // grouping mode is selected sees the update immediately.
+      const groupByModes: GanttGroupingMode[] = ['phase', 'status', 'priority'];
+      groupByModes.forEach(groupBy => {
+        dispatch(
+          roadmapApi.util.updateQueryData('getRoadmapTasks', { projectId, groupBy }, draft => {
+            const task = draft.body.find(t => t.id === data.id);
+            if (task) {
+              if ('start_date' in data) task.start_date = data.start_date ?? null;
+              if ('end_date' in data) task.end_date = data.end_date ?? null;
+            }
+            // Also patch subtasks in case the task is a child
+            draft.body.forEach(parentTask => {
+              const subtask = parentTask.subtasks?.find(s => s.id === data.id);
+              if (subtask) {
+                if ('start_date' in data) subtask.start_date = data.start_date ?? null;
+                if ('end_date' in data) subtask.end_date = data.end_date ?? null;
+              }
+            });
+          })
+        );
+      });
+    };
+
+    socket.on(SocketEvents.TASK_START_DATE_CHANGE.toString(), handleDateChange);
+    socket.on(SocketEvents.TASK_END_DATE_CHANGE.toString(), handleDateChange);
+
+    return () => {
+      socket.off(SocketEvents.TASK_START_DATE_CHANGE.toString(), handleDateChange);
+      socket.off(SocketEvents.TASK_END_DATE_CHANGE.toString(), handleDateChange);
+    };
+  }, [socket, projectId, dispatch]);
 
   const handleCreatePhase = useCallback(() => {
     setShowPhaseModal(true);
@@ -1135,13 +1209,6 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
           left: scrollPosition,
           behavior: 'smooth',
         });
-
-        if (timelineRef.current) {
-          timelineRef.current.scrollTo({
-            left: scrollPosition,
-            behavior: 'smooth',
-          });
-        }
 
         // Highlight the task's own date span in the header, matching how the "Today"
         // button focuses its column, so the scroll reads as landing on this task's bar.

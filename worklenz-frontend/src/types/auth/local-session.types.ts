@@ -15,8 +15,11 @@ export interface ILocalSession extends IUserType {
   is_member?: boolean;
   role_name?: string;
   is_guest?: boolean;
+  /** Phase 5 — may create projects from templates (Owner/Admin always true). */
+  can_create_projects_from_templates?: boolean;
   build_v?: string;
   is_google?: boolean;
+  has_password?: boolean;
   setup_completed?: boolean;
   my_setup_completed?: boolean;
   timezone?: string;
@@ -54,6 +57,15 @@ export interface ILocalSession extends IUserType {
   effective_user_limit?: number;
   base_user_limit?: number;
   ltd_users?: number;
+  // Resolved plan entitlements (backend resolveEntitlements). Gates read it through canUseFeature() in subscription-utils.
+  entitlements?: {
+    tier: 'free' | 'pro' | 'business' | 'enterprise';
+    features: string[];
+    guest_limit: number; // -1 = unlimited
+    seat_limit: number | null; // -1 = unlimited, null = unknown
+    primary_source: string;
+    enforced: boolean; // true when gates follow entitlements (backend ENTITLEMENTS_ENFORCE=on)
+  };
   // Timestamp fields
   created_at?: string;
   updated_at?: string;

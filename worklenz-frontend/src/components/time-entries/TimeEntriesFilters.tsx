@@ -1,14 +1,29 @@
 import React from 'react';
-import { Flex, Select, Input, DatePicker, ConfigProvider } from '@/shared/antd-imports';
-import { SearchOutlined } from '@ant-design/icons';
+import { Flex, Input, Dropdown, Button } from '@/shared/antd-imports';
+import { SearchOutlined, CaretDownFilled, ExportOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
-import type { Dayjs } from 'dayjs';
 import PillToggle from '@/pages/home/PillToggle';
+import {
+  TimeEntriesGroupBy,
+  TimeEntriesScope,
+  TimeEntriesTableView,
+} from '@/api/tasks/task-time-logs.api.service';
+import { TimeEntriesFilterPanel } from './TimeEntriesFilterPanel';
 
-export type DateFilter = 'today' | 'yesterday' | 'last_week' | 'no_logged_time' | 'custom';
+export type DateFilter = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'no_logged_time' | 'custom';
 
 interface Project {
+  id: string;
+  name: string;
+}
+
+interface PersonOption {
+  id: string;
+  name: string;
+  avatar_url?: string | null;
+}
+
+interface ClientOption {
   id: string;
   name: string;
 }
@@ -18,10 +33,37 @@ interface TimeEntriesFiltersProps {
   onDateFilterChange: (filter: DateFilter) => void;
   dateRange: [string, string] | null;
   onDateRangeChange: (range: [string, string] | null) => void;
-  projectId: string | undefined;
-  onProjectChange: (id: string | undefined) => void;
+  projectIds: string[];
+  onProjectIdsChange: (ids: string[]) => void;
   projects: Project[];
   onSearch: (q: string) => void;
+
+  groupBy: TimeEntriesGroupBy;
+  onGroupByChange: (groupBy: TimeEntriesGroupBy) => void;
+  /** Hide "Member" from the Group-by dropdown — it would always resolve to a
+   * single group (the viewer themself) for a Member-scope viewer. */
+  hideMemberGroupOption: boolean;
+
+  /** All/My toggle is only rendered when the viewer has an expanded scope. */
+  hasExpandedScope: boolean;
+  scope: TimeEntriesScope;
+  onScopeChange: (scope: TimeEntriesScope) => void;
+
+  /** Flat (entries as logged) vs By task (one row per task, time summed).
+   * Only rendered when `showTableViewToggle` — it switches the flat table,
+   * which isn't on screen while a Group-by is active. */
+  tableView: TimeEntriesTableView;
+  onTableViewChange: (view: TimeEntriesTableView) => void;
+  showTableViewToggle: boolean;
+
+  personOptions: PersonOption[];
+  personIds: string[];
+  onPersonIdsChange: (ids: string[]) => void;
+  clientOptions: ClientOption[];
+  clientIds: string[];
+  onClientIdsChange: (ids: string[]) => void;
+
+  onExport: (mode: 'filtered' | 'all') => void;
 }
 
 export const TimeEntriesFilters: React.FC<TimeEntriesFiltersProps> = ({
@@ -29,10 +71,26 @@ export const TimeEntriesFilters: React.FC<TimeEntriesFiltersProps> = ({
   onDateFilterChange,
   dateRange,
   onDateRangeChange,
-  projectId,
-  onProjectChange,
+  projectIds,
+  onProjectIdsChange,
   projects,
   onSearch,
+  groupBy,
+  onGroupByChange,
+  hideMemberGroupOption,
+  hasExpandedScope,
+  scope,
+  onScopeChange,
+  tableView,
+  onTableViewChange,
+  showTableViewToggle,
+  personOptions,
+  personIds,
+  onPersonIdsChange,
+  clientOptions,
+  clientIds,
+  onClientIdsChange,
+  onExport,
 }) => {
   const { t } = useTranslation('time-entries');
   const [searchValue, setSearchValue] = React.useState('');
@@ -48,86 +106,110 @@ export const TimeEntriesFilters: React.FC<TimeEntriesFiltersProps> = ({
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
   }, []);
 
-  const [dateError, setDateError] = React.useState<string | null>(null);
+  // Members filter only makes sense once the viewer can see more than their
+  // own entries. Client filter is passed through unconditionally below —
+  // it's always relevant since even a viewer's own projects can span
+  // multiple clients, regardless of scope.
+  const showPersonFilter = scope === 'all' && hasExpandedScope;
 
-  const handleRangeChange = (dates: [Dayjs | null, Dayjs | null] | null, dateStrings: [string, string]) => {
-    if (dates && dates[0] && dates[1]) {
-      if (dates[1].isBefore(dates[0], 'day')) {
-        setDateError('End date must not be before start date.');
-        onDateRangeChange(null);
-        return;
-      }
-      setDateError(null);
-      onDateRangeChange([dateStrings[0], dateStrings[1]]);
-    } else {
-      setDateError(null);
-      onDateRangeChange(null);
-    }
-  };
-
-  // Date filters operate on when time was logged, not the task due date.
-  const dateOptions: { label: string; value: DateFilter }[] = [
-    { label: t('filterToday', { defaultValue: 'Logged for Today' }), value: 'today' },
-    { label: t('filterYesterday', { defaultValue: 'Yesterday' }), value: 'yesterday' },
-    { label: t('filterLastWeek', { defaultValue: 'Last Week' }), value: 'last_week' },
-    { label: t('filterNoLoggedTime', { defaultValue: 'No Logged Time' }), value: 'no_logged_time' },
-    { label: t('filterCustomRange', { defaultValue: 'Custom Range' }), value: 'custom' },
+  // Order matches the Group-by dropdown's intended reading order: None,
+  // Member, Project, Client. There's deliberately no "Task" option — per-task
+  // totals are the "By task" table view (toggle above) instead.
+  const groupByOptions: { key: TimeEntriesGroupBy; label: string }[] = [
+    { key: 'none', label: t('groupByNone', { defaultValue: 'None' }) },
+    ...(hideMemberGroupOption ? [] : [{ key: 'member' as const, label: t('groupByMember', { defaultValue: 'Member' }) }]),
+    { key: 'project', label: t('groupByProject', { defaultValue: 'Project' }) },
+    { key: 'client', label: t('groupByClient', { defaultValue: 'Client' }) },
   ];
+  const selectedGroupByLabel = groupByOptions.find(o => o.key === groupBy)?.label ?? groupByOptions[0].label;
 
   return (
-    <Flex gap={12} wrap="wrap" align="center">
-      <PillToggle<DateFilter>
-        value={dateFilter}
-        options={dateOptions}
-        onChange={onDateFilterChange}
-      />
-      {/* Matches Projects > Overview's own button row (project-list.tsx) — an
-          explicit controlHeight/fontSize/borderRadius via ConfigProvider so
-          Select and DatePicker line up with the PillToggle beside them
-          (antd's `size="small"` preset renders shorter than the pill). */}
-      <ConfigProvider
-        theme={{
-          components: {
-            Select: { controlHeight: 30, fontSize: 12, borderRadius: 7 },
-            DatePicker: { controlHeight: 30, fontSize: 12, borderRadius: 7 },
-          },
-        }}
-      >
-        {dateFilter === 'custom' && (
-          <Flex vertical gap={4}>
-            <DatePicker.RangePicker
-              value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
-              onChange={handleRangeChange}
-              format="YYYY-MM-DD"
-              allowClear
-              order={false}
-            />
-            {dateError && (
-              <span style={{ color: '#ff4d4f', fontSize: 12 }}>{dateError}</span>
-            )}
-          </Flex>
-        )}
-        <Select
-          allowClear
-          showSearch
-          placeholder={t('filterProject', { defaultValue: 'All Projects' })}
-          value={projectId}
-          onChange={onProjectChange}
-          filterOption={(input, opt) =>
-            (opt?.label as string)?.toLowerCase().includes(input.toLowerCase())
-          }
-          options={projects.map(p => ({ value: p.id, label: p.name }))}
-          style={{ width: 180, flexShrink: 0 }}
+    // A single flat wrap row, not nested space-between groups: every control
+    // is a direct child so flex-wrap can move any one of them onto its own
+    // line predictably. The spacer absorbs leftover width on wide screens
+    // (pushing Search/Filter/Group-by to the right, next to the Scope
+    // toggle on the left) and just shrinks to ~0 once the row wraps, instead
+    // of risking a control being squeezed past the edge of the viewport.
+    <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
+      {hasExpandedScope && (
+        <PillToggle<TimeEntriesScope>
+          value={scope}
+          onChange={onScopeChange}
+          ariaLabel={t('scopeToggleLabel', { defaultValue: 'Visible entries' })}
+          options={[
+            { value: 'all', label: t('scopeAll', { defaultValue: 'All Entries' }) },
+            { value: 'my', label: t('scopeMy', { defaultValue: 'My Entries' }) },
+          ]}
         />
-      </ConfigProvider>
+      )}
+
+      <div style={{ flex: '1 1 auto', minWidth: 0 }} />
+
+      {showTableViewToggle && (
+        <PillToggle<TimeEntriesTableView>
+          value={tableView}
+          onChange={onTableViewChange}
+          ariaLabel={t('tableViewToggleLabel', { defaultValue: 'Table view' })}
+          options={[
+            { value: 'flat', label: t('tableViewFlat', { defaultValue: 'Flat' }) },
+            { value: 'task', label: t('tableViewByTask', { defaultValue: 'By task' }) },
+          ]}
+        />
+      )}
+
       <Input
         prefix={<SearchOutlined />}
-        placeholder={t('searchPlaceholder', { defaultValue: 'Search task name or ID...' })}
+        placeholder={t('searchPlaceholder', { defaultValue: 'Search task, ID, or description...' })}
         value={searchValue}
         onChange={e => handleSearchChange(e.target.value)}
         allowClear
-        style={{ width: 240, flexShrink: 0, height: 30, fontSize: 12, borderRadius: 7 }}
+        style={{ width: 240, maxWidth: '100%', height: 30, fontSize: 12, borderRadius: 7 }}
       />
+
+      <TimeEntriesFilterPanel
+        dateFilter={dateFilter}
+        onDateFilterChange={onDateFilterChange}
+        dateRange={dateRange}
+        onDateRangeChange={onDateRangeChange}
+        projectIds={projectIds}
+        onProjectIdsChange={onProjectIdsChange}
+        projects={projects}
+        showPersonFilter={showPersonFilter}
+        personOptions={personOptions}
+        personIds={personIds}
+        onPersonIdsChange={onPersonIdsChange}
+        clientOptions={clientOptions}
+        clientIds={clientIds}
+        onClientIdsChange={onClientIdsChange}
+      />
+
+      <Dropdown
+        trigger={['click']}
+        menu={{
+          items: groupByOptions.map(o => ({ key: o.key, label: o.label })),
+          onClick: info => onGroupByChange(info.key as TimeEntriesGroupBy),
+          selectedKeys: [groupBy],
+        }}
+      >
+        <Button style={{ height: 30, fontSize: 12, borderRadius: 7, paddingInline: 12 }}>
+          {t('groupByButtonLabel', { defaultValue: `Group by: ${selectedGroupByLabel}`, groupBy: selectedGroupByLabel })} <CaretDownFilled />
+        </Button>
+      </Dropdown>
+
+      <Dropdown
+        trigger={['click']}
+        menu={{
+          items: [
+            { key: 'filtered', label: t('exportFiltered', { defaultValue: 'Export Filtered (CSV)' }) },
+            { key: 'all', label: t('exportAll', { defaultValue: 'Export All (CSV)' }) },
+          ],
+          onClick: info => onExport(info.key as 'filtered' | 'all'),
+        }}
+      >
+        <Button icon={<ExportOutlined />} style={{ height: 30, fontSize: 12, borderRadius: 7, paddingInline: 12 }}>
+          {t('exportButton', { defaultValue: 'Export' })} <CaretDownFilled />
+        </Button>
+      </Dropdown>
     </Flex>
   );
 };

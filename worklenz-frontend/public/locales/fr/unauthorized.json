@@ -1,0 +1,13 @@
+{
+  "title": "Non autorisé !",
+  "subtitle": "Vous n'êtes pas autorisé à accéder à cette page",
+  "commentAccessTitle": "Vous avez besoin d'un accès pour voir ce commentaire",
+  "commentAccessContactAdmin": "Vous n'êtes pas invité à ce projet. Veuillez contacter votre administrateur ou propriétaire de projet pour demander l'accès.",
+  "commentAccessDenied": "Vous n'êtes pas invité à ce projet. Veuillez contacter votre administrateur ou propriétaire de projet pour demander l'accès.",
+  "invalidCommentLink": "Ce lien de commentaire n'est pas valide.",
+  "commentNotFound": "Ce commentaire est introuvable.",
+  "commentLinkOpenFailed": "Impossible d'ouvrir ce lien de commentaire. Veuillez réessayer ou ouvrir le commentaire de la tâche.",
+  "unableToOpenComment": "Impossible d'ouvrir le commentaire",
+  "openingComment": "Commentaire d'ouverture...",
+  "button": "Aller à la maison"
+}

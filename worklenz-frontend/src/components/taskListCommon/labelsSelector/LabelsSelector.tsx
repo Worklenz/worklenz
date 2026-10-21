@@ -20,6 +20,7 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { useAuthService } from '@/hooks/useAuth';
 import { SocketEvents } from '@/shared/socket-events';
 import { useSocket } from '@/socket/socketContext';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface LabelsSelectorProps {
   task: IProjectTask;
@@ -133,7 +134,7 @@ const LabelsSelector = ({ task }: LabelsSelectorProps) => {
                 >
                   <Flex gap={8}>
                     <Badge color={label.color_code} />
-                    {label.name}
+                    {decodeHtmlEntities(label.name)}
                   </Flex>
                 </Checkbox>
               </List.Item>
@@ -173,7 +174,7 @@ const LabelsSelector = ({ task }: LabelsSelectorProps) => {
   return (
     <Dropdown
       trigger={['click']}
-      dropdownRender={() => labelDropdownContent}
+      popupRender={() => labelDropdownContent}
       onOpenChange={handleLabelDropdownOpen}
     >
       <Button

@@ -1,0 +1,11 @@
+{
+  "title": "Painel",
+  "totalRequests": "Total de solicitações",
+  "pendingRequests": "Solicitações pendentes",
+  "activeProjects": "Projetos ativos",
+  "unpaidInvoices": "Faturas não pagas",
+  "recentRequests": "Solicitações recentes",
+  "noRecentRequests": "Nenhuma solicitação recente",
+  "recentMessages": "Mensagens recentes",
+  "noRecentMessages": "Nenhuma mensagem recente"
+}

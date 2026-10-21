@@ -10,7 +10,7 @@
   "delete": "Löschen",
   "moreOptions": "Weitere Optionen",
   "deselectAll": "Alle abwählen",
-  "status": "Status",
+  "status": "Alle Status",
   "priority": "Priorität",
   "phase": "Phase",
   "member": "Mitglied",
@@ -26,6 +26,7 @@
   "CHANGE_STATUS": "Status ändern",
   "CHANGE_PRIORITY": "Priorität ändern",
   "CHANGE_PHASE": "Phase ändern",
+  "MOVE_TO_SPRINT": "Gehen Sie zum Sprint über",
   "ADD_LABELS": "Labels hinzufügen",
   "ASSIGN_TO_ME": "Mir zuweisen",
   "ASSIGN_MEMBERS": "Mitglieder zuweisen",
@@ -43,5 +44,8 @@
   "DUE_DATE_UPDATED": "Fälligkeitsdatum erfolgreich aktualisiert",
   "DUE_DATE_CLEARED": "Fälligkeitsdatum erfolgreich gelöscht",
   "archiveSuccessTitle": "Sammelaktualisierung abgeschlossen",
-  "archiveSuccessMessage": "{{parentCount}} Aufgaben und {{subtaskCount}} Unteraufgaben wurden {{action}}."
+  "archiveSuccessMessage": "{{parentCount}} Aufgaben und {{subtaskCount}} Unteraufgaben wurden {{action}}.",
+  "SET_START_DATE": "Startdatum festlegen",
+  "Unarchive": "Dearchivieren",
+  "Archive": "Archivieren"
 }

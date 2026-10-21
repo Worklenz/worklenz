@@ -88,14 +88,25 @@ const CustomMentionsInput = ({
       }
       setDropdownRect(rect);
     };
+    // Coalesce scroll/resize into one measurement per frame; the capturing
+    // listener otherwise runs a layout read + setState on every scroll event.
+    let pendingRaf: number | null = null;
+    const scheduleCompute = () => {
+      if (pendingRaf !== null) return;
+      pendingRaf = requestAnimationFrame(() => {
+        pendingRaf = null;
+        compute();
+      });
+    };
     // rAF lets the expanded comment box finish painting before we measure
     const raf = requestAnimationFrame(compute);
-    window.addEventListener('scroll', compute, true);
-    window.addEventListener('resize', compute);
+    window.addEventListener('scroll', scheduleCompute, true);
+    window.addEventListener('resize', scheduleCompute);
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener('scroll', compute, true);
-      window.removeEventListener('resize', compute);
+      if (pendingRaf !== null) cancelAnimationFrame(pendingRaf);
+      window.removeEventListener('scroll', scheduleCompute, true);
+      window.removeEventListener('resize', scheduleCompute);
     };
   }, [isDropdownOpen]);
 

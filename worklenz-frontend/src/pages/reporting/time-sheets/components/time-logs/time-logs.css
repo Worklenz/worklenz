@@ -1,0 +1,184 @@
+/* The Time Logs table follows the Home > My Tasks table (HomeMyTasksView.css): 12px header/body
+   text, 45px rows, and ONE scroll container — .time-logs-table-card — with a CSS-sticky header.
+   The total row is the mirror image of the header: sticky to the bottom of the same container. */
+
+.time-logs-table-card .ant-table {
+  font-size: 12px;
+}
+
+.time-logs-table-card .ant-table-thead > tr > th {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 4px 8px !important;
+  /* Plain CSS sticky header — antd's own `sticky` prop tracks a custom scroll container via JS and
+     loses it in this layout; sticking each `th` directly works off normal scroll-ancestor rules. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--time-logs-sticky-bg, #fff);
+}
+
+.time-logs-table-card .ant-table-tbody > tr > td {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  /* The same measured 45px row height as the My Tasks table — padding alone does not guarantee it,
+     since it only pads whatever the tallest cell's content happens to be. */
+  height: 45px !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+}
+
+/* The total row (a <tfoot>): same 8px side padding as the data, so its text lines up with theirs,
+   and stuck to the bottom of the scroll container so the total never scrolls out of view.
+   The tint is layered over the opaque container colour: the rows scrolling underneath must not
+   show through a translucent background. Colours arrive as CSS variables set on the container. */
+.time-logs-table-card .ant-table-summary > tr > td {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  height: 45px !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background:
+    linear-gradient(var(--time-logs-summary-bg), var(--time-logs-summary-bg)),
+    var(--time-logs-sticky-bg, #fff) !important;
+  border-top: 1px solid var(--time-logs-summary-border) !important;
+  border-bottom: none !important;
+}
+
+/* `.time-logs-table-card` itself is the scroll container (overflow-y: auto, set inline) so only the
+   rows scroll, not the page — the sticky header and total row pin to the edges of that box. This
+   inner antd-generated wrapper must stay `visible` so it does not become a second, competing scroll
+   container that the sticky cells get stuck inside instead. */
+.time-logs-table-card .ant-table-container {
+  overflow: visible;
+}
+
+/* Below this width the six columns are scrolled sideways instead of being crushed. It goes on the
+   scroll container itself (already the single scrolling ancestor), not on antd's inner wrapper:
+   setting overflow-x there would turn it into a second scroll container and break the sticky
+   cells — same reasoning as the My Tasks table. */
+@media (max-width: 1023px) {
+  .time-logs-table-card {
+    overflow-x: auto;
+  }
+
+  .time-logs-table-card .ant-table {
+    min-width: 760px;
+  }
+}
+
+/* ---- Grouped list (Group by Member / Project / Client) -------------------------------------------
+   Same card, 12px text, 45px rows and sticky header / total row as the table above, drawn as CSS
+   grids because a group's row (a rollup) and its expanded entries have different columns. Colours
+   arrive as CSS variables on the scroll container, so they follow the light / dark theme. */
+
+.time-logs-groups {
+  /* Below this width the rollup columns are scrolled sideways instead of being crushed. */
+  min-width: 1060px;
+  font-size: 12px;
+}
+
+.time-logs-groups-head,
+.time-logs-group-row,
+.time-logs-groups-foot {
+  display: grid;
+  grid-template-columns: var(--time-logs-group-columns);
+  column-gap: 8px;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.time-logs-groups-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 32px;
+  padding-block: 4px;
+  font-weight: 500;
+  line-height: 1.3;
+  background: var(--time-logs-sticky-bg, #fff);
+  border-bottom: 1px solid var(--time-logs-border);
+}
+
+/* A long heading ("Non-billable Entries", or its translation) wraps onto a second line instead of
+   being cut off, and breaks inside a very long word rather than overflowing into its neighbour. */
+.time-logs-groups-head > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.time-logs-group {
+  border-bottom: 1px solid var(--time-logs-border);
+}
+
+.time-logs-group-row {
+  min-height: 45px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.time-logs-group-row:hover,
+.time-logs-group--expanded > .time-logs-group-row {
+  background: var(--time-logs-hover-bg);
+}
+
+.time-logs-group-cell {
+  min-width: 0;
+}
+
+.time-logs-group-cell--billable-time {
+  font-weight: 500;
+  color: var(--time-logs-billable);
+}
+
+/* The total row: stuck to the bottom of the scroll container, tint layered over the opaque
+   container colour so rows scrolling underneath never show through. */
+.time-logs-groups-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  min-height: 45px;
+  background:
+    linear-gradient(var(--time-logs-summary-bg), var(--time-logs-summary-bg)),
+    var(--time-logs-sticky-bg, #fff);
+  border-top: 1px solid var(--time-logs-summary-border);
+}
+
+/* A group's own entries, opened under its row. */
+.time-logs-group-entries {
+  background: var(--time-logs-hover-bg);
+  border-top: 1px solid var(--time-logs-border);
+}
+
+.time-logs-group-entries-head,
+.time-logs-group-entry {
+  display: grid;
+  grid-template-columns: var(--time-logs-entry-columns);
+  column-gap: 8px;
+  align-items: center;
+  /* 32px = the group row's toggle column, so the entries sit under the group's name. */
+  padding: 0 8px 0 40px;
+}
+
+.time-logs-group-entries-head {
+  min-height: 30px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--time-logs-border);
+}
+
+.time-logs-group-entry {
+  min-height: 40px;
+  border-bottom: 1px solid var(--time-logs-border);
+}
+
+.time-logs-group-entries-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 8px 0 40px;
+}

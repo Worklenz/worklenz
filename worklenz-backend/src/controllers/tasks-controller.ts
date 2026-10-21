@@ -6,7 +6,8 @@ import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import db from "../config/db";
 
 import { ServerResponse } from "../models/server-response";
-import { S3_URL, TASK_STATUS_COLOR_ALPHA } from "../shared/constants";
+import { S3_URL, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../shared/constants";
+import { advanceBacklogIssuesToTodo } from "../shared/software-sprint-utils";
 import {
   getDates,
   getMinMaxOfTaskDates,
@@ -45,7 +46,8 @@ import {
   IActivityLogChangeType,
 } from "../services/activity-logs/interfaces";
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
-import { isRestrictedFromProPlanFeatures } from "../ee/middlewares/subscription-middleware";
+import { isRestrictedFromProPlanFeatures } from "../middlewares/subscription-middleware";
+import { isEnforceMode, teamCanUseFeature } from "../shared/entitlements/gates";
 
 export default class TasksController extends TasksControllerBase {
   private static async getTaskDrawerCustomColumns(projectId: string | null) {
@@ -245,7 +247,11 @@ export default class TasksController extends TasksControllerBase {
 
     // Check if user is trying to set billable and if they're restricted
     if (req.body.billable === true) {
-      const isRestricted = await isRestrictedFromProPlanFeatures(teamId);
+      // Matrix: billable marking is available on every plan. Until ENTITLEMENTS_ENFORCE is on,
+      // keep the legacy Pro/AppSumo restriction.
+      const isRestricted = isEnforceMode()
+        ? !(await teamCanUseFeature(teamId, "billable_marking"))
+        : await isRestrictedFromProPlanFeatures(teamId);
 
       if (isRestricted) {
         return res
@@ -928,6 +934,16 @@ export default class TasksController extends TasksControllerBase {
       task.names = WorklenzControllerBase.createTagList(task.assignees);
       task.assignee_names = task.names;
 
+      const planningResult = await db.query(
+        "SELECT story_points, epic_id, release_id, is_blocked, issue_type FROM tasks WHERE id = $1;",
+        [task.id]
+      );
+      task.story_points = planningResult.rows[0]?.story_points ?? null;
+      task.epic_id = planningResult.rows[0]?.epic_id ?? null;
+      task.release_id = planningResult.rows[0]?.release_id ?? null;
+      task.is_blocked = planningResult.rows[0]?.is_blocked === true;
+      task.issue_type = planningResult.rows[0]?.issue_type || "task";
+
       const totalMinutes = task.total_minutes;
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
@@ -952,6 +968,14 @@ export default class TasksController extends TasksControllerBase {
 
     if (task) {
       task.custom_column_values = customColumnValues;
+      if (projectId) {
+        const projDates = await db.query(
+          "SELECT start_date, end_date FROM projects WHERE id = $1 LIMIT 1;",
+          [projectId]
+        );
+        task.project_start_date = projDates.rows[0]?.start_date ?? null;
+        task.project_end_date = projDates.rows[0]?.end_date ?? null;
+      }
     }
 
     for (const member of data.view_model?.team_members || []) {
@@ -1084,6 +1108,11 @@ export default class TasksController extends TasksControllerBase {
     const q = `SELECT bulk_change_tasks_phase($1, $2) AS task;`;
     const result = await db.query(q, [JSON.stringify(req.body), req.user?.id]);
     const [data] = result.rows;
+
+    if (req.body.phase_id && req.body.phase_id !== UNMAPPED) {
+      const taskIds = (req.body.tasks as Array<{ id: string }>).map(task => task.id);
+      await advanceBacklogIssuesToTodo(taskIds);
+    }
 
     TasksController.notifyProjectUpdates(
       req.user?.socket_id as string,

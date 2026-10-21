@@ -6,7 +6,7 @@ import {
   markProjectMembersUpdated,
 } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { CopyOutlined, CheckOutlined } from '@ant-design/icons';
 import { ROLE_NAMES } from '@/types/roles/role.types';
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
@@ -15,6 +15,7 @@ import { SeatLimitModal } from '@/components/common/seat-limit-modal';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useNavigate } from 'react-router-dom';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import { useAuthService } from '@/hooks/useAuth';
 
 interface FormValues {
   emails: string[];
@@ -54,10 +55,29 @@ const InviteProjectMembers = ({ projectId, projectName, prefillEmail }: InvitePr
 
   const [form] = Form.useForm<FormValues>();
   const navigate = useNavigate();
+  const authService = useAuthService();
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
 
   const { t } = useTranslation('settings/team-members');
   const isDrawerOpen = useAppSelector(state => state.projectMemberReducer.isDrawerOpen);
   const dispatch = useAppDispatch();
+
+  // Owner/Admin can invite elevated team roles; PMs may only invite Member or Guest.
+  const accessOptions = useMemo(
+    () =>
+      isOwnerOrAdmin
+        ? [
+            { value: 'member' as const, label: t('memberText') },
+            { value: 'team-lead' as const, label: t('teamLeadText', { defaultValue: 'Team Lead' }) },
+            { value: 'admin' as const, label: t('adminText') },
+            { value: 'guest' as const, label: t('guestText', { defaultValue: 'Guest' }) },
+          ]
+        : [
+            { value: 'member' as const, label: t('memberText') },
+            { value: 'guest' as const, label: t('guestText', { defaultValue: 'Guest' }) },
+          ],
+    [isOwnerOrAdmin, t]
+  );
 
   // Fetch team members when modal opens. prefillEmail is deliberately excluded from the
   // deps below — it's meant to be captured once, at the moment the drawer opens (it's
@@ -135,7 +155,7 @@ const InviteProjectMembers = ({ projectId, projectName, prefillEmail }: InvitePr
       const emailList = values.emails || [];
 
       if (emailList.length === 0) {
-        message.error(t('projectInvite_emailRequired'));
+        message.error(t('projectInvite_emailRequired', { defaultValue: 'Please enter at least one email address' }));
         setLoading(false);
         return;
       }
@@ -361,8 +381,8 @@ const InviteProjectMembers = ({ projectId, projectName, prefillEmail }: InvitePr
                   icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
                 >
                   {linkCopied
-                    ? t('projectInvite_copiedShort')
-                    : t('projectInvite_copyLinkButton')}
+                    ? t('projectInvite_copiedShort', { defaultValue: 'Copied!' })
+                    : t('projectInvite_copyLinkButton', { defaultValue: 'Copy project link' })}
                 </Button>
               </>
             ) : (
@@ -386,16 +406,16 @@ const InviteProjectMembers = ({ projectId, projectName, prefillEmail }: InvitePr
             layout="vertical"
             initialValues={{ access: 'member' }}
           >
-            <Flex gap={16} align="flex-start">
+            <Flex gap={16} align="flex-start" wrap>
               <Form.Item
                 name="emails"
-                label={t('projectInvite_emailLabel')}
-                style={{ flex: 1, marginBottom: 16 }}
+                label={t('projectInvite_emailLabel', { defaultValue: 'Invite with email' })}
+                style={{ flex: 1, minWidth: 0, marginBottom: 16 }}
                 rules={[
                   {
                     validator: (_, value) => {
                       if (!value || !Array.isArray(value) || value.length === 0) {
-                        return Promise.reject(new Error(t('projectInvite_emailRequired')));
+                        return Promise.reject(new Error(t('projectInvite_emailRequired', { defaultValue: 'Please enter at least one email address' })));
                       }
 
                       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -404,7 +424,7 @@ const InviteProjectMembers = ({ projectId, projectName, prefillEmail }: InvitePr
                       );
 
                       if (invalidEmails.length > 0) {
-                        return Promise.reject(new Error(t('projectInvite_emailInvalid')));
+                        return Promise.reject(new Error(t('projectInvite_emailInvalid', { defaultValue: 'Please enter valid email addresses' })));
                       }
 
                       return Promise.resolve();
@@ -416,7 +436,7 @@ const InviteProjectMembers = ({ projectId, projectName, prefillEmail }: InvitePr
                 <Select
                   mode="tags"
                   style={{ width: '100%' }}
-                  placeholder={t('projectInvite_emailPlaceholder')}
+                  placeholder={t('projectInvite_emailPlaceholder', { defaultValue: 'Add people or Email' })}
                   options={teamMemberOptions}
                   filterOption={(input, option) => {
                     if (!option) return false;
@@ -426,29 +446,22 @@ const InviteProjectMembers = ({ projectId, projectName, prefillEmail }: InvitePr
                     );
                   }}
                   notFoundContent={
-                    <Typography.Text type="secondary">{t('projectInvite_emailHelp')}</Typography.Text>
+                    <Typography.Text type="secondary">{t('projectInvite_emailHelp', { defaultValue: 'Type email and press Enter' })}</Typography.Text>
                   }
                   tokenSeparators={[',', ' ', ';']}
                 />
               </Form.Item>
               <Button htmlType="submit" type="primary" loading={loading} style={{ marginTop: 30 }}>
-                {t('projectInvite_inviteButton')}
+                {t('projectInvite_inviteButton', { defaultValue: 'Invite' })}
               </Button>
             </Flex>
 
             <Form.Item
-              label={t('projectInvite_teamRoleLabel')}
+              label={t('projectInvite_teamRoleLabel', { defaultValue: 'Team role' })}
               name="access"
-              tooltip={t('projectInvite_teamRoleTooltip')}
+              tooltip={t('projectInvite_teamRoleTooltip', { defaultValue: 'Team role determines team-wide permissions. Project access level defaults to Member and can be changed later.' })}
             >
-              <Select
-                options={[
-                  { value: 'member', label: t('memberText') },
-                  { value: 'team-lead', label: 'Team Lead' },
-                  { value: 'admin', label: t('adminText') },
-                  { value: 'guest', label: t('guestText', { defaultValue: 'Guest' }) },
-                ]}
-              />
+              <Select options={accessOptions} />
             </Form.Item>
           </Form>
         </Flex>

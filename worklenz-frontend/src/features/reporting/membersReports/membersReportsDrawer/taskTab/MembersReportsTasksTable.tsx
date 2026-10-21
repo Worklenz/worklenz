@@ -13,6 +13,7 @@ import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { setProjectId } from '@/features/project/project.slice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface ReportingTaskRecord {
   id: string;
@@ -66,7 +67,7 @@ const MembersReportsTasksTable = ({ tasksData, loading }: MembersReportsTasksTab
       render: record => (
         <Flex>
           {Number(record.sub_tasks_count) > 0 && <DoubleRightOutlined />}
-          <Typography.Text className="group-hover:text-[#1890ff]">{record.name}</Typography.Text>
+          <Typography.Text className="group-hover:text-[#1890ff]">{decodeHtmlEntities(record.name)}</Typography.Text>
         </Flex>
       ),
       width: 260,
@@ -79,7 +80,7 @@ const MembersReportsTasksTable = ({ tasksData, loading }: MembersReportsTasksTab
       render: record => (
         <Flex gap={8} align="center">
           <Badge color={record.project_color} />
-          <Typography.Text ellipsis={{ expanded: false }}>{record.project_name}</Typography.Text>
+          <Typography.Text ellipsis={{ expanded: false }}>{decodeHtmlEntities(record.project_name)}</Typography.Text>
         </Flex>
       ),
       width: 120,

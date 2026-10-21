@@ -26,5 +26,8 @@
   "navigateBackTooltip": "返回项目列表",
   "projectStatusTooltip": "项目状态",
   "projectDatesInfo": "项目时间安排信息",
-  "projectCategoryTooltip": "项目类别"
+  "projectCategoryTooltip": "项目类别",
+  "softwareProjectTooltip": "软件项目——问题、待办事项和冲刺",
+  "settingsDisabledForGuest": "访客用户无法访问项目设置",
+  "softwareProjectTag": "软件"
 }

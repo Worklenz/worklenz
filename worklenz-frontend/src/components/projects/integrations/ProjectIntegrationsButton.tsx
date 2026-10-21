@@ -9,9 +9,12 @@ import {
   CrownOutlined,
 } from '@/shared/antd-imports';
 import { IntegrationsDropdown } from './IntegrationsDropdown';
-import { slackApiService } from '@/ee/api/slack/slack.api.service';
+import { slackApiService } from '@/api/slack/slack.api.service';
+import { githubApiService } from '@/api/github/github.api.service';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
 import type { ProjectIntegrationStatus } from './integrations.types';
@@ -34,20 +37,32 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
     [currentSession]
   );
 
+  const isSoftwareProject = useAppSelector(state =>
+    isSoftwareProjectType(state.projectReducer.project?.project_type)
+  );
+
   const [open, setOpen] = useState(false);
   const [integrationStatus, setIntegrationStatus] = useState<ProjectIntegrationStatus | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchIntegrationStatus = useCallback(async () => {
-    if (!projectId || !hasBusinessAccess) return;
+    if (!projectId || (!hasBusinessAccess && !isSoftwareProject)) return;
 
     try {
       setLoading(true);
 
-      // Fetch Slack status
-      const [slackWorkspace, slackConfigsResponse] = await Promise.all([
-        slackApiService.getStatus().catch(() => null),
-        slackApiService.getProjectChannelConfigs(projectId).catch(() => null),
+      // GitHub is available to every team with software projects; Slack needs Business.
+      const [slackWorkspace, slackConfigsResponse, githubRepositories] = await Promise.all([
+        hasBusinessAccess ? slackApiService.getStatus().catch(() => null) : null,
+        hasBusinessAccess
+          ? slackApiService.getProjectChannelConfigs(projectId).catch(() => null)
+          : null,
+        isSoftwareProject
+          ? githubApiService
+              .getProjectRepositories(projectId)
+              .then(response => response.body)
+              .catch(() => null)
+          : null,
       ]);
 
       const slackChannels = slackConfigsResponse?.body || [];
@@ -72,9 +87,9 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
           channelCount: 0,
         },
         github: {
-          connected: false,
-          accountConnected: false,
-          repositoryCount: 0,
+          connected: !!githubRepositories?.connected,
+          accountConnected: !!githubRepositories?.connected,
+          repositoryCount: githubRepositories?.linked?.length || 0,
         },
       });
     } catch (error) {
@@ -82,7 +97,7 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
     } finally {
       setLoading(false);
     }
-  }, [projectId, hasBusinessAccess]);
+  }, [projectId, hasBusinessAccess, isSoftwareProject]);
 
   useEffect(() => {
     if (projectId) {
@@ -113,8 +128,8 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
     );
   }, [dispatch]);
 
-  // Show premium button for non-business users
-  if (!hasBusinessAccess) {
+  // Non-business teams only get the upsell when no integration is available to them
+  if (!hasBusinessAccess && !isSoftwareProject) {
     return (
       <Tooltip
         title={t('upgradeRequired', { defaultValue: 'Integrations available on Business plan' })}
@@ -135,6 +150,8 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
           projectId={projectId}
           projectName={projectName}
           status={integrationStatus}
+          hasBusinessAccess={hasBusinessAccess}
+          isSoftwareProject={isSoftwareProject}
           onClose={() => setOpen(false)}
           onRefresh={handleRefresh}
         />

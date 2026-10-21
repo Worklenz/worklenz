@@ -6,6 +6,7 @@ import { setFilteredCategories, setRequestParams } from '@/features/projects/pro
 import '../../TableColumns.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { getContrastColor } from '@/utils/colorUtils';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 export const CategoryCell: React.FC<{
   record: IProjectViewModel;
@@ -25,6 +26,7 @@ export const CategoryCell: React.FC<{
 
   const bgColor = record.category_color || '#a9a9a9';
   const textColor = getContrastColor(bgColor);
+  const decodedCategoryName = decodeHtmlEntities(record.category_name);
 
   return (
     <Tag
@@ -51,7 +53,7 @@ export const CategoryCell: React.FC<{
           whiteSpace: 'nowrap',
         }}
       >
-        {record.category_name}
+        {decodedCategoryName}
       </span>
     </Tag>
   );

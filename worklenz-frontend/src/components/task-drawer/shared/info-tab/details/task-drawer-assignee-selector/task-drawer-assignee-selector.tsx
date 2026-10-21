@@ -206,7 +206,7 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => membersDropdownContent}
+      popupRender={() => membersDropdownContent}
       onOpenChange={handleMembersDropdownOpen}
       disabled={!canCreateTask}
     >

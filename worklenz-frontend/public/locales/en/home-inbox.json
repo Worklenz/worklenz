@@ -32,5 +32,7 @@
   "clientsLockedTooltip": "Available on the Business plan",
   "clientChatLockedTitle": "Client Chat Locked",
   "clientChatLockedBody": "Chat with your clients directly from the Inbox is available on the Business plan.",
-  "upgradeNow": "Upgrade Now"
+  "upgradeNow": "Upgrade Now",
+  "today": "Today",
+  "edited": "(edited)"
 }

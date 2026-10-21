@@ -23,6 +23,7 @@ import { useSocket } from '@/socket/socketContext';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { TFunction } from 'i18next';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setTaskLabels } from '@/features/task-drawer/task-drawer.slice';
 import { updateTaskLabel, addMissingLabelsToFilter } from '@/features/tasks/tasks.slice';
@@ -193,7 +194,7 @@ const TaskDrawerLabels = ({ task, t, isGuest = false }: TaskDrawerLabelsProps) =
                 >
                   <Flex gap={8}>
                     <Badge color={label.color_code} />
-                    {label.name}
+                    {decodeHtmlEntities(label.name)}
                   </Flex>
                 </Checkbox>
               </List.Item>
@@ -255,13 +256,13 @@ const TaskDrawerLabels = ({ task, t, isGuest = false }: TaskDrawerLabelsProps) =
               }
             }}
           >
-            {label.name}
+            {decodeHtmlEntities(label.name)}
           </Tag>
         ))}
         {!isGuest && (
           <Dropdown
             trigger={['click']}
-            dropdownRender={() => labelDropdownContent}
+            popupRender={() => labelDropdownContent}
             onOpenChange={handleLabelDropdownOpen}
           >
             <Button

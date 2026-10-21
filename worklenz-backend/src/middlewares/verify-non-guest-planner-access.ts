@@ -2,8 +2,8 @@ import { NextFunction } from "express";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { ServerResponse } from "../models/server-response";
-import db from "../config/db";
 import { log_error } from "../shared/utils";
+import { isGuestForActiveTeam } from "../shared/team-permissions";
 
 /**
  * Middleware to block guest team members from the Planner area entirely
@@ -30,19 +30,7 @@ export default async function verifyNonGuestPlannerAccess(
   if (!userId || !teamId) return next();
 
   try {
-    const result = await db.query(
-      `SELECT tm.is_guest, r.owner, r.admin_role
-       FROM team_members tm
-       INNER JOIN roles r ON r.id = tm.role_id
-       WHERE tm.user_id = $1
-         AND tm.team_id = $2
-         AND tm.active = TRUE
-       LIMIT 1`,
-      [userId, teamId]
-    );
-
-    const row = result.rows[0];
-    const isGuest = row?.is_guest === true && row?.owner !== true && row?.admin_role !== true;
+    const isGuest = await isGuestForActiveTeam(userId, teamId);
 
     if (isGuest) {
       return res.status(403).send(

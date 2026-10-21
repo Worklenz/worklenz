@@ -79,6 +79,7 @@ import TextArea from 'antd/es/input/TextArea';
 // Icons - Import commonly used ones
 export {
   EditOutlined,
+  FormOutlined,
   DeleteOutlined,
   PlusOutlined,
   MoreOutlined,
@@ -172,6 +173,7 @@ export {
   SmileOutlined,
   HomeOutlined,
   PlayCircleFilled,
+  PlayCircleOutlined,
   CommentOutlined,
   TagsOutlined,
   BulbOutlined,
@@ -217,10 +219,23 @@ export {
   SlackOutlined,
   ApiOutlined,
   ApartmentOutlined,
+  BranchesOutlined,
+  NumberOutlined,
+  ThunderboltOutlined,
+  OrderedListOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   PictureOutlined,
   FolderOutlined,
+  RiseOutlined,
+  BookOutlined,
+  DiscordOutlined,
+  FacebookOutlined,
+  GithubOutlined,
+  HistoryOutlined,
+  LinkedinOutlined,
+  XOutlined,
+  YoutubeOutlined,
 } from '@ant-design/icons';
 
 // Re-export all components with React

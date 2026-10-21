@@ -28,6 +28,7 @@ import LabelsDrawer from './labels-drawer';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_settings_labels_visit } from '@/shared/worklenz-analytics-events';
 import { alertService } from '@/services/alerts/alertService';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const LabelsSettings = () => {
   const { t } = useTranslation('settings/labels');
@@ -134,7 +135,7 @@ const LabelsSettings = () => {
       width: 100,
       render: (record: ITaskLabel) => {
         const usageCount = record.usage || 0;
-        const labelName = record.name || 'this label';
+        const labelName = decodeHtmlEntities(record.name) || 'this label';
         const plural = usageCount > 1 ? 's' : '';
         const isInUse = usageCount > 0;
 
@@ -274,7 +275,7 @@ const LabelsSettings = () => {
           pagination={{
             showSizeChanger: true,
             defaultPageSize: 20,
-            pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
+             pageSizeOptions: ['10', '20', '50', '100'],
             size: 'small',
           }}
         />

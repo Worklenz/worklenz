@@ -58,7 +58,7 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({ open, onClose, pr
         </div>
       }
       className={`${isDarkMode ? 'dark-modal' : ''} status-manage-modal`}
-      destroyOnClose
+      destroyOnHidden
     >
       {open && <ManageStatusContent projectId={projectId} />}
     </Modal>

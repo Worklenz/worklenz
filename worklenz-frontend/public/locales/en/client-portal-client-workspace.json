@@ -1,0 +1,93 @@
+{
+  "retry": "Retry",
+
+  "tabs": {
+    "overview": "Overview",
+    "messages": "Messages",
+    "members": "Company Members",
+    "projects": "Projects",
+    "billing": "Billing"
+  },
+
+  "portalStatus": {
+    "active": "Active",
+    "invited": "Invited",
+    "expired": "Expired",
+    "not_invited": "Not Invited"
+  },
+
+  "header": {
+    "back": "Clients",
+    "edit": "Edit client",
+    "actionsLabel": "Client actions",
+    "lastSignedIn": "Last signed in {{time}}",
+    "invited": "Invited {{time}}",
+    "neverSignedIn": "Never signed in"
+  },
+
+  "rail": {
+    "contact": "Contact",
+    "email": "Email",
+    "company": "Company",
+    "projects": "Projects",
+    "balance": "Balance",
+    "portalHealth": "Portal health",
+    "signInMethod": "Sign-in method",
+    "signInPassword": "Password",
+    "signInNone": "Not signed in yet",
+    "lastSignIn": "Last sign-in",
+    "never": "Never",
+    "quickActions": "Quick actions",
+    "sendMessage": "Send message",
+    "createInvoice": "Create invoice",
+    "assignTask": "Assign task"
+  },
+
+  "overview": {
+    "tasksOpen": "Tasks open",
+    "invoicesDue": "Invoices due",
+    "unansweredMessages": "Unanswered messages",
+    "statsError": "Could not load this client’s numbers.",
+    "recentActivity": "Recent activity",
+    "activityError": "Could not load recent activity.",
+    "noActivity": "Nothing logged for {{name}} yet."
+  },
+
+  "members": {
+    "title": "Company members",
+    "addUser": "Add user"
+  },
+
+  "projects": {
+    "title": "Projects",
+    "project": "Project",
+    "openProject": "Open {{name}}",
+    "health": "Health",
+    "progress": "Progress",
+    "progressLabel": "Progress of {{name}}",
+    "due": "Due",
+    "assign": "Assign project",
+    "loadError": "Could not load this client’s projects.",
+    "empty": "No projects for {{name}} yet.",
+    "truncated": "Showing the first {{shown}} of {{total}} projects."
+  },
+
+  "billing": {
+    "title": "Invoices",
+    "createInvoice": "Create invoice",
+    "warningTitle": "{{name}} can’t use their portal yet",
+    "warningDescription": "They haven’t accepted an invitation, so they can’t view or pay invoices in their portal. You can still create invoices. Send the invitation first if they should see them.",
+    "sendInvite": "Send invite",
+    "resendInvite": "Resend invite",
+    "inviteSent": "Invitation sent to {{name}}.",
+    "inviteError": "Could not send the invitation."
+  },
+
+  "errors": {
+    "notFoundTitle": "Client not found",
+    "notFoundDescription": "It may have been removed, or the link is wrong.",
+    "loadTitle": "Could not load this client",
+    "loadDescription": "Please try again.",
+    "backToClients": "Back to clients"
+  }
+}

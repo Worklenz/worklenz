@@ -16,6 +16,7 @@ import {
   DuplicateTask,
 } from '@/types/task-management.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
+import { ITaskAttachmentViewModel } from '@/types/tasks/task-attachment-view-model';
 import { RootState } from '@/app/store';
 import {
   tasksApiService,
@@ -23,6 +24,7 @@ import {
   ITaskListV3Response,
 } from '@/api/tasks/tasks.api.service';
 import duplicateTaskApiService from '@/api/tasks/task-duplicate.api.service';
+import { toQuickFiltersParam } from '@/features/projects/singleProject/quick-filters/software-quick-filters.slice';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
 import logger from '@/utils/errorLogger';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
@@ -89,6 +91,7 @@ const initialState: TaskManagementState = {
   loading: false,
   error: null,
   loadedProjectId: null,
+  latestTasksRequestId: null,
   groups: [],
   grouping: undefined,
   selectedPriorities: [],
@@ -197,7 +200,11 @@ export const fetchTasks = createAsyncThunk(
             priority: priorityIdToNameMap[task.priority] || 'medium',
             phase: task.phase_name || 'Development',
             progress: typeof task.complete_ratio === 'number' ? task.complete_ratio : 0,
-            assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
+            // Handle both string-ID arrays (REST) and object arrays (socket acks)
+            // to avoid producing `[undefined, ...]` which breaks downstream filters.
+            assignees: (Array.isArray(task.assignees) ? task.assignees : [])
+              .map((a: any) => (typeof a === 'string' ? a : a?.team_member_id))
+              .filter((id: unknown): id is string => Boolean(id)),
             assignee_names: task.assignee_names || task.names || [],
             labels:
               task.labels?.map((l: any) => ({
@@ -232,6 +239,11 @@ export const fetchTasks = createAsyncThunk(
             priorityColor: task.priorityColor || undefined,
             comments_count: task.comments_count || 0,
             attachments_count: task.attachments_count || 0,
+            attachments: task.attachments || [],
+            latest_comment_id: task.latest_comment_id || null,
+            latest_comment: task.latest_comment || null,
+            latest_comment_at: task.latest_comment_at || null,
+            latest_comment_author: task.latest_comment_author || null,
             has_dependencies: task.has_dependencies || false,
             has_subscribers: task.has_subscribers || false,
             schedule_id: task.schedule_id || null,
@@ -299,6 +311,8 @@ export const fetchTasksV3 = createAsyncThunk(
         search: searchValue,
         statuses: selectedStatuses,
         phases: selectedPhases,
+        epics: state.epicsReducer.filterEpicId,
+        quick_filters: toQuickFiltersParam(state.softwareQuickFiltersReducer.active),
         members: selectedAssignees,
         projects: '',
         isSubtasksInclude: false,
@@ -324,10 +338,21 @@ export const fetchTasksV3 = createAsyncThunk(
           status: task.status || task.status_name || 'todo',
           priority: task.priority || 'medium',
           phase: task.phase_id || task.phase || '', // Use phase_id if available, fall back to phase field
+          epic_id: task.epic_id || null,
+          story_points: task.story_points ?? null,
+          is_blocked: task.is_blocked === true,
+          issue_type: task.issue_type ?? 'task',
           progress: calculatedProgress, // Use recalculated progress
           complete_ratio: calculatedProgress, // Update complete_ratio as well
           progress_value: calculatedProgress, // Update progress_value as well
-          assignees: task.assignees?.map((a: { team_member_id: string }) => a.team_member_id) || [],
+          // getTasksV3 already returns `assignees` as an array of team-member ID
+          // strings. Handle both that shape and the object shape (socket acks) so
+          // we never produce `[undefined, ...]` — which would make `length > 0`
+          // while every entry is invalid, silently blocking the assignee_names
+          // fallback in AssigneesColumn / useTaskRowState.
+          assignees: (Array.isArray(task.assignees) ? task.assignees : [])
+            .map((a: any) => (typeof a === 'string' ? a : a?.team_member_id))
+            .filter((id: unknown): id is string => Boolean(id)),
           assignee_names: task.assignee_names || task.names || [],
           labels:
             task.labels?.map(
@@ -387,6 +412,11 @@ export const fetchTasksV3 = createAsyncThunk(
           priorityColor: task.priorityColor || undefined,
           comments_count: task.comments_count || 0,
           attachments_count: task.attachments_count || 0,
+          attachments: task.attachments || [],
+          latest_comment_id: task.latest_comment_id || null,
+          latest_comment: task.latest_comment || null,
+          latest_comment_at: task.latest_comment_at || null,
+          latest_comment_author: task.latest_comment_author || null,
           has_dependencies: task.has_dependencies || false,
           has_subscribers: task.has_subscribers || false,
           schedule_id: task.schedule_id || null,
@@ -1266,6 +1296,36 @@ const taskManagementSlice = createSlice({
         }
       }
     },
+    // Replace the "latest comment" fields for a task when comments change so
+    // the Latest Comment column in the task list updates without a refresh.
+    setTaskLatestComment: (
+      state,
+      action: PayloadAction<{
+        taskId: string;
+        comment: { id?: string | null; text: string; at?: string | null; author?: string | null } | null;
+      }>
+    ) => {
+      const { taskId, comment } = action.payload;
+      const task = state.entities[taskId];
+      if (!task) return;
+      task.latest_comment_id = comment?.id ?? null;
+      task.latest_comment = comment?.text ?? null;
+      task.latest_comment_at = comment?.at ?? null;
+      task.latest_comment_author = comment?.author ?? null;
+    },
+    // Replace the attachments array for a task when a socket event tells us
+    // attachments were created/deleted on another client. The handler fetches
+    // the fresh list and dispatches it here so the task-list column re-renders.
+    setTaskAttachments: (
+      state,
+      action: PayloadAction<{ taskId: string; attachments: ITaskAttachmentViewModel[] }>
+    ) => {
+      const { taskId, attachments } = action.payload;
+      const task = state.entities[taskId];
+      if (!task) return;
+      task.attachments = attachments;
+      task.attachments_count = attachments.length;
+    },
   },
   extraReducers: builder => {
     builder
@@ -1275,9 +1335,12 @@ const taskManagementSlice = createSlice({
           state.loading = true;
         }
         state.error = null;
+        state.latestTasksRequestId = action.meta.requestId;
       })
 
       .addCase(fetchTasksV3.fulfilled, (state, action) => {
+        // A newer fetch (e.g. after a grouping or filter change) supersedes this response.
+        if (state.latestTasksRequestId && action.meta.requestId !== state.latestTasksRequestId) return;
         state.loading = false;
         state.loadedProjectId = typeof action.meta.arg === 'string' ? action.meta.arg : action.meta.arg.projectId;
         const { allTasks, groups, grouping } = action.payload;
@@ -1318,6 +1381,7 @@ const taskManagementSlice = createSlice({
         state.grouping = grouping;
       })
       .addCase(fetchTasksV3.rejected, (state, action) => {
+        if (state.latestTasksRequestId && action.meta.requestId !== state.latestTasksRequestId) return;
         state.loading = false;
         state.error =
           action.error?.message || (action.payload as string) || 'Failed to load tasks (V3)';
@@ -1379,6 +1443,11 @@ const taskManagementSlice = createSlice({
               comments_count: subtask.comments_count || 0,
               has_subscribers: subtask.has_subscribers || false,
               attachments_count: subtask.attachments_count || 0,
+              attachments: subtask.attachments || [],
+              latest_comment_id: subtask.latest_comment_id || null,
+              latest_comment: subtask.latest_comment || null,
+              latest_comment_at: subtask.latest_comment_at || null,
+              latest_comment_author: subtask.latest_comment_author || null,
               has_dependencies: subtask.has_dependencies || false,
               schedule_id: subtask.schedule_id || null,
               reporter: subtask.reporter || undefined, // Add reporter field mapping
@@ -1534,6 +1603,8 @@ export const {
   deleteCustomColumn,
   syncColumnsWithFields,
   updateTaskCounts,
+  setTaskLatestComment,
+  setTaskAttachments,
 } = taskManagementSlice.actions;
 
 // Export the selectors

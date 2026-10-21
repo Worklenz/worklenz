@@ -81,7 +81,7 @@ const PracticeDrawer = ({
       }
       open={drawerOpen}
       onClose={handleClose}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
         <Form.Item

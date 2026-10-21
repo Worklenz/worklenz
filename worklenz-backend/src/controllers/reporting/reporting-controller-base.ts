@@ -38,6 +38,26 @@ export default abstract class ReportingControllerBase extends WorklenzController
   }
 
   /**
+   * Get projects where the user holds the project-level "Project Manager"
+   * access level. Inverse of ProjectsController.getProjectManager (which goes
+   * project -> PM); this goes user -> PM projects. Used by the Time Entries
+   * visibility resolver alongside getTeamLeadProjects.
+   */
+  public static async getPmProjectIds(userId: string, teamId: string): Promise<string[]> {
+    if (!userId || !teamId) return [];
+    const q = `
+      SELECT DISTINCT pm.project_id
+      FROM project_members pm
+      JOIN team_members tm ON pm.team_member_id = tm.id
+      WHERE tm.user_id = $1::UUID
+        AND tm.team_id = $2::UUID
+        AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')
+    `;
+    const result = await db.query(q, [userId, teamId]);
+    return result.rows.map(r => r.project_id);
+  }
+
+  /**
    * Check if user has access to specific project (for Team Leads)
    */
   public static async canAccessProject(userId: string, teamId: string, projectId: string): Promise<boolean> {
@@ -104,7 +124,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
       return { clause: "", params: [] };
     }
     return {
-      clause: `AND ${column_name} NOT IN (SELECT project_id FROM archived_projects WHERE project_id = ${column_name} AND user_id = $${paramOffset}) `,
+      clause: `AND ${column_name} NOT IN (SELECT project_id FROM archived_projects WHERE project_id = ${column_name} AND user_id = $${Number(paramOffset)}) `,
       params: [user_id]
     };
   }
@@ -383,12 +403,12 @@ export default abstract class ReportingControllerBase extends WorklenzController
 
       if (start === end) {
         // Single day: compare the DATE part of the timestamp
-        query = `AND task_work_log.created_at::DATE = $${paramOffset}::DATE`;
+        query = `AND task_work_log.created_at::DATE = $${Number(paramOffset)}::DATE`;
         params.push(start);
       } else {
         // Date range: inclusive comparison on DATE part
         // Using ::DATE cast ensures we compare dates without time/timezone issues
-        query = `AND task_work_log.created_at::DATE >= $${paramOffset}::DATE AND task_work_log.created_at::DATE <= $${paramOffset + 1}::DATE`;
+        query = `AND task_work_log.created_at::DATE >= $${Number(paramOffset)}::DATE AND task_work_log.created_at::DATE <= $${Number(paramOffset) + 1}::DATE`;
         params.push(start, end);
       }
 

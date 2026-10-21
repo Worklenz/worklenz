@@ -12,5 +12,12 @@
   "confirmPasswordRequired": "请确认您的新密码",
   "passwordMismatch": "两次输入的密码不匹配",
   "successTitle": "密码重置成功",
-  "successMessage": "您的密码已更新，现在可以使用新密码登录。"
+  "successMessage": "您的密码已更新，现在可以使用新密码登录。",
+  "passwordChecklist": {
+    "minLength": "至少8个字符",
+    "uppercase": "一个大写字母",
+    "lowercase": "一个小写字母",
+    "number": "一个数字",
+    "special": "一个特殊字符"
+  }
 }

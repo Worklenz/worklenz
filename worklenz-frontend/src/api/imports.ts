@@ -6,6 +6,7 @@ export interface ImportJob {
   flow_type: 'direct' | 'csv';
   status?: 'pending' | 'ready' | 'running' | 'success' | 'failed';
   error_message?: string | null;
+  target_project_id?: string | null;
 }
 
 export interface ImportProgress {

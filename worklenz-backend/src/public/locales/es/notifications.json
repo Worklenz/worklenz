@@ -1,0 +1,21 @@
+{
+  "taskAssigned": "<b>{{reporter}}</b> te ha asignado en <b>{{task}}</b>",
+  "taskRemoved": "<b>{{reporter}}</b> te ha eliminado de <b>{{task}}</b>",
+  "taskAdded": "<b>{{user}}</b> añadió «<b>{{task}}</b>» a «<b>{{project}}</b>»",
+  "taskRemovedFromProject": "<b>{{user}}</b> eliminó «<b>{{task}}</b>» de «<b>{{project}}</b>»",
+  "addedToProject": "Has sido añadido a <b>{{project}}</b> por <b>{{user}}</b>",
+  "removedFromProject": "Has sido eliminado de <b>{{project}}</b> por <b>{{user}}</b>",
+  "addedToTeam": "Has sido añadido a <b>{{team}}</b>",
+  "removedFromTeam": "Has sido eliminado de <b>{{team}}</b> por <b>{{user}}</b>",
+  "commentAdded": "<b>{{user}}</b> añadió un comentario en <b>{{task}}</b>",
+  "mentionedInComment": "<b>{{user}}</b> te mencionó en un comentario en <b>{{task}}</b>",
+  "mentionedInProjectComment": "<b>{{user}}</b> te mencionó en un comentario en <b>{{project}}</b>",
+  "mentionedInProjectDocument": "<b>{{user}}</b> te mencionó en un documento en <b>{{project}}</b>",
+  "phaseTaskAssigned": "Se te ha asignado una tarea en <b>{{phase}}</b>: <b>{{task}}</b>",
+  "security": {
+    "invitationLimit": "Este espacio de trabajo ha alcanzado el límite de seguridad de invitaciones. Vuelve a intentarlo más tarde.",
+    "invitationsPaused": "Las invitaciones están pausadas temporalmente. Ponte en contacto con tu administrador.",
+    "blockedTaskHost": "Esta tarea contiene un enlace bloqueado. Elimínalo y vuelve a intentarlo.",
+    "blockedSignupDomain": "Este proveedor de correo no es compatible. Utiliza otra dirección de correo electrónico."
+  }
+}

@@ -21,6 +21,7 @@ import { nanoid } from '@reduxjs/toolkit';
 import { addLabel } from '@features/settings/label/labelSlice';
 import { useTranslation } from 'react-i18next';
 import { ITaskLabel, LabelType } from '@/types/label.type';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface LabelsSelectorProps {
   taskId: string | null;
@@ -34,7 +35,7 @@ const LabelsSelector = ({ taskId, labels }: LabelsSelectorProps) => {
   const [open, setOpen] = useState(false);
 
   // localization
-  const { t } = useTranslation('task-list');
+  const { t } = useTranslation('task-list-table');
 
   const dispatch = useAppDispatch();
 
@@ -112,7 +113,7 @@ const LabelsSelector = ({ taskId, labels }: LabelsSelectorProps) => {
 
                 <Flex gap={8}>
                   <Badge color={label.color_code} />
-                  {label.name}
+                  {decodeHtmlEntities(label.name)}
                 </Flex>
               </List.Item>
             ))
@@ -121,7 +122,7 @@ const LabelsSelector = ({ taskId, labels }: LabelsSelectorProps) => {
               style={{ color: colors.lightGray }}
               onClick={() => handleCreateLabel(searchQuery)}
             >
-              {t('labelSelectorInputTip')}
+              {t('labelsSelectorInputTip', { defaultValue: 'Hit enter to create!' })}
             </Typography.Text>
           )}
         </List>
@@ -151,7 +152,7 @@ const LabelsSelector = ({ taskId, labels }: LabelsSelectorProps) => {
   return (
     <Dropdown
       trigger={['click']}
-      dropdownRender={() => labelDropdownContent}
+      popupRender={() => labelDropdownContent}
       onOpenChange={handleLabelDropdownOpen}
     >
       <Button

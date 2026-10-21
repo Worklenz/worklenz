@@ -109,7 +109,7 @@ const InviteTeamMembers = () => {
       }
       open={isDrawerOpen}
       onClose={handleClose}
-      destroyOnClose
+      destroyOnHidden
       afterOpenChange={visible => visible && handleSearch('')}
       width={400}
       loading={loading}
@@ -179,7 +179,7 @@ const InviteTeamMembers = () => {
               form.setFieldsValue({ jobTitle: option?.label || value });
             }}
             onSelect={value => setSelectedJobTitle(value)}
-            dropdownRender={menu => (
+            popupRender={menu => (
               <div>
                 {searching && <Spin size="small" />}
                 {menu}

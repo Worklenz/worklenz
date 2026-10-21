@@ -1,0 +1,21 @@
+{
+  "taskAssigned": "<b>{{reporter}}</b> przypisał(a) Cię do <b>{{task}}</b>",
+  "taskRemoved": "<b>{{reporter}}</b> usunął/usunęła Cię z <b>{{task}}</b>",
+  "taskAdded": "<b>{{user}}</b> dodał(a) „<b>{{task}}</b>” do „<b>{{project}}</b>”",
+  "taskRemovedFromProject": "<b>{{user}}</b> usunął/usunęła „<b>{{task}}</b>” z „<b>{{project}}</b>”",
+  "addedToProject": "Zostałeś(-aś) dodany(-a) do <b>{{project}}</b> przez <b>{{user}}</b>",
+  "removedFromProject": "Zostałeś(-aś) usunięty(-a) z <b>{{project}}</b> przez <b>{{user}}</b>",
+  "addedToTeam": "Zostałeś(-aś) dodany(-a) do <b>{{team}}</b>",
+  "removedFromTeam": "Zostałeś(-aś) usunięty(-a) z <b>{{team}}</b> przez <b>{{user}}</b>",
+  "commentAdded": "<b>{{user}}</b> dodał(a) komentarz do <b>{{task}}</b>",
+  "mentionedInComment": "<b>{{user}}</b> wspomniał(a) o Tobie w komentarzu do <b>{{task}}</b>",
+  "mentionedInProjectComment": "<b>{{user}}</b> wspomniał(a) o Tobie w komentarzu do <b>{{project}}</b>",
+  "mentionedInProjectDocument": "<b>{{user}}</b> wspomniał(a) o Tobie w dokumencie w <b>{{project}}</b>",
+  "phaseTaskAssigned": "Przypisano Ci zadanie w <b>{{phase}}</b>: <b>{{task}}</b>",
+  "security": {
+    "invitationLimit": "Ten obszar roboczy osiągnął limit bezpieczeństwa zaproszeń. Spróbuj ponownie później.",
+    "invitationsPaused": "Zaproszenia zostały tymczasowo wstrzymane. Skontaktuj się z administratorem.",
+    "blockedTaskHost": "To zadanie zawiera zablokowany link. Usuń go i spróbuj ponownie.",
+    "blockedSignupDomain": "Ten dostawca poczty nie jest obsługiwany. Użyj innego adresu e-mail."
+  }
+}

@@ -16,7 +16,18 @@ exports.shorthands = undefined;
  * @param {import('node-pg-migrate').MigrationBuilder} pgm
  */
 exports.up = async (pgm) => {
-  pgm.sql(`
+  // This migration replaces shared signup functions and repairs organization
+  // licenses. Require an explicit mode rather than the application's default:
+  // a missing cloud configuration must never apply self-hosted licensing.
+  const deploymentMode = process.env.WORKLENZ_DEPLOYMENT_MODE?.trim().toLowerCase();
+  if (deploymentMode !== 'cloud' && deploymentMode !== 'self_hosted') {
+    throw new Error(
+      'Set WORKLENZ_DEPLOYMENT_MODE explicitly to cloud or self_hosted before running the self-hosted license migration.'
+    );
+  }
+
+  if (deploymentMode === 'self_hosted') {
+    pgm.sql(`
 -- Register user
 CREATE OR REPLACE FUNCTION register_user(_body json) returns json
     language plpgsql
@@ -342,6 +353,10 @@ $$;
 
 comment on function register_apple_user(json) is 'Registers a new Apple Sign-In OAuth user under the SELF_HOSTED license';
 
+    `);
+  }
+
+  pgm.sql(`
 -- Never create a second team member row for an email already in the team.
 CREATE OR REPLACE FUNCTION create_team_member(_body json) RETURNS json
     LANGUAGE plpgsql
@@ -437,6 +452,10 @@ BEGIN
 END;
 $$;
 
+  `);
+
+  if (deploymentMode === 'self_hosted') {
+    pgm.sql(`
 -- Repair organizations created with the trial license and no real subscription.
 UPDATE organizations o
 SET license_type_id     = (SELECT id FROM sys_license_types WHERE key = 'SELF_HOSTED'),
@@ -448,7 +467,8 @@ WHERE (o.license_type_id IS NULL
   AND NOT EXISTS(SELECT 1 FROM licensing_coupon_codes lcc WHERE lcc.redeemed_by = o.user_id)
   AND NOT EXISTS(SELECT 1 FROM licensing_custom_subs lcs WHERE lcs.user_id = o.user_id)
   AND NOT EXISTS(SELECT 1 FROM licensing_credit_subs lcs WHERE lcs.user_id = o.user_id);
-  `);
+    `);
+  }
 };
 
 /** @param {import('node-pg-migrate').MigrationBuilder} _pgm */

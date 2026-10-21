@@ -31,5 +31,6 @@
   "admin": "Administrador",
   "member": "Miembro",
   "cannotChangeOwnerRole": "A função de Proprietário não pode ser alterada",
-  "pendingInvitation": "Convite pendente"
+  "pendingInvitation": "Convite pendente",
+  "clickToEditName": "Clique para editar o nome"
 }

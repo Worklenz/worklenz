@@ -7,6 +7,8 @@ import pt from './locales/pt/translation.json';
 import de from './locales/de/translation.json';
 import al from './locales/al/translation.json';
 import zh from './locales/zh/translation.json';
+import pl from './locales/pl/translation.json';
+import fr from './locales/fr/translation.json';
 
 const resources = {
   en: { translation: en },
@@ -15,6 +17,8 @@ const resources = {
   de: { translation: de },
   al: { translation: al },
   zh: { translation: zh },
+  pl: { translation: pl },
+  fr: { translation: fr },
 };
 
 // Get saved language from localStorage or default to 'en'

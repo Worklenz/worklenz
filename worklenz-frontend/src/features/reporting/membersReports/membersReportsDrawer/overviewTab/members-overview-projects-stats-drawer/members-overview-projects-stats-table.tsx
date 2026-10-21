@@ -14,6 +14,7 @@ import { colors } from '@/styles/colors';
 import { toCamelCase } from '@/utils/toCamelCase';
 import ProjectCell from '@/components/reporting/table-cells/ProjectCell';
 import ProjectManagerCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-manager-cell/project-manager-cell';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 type ProjectReportsTableProps = {
   projectList: any[];
@@ -146,7 +147,7 @@ const MembersOverviewProjectsStatsTable = ({ projectList, loading }: ProjectRepo
             backgroundColor: record.category_color,
           }}
         >
-          {record.category_name ? record.category_name : '-'}
+          {record.category_name ? decodeHtmlEntities(record.category_name) : '-'}
         </Flex>
       ),
       width: 120,

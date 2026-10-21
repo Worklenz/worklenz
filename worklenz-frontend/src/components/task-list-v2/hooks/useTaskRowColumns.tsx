@@ -9,7 +9,6 @@ import {
   AssigneesColumn,
   PriorityColumn,
   ProgressColumn,
-  LabelsColumn,
   LabelsColumnWithOverflow,
   PhaseColumn,
   TimeTrackingColumn,
@@ -19,17 +18,25 @@ import {
   CustomColumn,
 } from '../components/TaskRowColumns';
 import { TitleColumn } from '../components/TitleColumn';
+import { EpicColumn } from '../components/EpicColumn';
+import { PointsColumn } from '../components/PointsColumn';
 import { DatePickerColumn } from '../components/DatePickerColumn';
+import { AttachmentsColumn } from '../components/AttachmentsColumn';
 import TaskListDueTimeCell from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-cells/task-list-due-time-cell/task-list-due-time-cell';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { CommentsColumn } from '../components/CommentsColumn';
 import { selectGroups } from '@/features/task-management/task-management.slice';
+import { useTaskListMode } from '@/features/task-management/task-list-mode-context';
 import {
   fetchTask as fetchTaskDrawer,
+  setTargetCommentId,
+  setTargetDrawerTab,
   setNavigationContext,
   setSelectedTaskId,
   setShowTaskDrawer,
 } from '@/features/task-drawer/task-drawer.slice';
+
 
 interface UseTaskRowColumnsProps {
   task: Task;
@@ -115,11 +122,16 @@ export const useTaskRowColumns = ({
 }: UseTaskRowColumnsProps) => {
   const dispatch = useAppDispatch();
   const groups = useAppSelector(selectGroups);
+  const isTaskDrawerOpenForTask = useAppSelector(
+    state => state.taskDrawerReducer.showTaskDrawer && state.taskDrawerReducer.selectedTaskId === task.id
+  );
+  const cellVariant = useTaskListMode() === 'backlog' ? 'inline' : 'pill';
 
   // Opens the task drawer — used by DescriptionColumn when rich formatting
   // is present and inline plain-text editing would destroy it.
   const openDrawerForTask = useCallback(() => {
     if (!task.id || !projectId) return;
+    if (isTaskDrawerOpenForTask) return;
     const taskIds = groups.flatMap(g => g.taskIds);
     const currentIndex = taskIds.indexOf(task.id);
     dispatch(
@@ -133,7 +145,16 @@ export const useTaskRowColumns = ({
     dispatch(setSelectedTaskId(task.id));
     dispatch(setShowTaskDrawer(true));
     dispatch(fetchTaskDrawer({ taskId: task.id, projectId }));
-  }, [dispatch, groups, task.id, projectId]);
+  }, [dispatch, groups, task.id, projectId, isTaskDrawerOpenForTask]);
+
+  const openLatestComment = useCallback(
+    (commentId: string) => {
+      dispatch(setTargetCommentId(commentId));
+      dispatch(setTargetDrawerTab('info'));
+      openDrawerForTask();
+    },
+    [dispatch, openDrawerForTask]
+  );
 
   const isReadOnly = isGuest;
 
@@ -239,6 +260,7 @@ export const useTaskRowColumns = ({
                 projectId={projectId}
                 isDarkMode={isDarkMode}
                 disabled={isReadOnly}
+                variant={cellVariant}
               />
             );
 
@@ -262,6 +284,7 @@ export const useTaskRowColumns = ({
                 projectId={projectId}
                 isDarkMode={isDarkMode}
                 disabled={isReadOnly}
+                variant={cellVariant}
               />
             );
 
@@ -308,6 +331,16 @@ export const useTaskRowColumns = ({
           case 'progress':
             return <ProgressColumn width={width} task={task} />;
 
+          case 'attachments':
+            return (
+              <AttachmentsColumn
+                width={width}
+                task={task}
+                projectId={projectId}
+                disabled={isReadOnly}
+              />
+            );
+
           case 'labels':
             return (
               <LabelsColumnWithOverflow
@@ -316,6 +349,26 @@ export const useTaskRowColumns = ({
                 labelsAdapter={labelsAdapter}
                 isDarkMode={isDarkMode}
                 columnId={columnId}
+                disabled={isReadOnly}
+              />
+            );
+
+          case 'epic':
+            return (
+              <EpicColumn
+                width={width}
+                task={task}
+                projectId={projectId}
+                disabled={isReadOnly}
+              />
+            );
+
+          case 'points':
+            return (
+              <PointsColumn
+                width={width}
+                task={task}
+                projectId={projectId}
                 disabled={isReadOnly}
               />
             );
@@ -355,6 +408,9 @@ export const useTaskRowColumns = ({
 
           case 'reporter':
             return <ReporterColumn width={width} reporter={task.reporter || ''} />;
+
+          case 'comments':
+            return <CommentsColumn width={width} task={task} onOpenComment={openLatestComment} />;
 
           default:
             // Handle custom columns

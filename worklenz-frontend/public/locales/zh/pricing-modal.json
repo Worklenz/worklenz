@@ -26,7 +26,8 @@
     "user": "用户",
     "users": "用户",
     "helpDescription": "输入您团队的用户数量（1-500）",
-    "placeholder": "选择团队规模"
+    "placeholder": "选择团队规模",
+    "aria": "团队规模"
   },
   "plans": {
     "free": {
@@ -70,7 +71,8 @@
       "payPerUser": "按用户付费（1-5 位用户）",
       "usersIncluded": "包括 {{count}} 用户",
       "maxUsers": "最多 {{count}} 个用户",
-      "maxUsersAppSumo": "最多 50 个用户（AppSumo 特别版）"
+      "maxUsersAppSumo": "最多 50 个用户（AppSumo 特别版）",
+      "namePromo": "商业（AppSumo 特别版）"
     },
     "proSmall": {
       "name": "专业版（小型）",
@@ -129,8 +131,11 @@
         "自定义集成",
         "专属客户经理",
         "本地部署"
-      ]
-    }
+      ],
+      "customPricing": "定制",
+      "customPricingNote": "为您的团队量身打造"
+    },
+    "additionalUsersCharged": "超出范围的其他用户：${{price}}/用户/月"
   },
   "badges": {
     "mostPopular": "最受欢迎",
@@ -325,7 +330,8 @@
     "billedMonthly": "（按月计费）",
     "perYear": "/year",
     "perMonth": "/month",
-    "forUsers": "对于 {{count}} 用户{{s}}"
+    "forUsers": "对于 {{count}} 用户{{s}}",
+    "annualSavingsShortOff": "最高 {{percent}}% 折扣"
   },
   "ribbon": {
     "recommended": "推荐",

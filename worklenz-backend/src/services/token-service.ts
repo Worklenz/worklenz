@@ -1,12 +1,15 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import bcrypt from "bcrypt";
 import db from "../config/db";
+import { getJwtSecret } from "../shared/jwt-secret";
 import { generatePrefixedToken, isValidBase62 } from "../utils/base62";
 
 interface ClientOrganization {
   id: string;
   name: string;
+  clientName?: string;
+  /** The team's Portal Title (Portal Settings > Branding); what the client sees as the portal's name. */
+  portalTitle?: string | null;
   teamId: string;
   clientId: string;
   isDefault: boolean;
@@ -41,7 +44,7 @@ interface OrganizationInviteTokenPayload {
 }
 
 class TokenService {
-  private readonly SECRET_KEY = process.env.JWT_SECRET || "your-secret-key-here";
+  private readonly SECRET_KEY = getJwtSecret();
   private readonly INVITE_SECRET = process.env.INVITE_SECRET || "invite-secret-key";
 
   // Generate client access token
@@ -146,14 +149,16 @@ class TokenService {
     role: string;
     invitedBy: string;
     token: string;
+    // The company user this invitation is for, so its portal status can be read per user.
+    clientContactId?: string | null;
   }): Promise<string> {
     const query = `
       INSERT INTO client_invitations (
-        id, client_id, email, name, role, invited_by, token, status, created_at, expires_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW() + INTERVAL '7 days')
+        id, client_id, email, name, role, invited_by, token, status, created_at, expires_at, client_contact_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW() + INTERVAL '7 days', $9)
       RETURNING id
     `;
-    
+
     const invitationId = crypto.randomUUID();
     const values = [
       invitationId,
@@ -163,7 +168,8 @@ class TokenService {
       inviteData.role,
       inviteData.invitedBy,
       inviteData.token,
-      "pending"
+      "pending",
+      inviteData.clientContactId ?? null
     ];
 
     const result = await db.query(query, values);
@@ -178,293 +184,15 @@ class TokenService {
       JOIN clients c ON ci.client_id = c.id
       LEFT JOIN teams t ON c.team_id = t.id
       WHERE ci.token = $1 AND ci.status = 'pending' AND ci.expires_at > NOW()
+        -- A disabled company user can't accept, even with a link that was sent before
+        AND NOT EXISTS (
+          SELECT 1 FROM client_contacts cc
+          WHERE cc.id = ci.client_contact_id AND cc.disabled_at IS NOT NULL
+        )
     `;
-    
+
     const result = await db.query(query, [token]);
     return result.rows[0] || null;
-  }
-
-  // Accept invitation
-  async acceptInvitation(token: string, userData: {
-    password: string;
-    name: string;
-    userId?: string | null; // Optional Worklenz user ID for linking
-  }): Promise<any> {
-    const invitation = await this.getInvitationByToken(token);
-    if (!invitation) {
-      throw new Error("Invalid or expired invitation");
-    }
-
-    // Start transaction
-    const client = await db.pool.connect();
-    try {
-      await client.query("BEGIN");
-
-      // Always hash password with bcrypt and attach to invitation object for use in subsequent queries
-      const passwordHash = this.hashClientPassword(userData.password);
-      (invitation as any).password_hash = passwordHash;
-
-      let userResult: any;
-      let actualClientUserId: string;
-
-      // Check if email already exists in client_users to avoid duplicate key error
-      const emailExistsCheck = await client.query(
-        `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
-        [invitation.email]
-      );
-
-      if (emailExistsCheck.rows.length > 0) {
-        // Email already exists - update the existing record
-        actualClientUserId = emailExistsCheck.rows[0].id;
-        
-        if (userData.userId) {
-          // Linking existing Worklenz user
-          await client.query(
-            `UPDATE client_users 
-             SET user_id = $1, client_id = $2, name = $3, role = $4, team_id = $5, status = 'active', updated_at = NOW()
-             WHERE id = $6`,
-            [userData.userId, invitation.client_id, userData.name, invitation.role, invitation.team_id, actualClientUserId]
-          );
-        } else {
-          // Standalone client portal user - update with password_hash (bcrypt)
-          await client.query(
-            `UPDATE client_users 
-             SET client_id = $1, name = $2, password_hash = $3, role = $4, team_id = $5, status = 'active', updated_at = NOW()
-             WHERE id = $6`,
-            [invitation.client_id, userData.name, passwordHash, invitation.role, invitation.team_id, actualClientUserId]
-          );
-        }
-        
-        userResult = await client.query(
-          `SELECT id, email, name, role, client_id FROM client_users WHERE id = $1`,
-          [actualClientUserId]
-        );
-      } else {
-        // Email doesn't exist - create new record (let DB generate UUID)
-        let createUserQuery: string;
-        let queryParams: any[];
-
-        if (userData.userId) {
-          // Linking existing Worklenz user - no password_hash needed for client_users table
-          createUserQuery = `
-            INSERT INTO client_users (
-              user_id, client_id, email, name, role, team_id, status, created_at, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW())
-            RETURNING id, email, name, role, client_id
-          `;
-          queryParams = [
-            userData.userId,
-            invitation.client_id,
-            invitation.email,
-            userData.name,
-            invitation.role,
-            invitation.team_id
-          ];
-        } else {
-          // Standalone client portal user - create with password_hash (bcrypt)
-          createUserQuery = `
-            INSERT INTO client_users (
-              client_id, email, name, password_hash, role, team_id, status, created_at, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW())
-            RETURNING id, email, name, role, client_id
-          `;
-          queryParams = [
-            invitation.client_id,
-            invitation.email,
-            userData.name,
-            passwordHash, // Bcrypt hash created earlier
-            invitation.role,
-            invitation.team_id
-          ];
-        }
-
-        userResult = await client.query(createUserQuery, queryParams);
-        actualClientUserId = userResult.rows[0].id;
-      }
-
-      // Create organization access record for multi-org support
-      const orgAccessQuery = `
-        INSERT INTO client_user_organizations (client_user_id, team_id, client_id, is_default, created_at, updated_at)
-        VALUES ($1, $2, $3, TRUE, NOW(), NOW())
-        ON CONFLICT (client_user_id, team_id) DO NOTHING
-      `;
-      await client.query(orgAccessQuery, [actualClientUserId, invitation.team_id, invitation.client_id]);
-
-      // Update invitation status
-      await client.query(
-        "UPDATE client_invitations SET status = $1, accepted_at = NOW() WHERE token = $2",
-        ["accepted", token]
-      );
-
-      // Update client status to active when invitation is accepted
-      await client.query(
-        "UPDATE clients SET status = $1, updated_at = NOW() WHERE id = $2",
-        ["active", invitation.client_id]
-      );
-
-      // Create client portal access record with full permissions
-      // Create client portal access record with full permissions
-      const portalAccessQuery = `
-        INSERT INTO client_portal_access (client_id, email, password_hash, is_active, created_at, updated_at)
-        VALUES ($1, $2, $3, TRUE, NOW(), NOW())
-        ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, email = $2, password_hash = $3, updated_at = NOW()
-      `;
-      await client.query(portalAccessQuery, [invitation.client_id, invitation.email, (invitation as any).password_hash]);
-
-      await client.query("COMMIT");
-
-      // Return complete user data with client information
-      const createdUser = userResult.rows[0];
-      return {
-        id: createdUser.id,
-        email: createdUser.email,
-        name: createdUser.name,
-        role: createdUser.role,
-        client_id: createdUser.client_id,
-        team_id: invitation.team_id,
-        client_name: invitation.client_name,
-        company_name: invitation.company_name
-      };
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
-    }
-  }
-
-  // Verify client password - supports both bcrypt and SHA256 with lazy migration
-  async verifyClientPassword(password: string, storedHash: string): Promise<{ isValid: boolean; needsMigration: boolean }> {
-    try {
-      // Try bcrypt first (modern hashing)
-      try {
-        const bcryptMatch = bcrypt.compareSync(password, storedHash);
-        if (bcryptMatch) {
-          return { isValid: true, needsMigration: false };
-        }
-      } catch (bcryptError) {
-        // Not a valid bcrypt hash, continue to SHA256 check
-      }
-
-      // Try SHA256 (legacy hashing)
-      const sha256Hash = crypto.createHash("sha256").update(password).digest("hex");
-      if (storedHash === sha256Hash) {
-        return { isValid: true, needsMigration: true }; // Valid but needs migration to bcrypt
-      }
-
-      return { isValid: false, needsMigration: false };
-    } catch (error) {
-      console.error("Error verifying client password:", error);
-      return { isValid: false, needsMigration: false };
-    }
-  }
-
-  // Hash client password using bcrypt (modern standard)
-  hashClientPassword(password: string): string {
-    const salt = bcrypt.genSaltSync(10);
-    return bcrypt.hashSync(password, salt);
-  }
-
-  // Migrate password hash from SHA256 to bcrypt
-  async migratePasswordHash(clientUserId: string, newPassword: string): Promise<void> {
-    try {
-      const newHash = this.hashClientPassword(newPassword);
-      await db.query(
-        "UPDATE client_users SET password_hash = $1, updated_at = NOW() WHERE id = $2",
-        [newHash, clientUserId]
-      );
-    } catch (error) {
-      console.error("Error migrating password hash:", error);
-    }
-  }
-
-  // Authenticate client user
-  async authenticateClient(email: string, password: string): Promise<any> {
-    try {
-      const normalizedEmail = email.toLowerCase().trim();
-
-      // First, check if user exists
-      const userExistsQuery = `
-        SELECT cu.*, c.name as client_name, c.company_name, c.team_id, c.status as client_status
-        FROM client_users cu
-        LEFT JOIN clients c ON cu.client_id = c.id
-        WHERE LOWER(cu.email) = LOWER($1)
-      `;
-
-      const userExistsResult = await db.query(userExistsQuery, [normalizedEmail]);
-
-      if (userExistsResult.rows.length === 0) {
-        return null; // No client user found with this email
-      }
-
-      const clientUser = userExistsResult.rows[0];
-
-      // Check user status
-      if (clientUser.status !== 'active') {
-        return null; // User is not active
-      }
-
-      // Check if client exists (required for authentication)
-      if (!clientUser.client_id) {
-        return null; // User has no associated client
-      }
-
-      // Check if client exists in clients table
-      if (!clientUser.client_name) {
-        return null; // Client doesn't exist
-      }
-
-      // Check if this is a linked Worklenz user (has user_id)
-      if (clientUser.user_id) {
-        // Authenticate against Worklenz users table
-        const worklenzAuthQuery = `
-          SELECT u.id, u.email, u.name, u.password
-          FROM users u
-          WHERE u.id = $1 AND u.is_deleted = FALSE
-        `;
-        const worklenzUserResult = await db.query(worklenzAuthQuery, [clientUser.user_id]);
-
-        if (worklenzUserResult.rows.length === 0) {
-          return null; // Linked Worklenz user not found
-        }
-
-        const worklenzUser = worklenzUserResult.rows[0];
-
-        if (!worklenzUser.password) {
-          return null; // No password set for linked user
-        }
-
-        // Verify password against Worklenz user password (bcrypt)
-        const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
-        if (passwordMatch) {
-          return clientUser; // Password matches, return client user info
-        }
-
-        return null; // Password doesn't match
-      } else {
-        // Standalone client portal user - authenticate against password_hash (supports both bcrypt and SHA256)
-        if (!clientUser.password_hash) {
-          return null; // No password hash set
-        }
-
-        // Verify password using centralized method (supports both bcrypt and SHA256)
-        const verificationResult = await this.verifyClientPassword(password, clientUser.password_hash);
-        
-        if (verificationResult.isValid) {
-          // Lazy migration: if password is SHA256, migrate to bcrypt
-          if (verificationResult.needsMigration) {
-            await this.migratePasswordHash(clientUser.id, password);
-          }
-          
-          return clientUser; // Password matches
-        }
-
-        return null; // Password doesn't match
-      }
-    } catch (error) {
-      console.error("[Client Auth] Error during authentication for email:", email, error);
-      return null;
-    }
   }
 
   // Get client permissions
@@ -565,19 +293,46 @@ class TokenService {
     return crypto.randomBytes(32).toString("hex");
   }
 
-  // Get all organizations accessible by a client user
+  // The token only needs ids; display names are read live by GET /organizations.
+  toTokenOrganizations(organizations: ClientOrganization[]): ClientOrganization[] {
+    return organizations.map(({ clientName: _clientName, portalTitle: _portalTitle, ...org }) => org);
+  }
+
+  // Get all organizations a client user can currently sign in to: the contact is not disabled and
+  // activated, the login is active, and the client is neither deleted, inactive nor portal-disabled.
+  // Read live (not from the token) so a revoked team drops out of the switcher straight away.
   async getClientUserOrganizations(clientUserId: string): Promise<ClientOrganization[]> {
     try {
       const query = `
         SELECT
           cuo.id,
           t.name,
+          c.name AS "clientName",
+          (
+            SELECT NULLIF(BTRIM(cps.portal_title), '')
+            FROM client_portal_settings cps
+            WHERE cps.organization_team_id = cuo.team_id
+            LIMIT 1
+          ) AS "portalTitle",
           cuo.team_id as "teamId",
           cuo.client_id as "clientId",
           cuo.is_default as "isDefault"
         FROM client_user_organizations cuo
         JOIN teams t ON cuo.team_id = t.id
+        JOIN clients c ON c.id = cuo.client_id
+        JOIN client_users cu ON cu.id = cuo.client_user_id
+        JOIN client_contacts cc
+          ON cc.client_user_id = cuo.client_user_id
+         AND cc.client_id = cuo.client_id
+         AND cc.team_id = cuo.team_id
         WHERE cuo.client_user_id = $1
+          AND cu.status = 'active'
+          AND cu.deleted_at IS NULL
+          AND cc.disabled_at IS NULL
+          AND cc.activated_at IS NOT NULL
+          AND c.deleted_at IS NULL
+          AND c.status <> 'inactive'
+          AND COALESCE((SELECT cpa.is_active FROM client_portal_access cpa WHERE cpa.client_id = c.id LIMIT 1), TRUE)
         ORDER BY cuo.is_default DESC, t.name ASC
       `;
 

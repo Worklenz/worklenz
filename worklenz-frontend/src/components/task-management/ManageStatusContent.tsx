@@ -10,6 +10,7 @@ import {
 } from '@/shared/antd-imports';
 import { PlusOutlined, HolderOutlined, EditOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   DndContext,
   DragEndEvent,
@@ -218,6 +219,7 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
             onChange={e => setEditName(e.target.value)}
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
+            maxLength={50}
             size="small"
             variant="borderless"
             style={{ padding: 0, fontSize: 12, fontWeight: 500 }}
@@ -357,7 +359,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Text style={{ fontSize: 13, fontWeight: 600 }}>{category.name}</Text>
+          <Text style={{ fontSize: 13, fontWeight: 600 }}>{decodeHtmlEntities(category.name)}</Text>
           <span
             style={{
               fontSize: 11,
@@ -412,7 +414,9 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                         }}
                       >
                         <Text style={{ fontSize: 12, color: token.colorPrimary }}>
-                          {t('dropToMoveToCategory', { categoryName: category.name })}
+                          {t('dropToMoveToCategory', {
+                            categoryName: decodeHtmlEntities(category.name),
+                          })}
                         </Text>
                       </div>
                     )}
@@ -441,7 +445,9 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                   }}
                 >
                   <Text style={{ fontSize: 12, color: token.colorPrimary }}>
-                    {t('dropToMoveToCategory', { categoryName: category.name })}
+                    {t('dropToMoveToCategory', {
+                      categoryName: decodeHtmlEntities(category.name),
+                    })}
                   </Text>
                 </div>
               )}
@@ -465,6 +471,8 @@ const CategorySection: React.FC<CategorySectionProps> = ({
               value={newStatusName}
               onChange={e => setNewStatusName(e.target.value)}
               onKeyDown={handleKeyDown}
+              maxLength={50}
+              showCount
               size="small"
               autoFocus
               style={{ flex: 1 }}

@@ -28,6 +28,7 @@ import type {
   ITeamProjectLinkRow,
 } from '@/api/files/team-files.api.service';
 import './files-table.css';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const MB = 1024 * 1024;
 
@@ -116,8 +117,8 @@ export const FilesTable: React.FC<FilesTableProps> = ({
         onClick={() => goToProject(record.project_id)}
       >
         <Badge color={record.project_color || token.colorPrimary} />
-        <Typography.Text ellipsis={{ tooltip: record.project_name }} style={{ maxWidth: 150 }}>
-          {record.project_name}
+        <Typography.Text ellipsis={{ tooltip: decodeHtmlEntities(record.project_name) }} style={{ maxWidth: 150 }}>
+          {decodeHtmlEntities(record.project_name)}
         </Typography.Text>
       </span>
     ),
@@ -237,11 +238,18 @@ export const FilesTable: React.FC<FilesTableProps> = ({
         key: 'task',
         title: <CustomTableTitle title={t('colTask', { defaultValue: 'Task' })} />,
         width: 200,
-        render: (_: unknown, record: ITeamTaskAttachmentRow) => (
-          <Typography.Text ellipsis={{ tooltip: record.task_name }} style={{ maxWidth: 180 }}>
-            {record.task_key && record.task_name ? `${record.task_key} - ${record.task_name}` : record.task_name || t('noTaskName', { defaultValue: '--' })}
-          </Typography.Text>
-        ),
+        render: (_: unknown, record: ITeamTaskAttachmentRow) => {
+          const taskName = decodeHtmlEntities(record.task_name);
+          const taskLabel =
+            record.task_key && record.task_name
+              ? `${record.task_key} - ${taskName}`
+              : taskName || t('noTaskName', { defaultValue: '--' });
+          return (
+            <Typography.Text ellipsis={{ tooltip: taskLabel }} style={{ maxWidth: 180 }}>
+              {taskLabel}
+            </Typography.Text>
+          );
+        },
       },
       {
         key: 'size',

@@ -18,6 +18,8 @@ const LanguageSelector = () => {
     { key: Language.ALB, label: 'Shqip' },
     { key: Language.DE, label: 'Deutsch' },
     { key: Language.ZH, label: '简体中文' },
+    { key: Language.PL, label: 'Polski' },
+    { key: Language.FR, label: 'Français' },
   ];
 
   const languageLabels: Record<ILanguageType, string> = {
@@ -27,6 +29,8 @@ const LanguageSelector = () => {
     [Language.ALB]: 'Sq',
     [Language.DE]: 'De',
     [Language.ZH]: 'Zh',
+    [Language.PL]: 'Pl',
+    [Language.FR]: 'Fr',
   };
 
   return (

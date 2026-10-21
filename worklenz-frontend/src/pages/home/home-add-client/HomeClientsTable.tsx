@@ -10,12 +10,13 @@ import {
   TableProps,
   theme,
   Typography,
+  SearchOutlined,
 } from '@/shared/antd-imports';
-import { ClientPortalClient, useGetClientsQuery } from '@/ee/api/client-portal/client-portal-api';
+import { ClientPortalClient, useGetClientsQuery } from '@/api/client-portal/client-portal-api';
 import dayjs from 'dayjs';
-import PortalStatusTag from '@/ee/components/client-portal/PortalStatusTag';
+import PortalStatusTag from '@/components/client-portal/PortalStatusTag';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
-const { Search } = Input;
 const { Option } = Select;
 
 interface HomeClientsTableProps {
@@ -97,7 +98,9 @@ const HomeClientsTable: React.FC<HomeClientsTableProps> = ({ onCreateClick }) =>
       sorter: true,
       render: (_name: string, record) => (
         <Flex vertical gap={2}>
-          <Typography.Text strong>{record.company_name?.trim() || record.name}</Typography.Text>
+          <Typography.Text strong>
+            {decodeHtmlEntities(record.company_name?.trim() || record.name)}
+          </Typography.Text>
           {record.email?.trim() && (
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               {record.email}
@@ -167,13 +170,32 @@ const HomeClientsTable: React.FC<HomeClientsTableProps> = ({ onCreateClick }) =>
       </div>
 
       <Flex gap={10} wrap="wrap" style={{ padding: '12px 14px' }}>
-        <Search
-          placeholder={t('searchClientsPlaceholder', { ns: 'client-portal-clients', defaultValue: 'Search clients...' })}
+        <Input
+          prefix={
+            <SearchOutlined
+              style={{ color: token.colorTextTertiary }}
+            />
+          }
+          placeholder={t('searchClientsPlaceholder', {
+            ns: 'client-portal-clients',
+            defaultValue: 'Search clients...',
+          })}
           allowClear
-          style={{ width: 220 }}
           value={search}
-          onChange={e => { setSearch(e.target.value); setPage(1); }}
-          onSearch={handleSearch}
+          onChange={e => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          onPressEnter={e =>
+            handleSearch((e.target as HTMLInputElement).value)
+          }
+          style={{
+            width: 220,
+            maxWidth: '100%',
+            height: 32,
+            fontSize: 12,
+            borderRadius: 7,
+          }}
         />
         <Select
           value={status}
@@ -203,12 +225,12 @@ const HomeClientsTable: React.FC<HomeClientsTableProps> = ({ onCreateClick }) =>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   {hasActiveFilters
                     ? t('noClientsMatchingFilters', {
-                        ns: 'client-portal-clients',
-                        defaultValue: 'No clients match the current filters.',
-                      })
+                      ns: 'client-portal-clients',
+                      defaultValue: 'No clients match the current filters.',
+                    })
                     : t('addClient.emptySubtitle', {
-                        defaultValue: 'Create your first client record using the form on the left.',
-                      })}
+                      defaultValue: 'Create your first client record using the form on the left.',
+                    })}
                 </Typography.Text>
               </div>
             }

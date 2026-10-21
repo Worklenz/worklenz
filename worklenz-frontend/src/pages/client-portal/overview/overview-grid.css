@@ -1,0 +1,22 @@
+/* react-grid-layout ships a red placeholder and fixed-colour resize handle; tie both to the antd theme. */
+.overview-grid .react-grid-item.react-grid-placeholder {
+  background: var(--ant-color-primary, #1890ff);
+  opacity: 0.25;
+  border-radius: 8px;
+}
+
+.overview-grid .react-grid-item > .react-resizable-handle::after {
+  border-color: var(--ant-color-text-secondary, currentColor);
+  opacity: 0.55;
+}
+
+.overview-grid .react-grid-item > .react-resizable-handle {
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overview-grid .react-grid-item,
+  .overview-grid {
+    transition: none;
+  }
+}

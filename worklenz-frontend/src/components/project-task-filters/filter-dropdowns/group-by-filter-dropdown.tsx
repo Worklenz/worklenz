@@ -11,6 +11,7 @@ import { IGroupBy, setCurrentGroup, setGroup } from '@features/tasks/tasks.slice
 import { setBoardGroupBy, setCurrentBoardGroup } from '@/features/board/board-slice';
 import { useAuthService } from '@/hooks/useAuth';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
+import { getSoftwareProjectLabels, isSoftwareProjectType } from '@/lib/project/software-project';
 
 const GroupByFilterDropdown = () => {
   const { t } = useTranslation('task-list-filters');
@@ -27,20 +28,19 @@ const GroupByFilterDropdown = () => {
   const projectView = tab === 'tasks-list' ? 'list' : 'kanban';
 
   const currentGroup = projectView === 'list' ? groupBy : boardGroupBy;
+  const softwareLabels = getSoftwareProjectLabels(project?.project_type);
 
   const items = useMemo(() => {
-    const baseItems = [
-      { key: IGroupBy.STATUS, label: t('statusText') },
-      { key: IGroupBy.PRIORITY, label: t('priorityText') },
-      { key: IGroupBy.PHASE, label: t('phaseText') },
+    const phaseLabel = isSoftwareProjectType(project?.project_type)
+      ? softwareLabels.phase
+      : project?.phase_label || t('phaseText', { defaultValue: 'Phase' });
+
+    return [
+      { key: IGroupBy.STATUS, label: t('statusText', { defaultValue: 'Status' }) },
+      { key: IGroupBy.PRIORITY, label: t('priorityText', { defaultValue: 'Priority' }) },
+      { key: IGroupBy.PHASE, label: phaseLabel },
     ];
-
-    // if (projectView === 'kanban') {
-    //   return [...baseItems, { key: IGroupBy.MEMBERS, label: t('memberText') }];
-    // }
-
-    return baseItems;
-  }, [t, project?.phase_label, projectView]);
+  }, [t, project?.phase_label, project?.project_type, softwareLabels.phase]);
 
   const handleGroupChange = (key: string) => {
     const group = key as IGroupBy;

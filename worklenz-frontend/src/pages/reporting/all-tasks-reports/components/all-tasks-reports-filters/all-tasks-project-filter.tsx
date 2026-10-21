@@ -19,6 +19,7 @@ import {
   toggleProject,
   fetchAllTasks,
 } from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface IProject {
   id: string;
@@ -170,7 +171,7 @@ const AllTasksProjectFilter = () => {
                       backgroundColor: project.color_code || '#1890ff',
                     }}
                   />
-                  {project.name}
+                  {decodeHtmlEntities(project.name)}
                 </Flex>
               </Checkbox>
             ))}
@@ -183,7 +184,7 @@ const AllTasksProjectFilter = () => {
   return (
     <Dropdown
       overlayClassName="custom-dropdown"
-      dropdownRender={() => dropdownContent}
+      popupRender={() => dropdownContent}
       trigger={['click']}
       placement="bottomLeft"
     >

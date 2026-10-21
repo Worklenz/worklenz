@@ -355,6 +355,17 @@ const allTasksReportsSlice = createSlice({
       state.selectedLabels = action.payload;
       state.index = 1;
     },
+    toggleLabel: (state, action: PayloadAction<string>) => {
+      const labelId = action.payload;
+
+      if (state.selectedLabels.includes(labelId)) {
+        state.selectedLabels = state.selectedLabels.filter(id => id !== labelId);
+      } else {
+        state.selectedLabels.push(labelId);
+      }
+
+      state.index = 1;
+    },
 
     setSelectedPhases: (state, action: PayloadAction<string[]>) => {
       state.selectedPhases = action.payload;
@@ -515,6 +526,7 @@ export const {
   setSelectedAssignees,
   toggleAssignee,
   setSelectedLabels,
+  toggleLabel,
   setSelectedPhases,
   setDateFilterField,
   setDateRange,

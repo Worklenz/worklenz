@@ -1,27 +1,102 @@
 {
-  "title": "Guardar como Plantilla",
-  "templateName": "Nombre de la Plantilla",
-  "includes": "¿Qué se debe incluir en la plantilla del proyecto?",
+  "title": "Guardar como plantilla",
+  "templateName": "Nombre de la plantilla",
+  "templateNamePlaceholder": "Introduce el nombre de la plantilla",
+  "templateInfo": "Información de la plantilla",
+  "includes": "Elementos del proyecto",
+  "projectSettings": "Configuración del proyecto",
+  "taskIncludes": "Elementos de la tarea",
+  "cancel": "Cancelar",
+  "save": "Guardar",
+  "creating": "Creando plantilla...",
+  "created": "¡Plantilla creada!",
+  "quickSelect": "Selección rápida:",
+  "selectAll": "Seleccionar todo",
+  "essentialOnly": "Solo esenciales",
+  "clearAll": "Borrar todo",
+  "itemsSelected": "elementos seleccionados",
+  "selected": "seleccionados",
+  "readyToSave": "Listo para guardar",
+  "validName": "Nombre válido",
+  "required": "Obligatorio",
+  "characters": "caracteres",
+  "proTips": "Consejos profesionales",
+  "budgetPlanHint": "La configuración de presupuesto está disponible en los planes Business y Enterprise.",
   "includesOptions": {
     "statuses": "Estados",
     "phases": "Fases",
-    "labels": "Etiquetas"
-  },
-  "taskIncludes": "¿Qué se debe incluir en la plantilla de las tareas?",
-  "taskIncludesOptions": {
-    "statuses": "Estados",
-    "phases": "Fases",
     "labels": "Etiquetas",
+    "customColumns": "Columnas personalizadas"
+  },
+  "projectSettingsOptions": {
+    "category": "Categoría",
+    "projectManager": "Gestor del proyecto",
+    "estimatedWorkingDays": "Días laborables estimados",
+    "estimatedManDays": "Días-hombre estimados",
+    "hoursPerDay": "Horas por día",
+    "advanced": "Configuración avanzada",
+    "budget": "Configuración de presupuesto"
+  },
+  "taskIncludesOptions": {
     "name": "Nombre",
     "priority": "Prioridad",
     "status": "Estado",
     "phase": "Fase",
     "label": "Etiqueta",
-    "timeEstimate": "Estimación de Tiempo",
+    "timeEstimate": "Estimación de tiempo",
     "description": "Descripción",
-    "subTasks": "Sub Tasks"
+    "subTasks": "Subtareas",
+    "assignees": "Asignados",
+    "recurrence": "Opciones de recurrencia",
+    "dependencies": "Dependencias",
+    "billable": "Facturable / No facturable"
   },
-  "cancel": "Cancel",
-  "save": "Save",
-  "templateNamePlaceholder": "Enter template name"
+  "descriptions": {
+    "statuses": "Configuración del flujo de estados del proyecto",
+    "phases": "Fases y hitos del proyecto",
+    "labels": "Etiquetas personalizadas para categorización",
+    "customColumns": "Campos personalizados y metadatos",
+    "category": "Categoría del proyecto para organización",
+    "projectManager": "Gestor de proyecto asignado",
+    "estimatedWorkingDays": "Días laborables estimados del proyecto",
+    "estimatedManDays": "Días-hombre estimados del proyecto",
+    "hoursPerDay": "Horas de trabajo por día por defecto",
+    "advanced": "Modos de progreso, valores por defecto de tareas y controles de acceso",
+    "budget": "Importe del presupuesto, moneda y tarifa del proyecto",
+    "taskName": "Nombres y títulos de las tareas",
+    "taskPriority": "Niveles de prioridad de las tareas",
+    "taskStatus": "Estado de finalización de las tareas",
+    "taskPhase": "Fase del proyecto asociada",
+    "taskLabel": "Etiquetas de las tareas",
+    "timeEstimate": "Estimaciones de tiempo y duración",
+    "description": "Descripciones y detalles de las tareas",
+    "subTasks": "Subtareas y elementos de lista",
+    "assignees": "Asignados en tareas y subtareas",
+    "recurrence": "Frecuencia, intervalo y regla de fin por tarea",
+    "dependencies": "Enlaces entre tareas de la plantilla",
+    "billable": "Indicador de facturación por tarea"
+  },
+  "tooltips": {
+    "projectElements": "Elige qué elementos del proyecto incluir en tu plantilla",
+    "projectSettings": "Elige qué ajustes del proyecto incluir. Se pueden revisar antes de crear un proyecto desde esta plantilla.",
+    "taskElements": "Elige qué elementos de tarea incluir en tu plantilla",
+    "required": "Este elemento es obligatorio y no se puede deseleccionar"
+  },
+  "tips": {
+    "line1": "Las plantillas conservan la estructura del proyecto para reutilizarla rápidamente",
+    "line2": "Los elementos esenciales siempre se incluyen y no se pueden quitar",
+    "line3": "La configuración del proyecto se puede revisar y editar al crear un proyecto desde esta plantilla",
+    "line4": "Deja personas y presupuesto desactivados por defecto para evitar asignaciones o costes inesperados"
+  },
+  "validation": {
+    "nameRequired": "Introduce un nombre de plantilla",
+    "nameMinLength": "El nombre de la plantilla debe tener al menos 3 caracteres",
+    "nameMaxLength": "El nombre de la plantilla debe tener menos de 50 caracteres"
+  },
+  "notifications": {
+    "createSuccess": "Plantilla creada",
+    "createSuccessDesc": "Tu plantilla de proyecto se ha creado correctamente y está lista para usar.",
+    "createError": "Error al crear la plantilla",
+    "error": "Error"
+  }
 }

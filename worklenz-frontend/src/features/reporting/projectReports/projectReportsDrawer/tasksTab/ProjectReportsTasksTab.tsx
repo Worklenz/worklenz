@@ -1,5 +1,5 @@
 import { Flex, Spin } from '@/shared/antd-imports';
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import CustomSearchbar from '@components/CustomSearchbar';
 import GroupByFilter from './group-by-filter';
 import ProjectReportsTasksTable from './ProjectReportsTaskTable';
@@ -10,6 +10,8 @@ import { reportingProjectsApiService } from '@/api/reporting/reporting-projects.
 import { IGroupByOption, ITaskListGroup } from '@/types/tasks/taskList.types';
 import { GROUP_BY_STATUS_VALUE, IGroupBy } from '@/features/board/board-slice';
 import { createPortal } from 'react-dom';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'));
 
@@ -25,6 +27,14 @@ const ProjectReportsTasksTab = ({ projectId = null }: ProjectReportsTasksTabProp
   const [groupBy, setGroupBy] = useState<IGroupBy>(GROUP_BY_STATUS_VALUE);
 
   const { t } = useTranslation('reporting-projects-drawer');
+  const lastDeletedTaskId = useAppSelector(state => state.taskDrawerReducer.lastDeletedTaskId);
+  const isTaskDrawerOpen = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
+  const wasTaskDrawerOpenRef = useRef(isTaskDrawerOpen);
+
+  useEffect(() => {
+    if (!lastDeletedTaskId) return;
+    setGroups(prev => removeTaskFromGroups(prev, lastDeletedTaskId));
+  }, [lastDeletedTaskId]);
 
   const filteredGroups = useMemo(() => {
     return groups
@@ -58,6 +68,12 @@ const ProjectReportsTasksTab = ({ projectId = null }: ProjectReportsTasksTabProp
     fetchTasksData();
   }, [projectId, groupBy]);
 
+  useEffect(() => {
+    const wasTaskDrawerOpen = wasTaskDrawerOpenRef.current;
+    wasTaskDrawerOpenRef.current = isTaskDrawerOpen;
+    if (wasTaskDrawerOpen && !isTaskDrawerOpen) fetchTasksData();
+  }, [isTaskDrawerOpen]);
+
   return (
     <Flex vertical gap={24}>
       <Flex gap={24} align="center" justify="space-between">
@@ -74,7 +90,7 @@ const ProjectReportsTasksTab = ({ projectId = null }: ProjectReportsTasksTabProp
           <ProjectReportsTasksTable
             key={item.id}
             tasksData={item.tasks}
-            title={item.name}
+            title={decodeHtmlEntities(item.name)}
             color={item.color_code}
             type={groupBy}
             projectId={projectId || ''}
@@ -92,5 +108,11 @@ const ProjectReportsTasksTab = ({ projectId = null }: ProjectReportsTasksTabProp
     </Flex>
   );
 };
+
+const removeTaskFromGroups = (groups: ITaskListGroup[], taskId: string): ITaskListGroup[] =>
+  groups.map(group => ({
+    ...group,
+    tasks: group.tasks.filter(task => task.id !== taskId && task.parent_task_id !== taskId),
+  }));
 
 export default ProjectReportsTasksTab;

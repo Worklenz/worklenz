@@ -1,3 +1,8 @@
+import type {
+  IProjectTemplateIncludes,
+  IProjectTemplateSettingsSnapshot,
+} from '@/types/project/projectTemplate.types';
+
 export interface IWorklenzTemplate {
   id?: string;
   name?: string;
@@ -14,6 +19,8 @@ interface IPhase {
 interface IStatus {
   name?: string;
   color_code?: string;
+  category_id?: string;
+  sort_order?: number | string;
 }
 
 interface IPriority {
@@ -32,6 +39,9 @@ interface ITemplateTask {
   priority_name?: string;
   phases?: { name?: string }[];
   labels?: { name?: string }[];
+  parent_task_id?: string;
+  original_task_id?: string;
+  id?: string;
 }
 
 export interface IProjectTemplate {
@@ -45,6 +55,10 @@ export interface IProjectTemplate {
   priorities?: IPriority[];
   labels?: ILabel[];
   tasks?: ITemplateTask[];
+  /** schema_version 2+ custom templates */
+  schema_version?: number;
+  includes?: IProjectTemplateIncludes | null;
+  settings?: IProjectTemplateSettingsSnapshot | null;
 }
 
 export interface ICustomTemplate {

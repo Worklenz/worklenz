@@ -4,5 +4,12 @@
   "owner": "Proprietário da Organização",
   "admins": "Administradores da Organização",
   "contactNumber": "Adicione o Número de Contato",
-  "edit": "Editar"
+  "edit": "Editar",
+  "fileSizeUpgradeModalHeadline": "Faça upload de arquivos de qualquer tamanho",
+  "fileSizeUpgradeModalBenefitFileSize": "Uploads de arquivos de até 250 MB",
+  "fileSizeUpgradeModalBenefitFileTypes": "Todos os tipos de arquivo suportados",
+  "nextMonth": "No próximo mês",
+  "fileSizeUpgradeModalBenefitStorage": "Armazenamento total expandido",
+  "previousMonth": "Mês anterior",
+  "fileSizeUpgradeModalSubCopy": "Seu plano atual suporta arquivos de até 25 MB. Atualize para Business para fazer upload de arquivos de até 250 MB e manter grandes ativos próximos ao trabalho do seu projeto."
 }

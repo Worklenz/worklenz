@@ -26,6 +26,7 @@
   "CHANGE_STATUS": "更改状态",
   "CHANGE_PRIORITY": "更改优先级",
   "CHANGE_PHASE": "更改阶段",
+  "MOVE_TO_SPRINT": "转向冲刺",
   "ADD_LABELS": "添加标签",
   "ASSIGN_TO_ME": "分配给我",
   "ASSIGN_MEMBERS": "分配成员",
@@ -43,5 +44,8 @@
   "DUE_DATE_UPDATED": "截止日期已成功更新",
   "DUE_DATE_CLEARED": "截止日期已成功清除",
   "archiveSuccessTitle": "批量更新完成",
-  "archiveSuccessMessage": "已{{action}} {{parentCount}} 个任务和 {{subtaskCount}} 个子任务。"
+  "archiveSuccessMessage": "已{{action}} {{parentCount}} 个任务和 {{subtaskCount}} 个子任务。",
+  "SET_START_DATE": "设置开始日期",
+  "Unarchive": "取消归档",
+  "Archive": "归档"
 }

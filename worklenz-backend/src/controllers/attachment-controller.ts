@@ -1,8 +1,10 @@
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
+import { IO } from "../shared/io";
+import { SocketEvents } from "../socket.io/events";
 
 import db from "../config/db";
-import { humanFileSize, smallId } from "../shared/utils";
+import { humanFileSize, log_error, smallId } from "../shared/utils";
 import { getStorageUrl } from "../shared/constants";
 import { ServerResponse } from "../models/server-response";
 import {
@@ -23,8 +25,24 @@ import { randomUUID } from "crypto";
 
 // Blocked extensions — kept in sync with frontend and validator middleware
 const BLOCKED_EXTENSIONS = new Set([
-  "exe", "bat", "cmd", "com", "pif", "scr", "vbs", "js",
-  "jar", "app", "deb", "rpm", "dmg", "pkg", "sh", "ps1", "dll", "msi",
+  "exe",
+  "bat",
+  "cmd",
+  "com",
+  "pif",
+  "scr",
+  "vbs",
+  "js",
+  "jar",
+  "app",
+  "deb",
+  "rpm",
+  "dmg",
+  "pkg",
+  "sh",
+  "ps1",
+  "dll",
+  "msi",
 ]);
 
 // Maximum file size for presigned uploads (250 MB — Business plan ceiling)
@@ -37,15 +55,20 @@ const sanitizeFileName = (fileName: string, extension: string): string => {
   const parsed = path.parse(fileName);
   const baseName = parsed.name || "file";
   const normalizedBase = baseName.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const maxBaseLength = Math.max(1, 255 - (extension ? extension.length + 1 : 0));
+  const maxBaseLength = Math.max(
+    1,
+    255 - (extension ? extension.length + 1 : 0),
+  );
   const trimmedBase = normalizedBase.slice(0, maxBaseLength);
   return extension ? `${trimmedBase}.${extension}` : trimmedBase;
 };
 
 export default class AttachmentController extends WorklenzControllerBase {
-
   @HandleExceptions()
-  public static async createTaskAttachment(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async createTaskAttachment(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const { file, file_name, task_id, project_id, size, type } = req.body;
 
     const q = `
@@ -62,21 +85,45 @@ export default class AttachmentController extends WorklenzControllerBase {
       req.user?.id,
       size,
       type,
-      `${getStorageUrl()}/${getRootDir()}`
+      `${getStorageUrl()}/${getRootDir()}`,
     ]);
     const [data] = result.rows;
 
-    const s3Url = await uploadBase64(file, getKey(req.user?.team_id as string, project_id, data.id, data.type));
+    const s3Url = await uploadBase64(
+      file,
+      getKey(req.user?.team_id as string, project_id, data.id, data.type),
+    );
 
     if (!data?.id || !s3Url)
-      return res.status(200).send(new ServerResponse(false, null, "Attachment upload failed"));
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "Attachment upload failed"));
 
     // Bump task updated_at so "Updated X ago" reflects the new attachment
-    await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [task_id]);
+    await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [
+      task_id,
+    ]);
 
     data.size = humanFileSize(data.size);
 
+    // Emit event after DB updates and S3 upload are both fully completed
+    AttachmentController.emitTaskAttachmentsUpdated(project_id, task_id);
+
     return res.status(200).send(new ServerResponse(true, data));
+  }
+
+  private static emitTaskAttachmentsUpdated(
+    projectId?: string,
+    taskId?: string,
+  ) {
+    if (!projectId || !taskId) return;
+    try {
+      IO.getInstance()
+        ?.to(projectId)
+        .emit(SocketEvents.TASK_ATTACHMENTS_UPDATED.toString(), taskId);
+    } catch (e) {
+      log_error(e);
+    }
   }
 
   /**
@@ -106,7 +153,13 @@ export default class AttachmentController extends WorklenzControllerBase {
     if (!task_id || !project_id || !filename || !size || !mime_type) {
       return res
         .status(400)
-        .send(new ServerResponse(false, null, "task_id, project_id, filename, size, and mime_type are required"));
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "task_id, project_id, filename, size, and mime_type are required",
+          ),
+        );
     }
 
     const extension = path.extname(filename).replace(".", "").toLowerCase();
@@ -114,19 +167,37 @@ export default class AttachmentController extends WorklenzControllerBase {
     if (!extension) {
       return res
         .status(400)
-        .send(new ServerResponse(false, null, "A valid file extension is required.").withTitle("Upload failed!"));
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "A valid file extension is required.",
+          ).withTitle("Upload failed!"),
+        );
     }
 
     if (BLOCKED_EXTENSIONS.has(extension)) {
       return res
         .status(400)
-        .send(new ServerResponse(false, null, `File type .${extension} is not allowed for security.`).withTitle("Upload blocked!"));
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            `File type .${extension} is not allowed for security.`,
+          ).withTitle("Upload blocked!"),
+        );
     }
 
     if (size > MAX_PRESIGN_FILE_SIZE_BYTES) {
       return res
         .status(400)
-        .send(new ServerResponse(false, null, "Max file size is 250 MB per file.").withTitle("Upload failed!"));
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "Max file size is 250 MB per file.",
+          ).withTitle("Upload failed!"),
+        );
     }
 
     // --- Auth & task/project ownership ---
@@ -151,7 +222,13 @@ export default class AttachmentController extends WorklenzControllerBase {
     if (!taskResult.rowCount) {
       return res
         .status(403)
-        .send(new ServerResponse(false, null, "You cannot attach files to this task"));
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "You cannot attach files to this task",
+          ),
+        );
     }
 
     // Use the project_id resolved from the database, not the client-supplied
@@ -169,14 +246,29 @@ export default class AttachmentController extends WorklenzControllerBase {
     if (!uploadUrl) {
       return res
         .status(500)
-        .send(new ServerResponse(false, null, "Failed to generate upload URL. Please try again."));
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "Failed to generate upload URL. Please try again.",
+          ),
+        );
     }
 
     // --- Insert a pending record ---
     await db.query(
       `INSERT INTO task_attachments (id, name, size, type, task_id, project_id, team_id, uploaded_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`,
-      [fileId, cleanFileName, size, extension, task_id, verifiedProjectId, teamId, userId],
+      [
+        fileId,
+        cleanFileName,
+        size,
+        extension,
+        task_id,
+        verifiedProjectId,
+        teamId,
+        userId,
+      ],
     );
 
     return res.status(200).send(
@@ -210,7 +302,9 @@ export default class AttachmentController extends WorklenzControllerBase {
     if (!file_id || !task_id) {
       return res
         .status(400)
-        .send(new ServerResponse(false, null, "file_id and task_id are required"));
+        .send(
+          new ServerResponse(false, null, "file_id and task_id are required"),
+        );
     }
 
     const userId = req.user?.id;
@@ -243,7 +337,12 @@ export default class AttachmentController extends WorklenzControllerBase {
     // client-declared value from presign, which cannot be trusted since the
     // browser PUTs directly to storage and could have sent more (or less)
     // data than it claimed.
-    const storageKey = getKey(attachment.team_id, attachment.project_id, attachment.id, attachment.type);
+    const storageKey = getKey(
+      attachment.team_id,
+      attachment.project_id,
+      attachment.id,
+      attachment.type,
+    );
     const actualSize = await getObjectSize(storageKey);
 
     if (actualSize === null) {
@@ -251,7 +350,13 @@ export default class AttachmentController extends WorklenzControllerBase {
       await db.query("DELETE FROM task_attachments WHERE id = $1", [file_id]);
       return res
         .status(400)
-        .send(new ServerResponse(false, null, "Upload verification failed. File not found in storage."));
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "Upload verification failed. File not found in storage.",
+          ),
+        );
     }
 
     if (actualSize > MAX_PRESIGN_FILE_SIZE_BYTES) {
@@ -261,14 +366,30 @@ export default class AttachmentController extends WorklenzControllerBase {
       await db.query("DELETE FROM task_attachments WHERE id = $1", [file_id]);
       return res
         .status(400)
-        .send(new ServerResponse(false, null, "Max file size is 250 MB per file.").withTitle("Upload failed!"));
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "Max file size is 250 MB per file.",
+          ).withTitle("Upload failed!"),
+        );
     }
 
     // Persist the real, storage-verified size rather than the client-declared one.
-    await db.query("UPDATE task_attachments SET size = $1 WHERE id = $2", [actualSize, file_id]);
+    await db.query("UPDATE task_attachments SET size = $1 WHERE id = $2", [
+      actualSize,
+      file_id,
+    ]);
 
     // Bump task updated_at
-    await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [task_id]);
+    await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [
+      task_id,
+    ]);
+
+    AttachmentController.emitTaskAttachmentsUpdated(
+      attachment.project_id,
+      task_id,
+    );
 
     // Return attachment details
     const url = `${getStorageUrl()}/${getRootDir()}/${attachment.team_id}/${attachment.project_id}/${attachment.id}.${attachment.type}`;
@@ -286,28 +407,58 @@ export default class AttachmentController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async createAvatarAttachment(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async createAvatarAttachment(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const { type, buffer } = req.body;
 
-    const s3Url = await uploadBuffer(buffer as Buffer, type, getAvatarKey(req.user?.id as string, type));
+    const s3Url = await uploadBuffer(
+      buffer as Buffer,
+      type,
+      getAvatarKey(req.user?.id as string, type),
+    );
 
     if (!s3Url)
-      return res.status(200).send(new ServerResponse(false, null, "Avatar upload failed"));
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "Avatar upload failed"));
 
-    const q = "UPDATE users SET avatar_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING avatar_url, updated_at;";
-    const result = await db.query(q, [req.user?.id, `${s3Url}?v=${smallId(4)}`]);
+    const q =
+      "UPDATE users SET avatar_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING avatar_url, updated_at;";
+    const result = await db.query(q, [
+      req.user?.id,
+      `${s3Url}?v=${smallId(4)}`,
+    ]);
     const [data] = result.rows;
     if (!data)
-      return res.status(200).send(new ServerResponse(false, null, "Avatar upload failed"));
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "Avatar upload failed"));
 
-    return res.status(200).send(new ServerResponse(true, { url: data.avatar_url, updated_at: data.updated_at }, "Avatar updated."));
+    return res
+      .status(200)
+      .send(
+        new ServerResponse(
+          true,
+          { url: data.avatar_url, updated_at: data.updated_at },
+          "Avatar updated.",
+        ),
+      );
   }
 
   @HandleExceptions()
-  public static async deleteAvatarAttachment(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async deleteAvatarAttachment(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const currentAvatarQuery = "SELECT avatar_url FROM users WHERE id = $1;";
-    const currentAvatarResult = await db.query(currentAvatarQuery, [req.user?.id]);
-    const currentAvatarUrl = currentAvatarResult.rows[0]?.avatar_url as string | null;
+    const currentAvatarResult = await db.query(currentAvatarQuery, [
+      req.user?.id,
+    ]);
+    const currentAvatarUrl = currentAvatarResult.rows[0]?.avatar_url as
+      | string
+      | null;
 
     const q =
       "UPDATE users SET avatar_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING updated_at;";
@@ -315,7 +466,9 @@ export default class AttachmentController extends WorklenzControllerBase {
     const [data] = result.rows;
 
     if (!data)
-      return res.status(200).send(new ServerResponse(false, null, "Avatar removal failed."));
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "Avatar removal failed."));
 
     if (currentAvatarUrl) {
       const sanitizedUrl = currentAvatarUrl.split("?")[0];
@@ -329,11 +482,20 @@ export default class AttachmentController extends WorklenzControllerBase {
 
     return res
       .status(200)
-      .send(new ServerResponse(true, { url: null, updated_at: data.updated_at }, "Avatar removed."));
+      .send(
+        new ServerResponse(
+          true,
+          { url: null, updated_at: data.updated_at },
+          "Avatar removed.",
+        ),
+      );
   }
 
   @HandleExceptions()
-  public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async get(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `
       SELECT id,
              name,
@@ -344,16 +506,21 @@ export default class AttachmentController extends WorklenzControllerBase {
       FROM task_attachments
       WHERE task_id = $1;
     `;
-    const result = await db.query(q, [req.params.id, `${getStorageUrl()}/${getRootDir()}`]);
+    const result = await db.query(q, [
+      req.params.id,
+      `${getStorageUrl()}/${getRootDir()}`,
+    ]);
 
-    for (const item of result.rows)
-      item.size = humanFileSize(item.size);
+    for (const item of result.rows) item.size = humanFileSize(item.size);
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
   @HandleExceptions()
-  public static async getByProjectId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getByProjectId(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const { size, offset } = this.toPaginationOptions(req.query, "name");
 
     const q = `
@@ -379,17 +546,32 @@ export default class AttachmentController extends WorklenzControllerBase {
                             LEFT JOIN tasks t ON task_attachments.task_id = t.id
                     WHERE task_attachments.project_id = $1) rec;
     `;
-    const result = await db.query(q, [req.params.id, `${getStorageUrl()}/${getRootDir()}`, size, offset]);
+    const result = await db.query(q, [
+      req.params.id,
+      `${getStorageUrl()}/${getRootDir()}`,
+      size,
+      offset,
+    ]);
     const [data] = result.rows;
 
     for (const item of data?.attachments.data || [])
       item.size = humanFileSize(item.size);
 
-    return res.status(200).send(new ServerResponse(true, data?.attachments || this.paginatedDatasetDefaultStruct));
+    return res
+      .status(200)
+      .send(
+        new ServerResponse(
+          true,
+          data?.attachments || this.paginatedDatasetDefaultStruct,
+        ),
+      );
   }
 
   @HandleExceptions()
-  public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async deleteById(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `DELETE
                FROM task_attachments
                WHERE id = $1
@@ -400,15 +582,25 @@ export default class AttachmentController extends WorklenzControllerBase {
     if (data) {
       const key = getKey(data.team_id, data.project_id, data.id, data.type);
       void deleteObject(key);
+      AttachmentController.emitTaskAttachmentsUpdated(
+        data.project_id,
+        data.task_id,
+      );
       // Bump task updated_at so "Updated X ago" reflects the removed attachment
-      if (data.task_id) await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [data.task_id]);
+      if (data.task_id)
+        await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [
+          data.task_id,
+        ]);
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
   @HandleExceptions()
-  public static async download(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async download(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT team_id, project_id, id, type
                FROM task_attachments
                WHERE id = $1;`;
@@ -417,8 +609,13 @@ export default class AttachmentController extends WorklenzControllerBase {
 
     if (data) {
       const key = getKey(data.team_id, data.project_id, data.id, data.type);
-      const url = await createPresignedUrlWithClient(key, req.query.file as string);
-      return res.status(200).send(new ServerResponse(true, { url, expires_in: 3600 }));
+      const url = await createPresignedUrlWithClient(
+        key,
+        req.query.file as string,
+      );
+      return res
+        .status(200)
+        .send(new ServerResponse(true, { url, expires_in: 3600 }));
     }
 
     return res.status(200).send(new ServerResponse(true, null));

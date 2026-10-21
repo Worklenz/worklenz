@@ -1,0 +1,10 @@
+{
+  "modal": {
+    "title": "Zapytaj o usługę",
+    "submitButton": "Prześlij prośbę"
+  },
+  "uploadLogoText": "Kliknij lub przeciągnij plik, aby go przesłać",
+  "uploadLogoAltText": "Prześlij plik",
+  "title": "Usługi",
+  "requestButton": "Złóż wniosek"
+}

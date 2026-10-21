@@ -94,35 +94,30 @@ export const ProjectListFieldsDropdown: React.FC = () => {
   const fieldsTitle = useMemo(() => {
     return visibleCount > 0
       ? t('fieldsWithCount', {
-          count: visibleCount,
-          defaultValue: 'Fields: {{count}}',
-        })
+        count: visibleCount,
+        defaultValue: 'Fields: {{count}}',
+      })
       : t('fieldsText', { defaultValue: 'Fields' });
   }, [visibleCount, t]);
 
   return (
     <div className="relative" ref={dropdownRef} style={{ flexShrink: 0 }}>
-      <Tooltip title={fieldsTitle}>
+      <Tooltip title={t('showFields', { defaultValue: 'Show Fields' })}>
         <Button
           onClick={handleToggleOpen}
-          aria-label={fieldsTitle}
+          aria-label={t('showFields', { defaultValue: 'Show Fields' })}
           icon={<EyeOutlined />}
           aria-expanded={open}
           aria-haspopup="true"
-          style={{ height: 30, padding: '0 12px', fontSize: 12, borderRadius: 7 }}
-        >
-          {t('fieldsText', { defaultValue: 'Fields' })}
-          <DownOutlined
-            style={{
-              fontSize: '10px',
-              marginLeft: '4px',
-              transition: 'transform 0.2s',
-              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-            }}
-          />
-        </Button>
+          style={{
+            width: 30,
+            height: 30,
+            padding: 0,
+            fontSize: 14,
+            borderRadius: 7,
+          }}
+        />
       </Tooltip>
-
       {open &&
         createPortal(
           <div
@@ -140,95 +135,95 @@ export const ProjectListFieldsDropdown: React.FC = () => {
               border: `1px solid ${token.colorBorder}`,
             }}
           >
-          <div style={{ maxHeight: '320px', overflowY: 'auto', padding: '4px' }}>
-            {configurableFields.length === 0 ? (
-              <div
-                style={{
-                  padding: '8px',
-                  fontSize: '12px',
-                  textAlign: 'center',
-                  color: token.colorTextSecondary,
-                }}
-              >
-                {t('noOptionsFound', { defaultValue: 'No Options Found' })}
-              </div>
-            ) : (
-              <>
+            <div style={{ maxHeight: '320px', overflowY: 'auto', padding: '4px' }}>
+              {configurableFields.length === 0 ? (
                 <div
                   style={{
-                    padding: '4px 8px',
-                    fontSize: '11px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
+                    padding: '8px',
+                    fontSize: '12px',
+                    textAlign: 'center',
                     color: token.colorTextSecondary,
                   }}
                 >
-                  {t('showFields', { defaultValue: 'Show Fields' })}
+                  {t('noOptionsFound', { defaultValue: 'No Options Found' })}
                 </div>
-                {configurableFields.map(field => {
-                  const isSelected = field.visible;
+              ) : (
+                <>
+                  <div
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '11px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      color: token.colorTextSecondary,
+                    }}
+                  >
+                    {t('showFields', { defaultValue: 'Show Fields' })}
+                  </div>
+                  {configurableFields.map(field => {
+                    const isSelected = field.visible;
 
-                  return (
-                    <button
-                      key={field.key}
-                      onClick={() => handleFieldToggle(field.key)}
-                      style={{
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '6px 8px',
-                        fontSize: '13px',
-                        borderRadius: '4px',
-                        border: 'none',
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        color: isSelected ? token.colorText : token.colorTextSecondary,
-                        fontWeight: isSelected ? 600 : 400,
-                        transition: 'background-color 0.15s',
-                      }}
-                      onMouseEnter={e => {
-                        (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                          token.colorFillSecondary;
-                      }}
-                      onMouseLeave={e => {
-                        (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                          'transparent';
-                      }}
-                    >
-                      <div
+                    return (
+                      <button
+                        key={field.key}
+                        onClick={() => handleFieldToggle(field.key)}
                         style={{
+                          width: '100%',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '14px',
-                          height: '14px',
-                          border: `1px solid ${isSelected ? token.colorPrimary : token.colorBorder}`,
-                          borderRadius: '2px',
-                          backgroundColor: isSelected ? token.colorPrimary : 'transparent',
-                          color: isSelected ? token.colorTextLightSolid : 'transparent',
+                          gap: '8px',
+                          padding: '6px 8px',
+                          fontSize: '13px',
+                          borderRadius: '4px',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          color: isSelected ? token.colorText : token.colorTextSecondary,
+                          fontWeight: isSelected ? 600 : 400,
+                          transition: 'background-color 0.15s',
+                        }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                            token.colorFillSecondary;
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                            'transparent';
                         }}
                       >
-                        {isSelected && <CheckOutlined style={{ fontSize: '10px' }} />}
-                      </div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '14px',
+                            height: '14px',
+                            border: `1px solid ${isSelected ? token.colorPrimary : token.colorBorder}`,
+                            borderRadius: '2px',
+                            backgroundColor: isSelected ? token.colorPrimary : 'transparent',
+                            color: isSelected ? token.colorTextLightSolid : 'transparent',
+                          }}
+                        >
+                          {isSelected && <CheckOutlined style={{ fontSize: '10px' }} />}
+                        </div>
 
-                      <span
-                        style={{
-                          flex: 1,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          textAlign: 'left',
-                        }}
-                      >
-                        {getFieldLabel(field.key)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </>
-            )}
-          </div>
+                        <span
+                          style={{
+                            flex: 1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            textAlign: 'left',
+                          }}
+                        >
+                          {getFieldLabel(field.key)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+            </div>
           </div>,
           document.body
         )}

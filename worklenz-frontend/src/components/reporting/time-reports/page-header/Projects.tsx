@@ -18,6 +18,7 @@ import {
 } from '@/features/reporting/time-reports/time-reports-overview.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const Projects: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -98,7 +99,7 @@ const Projects: React.FC = () => {
         menu={undefined}
         placement="bottomLeft"
         trigger={['click']}
-        dropdownRender={() => (
+        popupRender={() => (
           <div
             style={{
               background: colors.dropdownBg,
@@ -201,7 +202,7 @@ const Projects: React.FC = () => {
                     onChange={e => handleCheckboxChange(item.id || '', e.target.checked)}
                     style={{ fontSize: '14px' }}
                   >
-                    <span style={{ marginLeft: '2px', fontSize: '14px' }}>{item.name}</span>
+                    <span style={{ marginLeft: '2px', fontSize: '14px' }}>{decodeHtmlEntities(item.name)}</span>
                   </Checkbox>
                   {item.selected && (
                     <CheckCircleFilled style={{ color: colors.successColor, fontSize: '10px' }} />

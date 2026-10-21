@@ -63,7 +63,7 @@ const Department: React.FC<DepartmentProps> = ({ disabled = false }) => {
       menu={undefined}
       placement="bottomLeft"
       trigger={['click']}
-      dropdownRender={() => (
+      popupRender={() => (
         <div
           style={{
             background: colors.dropdownBg,

@@ -1,0 +1,64 @@
+{
+  "slack": {
+    "task_created": {
+      "title": "Detyra u krijua"
+    },
+    "task_assigned": {
+      "title": "Detyra u caktua"
+    },
+    "task_completed": {
+      "title": "Detyra u përfundua"
+    },
+    "comment_added": {
+      "title": "Komenti u shtua"
+    },
+    "priority_changed": {
+      "title": "Prioriteti u ndryshua"
+    },
+    "due_date_changed": {
+      "title": "Data e afatit u ndryshua"
+    },
+    "task_updated": {
+      "title": "Detyra u përditësua"
+    },
+    "task_status_changed": {
+      "title": "Statusi i detyrës u ndryshua"
+    },
+    "viewTask": "Shiko detyrën",
+    "assignedTo": "👥 Caktuar për",
+    "assignedBy": "👤 Caktuar nga",
+    "statusChange": "📊 Ndryshimi i statusit",
+    "changedBy": "👤 Ndryshuar nga",
+    "createdBy": "👤 Krijuar nga",
+    "commentedBy": "💬 Komentuar nga",
+    "updatedBy": "👤 Përditësuar nga",
+    "status": "📊 Statusi",
+    "currentStatus": "📊 Statusi aktual",
+    "priority": "Prioriteti",
+    "dueDate": "Data e afatit",
+    "assignees": "👥 Të caktuarit",
+    "comment": "Komenti",
+    "priorityChanged": "🔺 Prioriteti ndryshuar",
+    "dueDateChanged": "📅 Data e afatit u ndryshua",
+    "updatedByWithUser": "Përditësuar nga {{user}}"
+  },
+  "teams": {
+    "task": "Detyra",
+    "project": "Projekti",
+    "assignees": "Të caktuarit",
+    "assignedBy": "Caktuar nga",
+    "createdBy": "Krijuar nga",
+    "commentedBy": "Komentuar nga",
+    "updatedBy": "Përditësuar nga",
+    "status": "Statusi",
+    "priority": "Prioriteti",
+    "dueDate": "Data e afatit",
+    "previousStatus": "Statusi i mëparshëm",
+    "newStatus": "Statusi i ri",
+    "previousPriority": "Prioriteti i mëparshëm",
+    "newPriority": "Prioriteti i ri",
+    "statusChange": "Ndryshimi i statusit",
+    "changedBy": "Ndryshuar nga",
+    "viewTask": "Shiko detyrën"
+  }
+}

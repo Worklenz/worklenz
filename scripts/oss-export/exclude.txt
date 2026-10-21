@@ -43,6 +43,7 @@ worklenz-backend/docs/SAAS_SUBSCRIPTION_MIGRATION_SYSTEM.md
 # ---- Internal engineering notes / feature specs / implementation summaries.
 #      Keep the whole docs/ trees out except the curated allowlist below. ----
 docs/
+.gitmodules
 worklenz-backend/docs/
 worklenz-backend/doc/
 

@@ -107,6 +107,13 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     practiceIds: string[] = [],
     departmentIds: string[] = []
   ) {
+
+    const sortDirection = req?.query?.order === "desc" ? "DESC" : "ASC";
+
+    const orderByClause =
+      req?.query?.field === "name"
+        ? `LOWER(BTRIM(tmiv.name)) ${sortDirection} NULLS LAST, tmiv.team_member_id ASC`
+        : "last_user_activity DESC NULLS LAST, tmiv.team_member_id ASC";
     const pagingClause = (size !== null && offset !== null) ? `LIMIT ${size} OFFSET ${offset}` : "";
     const archivedClause = includeArchived
     ? ""
@@ -298,7 +305,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                       WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause} ${practicesFilterClause} ${departmentsFilterClause}
                           ${searchQuery}
                       GROUP BY email, name, avatar_url, team_member_id, tmiv.team_id
-                      ORDER BY last_user_activity DESC NULLS LAST
+                      ORDER BY ${orderByClause}
 
                       ${pagingClause}) t) AS members
                   FROM team_member_info_view tmiv
@@ -1008,17 +1015,21 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   }
 
 
-  public static async getMemberProjectsData(teamId: string, teamMemberId: string, searchQuery: string, searchParams: string[] = [], archived: boolean, userId: string, req?: any) {
+  public static async getMemberProjectsData(teamId: string, teamMemberId: string, searchQuery: string, searchParams: string[] = [], archived: boolean, userId: string, req?: IWorkLenzRequest) {
+    const params: unknown[] = [...searchParams, teamMemberId, userId, archived];
+    const memberParam = `$${searchParams.length + 1}::UUID`;
+    const userParam = `$${searchParams.length + 2}::UUID`;
+    const archivedParam = `$${searchParams.length + 3}::BOOLEAN`;
 
     const teamClause = teamId
-      ? `team_member_id = '${teamMemberId as string}'`
+      ? `team_member_id = ${memberParam}`
       : `team_member_id IN (SELECT team_member_id
             FROM team_member_info_view tmiv
             WHERE LOWER(email) = LOWER((SELECT email
                         FROM team_member_info_view tmiv2
-                        WHERE tmiv2.team_member_id = '${teamMemberId}' AND in_organization(p.team_id, tmiv2.team_id))))`;
+                        WHERE tmiv2.team_member_id = ${memberParam} AND in_organization(p.team_id, tmiv2.team_id))))`;
 
-    const archivedClause = archived ? `` : ` AND pm.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = pm.project_id AND user_id = '${userId}')`;
+    const archivedClause = ` AND (${archivedParam} OR pm.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = pm.project_id AND user_id = ${userParam}))`;
 
     // Add project filtering for Team Leads
     let projectFilterClause = "";
@@ -1066,7 +1077,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                       LEFT JOIN projects p ON p.id = pm.project_id
               WHERE ${teamClause} ${searchQuery} ${archivedClause} ${projectFilterClause}
               ORDER BY name;`;
-    const result = await db.query(q, searchParams);
+    const result = await db.query(q, params);
 
     for (const project of result.rows) {
       project.time_logged = formatDuration(moment.duration(project.time_logged, "seconds"));

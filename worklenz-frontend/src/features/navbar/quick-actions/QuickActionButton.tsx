@@ -16,7 +16,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useTranslation } from 'react-i18next';
 import { toggleInviteMemberDrawer } from '../../settings/member/memberSlice';
-import { toggleAddClientDrawer } from '@/ee/features/clients-portal/clients/clients-slice';
+import { toggleAddClientDrawer } from '@/features/clients-portal/clients/clients-slice';
 import { evt_projects_create_click } from '@/shared/worklenz-analytics-events';
 import { LogTimeModal } from '@/components/time-entries/LogTimeModal';
 import { AddExpenseModal } from '@/components/expenses/AddExpenseModal';
@@ -31,6 +31,7 @@ import {
   fetchTask,
 } from '@/features/task-drawer/task-drawer.slice';
 import { setProjectId } from '@/features/project/project.slice';
+import useIsProjectManager from '@/hooks/useIsProjectManager';
 
 interface QuickActionItem {
   key: string;
@@ -57,6 +58,7 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   const authService = useAuthService();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const isOwnerOrAdmin = authService.isOwnerOrAdmin();
+  const isProjectManager = useIsProjectManager();
   const { token } = useToken();
 
   const [open, setOpen] = useState(false);
@@ -94,6 +96,18 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
     { key: 'log-time',      label: t('quickActions.logTime', { defaultValue: 'Log Time' }), icon: <ClockCircleOutlined /> },
     { key: 'mark-time-off', label: t('quickActions.markTimeOff', { defaultValue: 'Mark Time Off' }), icon: <CalendarOutlined /> },
   ], [t]);
+
+  const PM_ITEMS = useMemo<QuickActionItem[]>(
+    () => [
+      ...MEMBER_ITEMS,
+      {
+        key: 'add-guest',
+        label: t('quickActions.addGuest', { defaultValue: 'Add Guest' }),
+        icon: <UsergroupAddOutlined />,
+      },
+    ],
+    [MEMBER_ITEMS, t]
+  );
 
   // Hide the New button for guest users after all hooks have run.
   if (isGuest) {
@@ -141,7 +155,7 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
     dispatch(setShowTaskDrawer(true));
   };
 
-  const items = isOwnerOrAdmin ? ALL_ITEMS : MEMBER_ITEMS;
+  const items = isOwnerOrAdmin ? ALL_ITEMS : isProjectManager ? PM_ITEMS : MEMBER_ITEMS;
   const allItems = canInviteMembers
     ? [
         ...items,

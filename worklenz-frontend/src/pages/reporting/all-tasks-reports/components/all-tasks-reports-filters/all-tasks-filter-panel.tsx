@@ -16,6 +16,7 @@ import AllTasksPriorityFilter from './all-tasks-priority-filter';
 import AllTasksAssigneeFilter from './all-tasks-assignee-filter';
 import AllTasksPhaseFilter from './all-tasks-phase-filter';
 import AllTasksClientFilter from './all-tasks-client-filter';
+import AllTasksLabelFilter from './all-tasks-label-filter';
 
 const { Text } = Typography;
 
@@ -91,6 +92,7 @@ const AllTasksFilterPanel = () => {
         <AllTasksStatusFilter />
         <AllTasksPriorityFilter />
         <AllTasksAssigneeFilter />
+        <AllTasksLabelFilter />
         <AllTasksPhaseFilter />
         <AllTasksClientFilter />
       </Flex>
@@ -104,14 +106,12 @@ const AllTasksFilterPanel = () => {
       placement="bottomLeft"
       open={panelOpen}
       onOpenChange={setPanelOpen}
-      overlayStyle={{ padding: 0 }}
-      overlayInnerStyle={{ padding: '12px 16px', borderRadius: 8 }}
+      styles={{ root: { padding: 0 }, body: { padding: '12px 16px', borderRadius: 8 } }}
     >
       <Button
         icon={<FilterOutlined />}
-        className={`transition-colors duration-300 ${
-          panelOpen || activeFilterCount > 0 ? 'border-[#1890ff] text-[#1890ff]' : ''
-        }`}
+        className={`transition-colors duration-300 ${panelOpen || activeFilterCount > 0 ? 'border-[#1890ff] text-[#1890ff]' : ''
+          }`}
         style={{ height: 30, fontSize: 12, borderRadius: 7, paddingInline: 12 }}
       >
         {t('filterButton', { defaultValue: 'Filter' })}

@@ -1,0 +1,10 @@
+{
+  "modal": {
+    "title": "Request service",
+    "submitButton": "Submit request"
+  },
+  "uploadLogoText": "Click or drag a file to upload",
+  "uploadLogoAltText": "Upload file",
+  "title": "Services",
+  "requestButton": "Make a request"
+}

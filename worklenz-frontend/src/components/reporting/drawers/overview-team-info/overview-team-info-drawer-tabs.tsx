@@ -1,5 +1,4 @@
-import { Tabs } from '@/shared/antd-imports';
-import { TabsProps } from 'antd/lib';
+import { Tabs, TabsProps } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import OverviewReportsOverviewTab from './overview-tab/reports-overview-tab';
 import OverviewReportsProjectsTab from './projects-tab/reporting-overview-projects-tab';

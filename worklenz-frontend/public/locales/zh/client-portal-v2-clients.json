@@ -1,0 +1,337 @@
+{
+  "actions": {
+    "createLinkFailed": "无法创建登录链接。",
+    "deactivateFailed": "无法停用该用户。",
+    "deactivated": "{{name}} 已停用。门户和 API 访问权限将立即撤销。",
+    "messageNoProjects": "{{name}} 还没有项目。先分配一个项目，然后开始讨论。",
+    "reactivateFailed": "无法重新激活用户。",
+    "reactivated": "{{name}} 可以再次登录。他们的状态又恢复了。",
+    "removeFailed": "无法删除该用户。",
+    "removed": "{{name}} 已从门户中删除。",
+    "resendFailed": "无法重新发送邀请。",
+    "resent": "邀请已重新发送至 {{email}}。该链接的有效期为 7 天。"
+  },
+  "assign": {
+    "description": "用户只能看到此处分配的项目，即使它们属于 {{organization}}。他们在每个项目中可以做什么取决于他们的角色：",
+    "failed": "无法更新项目访问权限。",
+    "loadFailed": "无法加载项目。",
+    "noProjects": "{{organization}} 还没有项目。",
+    "portalOff": "该项目的客户端已关闭。首先将其打开。",
+    "save": "保存",
+    "saved": "已更新 {{name}} 的项目访问权限。",
+    "savedWithRemoval": "已更新 {{name}} 的项目访问权限。删除的访问权限会立即生效。",
+    "title": "分配项目 · {{name}}"
+  },
+  "deactivate": {
+    "body": "{{name}} 立即失去访问权限。如果他们打开了会话，则他们的下一个请求将失败并且他们将被注销。您可以稍后重新激活它们，它们将恢复之前的状态。",
+    "confirm": "停用",
+    "title": "停用该客户端用户？"
+  },
+  "edit": {
+    "failed": "无法更新用户。",
+    "roleChanged": "{{name}} 现在是 {{role}}。它适用于他们的下一个请求，而不仅仅是在新登录后。",
+    "roleNotice": "角色更改会在用户下一次授权检查时生效，而不仅仅是在新登录后生效。",
+    "save": "保存",
+    "title": "编辑用户 · {{organization}}",
+    "updated": "{{name}} 已更新。"
+  },
+  "fields": {
+    "email": "电子邮件（登录地址）",
+    "emailInvalid": "输入有效的电子邮件地址。",
+    "emailRequired": "输入用户的电子邮件地址。",
+    "jobTitle": "职位名称",
+    "name": "全名",
+    "nameRequired": "输入用户名。",
+    "phone": "电话（可选）",
+    "role": "Role"
+  },
+  "lastAdmin": {
+    "confirm": "仍然继续",
+    "title": "这是最后一个客户端管理员"
+  },
+  "menu": {
+    "assign": "分配项目",
+    "createLink": "创建登录链接",
+    "deactivate": "停用用户",
+    "edit": "编辑用户和角色",
+    "message": "Message",
+    "reactivate": "重新激活用户",
+    "remove": "删除用户",
+    "resend": "重新发送邀请",
+    "resendShort": "重新发送",
+    "view": "查看个人资料"
+  },
+  "organizations": {
+    "accessFilter": {
+      "active": "活跃",
+      "deactivated": "已停用",
+      "invited": "受邀",
+      "none": "无用户"
+    },
+    "awaitingApprovals_one": "{{count}} 批准",
+    "awaitingApprovals_other": "{{count}} 批准",
+    "awaitingChangeRequests_one": "{{count}} 变更请求",
+    "awaitingChangeRequests_other": "{{count}} 变更请求",
+    "columns": {
+      "access": "门户访问",
+      "actions": "Actions",
+      "awaiting": "等待客户",
+      "client": "Client",
+      "contactEmail": "联系邮箱",
+      "contactName": "主要联系人",
+      "projects": "门户项目",
+      "users": "用户",
+      "contact": "Primary contact"
+    },
+    "empty": "No client organizations yet. Use Add Client to create the first one.",
+    "emptySearch": "No clients match this search.",
+    "createLinkFailed": "无法创建邀请链接。",
+    "menu": {
+      "copyInvite": "复制邀请链接",
+      "edit": "编辑客户",
+      "message": "消息客户端",
+      "open": "Open workspace",
+      "projects": "管理项目",
+      "users": "管理用户和访问"
+    },
+    "rowActions": "{{name}} 的操作",
+    "search": "Search organizations…",
+    "searchLabel": "搜索客户组织",
+    "tableLabel": "客户组织",
+    "usersSummary": "{{active}} 活跃 · {{total}} 总计",
+    "waiting": "{{count}} 等待",
+    "waiting_one": "{{count}} 等待",
+    "waiting_other": "{{count}} 等待",
+    "columnHelp": {
+      "access": "如果任何用户都可以登录，则处于活动状态，否则处于受邀状态、停用状态或无用户状态。",
+      "awaiting": "等待客户的批准和信息请求。",
+      "client": "客户组织。",
+      "contactEmail": "主要联系人的电子邮件地址。",
+      "contactName": "该客户端的第一个活跃门户管理员。",
+      "projects": "在门户中与该客户共享的项目。",
+      "users": "该客户端的所有用户中已登录的用户。"
+    }
+  },
+  "overview": {
+    "attention": {
+      "approvalAwaiting": "客户",
+      "changeRequestReview": "“{{title}}”需要您的审核",
+      "empty": "{{name}} 没有什么在等你。",
+      "inviteExpired": "{{name}} 的邀请已过期",
+      "inviteExpiredAsked": "{{name}} 的邀请已过期，他们要求提供新链接",
+      "theClient": "客户",
+      "title": "需要注意",
+      "unreadMessage": "未读客户消息"
+    },
+    "recent": {
+      "empty": "还没有活动。",
+      "error": "无法加载最近的活动。",
+      "title": "最近的活动"
+    },
+    "stats": {
+      "awaiting": "等待客户操作",
+      "awaitingSub": "批准和信息请求",
+      "openChangeRequests": "打开变更请求",
+      "portalProjects": "门户项目"
+    }
+  },
+  "page": {
+    "addClient": "Add Client",
+    "description": "客户组织、可以登录其门户的人员以及他们每个人正在等待的内容。",
+    "organizationsTab": "Organizations",
+    "title": "客户",
+    "usersTab": "客户端用户",
+    "viewToggle": "客户查看"
+  },
+  "profile": {
+    "assignedProjects_one": "分配的项目 ({{count}})",
+    "assignedProjects_other": "分配的项目 ({{count}})",
+    "lastAccess": "上次访问时间",
+    "neverAccessed": "从来没有",
+    "noJobTitle": "文件中没有职位名称",
+    "noProjects": "尚未分配项目。该用户登录到一个空门户。",
+    "phone": "电话",
+    "title": "客户端用户"
+  },
+  "remove": {
+    "body": "{{name}} 及其项目分配已被删除。他们的评论和认可将被载入史册。",
+    "confirm": "删除用户",
+    "title": "删除该客户端用户吗？"
+  },
+  "retry": "重试",
+  "roleAdminDescription": "查看分配的项目、评论、上传允许的文件、提交更改请求、批准项目并可以管理客户端用户（如果启用）。",
+  "roleMemberDescription": "查看分配的项目、评论、上传允许的文件并提交变更请求。无法批准或管理用户。",
+  "roleViewerDescription": "只读：项目信息、里程碑、客户可见的任务和文件。无法评论、上传、批准或提交更改请求。",
+  "rowsPerPage": "每页行数：",
+  "stats": {
+    "activeUsers": "活跃用户",
+    "awaiting": "等待客户操作",
+    "awaitingSub": "批准和信息请求",
+    "expired": "{{count}} 已过期",
+    "expired_one": "{{count}} 已过期",
+    "expired_other": "{{count}} 已过期",
+    "invited": "受邀",
+    "organizations": "客户组织"
+  },
+  "users": {
+    "allRoles": "所有角色",
+    "allStatuses": "所有状态",
+    "columns": {
+      "actions": "Actions",
+      "email": "Email",
+      "jobTitle": "职位名称",
+      "lastAccess": "上次访问时间",
+      "name": "Name",
+      "organization": "Organization",
+      "phone": "电话号码",
+      "projects": "项目",
+      "role": "Role",
+      "status": "Status",
+      "user": "用户"
+    },
+    "empty": "No client users yet. Use Add Client to invite the first one.",
+    "emptyFiltered": "没有客户端用户匹配这些过滤器。",
+    "groupBy": {
+      "client": "分组",
+      "label": "群组客户端用户",
+      "count_one": "{{count}} 用户",
+      "count_other": "{{count}} 个用户"
+    },
+    "invitedAgo": "已邀请 {{when}}",
+    "neverAccessed": "从来没有",
+    "noProjects": "未分配",
+    "projectCount": "{{count}} 项目",
+    "projectCount_one": "{{count}} 项目",
+    "projectCount_other": "{{count}} 项目",
+    "roleFilter": "按角色过滤",
+    "rowActions": "{{name}} 的操作",
+    "search": "Search users, emails or organizations…",
+    "searchInOrganization": "Search users or emails…",
+    "searchLabel": "搜索客户端用户",
+    "statusFilter": "按状态筛选",
+    "tableLabel": "客户端用户",
+    "columnHelp": {
+      "email": "该用户登录时使用的地址。",
+      "jobTitle": "他们在客户公司中的角色。",
+      "lastAccess": "用户上次登录门户的时间。",
+      "name": "客户端用户的全名。",
+      "organization": "该用户所属的客户端。",
+      "phone": "联系电话号码（如果提供）。",
+      "projects": "该用户可以打开的门户项目的数量。",
+      "role": "用户可以在门户中执行哪些操作：管理员、成员或查看者。",
+      "status": "用户是否已登录、被邀请或被停用。"
+    },
+    "searchClients": "搜索客户..."
+  },
+  "workspace": {
+    "activity": {
+      "empty": "{{name}} 尚无活动。",
+      "error": "无法加载该活动。",
+      "openFullLog": "打开完整的审核日志",
+      "sideClient": "Client",
+      "sideInternal": "内部",
+      "title": "{{name}} 的审计跟踪"
+    },
+    "approvals": {
+      "columns": {
+        "due": "截止日期",
+        "id": "ID",
+        "linked": "链接项目",
+        "status": "Status",
+        "title": "标题"
+      },
+      "empty": "尚未批准 {{name}}。",
+      "request": "请求批准",
+      "tableLabel": "对该客户的批准"
+    },
+    "billing": {
+      "createInvoice": "创建发票",
+      "manageUsers": "管理用户",
+      "title": "发票",
+      "warningDescription": "他们的用户都没有接受邀请，因此他们无法在门户中查看或支付发票。您仍然可以创建发票。如果用户应该看到他们，请先邀请他们。",
+      "warningTitle": "{{name}} 还无法使用他们的门户"
+    },
+    "changeRequests": {
+      "columns": {
+        "id": "ID",
+        "priority": "优先级",
+        "status": "Status",
+        "submitted": "已提交",
+        "title": "标题"
+      },
+      "empty": "尚未收到来自 {{name}} 的更改请求。",
+      "tableLabel": "来自该客户的变更请求"
+    },
+    "errors": {
+      "backToClients": "返回客户",
+      "loadDescription": "请再试一次。",
+      "loadTitle": "无法加载此客户端",
+      "notFoundDescription": "可能已被删除，或者链接有误。",
+      "notFoundTitle": "找不到客户端"
+    },
+    "header": {
+      "actionsLabel": "客户操作",
+      "edit": "编辑客户",
+      "message": "Message"
+    },
+    "projects": {
+      "assign": {
+        "button": "分配项目",
+        "cancel": "Cancel",
+        "confirm": "分配",
+        "description": "选择尚不属于客户的工作区项目。客户门户将保持关闭状态，直到您将其打开。",
+        "done_one": "{{count}} 项目分配给 {{name}}。打开客户端门户以共享它。",
+        "done_other": "{{count}} 项目分配给 {{name}}。打开客户端门户以共享它们。",
+        "failed": "无法分配某些项目：{{details}}",
+        "loadFailed": "无法加载项目。",
+        "none": "每个工作区项目都已经属于一个客户。",
+        "placeholder": "搜索项目...",
+        "retry": "重试",
+        "title": "将项目分配给 {{name}}"
+      },
+      "columns": {
+        "phase": "Phase",
+        "portal": "门户网站",
+        "progress": "进度",
+        "project": "项目",
+        "status": "面向客户的状态",
+        "users": "用户"
+      },
+      "empty": "{{name}} 还没有项目。将工作区项目从门户项目链接到该客户端。",
+      "emptyShort": "{{name}} 还没有项目。",
+      "manage": "管理",
+      "progressLabel": "{{name}} 的进度",
+      "tableLabel": "该客户的项目",
+      "title": "项目"
+    },
+    "rail": {
+      "active": "活跃",
+      "balance": "平衡",
+      "billing": "账单",
+      "deactivated": "已停用",
+      "email": "Email",
+      "hint": "客户端用户只能看到分配给他们的项目。",
+      "inviteUser": "邀请用户",
+      "invited": "受邀",
+      "organization": "组织",
+      "portalAccess": "门户访问",
+      "portalProjects": "门户项目",
+      "primaryContact": "主要联系人",
+      "quickActions": "快速行动",
+      "requestApproval": "请求批准"
+    },
+    "tabs": {
+      "activity": "动态",
+      "approvals": "批准",
+      "billing": "账单",
+      "changeRequests": "变更请求",
+      "overview": "Overview",
+      "projects": "项目",
+      "users": "用户和访问"
+    },
+    "users": {
+      "description": "{{name}} 中可以登录的人员。每个人只能看到分配给他们的项目。",
+      "invite": "邀请用户"
+    }
+  }
+}

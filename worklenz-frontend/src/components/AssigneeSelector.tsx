@@ -19,8 +19,12 @@ import {
 } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { updateEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import type { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update-response';
-import useIsProjectManager from '@/hooks/useIsProjectManager';
-import { useAuthStatus } from '@/hooks/useAuthStatus';
+import type { ITaskAssignee } from '@/types/project/projectTasksViewModel.types';
+import type { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
+import useProjectPermissions from '@/hooks/useProjectPermissions';
+import alertService from '@/services/alerts/alertService';
+import { useTranslation } from 'react-i18next';
 
 interface AssigneeSelectorProps {
   task: IProjectTask;
@@ -109,7 +113,8 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const [teamMembers, setTeamMembers] = useState<ITeamMembersViewModel>({ data: [], total: 0 });
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [openUpward, setOpenUpward] = useState(false);
-  const [optimisticAssignees, setOptimisticAssignees] = useState<string[]>([]);
+  // null = no in-flight change; the dropdown reads straight from task.assignees.
+  const [optimisticAssignees, setOptimisticAssignees] = useState<string[] | null>(null);
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -119,6 +124,10 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   // dropdown and opening a different row's) overwriting the members list
   // with the wrong project's response after the fact.
   const membersRequestId = useRef(0);
+  // Task assignees/names as they were before the first unacknowledged toggle,
+  // restored if the server rejects the change.
+  const rollbackSnapshotRef = useRef<AssigneesSnapshot | null>(null);
+  const pendingAcksRef = useRef(0);
 
   const { projectId: activeProjectId } = useSelector((state: RootState) => state.projectReducer);
   const projectId = projectIdOverride ?? activeProjectId;
@@ -126,8 +135,9 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const currentSession = useAuthService().getCurrentSession();
   const { socket } = useSocket();
   const dispatch = useAppDispatch();
-  const { isAdmin } = useAuthStatus();
-  const isProjectManager = useIsProjectManager();
+  const { t } = useTranslation('project-view-members');
+  const { permissions } = useProjectPermissions(projectId);
+  const canAddProjectMembers = Boolean(permissions.members.add);
 
   // A persistent listener scoped to this task, matched by data.id, instead of
   // a fresh socket.once() per click (see handleMemberToggle below) — with
@@ -137,9 +147,26 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   // That misapplied one task's update to another and left the second task's
   // real ack with no listener left to receive it.
   useEffect(() => {
-    if (!socket || !task?.id) return;
-    const handleAssigneesUpdate = (data: ITaskAssigneesUpdateResponse) => {
-      if (data?.id !== task.id) return;
+    const taskId = task?.id;
+    if (!socket || !taskId) return;
+    const handleAssigneesUpdate = (data: ITaskAssigneesUpdateResponse | IAssigneesUpdateError | null) => {
+      // Failure acks carry no task id, so only an instance with a change in flight reacts.
+      if (!data || 'error' in data) {
+        const snapshot = rollbackSnapshotRef.current;
+        if (!snapshot) return;
+        rollbackSnapshotRef.current = null;
+        pendingAcksRef.current = 0;
+        setOptimisticAssignees(null);
+        dispatch(updateEnhancedKanbanTaskAssignees({ id: taskId, ...snapshot }));
+        alertService.error(
+          t('assignFailedTitle', { defaultValue: 'Assignment failed' }),
+          data?.message || t('assignFailedMessage', { defaultValue: 'Could not update the task assignees. Please try again.' })
+        );
+        return;
+      }
+      if (data.id !== taskId) return;
+      pendingAcksRef.current = Math.max(0, pendingAcksRef.current - 1);
+      if (pendingAcksRef.current === 0) rollbackSnapshotRef.current = null;
       dispatch(updateEnhancedKanbanTaskAssignees(data));
       onAssigneesChanged?.(data);
     };
@@ -147,7 +174,18 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     return () => {
       socket.off(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), handleAssigneesUpdate);
     };
-  }, [socket, task?.id, dispatch, onAssigneesChanged]);
+  }, [socket, task?.id, dispatch, onAssigneesChanged, t]);
+
+  // Once the task prop reflects the latest assignees (optimistic redux update or
+  // server ack), drop the local overlay so the checkboxes never drift from the card.
+  const taskAssigneeIds = useMemo(
+    () => (task?.assignees || []).map(assignee => assignee.team_member_id || ''),
+    [task?.assignees]
+  );
+  const taskAssigneeIdsKey = taskAssigneeIds.join(',');
+  useEffect(() => {
+    setOptimisticAssignees(null);
+  }, [taskAssigneeIdsKey]);
 
   const filteredMembers = useMemo(() => {
     return teamMembers?.data?.filter(member =>
@@ -309,25 +347,34 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   };
 
   const handleMemberToggle = (memberId: string, checked: boolean) => {
-    if (!memberId || !projectId || !task?.id || !currentSession?.id) return;
+    if (!socket || !memberId || !projectId || !task?.id || !currentSession?.id) return;
 
     // Add to pending changes for visual feedback
     setPendingChanges(prev => new Set(prev).add(memberId));
 
-    // OPTIMISTIC UPDATE: Update local state immediately for instant UI feedback
-    const currentAssignees = task?.assignees?.map(a => a.team_member_id) || [];
-    let newAssigneeIds: string[];
+    const currentAssignees = optimisticAssignees ?? taskAssigneeIds;
+    const newAssigneeIds = checked
+      ? Array.from(new Set([...currentAssignees, memberId]))
+      : currentAssignees.filter(id => id !== memberId);
 
-    if (checked) {
-      // Adding assignee
-      newAssigneeIds = [...currentAssignees, memberId];
-    } else {
-      // Removing assignee
-      newAssigneeIds = currentAssignees.filter(id => id !== memberId);
-    }
-
-    // Update optimistic state for immediate UI feedback in dropdown
     setOptimisticAssignees(newAssigneeIds);
+
+    // Reflect the change on the card right away instead of waiting for the socket ack,
+    // which the server only sends after its post-assignment side effects finish.
+    const member = teamMembers.data?.find(m => m.id === memberId);
+    if (!rollbackSnapshotRef.current) {
+      rollbackSnapshotRef.current = {
+        assignees: task.assignees || [],
+        names: task.names || [],
+      };
+    }
+    dispatch(
+      updateEnhancedKanbanTaskAssignees({
+        id: task.id,
+        assignees: buildOptimisticAssignees(task.assignees || [], memberId, member, checked),
+        names: buildOptimisticNames(task.names || [], memberId, member, checked),
+      })
+    );
 
     // Update local team members state for dropdown UI
     setTeamMembers(prev => ({
@@ -349,7 +396,8 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
 
     // Emit socket event — the persistent, task-scoped listener registered
     // above (not a per-click .once()) picks up the ack and updates Redux.
-    socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(body));
+    pendingAcksRef.current += 1;
+    socket.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(body));
 
     // Remove from pending changes after a short delay (optimistic)
     setTimeout(() => {
@@ -363,12 +411,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
 
   const checkMemberSelected = (memberId: string) => {
     if (!memberId) return false;
-    // Use optimistic assignees if available, otherwise fall back to task assignees
-    const assignees =
-      optimisticAssignees.length > 0
-        ? optimisticAssignees
-        : task?.assignees?.map(assignee => assignee.team_member_id) || [];
-    return assignees.includes(memberId);
+    return (optimisticAssignees ?? taskAssigneeIds).includes(memberId);
   };
 
   const handleInviteProjectMemberDrawer = () => {
@@ -530,9 +573,10 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
             </div>
 
             {/* Footer */}
-            {(isAdmin || isProjectManager) && !hideInviteFooter && (
+            {canAddProjectMembers && !hideInviteFooter && (
               <div className="p-2 border-t" style={{ borderColor: token.colorBorderSecondary }}>
                 <button
+                  type="button"
                   className={`
                   w-full flex items-center justify-center gap-1 px-2 py-1 text-xs rounded
                   transition-colors
@@ -543,9 +587,10 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                   }
                 `}
                   onClick={handleInviteProjectMemberDrawer}
+                  aria-label={t('invite', { defaultValue: 'Invite' })}
                 >
                   <UserAddOutlined />
-                  Invite member
+                  {t('invite', { defaultValue: 'Invite' })}
                 </button>
               </div>
             )}
@@ -555,5 +600,52 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     </>
   );
 };
+
+const buildOptimisticAssignees = (
+  assignees: ITaskAssignee[],
+  memberId: string,
+  member: ITeamMemberViewModel | undefined,
+  checked: boolean
+): ITaskAssignee[] => {
+  const withoutMember = assignees.filter(assignee => assignee.team_member_id !== memberId);
+  if (!checked) return withoutMember;
+  return [
+    ...withoutMember,
+    { id: memberId, team_member_id: memberId, project_member_id: '', name: member?.name || '' },
+  ];
+};
+
+const buildOptimisticNames = (
+  names: InlineMember[],
+  memberId: string,
+  member: ITeamMemberViewModel | undefined,
+  checked: boolean
+): InlineMember[] => {
+  const isSameMember = (entry: InlineMember) =>
+    !entry.end &&
+    (entry.team_member_id ? entry.team_member_id === memberId : entry.name === member?.name);
+  const withoutMember = names.filter(entry => !isSameMember(entry));
+  if (!checked) return withoutMember;
+  if (!member?.name) return names;
+  return [
+    ...withoutMember,
+    {
+      name: member.name,
+      avatar_url: member.avatar_url,
+      color_code: member.color_code,
+      team_member_id: memberId,
+    },
+  ];
+};
+
+interface AssigneesSnapshot {
+  assignees: ITaskAssignee[];
+  names: InlineMember[];
+}
+
+interface IAssigneesUpdateError {
+  error: true;
+  message?: string;
+}
 
 export default AssigneeSelector;

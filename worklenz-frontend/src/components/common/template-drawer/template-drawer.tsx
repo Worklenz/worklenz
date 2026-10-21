@@ -25,6 +25,7 @@ import {
 import './template-drawer.css';
 import { SearchOutlined } from '@/shared/antd-imports';
 import logger from '@/utils/errorLogger';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
   evt_project_import_from_template_click,
@@ -118,7 +119,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
 
   const menuItems: MenuProps['items'] = templates.map(template => ({
     key: template.id || '',
-    label: template.name || t('untitled'),
+    label: decodeHtmlEntities(template.name) || t('untitled'),
     type: 'item',
   }));
 
@@ -173,7 +174,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
                     borderColor: phase.color_code ? undefined : token.colorBorder,
                   }}
                 >
-                  {phase.name}
+                  {decodeHtmlEntities(phase.name)}
                 </Tag>
               ))
             ) : (
@@ -199,7 +200,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
                     borderColor: status.color_code ? undefined : token.colorBorder,
                   }}
                 >
-                  {status.name}
+                  {decodeHtmlEntities(status.name)}
                 </Tag>
               ))
             ) : (
@@ -225,7 +226,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
                     borderColor: priority.color_code ? undefined : token.colorBorder,
                   }}
                 >
-                  {priority.name}
+                  {decodeHtmlEntities(priority.name)}
                 </Tag>
               ))
             ) : (
@@ -251,7 +252,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
                     borderColor: label.color_code ? undefined : token.colorBorder,
                   }}
                 >
-                  {label.name}
+                  {decodeHtmlEntities(label.name)}
                 </Tag>
               ))
             ) : (
@@ -270,7 +271,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
                 dataSource={selectedTemplate.tasks}
                 renderItem={item => (
                   <List.Item key={item.name}>
-                    <Text>{item.name}</Text>
+                    <Text>{decodeHtmlEntities(item.name)}</Text>
                   </List.Item>
                 )}
               />
@@ -324,7 +325,11 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
         </Title>
         <Skeleton loading={loadingSelectedTemplate} active>
           {selectedTemplate?.image_url && (
-            <Image preview={false} src={selectedTemplate.image_url} alt={selectedTemplate.name} />
+            <Image
+              preview={false}
+              src={selectedTemplate.image_url}
+              alt={decodeHtmlEntities(selectedTemplate.name)}
+            />
           )}
           {renderTemplateDetails()}
         </Skeleton>
@@ -396,7 +401,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
             total: filteredCustomTemplates.length,
             size: 'small',
             showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50'],
+             pageSizeOptions: ['10', '20', '50', '100'],
             showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} templates`,
             style: { marginTop: '12px', textAlign: 'right' },
             onChange: (page, size) => {
@@ -426,7 +431,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
                     : ''
               }
             >
-              <span style={{ color: token.colorText }}>{item.name}</span>
+              <span style={{ color: token.colorText }}>{decodeHtmlEntities(item.name)}</span>
             </List.Item>
           )}
         />

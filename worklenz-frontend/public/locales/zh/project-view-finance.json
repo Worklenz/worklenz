@@ -48,10 +48,8 @@
   "yes": "是",
   "no": "否",
   "alreadyImportedRateCardMessage": "已导入费率卡。清除所有已导入的费率卡以添加新的费率卡。",
-
   "noCurrenciesFound": "未找到货币",
   "unknownProject": "未知项目",
-
   "messages": {
     "projectIdNotFound": "未找到项目ID",
     "financeDataExportedSuccessfully": "财务数据导出成功",
@@ -64,7 +62,6 @@
     "projectBudgetUpdatedSuccessfully": "项目预算更新成功",
     "failedToUpdateProjectBudget": "更新项目预算失败"
   },
-
   "alerts": {
     "businessPlanRequired": {
       "message": "需要商业计划",
@@ -76,12 +73,10 @@
       "ratecardDescription": "您可以查看费率卡数据，但无法编辑费率或管理成员分配。只有项目经理、团队管理员和团队所有者可以进行更改。"
     }
   },
-
   "tooltips": {
     "availableOnlyOnBusinessPlan": "仅在商业版计划中可用",
     "budgetCalculationSettings": "预算和计算设置"
   },
-
   "budgetOverviewTooltips": {
     "manualBudget": "项目经理设置的手动项目预算金额",
     "totalActualCost": "包括固定成本在内的总实际成本",
@@ -146,5 +141,7 @@
     "totalBudgetManDays": "总预算成本包括预估成本（人天 × 日费率）+ 固定成本。",
     "totalActual": "总实际成本包括基于时间的成本 + 固定成本。",
     "variance": "成本偏差：总预算成本 - 总实际成本。正值表示预算内，负值表示超预算。"
-  }
+  },
+  "import": "导入",
+  "noTaskSelected": "未选择任务"
 }

@@ -27,6 +27,7 @@ import {
 import { DeleteOutlined, SearchOutlined, SyncOutlined } from '@/shared/antd-imports';
 import WorklenzPageHeader from '@/components/common/WorklenzPageHeader';
 import { projectsApiService } from '@/api/projects/projects.api.service';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const Projects: React.FC = () => {
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
@@ -96,7 +97,7 @@ const Projects: React.FC = () => {
             className="project-names"
             style={{ fontSize: `${isTablet ? '14px' : '10px'}` }}
           >
-            {record.name}
+            {decodeHtmlEntities(record.name)}
           </Typography.Text>
         ),
       },
@@ -221,7 +222,7 @@ const Projects: React.FC = () => {
           pagination={{
             showSizeChanger: true,
             defaultPageSize: 20,
-            pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
+             pageSizeOptions: ['10', '20', '50', '100'],
             size: 'small',
             total: total,
             current: requestParams.index,

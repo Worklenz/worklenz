@@ -37,5 +37,8 @@
   "TASKS_SELECTED_plural": "{{count}} tasks selected",
   "DELETE_TASKS_CONFIRM": "Delete {{count}} task?",
   "DELETE_TASKS_CONFIRM_plural": "Delete {{count}} tasks?",
-  "DELETE_TASKS_WARNING": "This action cannot be undone."
+  "DELETE_TASKS_WARNING": "This action cannot be undone.",
+  "SET_START_DATE": "Set Start Date",
+  "Unarchive": "Unarchive",
+  "Archive": "Archive"
 }

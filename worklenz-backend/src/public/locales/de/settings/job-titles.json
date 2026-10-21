@@ -16,5 +16,7 @@
   "createJobTitleSuccessMessage": "Jobtitel erfolgreich erstellt!",
   "createJobTitleErrorMessage": "Erstellung des Jobtitels fehlgeschlagen!",
   "updateJobTitleSuccessMessage": "Jobtitel erfolgreich aktualisiert!",
-  "updateJobTitleErrorMessage": "Aktualisierung des Jobtitels fehlgeschlagen!"
+  "updateJobTitleErrorMessage": "Aktualisierung des Jobtitels fehlgeschlagen!",
+  "fetchJobTitleErrorMessage": "Berufsbezeichnung konnte nicht abgerufen werden. Bitte versuchen Sie es erneut.",
+  "pageTitle": "Berufsbezeichnungen verwalten"
 }

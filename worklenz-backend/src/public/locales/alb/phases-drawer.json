@@ -1,7 +1,7 @@
 {
   "configurePhases": "Konfiguro Fazat",
   "phaseLabel": "Etiketa e Fazës",
-  "enterPhaseName": "Vendosni një emër për etiketën e fazës",
+  "enterPhaseName": "Shkruani emrin e fazës",
   "addOption": "Shto Opsion",
   "phaseOptions": "Opsionet e Fazës:",
   "dragToReorderPhases": "Zvarrit fazat për t'i rirenditur. Çdo fazë mund të ketë një ngjyrë të ndryshme.",
@@ -12,8 +12,19 @@
   "deletePhaseConfirm": "Jeni të sigurt që doni të fshini këtë fazë? Ky veprim nuk mund të zhbëhet.",
   "rename": "Riemëro",
   "delete": "Fshi",
-  "enterPhaseName": "Shkruani emrin e fazës",
   "selectColor": "Zgjidh ngjyrën",
   "managePhases": "Menaxho Fazat",
-  "close": "Mbyll"
+  "close": "Mbyll",
+  "manageAssignee": "Menaxhoni të ngarkuarin",
+  "start": "Filloni",
+  "assignMember": "Cakto një anëtar",
+  "completeSprint": "Sprint i plotë",
+  "deleteSprintTitle": "Të fshihet {{name}}?",
+  "deleteSprintContentWithItems": "{{count}} elemente pune në këtë sprint do të zhvendosen te {{backlog}}. Ky veprim nuk mund të zhbëhet.",
+  "deleteSprintContent": "Ky veprim nuk mund të zhbëhet.",
+  "deleteSprint": "Fshi sprintin",
+  "sprintDeleted": "Sprinti u fshi",
+  "sprintDeleteError": "Nuk mund të fshihej sprinti",
+  "completeSprintAutoStartHint": "Sprinti tjetër i planifikuar do të nisë sot dhe do të ruajë kohëzgjatjen e planifikuar.",
+  "nextSprintStarted": "{{name}} nisi ({{start}} – {{end}})"
 }

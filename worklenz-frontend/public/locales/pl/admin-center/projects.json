@@ -1,0 +1,14 @@
+{
+  "title": "Projekty",
+  "subTitle": "projekty",
+  "membersCount": "Liczba członków",
+  "createdAt": "Utworzono o godz",
+  "projectName": "Nazwa projektu",
+  "teamName": "Nazwa zespołu",
+  "refreshProjects": "Odśwież projekty",
+  "searchPlaceholder": "Wyszukaj według nazwy projektu",
+  "deleteProject": "Czy na pewno chcesz usunąć ten projekt?",
+  "confirm": "Potwierdź",
+  "cancel": "Anuluj",
+  "delete": "Usuń projekt"
+}
