@@ -60,45 +60,68 @@ export default class ProjectSavedViewsController extends WorklenzControllerBase 
     const config = validateSavedViewConfig(req.body?.config);
     if (!config.ok) return res.status(400).send(new ServerResponse(false, null, config.error));
 
-    // The limit check and insert run as one statement so concurrent creates cannot overshoot it.
-    const q = `
-      WITH existing AS (
-        SELECT COUNT(*) AS total, COALESCE(MAX(sort_order), -1) AS max_order
-        FROM project_saved_views
-        WHERE project_id = $1
-      ),
-      inserted AS (
-        INSERT INTO project_saved_views (project_id, created_by, name, base_view, config, sort_order)
-        SELECT $1, $2, $3, $4, $5::JSONB, existing.max_order + 1
-        FROM existing
-        WHERE existing.total < $6
-        RETURNING *
-      )
-      SELECT ${SELECT_COLUMNS}
-      FROM inserted sv
-    `;
-    const result = await db.query(q, [
-      projectId,
-      req.user?.id,
-      name.value,
-      baseView.value,
-      JSON.stringify(config.value),
-      SAVED_VIEWS_PER_PROJECT_LIMIT,
-    ]);
+    // Count + insert under a project-row lock so concurrent creates cannot both pass the limit
+    // check or allocate the same sort_order under READ COMMITTED.
+    const client = await db.connect();
+    try {
+      await client.query("BEGIN");
 
-    if (!result.rowCount) {
-      return res
-        .status(400)
-        .send(
-          new ServerResponse(
-            false,
-            null,
-            `A project can have up to ${SAVED_VIEWS_PER_PROJECT_LIMIT} saved views`
-          )
-        );
+      const project = await client.query(`SELECT id FROM projects WHERE id = $1 FOR UPDATE`, [
+        projectId,
+      ]);
+      if (!project.rowCount) {
+        await client.query("ROLLBACK");
+        return res.status(404).send(new ServerResponse(false, null, "Project not found"));
+      }
+
+      const existing = await client.query(
+        `SELECT COUNT(*)::INT AS total, COALESCE(MAX(sort_order), -1)::INT AS max_order
+         FROM project_saved_views
+         WHERE project_id = $1`,
+        [projectId]
+      );
+      const total = existing.rows[0]?.total ?? 0;
+      const maxOrder = existing.rows[0]?.max_order ?? -1;
+
+      if (total >= SAVED_VIEWS_PER_PROJECT_LIMIT) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .send(
+            new ServerResponse(
+              false,
+              null,
+              `A project can have up to ${SAVED_VIEWS_PER_PROJECT_LIMIT} saved views`
+            )
+          );
+      }
+
+      const result = await client.query(
+        `WITH inserted AS (
+           INSERT INTO project_saved_views (project_id, created_by, name, base_view, config, sort_order)
+           VALUES ($1, $2, $3, $4, $5::JSONB, $6)
+           RETURNING *
+         )
+         SELECT ${SELECT_COLUMNS}
+         FROM inserted sv`,
+        [
+          projectId,
+          req.user?.id,
+          name.value,
+          baseView.value,
+          JSON.stringify(config.value),
+          maxOrder + 1,
+        ]
+      );
+
+      await client.query("COMMIT");
+      return res.status(200).send(new ServerResponse(true, result.rows[0]));
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => void 0);
+      throw error;
+    } finally {
+      client.release();
     }
-
-    return res.status(200).send(new ServerResponse(true, result.rows[0]));
   }
 
   @HandleExceptions()
