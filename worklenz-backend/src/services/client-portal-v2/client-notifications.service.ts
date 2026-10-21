@@ -141,7 +141,7 @@ export async function listClientNotifications(q: Queryable, subject: ClientSubje
       body: row.message ?? "",
       at: row.created_at,
       unread: row.is_read !== true,
-      emailed: settings.client_email_events[NOTIFICATION_EVENT_BY_TYPE[type]] === true && prefs[type] !== false,
+      emailed: settings.client_email_events[NOTIFICATION_EVENT_BY_TYPE[type]] === true && prefs[type] === true,
       target: toTarget(row),
     };
   });
