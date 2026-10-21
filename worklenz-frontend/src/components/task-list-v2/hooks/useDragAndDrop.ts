@@ -4,9 +4,6 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {
-  convertTaskToSubtask,
-  fetchSubTasks,
-  fetchTasksV3,
   moveTaskToGroupWithAPI,
   reorderSubtasks,
   reorderTasksInGroup,
@@ -24,10 +21,9 @@ import { SocketEvents } from '@/shared/socket-events';
 import { UNMAPPED } from '@/shared/constants';
 import { useParams } from 'react-router-dom';
 import { useAuthService } from '@/hooks/useAuth';
-import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import logger from '@/utils/errorLogger';
-import { message } from '@/shared/antd-imports';
 import type { TFunction } from 'i18next';
+import { moveSubtaskToParent as performMoveSubtaskToParent } from './move-subtask-to-parent';
 
 interface TaskSortUpdate {
   task_id: string;
@@ -174,33 +170,17 @@ export const useDragAndDrop = (
     async (subtaskId: string, newParentId: string) => {
       if (!projectId) return;
 
-      dispatch(convertTaskToSubtask({ taskId: subtaskId, parentTaskId: newParentId }));
-      // Ensure the destination parent's full subtask list is loaded/visible
-      dispatch(fetchSubTasks({ taskId: newParentId, projectId }));
+      const oldParentId =
+        store.getState().taskManagement.entities[subtaskId]?.parent_task_id ?? null;
 
-      try {
-        const res = await tasksApiService.moveSubtask(subtaskId, projectId, newParentId);
-        if (!res.done) {
-          dispatch(fetchTasksV3(projectId));
-          message.error(
-            res.message ||
-              t?.('contextMenu.moveSubtaskFailed', { defaultValue: 'Failed to move subtask' }) ||
-              'Failed to move subtask'
-          );
-          return;
-        }
-        message.success(
-          t?.('contextMenu.moveSubtaskSuccess', { defaultValue: 'Subtask moved successfully' }) ||
-            'Subtask moved successfully'
-        );
-      } catch (error) {
-        logger.error('Error moving subtask via drag and drop:', error);
-        dispatch(fetchTasksV3(projectId));
-        message.error(
-          t?.('contextMenu.moveSubtaskFailed', { defaultValue: 'Failed to move subtask' }) ||
-            'Failed to move subtask'
-        );
-      }
+      await performMoveSubtaskToParent({
+        subtaskId,
+        newParentId,
+        projectId,
+        oldParentId,
+        dispatch,
+        t,
+      });
     },
     [dispatch, projectId, t]
   );
