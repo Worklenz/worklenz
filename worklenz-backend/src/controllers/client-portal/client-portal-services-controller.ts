@@ -233,6 +233,21 @@ export default class ClientPortalServicesController extends ClientPortalControll
         queryParams.push(`%${search}%`);
       }
 
+      const sortColumns: Record<string, string> = {
+        name: "s.name",
+        description: "s.description",
+        status: "s.status",
+        is_public: "s.is_public",
+        created_at: "s.created_at",
+        updated_at: "s.updated_at",
+        created_by_name: "u.name",
+        requests_count: "requests_count",
+      };
+      const sortColumn = typeof sortBy === "string" && Object.prototype.hasOwnProperty.call(sortColumns, sortBy)
+        ? sortColumns[sortBy]
+        : "s.name";
+      const sortDirection = typeof sortOrder === "string" && sortOrder.toLowerCase() === "desc" ? "DESC" : "ASC";
+
       // Build main query
       const query = `
         SELECT
@@ -251,7 +266,7 @@ export default class ClientPortalServicesController extends ClientPortalControll
         LEFT JOIN client_portal_requests r ON s.id = r.service_id
         ${whereClause}
         GROUP BY s.id, u.name
-        ORDER BY ${sortBy} ${String(sortOrder).toUpperCase()}
+        ORDER BY ${sortColumn} ${sortDirection}
         LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
       `;
 
