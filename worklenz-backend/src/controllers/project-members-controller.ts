@@ -1,3 +1,4 @@
+import { planLiftsLtdMemberLimit } from "../shared/entitlements/gates";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { IPassportSession } from "../interfaces/passport-session";
@@ -94,6 +95,16 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
     const [data] = result.rows;
     return data.exists;
+  }
+
+  /** Project membership checks must stay inside the target team. */
+  public static async checkIfUserAlreadyExistsInTeam(teamId: string, email: string): Promise<boolean> {
+    const result = await db.query(
+      `SELECT EXISTS(SELECT 1 FROM team_member_info_view
+        WHERE LOWER(email) = LOWER($1::TEXT) AND team_id = $2::UUID) AS exists;`,
+      [email.trim(), teamId],
+    );
+    return result.rows[0]?.exists === true;
   }
 
   /**
@@ -270,7 +281,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     }
 
     // Check if user already exists in the team
-    const userExists = await ProjectMembersController.checkIfUserAlreadyExists(req.user?.owner_id as string, req.body.email);
+    const userExists = await ProjectMembersController.checkIfUserAlreadyExistsInTeam(teamId, req.body.email);
 
     // If user exists in the team, check if they're already in the project
     if (userExists && req.body.project_id) {
@@ -463,10 +474,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         }
 
         // Check AppSumo lifetime limits - only applies if not on Business plan
-        const isBusinessPlan = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
-          subscriptionData.plan_name?.toLowerCase().includes("business") ||
-          subscriptionData.business_plan_override === true ||
-          subscriptionData.appsumo_business_eligible === true;
+        const isBusinessPlan = planLiftsLtdMemberLimit(subscriptionData);
         if (!userExists && subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlan && (parseInt(subscriptionData.current_count) + 1 > parseInt(subscriptionData.ltd_users))) {
           const ltdLimit = parseInt(subscriptionData.ltd_users);
           const obj = {
@@ -780,10 +788,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         }
 
         // Check LTD user limits - only applies if not on Business plan (check both subscription_type and plan_name)
-        const isBusinessPlan = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
-          subscriptionData.plan_name?.toLowerCase().includes("business") ||
-          subscriptionData.business_plan_override === true ||
-          subscriptionData.appsumo_business_eligible === true;
+        const isBusinessPlan = planLiftsLtdMemberLimit(subscriptionData);
         if (subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlan) {
           const currentCount = parseInt(subscriptionData.current_count) || 0;
           const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
@@ -1061,10 +1066,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
           // Check LTD user limits - only applies if not on Business plan
           // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
-          const isBusinessPlanProjectLink = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
-            subscriptionData.plan_name?.toLowerCase().includes("business") ||
-            subscriptionData.business_plan_override === true ||
-            subscriptionData.appsumo_business_eligible === true;
+          const isBusinessPlanProjectLink = planLiftsLtdMemberLimit(subscriptionData);
 
           if (incrementBy > 0 && subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlanProjectLink) {
             const currentCount = parseInt(subscriptionData.current_count) || 0;

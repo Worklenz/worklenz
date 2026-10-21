@@ -22,7 +22,7 @@ import {
   NAV_RAIL_DIVIDER_LIGHT,
 } from '@/components/nav-rail/nav-rail-constants';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { canUseFeature } from '@/utils/subscription-utils';
 import FeatureUpgradePreview from '@/components/upgrade/FeatureUpgradePreview';
 import PlannerSchedulePreviewMockup from '@/components/upgrade/mockups/PlannerSchedulePreviewMockup';
 import PlannerTimelinePreviewMockup from '@/components/upgrade/mockups/PlannerTimelinePreviewMockup';
@@ -35,6 +35,7 @@ const StatusDrawer = lazy(
 );
 
 const PLANNER_BASE_PATH = '/worklenz/planner';
+const PLANNER_FEATURE_KEYS = ['planner_schedule', 'planner_timeline', 'planner_workload'];
 
 // Shell for the Planner section: left rail plus drawers rendered outside the
 // routed sub-views. Each sub-view (Schedule, Timeline, Workload) is a routed
@@ -50,7 +51,7 @@ const PlannerLayout: React.FC = () => {
   const navigate = useNavigate();
   const { resolved: plannerNavResolved } = useNavPreferences('planner');
   const authService = useAuthService();
-  const hasBusinessAccess = hasBusinessFeatureAccess(authService.getCurrentSession());
+  const currentSession = authService.getCurrentSession();
   const { t } = useTranslation(['upgrade-preview', 'planner-sidebar']);
 
   // Planner is a business-plan feature. Rather than redirecting locked users
@@ -122,6 +123,11 @@ const PlannerLayout: React.FC = () => {
     return (rest || plannerNavResolved.activeDefaultKey) as PlannerView;
   }, [location.pathname, plannerNavResolved.activeDefaultKey]);
 
+  // Per-view access: legacy mode gates all three on Business; once entitlements are enforced the
+  // registry decides (e.g. AppSumo gets Timeline and Workload but not Schedule).
+  const hasViewAccess = canUseFeature(currentSession, `planner_${activeView}`);
+  const hasAnyPlannerAccess = PLANNER_FEATURE_KEYS.some(key => canUseFeature(currentSession, key));
+
   const handleViewChange = useCallback(
     (view: PlannerView) => {
       // TaskDrawer is portaled outside the <Outlet/> below, so it survives the
@@ -154,7 +160,7 @@ const PlannerLayout: React.FC = () => {
           borderLeft: `1px solid ${railDividerColor}`,
         }}
       >
-        {hasBusinessAccess ? (
+        {hasViewAccess ? (
           <Outlet />
         ) : (
           // Real Schedule/Timeline/Workload views add their own 16px top
@@ -173,8 +179,13 @@ const PlannerLayout: React.FC = () => {
         )}
       </div>
 
-      <ScheduleSettingsDrawer />
-      <ScheduleDrawer />
+      {/* These drawers fetch Planner data on mount, so only mount them when the plan allows it */}
+      {hasAnyPlannerAccess && (
+        <>
+          <ScheduleSettingsDrawer />
+          <ScheduleDrawer />
+        </>
+      )}
       <Suspense fallback={null}>
         <StatusDrawer />
       </Suspense>

@@ -2,13 +2,13 @@
  * Phase 4 — strip-finance-fields helpers.
  */
 
-jest.unmock("../../shared/strip-finance-fields");
+jest.unmock("../shared/strip-finance-fields");
 
 import {
   stripFinanceFromTemplateSettings,
   stripProjectFinanceFields,
   stripTaskFinanceFields,
-} from "../../shared/strip-finance-fields";
+} from "../shared/strip-finance-fields";
 
 describe("strip-finance-fields", () => {
   it("leaves project fields when finance access is on", () => {

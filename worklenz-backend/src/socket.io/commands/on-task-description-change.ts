@@ -1,4 +1,6 @@
 import { Server, Socket } from "socket.io";
+import { ISocketSession } from "../../interfaces/socket-session";
+import { handleSecurityPolicyError } from "../../services/security-policy.service";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 
@@ -19,6 +21,7 @@ export async function on_task_description_change(
   data?: string,
   callback?: DescriptionChangeAck
 ) {
+  let taskTeamId: string | undefined;
   try {
     const body = JSON.parse(data as string);
 
@@ -33,7 +36,9 @@ export async function on_task_description_change(
                SET description = $2
                WHERE id = $1
                RETURNING description;`;
-    const task_data = await getTaskDetails(body.task_id, "description");
+    const task_data = await getTaskDetails(body.task_id,
+      "description, (SELECT team_id FROM projects WHERE projects.id = tasks.project_id) AS team_id");
+    taskTeamId = task_data?.team_id;
 
     const description =
       (body.description || "")
@@ -79,6 +84,12 @@ export async function on_task_description_change(
     // }
     callback?.({ success: true });
   } catch (error) {
+    const sessionUser = (socket.request as ISocketSession).session?.passport?.user;
+    const rejection = await handleSecurityPolicyError(error, taskTeamId, sessionUser?.id);
+    if (rejection) {
+      callback?.({ success: false, error: rejection.message });
+      return;
+    }
     log_error(error);
     callback?.({ success: false, error: 'Failed to save the description. Please try again.' });
   }

@@ -131,7 +131,9 @@
         "Integrações personalizadas",
         "Gerente de conta dedicado",
         "Implementação on-premises"
-      ]
+      ],
+      "customPricing": "Personalizado",
+      "customPricingNote": "adaptado à sua equipe"
     },
     "additionalUsersCharged": "Usuários adicionais além dos incluídos: ${{price}}/usuário/mês"
   },

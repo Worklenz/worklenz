@@ -26,6 +26,8 @@
   transition: all 0.2s ease;
   background-color: #ffffff;
   color: #000000;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .description-editor-shell .description-editor-preview.is-hovered {
@@ -77,6 +79,16 @@
   font-size: 14px;
   line-height: 1.6;
   padding: 12px;
+}
+
+/* Quill heading font-weight fix: Tailwind preflight resets heading font-weight to inherit */
+.description-editor-shell .ql-editor h1,
+.description-editor-shell .ql-editor h2,
+.description-editor-shell .ql-editor h3,
+.description-editor-shell .ql-editor h4,
+.description-editor-shell .ql-editor h5,
+.description-editor-shell .ql-editor h6 {
+  font-weight: 600;
 }
 
 /* Text wrapping fix to prevent overflow */
@@ -177,6 +189,59 @@
   word-break: break-word;
   max-width: 100%;
   overflow-x: hidden;
+}
+
+/* ── Heading formatting fix for preview mode ──
+   Tailwind's Preflight resets font-size and font-weight on h1-h6 to inherit.
+   Explicitly restore font sizes and weights matching Quill's snow theme and design system. */
+.description-editor-shell .description-content h1 {
+  font-size: 2em;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0.5em 0 0.25em;
+}
+
+.description-editor-shell .description-content h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0.5em 0 0.25em;
+}
+
+.description-editor-shell .description-content h3 {
+  font-size: 1.17em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0.4em 0 0.2em;
+}
+
+.description-editor-shell .description-content h4 {
+  font-size: 1em;
+  font-weight: 600;
+  line-height: 1.45;
+  margin: 0.4em 0 0.2em;
+}
+
+.description-editor-shell .description-content h5 {
+  font-size: 0.83em;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0.3em 0 0.2em;
+}
+
+.description-editor-shell .description-content h6 {
+  font-size: 0.67em;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0.3em 0 0.2em;
+}
+
+.description-editor-shell .description-content > :first-child {
+  margin-top: 0;
+}
+
+.description-editor-shell .description-content > :last-child {
+  margin-bottom: 0;
 }
 
 /* ── Empty paragraph spacing in preview mode ──

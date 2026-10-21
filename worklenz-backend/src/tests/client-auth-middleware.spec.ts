@@ -239,6 +239,22 @@ describe("client-auth-middleware", () => {
         expect(next).not.toHaveBeenCalled();
       });
 
+      /** The row `loadClientSubject` returns: this person is still an Active company user of the client. */
+      const activeContact = () =>
+        mockedDb.query.mockResolvedValueOnce(
+          createQueryResult([
+            {
+              contact_id: "cc-1",
+              client_id: "client-123",
+              team_id: "org-456",
+              role: "member",
+              name: "Client User",
+              email: "client@test.com",
+              client_user_id: "login-1",
+            },
+          ])
+        );
+
       it("lets an active, enabled company user through", async () => {
         const req = createMockRequest({ headers: { "x-client-token": "valid-token" } });
         const res = createMockResponse();
@@ -248,11 +264,32 @@ describe("client-auth-middleware", () => {
         mockedDb.query.mockResolvedValueOnce(
           createQueryResult([{ login_status: "active", is_disabled: false }])
         );
+        activeContact();
 
         await authenticateClient(req, res, next);
 
         expect(next).toHaveBeenCalled();
         expect(req.clientUserId).toBe("login-1");
+      });
+
+      it("returns 403 when the company user was removed, although the login is still active", async () => {
+        // Removing a company user deletes the contact row, not the login: the login stays `active` and
+        // `getLoginAccessState` finds no disabled contact, so only this check can stop the request.
+        const req = createMockRequest({ headers: { "x-client-token": "valid-token" } });
+        const res = createMockResponse();
+        const next = jest.fn();
+
+        withLogin();
+        mockedDb.query.mockResolvedValueOnce(
+          createQueryResult([{ login_status: "active", is_disabled: false }])
+        );
+        mockedDb.query.mockResolvedValueOnce(createQueryResult([]));
+
+        await authenticateClient(req, res, next);
+
+        expect(res.statusCode).toBe(403);
+        expect(res.body.body).toMatchObject({ code: "ACCESS_REVOKED" });
+        expect(next).not.toHaveBeenCalled();
       });
     });
 

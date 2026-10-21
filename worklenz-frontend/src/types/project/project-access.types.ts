@@ -27,6 +27,7 @@ export const DENIED_PROJECT_PERMISSIONS: IProjectPermissions = {
   insights: false,
   files: false,
   updates: false,
+  docs: false,
   roadmap: false,
   workload: false,
 };

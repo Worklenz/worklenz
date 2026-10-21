@@ -19,4 +19,30 @@ describe("getTeamMemberSeatLimit", () => {
   it("ignores invalid or non-positive values", () => {
     expect(getTeamMemberSeatLimit({ effective_user_limit: "abc", quantity: -2, is_ltd: true, ltd_users: 0 })).toBe(25);
   });
+
+  it("uses the purchased quantity, with no free floor, for per-user Paddle Billing plans", () => {
+    expect(getTeamMemberSeatLimit({ billing_provider: "paddle_billing", quantity: 10, effective_user_limit: 25 })).toBe(10);
+    expect(getTeamMemberSeatLimit({ billing_provider: "paddle_billing", quantity: 40 })).toBe(40);
+  });
+
+  it("keeps AppSumo seats for per-user plans, and falls back to the legacy limit without a quantity", () => {
+    expect(getTeamMemberSeatLimit({ billing_provider: "paddle_billing", quantity: 10, is_ltd: true, ltd_users: 50 })).toBe(50);
+    expect(getTeamMemberSeatLimit({ billing_provider: "paddle_billing", quantity: null })).toBe(25);
+  });
+
+  it("keeps the 25-seat floor for Classic subscriptions", () => {
+    expect(getTeamMemberSeatLimit({ billing_provider: "paddle_classic", quantity: 10 })).toBe(25);
+  });
+
+  it("adds AppSumo Expansion seats on top of the lifetime-deal seats", () => {
+    expect(
+      getTeamMemberSeatLimit({
+        billing_provider: "paddle_billing",
+        plan_name: "Business AppSumo Expansion (per seat, monthly)",
+        quantity: 10,
+        is_ltd: true,
+        ltd_users: 50,
+      })
+    ).toBe(60);
+  });
 });

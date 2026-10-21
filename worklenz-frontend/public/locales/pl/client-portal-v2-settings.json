@@ -1,0 +1,122 @@
+{
+  "auditRecorded": "Zmiana uprawnień zarejestrowana w dzienniku audytu.",
+  "loadEmpty": "Nie zwrócono żadnych ustawień portalu.",
+  "loadFailed": "Nie można załadować ustawień portalu.",
+  "nav": {
+    "notifications": "Notifications",
+    "roles": "Role Klienta",
+    "sharing": "Udostępnianie i widoczność"
+  },
+  "notifications": {
+    "banner": "Powiadomienia wysyłane do klientów nigdy nie zawierają w tytule ani treści treści przeznaczonych wyłącznie do użytku wewnętrznego. Alerty w aplikacji są zawsze włączone. Adres e-mail jest opcjonalny w przypadku każdego wydarzenia.",
+    "client": {
+      "accessChanges": "Zmiany dostępu",
+      "accessChangesDescription": "Zaproszenie, zmiana roli lub przypisanie projektu.",
+      "approvalRequest": "Nowa prośba o zatwierdzenie",
+      "approvalRequestDescription": "Klient zatwierdzający jest proszony o zatwierdzenie elementu.",
+      "changeRequestUpdate": "Zmień aktualizację żądania",
+      "changeRequestUpdateDescription": "Zmiany stanu, odpowiedzi lub szacunków na żądanie.",
+      "commentOrReply": "Skomentuj lub odpowiedz",
+      "commentOrReplyDescription": "Ktoś odpowiada w dyskusji widocznej dla klienta.",
+      "fileShared": "Plik udostępniony",
+      "fileSharedDescription": "Plik jest oznaczony jako widoczny dla klienta lub przesyłana jest nowa wersja.",
+      "milestoneChange": "Zmiana kamienia milowego",
+      "milestoneChangeDescription": "Kamień milowy widoczny dla klienta zmienia status lub datę.",
+      "projectUpdate": "Aktualizacja projektu",
+      "projectUpdateDescription": "Zmiany statusu projektu lub opublikowanie aktualizacji.",
+      "title": "Powiadomienia dla klientów"
+    },
+    "emailColumn": "Email",
+    "emailLabel": "E-mail: {{event}}",
+    "eventColumn": "Zdarzenie",
+    "inAppColumn": "W aplikacji",
+    "inAppLabel": "W aplikacji: {{event}} (zawsze włączone)",
+    "team": {
+      "approvalDecision": "Decyzja zatwierdzająca klienta",
+      "approvalDecisionDescription": "Klient zatwierdza lub żąda zmian.",
+      "changeRequest": "Nowa prośba o zmianę lub kontynuacja",
+      "changeRequestDescription": "Klient składa wniosek lub odpowiada na pytanie.",
+      "clientComment": "Nowy komentarz klienta",
+      "clientCommentDescription": "Klient komentuje w dyskusji.",
+      "clientFileUpload": "Przesyłanie pliku klienta",
+      "clientFileUploadDescription": "Klient przesyła plik do projektu.",
+      "title": "Powiadomienia dla Twojego zespołu"
+    }
+  },
+  "retry": "Spróbuj ponownie",
+  "roles": {
+    "allowed": "Dozwolone",
+    "alwaysTrue": {
+      "nextRequest": "Dezaktywacja użytkownika lub usunięcie przypisania projektu zaczyna obowiązywać od jego następnego żądania, a nie od następnego logowania.",
+      "noTeamDirectory": "Użytkownik kliencki nigdy nie widzi Twojego wewnętrznego katalogu zespołu i nigdy nie może zostać administratorem Twojego obszaru roboczego.",
+      "oneOrganization": "Użytkownik-klient należy do dokładnie jednej organizacji i widzi tylko przypisane do niego projekty.",
+      "ownOrganizationOnly": "Administrator klienta może wyświetlać użytkowników i zarządzać nimi tylko w swojej własnej organizacji, nigdy w organizacji innego klienta.",
+      "title": "Zawsze prawda"
+    },
+    "capability": {
+      "approve": "Zatwierdź elementy lub poproś o zmiany",
+      "comment": "Komentuj i odpowiadaj w dyskusjach widocznych dla klienta",
+      "manageUsers": "Zarządzaj użytkownikami w ich własnej organizacji (jeśli włączono tę opcję poniżej)",
+      "submitChangeRequest": "Przesyłaj i śledź prośby o zmiany",
+      "upload": "Prześlij pliki (jeśli projekt na to pozwala)",
+      "view": "Przeglądaj przydzielone projekty, kamienie milowe, zadania widoczne dla klienta i pliki"
+    },
+    "capabilityColumn": "Możliwości",
+    "matrixDescription": "Trzy role, brak konstruktora uprawnień. Rola dotyczy każdego projektu, do którego przypisany jest użytkownik.",
+    "matrixError": "Nie można wczytać uprawnień roli.",
+    "matrixTitle": "Co może zrobić każda rola",
+    "notAllowed": "Niedozwolone",
+    "selfManagement": {
+      "description": "Pozwól administratorowi klienta zarządzać tym, kto z jego własnej organizacji ma dostęp do portalu, zamiast przekazywać każdą zmianę przez Twój zespół.",
+      "invite": {
+        "description": "Administrator Klienta może zaprosić kolegę ze swojej organizacji.",
+        "label": "Pozwól administratorom klienta zapraszać użytkowników"
+      },
+      "remove": {
+        "description": "Administrator klienta może usunąć innego użytkownika ze swojej organizacji.",
+        "label": "Pozwól administratorom klientów usuwać użytkowników"
+      },
+      "title": "Samodzielne zarządzanie administratorem klienta"
+    },
+    "signIn": {
+      "addedOnly": "Kod może otrzymać tylko adres dodany przez Ciebie lub przez Twojego administratora klienta. Ktokolwiek inny nie dostanie nic.",
+      "code": "Nie ma żadnych haseł. Klient loguje się za pomocą 6-cyfrowego kodu przesłanego na adres e-mail. Działa raz i wygasa po 10 minutach.",
+      "description": "Nic do skonfigurowania. Każdy klient podpisuje się w ten sam sposób.",
+      "direct": "Klienci mogą również otworzyć portal, wpisać swój adres i otrzymać kod, bez linku.",
+      "link": "E-mail z zaproszeniem zawiera link do logowania z wbudowanym adresem. Otwarcie go powoduje natychmiastowe wysłanie kodu. Linki wygasają po 7 dniach i mogą zostać ponownie przesłane przez Użytkowników.",
+      "title": "Jak klienci się logują"
+    }
+  },
+  "saveFailed": "Nie można zapisać ustawień portalu.",
+  "sharing": {
+    "defaults": {
+      "clientUploads": {
+        "description": "Administratorzy klienta i członkowie klienta mogą dodawać pliki. Widzowie klienta nigdy nie mogą. Możesz to zastąpić dla każdego projektu.",
+        "label": "Zezwalaj na przesyłanie klientów w nowych projektach portalu"
+      },
+      "showInvoices": {
+        "description": "Dodaje stronę Faktury dla klientów. Domyślnie ukryte.",
+        "label": "Pokaż faktury w portalu klienta"
+      },
+      "title": "Sekcje i wartości domyślne"
+    },
+    "rules": {
+      "defaultInternal": "Zadania, pliki, kamienie milowe i komentarze są domyślnie przeznaczone wyłącznie do użytku wewnętrznego i dotyczą istniejących i nowych elementów.",
+      "explicitShare": "Nic nie dociera do portalu, dopóki upoważniony członek zespołu nie oznaczy go jako Widoczny dla Klienta.",
+      "fixedTag": "Stałe zasady",
+      "neverExposed": "Wewnętrzne komentarze, dzienniki czasu, szacunki, koszty i zależności nigdy nie są ujawniane, niezależnie od tego, co udostępniasz.",
+      "noHints": "Ukryty element nigdy nie jest liczony ani wskazywany na pulpitach nawigacyjnych, listach ani w powiadomieniach.",
+      "revertImmediate": "Przywrócenie elementu do Tylko wewnętrznego powoduje natychmiastowe usunięcie go z portalu i zachowanie jego wewnętrznej historii.",
+      "title": "Jak działa udostępnianie"
+    },
+    "shared": {
+      "count": "Widoczny jest {{shared}} klienta {{total}}",
+      "description": "Naliczono projekty, które mają włączony Portal Klienta.",
+      "files": "Pliki",
+      "milestones": "Kamienie milowe",
+      "tasks": "Zadania",
+      "title": "Obecnie udostępniane w projektach portalu"
+    }
+  },
+  "subtitle": "Branding, co jest domyślnie udostępniane, role i powiadomienia dla Twojego portalu klienta."
+}

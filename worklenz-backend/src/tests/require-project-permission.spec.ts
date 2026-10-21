@@ -2,11 +2,11 @@
  * Phase 2 — requireProjectPermission + project access enforcement helpers.
  */
 
-jest.unmock("../../shared/project-access");
-jest.unmock("../../shared/team-permissions");
-jest.unmock("../../middlewares/validators/require-project-permission");
+jest.unmock("../shared/project-access");
+jest.unmock("../shared/team-permissions");
+jest.unmock("../middlewares/validators/require-project-permission");
 
-jest.mock("../../config/db", () => ({
+jest.mock("../config/db", () => ({
   __esModule: true,
   default: {
     query: jest.fn(),
@@ -16,9 +16,9 @@ jest.mock("../../config/db", () => ({
 import {
   hasProjectPermission,
   resolveRequestProjectId,
-} from "../../middlewares/validators/require-project-permission";
-import { buildProjectAccess } from "../../shared/project-access";
-import { TEAM_ROLE_NAMES } from "../../shared/team-permissions";
+} from "../middlewares/validators/require-project-permission";
+import { buildProjectAccess } from "../shared/project-access";
+import { TEAM_ROLE_NAMES } from "../shared/team-permissions";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 
 describe("require-project-permission helpers", () => {

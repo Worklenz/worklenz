@@ -47,11 +47,17 @@ describe('setTaskLatestComment', () => {
       createStateWithTask(),
       setTaskLatestComment({
         taskId: 'task-1',
-        comment: { text: '<p>hello</p>', at: '2026-10-01T10:00:00.000Z', author: 'Ada' },
+        comment: {
+          id: 'comment-1',
+          text: '<p>hello</p>',
+          at: '2026-10-01T10:00:00.000Z',
+          author: 'Ada',
+        },
       })
     );
 
     expect(next.entities['task-1']).toMatchObject({
+      latest_comment_id: 'comment-1',
       latest_comment: '<p>hello</p>',
       latest_comment_at: '2026-10-01T10:00:00.000Z',
       latest_comment_author: 'Ada',
@@ -69,6 +75,7 @@ describe('setTaskLatestComment', () => {
     const cleared = taskManagementReducer(next, setTaskLatestComment({ taskId: 'task-1', comment: null }));
 
     expect(cleared.entities['task-1']).toMatchObject({
+      latest_comment_id: null,
       latest_comment: null,
       latest_comment_at: null,
       latest_comment_author: null,

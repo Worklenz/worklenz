@@ -30,6 +30,8 @@ import { selectGroups } from '@/features/task-management/task-management.slice';
 import { useTaskListMode } from '@/features/task-management/task-list-mode-context';
 import {
   fetchTask as fetchTaskDrawer,
+  setTargetCommentId,
+  setTargetDrawerTab,
   setNavigationContext,
   setSelectedTaskId,
   setShowTaskDrawer,
@@ -120,12 +122,16 @@ export const useTaskRowColumns = ({
 }: UseTaskRowColumnsProps) => {
   const dispatch = useAppDispatch();
   const groups = useAppSelector(selectGroups);
+  const isTaskDrawerOpenForTask = useAppSelector(
+    state => state.taskDrawerReducer.showTaskDrawer && state.taskDrawerReducer.selectedTaskId === task.id
+  );
   const cellVariant = useTaskListMode() === 'backlog' ? 'inline' : 'pill';
 
   // Opens the task drawer — used by DescriptionColumn when rich formatting
   // is present and inline plain-text editing would destroy it.
   const openDrawerForTask = useCallback(() => {
     if (!task.id || !projectId) return;
+    if (isTaskDrawerOpenForTask) return;
     const taskIds = groups.flatMap(g => g.taskIds);
     const currentIndex = taskIds.indexOf(task.id);
     dispatch(
@@ -139,7 +145,16 @@ export const useTaskRowColumns = ({
     dispatch(setSelectedTaskId(task.id));
     dispatch(setShowTaskDrawer(true));
     dispatch(fetchTaskDrawer({ taskId: task.id, projectId }));
-  }, [dispatch, groups, task.id, projectId]);
+  }, [dispatch, groups, task.id, projectId, isTaskDrawerOpenForTask]);
+
+  const openLatestComment = useCallback(
+    (commentId: string) => {
+      dispatch(setTargetCommentId(commentId));
+      dispatch(setTargetDrawerTab('info'));
+      openDrawerForTask();
+    },
+    [dispatch, openDrawerForTask]
+  );
 
   const isReadOnly = isGuest;
 
@@ -395,7 +410,7 @@ export const useTaskRowColumns = ({
             return <ReporterColumn width={width} reporter={task.reporter || ''} />;
 
           case 'comments':
-            return <CommentsColumn width={width} task={task} />;
+            return <CommentsColumn width={width} task={task} onOpenComment={openLatestComment} />;
 
           default:
             // Handle custom columns

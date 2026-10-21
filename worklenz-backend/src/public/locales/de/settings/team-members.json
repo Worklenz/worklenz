@@ -207,6 +207,7 @@
   "noActiveInviteLink": "Kein aktiver Einladungslink",
   "linkExpiredPlaceholder": "Link abgelaufen",
   "inviteLinkCopied": "Einladungslink in die Zwischenablage kopiert",
+  "inviteLinkCopyFailed": "Einladungslink erstellt. Kopieren Sie ihn manuell aus dem Feld unten.",
   "inviteLinkGenerateError": "Einladungslink konnte nicht erstellt werden",
   "inviteLinkDeactivated": "Einladungslink deaktiviert",
   "inviteLinkDeactivateError": "Link konnte nicht deaktiviert werden",

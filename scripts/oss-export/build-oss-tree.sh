@@ -82,6 +82,13 @@ printf '%s\0' "${kept[@]}" | while IFS= read -r -d '' f; do
     || cp "$repo_root/$f" "$out/$f"   # fallback for anything odd
 done
 
+# Last line of defence: refuse to leave behind a tree containing key-shaped strings.
+if ! "$(dirname "$0")/scan-secrets.sh" "$out"; then
+  rm -rf "$out"
+  echo "aborted: secrets found in the export tree (removed $out). Fix the source files and re-run." >&2
+  exit 1
+fi
+
 echo
 echo "done -> $out"
 echo

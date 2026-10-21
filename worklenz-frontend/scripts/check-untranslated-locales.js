@@ -8,6 +8,7 @@ const SOURCE_LANGUAGE = 'en';
 const ALLOWED_SOURCE_VALUES = new Set([
   '—',
   '...',
+  'https://example.com',
   'OK',
   'Ok',
   'ETC',
@@ -21,7 +22,11 @@ const ALLOWED_SOURCE_VALUES = new Set([
   'TB',
   'URL',
   'ID',
+  // Pricing tier names are product labels and remain unchanged in translated pricing cards.
   'Pro',
+  'Business',
+  'Free',
+  'Enterprise',
   'AppSumo Special',
   'Slack',
   'Microsoft Teams',
@@ -188,8 +193,15 @@ const isAllowableValue = value => {
 };
 
 const ENGLISH_MARKERS = /\b(projected|revenue|profit|forecast|this month|next month|billable|invoice|budget|utilization|project|member|client|search|retry)\b/gi;
-// These words have identical English and French spellings.
-const LANGUAGE_SOURCE_VALUES = { fr: new Set(['Urgent', 'Description']) };
+// Words that are correctly spelled the same in these languages (cognates/loanwords), not missed
+// translations.
+const LANGUAGE_SOURCE_VALUES = {
+  fr: new Set(['Urgent', 'Description', 'Discussions', 'Conversation', '← Discussions']),
+  de: new Set(['Portal', 'Link']),
+  es: new Set(['Portal']),
+  pt: new Set(['Portal']),
+  pl: new Set(['Link']),
+};
 const namespaceArgument = process.argv.find(argument => argument.startsWith('--namespace='));
 const namespaceFilter = namespaceArgument?.split('=', 2)[1];
 const strict = process.argv.includes('--strict');
@@ -215,9 +227,13 @@ const getByPath = (value, keyPath) =>
 
 const hasLikelyEnglishText = value => {
   if (typeof value !== 'string') return false;
-  const matches = value.match(ENGLISH_MARKERS) ?? [];
+  // Strip {{variable}} interpolation placeholders first: their names (e.g. {{client}},
+  // {{project}}) are code tokens, not translatable text, and would otherwise read as
+  // English words even in a correctly translated string.
+  const withoutPlaceholders = value.replace(/\{\{[^}]+\}\}/g, '');
+  const matches = withoutPlaceholders.match(ENGLISH_MARKERS) ?? [];
   return (
-    /\bvs\s+(?:last|this)\s+month\b/i.test(value) ||
+    /\bvs\s+(?:last|this)\s+month\b/i.test(withoutPlaceholders) ||
     new Set(matches.map(match => match.toLowerCase())).size >= 2
   );
 };

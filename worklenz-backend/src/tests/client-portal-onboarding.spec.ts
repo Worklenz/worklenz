@@ -62,7 +62,7 @@ const viewRow = (overrides: Record<string, unknown> = {}) => ({
   email: "jane@beacon.io",
   phone: null,
   job_title: null,
-  role: "poc",
+  role: "admin",
   has_login: false,
   last_login_at: null,
   invited_at: null,
@@ -87,7 +87,7 @@ const newCompanyHandlers = (): Handler[] => [
   // The company just created is then found when a later row of the same company is added to it.
   [/SELECT id FROM clients WHERE id/, createQueryResult([{ id: CLIENT_ID }])],
   [/INSERT INTO clients/, createQueryResult([{ id: CLIENT_ID, name: "Beacon Logistics", company_name: "Beacon Logistics" }])],
-  [/INSERT INTO client_contacts/, createQueryResult([{ id: CONTACT_ID, client_id: CLIENT_ID, role: "poc" }])],
+  [/INSERT INTO client_contacts/, createQueryResult([{ id: CONTACT_ID, client_id: CLIENT_ID, role: "admin" }])],
 ];
 
 const statements = () => mockTxQuery.mock.calls.map(([sql]) => String(sql));
@@ -294,7 +294,7 @@ describe("commitImport", () => {
     expect(outcome).toMatchObject({ created_companies: 1, added_users: 2, skipped: 0 });
     const contactInserts = mockTxQuery.mock.calls.filter(([sql]) => /INSERT INTO client_contacts/.test(String(sql)));
     expect(contactInserts).toHaveLength(2);
-    expect(contactInserts[0][1][6]).toBe("poc");
+    expect(contactInserts[0][1][6]).toBe("admin");
     expect(contactInserts[1][1][6]).toBe("member");
     // Nobody is emailed by an import.
     expect(mockInviteContact).not.toHaveBeenCalled();
@@ -337,7 +337,7 @@ describe("commitImport", () => {
         // Placeholder replaced below: the second company fails.
         createQueryResult([{ id: CLIENT_ID, name: "Beacon Logistics", company_name: "Beacon Logistics" }]),
       ],
-      [/INSERT INTO client_contacts/, createQueryResult([{ id: CONTACT_ID, client_id: CLIENT_ID, role: "poc" }])],
+      [/INSERT INTO client_contacts/, createQueryResult([{ id: CONTACT_ID, client_id: CLIENT_ID, role: "admin" }])],
     ]);
     const base = mockTxQuery.getMockImplementation()!;
     mockTxQuery.mockImplementation(async (sql: string, params?: unknown[]) => {
@@ -398,7 +398,7 @@ describe("ClientPortalOnboardingController.onboard", () => {
     // name, email, company_name, phone, contact_person, team
     expect(clientInsert[1]).toEqual(["Beacon Logistics", "jane@beacon.io", "Beacon Logistics", null, "Jane Doe", "team-123"]);
     const contactInsert = mockTxQuery.mock.calls.find(([sql]) => /INSERT INTO client_contacts/.test(String(sql)))!;
-    expect(contactInsert[1][6]).toBe("poc");
+    expect(contactInsert[1][6]).toBe("admin");
     expect(statements()).toContain("COMMIT");
     expect(mockInviteContact).not.toHaveBeenCalled();
     expect(res.body.body.invite).toMatchObject({ requested: false });
@@ -570,11 +570,11 @@ describe("ClientPortalOnboardingController.addCompanyUser", () => {
     mockedQuery.mockResolvedValue(createQueryResult([viewRow({ role: "member" })]));
   });
 
-  it("rejects a role other than poc or member", async () => {
+  it("rejects a role that is not admin, member or viewer (the retired poc role included)", async () => {
     const res = createMockResponse();
 
     await ClientPortalOnboardingController.addCompanyUser(
-      request({ first_name: "Sam", email: "sam@x.io", role: "admin" }),
+      request({ first_name: "Sam", email: "sam@x.io", role: "poc" }),
       res
     );
 
@@ -615,13 +615,13 @@ describe("ClientPortalOnboardingController.addCompanyUser", () => {
 
     mockTxQuery.mockClear();
     stubTransaction([companyExists, contactInserted]);
-    const poc = createMockResponse();
+    const adminRes = createMockResponse();
     await ClientPortalOnboardingController.addCompanyUser(
-      request({ first_name: "Sam", email: "sam2@x.io", role: "poc" }),
-      poc
+      request({ first_name: "Sam", email: "sam2@x.io", role: "admin" }),
+      adminRes
     );
-    const pocInsert = mockTxQuery.mock.calls.find(([sql]) => /INSERT INTO client_contacts/.test(String(sql)))!;
-    expect(pocInsert[1][6]).toBe("poc");
+    const adminInsert = mockTxQuery.mock.calls.find(([sql]) => /INSERT INTO client_contacts/.test(String(sql)))!;
+    expect(adminInsert[1][6]).toBe("admin");
   });
 
   it("saves the project access chosen in the wizard with the user", async () => {

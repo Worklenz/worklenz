@@ -5,16 +5,12 @@ import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import db from "../../config/db";
 import TokenService from "../../services/token-service";
-import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { sendEmail, sendEmailEnhanced, EmailRequest } from "../../shared/email";
+import { loadClientSubject } from "../../services/client-portal-v2/subject";
 import FileConstants from "../../shared/file-constants";
 import { IEmailTemplateType } from "../../interfaces/email-template-type";
-import { getBaseUrl, getClientPortalBaseUrl } from "../../cron_jobs/helpers";
-import {
-  generateInvitationEmailHTML,
-  generateWelcomeEmailHTML,
-} from "./helpers";
+import { getClientPortalBaseUrl } from "../../cron_jobs/helpers";
 import {
   ensureContactIdForClient,
   getLoginAccessState,
@@ -164,515 +160,6 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
     }
   }
 
-  static async acceptInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-    try {
-      const { token, password, name, email } = req.body;
-
-      if (!token || !password || !name) {
-        return res
-          .status(400)
-          .json(
-            new ServerResponse(
-              false,
-              null,
-              "Token, password, and name are required",
-            ),
-          );
-      }
-
-      // Check if this is an organization invite token
-      if (TokenService.isOrganizationInviteToken(token)) {
-        const orgInvitePayload =
-          TokenService.verifyOrganizationInviteToken(token);
-
-        if (
-          orgInvitePayload &&
-          orgInvitePayload.type === "organization_invite"
-        ) {
-          // For organization invites, email is required
-          if (!email) {
-            return res
-              .status(400)
-              .json(
-                new ServerResponse(
-                  false,
-                  null,
-                  "Email is required for organization invites",
-                ),
-              );
-          }
-
-          // The link is a signed JWT, but regenerating it replaces the stored token. An older link
-          // must stop working even though its signature and expiry are still valid.
-          if (!(await TokenService.isCurrentOrganizationInvite(token))) {
-            return res
-              .status(400)
-              .json(
-                new ServerResponse(false, null, "Invalid or expired invitation"),
-              );
-          }
-
-          // Check if email exists in Worklenz users table for linking
-          const existingWorklenzUserQuery = `
-            SELECT id, email, name, password FROM users
-            WHERE LOWER(email) = LOWER($1)
-          `;
-          const existingWorklenzUserResult = await db.query(
-            existingWorklenzUserQuery,
-            [email],
-          );
-
-          let worklenzUserId = null;
-          if (existingWorklenzUserResult.rows.length > 0) {
-            // User already exists in Worklenz - verify their Worklenz password before linking
-            const worklenzUser = existingWorklenzUserResult.rows[0];
-            const passwordMatch = bcrypt.compareSync(
-              password,
-              worklenzUser.password,
-            );
-
-            if (!passwordMatch) {
-              return res.status(401).json({
-                done: false,
-                body: { isWorklenzUser: true },
-                titleKey: "errors.worklenz_account_found_title",
-                messageKey: "errors.worklenz_account_found_message",
-              });
-            }
-
-            worklenzUserId = worklenzUser.id;
-          }
-
-          // Create a client record for this organization
-          const clientResult = await db.query(
-            `INSERT INTO clients (name, email, team_id, status, client_portal_enabled, created_at, updated_at)
-           VALUES ($1, $2, $3, 'active', TRUE, NOW(), NOW())
-           RETURNING id`,
-            [name, email, orgInvitePayload.teamId],
-          );
-
-          const clientId = clientResult.rows[0].id;
-
-          // Create the client user - link to Worklenz user if exists, otherwise use password_hash
-          // Check if email already exists in client_users to avoid duplicate key error
-          const emailExistsCheck = await db.query(
-            `SELECT id, user_id, password_hash FROM client_users WHERE LOWER(email) = LOWER($1)`,
-            [email],
-          );
-
-          let userResult;
-          if (emailExistsCheck.rows.length > 0) {
-            // Email already exists - this user is joining a second organization
-            const existingClientUserId = emailExistsCheck.rows[0].id;
-            const existingUserId = emailExistsCheck.rows[0].user_id;
-            const existingPasswordHash = emailExistsCheck.rows[0].password_hash;
-
-            // Verify password before allowing access to second organization
-            if (existingUserId) {
-              // User is linked to Worklenz account - password already verified above
-              if (!worklenzUserId || existingUserId !== worklenzUserId) {
-                return res.status(401).json({
-                  done: false,
-                  body: null,
-                  titleKey: "errors.invalid_credentials_title",
-                  messageKey: "errors.invalid_credentials_message",
-                });
-              }
-            } else {
-              // Standalone client portal user - verify password hash (supports both bcrypt and SHA256)
-              const verificationResult =
-                await TokenService.verifyClientPassword(
-                  password,
-                  existingPasswordHash,
-                );
-              if (!verificationResult.isValid) {
-                return res.status(401).json({
-                  done: false,
-                  body: null,
-                  titleKey: "errors.invalid_credentials_title",
-                  messageKey: "errors.invalid_credentials_message",
-                });
-              }
-
-              // Lazy migration: if password is SHA256, migrate to bcrypt
-              if (verificationResult.needsMigration) {
-                await TokenService.migratePasswordHash(
-                  existingClientUserId,
-                  password,
-                );
-              }
-            }
-
-            // Password verified - don't update client_id, just fetch the user
-            userResult = await db.query(
-              `SELECT id, email, name, role, client_id FROM client_users WHERE id = $1`,
-              [existingClientUserId],
-            );
-          } else if (worklenzUserId) {
-            // Link to existing Worklenz user - they will authenticate with their Worklenz password
-            userResult = await db.query(
-              `INSERT INTO client_users (id, client_id, user_id, email, name, role, status, created_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
-             RETURNING id, email, name, role, client_id`,
-              [clientId, worklenzUserId, email, name],
-            );
-          } else {
-            // Standalone client portal user - create with password_hash (bcrypt)
-            const passwordHash = TokenService.hashClientPassword(password);
-            userResult = await db.query(
-              `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
-             RETURNING id, email, name, role, client_id`,
-              [clientId, email, name, passwordHash],
-            );
-          }
-
-          const newUser = userResult.rows[0];
-
-          // Create organization access record for multi-org support
-          const orgAccessQuery = `
-            INSERT INTO client_user_organizations (client_user_id, team_id, client_id, is_default, created_at, updated_at)
-            VALUES ($1, $2, $3, TRUE, NOW(), NOW())
-            ON CONFLICT (client_user_id, team_id) 
-            DO UPDATE SET client_id = $3, updated_at = NOW()
-          `;
-          await db.query(orgAccessQuery, [
-            newUser.id,
-            orgInvitePayload.teamId,
-            clientId,
-          ]);
-
-          // The joiner is the only person at the company created for them, so they are its POC.
-          try {
-            await linkContactToLogin(db, {
-              teamId: orgInvitePayload.teamId,
-              clientId,
-              clientUserId: newUser.id,
-              email: newUser.email,
-              name,
-              role: "poc",
-            });
-          } catch (linkError) {
-            console.error("Could not create company user for joiner:", linkError);
-          }
-
-          // Generate client access token
-          const permissions = await TokenService.getClientPermissions(clientId);
-          const tokenPayload = {
-            clientId,
-            organizationId: orgInvitePayload.teamId,
-            clientUserId: newUser.id,
-            email: newUser.email,
-            permissions,
-            type: "client" as const,
-          };
-
-          const accessToken = TokenService.generateClientToken(tokenPayload);
-
-          return res.json(
-            new ServerResponse(
-              true,
-              {
-                token: accessToken,
-                user: {
-                  id: newUser.id,
-                  email: newUser.email,
-                  name: newUser.name,
-                  role: newUser.role,
-                  clientId,
-                  clientName: name,
-                  companyName: orgInvitePayload.organizationName,
-                },
-                expiresAt: new Date(
-                  Date.now() + 24 * 60 * 60 * 1000,
-                ).toISOString(),
-              },
-              "Account created successfully",
-            ),
-          );
-        }
-      }
-
-      // Regular invitation flow
-      const invitation = await TokenService.getInvitationByToken(token);
-
-      if (!invitation) {
-        return res
-          .status(400)
-          .json(
-            new ServerResponse(false, null, "Invalid or expired invitation"),
-          );
-      }
-
-      // Check if user email exists in Worklenz users table
-      const existingWorklenzUserQuery = `
-        SELECT id, email, name, password FROM users
-        WHERE LOWER(email) = LOWER($1)
-      `;
-      const existingWorklenzUserResult = await db.query(
-        existingWorklenzUserQuery,
-        [invitation.email],
-      );
-
-      let userId = null;
-      if (existingWorklenzUserResult.rows.length > 0) {
-        // User already exists in Worklenz - verify their Worklenz password before linking
-        const worklenzUser = existingWorklenzUserResult.rows[0];
-        const passwordMatch = bcrypt.compareSync(
-          password,
-          worklenzUser.password,
-        );
-
-        if (!passwordMatch) {
-          return res.status(401).json({
-            done: false,
-            body: { isWorklenzUser: true },
-            titleKey: "errors.worklenz_account_found_title",
-            messageKey: "errors.worklenz_account_found_message",
-          });
-        }
-
-        userId = worklenzUser.id;
-      }
-
-      // Accept the invitation (will link if userId is provided, otherwise create password)
-      const newUser = await TokenService.acceptInvitation(token, {
-        password,
-        name,
-        userId,
-      });
-
-      // Send welcome email
-      const portalLink = `${
-        process.env.CLIENT_PORTAL_HOSTNAME
-          ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}`
-          : "http://localhost:5174"
-      }/login`;
-
-      // Fetch organization branding from client_portal_settings
-      // If client portal logo is not set, fall back to organization logo
-      let organizationBranding = {
-        logoUrl: null,
-        primaryColor: "#52c41a",
-        companyName: invitation.team_name || "Worklenz",
-      };
-
-      if (invitation.team_id) {
-        const brandingQuery = `
-          SELECT cps.logo_url, cps.primary_color, cps.company_name,
-                 o.logo_url as organization_logo_url
-          FROM client_portal_settings cps
-          RIGHT JOIN teams t ON t.id = cps.organization_team_id
-          LEFT JOIN organizations o ON (t.user_id = o.user_id OR t.organization_id = o.id)
-          WHERE t.id = $1
-          LIMIT 1
-        `;
-        const brandingResult = await db.query(brandingQuery, [
-          invitation.team_id,
-        ]);
-        if (brandingResult.rows.length > 0) {
-          const settings = brandingResult.rows[0];
-          // Use client portal logo if set, otherwise fall back to organization logo
-          const logoUrl = settings.logo_url || settings.organization_logo_url;
-          organizationBranding = {
-            logoUrl: logoUrl,
-            primaryColor: settings.primary_color || "#52c41a",
-            companyName:
-              settings.company_name ||
-              invitation.team_name ||
-              "Worklenz",
-          };
-        } else {
-          // If no client_portal_settings record exists, check organization logo directly
-          const orgQuery = `
-            SELECT o.logo_url
-            FROM organizations o
-            INNER JOIN teams t ON (t.user_id = o.user_id OR t.organization_id = o.id)
-            WHERE t.id = $1
-            LIMIT 1
-          `;
-          const orgResult = await db.query(orgQuery, [invitation.team_id]);
-          if (orgResult.rows.length > 0) {
-            organizationBranding.logoUrl = orgResult.rows[0].logo_url;
-          }
-        }
-      }
-
-      // Use company/team name for the welcome message, not client name
-      const organizationName =
-        organizationBranding.companyName ||
-        invitation.team_name ||
-        "Worklenz";
-
-      const emailHtml = generateWelcomeEmailHTML({
-        userName: newUser.name,
-        clientName: invitation.client_name,
-        companyName: invitation.company_name,
-        organizationName: organizationName,
-        portalLink,
-        logoUrl: organizationBranding.logoUrl,
-        primaryColor: organizationBranding.primaryColor,
-      });
-
-      const emailRequest = new EmailRequest(
-        [newUser.email],
-        `Welcome to ${organizationName} on Worklenz`,
-        emailHtml,
-      );
-
-      await sendEmail(emailRequest);
-
-      // Generate client access token for automatic login
-      const permissions = await TokenService.getClientPermissions(
-        newUser.client_id,
-      );
-
-      // clientUserId lets the per-request check see this login's status and its company user.
-      const tokenPayload = {
-        clientId: newUser.client_id,
-        organizationId: newUser.team_id,
-        clientUserId: newUser.id,
-        email: newUser.email,
-        permissions,
-        type: "client" as const,
-      };
-
-      const accessToken = TokenService.generateClientToken(tokenPayload);
-
-      // Update last login
-      await db.query(
-        "UPDATE client_users SET last_login = NOW() WHERE id = $1",
-        [newUser.id],
-      );
-
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            token: accessToken,
-            user: {
-              id: newUser.id,
-              email: newUser.email,
-              name: newUser.name,
-              role: newUser.role,
-              clientId: newUser.client_id,
-              clientName: newUser.client_name,
-              companyName: newUser.company_name,
-            },
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
-          },
-          "Invitation accepted successfully",
-        ),
-      );
-    } catch (error) {
-      console.error("Error accepting invitation:", error);
-      return res
-        .status(500)
-        .json(new ServerResponse(false, null, "Failed to accept invitation"));
-    }
-  }
-
-  static async clientLogin(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-    try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        return res
-          .status(400)
-          .json(
-            new ServerResponse(false, null, "Email and password are required"),
-          );
-      }
-
-      // Authenticate client user
-      const clientUser = await TokenService.authenticateClient(email, password);
-
-      if (!clientUser) {
-        return res
-          .status(401)
-          .json(new ServerResponse(false, null, "Invalid email or password"));
-      }
-
-      // Get all organizations accessible by this user
-      const organizations = await TokenService.getClientUserOrganizations(
-        clientUser.id,
-      );
-
-      // Use default organization or first available
-      const defaultOrg =
-        organizations.find((org) => org.isDefault) || organizations[0];
-      const organizationId = defaultOrg?.teamId || clientUser.team_id;
-      const clientId = defaultOrg?.clientId || clientUser.client_id;
-
-      // An admin can disable a company user without touching their login, so check it here too.
-      const access = await getLoginAccessState(db, clientUser.id, clientId);
-      if (access.isDisabled) {
-        return res
-          .status(403)
-          .json(
-            new ServerResponse(
-              false,
-              null,
-              "Your access has been disabled. Please contact your administrator.",
-            ),
-          );
-      }
-
-      // Generate client access token with organization information
-      const tokenPayload = {
-        clientId,
-        organizationId,
-        clientUserId: clientUser.id,
-        email: clientUser.email,
-        permissions: await TokenService.getClientPermissions(clientId),
-        availableOrganizations: organizations,
-        type: "client" as const,
-      };
-
-      const accessToken = TokenService.generateClientToken(tokenPayload);
-
-      // Update last login and organization access
-      await db.query(
-        "UPDATE client_users SET last_login = NOW() WHERE id = $1",
-        [clientUser.id],
-      );
-
-      if (defaultOrg) {
-        await TokenService.updateOrganizationAccess(
-          clientUser.id,
-          organizationId,
-        );
-      }
-
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            token: accessToken,
-            user: {
-              id: clientUser.id,
-              email: clientUser.email,
-              name: clientUser.name,
-              role: clientUser.role,
-              clientId,
-              organizationId,
-              clientName: clientUser.client_name,
-              companyName: clientUser.company_name,
-              organizations,
-            },
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          },
-          "Login successful",
-        ),
-      );
-    } catch (error) {
-      console.error("Error during client login:", error);
-      return res
-        .status(500)
-        .json(new ServerResponse(false, null, "Login failed"));
-    }
-  }
-
   static async refreshClientToken(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
@@ -714,6 +201,20 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           .json(new ServerResponse(false, null, "Access has been revoked"));
       }
 
+      // Removing a company user deletes the contact but not the login, so also require that this person is
+      // still an Active company user of the client the token is for. Otherwise a removed user could mint a
+      // new token every day.
+      const subject = await loadClientSubject(db, {
+        clientUserId: clientUserId as string,
+        clientId: decoded.clientId,
+        teamId: decoded.organizationId,
+      });
+      if (!subject) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Access has been revoked"));
+      }
+
       // Generate new token with updated expiry
       const newToken = TokenService.generateClientToken({
         clientId: decoded.clientId,
@@ -721,7 +222,9 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         clientUserId,
         email: decoded.email,
         permissions: decoded.permissions || [],
-        availableOrganizations: decoded.availableOrganizations,
+        availableOrganizations: TokenService.toTokenOrganizations(
+          await TokenService.getClientUserOrganizations(clientUserId as string),
+        ),
         type: "client" as const,
       });
 
@@ -772,9 +275,11 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           .json(new ServerResponse(false, null, "Client user ID not found"));
       }
 
-      // Get all organizations accessible by this user
-      const organizations =
-        await TokenService.getClientUserOrganizations(clientUserId);
+      // Get all organizations accessible by this user, flagging the one this token is acting in
+      const currentTeamId = (req as any).organizationId;
+      const organizations = (
+        await TokenService.getClientUserOrganizations(clientUserId)
+      ).map(org => ({ ...org, isCurrent: org.teamId === currentTeamId }));
 
       return res.json(
         new ServerResponse(
@@ -813,13 +318,13 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           .json(new ServerResponse(false, null, "Organization ID is required"));
       }
 
-      // Verify user has access to this organization
-      const hasAccess = await TokenService.hasOrganizationAccess(
-        clientUserId,
-        organizationId,
-      );
+      // Get all organizations the user can currently sign in to (live, so a revoked or deactivated
+      // team cannot be switched to even though the membership row still exists)
+      const organizations =
+        await TokenService.getClientUserOrganizations(clientUserId);
+      const target = organizations.find(org => org.teamId === organizationId);
 
-      if (!hasAccess) {
+      if (!target) {
         return res
           .status(403)
           .json(
@@ -831,27 +336,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           );
       }
 
-      // Get client_id for this organization
-      const clientId = await TokenService.getClientIdForOrganization(
-        clientUserId,
-        organizationId,
-      );
-
-      if (!clientId) {
-        return res
-          .status(404)
-          .json(
-            new ServerResponse(
-              false,
-              null,
-              "Client not found for this organization",
-            ),
-          );
-      }
-
-      // Get all organizations for token payload
-      const organizations =
-        await TokenService.getClientUserOrganizations(clientUserId);
+      const clientId = target.clientId;
 
       // Generate new token with updated organization
       const tokenPayload = {
@@ -860,7 +345,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         clientUserId,
         email: (req as any).clientEmail || "",
         permissions: await TokenService.getClientPermissions(clientId),
-        availableOrganizations: organizations,
+        availableOrganizations: TokenService.toTokenOrganizations(organizations),
         type: "client" as const,
       };
 
@@ -1038,7 +523,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
               clientUserId,
               email: user.email,
               name: user.name,
-              role: "poc",
+              role: "admin",
             });
           } catch (linkError) {
             console.error("Could not create company user for joiner:", linkError);
@@ -1220,7 +705,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
               clientUserId: newClientUserId,
               email: client.email,
               name: client.contact_person?.trim() || client.name,
-              role: "poc",
+              role: "admin",
             });
           } catch (linkError) {
             console.error("Could not link company user to login:", linkError);
@@ -1618,353 +1103,6 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
             "Failed to generate organization invitation link",
           ),
         );
-    }
-  }
-
-  static async forgotPassword(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-    try {
-      const { email } = req.body;
-
-      // Normalize email to lowercase for case-insensitive comparison
-      const normalizedEmail = email ? email.toLowerCase().trim() : null;
-      // CR/LF-safe copy for log statements (prevents log-forging via crafted email)
-      const emailForLog = normalizedEmail ? normalizedEmail.replace(/[\r\n]+/g, " ") : normalizedEmail;
-
-      // Security: Always return the same generic message to prevent email enumeration
-      const GENERIC_SUCCESS_MESSAGE =
-        "If an account with that email exists, a password reset link has been sent to your email.";
-
-      const q = `SELECT id, email, user_id, password_hash FROM client_users WHERE LOWER(email) = $1;`;
-      const result = await db.query(q, [normalizedEmail]);
-
-      // If email doesn't exist, return generic message without revealing account status
-      if (!result.rowCount) {
-        return res
-          .status(200)
-          .json(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
-      }
-
-      const [data] = result.rows;
-
-      // For linked Worklenz users (user_id is set), send reset email using main Worklenz flow
-      // They need to reset their password on the main Worklenz app where their password is stored
-      if (data?.user_id) {
-        try {
-          // Get the Worklenz user data
-          const worklenzUserQuery = `SELECT id, email, password FROM users WHERE id = $1;`;
-          const worklenzUserResult = await db.query(worklenzUserQuery, [
-            data.user_id,
-          ]);
-
-          if (
-            worklenzUserResult.rowCount &&
-            worklenzUserResult.rows[0].password
-          ) {
-            const worklenzUser = worklenzUserResult.rows[0];
-            const userIdBase64 = Buffer.from(worklenzUser.id, "utf8").toString(
-              "base64",
-            );
-
-            const salt = bcrypt.genSaltSync(10);
-            const hashedUserData = bcrypt.hashSync(
-              worklenzUser.id + worklenzUser.email + worklenzUser.password,
-              salt,
-            );
-            const hashedString = hashedUserData.toString().replace(/\//g, "-");
-
-            // Invalidate all previous unused tokens for this user
-            await db.query(
-              `UPDATE password_reset_tokens
-               SET is_used = TRUE
-               WHERE user_id = $1 AND is_used = FALSE`,
-              [worklenzUser.id],
-            );
-
-            // Store the new token in the database with 1 hour expiration
-            const expiresAt = new Date();
-            expiresAt.setHours(expiresAt.getHours() + 1);
-
-            await db.query(
-              `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
-               VALUES ($1, $2, $3)`,
-              [worklenzUser.id, hashedString, expiresAt],
-            );
-
-            // Import and send the main Worklenz reset email (not client portal)
-            const { sendClientPortalResetEmail } =
-              await import("../../shared/email-templates");
-            sendClientPortalResetEmail(normalizedEmail, userIdBase64, hashedString);
-          }
-        } catch (error) {
-          // Log error internally but don't expose to client
-          console.error(
-            "Failed to send password reset email for linked Worklenz user:",
-            emailForLog,
-            error,
-          );
-        }
-
-        return res
-          .status(200)
-          .json(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
-      }
-
-      // Only send reset email if account exists and has a password_hash (standalone client user)
-      if (data?.password_hash) {
-        try {
-          const userIdBase64 = Buffer.from(data.id, "utf8").toString("base64");
-
-          const salt = bcrypt.genSaltSync(10);
-          const hashedUserData = bcrypt.hashSync(
-            data.id + data.email + data.password_hash,
-            salt,
-          );
-          const hashedString = hashedUserData.toString().replace(/\//g, "-");
-
-          // Invalidate all previous unused tokens for this user
-          await db.query(
-            `UPDATE client_password_reset_tokens
-             SET is_used = TRUE
-             WHERE client_user_id = $1 AND is_used = FALSE`,
-            [data.id],
-          );
-
-          // Store the new token in the database with 1 hour expiration
-          const expiresAt = new Date();
-          expiresAt.setHours(expiresAt.getHours() + 1);
-
-          await db.query(
-            `INSERT INTO client_password_reset_tokens (client_user_id, token_hash, expires_at)
-             VALUES ($1, $2, $3)`,
-            [data.id, hashedString, expiresAt],
-          );
-
-          // Import and call the email sending function
-          const { sendClientPortalResetEmail } =
-            await import("../../shared/email-templates");
-          await sendClientPortalResetEmail(email, userIdBase64, hashedString);
-        } catch (error) {
-          // Log error internally but don't expose to client
-          console.error(
-            "Failed to send password reset email for:",
-            emailForLog,
-            error,
-          );
-        }
-      }
-
-      // Always return the same generic success message to prevent email enumeration
-      return res
-        .status(200)
-        .json(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
-    } catch (error) {
-      console.error("Error during forgot password:", error);
-      return res
-        .status(500)
-        .json(
-          new ServerResponse(
-            false,
-            null,
-            "Failed to process password reset request",
-          ),
-        );
-    }
-  }
-
-  static async resetPassword(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-    try {
-      const { user, hash, password } = req.body;
-
-      if (!user || !hash || !password) {
-        return res
-          .status(400)
-          .json(new ServerResponse(false, null, "User, hash, and password are required."));
-      }
-
-      // Decode the user ID from base64.
-      // For linked Worklenz users this is a Worklenz users.id.
-      // For standalone client users this is a client_users.id.
-      const userId = Buffer.from(user as string, "base64").toString("ascii");
-
-      // The hash is stored with dashes replacing slashes (URL-safe).
-      // Restore slashes for bcrypt.compareSync.
-      const hashedString = hash.replace(/-/g, "/");
-
-      // ── PATH 1: Linked Worklenz user ─────────────────────────────────────────
-      // forgotPassword stores the token in `password_reset_tokens` (keyed by
-      // Worklenz users.id) when the client_user has a user_id set.
-      // Hash seed used at generation: worklenzUser.id + worklenzUser.email + worklenzUser.password
-      // Login for linked users always verifies against users.password, so we must
-      // update users.password here — not client_users.password_hash.
-      const worklenzTokenCheck = await db.query(
-        `SELECT prt.id, prt.user_id,
-                u.id       AS wl_id,
-                u.email    AS wl_email,
-                u.password AS wl_password
-         FROM password_reset_tokens prt
-         JOIN users u ON u.id = prt.user_id
-         WHERE prt.token_hash = $1
-           AND prt.is_used = FALSE
-           AND prt.expires_at > NOW()`,
-        [hash],
-      );
-
-      if (worklenzTokenCheck.rowCount) {
-        const tokenData = worklenzTokenCheck.rows[0];
-
-        // The base64-encoded ID must match the Worklenz user who owns this token
-        if (tokenData.wl_id !== userId) {
-          return res
-            .status(200)
-            .json(
-              new ServerResponse(
-                false,
-                null,
-                "Invalid reset link. Please request a new password reset.",
-              ),
-            );
-        }
-
-        // Verify hash seed: wl_id + wl_email + wl_password (mirrors forgotPassword)
-        if (
-          !bcrypt.compareSync(
-            tokenData.wl_id + tokenData.wl_email + tokenData.wl_password,
-            hashedString,
-          )
-        ) {
-          await db.query(
-            `UPDATE password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
-            [tokenData.id],
-          );
-          return res
-            .status(200)
-            .json(
-              new ServerResponse(
-                false,
-                null,
-                "Invalid reset link. Please request a new password reset.",
-              ),
-            );
-        }
-
-        // Update the Worklenz user's password — this is what authenticateClient checks
-        // for linked users (it always verifies against users.password, never client_users.password_hash).
-        const encryptedPassword = bcrypt.hashSync(password, 10);
-        await db.query(
-          `UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2`,
-          [encryptedPassword, tokenData.wl_id],
-        );
-
-        // Mark token as used and invalidate all other unused tokens for this Worklenz user
-        await db.query(
-          `UPDATE password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
-          [tokenData.id],
-        );
-        await db.query(
-          `UPDATE password_reset_tokens
-           SET is_used = TRUE
-           WHERE user_id = $1 AND is_used = FALSE AND id != $2`,
-          [tokenData.wl_id, tokenData.id],
-        );
-
-        return res
-          .status(200)
-          .json(new ServerResponse(true, null, "Password updated successfully"));
-      }
-
-      // ── PATH 2: Standalone client user ───────────────────────────────────────
-      // forgotPassword stores the token in `client_password_reset_tokens` (keyed by
-      // client_users.id) when the user has no user_id (standalone portal account).
-      // Hash seed used at generation: data.id + data.email + data.password_hash
-      const clientTokenCheck = await db.query(
-        `SELECT cprt.id, cprt.client_user_id,
-                cu.id           AS cu_id,
-                cu.email        AS cu_email,
-                cu.password_hash AS cu_password_hash
-         FROM client_password_reset_tokens cprt
-         JOIN client_users cu ON cu.id = cprt.client_user_id
-         WHERE cprt.token_hash = $1
-           AND cprt.is_used = FALSE
-           AND cprt.expires_at > NOW()`,
-        [hash],
-      );
-
-      if (!clientTokenCheck.rowCount) {
-        return res
-          .status(200)
-          .json(
-            new ServerResponse(
-              false,
-              null,
-              "Invalid or expired reset link. Please request a new password reset.",
-            ),
-          );
-      }
-
-      const tokenData = clientTokenCheck.rows[0];
-
-      // The base64-encoded ID must match the client_user who owns this token
-      if (tokenData.cu_id !== userId) {
-        return res
-          .status(200)
-          .json(
-            new ServerResponse(
-              false,
-              null,
-              "Invalid reset link. Please request a new password reset.",
-            ),
-          );
-      }
-
-      // Verify hash seed: cu_id + cu_email + cu_password_hash (mirrors forgotPassword)
-      if (
-        !bcrypt.compareSync(
-          tokenData.cu_id + tokenData.cu_email + tokenData.cu_password_hash,
-          hashedString,
-        )
-      ) {
-        await db.query(
-          `UPDATE client_password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
-          [tokenData.id],
-        );
-        return res
-          .status(200)
-          .json(
-            new ServerResponse(
-              false,
-              null,
-              "Invalid reset link. Please request a new password reset.",
-            ),
-          );
-      }
-
-      // Update the client user's password
-      const encryptedPassword = TokenService.hashClientPassword(password);
-      await db.query(
-        `UPDATE client_users SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
-        [encryptedPassword, tokenData.cu_id],
-      );
-
-      // Mark token as used and invalidate all other unused tokens for this client user
-      await db.query(
-        `UPDATE client_password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
-        [tokenData.id],
-      );
-      await db.query(
-        `UPDATE client_password_reset_tokens
-         SET is_used = TRUE
-         WHERE client_user_id = $1 AND is_used = FALSE AND id != $2`,
-        [tokenData.cu_id, tokenData.id],
-      );
-
-      return res
-        .status(200)
-        .json(new ServerResponse(true, null, "Password updated successfully"));
-    } catch (error) {
-      console.error("Error during reset password:", error);
-      return res
-        .status(500)
-        .json(new ServerResponse(false, null, "Failed to reset password"));
     }
   }
 }

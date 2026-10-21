@@ -1,0 +1,122 @@
+{
+  "auditRecorded": "Ndryshimi i lejes është regjistruar në regjistrin e auditimit.",
+  "loadEmpty": "Asnjë cilësim i portalit nuk u kthye.",
+  "loadFailed": "Cilësimet e portalit nuk mund të ngarkoheshin.",
+  "nav": {
+    "notifications": "Notifications",
+    "roles": "Rolet e klientit",
+    "sharing": "Ndarja dhe dukshmëria"
+  },
+  "notifications": {
+    "banner": "Njoftimet e dërguara klientëve nuk përmbajnë kurrë përmbajtje vetëm të brendshme në titull ose në trup. Alarmet brenda aplikacionit janë gjithmonë aktive. Email-i është opsional për ngjarje.",
+    "client": {
+      "accessChanges": "Ndryshimet e aksesit",
+      "accessChangesDescription": "Ftesë, ndryshim roli ose caktim projekti.",
+      "approvalRequest": "Kërkesë e re për miratim",
+      "approvalRequestDescription": "Një miratues klienti i kërkohet të miratojë një artikull.",
+      "changeRequestUpdate": "Ndrysho përditësimin e kërkesës",
+      "changeRequestUpdateDescription": "Statusi, përgjigja ose vlerësimi i ndryshimeve në një kërkesë.",
+      "commentOrReply": "Komentoni ose përgjigjuni",
+      "commentOrReplyDescription": "Dikush përgjigjet në një diskutim të dukshëm nga klienti.",
+      "fileShared": "Skedari i ndarë",
+      "fileSharedDescription": "Një skedar është shënuar si Client Visible ose është ngarkuar një version i ri.",
+      "milestoneChange": "Ndryshimi moment historik",
+      "milestoneChangeDescription": "Një moment historik i dukshëm nga klienti ndryshon statusin ose datën.",
+      "projectUpdate": "Përditësimi i projektit",
+      "projectUpdateDescription": "Statusi i projektit ndryshon ose publikohet një përditësim.",
+      "title": "Njoftimet për klientët"
+    },
+    "emailColumn": "Email",
+    "emailLabel": "Email: {{event}}",
+    "eventColumn": "Ngjarja",
+    "inAppColumn": "Brenda aplikacionit",
+    "inAppLabel": "Në aplikacion: {{event}} (gjithmonë aktiv)",
+    "team": {
+      "approvalDecision": "Vendimi i miratimit të klientit",
+      "approvalDecisionDescription": "Një klient miraton ose kërkon ndryshime.",
+      "changeRequest": "Kërkesë e re ndryshimi ose vazhdim",
+      "changeRequestDescription": "Një klient paraqet një kërkesë ose i përgjigjet një pyetjeje.",
+      "clientComment": "Komenti i ri i klientit",
+      "clientCommentDescription": "Një klient komenton në një diskutim.",
+      "clientFileUpload": "Ngarkimi i skedarit të klientit",
+      "clientFileUploadDescription": "Një klient ngarkon një skedar në një projekt.",
+      "title": "Njoftimet për ekipin tuaj"
+    }
+  },
+  "retry": "Provo përsëri",
+  "roles": {
+    "allowed": "E lejuar",
+    "alwaysTrue": {
+      "nextRequest": "Çaktivizimi i një përdoruesi ose heqja e një caktimi projekti, hyn në fuqi në kërkesën e tij të radhës, jo në hyrjen e tij të radhës.",
+      "noTeamDirectory": "Një përdorues klienti nuk e sheh kurrë drejtorinë tuaj të brendshme të ekipit dhe nuk mund të bëhet kurrë një administrator i hapësirës suaj të punës.",
+      "oneOrganization": "Një përdorues klient i përket saktësisht një organizate dhe sheh vetëm projektet që i janë caktuar.",
+      "ownOrganizationOnly": "Një administrator klienti mund të shohë dhe menaxhojë vetëm përdoruesit në organizatën e tyre, asnjëherë të një klienti tjetër.",
+      "title": "Gjithmonë e vërtetë"
+    },
+    "capability": {
+      "approve": "Mirato artikuj ose kërko ndryshime",
+      "comment": "Komentoni dhe përgjigjuni në diskutime të dukshme nga klienti",
+      "manageUsers": "Menaxho përdoruesit në organizatën e tyre (nëse aktivizohet më poshtë)",
+      "submitChangeRequest": "Paraqisni dhe ndiqni kërkesat për ndryshim",
+      "upload": "Ngarko skedarë (aty ku e lejon projekti)",
+      "view": "Shikoni projektet e caktuara, piketa, detyrat dhe skedarët e dukshëm nga klienti"
+    },
+    "capabilityColumn": "Aftësia",
+    "matrixDescription": "Tre role, pa ndërtues leje. Një rol vlen për çdo projekt të cilit i është caktuar përdoruesi.",
+    "matrixError": "Lejet e roleve nuk mund të ngarkoheshin.",
+    "matrixTitle": "Çfarë mund të bëjë secili rol",
+    "notAllowed": "Nuk lejohet",
+    "selfManagement": {
+      "description": "Lëreni një administrator klienti të menaxhojë se kush nga organizata e tij ka akses në portal, në vend që të drejtojë çdo ndryshim përmes ekipit tuaj.",
+      "invite": {
+        "description": "Një administrator i klientit mund të ftojë një koleg nga organizata e tyre.",
+        "label": "Lejo që administratorët e klientëve të ftojnë përdoruesit"
+      },
+      "remove": {
+        "description": "Një administrator klienti mund të heqë një përdorues tjetër nga organizata e tij.",
+        "label": "Lejo që administratorët e klientëve të heqin përdoruesit"
+      },
+      "title": "Vetë-menaxhimi i administratorit të klientit"
+    },
+    "signIn": {
+      "addedOnly": "Vetëm një adresë që ju ose një administrator klienti që ju lejoni, keni shtuar mund të marrë një kod. Kushdo tjetër nuk merr asgjë.",
+      "code": "Nuk ka fjalëkalime. Një klient identifikohet me një kod 6-shifror të dërguar në adresën e tij të emailit. Funksionon një herë dhe skadon pas 10 minutash.",
+      "description": "Asgjë për të konfiguruar. Çdo klient nënshkruan në të njëjtën mënyrë.",
+      "direct": "Klientët gjithashtu mund të hapin portalin, të shkruajnë adresën e tyre dhe të marrin një kod, pa lidhje.",
+      "link": "Një email ftese përmban një lidhje identifikimi me adresën e integruar. Hapja e tij dërgon kodin menjëherë. Lidhjet skadojnë pas 7 ditësh dhe mund të ridërgohen nga Përdoruesit.",
+      "title": "Si identifikohen klientët"
+    }
+  },
+  "saveFailed": "Cilësimet e portalit nuk mund të ruheshin.",
+  "sharing": {
+    "defaults": {
+      "clientUploads": {
+        "description": "Administratorët e klientëve dhe anëtarët e klientëve mund të shtojnë skedarë. Shikuesit e klientëve nuk munden kurrë. Ju mund ta anashkaloni këtë për projekt.",
+        "label": "Lejo ngarkimet e klientëve në projektet e reja të portalit"
+      },
+      "showInvoices": {
+        "description": "Shton një faqe Faturash për klientët. Fshehur si parazgjedhje.",
+        "label": "Shfaq faturat në portalin e klientit"
+      },
+      "title": "Seksionet dhe parazgjedhjet"
+    },
+    "rules": {
+      "defaultInternal": "Detyrat, skedarët, momentet historike dhe komentet janë vetëm të brendshme si parazgjedhje, për artikujt ekzistues dhe të rinj.",
+      "explicitShare": "Asgjë nuk arrin në portal derisa një anëtar i autorizuar i ekipit ta shënojë atë si Client Visible.",
+      "fixedTag": "Rregulla të fiksuara",
+      "neverExposed": "Komentet e brendshme, regjistrat e kohës, vlerësimet, kostot dhe varësitë nuk ekspozohen kurrë, çfarëdo që të ndani.",
+      "noHints": "Një artikull i fshehur nuk numërohet asnjëherë në panel, lista ose njoftime.",
+      "revertImmediate": "Kthimi i një artikulli në \"Vetëm i brendshëm\" e heq atë menjëherë nga portali dhe ruan historinë e tij të brendshme.",
+      "title": "Si funksionon ndarja"
+    },
+    "shared": {
+      "count": "{{shared}} i klientit {{total}} i dukshëm",
+      "description": "Numërohen mbi projektet që kanë aktivizuar Portalin e Klientit.",
+      "files": "Skedar",
+      "milestones": "Ullesat",
+      "tasks": "Detyrat",
+      "title": "Aktualisht shpërndahet nëpër projektet e portalit"
+    }
+  },
+  "subtitle": "Markimi, ajo që ndahet si parazgjedhje, rolet dhe njoftimet për portalin tuaj të klientit."
+}

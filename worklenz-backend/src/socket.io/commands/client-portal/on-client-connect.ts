@@ -1,3 +1,4 @@
+import { getJwtSecret } from "../../../shared/jwt-secret";
 import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import db from "../../../config/db";
@@ -14,7 +15,7 @@ export async function on_client_connect(io: Server, socket: Socket, data: any) {
 
     if (type === 'client') {
       // Handle client portal authentication
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret') as any;
+      const decoded = jwt.verify(token, getJwtSecret()) as any;
       
       if (!decoded.clientId) {
         socket.emit('error', { message: 'Invalid client token' });
@@ -64,7 +65,7 @@ export async function on_client_connect(io: Server, socket: Socket, data: any) {
 
     } else if (type === 'team_member') {
       // Handle regular team member authentication (existing logic)
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret') as any;
+      const decoded = jwt.verify(token, getJwtSecret()) as any;
       
       if (!decoded.userId) {
         socket.emit('error', { message: 'Invalid user token' });

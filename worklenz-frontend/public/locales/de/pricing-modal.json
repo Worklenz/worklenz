@@ -131,7 +131,9 @@
         "Benutzerdefinierte Integrationen",
         "Dedicated Account Manager",
         "On-Premises-Bereitstellung"
-      ]
+      ],
+      "customPricing": "Individuell",
+      "customPricingNote": "auf Ihr Team zugeschnitten"
     },
     "additionalUsersCharged": "Zusätzliche Benutzer darüber hinaus: ${{price}}/Benutzer/Monat"
   },

@@ -1,0 +1,84 @@
+{
+  "access": {
+    "introExisting": "Escolha os projetos que este usuário pode abrir. Se o Portal do Cliente estiver desativado para um projeto escolhido, ele estará ativado.",
+    "introNew": "Escolha os projetos que este cliente deve ver. Os projetos sem cliente são vinculados à nova organização e o Portal do Cliente é ativado para cada um que você escolher.",
+    "loadFailed": "Não foi possível carregar os projetos.",
+    "noClientYet": "Nenhum cliente ainda",
+    "noProjectsExisting": "Esta organização ainda não tem projetos. O usuário pode receber projetos posteriormente.",
+    "noProjectsNew": "Todo projeto de espaço de trabalho já tem um cliente. Vincule um posteriormente em Projetos do Portal.",
+    "portalOff": "Portal desligado, será ligado",
+    "search": "Pesquisar projetos…",
+    "title": "Acesso ao projeto"
+  },
+  "details": {
+    "email": "Endereço de e-mail",
+    "emailHint": "Este é o endereço de login e convite. Deve ser único.",
+    "emailInvalid": "Insira um endereço de e-mail válido.",
+    "firstName": "Primeiro nome",
+    "firstNamePlaceholder": "Ana",
+    "firstUserNotice": "O primeiro usuário de uma nova organização é um administrador de cliente. Eles podem aprovar itens e, se você ativar isso nas Configurações do Portal, gerenciar seus próprios colegas. Como todo usuário cliente, eles fazem login com um código único enviado por e-mail para este endereço.",
+    "jobTitle": "Cargo",
+    "jobTitlePlaceholder": "por exemplo Gerente de Marketing",
+    "lastName": "Sobrenome",
+    "lastNamePlaceholder": "Silva",
+    "noOrganizations": "Nenhuma organização encontrada.",
+    "organization": "Organização",
+    "organizationName": "Nome da organização",
+    "organizationNamePlaceholder": "por exemplo Logística Farol",
+    "phone": "Telefone (opcional)",
+    "role": "Role",
+    "selectOrganization": "Selecione uma organização…"
+  },
+  "footer": {
+    "addUser": "Adicionar usuário",
+    "back": "Voltar",
+    "continue": "Continuar",
+    "sendInvitation": "Enviar convite"
+  },
+  "method": {
+    "existingOrganization": {
+      "description": "Convide outra pessoa para uma organização que já tenha acesso ao portal.",
+      "name": "Adicionar um usuário a uma organização existente"
+    },
+    "groupLabel": "Como adicionar este cliente",
+    "intro": "Cada usuário cliente pertence a uma organização e vê apenas os projetos que você atribui a eles.",
+    "newOrganization": {
+      "description": "Crie a organização e convide seu primeiro usuário como administrador do cliente.",
+      "name": "Nova organização do cliente"
+    }
+  },
+  "result": {
+    "activationHint": "Eles abrem o link do e-mail e fazem login com um código de 6 dígitos enviado para seu endereço. Não há senha.",
+    "addedNoInvite": "{{name}} foi adicionado como {{role}}. Nenhum convite foi enviado ainda.",
+    "emailNotSent": "{{name}} foi salvo, mas não foi possível enviar o e-mail de convite. Compartilhe o link.",
+    "failed": "O cliente não pôde ser adicionado.",
+    "invited": "Convite enviado para {{email}}.",
+    "portalsSwitchedOn": "Portal do cliente ativado para {{count}} projeto(s).",
+    "portalsSwitchedOn_one": "Portal do cliente ativado para projeto {{count}}.",
+    "portalsSwitchedOn_other": "Portal do cliente ativado para projetos {{count}}."
+  },
+  "review": {
+    "email": "Email",
+    "name": "Name",
+    "organization": "Organização",
+    "projects": "Projetos",
+    "projectsAssigned": "{{count}} atribuído",
+    "projectsAssigned_one": "{{count}} atribuído",
+    "projectsAssigned_other": "{{count}} atribuído",
+    "projectsNone": "Nenhum ainda",
+    "role": "Role",
+    "sendInvitation": "Envie o convite agora",
+    "sendInvitationHint": "O link contém o endereço de e-mail; abri-lo envia um código de 6 dígitos, portanto não há senha para definir. O link expira após 7 dias. Se expirar, reenvie-o da lista de usuários ou eles poderão fazer login digitando seu e-mail."
+  },
+  "steps": {
+    "access": "Acesso",
+    "details": "Details",
+    "method": "Método"
+  },
+  "title": {
+    "access": "Acesso e revisão",
+    "detailsExisting": "Escolha a organização e o usuário",
+    "detailsNew": "Conte-nos sobre a organização",
+    "method": "Como você deseja adicionar este cliente?"
+  }
+}

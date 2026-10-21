@@ -131,7 +131,9 @@
         "自定义集成",
         "专属客户经理",
         "本地部署"
-      ]
+      ],
+      "customPricing": "定制",
+      "customPricingNote": "为您的团队量身打造"
     },
     "additionalUsersCharged": "超出范围的其他用户：${{price}}/用户/月"
   },

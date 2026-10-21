@@ -2,25 +2,26 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-  Avatar,
   Button,
   Card,
   Flex,
   Modal,
   Result,
-  Skeleton,
   Tag,
   Typography,
   message,
   theme,
 } from '@/shared/antd-imports';
-import { DeleteOutlined, DownloadOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownloadOutlined, EyeOutlined } from '@ant-design/icons';
+import { PortalAvatar } from '@/components/client-portal/v2';
 import {
   useDeleteQuoteMutation,
   useGetQuoteDetailsQuery,
 } from '../../../api/client-portal/client-portal-quotes-api';
+import { portalPaths } from '../portal-paths';
 import { formatDate } from '../../../utils/dateUtils';
 import QuotePreviewModal from './quote-preview-modal';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   QUOTE_STATUS_TAG_COLOR,
   formatMoney,
@@ -29,6 +30,8 @@ import {
   normalizeQuoteStatus,
 } from './quotes-list-helpers';
 import '../invoices/invoices.css';
+import { PortalLoader } from '@/components/client-portal/v2';
+import { RichTextView } from '../shared/rich-text/RichTextView';
 
 const QUOTES_PATH = '/worklenz/client-portal/quotes';
 
@@ -119,7 +122,7 @@ const QuoteDetailModal = () => {
 
   let body: React.ReactNode;
   if (isLoading) {
-    body = <Skeleton active paragraph={{ rows: 8 }} />;
+    body = <PortalLoader />;
   } else if (isError || !quote) {
     body = (
       <Result
@@ -214,8 +217,10 @@ const QuoteDetailModal = () => {
                   {field(
                     t('clientLabel', { defaultValue: 'Client' }),
                     <Flex align="center" gap={6}>
-                      <Avatar size={20} icon={<UserOutlined />} />
-                      {quote.client?.name || '-'}
+                      {quote.client?.name && (
+                        <PortalAvatar name={decodeHtmlEntities(quote.client.name)} />
+                      )}
+                      {decodeHtmlEntities(quote.client?.name) || '-'}
                     </Flex>
                   )}
                   {field(t('companyName', { defaultValue: 'Company' }), quote.client?.companyName || '-')}
@@ -223,7 +228,25 @@ const QuoteDetailModal = () => {
                 </div>
               </Card>
 
-              {/* A standalone quote has no request, so the card is left out rather than showing blanks. */}
+              {/* A standalone quote has no change request, so the card is left out rather than showing blanks. */}
+              {quote.changeRequest && (
+                <Card size="small" title={t('linkedChangeRequest', { defaultValue: 'Linked Change Request' })}>
+                  <Flex justify="space-between" align="center" gap={12} wrap="wrap">
+                    <div>
+                      <Typography.Text strong>{quote.changeRequest.number}</Typography.Text>
+                      <div style={{ color: token.colorTextSecondary, fontSize: 12.5 }}>{quote.changeRequest.title}</div>
+                    </div>
+                    <Button
+                      size="small"
+                      onClick={() => navigate(portalPaths.changeRequest(quote.changeRequest?.id ?? ''))}
+                    >
+                      {t('openChangeRequest', { defaultValue: 'Open change request' })}
+                    </Button>
+                  </Flex>
+                </Card>
+              )}
+
+              {/* Older quotes link to a retired service request. It stays visible, read-only. */}
               {quote.request && (
                 <Card size="small" title={t('requestDetails', { defaultValue: 'Request Details' })}>
                   <div
@@ -246,7 +269,7 @@ const QuoteDetailModal = () => {
               )}
 
               <Card size="small" title={t('notes', { defaultValue: 'Notes' })}>
-                {boxedText(quote.notes)}
+                {boxedText(quote.notes ? <div style={{ whiteSpace: 'normal' }}><RichTextView value={quote.notes} /></div> : undefined)}
               </Card>
             </Flex>
           </div>
@@ -254,12 +277,14 @@ const QuoteDetailModal = () => {
           <div className="invoices-column-side">
             <Flex vertical gap={16}>
               <Card size="small" title={t('reference', { defaultValue: 'Reference' })}>
-                <Typography.Text strong>{quote.request?.requestNumber || '-'}</Typography.Text>
+                <Typography.Text strong>
+                  {quote.changeRequest?.number || quote.request?.requestNumber || '-'}
+                </Typography.Text>
               </Card>
 
               <Card size="small" title={t('createdBy', { defaultValue: 'Created By' })}>
                 <Flex align="center" gap={8}>
-                  <Avatar size={26} icon={<UserOutlined />} />
+                  {quote.createdBy?.name && <PortalAvatar name={quote.createdBy.name} />}
                   <Typography.Text strong>{quote.createdBy?.name || '-'}</Typography.Text>
                 </Flex>
               </Card>

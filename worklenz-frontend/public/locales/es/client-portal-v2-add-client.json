@@ -1,0 +1,84 @@
+{
+  "access": {
+    "introExisting": "Elija los proyectos que este usuario puede abrir. Si el Portal del cliente está desactivado para un proyecto que elija, estará activado.",
+    "introNew": "Elija los proyectos que este cliente debería ver. Los proyectos sin cliente se vinculan a la nueva organización y el Portal del Cliente se activa para cada uno que elija.",
+    "loadFailed": "No se pudieron cargar los proyectos.",
+    "noClientYet": "Ningún cliente todavía",
+    "noProjectsExisting": "Esta organización aún no tiene proyectos. Al usuario se le pueden asignar proyectos más adelante.",
+    "noProjectsNew": "Cada proyecto de espacio de trabajo ya tiene un cliente. Enlace uno más tarde desde Portal Projects.",
+    "portalOff": "Portal apagado, se encenderá",
+    "search": "Buscar proyectos…",
+    "title": "Acceso al proyecto"
+  },
+  "details": {
+    "email": "Dirección de correo electrónico",
+    "emailHint": "Esta es la dirección de inicio de sesión y de invitación. Debe ser único.",
+    "emailInvalid": "Ingrese una dirección de correo electrónico válida.",
+    "firstName": "Nombre de pila",
+    "firstNamePlaceholder": "Ana",
+    "firstUserNotice": "El primer usuario de una nueva organización es un administrador de clientes. Pueden aprobar elementos y, si lo habilita en la Configuración del portal, administrar a sus propios colegas. Como todos los usuarios clientes, inician sesión con un código único enviado por correo electrónico a esta dirección.",
+    "jobTitle": "Título del trabajo",
+    "jobTitlePlaceholder": "por ej. Gerente de Mercadeo",
+    "lastName": "apellido",
+    "lastNamePlaceholder": "García",
+    "noOrganizations": "No se encontraron organizaciones.",
+    "organization": "Organización",
+    "organizationName": "Nombre de la organización",
+    "organizationNamePlaceholder": "p.ej. Logística de baliza",
+    "phone": "Teléfono (opcional)",
+    "role": "Role",
+    "selectOrganization": "Seleccione una organización..."
+  },
+  "footer": {
+    "addUser": "Agregar usuario",
+    "back": "Volver",
+    "continue": "Continuar",
+    "sendInvitation": "Enviar invitación"
+  },
+  "method": {
+    "existingOrganization": {
+      "description": "Invite a otra persona a una organización que ya tenga acceso al portal.",
+      "name": "Agregar un usuario a una organización existente"
+    },
+    "groupLabel": "Cómo agregar este cliente",
+    "intro": "Cada usuario cliente pertenece a una organización y solo ve los proyectos que usted le asigna.",
+    "newOrganization": {
+      "description": "Cree la organización e invite a su primer usuario como administrador del cliente.",
+      "name": "Nueva organización de clientes"
+    }
+  },
+  "result": {
+    "activationHint": "Abren el enlace en el correo electrónico e inician sesión con un código de 6 dígitos enviado a su dirección. No hay contraseña.",
+    "addedNoInvite": "{{name}} se agregó como {{role}}. Aún no se ha enviado ninguna invitación.",
+    "emailNotSent": "{{name}} se guardó, pero no se pudo enviar el correo electrónico de invitación. Comparte el enlace en su lugar.",
+    "failed": "No se pudo agregar el cliente.",
+    "invited": "Invitación enviada a {{email}}.",
+    "portalsSwitchedOn": "Portal del cliente activado para {{count}} proyecto(s).",
+    "portalsSwitchedOn_one": "Portal del cliente activado para el proyecto {{count}}.",
+    "portalsSwitchedOn_other": "Portal del cliente activado para {{count}} proyectos."
+  },
+  "review": {
+    "email": "Email",
+    "name": "Name",
+    "organization": "Organización",
+    "projects": "Proyectos",
+    "projectsAssigned": "{{count}} asignado",
+    "projectsAssigned_one": "{{count}} asignado",
+    "projectsAssigned_other": "{{count}} asignado",
+    "projectsNone": "Ninguno todavía",
+    "role": "Role",
+    "sendInvitation": "Envía la invitación ahora",
+    "sendInvitationHint": "El enlace lleva su dirección de correo electrónico; Al abrirlo, se les envía un código de 6 dígitos, por lo que no es necesario establecer una contraseña. El enlace caduca después de 7 días. Si caduca, reenvíelo desde la lista de Usuarios o pueden iniciar sesión ingresando su correo electrónico."
+  },
+  "steps": {
+    "access": "Acceso",
+    "details": "Details",
+    "method": "Método"
+  },
+  "title": {
+    "access": "Acceso y revisión",
+    "detailsExisting": "Elige la organización y el usuario",
+    "detailsNew": "Cuéntanos sobre la organización.",
+    "method": "¿Cómo desea agregar este cliente?"
+  }
+}

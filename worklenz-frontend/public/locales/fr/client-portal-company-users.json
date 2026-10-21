@@ -142,7 +142,7 @@
     "nameRequired": "Saisissez un nom.",
     "nameTooLong": "Le nom ne peut pas dépasser 255 caractères.",
     "emailLabel": "Adresse e-mail",
-    "emailPlaceholder": "jane@company.com",
+    "emailPlaceholder": "jeanne@entreprise.com",
     "emailRequired": "Saisissez une adresse e-mail.",
     "emailInvalid": "Saisissez une adresse e-mail valide.",
     "emailLockedHint": "Il s'agit de son e-mail de connexion, il ne peut donc pas être modifié une fois l'accès au portail accordé.",

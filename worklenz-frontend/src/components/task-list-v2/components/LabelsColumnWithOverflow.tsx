@@ -5,6 +5,7 @@ import LabelsSelector from '@/components/LabelsSelector';
 import { CustomColordLabel, CustomNumberLabel } from '@/components';
 import { useColumnWidth } from '../hooks/useColumnWidth';
 import { useLabelsOverflow } from '../hooks/useLabelsOverflow';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface LabelsColumnWithOverflowProps {
   width: string;
@@ -63,7 +64,7 @@ export const LabelsColumnWithOverflow: React.FC<LabelsColumnWithOverflowProps> =
                 className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ backgroundColor: label.color || label.color_code || '#d9d9d9' }}
               />
-              <span className="text-xs">{label.name}</span>
+              <span className="text-xs">{decodeHtmlEntities(label.name)}</span>
             </div>
           ))}
         </div>
@@ -103,7 +104,7 @@ export const LabelsColumnWithOverflow: React.FC<LabelsColumnWithOverflowProps> =
                 className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ backgroundColor: label.color || label.color_code || '#d9d9d9' }}
               />
-              <span className="text-xs">{label.name}</span>
+              <span className="text-xs">{decodeHtmlEntities(label.name)}</span>
             </div>
           ))}
         </div>

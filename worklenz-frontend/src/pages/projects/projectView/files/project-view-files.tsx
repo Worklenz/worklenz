@@ -20,12 +20,14 @@ import {
   InboxOutlined,
   ImportOutlined,
   PlusOutlined,
+  theme,
   SearchOutlined,
   CheckCircleTwoTone,
   CloseCircleTwoTone,
   ClockCircleOutlined,
 } from '@/shared/antd-imports';
 import PillToggle from '@/pages/home/PillToggle';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { FilePreviewModal } from '@/components/common/FilePreviewModal';
 import { ProjectLinksTab } from './components/ProjectLinksTab';
 import type { UploadFile } from 'antd/es/upload/interface';
@@ -101,6 +103,8 @@ const formatFileSize = (bytes?: number): string => {
 };
 
 const ProjectViewFiles = () => {
+  const { token } = theme.useToken();
+
   const dispatch = useAppDispatch();
   const { t } = useTranslation('project-view-files');
   const { trackMixpanelEvent } = useMixpanelTracking();
@@ -555,7 +559,7 @@ const ProjectViewFiles = () => {
 
   const handleSearch = (value: string) => {
     setPaginationConfig(prev => ({ ...prev, pageIndex: 1 }));
-    setSearchValue(value.trim());
+    setSearchValue(value);
   };
 
   const downloadFile = async (file: ProjectFile) => {
@@ -842,14 +846,23 @@ const ProjectViewFiles = () => {
 
           {activeTab === 'project' && (
             <Space size={8} wrap style={{ justifyContent: 'flex-end' }}>
+
               <Input
-                allowClear
                 placeholder={t('searchPlaceholder', { defaultValue: 'Search files...' })}
-                style={{ width: 220, maxWidth: '100%', height: 30, fontSize: 12 }}
-                onChange={e => handleSearch(e.target.value)}
+                prefix={
+                  <SearchOutlined
+                    style={{ color: token.colorTextTertiary }}
+                  />
+                }
                 value={searchValue}
-                suffix={<SearchOutlined style={{ color: 'rgba(0,0,0,.45)' }} />}
-                onPressEnter={e => handleSearch((e.target as HTMLInputElement).value)}
+                onChange={e => handleSearch(e.target.value)}
+                allowClear
+                style={{
+                  width: 220,
+                  height: 32,
+                  borderRadius: 7,
+                  fontSize: 12,
+                }}
               />
               <Button
                 type="primary"
@@ -1047,108 +1060,108 @@ const ProjectViewFiles = () => {
           }
           trigger="click"
         >
-        <Upload.Dragger
-          multiple
-          beforeUpload={beforeUpload}
-          onRemove={handleRemoveFile}
-          fileList={pendingFiles as unknown as UploadFile[]}
-          disabled={uploading}
-          showUploadList
-          itemRender={(originNode, file, _fileList, actions) => {
-            const typedFile = file as PendingUploadFile;
+          <Upload.Dragger
+            multiple
+            beforeUpload={beforeUpload}
+            onRemove={handleRemoveFile}
+            fileList={pendingFiles as unknown as UploadFile[]}
+            disabled={uploading}
+            showUploadList
+            itemRender={(originNode, file, _fileList, actions) => {
+              const typedFile = file as PendingUploadFile;
 
-            const renderStatus = () => {
-              if (typedFile.status === 'uploading') {
-                return (
-                  <Flex align="center" gap={6}>
-                    <ClockCircleOutlined style={{ color: '#8c8c8c' }} />
+              const renderStatus = () => {
+                if (typedFile.status === 'uploading') {
+                  return (
+                    <Flex align="center" gap={6}>
+                      <ClockCircleOutlined style={{ color: '#8c8c8c' }} />
+                      <Typography.Text type="secondary">
+                        {typedFile.percent
+                          ? `${typedFile.percent}%`
+                          : t('uploadingLabel', { defaultValue: 'Uploading' })}
+                      </Typography.Text>
+                      <Progress
+                        percent={typedFile.percent ?? 0}
+                        size="small"
+                        style={{ width: 90, marginBottom: 0 }}
+                        showInfo={false}
+                      />
+                    </Flex>
+                  );
+                }
+
+                if (typedFile.status === 'done') {
+                  return (
+                    <Flex align="center" gap={6}>
+                      <CheckCircleTwoTone twoToneColor="#52c41a" />
+                      <Typography.Text>
+                        {t('uploadedLabel', { defaultValue: 'Uploaded' })}
+                      </Typography.Text>
+                    </Flex>
+                  );
+                }
+
+                if (typedFile.status === 'error') {
+                  return (
+                    <Flex align="center" gap={6}>
+                      <CloseCircleTwoTone twoToneColor={colors.vibrantOrange} />
+                      <Typography.Text type="danger">
+                        {typedFile.errorMessage ||
+                          t('uploadFailedShort', { defaultValue: 'Upload failed' })}
+                      </Typography.Text>
+                    </Flex>
+                  );
+                }
+
+                return null;
+              };
+
+              return (
+                <Flex
+                  justify="space-between"
+                  align="center"
+                  style={{ width: '100%', padding: '4px 8px' }}
+                >
+                  <Space size={8} align="center">
+                    <Typography.Text>{typedFile.name}</Typography.Text>
                     <Typography.Text type="secondary">
-                      {typedFile.percent
-                        ? `${typedFile.percent}%`
-                        : t('uploadingLabel', { defaultValue: 'Uploading' })}
+                      {formatFileSize(typedFile.size)}
                     </Typography.Text>
-                    <Progress
-                      percent={typedFile.percent ?? 0}
-                      size="small"
-                      style={{ width: 90, marginBottom: 0 }}
-                      showInfo={false}
-                    />
-                  </Flex>
-                );
-              }
+                  </Space>
 
-              if (typedFile.status === 'done') {
-                return (
-                  <Flex align="center" gap={6}>
-                    <CheckCircleTwoTone twoToneColor="#52c41a" />
-                    <Typography.Text>
-                      {t('uploadedLabel', { defaultValue: 'Uploaded' })}
-                    </Typography.Text>
-                  </Flex>
-                );
-              }
-
-              if (typedFile.status === 'error') {
-                return (
-                  <Flex align="center" gap={6}>
-                    <CloseCircleTwoTone twoToneColor={colors.vibrantOrange} />
-                    <Typography.Text type="danger">
-                      {typedFile.errorMessage ||
-                        t('uploadFailedShort', { defaultValue: 'Upload failed' })}
-                    </Typography.Text>
-                  </Flex>
-                );
-              }
-
-              return null;
-            };
-
-            return (
-              <Flex
-                justify="space-between"
-                align="center"
-                style={{ width: '100%', padding: '4px 8px' }}
-              >
-                <Space size={8} align="center">
-                  <Typography.Text>{typedFile.name}</Typography.Text>
-                  <Typography.Text type="secondary">
-                    {formatFileSize(typedFile.size)}
-                  </Typography.Text>
-                </Space>
-
-                <Space size={12} align="center">
-                  {renderStatus()}
-                  {!uploading && (
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<DeleteOutlined />}
-                      onClick={event => {
-                        event.stopPropagation();
-                        actions.remove?.(file);
-                      }}
-                    />
-                  )}
-                </Space>
-              </Flex>
-            );
-          }}
-        >
-          <p className="ant-upload-drag-icon">
-            <InboxOutlined />
-          </p>
-          <p className="ant-upload-text">
-            {t('filePickerHint', {
-              defaultValue: 'Drag & Drop files or click to browse',
-            })}
-          </p>
-          <p className="ant-upload-hint">
-            {t('uploadHintLimit', {
-              defaultValue: 'PDF, images, documents, archives. Max {{maxSize}} MB per file.',
-              maxSize: maxFileSizeMb,
-            })}
-          </p>
-        </Upload.Dragger>
+                  <Space size={12} align="center">
+                    {renderStatus()}
+                    {!uploading && (
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<DeleteOutlined />}
+                        onClick={event => {
+                          event.stopPropagation();
+                          actions.remove?.(file);
+                        }}
+                      />
+                    )}
+                  </Space>
+                </Flex>
+              );
+            }}
+          >
+            <p className="ant-upload-drag-icon">
+              <InboxOutlined />
+            </p>
+            <p className="ant-upload-text">
+              {t('filePickerHint', {
+                defaultValue: 'Drag & Drop files or click to browse',
+              })}
+            </p>
+            <p className="ant-upload-hint">
+              {t('uploadHintLimit', {
+                defaultValue: 'PDF, images, documents, archives. Max {{maxSize}} MB per file.',
+                maxSize: maxFileSizeMb,
+              })}
+            </p>
+          </Upload.Dragger>
         </Popover>
       </Modal>
     </Card>

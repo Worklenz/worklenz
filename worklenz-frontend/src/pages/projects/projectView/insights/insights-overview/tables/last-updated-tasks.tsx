@@ -9,6 +9,7 @@ import logger from '@/utils/errorLogger';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import { useTranslation } from 'react-i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAdaptivePageSize } from './use-adaptive-page-size';
@@ -177,7 +178,7 @@ const LastUpdatedTasks = () => {
       key: 'name',
       title: t('common.name', { defaultValue: 'Name' }),
       dataIndex: 'name',
-      render: (_: any, record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
+      render: (_: any, record: IInsightTasks) => <Typography.Text>{decodeHtmlEntities(record.name)}</Typography.Text>,
     },
     {
       key: 'status',

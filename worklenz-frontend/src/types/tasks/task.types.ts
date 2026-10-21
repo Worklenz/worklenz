@@ -126,6 +126,8 @@ export interface ITaskViewModel extends ITask {
   recurring?: boolean;
   task_level?: number;
   schedule_id?: string | null;
+  project_start_date?: string | null;
+  project_end_date?: string | null;
   custom_column_values?: Record<string, ITaskCustomColumnValue>;
   /** TVR-13: parent of assigned-only subtask — viewable, not editable */
   assignee_scope_readonly?: boolean;

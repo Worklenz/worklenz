@@ -1044,7 +1044,7 @@ export const CreateProjectModal = ({
                               }}
                               onPreview={() => {
                                 setPreviewTemplateId(template.id ?? null);
-                                setPreviewTemplateName(template.name);
+                                setPreviewTemplateName(decodeHtmlEntities(template.name));
                                 setPreviewTemplateType('worklenz');
                                 setPreviewOpen(true);
                               }}
@@ -1103,7 +1103,7 @@ export const CreateProjectModal = ({
                             }}
                             onPreview={() => {
                               setPreviewTemplateId(template.id ?? null);
-                              setPreviewTemplateName(template.name);
+                              setPreviewTemplateName(decodeHtmlEntities(template.name));
                               setPreviewTemplateType('custom');
                               setPreviewOpen(true);
                             }}

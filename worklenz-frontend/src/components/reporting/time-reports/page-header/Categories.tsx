@@ -20,6 +20,7 @@ import {
 } from '@/shared/antd-imports';
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const Categories: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -246,7 +247,9 @@ const Categories: React.FC = () => {
                       onChange={e => handleCheckboxChange(item.id || '', e.target.checked)}
                       style={{ fontSize: '14px' }}
                     >
-                      <span style={{ marginLeft: '2px', fontSize: '14px' }}>{item.name}</span>
+                      <span style={{ marginLeft: '2px', fontSize: '14px' }}>
+                        {decodeHtmlEntities(item.name)}
+                      </span>
                     </Checkbox>
                     {item.selected && (
                       <CheckCircleFilled style={{ color: colors.successColor, fontSize: '10px' }} />

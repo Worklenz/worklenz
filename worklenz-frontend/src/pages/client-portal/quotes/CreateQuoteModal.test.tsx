@@ -4,10 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   createQuote: vi.fn(() => ({ unwrap: () => Promise.resolve({ body: { id: 'new-1' } }) })),
-  requests: [] as Array<Record<string, unknown>>,
+  changeRequests: [] as Array<Record<string, unknown>>,
   clients: [] as Array<Record<string, unknown>>,
-  services: [] as Array<Record<string, unknown>>,
 }));
+
+vi.mock('../discussions/RichMessageEditor', async () => {
+  const { RichMessageEditorStub } = await import('../discussions/richMessageEditorStub');
+  return { RichMessageEditor: RichMessageEditorStub };
+});
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -31,30 +35,25 @@ vi.mock('../../../api/client-portal/client-portal-quotes-api', () => ({
 }));
 
 vi.mock('../../../api/client-portal/client-portal-api', () => ({
-  useGetOrganizationRequestsQuery: () => ({
-    data: { body: { data: mocks.requests, total: mocks.requests.length } },
-    isLoading: false,
-  }),
   useGetClientsQuery: () => ({
     data: { body: { clients: mocks.clients, total: mocks.clients.length } },
     isLoading: false,
   }),
-  useGetOrganizationServicesQuery: () => ({
-    data: { body: { data: mocks.services, total: mocks.services.length } },
-    isLoading: false,
-  }),
+}));
+
+vi.mock('../../../api/client-portal/portal-workflow-api', () => ({
+  useGetBillableChangeRequestsQuery: () => ({ data: { body: mocks.changeRequests }, isLoading: false }),
 }));
 
 import CreateQuoteModal from './CreateQuoteModal';
 
-const request = (overrides: Record<string, unknown> = {}) => ({
-  id: 'req-1',
-  req_no: 'REQ-0001',
-  status: 'accepted',
-  service_name: 'Landing Page Design',
-  client_id: 'client-1',
-  client_name: 'TechFlow Inc',
-  request_data: { title: 'Need to design website' },
+const changeRequest = (overrides: Record<string, unknown> = {}) => ({
+  id: 'cr-1',
+  cr_no: 'CR-0048',
+  title: 'Add a live chat widget',
+  organization_id: 'client-1',
+  status: 'approved',
+  existing_invoice_count: 0,
   ...overrides,
 });
 
@@ -70,9 +69,8 @@ const descriptionInputs = () => screen.getAllByLabelText('Description') as HTMLI
 describe('CreateQuoteModal', () => {
   beforeEach(() => {
     mocks.createQuote.mockClear();
-    mocks.requests = [request()];
+    mocks.changeRequests = [changeRequest()];
     mocks.clients = [{ id: 'client-1', name: 'TechFlow Inc', email: 'pm@techflow.com' }];
-    mocks.services = [];
   });
 
   it('starts with one empty line item that cannot be removed', () => {
@@ -92,25 +90,27 @@ describe('CreateQuoteModal', () => {
     expect(descriptionInputs()).toHaveLength(1);
   });
 
-  it('prefills the project and first line from a linked request in the URL', async () => {
-    renderModal('/worklenz/client-portal/quotes/create?requestId=req-1');
+  it('prefills the project and a quantity-1, rate-0 first line from the change request in the URL', async () => {
+    renderModal('/worklenz/client-portal/quotes/create?changeRequestId=cr-1');
 
-    await waitFor(() => expect(descriptionInputs()[0].value).toBe('Landing Page Design'));
-    expect(screen.getByDisplayValue('Need to design website')).toBeInTheDocument();
-    // The client comes from the request, so there is no manual client picker.
+    await waitFor(() => expect(descriptionInputs()[0].value).toBe('Add a live chat widget'));
+    // Project and first line both carry the title; the estimate is never copied into the rate.
+    expect(screen.getAllByDisplayValue('Add a live chat widget')).toHaveLength(2);
+    expect((screen.getByLabelText('Rate') as HTMLInputElement).value).toBe('0.00');
+    expect((screen.getByLabelText('Qty') as HTMLInputElement).value).toBe('1');
+    // The client comes from the change request, so there is no manual client picker.
     expect(screen.getByText('TechFlow Inc')).toBeInTheDocument();
   });
 
-  it('does not offer requests that cannot be quoted yet', () => {
-    mocks.requests = [request({ id: 'req-2', req_no: 'REQ-0002', status: 'pending' })];
+  it('offers the billable change requests the server returned', () => {
     renderModal();
 
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Select Request' }));
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Select Change Request' }));
 
-    expect(screen.queryByText(/REQ-0002/)).not.toBeInTheDocument();
+    expect(screen.getByText('CR-0048 - Add a live chat widget')).toBeInTheDocument();
   });
 
-  it('blocks saving with no client and no linked request', async () => {
+  it('blocks saving with no client and no linked change request', async () => {
     renderModal();
 
     fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
@@ -144,11 +144,28 @@ describe('CreateQuoteModal', () => {
     expect(mocks.createQuote).toHaveBeenCalledWith(
       expect.objectContaining({
         clientId: 'client-1',
-        requestId: undefined,
+        changeRequestId: undefined,
         status: 'draft',
         taxRate: 10,
         validUntil: null,
         lineItems: [{ description: 'Retainer', quantity: 2, rate: 1000, amount: 2000 }],
+      })
+    );
+  });
+
+  it('creates the quote from a change request without sending a client', async () => {
+    renderModal('/worklenz/client-portal/quotes/create?changeRequestId=cr-1');
+
+    await waitFor(() => expect(descriptionInputs()[0].value).toBe('Add a live chat widget'));
+    fireEvent.change(screen.getByLabelText('Rate'), { target: { value: '800' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
+
+    await waitFor(() => expect(mocks.createQuote).toHaveBeenCalled());
+    expect(mocks.createQuote).toHaveBeenCalledWith(
+      expect.objectContaining({
+        changeRequestId: 'cr-1',
+        clientId: undefined,
+        lineItems: [{ description: 'Add a live chat widget', quantity: 1, rate: 800, amount: 800 }],
       })
     );
   });

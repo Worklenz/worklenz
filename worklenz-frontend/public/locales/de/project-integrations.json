@@ -7,7 +7,7 @@
   "cancel": "Abbrechen",
   "slack": {
     "title": "Locker",
-    "description": "Benachrichtigungen an Slack-Kanäle senden",
+    "description": "Erhalten Sie Updates zu Aufgaben, Status und Kommentaren in Ihren Slack-Kanälen",
     "notConnected": "Bitte verbinden Sie zuerst Ihren Slack-Arbeitsbereich in den Einstellungen",
     "quickAddTitle": "Slack zum Projekt hinzufügen",
     "currentProject": "Projekt",
@@ -21,11 +21,14 @@
   },
   "teams": {
     "title": "Microsoft-Teams",
-    "description": "Benachrichtigungen an Teams-Kanäle senden"
+    "description": "Senden Sie Aufgaben- und Statusupdates an Ihre Teams-Kanäle"
   },
   "github": {
     "title": "GitHub",
-    "description": "Aufgaben mit GitHub-Issues synchronisieren"
+    "description": "Branches, Pull Requests und Commits an Aufgaben verfolgen",
+    "softwareDescription": "Branches, Pull Requests und Commits an jeder Aufgabe, mit automatischen Statusupdates",
+    "softwareOnly": "Softwareprojekte",
+    "connectDescription": "Verbinden Sie GitHub, um Repositories zu verknüpfen, Pull Requests zu verfolgen und den Aufgabenstatus zu automatisieren"
   },
   "notificationTypes": {
     "taskCreated": "Aufgabe erstellt",
