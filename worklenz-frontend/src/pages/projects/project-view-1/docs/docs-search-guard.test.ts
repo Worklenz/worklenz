@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { canWriteDocsSearch } from './docs-search-guard';
+import { renderHook } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { canWriteDocsSearch, useDocsSearchReplace } from './docs-search-guard';
 
 const life = {
   disposed: false,
@@ -36,5 +37,26 @@ describe('canWriteDocsSearch', () => {
         requiresDocsTab: true,
       })
     ).toBe(false);
+  });
+});
+
+describe('useDocsSearchReplace', () => {
+  it('keeps the replace callback stable when setSearchParams changes', () => {
+    window.history.pushState({}, '', '/worklenz/projects/docs');
+    const first = vi.fn();
+    const second = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ setSearchParams }) => useDocsSearchReplace(setSearchParams),
+      { initialProps: { setSearchParams: first } }
+    );
+    const stable = result.current;
+
+    rerender({ setSearchParams: second });
+
+    expect(result.current).toBe(stable);
+    const next = new URLSearchParams('doc=page');
+    result.current(next);
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledWith(next, { replace: true });
   });
 });

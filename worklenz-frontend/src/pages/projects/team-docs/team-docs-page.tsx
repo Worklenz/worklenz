@@ -62,11 +62,24 @@ const TeamDocsPage = () => {
   const contentRef = useRef(content);
   const titleRef = useRef(title);
   const searchParamsRef = useRef(searchParams);
+  const selectionRequestRef = useRef(0);
+  const isMountedRef = useRef(true);
   activeRef.current = active;
   pagesRef.current = pages;
   contentRef.current = content;
   titleRef.current = title;
   searchParamsRef.current = searchParams;
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      selectionRequestRef.current += 1;
+    };
+  }, []);
+
+  const isCurrentSelection = (generation: number) =>
+    isMountedRef.current && generation === selectionRequestRef.current;
 
   const applyDocument = useCallback((document: IProjectDocument, mark: (document: IProjectDocument) => void) => {
     setActive(document);
@@ -133,10 +146,13 @@ const TeamDocsPage = () => {
   const openDocument = useCallback(
     async (documentId: string) => {
       if (documentId === activeRef.current?.id) return;
+      const generation = ++selectionRequestRef.current;
       const flushed = await flush();
+      if (!isCurrentSelection(generation)) return;
       if (flushed === 'error' || flushed === 'conflict') return;
       try {
         const response = await projectDocumentsApiService.getById(documentId);
+        if (!isCurrentSelection(generation)) return;
         if (!response.done || !response.body) {
           message.error(t('loadError', { defaultValue: "Couldn't load this page" }));
           return;
@@ -145,6 +161,7 @@ const TeamDocsPage = () => {
         setReloadToken(token => token + 1);
         writeDocParam(response.body.id);
       } catch {
+        if (!isCurrentSelection(generation)) return;
         message.error(t('loadError', { defaultValue: "Couldn't load this page" }));
       }
     },
@@ -152,16 +169,19 @@ const TeamDocsPage = () => {
   );
 
   const loadPages = useCallback(async () => {
+    const generation = selectionRequestRef.current;
     setListLoading(true);
     setListError(false);
     try {
       const response = await teamDocumentsApiService.list();
+      if (!isMountedRef.current) return;
       if (!response.done) {
-        setListError(true);
+        if (isCurrentSelection(generation)) setListError(true);
         return;
       }
       const nextPages = response.body || [];
       setPages(nextPages);
+      if (!isCurrentSelection(generation)) return;
       const requested = searchParamsRef.current.get('doc');
       const currentId = activeRef.current?.id;
       const target =
@@ -181,6 +201,7 @@ const TeamDocsPage = () => {
       }
       if (target !== currentId) {
         const documentResponse = await projectDocumentsApiService.getById(target);
+        if (!isCurrentSelection(generation)) return;
         if (documentResponse.done && documentResponse.body) {
           applyDocument(documentResponse.body, markCleanRef.current);
           setReloadToken(value => value + 1);
@@ -190,9 +211,9 @@ const TeamDocsPage = () => {
         }
       }
     } catch {
-      setListError(true);
+      if (isCurrentSelection(generation)) setListError(true);
     } finally {
-      setListLoading(false);
+      if (isMountedRef.current) setListLoading(false);
     }
   }, [applyDocument, replaceDocsSearch]);
 

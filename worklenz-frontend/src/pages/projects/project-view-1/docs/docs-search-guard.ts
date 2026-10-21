@@ -31,11 +31,15 @@ export const useDocsSearchReplace = (
     };
   }, []);
 
-  return useCallback(
-    (next: URLSearchParams) => {
-      if (!canWriteDocsSearch(life.current)) return;
-      setSearchParams(next, { replace: true });
-    },
-    [setSearchParams]
-  );
+  // react-router recreates setSearchParams whenever the query string changes.
+  // Consumers put this callback in load effects, so it has to keep one identity.
+  const setSearchParamsRef = useRef(setSearchParams);
+  useEffect(() => {
+    setSearchParamsRef.current = setSearchParams;
+  });
+
+  return useCallback((next: URLSearchParams) => {
+    if (!canWriteDocsSearch(life.current)) return;
+    setSearchParamsRef.current(next, { replace: true });
+  }, []);
 };
