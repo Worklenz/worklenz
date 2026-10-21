@@ -32,7 +32,9 @@ function legacyAllows(feature: FeatureKey, subscriptionData: any): boolean {
 /** Can a session user / subscription-status row use the feature? */
 export function canUseFeature(subscriptionData: any, feature: FeatureKey): boolean {
   if (!subscriptionData) return false;
-  if (isEnforceMode()) return hasFeature(resolveEntitlements(subscriptionData), feature);
+  if (isEnforceMode() || FEATURE_REGISTRY[feature].alwaysEnforce) {
+    return hasFeature(resolveEntitlements(subscriptionData), feature);
+  }
   return legacyAllows(feature, subscriptionData);
 }
 
@@ -48,7 +50,7 @@ export async function teamCanUseFeature(
   if (!teamId) return false;
   const subscriptionData = await checkTeamSubscriptionStatus(teamId);
   if (!subscriptionData) return false;
-  if (!isEnforceMode() && legacy) return legacy(subscriptionData);
+  if (!isEnforceMode() && legacy && !FEATURE_REGISTRY[feature].alwaysEnforce) return legacy(subscriptionData);
   return canUseFeature(subscriptionData, feature);
 }
 

@@ -6,7 +6,7 @@ import db from "../../config/db";
 import { log_error } from "../../shared/utils";
 import { ERROR_KEY } from "./passport-constants";
 import { sendWelcomeEmail } from "../../shared/email-templates";
-import { BLOCKED_SIGNUP_EMAIL_MESSAGE, isSignupEmailDomainBlocked } from "../../shared/signup-email-domain-policy";
+import { getBlockedSignupEmailMessage, isSignupEmailDomainBlocked } from "../../shared/signup-email-domain-policy";
 
 /**
  * Apple ID Token Payload Interface
@@ -199,7 +199,7 @@ async function handleAppleWebAuth(
     }
 
     if (await isSignupEmailDomainBlocked(email)) {
-      const message = BLOCKED_SIGNUP_EMAIL_MESSAGE;
+      const message = getBlockedSignupEmailMessage(req.headers["accept-language"]);
       (req.session as any).error = message;
       return done(null, undefined, { message: req.flash(ERROR_KEY, message) });
     }
@@ -220,7 +220,7 @@ async function handleAppleWebAuth(
     });
   } catch (error: any) {
     if (error.message?.includes("ERROR_SIGNUP_EMAIL_DOMAIN_BLOCKED")) {
-      const message = BLOCKED_SIGNUP_EMAIL_MESSAGE;
+      const message = getBlockedSignupEmailMessage(req.headers["accept-language"]);
       (req.session as any).error = message;
       return done(null, undefined, { message: req.flash(ERROR_KEY, message) });
     }

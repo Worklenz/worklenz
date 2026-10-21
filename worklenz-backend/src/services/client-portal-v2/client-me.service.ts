@@ -165,7 +165,7 @@ export async function listTimezones(q: Queryable): Promise<Array<{ id: string; n
 
 export type ClientNotificationPrefs = Record<ClientNotificationType, boolean>;
 
-/** Email per event type. A type with no stored choice defaults to on; in-app is always on and not stored. */
+/** Email per event type. A type with no stored choice defaults to off (opt-in); in-app is always on and not stored. */
 export async function getNotificationPrefs(q: Queryable, subject: ClientSubject): Promise<ClientNotificationPrefs> {
   const result = await q.query(
     `SELECT event_type, email FROM client_contact_notification_prefs WHERE contact_id = $1`,
@@ -173,7 +173,7 @@ export async function getNotificationPrefs(q: Queryable, subject: ClientSubject)
   );
   const stored = new Map<string, boolean>(result.rows.map(row => [row.event_type as string, row.email === true]));
   return Object.fromEntries(
-    NOTIFICATION_TYPES.map(type => [type, stored.get(NOTIFICATION_EVENT_BY_TYPE[type]) ?? true])
+    NOTIFICATION_TYPES.map(type => [type, stored.get(NOTIFICATION_EVENT_BY_TYPE[type]) ?? false])
   ) as ClientNotificationPrefs;
 }
 

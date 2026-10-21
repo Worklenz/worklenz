@@ -199,6 +199,7 @@
   "noActiveInviteLink": "Asnjë lidhje ftese aktive",
   "linkExpiredPlaceholder": "Lidhja skadoi",
   "inviteLinkCopied": "Lidhja e ftesës u kopjua në tabelën e punës",
+  "inviteLinkCopyFailed": "Lidhja e ftesës u krijua. Kopjojeni manualisht nga fusha më poshtë.",
   "inviteLinkGenerateError": "Dështoi gjenerimi i lidhjes së ftesës",
   "inviteLinkDeactivated": "Lidhja e ftesës u çaktivizua",
   "inviteLinkDeactivateError": "Dështoi çaktivizimi i lidhjes",

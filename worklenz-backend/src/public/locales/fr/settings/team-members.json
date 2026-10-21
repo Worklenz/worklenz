@@ -202,6 +202,7 @@
   "noActiveInviteLink": "Aucun lien d'invitation actif",
   "linkExpiredPlaceholder": "Lien expiré",
   "inviteLinkCopied": "Lien d'invitation copié dans le presse-papiers",
+  "inviteLinkCopyFailed": "Lien d’invitation généré. Copiez-le manuellement depuis le champ ci-dessous.",
   "inviteLinkGenerateError": "Échec de la génération du lien d'invitation",
   "inviteLinkDeactivated": "Lien d'invitation désactivé",
   "inviteLinkDeactivateError": "Échec de la désactivation du lien",
@@ -236,9 +237,9 @@
   "partialSuccess": "{{count}} invité(s) invité(s) avec succès. Échec : {{emails}}",
   "selectProjectFirst": "Sélectionnez d'abord un projet",
   "inviteLinkGeneratedCopyFailed": "Lien d'invitation généré, mais n'a pas pu être copié automatiquement. Veuillez le copier manuellement.",
+  "noManagedProjectsFound": "Aucun projet pour lequel vous êtes chef de projet",
   "projectInvite_guestLimitExceeded": "Limite d'invités dépassée pour ce plan. Veuillez mettre à niveau pour ajouter plus d'invités.",
-  "assign_team_lead": "Désigner un chef d'équipe",
-  "Failed to fetch job titles": "Échec de la récupération des titres de poste",
   "license-expired-subtitle": "Votre abonnement Worklenz est terminé. Veuillez renouveler votre abonnement pour continuer à profiter de toutes les fonctionnalités.",
-  "noManagedProjectsFound": "Aucun projet pour lequel vous êtes chef de projet"
+  "Failed to fetch job titles": "Échec de la récupération des titres de poste",
+  "assign_team_lead": "Désigner un chef d'équipe"
 }
