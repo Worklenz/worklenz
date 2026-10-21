@@ -124,7 +124,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
       return { clause: "", params: [] };
     }
     return {
-      clause: `AND ${column_name} NOT IN (SELECT project_id FROM archived_projects WHERE project_id = ${column_name} AND user_id = $${paramOffset}) `,
+      clause: `AND ${column_name} NOT IN (SELECT project_id FROM archived_projects WHERE project_id = ${column_name} AND user_id = $${Number(paramOffset)}) `,
       params: [user_id]
     };
   }
@@ -403,12 +403,12 @@ export default abstract class ReportingControllerBase extends WorklenzController
 
       if (start === end) {
         // Single day: compare the DATE part of the timestamp
-        query = `AND task_work_log.created_at::DATE = $${paramOffset}::DATE`;
+        query = `AND task_work_log.created_at::DATE = $${Number(paramOffset)}::DATE`;
         params.push(start);
       } else {
         // Date range: inclusive comparison on DATE part
         // Using ::DATE cast ensures we compare dates without time/timezone issues
-        query = `AND task_work_log.created_at::DATE >= $${paramOffset}::DATE AND task_work_log.created_at::DATE <= $${paramOffset + 1}::DATE`;
+        query = `AND task_work_log.created_at::DATE >= $${Number(paramOffset)}::DATE AND task_work_log.created_at::DATE <= $${Number(paramOffset) + 1}::DATE`;
         params.push(start, end);
       }
 

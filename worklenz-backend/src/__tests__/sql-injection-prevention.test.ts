@@ -1,6 +1,7 @@
 import db from "../config/db";
 import PtTaskStatusesController from "../controllers/project-templates/pt-task-statuses-controller";
 import ReportingController from "../controllers/reporting-controller";
+import ReportingAllocationController from "../controllers/reporting/reporting-allocation-controller";
 import ReportingMembersController from "../controllers/reporting/reporting-members-controller";
 import ClientPortalServicesController from "../controllers/client-portal/client-portal-services-controller";
 import ClientsController from "../controllers/clients-controller";
@@ -46,6 +47,25 @@ describe("template status names", () => {
 });
 
 describe("reporting filters", () => {
+  it.each([
+    { dateRange: ["2026-10-01", "2026-10-01"], dateCount: 1 },
+    { dateRange: ["2026-10-01", "2026-10-02"], dateCount: 2 },
+  ])("keeps allocation placeholder indices numeric for $dateRange", async ({ dateRange, dateCount }) => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [{ id: "user" }] } as Awaited<ReturnType<typeof db.query>>)
+      .mockResolvedValueOnce({ rows: [] } as unknown as Awaited<ReturnType<typeof db.query>>)
+      .mockResolvedValueOnce({ rows: [{ time_logged: "0" }] } as Awaited<ReturnType<typeof db.query>>);
+    await ReportingAllocationController.getAllocation(createMockRequest({ body: {
+      teams: [injected], projects: [injected, "project"], duration: "CUSTOM", date_range: dateRange,
+      billable: { billable: true, nonBillable: true },
+    } }), createMockResponse());
+    expect(queryMock).toHaveBeenCalledTimes(3);
+    const [sql, params] = queryMock.mock.calls[1];
+    expect(sql).not.toContain(injected);
+    expect(sql).toContain(`user_id = $${5 + dateCount}`);
+    expect(params).toEqual([false, injected, "project", ...dateRange.slice(0, dateCount), "user", "user-123"]);
+  });
+
   it("passes request filter arrays as bound values", async () => {
     queryMock.mockResolvedValue({ rows: [{ team_members: { total: 0, team_members: [] } }] } as Awaited<ReturnType<typeof db.query>>);
     await ReportingController.getReportingMembers(createMockRequest({ body: {
