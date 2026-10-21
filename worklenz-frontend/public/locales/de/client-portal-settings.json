@@ -200,5 +200,6 @@
     "defaultStatusesLabel": "Standardstatus",
     "defaultStatusesHint": "Diese existieren immer und können nicht entfernt werden.",
     "customStatusesLabel": "Benutzerdefinierte Status"
-  }
+  },
+  "defaultInvoiceFooter": "Vielen Dank für Ihr Vertrauen. Bei Fragen zu dieser Rechnung kontaktieren Sie uns bitte über die oben genannten Angaben."
 }

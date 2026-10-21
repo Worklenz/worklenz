@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Alert,
@@ -331,7 +332,7 @@ const CreateInvoiceModal = () => {
       );
       // Create & Download hands the person the file straight away.
       if (mode === 'sent' && result.body?.id) {
-        window.open(getInvoiceDownloadUrl(result.body.id), '_blank', 'noopener,noreferrer');
+        downloadPortalPdf(getInvoiceDownloadUrl(result.body.id), 'invoice.pdf', t('downloadFailed', { defaultValue: 'Failed to download the PDF. Please try again.' }));
       }
       // Started from a change request: go back to it, where the new invoice now shows under Linked work.
       navigate(changeRequestIdParam ? portalPaths.changeRequest(changeRequestIdParam) : INVOICES_PATH);
