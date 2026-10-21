@@ -97,6 +97,16 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     return data.exists;
   }
 
+  /** Project membership checks must stay inside the target team. */
+  public static async checkIfUserAlreadyExistsInTeam(teamId: string, email: string): Promise<boolean> {
+    const result = await db.query(
+      `SELECT EXISTS(SELECT 1 FROM team_member_info_view
+        WHERE LOWER(email) = LOWER($1::TEXT) AND team_id = $2::UUID) AS exists;`,
+      [email.trim(), teamId],
+    );
+    return result.rows[0]?.exists === true;
+  }
+
   /**
    * @param auditUser Session of the person adding the member; when given, the addition is
    * written to the workspace Audit Log. Omitted for self-service joins, which log their own entry.
@@ -271,7 +281,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     }
 
     // Check if user already exists in the team
-    const userExists = await ProjectMembersController.checkIfUserAlreadyExists(req.user?.owner_id as string, req.body.email);
+    const userExists = await ProjectMembersController.checkIfUserAlreadyExistsInTeam(teamId, req.body.email);
 
     // If user exists in the team, check if they're already in the project
     if (userExists && req.body.project_id) {

@@ -4,6 +4,7 @@ import {sendEmail} from "./email";
 import {sanitize, sanitizePlainText} from "./utils";
 import FileConstants from "./file-constants";
 import db from "../config/db";
+import { reserveInvitationEmail } from "../services/security-policy.service";
 
 // Ensure FRONTEND_URL is always an absolute URL with a scheme.
 // Without https://, email clients (e.g. Outlook Safe Links) strip the <a> tag.
@@ -186,6 +187,7 @@ export async function sendClientPortalResetEmail(toEmail: string, user_id: strin
 
 // * This implementation should be improved
 export async function sendInvitationEmail(isNewMember: boolean, user: IPassportSession, userNameOrId: string, email: string, userId: string, userName?: string, projectId?: string) {
+  await reserveInvitationEmail(user.team_id);
   if (isNewMember) {
     // userNameOrId = userName
     await sendJoinTeamInvitation(user?.name as string, user?.team_name as string, user.team_id as string, userNameOrId, email, userId, projectId);

@@ -202,7 +202,7 @@
   "noActiveInviteLink": "Aucun lien d'invitation actif",
   "linkExpiredPlaceholder": "Lien expiré",
   "inviteLinkCopied": "Lien d'invitation copié dans le presse-papiers",
-  "inviteLinkCopyFailed": "Lien d'invitation généré. Copiez-le manuellement depuis le champ ci-dessous.",
+  "inviteLinkCopyFailed": "Lien d’invitation généré. Copiez-le manuellement depuis le champ ci-dessous.",
   "inviteLinkGenerateError": "Échec de la génération du lien d'invitation",
   "inviteLinkDeactivated": "Lien d'invitation désactivé",
   "inviteLinkDeactivateError": "Échec de la désactivation du lien",

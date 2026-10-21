@@ -202,7 +202,7 @@
   "noActiveInviteLink": "Brak aktywnego linku z zaproszeniem",
   "linkExpiredPlaceholder": "Link wygasł",
   "inviteLinkCopied": "Link do zaproszenia skopiowany do schowka",
-  "inviteLinkCopyFailed": "Link zaproszenia został wygenerowany. Skopiuj go ręcznie z poniższego pola.",
+  "inviteLinkCopyFailed": "Wygenerowano link z zaproszeniem. Skopiuj go ręcznie z pola poniżej.",
   "inviteLinkGenerateError": "Nie udało się wygenerować linku z zaproszeniem",
   "inviteLinkDeactivated": "Link do zaproszenia został dezaktywowany",
   "inviteLinkDeactivateError": "Nie udało się dezaktywować linku",
