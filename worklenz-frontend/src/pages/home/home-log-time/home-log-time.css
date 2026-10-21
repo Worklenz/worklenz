@@ -40,12 +40,39 @@
    antd wrapper would force its overflow-y to `auto` too (CSS overflow
    computed-value rule), turning it into a second scroll container that
    intercepts the sticky header. */
-@media (max-width: 1023px) {
-  .recent-logs-scroll {
-    overflow-x: auto;
-  }
+/* Keep the table readable when its column is narrow at any viewport size.
+   Use the existing scroll container to preserve the sticky header. */
+.recent-logs-card,
+.recent-logs-scroll {
+  min-width: 0;
+  max-width: 100%;
+}
 
-  .recent-logs-card .ant-table {
-    min-width: 600px;
-  }
+.recent-logs-scroll {
+  overflow-x: auto;
+}
+
+.recent-logs-card .ant-table {
+  min-width: 800px;
+}
+
+/* Keep project and task fields within the Quick Time Entry card. */
+.quick-entry-name-select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.quick-entry-name-select .ant-select-selector,
+.quick-entry-name-select .ant-select-selection-wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.quick-entry-name-select .ant-select-selection-item,
+.quick-entry-name-select .ant-select-selection-placeholder {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }

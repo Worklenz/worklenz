@@ -5,11 +5,22 @@ exports.shorthands = undefined;
 
 /** @param {import('node-pg-migrate').MigrationBuilder} pgm */
 exports.up = async (pgm) => {
+  // Historical migration history can be present without its schema changes.
+  // Restore prerequisites in this same transaction before verification runs.
+  await require('./1758412800000_add_reports_to_team_members').up(pgm);
+  pgm.sql(require('../pg-migrations-support/team-lead-prerequisites'));
   pgm.sql(`
 -- Migration: Verify Team Lead Implementation
 -- Description: Comprehensive verification queries to ensure Team Lead roles are correctly configured
 -- Version: v2.2.2
 -- Date: 2025-01-21
+
+-- Reconcile legacy rows before verifying. Historical signup functions can
+-- create Team Leads with admin privileges even after the earlier fix ran.
+-- Keep this repair here so a database stopped at this migration can retry it.
+UPDATE roles
+SET admin_role = FALSE
+WHERE name = 'Team Lead' AND admin_role IS DISTINCT FROM FALSE;
 
 -- Step 1: Verify that all Team Lead roles have admin_role = FALSE
 DO $$

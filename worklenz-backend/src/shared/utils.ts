@@ -222,17 +222,16 @@ export function sanitizePortalRichText(value: string | null | undefined): string
   return sanitizeDiscussionHtml((value ?? "").trim());
 }
 
-/** Flattens HTML (or legacy plain text) to readable text for previews, notifications and length checks. */
-export function htmlToPlainText(value: string | null): string {
+/** Flattens HTML to text. Set preserveWhitespace for plain-text fields whose line breaks must be retained. */
+export function htmlToPlainText(value: string | null, preserveWhitespace = false): string {
   if (!value) return "";
-  const spaced = value.replace(/<\/(p|li|h[1-6]|blockquote|pre)>|<br\s*\/?>/gi, " ");
-  return sanitizeHtml(spaced, { allowedTags: [], allowedAttributes: {} })
+  const spaced = preserveWhitespace ? value : value.replace(/<\/(p|li|h[1-6]|blockquote|pre)>|<br\s*\/?>/gi, " ");
+  const text = sanitizeHtml(spaced, { allowedTags: [], allowedAttributes: {} })
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, "&")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/&amp;/g, "&");
+  return (preserveWhitespace ? text : text.replace(/\s+/g, " ")).trim();
 }
 
 /**
