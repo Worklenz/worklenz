@@ -3,7 +3,7 @@ import { sendWelcomeEmail } from "../../shared/email-templates";
 import { log_error } from "../../shared/utils";
 import db from "../../config/db";
 import { ERROR_KEY } from "./passport-constants";
-import { BLOCKED_SIGNUP_EMAIL_MESSAGE, isSignupEmailDomainBlocked } from "../../shared/signup-email-domain-policy";
+import { getBlockedSignupEmailMessage, isSignupEmailDomainBlocked } from "../../shared/signup-email-domain-policy";
 import { Request } from "express";
 
 async function handleGoogleLogin(req: Request, _accessToken: string, _refreshToken: string, profile: GoogleStrategy.Profile, done: GoogleStrategy.VerifyCallback) {
@@ -62,7 +62,7 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
     }
 
     if (await isSignupEmailDomainBlocked(body.email))
-      return done(null, false, { message: req.flash(ERROR_KEY, BLOCKED_SIGNUP_EMAIL_MESSAGE) });
+      return done(null, false, { message: req.flash(ERROR_KEY, getBlockedSignupEmailMessage(req.headers["accept-language"])) });
 
     // Register new user
     const q2 = `SELECT register_google_user($1) AS user;`;
@@ -73,7 +73,7 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
     return done(null, data.user, { message: "User successfully logged in" });
   } catch (error: any) {
     if (error.message?.includes("ERROR_SIGNUP_EMAIL_DOMAIN_BLOCKED"))
-      return done(null, false, { message: req.flash(ERROR_KEY, BLOCKED_SIGNUP_EMAIL_MESSAGE) });
+      return done(null, false, { message: req.flash(ERROR_KEY, getBlockedSignupEmailMessage(req.headers["accept-language"])) });
     console.error("[Google OAuth] handleGoogleLogin CAUGHT ERROR:");
     console.error("[Google OAuth] error:", error);
     console.error("[Google OAuth] message:", error?.message);

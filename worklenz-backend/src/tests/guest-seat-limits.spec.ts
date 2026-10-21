@@ -94,7 +94,7 @@ describe("guest-seat-limits", () => {
       expect(result.remaining_slots).toBe(-1);
     });
 
-    it("should return APPSUMO_LTD with 5 limit for LIFE_TIME_DEAL with 1-4 codes when slots remain", async () => {
+    it("should return APPSUMO_LTD with unlimited guests for LIFE_TIME_DEAL with 1-4 codes", async () => {
       (paddleUtils.checkTeamSubscriptionStatus as jest.Mock).mockResolvedValue({
         subscription_type: "LIFE_TIME_DEAL",
         redeemed_codes_count: 2
@@ -105,15 +105,15 @@ describe("guest-seat-limits", () => {
 
       expect(result).toEqual({
         plan_tier: "APPSUMO_LTD",
-        guest_limit: 5,
+        guest_limit: -1,
         current_guest_count: 3,
-        remaining_slots: 2,
+        remaining_slots: -1,
         can_add_guest: true,
         error_message: undefined
       });
     });
 
-    it("should disallow adding guest when APPSUMO_LTD reaches limit of 5", async () => {
+    it("should allow unlimited guests for APPSUMO_LTD (Pro equivalent)", async () => {
       (paddleUtils.checkTeamSubscriptionStatus as jest.Mock).mockResolvedValue({
         subscription_type: "LIFE_TIME_DEAL",
         redeemed_codes_count: 1
@@ -124,11 +124,11 @@ describe("guest-seat-limits", () => {
 
       expect(result).toEqual({
         plan_tier: "APPSUMO_LTD",
-        guest_limit: 5,
+        guest_limit: -1,
         current_guest_count: 5,
-        remaining_slots: 0,
-        can_add_guest: false,
-        error_message: "Your APPSUMO_LTD plan includes 5 guests. Upgrade to add more guests."
+        remaining_slots: -1,
+        can_add_guest: true,
+        error_message: undefined
       });
     });
 
@@ -253,9 +253,9 @@ describe("guest-seat-limits", () => {
       expect(getGuestLimitByTier("APPSUMO_BUSINESS")).toBe(-1);
     });
 
-    it("should return -1 for PROFESSIONAL and 5 for APPSUMO_LTD", () => {
+    it("should return -1 for PROFESSIONAL and APPSUMO_LTD", () => {
       expect(getGuestLimitByTier("PROFESSIONAL")).toBe(-1);
-      expect(getGuestLimitByTier("APPSUMO_LTD")).toBe(5);
+      expect(getGuestLimitByTier("APPSUMO_LTD")).toBe(-1);
     });
 
     it("should return 0 for FREE, TRIAL, and any unknown tiers", () => {
@@ -267,7 +267,7 @@ describe("guest-seat-limits", () => {
     it("should be case-insensitive", () => {
       expect(getGuestLimitByTier("business")).toBe(-1);
       expect(getGuestLimitByTier("professional")).toBe(-1);
-      expect(getGuestLimitByTier("appsumo_ltd")).toBe(5);
+      expect(getGuestLimitByTier("appsumo_ltd")).toBe(-1);
     });
   });
 });

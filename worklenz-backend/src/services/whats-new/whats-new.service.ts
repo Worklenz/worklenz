@@ -5,7 +5,7 @@ import sanitizeHtml from "sanitize-html";
 import db from "../../config/db";
 import { DEFAULT_RELEASE_NOTE_LOCALE, normalizeReleaseNoteLocale } from "../../shared/release-note-locales";
 import { log_error, sanitizePlainText } from "../../shared/utils";
-import { ICurrentRelease, IReleaseNote } from "../../interfaces/whats-new";
+import { ICurrentRelease, ILatestRelease, IReleaseNote } from "../../interfaces/whats-new";
 
 const WINDOW_DAYS = 7;
 const PREVIEW_LENGTH = 150;
@@ -92,17 +92,24 @@ async function recordView(userId: string, releaseId: string): Promise<void> {
   }
 }
 
-function getEligibleReleases(releases: IReleaseNote[]): IReleaseNote[] {
-  const now = moment();
+// Shared window rule for the nav tag and the latest release's New badge.
+function isWithinWindow(release: IReleaseNote): boolean {
   const windowStart = moment().subtract(WINDOW_DAYS, "days");
+  return moment(release.published_at, DATE_FORMAT).isAfter(windowStart, "day");
+}
 
+function getPublishedReleases(releases: IReleaseNote[]): IReleaseNote[] {
+  const now = moment();
   return releases
-    .filter(release => {
-      if (!release.is_active) return false;
-      const publishedAt = moment(release.published_at, DATE_FORMAT);
-      return publishedAt.isSameOrBefore(now, "day") && publishedAt.isAfter(windowStart, "day");
-    })
-    .sort((a, b) => (a.published_at < b.published_at ? 1 : a.published_at > b.published_at ? -1 : 0));
+    .filter(release => release.is_active && moment(release.published_at, DATE_FORMAT).isSameOrBefore(now, "day"))
+    .sort((a, b) => {
+      if (a.published_at !== b.published_at) return a.published_at < b.published_at ? 1 : -1;
+      return a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
+    });
+}
+
+function getEligibleReleases(releases: IReleaseNote[]): IReleaseNote[] {
+  return getPublishedReleases(releases).filter(isWithinWindow);
 }
 
 function buildPreviewText(markdown: string): string {
@@ -135,6 +142,17 @@ async function getCurrentReleaseForUser(userId: string): Promise<ICurrentRelease
   return toCurrentRelease(release);
 }
 
+// Settings Help always offers the latest published release, even after its
+// New badge expires or the user dismisses it. Use the same localized database
+// content as the nav tag without reading or changing per-user dismissals.
+async function getLatestRelease(userId?: string): Promise<ILatestRelease | null> {
+  const releases = await loadReleaseNotes(await getUserLocale(userId));
+  const [release] = getPublishedReleases(releases);
+  if (!release) return null;
+
+  return { ...toCurrentRelease(release), is_new: isWithinWindow(release) };
+}
+
 // Ignores is_active and the 7-day window for a release the requesting user has
 // already been notified about (a row in user_notifications) — a What's New
 // notification persisted in the drawer must stay clickable long after the
@@ -143,9 +161,8 @@ async function getCurrentReleaseForUser(userId: string): Promise<ICurrentRelease
 // getCurrentReleaseForUser would show. Anything else (a draft/inactive
 // release, or one this user was never notified of) is denied — otherwise any
 // authenticated user could read a not-yet-published release by guessing its
-// slug. Looks up the id in already-parsed releases rather than building a
-// filename from the param directly, to avoid path traversal via an
-// attacker-controlled id. Fails closed on a DB error.
+// slug. Looks up the id in the localized database releases. Fails closed
+// on a DB error.
 async function getReleaseById(releaseId: string, userId?: string): Promise<ICurrentRelease | null> {
   if (!releaseId) return null;
   const releases = await loadReleaseNotes(await getUserLocale(userId));
@@ -221,6 +238,7 @@ async function ensureNotificationsForEligibleReleases(userId?: string, teamId?: 
 
 export default {
   getCurrentReleaseForUser,
+  getLatestRelease,
   recordDismissal,
   getReleaseById,
   ensureNotificationsForEligibleReleases,

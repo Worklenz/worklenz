@@ -11,5 +11,11 @@
   "mentionedInComment": "<b>{{user}}</b> ju përmendi në një koment në <b>{{task}}</b>",
   "mentionedInProjectComment": "<b>{{user}}</b> ju përmendi në një koment në <b>{{project}}</b>",
   "mentionedInProjectDocument": "<b>{{user}}</b> ju përmendi në një dokument në <b>{{project}}</b>",
-  "phaseTaskAssigned": "Një detyrë ju është caktuar në <b>{{phase}}</b>: <b>{{task}}</b>"
+  "phaseTaskAssigned": "Një detyrë ju është caktuar në <b>{{phase}}</b>: <b>{{task}}</b>",
+  "security": {
+    "invitationLimit": "Kjo hapësirë pune ka arritur kufirin e sigurisë për ftesat. Ju lutemi provoni përsëri më vonë.",
+    "invitationsPaused": "Ftesat janë pezulluar përkohësisht. Ju lutemi kontaktoni administratorin tuaj.",
+    "blockedTaskHost": "Kjo detyrë përmban një lidhje të bllokuar. Ju lutemi hiqeni dhe provoni përsëri.",
+    "blockedSignupDomain": "Ky ofrues i emailit nuk mbështetet. Ju lutemi përdorni një adresë tjetër emaili."
+  }
 }

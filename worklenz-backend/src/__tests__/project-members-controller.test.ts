@@ -17,6 +17,7 @@ jest.mock('../shared/guest-seat-limits', () => ({
   getGuestSeatLimit: jest.fn(),
 }));
 
+import db from '../config/db';
 import ProjectMembersController from '../controllers/project-members-controller';
 import TeamMembersController from '../controllers/team-members-controller';
 import { checkTeamSubscriptionStatus, getActiveGuestCount } from '../shared/paddle-utils';
@@ -174,5 +175,16 @@ describe('ProjectMembersController.createByEmail', () => {
       }),
     );
     expect(createOrInviteMembersSpy).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('ProjectMembersController.checkIfUserAlreadyExistsInTeam', () => {
+  it.each([true, false])('returns %s for the target team without querying other workspaces', async exists => {
+    const query = jest.mocked(db.query);
+    query.mockReset().mockResolvedValue({ rows: [{ exists }], rowCount: 1 } as Awaited<ReturnType<typeof db.query>>);
+    expect(await ProjectMembersController.checkIfUserAlreadyExistsInTeam('target-team', ' user@example.com ')).toBe(exists);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('team_id = $2::UUID'), ['user@example.com', 'target-team']);
+    expect(query).not.toHaveBeenCalledWith(expect.stringContaining('t.user_id'), expect.anything());
   });
 });

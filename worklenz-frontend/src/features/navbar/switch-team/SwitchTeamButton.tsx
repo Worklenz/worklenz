@@ -105,14 +105,14 @@ const SwitchTeamButton = () => {
 
     try {
       trackMixpanelEvent(evt_common_switch_team);
-      
+
       // Switch team and wait for backend to complete the activation
       await dispatch(setActiveTeam(id)).unwrap();
-      
+
       // Add a small delay to ensure database transaction is committed
       // and session is properly updated before verifying
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       // Verify authentication to get the updated user session with new team
       await handleVerifyAuth();
 
@@ -141,7 +141,10 @@ const SwitchTeamButton = () => {
       <Flex vertical>
         <Flex gap={12} align="center" justify="space-between" style={{ padding: '4px 12px' }}>
           <Flex gap={8} align="center">
-            <CustomAvatar avatarName={team.name || ''} />
+            <CustomAvatar
+              avatarName={team.name || ''}
+              avatarUrl={team.logo_url || undefined}
+            />
             <Flex vertical>
               <Typography.Text style={{ fontSize: 11, fontWeight: 300 }}>
                 {t('owned-by', { ns: 'common', defaultValue: 'Owned by' })} {team.owns_by}
