@@ -1,11 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { Flex, Input, Tooltip, Typography, message, theme } from '@/shared/antd-imports';
+import {
+  Button,
+  Flex,
+  Input,
+  Tooltip,
+  Typography,
+  message,
+  theme,
+} from '@/shared/antd-imports';
 import PillToggle from '@/pages/home/PillToggle';
 import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
-import { useGetProjectTasksQuery, useUpdatePortalTaskMutation } from '@/api/client-portal/portal-projects-api';
+import {
+  useGetProjectTasksQuery,
+  useUpdatePortalTaskMutation,
+  useBulkUpdatePortalTaskVisibilityMutation,
+} from '@/api/client-portal/portal-projects-api';
 import {
   PortalAvatar,
   PortalPagedTable,
@@ -44,6 +56,20 @@ export const TasksTab = ({ project }: TasksTabProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, debouncedSearch]);
 
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  const [isBulkSaving, setIsBulkSaving] = useState(false);
+  const bulkRequestInProgress = useRef(false);
+
+  useEffect(() => {
+    setSelectedTaskIds([]);
+  }, [
+    project.id,
+    filter,
+    search,
+    paging.page,
+    paging.limit,
+  ]);
+
   const query = useGetProjectTasksQuery({
     projectId: project.id,
     params: {
@@ -57,13 +83,75 @@ export const TasksTab = ({ project }: TasksTabProps) => {
   const list = query.data?.body;
   const counts = list?.counts;
   const openTask = list?.items.find(task => task.id === openTaskId) ?? null;
+  const [bulkUpdateVisibility] =
+    useBulkUpdatePortalTaskVisibilityMutation();
+
+  const controlsDisabled =
+    isUpdating ||
+    isBulkSaving ||
+    query.isFetching ||
+    query.isError ||
+    search !== debouncedSearch;
 
   const changeVisibility = async (task: PortalTask, visibility: PortalVisibility) => {
+    if (controlsDisabled) return;
     try {
       await updateTask({ projectId: project.id, taskId: task.id, body: { visibility } }).unwrap();
       showVisibilityToast('task', task.client_title || decodeHtmlEntities(task.title), visibility);
     } catch (error) {
       message.error(getPortalErrorMessage(error, t('tasks.visibilityFailed', { defaultValue: 'The visibility could not be changed.' })));
+    }
+  };
+
+  const changeSelectedVisibility = async (
+    visibility: PortalVisibility
+  ) => {
+    if (
+      bulkRequestInProgress.current ||
+      controlsDisabled ||
+      selectedTaskIds.length === 0
+    ) {
+      return;
+    }
+
+    const taskIds = [...selectedTaskIds];
+
+    bulkRequestInProgress.current = true;
+    setIsBulkSaving(true);
+
+    try {
+      await bulkUpdateVisibility({
+        projectId: project.id,
+        body: {
+          task_ids: taskIds,
+          visibility,
+        },
+      }).unwrap();
+
+      setSelectedTaskIds([]);
+
+      // A visibility filter may lose rows after this update.
+      // Returning to page 1 avoids landing on an empty later page.
+      paging.reset();
+
+      message.success(
+        t('tasks.bulkUpdated', {
+          defaultValue: 'Visibility updated for the selected tasks.',
+        })
+      );
+    } catch (error) {
+      message.error(
+        getPortalErrorMessage(
+          error,
+          t('tasks.bulkFailed', {
+            defaultValue:
+              'Task visibility could not be updated. Please try again.',
+          })
+        )
+      );
+    } finally {
+      bulkRequestInProgress.current = false;
+      setIsBulkSaving(false);
     }
   };
 
@@ -124,7 +212,7 @@ export const TasksTab = ({ project }: TasksTabProps) => {
           <VisibilitySwitch
             visibility={task.visibility}
             itemLabel={decodeHtmlEntities(task.title)}
-            disabled={isUpdating}
+            disabled={controlsDisabled}
             onChange={visibility => void changeVisibility(task, visibility)}
           />
         </span>
@@ -167,6 +255,56 @@ export const TasksTab = ({ project }: TasksTabProps) => {
         })}
       </Typography.Paragraph>
 
+      <Flex
+        align="center"
+        wrap="wrap"
+        gap={8}
+        style={{ marginBottom: 12 }}
+      >
+        <Typography.Text>
+          {t('tasks.bulkSelected', {
+            count: selectedTaskIds.length,
+            defaultValue: 'Selected: {{count}}',
+          })}
+        </Typography.Text>
+
+        <Button
+          type="primary"
+          loading={isBulkSaving}
+          disabled={controlsDisabled || selectedTaskIds.length === 0}
+          onClick={() => void changeSelectedVisibility('client')}
+        >
+          {t('tasks.bulkEnable', {
+            defaultValue: 'Enable Client Visible',
+          })}
+        </Button>
+
+        <Button
+          disabled={controlsDisabled || selectedTaskIds.length === 0}
+          onClick={() => void changeSelectedVisibility('internal')}
+        >
+          {t('tasks.bulkDisable', {
+            defaultValue: 'Disable Client Visible',
+          })}
+        </Button>
+
+        <Button
+          type="text"
+          disabled={isBulkSaving || selectedTaskIds.length === 0}
+          onClick={() => setSelectedTaskIds([])}
+        >
+          {t('tasks.bulkClear', {
+            defaultValue: 'Clear selection',
+          })}
+        </Button>
+
+        <Typography.Text type="secondary">
+          {t('tasks.bulkPageHint', {
+            defaultValue: 'Select all applies to this page only.',
+          })}
+        </Typography.Text>
+      </Flex>
+
       <PortalPagedTable<PortalTask>
         ariaLabel={t('tasks.tableLabel', { defaultValue: 'Tasks' })}
         columns={columns}
@@ -177,8 +315,29 @@ export const TasksTab = ({ project }: TasksTabProps) => {
         loading={query.isLoading}
         isError={query.isError}
         onRetry={() => query.refetch()}
-        onRowClick={task => setOpenTaskId(task.id)}
+        onRowClick={
+          controlsDisabled
+            ? undefined
+            : task => setOpenTaskId(task.id)
+        }
         emptyText={t('tasks.empty', { defaultValue: 'No tasks in this view.' })}
+        rowSelection={{
+          selectedRowKeys: selectedTaskIds,
+          preserveSelectedRowKeys: false,
+          onChange: keys => {
+            if (!controlsDisabled) {
+              setSelectedTaskIds(keys.map(String));
+            }
+          },
+          getCheckboxProps: () => ({
+            disabled: controlsDisabled,
+          }),
+          renderCell: (_checked, _task, _index, originNode) => (
+            <span onClick={event => event.stopPropagation()}>
+              {originNode}
+            </span>
+          ),
+        }}
       />
 
       {openTask && <TaskDrawer key={openTask.id} project={project} task={openTask} onClose={() => setOpenTaskId(null)} />}

@@ -60,6 +60,12 @@ router.delete("/milestones/:milestoneId", safeControllerFunction(PortalProjectsC
 
 router.get("/projects/:projectId/tasks", safeControllerFunction(PortalProjectsController.tasks));
 router.put("/tasks/:taskId", safeControllerFunction(PortalProjectsController.updateTask));
+router.put(
+  "/projects/:projectId/tasks/visibility",
+  safeControllerFunction(
+    PortalProjectsController.bulkUpdateTaskVisibility
+  )
+);
 
 router.get("/projects/:projectId/files", safeControllerFunction(PortalProjectsController.files));
 router.post("/projects/:projectId/files/presign", safeControllerFunction(PortalProjectsController.presignFile));

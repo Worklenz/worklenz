@@ -32,7 +32,11 @@ import {
   setProjectPortal,
   updateProjectOverview,
 } from "../../../services/client-portal-v2/projects.service";
-import { listPortalTasks, updatePortalTask } from "../../../services/client-portal-v2/tasks.service";
+import {
+  listPortalTasks,
+  updatePortalTask,
+  bulkUpdatePortalTaskVisibility,
+} from "../../../services/client-portal-v2/tasks.service";
 import { asNumber, asString, bodyOf, ok, portalHandler, staffContext, uuidParam } from "./portal-http";
 
 /**
@@ -230,6 +234,25 @@ export default class PortalProjectsController {
       body.visibility === "internal" ? "Client access was removed immediately." : "Saved"
     );
   });
+
+  static bulkUpdateTaskVisibility = portalHandler(
+    "Failed to update task visibility",
+    async (req, res) => {
+      const { teamId, userId, actor } = staffContext(req);
+      const body = bodyOf(req);
+
+      const result = await bulkUpdatePortalTaskVisibility({
+        teamId,
+        userId,
+        actor,
+        projectId: uuidParam(req, "projectId"),
+        taskIds: body.task_ids,
+        visibility: body.visibility,
+      });
+
+      ok(res, result, "Task visibility updated");
+    }
+  );
 
   // ─── Files ────────────────────────────────────────────────────────────────
 

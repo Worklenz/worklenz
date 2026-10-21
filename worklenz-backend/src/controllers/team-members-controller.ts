@@ -54,6 +54,7 @@ import {
   logTeamMemberEvent,
 } from "../services/team-member-audit.service";
 import { AUDIT_EVENT_TYPE } from "../shared/audit-log-constants";
+import { isSelfHostedDeployment } from "../shared/deployment-mode";
 
 export default class TeamMembersController extends WorklenzControllerBase {
   private static async ensureAssignableRole(

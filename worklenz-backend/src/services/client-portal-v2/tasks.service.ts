@@ -238,3 +238,120 @@ export async function updatePortalTask(input: {
 
   return getPortalTask(db, teamId, taskId);
 }
+
+interface BulkTaskVisibilityInput {
+  teamId: string;
+  projectId: string;
+  userId: string;
+  actor: AuditActor;
+  taskIds: unknown;
+  visibility: unknown;
+}
+
+interface BulkTaskRow {
+  id: string;
+  title: string;
+  visibility: PortalVisibility;
+}
+
+export async function bulkUpdatePortalTaskVisibility(
+  input: BulkTaskVisibilityInput
+): Promise<{ updated_count: number }> {
+  const uuidShape =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  if (
+    !Array.isArray(input.taskIds) ||
+    input.taskIds.length === 0 ||
+    input.taskIds.length > 100
+  ) {
+    throw badRequest("Select between 1 and 100 tasks");
+  }
+
+  const normalizedIds: string[] = [];
+
+  for (const id of input.taskIds) {
+    if (typeof id !== "string" || !uuidShape.test(id)) {
+      throw badRequest("Invalid task ID", "INVALID_ID");
+    }
+
+    normalizedIds.push(id.toLowerCase());
+  }
+
+  const taskIds = Array.from(new Set(normalizedIds));
+
+  if (!isPortalVisibility(input.visibility)) {
+    throw badRequest("Invalid visibility");
+  }
+
+  const visibility = input.visibility;
+
+  return withTransaction(async tx => {
+    const project = await getProjectRef(
+      tx,
+      input.teamId,
+      input.projectId
+    );
+
+    // Validate the entire selection before making changes.
+    // Stable locking order also avoids overlapping bulk requests
+    // locking the same tasks in different orders.
+    const result = await tx.query(
+      `SELECT t.id, t.name AS title,
+              COALESCE(cts.visibility, 'internal') AS visibility
+         FROM tasks t
+         JOIN projects p ON p.id = t.project_id
+         LEFT JOIN client_portal_task_settings cts
+           ON cts.task_id = t.id
+        WHERE t.id = ANY($1::uuid[])
+          AND t.project_id = $2
+          AND p.team_id = $3
+          AND t.archived IS FALSE
+        ORDER BY t.id
+        FOR UPDATE OF t`,
+      [taskIds, input.projectId, input.teamId]
+    );
+
+    const tasks = result.rows as BulkTaskRow[];
+
+    if (tasks.length !== taskIds.length) {
+      throw badRequest(
+        "One or more selected tasks are unavailable in this project",
+        "INVALID_TASK_SELECTION"
+      );
+    }
+
+    await tx.query(
+      `INSERT INTO client_portal_task_settings
+         (task_id, project_id, visibility, updated_by)
+       SELECT task_id, $2::uuid, $3, $4::uuid
+         FROM unnest($1::uuid[]) AS selected(task_id)
+       ON CONFLICT (task_id) DO UPDATE SET
+         visibility = EXCLUDED.visibility,
+         updated_by = EXCLUDED.updated_by,
+         updated_at = CURRENT_TIMESTAMP`,
+      [taskIds, input.projectId, visibility, input.userId]
+    );
+
+    for (const task of tasks) {
+      if (task.visibility === visibility) continue;
+
+      await recordAuditEvent(tx, {
+        teamId: input.teamId,
+        event:
+          visibility === "client"
+            ? "Entity made Client Visible"
+            : "Entity returned to Internal Only",
+        actor: input.actor,
+        clientId: project.clientId,
+        clientName: project.clientName,
+        projectId: project.id,
+        targetType: "task",
+        targetId: task.id,
+        targetLabel: `Task: ${task.title}`,
+      });
+    }
+
+    return { updated_count: taskIds.length };
+  });
+}

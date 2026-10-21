@@ -309,6 +309,14 @@
     },
     "tableLabel": "Tasks",
     "visibilityFailed": "The visibility could not be changed."
+
+    "bulkSelected": "Selected: {{count}}",
+    "bulkEnable": "Enable Client Visible",
+    "bulkDisable": "Disable Client Visible",
+    "bulkClear": "Clear selection",
+    "bulkPageHint": "Select all applies to this page only.",
+    "bulkUpdated": "Visibility updated for the selected tasks.",
+    "bulkFailed": "Task visibility could not be updated. Please try again."
   },
   "upload": {
     "addedInternal": "{{name}} uploaded as Internal Only.",
@@ -357,3 +365,4 @@
   "close": "Close",
   "retry": "Retry"
 }
+

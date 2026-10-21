@@ -40,6 +40,8 @@ interface PortalPagedTableProps<T extends object> {
   onTableChange?: TableProps<T>['onChange'];
   /** Adds a full-width header row whenever the key changes. A group that spans pages repeats its header. */
   grouping?: PortalTableGrouping<T>;
+
+  rowSelection?: TableProps<T>['rowSelection'];
 }
 
 /**
@@ -60,6 +62,7 @@ export const PortalPagedTable = <T extends object>({
   ariaLabel,
   onTableChange,
   grouping,
+  rowSelection,
 }: PortalPagedTableProps<T>) => {
   const { t } = useTranslation('client-portal-v2');
   const { token } = theme.useToken();
@@ -141,6 +144,7 @@ export const PortalPagedTable = <T extends object>({
               : rowKey(row)
           }
           pagination={false}
+          rowSelection={grouping ? undefined : rowSelection}
           onChange={onTableChange}
           showSorterTooltip={false}
           scroll={{ x: 'max-content' }}

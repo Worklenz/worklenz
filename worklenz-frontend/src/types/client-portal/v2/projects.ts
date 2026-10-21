@@ -208,6 +208,15 @@ export interface UpdatePortalTaskRequest {
   attached_file_ids?: string[];
 }
 
+export interface BulkUpdatePortalTaskVisibilityRequest {
+  task_ids: string[];
+  visibility: PortalVisibility;
+}
+
+export interface BulkUpdatePortalTaskVisibilityResult {
+  updated_count: number;
+}
+
 // ─── Files ──────────────────────────────────────────────────────────────────
 
 export const FILE_CATEGORIES = [

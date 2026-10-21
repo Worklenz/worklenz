@@ -24,6 +24,8 @@ import type {
   SetPortalResult,
   UpdatePortalTaskRequest,
   UpdateProjectOverviewRequest,
+  BulkUpdatePortalTaskVisibilityRequest,
+  BulkUpdatePortalTaskVisibilityResult,
 } from '@/types/client-portal/v2';
 
 export const portalProjectsApi = clientPortalApi.injectEndpoints({
@@ -193,6 +195,27 @@ export const portalProjectsApi = clientPortalApi.injectEndpoints({
       ],
     }),
 
+    bulkUpdatePortalTaskVisibility: builder.mutation<
+      ServerEnvelope<BulkUpdatePortalTaskVisibilityResult>,
+      {
+        projectId: string;
+        body: BulkUpdatePortalTaskVisibilityRequest;
+      }
+    >({
+      query: ({ projectId, body }) => ({
+        url: `${PORTAL_V2}/projects/${projectId}/tasks/visibility`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (_result, _error, { projectId }) => [
+        { type: 'PortalTasks', id: projectId },
+        { type: 'Milestones', id: projectId },
+        'PortalSettingsV2',
+        'Threads',
+        'AuditLog',
+      ],
+    }),
+
     // ─── Files ──────────────────────────────────────────────────────────────
 
     getProjectFiles: builder.query<
@@ -305,4 +328,5 @@ export const {
   usePresignFileVersionMutation,
   useConfirmFileVersionMutation,
   useGetFileDownloadLinkMutation,
+  useBulkUpdatePortalTaskVisibilityMutation,  
 } = portalProjectsApi;
