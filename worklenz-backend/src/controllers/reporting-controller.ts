@@ -99,10 +99,10 @@ export default class ReportingController extends WorklenzControllerBase {
       const params: any[] = [];
 
       if (start === end) {
-        clause = `task_work_log.created_at::DATE = $${paramOffset}::DATE`;
+        clause = `task_work_log.created_at::DATE = $${Number(paramOffset)}::DATE`;
         params.push(start);
       } else {
-        clause = `task_work_log.created_at::DATE >= $${paramOffset}::DATE AND task_work_log.created_at < $${paramOffset + 1}::DATE + INTERVAL '1 day'`;
+        clause = `task_work_log.created_at::DATE >= $${Number(paramOffset)}::DATE AND task_work_log.created_at < $${Number(paramOffset) + 1}::DATE + INTERVAL '1 day'`;
         params.push(start, end);
       }
 
@@ -941,24 +941,24 @@ export default class ReportingController extends WorklenzControllerBase {
                               AND status_id IN (${statusIdsClause})
                                AND NOT EXISTS (SELECT user_id
                                FROM archived_projects
-                               WHERE user_id = $${userIdParam}
+                               WHERE user_id = $${Number(userIdParam)}
                                AND project_id = projects.id)
                                AND CASE
-                               WHEN ($${includeArchivedParam} IS TRUE) THEN team_id IS NOT NULL
+                               WHEN ($${Number(includeArchivedParam)} IS TRUE) THEN team_id IS NOT NULL
                                ELSE NOT EXISTS (SELECT project_id
                                FROM archived_projects
                                WHERE project_id = projects.id) END
                              ORDER BY NAME ASC
-                             LIMIT $${limitParam} OFFSET $${offsetParam}) t) AS DATA
+                             LIMIT $${Number(limitParam)} OFFSET $${Number(offsetParam)}) t) AS DATA
                FROM projects
                WHERE team_id IN (${teamIdsClause}) ${searchQuery}
                 AND status_id IN (${statusIdsClause})
                  AND NOT EXISTS (SELECT user_id
                  FROM archived_projects
-                 WHERE user_id = $${userIdParam}
+                 WHERE user_id = $${Number(userIdParam)}
                  AND project_id = projects.id)
                  AND CASE
-                 WHEN ($${includeArchivedParam} IS TRUE) THEN team_id IS NOT NULL
+                 WHEN ($${Number(includeArchivedParam)} IS TRUE) THEN team_id IS NOT NULL
                  ELSE NOT EXISTS (SELECT project_id
                  FROM archived_projects
                  WHERE project_id = projects.id)
