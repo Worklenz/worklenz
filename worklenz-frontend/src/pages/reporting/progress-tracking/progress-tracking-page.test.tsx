@@ -115,7 +115,7 @@ const renderPage = async () => {
   await screen.findByText('Project 1');
 };
 
-describe('ProgressTrackingPage sorting', () => {
+describe('ProgressTrackingPage sorting', { timeout: 15000 }, () => {
   beforeEach(() => {
     mockGetProjects.mockReset();
     mockGetProjects.mockImplementation(query => Promise.resolve(buildResponse(query)));
@@ -188,7 +188,7 @@ describe('ProgressTrackingPage sorting', () => {
     goToPage(2);
     await expectLastQuery({ page: 2 });
     expect(lastQuery().field).toBeUndefined();
-  });
+  }, 15000);
 
   it('resets to page 1 on a page-size change, with and without an active sort', async () => {
     await renderPage();
@@ -232,5 +232,80 @@ describe('ProgressTrackingPage sorting', () => {
 
     const table = screen.getByRole('table');
     expect(within(table).getByText('Project 1')).toBeInTheDocument();
+  });
+});
+
+describe('ProgressTrackingPage filter buttons and dropdown button', { timeout: 15000 }, () => {
+  beforeEach(() => {
+    mockGetProjects.mockReset();
+    mockGetProjects.mockImplementation(query => Promise.resolve(buildResponse(query)));
+  });
+
+  it('renders status filter buttons and dropdown button without round shape and with standard styling', async () => {
+    await renderPage();
+
+    const confidenceGroup = screen.getByRole('group', { name: /Delivery Confidence/i });
+    const buttons = within(confidenceGroup).getAllByRole('button');
+    expect(buttons).toHaveLength(5);
+
+    // Ensure none of the buttons have the obsolete ant-btn-round class
+    buttons.forEach(button => {
+      expect(button).not.toHaveClass('ant-btn-round');
+    });
+
+    const allBtn = screen.getByRole('button', { name: /^All/i });
+    expect(allBtn).toHaveAttribute('aria-pressed', 'true');
+
+    const dropdownBtn = screen.getByRole('button', { name: /Percent complete/i });
+    expect(dropdownBtn).toBeInTheDocument();
+    expect(dropdownBtn).not.toHaveClass('ant-btn-round');
+    expect(dropdownBtn).toHaveTextContent('Any % complete');
+  });
+
+  it('filters by status when clicking status filter buttons and toggles back to all when clicking active status', async () => {
+    await renderPage();
+
+    const confidenceGroup = screen.getByRole('group', { name: /Delivery Confidence/i });
+    const onTrackBtn = within(confidenceGroup).getByRole('button', { name: /^On track/i });
+    fireEvent.click(onTrackBtn);
+    await expectLastQuery({ confidence: 'green', page: 1 });
+    expect(onTrackBtn).toHaveAttribute('aria-pressed', 'true');
+
+    // Clicking an active status again toggles it off back to 'all'
+    fireEvent.click(onTrackBtn);
+    await expectLastQuery({ confidence: undefined, page: 1 });
+    const allBtn = within(confidenceGroup).getByRole('button', { name: /^All/i });
+    expect(allBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(onTrackBtn).toHaveAttribute('aria-pressed', 'false');
+
+    const atRiskBtn = within(confidenceGroup).getByRole('button', { name: /^At risk/i });
+    fireEvent.click(atRiskBtn);
+    await expectLastQuery({ confidence: 'amber', page: 1 });
+    expect(atRiskBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(allBtn).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(allBtn);
+    await expectLastQuery({ confidence: undefined, page: 1 });
+    expect(allBtn).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('filters by percent range using the dropdown button and clears it', async () => {
+    await renderPage();
+
+    const dropdownBtn = screen.getByRole('button', { name: /Percent complete/i });
+    fireEvent.click(dropdownBtn);
+
+    const option = await screen.findByText('0–25%');
+    fireEvent.click(option);
+
+    await expectLastQuery({ percent_range: '0_25', page: 1 });
+    expect(dropdownBtn).toHaveTextContent('Percent complete: 0–25%');
+
+    // Click clear icon to reset percent range
+    const clearIcon = screen.getByRole('img', { name: /Any % complete/i });
+    fireEvent.click(clearIcon);
+
+    await expectLastQuery({ percent_range: undefined, page: 1 });
+    expect(dropdownBtn).toHaveTextContent('Any % complete');
   });
 });
