@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { clientPortalV2Api, useGetApprovalsQuery, useGetChangeRequestsQuery, useGetOrgUsersQuery, useGetProjectsV2Query } from '@/store/api-v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { targetPath } from '@/utils/targets';
 import type { ClientTaskV2 } from '@/types/v2';
 
@@ -66,7 +67,14 @@ const useSearchHits = (query: string, enabled: boolean): SearchHit[] => {
 
     (projects ?? []).forEach(project => {
       if (!matches(needle, project.id, project.name, project.primary_contact, project.phase)) return;
-      hits.push({ key: `project-${project.id}`, group: 'projects', title: project.name, subtitle: project.phase, reference: null, path: `/projects/${project.id}` });
+      hits.push({
+        key: `project-${project.id}`,
+        group: 'projects',
+        title: decodeHtmlEntities(project.name),
+        subtitle: project.phase ? decodeHtmlEntities(project.phase) : null,
+        reference: null,
+        path: `/projects/${project.id}`,
+      });
     });
     (projects ?? []).forEach(project => {
       (tasksByProject[project.id] ?? []).forEach(task => {
@@ -74,8 +82,8 @@ const useSearchHits = (query: string, enabled: boolean): SearchHit[] => {
         hits.push({
           key: `task-${task.id}`,
           group: 'tasks',
-          title: task.title,
-          subtitle: project.name,
+          title: decodeHtmlEntities(task.title),
+          subtitle: decodeHtmlEntities(project.name),
           reference: task.key,
           path: targetPath({ page: 'task', projectId: project.id, id: task.id }),
         });
@@ -83,15 +91,36 @@ const useSearchHits = (query: string, enabled: boolean): SearchHit[] => {
     });
     (approvals ?? []).forEach(approval => {
       if (!matches(needle, approval.id, approval.ref_no, approval.title, approval.project_name, approval.approver_name)) return;
-      hits.push({ key: `approval-${approval.id}`, group: 'approvals', title: approval.title, subtitle: approval.project_name, reference: approval.ref_no, path: `/approvals/${approval.id}` });
+      hits.push({
+        key: `approval-${approval.id}`,
+        group: 'approvals',
+        title: decodeHtmlEntities(approval.title),
+        subtitle: approval.project_name ? decodeHtmlEntities(approval.project_name) : null,
+        reference: approval.ref_no,
+        path: `/approvals/${approval.id}`,
+      });
     });
     (changeRequests ?? []).forEach(request => {
       if (!matches(needle, request.id, request.cr_no, request.title, request.project_name, request.requester_name)) return;
-      hits.push({ key: `cr-${request.id}`, group: 'changeRequests', title: request.title, subtitle: request.project_name, reference: request.cr_no, path: `/change-requests/${request.id}` });
+      hits.push({
+        key: `cr-${request.id}`,
+        group: 'changeRequests',
+        title: decodeHtmlEntities(request.title),
+        subtitle: request.project_name ? decodeHtmlEntities(request.project_name) : null,
+        reference: request.cr_no,
+        path: `/change-requests/${request.id}`,
+      });
     });
     (members ?? []).forEach(member => {
       if (!matches(needle, member.id, member.name, member.email)) return;
-      hits.push({ key: `member-${member.id}`, group: 'members', title: member.name, subtitle: member.email, reference: null, path: '/settings/members' });
+      hits.push({
+        key: `member-${member.id}`,
+        group: 'members',
+        title: decodeHtmlEntities(member.name),
+        subtitle: member.email,
+        reference: null,
+        path: '/settings/members',
+      });
     });
     return hits;
   }, [query, projects, tasksByProject, approvals, changeRequests, members]);

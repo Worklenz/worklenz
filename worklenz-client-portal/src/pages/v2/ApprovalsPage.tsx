@@ -27,6 +27,7 @@ import type { ColumnField, FilterGroup, RowAction } from '@/components/v2';
 import type { ClientApprovalV2 } from '@/types/v2';
 import PillToggle from '@/components/PillToggle';
 import { PORTAL_CONTROL_HEIGHT } from '@/config/theme.config';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { ApprovalDetail } from './approvals/ApprovalDetail';
 
 const LINK_TYPE_LABELS: Record<string, string> = {
@@ -142,7 +143,7 @@ const ApprovalsList: React.FC<{ openId?: string }> = ({ openId }) => {
       title: t('approvals.approval', { defaultValue: 'Approval' }),
       key: 'approval',
       ...sorting.columnProps('approval'),
-      render: (_: unknown, approval) => <Typography.Text strong>{approval.title}</Typography.Text>,
+      render: (_: unknown, approval) => <Typography.Text strong>{decodeHtmlEntities(approval.title)}</Typography.Text>,
     },
     {
       title: t('approvals.revisionColumn', { defaultValue: 'Revision' }),
@@ -164,7 +165,7 @@ const ApprovalsList: React.FC<{ openId?: string }> = ({ openId }) => {
       key: 'linked',
       responsive: ['lg'],
       ...sorting.columnProps('linked'),
-      render: (_: unknown, approval) => approval.linked_item.name,
+      render: (_: unknown, approval) => decodeHtmlEntities(approval.linked_item.name),
     },
     {
       title: t('approvals.linkedType', { defaultValue: 'Item type' }),
@@ -252,7 +253,7 @@ const ApprovalsList: React.FC<{ openId?: string }> = ({ openId }) => {
       width: 90,
       align: 'center',
       render: (_: unknown, approval) => (
-        <RowActions name={approval.title} actions={actionsFor(approval)} onSelect={key => runAction(approval, key)} />
+        <RowActions name={decodeHtmlEntities(approval.title)} actions={actionsFor(approval)} onSelect={key => runAction(approval, key)} />
       ),
     },
   ];
@@ -281,7 +282,7 @@ const ApprovalsList: React.FC<{ openId?: string }> = ({ openId }) => {
   const projectOptions = useMemo(
     () =>
       Array.from(new Map(approvals.map(approval => [approval.project_id, approval.project_name])))
-        .map(([value, label]) => ({ value, label }))
+        .map(([value, label]) => ({ value, label: decodeHtmlEntities(label) }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     [approvals]
   );

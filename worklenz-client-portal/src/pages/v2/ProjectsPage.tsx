@@ -35,6 +35,7 @@ import {
 import type { ColumnField, FilterGroup, RowAction } from '@/components/v2';
 import type { ClientProjectV2, ProjectStatus } from '@/types/v2';
 import { toModalTab, type ProjectModalIntent, type ProjectModalTab } from '@/utils/targets';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { ProjectModal } from './project/ProjectModal';
 
 const TABLE_BODY_HEIGHT = tableBodyHeight(380);
@@ -157,7 +158,7 @@ export const ProjectsPage: React.FC = () => {
       dataIndex: 'phase',
       responsive: ['md'],
       ...sorting.columnProps('phase'),
-      render: (phase: string | null) => phase ?? '—',
+      render: (phase: string | null) => decodeHtmlEntities(phase ?? undefined) || '—',
     },
     {
       title: t('projects.progress', { defaultValue: 'Progress' }),
@@ -183,7 +184,7 @@ export const ProjectsPage: React.FC = () => {
       key: 'contact',
       dataIndex: 'primary_contact',
       responsive: ['lg'],
-      render: (value: string | null) => value ?? '—',
+      render: (value: string | null) => decodeHtmlEntities(value ?? undefined) || '—',
     },
     {
       title: t('projects.openItems', { defaultValue: 'Open items' }),
@@ -200,7 +201,7 @@ export const ProjectsPage: React.FC = () => {
       width: 90,
       align: 'center',
       render: (_: unknown, project) => (
-        <RowActions name={project.name} actions={actionItems(project)} onSelect={key => runAction(project, key)} />
+        <RowActions name={decodeHtmlEntities(project.name)} actions={actionItems(project)} onSelect={key => runAction(project, key)} />
       ),
     },
   ];
@@ -232,7 +233,7 @@ export const ProjectsPage: React.FC = () => {
       {
         key: 'phase',
         label: t('projects.phase', { defaultValue: 'Phase' }),
-        options: (query.data?.phases ?? []).map(phase => ({ value: phase, label: phase })),
+        options: (query.data?.phases ?? []).map(phase => ({ value: phase, label: decodeHtmlEntities(phase) })),
         value: phaseFilter,
         onChange: (value: string[]) => {
           setPhaseFilter(value);

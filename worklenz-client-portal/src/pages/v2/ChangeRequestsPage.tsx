@@ -36,6 +36,7 @@ import {
 import type { ColumnField, FilterGroup, RowAction } from '@/components/v2';
 import type { ClientChangeRequestV2 } from '@/types/v2';
 import { NewChangeRequestModal } from '@/components/v2/NewChangeRequestModal';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { ChangeRequestDetail } from './change-requests/ChangeRequestDetail';
 
 const OPEN_STATUSES = ['submitted', 'under_review', 'more_info'];
@@ -125,7 +126,7 @@ const ChangeRequestList: React.FC<{ openId?: string }> = ({ openId }) => {
       title: t('changeRequests.request', { defaultValue: 'Request' }),
       key: 'request',
       ...sorting.columnProps('request'),
-      render: (_: unknown, request) => <Typography.Text strong>{request.title}</Typography.Text>,
+      render: (_: unknown, request) => <Typography.Text strong>{decodeHtmlEntities(request.title)}</Typography.Text>,
     },
     {
       title: t('changeRequests.requester', { defaultValue: 'Requested by' }),
@@ -199,7 +200,7 @@ const ChangeRequestList: React.FC<{ openId?: string }> = ({ openId }) => {
       width: 90,
       align: 'center',
       render: (_: unknown, request) => (
-        <RowActions name={request.title} actions={actionsFor()} onSelect={key => runAction(request, key)} />
+        <RowActions name={decodeHtmlEntities(request.title)} actions={actionsFor()} onSelect={key => runAction(request, key)} />
       ),
     },
   ];

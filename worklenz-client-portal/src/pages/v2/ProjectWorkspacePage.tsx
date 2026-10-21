@@ -6,6 +6,7 @@ import { useGetProjectQuery, useGetThreadsQuery } from '@/store/api-v2';
 import { useClientAccess } from '@/hooks/useClientAccess';
 import { useFormatters } from '@/hooks/useFormatters';
 import { QueryState, StatusTag, useRoleLabel } from '@/components/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { PROJECT_TABS, toProjectTab } from '@/utils/targets';
 import { TAB_LABELS } from './project/tabLabels';
 import { OverviewTab } from './project/OverviewTab';
@@ -48,10 +49,10 @@ export const ProjectWorkspacePage: React.FC = () => {
           <Flex justify="space-between" align="flex-start" wrap="wrap" gap={12} style={{ marginBottom: 12 }}>
             <div style={{ minWidth: 0 }}>
               <Typography.Title level={3} style={{ margin: 0 }}>
-                {project.name}
+                {decodeHtmlEntities(project.name)}
               </Typography.Title>
               <Typography.Text type="secondary">
-                {[project.phase, t('projects.expectedOn', { date: date(project.expected_completion), defaultValue: 'Expected completion {{date}}' })]
+                {[decodeHtmlEntities(project.phase ?? undefined) || null, t('projects.expectedOn', { date: date(project.expected_completion), defaultValue: 'Expected completion {{date}}' })]
                   .filter(Boolean)
                   .join(' · ')}
               </Typography.Text>
