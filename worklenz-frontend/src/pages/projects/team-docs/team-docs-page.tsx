@@ -26,11 +26,13 @@ import DocsSidebar from '@/pages/projects/project-view-1/docs/docs-sidebar';
 import { mentionStore } from '@/pages/projects/project-view-1/docs/mention-store';
 import { useDocsFavorites } from '@/pages/projects/project-view-1/docs/use-docs-favorites';
 import { useDocsAutosave } from '@/pages/projects/project-view-1/docs/use-docs-autosave';
+import { useDocsSearchReplace } from '@/pages/projects/project-view-1/docs/docs-search-guard';
 
 const TeamDocsPage = () => {
   const { t } = useTranslation('project-view-docs');
   const { token } = theme.useToken();
   const [searchParams, setSearchParams] = useSearchParams();
+  const replaceDocsSearch = useDocsSearchReplace(setSearchParams);
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
 
@@ -123,9 +125,9 @@ const TeamDocsPage = () => {
       const next = new URLSearchParams(searchParams);
       if (documentId) next.set('doc', documentId);
       else next.delete('doc');
-      setSearchParams(next, { replace: true });
+      replaceDocsSearch(next);
     },
-    [searchParams, setSearchParams]
+    [searchParams, replaceDocsSearch]
   );
 
   const openDocument = useCallback(
@@ -173,7 +175,7 @@ const TeamDocsPage = () => {
         const next = new URLSearchParams(searchParamsRef.current);
         if (next.has('doc')) {
           next.delete('doc');
-          setSearchParams(next, { replace: true });
+          replaceDocsSearch(next);
         }
         return;
       }
@@ -184,7 +186,7 @@ const TeamDocsPage = () => {
           setReloadToken(value => value + 1);
           const next = new URLSearchParams(searchParamsRef.current);
           next.set('doc', documentResponse.body.id);
-          setSearchParams(next, { replace: true });
+          replaceDocsSearch(next);
         }
       }
     } catch {
@@ -192,7 +194,7 @@ const TeamDocsPage = () => {
     } finally {
       setListLoading(false);
     }
-  }, [applyDocument, setSearchParams]);
+  }, [applyDocument, replaceDocsSearch]);
 
   useEffect(() => {
     void loadPages();

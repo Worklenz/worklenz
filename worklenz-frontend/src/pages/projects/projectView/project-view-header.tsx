@@ -19,6 +19,7 @@ import {
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { releaseDocsEditors } from '@/pages/projects/project-view-1/docs/docs-editor-release';
 import { useState, useCallback, useMemo, memo, useRef, useEffect } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 
@@ -337,6 +338,7 @@ const ProjectViewHeader = memo(() => {
   }, [dispatch, projectId, tab]);
 
   const handleNavigateToProjects = useCallback(() => {
+    releaseDocsEditors();
     navigate('/worklenz/projects');
   }, [navigate]);
 
