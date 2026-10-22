@@ -131,6 +131,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 it('keeps a newer draft when an older document response arrives later', async () => {
@@ -244,6 +245,4 @@ it.each([
 
   await waitFor(() => expect(error).toHaveBeenCalled());
   expect(screen.getByLabelText('Page title')).toHaveValue('First page');
-  error.mockRestore();
-  vi.mocked(Modal.confirm).mockRestore();
 });
