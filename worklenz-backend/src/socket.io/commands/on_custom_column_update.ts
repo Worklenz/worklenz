@@ -3,6 +3,10 @@ import { SocketEvents } from "../events";
 import db from "../../config/db";
 import { getLoggedInUserIdFromSocket, log_error } from "../util";
 import { verifyNonGuestTaskAccessSocket, logUnauthorizedSocketAccess } from "../authorization";
+import {
+  clearInvalidDependentValues,
+  validateDependentSelectionValue,
+} from "../../services/cascading-selection-service";
 
 interface TaskCustomColumnUpdateData {
   task_id: string;
@@ -33,6 +37,42 @@ const normalizePeopleCustomColumnValue = (value: unknown): string[] => {
   }
 
   return [];
+};
+
+/**
+ * After a Selection value changes, clears dependent-field values on the same task that are
+ * no longer valid. Everyone in the project gets the plain update; only the sender gets
+ * `auto_cleared`, so only they see the explanation toast.
+ */
+const clearAndBroadcastDependentValues = async (
+  socket: Socket,
+  projectId: string,
+  taskId: string,
+  parentColumnId: string,
+  parentColumnName: string,
+  parentValue: unknown
+) => {
+  const cleared = await clearInvalidDependentValues(taskId, parentColumnId);
+
+  for (const item of cleared) {
+    const payload = { task_id: taskId, column_key: item.column_key, value: null };
+    socket.to(`project:${projectId}`).emit(
+      SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(),
+      JSON.stringify(payload)
+    );
+    socket.emit(
+      SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(),
+      JSON.stringify({
+        ...payload,
+        auto_cleared: {
+          field_name: item.column_name,
+          previous_value: item.previous_value,
+          parent_field_name: parentColumnName,
+          parent_value: parentValue === null || parentValue === undefined ? null : String(parentValue),
+        },
+      })
+    );
+  }
 };
 
 export const on_task_custom_column_update = async (_io: Server, socket: Socket, data: string) => {
@@ -66,7 +106,7 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
 
     // Get column information
     const columnQuery = `
-      SELECT id, field_type 
+      SELECT id, name, field_type 
       FROM cc_custom_columns 
       WHERE project_id = $1 AND key = $2
     `;
@@ -89,6 +129,29 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
       value === "" ||
       (Array.isArray(value) && value.length === 0) ||
       (fieldType === "people" && normalizedPeopleValue !== null && normalizedPeopleValue.length === 0);
+
+    if (fieldType === "selection" && !isEmptyValue) {
+      const cascadeError = await validateDependentSelectionValue(task_id, columnId, value);
+      if (cascadeError) {
+        // Revert the sender's optimistic update to the stored value.
+        const storedResult = await db.query(
+          `SELECT text_value FROM cc_column_values WHERE task_id = $1 AND column_id = $2 LIMIT 1`,
+          [task_id, columnId]
+        );
+        socket.emit(
+          SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(),
+          JSON.stringify({
+            task_id,
+            column_key,
+            value: storedResult.rows[0]?.text_value ?? null,
+            rejected: true,
+            error_code: cascadeError.error_code,
+            message: cascadeError.message,
+          })
+        );
+        return;
+      }
+    }
 
     if (isEmptyValue) {
       await db.query(
@@ -116,6 +179,10 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
           value: null
         })
       );
+
+      if (fieldType === "selection") {
+        await clearAndBroadcastDependentValues(socket, project_id, task_id, columnId, column.name, null);
+      }
 
       return;
     }
@@ -213,6 +280,10 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
         value
       })
     );
+
+    if (fieldType === "selection") {
+      await clearAndBroadcastDependentValues(socket, project_id, task_id, columnId, column.name, value);
+    }
 
     // console.log("Task custom column updated successfully", { task_id, column_key });
   } catch (error) {

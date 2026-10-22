@@ -27,6 +27,10 @@ import TasksControllerBase, {
   ITaskGroup,
   UNASSIGNED_GROUP_ID,
 } from "./tasks-controller-base";
+import {
+  clearInvalidDependentValues,
+  validateDependentSelectionValue,
+} from "../services/cascading-selection-service";
 
 const normalizePeopleCustomColumnValue = (value: unknown): string[] => {
   if (Array.isArray(value)) {
@@ -1752,6 +1756,15 @@ export default class TasksControllerV2 extends TasksControllerBase {
       (Array.isArray(value) && value.length === 0) ||
       (fieldType === "people" && normalizedPeopleValue !== null && normalizedPeopleValue.length === 0);
 
+    if (fieldType === "selection" && !isEmptyValue) {
+      const cascadeError = await validateDependentSelectionValue(taskId, columnId, value);
+      if (cascadeError) {
+        return res
+          .status(400)
+          .send(new ServerResponse(false, { error_code: cascadeError.error_code }, cascadeError.message));
+      }
+    }
+
     if (isEmptyValue) {
       await db.query(
         `
@@ -1761,11 +1774,15 @@ export default class TasksControllerV2 extends TasksControllerBase {
         [taskId, columnId]
       );
 
+      const clearedDependents =
+        fieldType === "selection" ? await clearInvalidDependentValues(taskId, columnId) : [];
+
       return res.status(200).send(
         new ServerResponse(true, {
           task_id: taskId,
           column_key,
           value: null,
+          cleared_dependents: clearedDependents,
         })
       );
     }
@@ -1847,11 +1864,15 @@ export default class TasksControllerV2 extends TasksControllerBase {
       ]);
     }
 
+    const clearedDependents =
+      fieldType === "selection" ? await clearInvalidDependentValues(taskId, columnId) : [];
+
     return res.status(200).send(
       new ServerResponse(true, {
         task_id: taskId,
         column_key,
         value,
+        cleared_dependents: clearedDependents,
       })
     );
   }

@@ -12,8 +12,11 @@ import {
   Popover,
   Select,
   Typography,
+  WarningOutlined,
   message,
+  theme,
 } from '@/shared/antd-imports';
+import { findSelectionOption, getDependentSelectionState } from '@/utils/cascading-selection';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
 import { store } from '@/app/store';
 import AvatarGroup from '@/components/AvatarGroup';
@@ -199,6 +202,7 @@ const TaskDrawerCustomFields = ({
   const { socket, connected } = useSocket();
   const { t } = useTranslation('task-drawer/task-drawer');
   const { t: tTaskList } = useTranslation('task-list-table');
+  const { token } = theme.useToken();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
   const isFree = isFreeUser(currentSession);
@@ -247,6 +251,8 @@ const TaskDrawerCustomFields = ({
       return supportedColumns;
     }
   }, [customColumns, projectId, storeCustomColumns]);
+  const allProjectColumns =
+    storeCustomColumns?.length > 0 ? (storeCustomColumns as ITaskCustomColumn[]) : customColumns;
   const initiallyVisibleColumns = visibleSupportedColumns.slice(0, 4);
   const hiddenColumns = visibleSupportedColumns.slice(4);
 
@@ -474,28 +480,80 @@ const TaskDrawerCustomFields = ({
       }
 
       case 'selection': {
-        const selectionsList = getSelectionOptions(column);
+        const dependentState = getDependentSelectionState(
+          column,
+          allProjectColumns,
+          task?.custom_column_values
+        );
+        const parentFieldName = dependentState.parentColumn
+          ? getTaskCustomFieldDisplayName(dependentState.parentColumn)
+          : '';
+        const currentOption = findSelectionOption(getSelectionOptions(column), rawValue);
+        const hasValue = typeof rawValue === 'string' && rawValue !== '';
+        const isWaitingForParent = dependentState.isAwaitingParent && !hasValue;
+        const options = dependentState.allowedOptions.map(option => ({
+          value: option.selection_name,
+          label: (
+            <Flex align="center" gap={8}>
+              <Badge color={option.selection_color} />
+              <span>{option.selection_name}</span>
+            </Flex>
+          ),
+        }));
+
+        // Keep an invalid/orphaned value visible so it can be seen and replaced.
+        if (hasValue && dependentState.isCurrentValueInvalid) {
+          options.unshift({
+            value: String(rawValue),
+            label: (
+              <Flex align="center" gap={8}>
+                <WarningOutlined style={{ color: token.colorWarning }} />
+                <span>{currentOption?.selection_name || String(rawValue)}</span>
+              </Flex>
+            ),
+          });
+        }
 
         return (
-          <Select
-            allowClear
-            disabled={isReadOnly}
-            value={typeof rawValue === 'string' ? rawValue : undefined}
-            className="w-full"
-            placeholder={t('taskInfoTab.details.customFields.selectOption', {
-              defaultValue: 'Select option',
-            })}
-            onChange={value => handleValueChange(column, value ?? null)}
-            options={selectionsList.map(option => ({
-              value: option.selection_name,
-              label: (
-                <Flex align="center" gap={8}>
-                  <Badge color={option.selection_color} />
-                  <span>{option.selection_name}</span>
-                </Flex>
-              ),
-            }))}
-          />
+          <Flex vertical gap={4}>
+            <Select
+              allowClear
+              disabled={isReadOnly || isWaitingForParent}
+              value={hasValue ? String(rawValue) : undefined}
+              status={dependentState.isCurrentValueInvalid ? 'warning' : undefined}
+              className="w-full"
+              placeholder={
+                isWaitingForParent
+                  ? tTaskList('customColumns.dependentSelection.selectParentFirst', {
+                      defaultValue: 'Select {{parent}} first',
+                      parent: parentFieldName,
+                    })
+                  : t('taskInfoTab.details.customFields.selectOption', {
+                      defaultValue: 'Select option',
+                    })
+              }
+              notFoundContent={
+                dependentState.parentOption
+                  ? tTaskList('customColumns.dependentSelection.noOptionsForParent', {
+                      defaultValue: 'No options under {{value}}',
+                      value: dependentState.parentOption.selection_name,
+                    })
+                  : undefined
+              }
+              onChange={value => handleValueChange(column, value ?? null)}
+              options={options}
+            />
+            {dependentState.isCurrentValueInvalid && (
+              <Typography.Text type="warning" style={{ fontSize: 12 }}>
+                {tTaskList('customColumns.dependentSelection.invalidValue', {
+                  defaultValue:
+                    '"{{value}}" is not valid for the current {{parent}}. Pick a new option or clear it.',
+                  value: currentOption?.selection_name || String(rawValue),
+                  parent: parentFieldName,
+                })}
+              </Typography.Text>
+            )}
+          </Flex>
         );
       }
 
