@@ -5,12 +5,15 @@ import {
   Alert,
   Button,
   Card,
+  CaretDownFilled,
+  CheckOutlined,
   Checkbox,
+  CloseCircleOutlined,
+  Dropdown,
   Empty,
   Flex,
   Input,
   Progress,
-  Select,
   Table,
   Tag,
   Tooltip,
@@ -18,7 +21,7 @@ import {
   SearchOutlined,
   theme,
 } from '@/shared/antd-imports';
-import type { TableProps } from '@/shared/antd-imports';
+import type { MenuProps, TableProps } from '@/shared/antd-imports';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_reporting_progress_tracking } from '@/shared/worklenz-analytics-events';
@@ -34,6 +37,17 @@ import {
 import logger from '@/utils/errorLogger';
 import { useAppSelector } from '@/app/store';
 import TablePagination from '@/components/TablePagination';
+
+const FILTER_BUTTON_STYLE: React.CSSProperties = {
+  height: 32,
+  fontSize: 12,
+  borderRadius: 7,
+  paddingInline: 12,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition: 'all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1)',
+};
 
 const EMPTY_SUMMARY: IProgressTrackingSummary = {
   total: 0,
@@ -99,6 +113,7 @@ const ProgressTrackingPage = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [projects, setProjects] = useState<IProgressTrackingProject[]>([]);
   const [total, setTotal] = useState(0);
   const [summary, setSummary] = useState<IProgressTrackingSummary>(EMPTY_SUMMARY);
@@ -173,15 +188,119 @@ const ProgressTrackingPage = () => {
     );
   }, [navigate]);
 
+  const percentRangeOptions: MenuProps['items'] = useMemo(
+    () => [
+      {
+        key: 'all',
+        label: t('percentRangeAll', { defaultValue: 'Any % complete' }),
+        icon: !percentRange ? <CheckOutlined style={{ fontSize: 11 }} /> : <span style={{ display: 'inline-block', width: 11 }} />,
+      },
+      {
+        type: 'divider',
+      },
+      {
+        key: 'no_tasks',
+        label: t('percentRangeNoTasks', { defaultValue: 'No tasks yet' }),
+        icon: percentRange === 'no_tasks' ? <CheckOutlined style={{ fontSize: 11 }} /> : <span style={{ display: 'inline-block', width: 11 }} />,
+      },
+      {
+        key: '0_25',
+        label: t('percentRange0', { defaultValue: '0–25%' }),
+        icon: percentRange === '0_25' ? <CheckOutlined style={{ fontSize: 11 }} /> : <span style={{ display: 'inline-block', width: 11 }} />,
+      },
+      {
+        key: '26_50',
+        label: t('percentRange26', { defaultValue: '26–50%' }),
+        icon: percentRange === '26_50' ? <CheckOutlined style={{ fontSize: 11 }} /> : <span style={{ display: 'inline-block', width: 11 }} />,
+      },
+      {
+        key: '51_75',
+        label: t('percentRange51', { defaultValue: '51–75%' }),
+        icon: percentRange === '51_75' ? <CheckOutlined style={{ fontSize: 11 }} /> : <span style={{ display: 'inline-block', width: 11 }} />,
+      },
+      {
+        key: '76_100',
+        label: t('percentRange76', { defaultValue: '76–100%' }),
+        icon: percentRange === '76_100' ? <CheckOutlined style={{ fontSize: 11 }} /> : <span style={{ display: 'inline-block', width: 11 }} />,
+      },
+    ],
+    [percentRange, t]
+  );
+
+  const selectedPercentRangeLabel = useMemo(() => {
+    if (!percentRange) return t('percentRangeAll', { defaultValue: 'Any % complete' });
+    const match = percentRangeOptions.find(opt => opt && 'key' in opt && opt.key === percentRange);
+    const label = match && 'label' in match ? match.label : percentRange;
+    return `${t('percentRangeLabel', { defaultValue: 'Percent complete' })}: ${label}`;
+  }, [percentRange, percentRangeOptions, t]);
+
+  const handlePercentRangeClick: MenuProps['onClick'] = ({ key }) => {
+    if (key === 'all') {
+      setPercentRange(undefined);
+    } else {
+      setPercentRange(key as ProgressTrackingPercentRange);
+    }
+    setPage(1);
+  };
+
+  const handleClearPercentRange = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.stopPropagation();
+    setPercentRange(undefined);
+    setPage(1);
+  };
+
   const chipItems = useMemo(() => {
     return [
-      { key: 'all' as const, label: t('chipAll', { defaultValue: 'All' }), count: summary.total, color: token.colorPrimary },
-      { key: 'green' as const, label: t('chipOnTrack', { defaultValue: 'On track' }), count: summary.on_track, color: token.colorSuccess },
-      { key: 'amber' as const, label: t('chipAtRisk', { defaultValue: 'At risk' }), count: summary.at_risk, color: token.colorWarning },
-      { key: 'red' as const, label: t('chipOffTrack', { defaultValue: 'Off track' }), count: summary.off_track, color: token.colorError },
-      { key: 'unset' as const, label: t('chipNotSet', { defaultValue: 'Not set' }), count: summary.not_set, color: token.colorTextSecondary },
+      {
+        key: 'all' as const,
+        label: t('chipAll', { defaultValue: 'All' }),
+        count: summary.total,
+        color: token.colorPrimary,
+        bg: token.colorPrimaryBg,
+      },
+      {
+        key: 'green' as const,
+        label: t('chipOnTrack', { defaultValue: 'On track' }),
+        count: summary.on_track,
+        color: token.colorSuccess,
+        bg: token.colorSuccessBg,
+      },
+      {
+        key: 'amber' as const,
+        label: t('chipAtRisk', { defaultValue: 'At risk' }),
+        count: summary.at_risk,
+        color: token.colorWarning,
+        bg: token.colorWarningBg,
+      },
+      {
+        key: 'red' as const,
+        label: t('chipOffTrack', { defaultValue: 'Off track' }),
+        count: summary.off_track,
+        color: token.colorError,
+        bg: token.colorErrorBg,
+      },
+      {
+        key: 'unset' as const,
+        label: t('chipNotSet', { defaultValue: 'Not set' }),
+        count: summary.not_set,
+        color: token.colorTextSecondary,
+        bg: token.colorFillSecondary,
+      },
     ];
-  }, [summary, t, token]);
+  }, [
+    summary,
+    t,
+    token.colorError,
+    token.colorErrorBg,
+    token.colorFillSecondary,
+    token.colorPrimary,
+    token.colorPrimaryBg,
+    token.colorSuccess,
+    token.colorSuccessBg,
+    token.colorTextSecondary,
+    token.colorWarning,
+    token.colorWarningBg,
+  ]);
 
   const columns: TableProps<IProgressTrackingProject>['columns'] = useMemo(() => [
     {
@@ -409,7 +528,8 @@ const ProgressTrackingPage = () => {
     setPage(1);
   };
   const handleConfidenceChip = (key: DeliveryConfidenceFilter) => {
-    setConfidence(key);
+    const nextKey = confidence === key && key !== 'all' ? 'all' : key;
+    setConfidence(nextKey);
     setPage(1);
   };
 
@@ -481,41 +601,115 @@ const ProgressTrackingPage = () => {
               borderRadius: 7,
             }}
           />
-          <Flex gap={6} wrap="wrap" role="group" aria-label={t('columnConfidence', { defaultValue: 'Delivery Confidence' })}>
+          <Flex gap={8} wrap="wrap" role="group" aria-label={t('columnConfidence', { defaultValue: 'Delivery Confidence' })}>
             {chipItems.map(item => {
               const isActive = confidence === item.key;
+              const activeBorderColor = item.key === 'unset' ? token.colorBorder : item.color;
               return (
                 <Button
                   key={item.key}
-                  size="small"
-                  shape="round"
                   aria-pressed={isActive}
                   onClick={() => handleConfidenceChip(item.key)}
-                  style={isActive ? { background: item.color, borderColor: item.color, color: token.colorTextLightSolid } : undefined}
+                  style={
+                    isActive
+                      ? {
+                          ...FILTER_BUTTON_STYLE,
+                          borderColor: activeBorderColor,
+                          color: item.color,
+                          background: item.bg,
+                        }
+                      : FILTER_BUTTON_STYLE
+                  }
                 >
-                  {item.label} {item.count}
+                  <Flex align="center" gap={6}>
+                    {item.key !== 'all' && (
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          backgroundColor: item.color,
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
+                    <span>{item.label}</span>
+                    <span
+                      style={{
+                        fontWeight: isActive ? 600 : 400,
+                        opacity: isActive ? 0.95 : 0.65,
+                      }}
+                    >
+                      {item.count}
+                    </span>
+                  </Flex>
                 </Button>
               );
             })}
           </Flex>
-          <Select
-            allowClear
-            className="min-w-[160px]"
-            value={percentRange}
-            placeholder={t('percentRangeAll', { defaultValue: 'Any % complete' })}
-            aria-label={t('percentRangeLabel', { defaultValue: 'Percent complete' })}
-            onChange={value => {
-              setPercentRange(value);
-              setPage(1);
+          <Dropdown
+            trigger={['click']}
+            open={dropdownOpen}
+            onOpenChange={setDropdownOpen}
+            menu={{
+              items: percentRangeOptions,
+              onClick: handlePercentRangeClick,
+              selectedKeys: [percentRange ?? 'all'],
             }}
-            options={[
-              { value: 'no_tasks', label: t('percentRangeNoTasks', { defaultValue: 'No tasks yet' }) },
-              { value: '0_25', label: t('percentRange0', { defaultValue: '0–25%' }) },
-              { value: '26_50', label: t('percentRange26', { defaultValue: '26–50%' }) },
-              { value: '51_75', label: t('percentRange51', { defaultValue: '51–75%' }) },
-              { value: '76_100', label: t('percentRange76', { defaultValue: '76–100%' }) },
-            ]}
-          />
+          >
+            <Button
+              aria-label={selectedPercentRangeLabel || t('percentRangeLabel', { defaultValue: 'Percent complete' })}
+              aria-haspopup="true"
+              aria-expanded={dropdownOpen}
+              style={
+                dropdownOpen || Boolean(percentRange)
+                  ? {
+                      ...FILTER_BUTTON_STYLE,
+                      borderColor: token.colorPrimary,
+                      color: token.colorPrimary,
+                      background: percentRange ? token.colorPrimaryBg : undefined,
+                    }
+                  : FILTER_BUTTON_STYLE
+              }
+            >
+              <Flex align="center" gap={6}>
+                <span>{selectedPercentRangeLabel}</span>
+                {percentRange && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t('percentRangeAll', { defaultValue: 'Any % complete' })}
+                    onClick={handleClearPercentRange}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleClearPercentRange(e);
+                      }
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: token.colorPrimary,
+                      lineHeight: 1,
+                    }}
+                  >
+                    <CloseCircleOutlined style={{ fontSize: 11 }} />
+                  </span>
+                )}
+                <CaretDownFilled
+                  style={{
+                    fontSize: 10,
+                    color: dropdownOpen || Boolean(percentRange) ? token.colorPrimary : undefined,
+                    transition: 'transform 0.2s ease',
+                    transform: dropdownOpen ? 'rotate(180deg)' : undefined,
+                  }}
+                />
+              </Flex>
+            </Button>
+          </Dropdown>
           <Checkbox
             checked={hasBlockers}
             onChange={event => {

@@ -32,6 +32,7 @@ import {
 import type { PortalSettingsV2 } from '@/types/client-portal/v2';
 import { CompanyDetailsSection } from './sections/CompanyDetailsSection';
 import { BrandingSection } from './sections/BrandingSection';
+import { LogoCropModal } from './sections/LogoCropModal';
 import { InvoiceTemplateSection } from './sections/InvoiceTemplateSection';
 import { SharingVisibilitySection } from './sections/SharingVisibilitySection';
 import { ClientRolesSection } from './sections/ClientRolesSection';
@@ -100,6 +101,8 @@ const ClientPortalSettings = () => {
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [pendingLogoUrl, setPendingLogoUrl] = useState<string | null>(null);
   const [pendingLogoRemoval, setPendingLogoRemoval] = useState(false);
+  const [cropRawSrc, setCropRawSrc] = useState<string | null>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
   // v2 settings: the server copy comes from RTK Query, and `draftV2` holds the user's edits.
   // `null` means "no edits yet", so a background refetch can never overwrite typed changes.
@@ -204,10 +207,45 @@ const ClientPortalSettings = () => {
       message.error(t('logoFileTooLargeError', { defaultValue: 'Logo must be smaller than 2MB.' }));
       return;
     }
-    if (pendingLogoUrl) URL.revokeObjectURL(pendingLogoUrl);
-    setPendingLogoFile(file);
-    setPendingLogoUrl(URL.createObjectURL(file));
-    setPendingLogoRemoval(false);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropRawSrc(reader.result as string);
+      setIsCropModalOpen(true);
+    };
+    reader.onerror = () => {
+      message.error(t('logoUploadFailedError', { defaultValue: 'Failed to upload logo.' }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropDone = async (croppedBase64: string) => {
+    try {
+      const res = await fetch(croppedBase64);
+      const blob = await res.blob();
+      const croppedFile = new File([blob], 'logo-cropped.png', { type: 'image/png' });
+
+      if (croppedFile.size / 1024 / 1024 >= 2) {
+        message.error(t('logoFileTooLargeError', { defaultValue: 'Logo must be smaller than 2MB.' }));
+        setIsCropModalOpen(false);
+        setCropRawSrc(null);
+        return;
+      }
+
+      if (pendingLogoUrl) URL.revokeObjectURL(pendingLogoUrl);
+      setPendingLogoFile(croppedFile);
+      setPendingLogoUrl(URL.createObjectURL(croppedFile));
+      setPendingLogoRemoval(false);
+      setIsCropModalOpen(false);
+      setCropRawSrc(null);
+    } catch (err) {
+      console.error('Failed to process cropped logo', err);
+      message.error(t('logoUploadFailedError', { defaultValue: 'Failed to upload logo.' }));
+    }
+  };
+
+  const handleCropCancel = () => {
+    setIsCropModalOpen(false);
+    setCropRawSrc(null);
   };
 
   const handleStageLogoRemoval = () => {
@@ -248,6 +286,8 @@ const ClientPortalSettings = () => {
     setPendingLogoFile(null);
     setPendingLogoUrl(null);
     setPendingLogoRemoval(false);
+    setCropRawSrc(null);
+    setIsCropModalOpen(false);
   };
 
   const hasLegacyChanges = useMemo(
@@ -536,6 +576,14 @@ const ClientPortalSettings = () => {
           )}
         </div>
       </div>
+
+      <LogoCropModal
+        open={isCropModalOpen}
+        imageSrc={cropRawSrc}
+        aspect={1}
+        onCancel={handleCropCancel}
+        onCropComplete={handleCropDone}
+      />
     </div>
   );
 };
