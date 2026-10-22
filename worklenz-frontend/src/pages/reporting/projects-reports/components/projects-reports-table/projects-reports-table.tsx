@@ -375,9 +375,13 @@ const ProjectsReportsTable = () => {
   );
 
   const handleTableChange = useCallback(
-    (_pagination: any, _filters: any, sorter: any) => {
-      if (sorter.order) dispatch(setOrder(sorter.order));
-      if (sorter.field) dispatch(setField(sorter.field));
+    (_pagination: any, _filters: any, sorter: any, extra: any) => {
+      if (extra.action !== 'sort') return;
+
+      const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+      dispatch(setField(activeSorter?.order ? activeSorter.field : 'name'));
+      dispatch(setOrder(activeSorter?.order === 'descend' ? 'desc' : 'asc'));
+      dispatch(setIndex(1));
     },
     [dispatch, pageSize]
   );

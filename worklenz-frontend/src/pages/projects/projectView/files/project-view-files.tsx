@@ -974,6 +974,9 @@ const ProjectViewFiles = () => {
             page={paginationConfig.pageIndex}
             pageSize={paginationConfig.pageSize}
             total={paginationConfig.total}
+            rowsPerPageLabel={t('myTasksView.rowsPerPage', {
+              defaultValue: 'Rows per page',
+            })}
             onPageChange={(page, pageSize) =>
               setPaginationConfig(prev => ({
                 ...prev,
@@ -1006,14 +1009,14 @@ const ProjectViewFiles = () => {
 
 
           <TablePagination
-            page={paginationConfig.pageIndex}
-            pageSize={paginationConfig.pageSize}
-            total={paginationConfig.total}
+            page={taskAttachmentsPagination.pageIndex}
+            pageSize={taskAttachmentsPagination.pageSize}
+            total={taskAttachmentsPagination.total}
             rowsPerPageLabel={t('myTasksView.rowsPerPage', {
               defaultValue: 'Rows per page',
             })}
             onPageChange={(page, pageSize) =>
-              setPaginationConfig(prev => ({
+              setTaskAttachmentsPagination(prev => ({
                 ...prev,
                 pageIndex: page,
                 pageSize,
@@ -1165,7 +1168,7 @@ const ProjectViewFiles = () => {
                         icon={<DeleteOutlined />}
                         onClick={event => {
                           event.stopPropagation();
-                          actions.remove?.(file);
+                          actions.remove?.();
                         }}
                       />
                     )}
