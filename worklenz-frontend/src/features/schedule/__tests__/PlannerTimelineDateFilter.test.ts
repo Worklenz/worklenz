@@ -1,136 +1,214 @@
-import { describe, expect, it } from 'vitest';
-import dayjs, { Dayjs } from 'dayjs';
+import { describe, expect, it, vi } from 'vitest';
+import dayjs from 'dayjs';
+import { renderHook, act } from '@testing-library/react';
+import {
+  isTimelineDateDisabled,
+  useTimelineDateFilter,
+} from '../plannerTimelineDateFilter';
 
-/**
- * Validates date range logic mirroring PlannerTimelineView's date filter rules.
- */
-describe('PlannerTimelineView Date Range Filter Validation', () => {
-  const getDisabledDate = (
-    calendarDates: [Dayjs | null, Dayjs | null] | null,
-    dateFilter: [Dayjs, Dayjs] | null,
-    activeField: 'start' | 'end' | null
-  ) => {
-    return (current: Dayjs) => {
-      if (!current) return false;
-
-      const startDate = calendarDates?.[0] ?? dateFilter?.[0];
-      const endDate = calendarDates?.[1] ?? dateFilter?.[1];
-
-      // If user is editing/picking the End Date: disable days before Start Date
-      if (activeField === 'end' || (calendarDates?.[0] && !calendarDates?.[1])) {
-        if (startDate) {
-          return current.isBefore(startDate, 'day');
-        }
-      }
-
-      // If user is editing/picking the Start Date: disable days after End Date
-      if (activeField === 'start' || (!calendarDates?.[0] && calendarDates?.[1])) {
-        if (endDate) {
-          return current.isAfter(endDate, 'day');
-        }
-      }
-
-      return false;
-    };
+describe('PlannerTimelineDateFilter Production Rules and Callbacks', () => {
+  const mockTranslate = (key: string, options?: { defaultValue?: string }) => {
+    if (key === 'endDateBeforeStartDate') {
+      return 'End date cannot be earlier than start date';
+    }
+    return options?.defaultValue || key;
   };
 
-  const validateDateRange = (dates: [Dayjs | null, Dayjs | null] | null) => {
-    if (!dates || !dates[0] || !dates[1]) {
-      return { isValid: true, isCleared: true, error: null };
-    }
-    const [start, end] = dates;
-    if (start.isAfter(end, 'day')) {
-      return {
-        isValid: false,
-        isCleared: false,
-        error: 'End date cannot be earlier than start date',
-      };
-    }
-    return { isValid: true, isCleared: false, error: null };
-  };
-
-  describe('disabledDate calendar rules', () => {
-    it('disables dates before Start Date when picking End Date on first attempt', () => {
+  describe('isTimelineDateDisabled rule', () => {
+    it('disables dates before Start Date when activeField is end (on first attempt)', () => {
       const startDate = dayjs('2026-10-15');
-      const disabledDate = getDisabledDate([startDate, null], null, 'end');
-
-      expect(disabledDate(dayjs('2026-10-14'))).toBe(true);
-      expect(disabledDate(dayjs('2026-10-01'))).toBe(true);
-      expect(disabledDate(dayjs('2026-10-15'))).toBe(false);
-      expect(disabledDate(dayjs('2026-10-20'))).toBe(false);
+      // activeField is explicitly 'end'
+      expect(isTimelineDateDisabled(dayjs('2026-10-14'), [startDate, null], null, 'end')).toBe(true);
+      expect(isTimelineDateDisabled(dayjs('2026-10-01'), [startDate, null], null, 'end')).toBe(true);
+      expect(isTimelineDateDisabled(dayjs('2026-10-15'), [startDate, null], null, 'end')).toBe(false);
+      expect(isTimelineDateDisabled(dayjs('2026-10-20'), [startDate, null], null, 'end')).toBe(false);
     });
 
-    it('disables dates after End Date when picking Start Date on first attempt (user selected End Date first)', () => {
+    it('disables dates after End Date when activeField is start (user picked End Date first)', () => {
       const endDate = dayjs('2026-10-15');
-      const disabledDate = getDisabledDate([null, endDate], null, 'start');
-
-      expect(disabledDate(dayjs('2026-10-16'))).toBe(true);
-      expect(disabledDate(dayjs('2026-10-31'))).toBe(true);
-      expect(disabledDate(dayjs('2026-10-15'))).toBe(false);
-      expect(disabledDate(dayjs('2026-10-10'))).toBe(false);
+      // activeField is explicitly 'start'
+      expect(isTimelineDateDisabled(dayjs('2026-10-16'), [null, endDate], null, 'start')).toBe(true);
+      expect(isTimelineDateDisabled(dayjs('2026-10-31'), [null, endDate], null, 'start')).toBe(true);
+      expect(isTimelineDateDisabled(dayjs('2026-10-15'), [null, endDate], null, 'start')).toBe(false);
+      expect(isTimelineDateDisabled(dayjs('2026-10-10'), [null, endDate], null, 'start')).toBe(false);
     });
 
-    it('disables dates before Start Date when changing End Date again on an existing locked range', () => {
-      const existingRange: [Dayjs, Dayjs] = [dayjs('2026-10-10'), dayjs('2026-10-20')];
-      // User opens picker and focuses End Date input to change it (calendarDates is null initially)
-      const disabledDate = getDisabledDate(null, existingRange, 'end');
+    it('regression: allows revising provisional start date earlier when start input is refocused', () => {
+      // User picked October 15 as start, end is empty.
+      // Then user focuses the start input to revise it to October 10.
+      const provisionalStart = dayjs('2026-10-15');
+      const calendarDates: [dayjs.Dayjs | null, dayjs.Dayjs | null] = [provisionalStart, null];
+      const activeField = 'start';
 
-      expect(disabledDate(dayjs('2026-10-09'))).toBe(true);
-      expect(disabledDate(dayjs('2026-10-01'))).toBe(true);
-      expect(disabledDate(dayjs('2026-10-10'))).toBe(false);
-      expect(disabledDate(dayjs('2026-10-15'))).toBe(false);
-      expect(disabledDate(dayjs('2026-10-25'))).toBe(false);
+      // October 10 (earlier than provisional October 15) must NOT be disabled
+      expect(isTimelineDateDisabled(dayjs('2026-10-10'), calendarDates, null, activeField)).toBe(false);
+      expect(isTimelineDateDisabled(dayjs('2026-10-01'), calendarDates, null, activeField)).toBe(false);
+      expect(isTimelineDateDisabled(dayjs('2026-10-15'), calendarDates, null, activeField)).toBe(false);
     });
 
-    it('disables dates after End Date when changing Start Date again on an existing locked range', () => {
-      const existingRange: [Dayjs, Dayjs] = [dayjs('2026-10-10'), dayjs('2026-10-20')];
-      // User opens picker and focuses Start Date input to change it
-      const disabledDate = getDisabledDate(null, existingRange, 'start');
+    it('symmetric regression: allows revising provisional end date later when end input is refocused', () => {
+      // User picked October 15 as provisional end date, start is empty.
+      // Then user focuses the end input to revise it to October 25.
+      const provisionalEnd = dayjs('2026-10-15');
+      const calendarDates: [dayjs.Dayjs | null, dayjs.Dayjs | null] = [null, provisionalEnd];
+      const activeField = 'end';
 
-      expect(disabledDate(dayjs('2026-10-21'))).toBe(true);
-      expect(disabledDate(dayjs('2026-10-30'))).toBe(true);
-      expect(disabledDate(dayjs('2026-10-20'))).toBe(false);
-      expect(disabledDate(dayjs('2026-10-15'))).toBe(false);
-      expect(disabledDate(dayjs('2026-10-05'))).toBe(false);
+      // October 25 (later than provisional October 15) must NOT be disabled
+      expect(isTimelineDateDisabled(dayjs('2026-10-25'), calendarDates, null, activeField)).toBe(false);
+      expect(isTimelineDateDisabled(dayjs('2026-10-31'), calendarDates, null, activeField)).toBe(false);
+      expect(isTimelineDateDisabled(dayjs('2026-10-15'), calendarDates, null, activeField)).toBe(false);
     });
 
-    it('allows any date when no range exists and no intermediate field is focused', () => {
-      const disabledDate = getDisabledDate(null, null, null);
+    it('disables dates before Start Date when modifying End Date on an existing locked range', () => {
+      const existingRange: [dayjs.Dayjs, dayjs.Dayjs] = [dayjs('2026-10-10'), dayjs('2026-10-20')];
+      // User opens picker and focuses End Date input (calendarDates is null initially)
+      expect(isTimelineDateDisabled(dayjs('2026-10-09'), null, existingRange, 'end')).toBe(true);
+      expect(isTimelineDateDisabled(dayjs('2026-10-01'), null, existingRange, 'end')).toBe(true);
+      expect(isTimelineDateDisabled(dayjs('2026-10-10'), null, existingRange, 'end')).toBe(false);
+      expect(isTimelineDateDisabled(dayjs('2026-10-25'), null, existingRange, 'end')).toBe(false);
+    });
 
-      expect(disabledDate(dayjs('2026-10-01'))).toBe(false);
-      expect(disabledDate(dayjs('2026-10-15'))).toBe(false);
-      expect(disabledDate(dayjs('2026-10-31'))).toBe(false);
+    it('disables dates after End Date when modifying Start Date on an existing locked range', () => {
+      const existingRange: [dayjs.Dayjs, dayjs.Dayjs] = [dayjs('2026-10-10'), dayjs('2026-10-20')];
+      // User opens picker and focuses Start Date input
+      expect(isTimelineDateDisabled(dayjs('2026-10-21'), null, existingRange, 'start')).toBe(true);
+      expect(isTimelineDateDisabled(dayjs('2026-10-30'), null, existingRange, 'start')).toBe(true);
+      expect(isTimelineDateDisabled(dayjs('2026-10-20'), null, existingRange, 'start')).toBe(false);
+      expect(isTimelineDateDisabled(dayjs('2026-10-05'), null, existingRange, 'start')).toBe(false);
+    });
+
+    it('applies partial-selection fallback only when activeField is null', () => {
+      const startDate = dayjs('2026-10-15');
+      // activeField is null, start is present, end is empty -> fallback treats as selecting end date
+      expect(isTimelineDateDisabled(dayjs('2026-10-10'), [startDate, null], null, null)).toBe(true);
+      expect(isTimelineDateDisabled(dayjs('2026-10-20'), [startDate, null], null, null)).toBe(false);
+
+      const endDate = dayjs('2026-10-15');
+      // activeField is null, end is present, start is empty -> fallback treats as selecting start date
+      expect(isTimelineDateDisabled(dayjs('2026-10-20'), [null, endDate], null, null)).toBe(true);
+      expect(isTimelineDateDisabled(dayjs('2026-10-10'), [null, endDate], null, null)).toBe(false);
+    });
+
+    it('allows any date when no range exists and activeField is null', () => {
+      expect(isTimelineDateDisabled(dayjs('2026-10-01'), null, null, null)).toBe(false);
+      expect(isTimelineDateDisabled(dayjs('2026-10-15'), null, null, null)).toBe(false);
+      expect(isTimelineDateDisabled(dayjs('2026-10-31'), null, null, null)).toBe(false);
     });
   });
 
-  describe('validateDateRange submission validation', () => {
-    it('rejects ranges where Start Date is after End Date without swapping', () => {
-      const result = validateDateRange([dayjs('2026-10-25'), dayjs('2026-10-10')]);
+  describe('useTimelineDateFilter production callbacks', () => {
+    it('detects inverted calendar draft in onCalendarChange, sets error, and triggers toast', () => {
+      const showMessageError = vi.fn();
+      const { result } = renderHook(() =>
+        useTimelineDateFilter({
+          t: mockTranslate,
+          showMessageError,
+        })
+      );
 
-      expect(result.isValid).toBe(false);
-      expect(result.error).toBe('End date cannot be earlier than start date');
+      // rc-picker fires onCalendarChange with draft values [2026-10-25, 2026-10-10]
+      act(() => {
+        result.current.onCalendarChange([dayjs('2026-10-25'), dayjs('2026-10-10')]);
+      });
+
+      expect(result.current.dateRangeError).toBe('End date cannot be earlier than start date');
+      expect(showMessageError).toHaveBeenCalledWith('End date cannot be earlier than start date');
     });
 
-    it('accepts valid date ranges', () => {
-      const result = validateDateRange([dayjs('2026-10-10'), dayjs('2026-10-25')]);
+    it('clears error once calendar draft is no longer inverted', () => {
+      const showMessageError = vi.fn();
+      const { result } = renderHook(() =>
+        useTimelineDateFilter({
+          t: mockTranslate,
+          showMessageError,
+        })
+      );
 
-      expect(result.isValid).toBe(true);
-      expect(result.error).toBeNull();
+      // First produce inverted error
+      act(() => {
+        result.current.onCalendarChange([dayjs('2026-10-25'), dayjs('2026-10-10')]);
+      });
+      expect(result.current.dateRangeError).not.toBeNull();
+
+      // Now draft is corrected (e.g. valid range or user cleared/edited to single date)
+      act(() => {
+        result.current.onCalendarChange([dayjs('2026-10-10'), dayjs('2026-10-25')]);
+      });
+      expect(result.current.dateRangeError).toBeNull();
     });
 
-    it('accepts single-day ranges (Start Date equals End Date)', () => {
-      const result = validateDateRange([dayjs('2026-10-15'), dayjs('2026-10-15')]);
+    it('submission handler (onChange) preserves previously applied valid range when called with inverted dates', () => {
+      const showMessageError = vi.fn();
+      const { result } = renderHook(() =>
+        useTimelineDateFilter({
+          t: mockTranslate,
+          showMessageError,
+        })
+      );
 
-      expect(result.isValid).toBe(true);
-      expect(result.error).toBeNull();
+      // Establish previously applied valid range
+      const initialStart = dayjs('2026-10-10');
+      const initialEnd = dayjs('2026-10-20');
+      act(() => {
+        result.current.onChange([initialStart, initialEnd]);
+      });
+      expect(result.current.dateFilter).toEqual([initialStart, initialEnd]);
+      expect(result.current.dateRangeError).toBeNull();
+
+      // Call onChange directly with inverted dates
+      act(() => {
+        result.current.onChange([dayjs('2026-10-25'), dayjs('2026-10-10')]);
+      });
+
+      // Must preserve the previously applied valid range
+      expect(result.current.dateFilter).toEqual([initialStart, initialEnd]);
+      expect(result.current.dateRangeError).toBe('End date cannot be earlier than start date');
+      expect(showMessageError).toHaveBeenCalledWith('End date cannot be earlier than start date');
     });
 
-    it('handles clearing date range', () => {
-      const result = validateDateRange(null);
+    it('revising provisional start earlier via hook callbacks keeps start date editable', () => {
+      const { result } = renderHook(() =>
+        useTimelineDateFilter({
+          t: mockTranslate,
+        })
+      );
 
-      expect(result.isValid).toBe(true);
-      expect(result.isCleared).toBe(true);
-      expect(result.error).toBeNull();
+      // Select October 15 as start
+      act(() => {
+        result.current.onCalendarChange([dayjs('2026-10-15'), null], undefined, { range: 'start' });
+      });
+      expect(result.current.activeField).toBe('end');
+
+      // User focuses the start input to revise it
+      act(() => {
+        result.current.onFocus(null, { range: 'start' });
+      });
+      expect(result.current.activeField).toBe('start');
+
+      // October 10 is earlier than October 15, but since activeField is 'start' and end is empty, it must be enabled
+      expect(result.current.disabledDate(dayjs('2026-10-10'))).toBe(false);
+    });
+
+    it('clears date filter and errors when clearAll is called', () => {
+      const { result } = renderHook(() =>
+        useTimelineDateFilter({
+          t: mockTranslate,
+        })
+      );
+
+      act(() => {
+        result.current.onChange([dayjs('2026-10-10'), dayjs('2026-10-20')]);
+      });
+      expect(result.current.dateFilter).not.toBeNull();
+
+      act(() => {
+        result.current.clearAll();
+      });
+
+      expect(result.current.dateFilter).toBeNull();
+      expect(result.current.calendarDates).toBeNull();
+      expect(result.current.activeField).toBeNull();
+      expect(result.current.dateRangeError).toBeNull();
     });
   });
 });

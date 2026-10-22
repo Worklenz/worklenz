@@ -24,6 +24,7 @@ import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 import PlannerMultiFilterDropdown from '@/features/schedule/PlannerMultiFilterDropdown';
+import { useTimelineDateFilter } from '@/features/schedule/plannerTimelineDateFilter';
 import {
   useFetchProjectsTimelineQuery,
   useUpdateProjectTimelineDatesMutation,
@@ -990,61 +991,16 @@ const PlannerTimelineView: React.FC = () => {
   // Portfolio-wide date range filter — narrows both which projects are shown and, once
   // applied, becomes the visible grid range itself (see rangeStart/rangeEnd below)
   // instead of the range being auto-derived from the filtered projects' own dates.
-  const [dateFilter, setDateFilter] = useState<[Dayjs, Dayjs] | null>(null);
-  // Tracks active in-progress calendar selection to disable invalid dates
-  const [calendarDates, setCalendarDates] = useState<[Dayjs | null, Dayjs | null] | null>(null);
-  // Tracks which field (start or end) is currently focused / being edited
-  const [activeField, setActiveField] = useState<'start' | 'end' | null>(null);
-  // Date range validation error message
-  const [dateRangeError, setDateRangeError] = useState<string | null>(null);
-
-  const disabledDate = (current: Dayjs) => {
-    if (!current) return false;
-
-    // Use in-progress selection first, falling back to already applied date filter
-    const startDate = calendarDates?.[0] ?? dateFilter?.[0];
-    const endDate = calendarDates?.[1] ?? dateFilter?.[1];
-
-    // If user is editing/picking the End Date: disable days before Start Date
-    if (activeField === 'end' || (calendarDates?.[0] && !calendarDates?.[1])) {
-      if (startDate) {
-        return current.isBefore(startDate, 'day');
-      }
-    }
-
-    // If user is editing/picking the Start Date: disable days after End Date
-    if (activeField === 'start' || (!calendarDates?.[0] && calendarDates?.[1])) {
-      if (endDate) {
-        return current.isAfter(endDate, 'day');
-      }
-    }
-
-    return false;
-  };
-
-  const handleDateRangeChange = (
-    dates: [Dayjs | null, Dayjs | null] | null,
-    _dateStrings: [string, string]
-  ) => {
-    if (!dates || !dates[0] || !dates[1]) {
-      setDateFilter(null);
-      setDateRangeError(null);
-      return;
-    }
-
-    const [start, end] = dates;
-    if (start.isAfter(end, 'day')) {
-      const errorMsg = t('endDateBeforeStartDate', {
-        defaultValue: 'End date cannot be earlier than start date',
-      });
-      setDateRangeError(errorMsg);
-      message.error(errorMsg);
-      return;
-    }
-
-    setDateRangeError(null);
-    setDateFilter([start, end]);
-  };
+  const {
+    dateFilter,
+    dateRangeError,
+    disabledDate,
+    onCalendarChange,
+    onChange: handleDateRangeChange,
+    onFocus: handleRangePickerFocus,
+    onOpenChange: handleRangePickerOpenChange,
+    clearAll: clearDateFilter,
+  } = useTimelineDateFilter({ t });
   const anyFilterActive =
     filterProjects.length > 0 ||
     filterStatuses.length > 0 ||
@@ -1058,10 +1014,7 @@ const PlannerTimelineView: React.FC = () => {
     setFilterPriorities([]);
     setFilterCategories([]);
     setFilterClients([]);
-    setDateFilter(null);
-    setCalendarDates(null);
-    setActiveField(null);
-    setDateRangeError(null);
+    clearDateFilter();
   };
 
   // Which projects are expanded to show their tasks in place, and the tasks fetched for
@@ -1650,26 +1603,9 @@ const PlannerTimelineView: React.FC = () => {
             order={false}
             value={dateFilter}
             onChange={handleDateRangeChange}
-            onFocus={(_e, info) => {
-              if (info?.range) {
-                setActiveField(info.range);
-              }
-            }}
-            onCalendarChange={(dates, _dateStrings, info) => {
-              setCalendarDates(dates);
-              if (dateRangeError) setDateRangeError(null);
-              if (info?.range === 'start') {
-                setActiveField('end');
-              } else if (info?.range === 'end') {
-                setActiveField('start');
-              }
-            }}
-            onOpenChange={open => {
-              if (!open) {
-                setCalendarDates(null);
-                setActiveField(null);
-              }
-            }}
+            onFocus={handleRangePickerFocus}
+            onCalendarChange={onCalendarChange}
+            onOpenChange={handleRangePickerOpenChange}
             disabledDate={disabledDate}
             placeholder={[
               t('startDate', { defaultValue: 'Start date' }),
