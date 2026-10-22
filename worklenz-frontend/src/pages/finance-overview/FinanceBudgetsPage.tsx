@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -13,7 +13,7 @@ import {
   Typography,
 } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import TablePagination from '@/components/TablePagination';
 import {
   financeOverviewApiService,
   IFinanceBudgetProject,
@@ -21,6 +21,7 @@ import {
 import { alertColor, burnColor, fmtMoney } from './finance-report-utils';
 import { useFinanceReportFetch } from './useFinanceReportFetch';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 
 const { Text, Title } = Typography;
 
@@ -28,11 +29,19 @@ export const FinanceBudgetsPage = () => {
   const { t } = useTranslation('finance-reports');
   useDocumentTitle(t('budgets.pageTitle', { defaultValue: 'Budgets' }));
 
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const { data, loading, error, refetch } = useFinanceReportFetch(
     () => financeOverviewApiService.getBudgets(),
     []
   );
   const projects: IFinanceBudgetProject[] = data?.projects ?? [];
+
+  const paginatedProjects = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return projects.slice(start, start + pageSize);
+  }, [projects, page, pageSize]);
 
   const columns: ColumnsType<IFinanceBudgetProject> = useMemo(
     () => [
@@ -43,23 +52,23 @@ export const FinanceBudgetsPage = () => {
         render: (name: string, record) => {
           const decodedName = decodeHtmlEntities(name);
           return (
-          <Flex align="center" gap={8} style={{ minWidth: 0 }}>
-            <span
-              style={{
-                display: 'inline-block',
-                width: 10,
-                height: 10,
-                borderRadius: '50%',
-                backgroundColor: record.color_code || '#1890ff',
-                flexShrink: 0,
-              }}
-            />
-            <Tooltip title={decodedName}>
-              <Text ellipsis style={{ maxWidth: 220 }}>
-                {decodedName}
-              </Text>
-            </Tooltip>
-          </Flex>
+            <Flex align="center" gap={8} style={{ minWidth: 0 }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  backgroundColor: record.color_code || '#1890ff',
+                  flexShrink: 0,
+                }}
+              />
+              <Tooltip title={decodedName}>
+                <Text ellipsis style={{ maxWidth: 220 }}>
+                  {decodedName}
+                </Text>
+              </Tooltip>
+            </Flex>
           );
         },
       },
@@ -166,15 +175,29 @@ export const FinanceBudgetsPage = () => {
         <Table<IFinanceBudgetProject>
           rowKey="id"
           columns={columns}
-          dataSource={projects}
+          dataSource={paginatedProjects}
           loading={loading}
-          pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50, 100] }}
+          pagination={false}
           locale={{
             emptyText: (
               <Empty description={t('budgets.empty', { defaultValue: 'No projects to show yet.' })} />
             ),
           }}
           scroll={{ x: 900 }}
+        />
+
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          total={projects.length}
+          onPageChange={(nextPage, nextPageSize) => {
+            setPage(nextPage);
+            setPageSize(nextPageSize);
+          }}
+          rowsPerPageLabel={t('myTasksView.rowsPerPage', {
+            defaultValue: 'Rows per page',
+          })}
+          variant="dropdown"
         />
       </Card>
     </Flex>

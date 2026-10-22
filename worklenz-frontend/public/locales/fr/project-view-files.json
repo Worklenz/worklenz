@@ -68,4 +68,8 @@
   "uploadExpired": "La session de téléchargement a expiré. Veuillez réessayer.",
   "fileTooLargePopoverTitle": "Fichier trop volumineux",
   "fileTooLargePopoverBody": "Les fichiers de plus de 25 Mo nécessitent le forfait Business. Ce fichier fait {{sizeMb}} Mo. Mettez à niveau pour télécharger des fichiers plus volumineux."
+,
+  "myTasksView": {
+    "rowsPerPage": "Lignes par page :"
+  }
 }

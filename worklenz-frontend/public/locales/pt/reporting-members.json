@@ -35,4 +35,6 @@
   "doingText": "Em andamento",
   "doneText": "Concluído",
   "customDateRangeInvalidError": "A data de término não pode ser anterior à data de início. Selecione um intervalo válido."
+,
+  "rowsPerPage": "Linhas por página:"
 }

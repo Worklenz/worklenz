@@ -57,6 +57,7 @@ import { ITaskAttachmentViewModel } from '@/types/tasks/task-attachment-view-mod
 import { getFileType } from '@/types/mixpanel-events.types';
 import { durationDateFormat } from '@utils/durationDateFormat';
 import logger from '@/utils/errorLogger';
+import TablePagination from '@/components/TablePagination';
 
 const MB = 1024 * 1024;
 const STARTER_FILE_SIZE_LIMIT_BYTES = 25 * MB;
@@ -960,43 +961,72 @@ const ProjectViewFiles = () => {
             rowKey={record => record.id}
             loading={loading}
             scroll={{ x: 'max-content' }}
-            locale={{ emptyText: t('emptyText', { defaultValue: 'There are no files yet.' }) }}
-            pagination={{
-              total: paginationConfig.total,
-              current: paginationConfig.pageIndex,
-              pageSize: paginationConfig.pageSize,
-              showSizeChanger: true,
-              onChange: (page, pageSize) =>
-                setPaginationConfig(prev => ({ ...prev, pageIndex: page, pageSize })),
+            locale={{
+              emptyText: t('emptyText', {
+                defaultValue: 'There are no files yet.',
+              }),
             }}
+            pagination={false}
             onChange={handleTableChange}
+          />
+
+          <TablePagination
+            page={paginationConfig.pageIndex}
+            pageSize={paginationConfig.pageSize}
+            total={paginationConfig.total}
+            rowsPerPageLabel={t('myTasksView.rowsPerPage', {
+              defaultValue: 'Rows per page',
+            })}
+            onPageChange={(page, pageSize) =>
+              setPaginationConfig(prev => ({
+                ...prev,
+                pageIndex: page,
+                pageSize,
+              }))
+            }
+            pageSizeOptions={[10, 20, 50, 100]}
+            variant="dropdown"
           />
         </>
       )}
 
-      {activeTab === 'task' && (
-        <Table<ITaskAttachmentViewModel>
-          dataSource={taskAttachments}
-          columns={taskAttachmentColumns}
-          rowKey={record => record.id || ''}
-          loading={taskAttachmentsLoading}
-          scroll={{ x: 'max-content' }}
-          locale={{
-            emptyText: t('taskAttachmentsEmptyText', {
-              defaultValue: 'No task attachments found.',
-            }),
-          }}
-          pagination={{
-            total: taskAttachmentsPagination.total,
-            current: taskAttachmentsPagination.pageIndex,
-            pageSize: taskAttachmentsPagination.pageSize,
-            showSizeChanger: true,
-            onChange: (page, pageSize) =>
-              setTaskAttachmentsPagination(prev => ({ ...prev, pageIndex: page, pageSize })),
-          }}
-        />
-      )}
 
+      {activeTab === 'task' && (
+        <>
+          <Table<ITaskAttachmentViewModel>
+            dataSource={taskAttachments}
+            columns={taskAttachmentColumns}
+            rowKey={record => record.id || ''}
+            loading={taskAttachmentsLoading}
+            scroll={{ x: 'max-content' }}
+            locale={{
+              emptyText: t('taskAttachmentsEmptyText', {
+                defaultValue: 'No task attachments found.',
+              }),
+            }}
+            pagination={false}
+          />
+
+
+          <TablePagination
+            page={taskAttachmentsPagination.pageIndex}
+            pageSize={taskAttachmentsPagination.pageSize}
+            total={taskAttachmentsPagination.total}
+            rowsPerPageLabel={t('myTasksView.rowsPerPage', {
+              defaultValue: 'Rows per page',
+            })}
+            onPageChange={(page, pageSize) =>
+              setTaskAttachmentsPagination(prev => ({
+                ...prev,
+                pageIndex: page,
+                pageSize,
+              }))
+            }
+            pageSizeOptions={[10, 20, 50, 100]}
+            variant="dropdown"
+          />
+        </>
+      )}
       {activeTab === 'links' && (
         <ProjectLinksTab
           active={activeTab === 'links'}
@@ -1138,7 +1168,7 @@ const ProjectViewFiles = () => {
                         icon={<DeleteOutlined />}
                         onClick={event => {
                           event.stopPropagation();
-                          actions.remove?.(file);
+                          actions.remove?.();
                         }}
                       />
                     )}

@@ -45,7 +45,6 @@ import { colors } from '@/styles/colors';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import { IRPTProject } from '@/types/reporting/reporting.types';
 import ProjectReportsDrawer from '@/features/reporting/projectReports/projectReportsDrawer/ProjectReportsDrawer';
-import { PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import './projects-reports-table.css';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { useSocket } from '@/socket/socketContext';
@@ -58,11 +57,12 @@ import ProjectManagersFilterDropdown from '../projects-reports-filters/project-m
 import ProjectClientFilterDropdown from '../projects-reports-filters/project-client-filter-dropdown';
 import ProjectPriorityFilterDropdown from '../projects-reports-filters/project-priority-filter-dropdown';
 import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
+import TablePagination from '@/components/TablePagination';
 
 const ProjectsReportsTable = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
-  const { socket, connected } = useSocket();
+ const { socket } = useSocket();
 
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
@@ -456,23 +456,14 @@ const ProjectsReportsTable = () => {
     [columns, columnsVisibility]
   );
 
-  const handleTableChange = useCallback<NonNullable<TableProps<IRPTProject>['onChange']>>(
-    (pagination, _filters, sorter, extra) => {
-      if (extra.action === 'sort') {
-        const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
-        const sortField = Array.isArray(activeSorter.field)
-          ? activeSorter.field[0]
-          : activeSorter.field;
-        dispatch(setField(activeSorter.order && sortField ? String(sortField) : 'name'));
-        dispatch(setOrder(activeSorter.order ?? ''));
-        dispatch(setIndex(1));
-        return;
-      }
+  const handleTableChange = useCallback(
+    (_pagination: any, _filters: any, sorter: any, extra: any) => {
+      if (extra.action !== 'sort') return;
 
-      if (extra.action === 'paginate') {
-        dispatch(setIndex(pagination.current ?? 1));
-        dispatch(setPageSize(pagination.pageSize ?? pageSize));
-      }
+      const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+      dispatch(setField(activeSorter?.order ? activeSorter.field : 'name'));
+      dispatch(setOrder(activeSorter?.order === 'descend' ? 'desc' : 'asc'));
+      dispatch(setIndex(1));
     },
     [dispatch, pageSize]
   );
@@ -529,35 +520,38 @@ const ProjectsReportsTable = () => {
     []
   );
 
-  const paginationConfig = useMemo(
-    () => ({
-      showSizeChanger: true,
-      pageSize,
-      total: total,
-      current: index,
-      pageSizeOptions: PAGE_SIZE_OPTIONS,
-    }),
-    [total, index, pageSize]
-  );
-
   const scrollConfig = useMemo(() => ({ x: 'max-content' }), []);
   const getRowKey = useCallback((record: IRPTProject) => record.id, []);
   const getRowProps = useCallback(() => tableRowProps, [tableRowProps]);
 
-  return (
+  return(
     <ConfigProvider {...tableConfig}>
-      {/* ← className enables our CSS to scope to this table */}
       <Table
         className="projects-reports-table"
         columns={visibleColumns}
         dataSource={projectList}
-        pagination={paginationConfig}
+        pagination={false}
         scroll={scrollConfig}
         loading={isLoading}
         onChange={handleTableChange}
         rowKey={getRowKey}
         onRow={getRowProps}
       />
+
+      <TablePagination
+        page={index}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={(nextPage, nextPageSize) => {
+          dispatch(setIndex(nextPage));
+          dispatch(setPageSize(nextPageSize));
+        }}
+        rowsPerPageLabel={t('myTasksView.rowsPerPage', {
+          defaultValue: 'Rows per page',
+        })}
+        variant="dropdown"
+      />
+
       {createPortal(<ProjectReportsDrawer selectedProject={selectedProject} />, document.body)}
     </ConfigProvider>
   );

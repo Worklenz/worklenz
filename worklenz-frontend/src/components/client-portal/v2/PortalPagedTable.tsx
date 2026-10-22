@@ -91,9 +91,9 @@ export const PortalPagedTable = <T extends object>({
         onCell: (row: T | GroupHeaderRow<T>, rowIndex?: number) =>
           isGroupHeader(row)
             ? ({
-                colSpan: index === 0 ? columns.length : 0,
-                style: { background: token.colorFillQuaternary, fontWeight: 600 },
-              } as React.HTMLAttributes<HTMLElement>)
+              colSpan: index === 0 ? columns.length : 0,
+              style: { background: token.colorFillQuaternary, fontWeight: 600 },
+            } as React.HTMLAttributes<HTMLElement>)
             : (original.onCell?.(row, rowIndex) ?? {}),
         render: (value: unknown, row: T | GroupHeaderRow<T>, rowIndex: number) => {
           if (isGroupHeader(row)) return index === 0 ? grouping.renderHeader(row.groupKey, row.rows) : null;
@@ -148,12 +148,12 @@ export const PortalPagedTable = <T extends object>({
           onRow={
             onRowClick
               ? row =>
-                  isGroupHeader(row as T | GroupHeaderRow<T>)
-                    ? {}
-                    : {
-                        onClick: () => onRowClick(row),
-                        style: { cursor: 'pointer' },
-                      }
+                isGroupHeader(row as T | GroupHeaderRow<T>)
+                  ? {}
+                  : {
+                    onClick: () => onRowClick(row),
+                    style: { cursor: 'pointer' },
+                  }
               : undefined
           }
         />
@@ -165,6 +165,7 @@ export const PortalPagedTable = <T extends object>({
           total={total}
           onPageChange={(page, pageSize) => paging.setPage(page, pageSize)}
           rowsPerPageLabel={t('rowsPerPage', { defaultValue: 'Rows per page:' })}
+          variant="dropdown"
         />
       )}
     </div>

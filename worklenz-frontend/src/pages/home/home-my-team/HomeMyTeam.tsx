@@ -28,8 +28,8 @@ import { useAuthService } from '@/hooks/useAuth';
 import { getRoleColor, ROLE_NAMES } from '@/types/roles/role.types';
 import { canManageUserRole, getSessionRoleName } from '@/utils/role-permissions.utils';
 import { fetchBillingInfo } from '@/features/admin-center/admin-center.slice';
+import TablePagination from '@/components/TablePagination';
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 const HomeMyTeam: React.FC = () => {
   const { token } = theme.useToken();
@@ -57,7 +57,7 @@ const HomeMyTeam: React.FC = () => {
           setTotal(res.body?.total || 0);
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, [page, pageSize]);
 
@@ -167,7 +167,7 @@ const HomeMyTeam: React.FC = () => {
             onConfirm={() => canManage && handleStatusChange(record)}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-               <UserSwitchOutlined /> {record.active ? t('myTeam.statusToggleLabelDeactivate', { defaultValue: 'Deactivate' }) : t('myTeam.statusToggleLabelActivate', { defaultValue: 'Activate' })}
+              <UserSwitchOutlined /> {record.active ? t('myTeam.statusToggleLabelDeactivate', { defaultValue: 'Deactivate' }) : t('myTeam.statusToggleLabelActivate', { defaultValue: 'Activate' })}
             </div>
           </Popconfirm>
         ),
@@ -185,8 +185,8 @@ const HomeMyTeam: React.FC = () => {
             disabled={!canManage}
             onConfirm={() => canManage && handleDeleteMember(record)}
           >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-                <DeleteOutlined /> {t('myTeam.deleteLabel', { defaultValue: 'Remove' })}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+              <DeleteOutlined /> {t('myTeam.deleteLabel', { defaultValue: 'Remove' })}
             </div>
           </Popconfirm>
         ),
@@ -213,7 +213,6 @@ const HomeMyTeam: React.FC = () => {
     whiteSpace: 'nowrap',
   };
 
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const columnCount = 7;
 
   return (
@@ -279,12 +278,12 @@ const HomeMyTeam: React.FC = () => {
                         <CustomAvatar avatarName={m.name || m.email || '?'} avatarUrl={m.avatar_url} size={28} />
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontWeight: 500 }}>{m.name || m.email}</div>
-                           {m.pending_invitation && (
-                             <div style={{ fontSize: 11, opacity: 0.5 }}>{t('myTeam.pendingInvitation', { defaultValue: 'Pending invitation' })}</div>
-                           )}
-                           {!m.active && !m.pending_invitation && (
-                             <div style={{ fontSize: 11, color: token.colorWarning }}>{t('myTeam.deactivated', { defaultValue: 'Deactivated' })}</div>
-                           )}
+                          {m.pending_invitation && (
+                            <div style={{ fontSize: 11, opacity: 0.5 }}>{t('myTeam.pendingInvitation', { defaultValue: 'Pending invitation' })}</div>
+                          )}
+                          {!m.active && !m.pending_invitation && (
+                            <div style={{ fontSize: 11, color: token.colorWarning }}>{t('myTeam.deactivated', { defaultValue: 'Deactivated' })}</div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -292,11 +291,11 @@ const HomeMyTeam: React.FC = () => {
                     <td style={{ ...tdStyle, opacity: 0.65 }}>{m.job_title || '—'}</td>
                     <td style={tdStyle}>
                       <span style={{ color: getRoleColor(m.role_name || ''), fontWeight: 500 }}>
-                         {m.role_name || t('myTeam.defaultRole', { defaultValue: 'Member' })}
+                        {m.role_name || t('myTeam.defaultRole', { defaultValue: 'Member' })}
                       </span>
                     </td>
                     <td style={{ ...tdStyle, opacity: 0.75 }}>
-                       {isTeamLeadRole ? '—' : m.current_team_lead_name || t('myTeam.noTeamLead', { defaultValue: 'No team lead' })}
+                      {isTeamLeadRole ? '—' : m.current_team_lead_name || t('myTeam.noTeamLead', { defaultValue: 'No team lead' })}
                     </td>
                     <td style={{ ...tdStyle, fontWeight: 600 }}>{m.projects_count ?? 0}</td>
                     <td style={{ ...tdStyle, textAlign: 'right' }}>
@@ -328,24 +327,20 @@ const HomeMyTeam: React.FC = () => {
             borderTop: `1px solid ${token.colorBorderSecondary}`,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 12, color: token.colorTextSecondary }}>{t('myTeam.rowsPerPage', { defaultValue: 'Rows per page' })}</span>
-            <Select
-              size="small"
-              style={{ width: 64 }}
-              value={pageSize}
-              onChange={v => { setPageSize(v); setPage(1); }}
-              options={PAGE_SIZE_OPTIONS.map(n => ({ value: n, label: n }))}
-            />
-            <span style={{ fontSize: 12, color: token.colorTextSecondary, marginLeft: 4 }}>
-              {total === 0 ? '0' : `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)}`} of {total}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Button size="small" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>‹</Button>
-            <span style={{ fontSize: 12 }}>{page} / {totalPages}</span>
-            <Button size="small" disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>›</Button>
-          </div>
+          <TablePagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            rowsPerPageLabel={t('myTeam.rowsPerPage', {
+              defaultValue: 'Rows per page',
+            })}
+            variant="dropdown"
+            onPageChange={(nextPage, nextPageSize) => {
+              setPage(nextPage);
+              setPageSize(nextPageSize);
+            }}
+            renderSummary={(range, count) => `${range} of ${count}`}
+          />
         </div>
       </div>
 
