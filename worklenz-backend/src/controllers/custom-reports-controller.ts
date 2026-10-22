@@ -5,6 +5,7 @@ import db from "../config/db";
 import {ServerResponse} from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
+import {buildSprintScopeTasksFrom} from "../shared/sprint-report-scope";
 import {isValidUuid} from "../shared/validation-helpers";
 
 type ReportSource = "items" | "sprints" | "releases" | "time";
@@ -335,11 +336,9 @@ export default class CustomReportsController extends WorklenzControllerBase {
          SELECT COUNT(*) FILTER (WHERE cat.is_done IS TRUE) AS done_count,
                 COALESCE(SUM(t.story_points) FILTER (WHERE cat.is_done IS TRUE), 0) AS done_points,
                 COALESCE(SUM(t.story_points), 0) AS total_points
-         FROM task_phase tp
-         INNER JOIN tasks t ON t.id = tp.task_id AND t.archived IS FALSE
+         FROM (${buildSprintScopeTasksFrom("pp.id")}) t
          LEFT JOIN task_statuses ts ON ts.id = t.status_id
          LEFT JOIN sys_task_status_categories cat ON cat.id = ts.category_id
-         WHERE tp.phase_id = pp.id
        ) live ON TRUE
        WHERE pp.project_id = $1 AND pp.sprint_status IN ('active', 'completed')
        ORDER BY COALESCE(pp.started_at, pp.start_date, pp.created_at) DESC
