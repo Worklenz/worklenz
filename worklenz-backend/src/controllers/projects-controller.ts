@@ -724,6 +724,8 @@ export default class ProjectsController extends WorklenzControllerBase {
     const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
     
     const search = (req.query.search || "").toString().trim();
+    // `team` = non-guests, `guest` = guests only, anything else = all (backward compatible).
+    const memberType = (req.query.member_type || "").toString().trim().toLowerCase();
 
     let searchFilter = "";
     const params = [req.params.id, req.user?.team_id ?? null, size, offset];
@@ -735,6 +737,14 @@ export default class ProjectsController extends WorklenzControllerBase {
         )
       `;
       params.push(search);
+    }
+
+    const isGuestPredicate = `(pal.key = 'GUEST' OR COALESCE(tm.is_guest, FALSE) = TRUE)`;
+    let memberTypeFilter = "";
+    if (memberType === "guest") {
+      memberTypeFilter = `AND ${isGuestPredicate}`;
+    } else if (memberType === "team") {
+      memberTypeFilter = `AND NOT ${isGuestPredicate}`;
     }
 
     const q = `
@@ -762,6 +772,7 @@ export default class ProjectsController extends WorklenzControllerBase {
          LEFT JOIN users u ON tm.user_id = u.id
          LEFT JOIN project_access_levels pal ON project_members.project_access_level_id = pal.id
          WHERE project_id = $1
+         ${memberTypeFilter}
          ${search ? searchFilter : ""}
       )
       SELECT
@@ -823,6 +834,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              sps.name AS status,
              sps.color_code AS status_color,
              sps.icon AS status_icon,
+             projects.client_id,
              (SELECT name FROM clients WHERE id = projects.client_id) AS client_name,
              projects.use_manual_progress,
              projects.use_weighted_progress,
@@ -830,6 +842,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.auto_assign_task_creator,
              projects.restrict_task_creation,
              projects.phase_assignees_enabled,
+             projects.members_can_view_client_team,
              to_jsonb(projects)->>'worklenz_id' AS worklenz_id,
              projects.restrict_tasks_to_assignee,
              projects.auto_assign_subtask_phase,
@@ -1076,6 +1089,18 @@ export default class ProjectsController extends WorklenzControllerBase {
               AND team_id = $3
           `,
           [Boolean(req.body.phase_assignees_enabled), req.params.id, req.user?.team_id || null]
+        );
+      }
+
+      if (Object.prototype.hasOwnProperty.call(req.body, 'members_can_view_client_team')) {
+        await db.query(
+          `
+            UPDATE projects
+            SET members_can_view_client_team = $1
+            WHERE id = $2
+              AND team_id = $3
+          `,
+          [Boolean(req.body.members_can_view_client_team), req.params.id, req.user?.team_id || null]
         );
       }
 

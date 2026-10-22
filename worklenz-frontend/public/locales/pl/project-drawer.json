@@ -97,6 +97,8 @@
   "restrictTaskCreationBusinessPlanDescription": "Ograniczenie tworzenia zadań do administratorów i liderów zespołów jest dostępne w planach Business i Enterprise.",
   "restrictTaskCreation": "Ogranicz przydzielanie zadań do administratorów i liderów zespołów",
   "restrictTaskCreationTooltip": "Gdy ta opcja jest włączona, tylko administratorzy i liderzy zespołów mogą tworzyć i przypisywać zadania. Członkowie zespołu mogą przeglądać tylko przydzielone im zadania.",
+  "membersCanViewClientTeam": "Zezwól członkom na przeglądanie zespołu klienta",
+  "membersCanViewClientTeamTooltip": "Po włączeniu zwykli członkowie projektu mogą zobaczyć kartę Zespół klienta na stronie Członkowie. Właściciele, administratorzy, liderzy zespołów i kierownicy projektów zawsze ją widzą.",
   "phaseAssigneesSettings": "Osoby przypisane do fazy",
   "phaseAssigneesSettingsDescription": "Po włączeniu każda faza potoku może mieć dedykowanego przypisanego. Zadania mogą być zlecane wyłącznie przez osobę przypisaną do etapu (administratorzy zawsze mogą je zastąpić).",
   "phaseAssigneesEnabled": "Włącz przypisanych faz",
