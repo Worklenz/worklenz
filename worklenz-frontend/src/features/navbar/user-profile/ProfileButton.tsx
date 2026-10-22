@@ -25,7 +25,7 @@ import MobileAppModal from '@/components/mobile-app/MobileAppModal';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleTheme } from '@/features/theme/themeSlice';
+import { toggleThemeWithTransition } from '@/features/theme/themeSlice';
 import { RootState } from '@/app/store';
 import { selectCurrentProject } from '@/app/selectors';
 
@@ -214,7 +214,7 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
             </div>
           )}
           <div
-            onClick={() => dispatch(toggleTheme())}
+            onClick={() => toggleThemeWithTransition(dispatch)}
             onMouseEnter={handleItemMouseEnter}
             onMouseLeave={handleItemMouseLeave}
             style={{
