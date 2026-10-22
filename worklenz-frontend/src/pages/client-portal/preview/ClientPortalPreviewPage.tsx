@@ -29,6 +29,7 @@ import {
 } from './PreviewViews';
 import { PortalLoader } from '@/components/client-portal/v2';
 import { PortalPreviewShell, type PreviewTab } from './PortalPreviewShell';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 const CAPABILITY_ROWS: { capability: ClientCapability; key: string; defaultValue: string }[] = [
   { capability: 'view', key: 'capability.view', defaultValue: 'View assigned projects, milestones, client-visible tasks and files' },
@@ -67,6 +68,7 @@ const ClientPortalPreviewPage = () => {
   const { t } = useTranslation('client-portal-v2-preview');
   const { t: tShared } = useTranslation('client-portal-v2');
   const { token } = theme.useToken();
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [searchParams] = useSearchParams();
   const projectParam = searchParams.get('project');
   const branding = usePortalBranding();
@@ -108,7 +110,7 @@ const ClientPortalPreviewPage = () => {
   );
 
   const brandColor = branding?.primary_color || CLIENT_PORTAL_BRAND_COLORS[0];
-  const isDarkPortal = branding?.portal_theme === 'dark';
+  const isDarkPortal = themeMode === 'dark';
   const portalTitle = branding?.portal_title || branding?.company_name || t('frame.defaultTitle', { defaultValue: 'Client Portal' });
 
   const header = (
@@ -266,8 +268,27 @@ const ClientPortalPreviewPage = () => {
           {/* The frame uses the portal's own colour and light/dark theme, not the admin app's. */}
           <ConfigProvider
             theme={{
-              algorithm: isDarkPortal ? theme.darkAlgorithm : theme.defaultAlgorithm,
-              token: { colorPrimary: brandColor },
+              // Keep the portal theme independent of the main app theme.
+              inherit: false,
+              algorithm: isDarkPortal
+                ? theme.darkAlgorithm
+                : theme.defaultAlgorithm,
+              token: {
+                colorPrimary: brandColor,
+                borderRadius: 6,
+                fontFamily: token.fontFamily,
+                colorBgLayout: isDarkPortal ? '#141414' : '#f5f5f5',
+                colorBgContainer: isDarkPortal ? '#1f1f1f' : '#ffffff',
+                colorText: isDarkPortal
+                  ? 'rgba(255, 255, 255, 0.85)'
+                  : 'rgba(0, 0, 0, 0.88)',
+                colorTextSecondary: isDarkPortal
+                  ? 'rgba(255, 255, 255, 0.65)'
+                  : 'rgba(0, 0, 0, 0.65)',
+                colorTextTertiary: isDarkPortal
+                  ? 'rgba(255, 255, 255, 0.65)'
+                  : 'rgba(0, 0, 0, 0.65)',
+              },
             }}
           >
             <PortalPreviewShell
