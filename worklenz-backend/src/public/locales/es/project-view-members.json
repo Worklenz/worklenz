@@ -13,5 +13,22 @@
   "emptyText": "No hay archivos adjuntos en el proyecto.",
   "removeFromProject": "Eliminar del proyecto",
   "assignFailedMessage": "No se pudieron actualizar los asignados a la tarea. Por favor inténtalo de nuevo.",
-  "assignFailedTitle": "La tarea falló"
+  "assignFailedTitle": "La tarea falló",
+  "clientPortal": {
+    "title": "Acceso al portal del cliente",
+    "summary": "{{count}} usuario(s) de {{client}} pueden abrir este proyecto en el Portal del cliente.",
+    "unknownClient": "Cliente",
+    "viewClient": "Ver cliente",
+    "manageAccess": "Gestionar acceso",
+    "nameColumn": "Nombre",
+    "emailColumn": "Correo",
+    "roleColumn": "Rol",
+    "statusColumn": "Estado",
+    "lastAccessColumn": "Último acceso",
+    "neverAccessed": "Nunca",
+    "loadFailed": "No se pudieron cargar los usuarios del portal del cliente.",
+    "retry": "Reintentar",
+    "tableLabel": "Usuarios del portal del cliente con acceso a este proyecto",
+    "empty": "Aún no hay usuarios del cliente asignados a este proyecto. Asígnelos desde el Portal del cliente."
+  }
 }

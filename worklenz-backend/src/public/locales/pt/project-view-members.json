@@ -13,5 +13,22 @@
   "emptyText": "Não há anexos no projeto.",
   "removeFromProject": "Remover do projeto",
   "assignFailedMessage": "Não foi possível atualizar os destinatários da tarefa. Por favor, tente novamente.",
-  "assignFailedTitle": "Falha na tarefa"
+  "assignFailedTitle": "Falha na tarefa",
+  "clientPortal": {
+    "title": "Acesso ao portal do cliente",
+    "summary": "{{count}} usuário(s) em {{client}} podem abrir este projeto no Portal do Cliente.",
+    "unknownClient": "Cliente",
+    "viewClient": "Ver cliente",
+    "manageAccess": "Gerenciar acesso",
+    "nameColumn": "Nome",
+    "emailColumn": "E-mail",
+    "roleColumn": "Função",
+    "statusColumn": "Status",
+    "lastAccessColumn": "Último acesso",
+    "neverAccessed": "Nunca",
+    "loadFailed": "Não foi possível carregar os usuários do portal do cliente.",
+    "retry": "Tentar novamente",
+    "tableLabel": "Usuários do portal do cliente com acesso a este projeto",
+    "empty": "Nenhum usuário do cliente está atribuído a este projeto ainda. Atribua-os pelo Portal do Cliente."
+  }
 }

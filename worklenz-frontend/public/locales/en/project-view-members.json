@@ -43,5 +43,22 @@
   "changeMemberStatusConfirmation": "Are you sure you want to change this member's status?",
   "yesProceed": "Yes, Proceed",
   "cancel": "Cancel",
-  "removeFromProject": "Remove from Project"
+  "removeFromProject": "Remove from Project",
+  "clientPortal": {
+    "title": "Client portal access",
+    "summary": "{{count}} user(s) at {{client}} can open this project in the Client Portal.",
+    "unknownClient": "Client",
+    "viewClient": "View client",
+    "manageAccess": "Manage access",
+    "nameColumn": "Name",
+    "emailColumn": "Email",
+    "roleColumn": "Role",
+    "statusColumn": "Status",
+    "lastAccessColumn": "Last access",
+    "neverAccessed": "Never",
+    "loadFailed": "Client portal users could not be loaded.",
+    "retry": "Retry",
+    "tableLabel": "Client portal users with access to this project",
+    "empty": "No client users are assigned to this project yet. Assign them from Client Portal."
+  }
 }

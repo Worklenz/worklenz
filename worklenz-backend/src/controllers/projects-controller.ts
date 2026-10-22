@@ -823,6 +823,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              sps.name AS status,
              sps.color_code AS status_color,
              sps.icon AS status_icon,
+             projects.client_id,
              (SELECT name FROM clients WHERE id = projects.client_id) AS client_name,
              projects.use_manual_progress,
              projects.use_weighted_progress,

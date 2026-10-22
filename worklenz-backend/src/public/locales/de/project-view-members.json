@@ -13,5 +13,22 @@
   "emptyText": "Es gibt keine Anhänge in diesem Projekt.",
   "removeFromProject": "Aus Projekt entfernen",
   "assignFailedMessage": "Die Aufgabenverantwortlichen konnten nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
-  "assignFailedTitle": "Zuweisung fehlgeschlagen"
+  "assignFailedTitle": "Zuweisung fehlgeschlagen",
+  "clientPortal": {
+    "title": "Client-Portal-Zugriff",
+    "summary": "{{count}} Benutzer bei {{client}} können dieses Projekt im Client-Portal öffnen.",
+    "unknownClient": "Kunde",
+    "viewClient": "Kunde anzeigen",
+    "manageAccess": "Zugriff verwalten",
+    "nameColumn": "Name",
+    "emailColumn": "E-Mail",
+    "roleColumn": "Rolle",
+    "statusColumn": "Status",
+    "lastAccessColumn": "Letzter Zugriff",
+    "neverAccessed": "Nie",
+    "loadFailed": "Client-Portal-Benutzer konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "tableLabel": "Client-Portal-Benutzer mit Zugriff auf dieses Projekt",
+    "empty": "Diesem Projekt sind noch keine Client-Benutzer zugewiesen. Weisen Sie sie über das Client-Portal zu."
+  }
 }

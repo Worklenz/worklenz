@@ -45,6 +45,7 @@ import logger from '@/utils/errorLogger';
 
 // Components
 import EmptyListPlaceholder from '../../../../components/EmptyListPlaceholder';
+import { ProjectClientPortalMembers } from './ProjectClientPortalMembers';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { evt_project_members_visit } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -101,7 +102,7 @@ const ProjectViewMembers = () => {
   const { trackMixpanelEvent } = useMixpanelTracking();
   const dispatch = useAppDispatch();
 
-  const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
+  const { refreshTimestamp, project: currentProject } = useAppSelector(state => state.projectReducer);
   const membersRefreshCount = useAppSelector(state => state.projectMemberReducer.membersRefreshCount);
   const billingInfo = useAppSelector(state => state.adminCenterReducer.billingInfo);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -757,6 +758,15 @@ const ProjectViewMembers = () => {
           />
         )}
       </Card>
+
+      {projectId && (
+        <ProjectClientPortalMembers
+          projectId={projectId}
+          clientId={currentProject?.client_id}
+          clientName={currentProject?.client_name}
+        />
+      )}
+
       <TimeOffCalendar
         members={
           timeOffTargetMember

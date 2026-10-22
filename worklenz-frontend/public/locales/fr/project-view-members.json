@@ -43,5 +43,22 @@
   "changeMemberStatusConfirmation": "Voulez-vous vraiment modifier le statut de ce membre ?",
   "yesProceed": "Oui, continuer",
   "cancel": "Annuler",
-  "removeFromProject": "Supprimer du projet"
+  "removeFromProject": "Supprimer du projet",
+  "clientPortal": {
+    "title": "Accès au portail client",
+    "summary": "{{count}} utilisateur(s) chez {{client}} peuvent ouvrir ce projet dans le Portail client.",
+    "unknownClient": "Client",
+    "viewClient": "Voir le client",
+    "manageAccess": "Gérer l'accès",
+    "nameColumn": "Nom",
+    "emailColumn": "Courriel",
+    "roleColumn": "Rôle",
+    "statusColumn": "Statut",
+    "lastAccessColumn": "Dernier accès",
+    "neverAccessed": "Jamais",
+    "loadFailed": "Impossible de charger les utilisateurs du portail client.",
+    "retry": "Réessayer",
+    "tableLabel": "Utilisateurs du portail client ayant accès à ce projet",
+    "empty": "Aucun utilisateur client n'est encore assigné à ce projet. Assignez-les depuis le Portail client."
+  }
 }

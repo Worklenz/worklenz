@@ -43,5 +43,22 @@
   "changeMemberStatusConfirmation": "确定要更改此成员的状态吗？",
   "yesProceed": "是，继续",
   "cancel": "取消",
-  "removeFromProject": "从项目中删除"
+  "removeFromProject": "从项目中删除",
+  "clientPortal": {
+    "title": "客户门户访问权限",
+    "summary": "{{client}} 的 {{count}} 位用户可在客户门户中打开此项目。",
+    "unknownClient": "客户",
+    "viewClient": "查看客户",
+    "manageAccess": "管理访问权限",
+    "nameColumn": "名称",
+    "emailColumn": "电子邮件",
+    "roleColumn": "角色",
+    "statusColumn": "状态",
+    "lastAccessColumn": "上次访问",
+    "neverAccessed": "从未",
+    "loadFailed": "无法加载客户门户用户。",
+    "retry": "重试",
+    "tableLabel": "有权访问此项目的客户门户用户",
+    "empty": "尚未向此项目分配客户用户。请从客户门户进行分配。"
+  }
 }

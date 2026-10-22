@@ -43,5 +43,22 @@
   "changeMemberStatusConfirmation": "Jeni të sigurt që dëshironi të ndryshoni statusin e këtij anëtari?",
   "yesProceed": "Po, vazhdo",
   "cancel": "Anulo",
-  "removeFromProject": "Hiq nga Projekti"
+  "removeFromProject": "Hiq nga Projekti",
+  "clientPortal": {
+    "title": "Qasja në portalin e klientit",
+    "summary": "{{count}} përdorues te {{client}} mund ta hapin këtë projekt në Portalin e Klientit.",
+    "unknownClient": "Klient",
+    "viewClient": "Shiko klientin",
+    "manageAccess": "Menaxho qasjen",
+    "nameColumn": "Emri",
+    "emailColumn": "Email",
+    "roleColumn": "Roli",
+    "statusColumn": "Statusi",
+    "lastAccessColumn": "Qasja e fundit",
+    "neverAccessed": "Asnjëherë",
+    "loadFailed": "Përdoruesit e portalit të klientit nuk mund të ngarkoheshin.",
+    "retry": "Provo përsëri",
+    "tableLabel": "Përdoruesit e portalit të klientit me qasje në këtë projekt",
+    "empty": "Ende nuk ka përdorues klienti të caktuar në këtë projekt. Caktojini nga Portali i Klientit."
+  }
 }

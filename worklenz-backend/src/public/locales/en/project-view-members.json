@@ -13,5 +13,22 @@
   "emptyText": "There are no attachments in the project.",
   "removeFromProject": "Remove from Project",
   "assignFailedMessage": "Could not update the task assignees. Please try again.",
-  "assignFailedTitle": "Assignment failed"
+  "assignFailedTitle": "Assignment failed",
+  "clientPortal": {
+    "title": "Client portal access",
+    "summary": "{{count}} user(s) at {{client}} can open this project in the Client Portal.",
+    "unknownClient": "Client",
+    "viewClient": "View client",
+    "manageAccess": "Manage access",
+    "nameColumn": "Name",
+    "emailColumn": "Email",
+    "roleColumn": "Role",
+    "statusColumn": "Status",
+    "lastAccessColumn": "Last access",
+    "neverAccessed": "Never",
+    "loadFailed": "Client portal users could not be loaded.",
+    "retry": "Retry",
+    "tableLabel": "Client portal users with access to this project",
+    "empty": "No client users are assigned to this project yet. Assign them from Client Portal."
+  }
 }

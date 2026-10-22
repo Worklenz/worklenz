@@ -30,5 +30,22 @@
   "removeError": "Nie udało się usunąć członka",
   "removeFromProject": "Usuń z projektu",
   "assignFailedMessage": "Nie można zaktualizować przypisanych zadań. Spróbuj ponownie.",
-  "assignFailedTitle": "Przypisanie nie powiodło się"
+  "assignFailedTitle": "Przypisanie nie powiodło się",
+  "clientPortal": {
+    "title": "Dostęp do portalu klienta",
+    "summary": "{{count}} użytkownik(ów) w {{client}} może otworzyć ten projekt w Portalu klienta.",
+    "unknownClient": "Klient",
+    "viewClient": "Zobacz klienta",
+    "manageAccess": "Zarządzaj dostępem",
+    "nameColumn": "Imię",
+    "emailColumn": "E-mail",
+    "roleColumn": "Rola",
+    "statusColumn": "Status",
+    "lastAccessColumn": "Ostatni dostęp",
+    "neverAccessed": "Nigdy",
+    "loadFailed": "Nie udało się załadować użytkowników portalu klienta.",
+    "retry": "Spróbuj ponownie",
+    "tableLabel": "Użytkownicy portalu klienta z dostępem do tego projektu",
+    "empty": "Żaden użytkownik klienta nie jest jeszcze przypisany do tego projektu. Przypisz ich w Portalu klienta."
+  }
 }
