@@ -44,9 +44,14 @@
   "yesProceed": "Tak, kontynuuj",
   "cancel": "Anuluj",
   "removeFromProject": "Usuń z projektu",
+  "guestCount": "Gość",
+  "guestsCountPlural": "Goście",
+  "emptyGuestsText": "W tym projekcie nie ma gości.",
+  "emptyTeamMembersText": "W tym projekcie nie ma członków zespołu.",
   "tabs": {
     "ariaLabel": "Sekcje członków",
     "teamMembers": "Członkowie zespołu",
+    "guests": "Goście",
     "clientTeam": "Zespół klienta"
   },
   "clientPortal": {

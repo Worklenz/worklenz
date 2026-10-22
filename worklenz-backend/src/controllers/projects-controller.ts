@@ -724,6 +724,8 @@ export default class ProjectsController extends WorklenzControllerBase {
     const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
     
     const search = (req.query.search || "").toString().trim();
+    // `team` = non-guests, `guest` = guests only, anything else = all (backward compatible).
+    const memberType = (req.query.member_type || "").toString().trim().toLowerCase();
 
     let searchFilter = "";
     const params = [req.params.id, req.user?.team_id ?? null, size, offset];
@@ -735,6 +737,14 @@ export default class ProjectsController extends WorklenzControllerBase {
         )
       `;
       params.push(search);
+    }
+
+    const isGuestPredicate = `(pal.key = 'GUEST' OR COALESCE(tm.is_guest, FALSE) = TRUE)`;
+    let memberTypeFilter = "";
+    if (memberType === "guest") {
+      memberTypeFilter = `AND ${isGuestPredicate}`;
+    } else if (memberType === "team") {
+      memberTypeFilter = `AND NOT ${isGuestPredicate}`;
     }
 
     const q = `
@@ -762,6 +772,7 @@ export default class ProjectsController extends WorklenzControllerBase {
          LEFT JOIN users u ON tm.user_id = u.id
          LEFT JOIN project_access_levels pal ON project_members.project_access_level_id = pal.id
          WHERE project_id = $1
+         ${memberTypeFilter}
          ${search ? searchFilter : ""}
       )
       SELECT

@@ -67,7 +67,7 @@ import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import useProjectPermissions from '@/hooks/useProjectPermissions';
 
-type MembersTab = 'team' | 'client';
+type MembersTab = 'team' | 'guests' | 'client';
 
 interface PaginationType {
   current: number;
@@ -168,6 +168,10 @@ const ProjectViewMembers = () => {
         label: t('tabs.teamMembers', { defaultValue: 'Team members' }),
       },
       {
+        value: 'guests' as const,
+        label: t('tabs.guests', { defaultValue: 'Guests' }),
+      },
+      {
         value: 'client' as const,
         label: t('tabs.clientTeam', { defaultValue: "Client's team" }),
       },
@@ -175,20 +179,26 @@ const ProjectViewMembers = () => {
     [t]
   );
 
+  const membersListMemberType = activeTab === 'guests' ? 'guest' : 'team';
+  const isMembersListTab = activeTab === 'team' || activeTab === 'guests';
+
   // API Functions
-  const getProjectMembers = async (search: string = searchQuery) => {
+  const getProjectMembers = async (
+    search: string = searchQuery,
+    memberType: 'team' | 'guest' = membersListMemberType
+  ) => {
     if (!projectId) return;
 
     setIsLoading(true);
     try {
-      const offset = (pagination.current - 1) * pagination.pageSize;
       const res = await projectsApiService.getMembers(
         projectId,
         pagination.current,
         pagination.pageSize,
         pagination.field,
         pagination.order,
-        search
+        search,
+        memberType
       );
       if (res.done) {
         setMembers(res.body);
@@ -383,7 +393,8 @@ const ProjectViewMembers = () => {
 
   // Effects
   useEffect(() => {
-    void getProjectMembers();
+    if (!isMembersListTab) return;
+    void getProjectMembers(searchQuery, membersListMemberType);
   }, [
     refreshTimestamp,
     membersRefreshCount,
@@ -392,8 +403,19 @@ const ProjectViewMembers = () => {
     pagination.pageSize,
     pagination.field,
     pagination.order,
+    activeTab,
     // searchQuery, // <-- Do NOT include here, search is triggered manually
   ]);
+
+  const handleMembersTabChange = (tab: MembersTab) => {
+    setActiveTab(tab);
+    if (tab === 'team' || tab === 'guests') {
+      setIsLoading(true);
+      setMembers(undefined);
+      setPagination(prev => ({ ...prev, current: 1 }));
+      setSearchQuery('');
+    }
+  };
 
   useEffect(() => {
     if (isOwnerOrAdmin && !billingInfo) {
@@ -626,19 +648,26 @@ const ProjectViewMembers = () => {
         <PillToggle<MembersTab>
           value={activeTab}
           options={membersTabOptions}
-          onChange={setActiveTab}
+          onChange={handleMembersTabChange}
           ariaLabel={t('tabs.ariaLabel', { defaultValue: 'Members sections' })}
         />
       </Flex>
 
-      {activeTab === 'team' ? (
+      {isMembersListTab ? (
         <Card
           style={{ width: '100%' }}
           title={
             <Flex justify="space-between" align="center">
               <Typography.Text style={{ fontSize: 16, fontWeight: 500 }}>
-                {members?.total}{' '}
-                {members?.total !== 1 ? t('membersCountPlural') : t('memberCount')}
+                {activeTab === 'guests'
+                  ? `${members?.total ?? 0} ${
+                      members?.total !== 1
+                        ? t('guestsCountPlural', { defaultValue: 'Guests' })
+                        : t('guestCount', { defaultValue: 'Guest' })
+                    }`
+                  : `${members?.total ?? 0} ${
+                      members?.total !== 1 ? t('membersCountPlural') : t('memberCount')
+                    }`}
               </Typography.Text>
 
               <Flex gap={8} align="center">
@@ -747,7 +776,7 @@ const ProjectViewMembers = () => {
                   onChange={e => setSearchQuery(e.target.value)}
                   onSearch={value => {
                     setPagination(p => ({ ...p, current: 1 })); // Reset to first page
-                    void getProjectMembers(value);
+                    void getProjectMembers(value, membersListMemberType);
                   }}
                   style={{ width: 220 }}
                   enterButton
@@ -761,7 +790,15 @@ const ProjectViewMembers = () => {
             <EmptyListPlaceholder
               imageSrc="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/empty-box.webp"
               imageHeight={120}
-              text={t('emptyText')}
+              text={
+                activeTab === 'guests'
+                  ? t('emptyGuestsText', {
+                      defaultValue: 'There are no guests in this project.',
+                    })
+                  : t('emptyTeamMembersText', {
+                      defaultValue: 'There are no team members in this project.',
+                    })
+              }
             />
           ) : isLoading ? (
             <Skeleton />

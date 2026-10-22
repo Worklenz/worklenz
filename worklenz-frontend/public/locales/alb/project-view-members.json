@@ -44,9 +44,14 @@
   "yesProceed": "Po, vazhdo",
   "cancel": "Anulo",
   "removeFromProject": "Hiq nga Projekti",
+  "guestCount": "I ftuar",
+  "guestsCountPlural": "Të ftuar",
+  "emptyGuestsText": "Nuk ka të ftuar në këtë projekt.",
+  "emptyTeamMembersText": "Nuk ka anëtarë ekipi në këtë projekt.",
   "tabs": {
     "ariaLabel": "Seksionet e anëtarëve",
     "teamMembers": "Anëtarët e ekipit",
+    "guests": "Të ftuar",
     "clientTeam": "Ekipi i klientit"
   },
   "clientPortal": {
