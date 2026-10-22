@@ -44,8 +44,13 @@
   "yesProceed": "Tak, kontynuuj",
   "cancel": "Anuluj",
   "removeFromProject": "Usuń z projektu",
+  "tabs": {
+    "ariaLabel": "Sekcje członków",
+    "teamMembers": "Członkowie zespołu",
+    "clientTeam": "Zespół klienta"
+  },
   "clientPortal": {
-    "title": "Dostęp do portalu klienta",
+    "title": "Zespół klienta",
     "summary": "{{count}} użytkownik(ów) w {{client}} może otworzyć ten projekt w Portalu klienta.",
     "unknownClient": "Klient",
     "viewClient": "Zobacz klienta",
@@ -59,6 +64,8 @@
     "loadFailed": "Nie udało się załadować użytkowników portalu klienta.",
     "retry": "Spróbuj ponownie",
     "tableLabel": "Użytkownicy portalu klienta z dostępem do tego projektu",
-    "empty": "Żaden użytkownik klienta nie jest jeszcze przypisany do tego projektu. Przypisz ich w Portalu klienta."
+    "empty": "Żaden użytkownik klienta nie jest jeszcze przypisany do tego projektu. Przypisz ich w Portalu klienta.",
+    "noClientLinked": "Ten projekt nie jest jeszcze powiązany z klientem. Przypisz klienta w Portalu klienta, aby zarządzać dostępem zespołu klienta tutaj.",
+    "goToClientPortal": "Przejdź do Portalu klienta"
   }
 }

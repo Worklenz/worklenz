@@ -44,8 +44,13 @@
   "yesProceed": "Po, vazhdo",
   "cancel": "Anulo",
   "removeFromProject": "Hiq nga Projekti",
+  "tabs": {
+    "ariaLabel": "Seksionet e anëtarëve",
+    "teamMembers": "Anëtarët e ekipit",
+    "clientTeam": "Ekipi i klientit"
+  },
   "clientPortal": {
-    "title": "Qasja në portalin e klientit",
+    "title": "Ekipi i klientit",
     "summary": "{{count}} përdorues te {{client}} mund ta hapin këtë projekt në Portalin e Klientit.",
     "unknownClient": "Klient",
     "viewClient": "Shiko klientin",
@@ -59,6 +64,8 @@
     "loadFailed": "Përdoruesit e portalit të klientit nuk mund të ngarkoheshin.",
     "retry": "Provo përsëri",
     "tableLabel": "Përdoruesit e portalit të klientit me qasje në këtë projekt",
-    "empty": "Ende nuk ka përdorues klienti të caktuar në këtë projekt. Caktojini nga Portali i Klientit."
+    "empty": "Ende nuk ka përdorues klienti të caktuar në këtë projekt. Caktojini nga Portali i Klientit.",
+    "noClientLinked": "Ky projekt nuk është ende i lidhur me një klient. Caktoni një klient në Portalin e Klientit për të menaxhuar këtu qasjen e ekipit të klientit.",
+    "goToClientPortal": "Shko te Portali i Klientit"
   }
 }

@@ -44,8 +44,13 @@
   "yesProceed": "Sí, continuar",
   "cancel": "Cancelar",
   "removeFromProject": "Eliminar del proyecto",
+  "tabs": {
+    "ariaLabel": "Secciones de miembros",
+    "teamMembers": "Miembros del equipo",
+    "clientTeam": "Equipo del cliente"
+  },
   "clientPortal": {
-    "title": "Acceso al portal del cliente",
+    "title": "Equipo del cliente",
     "summary": "{{count}} usuario(s) de {{client}} pueden abrir este proyecto en el Portal del cliente.",
     "unknownClient": "Cliente",
     "viewClient": "Ver cliente",
@@ -59,6 +64,8 @@
     "loadFailed": "No se pudieron cargar los usuarios del portal del cliente.",
     "retry": "Reintentar",
     "tableLabel": "Usuarios del portal del cliente con acceso a este proyecto",
-    "empty": "Aún no hay usuarios del cliente asignados a este proyecto. Asígnelos desde el Portal del cliente."
+    "empty": "Aún no hay usuarios del cliente asignados a este proyecto. Asígnelos desde el Portal del cliente.",
+    "noClientLinked": "Este proyecto aún no está vinculado a un cliente. Asigna un cliente en el Portal del cliente para gestionar el acceso del equipo del cliente aquí.",
+    "goToClientPortal": "Ir al Portal del cliente"
   }
 }

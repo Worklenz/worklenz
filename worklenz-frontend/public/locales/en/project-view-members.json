@@ -44,8 +44,13 @@
   "yesProceed": "Yes, Proceed",
   "cancel": "Cancel",
   "removeFromProject": "Remove from Project",
+  "tabs": {
+    "ariaLabel": "Members sections",
+    "teamMembers": "Team members",
+    "clientTeam": "Client's team"
+  },
   "clientPortal": {
-    "title": "Client portal access",
+    "title": "Client's team",
     "summary": "{{count}} user(s) at {{client}} can open this project in the Client Portal.",
     "unknownClient": "Client",
     "viewClient": "View client",
@@ -59,6 +64,8 @@
     "loadFailed": "Client portal users could not be loaded.",
     "retry": "Retry",
     "tableLabel": "Client portal users with access to this project",
-    "empty": "No client users are assigned to this project yet. Assign them from Client Portal."
+    "empty": "No client users are assigned to this project yet. Assign them from Client Portal.",
+    "noClientLinked": "This project is not linked to a client yet. Assign a client in the Client Portal to manage client team access here.",
+    "goToClientPortal": "Go to Client Portal"
   }
 }

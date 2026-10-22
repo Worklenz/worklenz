@@ -44,8 +44,13 @@
   "yesProceed": "Oui, continuer",
   "cancel": "Annuler",
   "removeFromProject": "Supprimer du projet",
+  "tabs": {
+    "ariaLabel": "Sections des membres",
+    "teamMembers": "Membres de l'équipe",
+    "clientTeam": "Équipe client"
+  },
   "clientPortal": {
-    "title": "Accès au portail client",
+    "title": "Équipe client",
     "summary": "{{count}} utilisateur(s) chez {{client}} peuvent ouvrir ce projet dans le Portail client.",
     "unknownClient": "Client",
     "viewClient": "Voir le client",
@@ -59,6 +64,8 @@
     "loadFailed": "Impossible de charger les utilisateurs du portail client.",
     "retry": "Réessayer",
     "tableLabel": "Utilisateurs du portail client ayant accès à ce projet",
-    "empty": "Aucun utilisateur client n'est encore assigné à ce projet. Assignez-les depuis le Portail client."
+    "empty": "Aucun utilisateur client n'est encore assigné à ce projet. Assignez-les depuis le Portail client.",
+    "noClientLinked": "Ce projet n'est pas encore lié à un client. Assignez un client dans le Portail client pour gérer l'accès de l'équipe client ici.",
+    "goToClientPortal": "Aller au Portail client"
   }
 }

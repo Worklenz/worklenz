@@ -44,8 +44,13 @@
   "yesProceed": "是，继续",
   "cancel": "取消",
   "removeFromProject": "从项目中删除",
+  "tabs": {
+    "ariaLabel": "成员分区",
+    "teamMembers": "团队成员",
+    "clientTeam": "客户团队"
+  },
   "clientPortal": {
-    "title": "客户门户访问权限",
+    "title": "客户团队",
     "summary": "{{client}} 的 {{count}} 位用户可在客户门户中打开此项目。",
     "unknownClient": "客户",
     "viewClient": "查看客户",
@@ -59,6 +64,8 @@
     "loadFailed": "无法加载客户门户用户。",
     "retry": "重试",
     "tableLabel": "有权访问此项目的客户门户用户",
-    "empty": "尚未向此项目分配客户用户。请从客户门户进行分配。"
+    "empty": "尚未向此项目分配客户用户。请从客户门户进行分配。",
+    "noClientLinked": "此项目尚未关联客户。请在客户门户中分配客户，以便在此管理客户团队访问权限。",
+    "goToClientPortal": "前往客户门户"
   }
 }

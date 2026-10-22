@@ -28,11 +28,29 @@
   "Invite": "Inviter",
   "removeSuccess": "{{name}} supprimé du projet",
   "removeError": "Échec de la suppression du membre",
-  "removeFromProject": "Supprimer du projet",
-  "assignFailedMessage": "Impossible de mettre à jour les responsables de la tâche. Veuillez réessayer.",
   "assignFailedTitle": "Échec de l'affectation",
+  "assignFailedMessage": "Impossible de mettre à jour les responsables de la tâche. Veuillez réessayer.",
+  "memberNotFound": "Informations sur le membre de l'équipe introuvables",
+  "manageTimeOff": "Gérer les congés",
+  "seatLimitReached": "Limite de sièges atteinte",
+  "memberDeactivated": "Membre désactivé avec succès",
+  "memberActivated": "Membre activé avec succès",
+  "statusChangeError": "Échec de la modification du statut du membre",
+  "deactivateTooltip": "Désactiver le membre",
+  "activateTooltip": "Activer le membre",
+  "editTooltip": "Modifier le membre",
+  "moreOptions": "Plus d'options",
+  "changeMemberStatusConfirmation": "Voulez-vous vraiment modifier le statut de ce membre ?",
+  "yesProceed": "Oui, continuer",
+  "cancel": "Annuler",
+  "removeFromProject": "Supprimer du projet",
+  "tabs": {
+    "ariaLabel": "Sections des membres",
+    "teamMembers": "Membres de l'équipe",
+    "clientTeam": "Équipe client"
+  },
   "clientPortal": {
-    "title": "Accès au portail client",
+    "title": "Équipe client",
     "summary": "{{count}} utilisateur(s) chez {{client}} peuvent ouvrir ce projet dans le Portail client.",
     "unknownClient": "Client",
     "viewClient": "Voir le client",
@@ -46,6 +64,8 @@
     "loadFailed": "Impossible de charger les utilisateurs du portail client.",
     "retry": "Réessayer",
     "tableLabel": "Utilisateurs du portail client ayant accès à ce projet",
-    "empty": "Aucun utilisateur client n'est encore assigné à ce projet. Assignez-les depuis le Portail client."
+    "empty": "Aucun utilisateur client n'est encore assigné à ce projet. Assignez-les depuis le Portail client.",
+    "noClientLinked": "Ce projet n'est pas encore lié à un client. Assignez un client dans le Portail client pour gérer l'accès de l'équipe client ici.",
+    "goToClientPortal": "Aller au Portail client"
   }
 }

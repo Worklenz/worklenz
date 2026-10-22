@@ -28,11 +28,29 @@
   "Invite": "Zaproś",
   "removeSuccess": "{{name}} usunięty z projektu",
   "removeError": "Nie udało się usunąć członka",
-  "removeFromProject": "Usuń z projektu",
-  "assignFailedMessage": "Nie można zaktualizować przypisanych zadań. Spróbuj ponownie.",
   "assignFailedTitle": "Przypisanie nie powiodło się",
+  "assignFailedMessage": "Nie można zaktualizować przypisanych zadań. Spróbuj ponownie.",
+  "memberNotFound": "Nie znaleziono informacji o członku zespołu",
+  "manageTimeOff": "Zarządzaj urlopem",
+  "seatLimitReached": "Osiągnięto limit miejsc",
+  "memberDeactivated": "Członek został pomyślnie dezaktywowany",
+  "memberActivated": "Członek został pomyślnie aktywowany",
+  "statusChangeError": "Nie udało się zmienić statusu członka",
+  "deactivateTooltip": "Dezaktywuj członka",
+  "activateTooltip": "Aktywuj członka",
+  "editTooltip": "Edytuj członka",
+  "moreOptions": "Więcej opcji",
+  "changeMemberStatusConfirmation": "Czy na pewno chcesz zmienić status tego członka?",
+  "yesProceed": "Tak, kontynuuj",
+  "cancel": "Anuluj",
+  "removeFromProject": "Usuń z projektu",
+  "tabs": {
+    "ariaLabel": "Sekcje członków",
+    "teamMembers": "Członkowie zespołu",
+    "clientTeam": "Zespół klienta"
+  },
   "clientPortal": {
-    "title": "Dostęp do portalu klienta",
+    "title": "Zespół klienta",
     "summary": "{{count}} użytkownik(ów) w {{client}} może otworzyć ten projekt w Portalu klienta.",
     "unknownClient": "Klient",
     "viewClient": "Zobacz klienta",
@@ -46,6 +64,8 @@
     "loadFailed": "Nie udało się załadować użytkowników portalu klienta.",
     "retry": "Spróbuj ponownie",
     "tableLabel": "Użytkownicy portalu klienta z dostępem do tego projektu",
-    "empty": "Żaden użytkownik klienta nie jest jeszcze przypisany do tego projektu. Przypisz ich w Portalu klienta."
+    "empty": "Żaden użytkownik klienta nie jest jeszcze przypisany do tego projektu. Przypisz ich w Portalu klienta.",
+    "noClientLinked": "Ten projekt nie jest jeszcze powiązany z klientem. Przypisz klienta w Portalu klienta, aby zarządzać dostępem zespołu klienta tutaj.",
+    "goToClientPortal": "Przejdź do Portalu klienta"
   }
 }

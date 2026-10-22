@@ -31,8 +31,8 @@ interface ProjectClientPortalMembersProps {
 }
 
 /**
- * Shows client-portal users who can open this project when the project is linked
- * to a client organization (via Admin Client Portal project assignment).
+ * Client's team tab content: portal users who can open this project.
+ * Shown even when no client is linked, with guidance to assign one.
  */
 export const ProjectClientPortalMembers = ({
   projectId,
@@ -50,6 +50,7 @@ export const ProjectClientPortalMembers = ({
   const access = accessQuery.data?.body;
   const organizationId = access?.organization_id ?? clientId ?? null;
   const assigned = access?.assigned ?? [];
+  const hasOrganization = Boolean(organizationId);
 
   const columns: ColumnsType<ProjectAccessUser> = useMemo(
     () => [
@@ -102,27 +103,46 @@ export const ProjectClientPortalMembers = ({
     [t, i18n.language]
   );
 
-  if (!isLinkedToClient) {
-    return null;
-  }
-
-  if (accessQuery.isSuccess && !organizationId) {
-    return null;
-  }
-
   const manageAccessPath = portalPaths.project(projectId, 'access');
   const clientPath = organizationId ? clientWorkspacePath(organizationId, 'users') : null;
   const displayClientName =
     clientName || t('clientPortal.unknownClient', { defaultValue: 'Client' });
 
+  if (!isLinkedToClient || (accessQuery.isSuccess && !hasOrganization)) {
+    return (
+      <Card style={{ width: '100%' }}>
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={
+            <Flex vertical gap={8} align="center">
+              <Typography.Text type="secondary">
+                {t('clientPortal.noClientLinked', {
+                  defaultValue:
+                    'This project is not linked to a client yet. Assign a client in the Client Portal to manage client team access here.',
+                })}
+              </Typography.Text>
+              <Link to={portalPaths.projects}>
+                <Button type="primary" size="small">
+                  {t('clientPortal.goToClientPortal', {
+                    defaultValue: 'Go to Client Portal',
+                  })}
+                </Button>
+              </Link>
+            </Flex>
+          }
+        />
+      </Card>
+    );
+  }
+
   return (
     <Card
-      style={{ width: '100%', marginTop: 16 }}
+      style={{ width: '100%' }}
       title={
         <Flex justify="space-between" align="center" gap={12} wrap="wrap">
           <Flex vertical gap={2}>
             <Typography.Text style={{ fontSize: 16, fontWeight: 500 }}>
-              {t('clientPortal.title', { defaultValue: 'Client portal access' })}
+              {t('clientPortal.title', { defaultValue: "Client's team" })}
             </Typography.Text>
             <Typography.Text type="secondary" style={{ fontSize: 12.5, fontWeight: 400 }}>
               {t('clientPortal.summary', {
@@ -132,20 +152,6 @@ export const ProjectClientPortalMembers = ({
                   '{{count}} user(s) at {{client}} can open this project in the Client Portal.',
               })}
             </Typography.Text>
-          </Flex>
-          <Flex gap={8} wrap="wrap">
-            {clientPath && (
-              <Link to={clientPath}>
-                <Button size="small">
-                  {t('clientPortal.viewClient', { defaultValue: 'View client' })}
-                </Button>
-              </Link>
-            )}
-            <Link to={manageAccessPath}>
-              <Button type="primary" size="small">
-                {t('clientPortal.manageAccess', { defaultValue: 'Manage access' })}
-              </Button>
-            </Link>
           </Flex>
         </Flex>
       }
