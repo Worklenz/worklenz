@@ -204,5 +204,12 @@
     "passport-custom": {
       "@types/express": "$@types/express"
     }
+  },
+  "allowScripts": {
+    "@scarf/scarf": false,
+    "bcrypt": true,
+    "esbuild": true,
+    "puppeteer": true,
+    "segfault-handler": true
   }
 }

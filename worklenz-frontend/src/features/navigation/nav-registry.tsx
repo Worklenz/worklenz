@@ -343,6 +343,12 @@ export const PROJECTS_NAV_SURFACE: NavSurface = {
           guestExcluded: true, // Hide from guest users
         },
         {
+          key: 'docs',
+          label: { i18nNs: 'projects-sidebar', i18nKey: 'docs', defaultValue: 'Docs' },
+          icon: <FileTextOutlined />,
+          guestExcluded: true, // Guests do not have project docs access
+        },
+        {
           key: 'templates',
           label: { i18nNs: 'projects-sidebar', i18nKey: 'templates', defaultValue: 'Templates' },
           icon: <BlockOutlined />,

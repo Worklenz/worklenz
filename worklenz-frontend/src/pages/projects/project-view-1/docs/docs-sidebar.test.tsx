@@ -87,3 +87,56 @@ describe.each([false, true])('page navigation with dark theme = %s', dark => {
     expect(screen.getAllByRole('treeitem')).toHaveLength(2);
   });
 });
+
+describe('create actions', () => {
+  it('keeps new page, subpage, and duplicate on the project sidebar', async () => {
+    render(
+      <ConfigProvider theme={{ algorithm: theme.defaultAlgorithm }}>
+        <DocsSidebar {...props()} />
+      </ConfigProvider>
+    );
+    expect(screen.getByRole('button', { name: 'New page' })).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Page actions' })[0]);
+    expect(await screen.findByRole('menuitem', { name: 'Add subpage' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Duplicate' })).toBeInTheDocument();
+  });
+
+  it('hides new page, subpage, and duplicate when creating is disabled', async () => {
+    render(
+      <ConfigProvider theme={{ algorithm: theme.defaultAlgorithm }}>
+        <DocsSidebar {...props()} canCreate={false} />
+      </ConfigProvider>
+    );
+    expect(screen.queryByRole('button', { name: 'New page' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Page actions' })[0]);
+    expect(await screen.findByRole('menuitem', { name: 'Rename' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Add subpage' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Duplicate' })).not.toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
+  });
+
+  it('groups pages under their projects so each tree stays in its own project', () => {
+    const grouped = [
+      ...pages.map(page => ({ ...page, project_name: 'Alpha', project_color: '#1890ff' })),
+      {
+        id: 'other',
+        parent_id: null,
+        project_id: 'other-project',
+        title: 'Notes',
+        position: 0,
+        updated_at: '',
+        updated_by_name: null,
+        project_name: 'Beta',
+        project_color: '#52c41a',
+      },
+    ];
+    render(
+      <ConfigProvider theme={{ algorithm: theme.defaultAlgorithm }}>
+        <DocsSidebar {...props()} pages={grouped} groupByProject canCreate={false} />
+      </ConfigProvider>
+    );
+    expect(screen.getByRole('group', { name: 'Alpha' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Beta' })).toBeInTheDocument();
+    expect(within(screen.getByRole('group', { name: 'Beta' })).getByText('Notes')).toBeInTheDocument();
+  });
+});
