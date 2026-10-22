@@ -1,14 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { ColumnsType } from 'antd/es/table';
 import {
   Alert,
   Button,
-  Card,
   Empty,
   Flex,
-  Input,
   Skeleton,
   Table,
   Typography,
@@ -28,20 +26,21 @@ interface ProjectClientPortalMembersProps {
   projectId: string;
   clientId?: string | null;
   clientName?: string | null;
+  searchQuery?: string;
 }
 
 /**
- * Client's team tab content: portal users who can open this project.
- * Shown even when no client is linked, with guidance to assign one.
+ * Client's team tab body: portal users who can open this project.
+ * Rendered inside the shared Members card (tabs live in the card title).
  */
 export const ProjectClientPortalMembers = ({
   projectId,
   clientId,
   clientName,
+  searchQuery = '',
 }: ProjectClientPortalMembersProps) => {
   const { t, i18n } = useTranslation('project-view-members');
   const { token } = theme.useToken();
-  const [searchQuery, setSearchQuery] = useState('');
 
   const isLinkedToClient = Boolean(clientId) || Boolean(clientName);
   const accessQuery = useGetProjectAccessQuery(projectId, {
@@ -114,136 +113,100 @@ export const ProjectClientPortalMembers = ({
   );
 
   const manageAccessPath = portalPaths.project(projectId, 'access');
-  const displayClientName =
-    clientName || t('clientPortal.unknownClient', { defaultValue: 'Client' });
+  const hasActiveSearch = searchQuery.trim().length > 0;
 
   if (!isLinkedToClient || (accessQuery.isSuccess && !hasOrganization)) {
     return (
-      <Card style={{ width: '100%' }}>
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={
-            <Flex vertical gap={8} align="center">
-              <Typography.Text type="secondary">
-                {t('clientPortal.noClientLinked', {
-                  defaultValue:
-                    'This project is not linked to a client yet. Assign a client in the Client Portal to manage client team access here.',
+      <Empty
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+        description={
+          <Flex vertical gap={8} align="center">
+            <Typography.Text type="secondary">
+              {t('clientPortal.noClientLinked', {
+                defaultValue:
+                  'This project is not linked to a client yet. Assign a client in the Client Portal to manage client team access here.',
+              })}
+            </Typography.Text>
+            <Link to={portalPaths.projects}>
+              <Button type="primary" size="small">
+                {t('clientPortal.goToClientPortal', {
+                  defaultValue: 'Go to Client Portal',
                 })}
-              </Typography.Text>
-              <Link to={portalPaths.projects}>
-                <Button type="primary" size="small">
-                  {t('clientPortal.goToClientPortal', {
-                    defaultValue: 'Go to Client Portal',
-                  })}
-                </Button>
-              </Link>
-            </Flex>
-          }
-        />
-      </Card>
+              </Button>
+            </Link>
+          </Flex>
+        }
+      />
     );
   }
 
-  const hasActiveSearch = searchQuery.trim().length > 0;
+  if (accessQuery.isLoading) {
+    return <Skeleton active paragraph={{ rows: 3 }} />;
+  }
+
+  if (accessQuery.isError) {
+    return (
+      <Alert
+        type="error"
+        showIcon
+        message={t('clientPortal.loadFailed', {
+          defaultValue: 'Client portal users could not be loaded.',
+        })}
+        action={
+          <Button size="small" onClick={() => accessQuery.refetch()}>
+            {t('clientPortal.retry', { defaultValue: 'Retry' })}
+          </Button>
+        }
+      />
+    );
+  }
 
   return (
-    <Card
-      style={{ width: '100%' }}
-      title={
-        <Flex justify="space-between" align="center" gap={12} wrap="wrap">
-          <Flex vertical gap={2}>
-            <Typography.Text style={{ fontSize: 16, fontWeight: 500 }}>
-              {t('clientPortal.title', { defaultValue: "Client's team" })}
-            </Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12.5, fontWeight: 400 }}>
-              {t('clientPortal.summary', {
-                count: assigned.length,
-                client: displayClientName,
-                defaultValue:
-                  '{{count}} user(s) at {{client}} can open this project in the Client Portal.',
-              })}
-            </Typography.Text>
-          </Flex>
-          <Input.Search
-            allowClear
-            placeholder={t('clientPortal.searchPlaceholder', {
-              defaultValue: 'Search client users',
-            })}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ width: 220 }}
-            enterButton
-            size="middle"
-            aria-label={t('clientPortal.searchPlaceholder', {
-              defaultValue: 'Search client users',
-            })}
+    <Table<ProjectAccessUser>
+      aria-label={t('clientPortal.tableLabel', {
+        defaultValue: 'Client portal users with access to this project',
+      })}
+      className="custom-two-colors-row-table"
+      size="middle"
+      columns={columns}
+      dataSource={filteredAssigned}
+      rowKey={user => user.id}
+      pagination={false}
+      scroll={{ x: 'max-content' }}
+      locale={{
+        emptyText: (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <Flex vertical gap={8} align="center">
+                <Typography.Text type="secondary">
+                  {hasActiveSearch
+                    ? t('clientPortal.searchEmpty', {
+                        defaultValue: 'No client users match your search.',
+                      })
+                    : t('clientPortal.empty', {
+                        defaultValue:
+                          'No client users are assigned to this project yet. Assign them from Client Portal.',
+                      })}
+                </Typography.Text>
+                {!hasActiveSearch && (
+                  <Link to={manageAccessPath}>
+                    <Button type="link" size="small" style={{ padding: 0 }}>
+                      {t('clientPortal.manageAccess', { defaultValue: 'Manage access' })}
+                    </Button>
+                  </Link>
+                )}
+              </Flex>
+            }
           />
-        </Flex>
-      }
-    >
-      {accessQuery.isLoading ? (
-        <Skeleton active paragraph={{ rows: 3 }} />
-      ) : accessQuery.isError ? (
-        <Alert
-          type="error"
-          showIcon
-          message={t('clientPortal.loadFailed', {
-            defaultValue: 'Client portal users could not be loaded.',
-          })}
-          action={
-            <Button size="small" onClick={() => accessQuery.refetch()}>
-              {t('clientPortal.retry', { defaultValue: 'Retry' })}
-            </Button>
-          }
-        />
-      ) : (
-        <Table<ProjectAccessUser>
-          aria-label={t('clientPortal.tableLabel', {
-            defaultValue: 'Client portal users with access to this project',
-          })}
-          className="custom-two-colors-row-table"
-          size="middle"
-          columns={columns}
-          dataSource={filteredAssigned}
-          rowKey={user => user.id}
-          pagination={false}
-          scroll={{ x: 'max-content' }}
-          locale={{
-            emptyText: (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  <Flex vertical gap={8} align="center">
-                    <Typography.Text type="secondary">
-                      {hasActiveSearch
-                        ? t('clientPortal.searchEmpty', {
-                            defaultValue: 'No client users match your search.',
-                          })
-                        : t('clientPortal.empty', {
-                            defaultValue:
-                              'No client users are assigned to this project yet. Assign them from Client Portal.',
-                          })}
-                    </Typography.Text>
-                    {!hasActiveSearch && (
-                      <Link to={manageAccessPath}>
-                        <Button type="link" size="small" style={{ padding: 0 }}>
-                          {t('clientPortal.manageAccess', { defaultValue: 'Manage access' })}
-                        </Button>
-                      </Link>
-                    )}
-                  </Flex>
-                }
-              />
-            ),
-          }}
-          onRow={() => ({
-            style: {
-              height: 42,
-              borderColor: token.colorBorderSecondary,
-            },
-          })}
-        />
-      )}
-    </Card>
+        ),
+      }}
+      onRow={() => ({
+        style: {
+          height: 42,
+          borderColor: token.colorBorderSecondary,
+        },
+      })}
+    />
   );
 };
