@@ -70,6 +70,8 @@
     "retry": "Spróbuj ponownie",
     "tableLabel": "Użytkownicy portalu klienta z dostępem do tego projektu",
     "empty": "Żaden użytkownik klienta nie jest jeszcze przypisany do tego projektu. Przypisz ich w Portalu klienta.",
+    "searchPlaceholder": "Szukaj użytkowników klienta",
+    "searchEmpty": "Żaden użytkownik klienta nie pasuje do Twojego wyszukiwania.",
     "noClientLinked": "Ten projekt nie jest jeszcze powiązany z klientem. Przypisz klienta w Portalu klienta, aby zarządzać dostępem zespołu klienta tutaj.",
     "goToClientPortal": "Przejdź do Portalu klienta"
   }

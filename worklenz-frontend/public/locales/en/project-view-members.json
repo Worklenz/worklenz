@@ -70,6 +70,8 @@
     "retry": "Retry",
     "tableLabel": "Client portal users with access to this project",
     "empty": "No client users are assigned to this project yet. Assign them from Client Portal.",
+    "searchPlaceholder": "Search client users",
+    "searchEmpty": "No client users match your search.",
     "noClientLinked": "This project is not linked to a client yet. Assign a client in the Client Portal to manage client team access here.",
     "goToClientPortal": "Go to Client Portal"
   }

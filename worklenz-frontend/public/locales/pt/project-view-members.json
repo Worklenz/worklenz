@@ -70,6 +70,8 @@
     "retry": "Tentar novamente",
     "tableLabel": "Usuários do portal do cliente com acesso a este projeto",
     "empty": "Nenhum usuário do cliente está atribuído a este projeto ainda. Atribua-os pelo Portal do Cliente.",
+    "searchPlaceholder": "Pesquisar usuários do cliente",
+    "searchEmpty": "Nenhum usuário do cliente corresponde à sua pesquisa.",
     "noClientLinked": "Este projeto ainda não está vinculado a um cliente. Atribua um cliente no Portal do Cliente para gerenciar o acesso da equipe do cliente aqui.",
     "goToClientPortal": "Ir para o Portal do Cliente"
   }

@@ -70,6 +70,8 @@
     "retry": "重试",
     "tableLabel": "有权访问此项目的客户门户用户",
     "empty": "尚未向此项目分配客户用户。请从客户门户进行分配。",
+    "searchPlaceholder": "搜索客户用户",
+    "searchEmpty": "没有与搜索匹配的客户用户。",
     "noClientLinked": "此项目尚未关联客户。请在客户门户中分配客户，以便在此管理客户团队访问权限。",
     "goToClientPortal": "前往客户门户"
   }

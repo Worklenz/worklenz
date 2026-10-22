@@ -70,6 +70,8 @@
     "retry": "Provo përsëri",
     "tableLabel": "Përdoruesit e portalit të klientit me qasje në këtë projekt",
     "empty": "Ende nuk ka përdorues klienti të caktuar në këtë projekt. Caktojini nga Portali i Klientit.",
+    "searchPlaceholder": "Kërko përdoruesit e klientit",
+    "searchEmpty": "Asnjë përdorues klienti nuk përputhet me kërkimin tuaj.",
     "noClientLinked": "Ky projekt nuk është ende i lidhur me një klient. Caktoni një klient në Portalin e Klientit për të menaxhuar këtu qasjen e ekipit të klientit.",
     "goToClientPortal": "Shko te Portali i Klientit"
   }

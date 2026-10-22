@@ -70,6 +70,8 @@
     "retry": "Réessayer",
     "tableLabel": "Utilisateurs du portail client ayant accès à ce projet",
     "empty": "Aucun utilisateur client n'est encore assigné à ce projet. Assignez-les depuis le Portail client.",
+    "searchPlaceholder": "Rechercher des utilisateurs clients",
+    "searchEmpty": "Aucun utilisateur client ne correspond à votre recherche.",
     "noClientLinked": "Ce projet n'est pas encore lié à un client. Assignez un client dans le Portail client pour gérer l'accès de l'équipe client ici.",
     "goToClientPortal": "Aller au Portail client"
   }
