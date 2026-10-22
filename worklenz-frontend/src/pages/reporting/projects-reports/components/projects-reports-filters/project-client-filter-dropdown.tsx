@@ -100,12 +100,12 @@ const ProjectClientFilterDropdown = ({
     }
   }, [selectedClients]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load the full client list when the dropdown opens for the first time.
+  // Inline panels are already open when mounted by the table filter.
   useEffect(() => {
-    if (isDropdownOpen && clients.length === 0 && !loading) {
+    if ((inline || isDropdownOpen) && clients.length === 0 && !loading) {
       fetchClients('');
     }
-  }, [isDropdownOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [inline, isDropdownOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDropdownOpen = (open: boolean) => {
     setIsDropdownOpen(open);
@@ -225,8 +225,8 @@ const ProjectClientFilterDropdown = ({
   );
 
   if (inline) {
-  return dropdownContent;
-}
+    return dropdownContent;
+  }
 
   return (
     <Dropdown

@@ -3,12 +3,12 @@ import {
   Button,
   ConfigProvider,
   Flex,
-  PaginationProps,
   Table,
   TableColumnsType,
   Tag,
   Typography,
 } from '@/shared/antd-imports';
+import type { TableProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { ExpandAltOutlined } from '@/shared/antd-imports';
@@ -163,6 +163,14 @@ const ProjectsReportsTable = () => {
     [dispatch]
   );
 
+  const getColumnSortOrder = useCallback(
+    (sortField: string): 'ascend' | 'descend' | null => {
+      if (field !== sortField || !order) return null;
+      return order.toLowerCase().startsWith('desc') ? 'descend' : 'ascend';
+    },
+    [field, order]
+  );
+
   const columns: TableColumnsType<IRPTProject> = useMemo(
     () => [
       {
@@ -171,7 +179,7 @@ const ProjectsReportsTable = () => {
         title: <CustomTableTitle title={t('projectColumn')} />,
         width: 300,
         sorter: true,
-        defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
+        sortOrder: getColumnSortOrder('name'),
         fixed: 'left' as const,
         onCell: record => ({
           onClick: () => handleDrawerOpen(record as IRPTProject),
@@ -221,6 +229,7 @@ const ProjectsReportsTable = () => {
       {
         key: 'lastActivity',
         dataIndex: 'last_activity',
+        sortOrder: getColumnSortOrder('last_activity'),
         title: <CustomTableTitle title={t('lastActivityColumn')} />,
         sorter: true,
         render: (_, record: IRPTProject) => (
@@ -230,9 +239,10 @@ const ProjectsReportsTable = () => {
       },
       {
         key: 'status',
-        dataIndex: 'status_id',
+        dataIndex: 'status_name',
+        sortOrder: getColumnSortOrder('status_name'),
         title: <CustomTableTitle title={t('statusColumn')} />,
-        sorter: (a, b) => (a.status_name || '').localeCompare(b.status_name || ''),
+        sorter: true,
         filterDropdown: () => (
           <div className="table-filter-menu-popup">
             <ProjectStatusFilterDropdown inline />
@@ -250,12 +260,13 @@ const ProjectsReportsTable = () => {
       {
         key: 'priority',
         dataIndex: 'priority_name',
+        sortOrder: getColumnSortOrder('priority_name'),
         title: (
           <CustomTableTitle
             title={t('priorityColumn', { defaultValue: 'Priority' })}
           />
         ),
-        sorter: (a, b) => (a.priority_name || '').localeCompare(b.priority_name || ''),
+        sorter: true,
 
         filterDropdown: () => (
           <div className="table-filter-menu-popup">
@@ -295,6 +306,7 @@ const ProjectsReportsTable = () => {
       {
         key: 'daysLeft',
         dataIndex: 'days_left',
+        sortOrder: getColumnSortOrder('days_left'),
         title: <CustomTableTitle title={t('daysLeftColumn')} />,
         sorter: true,
         render: (_, record: IRPTProject) => (
@@ -309,8 +321,9 @@ const ProjectsReportsTable = () => {
       {
         key: 'projectHealth',
         dataIndex: 'health_name',
+        sortOrder: getColumnSortOrder('health_name'),
         title: <CustomTableTitle title={t('projectHealthColumn')} />,
-        sorter: (a, b) => (a.health_name || '').localeCompare(b.health_name || ''),
+        sorter: true,
         filterDropdown: () => (
           <div className="table-filter-menu-popup">
             <ProjectHealthFilterDropdown inline />
@@ -330,12 +343,9 @@ const ProjectsReportsTable = () => {
       {
         key: 'category',
         dataIndex: 'category_name',
+        sortOrder: getColumnSortOrder('category_name'),
         title: <CustomTableTitle title={t('categoryColumn')} />,
-        sorter: (a, b) => {
-          const nameA = a.category_name || (typeof (a as any).category === 'object' ? (a as any).category?.name : (a as any).category) || '';
-          const nameB = b.category_name || (typeof (b as any).category === 'object' ? (b as any).category?.name : (b as any).category) || '';
-          return nameA.localeCompare(nameB);
-        },
+        sorter: true,
         filterDropdown: () => (
           <div className="table-filter-menu-popup">
             <ProjectCategoriesFilterDropdown inline />
@@ -344,7 +354,7 @@ const ProjectsReportsTable = () => {
         filtered: Boolean(selectedProjectCategories?.length),
         onCell: () => ({ className: 'category-cell' }),
         render: (_, record: IRPTProject) => {
-          const catName = record.category_name || (typeof (record as any).category === 'object' ? (record as any).category?.name : (record as any).category) || '';
+          const catName = record.category_name || '';
           return (
             <ProjectCategoryCell
               projectId={record.id}
@@ -359,6 +369,7 @@ const ProjectsReportsTable = () => {
       {
         key: 'projectUpdate',
         dataIndex: 'comment',
+        sortOrder: getColumnSortOrder('comment'),
         title: <CustomTableTitle title={t('projectUpdateColumn')} />,
         sorter: true,
         onCell: () => ({ className: 'project-update-cell' }),
@@ -370,12 +381,9 @@ const ProjectsReportsTable = () => {
       {
         key: 'client',
         dataIndex: 'client',
+        sortOrder: getColumnSortOrder('client'),
         title: <CustomTableTitle title={t('clientColumn')} />,
-        sorter: (a, b) => {
-          const clientA = typeof a.client === 'object' ? (a.client?.name || (a.client as any)?.client_name) : a.client || '';
-          const clientB = typeof b.client === 'object' ? (b.client?.name || (b.client as any)?.client_name) : b.client || '';
-          return String(clientA).localeCompare(String(clientB));
-        },
+        sorter: true,
         filterDropdown: () => (
           <div className="table-filter-menu-popup">
             <ProjectClientFilterDropdown inline />
@@ -383,7 +391,7 @@ const ProjectsReportsTable = () => {
         ),
         filtered: Boolean(selectedClients?.length),
         render: (_, record: IRPTProject) => {
-          const clientName = typeof record.client === 'object' ? (record.client?.name || (record.client as any)?.client_name) : record.client;
+          const clientName = record.client;
           return clientName ? <ProjectClientCell client={clientName} /> : '-';
         },
         width: 200,
@@ -392,8 +400,9 @@ const ProjectsReportsTable = () => {
       {
         key: 'team',
         dataIndex: 'team_name',
+        sortOrder: getColumnSortOrder('team_name'),
         title: <CustomTableTitle title={t('teamColumn')} />,
-        sorter: (a, b) => (a.team_name || '').localeCompare(b.team_name || ''),
+        sorter: true,
         filterDropdown: () => (
           <div className="table-filter-menu-popup">
             <ProjectTeamFilterDropdown inline />
@@ -406,12 +415,10 @@ const ProjectsReportsTable = () => {
       },
       {
         key: 'projectManager',
+        dataIndex: 'project_manager_name',
+        sortOrder: getColumnSortOrder('project_manager_name'),
         title: <CustomTableTitle title={t('projectManagerColumn')} />,
-        sorter: (a, b) => {
-          const nameA = typeof a.project_manager === 'object' ? a.project_manager?.name : a.project_manager || '';
-          const nameB = typeof b.project_manager === 'object' ? b.project_manager?.name : b.project_manager || '';
-          return String(nameA).localeCompare(String(nameB));
-        },
+        sorter: true,
         filterDropdown: () => (
           <div className="table-filter-menu-popup">
             <ProjectManagersFilterDropdown inline />
@@ -430,7 +437,7 @@ const ProjectsReportsTable = () => {
     ],
     [
       t,
-      order,
+      getColumnSortOrder,
       handleDrawerOpen,
       projectStatuses,
       selectedProjectStatuses,
@@ -449,47 +456,25 @@ const ProjectsReportsTable = () => {
     [columns, columnsVisibility]
   );
 
-  const handleTableChange = useCallback(
-    (
-      pagination: PaginationProps,
-      _filters: Record<string, (React.Key | boolean)[] | null>,
-      sorter: any,
-      extra?: { action?: string }
-    ) => {
-      if (extra?.action === 'paginate') {
-        dispatch(setIndex(pagination.current || 1));
-        dispatch(setPageSize(pagination.pageSize || 10));
+  const handleTableChange = useCallback<NonNullable<TableProps<IRPTProject>['onChange']>>(
+    (pagination, _filters, sorter, extra) => {
+      if (extra.action === 'sort') {
+        const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+        const sortField = Array.isArray(activeSorter.field)
+          ? activeSorter.field[0]
+          : activeSorter.field;
+        dispatch(setField(activeSorter.order && sortField ? String(sortField) : 'name'));
+        dispatch(setOrder(activeSorter.order ?? ''));
+        dispatch(setIndex(1));
         return;
       }
 
-      const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
-
-      const columnKey = String(
-        activeSorter?.field ?? activeSorter?.columnKey ?? ''
-      );
-
-      const sortFieldMap: Record<string, string> = {
-        name: 'name',
-        last_activity: 'last_activity',
-        days_left: 'days_left',
-        comment: 'comment',
-      };
-
-      if (!activeSorter?.order) {
-        dispatch(setField('name'));
-        dispatch(setOrder('asc'));
-        dispatch(setIndex(1));
-      } else if (sortFieldMap[columnKey]) {
-        dispatch(setField(sortFieldMap[columnKey]));
-        dispatch(setOrder(activeSorter.order === 'ascend' ? 'asc' : 'desc'));
-        dispatch(setIndex(1));
-      } else {
-        dispatch(setIndex(pagination.current || 1));
+      if (extra.action === 'paginate') {
+        dispatch(setIndex(pagination.current ?? 1));
+        dispatch(setPageSize(pagination.pageSize ?? pageSize));
       }
-
-      dispatch(setPageSize(pagination.pageSize || 10));
     },
-    [dispatch]
+    [dispatch, pageSize]
   );
 
   useEffect(() => {
@@ -547,12 +532,12 @@ const ProjectsReportsTable = () => {
   const paginationConfig = useMemo(
     () => ({
       showSizeChanger: true,
-      defaultPageSize: 10,
+      pageSize,
       total: total,
       current: index,
       pageSizeOptions: PAGE_SIZE_OPTIONS,
     }),
-    [total, index]
+    [total, index, pageSize]
   );
 
   const scrollConfig = useMemo(() => ({ x: 'max-content' }), []);

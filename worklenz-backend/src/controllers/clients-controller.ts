@@ -138,8 +138,16 @@ export default class ClientsController extends WorklenzControllerBase {
 
     // Whitelisted against the subquery's own SELECT aliases below — never interpolate the raw
     // query param into ORDER BY.
-    const SORTABLE_FIELDS = new Set(["req_no", "client_name", "service_name", "status", "created_at"]);
-    const safeSortField = SORTABLE_FIELDS.has(String(sortBy)) ? String(sortBy) : "created_at";
+    const sortColumns: Record<string, string> = {
+      req_no: "req_no",
+      client_name: "client_name",
+      service_name: "service_name",
+      status: "status",
+      created_at: "created_at",
+    };
+    const safeSortField = typeof sortBy === "string" && Object.prototype.hasOwnProperty.call(sortColumns, sortBy)
+      ? sortColumns[sortBy]
+      : "created_at";
     const safeSortOrder = String(sortOrder).toLowerCase() === "asc" ? "ASC" : "DESC";
 
     // Build filter conditions
@@ -577,8 +585,17 @@ export default class ClientsController extends WorklenzControllerBase {
 
     // Whitelisted against the subquery's own SELECT aliases below — never interpolate the raw
     // query param into ORDER BY.
-    const SORTABLE_FIELDS = new Set(["ticket_no", "client_name", "subject", "priority", "status", "created_at"]);
-    const safeSortField = SORTABLE_FIELDS.has(String(sortBy)) ? String(sortBy) : "created_at";
+    const sortColumns: Record<string, string> = {
+      ticket_no: "ticket_no",
+      client_name: "client_name",
+      subject: "subject",
+      priority: "priority",
+      status: "status",
+      created_at: "created_at",
+    };
+    const safeSortField = typeof sortBy === "string" && Object.prototype.hasOwnProperty.call(sortColumns, sortBy)
+      ? sortColumns[sortBy]
+      : "created_at";
     const safeSortOrder = String(sortOrder).toLowerCase() === "asc" ? "ASC" : "DESC";
 
     // Client/Priority/Status columns are multi-select in the admin UI — each arrives as a
@@ -1188,8 +1205,19 @@ export default class ClientsController extends WorklenzControllerBase {
 
     // Whitelisted against the subquery's own SELECT aliases below — never interpolate the raw
     // query param into ORDER BY.
-    const SORTABLE_FIELDS = new Set(["name", "status", "is_public", "category", "billing_type", "requests_count", "created_at", "updated_at"]);
-    const safeSortField = SORTABLE_FIELDS.has(String(sortBy)) ? String(sortBy) : "name";
+    const sortColumns: Record<string, string> = {
+      name: "name",
+      status: "status",
+      is_public: "is_public",
+      category: "category",
+      billing_type: "billing_type",
+      requests_count: "requests_count",
+      created_at: "created_at",
+      updated_at: "updated_at",
+    };
+    const safeSortField = typeof sortBy === "string" && Object.prototype.hasOwnProperty.call(sortColumns, sortBy)
+      ? sortColumns[sortBy]
+      : "name";
     const safeSortOrder = String(sortOrder).toLowerCase() === "desc" ? "DESC" : "ASC";
 
     const conditions = [];

@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ISectionDocument } from '@/types/project/project-documents.types';
 import DocsEditor from './DocsEditor';
+import { releaseDocsEditors } from './docs-editor-release';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (_key: string, options: { defaultValue: string }) => options.defaultValue }),
@@ -508,6 +509,29 @@ describe.each([false, true])('phase 2 writing with dark theme = %s', dark => {
     await waitFor(() => expect(body.querySelector('h2 strong')).toHaveTextContent('Hovered'));
     expect(body.querySelector('p')).toHaveTextContent('First');
     expect(body.querySelectorAll('h2')).toHaveLength(1);
+  });
+
+  it('unmounts the editor synchronously before a route change', () => {
+    render(<ExampleDocument dark={dark} />);
+    expect(screen.getByLabelText('Page content')).toBeInTheDocument();
+    act(() => { releaseDocsEditors(); });
+    expect(screen.queryByLabelText('Page content')).not.toBeInTheDocument();
+  });
+
+  it('follows the hovered block after the editor loses focus', async () => {
+    render(<ExampleDocument dark={dark} initialContent={{ version: 1, sections: [
+      { id: crypto.randomUUID(), type: 'paragraph', content: [{ type: 'text', text: 'First' }] },
+      { id: crypto.randomUUID(), type: 'paragraph', content: [{ type: 'text', text: 'Hovered', marks: [{ type: 'bold' }] }] },
+    ] }} />);
+    const body = screen.getByLabelText('Page content');
+    act(() => { body.focus(); });
+    fireEvent.blur(body);
+    fireEvent.pointerMove(body.querySelectorAll('p')[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Block actions' }));
+    await userEvent.hover(await screen.findByText('Turn into'));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Heading 2' }));
+    await waitFor(() => expect(body.querySelector('h2 strong')).toHaveTextContent('Hovered'));
+    expect(body.querySelector('p')).toHaveTextContent('First');
   });
 
   it('reorders blocks using the drag handle without copying or dropping content', () => {

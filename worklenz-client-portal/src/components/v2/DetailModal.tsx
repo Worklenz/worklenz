@@ -17,7 +17,7 @@ export const DetailModal = ({ open, title, onClose, children }: DetailModalProps
       open={open}
       onCancel={onClose}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
       title={title}
       width={isMobile ? '100%' : 1000}
       style={isMobile ? { top: 0, maxWidth: '100vw', margin: 0, paddingBottom: 0 } : { top: 40 }}
