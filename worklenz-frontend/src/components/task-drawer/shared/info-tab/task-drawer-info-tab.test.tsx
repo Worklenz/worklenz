@@ -2,8 +2,11 @@ import React from 'react';
 import { render, fireEvent, screen, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { TFunction } from 'i18next';
+import { MemoryRouter } from 'react-router-dom';
 import { SocketEvents } from '@/shared/socket-events';
 import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service';
+
+const mockDispatch = vi.hoisted(() => vi.fn());
 
 const mockDrawerState = vi.hoisted(() => ({
   targetCommentId: null as string | null,
@@ -41,7 +44,7 @@ vi.mock('@/hooks/useAppSelector', () => ({
     }),
 }));
 
-vi.mock('@/hooks/useAppDispatch', () => ({ useAppDispatch: () => vi.fn() }));
+vi.mock('@/hooks/useAppDispatch', () => ({ useAppDispatch: () => mockDispatch }));
 vi.mock('@/hooks/useAuth', () => ({
   useAuthService: () => ({ getCurrentSession: () => ({ subscription_type: 'business' }) }),
 }));
@@ -116,6 +119,7 @@ const pasteFile = (target: Element) => {
 describe('TaskDrawerInfoTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(taskAttachmentsApiService.getTaskAttachments).mockResolvedValue({ done: true, body: [] });
     mockDrawerState.targetCommentId = null;
     mockDrawerState.selectedTaskId = 'task-1';
     mockDrawerState.loadingTask = false;
@@ -126,7 +130,7 @@ describe('TaskDrawerInfoTab', () => {
   });
 
   it('reveals the attachments section after a valid paste', async () => {
-    const { container } = render(<TaskDrawerInfoTab t={t} canCreateTask />);
+    const { container } = render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     const header = await screen.findByText('Attachments');
     const panel = header.closest('.ant-collapse-item') as HTMLElement;
@@ -146,7 +150,7 @@ describe('TaskDrawerInfoTab', () => {
 
   it('expands the Comments section when a comment navigation target arrives', async () => {
     mockDrawerState.targetCommentId = null;
-    const { rerender } = render(<TaskDrawerInfoTab t={t} canCreateTask />);
+    const { rerender } = render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     const header = await screen.findByText('Comments');
     const panel = header.closest('.ant-collapse-item') as HTMLElement;
@@ -154,7 +158,7 @@ describe('TaskDrawerInfoTab', () => {
     await waitFor(() => expect(panel).not.toHaveClass('ant-collapse-item-active'));
 
     mockDrawerState.targetCommentId = 'comment-1';
-    rerender(<TaskDrawerInfoTab t={t} canCreateTask />);
+    rerender(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     await waitFor(() => expect(panel).toHaveClass('ant-collapse-item-active'));
     mockDrawerState.targetCommentId = null;
@@ -176,18 +180,18 @@ describe('TaskDrawerInfoTab', () => {
       body: mockAttachments,
     });
 
-    const { rerender } = render(<TaskDrawerInfoTab t={t} canCreateTask />);
+    const { rerender } = render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     expect(taskAttachmentsApiService.getTaskAttachments).toHaveBeenCalledWith('task-1');
     expect(await screen.findByLabelText(/specification\.pdf/i)).toBeInTheDocument();
 
     // Simulate Redux loadingTask transitioning to true (fetchTask dispatched, drawer shows skeleton)
     mockDrawerState.loadingTask = true;
-    rerender(<TaskDrawerInfoTab t={t} canCreateTask />);
+    rerender(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     // Simulate Redux loadingTask transitioning back to false (fetchTask finished, skeleton hides)
     mockDrawerState.loadingTask = false;
-    rerender(<TaskDrawerInfoTab t={t} canCreateTask />);
+    rerender(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
     expect(await screen.findByLabelText(/specification\.pdf/i)).toBeInTheDocument();
   });
 
@@ -197,7 +201,7 @@ describe('TaskDrawerInfoTab', () => {
       body: [],
     });
 
-    render(<TaskDrawerInfoTab t={t} canCreateTask />);
+    render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
     await waitFor(() => {
       expect(taskAttachmentsApiService.getTaskAttachments).toHaveBeenCalledWith('task-1');
     });
@@ -214,7 +218,7 @@ describe('TaskDrawerInfoTab', () => {
     expect(taskAttachmentsApiService.getTaskAttachments).not.toHaveBeenCalled();
 
     // Socket event for the open task should trigger re-fetch
-    act(() => {
+    await act(async () => {
       socketHandler('task-1');
     });
     expect(taskAttachmentsApiService.getTaskAttachments).toHaveBeenCalledWith('task-1');
@@ -226,7 +230,7 @@ describe('TaskDrawerInfoTab', () => {
       body: [],
     });
 
-    const { rerender } = render(<TaskDrawerInfoTab t={t} canCreateTask />);
+    const { rerender } = render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
     await waitFor(() => {
       expect(taskAttachmentsApiService.getTaskAttachments).toHaveBeenCalledWith('task-1');
     });
@@ -234,10 +238,30 @@ describe('TaskDrawerInfoTab', () => {
     vi.mocked(taskAttachmentsApiService.getTaskAttachments).mockClear();
 
     mockDrawerState.selectedTaskId = 'task-2';
-    rerender(<TaskDrawerInfoTab t={t} canCreateTask />);
+    rerender(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     await waitFor(() => {
       expect(taskAttachmentsApiService.getTaskAttachments).toHaveBeenCalledWith('task-2');
     });
+  });
+
+  it('keeps fetched attachments when loadingTask changes after the fetch', async () => {
+    vi.mocked(taskAttachmentsApiService.getTaskAttachments).mockResolvedValueOnce({
+      done: true,
+      body: [
+        { id: 'a1', name: 'existing-file.png', size: '1 KB', url: 'https://x.test/a1.png', type: 'png', created_at: '' },
+      ],
+    } as never);
+
+    const { rerender } = render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
+    await screen.findByLabelText('Preview attachment existing-file.png');
+
+    // The drawer's task details finish loading after attachments were fetched.
+    mockDrawerState.loadingTask = true;
+    rerender(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
+    mockDrawerState.loadingTask = false;
+    rerender(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
+
+    await waitFor(() => expect(screen.getByLabelText('Preview attachment existing-file.png')).toBeInTheDocument());
   });
 });
