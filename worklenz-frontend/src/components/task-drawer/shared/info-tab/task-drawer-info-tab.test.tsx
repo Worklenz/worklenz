@@ -3,7 +3,7 @@ import { render, fireEvent, screen, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { TFunction } from 'i18next';
 import { SocketEvents } from '@/shared/socket-events';
-import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service';
+import { MemoryRouter } from 'react-router-dom';
 
 const mockDrawerState = vi.hoisted(() => ({
   targetCommentId: null as string | null,
@@ -97,6 +97,7 @@ vi.mock('@/api/tasks/task-dependencies.api.service', () => ({
 }));
 
 import TaskDrawerInfoTab from './task-drawer-info-tab';
+import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service';
 
 const t = ((key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? key) as TFunction;
 
@@ -126,7 +127,7 @@ describe('TaskDrawerInfoTab', () => {
   });
 
   it('reveals the attachments section after a valid paste', async () => {
-    const { container } = render(<TaskDrawerInfoTab t={t} canCreateTask />);
+    const { container } = render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     const header = await screen.findByText('Attachments');
     const panel = header.closest('.ant-collapse-item') as HTMLElement;
@@ -146,7 +147,7 @@ describe('TaskDrawerInfoTab', () => {
 
   it('expands the Comments section when a comment navigation target arrives', async () => {
     mockDrawerState.targetCommentId = null;
-    const { rerender } = render(<TaskDrawerInfoTab t={t} canCreateTask />);
+    const { rerender } = render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     const header = await screen.findByText('Comments');
     const panel = header.closest('.ant-collapse-item') as HTMLElement;
@@ -154,7 +155,7 @@ describe('TaskDrawerInfoTab', () => {
     await waitFor(() => expect(panel).not.toHaveClass('ant-collapse-item-active'));
 
     mockDrawerState.targetCommentId = 'comment-1';
-    rerender(<TaskDrawerInfoTab t={t} canCreateTask />);
+    rerender(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     await waitFor(() => expect(panel).toHaveClass('ant-collapse-item-active'));
     mockDrawerState.targetCommentId = null;
@@ -176,18 +177,18 @@ describe('TaskDrawerInfoTab', () => {
       body: mockAttachments,
     });
 
-    const { rerender } = render(<TaskDrawerInfoTab t={t} canCreateTask />);
+    const { rerender } = render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     expect(taskAttachmentsApiService.getTaskAttachments).toHaveBeenCalledWith('task-1');
     expect(await screen.findByLabelText(/specification\.pdf/i)).toBeInTheDocument();
 
     // Simulate Redux loadingTask transitioning to true (fetchTask dispatched, drawer shows skeleton)
     mockDrawerState.loadingTask = true;
-    rerender(<TaskDrawerInfoTab t={t} canCreateTask />);
+    rerender(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     // Simulate Redux loadingTask transitioning back to false (fetchTask finished, skeleton hides)
     mockDrawerState.loadingTask = false;
-    rerender(<TaskDrawerInfoTab t={t} canCreateTask />);
+    rerender(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
     expect(await screen.findByLabelText(/specification\.pdf/i)).toBeInTheDocument();
   });
 
@@ -197,7 +198,7 @@ describe('TaskDrawerInfoTab', () => {
       body: [],
     });
 
-    render(<TaskDrawerInfoTab t={t} canCreateTask />);
+    render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
     await waitFor(() => {
       expect(taskAttachmentsApiService.getTaskAttachments).toHaveBeenCalledWith('task-1');
     });
@@ -226,7 +227,7 @@ describe('TaskDrawerInfoTab', () => {
       body: [],
     });
 
-    const { rerender } = render(<TaskDrawerInfoTab t={t} canCreateTask />);
+    const { rerender } = render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
     await waitFor(() => {
       expect(taskAttachmentsApiService.getTaskAttachments).toHaveBeenCalledWith('task-1');
     });
@@ -234,7 +235,7 @@ describe('TaskDrawerInfoTab', () => {
     vi.mocked(taskAttachmentsApiService.getTaskAttachments).mockClear();
 
     mockDrawerState.selectedTaskId = 'task-2';
-    rerender(<TaskDrawerInfoTab t={t} canCreateTask />);
+    rerender(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     await waitFor(() => {
       expect(taskAttachmentsApiService.getTaskAttachments).toHaveBeenCalledWith('task-2');
