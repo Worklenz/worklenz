@@ -753,13 +753,6 @@ const ProjectViewMembers = () => {
                   enterButton
                   size="middle"
                 />
-                <Tooltip title={t('refreshButtonTooltip')}>
-                  <Button
-                    shape="circle"
-                    icon={<SyncOutlined spin={isLoading} />}
-                    onClick={() => void getProjectMembers()}
-                  />
-                </Tooltip>
               </Flex>
             </Flex>
           }
