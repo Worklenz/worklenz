@@ -144,7 +144,9 @@ const CreateInvoiceModal = () => {
         : [
             {
               key: newKey(),
-              description: existing.projectName || existing.request?.service?.name || '',
+              description: decodeHtmlEntities(
+                existing.projectName || existing.request?.service?.name || ''
+              ),
               quantity: 1,
               rate: existing.subtotal || existing.amount,
             },
@@ -466,7 +468,7 @@ const CreateInvoiceModal = () => {
                       {existing?.changeRequest
                         ? `${existing.changeRequest.number} - ${existing.changeRequest.title}`
                         : existing?.request
-                          ? `${existing.request.requestNumber} - ${existing.request.service?.name ?? ''}`
+                          ? `${existing.request.requestNumber} - ${decodeHtmlEntities(existing.request.service?.name ?? '')}`
                           : t('standaloneInvoice', { defaultValue: 'Standalone invoice (no change request)' })}
                     </Typography.Text>
                   </Card>

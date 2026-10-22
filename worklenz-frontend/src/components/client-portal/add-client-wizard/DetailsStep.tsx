@@ -6,6 +6,7 @@ import { RoleCards, useDebouncedValue } from '@/components/client-portal/v2';
 import { isValidEmailAddress } from '@/components/client-portal/v2/validation';
 import type { ClientRole } from '@/types/client-portal/v2';
 import type { PersonField, WizardState } from './wizard-state';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface DetailsStepProps {
   state: WizardState;
@@ -28,11 +29,14 @@ export const DetailsStep = ({ state, onOrganizationName, onOrganization, onPerso
   );
   const organizationOptions = (organizations.data?.body?.items ?? []).map(item => ({
     value: item.id,
-    label: item.name,
+    label: decodeHtmlEntities(item.name),
   }));
   // Keep the chosen organization selectable even when the current search no longer lists it.
   if (state.organization && !organizationOptions.some(option => option.value === state.organization?.id)) {
-    organizationOptions.unshift({ value: state.organization.id, label: state.organization.name });
+    organizationOptions.unshift({
+      value: state.organization.id,
+      label: decodeHtmlEntities(state.organization.name),
+    });
   }
 
   const emailInvalid = state.email.trim() !== '' && !isValidEmailAddress(state.email);

@@ -15,6 +15,7 @@ import {
   Typography,
   theme,
 } from '@/shared/antd-imports';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import type { ClientProjectV2, DashboardWidgetInstance, ProjectCardField, ProjectsWidgetSettings } from '@/types/v2';
 import { ALL_CARD_FIELDS, WIDGET_META, WIDTH_OPTIONS } from './layoutModel';
 import type { DashboardLayoutApi } from './useDashboardLayout';
@@ -173,7 +174,7 @@ const ProjectsSettings = ({
             showSearch
             optionFilterProp="label"
             value={settings.projectIds as string[]}
-            options={projects.map(project => ({ value: project.id, label: project.name }))}
+            options={projects.map(project => ({ value: project.id, label: decodeHtmlEntities(project.name) }))}
             placeholder={t('dashboard.customize.chooseProjects', { defaultValue: 'Choose projects' })}
             onChange={projectIds => onChange({ projectIds })}
             aria-label={t('dashboard.customize.projectsShown', { defaultValue: 'Projects shown' })}

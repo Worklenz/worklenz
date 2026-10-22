@@ -37,6 +37,7 @@ import {
   useDebouncedValue,
 } from '@/components/v2';
 import type { ClientProjectV2, ClientThreadMessageV2, ClientThreadV2, ThreadContextType } from '@/types/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { NewDiscussionModal } from './NewDiscussionModal';
 import { ThreadComposer } from './ThreadComposer';
 import { ThreadMessages } from './ThreadMessages';
@@ -201,14 +202,14 @@ export const DiscussionsView: React.FC<DiscussionsViewProps> = ({ project, autoO
             background: thread.unread ? token.colorError : 'transparent',
           }}
         />
-        <ThreadAvatar name={thread.project_name} />
+        <ThreadAvatar name={decodeHtmlEntities(thread.project_name)} />
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'block', fontWeight: thread.unread ? 700 : 600, fontSize: 13, overflowWrap: 'anywhere' }}>
-            {thread.context.label}
+            {decodeHtmlEntities(thread.context.label)}
           </span>
           <span style={{ display: 'block', fontSize: 11.5, color: token.colorTextSecondary }}>
             {thread.ref_no ? `${thread.ref_no} · ` : ''}
-            {thread.project_name}
+            {decodeHtmlEntities(thread.project_name)}
           </span>
           <span
             style={{
@@ -381,7 +382,7 @@ export const DiscussionsView: React.FC<DiscussionsViewProps> = ({ project, autoO
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span aria-hidden>{CONTEXT_ICONS[selected.context.type]}</span>
-                      <span style={{ overflowWrap: 'anywhere' }}>{selected.context.label}</span>
+                      <span style={{ overflowWrap: 'anywhere' }}>{decodeHtmlEntities(selected.context.label)}</span>
                     </div>
                     <Flex align="center" gap={4} wrap="wrap" style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 2 }}>
                       {selected.ref_no && (
@@ -403,7 +404,7 @@ export const DiscussionsView: React.FC<DiscussionsViewProps> = ({ project, autoO
                         </>
                       )}
                       {project ? (
-                        <span>{selected.project_name}</span>
+                        <span>{decodeHtmlEntities(selected.project_name)}</span>
                       ) : (
                         <Tooltip title={t('discussions.openProject', { defaultValue: 'Open this project' })}>
                           <Button
@@ -412,7 +413,7 @@ export const DiscussionsView: React.FC<DiscussionsViewProps> = ({ project, autoO
                             onClick={() => navigate(`/projects/${selected.project_id}/discussions?thread=${selected.id}`)}
                             style={{ padding: 0, height: 'auto', fontSize: 11 }}
                           >
-                            {selected.project_name}
+                            {decodeHtmlEntities(selected.project_name)}
                           </Button>
                         </Tooltip>
                       )}

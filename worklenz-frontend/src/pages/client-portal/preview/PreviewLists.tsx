@@ -57,7 +57,9 @@ const includesText = (needle: string, ...values: Array<string | null | undefined
   needle === '' || values.some(value => (value ?? '').toLowerCase().includes(needle));
 
 const toOptions = (entries: Array<[string, string]>) =>
-  Array.from(new Map(entries), ([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+  Array.from(new Map(entries), ([value, label]) => ({ value, label: decodeHtmlEntities(label) })).sort((a, b) =>
+    a.label.localeCompare(b.label)
+  );
 
 const useProjectColors = (projects: ClientProjectView[]) =>
   useMemo(() => new Map(projects.map(project => [project.id, project.color])), [projects]);
@@ -506,7 +508,9 @@ export const PreviewApprovals = ({ approvals, projects, role, canApprove }: Prev
       title: t('approvals.approval', { defaultValue: 'Approval' }),
       key: 'title',
       sorter: (a, b) => a.title.localeCompare(b.title),
-      render: (_: unknown, approval) => <Typography.Text strong>{approval.title}</Typography.Text>,
+      render: (_: unknown, approval) => (
+        <Typography.Text strong>{decodeHtmlEntities(approval.title)}</Typography.Text>
+      ),
     },
     {
       title: t('approvals.project', { defaultValue: 'Project' }),
@@ -518,7 +522,7 @@ export const PreviewApprovals = ({ approvals, projects, role, canApprove }: Prev
       key: 'linked',
       render: (_: unknown, approval) =>
         approval.linked_item.available
-          ? approval.linked_item.name
+          ? decodeHtmlEntities(approval.linked_item.name)
           : t('approvals.noLongerShared', { defaultValue: 'The linked item is no longer shared' }),
     },
     { title: t('approvals.linkedType', { defaultValue: 'Item type' }), key: 'type', render: (_: unknown, approval) => linkTypeLabel(approval.linked_item.type) },
@@ -700,7 +704,9 @@ export const PreviewChangeRequests = ({ requests, projects }: PreviewChangeReque
       title: t('changeRequests.request', { defaultValue: 'Request' }),
       key: 'title',
       sorter: (a, b) => a.title.localeCompare(b.title),
-      render: (_: unknown, request) => <Typography.Text strong>{request.title}</Typography.Text>,
+      render: (_: unknown, request) => (
+        <Typography.Text strong>{decodeHtmlEntities(request.title)}</Typography.Text>
+      ),
     },
     { title: t('changeRequests.requester', { defaultValue: 'Requested by' }), key: 'requester', dataIndex: 'requester_name' },
     {

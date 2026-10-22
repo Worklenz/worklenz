@@ -2,6 +2,7 @@ import { Button, Flex, Tag, Tooltip, Typography, CheckOutlined, MailOutlined, th
 import { useTranslation } from 'react-i18next';
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatRelative } from '@/utils/dates';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import type { ClientNotificationV2 } from '@/types/v2';
 import { notificationIcon } from './notificationMeta';
 
@@ -45,7 +46,7 @@ export const NotificationRow = ({ item, onOpen, onToggleRead, compact = !onToggl
       <div style={{ flex: 1, minWidth: 0 }}>
         <Flex gap={8} align="center" wrap="wrap">
           <Typography.Text strong={item.unread} style={{ fontSize: compact ? token.fontSizeSM : token.fontSize }}>
-            {item.title}
+            {decodeHtmlEntities(item.title)}
           </Typography.Text>
           {!compact && (
             <Tag style={{ marginInlineEnd: 0 }}>{t(`notificationType.${item.type}`, { defaultValue: item.type })}</Tag>
@@ -57,7 +58,7 @@ export const NotificationRow = ({ item, onOpen, onToggleRead, compact = !onToggl
           )}
         </Flex>
         <Typography.Paragraph type="secondary" style={{ margin: '2px 0 0', fontSize: token.fontSizeSM }}>
-          {item.body}
+          {decodeHtmlEntities(item.body)}
         </Typography.Paragraph>
         <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM - 1 }}>
           {compact ? `${t(`notificationType.${item.type}`, { defaultValue: item.type })} · ` : ''}

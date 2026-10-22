@@ -33,6 +33,7 @@ import {
 } from '@/types/client-portal/v2';
 import { portalPaths } from '../portal-paths';
 import { clientWorkspacePath } from '../clients/workspace/workspace-helpers';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 type PortalFilter = 'on' | 'off';
 
@@ -94,7 +95,9 @@ const PortalProjectsPage = () => {
     setSavingCell(`${project.id}:${field}`);
     try {
       await saveOverview({ projectId: project.id, body }).unwrap();
-      message.success(t('list.fieldSaved', { name: project.name, defaultValue: '{{name}} updated.' }));
+      message.success(
+        t('list.fieldSaved', { name: decodeHtmlEntities(project.name), defaultValue: '{{name}} updated.' })
+      );
     } catch (error) {
       message.error(
         getPortalErrorMessage(error, t('list.fieldSaveFailed', { defaultValue: 'The project could not be updated.' }))
@@ -133,7 +136,10 @@ const PortalProjectsPage = () => {
 
   const clientOptions = [
     { value: NO_CLIENT, label: t('list.noClient', { defaultValue: 'No client' }) },
-    ...(organizations.data?.body?.items ?? []).map(item => ({ value: item.id, label: item.name })),
+    ...(organizations.data?.body?.items ?? []).map(item => ({
+      value: item.id,
+      label: decodeHtmlEntities(item.name),
+    })),
   ];
   const statusOptions = STATUS_FILTERS.map(item => ({
     value: item.value,
@@ -221,7 +227,7 @@ const PortalProjectsPage = () => {
       ),
       render: (_value, project) =>
         project.organization_name ? (
-          <span style={{ fontSize: 12.5 }}>{project.organization_name}</span>
+          <span style={{ fontSize: 12.5 }}>{decodeHtmlEntities(project.organization_name)}</span>
         ) : (
           <Typography.Text type="secondary">{t('list.noClient', { defaultValue: 'No client' })}</Typography.Text>
         ),
@@ -245,7 +251,10 @@ const PortalProjectsPage = () => {
             style={{ minWidth: 120 }}
             value={project.status}
             loading={savingCell === `${project.id}:status`}
-            aria-label={t('list.statusLabel', { name: project.name, defaultValue: 'Client-facing status of {{name}}' })}
+            aria-label={t('list.statusLabel', {
+              name: decodeHtmlEntities(project.name),
+              defaultValue: 'Client-facing status of {{name}}',
+            })}
             onChange={value => void saveField(project, 'status', { status: value })}
             options={STATUS_FILTERS.map(item => ({
               value: item.value,
@@ -275,7 +284,10 @@ const PortalProjectsPage = () => {
             value={project.phase ?? undefined}
             loading={savingCell === `${project.id}:phase`}
             placeholder={t('list.phaseNone', { defaultValue: 'Not set' })}
-            aria-label={t('list.phaseLabel', { name: project.name, defaultValue: 'Phase of {{name}}' })}
+            aria-label={t('list.phaseLabel', {
+              name: decodeHtmlEntities(project.name),
+              defaultValue: 'Phase of {{name}}',
+            })}
             onChange={value => void saveField(project, 'phase', { phase: value ?? null })}
             options={PROJECT_PHASES.map(value => ({ value, label: value }))}
           />
@@ -297,7 +309,10 @@ const PortalProjectsPage = () => {
           percent={project.progress}
           size="small"
           strokeColor={project.color || token.colorPrimary}
-          aria-label={t('list.progressLabel', { name: project.name, defaultValue: 'Progress of {{name}}' })}
+          aria-label={t('list.progressLabel', {
+            name: decodeHtmlEntities(project.name),
+            defaultValue: 'Progress of {{name}}',
+          })}
         />
       ),
     },
@@ -313,7 +328,7 @@ const PortalProjectsPage = () => {
       render: (_value, project) =>
         project.next_milestone ? (
           <div style={{ fontSize: 12.5 }}>
-            {project.next_milestone.name}
+            {decodeHtmlEntities(project.next_milestone.name)}
             <div style={{ fontSize: 11.5, color: token.colorTextSecondary }}>
               {formatPortalDate(project.next_milestone.target_date, i18n.language)}
             </div>
@@ -364,7 +379,10 @@ const PortalProjectsPage = () => {
               size="small"
               type="text"
               icon={<MoreOutlined />}
-              aria-label={t('list.rowActions', { name: project.name, defaultValue: 'Actions for {{name}}' })}
+              aria-label={t('list.rowActions', {
+                name: decodeHtmlEntities(project.name),
+                defaultValue: 'Actions for {{name}}',
+              })}
             />
           </Dropdown>
         </span>

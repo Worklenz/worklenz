@@ -6,6 +6,7 @@ import {
   useLinkProjectToClientMutation,
 } from '@/api/client-portal/portal-projects-api';
 import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface AssignProjectsToClientModalProps {
   organizationId: string;
@@ -31,7 +32,10 @@ export const AssignProjectsToClientModal = ({
 
   const candidates = useGetPortalProjectsQuery({ organization_id: NO_CLIENT, limit: 100 });
   const [linkProject] = useLinkProjectToClientMutation();
-  const options = (candidates.data?.body?.items ?? []).map(project => ({ value: project.id, label: project.name }));
+  const options = (candidates.data?.body?.items ?? []).map(project => ({
+    value: project.id,
+    label: decodeHtmlEntities(project.name),
+  }));
 
   const assign = async () => {
     setSaving(true);
@@ -53,7 +57,7 @@ export const AssignProjectsToClientModal = ({
       message.success(
         t('workspace.projects.assign.done', {
           count: linked,
-          name: organizationName,
+          name: decodeHtmlEntities(organizationName),
           defaultValue: '{{count}} project assigned to {{name}}. Switch the Client Portal on to share it.',
         })
       );
@@ -77,7 +81,10 @@ export const AssignProjectsToClientModal = ({
       onCancel={onClose}
       destroyOnHidden
       width={520}
-      title={t('workspace.projects.assign.title', { name: organizationName, defaultValue: 'Assign projects to {{name}}' })}
+      title={t('workspace.projects.assign.title', {
+        name: decodeHtmlEntities(organizationName),
+        defaultValue: 'Assign projects to {{name}}',
+      })}
       footer={[
         <Button key="cancel" onClick={onClose} disabled={saving}>
           {t('workspace.projects.assign.cancel', { defaultValue: 'Cancel' })}

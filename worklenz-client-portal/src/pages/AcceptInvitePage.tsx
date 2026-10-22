@@ -7,6 +7,7 @@ import { useAcceptInviteMutation } from '@/store/api';
 import { logoutUser } from '@/store/slices/authSlice';
 import { applyTeamSession } from '@/utils/teamSession';
 import { errorMessage } from '@/components/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface AcceptInvitePageProps {
   inviteToken: string;
@@ -38,7 +39,7 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({ inviteToken 
       .then(async response => {
         if (!response.done) throw new Error(response.message ?? undefined);
         await applyTeamSession(dispatch, response.body);
-        const name = response.body.organizationName;
+        const name = decodeHtmlEntities(response.body.organizationName);
         message.success(
           name
             ? t('invite.accepted', { defaultValue: 'You were added to {{name}}', name })
