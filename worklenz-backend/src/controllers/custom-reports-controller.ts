@@ -259,7 +259,6 @@ export default class CustomReportsController extends WorklenzControllerBase {
        ${group.join}
        WHERE t.project_id = $1
          AND t.archived IS FALSE
-         ${isTime ? "" : "AND t.parent_task_id IS NULL"}
          ${FILTER_SQL[definition.filter]}
        GROUP BY 1, 2, 3
        ORDER BY MIN(${group.sort}), 4 DESC
@@ -337,7 +336,7 @@ export default class CustomReportsController extends WorklenzControllerBase {
                 COALESCE(SUM(t.story_points) FILTER (WHERE cat.is_done IS TRUE), 0) AS done_points,
                 COALESCE(SUM(t.story_points), 0) AS total_points
          FROM task_phase tp
-         INNER JOIN tasks t ON t.id = tp.task_id AND t.archived IS FALSE AND t.parent_task_id IS NULL
+         INNER JOIN tasks t ON t.id = tp.task_id AND t.archived IS FALSE
          LEFT JOIN task_statuses ts ON ts.id = t.status_id
          LEFT JOIN sys_task_status_categories cat ON cat.id = ts.category_id
          WHERE tp.phase_id = pp.id

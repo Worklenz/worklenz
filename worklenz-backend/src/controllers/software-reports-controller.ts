@@ -105,8 +105,19 @@ export default class SoftwareReportsController extends WorklenzControllerBase {
     );
     const sprint = activeSprint.rows[0] ?? null;
 
+    // Include issues in the active sprint, plus their subtasks (even if the subtask
+    // has no task_phase row of its own — same visibility as the Backlog sprint list).
     const scopeFilter = sprint
-      ? "AND EXISTS (SELECT 1 FROM task_phase tp WHERE tp.task_id = t.id AND tp.phase_id = $2)"
+      ? `AND (
+           EXISTS (SELECT 1 FROM task_phase tp WHERE tp.task_id = t.id AND tp.phase_id = $2)
+           OR (
+             t.parent_task_id IS NOT NULL
+             AND EXISTS (
+               SELECT 1 FROM task_phase tp
+               WHERE tp.task_id = t.parent_task_id AND tp.phase_id = $2
+             )
+           )
+         )`
       : "";
     const scopeParams = sprint ? [projectId, sprint.id] : [projectId];
 
@@ -122,7 +133,6 @@ export default class SoftwareReportsController extends WorklenzControllerBase {
          INNER JOIN sys_task_status_categories cat ON cat.id = ts.category_id
          LEFT JOIN tasks t ON t.status_id = ts.id
                           AND t.archived IS FALSE
-                          AND t.parent_task_id IS NULL
                           ${scopeFilter}
          WHERE ts.project_id = $1
          GROUP BY ts.id, ts.name, ts.sort_order, cat.color_code, cat.color_code_dark, cat.is_done, cat.is_doing
