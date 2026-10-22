@@ -48,6 +48,8 @@
   "guestsCountPlural": "Guests",
   "emptyGuestsText": "There are no guests in this project.",
   "emptyTeamMembersText": "There are no team members in this project.",
+  "rowsPerPage": "Rows per page:",
+  "paginationSummary": "{{range}} of {{total}}",
   "tabs": {
     "ariaLabel": "Members sections",
     "teamMembers": "Team members",

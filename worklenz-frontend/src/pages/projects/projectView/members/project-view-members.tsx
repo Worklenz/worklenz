@@ -39,12 +39,13 @@ import { useAuthService } from '@/hooks/useAuth';
 import { IProjectMembersViewModel, IProjectMemberViewModel } from '@/types/projectMember.types';
 
 // Constants & Utils
-import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import { colors } from '../../../../styles/colors';
 import logger from '@/utils/errorLogger';
 
 // Components
 import EmptyListPlaceholder from '../../../../components/EmptyListPlaceholder';
+import TablePagination from '@/components/TablePagination';
 import { ProjectClientPortalMembers } from './ProjectClientPortalMembers';
 import PillToggle from '@/pages/home/PillToggle';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -75,8 +76,6 @@ interface PaginationType {
   field: string;
   order: string;
   total: number;
-  pageSizeOptions: string[];
-  size: 'small' | 'default';
 }
 
 const ProjectViewMembers = () => {
@@ -120,9 +119,8 @@ const ProjectViewMembers = () => {
     field: 'role_level',
     order: 'ascend',
     total: 0,
-    pageSizeOptions: ['10', '20', '50', '100'],
-    size: 'small',
   });
+  const pageSizeNumberOptions = useMemo(() => PAGE_SIZE_OPTIONS.map(Number), []);
   const [searchQuery, setSearchQuery] = useState(''); // <-- Add search state
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
@@ -391,15 +389,23 @@ const ProjectViewMembers = () => {
     return Math.floor((completed / total) * 100);
   };
 
-  const handleTableChange = (tablePagination: any, filters: any, sorter: any) => {
+  // Sorting only — page / pageSize come from TablePagination (same as projects list).
+  const handleTableChange = (_tablePagination: unknown, _filters: unknown, sorter: any) => {
     setPagination(prev => ({
       ...prev,
-      current: tablePagination.current,
-      pageSize: tablePagination.pageSize,
-      field: sorter.order ? sorter.field : 'role_level',   // reset to default field when sort cancelled
-      order: sorter.order ?? 'ascend',               // reset to default order when sort cancelled
+      current: 1,
+      field: sorter.order ? sorter.field : 'role_level',
+      order: sorter.order ?? 'ascend',
     }));
   };
+
+  const handlePageChange = useCallback((page: number, pageSize: number) => {
+    setPagination(prev => ({
+      ...prev,
+      current: page,
+      pageSize,
+    }));
+  }, []);
 
   // Effects
   useEffect(() => {
@@ -831,27 +837,37 @@ const ProjectViewMembers = () => {
           ) : isLoading ? (
             <Skeleton />
           ) : (
-            <Table
-              className="custom-two-colors-row-table"
-              dataSource={members?.data}
-              columns={columns}
-              rowKey={record => record.id}
-              pagination={{
-                current: pagination.current,
-                pageSize: pagination.pageSize,
-                total: pagination.total,
-                showSizeChanger: true,
-                pageSizeOptions: pagination.pageSizeOptions,
-                size: pagination.size,
-              }}
-              onChange={handleTableChange}
-              onRow={record => ({
-                style: {
-                  cursor: 'pointer',
-                  height: 42,
-                },
-              })}
-            />
+            <>
+              <Table
+                className="custom-two-colors-row-table"
+                dataSource={members?.data}
+                columns={columns}
+                rowKey={record => record.id}
+                pagination={false}
+                onChange={handleTableChange}
+                onRow={record => ({
+                  style: {
+                    cursor: 'pointer',
+                    height: 42,
+                  },
+                })}
+              />
+              <TablePagination
+                page={pagination.current}
+                pageSize={pagination.pageSize}
+                total={pagination.total}
+                onPageChange={handlePageChange}
+                pageSizeOptions={pageSizeNumberOptions}
+                rowsPerPageLabel={t('rowsPerPage', { defaultValue: 'Rows per page:' })}
+                renderSummary={(range, total) =>
+                  t('paginationSummary', {
+                    range,
+                    total,
+                    defaultValue: `${range} of ${total}`,
+                  })
+                }
+              />
+            </>
           )
         ) : (
           projectId && (
