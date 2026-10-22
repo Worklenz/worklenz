@@ -66,7 +66,107 @@ interface DocsSidebarProps {
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   onReorder: (items: IReorderDocumentItem[]) => void;
+  /** Project docs can create pages. The team workspace hides those actions. */
+  canCreate?: boolean;
+  /** Split the tree into one drag context per project. */
+  groupByProject?: boolean;
 }
+
+interface PageTreeProps {
+  pages: IProjectDocumentSummary[];
+  sensors: ReturnType<typeof useSensors>;
+  activeId: string | null;
+  favoriteIds: Set<string>;
+  favoritePending: Set<string>;
+  favoriteLoading: boolean;
+  favoriteError: boolean;
+  editingId: string | null;
+  draftTitle: string;
+  canCreate: boolean;
+  onToggleFavorite: (id: string) => void;
+  onDraftTitle: (value: string) => void;
+  onSelect: (id: string) => void;
+  onStartRename: (page: IProjectDocumentSummary) => void;
+  onCommitRename: (page: IProjectDocumentSummary) => void;
+  onCancelRename: () => void;
+  onCreate: (parentId: string | null) => void;
+  onDuplicate: (id: string) => void;
+  onDelete: (id: string) => void;
+  onReorder: (items: IReorderDocumentItem[]) => void;
+}
+
+const PageTree = ({
+  pages,
+  sensors,
+  activeId,
+  favoriteIds,
+  favoritePending,
+  favoriteLoading,
+  favoriteError,
+  editingId,
+  draftTitle,
+  canCreate,
+  onToggleFavorite,
+  onDraftTitle,
+  onSelect,
+  onStartRename,
+  onCommitRename,
+  onCancelRename,
+  onCreate,
+  onDuplicate,
+  onDelete,
+  onReorder,
+}: PageTreeProps) => {
+  const flatPages = useMemo(() => flattenDocumentTree(buildDocumentTree(pages)), [pages]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const overId = event.over?.id;
+    if (!overId || overId === event.active.id) return;
+    const placement = dragPlacement(
+      flatPages.findIndex(page => page.id === event.active.id),
+      flatPages.findIndex(page => page.id === overId),
+      event.delta.x
+    );
+    const items = planDocumentMove(pages, String(event.active.id), String(overId), placement);
+    if (items) onReorder(items);
+  };
+
+  if (flatPages.length === 0) return null;
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={flatPages.map(page => page.id)} strategy={verticalListSortingStrategy}>
+        {flatPages.map(page => (
+          <PageRow
+            key={page.id}
+            page={page}
+            active={page.id === activeId}
+            isFavorite={favoriteIds.has(page.id)}
+            isFavoriteDisabled={favoriteLoading || favoriteError || favoritePending.has(page.id)}
+            onToggleFavorite={() => onToggleFavorite(page.id)}
+            editing={editingId === page.id}
+            draftTitle={draftTitle}
+            canNest={pageDepth(pages, page.id) < 5}
+            canCreate={canCreate}
+            onDraftTitle={onDraftTitle}
+            onSelect={() => onSelect(page.id)}
+            onStartRename={() => onStartRename(page)}
+            onCommitRename={() => onCommitRename(page)}
+            onCancelRename={onCancelRename}
+            onCreate={() => onCreate(page.id)}
+            onDuplicate={() => onDuplicate(page.id)}
+            onDelete={() => onDelete(page.id)}
+            onMove={(placement, overId) => {
+              const items = planDocumentMove(pages, page.id, overId, placement);
+              if (items) onReorder(items);
+            }}
+            siblings={flatPages.filter(item => item.parent_id === page.parent_id)}
+          />
+        ))}
+      </SortableContext>
+    </DndContext>
+  );
+};
 
 const DocsSidebar = ({
   pages,
@@ -88,25 +188,36 @@ const DocsSidebar = ({
   onDuplicate,
   onDelete,
   onReorder,
+  canCreate = true,
+  groupByProject = false,
 }: DocsSidebarProps) => {
   const { t } = useTranslation('project-view-docs');
   const { token } = theme.useToken();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState('');
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-  const flatPages = useMemo(() => flattenDocumentTree(buildDocumentTree(pages)), [pages]);
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const overId = event.over?.id;
-    if (!overId || overId === event.active.id) return;
-    const placement = dragPlacement(
-      flatPages.findIndex(page => page.id === event.active.id),
-      flatPages.findIndex(page => page.id === overId),
-      event.delta.x
-    );
-    const items = planDocumentMove(pages, String(event.active.id), String(overId), placement);
-    if (items) onReorder(items);
-  };
+  const projectGroups = useMemo(() => {
+    const order: string[] = [];
+    const byProject = new Map<string, IProjectDocumentSummary[]>();
+    pages.forEach(page => {
+      const list = byProject.get(page.project_id);
+      if (list) {
+        list.push(page);
+      } else {
+        order.push(page.project_id);
+        byProject.set(page.project_id, [page]);
+      }
+    });
+    return order.map(projectId => {
+      const groupPages = byProject.get(projectId) || [];
+      return {
+        projectId,
+        projectName: groupPages[0]?.project_name || projectId,
+        projectColor: groupPages[0]?.project_color || null,
+        pages: groupPages,
+      };
+    });
+  }, [pages]);
 
   const commitRename = (page: IProjectDocumentSummary) => {
     const title = draftTitle.trim();
@@ -135,15 +246,17 @@ const DocsSidebar = ({
         style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}
       >
         <Typography.Text strong>{t('pages', { defaultValue: 'Pages' })}</Typography.Text>
-        <Tooltip title={t('newPage', { defaultValue: 'New page' })}>
-          <Button
-            size="small"
-            type="text"
-            aria-label={t('newPage', { defaultValue: 'New page' })}
-            icon={<PlusOutlined />}
-            onClick={() => onCreate(null)}
-          />
-        </Tooltip>
+        {canCreate ? (
+          <Tooltip title={t('newPage', { defaultValue: 'New page' })}>
+            <Button
+              size="small"
+              type="text"
+              aria-label={t('newPage', { defaultValue: 'New page' })}
+              icon={<PlusOutlined />}
+              onClick={() => onCreate(null)}
+            />
+          </Tooltip>
+        ) : null}
       </Flex>
       <div className="px-3 py-2">
         <Input
@@ -196,7 +309,14 @@ const DocsSidebar = ({
                     }}
                   >
                     <StarFilled aria-hidden style={{ color: token.colorPrimary }} />
-                    <span className="truncate">{page.title}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{page.title}</span>
+                      {groupByProject && page.project_name ? (
+                        <span className="block truncate text-xs" style={{ color: token.colorTextSecondary }}>
+                          {page.project_name}
+                        </span>
+                      ) : null}
+                    </span>
                   </button>
                 ))
             ) : (
@@ -215,54 +335,77 @@ const DocsSidebar = ({
             </Flex>
           ) : searchQuery.trim().length >= 2 ? (
             <SearchResults searching={searching} results={searchResults} onSelect={onSelect} />
-          ) : flatPages.length === 0 ? (
+          ) : pages.length === 0 ? (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={t('emptySidebar', { defaultValue: 'No pages yet' })}
             />
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={flatPages.map(page => page.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                {flatPages.map(page => (
-                  <PageRow
-                    key={page.id}
-                    page={page}
-                    active={page.id === activeId}
-                    isFavorite={favoriteIds.has(page.id)}
-                    isFavoriteDisabled={
-                      favoriteLoading || favoriteError || favoritePending.has(page.id)
-                    }
-                    onToggleFavorite={() => onToggleFavorite(page.id)}
-                    editing={editingId === page.id}
-                    draftTitle={draftTitle}
-                    canNest={pageDepth(pages, page.id) < 5}
-                    onDraftTitle={setDraftTitle}
-                    onSelect={() => onSelect(page.id)}
-                    onStartRename={() => {
-                      setEditingId(page.id);
-                      setDraftTitle(page.title);
-                    }}
-                    onCommitRename={() => commitRename(page)}
-                    onCancelRename={() => setEditingId(null)}
-                    onCreate={() => onCreate(page.id)}
-                    onDuplicate={() => onDuplicate(page.id)}
-                    onDelete={() => onDelete(page.id)}
-                    onMove={(placement, overId) => {
-                      const items = planDocumentMove(pages, page.id, overId, placement);
-                      if (items) onReorder(items);
-                    }}
-                    siblings={flatPages.filter(item => item.parent_id === page.parent_id)}
+          ) : groupByProject ? (
+            projectGroups.map(group => (
+              <div key={group.projectId} role="group" aria-label={group.projectName} className="mb-2">
+                <Flex align="center" gap={8} className="px-2 pb-1 pt-3">
+                  <span
+                    aria-hidden
+                    className="inline-block h-2 w-2 shrink-0 rounded-full"
+                    style={{ background: group.projectColor || token.colorPrimary }}
                   />
-                ))}
-              </SortableContext>
-            </DndContext>
+                  <Typography.Text type="secondary" className="truncate text-xs" strong>
+                    {group.projectName}
+                  </Typography.Text>
+                </Flex>
+                <PageTree
+                  pages={group.pages}
+                  sensors={sensors}
+                  activeId={activeId}
+                  favoriteIds={favoriteIds}
+                  favoriteLoading={favoriteLoading}
+                  favoriteError={favoriteError}
+                  favoritePending={favoritePending}
+                  editingId={editingId}
+                  draftTitle={draftTitle}
+                  canCreate={canCreate}
+                  onToggleFavorite={onToggleFavorite}
+                  onDraftTitle={setDraftTitle}
+                  onSelect={onSelect}
+                  onStartRename={page => {
+                    setEditingId(page.id);
+                    setDraftTitle(page.title);
+                  }}
+                  onCommitRename={commitRename}
+                  onCancelRename={() => setEditingId(null)}
+                  onCreate={onCreate}
+                  onDuplicate={onDuplicate}
+                  onDelete={onDelete}
+                  onReorder={onReorder}
+                />
+              </div>
+            ))
+          ) : (
+            <PageTree
+              pages={pages}
+              sensors={sensors}
+              activeId={activeId}
+              favoriteIds={favoriteIds}
+              favoriteLoading={favoriteLoading}
+              favoriteError={favoriteError}
+              favoritePending={favoritePending}
+              editingId={editingId}
+              draftTitle={draftTitle}
+              canCreate={canCreate}
+              onToggleFavorite={onToggleFavorite}
+              onDraftTitle={setDraftTitle}
+              onSelect={onSelect}
+              onStartRename={page => {
+                setEditingId(page.id);
+                setDraftTitle(page.title);
+              }}
+              onCommitRename={commitRename}
+              onCancelRename={() => setEditingId(null)}
+              onCreate={onCreate}
+              onDuplicate={onDuplicate}
+              onDelete={onDelete}
+              onReorder={onReorder}
+            />
           )}
         </div>
       </div>
@@ -305,6 +448,11 @@ const SearchResults = ({ searching, results, onSelect }: SearchResultsProps) => 
           onClick={() => onSelect(result.id)}
         >
           <div className="truncate text-sm font-medium">{result.title}</div>
+          {result.project_name ? (
+            <div className="truncate text-xs" style={{ color: token.colorTextSecondary }}>
+              {result.project_name}
+            </div>
+          ) : null}
           <div className="truncate text-xs" style={{ color: token.colorTextSecondary }}>
             {result.snippet}
           </div>
@@ -323,6 +471,7 @@ interface PageRowProps {
   editing: boolean;
   draftTitle: string;
   canNest: boolean;
+  canCreate: boolean;
   siblings: Array<{ id: string }>;
   onDraftTitle: (value: string) => void;
   onSelect: () => void;
@@ -344,6 +493,7 @@ const PageRow = ({
   editing,
   draftTitle,
   canNest,
+  canCreate,
   siblings,
   onDraftTitle,
   onSelect,
@@ -447,12 +597,16 @@ const PageRow = ({
                 : t('addFavorite', { defaultValue: 'Add to favorites' }),
             },
             { key: 'rename', label: t('rename', { defaultValue: 'Rename' }) },
-            {
-              key: 'subpage',
-              label: t('newSubpage', { defaultValue: 'Add subpage' }),
-              disabled: !canNest,
-            },
-            { key: 'duplicate', label: t('duplicate', { defaultValue: 'Duplicate' }) },
+            ...(canCreate
+              ? [
+                  {
+                    key: 'subpage',
+                    label: t('newSubpage', { defaultValue: 'Add subpage' }),
+                    disabled: !canNest,
+                  },
+                  { key: 'duplicate', label: t('duplicate', { defaultValue: 'Duplicate' }) },
+                ]
+              : []),
             {
               key: 'up',
               label: t('moveUp', { defaultValue: 'Move up' }),

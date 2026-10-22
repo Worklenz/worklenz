@@ -75,6 +75,7 @@ import taskDependenciesApiRouter from "./task-dependencies-api-router";
 
 import taskRecurringApiRouter from "./task-recurring-api-router";
 import teamFilesApiRouter from "./team-files-api-router";
+import teamDocumentsApiRouter from "./team-documents-api-router";
 
 import customColumnsApiRouter from "./custom-columns-api-router";
 import projectFinanceApiRouter from "../../routes/apis/project-finance-api-router";
@@ -195,6 +196,7 @@ api.use("/task-dependencies", taskDependenciesApiRouter);
 
 api.use("/task-recurring", taskRecurringApiRouter);
 api.use("/team-files", teamFilesApiRouter);
+api.use("/team-documents", teamDocumentsApiRouter);
 
 api.use("/custom-columns", customColumnsApiRouter);
 api.use("/support", supportApiRouter);

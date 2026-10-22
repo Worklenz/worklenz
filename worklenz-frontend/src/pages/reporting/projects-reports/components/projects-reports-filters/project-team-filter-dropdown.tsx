@@ -20,7 +20,13 @@ import {
   setSelectOrDeselectTeam,
 } from '@/features/reporting/projectReports/project-reports-slice';
 
-const ProjectTeamFilterDropdown: React.FC = () => {
+interface ProjectTeamFilterDropdownProps {
+  inline?: boolean;
+}
+
+const ProjectTeamFilterDropdown: React.FC<ProjectTeamFilterDropdownProps> = ({
+  inline = false,
+}) => {
   const dispatch = useAppDispatch();
   const [searchText, setSearchText] = useState('');
   const { t } = useTranslation('reporting-projects-filters');
@@ -88,7 +94,121 @@ const ProjectTeamFilterDropdown: React.FC = () => {
     if (isAllSelected) return `${t('allTeams')}`;
     return `${t('teams')} (${activeFiltersCount})`;
   };
+  
+const teamDropdownContent = (
+  <div
+    style={{
+      background: colors.dropdownBg,
+      borderRadius: '8px',
+      boxShadow: isDark
+        ? '0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 3px 6px -4px rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.20)'
+        : '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
+      border: `1px solid ${colors.dropdownBorder}`,
+      padding: '4px 0',
+      maxHeight: '330px',
+      display: 'flex',
+      flexDirection: 'column',
+    }}
+  >
+    <div
+      style={{
+        padding: '4px 4px 2px',
+        fontWeight: 600,
+        fontSize: '12px',
+        color: colors.headerText,
+        borderBottom: `1px solid ${colors.borderColor}`,
+        marginBottom: '2px',
+      }}
+    >
+      {t('searchByName')}
+    </div>
 
+    <div style={{ padding: '4px 8px', flexShrink: 0 }}>
+      <Input
+        placeholder={t('searchByName')}
+        value={searchText}
+        onChange={e => setSearchText(e.target.value)}
+        onClick={e => e.stopPropagation()}
+        style={{ fontSize: '14px' }}
+      />
+    </div>
+
+    <div style={{ padding: '2px 8px', marginBottom: '2px' }}>
+      <Space size="small">
+        <Button
+          type="link"
+          size="small"
+          onClick={handleSelectAllClick}
+          disabled={isAllSelected}
+          style={{
+            padding: '0 2px',
+            height: 'auto',
+            fontSize: '11px',
+            color: isAllSelected ? colors.linkDisabled : colors.linkActive,
+          }}
+        >
+          {t('selectAll')}
+        </Button>
+        <Divider type="vertical" style={{ margin: '0 2px' }} />
+        <Button
+          type="link"
+          size="small"
+          onClick={handleClearAll}
+          disabled={isNoneSelected}
+          style={{
+            padding: '0 2px',
+            height: 'auto',
+            fontSize: '11px',
+            color: isNoneSelected ? colors.linkDisabled : colors.errorColor,
+          }}
+        >
+          {t('clearAll')}
+        </Button>
+      </Space>
+    </div>
+
+    <Divider style={{ margin: '2px 0', flexShrink: 0 }} />
+
+    <div style={{ overflowY: 'auto', flex: 1 }}>
+      {filteredItems.map(item => (
+        <div
+          key={item.id}
+          style={{
+            padding: '4px 8px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            borderRadius: '4px',
+            transition: 'background-color 0.2s',
+          }}
+        >
+          <Checkbox
+            onClick={e => e.stopPropagation()}
+            checked={item.selected}
+            onChange={e =>
+              handleCheckboxChange(item.id || '', e.target.checked)
+            }
+            style={{ fontSize: '14px' }}
+          >
+            <span style={{ marginLeft: '2px', fontSize: '14px' }}>
+              {item.name}
+            </span>
+          </Checkbox>
+          {item.selected && (
+            <CheckCircleFilled
+              style={{ color: colors.successColor, fontSize: '10px' }}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+  if (inline) {
+    return teamDropdownContent;
+  }
   return (
     <div>
       <Dropdown
