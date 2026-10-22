@@ -6,6 +6,7 @@ import idParamValidator from "../../middlewares/validators/id-param-validator";
 import teamMembersBodyValidator from "../../middlewares/validators/team-members-body-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import teamRoleManagementValidator from "../../middlewares/validators/team-role-management-validator";
+import teamMemberSelfOrManagementValidator from "../../middlewares/validators/team-member-self-or-management-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 
 const teamMembersApiRouter = express.Router();
@@ -25,10 +26,10 @@ teamMembersApiRouter.get("/project/:id", safeControllerFunction(TeamMembersContr
 teamMembersApiRouter.get("/projects/:id", safeControllerFunction(TeamMembersController.getProjectsByTeamMember));
 teamMembersApiRouter.get("/overview/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(TeamMembersController.getOverview));
 teamMembersApiRouter.get("/overview-chart/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(TeamMembersController.getOverviewChart));
-teamMembersApiRouter.get("/:id", teamRoleManagementValidator, idParamValidator, safeControllerFunction(TeamMembersController.getById));
+teamMembersApiRouter.get("/:id", teamMemberSelfOrManagementValidator, idParamValidator, safeControllerFunction(TeamMembersController.getById));
 teamMembersApiRouter.put("/resend-invitation", teamRoleManagementValidator, safeControllerFunction(TeamMembersController.resend_invitation));
-teamMembersApiRouter.put("/:id", teamRoleManagementValidator, idParamValidator, safeControllerFunction(TeamMembersController.update));
-teamMembersApiRouter.put("/:id/name", teamRoleManagementValidator, idParamValidator, safeControllerFunction(TeamMembersController.updateMemberName));
+teamMembersApiRouter.put("/:id", teamMemberSelfOrManagementValidator, idParamValidator, safeControllerFunction(TeamMembersController.update));
+teamMembersApiRouter.put("/:id/name", teamMemberSelfOrManagementValidator, idParamValidator, safeControllerFunction(TeamMembersController.updateMemberName));
 teamMembersApiRouter.delete("/:id", teamRoleManagementValidator, idParamValidator, safeControllerFunction(TeamMembersController.deleteById));
 teamMembersApiRouter.get("/deactivate/:id", teamRoleManagementValidator, idParamValidator, safeControllerFunction(TeamMembersController.toggleMemberActiveStatus));
 
