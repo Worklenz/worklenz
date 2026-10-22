@@ -133,6 +133,13 @@ const HomeAddTaskModal = ({ open, defaultDate, defaultProjectId, onClose, onTask
     setUnassignedTasks([]);
   }, [open, defaultDate, defaultProjectId]);
 
+  // Project options may arrive after opening. Fill an empty field without resetting edits.
+  useEffect(() => {
+    if (open && !form.getFieldValue('project_id') && projectOptions[0]?.value) {
+      form.setFieldsValue({ project_id: defaultProjectId || projectOptions[0].value });
+    }
+  }, [open, defaultProjectId, projectOptions, form]);
+
   // Switching mode or project invalidates whatever unassigned task was picked.
   useEffect(() => {
     setSelectedUnassignedTask(null);
