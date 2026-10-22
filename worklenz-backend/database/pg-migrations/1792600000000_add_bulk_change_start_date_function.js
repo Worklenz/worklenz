@@ -1,5 +1,4 @@
 'use strict';
-// Converted from: database/migrations/20260423000000-add-bulk-change-start-date-function.sql
 
 /** @type {import('node-pg-migrate').ColumnDefinitions | undefined} */
 exports.shorthands = undefined;
@@ -16,30 +15,31 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     _task            JSON;
-    _previous_date   TIMESTAMP;
-    _new_date        TIMESTAMP;
+    _previous_date   TIMESTAMPTZ;
+    _new_date        TIMESTAMPTZ;
     _updated_count   INTEGER := 0;
 BEGIN
     -- Parse the new start_date from the body (can be null to clear start date)
     _new_date := CASE 
         WHEN (_body ->> 'start_date') IS NULL OR (_body ->> 'start_date') = '' THEN NULL
-        ELSE (_body ->> 'start_date')::TIMESTAMP
+        ELSE (_body ->> 'start_date')::TIMESTAMPTZ
     END;
 
     FOR _task IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'tasks')::JSON)
     LOOP
-        -- Get the previous start_date
-        _previous_date := (SELECT start_date FROM tasks WHERE id = (_task ->> 'id')::UUID);
+        -- Serialize updates so the activity log records the actual previous value.
+        SELECT start_date INTO _previous_date
+        FROM tasks WHERE id = (_task ->> 'id')::UUID
+        FOR UPDATE;
 
-        -- Update the task's start_date
-        UPDATE tasks 
-        SET start_date = _new_date,
-            updated_at = NOW()
-        WHERE id = (_task ->> 'id')::UUID;
-
-        -- Log the activity if the date actually changed
-        IF (_previous_date IS DISTINCT FROM _new_date)
+        -- Missing tasks and unchanged dates must not produce updates or activity.
+        IF FOUND AND (_previous_date IS DISTINCT FROM _new_date)
         THEN
+            UPDATE tasks
+            SET start_date = _new_date,
+                updated_at = NOW()
+            WHERE id = (_task ->> 'id')::UUID;
+
             INSERT INTO task_activity_logs (
                 task_id, 
                 team_id, 
@@ -76,7 +76,6 @@ COMMENT ON FUNCTION bulk_change_tasks_start_date(json, uuid) IS 'Bulk update tas
 };
 
 /** @param {import('node-pg-migrate').MigrationBuilder} pgm */
-exports.down = async (_pgm) => {
-  // This migration is a DDL/function change — no automatic rollback defined.
-  // Review manually before running migrate:down.
+exports.down = async (pgm) => {
+  pgm.sql('DROP FUNCTION IF EXISTS bulk_change_tasks_start_date(json, uuid);');
 };
