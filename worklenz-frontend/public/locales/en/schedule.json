@@ -67,6 +67,7 @@
   "durationType": "Duration Type",
   "edit": "Edit",
   "endDate": "End Date",
+  "endDateBeforeStartDate": "End date cannot be earlier than start date",
   "enterTaskName": "Enter task name…",
   "estHoursPerDay": "Estimated Hours",
   "estHoursRequired": "Estimated hours is required",

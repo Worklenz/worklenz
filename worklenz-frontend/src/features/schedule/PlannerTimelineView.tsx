@@ -8,7 +8,7 @@ dayjs.extend(isoWeek);
 
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Badge, Button, DatePicker, Flex, Space, theme, Tooltip } from '@/shared/antd-imports';
+import { Badge, Button, DatePicker, Flex, Space, theme, Tooltip, message } from '@/shared/antd-imports';
 import {
   ZoomInOutlined,
   ZoomOutOutlined,
@@ -991,6 +991,60 @@ const PlannerTimelineView: React.FC = () => {
   // applied, becomes the visible grid range itself (see rangeStart/rangeEnd below)
   // instead of the range being auto-derived from the filtered projects' own dates.
   const [dateFilter, setDateFilter] = useState<[Dayjs, Dayjs] | null>(null);
+  // Tracks active in-progress calendar selection to disable invalid dates
+  const [calendarDates, setCalendarDates] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  // Tracks which field (start or end) is currently focused / being edited
+  const [activeField, setActiveField] = useState<'start' | 'end' | null>(null);
+  // Date range validation error message
+  const [dateRangeError, setDateRangeError] = useState<string | null>(null);
+
+  const disabledDate = (current: Dayjs) => {
+    if (!current) return false;
+
+    // Use in-progress selection first, falling back to already applied date filter
+    const startDate = calendarDates?.[0] ?? dateFilter?.[0];
+    const endDate = calendarDates?.[1] ?? dateFilter?.[1];
+
+    // If user is editing/picking the End Date: disable days before Start Date
+    if (activeField === 'end' || (calendarDates?.[0] && !calendarDates?.[1])) {
+      if (startDate) {
+        return current.isBefore(startDate, 'day');
+      }
+    }
+
+    // If user is editing/picking the Start Date: disable days after End Date
+    if (activeField === 'start' || (!calendarDates?.[0] && calendarDates?.[1])) {
+      if (endDate) {
+        return current.isAfter(endDate, 'day');
+      }
+    }
+
+    return false;
+  };
+
+  const handleDateRangeChange = (
+    dates: [Dayjs | null, Dayjs | null] | null,
+    _dateStrings: [string, string]
+  ) => {
+    if (!dates || !dates[0] || !dates[1]) {
+      setDateFilter(null);
+      setDateRangeError(null);
+      return;
+    }
+
+    const [start, end] = dates;
+    if (start.isAfter(end, 'day')) {
+      const errorMsg = t('endDateBeforeStartDate', {
+        defaultValue: 'End date cannot be earlier than start date',
+      });
+      setDateRangeError(errorMsg);
+      message.error(errorMsg);
+      return;
+    }
+
+    setDateRangeError(null);
+    setDateFilter([start, end]);
+  };
   const anyFilterActive =
     filterProjects.length > 0 ||
     filterStatuses.length > 0 ||
@@ -1005,6 +1059,9 @@ const PlannerTimelineView: React.FC = () => {
     setFilterCategories([]);
     setFilterClients([]);
     setDateFilter(null);
+    setCalendarDates(null);
+    setActiveField(null);
+    setDateRangeError(null);
   };
 
   // Which projects are expanded to show their tasks in place, and the tasks fetched for
@@ -1581,16 +1638,46 @@ const PlannerTimelineView: React.FC = () => {
           selected={filterClients}
           onChange={setFilterClients}
         />
-        <DatePicker.RangePicker
-          size="small"
-          value={dateFilter}
-          onChange={v => setDateFilter(v && v[0] && v[1] ? [v[0], v[1]] : null)}
-          placeholder={[
-            t('startDate', { defaultValue: 'Start date' }),
-            t('endDate', { defaultValue: 'End date' }),
-          ]}
-          style={{ fontSize: 12 }}
-        />
+        <Tooltip
+          title={dateRangeError}
+          open={!!dateRangeError}
+          placement="topLeft"
+          color="red"
+        >
+          <DatePicker.RangePicker
+            size="small"
+            status={dateRangeError ? 'error' : undefined}
+            order={false}
+            value={dateFilter}
+            onChange={handleDateRangeChange}
+            onFocus={(_e, info) => {
+              if (info?.range) {
+                setActiveField(info.range);
+              }
+            }}
+            onCalendarChange={(dates, _dateStrings, info) => {
+              setCalendarDates(dates);
+              if (dateRangeError) setDateRangeError(null);
+              if (info?.range === 'start') {
+                setActiveField('end');
+              } else if (info?.range === 'end') {
+                setActiveField('start');
+              }
+            }}
+            onOpenChange={open => {
+              if (!open) {
+                setCalendarDates(null);
+                setActiveField(null);
+              }
+            }}
+            disabledDate={disabledDate}
+            placeholder={[
+              t('startDate', { defaultValue: 'Start date' }),
+              t('endDate', { defaultValue: 'End date' }),
+            ]}
+            style={{ fontSize: 12 }}
+          />
+        </Tooltip>
       </Flex>
 
       {/* Range label + zoom row */}
