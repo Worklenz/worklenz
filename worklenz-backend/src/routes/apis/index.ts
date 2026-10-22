@@ -54,6 +54,7 @@ import projectCategoriesApiRouter from "./project-categories-api-router";
 import homePageApiRouter from "./home-page-api-router";
 import projectRoadmapApiRouter from "./roadmap-api-router";
 import projectCommentsApiRouter from "./project-comments-api-router";
+import projectDocumentsApiRouter from "./project-documents-api-router";
 import projectCommentReactionsApiRouter from "./project-comment-reactions-api-router";
 import reportingExportApiRouter from "./reporting-export-api-router";
 import projectHealthsApiRouter from "./project-healths-api-router";
@@ -74,6 +75,7 @@ import taskDependenciesApiRouter from "./task-dependencies-api-router";
 
 import taskRecurringApiRouter from "./task-recurring-api-router";
 import teamFilesApiRouter from "./team-files-api-router";
+import teamDocumentsApiRouter from "./team-documents-api-router";
 
 import customColumnsApiRouter from "./custom-columns-api-router";
 import projectFinanceApiRouter from "../../routes/apis/project-finance-api-router";
@@ -90,6 +92,7 @@ import plansApiRouter from "./plans-api-router";
 import usersApiRouter from "./users-api-router";
 import clientPortalApiRouter from "../../routes/apis/client-portal-api-router";
 import slackApiRouter from "../../routes/apis/slack-api-router";
+import githubApiRouter from "../../routes/apis/github-api-router";
 import onboardingApiRouter from "./onboarding-api-router";
 import importsApiRouter from "./imports-api-router";
 import digestApiRouter from "./digest-api-router";
@@ -143,6 +146,7 @@ api.use("/project-categories", projectCategoriesApiRouter);
 api.use("/home", homePageApiRouter);
 api.use("/roadmap", projectRoadmapApiRouter);
 api.use("/project-comments", projectCommentsApiRouter);
+api.use("/project-documents", projectDocumentsApiRouter);
 api.use("/project-comment-reactions", projectCommentReactionsApiRouter);
 api.use("/reporting-export", reportingExportApiRouter);
 api.use("/project-healths", projectHealthsApiRouter);
@@ -192,6 +196,7 @@ api.use("/task-dependencies", taskDependenciesApiRouter);
 
 api.use("/task-recurring", taskRecurringApiRouter);
 api.use("/team-files", teamFilesApiRouter);
+api.use("/team-documents", teamDocumentsApiRouter);
 
 api.use("/custom-columns", customColumnsApiRouter);
 api.use("/support", supportApiRouter);
@@ -221,6 +226,9 @@ api.use("/client-portal", clientPortalApiRouter);
 
 // Slack integration APIs
 api.use("/slack", slackApiRouter);
+
+// GitHub integration APIs
+api.use("/github", githubApiRouter);
 
 // Digest preferences (auth required)
 api.use("/digest", digestApiRouter);

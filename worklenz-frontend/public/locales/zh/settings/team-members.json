@@ -203,6 +203,7 @@
   "noActiveInviteLink": "没有有效的邀请链接",
   "linkExpiredPlaceholder": "链接已过期",
   "inviteLinkCopied": "邀请链接已复制到剪贴板",
+  "inviteLinkCopyFailed": "邀请链接已生成。请从下方字段手动复制。",
   "inviteLinkGenerateError": "生成邀请链接失败",
   "inviteLinkDeactivated": "邀请链接已停用",
   "inviteLinkDeactivateError": "停用链接失败",

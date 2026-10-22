@@ -12,6 +12,7 @@ import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.
 import { sortTeamMembers } from '@/utils/sort-team-members';
 import { useTranslation } from 'react-i18next';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { getContrastColor } from '@/utils/colorUtils';
 
 interface TaskPhaseDropdownProps {
   task: Task;
@@ -288,6 +289,13 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
 
   // Determine if no phase is selected
   const hasPhase = task.phase && task.phase.trim() !== '';
+  const phaseBackgroundColor =
+    hasPhase && currentPhase
+      ? getPhaseColor(currentPhase)
+      : isDarkMode
+        ? '#4b5563'
+        : '#9ca3af';
+  const phaseTextColor = getContrastColor(phaseBackgroundColor);
 
   return (
     <>
@@ -310,13 +318,8 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
               ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
             `}
             style={{
-              backgroundColor:
-                hasPhase && currentPhase
-                  ? getPhaseColor(currentPhase)
-                  : isDarkMode
-                    ? '#4b5563'
-                    : '#9ca3af',
-              color: 'white',
+              backgroundColor: phaseBackgroundColor,
+              color: phaseTextColor,
               maxWidth: '100%',
             }}
           >

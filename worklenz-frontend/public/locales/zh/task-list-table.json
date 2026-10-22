@@ -13,6 +13,7 @@
   "labelsColumn": "标签",
   "attachmentsColumn": "附件",
   "commentsColumn": "最新评论",
+  "openLatestComment": "打开最新评论",
   "attachmentsAdd": "添加",
   "attachmentsOpen": "打开",
   "attachmentsDownload": "下载",

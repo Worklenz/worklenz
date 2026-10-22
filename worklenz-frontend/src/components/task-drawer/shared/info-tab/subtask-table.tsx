@@ -16,6 +16,7 @@ import {
 } from '@/shared/antd-imports';
 import { nanoid } from '@reduxjs/toolkit';
 import { TFunction } from 'i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 import {
   DndContext,
@@ -158,7 +159,7 @@ const SortableSubtaskRow = ({ subtask, themeMode, onEdit, onDelete, t, isGuest =
           minWidth: 0,
         }}
       >
-        {subtask.name}
+        {decodeHtmlEntities(subtask.name)}
       </span>
 
       {/* Priority column — fixed width so all rows align, tag left-aligned */}

@@ -6,7 +6,7 @@ import Flex from 'antd/es/flex';
 import GreetingWithTime from './greeting-with-time';
 import TasksList from '@/pages/home/task-list/tasks-list';
 import TodoList from '@/pages/home/todo-list/todo-list';
-import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/project-settings-modal';
+import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/ProjectSettingsModal';
 import CreateProjectButton from '@/components/projects/project-create-button/project-create-button';
 import RecentAndFavouriteProjectList from '@/pages/home/recent-and-favourite-project-list/recent-and-favourite-project-list';
 

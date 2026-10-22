@@ -80,6 +80,21 @@ export default class NotificationController extends WorklenzControllerBase {
       if (!hasOwnUrl && item.comment_id) {
         item.params.comment = item.comment_id;
       }
+      if (item.notification_type_key === "PROJECT_DOCUMENT_MENTION" && item.project_id) {
+        let params = item.message_params;
+        if (typeof params === "string") {
+          try {
+            params = JSON.parse(params);
+          } catch {
+            params = null;
+          }
+        }
+        const documentId = params?.documentId;
+        if (typeof documentId === "string" && documentId) {
+          item.url = `/worklenz/projects/${item.project_id}?tab=docs&doc=${documentId}`;
+          item.params = { tab: "docs", doc: documentId, from: "notification" };
+        }
+      }
     }
 
 

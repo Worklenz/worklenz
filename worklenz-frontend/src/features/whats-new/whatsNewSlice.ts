@@ -1,18 +1,32 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { whatsNewApiService } from '@/api/whats-new/whats-new.api.service';
-import { IWhatsNewRelease } from '@/types/whats-new/whats-new.types';
+import { ILatestWhatsNewRelease, IWhatsNewRelease } from '@/types/whats-new/whats-new.types';
+
+type LatestReleaseStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
 
 type WhatsNewState = {
   currentRelease: IWhatsNewRelease | null;
   isModalOpen: boolean;
   loading: boolean;
-  // Drawer-driven viewer: fully independent of currentRelease/isModalOpen
-  // above, so opening/closing it can never touch (or be touched by) the nav
-  // tag's own dismissal state. See notfication-drawer.tsx's goToUrl.
+  // Viewer: independent of currentRelease/isModalOpen above, so opening it
+  // can never touch the nav tag's own dismissal state on its own. Opened from
+  // the notification drawer (notfication-drawer.tsx's goToUrl), which never
+  // dismisses anything, and from Settings > Help (openLatestReleaseViewer),
+  // which dismisses on close only when the release was tag-eligible.
   viewedRelease: IWhatsNewRelease | null;
   isViewedModalOpen: boolean;
   viewedLoading: boolean;
   viewedNotFound: boolean;
+  // Whether the viewer shows the "New" badge. Only Help can turn it off
+  // (release older than the 7-day window); the drawer flow always shows it.
+  viewedShowNewBadge: boolean;
+  // Whether closing the viewer records a dismissal. True only when Help opened
+  // a release the nav tag is currently showing; the drawer flow never sets it.
+  viewedDismissOnClose: boolean;
+  // Latest published release for Settings > Help, independent of the tag's
+  // expiry and dismissals (see GET /whats-new/latest).
+  latestRelease: ILatestWhatsNewRelease | null;
+  latestStatus: LatestReleaseStatus;
 };
 
 const initialState: WhatsNewState = {
@@ -23,6 +37,10 @@ const initialState: WhatsNewState = {
   isViewedModalOpen: false,
   viewedLoading: false,
   viewedNotFound: false,
+  viewedShowNewBadge: true,
+  viewedDismissOnClose: false,
+  latestRelease: null,
+  latestStatus: 'idle',
 };
 
 export const fetchCurrentRelease = createAsyncThunk('whatsNew/fetchCurrentRelease', async () => {
@@ -32,6 +50,11 @@ export const fetchCurrentRelease = createAsyncThunk('whatsNew/fetchCurrentReleas
 
 export const fetchReleaseById = createAsyncThunk('whatsNew/fetchReleaseById', async (releaseId: string) => {
   const res = await whatsNewApiService.getById(releaseId);
+  return res.body ?? null;
+});
+
+export const fetchLatestRelease = createAsyncThunk('whatsNew/fetchLatestRelease', async () => {
+  const res = await whatsNewApiService.getLatest();
   return res.body ?? null;
 });
 
@@ -66,6 +89,22 @@ const whatsNewSlice = createSlice({
     closeReleaseViewer: state => {
       state.isViewedModalOpen = false;
     },
+    // Opens the already-fetched latest release in the viewer (Settings > Help).
+    // `currentRelease` is non-null exactly when the nav tag is showing a
+    // release (active, inside the window, not dismissed), so matching its id is
+    // what "currently eligible for the nav tag" means — closing then dismisses
+    // it, just like closing the tag's own modal. Anything else writes nothing.
+    openLatestReleaseViewer: state => {
+      const latest = state.latestRelease;
+      if (!latest) return;
+
+      state.viewedRelease = latest;
+      state.viewedLoading = false;
+      state.viewedNotFound = false;
+      state.viewedShowNewBadge = latest.is_new;
+      state.viewedDismissOnClose = state.currentRelease?.id === latest.id;
+      state.isViewedModalOpen = true;
+    },
   },
   extraReducers: builder => {
     builder.addCase(fetchCurrentRelease.pending, state => {
@@ -82,11 +121,25 @@ const whatsNewSlice = createSlice({
       state.currentRelease = null;
       state.isModalOpen = false;
     });
+    builder.addCase(fetchLatestRelease.pending, state => {
+      state.latestStatus = 'loading';
+    });
+    builder.addCase(fetchLatestRelease.fulfilled, (state, action) => {
+      state.latestStatus = 'succeeded';
+      state.latestRelease = action.payload;
+    });
+    builder.addCase(fetchLatestRelease.rejected, state => {
+      state.latestStatus = 'failed';
+    });
     builder.addCase(fetchReleaseById.pending, state => {
       state.isViewedModalOpen = true;
       state.viewedLoading = true;
       state.viewedNotFound = false;
       state.viewedRelease = null;
+      // The drawer flow always shows the badge and never dismisses; reset in
+      // case Help opened the viewer with different flags just before.
+      state.viewedShowNewBadge = true;
+      state.viewedDismissOnClose = false;
     });
     builder.addCase(fetchReleaseById.fulfilled, (state, action) => {
       state.viewedLoading = false;
@@ -100,5 +153,10 @@ const whatsNewSlice = createSlice({
   },
 });
 
-export const { openWhatsNewModal, closeWhatsNewModal, closeReleaseViewer } = whatsNewSlice.actions;
+export const {
+  openWhatsNewModal,
+  closeWhatsNewModal,
+  closeReleaseViewer,
+  openLatestReleaseViewer,
+} = whatsNewSlice.actions;
 export default whatsNewSlice.reducer;

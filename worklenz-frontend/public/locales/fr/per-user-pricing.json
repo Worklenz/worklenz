@@ -30,7 +30,7 @@
         "Projets illimités",
         "Suivi du temps et rapports",
         "Champs et modèles personnalisés",
-        "Jusqu’à 5 invités"
+        "Invités illimités et portail client"
       ]
     },
     "business": {
@@ -39,8 +39,8 @@
       "features": [
         "Tout ce que comprend Pro",
         "Planificateur, chronologie, charge de travail",
-        "Finances et portail client",
-        "Invités illimités et Slack"
+        "Finances et personnalisation du portail",
+        "Intégration Slack"
       ]
     },
     "expansion": {

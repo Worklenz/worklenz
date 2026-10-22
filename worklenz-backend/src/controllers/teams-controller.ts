@@ -22,35 +22,52 @@ export default class TeamsController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, data));
   }
 
+
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `
-      SELECT id,
-             name,
-             created_at,
-             (id = $2) AS active,
-             (user_id = $1) AS owner,
-             EXISTS(SELECT 1
-                    FROM email_invitations
-                    WHERE team_id = teams.id
-                      AND team_member_id = (SELECT id
-                                            FROM team_members
-                                            WHERE team_members.user_id = $1
-                                              AND team_members.team_id = teams.id)) AS pending_invitation,
-             (CASE
-                WHEN user_id = $1 THEN 'You'
-                ELSE (SELECT name FROM users WHERE id = teams.user_id) END
-               ) AS owns_by
+      SELECT teams.id,
+             teams.name,
+             teams.created_at,
+             organizations.logo_url,
+             (teams.id = $2) AS active,
+             (teams.user_id = $1) AS owner,
+             EXISTS(
+               SELECT 1
+               FROM email_invitations
+               WHERE email_invitations.team_id = teams.id
+                 AND email_invitations.team_member_id = (
+                   SELECT id
+                   FROM team_members
+                   WHERE team_members.user_id = $1
+                     AND team_members.team_id = teams.id
+                 )
+             ) AS pending_invitation,
+             CASE
+               WHEN teams.user_id = $1 THEN 'You'
+               ELSE (
+                 SELECT users.name
+                 FROM users
+                 WHERE users.id = teams.user_id
+               )
+             END AS owns_by
       FROM teams
-      WHERE user_id = $1
-         OR id IN (SELECT team_id FROM team_members WHERE team_members.user_id = $1
-               AND team_members.active IS TRUE)
-      ORDER BY name;
+      LEFT JOIN organizations
+        ON organizations.id = teams.organization_id
+      WHERE teams.user_id = $1
+         OR teams.id IN (
+           SELECT team_members.team_id
+           FROM team_members
+           WHERE team_members.user_id = $1
+             AND team_members.active IS TRUE
+         )
+      ORDER BY teams.name;
     `;
 
     const result = await db.query(q, [req.user?.id, req.user?.team_id ?? null]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
+
 
   @HandleExceptions()
   public static async getTeamInvites(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
@@ -88,7 +105,7 @@ export default class TeamsController extends WorklenzControllerBase {
   public static async activate(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `SELECT activate_team($1, $2)`;
     await db.query(q, [req.body.id, req.user?.id ?? null]);
-    
+
     // Refresh the user session with updated team data to ensure the new active_team
     // is immediately reflected in req.user. Without this, the session remains stale
     // until the next deserialize cycle, causing team switches to revert.
@@ -104,7 +121,7 @@ export default class TeamsController extends WorklenzControllerBase {
         console.error('Failed to refresh user session after team activation:', error);
       }
     }
-    
+
     return res.status(200).send(new ServerResponse(true, { subdomain: null }));
   }
 }

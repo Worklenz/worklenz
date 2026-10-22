@@ -2,6 +2,8 @@ import React from 'react';
 import { Tooltip } from '@/shared/antd-imports';
 import { Label } from '@/types/task-management.types';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
+import { getContrastColor } from '@/utils/colorUtils';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface CustomColordLabelProps {
   label: Label | ITaskLabel;
@@ -13,27 +15,11 @@ const CustomColordLabel = React.forwardRef<HTMLSpanElement, CustomColordLabelPro
     // Handle different color property names for different types
     const backgroundColor = (label as Label).color || (label as ITaskLabel).color_code || '#6b7280'; // Default to gray-500 if no color
 
-    // Function to determine if we should use white or black text based on background color
-    const getTextColor = (bgColor: string): string => {
-      // Remove # if present
-      const color = bgColor.replace('#', '');
-
-      // Convert to RGB
-      const r = parseInt(color.substr(0, 2), 16);
-      const g = parseInt(color.substr(2, 2), 16);
-      const b = parseInt(color.substr(4, 2), 16);
-
-      // Calculate luminance
-      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-      // Return white for dark backgrounds, black for light backgrounds
-      return luminance > 0.5 ? '#000000' : '#ffffff';
-    };
-
-    const textColor = getTextColor(backgroundColor);
+    const textColor = getContrastColor(backgroundColor);
+    const decodedName = decodeHtmlEntities(label.name);
 
     return (
-      <Tooltip title={label.name}>
+      <Tooltip title={decodedName}>
         <span
           ref={ref}
           className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium shrink-0"
@@ -52,7 +38,7 @@ const CustomColordLabel = React.forwardRef<HTMLSpanElement, CustomColordLabelPro
               whiteSpace: 'nowrap',
             }}
           >
-            {label.name}
+            {decodedName}
           </span>
         </span>
       </Tooltip>

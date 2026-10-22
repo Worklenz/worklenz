@@ -11,15 +11,13 @@ import { DATE_RANGES } from "../../shared/constants";
 export async function getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
   const archived = req.query.archived === "true";
   const teams = (req.body.teams || []) as string[];
-  const teamIds = teams.map(id => `'${id}'`).join(",");
   const projects = (req.body.projects || []) as string[];
-  const projectIds = projects.map(p => `'${p}'`).join(",");
   const {billable} = req.body;
   
   // Get user timezone from request or database
   const userTimezone = req.body.timezone || await getUserTimezone(req.user?.id || "");
   
-  if (!teamIds || !projectIds.length)
+  if (!teams.length || !projects.length)
     return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
     
   const { duration, date_range } = req.body;
@@ -33,8 +31,8 @@ export async function getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzR
     startDate = moment.tz(date_range[0], userTimezone).startOf("day");
     endDate = moment.tz(date_range[1], userTimezone).endOf("day");
   } else if (duration === DATE_RANGES.ALL_TIME) {
-    const minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${projectIds})`;
-    const minDateResult = await db.query(minDateQuery, []);
+    const minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id = ANY($1::UUID[])`;
+    const minDateResult = await db.query(minDateQuery, [projects]);
     const minDate = minDateResult.rows[0]?.min_date;
     startDate = minDate ? moment.tz(minDate, userTimezone) : moment.tz("2000-01-01", userTimezone);
     endDate = moment.tz(userTimezone);
@@ -83,7 +81,7 @@ export async function getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzR
   
   // Updated SQL query with proper timezone handling
   const billableQuery = buildBillableQuery(billable);
-  const archivedClause = archived ? "" : `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND user_id = '${req.user?.id}')`;
+  const archivedClause = `AND ($10::BOOLEAN OR p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $9::UUID))`;
   
   const q = `
     WITH project_hours AS (
@@ -91,11 +89,11 @@ export async function getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzR
         id,
         COALESCE(hours_per_day, 8) as hours_per_day
       FROM projects
-      WHERE id IN (${projectIds})
+      WHERE id = ANY($2::UUID[])
     ),
     total_working_hours AS (
       SELECT 
-        SUM(hours_per_day) * ${workingDays} as total_hours
+        SUM(hours_per_day) * $3::INTEGER as total_hours
       FROM project_hours
     )
     SELECT 
@@ -113,28 +111,28 @@ export async function getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzR
       END as utilization_percent,
       ROUND(COALESCE(SUM(twl.time_spent), 0) / 3600.0, 2) as utilized_hours,
       ROUND(COALESCE(SUM(twl.time_spent), 0) / 3600.0 - (SELECT total_hours FROM total_working_hours), 2) as over_under_utilized_hours,
-      '${userTimezone}' as user_timezone,
-      '${startDate.format("YYYY-MM-DD")}' as report_start_date,
-      '${endDate.format("YYYY-MM-DD")}' as report_end_date
+      $4::TEXT as user_timezone,
+      $5::TEXT as report_start_date,
+      $6::TEXT as report_end_date
     FROM team_members tm
       LEFT JOIN users u ON tm.user_id = u.id
       LEFT JOIN task_work_log twl ON twl.user_id = u.id
       LEFT JOIN tasks t ON twl.task_id = t.id ${billableQuery}
       LEFT JOIN projects p ON t.project_id = p.id
-    WHERE tm.team_id IN (${teamIds})
+    WHERE tm.team_id = ANY($1::UUID[])
       AND (
         twl.id IS NULL 
         OR (
-          p.id IN (${projectIds})
-          AND twl.created_at >= '${startUtc}'::TIMESTAMP 
-          AND twl.created_at <= '${endUtc}'::TIMESTAMP
+          p.id = ANY($2::UUID[])
+          AND twl.created_at >= $7::TIMESTAMP
+          AND twl.created_at <= $8::TIMESTAMP
           ${archivedClause}
         )
       )
     GROUP BY u.id, u.email, tm.name, tm.color_code
     ORDER BY logged_time DESC`;
     
-  const result = await db.query(q, []);
+  const result = await db.query(q, [teams, projects, workingDays, userTimezone, startDate.format("YYYY-MM-DD"), endDate.format("YYYY-MM-DD"), startUtc, endUtc, req.user?.id, archived]);
   
   // Add timezone context to response
   const response = {
@@ -170,9 +168,9 @@ function buildBillableQuery(billable: { billable: boolean; nonBillable: boolean 
   if (isBillable && nonBillable) {
     return "";
   } else if (isBillable) {
-    return " AND tasks.billable IS TRUE";
+    return " AND t.billable IS TRUE";
   } else if (nonBillable) {
-    return " AND tasks.billable IS FALSE";
+    return " AND t.billable IS FALSE";
   }
   
   return "";

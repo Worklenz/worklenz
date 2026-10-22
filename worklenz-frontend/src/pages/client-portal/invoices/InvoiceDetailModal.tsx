@@ -32,6 +32,7 @@ import { formatDate } from '../../../utils/dateUtils';
 import { PortalAvatar } from '@/components/client-portal/v2';
 import { portalPaths } from '../portal-paths';
 import InvoicePreviewModal from './invoice-details/invoice-preview-modal';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { RecordPaymentModal } from './RecordPaymentModal';
 import {
   formatMoney,
@@ -309,8 +310,10 @@ const InvoiceDetailModal = () => {
                   {field(
                     t('clientLabel', { defaultValue: 'Client' }),
                     <Flex align="center" gap={6}>
-                      {invoice.client?.name && <PortalAvatar name={invoice.client.name} />}
-                      {invoice.client?.name || '-'}
+                      {invoice.client?.name && (
+                        <PortalAvatar name={decodeHtmlEntities(invoice.client.name)} />
+                      )}
+                      {decodeHtmlEntities(invoice.client?.name) || '-'}
                     </Flex>
                   )}
                   {field(t('companyName', { defaultValue: 'Company' }), invoice.client?.companyName || '-')}

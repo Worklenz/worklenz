@@ -80,6 +80,7 @@
   "optionalFieldLabel": "(Opsional)",
   "inviteTeamMembersModalTitle": "Ftoni anëtarët e ekipit",
   "assign_manager": "Cakto Menaxherin",
+  "assign_team_lead": "Cakto Drejtuesin e Ekipit",
   "bulk_assign_manager": "Cakto Menaxherin në Grup",
   "bulk_assign_team_lead": "Cakto Drejtuesin e Ekipit në Grup",
   "selected_members": "Anëtarët e Përzgjedhur",
@@ -203,6 +204,7 @@
   "noActiveInviteLink": "Asnjë lidhje ftese aktive",
   "linkExpiredPlaceholder": "Lidhja skadoi",
   "inviteLinkCopied": "Lidhja e ftesës u kopjua në tabelën e punës",
+  "inviteLinkCopyFailed": "Lidhja e ftesës u krijua. Kopjojeni manualisht nga fusha më poshtë.",
   "inviteLinkGenerateError": "Dështoi gjenerimi i lidhjes së ftesës",
   "inviteLinkDeactivated": "Lidhja e ftesës u çaktivizua",
   "inviteLinkDeactivateError": "Dështoi çaktivizimi i lidhjes",
@@ -236,10 +238,14 @@
   "guestInviteError": "Ndodhi një gabim gjatë ftimit të mysafirëve",
   "partialSuccess": "{{count}} mysafirë u ftuan me sukses. Dështuan: {{emails}}",
   "selectProjectFirst": "Zgjidhni një projekt së pari",
+  "manageTimeOff": "Menaxho Pushimet",
+  "createFromTemplatesLabel": "Krijo projekte nga shabllone",
+  "createFromTemplatesHint": "Lejon këtë anëtar të krijojë projekte nga shabllone. Ata bëhen Menaxher i Projektit të projektit të ri pa akses financiar. Nuk lejon krijimin e projekteve bosh.",
   "inviteLinkGeneratedCopyFailed": "Lidhja e ftesës u krijua, por nuk mund të kopjohej automatikisht. Ju lutemi kopjoni atë me dorë.",
   "noManagedProjectsFound": "Nuk ka projekte ku ju jeni Menaxher i Projektit",
   "projectInvite_guestLimitExceeded": "Kufiri i vizitorëve u tejkalua për këtë plan. Përmirësoje për të shtuar më shumë të ftuar.",
   "license-expired-subtitle": "Periudhja juaj e provës në Worklenz ka përfunduar. Ju lutemi përditesohuni për të vazhduar të shijoni të gjitha veçoritë.",
   "Failed to fetch job titles": "Dështoi marrja e titujve të punës",
   "assign_team_lead": "Cakto Drejtuesin e Ekipit"
+  "Failed to fetch job titles": "Dështoi marrja e titujve të punës"
 }

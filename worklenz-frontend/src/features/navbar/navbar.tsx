@@ -61,6 +61,11 @@ const Navbar = () => {
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
   const currentRole = useMemo(() => getSessionRoleName(currentSession), [currentSession]);
   const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
+  // Self-hosted deployments are licensed at the deployment level, so trial and
+  // upgrade prompts never apply (even if the org row still carries a trial license).
+  const isSelfHostedDeployment =
+    currentSession?.deployment_mode === 'self_hosted' ||
+    currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
   const canInviteMembers = ROLE_DEFINITIONS[currentRole].canInviteMembers;
 
   const { setIdentity } = useMixpanelTracking();
@@ -327,8 +332,9 @@ const Navbar = () => {
               {isDesktop && (
                 <Flex>
                   <Flex gap={12} align="center">
-                    <TrialDaysBadge />
-                    {isOwnerOrAdmin &&
+                    {!isSelfHostedDeployment && <TrialDaysBadge />}
+                    {!isSelfHostedDeployment &&
+                      isOwnerOrAdmin &&
                       showUpgradeTypes.includes(
                         currentSession?.subscription_type as ISUBSCRIPTION_TYPE
                       ) && <UpgradePlanButton showModal redirectToBilling={false} />}
@@ -352,7 +358,7 @@ const Navbar = () => {
               )}
               {isTablet && !isDesktop && (
                 <Flex gap={12} align="center">
-                  <TrialDaysBadge />
+                  {!isSelfHostedDeployment && <TrialDaysBadge />}
                   <SwitchTeamButton />
                   <NotificationButton />
                   <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
@@ -361,7 +367,7 @@ const Navbar = () => {
               )}
               {isMobile && (
                 <Flex gap={12} align="center">
-                  <TrialDaysBadge />
+                  {!isSelfHostedDeployment && <TrialDaysBadge />}
                   <NotificationButton />
                   <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
                   <MobileMenuButton routes={filteredRoutes} isFreePlan={isFreePlan} />

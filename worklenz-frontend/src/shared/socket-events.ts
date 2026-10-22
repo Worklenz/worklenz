@@ -120,4 +120,7 @@ export enum SocketEvents {
 
   // Owner/admin reporting overview room (org-scoped). Appended last to keep numeric values.
   JOIN_OR_LEAVE_REPORTING_ROOM,
+
+  // GitHub activity linked to one or more tasks changed (appended last to keep numeric values).
+  GITHUB_TASK_ACTIVITY,
 }

@@ -80,6 +80,7 @@
   "optionalFieldLabel": "（可选）",
   "inviteTeamMembersModalTitle": "邀请团队成员",
   "assign_manager": "分配经理",
+  "assign_team_lead": "分配团队负责人",
   "bulk_assign_manager": "批量分配经理",
   "bulk_assign_team_lead": "批量分配团队负责人",
   "selected_members": "选中的成员",
@@ -203,6 +204,7 @@
   "noActiveInviteLink": "没有有效的邀请链接",
   "linkExpiredPlaceholder": "链接已过期",
   "inviteLinkCopied": "邀请链接已复制到剪贴板",
+  "inviteLinkCopyFailed": "邀请链接已生成。请从下方字段手动复制。",
   "inviteLinkGenerateError": "生成邀请链接失败",
   "inviteLinkDeactivated": "邀请链接已停用",
   "inviteLinkDeactivateError": "停用链接失败",
@@ -236,10 +238,14 @@
   "guestInviteError": "邀请访客时发生错误",
   "partialSuccess": "成功邀请 {{count}} 位访客。失败：{{emails}}",
   "selectProjectFirst": "请先选择一个项目",
+  "manageTimeOff": "管理请假",
+  "createFromTemplatesLabel": "从模板创建项目",
+  "createFromTemplatesHint": "允许此成员从模板创建项目。他们将成为新项目的项目经理，但无财务访问权限。不允许创建空白项目。",
   "inviteLinkGeneratedCopyFailed": "已生成邀请链接，但无法自动复制。请手动复制。",
   "noManagedProjectsFound": "没有您担任项目经理的项目",
   "projectInvite_guestLimitExceeded": "超出了该计划的宾客限制。请升级以添加更多客人。",
   "license-expired-subtitle": "您的 Worklenz 试用期已结束。请升级以继续享受所有功能。",
   "Failed to fetch job titles": "获取职位失败",
   "assign_team_lead": "分配团队负责人"
+  "Failed to fetch job titles": "获取职位失败"
 }

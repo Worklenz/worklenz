@@ -10,6 +10,7 @@ import {
   fetchTask,
 } from '@/features/task-drawer/task-drawer.slice';
 import { setProjectId } from '@/features/project/project.slice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { IUserTimeLoggedTask } from '@/types/home/user-activity.types';
 
 const { Text } = Typography;
@@ -76,9 +77,9 @@ const TimeLoggedTaskList: React.FC<TimeLoggedTaskListProps> = React.memo(({ task
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }}
-                title={record.task_name}
+                title={decodeHtmlEntities(record.task_name)}
               >
-                {record.task_name}
+                {decodeHtmlEntities(record.task_name)}
               </Text>
             </div>
 
@@ -94,9 +95,9 @@ const TimeLoggedTaskList: React.FC<TimeLoggedTaskListProps> = React.memo(({ task
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}
-              title={record.project_name}
+              title={decodeHtmlEntities(record.project_name)}
             >
-              {record.project_name}
+              {decodeHtmlEntities(record.project_name)}
             </Text>
           </div>
 

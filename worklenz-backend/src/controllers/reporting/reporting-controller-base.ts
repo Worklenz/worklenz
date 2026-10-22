@@ -124,7 +124,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
       return { clause: "", params: [] };
     }
     return {
-      clause: `AND ${column_name} NOT IN (SELECT project_id FROM archived_projects WHERE project_id = ${column_name} AND user_id = $${paramOffset}) `,
+      clause: `AND ${column_name} NOT IN (SELECT project_id FROM archived_projects WHERE project_id = ${column_name} AND user_id = $${Number(paramOffset)}) `,
       params: [user_id]
     };
   }
@@ -403,12 +403,12 @@ export default abstract class ReportingControllerBase extends WorklenzController
 
       if (start === end) {
         // Single day: compare the DATE part of the timestamp
-        query = `AND task_work_log.created_at::DATE = $${paramOffset}::DATE`;
+        query = `AND task_work_log.created_at::DATE = $${Number(paramOffset)}::DATE`;
         params.push(start);
       } else {
         // Date range: inclusive comparison on DATE part
         // Using ::DATE cast ensures we compare dates without time/timezone issues
-        query = `AND task_work_log.created_at::DATE >= $${paramOffset}::DATE AND task_work_log.created_at::DATE <= $${paramOffset + 1}::DATE`;
+        query = `AND task_work_log.created_at::DATE >= $${Number(paramOffset)}::DATE AND task_work_log.created_at::DATE <= $${Number(paramOffset) + 1}::DATE`;
         params.push(start, end);
       }
 
@@ -506,8 +506,33 @@ export default abstract class ReportingControllerBase extends WorklenzController
     projectManagersClause: string,
     queryParams: any[] = []) {
 
+    const getStatusRank = (statusName: string) => `CASE LOWER(${statusName})
+           WHEN 'proposed' THEN 1
+           WHEN 'in planning' THEN 2
+           WHEN 'in progress' THEN 3
+           WHEN 'completed' THEN 4
+           WHEN 'on hold' THEN 5
+           WHEN 'blocked' THEN 6
+           WHEN 'cancelled' THEN 7
+           ELSE 8
+         END`;
+    // `status_name` sorts by the custom project-status workflow order defined above.
+    // Project name (then id) is the tie-breaker so the order is deterministic and
+    // LIMIT/OFFSET pages stay stable; using the status name itself would be a no-op
+    // because it is identical for every row inside a status group.
+    // `status_id` (the status column dataIndex of the other reporting tables)
+    // and `status` are accepted as aliases so every caller gets this order;
+    // sorting on the raw UUID leaves the status groups in a random order.
+    const isStatusSort = ["status_name", "status_id", "status"].includes(sortField);
+    const orderBy = isStatusSort
+      ? `${getStatusRank("ps.name")} ${sortOrder}, LOWER(p.name) ${sortOrder}, p.id`
+      : `${sortField} ${sortOrder}`;
+    const aggregateOrderBy = isStatusSort
+      ? `ORDER BY ${getStatusRank("t.status_name")} ${sortOrder}, LOWER(t.name) ${sortOrder}, t.id`
+      : "";
+
     const q = `SELECT COUNT(*) AS total,
-             (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
+             (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t) ${aggregateOrderBy})), '[]'::JSON)
               FROM (SELECT p.id,
                            p.name,
                            p.color_code,
@@ -639,7 +664,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                              LEFT JOIN project_categories pc ON pc.id = p.category_id
                              LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
                     WHERE ${teamFilterClause} ${searchQuery} ${healthClause} ${statusClause} ${categoryClause} ${projectManagersClause} ${archivedClause}
-                    ORDER BY ${sortField} ${sortOrder}
+                    ORDER BY ${orderBy}
                     LIMIT $2 OFFSET $3) t) AS projects
       FROM projects p
                LEFT JOIN project_categories pc ON pc.id = p.category_id

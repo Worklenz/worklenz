@@ -8,7 +8,7 @@ import { Button, Card, Empty, Table, Typography, theme } from '@/shared/antd-imp
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
 
 import ProjectGroupList from '@/components/project-list/project-group/project-group-list';
-import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/project-settings-modal';
+import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/ProjectSettingsModal';
 import TablePagination from '@/components/TablePagination';
 
 import { useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';

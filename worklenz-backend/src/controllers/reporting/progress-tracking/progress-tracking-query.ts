@@ -1,7 +1,10 @@
+import { htmlToPlainText } from "../../../shared/utils";
+
 export const CONFIDENCE_FILTERS = ["green", "amber", "red", "unset"] as const;
 export const PERCENT_RANGE_FILTERS = ["no_tasks", "0_25", "26_50", "51_75", "76_100"] as const;
 export const SORT_FIELDS = ["name", "client", "percent", "blocked", "confidence", "updated"] as const;
 export const DELIVERY_CONFIDENCE_NOTE_MAX = 280;
+const DELIVERY_CONFIDENCE_NOTE_INPUT_MAX = 16_384;
 
 export type DeliveryConfidenceStatus = "green" | "amber" | "red";
 
@@ -141,7 +144,9 @@ export const parseDeliveryConfidenceNote = (
   if (value === null || value === "") return { ok: true, note: null };
   if (typeof value !== "string") return { ok: false };
 
-  const cleaned = value.replace(/<[^>]*>/g, "").trim();
+  // Bound parsing work before stripping markup; the visible note limit remains 280 code points.
+  if (value.length > DELIVERY_CONFIDENCE_NOTE_INPUT_MAX) return { ok: false };
+  const cleaned = htmlToPlainText(value, true);
   if ([...cleaned].length > DELIVERY_CONFIDENCE_NOTE_MAX) return { ok: false };
   return { ok: true, note: cleaned.length > 0 ? cleaned : null };
 };
