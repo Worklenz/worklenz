@@ -2,8 +2,12 @@ import React from 'react';
 import { render, fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import type { TFunction } from 'i18next';
+import { MemoryRouter } from 'react-router-dom';
 
-const mockDrawerState = vi.hoisted(() => ({ targetCommentId: null as string | null }));
+const mockDrawerState = vi.hoisted(() => ({
+  targetCommentId: null as string | null,
+  loadingTask: false,
+}));
 
 // Heavy drawer children are irrelevant to paste handling.
 vi.mock('./description-editor', () => ({ default: () => <div data-testid="description-editor" /> }));
@@ -21,7 +25,7 @@ vi.mock('@/hooks/useAppSelector', () => ({
       themeReducer: { mode: 'light' },
       projectReducer: { projectId: 'project-1' },
       taskDrawerReducer: {
-        loadingTask: false,
+        loadingTask: mockDrawerState.loadingTask,
         selectedTaskId: 'task-1',
         targetCommentId: mockDrawerState.targetCommentId,
         taskFormViewModel: {
@@ -75,6 +79,7 @@ vi.mock('@/api/tasks/task-dependencies.api.service', () => ({
 }));
 
 import TaskDrawerInfoTab from './task-drawer-info-tab';
+import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service';
 
 const t = ((key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? key) as TFunction;
 
@@ -93,7 +98,7 @@ const pasteFile = (target: Element) => {
 
 describe('TaskDrawerInfoTab', () => {
   it('reveals the attachments section after a valid paste', async () => {
-    const { container } = render(<TaskDrawerInfoTab t={t} canCreateTask />);
+    const { container } = render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     const header = await screen.findByText('Attachments');
     const panel = header.closest('.ant-collapse-item') as HTMLElement;
@@ -113,7 +118,7 @@ describe('TaskDrawerInfoTab', () => {
 
   it('expands the Comments section when a comment navigation target arrives', async () => {
     mockDrawerState.targetCommentId = null;
-    const { rerender } = render(<TaskDrawerInfoTab t={t} canCreateTask />);
+    const { rerender } = render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     const header = await screen.findByText('Comments');
     const panel = header.closest('.ant-collapse-item') as HTMLElement;
@@ -121,9 +126,29 @@ describe('TaskDrawerInfoTab', () => {
     await waitFor(() => expect(panel).not.toHaveClass('ant-collapse-item-active'));
 
     mockDrawerState.targetCommentId = 'comment-1';
-    rerender(<TaskDrawerInfoTab t={t} canCreateTask />);
+    rerender(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
 
     await waitFor(() => expect(panel).toHaveClass('ant-collapse-item-active'));
     mockDrawerState.targetCommentId = null;
+  });
+
+  it('keeps fetched attachments when loadingTask changes after the fetch', async () => {
+    vi.mocked(taskAttachmentsApiService.getTaskAttachments).mockResolvedValueOnce({
+      done: true,
+      body: [
+        { id: 'a1', name: 'existing-file.png', size: '1 KB', url: 'https://x.test/a1.png', type: 'png', created_at: '' },
+      ],
+    } as never);
+
+    const { rerender } = render(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
+    await screen.findByLabelText('Preview attachment existing-file.png');
+
+    // The drawer's task details finish loading after attachments were fetched.
+    mockDrawerState.loadingTask = true;
+    rerender(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
+    mockDrawerState.loadingTask = false;
+    rerender(<MemoryRouter><TaskDrawerInfoTab t={t} canCreateTask /></MemoryRouter>);
+
+    await waitFor(() => expect(screen.getByLabelText('Preview attachment existing-file.png')).toBeInTheDocument());
   });
 });
