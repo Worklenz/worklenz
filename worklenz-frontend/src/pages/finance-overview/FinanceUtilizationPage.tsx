@@ -24,6 +24,7 @@ import {
 import { FinanceKpiCard } from './FinanceKpiCard';
 import { alertColor, burnColor, fmtHours, getRangeDates } from './finance-report-utils';
 import { useFinanceReportFetch } from './useFinanceReportFetch';
+import TablePagination from '@/components/TablePagination';
 
 const { Text, Title } = Typography;
 
@@ -34,6 +35,8 @@ export const FinanceUtilizationPage = () => {
   useDocumentTitle(t('utilization.pageTitle', { defaultValue: 'Utilization' }));
 
   const [preset, setPreset] = useState<RangePreset>('month');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data, loading, error, refetch } = useFinanceReportFetch(() => {
     const range = getRangeDates(preset);
@@ -41,6 +44,11 @@ export const FinanceUtilizationPage = () => {
   }, [preset]);
 
   const members: IFinanceUtilizationMember[] = data?.members ?? [];
+
+  const paginatedMembers = useMemo(
+    () => members.slice((page - 1) * pageSize, page * pageSize),
+    [members, page, pageSize]
+  );
   const summary = data?.summary ?? {
     team_utilization_pct: 0,
     billable_hours: 0,
@@ -136,7 +144,10 @@ export const FinanceUtilizationPage = () => {
         </div>
         <Select<RangePreset>
           value={preset}
-          onChange={setPreset}
+          onChange={value => {
+            setPreset(value);
+            setPage(1);
+          }}
           aria-label={t('billableTime.range.month', { defaultValue: 'This month' })}
           options={[
             { value: 'week', label: t('billableTime.range.week', { defaultValue: 'This week' }) },
@@ -208,9 +219,9 @@ export const FinanceUtilizationPage = () => {
         <Table<IFinanceUtilizationMember>
           rowKey="team_member_id"
           columns={columns}
-          dataSource={members}
+          dataSource={paginatedMembers}
           loading={loading}
-          pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50, 100] }}
+          pagination={false}
           locale={{
             emptyText: (
               <Empty
@@ -219,6 +230,20 @@ export const FinanceUtilizationPage = () => {
             ),
           }}
           scroll={{ x: 800 }}
+        />
+
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          total={members.length}
+          onPageChange={(nextPage, nextPageSize) => {
+            setPage(nextPage);
+            setPageSize(nextPageSize);
+          }}
+          rowsPerPageLabel={t('myTasksView.rowsPerPage', {
+            defaultValue: 'Rows per page',
+          })}
+          variant="dropdown"
         />
       </Card>
     </Flex>

@@ -169,4 +169,8 @@
     },
     "empty": "Aún no hay suficiente historial para realizar una previsión. Registre tiempo y envíe facturas para generar una tendencia."
   }
+,
+  "myTasksView": {
+    "rowsPerPage": "Filas por página:"
+  }
 }

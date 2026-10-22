@@ -103,7 +103,7 @@ const EMPTY_PROJECTS: IProjectViewModel[] = [];
 const EMPTY_FILTERED_INFO: Record<string, FilterValue | null> = {};
 
 const getRowKey = (record: IProjectViewModel) => record.id || '';
-const noop = () => {};
+const noop = () => { };
 
 const readFilterIndex = () => {
   const stored = Number(localStorage.getItem(FILTER_INDEX_KEY));
@@ -506,7 +506,7 @@ const ProjectList: React.FC = () => {
   const prefetchProjectView = useCallback(() => {
     if (hasPrefetchedProjectView.current) return;
     hasPrefetchedProjectView.current = true;
-    import('@/pages/projects/projectView/project-view').catch(() => {});
+    import('@/pages/projects/projectView/project-view').catch(() => { });
   }, []);
 
   const handleRow = useCallback(
@@ -731,6 +731,7 @@ const ProjectList: React.FC = () => {
               onPageChange={handleListPageChange}
               pageSizeOptions={PAGE_SIZE_NUMBER_OPTIONS}
               rowsPerPageLabel={rowsPerPageLabel}
+              variant="dropdown"
             />
           </>
         ) : (
@@ -756,6 +757,7 @@ const ProjectList: React.FC = () => {
                 pageSizeOptions={PAGE_SIZE_NUMBER_OPTIONS}
                 rowsPerPageLabel={rowsPerPageLabel}
                 renderSummary={groupedPaginationSummary}
+                variant="dropdown"
               />
             )}
           </div>

@@ -341,15 +341,15 @@ export const TimeEntriesLogTable: React.FC<TimeEntriesLogTableProps> = ({
       },
       ...(showAuthor
         ? [
-            {
-              key: 'member',
-              title: renderSortableTitle(t('colMember', { defaultValue: 'Member' }), 'user_name'),
-              width: widths.member,
-              render: (_: unknown, record: IRecentTimeLog) => (
-                <TimeEntryMemberAvatars members={getRowMembers(record)} />
-              ),
-            },
-          ]
+          {
+            key: 'member',
+            title: renderSortableTitle(t('colMember', { defaultValue: 'Member' }), 'user_name'),
+            width: widths.member,
+            render: (_: unknown, record: IRecentTimeLog) => (
+              <TimeEntryMemberAvatars members={getRowMembers(record)} />
+            ),
+          },
+        ]
         : []),
       {
         key: 'project',
@@ -465,48 +465,48 @@ export const TimeEntriesLogTable: React.FC<TimeEntriesLogTableProps> = ({
       },
       ...(showEntryActions
         ? [
-            {
-              key: 'actions',
-              title: (
-                <span className="time-entries-sr-only">
-                  {t('colActions', { defaultValue: 'Actions' })}
-                </span>
-              ),
-              width: widths.actions,
-              render: (_: unknown, record: IRecentTimeLog) =>
-                // Only the person who logged it - or an owner/admin - may change an entry.
-                canEditEntry(record.user_id) ? (
-                  <Flex gap={4} justify="flex-end" className="row-action-button">
-                    <Tooltip title={t('editEntry', { defaultValue: 'Edit' })}>
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<EditOutlined />}
-                        aria-label={t('editEntry', { defaultValue: 'Edit' })}
-                        onClick={() => setEditingRecord(record)}
-                      />
-                    </Tooltip>
-                    <Popconfirm
-                      title={t('deleteEntryConfirm', { defaultValue: 'Delete this time entry?' })}
-                      okText={t('deleteEntryOk', { defaultValue: 'Delete' })}
-                      cancelText={t('deleteEntryCancel', { defaultValue: 'Cancel' })}
-                      okButtonProps={{ danger: true }}
-                      onConfirm={() => handleDeleteEntry(record)}
-                    >
-                      <Button
-                        type="text"
-                        size="small"
-                        danger
-                        icon={<DeleteOutlined />}
-                        title={t('deleteEntry', { defaultValue: 'Delete' })}
-                        aria-label={t('deleteEntry', { defaultValue: 'Delete' })}
-                        loading={deletingId === record.id}
-                      />
-                    </Popconfirm>
-                  </Flex>
-                ) : null,
-            },
-          ]
+          {
+            key: 'actions',
+            title: (
+              <span className="time-entries-sr-only">
+                {t('colActions', { defaultValue: 'Actions' })}
+              </span>
+            ),
+            width: widths.actions,
+            render: (_: unknown, record: IRecentTimeLog) =>
+              // Only the person who logged it - or an owner/admin - may change an entry.
+              canEditEntry(record.user_id) ? (
+                <Flex gap={4} justify="flex-end" className="row-action-button">
+                  <Tooltip title={t('editEntry', { defaultValue: 'Edit' })}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditOutlined />}
+                      aria-label={t('editEntry', { defaultValue: 'Edit' })}
+                      onClick={() => setEditingRecord(record)}
+                    />
+                  </Tooltip>
+                  <Popconfirm
+                    title={t('deleteEntryConfirm', { defaultValue: 'Delete this time entry?' })}
+                    okText={t('deleteEntryOk', { defaultValue: 'Delete' })}
+                    cancelText={t('deleteEntryCancel', { defaultValue: 'Cancel' })}
+                    okButtonProps={{ danger: true }}
+                    onConfirm={() => handleDeleteEntry(record)}
+                  >
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      title={t('deleteEntry', { defaultValue: 'Delete' })}
+                      aria-label={t('deleteEntry', { defaultValue: 'Delete' })}
+                      loading={deletingId === record.id}
+                    />
+                  </Popconfirm>
+                </Flex>
+              ) : null,
+          },
+        ]
         : []),
     ],
     [
@@ -595,6 +595,7 @@ export const TimeEntriesLogTable: React.FC<TimeEntriesLogTableProps> = ({
           total={total}
           onPageChange={onPageChange}
           rowsPerPageLabel={t('rowsPerPage', { defaultValue: 'Rows per page:' })}
+          variant="dropdown"
         />
       </div>
 

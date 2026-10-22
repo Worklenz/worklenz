@@ -3,7 +3,6 @@ import {
   Button,
   ConfigProvider,
   Flex,
-  PaginationProps,
   Table,
   TableColumnsType,
   Tag,
@@ -45,17 +44,17 @@ import { colors } from '@/styles/colors';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import { IRPTProject } from '@/types/reporting/reporting.types';
 import ProjectReportsDrawer from '@/features/reporting/projectReports/projectReportsDrawer/ProjectReportsDrawer';
-import { PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import './projects-reports-table.css';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
+import TablePagination from '@/components/TablePagination';
 
 const ProjectsReportsTable = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
-  const { socket, connected } = useSocket();
+ const { socket } = useSocket();
 
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
@@ -349,11 +348,9 @@ const ProjectsReportsTable = () => {
   );
 
   const handleTableChange = useCallback(
-    (pagination: PaginationProps, filters: any, sorter: any) => {
+    (_pagination: any, _filters: any, sorter: any) => {
       if (sorter.order) dispatch(setOrder(sorter.order));
       if (sorter.field) dispatch(setField(sorter.field));
-      dispatch(setIndex(pagination.current));
-      dispatch(setPageSize(pagination.pageSize));
     },
     [dispatch]
   );
@@ -403,35 +400,38 @@ const ProjectsReportsTable = () => {
     []
   );
 
-  const paginationConfig = useMemo(
-    () => ({
-      showSizeChanger: true,
-      defaultPageSize: 10,
-      total: total,
-      current: index,
-      pageSizeOptions: PAGE_SIZE_OPTIONS,
-    }),
-    [total, index]
-  );
-
   const scrollConfig = useMemo(() => ({ x: 'max-content' }), []);
   const getRowKey = useCallback((record: IRPTProject) => record.id, []);
   const getRowProps = useCallback(() => tableRowProps, [tableRowProps]);
 
-  return (
+  return(
     <ConfigProvider {...tableConfig}>
-      {/* ← className enables our CSS to scope to this table */}
       <Table
         className="projects-reports-table"
         columns={visibleColumns}
         dataSource={projectList}
-        pagination={paginationConfig}
+        pagination={false}
         scroll={scrollConfig}
         loading={isLoading}
         onChange={handleTableChange}
         rowKey={getRowKey}
         onRow={getRowProps}
       />
+
+      <TablePagination
+        page={index}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={(nextPage, nextPageSize) => {
+          dispatch(setIndex(nextPage));
+          dispatch(setPageSize(nextPageSize));
+        }}
+        rowsPerPageLabel={t('myTasksView.rowsPerPage', {
+          defaultValue: 'Rows per page',
+        })}
+        variant="dropdown"
+      />
+
       {createPortal(<ProjectReportsDrawer selectedProject={selectedProject} />, document.body)}
     </ConfigProvider>
   );

@@ -81,4 +81,8 @@
   "loadMoreProjectsButton": "加载更多 {{remaining}} 个项目",
   "loadingText": "加载中...",
   "showingProjectsText": "显示 {{shown}} / {{total}} 个项目"
+,
+  "myTasksView": {
+    "rowsPerPage": "每页行数："
+  }
 }

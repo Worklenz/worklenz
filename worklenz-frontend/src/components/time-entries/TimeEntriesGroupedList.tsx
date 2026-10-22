@@ -378,15 +378,14 @@ export const TimeEntriesGroupedList: React.FC<TimeEntriesGroupedListProps> = ({
             </div>
           </div>
 
-          <div style={{ flexShrink: 0 }}>
-            <TablePagination
-              page={page}
-              pageSize={pageSize}
-              total={total}
-              onPageChange={onPageChange}
-              rowsPerPageLabel={t('rowsPerPage', { defaultValue: 'Rows per page:' })}
-            />
-          </div>
+          <TablePagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={onPageChange}
+            rowsPerPageLabel={t('rowsPerPage', { defaultValue: 'Rows per page:' })}
+            variant="dropdown"
+          />
         </>
       )}
     </div>

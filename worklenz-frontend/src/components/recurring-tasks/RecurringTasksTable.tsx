@@ -154,17 +154,17 @@ export const RecurringTasksTable: React.FC<RecurringTasksTableProps> = ({
             .map(d => t(`dayShort.${DAY_NAMES[d]}`, { defaultValue: DAY_NAMES[d] }));
           return days.length
             ? t('recurrenceWeeklyOn', {
-                defaultValue: 'Weekly on {{days}}',
-                days: days.join(', '),
-              })
+              defaultValue: 'Weekly on {{days}}',
+              days: days.join(', '),
+            })
             : t('recurrenceWeekly', { defaultValue: 'Weekly' });
         }
         case 'monthly':
           return record.date_of_month
             ? t('recurrenceMonthlyOnDate', {
-                defaultValue: 'Monthly on day {{date}}',
-                date: record.date_of_month,
-              })
+              defaultValue: 'Monthly on day {{date}}',
+              date: record.date_of_month,
+            })
             : t('recurrenceMonthly', { defaultValue: 'Monthly' });
         case 'yearly':
           return t('recurrenceYearly', { defaultValue: 'Yearly' });
@@ -471,6 +471,7 @@ export const RecurringTasksTable: React.FC<RecurringTasksTableProps> = ({
         total={total}
         onPageChange={onPageChange}
         rowsPerPageLabel={t('rowsPerPage', { defaultValue: 'Rows per page:' })}
+        variant="dropdown"
       />
     </div>
   );
