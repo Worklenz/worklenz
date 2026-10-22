@@ -17,8 +17,11 @@ const ADVISORY_LOCK_ID = 900100;
 const DEFAULT_MAX_TASKS_PER_TICK = 50;
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {
-  const parsed = Number.parseInt(value ?? "", 10);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+  const trimmed = (value ?? "").trim();
+  // Accept only a whole positive integer; "10abc", "5.5" or "1e3" must not be partially parsed
+  if (!/^\d+$/.test(trimmed)) return fallback;
+  const parsed = Number(trimmed);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 const MAX_TASKS_PER_TICK = parsePositiveInt(process.env.RECURRING_JOBS_MAX_PER_TICK, DEFAULT_MAX_TASKS_PER_TICK);
