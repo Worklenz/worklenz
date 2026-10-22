@@ -37,6 +37,7 @@ import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/pr
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { fetchProjectPriorities } from '@/features/projects/priority/projectPrioritySlice';
 import { mergeProject, setProject, setProjectId } from '@/features/project/project.slice';
+import { mergeProjectData } from '@/features/project/project-drawer.slice';
 import {
   setProjectData,
   setProjectId as setDrawerProjectId,
@@ -159,15 +160,16 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
         return;
       }
 
+      const projectModel = buildProjectModel({
+        project,
+        values,
+        projectLead: selectedProjectLead,
+        canAssignLead: permissions.assignPm,
+        canManageVisibility: canEditSettings,
+      });
       const response = await updateProject({
         id: projectId,
-        project: buildProjectModel({
-          project,
-          values,
-          projectLead: selectedProjectLead,
-          canAssignLead: permissions.assignPm,
-          canManageVisibility: canEditSettings,
-        }),
+        project: projectModel,
       });
 
       if (!response?.data?.done) {
@@ -179,7 +181,11 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
         return;
       }
 
-      if (response.data.body) dispatch(mergeProject(response.data.body));
+      if (response.data.body) {
+        const mergedProject = { ...response.data.body, ...projectModel };
+        dispatch(mergeProject(mergedProject));
+        dispatch(mergeProjectData({ projectId, changes: mergedProject }));
+      }
       notification.success({
         message: t('softwareSettings.saved', { defaultValue: 'Project settings saved' }),
         duration: 2,

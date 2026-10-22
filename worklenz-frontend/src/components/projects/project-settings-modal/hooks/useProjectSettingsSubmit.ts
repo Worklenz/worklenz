@@ -13,6 +13,7 @@ import { ensureCsrfToken } from '@/api/api-client';
 import { progressTrackingApiService } from '@/api/reporting/progress-tracking.api.service';
 import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
 import { mergeProject } from '@/features/project/project.slice';
+import { mergeProjectData } from '@/features/project/project-drawer.slice';
 import { closeProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -116,7 +117,16 @@ export const useProjectSettingsSubmit = ({
 
       if (response?.data?.done) {
         if (response.data.body) {
-          dispatch(mergeProject(response.data.body));
+          // update_project() returns a slim payload; merge submitted settings so
+          // flags like members_can_view_client_team stay correct until reload.
+          const mergedProject = {
+            ...response.data.body,
+            ...projectModel,
+          };
+          dispatch(mergeProject(mergedProject));
+          if (projectId) {
+            dispatch(mergeProjectData({ projectId, changes: mergedProject }));
+          }
         }
 
         if (editMode && projectId && hasFinanceAccess) {
