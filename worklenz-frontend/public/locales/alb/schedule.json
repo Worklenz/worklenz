@@ -67,6 +67,7 @@
   "durationType": "Lloji i kohëzgjatjes",
   "edit": "Modifiko",
   "endDate": "Data e Përfundimit",
+  "endDateBeforeStartDate": "Data e përfundimit nuk mund të jetë para datës së fillimit",
   "enterTaskName": "Shkruaj emrin e detyrës…",
   "estHoursPerDay": "Orë të Vlerësuara",
   "estHoursRequired": "Orët e vlerësuara janë të detyrueshme",
