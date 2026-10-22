@@ -451,6 +451,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   const memoizedFilterSections = useMemo(() => visibleFilterSections, [visibleFilterSections]);
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');
   const isRestoringFilters = useAppSelector((state: RootState) => state.taskReducer.isRestoringFilters);
+  const isSavedViewActive = useAppSelector((state: RootState) => state.taskReducer.isSavedViewActive);
   const { projectId } = useAppSelector(state => state.projectReducer);
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const isProjectManager = useIsProjectManager();
@@ -719,8 +720,8 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         if (!isGroupingType(values[0])) return;
         dispatch(setCurrentGrouping(values[0]));
         dispatch(fetchTasksV3(projectId));
-        // Backlog grouping is temporary and must not overwrite the List tab preference.
-        if (mode !== 'backlog') {
+        // Backlog and saved view grouping must not overwrite the List tab preference.
+        if (mode !== 'backlog' && !isSavedViewActive) {
           debouncedGroupBySaveRef.current?.(projectId, 'list', values[0]);
         }
         return;
@@ -776,7 +777,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(fetchTasksV3(projectId));
       }
     },
-    [dispatch, projectId, position, currentTaskAssignees, currentTaskLabels, kanbanState, allStatuses, isRestoringFilters, mode]
+    [dispatch, projectId, position, currentTaskAssignees, currentTaskLabels, kanbanState, allStatuses, isRestoringFilters, mode, isSavedViewActive]
   );
 
   const handleSearchChange = useCallback(
@@ -991,7 +992,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(setCurrentGrouping(grouping));
         if (projectId) dispatch(fetchTasksV3(projectId));
       }
-      if (projectId && !isBacklogMode) {
+      if (projectId && !isBacklogMode && !(position === 'list' && isSavedViewActive)) {
         debouncedGroupBySaveRef.current?.(projectId, position === 'board' ? 'board' : 'list', grouping);
       }
       return;

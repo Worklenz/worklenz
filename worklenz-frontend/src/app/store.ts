@@ -29,6 +29,7 @@ import epicsReducer from '@/features/projects/singleProject/epics/epics.slice';
 import releasesReducer from '@/features/projects/singleProject/releases/releases.slice';
 import createIssueModalReducer from '@/features/projects/singleProject/create-issue/create-issue-modal.slice';
 import softwareQuickFiltersReducer from '@/features/projects/singleProject/quick-filters/software-quick-filters.slice';
+import savedViewsReducer from '@/features/projects/singleProject/saved-views/saved-views.slice';
 import updatesReducer from '../features/projects/singleProject/updates/updatesSlice';
 import statusReducer from '@features/projects/status/StatusSlice';
 import deleteStatusReducer from '@features/projects/status/DeleteStatusSlice';
@@ -256,6 +257,7 @@ const coreReducers = {
   releasesReducer: releasesReducer,
   createIssueModalReducer: createIssueModalReducer,
   softwareQuickFiltersReducer: softwareQuickFiltersReducer,
+  savedViewsReducer: savedViewsReducer,
   auditLogReducer: auditLogReducer,
 };
 

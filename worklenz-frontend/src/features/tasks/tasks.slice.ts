@@ -145,6 +145,8 @@ export interface ITaskState {
   totalTasks: number;
   projectId: string | null;
   isRestoringFilters: boolean;
+  /** A saved view tab owns the filter state; it must not overwrite the List tab's persisted filters. */
+  isSavedViewActive: boolean;
 }
 
 const initialState: ITaskState = {
@@ -176,6 +178,7 @@ const initialState: ITaskState = {
   totalTasks: 0,
   projectId: null,
   isRestoringFilters: false,
+  isSavedViewActive: false,
 };
 
 export const COLUMN_KEYS = {
@@ -1205,7 +1208,7 @@ const taskSlice = createSlice({
       // Never persist while a restoration is in progress, otherwise stale
       // filters (from before restoration completes) would clobber the
       // saved filters for the project.
-      if (state.isRestoringFilters) return;
+      if (state.isRestoringFilters || state.isSavedViewActive) return;
 
       saveFiltersToLocalStorage(
         {
@@ -1219,6 +1222,10 @@ const taskSlice = createSlice({
         },
         state.projectId
       );
+    },
+
+    setSavedViewActive: (state, action: PayloadAction<boolean>) => {
+      state.isSavedViewActive = action.payload;
     },
 
     // Mark the start of filter restoration to prevent useFilterPersistence from persisting stale filters
@@ -1473,6 +1480,7 @@ export const {
   updateCustomColumnPinned,
   updateRecurringChange,
   persistFilters,
+  setSavedViewActive,
   startFilterRestoration,
   restoreFilters,
   endFilterRestoration,
