@@ -48,6 +48,7 @@ const InfoTabFooter = () => {
   const { t, i18n } = useTranslation('task-drawer/task-drawer');
   const MAXIMUM_FILE_COUNT = 5;
 
+  const isSubmittingComment = useRef(false);
   const [characterLength, setCharacterLength] = useState<number>(0);
   const [isCommentBoxExpand, setIsCommentBoxExpand] = useState<boolean>(false);
   const [attachmentComment, setAttachmentComment] = useState<boolean>(false);
@@ -166,12 +167,12 @@ const InfoTabFooter = () => {
         prev.some(mention => mention.team_member_id === selectedMember.id)
           ? prev
           : [
-              ...prev,
-              {
-                team_member_id: selectedMember.id!,
-                name: selectedMember.name!,
-              },
-            ]
+            ...prev,
+            {
+              team_member_id: selectedMember.id!,
+              name: selectedMember.name!,
+            },
+          ]
       );
     },
     [members]
@@ -183,6 +184,7 @@ const InfoTabFooter = () => {
   }, []);
 
   const handleSubmit = useCallback(async () => {
+    if (isSubmittingComment.current) return;
     if (!selectedTaskId || !projectId) return;
 
     if (!isCommentValid()) {
@@ -205,6 +207,8 @@ const InfoTabFooter = () => {
     }
 
     try {
+      setUploading(true);
+
       const hasOversizedAttachment = selectedFiles.some(
         file => Number(file.size || 0) > COMMENT_ATTACHMENT_SIZE_LIMIT_BYTES
       );
@@ -252,9 +256,9 @@ const InfoTabFooter = () => {
       } else {
         message.error(
           res.message ||
-            t('taskInfoTab.comments.saveCommentError', {
-              defaultValue: 'Failed to save comment. Please try again.',
-            })
+          t('taskInfoTab.comments.saveCommentError', {
+            defaultValue: 'Failed to save comment. Please try again.',
+          })
         );
       }
     } catch (error) {
@@ -265,6 +269,7 @@ const InfoTabFooter = () => {
         })
       );
     } finally {
+      isSubmittingComment.current = false;
       setUploading(false);
     }
   }, [
@@ -548,12 +553,12 @@ const InfoTabFooter = () => {
                 title={
                   selectedFiles.length >= MAXIMUM_FILE_COUNT
                     ? t('taskInfoTab.comments.maxFilesError', {
-                        count: MAXIMUM_FILE_COUNT,
-                        defaultValue: 'You can only upload a maximum of {{count}} files',
-                      })
+                      count: MAXIMUM_FILE_COUNT,
+                      defaultValue: 'You can only upload a maximum of {{count}} files',
+                    })
                     : t('taskInfoTab.comments.attachFiles', {
-                        defaultValue: 'Attach Files',
-                      })
+                      defaultValue: 'Attach Files',
+                    })
                 }
               >
                 <Button
@@ -591,14 +596,14 @@ const InfoTabFooter = () => {
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               {taskFormViewModel.task.reporter
                 ? t('taskInfoTab.comments.createdBy', {
-                    defaultValue: 'Created {{time}} by {{user}}',
-                    time: createdFromNow,
-                    user: taskFormViewModel.task.reporter,
-                  })
+                  defaultValue: 'Created {{time}} by {{user}}',
+                  time: createdFromNow,
+                  user: taskFormViewModel.task.reporter,
+                })
                 : t('taskInfoTab.comments.createdTime', {
-                    defaultValue: 'Created {{time}}',
-                    time: createdFromNow,
-                  })}
+                  defaultValue: 'Created {{time}}',
+                  time: createdFromNow,
+                })}
             </Typography.Text>
           </Tooltip>
         )}
