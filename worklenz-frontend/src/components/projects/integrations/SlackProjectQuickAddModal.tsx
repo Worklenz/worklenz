@@ -25,7 +25,7 @@ interface SlackProjectQuickAddModalProps {
   onSuccess?: () => void;
 }
 
-const NOTIFICATION_TYPE_DEFINITIONS = [
+export const NOTIFICATION_TYPE_DEFINITIONS = [
   {
     value: 'task_created',
     labelKey: 'notificationTypes.taskCreated',

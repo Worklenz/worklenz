@@ -7,8 +7,9 @@
     "description": "Zintegruj Slack, aby otrzymywać powiadomienia w czasie rzeczywistym, tworzyć zadania i synchronizować swój zespół."
   },
   "teams": {
-    "title": "Zespoły Microsoftu",
-    "description": "Zintegruj Microsoft Teams ze swoim zespołem Worklenz, aby otrzymywać powiadomienia w czasie rzeczywistym, tworzyć zadania w aplikacji Teams i synchronizować swój zespół na obu platformach."
+    "title": "Microsoft Teams",
+    "description": "Publikuj aktualizacje zadań i statusów w kanałach Microsoft Teams.",
+    "howTo": "Konfiguracja odbywa się dla każdego projektu: otwórz projekt i użyj przycisku Integracje w jego nagłówku."
   },
   "github": {
     "title": "GitHub",

@@ -20,8 +20,36 @@
     "inviteBotTip": "提示：请确保首先邀请 @Worklenz 机器人到您的 Slack 频道！"
   },
   "teams": {
-    "title": "微软团队",
-    "description": "将任务和状态更新发布到 Teams 频道"
+    "title": "Microsoft Teams",
+    "description": "将任务和状态更新发布到 Teams 频道",
+    "modalTitle": "Microsoft Teams",
+    "empty": "尚未连接 Teams 频道",
+    "sendTest": "发送测试消息",
+    "confirmDelete": "移除此 Teams Webhook？",
+    "deliveryFailed": "发送失败",
+    "addTitle": "添加 Teams 频道",
+    "name": "名称",
+    "namePlaceholder": "例如：工程频道",
+    "webhookUrl": "Webhook URL",
+    "webhookHelp": "在 Teams 中，打开频道菜单 (…) → Workflows → \"Send webhook alerts to a channel\"，然后粘贴它提供的 URL。",
+    "secretNote": "Webhook URL 以加密方式存储，保存后不再显示。",
+    "addButton": "添加 Teams 频道",
+    "validation": {
+      "name": "请输入名称",
+      "url": "请粘贴 Webhook URL"
+    },
+    "messages": {
+      "added": "已添加 Teams Webhook",
+      "testSent": "测试消息已发送到 Teams"
+    },
+    "errors": {
+      "load": "无法加载 Teams Webhook",
+      "add": "无法添加 Teams Webhook",
+      "update": "无法更新 Teams Webhook",
+      "delete": "无法移除 Teams Webhook",
+      "test": "无法发送测试消息"
+    },
+    "ownerNote": "该 Webhook 作为由创建者拥有的 Teams 工作流运行。如果创建者离开，它将停止工作，因此请在 Workflows 应用中添加共同所有者。Teams 目前尚未完全支持向私有频道发布消息。"
   },
   "github": {
     "title": "GitHub",

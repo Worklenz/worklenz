@@ -8,7 +8,8 @@
   },
   "teams": {
     "title": "Microsoft Teams",
-    "description": "Integrate Microsoft Teams with your Worklenz team to receive real-time notifications, create tasks from Teams, and keep your team synchronized across both platforms."
+    "description": "Post task and status updates to your Microsoft Teams channels.",
+    "howTo": "Set it up per project: open a project and use the Integrations button in its header."
   },
   "github": {
     "title": "GitHub",
@@ -21,7 +22,5 @@
   "googleCalendar": {
     "title": "Google Calendar",
     "description": "Sync your tasks and deadlines with Google Calendar to manage your schedule, set reminders, and never miss important project milestones."
-  },
-  "connect": "Connect",
-  "comingSoon": "Coming Soon"
+  }
 }

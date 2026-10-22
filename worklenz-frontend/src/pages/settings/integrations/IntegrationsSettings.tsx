@@ -15,9 +15,18 @@ interface IntegrationCardProps {
   description: string;
   available: boolean;
   children?: React.ReactNode;
+  /** Replaces the action button, for integrations that are configured elsewhere (per project). */
+  footer?: React.ReactNode;
 }
 
-function IntegrationCard({ icon, title, description, available, children }: IntegrationCardProps) {
+function IntegrationCard({
+  icon,
+  title,
+  description,
+  available,
+  children,
+  footer,
+}: IntegrationCardProps) {
   const { t } = useTranslation('settings/integrations');
 
   if (available && children) {
@@ -43,7 +52,9 @@ function IntegrationCard({ icon, title, description, available, children }: Inte
 
         {/* Action Button */}
         <div className="w-full">
-          {available ? (
+          {footer ? (
+            footer
+          ) : available ? (
             <Button
               type="primary"
               size="large"
@@ -85,15 +96,23 @@ function IntegrationsSettings() {
         {/* GitHub Integration - Active (software projects) */}
         <GithubIntegrationCard />
 
-        {/* MS Teams Integration - Coming Soon */}
+        {/* MS Teams Integration - Active (configured per project) */}
         <IntegrationCard
           icon={<MSTeamsIcon />}
           title={t('teams.title', { defaultValue: 'Microsoft Teams' })}
           description={t('teams.description', {
             defaultValue:
-              'Integrate Microsoft Teams with your Worklenz team to receive real-time notifications, create tasks from Teams, and keep your team synchronized across both platforms.',
+              'Post task and status updates to your Microsoft Teams channels.',
           })}
-          available={false}
+          available={true}
+          footer={
+            <p className="text-sm text-gray-500 dark:text-gray-400 m-0">
+              {t('teams.howTo', {
+                defaultValue:
+                  'Set it up per project: open a project and use the Integrations button in its header.',
+              })}
+            </p>
+          }
         />
 
         {/* Google Drive Integration - Coming Soon */}

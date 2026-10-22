@@ -1,10 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Button, ApiOutlined, SettingOutlined, TeamOutlined, theme } from '@/shared/antd-imports';
+import { Button, ApiOutlined, SettingOutlined, theme } from '@/shared/antd-imports';
 import { GithubOutlined } from '@ant-design/icons';
 import { SlackProjectIntegration } from '../../../components/projects/integrations/SlackProjectIntegration';
 import { IntegrationItem } from './IntegrationItem';
-import { SlackIcon } from '@/components/settings/integrations/IntegrationIcons';
+import { TeamsProjectIntegration } from './TeamsProjectIntegration';
+import { MSTeamsIcon, SlackIcon } from '@/components/settings/integrations/IntegrationIcons';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
 import {
@@ -139,17 +140,6 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
     />
   );
 
-  const teamsItem = (
-    <IntegrationItem
-      icon={<TeamOutlined style={{ color: '#6264A7' }} />}
-      title={t('teams.title', { defaultValue: 'Microsoft Teams' })}
-      description={t('teams.description', {
-        defaultValue: 'Post task and status updates to your Teams channels',
-      })}
-      comingSoon
-    />
-  );
-
   return (
     <div className="integrations-dropdown" style={dropdownStyles}>
       {/* Header */}
@@ -180,9 +170,28 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
           />
         )}
 
-        {/* Coming soon last */}
+        {/* Teams - Active */}
+        {hasBusinessAccess ? (
+          <TeamsProjectIntegration
+            projectId={projectId}
+            projectName={projectName}
+            status={status?.teams || null}
+            onClose={onClose}
+            onRefresh={onRefresh}
+          />
+        ) : (
+          <IntegrationItem
+            icon={<MSTeamsIcon />}
+            title={t('teams.title', { defaultValue: 'Microsoft Teams' })}
+            description={t('teams.description', {
+              defaultValue: 'Post task and status updates to your Teams channels',
+            })}
+            locked
+            onClick={handleUpgradeClick}
+          />
+        )}
+
         {githubItem}
-        {teamsItem}
       </div>
 
       {/* Footer */}

@@ -3,6 +3,7 @@ import { log_error } from "../shared/utils";
 import { SlackService } from "../services/slack.service";
 import { TeamsNotificationService } from "./teams-notification.service";
 import { I18nHelper } from "../shared/i18n-helper";
+import { getNotificationEventMeta, NotificationEventType } from "../shared/notification-events";
 
 interface TaskNotificationData {
   task_id: string;
@@ -93,30 +94,7 @@ export class ExternalNotificationsService {
   ): any {
     const t = I18nHelper.getFixedT(locale, "external");
 
-    const emoji = notificationType === "task_created" ? "🆕" :
-                  notificationType === "task_assigned" ? "👤" :
-                  notificationType === "task_completed" ? "✅" :
-                  notificationType === "comment_added" ? "💬" :
-                  notificationType === "priority_changed" ? "🔺" :
-                  notificationType === "due_date_changed" ? "📅" :
-                  notificationType === "task_updated" ? "✏️" : "🔄";
-
-    const titleKey = notificationType === "task_created" ? "task_created" :
-                     notificationType === "task_assigned" ? "task_assigned" :
-                     notificationType === "task_completed" ? "task_completed" :
-                     notificationType === "comment_added" ? "comment_added" :
-                     notificationType === "priority_changed" ? "priority_changed" :
-                     notificationType === "due_date_changed" ? "due_date_changed" :
-                     notificationType === "task_updated" ? "task_updated" : "task_status_changed";
-
-    const defaultTitle = notificationType === "task_created" ? "Task Created" :
-                         notificationType === "task_assigned" ? "Task Assigned" :
-                         notificationType === "task_completed" ? "Task Completed" :
-                         notificationType === "comment_added" ? "Comment Added" :
-                         notificationType === "priority_changed" ? "Priority Changed" :
-                         notificationType === "due_date_changed" ? "Due Date Changed" :
-                         notificationType === "task_updated" ? "Task Updated" : "Task Status Changed";
-
+    const { emoji, titleKey, defaultTitle } = getNotificationEventMeta(notificationType);
     const title = t(`slack.${titleKey}.title`, { defaultValue: defaultTitle });
 
     // Color based on notification type
@@ -289,30 +267,7 @@ export class ExternalNotificationsService {
   ): any {
     const t = I18nHelper.getFixedT(locale, "external");
 
-    const emoji = notificationType === "task_created" ? "🆕" :
-                  notificationType === "task_assigned" ? "👤" :
-                  notificationType === "task_completed" ? "✅" :
-                  notificationType === "comment_added" ? "💬" :
-                  notificationType === "priority_changed" ? "🔺" :
-                  notificationType === "due_date_changed" ? "📅" :
-                  notificationType === "task_updated" ? "✏️" : "🔄";
-
-    const titleKey = notificationType === "task_created" ? "task_created" :
-                     notificationType === "task_assigned" ? "task_assigned" :
-                     notificationType === "task_completed" ? "task_completed" :
-                     notificationType === "comment_added" ? "comment_added" :
-                     notificationType === "priority_changed" ? "priority_changed" :
-                     notificationType === "due_date_changed" ? "due_date_changed" :
-                     notificationType === "task_updated" ? "task_updated" : "task_status_changed";
-
-    const defaultTitle = notificationType === "task_created" ? "Task Created" :
-                         notificationType === "task_assigned" ? "Task Assigned" :
-                         notificationType === "task_completed" ? "Task Completed" :
-                         notificationType === "comment_added" ? "Comment Added" :
-                         notificationType === "priority_changed" ? "Priority Changed" :
-                         notificationType === "due_date_changed" ? "Due Date Changed" :
-                         notificationType === "task_updated" ? "Task Updated" : "Task Status Changed";
-
+    const { emoji, titleKey, defaultTitle } = getNotificationEventMeta(notificationType);
     const title = t(`slack.${titleKey}.title`, { defaultValue: defaultTitle });
 
     const facts: any[] = [
@@ -356,6 +311,12 @@ export class ExternalNotificationsService {
           value: taskData.status_name
         });
       }
+      if (taskData.assignee_names && taskData.assignee_names.length > 0) {
+        facts.push({
+          title: `${t("teams.assignees", { defaultValue: "Assignees" })}:`,
+          value: taskData.assignee_names.join(", ")
+        });
+      }
     } else if (notificationType === "comment_added") {
       facts.push({
         title: `${t("teams.commentedBy", { defaultValue: "Commented By" })}:`,
@@ -392,7 +353,7 @@ export class ExternalNotificationsService {
           content: {
             $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
             type: "AdaptiveCard",
-            version: "1.4",
+            version: "1.2",
             body: [
               {
                 type: "TextBlock",
@@ -437,13 +398,23 @@ export class ExternalNotificationsService {
     }
   }
 
+  private static async deliverToTeams(webhookId: string, webhookUrl: string, message: any): Promise<void> {
+    try {
+      await TeamsNotificationService.sendTeamsNotification(webhookUrl, message, webhookId);
+      await TeamsNotificationService.recordDelivery(webhookId);
+    } catch (error: any) {
+      log_error(`Error sending Teams notification to webhook ${webhookId}:`, error);
+      await TeamsNotificationService.recordDelivery(webhookId, String(error?.message ?? error).slice(0, 500));
+    }
+  }
+
   /**
    * Send external notifications (Slack and Teams)
    */
   public static async sendExternalNotifications(
     projectId: string,
     taskId: string,
-    notificationType: "task_created" | "task_assigned" | "status_changed" | "task_completed" | "task_updated" | "priority_changed" | "due_date_changed" | "comment_added",
+    notificationType: NotificationEventType,
     userName: string,
     additionalDataOrUserId?: { oldStatusId?: string; newStatusId?: string; oldValue?: string; newValue?: string } | string | null,
     userId?: string | null
@@ -500,14 +471,15 @@ export class ExternalNotificationsService {
         }
       }
 
-      // Send to Teams webhook if configured
-      const teamsWebhookUrl = process.env.TEAMS_WEBHOOK_URL;
-      if (teamsWebhookUrl) {
-        try {
-          const teamsMessage = this.formatTeamsMessage(notificationType, taskData, userName, locale);
-          await TeamsNotificationService.sendTeamsNotification(teamsWebhookUrl, teamsMessage);
-        } catch (error) {
-          log_error("Error sending Teams notification:", error);
+      // Send to the Teams webhooks configured for this project
+      const teamsWebhooks = await TeamsNotificationService.getActiveWebhooksForDispatch(projectId);
+      if (teamsWebhooks.length > 0) {
+        const teamsMessage = this.formatTeamsMessage(notificationType, taskData, userName, locale);
+
+        // Not awaited: paced sends and retries must not hold up the task operation that triggered them
+        for (const webhook of teamsWebhooks) {
+          if (!webhook.notification_types?.includes(notificationType)) continue;
+          void this.deliverToTeams(webhook.id, webhook.webhook_url, teamsMessage);
         }
       }
     } catch (error) {

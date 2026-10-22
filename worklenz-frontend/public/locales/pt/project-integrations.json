@@ -20,8 +20,36 @@
     "inviteBotTip": "Dica: Certifique-se de convidar o bot @Worklenz para seu canal do Slack primeiro!"
   },
   "teams": {
-    "title": "Equipes da Microsoft",
-    "description": "Publique atualizações de tarefas e status nos seus canais do Teams"
+    "title": "Microsoft Teams",
+    "description": "Publique atualizações de tarefas e status nos seus canais do Teams",
+    "modalTitle": "Microsoft Teams",
+    "empty": "Nenhum canal do Teams conectado ainda",
+    "sendTest": "Enviar mensagem de teste",
+    "confirmDelete": "Remover este webhook do Teams?",
+    "deliveryFailed": "Falha na entrega",
+    "addTitle": "Adicionar um canal do Teams",
+    "name": "Nome",
+    "namePlaceholder": "ex.: Canal de engenharia",
+    "webhookUrl": "URL do webhook",
+    "webhookHelp": "No Teams, abra o menu do canal (…) → Workflows → \"Send webhook alerts to a channel\" e cole a URL fornecida.",
+    "secretNote": "A URL do webhook é armazenada criptografada e não é exibida novamente após salvar.",
+    "addButton": "Adicionar canal do Teams",
+    "validation": {
+      "name": "Informe um nome",
+      "url": "Cole a URL do webhook"
+    },
+    "messages": {
+      "added": "Webhook do Teams adicionado",
+      "testSent": "Mensagem de teste enviada ao Teams"
+    },
+    "errors": {
+      "load": "Falha ao carregar os webhooks do Teams",
+      "add": "Falha ao adicionar o webhook do Teams",
+      "update": "Falha ao atualizar o webhook do Teams",
+      "delete": "Falha ao remover o webhook do Teams",
+      "test": "Falha ao enviar a mensagem de teste"
+    },
+    "ownerNote": "O webhook é executado como um fluxo de trabalho do Teams pertencente a quem o criou. Se essa pessoa sair, ele deixa de funcionar, então adicione um coproprietário no aplicativo Workflows. O Teams ainda não oferece suporte completo à publicação em canais privados."
   },
   "github": {
     "title": "GitHub",

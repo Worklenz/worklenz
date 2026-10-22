@@ -17,6 +17,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
+import { teamsWebhooksApiService } from '@/api/teams-webhooks/teams-webhooks.api.service';
 import type { ProjectIntegrationStatus } from './integrations.types';
 
 interface ProjectIntegrationsButtonProps {
@@ -52,10 +53,13 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
       setLoading(true);
 
       // GitHub is available to every team with software projects; Slack needs Business.
-      const [slackWorkspace, slackConfigsResponse, githubRepositories] = await Promise.all([
+      const [slackWorkspace, slackConfigsResponse, teamsResponse, githubRepositories] = await Promise.all([
         hasBusinessAccess ? slackApiService.getStatus().catch(() => null) : null,
         hasBusinessAccess
           ? slackApiService.getProjectChannelConfigs(projectId).catch(() => null)
+          : null,
+        hasBusinessAccess
+          ? teamsWebhooksApiService.getProjectWebhooks(projectId).catch(() => null)
           : null,
         isSoftwareProject
           ? githubApiService
@@ -70,6 +74,8 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
         ? slackChannels.filter((ch: any) => ch.isActive)
         : [];
 
+      const activeTeamsWebhooks = (teamsResponse?.body || []).filter(webhook => webhook.is_active);
+
       setIntegrationStatus({
         slack: {
           connected: !!slackWorkspace?.connected,
@@ -82,9 +88,9 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
           })),
         },
         teams: {
-          connected: false,
-          tenantConnected: false,
-          channelCount: 0,
+          connected: activeTeamsWebhooks.length > 0,
+          channelCount: activeTeamsWebhooks.length,
+          channels: activeTeamsWebhooks.map(webhook => webhook.name),
         },
         github: {
           connected: !!githubRepositories?.connected,

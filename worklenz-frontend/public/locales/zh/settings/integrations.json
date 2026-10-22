@@ -7,8 +7,9 @@
     "description": "集成 Slack 以接收实时通知、创建任务并同步您的团队。"
   },
   "teams": {
-    "title": "微软团队",
-    "description": "将 Microsoft Teams 与您的 Worklenz 团队集成，以接收实时通知、从 Teams 创建任务，并保持您的团队在两个平台上同步。"
+    "title": "Microsoft Teams",
+    "description": "将任务和状态更新发布到您的 Microsoft Teams 频道。",
+    "howTo": "按项目进行设置：打开项目，使用其标题栏中的“集成”按钮。"
   },
   "github": {
     "title": "GitHub",

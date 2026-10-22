@@ -119,6 +119,7 @@ export const FEATURE_REGISTRY = {
 
   // Integrations & support
   slack_integration: business(),
+  teams_integration: business(),
   priority_support: business(),
 
   // Gated today but not listed in the matrix: registered at Business so current behavior is

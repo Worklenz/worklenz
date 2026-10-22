@@ -20,8 +20,36 @@
     "inviteBotTip": "Tipp: Stellen Sie sicher, dass Sie den @Worklenz-Bot zuerst zu Ihrem Slack-Kanal einladen!"
   },
   "teams": {
-    "title": "Microsoft-Teams",
-    "description": "Senden Sie Aufgaben- und Statusupdates an Ihre Teams-Kanäle"
+    "title": "Microsoft Teams",
+    "description": "Senden Sie Aufgaben- und Statusupdates an Ihre Teams-Kanäle",
+    "modalTitle": "Microsoft Teams",
+    "empty": "Noch keine Teams-Kanäle verbunden",
+    "sendTest": "Testnachricht senden",
+    "confirmDelete": "Diesen Teams-Webhook entfernen?",
+    "deliveryFailed": "Zustellung fehlgeschlagen",
+    "addTitle": "Teams-Kanal hinzufügen",
+    "name": "Name",
+    "namePlaceholder": "z. B. Engineering-Kanal",
+    "webhookUrl": "Webhook-URL",
+    "webhookHelp": "Öffnen Sie in Teams das Kanalmenü (…) → Workflows → \"Send webhook alerts to a channel\" und fügen Sie die angezeigte URL ein.",
+    "secretNote": "Die Webhook-URL wird verschlüsselt gespeichert und nach dem Speichern nicht mehr angezeigt.",
+    "addButton": "Teams-Kanal hinzufügen",
+    "validation": {
+      "name": "Bitte geben Sie einen Namen ein",
+      "url": "Bitte fügen Sie die Webhook-URL ein"
+    },
+    "messages": {
+      "added": "Teams-Webhook hinzugefügt",
+      "testSent": "Testnachricht an Teams gesendet"
+    },
+    "errors": {
+      "load": "Teams-Webhooks konnten nicht geladen werden",
+      "add": "Teams-Webhook konnte nicht hinzugefügt werden",
+      "update": "Teams-Webhook konnte nicht aktualisiert werden",
+      "delete": "Teams-Webhook konnte nicht entfernt werden",
+      "test": "Testnachricht konnte nicht gesendet werden"
+    },
+    "ownerNote": "Der Webhook läuft als Teams-Workflow, der der erstellenden Person gehört. Verlässt diese Person das Unternehmen, funktioniert er nicht mehr – fügen Sie daher in der Workflows-App einen Miteigentümer hinzu. Das Posten in private Kanäle wird von Teams noch nicht vollständig unterstützt."
   },
   "github": {
     "title": "GitHub",

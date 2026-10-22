@@ -20,8 +20,36 @@
     "inviteBotTip": "Këshillë: Sigurohuni që të ftoni bot-in @Worklenz në kanalin tuaj të Slack fillimisht!"
   },
   "teams": {
-    "title": "Ekipet e Microsoft",
-    "description": "Posto përditësime për detyrat dhe statusin në kanalet e tua Teams"
+    "title": "Microsoft Teams",
+    "description": "Posto përditësime për detyrat dhe statusin në kanalet e tua Teams",
+    "modalTitle": "Microsoft Teams",
+    "empty": "Ende nuk ka kanale Teams të lidhura",
+    "sendTest": "Dërgo mesazh provë",
+    "confirmDelete": "Të hiqet ky webhook i Teams?",
+    "deliveryFailed": "Dërgimi dështoi",
+    "addTitle": "Shto një kanal Teams",
+    "name": "Emri",
+    "namePlaceholder": "p.sh. Kanali i inxhinierisë",
+    "webhookUrl": "URL e webhook-ut",
+    "webhookHelp": "Në Teams, hap menunë e kanalit (…) → Workflows → \"Send webhook alerts to a channel\", pastaj ngjit URL-në që të jepet.",
+    "secretNote": "URL e webhook-ut ruhet e enkriptuar dhe nuk shfaqet më pas ruajtjes.",
+    "addButton": "Shto kanalin Teams",
+    "validation": {
+      "name": "Ju lutem shkruani një emër",
+      "url": "Ju lutem ngjitni URL-në e webhook-ut"
+    },
+    "messages": {
+      "added": "Webhook-u i Teams u shtua",
+      "testSent": "Mesazhi provë u dërgua te Teams"
+    },
+    "errors": {
+      "load": "Ngarkimi i webhook-eve të Teams dështoi",
+      "add": "Shtimi i webhook-ut të Teams dështoi",
+      "update": "Përditësimi i webhook-ut të Teams dështoi",
+      "delete": "Heqja e webhook-ut të Teams dështoi",
+      "test": "Dërgimi i mesazhit provë dështoi"
+    },
+    "ownerNote": "Webhook-u funksionon si një workflow i Teams që i përket personit që e krijoi. Nëse ai person largohet, ai ndalon së funksionuari, ndaj shto një bashkëpronar në aplikacionin Workflows. Teams ende nuk mbështet plotësisht postimin në kanale private."
   },
   "github": {
     "title": "GitHub",

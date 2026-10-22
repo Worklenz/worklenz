@@ -13,8 +13,9 @@ export interface SlackIntegrationStatus {
 
 export interface TeamsIntegrationStatus {
   connected: boolean;
-  tenantConnected: boolean;
   channelCount: number;
+  /** Names of the active webhooks, for display. */
+  channels: string[];
 }
 
 export interface GitHubIntegrationStatus {

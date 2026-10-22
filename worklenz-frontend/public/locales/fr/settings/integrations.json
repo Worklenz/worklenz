@@ -7,8 +7,9 @@
     "description": "Intégrez Slack pour recevoir des notifications en temps réel, créer des tâches et synchroniser votre équipe."
   },
   "teams": {
-    "title": "Équipes Microsoft",
-    "description": "Intégrez Microsoft Teams à votre équipe Worklenz pour recevoir des notifications en temps réel, créer des tâches à partir de Teams et garder votre équipe synchronisée sur les deux plateformes."
+    "title": "Microsoft Teams",
+    "description": "Publiez les mises à jour des tâches et des statuts dans vos canaux Microsoft Teams.",
+    "howTo": "Configurez-le par projet : ouvrez un projet et utilisez le bouton Intégrations de son en-tête."
   },
   "github": {
     "title": "GitHub",

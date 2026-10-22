@@ -7,8 +7,9 @@
     "description": "Integrieren Sie Slack, um Echtzeit-Benachrichtigungen zu erhalten, Aufgaben zu erstellen und Ihr Team zu synchronisieren."
   },
   "teams": {
-    "title": "Microsoft-Teams",
-    "description": "Integrieren Sie Microsoft Teams mit Ihrem Worklenz-Team, um Echtzeit-Benachrichtigungen zu erhalten, Aufgaben aus Teams zu erstellen und Ihr Team auf beiden Plattformen synchronisiert zu halten."
+    "title": "Microsoft Teams",
+    "description": "Senden Sie Aufgaben- und Statusupdates an Ihre Microsoft-Teams-Kanäle.",
+    "howTo": "Die Einrichtung erfolgt pro Projekt: Öffnen Sie ein Projekt und verwenden Sie die Schaltfläche „Integrationen“ in der Kopfzeile."
   },
   "github": {
     "title": "GitHub",

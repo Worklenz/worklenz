@@ -20,8 +20,36 @@
     "inviteBotTip": "Wskazówka: pamiętaj, aby najpierw zaprosić bota @Worklenz na swój kanał Slack!"
   },
   "teams": {
-    "title": "Zespoły Microsoftu",
-    "description": "Publikuj aktualizacje zadań i statusów w kanałach Teams"
+    "title": "Microsoft Teams",
+    "description": "Publikuj aktualizacje zadań i statusów w kanałach Teams",
+    "modalTitle": "Microsoft Teams",
+    "empty": "Brak połączonych kanałów Teams",
+    "sendTest": "Wyślij wiadomość testową",
+    "confirmDelete": "Usunąć ten webhook Teams?",
+    "deliveryFailed": "Błąd dostarczenia",
+    "addTitle": "Dodaj kanał Teams",
+    "name": "Nazwa",
+    "namePlaceholder": "np. Kanał inżynierii",
+    "webhookUrl": "Adres URL webhooka",
+    "webhookHelp": "W Teams otwórz menu kanału (…) → Workflows → \"Send webhook alerts to a channel\", a następnie wklej wygenerowany adres URL.",
+    "secretNote": "Adres URL webhooka jest przechowywany w postaci zaszyfrowanej i nie jest ponownie wyświetlany po zapisaniu.",
+    "addButton": "Dodaj kanał Teams",
+    "validation": {
+      "name": "Wprowadź nazwę",
+      "url": "Wklej adres URL webhooka"
+    },
+    "messages": {
+      "added": "Dodano webhook Teams",
+      "testSent": "Wysłano wiadomość testową do Teams"
+    },
+    "errors": {
+      "load": "Nie udało się wczytać webhooków Teams",
+      "add": "Nie udało się dodać webhooka Teams",
+      "update": "Nie udało się zaktualizować webhooka Teams",
+      "delete": "Nie udało się usunąć webhooka Teams",
+      "test": "Nie udało się wysłać wiadomości testowej"
+    },
+    "ownerNote": "Webhook działa jako przepływ pracy Teams należący do osoby, która go utworzyła. Jeśli ta osoba odejdzie, przestanie działać, dlatego dodaj współwłaściciela w aplikacji Workflows. Teams nie w pełni obsługuje jeszcze publikowanie w kanałach prywatnych."
   },
   "github": {
     "title": "GitHub",

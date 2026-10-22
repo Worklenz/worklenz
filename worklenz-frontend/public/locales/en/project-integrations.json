@@ -21,7 +21,35 @@
   },
   "teams": {
     "title": "Microsoft Teams",
-    "description": "Post task and status updates to your Teams channels"
+    "description": "Post task and status updates to your Teams channels",
+    "modalTitle": "Microsoft Teams",
+    "empty": "No Teams channels connected yet",
+    "sendTest": "Send test message",
+    "confirmDelete": "Remove this Teams webhook?",
+    "deliveryFailed": "Delivery failed",
+    "addTitle": "Add a Teams channel",
+    "name": "Name",
+    "namePlaceholder": "e.g. Engineering channel",
+    "webhookUrl": "Webhook URL",
+    "webhookHelp": "In Teams, open the channel menu (…) → Workflows → \"Send webhook alerts to a channel\", then paste the URL it gives you.",
+    "secretNote": "The webhook URL is stored encrypted and is not shown again after saving.",
+    "addButton": "Add Teams channel",
+    "validation": {
+      "name": "Please enter a name",
+      "url": "Please paste the webhook URL"
+    },
+    "messages": {
+      "added": "Teams webhook added",
+      "testSent": "Test message sent to Teams"
+    },
+    "errors": {
+      "load": "Failed to load Teams webhooks",
+      "add": "Failed to add Teams webhook",
+      "update": "Failed to update Teams webhook",
+      "delete": "Failed to remove Teams webhook",
+      "test": "Failed to send test message"
+    },
+    "ownerNote": "The webhook runs as a Teams workflow owned by the person who created it. If that person leaves, it stops working, so add a co-owner in the Workflows app. Teams does not fully support posting to private channels yet."
   },
   "github": {
     "title": "GitHub",

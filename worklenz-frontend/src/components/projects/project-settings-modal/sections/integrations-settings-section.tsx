@@ -1,14 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Flex, Typography, TeamOutlined, theme, message } from '@/shared/antd-imports';
+import { Flex, Typography, theme, message } from '@/shared/antd-imports';
 import { GithubOutlined } from '@ant-design/icons';
 import { GithubProjectRepositories } from '@/components/github/GithubProjectRepositories';
 import { useProjectPermissions } from '@/hooks/useProjectPermissions';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IntegrationItem } from '@/components/projects/integrations/IntegrationItem';
-import { SlackIcon } from '@/components/settings/integrations/IntegrationIcons';
+import { MSTeamsIcon, SlackIcon } from '@/components/settings/integrations/IntegrationIcons';
 import { SlackProjectQuickAddModal } from '@/components/projects/integrations/SlackProjectQuickAddModal';
+import { TeamsProjectModal } from '@/components/projects/integrations/TeamsProjectModal';
+import { teamsWebhooksApiService } from '@/api/teams-webhooks/teams-webhooks.api.service';
 import { slackApiService } from '@/api/slack/slack.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
@@ -42,15 +44,18 @@ const IntegrationsSettingsSection = ({
 
   const [integrationStatus, setIntegrationStatus] = useState<ProjectIntegrationStatus | null>(null);
   const [slackModalOpen, setSlackModalOpen] = useState(false);
+  const [teamsModalOpen, setTeamsModalOpen] = useState(false);
 
   const fetchIntegrationStatus = useCallback(async () => {
     if (!projectId || !hasBusinessAccess) return;
 
     try {
-      const [slackWorkspace, slackConfigsResponse] = await Promise.all([
+      const [slackWorkspace, slackConfigsResponse, teamsResponse] = await Promise.all([
         slackApiService.getStatus().catch(() => null),
         slackApiService.getProjectChannelConfigs(projectId).catch(() => null),
+        teamsWebhooksApiService.getProjectWebhooks(projectId).catch(() => null),
       ]);
+      const activeTeamsWebhooks = (teamsResponse?.body || []).filter(webhook => webhook.is_active);
 
       const slackChannels = slackConfigsResponse?.body || [];
       const activeSlackChannels = Array.isArray(slackChannels)
@@ -68,7 +73,11 @@ const IntegrationsSettingsSection = ({
             isActive: ch.isActive,
           })),
         },
-        teams: { connected: false, tenantConnected: false, channelCount: 0 },
+        teams: {
+          connected: activeTeamsWebhooks.length > 0,
+          channelCount: activeTeamsWebhooks.length,
+          channels: activeTeamsWebhooks.map(webhook => webhook.name),
+        },
         github: { connected: false, accountConnected: false, repositoryCount: 0 },
       });
     } catch (error) {
@@ -106,6 +115,14 @@ const IntegrationsSettingsSection = ({
       return;
     }
     setSlackModalOpen(true);
+  };
+
+  const handleTeamsClick = () => {
+    if (!hasBusinessAccess) {
+      handleUpgradeClick();
+      return;
+    }
+    setTeamsModalOpen(true);
   };
 
   return (
@@ -166,7 +183,6 @@ const IntegrationsSettingsSection = ({
         </div>
       )}
 
-      {/* Coming soon integrations stay at the bottom */}
       <div
         style={{
           borderRadius: 10,
@@ -175,14 +191,27 @@ const IntegrationsSettingsSection = ({
         }}
       >
         <IntegrationItem
-          icon={<TeamOutlined style={{ color: '#6264A7' }} />}
+          icon={<MSTeamsIcon />}
           title={t('teamsTitle', { defaultValue: 'Microsoft Teams' })}
           description={t('teamsDescription', {
             defaultValue: 'Post task and status updates to your Teams channels',
           })}
-          comingSoon
+          badge={integrationStatus?.teams?.channelCount}
+          channels={integrationStatus?.teams?.channels}
+          locked={!hasBusinessAccess}
+          onClick={handleTeamsClick}
         />
       </div>
+
+      {projectId && (
+        <TeamsProjectModal
+          open={teamsModalOpen}
+          projectId={projectId}
+          projectName={projectName}
+          onClose={() => setTeamsModalOpen(false)}
+          onChange={fetchIntegrationStatus}
+        />
+      )}
 
       {projectId && (
         <SlackProjectQuickAddModal

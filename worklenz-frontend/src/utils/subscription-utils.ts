@@ -73,6 +73,7 @@ const LEGACY_BUSINESS_FEATURES = new Set([
   'client_portal_invoices',
   'finance_module',
   'slack_integration',
+  'teams_integration',
   'restrict_task_creation',
   'planner_schedule',
   'planner_timeline',

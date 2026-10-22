@@ -50,7 +50,7 @@ describe("feature registry", () => {
 
   it("gates the Business-only matrix rows at business", () => {
     for (const key of [
-      "finance_module", "billable_reporting", "client_portal_branding", "slack_integration",
+      "finance_module", "billable_reporting", "client_portal_branding", "slack_integration", "teams_integration",
       "advanced_reporting", "priority_support", "gantt_edit", "planner_schedule", "planner_timeline", "planner_workload",
     ] as const) {
       expect(FEATURE_REGISTRY[key].minTier).toBe("business");

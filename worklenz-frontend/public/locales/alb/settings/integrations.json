@@ -7,8 +7,9 @@
     "description": "Integroni Slack për të marrë njoftime në kohë reale, për të krijuar detyra dhe për të sinkronizuar ekipin tuaj."
   },
   "teams": {
-    "title": "Ekipet e Microsoft",
-    "description": "Integroni Microsoft Teams me ekipin tuaj Worklenz për të marrë njoftime në kohë reale, për të krijuar detyra nga Teams dhe për të mbajtur ekipin tuaj të sinkronizuar në të dyja platformat."
+    "title": "Microsoft Teams",
+    "description": "Posto përditësime për detyrat dhe statusin në kanalet e tua të Microsoft Teams.",
+    "howTo": "Konfigurohet për çdo projekt: hap një projekt dhe përdor butonin Integrimet në krye të tij."
   },
   "github": {
     "title": "GitHub",
