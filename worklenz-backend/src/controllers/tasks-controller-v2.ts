@@ -1,4 +1,5 @@
 import { ParsedQs } from "qs";
+import { PoolClient } from "pg";
 
 import db from "../config/db";
 import { buildTaskSearchQuery } from "../shared/task-search-query-builder";
@@ -1370,11 +1371,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   @HandleExceptions()
   public static async resetParentTaskManualProgress(
-    parentTaskId: string
+    parentTaskId: string,
+    client?: PoolClient
   ): Promise<void> {
+    const query = client ? client.query.bind(client) : db.query.bind(db);
     try {
       // Check if this task has subtasks
-      const subTasksResult = await db.query(
+      const subTasksResult = await query(
         "SELECT COUNT(*) as subtask_count FROM tasks WHERE parent_task_id = $1 AND archived IS FALSE",
         [parentTaskId]
       );
@@ -1385,13 +1388,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
       // If it has subtasks, reset the manual_progress flag to false
       if (subtaskCount > 0) {
-        await db.query(
+        await query(
           "UPDATE tasks SET manual_progress = false WHERE id = $1",
           [parentTaskId]
         );
 
         // Get the project settings to determine which calculation method to use
-        const projectResult = await db.query(
+        const projectResult = await query(
           "SELECT project_id FROM tasks WHERE id = $1",
           [parentTaskId]
         );
@@ -1400,7 +1403,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
         if (projectId) {
           // Recalculate the parent task's progress based on its subtasks
-          const progressResult = await db.query(
+          const progressResult = await query(
             "SELECT get_task_complete_ratio($1) AS ratio",
             [parentTaskId]
           );
@@ -1410,6 +1413,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
           // Emit the updated progress value to all clients
           // Note: We don't have socket context here, so we can't directly emit
           // This will be picked up on the next client refresh
+          void progressRatio;
         }
       }
     } catch (error) {
@@ -1478,6 +1482,196 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const [data] = result.rows;
     const model = TasksControllerV2.updateTaskViewModel(data.task);
     return res.status(200).send(new ServerResponse(true, model));
+  }
+
+  /**
+   * Move an existing subtask under a different parent task in the same project.
+   * Preserves all subtask details (title, description, assignee, dates, status, logged hours, etc.).
+   *
+   * Cycle validation and the parent UPDATE run in one transaction under a
+   * project-scoped advisory lock so concurrent opposite moves (A→B and B→A)
+   * cannot both pass the descendant check and form a cycle.
+   */
+  @HandleExceptions()
+  public static async moveSubtask(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const taskId = req.body?.id as string | undefined;
+    const projectId = req.body?.project_id as string | undefined;
+    const newParentTaskId = req.body?.parent_task_id as string | undefined;
+
+    if (!taskId || !projectId || !newParentTaskId) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Missing required parameters"));
+    }
+
+    if (!isValidUuid(taskId) || !isValidUuid(projectId) || !isValidUuid(newParentTaskId)) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Invalid identifiers"));
+    }
+
+    if (taskId === newParentTaskId) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "A task cannot be its own parent"));
+    }
+
+    const client = await db.connect();
+    try {
+      await client.query("BEGIN");
+      // Serialize hierarchy mutations for this project before reading ancestry.
+      await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+        `task-hierarchy:${projectId}`,
+      ]);
+
+      const taskResult = await client.query(
+        `
+        SELECT id, parent_task_id, project_id, archived
+        FROM tasks
+        WHERE id = $1
+        `,
+        [taskId]
+      );
+      const [task] = taskResult.rows;
+
+      if (!task) {
+        await client.query("ROLLBACK");
+        return res.status(404).send(new ServerResponse(false, null, "Task not found"));
+      }
+
+      if (task.project_id !== projectId) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .send(new ServerResponse(false, null, "Task does not belong to this project"));
+      }
+
+      if (!task.parent_task_id) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .send(new ServerResponse(false, null, "Only subtasks can be moved to another parent"));
+      }
+
+      if (task.parent_task_id === newParentTaskId) {
+        await client.query("COMMIT");
+        const currentResult = await db.query("SELECT get_single_task($1) AS task;", [taskId]);
+        const [currentData] = currentResult.rows;
+        const currentModel = TasksControllerV2.updateTaskViewModel(currentData.task);
+        return res.status(200).send(new ServerResponse(true, currentModel));
+      }
+
+      const parentResult = await client.query(
+        `
+        SELECT id, parent_task_id, project_id, archived
+        FROM tasks
+        WHERE id = $1
+        `,
+        [newParentTaskId]
+      );
+      const [newParent] = parentResult.rows;
+
+      if (!newParent) {
+        await client.query("ROLLBACK");
+        return res
+          .status(404)
+          .send(new ServerResponse(false, null, "Parent task not found"));
+      }
+
+      if (newParent.project_id !== projectId) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .send(
+            new ServerResponse(
+              false,
+              null,
+              "Parent task must belong to the same project"
+            )
+          );
+      }
+
+      if (newParent.archived) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .send(new ServerResponse(false, null, "Cannot move subtask under an archived parent"));
+      }
+
+      // Prevent cycles: new parent must not be a descendant of the subtask being moved
+      const cycleResult = await client.query(
+        `
+        WITH RECURSIVE task_descendants AS (
+          SELECT id
+          FROM tasks
+          WHERE parent_task_id = $1 AND archived IS FALSE
+
+          UNION ALL
+
+          SELECT child.id
+          FROM tasks child
+          INNER JOIN task_descendants td ON child.parent_task_id = td.id
+          WHERE child.archived IS FALSE
+        )
+        SELECT EXISTS(
+          SELECT 1 FROM task_descendants WHERE id = $2
+        ) AS is_descendant;
+        `,
+        [taskId, newParentTaskId]
+      );
+
+      if (cycleResult.rows[0]?.is_descendant) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .send(
+            new ServerResponse(
+              false,
+              null,
+              "Cannot move a subtask under one of its own descendants"
+            )
+          );
+      }
+
+      const oldParentTaskId = task.parent_task_id as string;
+
+      // sort_order is unique per (project_id, sort_order), so use project-wide MAX
+      // (same pattern as convertToSubtask / convertToTask), not per-parent siblings.
+      await client.query(
+        `
+        UPDATE tasks
+        SET parent_task_id = $2,
+            sort_order = COALESCE(
+              (SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = $3),
+              0
+            )
+        WHERE id = $1 AND project_id = $3;
+        `,
+        [taskId, newParentTaskId, projectId]
+      );
+
+      await this.resetParentTaskManualProgress(oldParentTaskId, client);
+      await this.resetParentTaskManualProgress(newParentTaskId, client);
+
+      await client.query("COMMIT");
+
+      const result = await db.query("SELECT get_single_task($1) AS task;", [taskId]);
+      const [data] = result.rows;
+      const model = TasksControllerV2.updateTaskViewModel(data.task);
+      return res.status(200).send(new ServerResponse(true, model));
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // ignore rollback errors when BEGIN never succeeded
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   public static async getTaskSubscribers(taskId: string) {

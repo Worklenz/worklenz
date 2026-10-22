@@ -172,9 +172,13 @@ const TaskRow: React.FC<TaskRowProps> = memo(
         style={{ ...style, height: '40px', position: 'relative', zIndex: 1 }}
         className={`group flex items-center min-w-max px-1 border-t border-b border-gray-200 dark:border-gray-700 hover:bg-black/5 dark:hover:bg-white/5 transition-colors ${
           isDragging ? 'opacity-50' : ''
-        } ${isOver && !isDragging ? 'bg-black/5 dark:bg-white/5' : ''} ${
-          isDrawerActive ? 'bg-black/[0.04] dark:bg-white/[0.05]' : ''
-        }`}
+        } ${
+          isOver && !isDragging
+            ? isSubtask
+              ? 'bg-black/5 dark:bg-white/5'
+              : 'bg-blue-50/70 dark:bg-blue-900/30 ring-1 ring-inset ring-blue-400/70 dark:ring-blue-500/70'
+            : ''
+        } ${isDrawerActive ? 'bg-black/[0.04] dark:bg-white/[0.05]' : ''}`}
       >
         {visibleColumns.map((column, index) => {
           const rowBackgrounds = {
