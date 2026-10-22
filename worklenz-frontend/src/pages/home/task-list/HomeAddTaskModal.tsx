@@ -42,6 +42,7 @@ import { decodeHtmlEntities } from '@/utils/html-entities';
 interface HomeAddTaskModalProps {
   open: boolean;
   defaultDate: Dayjs | null;
+  defaultProjectId?: string;
   onClose: () => void;
   /** Fired with the newly created task once creation (and any assignee updates) finish. */
   onTaskCreated?: (task: IMyTask) => void;
@@ -60,7 +61,7 @@ interface HomeAddTaskFormValues {
   priority_id?: string;
 }
 
-const HomeAddTaskModal = ({ open, defaultDate, onClose, onTaskCreated }: HomeAddTaskModalProps) => {
+const HomeAddTaskModal = ({ open, defaultDate, defaultProjectId, onClose, onTaskCreated }: HomeAddTaskModalProps) => {
   const { t } = useTranslation('home');
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
@@ -87,7 +88,7 @@ const HomeAddTaskModal = ({ open, defaultDate, onClose, onTaskCreated }: HomeAdd
     () =>
       (projectListData?.body || []).map((project: IProject) => ({
         value: project.id,
-        label: project.name,
+        label: decodeHtmlEntities(project.name),
       })),
     [projectListData]
   );
@@ -121,7 +122,7 @@ const HomeAddTaskModal = ({ open, defaultDate, onClose, onTaskCreated }: HomeAdd
     form.resetFields();
     form.setFieldsValue({
       due_date: defaultDate || dayjs(),
-      project_id: projectOptions[0]?.value,
+      project_id: defaultProjectId || projectOptions[0]?.value,
       priority_id: priorityOptions.find(p => p.label?.toLowerCase() === 'medium')?.value,
     });
     setSelectedAssignees([]);
@@ -130,7 +131,7 @@ const HomeAddTaskModal = ({ open, defaultDate, onClose, onTaskCreated }: HomeAdd
     setTaskSearch('');
     setSelectedUnassignedTask(null);
     setUnassignedTasks([]);
-  }, [open, defaultDate]);
+  }, [open, defaultDate, defaultProjectId]);
 
   // Switching mode or project invalidates whatever unassigned task was picked.
   useEffect(() => {

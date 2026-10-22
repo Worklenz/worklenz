@@ -1225,6 +1225,8 @@ const HomeLogTime: React.FC = () => {
       <HomeAddTaskModal
         open={addTaskOpen}
         defaultDate={null}
+        defaultProjectId={selProjectId}
+        onTaskCreated={(task) => { if (task?.id) setSelTaskId(task.id); }}
         onClose={() => {
           setAddTaskOpen(false);
           if (selProjectId) {
