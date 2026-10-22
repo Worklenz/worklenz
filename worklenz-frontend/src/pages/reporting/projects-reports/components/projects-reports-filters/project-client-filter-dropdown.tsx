@@ -35,7 +35,13 @@ const SEARCH_DEBOUNCE_MS = 300;
 // Keeps the initial render fast and the list scannable.
 const INITIAL_DISPLAY_LIMIT = 50;
 
-const ProjectClientFilterDropdown = () => {
+interface ProjectClientFilterDropdownProps {
+  inline?: boolean;
+}
+
+const ProjectClientFilterDropdown = ({
+  inline = false,
+}: ProjectClientFilterDropdownProps) => {
   const { t } = useTranslation('reporting-projects-filters');
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
@@ -94,12 +100,12 @@ const ProjectClientFilterDropdown = () => {
     }
   }, [selectedClients]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load the full client list when the dropdown opens for the first time.
+  // Inline panels are already open when mounted by the table filter.
   useEffect(() => {
-    if (isDropdownOpen && clients.length === 0 && !loading) {
+    if ((inline || isDropdownOpen) && clients.length === 0 && !loading) {
       fetchClients('');
     }
-  }, [isDropdownOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [inline, isDropdownOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDropdownOpen = (open: boolean) => {
     setIsDropdownOpen(open);
@@ -217,6 +223,10 @@ const ProjectClientFilterDropdown = () => {
       </Flex>
     </Card>
   );
+
+  if (inline) {
+    return dropdownContent;
+  }
 
   return (
     <Dropdown
