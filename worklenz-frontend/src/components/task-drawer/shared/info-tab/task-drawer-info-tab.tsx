@@ -675,17 +675,21 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     fetchTaskDependencies();
     fetchTaskAttachments();
     fetchTaskComments();
+  }, [selectedTaskId, projectId, fetchSubTasks, loadingTask, taskFormViewModel?.task?.id, taskFormViewModel?.task?.name]);
 
+  // Clear per-task local data only when selectedTaskId itself changes. This must
+  // not live in the fetch effect's cleanup: that effect also re-runs when
+  // loadingTask / task name change, which wiped freshly fetched attachments
+  // (and sub-tasks, dependencies, comments) without refetching them.
+  useEffect(() => {
     return () => {
-      // Only clear local data when we're actually switching to a different
-      // task, not when selectedTaskId is being reset to null on drawer close.
       setSubTasks([]);
       setTaskDependencies([]);
       setTaskAttachments([]);
       selectedFilesRef.current = [];
       setTaskComments([]);
     };
-  }, [selectedTaskId, projectId, fetchSubTasks, loadingTask, taskFormViewModel?.task?.id, taskFormViewModel?.task?.name]);
+  }, [selectedTaskId]);
 
   useEffect(() => {
     if (!selectedTaskId || !projectId || loadingTask) return;
