@@ -573,6 +573,7 @@ const buildFormValues = (project: IProjectViewModel): SoftwareSettingsFormValues
       : true,
   auto_assign_task_creator: Boolean(project.auto_assign_task_creator),
   restrict_task_creation: Boolean(project.restrict_task_creation),
+  members_can_view_client_team: Boolean(project.members_can_view_client_team),
   restrict_tasks_to_assignee: Boolean(project.restrict_tasks_to_assignee),
 });
 
@@ -603,6 +604,7 @@ const buildProjectModel = ({
   ...(canAssignLead ? { finance_access: values.finance_access !== false } : {}),
   auto_assign_task_creator: Boolean(values.auto_assign_task_creator),
   restrict_task_creation: Boolean(values.restrict_task_creation),
+  members_can_view_client_team: Boolean(values.members_can_view_client_team),
   ...(canManageVisibility
     ? { restrict_tasks_to_assignee: Boolean(values.restrict_tasks_to_assignee) }
     : {}),
@@ -660,6 +662,7 @@ interface SoftwareSettingsFormValues {
   finance_access?: boolean;
   auto_assign_task_creator?: boolean;
   restrict_task_creation?: boolean;
+  members_can_view_client_team?: boolean;
   restrict_tasks_to_assignee?: boolean;
 }
 

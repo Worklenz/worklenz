@@ -183,6 +183,30 @@ const AdvancedSettingsSection = ({
         >
           <Switch disabled={disabled || !canRestrictTaskCreation} />
         </Form.Item>
+
+        <Form.Item
+          name="members_can_view_client_team"
+          label={
+            <Space>
+              <Typography.Text>
+                {t('membersCanViewClientTeam', {
+                  defaultValue: "Allow members to view Client's team",
+                })}
+              </Typography.Text>
+              <Tooltip
+                title={t('membersCanViewClientTeamTooltip', {
+                  defaultValue:
+                    "When enabled, normal project members can see the Client's team tab on the Members page. Owners, Admins, Team Leads, and Project Managers always see it.",
+                })}
+              >
+                <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />
+              </Tooltip>
+            </Space>
+          }
+          valuePropName="checked"
+        >
+          <Switch disabled={disabled} />
+        </Form.Item>
       </SettingsCard>
 
       <SettingsCard

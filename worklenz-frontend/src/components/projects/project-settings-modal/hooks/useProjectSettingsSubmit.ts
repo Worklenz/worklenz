@@ -99,6 +99,7 @@ export const useProjectSettingsSubmit = ({
         auto_assign_task_creator: Boolean(values.auto_assign_task_creator),
         restrict_task_creation: Boolean(values.restrict_task_creation),
         phase_assignees_enabled: Boolean(values.phase_assignees_enabled),
+        members_can_view_client_team: Boolean(values.members_can_view_client_team),
         auto_assign_subtask_phase: Boolean(values.auto_assign_subtask_phase),
         ...(canEditSettings
           ? { restrict_tasks_to_assignee: Boolean(values.restrict_tasks_to_assignee) }

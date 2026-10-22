@@ -87,7 +87,7 @@ const ProjectViewMembers = () => {
   const user = auth.getCurrentSession();
   const isOwnerOrAdmin = auth.isOwnerOrAdmin();
   const isTeamLead = isTeamLeadRole(auth.role);
-  const { permissions } = useProjectPermissions(projectId);
+  const { permissions, isProjectManager } = useProjectPermissions(projectId);
 
   const effectiveRole = getSessionRoleName(user);
 
@@ -162,23 +162,32 @@ const ProjectViewMembers = () => {
     });
   }, [totalAvailableSeats, totalUsedSeats, t]);
 
-  const membersTabOptions = useMemo(
-    () => [
+  // Privileged roles always see Client's team; normal members need the project setting.
+  const canViewClientTeamTab =
+    isOwnerOrAdmin ||
+    isTeamLead ||
+    isProjectManager ||
+    Boolean(currentProject?.members_can_view_client_team);
+
+  const membersTabOptions = useMemo(() => {
+    const options: { value: MembersTab; label: string }[] = [
       {
-        value: 'team' as const,
+        value: 'team',
         label: t('tabs.teamMembers', { defaultValue: 'Team members' }),
       },
       {
-        value: 'guests' as const,
+        value: 'guests',
         label: t('tabs.guests', { defaultValue: 'Guests' }),
       },
-      {
-        value: 'client' as const,
+    ];
+    if (canViewClientTeamTab) {
+      options.push({
+        value: 'client',
         label: t('tabs.clientTeam', { defaultValue: "Client's team" }),
-      },
-    ],
-    [t]
-  );
+      });
+    }
+    return options;
+  }, [t, canViewClientTeamTab]);
 
   const membersListMemberType = activeTab === 'guests' ? 'guest' : 'team';
   const isMembersListTab = activeTab === 'team' || activeTab === 'guests';
@@ -419,6 +428,13 @@ const ProjectViewMembers = () => {
       setClientSearchQuery('');
     }
   };
+
+  // If Client's team becomes hidden while active, fall back to Team members.
+  useEffect(() => {
+    if (activeTab === 'client' && !canViewClientTeamTab) {
+      setActiveTab('team');
+    }
+  }, [activeTab, canViewClientTeamTab]);
 
   useEffect(() => {
     if (isOwnerOrAdmin && !billingInfo) {

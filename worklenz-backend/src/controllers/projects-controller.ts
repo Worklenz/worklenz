@@ -842,6 +842,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.auto_assign_task_creator,
              projects.restrict_task_creation,
              projects.phase_assignees_enabled,
+             projects.members_can_view_client_team,
              to_jsonb(projects)->>'worklenz_id' AS worklenz_id,
              projects.restrict_tasks_to_assignee,
              projects.auto_assign_subtask_phase,
@@ -1088,6 +1089,18 @@ export default class ProjectsController extends WorklenzControllerBase {
               AND team_id = $3
           `,
           [Boolean(req.body.phase_assignees_enabled), req.params.id, req.user?.team_id || null]
+        );
+      }
+
+      if (Object.prototype.hasOwnProperty.call(req.body, 'members_can_view_client_team')) {
+        await db.query(
+          `
+            UPDATE projects
+            SET members_can_view_client_team = $1
+            WHERE id = $2
+              AND team_id = $3
+          `,
+          [Boolean(req.body.members_can_view_client_team), req.params.id, req.user?.team_id || null]
         );
       }
 
