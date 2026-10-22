@@ -29,7 +29,9 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
   const showVisibilityToast = useVisibilityToast();
 
   const [visibility, setVisibility] = useState<PortalVisibility>(task.visibility);
-  const [clientTitle, setClientTitle] = useState(decodeHtmlEntities(task.client_title));
+  // client_title is plain text (backend trims/limits only). Do not decode entities —
+  // that would mutate literal "&amp;" into "&" on a no-op save. Decode only legacy task.title.
+  const [clientTitle, setClientTitle] = useState(task.client_title);
   const [clientDescription, setClientDescription] = useState(task.client_description);
   const [fileIds, setFileIds] = useState<string[]>(task.attached_file_ids);
   const [updateTask, { isLoading }] = useUpdatePortalTaskMutation();
@@ -38,6 +40,8 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
 
   const visibleAttachments = files.filter(file => fileIds.includes(file.id) && file.visibility === 'client');
   const dash = '—';
+  const trimmedClientTitle = clientTitle.trim();
+  const displayTitle = trimmedClientTitle || decodeHtmlEntities(task.title);
 
   const save = async () => {
     try {
@@ -46,13 +50,13 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
         taskId: task.id,
         body: {
           visibility,
-          client_title: clientTitle.trim(),
+          client_title: trimmedClientTitle,
           client_description: clientDescription.trim(),
           attached_file_ids: fileIds,
         },
       }).unwrap();
       if (visibility !== task.visibility) {
-        showVisibilityToast('task', decodeHtmlEntities(clientTitle.trim() || task.title), visibility);
+        showVisibilityToast('task', displayTitle, visibility);
       }
       else message.success(t('tasks.drawer.saved', { defaultValue: 'Client-facing wording and attachments saved.' }));
       onClose();
@@ -189,7 +193,7 @@ export const TaskDrawer = ({ project, task, onClose }: TaskDrawerProps) => {
       {visibility === 'client' ? (
         <Card size="small" style={{ marginBottom: 16 }}>
           <div style={{ fontWeight: 600, fontSize: 13 }}>
-            {decodeHtmlEntities(clientTitle.trim() || task.title)}
+            {displayTitle}
           </div>
           <div style={{ fontSize: 12, color: token.colorTextSecondary, margin: '3px 0 6px' }}>
             {labels.client[task.status]}

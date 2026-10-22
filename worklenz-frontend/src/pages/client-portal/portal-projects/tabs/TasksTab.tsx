@@ -61,7 +61,8 @@ export const TasksTab = ({ project }: TasksTabProps) => {
   const changeVisibility = async (task: PortalTask, visibility: PortalVisibility) => {
     try {
       await updateTask({ projectId: project.id, taskId: task.id, body: { visibility } }).unwrap();
-      showVisibilityToast('task', decodeHtmlEntities(task.client_title || task.title), visibility);
+      // client_title is plain text; only legacy task.title may contain encoded entities.
+      showVisibilityToast('task', task.client_title || decodeHtmlEntities(task.title), visibility);
     } catch (error) {
       message.error(getPortalErrorMessage(error, t('tasks.visibilityFailed', { defaultValue: 'The visibility could not be changed.' })));
     }
@@ -108,7 +109,7 @@ export const TasksTab = ({ project }: TasksTabProps) => {
       render: (_value, task) =>
         task.visibility === 'client' ? (
           <div style={{ fontSize: 12.5 }}>
-            {decodeHtmlEntities(task.client_title || task.title)}
+            {task.client_title || decodeHtmlEntities(task.title)}
             <div style={{ fontSize: 11.5, color: token.colorTextSecondary }}>{labels.client[task.status]}</div>
           </div>
         ) : (
