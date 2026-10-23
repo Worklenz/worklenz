@@ -36,7 +36,7 @@ const TaskDrawerActivityLog = () => {
   const [activityLogs, setActivityLogs] = useState<IActivityLogsResponse>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
-  const { selectedTaskId, taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
+  const { selectedTaskId, taskFormViewModel, lastDeletedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const { mode: themeMode } = useAppSelector(state => state.themeReducer);
   const { t, i18n } = useTranslation('task-drawer/task-drawer');
   const currentSession = useAuthService().getCurrentSession();
@@ -49,7 +49,7 @@ const TaskDrawerActivityLog = () => {
   }, [taskFormViewModel]);
 
   const fetchActivityLogs = async () => {
-    if (!selectedTaskId) return;
+    if (!selectedTaskId || selectedTaskId === lastDeletedTaskId) return;
     setLoading(true);
     try {
       const res = await taskActivityLogsApiService.getActivityLogsByTaskId(selectedTaskId);

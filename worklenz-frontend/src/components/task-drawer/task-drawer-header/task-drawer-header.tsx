@@ -52,6 +52,7 @@ import { useTaskDrawerStatuses } from '@/hooks/useTaskDrawerStatuses';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
 import logger from '@/utils/errorLogger';
 import homePageApi from '@/api/home-page/home-page.api.service';
+import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
 import CopyTaskToProjectModal from '@/components/task-list-v2/components/CopyTaskToProjectModal';
 import { duplicateTask } from '@/features/task-management/task-management.slice';
 import taskDuplicateApiService from '@/api/tasks/task-duplicate.api.service';
@@ -84,7 +85,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
 
   const statusesForDropdown = useTaskDrawerStatuses();
   const isSoftwareProject = useAppSelector(state =>
-    isSoftwareProjectType(state.projectReducer.project?.project_type)
+    isSoftwareProjectType(state.projectReducer?.project?.project_type)
   );
 
   const currentSession = useAuthService().getCurrentSession();
@@ -147,9 +148,6 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
 
       dispatch(setSelectedTaskId(null));
 
-      dispatch(deleteTask({ taskId: selectedTaskId }));
-      dispatch(deleteBoardTask({ sectionId: '', taskId: selectedTaskId }));
-
       if (taskFormViewModel?.task?.is_sub_task) {
         dispatch(
           updateEnhancedKanbanSubtask({
@@ -169,13 +167,11 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
 
       // Invalidate home page cache to refresh the task list
       dispatch(homePageApi.util.invalidateTags(['myTasks', 'taskCounts']));
+      dispatch(roadmapApi.util.invalidateTags(['RoadmapTasks', 'ProjectPhases']));
 
+      clearTaskFromUrl();
       dispatch(setShowTaskDrawer(false));
-
-      setTimeout(() => {
-        clearTaskFromUrl();
-        isDeleting.current = false;
-      }, 100);
+      isDeleting.current = false;
 
       if (taskFormViewModel?.task?.parent_task_id) {
         socket?.emit(

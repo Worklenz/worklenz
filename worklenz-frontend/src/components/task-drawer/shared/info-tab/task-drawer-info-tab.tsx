@@ -70,7 +70,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   const isSoftwareProject = useAppSelector(state =>
     isSoftwareProjectType(state.projectReducer.project?.project_type)
   );
-  const { taskFormViewModel, loadingTask, selectedTaskId, targetCommentId } = useAppSelector(
+  const { taskFormViewModel, loadingTask, selectedTaskId, targetCommentId, lastDeletedTaskId } = useAppSelector(
     state => state.taskDrawerReducer
   );
   const [subTasks, setSubTasks] = useState<ISubTask[]>([]);
@@ -303,7 +303,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   };
 
   const fetchSubTasks = useCallback(async () => {
-    if (!selectedTaskId) return;
+    if (!selectedTaskId || selectedTaskId === lastDeletedTaskId) return;
     try {
       setLoadingSubTasks(true);
       const res = await subTasksApiService.getSubTasks(selectedTaskId);
@@ -315,7 +315,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     } finally {
       setLoadingSubTasks(false);
     }
-  }, [selectedTaskId]);
+  }, [selectedTaskId, lastDeletedTaskId]);
 
   // ── Socket listener: keep drawer subtasks in sync with task list ──────────
   useEffect(() => {
@@ -338,6 +338,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
 
     // Project updates (e.g., status renamed) — re-fetch subtasks to sync status names
     const handleProjectUpdatesAvailable = () => {
+      if (!selectedTaskId || selectedTaskId === lastDeletedTaskId) return;
       fetchSubTasks();
     };
 
@@ -369,7 +370,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   }, [socket, selectedTaskId, isSoftwareProject]);
 
   const fetchTaskDependencies = useCallback(async () => {
-    if (!selectedTaskId) return;
+    if (!selectedTaskId || selectedTaskId === lastDeletedTaskId) return;
     try {
       setLoadingTaskDependencies(true);
       const res = await taskDependenciesApiService.getTaskDependencies(selectedTaskId);
@@ -390,7 +391,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   }, [selectedTaskId, dispatch]);
 
   const fetchTaskAttachments = useCallback(async () => {
-    if (!selectedTaskId) return;
+    if (!selectedTaskId || selectedTaskId === lastDeletedTaskId) return;
     try {
       setLoadingTaskAttachments(true);
       const res = await taskAttachmentsApiService.getTaskAttachments(selectedTaskId);
