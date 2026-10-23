@@ -23,7 +23,7 @@ import {
 } from '@/features/task-management/task-management.slice';
 import { deselectAll, selectTasks } from '@/features/projects/bulkActions/bulkActionSlice';
 import { setConvertToSubtaskDrawerOpen } from '@/features/tasks/tasks.slice';
-import { setLastDeletedTaskId } from '@/features/task-drawer/task-drawer.slice';
+import { setLastDeletedTaskId, setShowTaskDrawer, setSelectedTaskId } from '@/features/task-drawer/task-drawer.slice';
 import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
 import { useTranslation } from 'react-i18next';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -80,6 +80,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   const isSoftwareProject = isSoftwareProjectType(projectType);
   const currentGrouping = useAppSelector(state => state.grouping.currentGrouping);
   const archived = useAppSelector(state => state.taskManagement.archived);
+  const selectedTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
 
   const [updatingAssignToMe, setUpdatingAssignToMe] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -280,6 +281,10 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_context_menu_delete);
         dispatch(setLastDeletedTaskId(task.id));
+        if (selectedTaskId === task.id) {
+          dispatch(setShowTaskDrawer(false));
+          dispatch(setSelectedTaskId(null));
+        }
         dispatch(deleteTask(task.id));
         dispatch(deselectAll());
         dispatch(roadmapApi.util.invalidateTags(['RoadmapTasks', 'ProjectPhases']));
@@ -292,7 +297,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     } finally {
       onClose();
     }
-  }, [projectId, task.id, dispatch, onClose, trackMixpanelEvent]);
+  }, [projectId, task.id, selectedTaskId, dispatch, onClose, trackMixpanelEvent]);
 
   const handleDeleteCancel = useCallback(() => {
     setShowDeleteConfirm(false);

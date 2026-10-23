@@ -387,7 +387,6 @@ apiClient.interceptors.response.use(
       // Check if this is a project or task drawer access error - don't show alert, let component handle it
       if (
         errorMessage.toLowerCase().includes('project') ||
-        errorMessage === 'You do not have permission to access this task' ||
         errorData?.body?.code === 'TASK_NOT_FOUND' ||
         errorData?.body?.requiresTeamSwitch ||
         errorData?.body?.code === 'TASK_ASSIGNEE_RESTRICTED' ||
