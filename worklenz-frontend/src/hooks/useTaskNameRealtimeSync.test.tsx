@@ -194,4 +194,44 @@ describe('useTaskNameRealtimeSync', () => {
 
     expect(result.current.items[0].title).toBe('New Custom Title');
   });
+
+  test('accepts plain interfaces without string index signatures', () => {
+    interface StrictEntry {
+      task_id: string;
+      task_name: string;
+      hours: number;
+    }
+
+    const strictItems: StrictEntry[] = [{ task_id: 'task-1', task_name: 'Strict 1', hours: 4 }];
+
+    const { result } = renderHook(() => {
+      const [items, setItems] = useState<StrictEntry[]>(strictItems);
+      useTaskNameRealtimeSync({ items, setItems });
+      return { items, setItems };
+    });
+
+    act(() => {
+      fakeSocket.emitEvent(SocketEvents.TASK_NAME_CHANGE.toString(), {
+        id: 'task-1',
+        name: 'Strict Renamed',
+      });
+    });
+
+    expect(result.current.items[0].task_name).toBe('Strict Renamed');
+  });
+
+  test('does not re-register socket listeners on re-render when using default accessors', () => {
+    const { rerender } = renderHook(() => {
+      const [items, setItems] = useState(initialItems);
+      useTaskNameRealtimeSync({ items, setItems });
+      return { items, setItems };
+    });
+
+    expect(fakeSocket.on).toHaveBeenCalledTimes(1);
+
+    rerender();
+
+    expect(fakeSocket.off).not.toHaveBeenCalled();
+    expect(fakeSocket.on).toHaveBeenCalledTimes(1);
+  });
 });

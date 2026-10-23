@@ -11,6 +11,27 @@ export interface UseTaskNameRealtimeSyncOptions<T> {
   updateTaskName?: (item: T, newName: string) => T;
 }
 
+const defaultGetTaskId = (item: unknown): string => {
+  if (!item || typeof item !== 'object') return '';
+  const record = item as { task_id?: unknown; id?: unknown };
+  if (typeof record.task_id === 'string') return record.task_id;
+  if (typeof record.id === 'string') return record.id;
+  return '';
+};
+
+const defaultUpdateTaskName = <T>(item: T, newName: string): T => {
+  if (!item || typeof item !== 'object') return item;
+  return { ...item, task_name: newName };
+};
+
+const getOriginalItemName = (item: unknown): string | undefined => {
+  if (!item || typeof item !== 'object') return undefined;
+  const record = item as { task_name?: unknown; name?: unknown };
+  if (typeof record.task_name === 'string') return record.task_name;
+  if (typeof record.name === 'string') return record.name;
+  return undefined;
+};
+
 /**
  * Hook to synchronize task names in list/table state in real-time.
  * 
@@ -19,11 +40,11 @@ export interface UseTaskNameRealtimeSyncOptions<T> {
  * 2. Real-time Socket.IO `TASK_NAME_CHANGE` events.
  * 3. Graceful restoration of the original name if blanked out or cleared on drawer close.
  */
-export function useTaskNameRealtimeSync<T extends Record<string, unknown>>({
+export function useTaskNameRealtimeSync<T>({
   items,
   setItems,
-  getTaskId = item => (item.task_id as string) || (item.id as string) || '',
-  updateTaskName = (item, newName) => ({ ...item, task_name: newName }),
+  getTaskId = defaultGetTaskId,
+  updateTaskName = defaultUpdateTaskName,
 }: UseTaskNameRealtimeSyncOptions<T>): void {
   const { socket } = useSocket();
   const selectedTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
@@ -58,7 +79,7 @@ export function useTaskNameRealtimeSync<T extends Record<string, unknown>>({
   useEffect(() => {
     if (showTaskDrawer && selectedTaskId) {
       const match = items.find(item => getTaskId(item) === selectedTaskId);
-      const originalName = match ? ((match.task_name as string) || (match.name as string)) : undefined;
+      const originalName = match ? getOriginalItemName(match) : undefined;
 
       if (originalName && !originalTaskNamesRef.current.has(selectedTaskId)) {
         originalTaskNamesRef.current.set(selectedTaskId, originalName);
