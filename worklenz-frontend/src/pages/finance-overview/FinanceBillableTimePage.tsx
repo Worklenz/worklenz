@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -33,6 +33,7 @@ import {
 import { FinanceKpiCard } from './FinanceKpiCard';
 import { fmtHours, fmtMoney, getRangeDates } from './finance-report-utils';
 import { useFinanceReportFetch } from './useFinanceReportFetch';
+import { useTaskNameRealtimeSync } from '@/hooks/useTaskNameRealtimeSync';
 
 const { Text, Title } = Typography;
 
@@ -57,7 +58,16 @@ export const FinanceBillableTimePage = () => {
     });
   }, [page, pageSize, preset]);
 
-  const entries: IFinanceBillableEntry[] = data?.entries ?? [];
+  const [entries, setEntries] = useState<IFinanceBillableEntry[]>([]);
+
+  useEffect(() => {
+    setEntries(data?.entries ?? []);
+  }, [data?.entries]);
+
+  useTaskNameRealtimeSync({
+    items: entries,
+    setItems: setEntries,
+  });
   const total = data?.total ?? 0;
   const summary = data?.summary ?? {
     logged_hours: 0,
