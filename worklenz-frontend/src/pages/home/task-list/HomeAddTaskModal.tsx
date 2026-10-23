@@ -291,7 +291,7 @@ const HomeAddTaskModal = ({ open, defaultDate, defaultProjectId, onClose, onTask
               task.message ||
               t('tasks.taskCreationRestricted', {
                 defaultValue:
-                  'Task creation is restricted to Admins and Team Leads only. Please contact your admin for access.',
+                  'Task creation is restricted to Admins, Team Leads, and Project Managers only. Please contact your admin for access.',
               }),
             placement: 'topRight',
           });
