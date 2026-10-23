@@ -23,6 +23,8 @@ import {
 } from '@/features/task-management/task-management.slice';
 import { deselectAll, selectTasks } from '@/features/projects/bulkActions/bulkActionSlice';
 import { setConvertToSubtaskDrawerOpen } from '@/features/tasks/tasks.slice';
+import { setLastDeletedTaskId, setShowTaskDrawer, setSelectedTaskId } from '@/features/task-drawer/task-drawer.slice';
+import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
 import { useTranslation } from 'react-i18next';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
@@ -78,6 +80,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   const isSoftwareProject = isSoftwareProjectType(projectType);
   const currentGrouping = useAppSelector(state => state.grouping.currentGrouping);
   const archived = useAppSelector(state => state.taskManagement.archived);
+  const selectedTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
 
   const [updatingAssignToMe, setUpdatingAssignToMe] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -247,6 +250,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
           })
         );
         dispatch(deselectAll());
+        dispatch(roadmapApi.util.invalidateTags(['RoadmapTasks', 'ProjectPhases']));
 
         // Note: We DON'T call fetchTasksV3 here because:
         // - If archiving: task is moved to archived list, not needed in current view
@@ -276,8 +280,14 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
 
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_context_menu_delete);
+        dispatch(setLastDeletedTaskId(task.id));
+        if (selectedTaskId === task.id) {
+          dispatch(setShowTaskDrawer(false));
+          dispatch(setSelectedTaskId(null));
+        }
         dispatch(deleteTask(task.id));
         dispatch(deselectAll());
+        dispatch(roadmapApi.util.invalidateTags(['RoadmapTasks', 'ProjectPhases']));
         if (task.parent_task_id) {
           socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.parent_task_id);
         }
@@ -287,7 +297,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     } finally {
       onClose();
     }
-  }, [projectId, task.id, dispatch, onClose, trackMixpanelEvent]);
+  }, [projectId, task.id, selectedTaskId, dispatch, onClose, trackMixpanelEvent]);
 
   const handleDeleteCancel = useCallback(() => {
     setShowDeleteConfirm(false);
@@ -486,6 +496,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       const res = await tasksApiService.convertToTask(task.id as string, projectId as string);
       if (res.done) {
         dispatch(deselectAll());
+        dispatch(roadmapApi.util.invalidateTags(['RoadmapTasks', 'ProjectPhases']));
         dispatch(fetchTasksV3(projectId));
       }
     } catch (error) {
