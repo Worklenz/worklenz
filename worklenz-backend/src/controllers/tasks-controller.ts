@@ -170,15 +170,16 @@ export default class TasksController extends TasksControllerBase {
   }
 
   private static notifyProjectUpdates(socketId: string, projectId: string, notifySender = true) {
-    // Emit to the sender's socket directly
-    const socket = IO.getSocketById(socketId);
-    if (notifySender) {
-      socket?.emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+    const event = SocketEvents.PROJECT_UPDATES_AVAILABLE.toString();
+    // Room fan-out must not depend on resolving the sender socket — after a
+    // reconnect users.socket_id / session socket_id can be stale while peers
+    // are still correctly joined to the project room.
+    if (notifySender && socketId) {
+      IO.getSocketById(socketId)?.emit(event);
     }
-    // Also broadcast to others in the project room
-    socket
-      ?.to(projectId)
-      .emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+    IO.emitToProjectRoom(projectId, event, undefined, {
+      excludeSocketId: socketId || undefined,
+    });
   }
 
   public static async uploadAttachment(
