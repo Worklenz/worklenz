@@ -695,11 +695,25 @@ BEGIN
             REPLACE((_body ->> 'project_created_log')::TEXT, '@user',
                     (SELECT name FROM users WHERE id = _user_id)));
 
-    -- insert the project creator as a project member
+    -- insert the project creator as a project member with their actual team access level
     INSERT INTO project_members (team_member_id, project_access_level_id, project_id, role_id)
-    VALUES (_team_member_id, (SELECT id FROM project_access_levels WHERE key = 'ADMIN'),
-            _project_id,
-            (SELECT id FROM roles WHERE team_id = _team_id AND default_role IS TRUE));
+    SELECT _team_member_id,
+           COALESCE(
+               (SELECT id FROM project_access_levels WHERE key = (
+                   CASE
+                       WHEN r.owner IS TRUE OR r.admin_role IS TRUE THEN 'ADMIN'
+                       WHEN r.name = 'Team Lead' THEN 'PROJECT_MANAGER'
+                       WHEN COALESCE(tm.is_guest, FALSE) IS TRUE THEN 'GUEST'
+                       ELSE 'MEMBER'
+                   END
+               )),
+               (SELECT id FROM project_access_levels WHERE key = 'MEMBER')
+           ),
+           _project_id,
+           COALESCE(tm.role_id, (SELECT id FROM roles WHERE team_id = _team_id AND default_role IS TRUE))
+    FROM team_members tm
+             JOIN roles r ON r.id = tm.role_id
+    WHERE tm.id = _team_member_id;
 
     -- insert statuses
     INSERT INTO task_statuses (name, project_id, team_id, category_id, sort_order)
@@ -6157,7 +6171,27 @@ BEGIN
       AND team_id = _team_id
     RETURNING id INTO _project_id;
 
-    UPDATE project_members SET project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'MEMBER') WHERE project_id = _project_id;
+    -- Reset access by team role so Owner/Admin creators keep ADMIN (not demoted to MEMBER).
+    UPDATE project_members pm
+    SET project_access_level_id = (
+            SELECT id
+            FROM project_access_levels
+            WHERE key = (
+                CASE
+                    WHEN r.owner IS TRUE OR r.admin_role IS TRUE THEN 'ADMIN'
+                    WHEN COALESCE(tm.is_guest, FALSE) IS TRUE THEN 'GUEST'
+                    ELSE 'MEMBER'
+                END
+            )
+        ),
+        finance_access = CASE
+            WHEN r.owner IS TRUE OR r.admin_role IS TRUE THEN pm.finance_access
+            ELSE FALSE
+        END
+    FROM team_members tm
+             JOIN roles r ON r.id = tm.role_id
+    WHERE pm.project_id = _project_id
+      AND pm.team_member_id = tm.id;
 
     IF NOT (_project_manager_team_member_id IS NULL)
     THEN

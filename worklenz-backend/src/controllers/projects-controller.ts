@@ -122,6 +122,28 @@ export default class ProjectsController extends WorklenzControllerBase {
         await this.createDefaultSprint(data.project.id);
       }
 
+      // Apply selected project manager on create (create_project only adds the creator).
+      if (req.body.project_manager_id) {
+        await db.query(`SELECT update_project_manager($1, $2);`, [
+          req.body.project_manager_id,
+          data.project.id,
+        ]);
+        if (Object.prototype.hasOwnProperty.call(req.body, "finance_access")) {
+          await db.query(
+            `
+              UPDATE project_members
+              SET finance_access = $1
+              WHERE project_id = $2::UUID
+                AND team_member_id = $3::UUID
+                AND project_access_level_id = (
+                  SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'
+                )
+            `,
+            [Boolean(req.body.finance_access), data.project.id, req.body.project_manager_id]
+          );
+        }
+      }
+
       await ActivityLoggingService.logProjectCreated(
         req.user?.team_id || "",
         data.project.id,
@@ -747,14 +769,28 @@ export default class ProjectsController extends WorklenzControllerBase {
                (SELECT COUNT(*) FROM tasks WHERE archived IS FALSE AND project_id = project_members.project_id AND id IN (SELECT task_id FROM tasks_assignees WHERE tasks_assignees.project_member_id = project_members.id)) AS all_tasks_count,
                (SELECT COUNT(*) FROM tasks WHERE archived IS FALSE AND project_id = project_members.project_id AND id IN (SELECT task_id FROM tasks_assignees WHERE tasks_assignees.project_member_id = project_members.id) AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE))) AS completed_tasks_count,
                EXISTS(SELECT email FROM email_invitations WHERE team_member_id = project_members.team_member_id AND email_invitations.team_id = $2) AS pending_invitation,
-                COALESCE(pal.name, (SELECT name FROM roles WHERE id = tm.role_id), 'Member') AS access,
-                COALESCE(pal.name, (SELECT name FROM roles WHERE id = tm.role_id), 'Member') AS access_level,
+                -- Prefer team role (Owner/Admin/Team Lead) so creators show their actual access_level;
+                -- otherwise show project access (Project Manager / Member / Guest).
+                CASE
+                  WHEN (SELECT owner FROM roles WHERE id = tm.role_id) IS TRUE THEN 'Owner'
+                  WHEN (SELECT admin_role FROM roles WHERE id = tm.role_id) IS TRUE THEN 'Admin'
+                  WHEN (SELECT name FROM roles WHERE id = tm.role_id) = 'Team Lead' THEN 'Team Lead'
+                  WHEN pal.key = 'GUEST' OR COALESCE(tm.is_guest, FALSE) THEN 'Guest'
+                  ELSE COALESCE(pal.name, (SELECT name FROM roles WHERE id = tm.role_id), 'Member')
+                END AS access,
+                CASE
+                  WHEN (SELECT owner FROM roles WHERE id = tm.role_id) IS TRUE THEN 'Owner'
+                  WHEN (SELECT admin_role FROM roles WHERE id = tm.role_id) IS TRUE THEN 'Admin'
+                  WHEN (SELECT name FROM roles WHERE id = tm.role_id) = 'Team Lead' THEN 'Team Lead'
+                  WHEN pal.key = 'GUEST' OR COALESCE(tm.is_guest, FALSE) THEN 'Guest'
+                  ELSE COALESCE(pal.name, (SELECT name FROM roles WHERE id = tm.role_id), 'Member')
+                END AS access_level,
                (SELECT name FROM job_titles WHERE id = tm.job_title_id) AS job_title,
                  CASE
                    WHEN (SELECT name FROM roles WHERE id = tm.role_id) = 'Team Lead' THEN 3
                    WHEN (SELECT owner FROM roles WHERE id = tm.role_id) = true THEN 1
                    WHEN (SELECT admin_role FROM roles WHERE id = tm.role_id) = true THEN 2
-                   WHEN pal.key = 'GUEST' THEN 5
+                   WHEN pal.key = 'GUEST' OR COALESCE(tm.is_guest, FALSE) THEN 5
                    ELSE 4
                  END AS role_level
          FROM project_members
