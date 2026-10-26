@@ -34,6 +34,41 @@ describe("client user project list SQL", () => {
     expect(USER_VIEW_SQL).toContain("WHEN cc.role = 'admin'");
     expect(USER_VIEW_SQL).toContain("pcs.portal_enabled IS TRUE");
     expect(USER_VIEW_SQL).toContain("client_contact_project_access");
+
+    const adminBranch = /WHEN cc\.role = 'admin' THEN \(([\s\S]*?)\)\s*ELSE/i.exec(USER_VIEW_SQL)?.[1] ?? "";
+    const memberBranch = /ELSE \(([\s\S]*?)\)\s*END/i.exec(USER_VIEW_SQL)?.[1] ?? "";
+    expect(adminBranch).toContain("project_client_settings");
+    expect(adminBranch).not.toContain("client_contact_project_access");
+    expect(memberBranch).toContain("client_contact_project_access");
+    expect(memberBranch).not.toContain("project_client_settings");
+  });
+
+  it("maps admin and member project lists from query rows without swapping them", () => {
+    const adminProjects = [
+      { id: "p1", name: "Alpha" },
+      { id: "p2", name: "Beta" },
+    ];
+    const memberProjects = [{ id: "p1", name: "Alpha" }];
+    const row = {
+      id: "u1",
+      client_id: "c1",
+      name: "Priyanka Mendis",
+      email: "p@avant.lk",
+      phone: null,
+      job_title: null,
+      email_verified_at: null,
+      new_link_requested_at: null,
+      invited_at: "2026-05-31T10:00:00Z",
+      last_access_at: null,
+      organization_name: "Avant",
+      status_key: "active",
+      invitation_lapsed: false,
+      no_invitation: false,
+    };
+
+    expect(mapUserRow({ ...row, role: "admin", projects: adminProjects }).projects).toEqual(adminProjects);
+    expect(mapUserRow({ ...row, role: "member", projects: memberProjects }).projects).toEqual(memberProjects);
+    expect(mapUserRow({ ...row, role: "admin", projects: null }).projects).toEqual([]);
   });
 });
 
