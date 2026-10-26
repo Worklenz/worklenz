@@ -15,6 +15,7 @@ import {
   NAV_RAIL_EXPANDED_WIDTH,
 } from '@/components/nav-rail/nav-rail-constants';
 import type { NavItem, SurfaceKey } from '@/features/navigation/nav-registry.types';
+import { releaseDocsEditors } from '@/pages/projects/project-view-1/docs/docs-editor-release';
 import '@/components/nav-rail/nav-rail.css';
 
 interface SimpleRailLayoutProps {
@@ -81,9 +82,11 @@ const SimpleRailLayout: React.FC<SimpleRailLayoutProps> = memo(({ surfaceKey, co
 
   const handleSelect = useCallback(
     (itemKey: string) => {
-      navigate(`${basePath}/${itemKey}`);
+      const nextPath = `${basePath}/${itemKey}`;
+      if (location.pathname !== nextPath) releaseDocsEditors();
+      navigate(nextPath);
     },
-    [navigate, basePath]
+    [navigate, basePath, location.pathname]
   );
 
   return (

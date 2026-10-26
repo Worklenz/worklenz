@@ -121,7 +121,7 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
       if (task?.error) {
         notification.error({
           message: t('home:tasks.taskCreationRestrictedTitle', { defaultValue: 'Task Creation Restricted' }),
-          description: task.message || t('home:tasks.taskCreationRestricted', { defaultValue: 'Task creation is restricted to Admins and Team Leads only. Please contact your admin for access.' }),
+          description: task.message || t('home:tasks.taskCreationRestricted', { defaultValue: 'Task creation is restricted to Admins, Team Leads, and Project Managers only. Please contact your admin for access.' }),
           placement: 'topRight',
         });
         return;

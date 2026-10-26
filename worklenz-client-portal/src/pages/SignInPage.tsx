@@ -21,6 +21,7 @@ import clientPortalAPI from '@/services/api';
 import { setError, verifySignInCode } from '@/store/slices/authSlice';
 import type { RootState } from '@/store';
 import { clearReturnTo, peekReturnTo } from '@/utils/returnTo';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 type Step = 'email' | 'code';
 
@@ -269,7 +270,7 @@ const SignInPage: React.FC = () => {
         {organizationName
           ? t('signIn.codeDescriptionOrganization', {
               email: maskedEmail,
-              organization: organizationName,
+              organization: decodeHtmlEntities(organizationName),
               defaultValue:
                 'We sent a 6-digit code to {{email}} to open your {{organization}} portal. It works once and expires in 10 minutes.',
             })

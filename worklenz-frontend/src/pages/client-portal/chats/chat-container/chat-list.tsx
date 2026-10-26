@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import CustomAvatar from '@components/CustomAvatar';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@utils/themeWiseColor';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 type ChatListProps = {
   chatList: TempChatsType[];
@@ -165,7 +166,7 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
             >
               {/* Avatar with badge */}
               <Badge count={chat.unreadCount || 0} size="small" offset={[-4, 4]}>
-                <CustomAvatar avatarName={chat.name} size={44} />
+                <CustomAvatar avatarName={decodeHtmlEntities(chat.name)} size={44} />
               </Badge>
 
               {/* Chat info */}
@@ -178,9 +179,9 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
                       textTransform: 'capitalize',
                       maxWidth: 150,
                     }}
-                    ellipsis={{ tooltip: chat.name }}
+                    ellipsis={{ tooltip: decodeHtmlEntities(chat.name) }}
                   >
-                    {chat.name}
+                    {decodeHtmlEntities(chat.name)}
                   </Typography.Text>
                   <Typography.Text type="secondary" style={{ fontSize: 11, flexShrink: 0 }}>
                     {formatTime(chat.lastMessageTime)}

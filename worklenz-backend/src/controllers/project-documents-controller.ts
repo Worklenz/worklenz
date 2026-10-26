@@ -8,6 +8,7 @@ import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { ServerResponse } from "../models/server-response";
 import { getBaseUrl } from "../cron_jobs/helpers";
 import { sendProjectComment } from "../shared/email-notifications";
+import { getOrganizationLogoUrl } from "../shared/email-templates";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import {
   DocumentMentionRef,
@@ -385,6 +386,7 @@ export default class ProjectDocumentsController extends WorklenzControllerBase {
             comment: plainMessage,
             settings_url: `${getBaseUrl()}/worklenz/settings/notifications`,
             project_url: `${getBaseUrl()}/worklenz/projects/${projectId}?tab=docs&doc=${documentId}`,
+            logo_url: await getOrganizationLogoUrl(teamId),
           };
           await sendProjectComment(member.email, email);
         }

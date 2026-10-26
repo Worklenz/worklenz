@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { projectDocumentsApiService } from '@/api/projects/docs/project-documents.api.service';
 import { EMPTY_MENTIONS, IProjectDocument } from '@/types/project/project-documents.types';
@@ -162,6 +162,31 @@ it('keeps a conflicted draft open when following a breadcrumb', async () => {
   await screen.findByText('conflict');
   expect(screen.getByLabelText('Page title')).toHaveValue('My draft');
   expect(projectDocumentsApiService.getById).not.toHaveBeenCalled();
+});
+
+it('does not write the docs query after the page unmounts', async () => {
+  const view = render(<ProjectViewDocs />);
+  await screen.findByDisplayValue('First page');
+  mocks.setSearchParams.mockClear();
+  let resolveGet: (value: { done: boolean; body: IProjectDocument }) => void = () => undefined;
+  vi.mocked(projectDocumentsApiService.getById).mockImplementation(
+    () =>
+      new Promise(resolve => {
+        resolveGet = resolve;
+      })
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Open another page' }));
+  await waitFor(() =>
+    expect(vi.mocked(projectDocumentsApiService.getById).mock.calls.some(call => call[0] === 'second')).toBe(
+      true
+    )
+  );
+  view.unmount();
+  resolveGet({ done: true, body: second });
+  await act(async () => {
+    await Promise.resolve();
+  });
+  expect(mocks.setSearchParams).not.toHaveBeenCalled();
 });
 
 it('cancels the discarded draft after confirmed deletion and opens the remaining page', async () => {
