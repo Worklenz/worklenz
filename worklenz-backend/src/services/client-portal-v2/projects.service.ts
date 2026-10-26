@@ -526,8 +526,10 @@ export async function getProjectAccess(q: Queryable, teamId: string, projectId: 
 
   const result = await q.query(
     `SELECT u.id, u.name, u.email, u.role, u.status_key, u.last_access_at,
-            EXISTS (SELECT 1 FROM client_contact_project_access a
-                     WHERE a.client_contact_id = u.id AND a.project_id = $3) AS is_assigned
+            (u.role = 'admin' OR EXISTS (
+               SELECT 1 FROM client_contact_project_access a
+                WHERE a.client_contact_id = u.id AND a.project_id = $3
+             )) AS is_assigned
        FROM (${USER_VIEW_SQL}) u
       WHERE u.client_id = $2
       ORDER BY u.name`,
@@ -546,8 +548,9 @@ export async function getProjectAccess(q: Queryable, teamId: string, projectId: 
   return {
     project_id: projectId,
     organization_id: project.clientId,
+    // Client Admins open every org project automatically; Members/Viewers need an access row.
     assigned: result.rows.filter(row => row.is_assigned).map(toView),
-    // Organization users not yet assigned and not Deactivated.
+    // Organization users not yet assigned and not Deactivated (admins are never assignable).
     assignable: result.rows.filter(row => !row.is_assigned && row.status_key !== "deactivated").map(toView),
   };
 }

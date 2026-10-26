@@ -22,10 +22,20 @@ import { PortalError, conflict, forbidden } from "../services/client-portal-v2/e
 import { formatApprovalRef, formatChangeRequestNo } from "../services/client-portal-v2/sequences";
 import { DEFAULT_PORTAL_SETTINGS_V2, applySettingsPatch } from "../services/client-portal-v2/settings.service";
 import { toStaffRef } from "../services/client-portal-v2/staff";
-import { mapUserRow } from "../services/client-portal-v2/users.service";
+import { mapUserRow, USER_VIEW_SQL } from "../services/client-portal-v2/users.service";
 import { CLIENT_ROLE_DEFINITIONS, clientRoleCan, isClientContactRole } from "../shared/client-portal-permissions";
 import { sanitizeDisplayName } from "../shared/project-file-rules";
 import { createMockResponse } from "./utils/express-mock";
+
+describe("client user project list SQL", () => {
+  it("lists portal-enabled org projects for Client Admins, not only access rows", () => {
+    // Production assigns projects at the organization level; admins inherit them without
+    // client_contact_project_access rows. The Clients and Client Users counts must match.
+    expect(USER_VIEW_SQL).toContain("WHEN cc.role = 'admin'");
+    expect(USER_VIEW_SQL).toContain("pcs.portal_enabled IS TRUE");
+    expect(USER_VIEW_SQL).toContain("client_contact_project_access");
+  });
+});
 
 describe("client roles", () => {
   it("has exactly the three v2 roles, and the retired poc role is not one of them", () => {
