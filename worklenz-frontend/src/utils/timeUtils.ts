@@ -2,6 +2,12 @@ import dayjs from 'dayjs';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import { formatSecondsToTimeString } from './time-format.utils';
 
+/**
+ * Formats a date as `MMM DD, YYYY` in local time.
+ *
+ * @param date - A Date or date string; `YYYY-MM-DD` strings are treated as local calendar dates.
+ * @returns The formatted date using the active Day.js locale.
+ */
 export function formatDate(date: Date | string): string {
   // Handle ISO date strings (YYYY-MM-DD) as local dates to avoid timezone issues
   if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -12,6 +18,14 @@ export function formatDate(date: Date | string): string {
   return dayjs(date).format('MMM DD, YYYY');
 }
 
+/**
+ * Builds a duration label, omitting the hours component when it is not positive.
+ *
+ * @param hours - Hours component; values greater than zero are included.
+ * @param minutes - Minutes component, always included without normalization.
+ * @param seconds - Seconds component, always included without normalization.
+ * @returns A label such as `1h 5m 0s` or `0m 0s`.
+ */
 export function buildTimeString(hours: number, minutes: number, seconds: number) {
   const h = hours > 0 ? `${hours}h` : '';
   const m = `${minutes}m`;
@@ -36,6 +50,20 @@ export interface OvernightSplitInfo {
   splits: TimeRangeSplitResult[];
 }
 
+/**
+ * Computes a time range's duration and splits it at the first local midnight.
+ * Seconds and milliseconds are discarded. A later calendar date on the end
+ * value is preserved; otherwise, an end time before the start rolls to the next day.
+ * Ranges spanning multiple days still produce at most two segments, with the
+ * second containing all time after the first midnight.
+ *
+ * @param dateValue - Calendar date on which the range starts.
+ * @param startTimeValue - Start clock time, anchored to `dateValue`.
+ * @param endTimeValue - End clock time, optionally carrying a later calendar date.
+ * @returns Total duration and segments with ISO start timestamps. `isOvernight`
+ * is true only when two nonempty segments exist; a same-day zero-duration range
+ * returns one zero-duration segment.
+ */
 export function computeTimeRangeSplits(
   dateValue: dayjs.Dayjs,
   startTimeValue: dayjs.Dayjs,
