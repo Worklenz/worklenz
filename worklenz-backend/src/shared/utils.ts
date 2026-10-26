@@ -337,12 +337,13 @@ export function sanitizeSVG(svgContent: string): string {
 }
 
 /**
- * Sanitizes task comment content to prevent XSS attacks and open redirects
- * Allows safe HTML tags for mentions and basic formatting while blocking dangerous content
- * External links are completely removed to prevent open redirect attacks
- * 
+ * Sanitizes comment HTML while retaining rich formatting, mentions, and checklists.
+ * Permits HTTP(S) and mailto links, as well as relative URLs, and sets all anchors
+ * to target="_blank" with rel="noopener noreferrer nofollow". Inline styles are
+ * limited to allowed color declarations, and input types to checkbox.
+ *
  * @param content - The comment content to sanitize
- * @returns Sanitized content safe for storage and display
+ * @returns Sanitized HTML, or an empty string for empty input
  */
 export function sanitizeCommentContent(content: string): string {
   if (!content) return "";

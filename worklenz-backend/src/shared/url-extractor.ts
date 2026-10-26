@@ -52,10 +52,18 @@ function trimTrailingPunctuation(url: string): string {
   return url.slice(0, end);
 }
 
+/** Decodes ampersand entities and removes trailing sentence punctuation from a URL. */
 function cleanUrl(url: string): string {
   return trimTrailingPunctuation(url.replace(/&amp;/gi, "&"));
 }
 
+/**
+ * Extracts unique HTTP(S) URLs from quoted href attributes and tag-stripped text.
+ * Decodes ampersand entities and trims trailing sentence punctuation before
+ * deduplication. Attribute URLs precede text URLs in the returned array.
+ * Only the first 100,000 UTF-16 code units are scanned for text URLs; href
+ * attributes are scanned throughout the input. Empty input returns an empty array.
+ */
 export function extractUrls(html: string): string[] {
   if (!html) return [];
   const hrefUrls: string[] = [];

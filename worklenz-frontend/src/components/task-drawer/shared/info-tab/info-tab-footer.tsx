@@ -44,6 +44,7 @@ const formatFileSize = (bytes: number): string => {
 const COMMENT_ATTACHMENT_SIZE_LIMIT_BYTES = 25 * 1024 * 1024;
 const MAX_COMMENT_LENGTH = 5000;
 
+/** Composes rich comments with mentions and attachments for the selected task. */
 const InfoTabFooter = () => {
   const { t, i18n } = useTranslation('task-drawer/task-drawer');
   const MAXIMUM_FILE_COUNT = 5;
@@ -180,6 +181,7 @@ const InfoTabFooter = () => {
     [members]
   );
 
+  /** Stores comment HTML and mentions, using plain-text length to enable submission. */
   const handleCommentChange = useCallback(({ html, text, mentions }: RichCommentChange) => {
     setCommentValue(html);
     setCharacterLength(text.length);

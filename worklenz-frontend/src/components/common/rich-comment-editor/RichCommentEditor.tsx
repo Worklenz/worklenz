@@ -78,10 +78,13 @@ const COLOR_PALETTE = [
   { label: 'Gray', value: '#8c8c8c' },
 ];
 
+/** Escapes ampersands and angle brackets for HTML text content. */
 const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+/** Detects recognized rich-text tags; this is a format heuristic, not sanitization. */
 const isHtml = (text: string): boolean => /<\/?(?:p|br|h[1-6]|strong|b|em|i|u|s|del|strike|ul|ol|li|a|blockquote|code|pre|span|div)\b[^>]*>/i.test(text);
 
+/** Preserves recognized HTML; otherwise wraps each escaped text line in a paragraph. */
 const toEditorHtml = (value: string): string => {
   if (!value) return '';
   if (isHtml(value)) return value;
@@ -91,6 +94,7 @@ const toEditorHtml = (value: string): string => {
     .join('');
 };
 
+/** Returns supplied member options whose IDs occur in mention nodes, in option order. */
 const extractMentions = (editor: Editor, options: MentionMemberOption[]): MentionMemberOption[] => {
   const ids = new Set<string>();
   editor.state.doc.descendants(node => {
@@ -102,6 +106,17 @@ const extractMentions = (editor: Editor, options: MentionMemberOption[]): Mentio
   return options.filter(opt => ids.has(opt.id));
 };
 
+/**
+ * Edits rich comment HTML with formatting, checklists, and member mentions.
+ * With controlled=true, value changes replace content without emitting onChange;
+ * plain text is converted to paragraphs. Otherwise value initializes content,
+ * and setting it to an empty string clears the editor in either mode.
+ * Changes emit HTML (empty when the editor is empty), trimmed text with spaces
+ * between blocks, and matching mentionOptions. Ctrl+Enter or Cmd+Enter invokes
+ * onSubmit without validating content. Callback errors are not caught here.
+ * minHeight and maxHeight are in pixels. maxLength only displays a counter and
+ * over-limit styling; edits count HTML UTF-16 code units and are not truncated.
+ */
 export const RichCommentEditor = ({
   value = '',
   controlled = false,
@@ -136,6 +151,7 @@ export const RichCommentEditor = ({
   onChangeRef.current = onChange;
   onSubmitRef.current = onSubmit;
 
+  /** Updates both the rendered mention menu and the state used by keyboard handlers. */
   const updateSuggestion = (next: SuggestionState | null) => {
     suggestionRef.current = next;
     setSuggestion(next);
@@ -375,12 +391,14 @@ export const RichCommentEditor = ({
   );
 };
 
+/** Renders the blockquote toolbar icon. */
 const QuoteGlyph = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
     <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
   </svg>
 );
 
+/** Renders formatting controls reflecting the editor's current selection. */
 const Toolbar = ({ editor, disabled }: { editor: Editor; disabled: boolean }) => {
   const { t } = useTranslation('common');
 
@@ -400,6 +418,7 @@ const Toolbar = ({ editor, disabled }: { editor: Editor; disabled: boolean }) =>
     }),
   });
 
+  /** Renders a labeled action that preserves the editor selection on mouse down. */
   const btn = (label: string, isActive: boolean, action: () => void, icon: ReactNode) => (
     <Tooltip title={label} placement="top">
       <Button
@@ -494,6 +513,7 @@ const Toolbar = ({ editor, disabled }: { editor: Editor; disabled: boolean }) =>
   );
 };
 
+/** Edits the selected link through a URL popover, showing unsupported schemes as errors. */
 const LinkControl = ({
   editor,
   isActive,
@@ -508,6 +528,10 @@ const LinkControl = ({
   const [url, setUrl] = useState('');
   const [hasError, setHasError] = useState(false);
 
+  /**
+   * Removes the link for blank input, or applies an HTTP(S)/mailto URL, adding
+   * https:// when no scheme is supplied. Invalid schemes leave the popover open.
+   */
   const apply = () => {
     const trimmed = url.trim();
     if (!trimmed) {
@@ -572,6 +596,7 @@ const LinkControl = ({
   );
 };
 
+/** Applies a palette color to the selection; Default removes the textStyle mark. */
 const ColorControl = ({
   editor,
   currentColor,

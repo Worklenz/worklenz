@@ -29,6 +29,12 @@ const formatCommentDate = (value?: string | null): string => {
 /**
  * Extracts the first meaningful line / block for single-row cell preview,
  * preserving inline rich formatting while ignoring subsequent blocks.
+ * Lists use the first nonempty item's inner HTML; other elements stop at the
+ * first br. Returns the input unchanged when document or child elements are absent.
+ *
+ * @param html - Already sanitized HTML; this helper does not sanitize content
+ * @returns Preview HTML and a flag for a line break, multiple list items, or
+ * subsequent nonempty elements. Empty input returns an empty preview and false.
  */
 export const extractFirstLinePreview = (html: string): { previewHtml: string; hasMore: boolean } => {
   if (!html) return { previewHtml: '', hasMore: false };

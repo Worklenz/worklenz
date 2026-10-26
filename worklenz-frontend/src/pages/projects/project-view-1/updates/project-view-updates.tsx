@@ -122,6 +122,7 @@ interface ProjectViewUpdatesProps {
   fullHeight?: boolean;
 }
 
+/** Displays a live project conversation with rich comment composition and inline editing. */
 const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectViewUpdatesProps = {}) => {
   const { projectId: routeProjectId } = useParams<{ projectId: string }>();
   const projectId = projectIdProp || routeProjectId;
@@ -485,6 +486,7 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
     }
   };
 
+  /** Opens the inline editor with the existing HTML and normalizes supplied mention IDs. */
   const startEdit = (commentId: string, content: string, mentions?: any[]) => {
     setEditingCommentId(commentId);
     setEditContent(content || '');

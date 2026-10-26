@@ -1,5 +1,6 @@
 import DOMPurify from 'dompurify';
 
+/** Uses the DOMPurify instance, or initializes its factory with an available window. */
 const getPurify = () => {
   if (DOMPurify && typeof (DOMPurify as any).sanitize === 'function') {
     return DOMPurify;
@@ -17,10 +18,11 @@ const getPurify = () => {
 
 /**
  * Sanitizes user input to prevent XSS attacks
+ * Strips all tags and attributes by default. Requires DOMPurify with a DOM window.
  *
  * @param input - The user input string to sanitize
- * @param options - Optional configuration for DOMPurify
- * @returns Sanitized string
+ * @param options - DOMPurify configuration that replaces the default configuration
+ * @returns Sanitized output, or an empty string for empty input
  */
 export const sanitizeInput = (input: string, options?: DOMPurify.Config): string => {
   if (!input) return '';
@@ -44,7 +46,7 @@ export const sanitizeInput = (input: string, options?: DOMPurify.Config): string
  * completely.
  *
  * @param input - The string to strip
- * @returns Plain text with all tags removed
+ * @returns Decoded text with all tags removed and surrounding whitespace trimmed
  */
 export const stripHtmlTags = (input: string): string => {
   if (!input) return '';
@@ -92,12 +94,15 @@ export const sanitizeHtml = (input: string): string => {
 };
 
 /**
- * Sanitizes comment content to prevent XSS attacks and open redirects
- * Matches backend sanitization: allows safe formatting but NO external links
- * Use this for comments to prevent HTML injection and open redirect attacks
+ * Sanitizes comment HTML while retaining rich formatting, mentions, and checklists.
+ * Link URLs must start with http:, https:, or mailto:.
+ * When document is available, retains only matching color declarations in styles,
+ * converts inputs to checkboxes, and sets anchors to target="_blank" with
+ * rel="noopener noreferrer nofollow". Otherwise returns the DOMPurify output
+ * without these additional transformations.
  *
  * @param input - The comment content to sanitize
- * @returns Sanitized comment content
+ * @returns Sanitized comment HTML, or an empty string for empty input
  */
 export const sanitizeCommentContent = (input: string): string => {
   if (!input) return '';
