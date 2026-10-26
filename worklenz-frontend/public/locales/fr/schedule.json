@@ -67,6 +67,7 @@
   "durationType": "Type de durée",
   "edit": "Modifier",
   "endDate": "Date de fin",
+  "endDateBeforeStartDate": "La date de fin ne peut pas être antérieure à la date de début",
   "enterTaskName": "Entrez le nom de la tâche…",
   "estHoursPerDay": "Heures estimées",
   "estHoursRequired": "Les heures estimées sont requises",

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, Suspense, useRef } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { releaseDocsEditors } from '@/pages/projects/project-view-1/docs/docs-editor-release';
 import { createPortal } from 'react-dom';
 
 // Centralized Ant Design imports
@@ -647,6 +648,8 @@ const ProjectView = React.memo(() => {
         dispatch(toggleUpgradeModal());
         return;
       }
+
+      if (activeTab === 'docs' && key !== 'docs') releaseDocsEditors();
 
       // Track finance tab clicks
       if (key === 'finance') {

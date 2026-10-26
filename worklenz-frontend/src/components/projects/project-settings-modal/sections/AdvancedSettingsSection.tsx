@@ -144,7 +144,7 @@ const AdvancedSettingsSection = ({
                 <Typography.Text>
                   {t('restrictTaskCreationBusinessPlanDescription', {
                     defaultValue:
-                      'Restricting task creation to Admins and Team Leads is available on Business and Enterprise plans.',
+                      'Restricting task creation to Admins, Team Leads, and Project Managers is available on Business and Enterprise plans.',
                   })}
                 </Typography.Text>
                 <Button
@@ -166,13 +166,14 @@ const AdvancedSettingsSection = ({
             <Space>
               <Typography.Text>
                 {t('restrictTaskCreation', {
-                  defaultValue: 'Restrict task assignment to Admins and Team Leads',
+                  defaultValue:
+                    'Restrict task assignment to Admins, Team Leads, and Project Managers',
                 })}
               </Typography.Text>
               <Tooltip
                 title={t('restrictTaskCreationTooltip', {
                   defaultValue:
-                    'When enabled, only Admins and Team Leads can create and assign tasks. Team Members can only view their assigned tasks.',
+                    'When enabled, only Admins, Team Leads, and Project Managers can create and assign tasks. Team Members can only view their assigned tasks.',
                 })}
               >
                 <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />

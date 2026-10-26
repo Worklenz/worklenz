@@ -363,7 +363,7 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
             description:
               task.message ||
               t('taskCreationRestricted', {
-                defaultValue: 'Task creation is restricted to Admins and Team Leads only. Please contact your admin for access.',
+                defaultValue: 'Task creation is restricted to Admins, Team Leads, and Project Managers only. Please contact your admin for access.',
               }),
             placement: 'topRight',
           });

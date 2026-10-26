@@ -23,7 +23,13 @@ import {
 
 const NO_PRIORITY_ID = '__no_priority__';
 
-const ProjectPriorityFilterDropdown = () => {
+interface ProjectPriorityFilterDropdownProps {
+  inline?: boolean;
+}
+
+const ProjectPriorityFilterDropdown = ({
+  inline = false,
+}: ProjectPriorityFilterDropdownProps) => {
   const { t } = useTranslation('reporting-projects-filters');
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
@@ -122,6 +128,11 @@ const ProjectPriorityFilterDropdown = () => {
     </Card>
   );
 
+  
+  if (inline) {
+    return dropdownContent;
+  }
+
   return (
     <Dropdown
       overlayClassName="custom-dropdown"
@@ -151,6 +162,7 @@ const ProjectPriorityFilterDropdown = () => {
       </Button>
     </Dropdown>
   );
+
 };
 
 export default memo(ProjectPriorityFilterDropdown);
