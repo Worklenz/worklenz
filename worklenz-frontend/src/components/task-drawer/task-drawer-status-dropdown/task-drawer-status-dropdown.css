@@ -26,3 +26,10 @@
   background-color: var(--task-drawer-status-bg) !important;
   border-radius: 16px !important;
 }
+   .task-drawer-status-select.ant-select {
+     min-width: 90px !important;
+   }
+
+   .task-drawer-status-select .ant-select-selector {
+     padding: 0 8px !important;
+   }
