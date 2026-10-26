@@ -293,12 +293,6 @@ button.docs-mention-chip:disabled,
   flex-direction: column;
 }
 
-.docs-document-editor .ProseMirror:focus-visible {
-  outline: 1px solid var(--docs-border);
-  outline-offset: 6px;
-  border-radius: 6px;
-}
-
 .docs-writing-tail {
   display: block;
   flex: 1;
