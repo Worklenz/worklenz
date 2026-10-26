@@ -69,15 +69,25 @@ const { useToken } = theme;
 
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🎉', '🔥'];
 
+/**
+ * Escapes plain text string into safe HTML entities using DOM textContent assignment.
+ *
+ * @param text - Plain text string to escape
+ * @returns Escaped HTML string
+ */
 const escapeHtml = (text: string) => {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 };
 
-// Wrap bare http(s) URLs that appear as plain text in anchors so they render as
-// clickable links. Walks text nodes only, leaving existing <a> tags and mention
-// spans untouched.
+/**
+ * Wraps bare http(s) URLs that appear as plain text in anchor tags so they render as
+ * clickable links. Walks text nodes only, leaving existing <a> tags and mention spans untouched.
+ *
+ * @param html - HTML content string
+ * @returns HTML string with text URLs converted to clickable links
+ */
 const autoLinkUrls = (html: string) => {
   if (!html || !/https?:\/\//i.test(html)) return html;
   const parser = new DOMParser();
@@ -122,6 +132,13 @@ interface ProjectViewUpdatesProps {
   fullHeight?: boolean;
 }
 
+/**
+ * Project updates chat thread component, allowing project team members to post rich comments,
+ * mention colleagues, attach files, add emoji reactions, and manage comment updates in real time.
+ *
+ * @param props - Optional projectId override and fullHeight layout flag
+ * @returns The rendered project updates thread component
+ */
 const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectViewUpdatesProps = {}) => {
   const { projectId: routeProjectId } = useParams<{ projectId: string }>();
   const projectId = projectIdProp || routeProjectId;

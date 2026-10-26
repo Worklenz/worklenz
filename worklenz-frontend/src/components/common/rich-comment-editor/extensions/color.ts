@@ -9,6 +9,10 @@ declare module '@tiptap/core' {
   }
 }
 
+/**
+ * TipTap mark extension providing text color formatting support.
+ * Parses and renders span elements with inline color styles, and exposes setColor/unsetColor commands.
+ */
 export const ColorMark = Mark.create({
   name: 'textStyle',
   addOptions() {

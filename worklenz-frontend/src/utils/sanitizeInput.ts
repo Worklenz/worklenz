@@ -148,6 +148,27 @@ export const sanitizeCommentContent = (input: string): string => {
       }
     });
 
+    const ALLOWED_CLASSES = new Set([
+      'mention',
+      'mentions',
+      'comment-link',
+      'rich-task-list',
+      'rich-task-item',
+      'is-checked',
+      'rich-task-item-content',
+      'rich-code-block',
+      'rich-blockquote',
+    ]);
+
+    div.querySelectorAll('[class]').forEach(el => {
+      const filtered = Array.from(el.classList).filter(cls => ALLOWED_CLASSES.has(cls));
+      if (filtered.length > 0) {
+        el.setAttribute('class', filtered.join(' '));
+      } else {
+        el.removeAttribute('class');
+      }
+    });
+
     div.querySelectorAll('input').forEach(input => {
       input.setAttribute('type', 'checkbox');
     });

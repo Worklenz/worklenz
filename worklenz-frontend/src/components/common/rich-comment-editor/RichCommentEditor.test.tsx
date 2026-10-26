@@ -110,4 +110,19 @@ describe('RichCommentEditor', () => {
 
     expect(onSubmit).toHaveBeenCalled();
   });
+
+  it('parses legacy span.mentions into mention nodes', async () => {
+    render(
+      <RichCommentEditor
+        value='<p>Hello <span class="mentions">@Alex Doe</span> please check</p>'
+        onChange={vi.fn()}
+        mentionOptions={sampleMembers}
+        ariaLabel="Task comment"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('@Alex Doe')).toBeInTheDocument();
+    });
+  });
 });

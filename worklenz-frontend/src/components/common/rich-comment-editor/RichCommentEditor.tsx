@@ -78,10 +78,29 @@ const COLOR_PALETTE = [
   { label: 'Gray', value: '#8c8c8c' },
 ];
 
+/**
+ * Escapes special HTML characters in plain text to prevent unintended markup execution.
+ *
+ * @param text - Plaintext string to escape
+ * @returns HTML-escaped string
+ */
 const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+/**
+ * Checks whether a given string contains HTML tags.
+ *
+ * @param text - String to test for HTML tags
+ * @returns True if HTML tags are detected, false otherwise
+ */
 const isHtml = (text: string): boolean => /<\/?(?:p|br|h[1-6]|strong|b|em|i|u|s|del|strike|ul|ol|li|a|blockquote|code|pre|span|div)\b[^>]*>/i.test(text);
 
+/**
+ * Normalizes input value for TipTap: preserves existing HTML or converts plaintext
+ * newlines into paragraph tags.
+ *
+ * @param value - Raw text or HTML input
+ * @returns HTML string suitable for TipTap editor content
+ */
 const toEditorHtml = (value: string): string => {
   if (!value) return '';
   if (isHtml(value)) return value;
@@ -91,6 +110,13 @@ const toEditorHtml = (value: string): string => {
     .join('');
 };
 
+/**
+ * Extracts all unique mention options currently referenced inside the editor document.
+ *
+ * @param editor - TipTap editor instance
+ * @param options - Available member mention options
+ * @returns Filtered array of mention members present in the document
+ */
 const extractMentions = (editor: Editor, options: MentionMemberOption[]): MentionMemberOption[] => {
   const ids = new Set<string>();
   editor.state.doc.descendants(node => {
@@ -102,6 +128,14 @@ const extractMentions = (editor: Editor, options: MentionMemberOption[]): Mentio
   return options.filter(opt => ids.has(opt.id));
 };
 
+/**
+ * TipTap-based rich text editor component for task comments and project updates.
+ * Supports 10 rich text formatting options, inline member mentions, URL autolinking,
+ * keyboard shortcuts (Ctrl/Cmd+Enter), and light/dark theme adaptation.
+ *
+ * @param props - Configuration and event handler properties for the editor
+ * @returns The rendered rich comment editor element
+ */
 export const RichCommentEditor = ({
   value = '',
   controlled = false,
@@ -166,7 +200,43 @@ export const RichCommentEditor = ({
       Placeholder.configure({
         placeholder: placeholder || t('addComment', { defaultValue: 'Add a comment...' }),
       }),
-      Mention.configure({
+      Mention.extend({
+        parseHTML() {
+          return [
+            {
+              tag: 'span[data-type="mention"]',
+            },
+            {
+              tag: 'span.mentions',
+              getAttrs: node => {
+                const el = node as HTMLElement;
+                const text = (el.textContent || '').replace(/^@/, '').trim();
+                const matched = optionsRef.current.find(
+                  m => m.name.toLowerCase() === text.toLowerCase()
+                );
+                return {
+                  id: matched?.id || el.getAttribute('data-id') || text,
+                  label: matched?.name || el.getAttribute('data-label') || text,
+                };
+              },
+            },
+            {
+              tag: 'span.mention',
+              getAttrs: node => {
+                const el = node as HTMLElement;
+                const text = (el.textContent || '').replace(/^@/, '').trim();
+                const matched = optionsRef.current.find(
+                  m => m.name.toLowerCase() === text.toLowerCase()
+                );
+                return {
+                  id: matched?.id || el.getAttribute('data-id') || text,
+                  label: matched?.name || el.getAttribute('data-label') || text,
+                };
+              },
+            },
+          ];
+        },
+      }).configure({
         HTMLAttributes: { class: 'mention' },
         suggestion: {
           char: '@',
@@ -375,12 +445,24 @@ export const RichCommentEditor = ({
   );
 };
 
+/**
+ * Renders an inline SVG quote icon for the blockquote formatting action.
+ *
+ * @returns The SVG icon element
+ */
 const QuoteGlyph = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
     <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
   </svg>
 );
 
+/**
+ * Formatting toolbar for the rich comment editor, exposing action buttons for text styles,
+ * code blocks, quotes, lists, links, and color picker.
+ *
+ * @param props - Editor instance and disabled state
+ * @returns The toolbar element
+ */
 const Toolbar = ({ editor, disabled }: { editor: Editor; disabled: boolean }) => {
   const { t } = useTranslation('common');
 
@@ -494,6 +576,12 @@ const Toolbar = ({ editor, disabled }: { editor: Editor; disabled: boolean }) =>
   );
 };
 
+/**
+ * Toolbar link control popover that allows users to attach or remove hyperlinks on selected text.
+ *
+ * @param props - Editor instance, active link status, and disabled flag
+ * @returns The link control popover element
+ */
 const LinkControl = ({
   editor,
   isActive,
@@ -572,6 +660,12 @@ const LinkControl = ({
   );
 };
 
+/**
+ * Toolbar color picker popover that allows users to apply or clear text color from a preset palette.
+ *
+ * @param props - Editor instance, active text color, and disabled flag
+ * @returns The color control popover element
+ */
 const ColorControl = ({
   editor,
   currentColor,

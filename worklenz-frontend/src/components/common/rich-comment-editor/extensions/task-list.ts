@@ -8,6 +8,10 @@ declare module '@tiptap/core' {
   }
 }
 
+/**
+ * TipTap Node extension for task list containers (ul[data-type="taskList"]).
+ * Handles list commands, keyboard shortcuts, and renders accessible checklist elements.
+ */
 export const TaskList = Node.create({
   name: 'taskList',
   group: 'block list',
@@ -34,6 +38,10 @@ export const TaskList = Node.create({
   },
 });
 
+/**
+ * TipTap Node extension for individual checklist items (li[data-type="taskItem"]).
+ * Renders checkbox inputs and content wrappers, and manages checked state transitions.
+ */
 export const TaskItem = Node.create({
   name: 'taskItem',
   content: 'paragraph block*',

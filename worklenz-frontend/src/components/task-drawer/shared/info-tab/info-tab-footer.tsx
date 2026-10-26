@@ -22,7 +22,12 @@ import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import './info-tab-footer.css';
 
-// Utility function to convert file to base64
+/**
+ * Converts a browser File object to a base64 Data URL string.
+ *
+ * @param file - The file to read
+ * @returns Promise resolving to base64 data string
+ */
 const getBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -32,7 +37,12 @@ const getBase64 = (file: File): Promise<string> => {
   });
 };
 
-// Utility function to format file size
+/**
+ * Formats a raw byte count into a human-readable file size string (Bytes, KB, MB, GB).
+ *
+ * @param bytes - Size in bytes
+ * @returns Formatted size string
+ */
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
@@ -44,6 +54,12 @@ const formatFileSize = (bytes: number): string => {
 const COMMENT_ATTACHMENT_SIZE_LIMIT_BYTES = 25 * 1024 * 1024;
 const MAX_COMMENT_LENGTH = 5000;
 
+/**
+ * Footer component for the task drawer's info tab, hosting the rich comment composer,
+ * file attachment handling, and quick submit actions.
+ *
+ * @returns The rendered footer element
+ */
 const InfoTabFooter = () => {
   const { t, i18n } = useTranslation('task-drawer/task-drawer');
   const MAXIMUM_FILE_COUNT = 5;
@@ -182,7 +198,7 @@ const InfoTabFooter = () => {
 
   const handleCommentChange = useCallback(({ html, text, mentions }: RichCommentChange) => {
     setCommentValue(html);
-    setCharacterLength(text.length);
+    setCharacterLength(text.trim().length);
     setSelectedMembers(
       mentions.map(m => ({ team_member_id: m.id, name: m.name }))
     );

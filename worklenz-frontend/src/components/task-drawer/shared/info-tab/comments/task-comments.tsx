@@ -57,19 +57,34 @@ const formatDateForSeparator = (date: string, t?: TFunction) => {
   }
 };
 
-// Helper function to check if two dates are from different days
+/**
+ * Checks whether two ISO date strings fall on different calendar days.
+ *
+ * @param date1 - First ISO date string
+ * @param date2 - Second ISO date string
+ * @returns True if the dates are on different days, false otherwise
+ */
 const isDifferentDay = (date1: string, date2: string) => {
   return !dayjs(date1).isSame(dayjs(date2), 'day');
 };
 
-// Helper function to check if content already has processed mentions
+/**
+ * Checks whether HTML content already includes processed mention spans.
+ *
+ * @param content - HTML comment string to check
+ * @returns True if mention spans are detected, false otherwise
+ */
 const hasProcessedMentions = (content: string): boolean => {
   return content.includes('<span class="mentions">');
 };
 
-// Enhanced mention processing function — only highlights known mention names.
-// Without knownNames we cannot safely identify mentions, so we skip highlighting
-// to avoid false positives on arbitrary @-prefixed text.
+/**
+ * Highlights known member mention names as formatted mention spans within comment HTML.
+ *
+ * @param content - Raw or sanitized comment text
+ * @param knownNames - List of member names known to be mentioned
+ * @returns Comment HTML with mention names wrapped in mention spans
+ */
 const processMentions = (content: string, knownNames?: string[]) => {
   if (!content) return '';
   if (hasProcessedMentions(content)) return content;
@@ -115,8 +130,13 @@ const linkifyUrls = (content: string): string => {
   });
 };
 
-// Helper function to process content
-// knownNames: list of mention names from the comment's mentions array
+/**
+ * Sanitizes and formats comment content for display, resolving mentions and links.
+ *
+ * @param content - Stored comment content string
+ * @param knownNames - Optional list of mentioned member names
+ * @returns Sanitized, linkified, and mention-highlighted HTML string
+ */
 const processContent = (content: string, knownNames?: string[]) => {
   if (!content) return '';
 
@@ -158,6 +178,13 @@ const prepareContentForEditing = (content: string): string => {
   return stripHtmlTags(withRawUrls);
 };
 
+/**
+ * Renders the task comments thread in the task drawer, displaying existing comments,
+ * attachments, reactions, and inline edit capabilities via the rich comment editor.
+ *
+ * @param props - Task ID, translation function, and guest flag
+ * @returns The rendered task comments component
+ */
 const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFunction; isGuest?: boolean }) => {
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<ITaskCommentViewModel[]>([]);
@@ -237,6 +264,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
           // Process content for display but preserve task_id from response
           sortedComments.forEach(comment => {
             if (comment.content) {
+              comment.raw_content = comment.content;
               // Primary: use the mentions array from backend
               let knownNames: string[] | undefined = (comment as any).mentions
                 ?.map((m: any) => m.user_name || m.name)
@@ -476,7 +504,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
 
   const startEdit = (item: ITaskCommentViewModel) => {
     setEditingCommentId(item.id || null);
-    setEditContent(item.content || '');
+    setEditContent(item.raw_content ?? item.content ?? '');
     setEditSelectedMembers([]);
   };
 
@@ -491,7 +519,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
 
     if (!item.id || !resolvedTaskId || !editContent.trim()) return;
 
-    const originalContent = item.content || '';
+    const originalContent = item.raw_content ?? item.content ?? '';
     if (editContent.trim() === originalContent.trim()) {
       cancelEdit();
       return;

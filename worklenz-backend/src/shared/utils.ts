@@ -357,8 +357,9 @@ export function sanitizeCommentContent(content: string): string {
     allowedAttributes: {
       'span': ['class', 'style', 'data-type', 'data-id', 'data-label', 'data-color'],
       'a': ['href', 'target', 'rel', 'class'],
+      'blockquote': ['class'],
       'ul': ['class', 'data-type'],
-      'ol': ['class', 'start'],
+      'ol': ['start'],
       'li': ['class', 'data-type', 'data-checked'],
       'input': [
         {
@@ -373,6 +374,16 @@ export function sanitizeCommentContent(content: string): string {
       'code': ['class'],
       'pre': ['class'],
       'div': ['class', 'style']
+    },
+    allowedClasses: {
+      'span': ['mention', 'mentions'],
+      'a': ['comment-link'],
+      'blockquote': ['rich-blockquote'],
+      'ul': ['rich-task-list'],
+      'li': ['rich-task-item', 'is-checked'],
+      'div': ['rich-task-item-content'],
+      'pre': ['rich-code-block'],
+      'code': ['rich-code-block']
     },
     allowedSchemes: ['http', 'https', 'mailto'],
     allowedStyles: {

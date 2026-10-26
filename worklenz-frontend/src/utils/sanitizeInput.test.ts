@@ -41,4 +41,16 @@ describe('sanitizeCommentContent', () => {
     expect(output).not.toContain('onerror');
     expect(output).not.toContain('javascript:');
   });
+
+  it('restricts classes to the editor allowlist and removes unknown classes', () => {
+    const input = '<span class="mention fixed inset-0">@John</span><div class="rich-task-item-content evil-class">content</div><p class="unauthorized">text</p><blockquote class="rich-blockquote">quote</blockquote>';
+    const output = sanitizeCommentContent(input);
+    expect(output).toContain('class="mention"');
+    expect(output).not.toContain('fixed');
+    expect(output).not.toContain('inset-0');
+    expect(output).toContain('class="rich-task-item-content"');
+    expect(output).not.toContain('evil-class');
+    expect(output).not.toContain('unauthorized');
+    expect(output).toContain('class="rich-blockquote"');
+  });
 });

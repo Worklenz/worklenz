@@ -11,7 +11,12 @@ interface CommentsColumnProps {
   onOpenComment?: (commentId: string) => void;
 }
 
-/** Strip HTML tags so accessible text / aria labels stay plain. */
+/**
+ * Strips HTML tags and normalizes whitespace so accessible text and aria-labels stay plain text.
+ *
+ * @param html - Raw HTML string to strip
+ * @returns Plain text content
+ */
 const stripHtml = (html: string): string => {
   if (!html) return '';
   const tmp = document.createElement('div');
@@ -19,6 +24,12 @@ const stripHtml = (html: string): string => {
   return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
 };
 
+/**
+ * Formats an ISO date string into a localized short date display (e.g., "Oct 26, 2026").
+ *
+ * @param value - ISO date string or null/undefined
+ * @returns Formatted date string, or empty string if invalid
+ */
 const formatCommentDate = (value?: string | null): string => {
   if (!value) return '';
   const date = new Date(value);
@@ -27,8 +38,11 @@ const formatCommentDate = (value?: string | null): string => {
 };
 
 /**
- * Extracts the first meaningful line / block for single-row cell preview,
- * preserving inline rich formatting while ignoring subsequent blocks.
+ * Extracts the first meaningful line or block from HTML content for single-row table cell preview,
+ * preserving inline rich formatting tags while ignoring subsequent blocks.
+ *
+ * @param html - Full sanitized comment HTML string
+ * @returns Object with preview HTML string and hasMore boolean indicator
  */
 export const extractFirstLinePreview = (html: string): { previewHtml: string; hasMore: boolean } => {
   if (!html) return { previewHtml: '', hasMore: false };
@@ -103,8 +117,8 @@ export const extractFirstLinePreview = (html: string): { previewHtml: string; ha
 export const CommentsColumn: React.FC<CommentsColumnProps> = memo(({ width, task, onOpenComment }) => {
   const { t } = useTranslation('task-list-table');
   const rawComment = task.latest_comment || '';
-  const plainTextComment = useMemo(() => stripHtml(rawComment), [rawComment]);
   const sanitizedComment = useMemo(() => sanitizeCommentContent(rawComment), [rawComment]);
+  const plainTextComment = useMemo(() => stripHtml(sanitizedComment), [sanitizedComment]);
   const { previewHtml, hasMore } = useMemo(
     () => extractFirstLinePreview(sanitizedComment),
     [sanitizedComment]

@@ -46,23 +46,43 @@ function stripHtml(html: string): string {
 // /[.,;:!?)]+$/ backtracks polynomially on a URL ending in many such chars.
 const TRAILING_PUNCTUATION = new Set([".", ",", ";", ":", "!", "?", ")"]);
 
+/**
+ * Trims trailing sentence punctuation characters from an extracted URL.
+ *
+ * @param url - The raw URL string
+ * @returns The URL with trailing punctuation removed
+ */
 function trimTrailingPunctuation(url: string): string {
   let end = url.length;
   while (end > 0 && TRAILING_PUNCTUATION.has(url[end - 1])) end--;
   return url.slice(0, end);
 }
 
+/**
+ * Normalizes an extracted URL by replacing HTML-encoded ampersands (&amp;)
+ * with plain ampersands and stripping any trailing punctuation.
+ *
+ * @param url - The URL string to normalize
+ * @returns The normalized URL string
+ */
 function cleanUrl(url: string): string {
   return trimTrailingPunctuation(url.replace(/&amp;/gi, "&"));
 }
 
+/**
+ * Extracts and deduplicates all unique URLs found in HTML content (both from href
+ * attributes and plaintext URLs), normalizing query strings and punctuation.
+ *
+ * @param html - The HTML string to parse for URLs
+ * @returns Array of unique, normalized URL strings
+ */
 export function extractUrls(html: string): string[] {
   if (!html) return [];
   const hrefUrls: string[] = [];
   const hrefRegex = /href=["'](https?:\/\/[^\s"'>]+)["']/gi;
   let match: RegExpExecArray | null;
   while ((match = hrefRegex.exec(html)) !== null) {
-    hrefUrls.push(cleanUrl(match[1]));
+    hrefUrls.push(match[1].replace(/&amp;/gi, "&"));
   }
 
   const text = stripHtml(html);
