@@ -96,9 +96,17 @@ export const projectsApiService = {
     size: number,
     field: string | null,
     order: string | null,
-    search: string | null
+    search: string | null,
+    memberType?: 'team' | 'guest' | 'all' | null
   ): Promise<IServerResponse<IProjectMembersViewModel>> => {
-    const url = `${rootUrl}/members/${id}${toQueryString({ index, size, field, order, search: search || '' })}`;
+    const url = `${rootUrl}/members/${id}${toQueryString({
+      index,
+      size,
+      field,
+      order,
+      search: search || '',
+      member_type: memberType || undefined,
+    })}`;
     const response = await apiClient.get<IServerResponse<IProjectMembersViewModel>>(`${url}`);
     return response.data;
   },

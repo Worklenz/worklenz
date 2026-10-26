@@ -97,6 +97,8 @@
   "restrictTaskCreationBusinessPlanDescription": "Die Einschränkung der Aufgabenerstellung auf Admins und Teamleiter ist in Business- und Enterprise-Plänen verfügbar.",
   "restrictTaskCreation": "Aufgabenzuweisung auf Admins und Teamleiter beschränken",
   "restrictTaskCreationTooltip": "Wenn aktiviert, können nur Admins und Teamleiter Aufgaben erstellen und zuweisen.",
+  "membersCanViewClientTeam": "Mitgliedern erlauben, das Kundenteam zu sehen",
+  "membersCanViewClientTeamTooltip": "Wenn aktiviert, können normale Projektmitglieder den Tab Kundenteam auf der Mitgliederseite sehen. Eigentümer, Admins, Teamleiter und Projektmanager sehen ihn immer.",
   "phaseAssigneesSettings": "Phasen-Beauftragte",
   "phaseAssigneesSettingsDescription": "Wenn aktiviert, kann jede Pipeline-Phase einen dedizierten Beauftragten haben. Aufgaben können nur vom Phasenbeauftragten vorangebracht werden (Admins können immer überschreiben).",
   "phaseAssigneesEnabled": "Phasen-Beauftragte aktivieren",
