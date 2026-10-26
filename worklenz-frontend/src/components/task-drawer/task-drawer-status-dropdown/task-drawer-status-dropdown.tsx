@@ -129,9 +129,9 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId, disabled = false }: 
     const statusColor =
       themeMode === 'dark'
         ? selectedStatus?.color_code_dark ||
-          selectedStatus?.color_code ||
-          task.status_color_dark ||
-          task.status_color
+        selectedStatus?.color_code ||
+        task.status_color_dark ||
+        task.status_color
         : selectedStatus?.color_code || task.status_color || task.status_color_dark;
 
     return statusColor || (themeMode === 'dark' ? '#4b5563' : '#9ca3af');
@@ -160,9 +160,9 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId, disabled = false }: 
           popupMatchSelectWidth={false}
           style={
             {
-              width: 'fit-content',
-              minWidth: 120,
-              maxWidth: 220,
+              width: 160,
+              minWidth: 160,
+              maxWidth: 160,
               backgroundColor: resolvedStatusBackground,
               borderRadius: 16,
               '--task-drawer-status-bg': resolvedStatusBackground,
@@ -173,7 +173,18 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId, disabled = false }: 
           }
           labelRender={status => {
             return (
-              <span style={{ fontSize: 13, color: resolvedStatusTextColor }}>
+              <span
+                title={String(status.label ?? '')}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 13,
+                  color: resolvedStatusTextColor,
+                }}
+              >
                 {status.label}
               </span>
             );

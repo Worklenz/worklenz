@@ -1,21 +1,15 @@
-/* Mentions styling */
+/* Mentions in sent messages: single highlight only */
 .mentions {
-  font-weight: 500;
-  border-radius: 4px;
-  padding: 1px 4px;
-  margin: 0 1px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
 }
 
-.theme-light .mentions {
-  background: #f0f2f5;
-  color: #1890ff;
-  border: 1px solid #e6e6e6;
-}
-
-.theme-dark .mentions {
-  background: #2a3a4a;
-  color: #40a9ff;
-  border: 1px solid #2a4a6d;
+/* The inner highlight (same look as the input) is the only visible box */
+.mentions .mention-highlight-light,
+.mentions .mention-highlight-dark {
+  display: inline;
 }
 
 /* ========== MENTION INPUT HIGHLIGHTING STYLES ========== */

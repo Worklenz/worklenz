@@ -4,6 +4,8 @@
  * Used for both PDF generation and print preview
  */
 
+import { sanitizePortalRichText } from "./utils";
+
 interface InvoiceData {
   invoiceNumber: string;
   status: string;
@@ -153,6 +155,21 @@ export class InvoiceTemplateGenerator {
       "'": '&#039;',
     };
     return text.replace(/[&<>"']/g, (m) => map[m]);
+  }
+
+  /**
+   * Safe HTML for the notes section: sanitized rich text, or escaped legacy plain text
+   * with line breaks preserved (mirrors frontend richTextToSafeHtml / isRichHtml).
+   */
+  private static formatNotesHtml(notes: string): string {
+    // Same allowlist as frontend isRichHtml — avoids treating stray "<script>" in plain text as rich HTML.
+    const isRichHtml = /<\/?(?:p|br|h[1-3]|strong|b|em|i|u|s|ul|ol|li|a|blockquote|code|pre|span)\b[^>]*>/i.test(
+      notes
+    );
+    if (isRichHtml) {
+      return sanitizePortalRichText(notes);
+    }
+    return this.escapeHtml(notes).replace(/\r?\n/g, '<br>');
   }
 
   /**
@@ -426,10 +443,19 @@ export class InvoiceTemplateGenerator {
               color: #666;
               margin-bottom: 10px;
             }
-            .notes-section p {
+            .notes-section p,
+            .notes-section .notes-body {
               font-size: 14px;
               color: #555;
               line-height: 1.6;
+            }
+            .notes-section .notes-body ul,
+            .notes-section .notes-body ol {
+              margin: 8px 0;
+              padding-left: 24px;
+            }
+            .notes-section .notes-body li {
+              margin: 4px 0;
             }
             .footer {
               text-align: center;
@@ -583,7 +609,7 @@ export class InvoiceTemplateGenerator {
             ${invoice.notes ? `
               <div class="notes-section">
                 <h3>Notes</h3>
-                <p>${this.escapeHtml(invoice.notes)}</p>
+                <div class="notes-body">${this.formatNotesHtml(invoice.notes)}</div>
               </div>
             ` : ''}
 
