@@ -180,7 +180,7 @@ const prepareContentForEditing = (content: string): string => {
 
 /**
  * Renders the task comments thread in the task drawer, displaying existing comments,
- * attachments, reactions, and inline edit capabilities via the rich comment editor.
+ * attachments, reactions, live updates, and inline editing via the rich comment editor.
  *
  * @param props - Task ID, translation function, and guest flag
  * @returns The rendered task comments component
@@ -502,6 +502,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
 
   // ─── Edit ─────────────────────────────────────────────────────────────────
 
+  /** Opens the inline editor with the comment's HTML and clears selected mentions. */
   const startEdit = (item: ITaskCommentViewModel) => {
     setEditingCommentId(item.id || null);
     setEditContent(item.raw_content ?? item.content ?? '');
@@ -514,6 +515,12 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
     setEditSelectedMembers([]);
   };
 
+  /**
+   * Saves changed comment HTML with mentions deduplicated by team member ID.
+   * Missing IDs or blank content are ignored; unchanged content closes the editor.
+   * Success refreshes comments and dispatches task-comment-update. Request errors
+   * are caught and shown as messages, leaving the editor open for retry.
+   */
   const saveEdit = async (item: ITaskCommentViewModel) => {
     const resolvedTaskId = item.task_id || taskId;
 

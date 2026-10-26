@@ -38,11 +38,15 @@ const formatCommentDate = (value?: string | null): string => {
 };
 
 /**
- * Extracts the first meaningful line or block from HTML content for single-row table cell preview,
- * preserving inline rich formatting tags while ignoring subsequent blocks.
+ * Extracts the first meaningful line or block for a single-row cell preview,
+ * preserving inline formatting while ignoring subsequent blocks. Lists use the
+ * first nonempty item's inner HTML; other elements stop at the first br.
+ * This helper expects sanitized HTML and does not sanitize its input. When the
+ * document or child elements are unavailable, it returns the input unchanged.
  *
- * @param html - Full sanitized comment HTML string
- * @returns Object with preview HTML string and hasMore boolean indicator
+ * @param html - Already-sanitized comment HTML
+ * @returns Preview HTML and whether more content follows; empty input returns
+ * an empty preview with hasMore set to false
  */
 export const extractFirstLinePreview = (html: string): { previewHtml: string; hasMore: boolean } => {
   if (!html) return { previewHtml: '', hasMore: false };

@@ -133,8 +133,8 @@ interface ProjectViewUpdatesProps {
 }
 
 /**
- * Project updates chat thread component, allowing project team members to post rich comments,
- * mention colleagues, attach files, add emoji reactions, and manage comment updates in real time.
+ * Project updates conversation for posting rich comments, mentioning colleagues,
+ * attaching files, adding reactions, and editing comments in real time.
  *
  * @param props - Optional projectId override and fullHeight layout flag
  * @returns The rendered project updates thread component
@@ -502,6 +502,7 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
     }
   };
 
+  /** Opens the inline editor with the existing HTML and normalizes supplied mention IDs. */
   const startEdit = (commentId: string, content: string, mentions?: any[]) => {
     setEditingCommentId(commentId);
     setEditContent(content || '');

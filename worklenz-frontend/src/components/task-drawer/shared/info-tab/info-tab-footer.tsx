@@ -56,7 +56,7 @@ const MAX_COMMENT_LENGTH = 5000;
 
 /**
  * Footer component for the task drawer's info tab, hosting the rich comment composer,
- * file attachment handling, and quick submit actions.
+ * mentions, file attachment handling, and quick submit actions.
  *
  * @returns The rendered footer element
  */
@@ -196,6 +196,7 @@ const InfoTabFooter = () => {
     [members]
   );
 
+  /** Stores comment HTML and mentions, using plain-text length to enable submission. */
   const handleCommentChange = useCallback(({ html, text, mentions }: RichCommentChange) => {
     setCommentValue(html);
     setCharacterLength(text.trim().length);

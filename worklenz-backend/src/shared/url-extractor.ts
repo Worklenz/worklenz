@@ -58,24 +58,10 @@ function trimTrailingPunctuation(url: string): string {
   return url.slice(0, end);
 }
 
-/**
- * Normalizes an extracted URL by replacing HTML-encoded ampersands (&amp;)
- * with plain ampersands and stripping any trailing punctuation.
- *
- * @param url - The URL string to normalize
- * @returns The normalized URL string
- */
 function cleanUrl(url: string): string {
   return trimTrailingPunctuation(url.replace(/&amp;/gi, "&"));
 }
 
-/**
- * Extracts and deduplicates all unique URLs found in HTML content (both from href
- * attributes and plaintext URLs), normalizing query strings and punctuation.
- *
- * @param html - The HTML string to parse for URLs
- * @returns Array of unique, normalized URL strings
- */
 export function extractUrls(html: string): string[] {
   if (!html) return [];
   const hrefUrls: string[] = [];

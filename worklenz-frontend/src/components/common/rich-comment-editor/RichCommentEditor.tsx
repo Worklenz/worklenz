@@ -79,7 +79,7 @@ const COLOR_PALETTE = [
 ];
 
 /**
- * Escapes special HTML characters in plain text to prevent unintended markup execution.
+ * Escapes ampersands and angle brackets in plain text for safe HTML text content.
  *
  * @param text - Plaintext string to escape
  * @returns HTML-escaped string
@@ -87,16 +87,15 @@ const COLOR_PALETTE = [
 const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /**
- * Checks whether a given string contains HTML tags.
+ * Detects recognized rich-text tags. This is a format heuristic, not sanitization.
  *
- * @param text - String to test for HTML tags
- * @returns True if HTML tags are detected, false otherwise
+ * @param text - String to inspect for recognized rich-text tags
+ * @returns True if a recognized tag is present
  */
 const isHtml = (text: string): boolean => /<\/?(?:p|br|h[1-6]|strong|b|em|i|u|s|del|strike|ul|ol|li|a|blockquote|code|pre|span|div)\b[^>]*>/i.test(text);
 
 /**
- * Normalizes input value for TipTap: preserves existing HTML or converts plaintext
- * newlines into paragraph tags.
+ * Preserves recognized HTML or wraps each escaped plain-text line in a paragraph.
  *
  * @param value - Raw text or HTML input
  * @returns HTML string suitable for TipTap editor content
@@ -111,11 +110,11 @@ const toEditorHtml = (value: string): string => {
 };
 
 /**
- * Extracts all unique mention options currently referenced inside the editor document.
+ * Returns supplied member options whose IDs occur in mention nodes, in option order.
  *
  * @param editor - TipTap editor instance
  * @param options - Available member mention options
- * @returns Filtered array of mention members present in the document
+ * @returns Mention options referenced in the document
  */
 const extractMentions = (editor: Editor, options: MentionMemberOption[]): MentionMemberOption[] => {
   const ids = new Set<string>();
@@ -132,6 +131,15 @@ const extractMentions = (editor: Editor, options: MentionMemberOption[]): Mentio
  * TipTap-based rich text editor component for task comments and project updates.
  * Supports 10 rich text formatting options, inline member mentions, URL autolinking,
  * keyboard shortcuts (Ctrl/Cmd+Enter), and light/dark theme adaptation.
+ *
+ * With controlled=true, value changes replace content without emitting onChange;
+ * otherwise value initializes content, and setting it to an empty string clears
+ * the editor in either mode. Plain text is converted to paragraphs. Changes emit
+ * HTML (empty when the editor is empty), trimmed text with spaces between blocks,
+ * and matching mentionOptions. Ctrl/Cmd+Enter invokes onSubmit without validating
+ * content. minHeight and maxHeight are in pixels. maxLength only displays a
+ * counter and over-limit styling; edits count HTML UTF-16 code units and are not
+ * truncated.
  *
  * @param props - Configuration and event handler properties for the editor
  * @returns The rendered rich comment editor element
@@ -170,6 +178,7 @@ export const RichCommentEditor = ({
   onChangeRef.current = onChange;
   onSubmitRef.current = onSubmit;
 
+  /** Updates both the rendered mention menu and the state used by keyboard handlers. */
   const updateSuggestion = (next: SuggestionState | null) => {
     suggestionRef.current = next;
     setSuggestion(next);
@@ -446,7 +455,7 @@ export const RichCommentEditor = ({
 };
 
 /**
- * Renders an inline SVG quote icon for the blockquote formatting action.
+ * Renders the inline SVG quote icon for the blockquote formatting action.
  *
  * @returns The SVG icon element
  */
@@ -457,8 +466,8 @@ const QuoteGlyph = () => (
 );
 
 /**
- * Formatting toolbar for the rich comment editor, exposing action buttons for text styles,
- * code blocks, quotes, lists, links, and color picker.
+ * Renders the formatting toolbar with text styles, code blocks, quotes, lists,
+ * links, and color controls reflecting the editor's current selection.
  *
  * @param props - Editor instance and disabled state
  * @returns The toolbar element
@@ -482,6 +491,7 @@ const Toolbar = ({ editor, disabled }: { editor: Editor; disabled: boolean }) =>
     }),
   });
 
+  /** Renders a labeled action that preserves the editor selection on mouse down. */
   const btn = (label: string, isActive: boolean, action: () => void, icon: ReactNode) => (
     <Tooltip title={label} placement="top">
       <Button
@@ -577,7 +587,8 @@ const Toolbar = ({ editor, disabled }: { editor: Editor; disabled: boolean }) =>
 };
 
 /**
- * Toolbar link control popover that allows users to attach or remove hyperlinks on selected text.
+ * Lets users attach or remove hyperlinks on selected text through a URL popover;
+ * unsupported schemes are displayed as errors.
  *
  * @param props - Editor instance, active link status, and disabled flag
  * @returns The link control popover element
@@ -596,6 +607,10 @@ const LinkControl = ({
   const [url, setUrl] = useState('');
   const [hasError, setHasError] = useState(false);
 
+  /**
+   * Removes the link for blank input, or applies an HTTP(S)/mailto URL, adding
+   * https:// when no scheme is supplied. Invalid schemes leave the popover open.
+   */
   const apply = () => {
     const trimmed = url.trim();
     if (!trimmed) {
@@ -661,7 +676,7 @@ const LinkControl = ({
 };
 
 /**
- * Toolbar color picker popover that allows users to apply or clear text color from a preset palette.
+ * Lets users apply a preset text color or clear it with the Default palette option.
  *
  * @param props - Editor instance, active text color, and disabled flag
  * @returns The color control popover element

@@ -16,12 +16,15 @@ export const TaskList = Node.create({
   name: 'taskList',
   group: 'block list',
   content: 'taskItem+',
+  /** Recognizes unordered lists marked with data-type="taskList" as checklists. */
   parseHTML() {
     return [{ tag: 'ul[data-type="taskList"]', priority: 60 }];
   },
+  /** Serializes a checklist as an unordered list with its taskList marker and class. */
   renderHTML({ HTMLAttributes }) {
     return ['ul', mergeAttributes(HTMLAttributes, { 'data-type': 'taskList', class: 'rich-task-list' }), 0];
   },
+  /** Provides a toggle that switches the current selection to or from a taskItem list. */
   addCommands() {
     return {
       toggleTaskList:
@@ -31,6 +34,7 @@ export const TaskList = Node.create({
         },
     };
   },
+  /** Binds Mod-Shift-9 to toggle the checklist for the current selection. */
   addKeyboardShortcuts() {
     return {
       'Mod-Shift-9': () => this.editor.commands.toggleTaskList(),
@@ -46,6 +50,7 @@ export const TaskItem = Node.create({
   name: 'taskItem',
   content: 'paragraph block*',
   defining: true,
+  /** Stores checked state in data-checked, defaulting to unchecked after a split. */
   addAttributes() {
     return {
       checked: {
@@ -56,9 +61,11 @@ export const TaskItem = Node.create({
       },
     };
   },
+  /** Recognizes list items marked with data-type="taskItem" as checklist items. */
   parseHTML() {
     return [{ tag: 'li[data-type="taskItem"]', priority: 60 }];
   },
+  /** Serializes checked state with a checkbox label and a separate content container. */
   renderHTML({ node, HTMLAttributes }) {
     return [
       'li',
@@ -81,9 +88,11 @@ export const TaskItem = Node.create({
       ['div', { class: 'rich-task-item-content' }, 0],
     ];
   },
+  /** Turns an empty bracket pair followed by a space into a checklist item. */
   addInputRules() {
     return [wrappingInputRule({ find: /^\s*\[\s?\]\s$/, type: this.type })];
   },
+  /** Splits items with Enter, indents with Tab, and outdents with Shift-Tab. */
   addKeyboardShortcuts() {
     return {
       Enter: () => this.editor.commands.splitListItem(this.name),
@@ -91,6 +100,10 @@ export const TaskItem = Node.create({
       'Shift-Tab': () => this.editor.commands.liftListItem(this.name),
     };
   },
+  /**
+   * Creates a checkbox view that updates document state when the editor is editable
+   * and the item's position is available. Updates reuse the view only for taskItem nodes.
+   */
   addNodeView() {
     return ({ node, editor, getPos }) => {
       const dom = document.createElement('li');

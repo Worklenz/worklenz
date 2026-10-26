@@ -20,6 +20,7 @@ export const ColorMark = Mark.create({
       types: ['textStyle'],
     };
   },
+  /** Preserves inline text color when parsing and serializing marked content. */
   addAttributes() {
     return {
       color: {
@@ -36,6 +37,7 @@ export const ColorMark = Mark.create({
       },
     };
   },
+  /** Recognizes spans with an inline color declaration as textStyle marks. */
   parseHTML() {
     return [
       {
@@ -50,9 +52,11 @@ export const ColorMark = Mark.create({
       },
     ];
   },
+  /** Wraps marked content in a span carrying the mark's HTML attributes. */
   renderHTML({ HTMLAttributes }) {
     return ['span', mergeAttributes(HTMLAttributes), 0];
   },
+  /** Provides commands to set a color or remove the entire textStyle mark. */
   addCommands() {
     return {
       setColor:
