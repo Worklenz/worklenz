@@ -252,7 +252,7 @@ export const RichCommentEditor = ({
       const html = current.isEmpty ? '' : current.getHTML();
       const text = current.getText({ blockSeparator: ' ' }).trim();
       lastEmittedRef.current = html;
-      setCharCount(text.length);
+      setCharCount(html.length);
       onChangeRef.current?.({
         html,
         text,
@@ -265,7 +265,7 @@ export const RichCommentEditor = ({
     if (!editor || !controlled || value === lastEmittedRef.current) return;
     lastEmittedRef.current = value;
     editor.commands.setContent(toEditorHtml(value), { emitUpdate: false });
-    setCharCount(editor.getText({ blockSeparator: ' ' }).trim().length);
+    setCharCount(value.length);
   }, [editor, controlled, value]);
 
   useEffect(() => {

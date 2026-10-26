@@ -360,7 +360,15 @@ export function sanitizeCommentContent(content: string): string {
       'ul': ['class', 'data-type'],
       'ol': ['class', 'start'],
       'li': ['class', 'data-type', 'data-checked'],
-      'input': ['type', 'checked', 'disabled', 'aria-label'],
+      'input': [
+        {
+          name: 'type',
+          values: ['checkbox']
+        },
+        'checked',
+        'disabled',
+        'aria-label'
+      ],
       'label': ['contenteditable'],
       'code': ['class'],
       'pre': ['class'],

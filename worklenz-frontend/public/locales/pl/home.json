@@ -100,7 +100,7 @@
     "noUnassignedTasks": "Nie znaleziono nieprzydzielonych zadań",
     "pickUnassignedTaskRequired": "Wybierz nieprzypisane zadanie",
     "taskCreationRestrictedTitle": "Tworzenie zadań ograniczone",
-    "taskCreationRestricted": "Tworzenie zadań jest ograniczone wyłącznie do administratorów i liderów zespołów. Skontaktuj się ze swoim administratorem.",
+    "taskCreationRestricted": "Tworzenie zadań jest ograniczone wyłącznie do administratorów, liderów zespołów i kierowników projektów. Skontaktuj się ze swoim administratorem.",
     "assignees": "Osoby przypisane",
     "searchMembers": "Szukaj według nazwy lub adresu e-mail…",
     "noMembersFound": "Nie znaleziono żadnych członków",
@@ -538,6 +538,5 @@
     "completeFailed": "Nie można zaktualizować zadania. Spróbuj ponownie."
   },
   "projectsAtRisk": "Projekty zagrożone",
-  "flagged": "oflagowany",
-  "taskCreationRestricted": "Tworzenie zadań jest ograniczone wyłącznie do administratorów, liderów zespołów i kierowników projektów. Skontaktuj się ze swoim administratorem."
+  "flagged": "oflagowany"
 }

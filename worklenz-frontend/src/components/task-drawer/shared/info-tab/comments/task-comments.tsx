@@ -889,7 +889,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
                             </div>
                           ) : (
                             <>
-                              <div className="rich-comment-rendered" dangerouslySetInnerHTML={{ __html: item.content || '' }} />
+                              <div className="rich-comment-rendered" dangerouslySetInnerHTML={{ __html: sanitizeCommentContent(item.content || '') }} />
                               {item.attachments && item.attachments.length > 0 && (
                                 <div className="ant-upload-list ant-upload-list-picture-card">
                                   <AttachmentsGrid

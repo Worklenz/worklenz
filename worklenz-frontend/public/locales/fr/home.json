@@ -100,7 +100,7 @@
     "noUnassignedTasks": "Aucune tâche non attribuée trouvée",
     "pickUnassignedTaskRequired": "Veuillez sélectionner une tâche non attribuée",
     "taskCreationRestrictedTitle": "Création de tâches restreinte",
-    "taskCreationRestricted": "La création de tâches est réservée aux administrateurs et aux chefs d'équipe uniquement. Veuillez contacter votre administrateur.",
+    "taskCreationRestricted": "La création de tâches est réservée aux administrateurs, aux chefs d'équipe et aux chefs de projet uniquement. Veuillez contacter votre administrateur.",
     "assignees": "Destinataires",
     "searchMembers": "Rechercher par nom ou par email…",
     "noMembersFound": "Aucun membre trouvé",
@@ -538,6 +538,5 @@
     "completeFailed": "Impossible de mettre à jour cette tâche. Veuillez réessayer."
   },
   "projectsAtRisk": "Projets à risque",
-  "flagged": "signalé",
-  "taskCreationRestricted": "La création de tâches est réservée aux administrateurs, aux chefs d'équipe et aux chefs de projet uniquement. Veuillez contacter votre administrateur."
+  "flagged": "signalé"
 }

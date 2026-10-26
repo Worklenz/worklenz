@@ -52,18 +52,22 @@ function trimTrailingPunctuation(url: string): string {
   return url.slice(0, end);
 }
 
+function cleanUrl(url: string): string {
+  return trimTrailingPunctuation(url.replace(/&amp;/gi, "&"));
+}
+
 export function extractUrls(html: string): string[] {
   if (!html) return [];
   const hrefUrls: string[] = [];
   const hrefRegex = /href=["'](https?:\/\/[^\s"'>]+)["']/gi;
   let match: RegExpExecArray | null;
   while ((match = hrefRegex.exec(html)) !== null) {
-    hrefUrls.push(trimTrailingPunctuation(match[1]));
+    hrefUrls.push(cleanUrl(match[1]));
   }
 
   const text = stripHtml(html);
   const matches = text.match(URL_REGEX);
-  const textUrls = matches ? matches.map(trimTrailingPunctuation) : [];
+  const textUrls = matches ? matches.map(cleanUrl) : [];
 
   return [...new Set([...hrefUrls, ...textUrls])];
 }

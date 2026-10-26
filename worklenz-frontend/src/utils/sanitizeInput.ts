@@ -129,10 +129,25 @@ export const sanitizeCommentContent = (input: string): string => {
     RETURN_TRUSTED_TYPE: false,
   });
 
-  // Ensure inputs are strictly checkboxes and links open in new tab safely
-  if (typeof document !== 'undefined' && (sanitized.includes('<a') || sanitized.includes('<input'))) {
+  // Retain only validated color declarations in style attributes,
+  // ensure inputs are strictly checkboxes, and links open in new tab safely
+  if (typeof document !== 'undefined') {
     const div = document.createElement('div');
     div.innerHTML = sanitized;
+    const SAFE_COLOR_REGEX = /^(?:#(?:[0-9a-f]{3,4}){1,2}|rgba?\([^)]+\)|hsla?\([^)]+\)|[a-z]+)$/i;
+
+    div.querySelectorAll('[style]').forEach(el => {
+      const rawStyle = el.getAttribute('style') || '';
+      el.removeAttribute('style');
+      const match = rawStyle.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
+      if (match) {
+        const val = match[1].trim();
+        if (SAFE_COLOR_REGEX.test(val)) {
+          el.setAttribute('style', `color: ${val};`);
+        }
+      }
+    });
+
     div.querySelectorAll('input').forEach(input => {
       input.setAttribute('type', 'checkbox');
     });
