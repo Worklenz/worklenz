@@ -11,11 +11,13 @@ import clientsBodyValidator from "../../middlewares/validators/clients-body-vali
 import idParamValidator from "../../middlewares/validators/id-param-validator";
 import userIdParamValidator from "../../middlewares/validators/user-id-param-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
+import canViewClientTeamValidator from "../../middlewares/validators/can-view-client-team-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import projectManagerValidator from "../../middlewares/validators/project-manager-validator";
 import chatIdParamValidator from "../../middlewares/validators/chat-id-param-validator";
 import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
 import { requireFeature } from "../../shared/entitlements/gates";
+import PortalProjectsController from "../../controllers/client-portal/v2/portal-projects-controller";
 
 const clientsApiRouter = express.Router();
 
@@ -32,6 +34,14 @@ clientsApiRouter.delete("/:id", teamOwnerOrAdminValidator, idParamValidator, saf
 // the requesting team to hold a Business plan. The plain client CRUD routes above stay free.
 clientsApiRouter.use("/portal", requireFeature("client_portal"));
 clientsApiRouter.use("/:clientId/invoices", requireFeature("client_portal_invoices"));
+
+// Read-only Client's team list for the project Members tab. Registered before the Owner/Admin
+// portal guard so eligible project members can load assigned client users when allowed.
+clientsApiRouter.get(
+  "/portal/v2/projects/:projectId/access",
+  canViewClientTeamValidator,
+  safeControllerFunction(PortalProjectsController.access)
+);
 
 // Every Client Portal admin route is Owner/Admin only. Most of /portal/* previously had no role check,
 // so any signed-in member could reach it by URL; the guard is applied once here for all of it.

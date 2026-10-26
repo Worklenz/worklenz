@@ -43,5 +43,38 @@
   "changeMemberStatusConfirmation": "¿Estás seguro de que deseas cambiar el estado de este miembro?",
   "yesProceed": "Sí, continuar",
   "cancel": "Cancelar",
-  "removeFromProject": "Eliminar del proyecto"
+  "removeFromProject": "Eliminar del proyecto",
+  "guestCount": "Invitado",
+  "guestsCountPlural": "Invitados",
+  "emptyGuestsText": "No hay invitados en este proyecto.",
+  "emptyTeamMembersText": "No hay miembros del equipo en este proyecto.",
+  "rowsPerPage": "Filas por página:",
+  "paginationSummary": "{{range}} de {{total}}",
+  "tabs": {
+    "ariaLabel": "Secciones de miembros",
+    "teamMembers": "Miembros del equipo",
+    "guests": "Invitados",
+    "clientTeam": "Equipo del cliente"
+  },
+  "clientPortal": {
+    "title": "Equipo del cliente",
+    "summary": "{{count}} usuario(s) de {{client}} pueden abrir este proyecto en el Portal del cliente.",
+    "unknownClient": "Cliente",
+    "viewClient": "Ver cliente",
+    "manageAccess": "Gestionar acceso",
+    "nameColumn": "Nombre",
+    "emailColumn": "Correo",
+    "roleColumn": "Rol",
+    "statusColumn": "Estado",
+    "lastAccessColumn": "Último acceso",
+    "neverAccessed": "Nunca",
+    "loadFailed": "No se pudieron cargar los usuarios del portal del cliente.",
+    "retry": "Reintentar",
+    "tableLabel": "Usuarios del portal del cliente con acceso a este proyecto",
+    "empty": "Aún no hay usuarios del cliente asignados a este proyecto. Asígnelos desde el Portal del cliente.",
+    "searchPlaceholder": "Buscar usuarios del cliente",
+    "searchEmpty": "Ningún usuario del cliente coincide con tu búsqueda.",
+    "noClientLinked": "Este proyecto aún no está vinculado a un cliente. Asigna un cliente en el Portal del cliente para gestionar el acceso del equipo del cliente aquí.",
+    "goToClientPortal": "Ir al Portal del cliente"
+  }
 }

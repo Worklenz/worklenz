@@ -29,6 +29,7 @@ import {
 } from './PreviewViews';
 import { PortalLoader } from '@/components/client-portal/v2';
 import { PortalPreviewShell, type PreviewTab } from './PortalPreviewShell';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const CAPABILITY_ROWS: { capability: ClientCapability; key: string; defaultValue: string }[] = [
   { capability: 'view', key: 'capability.view', defaultValue: 'View assigned projects, milestones, client-visible tasks and files' },
@@ -227,7 +228,7 @@ const ClientPortalPreviewPage = () => {
             setOpenProjectId(null);
             setTab('dashboard');
           }}
-          options={clients.map(client => ({ value: client.id, label: client.name }))}
+          options={clients.map(client => ({ value: client.id, label: decodeHtmlEntities(client.name) }))}
         />
         <Select<string>
           showSearch

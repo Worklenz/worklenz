@@ -4,6 +4,7 @@ import { Button, Form, Input, Modal, Select, message } from '@/shared/antd-impor
 import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
 import { useGetApprovalOptionsQuery, useUpdateApprovalMutation } from '@/api/client-portal/portal-workflow-api';
 import type { Approval, UpdateApprovalRequest } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { buildApproverOptions } from './approverOptions';
 import { RichTextField } from '../shared/rich-text/RichTextField';
 
@@ -21,13 +22,13 @@ export const EditApprovalModal = ({ approval, onClose }: EditApprovalModalProps)
   const { t: tShared } = useTranslation('client-portal-v2');
   const isFreeform = approval.linked_item.type === 'freeform';
 
-  const [title, setTitle] = useState(approval.title);
+  const [title, setTitle] = useState(decodeHtmlEntities(approval.title));
   const [approverIds, setApproverIds] = useState<string[]>(
     approval.approvers?.length ? approval.approvers.map(approver => approver.id) : approval.approver_id ? [approval.approver_id] : []
   );
   const [instructions, setInstructions] = useState(approval.instructions ?? '');
   const [dueDate, setDueDate] = useState(approval.due_date ?? '');
-  const [freeformName, setFreeformName] = useState(approval.linked_item.name);
+  const [freeformName, setFreeformName] = useState(decodeHtmlEntities(approval.linked_item.name));
   const [freeformDescription, setFreeformDescription] = useState(approval.linked_item.description ?? '');
 
   const optionsQuery = useGetApprovalOptionsQuery(approval.project_id);
@@ -106,7 +107,11 @@ export const EditApprovalModal = ({ approval, onClose }: EditApprovalModalProps)
               />
             </>
           ) : (
-            <Input disabled value={approval.linked_item.name} aria-label={t('create.linkedItem', { defaultValue: 'Linked item' })} />
+            <Input
+              disabled
+              value={decodeHtmlEntities(approval.linked_item.name)}
+              aria-label={t('create.linkedItem', { defaultValue: 'Linked item' })}
+            />
           )}
         </Form.Item>
 
