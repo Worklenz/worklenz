@@ -1,10 +1,7 @@
 import React, { memo, useMemo, useState, useRef, useEffect } from 'react';
 import type { InputRef } from 'antd';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import {
-  isSoftwareProjectType,
-  isSoftwareSprintSetupRequired,
-} from '@/lib/project/software-project';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import TaskCard from './TaskCard';
 import { themeWiseColor } from '@/utils/themeWiseColor';
@@ -171,9 +168,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     const { statusCategories, status } = useAppSelector(state => state.taskStatusReducer);
     const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
     const isSoftwareProject = isSoftwareProjectType(project?.project_type);
-    const canCreateTask =
-      canCreateTaskPermission &&
-      !isSoftwareSprintSetupRequired(project?.project_type, phaseList.length);
+    const canCreateTask = canCreateTaskPermission;
     const { trackMixpanelEvent } = useMixpanelTracking();
     const [showNewCardTop, setShowNewCardTop] = useState(false);
     const [showNewCardBottom, setShowNewCardBottom] = useState(false);

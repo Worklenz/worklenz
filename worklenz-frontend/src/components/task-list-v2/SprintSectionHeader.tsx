@@ -108,11 +108,7 @@ export const SprintSectionHeader = ({
 
   const goal = sprint
     ? sprint.sprint_goal
-    : hasNoSprints
-      ? t('sprintSetupRequiredHint', {
-          defaultValue: 'Create a sprint to unlock the backlog and start adding issues.',
-        })
-      : t('backlogSectionGoal', { defaultValue: 'Prioritized future work' });
+    : t('backlogSectionGoal', { defaultValue: 'Prioritized future work' });
 
   const handleToggleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;

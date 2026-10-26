@@ -73,10 +73,7 @@ import {
   useTaskListMode,
 } from '@/features/task-management/task-list-mode-context';
 import { assignTaskToMember } from '@/utils/assign-task-to-member';
-import {
-  isSoftwareProjectType,
-  isSoftwareSprintSetupRequired,
-} from '@/lib/project/software-project';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import {
   fetchTask as fetchTaskDrawer,
@@ -877,10 +874,8 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
   const isSoftwareProject = isSoftwareProjectType(projectType);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
-  // Default backlog-only software projects stay read-only until a sprint exists.
-  const isSprintSetupRequired = isSoftwareSprintSetupRequired(projectType, phaseList.length);
-  const canCreateTask = canCreateTaskPermission && !isSprintSetupRequired;
-  const isWorkReadOnly = isGuest || isSprintSetupRequired;
+  const canCreateTask = canCreateTaskPermission;
+  const isWorkReadOnly = isGuest;
   const activeSprintGroupIds = useMemo(
     () =>
       new Set(
@@ -1819,8 +1814,8 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
               !isGroupCollapsed &&
               hasNoTasks &&
               !isGuest &&
-              (isSprintSetupRequired ||
-                (!isWorkReadOnly && !(isBacklogMode && isSoftwareProject))) && (
+              !isWorkReadOnly &&
+              (!(isBacklogMode && isSoftwareProject) || group.id === UNMAPPED_PHASE_ID) && (
               <ExampleTaskRows
                 visibleColumns={visibleColumns}
                 isDarkMode={isDarkMode}
@@ -1831,7 +1826,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 groupColor={(isDarkMode ? group.color_code_dark || group.color : group.color) || ''}
                 projectId={urlProjectId || ''}
                 canCreateTask={canCreateTask}
-                interactive={!isSprintSetupRequired}
+                interactive
                 onTaskCreated={(task, options) =>
                   handleTaskCreated(task, group.id, !!options?.openDrawer, null)
                 }
@@ -1856,7 +1851,6 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       canCreateTask,
       isGuest,
       isWorkReadOnly,
-      isSprintSetupRequired,
       isSoftwareProject,
       isBacklogMode,
       activeSprintGroupIds,
@@ -2468,10 +2462,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                         onToggle={() => {}}
                         projectId={urlProjectId || ''}
                       />
-                      {hasNoTasks &&
-                        !isGuest &&
-                        (isSprintSetupRequired ||
-                          (!isWorkReadOnly && !(isBacklogMode && isSoftwareProject))) && (
+                      {hasNoTasks && !isGuest && !isWorkReadOnly && (
                         <ExampleTaskRows
                           visibleColumns={visibleColumns}
                           isDarkMode={isDarkMode}
@@ -2482,7 +2473,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                           groupColor="#fbc84c69"
                           projectId={urlProjectId || ''}
                           canCreateTask={canCreateTask}
-                          interactive={!isSprintSetupRequired}
+                          interactive
                           onTaskCreated={(task, options) =>
                             handleTaskCreated(task, unmappedGroupId, !!options?.openDrawer, null)
                           }

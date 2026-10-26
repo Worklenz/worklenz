@@ -39,10 +39,7 @@ import {
   getProject,
 } from '@features/project/project.slice';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import {
-  isSoftwareProjectType,
-  isSoftwareSprintSetupRequired,
-} from '@/lib/project/software-project';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import { openCreateIssueModal } from '@/features/projects/singleProject/create-issue/create-issue-modal.slice';
 import {
   addTask,
@@ -105,21 +102,12 @@ const ProjectViewHeader = memo(() => {
 
   const isGuest = useMemo(() => isUserGuest(selectedProject), [selectedProject]);
   const isSoftwareProject = isSoftwareProjectType(selectedProject?.project_type);
-  const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
-  const isSprintSetupRequired = isSoftwareSprintSetupRequired(
-    selectedProject?.project_type,
-    phaseList.length
-  );
   const createTaskLabel = isSoftwareProject
     ? t('createIssue', { defaultValue: 'Create Issue' })
     : t('createTask', { defaultValue: 'Create task' });
-  const createTaskTooltip = isSprintSetupRequired
-    ? t('createIssueRequiresSprintTooltip', {
-        defaultValue: 'Create a sprint first to start adding issues',
-      })
-    : isSoftwareProject
-      ? t('createIssueTooltip', { defaultValue: 'Create a new issue' })
-      : t('createTaskTooltip', { defaultValue: 'Create a new task' });
+  const createTaskTooltip = isSoftwareProject
+    ? t('createIssueTooltip', { defaultValue: 'Create a new issue' })
+    : t('createTaskTooltip', { defaultValue: 'Create a new task' });
 
   const [creatingTask, setCreatingTask] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
@@ -251,7 +239,6 @@ const ProjectViewHeader = memo(() => {
   }, [dispatch, selectedProject]);
 
   const handleCreateTask = useCallback(() => {
-    if (isSprintSetupRequired) return;
     if (isSoftwareProject) {
       dispatch(openCreateIssueModal());
       return;
@@ -293,7 +280,6 @@ const ProjectViewHeader = memo(() => {
       setCreatingTask(false);
     }
   }, [
-    isSprintSetupRequired,
     isSoftwareProject,
     selectedProject?.id,
     currentSession,
@@ -689,7 +675,6 @@ const ProjectViewHeader = memo(() => {
             menu={{ items: dropdownItems }}
             trigger={['click']}
             onClick={handleCreateTask}
-            disabled={isSprintSetupRequired}
           >
             <EditOutlined /> <span className={styles.buttonLabel}>{createTaskLabel}</span>
           </Dropdown.Button>
@@ -708,7 +693,6 @@ const ProjectViewHeader = memo(() => {
             type="primary"
             icon={<EditOutlined />}
             onClick={handleCreateTask}
-            disabled={isSprintSetupRequired}
           >
             <span className={styles.buttonLabel}>{createTaskLabel}</span>
           </Button>
@@ -742,7 +726,6 @@ const ProjectViewHeader = memo(() => {
     handleCreateTask,
     canCreateTask,
     isGuest,
-    isSprintSetupRequired,
     createTaskLabel,
     createTaskTooltip,
   ]);

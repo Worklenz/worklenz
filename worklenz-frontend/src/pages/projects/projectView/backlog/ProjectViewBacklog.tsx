@@ -206,7 +206,6 @@ export const ProjectViewBacklog = () => {
           <Button
             size="small"
             icon={<OrderedListOutlined />}
-            disabled={hasNoSprints}
             onClick={() => setIsPointScaleOpen(true)}
           >
             {t('pointScaleButton', { defaultValue: 'Point scale' })}
@@ -215,7 +214,6 @@ export const ProjectViewBacklog = () => {
         <Button
           size="small"
           icon={<ThunderboltOutlined />}
-          disabled={hasNoSprints}
           onClick={() => setIsEpicsDrawerOpen(true)}
         >
           {t('epicsTitle', { defaultValue: 'Epics' })}
