@@ -99,6 +99,40 @@ describe("InvoiceTemplateGenerator.generateQuoteHTML", () => {
     expect(html).toContain("BILLED TO");
     expect(html).toContain("Due Date");
   });
+
+  it("renders rich HTML notes instead of escaping them", () => {
+    const notes =
+      "<p>Thanks for your <strong>business</strong> and <em>support</em>.</p>" +
+      "<ol><li>One</li><li>Two</li></ol>" +
+      "<ul><li>Alpha</li><li>Beta</li></ul>";
+    const html = InvoiceTemplateGenerator.generateInvoiceHTML({ ...base, notes });
+    expect(html).toContain('<div class="notes-body">');
+    expect(html).toContain("<strong>business</strong>");
+    expect(html).toContain("<em>support</em>");
+    expect(html).toContain("<ol>");
+    expect(html).toContain("<ul>");
+    expect(html).not.toContain("&lt;strong&gt;");
+    expect(html).not.toContain("&lt;ul&gt;");
+  });
+
+  it("escapes legacy plain-text notes and preserves line breaks", () => {
+    const html = InvoiceTemplateGenerator.generateInvoiceHTML({
+      ...base,
+      notes: "Line one\nLine two <script>",
+    });
+    expect(html).toContain("Line one<br>Line two &lt;script&gt;");
+    expect(html).not.toContain("<script>");
+  });
+
+  it("strips unsafe tags from rich HTML notes", () => {
+    const html = InvoiceTemplateGenerator.generateInvoiceHTML({
+      ...base,
+      notes: '<p>Safe</p><script>alert(1)</script><img src=x onerror=alert(1)>',
+    });
+    expect(html).toContain("<p>Safe</p>");
+    expect(html).not.toContain("<script>");
+    expect(html).not.toContain("<img");
+  });
 });
 
 describe("ClientPortalQuotesController.createQuote", () => {

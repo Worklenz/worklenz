@@ -22,7 +22,9 @@
 /* Prevent background flash during load */
 html,
 body {
-  transition: background-color 0.3s ease;
+  transition:
+    background-color 0.2s var(--tl-theme-ease, cubic-bezier(0.4, 0, 0.2, 1)),
+    color 0.2s var(--tl-theme-ease, cubic-bezier(0.4, 0, 0.2, 1));
   margin: 0;
   padding: 0;
 }
@@ -39,6 +41,45 @@ html.light body {
   color: #181818;
 }
 
+/* --- Task list theme surfaces ---
+   Single source of truth for every task-list surface color. Flipping these
+   variables with the html[data-theme] attribute recolors all rows, sticky
+   columns, headers, and group headers in one style recalc, in lockstep. */
+:root,
+html[data-theme="light"] {
+  --tl-surface-bg: #ffffff;
+  --tl-header-bg: #f9fafb;
+  --tl-sticky-cell-bg: #ffffff;
+  /* Composites of the row hover overlay (black/5 or white/5) over the base
+     surface, so sticky cells match the scrolled row behind them exactly. */
+  --tl-sticky-cell-hover-bg: #f2f2f2;
+  --tl-sticky-cell-drag-bg: #f2f2f2;
+  --tl-group-header-bg: #ffffff;
+  --tl-backlog-group-header-bg: #f5f5f5;
+  --tl-theme-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html[data-theme="dark"] {
+  --tl-surface-bg: #141414;
+  --tl-header-bg: #141414;
+  --tl-sticky-cell-bg: #141414;
+  --tl-sticky-cell-hover-bg: #202020;
+  --tl-sticky-cell-drag-bg: #202020;
+  --tl-group-header-bg: #1f1f1f;
+  --tl-backlog-group-header-bg: #141414;
+  --tl-theme-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* While a View Transition animates the old/new snapshots, freeze
+   element-level transitions so the captured frame already shows final colors
+   and nothing "pops" when the live DOM is swapped back in. */
+html.theme-switching,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
+
 /* Prevent content flash */
 #root {
   opacity: 0;
@@ -52,6 +93,13 @@ html.light body {
 }
 
 /* Cookie consent banner animations */
+
+/* Smooth View Transition for theme toggling */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.25s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
 @keyframes slideUp {
   from {
     transform: translateY(100%);
