@@ -524,12 +524,36 @@ export default abstract class ReportingControllerBase extends WorklenzController
     // and `status` are accepted as aliases so every caller gets this order;
     // sorting on the raw UUID leaves the status groups in a random order.
     const isStatusSort = ["status_name", "status_id", "status"].includes(sortField);
+    const sortColumns: Record<string, string> = {
+      name: 'name',
+      'p.name': 'name',
+      last_activity: 'last_activity_at',
+      days_left: 'days_left',
+      comment: 'comment',
+      priority_name: 'priority_name',
+      health_name: 'health_name',
+      project_health: 'health_name',
+      category_name: 'category_name',
+      client: 'client',
+      team_name: 'team_name',
+      project_manager_name: 'project_manager_name',
+      start_date: 'start_date',
+      end_date: 'end_date',
+      estimated_time: 'estimated_time',
+      actual_time: 'actual_time',
+    };
+    const sortColumn = Object.prototype.hasOwnProperty.call(sortColumns, sortField)
+      ? sortColumns[sortField]
+      : 'name';
+    const direction = sortOrder.toLowerCase().startsWith('desc') ? 'DESC' : 'ASC';
+    // Scalar aliases are ordered before LIMIT/OFFSET. Repeat that order in the
+    // aggregate, with a stable tie-breaker so equal values do not drift between pages.
     const orderBy = isStatusSort
-      ? `${getStatusRank("ps.name")} ${sortOrder}, LOWER(p.name) ${sortOrder}, p.id`
-      : `${sortField} ${sortOrder}`;
+      ? `${getStatusRank("ps.name")} ${direction}, LOWER(p.name) ${direction}, p.id`
+      : `${sortColumn} ${direction} NULLS LAST, p.id`;
     const aggregateOrderBy = isStatusSort
-      ? `ORDER BY ${getStatusRank("t.status_name")} ${sortOrder}, LOWER(t.name) ${sortOrder}, t.id`
-      : "";
+      ? `ORDER BY ${getStatusRank("t.status_name")} ${direction}, LOWER(t.name) ${direction}, t.id`
+      : `ORDER BY t.${sortColumn} ${direction} NULLS LAST, t.id`;
 
     const q = `SELECT COUNT(*) AS total,
              (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t) ${aggregateOrderBy})), '[]'::JSON)
@@ -562,6 +586,21 @@ export default abstract class ReportingControllerBase extends WorklenzController
                            p.priority_id,
                            (SELECT name FROM sys_project_priorities WHERE id = p.priority_id) AS priority_name,
                            (SELECT color_code FROM sys_project_priorities WHERE id = p.priority_id) AS priority_color,
+
+                           ABS(p.end_date::DATE - CURRENT_DATE) AS days_left,
+                           (SELECT MAX(tal.created_at)
+                            FROM task_activity_logs tal
+                            JOIN tasks activity_task ON activity_task.id = tal.task_id
+                            WHERE activity_task.project_id = p.id) AS last_activity_at,
+                           (SELECT tmiv.name
+                            FROM project_members pm
+                            JOIN team_member_info_view tmiv ON tmiv.team_member_id = pm.team_member_id
+                              AND tmiv.team_id = p.team_id
+                            WHERE pm.project_id = p.id
+                              AND pm.project_access_level_id = (
+                                SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'
+                              )
+                            LIMIT 1) AS project_manager_name,
 
                            TO_CHAR(p.start_date::DATE, 'YYYY-MM-DD') AS start_date,
                            TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
@@ -617,6 +656,12 @@ export default abstract class ReportingControllerBase extends WorklenzController
                                   WHERE pu.project_id = p.id
                                   ORDER BY pu.updated_at DESC
                                   LIMIT 1) AS rec) AS update,
+
+                           (SELECT pu.content
+                            FROM project_comments pu
+                            WHERE pu.project_id = p.id
+                            ORDER BY pu.updated_at DESC
+                            LIMIT 1) AS comment,
 
                      (SELECT ROW_TO_JSON(rec)
                       FROM (SELECT attribute_type,

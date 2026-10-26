@@ -33,13 +33,14 @@ function safeLogoUrl(url: string): string {
  * Fetches the organization branding logo URL for a given team.
  * Falls back to the default Worklenz logo if no custom logo is set.
  */
-async function getOrganizationLogoUrl(teamId: string): Promise<string> {
+export async function getOrganizationLogoUrl(teamId: string): Promise<string> {
   try {
     const q = `
       SELECT o.logo_url
       FROM organizations o
       INNER JOIN teams t ON (t.user_id = o.user_id OR t.organization_id = o.id)
       WHERE t.id = $1
+      ORDER BY (o.logo_url IS NOT NULL) DESC
       LIMIT 1
     `;
     const result = await db.query(q, [teamId]);

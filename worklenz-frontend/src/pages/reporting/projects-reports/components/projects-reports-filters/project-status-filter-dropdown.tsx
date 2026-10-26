@@ -12,7 +12,13 @@ import debounce from 'lodash-es/debounce';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const ProjectStatusFilterDropdown = () => {
+interface ProjectStatusFilterDropdownProps {
+  inline?: boolean;
+}
+
+const ProjectStatusFilterDropdown = ({
+  inline = false,
+}: ProjectStatusFilterDropdownProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects-filters');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -78,6 +84,11 @@ const ProjectStatusFilterDropdown = () => {
     </Card>
   );
 
+  
+  if (inline) {
+    return projectStatusDropdownContent;
+  }
+
   return (
     <Dropdown
       overlayClassName="custom-dropdown"
@@ -93,13 +104,14 @@ const ProjectStatusFilterDropdown = () => {
         className={`transition-colors duration-300 ${
           isDropdownOpen
             ? 'border-[#1890ff] text-[#1890ff]'
-            : 'hover:text-[#1890ff hover:border-[#1890ff]'
+            : 'hover:text-[#1890ff] hover:border-[#1890ff]'
         }`}
       >
         {t('statusText')}
       </Button>
     </Dropdown>
   );
+
 };
 
 export default ProjectStatusFilterDropdown;

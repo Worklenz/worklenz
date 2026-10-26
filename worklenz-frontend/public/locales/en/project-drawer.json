@@ -94,11 +94,17 @@
   "accessControlSettings": "Access Control",
   "accessControlSettingsDescription": "Control who can create and assign tasks in this project.",
   "restrictTaskCreationBusinessPlanTitle": "Business Plan Required",
+<<<<<<< HEAD
   "restrictTaskCreationBusinessPlanDescription": "Restricting task creation to Admins and Team Leads is available on Business and Enterprise plans.",
   "restrictTaskCreation": "Restrict task assignment to Admins and Team Leads",
   "restrictTaskCreationTooltip": "When enabled, only Admins and Team Leads can create and assign tasks. Team Members can only view their assigned tasks.",
   "membersCanViewClientTeam": "Allow members to view Client's team",
   "membersCanViewClientTeamTooltip": "When enabled, normal project members can see the Client's team tab on the Members page. Owners, Admins, Team Leads, and Project Managers always see it.",
+=======
+  "restrictTaskCreationBusinessPlanDescription": "Restricting task creation to Admins, Team Leads, and Project Managers is available on Business and Enterprise plans.",
+  "restrictTaskCreation": "Restrict task assignment to Admins, Team Leads, and Project Managers",
+  "restrictTaskCreationTooltip": "When enabled, only Admins, Team Leads, and Project Managers can create and assign tasks. Team Members can only view their assigned tasks.",
+>>>>>>> 3f30eebcb8a704050d96a723af5ae33728ba3c7e
   "phaseAssigneesSettings": "Phase Assignees",
   "phaseAssigneesSettingsDescription": "When enabled, each pipeline phase can have a dedicated assignee. Tasks can only be advanced by their phase assignee (admins can always override).",
   "phaseAssigneesEnabled": "Enable Phase Assignees",
@@ -228,7 +234,7 @@
     "workItemsCard": "Work item rules",
     "autoAssignReporter": "Assign new work items to their creator",
     "autoAssignReporterHelp": "Useful when engineers pick up the issues they log themselves.",
-    "restrictCreation": "Only Admins and Team Leads can create and assign work items",
+    "restrictCreation": "Only Admins, Team Leads, and Project Managers can create and assign work items",
     "restrictCreationHelp": "Members can still update the work items assigned to them.",
     "restrictVisibility": "Members only see work items assigned to them",
     "workflowTitle": "Workflow",
