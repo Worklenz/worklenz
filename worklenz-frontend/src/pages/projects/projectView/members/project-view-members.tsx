@@ -160,12 +160,13 @@ const ProjectViewMembers = () => {
     });
   }, [totalAvailableSeats, totalUsedSeats, t]);
 
-  // Privileged roles always see Client's team; normal members need the project setting.
+  // Privileged roles always see Client's team; ordinary members need the project setting
+  // (backend GET access allows the same set — Owner/Admin portal guard is bypassed for that read).
   const canViewClientTeamTab =
     isOwnerOrAdmin ||
     isTeamLead ||
     isProjectManager ||
-    Boolean(currentProject?.members_can_view_client_team);
+    currentProject?.members_can_view_client_team === true;
 
   const membersTabOptions = useMemo(() => {
     const options: { value: MembersTab; label: string }[] = [
@@ -876,6 +877,7 @@ const ProjectViewMembers = () => {
               clientId={currentProject?.client_id}
               clientName={currentProject?.client_name}
               searchQuery={clientSearchQuery}
+              canManageAccess={isOwnerOrAdmin}
             />
           )
         )}

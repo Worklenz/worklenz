@@ -1009,6 +1009,27 @@ export default class ProjectsController extends WorklenzControllerBase {
       delete req.body.restrict_tasks_to_assignee;
     }
 
+    // Written only by update_project(); reject non-booleans so string "false" is not coerced.
+    const hasMembersCanViewClientTeam = Object.prototype.hasOwnProperty.call(
+      req.body,
+      "members_can_view_client_team"
+    );
+    if (hasMembersCanViewClientTeam) {
+      if (!canUpdateProjectPrivacy) {
+        delete req.body.members_can_view_client_team;
+      } else if (typeof req.body.members_can_view_client_team !== "boolean") {
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(
+              false,
+              null,
+              "members_can_view_client_team must be a boolean."
+            )
+          );
+      }
+    }
+
     // read before update_project(), which also writes this column,
     // so the audit entry below records the real old → new transition.
     let previousRestrictTasksToAssignee = false;
@@ -1089,18 +1110,6 @@ export default class ProjectsController extends WorklenzControllerBase {
               AND team_id = $3
           `,
           [Boolean(req.body.phase_assignees_enabled), req.params.id, req.user?.team_id || null]
-        );
-      }
-
-      if (Object.prototype.hasOwnProperty.call(req.body, 'members_can_view_client_team')) {
-        await db.query(
-          `
-            UPDATE projects
-            SET members_can_view_client_team = $1
-            WHERE id = $2
-              AND team_id = $3
-          `,
-          [Boolean(req.body.members_can_view_client_team), req.params.id, req.user?.team_id || null]
         );
       }
 

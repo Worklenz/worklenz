@@ -29,6 +29,8 @@ interface ProjectClientPortalMembersProps {
   clientId?: string | null;
   clientName?: string | null;
   searchQuery?: string;
+  /** Owner/Admin only — assignment stays in Client Portal admin routes. */
+  canManageAccess?: boolean;
 }
 
 /**
@@ -40,6 +42,7 @@ export const ProjectClientPortalMembers = ({
   clientId,
   clientName,
   searchQuery = '',
+  canManageAccess = false,
 }: ProjectClientPortalMembersProps) => {
   const { t, i18n } = useTranslation('project-view-members');
   const { token } = theme.useToken();
@@ -153,13 +156,15 @@ export const ProjectClientPortalMembers = ({
                   'This project is not linked to a client yet. Assign a client in the Client Portal to manage client team access here.',
               })}
             </Typography.Text>
-            <Link to={portalPaths.projects}>
-              <Button type="primary" size="small">
-                {t('clientPortal.goToClientPortal', {
-                  defaultValue: 'Go to Client Portal',
-                })}
-              </Button>
-            </Link>
+            {canManageAccess && (
+              <Link to={portalPaths.projects}>
+                <Button type="primary" size="small">
+                  {t('clientPortal.goToClientPortal', {
+                    defaultValue: 'Go to Client Portal',
+                  })}
+                </Button>
+              </Link>
+            )}
           </Flex>
         }
       />
@@ -216,7 +221,7 @@ export const ProjectClientPortalMembers = ({
                             'No client users are assigned to this project yet. Assign them from Client Portal.',
                         })}
                   </Typography.Text>
-                  {!hasActiveSearch && (
+                  {!hasActiveSearch && canManageAccess && (
                     <Link to={manageAccessPath}>
                       <Button type="link" size="small" style={{ padding: 0 }}>
                         {t('clientPortal.manageAccess', { defaultValue: 'Manage access' })}
