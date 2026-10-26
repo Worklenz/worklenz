@@ -1125,11 +1125,19 @@ export default class TasksControllerV2 extends TasksControllerBase {
         `;
         break;
       case GroupBy.PHASE:
+        // Active sprint first, then planned, then completed; sort_index breaks ties.
         q = `
-          SELECT id, name, color_code, color_code AS color_code_dark, start_date, end_date, sort_index
+          SELECT id, name, color_code, color_code AS color_code_dark, start_date, end_date, sort_index, sprint_status
           FROM project_phases
           WHERE project_id = $1
-          ORDER BY sort_index DESC;
+          ORDER BY
+            CASE COALESCE(sprint_status, 'planned')
+              WHEN 'active' THEN 0
+              WHEN 'planned' THEN 1
+              WHEN 'completed' THEN 2
+              ELSE 3
+            END,
+            sort_index DESC;
         `;
         params = [projectId];
         break;

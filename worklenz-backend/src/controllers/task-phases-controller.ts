@@ -145,7 +145,14 @@ export default class TaskPhasesController extends WorklenzControllerBase {
           AND pp.sprint_status = 'active'
       ) sprint_metrics ON TRUE
       WHERE pp.project_id = $1
-      ORDER BY pp.sort_index DESC;
+      ORDER BY
+        CASE COALESCE(pp.sprint_status, 'planned')
+          WHEN 'active' THEN 0
+          WHEN 'planned' THEN 1
+          WHEN 'completed' THEN 2
+          ELSE 3
+        END,
+        pp.sort_index DESC;
     `;
     const result = await db.query(q, [req.query.id]);
 

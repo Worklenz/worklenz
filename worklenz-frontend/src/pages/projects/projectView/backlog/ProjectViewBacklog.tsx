@@ -138,10 +138,16 @@ export const ProjectViewBacklog = () => {
   }, [dispatch, projectId]);
 
   // Every open sprint is listed above the Backlog (no sprint) section.
+  // Active sprint stays first so it appears at the top of the backlog list.
   const backlogPhaseFilter = useMemo(() => {
-    const openSprintIds = phaseList
+    const openSprintIds = [...phaseList]
       .filter(phase => phase.id && phase.sprint_status !== 'completed')
-      .map(phase => phase.id);
+      .sort((a, b) => {
+        if (a.sprint_status === 'active' && b.sprint_status !== 'active') return -1;
+        if (b.sprint_status === 'active' && a.sprint_status !== 'active') return 1;
+        return (b.sort_index ?? 0) - (a.sort_index ?? 0);
+      })
+      .map(phase => phase.id as string);
     return [...openSprintIds, UNMAPPED_PHASE_ID];
   }, [phaseList]);
 

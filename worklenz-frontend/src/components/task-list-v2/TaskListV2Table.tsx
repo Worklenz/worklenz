@@ -1681,7 +1681,21 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const virtuosoGroups = useMemo(() => {
     let currentTaskIndex = 0;
 
-    return groups.map(group => {
+    // Software backlog: active sprint first, then planned sprints, Backlog last.
+    const orderedGroups =
+      isBacklogMode && isSoftwareProject
+        ? [...groups].sort((a, b) => {
+            if (a.id === UNMAPPED_PHASE_ID) return 1;
+            if (b.id === UNMAPPED_PHASE_ID) return -1;
+            const aStatus = phaseList.find(phase => phase.id === a.id)?.sprint_status;
+            const bStatus = phaseList.find(phase => phase.id === b.id)?.sprint_status;
+            const rank = (status?: string | null) =>
+              status === 'active' ? 0 : status === 'planned' ? 1 : 2;
+            return rank(aStatus) - rank(bStatus);
+          })
+        : groups;
+
+    return orderedGroups.map(group => {
       const isCurrentGroupCollapsed = collapsedGroups.has(group.id);
 
       const visibleTasksInGroup = isCurrentGroupCollapsed
@@ -1740,7 +1754,17 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       currentTaskIndex += itemsWithAddTask.length;
       return groupData;
     });
-  }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId, insertAnchor]);
+  }, [
+    groups,
+    allTasks,
+    collapsedGroups,
+    currentGrouping,
+    urlProjectId,
+    insertAnchor,
+    isBacklogMode,
+    isSoftwareProject,
+    phaseList,
+  ]);
 
   const virtuosoGroupCounts = useMemo(() => {
     return virtuosoGroups.map(group => group.count);
