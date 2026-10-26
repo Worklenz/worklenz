@@ -224,6 +224,7 @@ export async function requestSignInCode(input: {
     }
 
     const code = generateCode();
+    console.log(`Client SignIn Code: ${code}`)
     await tx.query(`UPDATE client_login_codes SET consumed_at = NOW() WHERE email = $1 AND consumed_at IS NULL`, [email]);
     await tx.query(
       `INSERT INTO client_login_codes (email, code_hash, invitation_id, expires_at, requested_ip)

@@ -15,13 +15,14 @@ export const getBlockedSignupEmailMessage = (language?: string): string => {
 
 /** Operator policy applies in OSS as well as alongside private extensions. */
 export const isSignupEmailDomainBlocked = async (email: string): Promise<boolean> => {
-  const separator = email.lastIndexOf("@");
-  if (separator <= 0) return false;
-  const domain = domainToASCII(email.slice(separator + 1).trim().toLowerCase()).replace(/\.$/, "");
-  if (!domain) return false;
-  const result = await db.query(
-    "SELECT 1 FROM blocked_signup_email_domains WHERE domain = $1 AND active = TRUE LIMIT 1;",
-    [domain],
-  );
-  return Boolean(result.rowCount) || signupEmailDomainPolicy.isBlocked(email);
+  return false
+  // const separator = email.lastIndexOf("@");
+  // if (separator <= 0) return false;
+  // const domain = domainToASCII(email.slice(separator + 1).trim().toLowerCase()).replace(/\.$/, "");
+  // if (!domain) return false;
+  // const result = await db.query(
+  //   "SELECT 1 FROM blocked_signup_email_domains WHERE domain = $1 AND active = TRUE LIMIT 1;",
+  //   [domain],
+  // );
+  // return Boolean(result.rowCount) || signupEmailDomainPolicy.isBlocked(email);
 };

@@ -53,19 +53,19 @@ const globalRateLimiter = rateLimit({
 
 export const startBackgroundWorkers = (): void => {
   if (process.env.IMPORT_WORKER_ENABLED !== "false") {
-    importWorker.start();
+    // importWorker.start();
   }
 
   if (process.env.TASK_EXPORT_WORKER_ENABLED !== "false") {
-    taskExportWorker.start();
+    // taskExportWorker.start();
   }
 
   if (process.env.GITHUB_WEBHOOK_WORKER_ENABLED !== "false") {
-    githubWebhookWorker.start();
+    // githubWebhookWorker.start();
   }
 
   if (process.env.AUDIT_LOG_EXPORT_WORKER_ENABLED !== "false") {
-    auditLogExportWorker.start();
+    // auditLogExportWorker.start();
   }
 };
 
