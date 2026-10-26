@@ -1489,8 +1489,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
    * Preserves all subtask details (title, description, assignee, dates, status, logged hours, etc.).
    *
    * Cycle validation and the parent UPDATE run in one transaction under a
-   * project-scoped advisory lock so concurrent opposite moves (A→B and B→A)
-   * cannot both pass the descendant check and form a cycle.
+   * project-scoped advisory lock, with the moved task row locked FOR UPDATE,
+   * so concurrent opposite moves (A→B and B→A) cannot both pass the descendant
+   * check and form a cycle.
    */
   @HandleExceptions()
   public static async moveSubtask(
@@ -1532,6 +1533,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         SELECT id, parent_task_id, project_id, archived
         FROM tasks
         WHERE id = $1
+        FOR UPDATE
         `,
         [taskId]
       );
@@ -1601,20 +1603,21 @@ export default class TasksControllerV2 extends TasksControllerBase {
           .send(new ServerResponse(false, null, "Cannot move subtask under an archived parent"));
       }
 
-      // Prevent cycles: new parent must not be a descendant of the subtask being moved
+      // Prevent cycles: new parent must not be a descendant of the subtask being moved.
+      // Include archived descendants so a soft-archived path cannot hide a cycle.
+      // UNION (not UNION ALL) deduplicates so a corrupt cycle in the data still terminates.
       const cycleResult = await client.query(
         `
         WITH RECURSIVE task_descendants AS (
           SELECT id
           FROM tasks
-          WHERE parent_task_id = $1 AND archived IS FALSE
+          WHERE parent_task_id = $1
 
-          UNION ALL
+          UNION
 
           SELECT child.id
           FROM tasks child
           INNER JOIN task_descendants td ON child.parent_task_id = td.id
-          WHERE child.archived IS FALSE
         )
         SELECT EXISTS(
           SELECT 1 FROM task_descendants WHERE id = $2

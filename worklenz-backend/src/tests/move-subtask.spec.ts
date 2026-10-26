@@ -58,10 +58,11 @@ const createHierarchyPool = (initial: TaskRow[]) => {
     if (next) next();
   };
 
+  // Mirror cycle CTE: walk all descendants (including archived) with visited-set dedupe.
   const isDescendant = (ancestorId: string, candidateId: string) => {
     const visited = new Set<string>();
     const stack = [...rows.values()]
-      .filter(r => r.parent_task_id === ancestorId && !r.archived)
+      .filter(r => r.parent_task_id === ancestorId)
       .map(r => r.id);
     while (stack.length) {
       const id = stack.pop()!;
@@ -69,7 +70,7 @@ const createHierarchyPool = (initial: TaskRow[]) => {
       if (visited.has(id)) continue;
       visited.add(id);
       for (const child of rows.values()) {
-        if (child.parent_task_id === id && !child.archived) stack.push(child.id);
+        if (child.parent_task_id === id) stack.push(child.id);
       }
     }
     return false;
@@ -91,7 +92,9 @@ const createHierarchyPool = (initial: TaskRow[]) => {
         await acquireLock();
         return createQueryResult([]);
       }
-      if (/SELECT id, parent_task_id, project_id, archived\s+FROM tasks\s+WHERE id = \$1/.test(sql)) {
+      if (
+        /SELECT id, parent_task_id, project_id, archived\s+FROM tasks\s+WHERE id = \$1/.test(sql)
+      ) {
         const row = rows.get(params[0] as string);
         return createQueryResult(row ? [{ ...row }] : []);
       }
@@ -229,5 +232,31 @@ describe("TasksControllerV2.moveSubtask", () => {
     expect(pool.getParent(TASK_A)).toBe(ROOT_ID);
     expect(client.query.mock.calls.map((c: unknown[]) => String(c[0]))).toContain("ROLLBACK");
     expect(client.release).toHaveBeenCalledTimes(1);
+  });
+
+  it("locks the moved task FOR UPDATE and rejects cycles through archived descendants", async () => {
+    const archivedMid = "550e8400-e29b-41d4-a716-4466554400cc";
+    // A → (archived mid) → B; moving A under B must still detect the cycle.
+    const pool = createHierarchyPool([
+      { id: ROOT_ID, parent_task_id: null, project_id: PROJECT_ID, archived: false },
+      { id: TASK_A, parent_task_id: ROOT_ID, project_id: PROJECT_ID, archived: false },
+      { id: archivedMid, parent_task_id: TASK_A, project_id: PROJECT_ID, archived: true },
+      { id: TASK_B, parent_task_id: archivedMid, project_id: PROJECT_ID, archived: false },
+    ]);
+    const client = await pool.connectAndCapture();
+    mockedConnect.mockResolvedValue(client);
+
+    const res = createMockResponse();
+    await TasksControllerV2.moveSubtask(
+      createMockRequest({ body: moveBody(TASK_A, TASK_B) }),
+      res
+    );
+
+    const selectMoved = client.query.mock.calls.find((call: unknown[]) =>
+      /FROM tasks\s+WHERE id = \$1[\s\S]*FOR UPDATE/.test(String(call[0]))
+    );
+    expect(selectMoved).toBeDefined();
+    expect(res.statusCode).toBe(400);
+    expect(pool.getParent(TASK_A)).toBe(ROOT_ID);
   });
 });

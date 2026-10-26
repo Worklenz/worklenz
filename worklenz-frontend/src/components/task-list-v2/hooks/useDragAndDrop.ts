@@ -139,6 +139,8 @@ export const useDragAndDrop = (
 
       // Dropping onto a subtask of a different parent → move under that subtask's parent
       if (overTask.parent_task_id !== activeTask.parent_task_id) {
+        // Own child: would set parent to self (isDescendantOf does not treat self as descendant)
+        if (overTask.parent_task_id === activeTask.id) return null;
         if (isDescendantOf(overTask.parent_task_id, activeTask.id)) return null;
         return overTask.parent_task_id;
       }
