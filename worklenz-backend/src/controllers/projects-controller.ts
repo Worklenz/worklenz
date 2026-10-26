@@ -64,9 +64,12 @@ export default class ProjectsController extends WorklenzControllerBase {
       }
     }
 
-    IO.getSocketById(user.socket_id as string)
-    ?.to(projectId)
-    .emit(SocketEvents.PROJECT_DATA_CHANGE.toString(), {user_id: user.id});
+    IO.emitToProjectRoom(
+      projectId as string,
+      SocketEvents.PROJECT_DATA_CHANGE,
+      { user_id: user.id },
+      { excludeSocketId: user.socket_id || undefined }
+    );
 
   }
 
