@@ -51,6 +51,7 @@ vi.mock('@/utils/errorLogger', () => ({ default: { error: mocks.loggerError } })
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
 
 vi.mock('react-i18next', () => ({
+  initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
     t: (key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? key,
   }),
@@ -60,6 +61,10 @@ vi.mock('../task-drawer-status-dropdown/task-drawer-status-dropdown', () => ({ d
 vi.mock('../task-drawer-navigation/task-drawer-navigation', () => ({ default: () => null }));
 vi.mock('@/components/task-list-v2/components/CopyTaskToProjectModal', () => ({ default: () => null }));
 vi.mock('@/api/tasks/task-duplicate.api.service', () => ({ default: { compare: vi.fn() } }));
+
+vi.mock('@/pages/projects/projectView/gantt/services/roadmap-api.service', () => ({
+  roadmapApi: { util: { invalidateTags: action('roadmapApi/invalidateTags') } },
+}));
 
 vi.mock('@/api/home-page/home-page.api.service', () => ({
   default: { util: { invalidateTags: action('homePageApi/invalidateTags') } },
@@ -181,6 +186,10 @@ describe('TaskDrawerHeader task deletion', () => {
     expect(types.indexOf('taskDrawer/setLastDeletedTaskId')).toBeLessThan(types.indexOf('tasks/deleteTask'));
     expect(mocks.dispatch).toHaveBeenCalledWith({ type: 'taskDrawer/setLastDeletedTaskId', payload: 'task-1' });
     expect(mocks.dispatch).toHaveBeenCalledWith({ type: 'taskDrawer/setSelectedTaskId', payload: null });
+    expect(mocks.dispatch).toHaveBeenCalledWith({
+      type: 'roadmapApi/invalidateTags',
+      payload: ['RoadmapTasks', 'ProjectPhases'],
+    });
 
     await waitFor(() => expect(mocks.clearTaskFromUrl).toHaveBeenCalledTimes(1));
   });

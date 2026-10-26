@@ -506,8 +506,57 @@ export default abstract class ReportingControllerBase extends WorklenzController
     projectManagersClause: string,
     queryParams: any[] = []) {
 
+    const getStatusRank = (statusName: string) => `CASE LOWER(${statusName})
+           WHEN 'proposed' THEN 1
+           WHEN 'in planning' THEN 2
+           WHEN 'in progress' THEN 3
+           WHEN 'completed' THEN 4
+           WHEN 'on hold' THEN 5
+           WHEN 'blocked' THEN 6
+           WHEN 'cancelled' THEN 7
+           ELSE 8
+         END`;
+    // `status_name` sorts by the custom project-status workflow order defined above.
+    // Project name (then id) is the tie-breaker so the order is deterministic and
+    // LIMIT/OFFSET pages stay stable; using the status name itself would be a no-op
+    // because it is identical for every row inside a status group.
+    // `status_id` (the status column dataIndex of the other reporting tables)
+    // and `status` are accepted as aliases so every caller gets this order;
+    // sorting on the raw UUID leaves the status groups in a random order.
+    const isStatusSort = ["status_name", "status_id", "status"].includes(sortField);
+    const sortColumns: Record<string, string> = {
+      name: 'name',
+      'p.name': 'name',
+      last_activity: 'last_activity_at',
+      days_left: 'days_left',
+      comment: 'comment',
+      priority_name: 'priority_name',
+      health_name: 'health_name',
+      project_health: 'health_name',
+      category_name: 'category_name',
+      client: 'client',
+      team_name: 'team_name',
+      project_manager_name: 'project_manager_name',
+      start_date: 'start_date',
+      end_date: 'end_date',
+      estimated_time: 'estimated_time',
+      actual_time: 'actual_time',
+    };
+    const sortColumn = Object.prototype.hasOwnProperty.call(sortColumns, sortField)
+      ? sortColumns[sortField]
+      : 'name';
+    const direction = sortOrder.toLowerCase().startsWith('desc') ? 'DESC' : 'ASC';
+    // Scalar aliases are ordered before LIMIT/OFFSET. Repeat that order in the
+    // aggregate, with a stable tie-breaker so equal values do not drift between pages.
+    const orderBy = isStatusSort
+      ? `${getStatusRank("ps.name")} ${direction}, LOWER(p.name) ${direction}, p.id`
+      : `${sortColumn} ${direction} NULLS LAST, p.id`;
+    const aggregateOrderBy = isStatusSort
+      ? `ORDER BY ${getStatusRank("t.status_name")} ${direction}, LOWER(t.name) ${direction}, t.id`
+      : `ORDER BY t.${sortColumn} ${direction} NULLS LAST, t.id`;
+
     const q = `SELECT COUNT(*) AS total,
-             (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
+             (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t) ${aggregateOrderBy})), '[]'::JSON)
               FROM (SELECT p.id,
                            p.name,
                            p.color_code,
@@ -537,6 +586,21 @@ export default abstract class ReportingControllerBase extends WorklenzController
                            p.priority_id,
                            (SELECT name FROM sys_project_priorities WHERE id = p.priority_id) AS priority_name,
                            (SELECT color_code FROM sys_project_priorities WHERE id = p.priority_id) AS priority_color,
+
+                           ABS(p.end_date::DATE - CURRENT_DATE) AS days_left,
+                           (SELECT MAX(tal.created_at)
+                            FROM task_activity_logs tal
+                            JOIN tasks activity_task ON activity_task.id = tal.task_id
+                            WHERE activity_task.project_id = p.id) AS last_activity_at,
+                           (SELECT tmiv.name
+                            FROM project_members pm
+                            JOIN team_member_info_view tmiv ON tmiv.team_member_id = pm.team_member_id
+                              AND tmiv.team_id = p.team_id
+                            WHERE pm.project_id = p.id
+                              AND pm.project_access_level_id = (
+                                SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'
+                              )
+                            LIMIT 1) AS project_manager_name,
 
                            TO_CHAR(p.start_date::DATE, 'YYYY-MM-DD') AS start_date,
                            TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
@@ -593,6 +657,12 @@ export default abstract class ReportingControllerBase extends WorklenzController
                                   ORDER BY pu.updated_at DESC
                                   LIMIT 1) AS rec) AS update,
 
+                           (SELECT pu.content
+                            FROM project_comments pu
+                            WHERE pu.project_id = p.id
+                            ORDER BY pu.updated_at DESC
+                            LIMIT 1) AS comment,
+
                      (SELECT ROW_TO_JSON(rec)
                       FROM (SELECT attribute_type,
                                    log_type,
@@ -639,7 +709,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                              LEFT JOIN project_categories pc ON pc.id = p.category_id
                              LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
                     WHERE ${teamFilterClause} ${searchQuery} ${healthClause} ${statusClause} ${categoryClause} ${projectManagersClause} ${archivedClause}
-                    ORDER BY ${sortField} ${sortOrder}
+                    ORDER BY ${orderBy}
                     LIMIT $2 OFFSET $3) t) AS projects
       FROM projects p
                LEFT JOIN project_categories pc ON pc.id = p.category_id

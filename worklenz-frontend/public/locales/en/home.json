@@ -100,7 +100,7 @@
     "noUnassignedTasks": "No unassigned tasks found",
     "pickUnassignedTaskRequired": "Please select an unassigned task",
     "taskCreationRestrictedTitle": "Task Creation Restricted",
-    "taskCreationRestricted": "Task creation is restricted to Admins and Team Leads only. Please contact your administrator.",
+    "taskCreationRestricted": "Task creation is restricted to Admins, Team Leads, and Project Managers only. Please contact your administrator.",
     "assignees": "Assignees",
     "searchMembers": "Search by name or email…",
     "noMembersFound": "No members found",

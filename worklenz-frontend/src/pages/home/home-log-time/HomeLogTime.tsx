@@ -164,6 +164,7 @@ const HomeLogTime: React.FC = () => {
   const [tasks, setTasks] = useState<ITaskInProject[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [taskSearch, setTaskSearch] = useState('');
+  const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const quickEntryRef = useRef<HTMLDivElement>(null);
 
@@ -418,17 +419,20 @@ const HomeLogTime: React.FC = () => {
   ]);
 
   useEffect(() => {
+    let cancelled = false;
+    setTasks([]);
     if (!selProjectId) {
-      setTasks([]);
+      setTasksLoading(false);
       return;
     }
     setTasksLoading(true);
     taskTimeLogsApiService
       .getMyTasksInProject(selProjectId, taskSearch || undefined)
-      .then(res => { if (res.done) setTasks(res.body as ITaskInProject[]); })
-      .catch(() => setTasks([]))
-      .finally(() => setTasksLoading(false));
-  }, [selProjectId, taskSearch]);
+      .then(res => { if (!cancelled && res.done) setTasks(res.body as ITaskInProject[]); })
+      .catch(() => { if (!cancelled) setTasks([]); })
+      .finally(() => { if (!cancelled) setTasksLoading(false); });
+    return () => { cancelled = true; };
+  }, [selProjectId, taskSearch, tasksRefreshKey]);
 
   const projectOptions = projects.map((p: IProject) => ({
     value: p.id,
@@ -829,7 +833,18 @@ const HomeLogTime: React.FC = () => {
   );
 
   return (
-    <div style={{ padding: 24, height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+    <div
+      style={{
+        padding: 24,
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        height: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <div style={{ marginBottom: 20, flexShrink: 0 }}>
          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>{t('logTime.pageTitle', { defaultValue: 'Log Time' })}</h1>
          <p style={{ opacity: 0.5, fontSize: 13, margin: '4px 0 0' }}>{t('logTime.pageSubtitle', { defaultValue: 'Track time spent on your tasks.' })}</p>
@@ -843,6 +858,7 @@ const HomeLogTime: React.FC = () => {
           alignItems: isDesktop ? 'stretch' : undefined,
           flex: 1,
           minHeight: 0,
+          minWidth: 0,
         }}
       >
         {/* Quick Time Entry */}
@@ -851,7 +867,10 @@ const HomeLogTime: React.FC = () => {
           style={{
             ...cardStyle,
             flex: isDesktop ? '0 0 360px' : '1 1 auto',
-            width: isDesktop ? undefined : '100%',
+            width: isDesktop ? 360 : '100%',
+            minWidth: 0,
+            maxWidth: '100%',
+            boxSizing: 'border-box',
             alignSelf: isDesktop ? 'flex-start' : 'stretch',
           }}
         >
@@ -876,6 +895,7 @@ const HomeLogTime: React.FC = () => {
           <div style={{ marginBottom: 10 }}>
             <label style={fldLbl}>{t('logTime.projectLabel', { defaultValue: 'Project' })}</label>
             <Select
+              className="quick-entry-name-select"
               classNames={{ popup: { root: 'quick-entry-dropdown' } }}
               styles={{ popup: { root: quickEntryDropdownStyle } }}
               showSearch
@@ -891,6 +911,7 @@ const HomeLogTime: React.FC = () => {
           <div style={{ marginBottom: 10 }}>
             <label style={fldLbl}>{t('logTime.taskLabel', { defaultValue: 'Task' })}</label>
             <Select
+              className="quick-entry-name-select"
               showSearch
               styles={{
                 popup: {
@@ -1208,14 +1229,14 @@ const HomeLogTime: React.FC = () => {
       <HomeAddTaskModal
         open={addTaskOpen}
         defaultDate={null}
-        onClose={() => {
-          setAddTaskOpen(false);
-          if (selProjectId) {
-            taskTimeLogsApiService.getMyTasksInProject(selProjectId, taskSearch || undefined)
-              .then(res => { if (res.done) setTasks(res.body as ITaskInProject[]); })
-              .catch(() => {});
-          }
+        defaultProjectId={selProjectId}
+        onTaskCreated={(task) => {
+          if (task.project_id) handleProjectChange(task.project_id);
+          if (task.id) setSelTaskId(task.id);
+          setTaskSearch('');
+          setTasksRefreshKey(value => value + 1);
         }}
+        onClose={() => setAddTaskOpen(false)}
       />
     </div>
   );

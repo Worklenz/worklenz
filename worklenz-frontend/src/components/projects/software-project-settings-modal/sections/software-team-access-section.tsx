@@ -110,7 +110,8 @@ export const SoftwareTeamAccessSection = ({
         </SettingRow>
         <SettingRow
           label={t('softwareSettings.restrictCreation', {
-            defaultValue: 'Only Admins and Team Leads can create and assign work items',
+            defaultValue:
+              'Only Admins, Team Leads, and Project Managers can create and assign work items',
           })}
           description={t('softwareSettings.restrictCreationHelp', {
             defaultValue: 'Members can still update the work items assigned to them.',
@@ -121,7 +122,8 @@ export const SoftwareTeamAccessSection = ({
             <Switch
               disabled={disabled || !hasBusinessAccess}
               aria-label={t('softwareSettings.restrictCreation', {
-                defaultValue: 'Only Admins and Team Leads can create and assign work items',
+                defaultValue:
+                  'Only Admins, Team Leads, and Project Managers can create and assign work items',
               })}
             />
           </Form.Item>
@@ -154,7 +156,7 @@ export const SoftwareTeamAccessSection = ({
             className="mt-3"
             message={t('restrictTaskCreationBusinessPlanDescription', {
               defaultValue:
-                'Restricting task creation to Admins and Team Leads is available on Business and Enterprise plans.',
+                'Restricting task creation to Admins, Team Leads, and Project Managers is available on Business and Enterprise plans.',
             })}
             action={upgradeAction}
           />
