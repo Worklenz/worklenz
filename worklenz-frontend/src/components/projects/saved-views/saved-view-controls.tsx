@@ -27,6 +27,7 @@ import {
   nextSavedViewName,
   toSavedViewTabKey,
 } from '@/features/projects/singleProject/saved-views/saved-view-config';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 
 /**
  * "Save view" for the Task List toolbar. On the List tab it offers to save the current filters,
@@ -39,6 +40,9 @@ export const SavedViewControls: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const isGuest = useAppSelector(state => state.projectReducer.project?.is_guest === true);
+  const isSoftwareProject = useAppSelector(state =>
+    isSoftwareProjectType(state.projectReducer.project?.project_type)
+  );
   const views = useAppSelector(selectSavedViews);
   const activeView = useAppSelector(selectActiveSavedView);
   const currentConfig = useAppSelector(selectCurrentSavedViewConfig);
@@ -111,7 +115,7 @@ export const SavedViewControls: React.FC = () => {
     [dispatch, projectId, saveAsNewTab, t]
   );
 
-  if (isGuest || !projectId) return null;
+  if (isGuest || isSoftwareProject || !projectId) return null;
 
   if (activeView) {
     if (!isDirty) return null;

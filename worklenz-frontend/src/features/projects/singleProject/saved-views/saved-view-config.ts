@@ -12,6 +12,10 @@ export const parseSavedViewTabKey = (tabKey: string | null | undefined): string 
   return tabKey.slice(SAVED_VIEW_TAB_PREFIX.length) || null;
 };
 
+/** True for the List tab and for saved-view tabs that reuse the task list UI. */
+export const isListTabKey = (tabKey: string | null | undefined): boolean =>
+  tabKey === 'tasks-list' || !!parseSavedViewTabKey(tabKey);
+
 /** The slices of Redux state a saved view is captured from. */
 export interface SavedViewSourceState {
   taskReducer: {

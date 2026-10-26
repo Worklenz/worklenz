@@ -110,6 +110,7 @@ import {
   selectSavedViews,
 } from '@/features/projects/singleProject/saved-views/saved-views.slice';
 import {
+  isListTabKey,
   parseSavedViewTabKey,
   toSavedViewTabKey,
 } from '@/features/projects/singleProject/saved-views/saved-view-config';
@@ -420,9 +421,7 @@ const ProjectView = React.memo(() => {
 
           const requestedTab = searchParams.get('tab') || 'tasks-list';
           const shouldPreloadTaskList =
-            requestedTab === 'tasks-list' ||
-            requestedTab === 'backlog' ||
-            !!parseSavedViewTabKey(requestedTab);
+            isListTabKey(requestedTab) || requestedTab === 'backlog';
 
           // Block filter persistence until the new project's saved filters are restored,
           // otherwise useFilterPersistence can write the previous project's filters under

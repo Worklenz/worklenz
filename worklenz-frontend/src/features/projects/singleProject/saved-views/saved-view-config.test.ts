@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   areSavedViewConfigsEqual,
   hasSavedViewCriteria,
+  isListTabKey,
   nextSavedViewName,
   parseSavedViewTabKey,
   SavedViewSourceState,
@@ -48,6 +49,13 @@ describe('saved view tab keys', () => {
 
   it.each([null, undefined, '', 'tasks-list', 'view:'])('ignores %p', key => {
     expect(parseSavedViewTabKey(key)).toBeNull();
+  });
+
+  it('treats list and saved-view tabs as list tabs', () => {
+    expect(isListTabKey('tasks-list')).toBe(true);
+    expect(isListTabKey(toSavedViewTabKey('abc'))).toBe(true);
+    expect(isListTabKey('board')).toBe(false);
+    expect(isListTabKey('view:')).toBe(false);
   });
 });
 

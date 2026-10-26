@@ -55,6 +55,7 @@ import { FieldsDropdown } from './fields-dropdown';
 import { FilterDropdown } from './filter-dropdown';
 import { Filters } from './filters-panel';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { isListTabKey } from '@/features/projects/singleProject/saved-views/saved-view-config';
 import { SearchFilter } from './search-filter';
 import { SoftwareQuickFilterChips } from './software-quick-filter-chips';
 import { resetSoftwareQuickFilters } from '@/features/projects/singleProject/quick-filters/software-quick-filters.slice';
@@ -161,7 +162,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
   const kanbanProject = useAppSelector((state: RootState) => state.projectReducer.project);
   const isBoard = position === 'board';
   const tab = searchParams.get('tab');
-  const currentProjectView = tab === 'tasks-list' ? 'list' : 'kanban';
+  const currentProjectView = isListTabKey(tab) ? 'list' : 'kanban';
   const isSoftwareProject = isSoftwareProjectType(kanbanProject?.project_type);
   const phaseLabel = isSoftwareProject
     ? t('sprintText', { defaultValue: 'Sprint' })
