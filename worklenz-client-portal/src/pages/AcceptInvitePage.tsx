@@ -39,7 +39,7 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({ inviteToken 
       .then(async response => {
         if (!response.done) throw new Error(response.message ?? undefined);
         await applyTeamSession(dispatch, response.body);
-        const name = decodeHtmlEntities(response.body.organizationName);
+        const name = decodeHtmlEntities(response.body.organizationName ?? undefined);
         message.success(
           name
             ? t('invite.accepted', { defaultValue: 'You were added to {{name}}', name })

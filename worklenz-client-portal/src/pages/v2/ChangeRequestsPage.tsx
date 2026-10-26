@@ -81,8 +81,8 @@ const ChangeRequestList: React.FC<{ openId?: string }> = ({ openId }) => {
         (priorityFilter.length === 0 || priorityFilter.includes(request.priority)) &&
         (projectFilter.length === 0 || projectFilter.includes(request.project_id)) &&
         (needle === '' ||
-          [request.title, request.cr_no, request.requester_name, request.project_name].some(value =>
-            value.toLowerCase().includes(needle)
+          [decodeHtmlEntities(request.title), request.cr_no, request.requester_name, request.project_name].some(
+            value => value.toLowerCase().includes(needle)
           ))
     );
   }, [requests, searchText, statusFilter, priorityFilter, projectFilter]);
@@ -200,7 +200,7 @@ const ChangeRequestList: React.FC<{ openId?: string }> = ({ openId }) => {
       width: 90,
       align: 'center',
       render: (_: unknown, request) => (
-        <RowActions name={decodeHtmlEntities(request.title)} actions={actionsFor()} onSelect={key => runAction(request, key)} />
+        <RowActions name={request.title} actions={actionsFor()} onSelect={key => runAction(request, key)} />
       ),
     },
   ];

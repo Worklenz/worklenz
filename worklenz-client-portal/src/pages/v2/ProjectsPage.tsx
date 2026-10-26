@@ -201,7 +201,7 @@ export const ProjectsPage: React.FC = () => {
       width: 90,
       align: 'center',
       render: (_: unknown, project) => (
-        <RowActions name={decodeHtmlEntities(project.name)} actions={actionItems(project)} onSelect={key => runAction(project, key)} />
+        <RowActions name={project.name} actions={actionItems(project)} onSelect={key => runAction(project, key)} />
       ),
     },
   ];

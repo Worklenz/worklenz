@@ -13,7 +13,6 @@ import { MessageOutlined, ReloadOutlined, InboxOutlined } from '@ant-design/icon
 import NewChatModal from '@/components/client-portal/NewChatModal';
 import { themeWiseColor } from '@utils/themeWiseColor';
 import { PortalLoader } from '@/components/client-portal/v2';
-import { decodeHtmlEntities } from '@/utils/html-entities';
 
 export type TempChatsType = {
   id: string;
@@ -103,9 +102,7 @@ const ChatBoxWrapper = ({
 
           return {
             id: chat.id || '',
-            name:
-              decodeHtmlEntities(chat.clientName || chat.title || chat.participants?.join(', ')) ||
-              'Unknown',
+            name: chat.clientName || chat.title || chat.participants?.join(', ') || 'Unknown',
             chats_data: [],
             status: (chat.unreadCount > 0 ? 'unread' : 'read') as 'read' | 'unread',
             lastMessage: chat.lastMessage || '',

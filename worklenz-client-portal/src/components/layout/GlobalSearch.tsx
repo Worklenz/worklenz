@@ -66,7 +66,17 @@ const useSearchHits = (query: string, enabled: boolean): SearchHit[] => {
     const hits: SearchHit[] = [];
 
     (projects ?? []).forEach(project => {
-      if (!matches(needle, project.id, project.name, project.primary_contact, project.phase)) return;
+      if (
+        !matches(
+          needle,
+          project.id,
+          decodeHtmlEntities(project.name),
+          project.primary_contact,
+          decodeHtmlEntities(project.phase ?? undefined)
+        )
+      ) {
+        return;
+      }
       hits.push({
         key: `project-${project.id}`,
         group: 'projects',
@@ -78,7 +88,7 @@ const useSearchHits = (query: string, enabled: boolean): SearchHit[] => {
     });
     (projects ?? []).forEach(project => {
       (tasksByProject[project.id] ?? []).forEach(task => {
-        if (!matches(needle, task.id, task.key, task.title)) return;
+        if (!matches(needle, task.id, task.key, decodeHtmlEntities(task.title))) return;
         hits.push({
           key: `task-${task.id}`,
           group: 'tasks',
@@ -90,7 +100,18 @@ const useSearchHits = (query: string, enabled: boolean): SearchHit[] => {
       });
     });
     (approvals ?? []).forEach(approval => {
-      if (!matches(needle, approval.id, approval.ref_no, approval.title, approval.project_name, approval.approver_name)) return;
+      if (
+        !matches(
+          needle,
+          approval.id,
+          approval.ref_no,
+          decodeHtmlEntities(approval.title),
+          decodeHtmlEntities(approval.project_name),
+          approval.approver_name
+        )
+      ) {
+        return;
+      }
       hits.push({
         key: `approval-${approval.id}`,
         group: 'approvals',
@@ -101,7 +122,18 @@ const useSearchHits = (query: string, enabled: boolean): SearchHit[] => {
       });
     });
     (changeRequests ?? []).forEach(request => {
-      if (!matches(needle, request.id, request.cr_no, request.title, request.project_name, request.requester_name)) return;
+      if (
+        !matches(
+          needle,
+          request.id,
+          request.cr_no,
+          decodeHtmlEntities(request.title),
+          decodeHtmlEntities(request.project_name),
+          request.requester_name
+        )
+      ) {
+        return;
+      }
       hits.push({
         key: `cr-${request.id}`,
         group: 'changeRequests',
@@ -112,7 +144,7 @@ const useSearchHits = (query: string, enabled: boolean): SearchHit[] => {
       });
     });
     (members ?? []).forEach(member => {
-      if (!matches(needle, member.id, member.name, member.email)) return;
+      if (!matches(needle, member.id, decodeHtmlEntities(member.name), member.email)) return;
       hits.push({
         key: `member-${member.id}`,
         group: 'members',

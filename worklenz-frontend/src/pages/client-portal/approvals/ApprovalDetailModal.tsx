@@ -135,7 +135,7 @@ export const ApprovalDetailModal = () => {
             {decodeHtmlEntities(item.title)}
           </Typography.Title>
           <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 14 }}>
-            {item.organization_name} · {decodeHtmlEntities(item.project_name)}
+            {decodeHtmlEntities(item.organization_name)} · {decodeHtmlEntities(item.project_name)}
           </Typography.Text>
 
           <Card size="small" style={{ marginBottom: 12 }} title={t('detail.linkedItem', { defaultValue: 'Linked item' })}>

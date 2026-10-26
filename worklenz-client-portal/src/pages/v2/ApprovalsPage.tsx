@@ -93,9 +93,12 @@ const ApprovalsList: React.FC<{ openId?: string }> = ({ openId }) => {
         (projectFilter.length === 0 || projectFilter.includes(approval.project_id)) &&
         (statusFilter.length === 0 || statusFilter.includes(approval.status)) &&
         (needle === '' ||
-          [approval.title, approval.ref_no, approval.project_name, approval.linked_item.name].some(value =>
-            value.toLowerCase().includes(needle)
-          ))
+          [
+            decodeHtmlEntities(approval.title),
+            approval.ref_no,
+            approval.project_name,
+            decodeHtmlEntities(approval.linked_item.name),
+          ].some(value => value.toLowerCase().includes(needle)))
     );
   }, [tabRows, searchText, projectFilter, statusFilter]);
 
@@ -253,7 +256,7 @@ const ApprovalsList: React.FC<{ openId?: string }> = ({ openId }) => {
       width: 90,
       align: 'center',
       render: (_: unknown, approval) => (
-        <RowActions name={decodeHtmlEntities(approval.title)} actions={actionsFor(approval)} onSelect={key => runAction(approval, key)} />
+        <RowActions name={approval.title} actions={actionsFor(approval)} onSelect={key => runAction(approval, key)} />
       ),
     },
   ];

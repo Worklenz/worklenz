@@ -99,8 +99,8 @@ export const DiscussionsView: React.FC<DiscussionsViewProps> = ({ project, autoO
       if (!needle) return true;
       return (
         (thread.ref_no ?? '').toLowerCase().includes(needle) ||
-        thread.project_name.toLowerCase().includes(needle) ||
-        thread.context.label.toLowerCase().includes(needle) ||
+        decodeHtmlEntities(thread.project_name).toLowerCase().includes(needle) ||
+        decodeHtmlEntities(thread.context.label).toLowerCase().includes(needle) ||
         thread.messages.some(item => richTextToPlain(item.text).toLowerCase().includes(needle))
       );
     });

@@ -35,7 +35,7 @@ export const DetailsStep = ({ state, onOrganizationName, onOrganization, onPerso
   if (state.organization && !organizationOptions.some(option => option.value === state.organization?.id)) {
     organizationOptions.unshift({
       value: state.organization.id,
-      label: decodeHtmlEntities(state.organization.name),
+      label: state.organization.name,
     });
   }
 

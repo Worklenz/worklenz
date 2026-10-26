@@ -432,7 +432,13 @@ export const PreviewApprovals = ({ approvals, projects, role, canApprove }: Prev
       approval =>
         (projectFilter.length === 0 || projectFilter.includes(approval.project_id)) &&
         (statusFilter.length === 0 || statusFilter.includes(approval.status)) &&
-        includesText(needle, approval.title, approval.ref_no, approval.project_name, approval.linked_item.name)
+        includesText(
+          needle,
+          decodeHtmlEntities(approval.title),
+          approval.ref_no,
+          approval.project_name,
+          approval.linked_item.name
+        )
     );
   }, [viewRows, searchText, projectFilter, statusFilter]);
 
@@ -645,7 +651,13 @@ export const PreviewChangeRequests = ({ requests, projects }: PreviewChangeReque
         (statusFilter.length === 0 || statusFilter.includes(request.status)) &&
         (priorityFilter.length === 0 || priorityFilter.includes(request.priority)) &&
         (projectFilter.length === 0 || projectFilter.includes(request.project_id)) &&
-        includesText(needle, request.title, request.cr_no, request.requester_name, request.project_name)
+        includesText(
+          needle,
+          decodeHtmlEntities(request.title),
+          request.cr_no,
+          request.requester_name,
+          request.project_name
+        )
     );
   }, [requests, searchText, statusFilter, priorityFilter, projectFilter]);
 

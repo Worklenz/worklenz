@@ -57,7 +57,7 @@ export const AssignProjectsToClientModal = ({
       message.success(
         t('workspace.projects.assign.done', {
           count: linked,
-          name: decodeHtmlEntities(organizationName),
+          name: organizationName,
           defaultValue: '{{count}} project assigned to {{name}}. Switch the Client Portal on to share it.',
         })
       );
@@ -82,7 +82,7 @@ export const AssignProjectsToClientModal = ({
       destroyOnHidden
       width={520}
       title={t('workspace.projects.assign.title', {
-        name: decodeHtmlEntities(organizationName),
+        name: organizationName,
         defaultValue: 'Assign projects to {{name}}',
       })}
       footer={[

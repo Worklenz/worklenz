@@ -22,7 +22,7 @@ export const EditApprovalModal = ({ approval, onClose }: EditApprovalModalProps)
   const { t: tShared } = useTranslation('client-portal-v2');
   const isFreeform = approval.linked_item.type === 'freeform';
 
-  const [title, setTitle] = useState(approval.title);
+  const [title, setTitle] = useState(decodeHtmlEntities(approval.title));
   const [approverIds, setApproverIds] = useState<string[]>(
     approval.approvers?.length ? approval.approvers.map(approver => approver.id) : approval.approver_id ? [approval.approver_id] : []
   );
