@@ -7,6 +7,15 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useProjectTabNavigation } from '@/hooks/useProjectTabNavigation';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import {
+  fetchProjectData,
+  setProjectData,
+  setProjectId as setDrawerProjectId,
+} from '@/features/project/project-drawer.slice';
+import {
+  openProjectSettingsModal,
+  setActiveSettingsSection,
+} from '@/features/project/project-settings-modal.slice';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { formatStoryPoints } from '@/lib/project/story-points';
 
@@ -24,6 +33,7 @@ export const SprintHealthBar = ({ projectId }: SprintHealthBarProps) => {
   const dispatch = useAppDispatch();
   const { goToProjectTab } = useProjectTabNavigation();
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
+  const selectedProject = useAppSelector(state => state.projectReducer.project);
   const listTaskEntities = useAppSelector(state => state.taskManagement.entities);
   const boardTaskGroups = useAppSelector(state => state.enhancedKanbanReducer.taskGroups);
   const isFirstRenderRef = useRef(true);
@@ -45,6 +55,24 @@ export const SprintHealthBar = ({ projectId }: SprintHealthBarProps) => {
     return () => window.clearTimeout(timer);
   }, [dispatch, listTaskEntities, boardTaskGroups, projectId]);
 
+  /** Opens project settings on the Sprints section so users can create and plan sprints. */
+  const handlePlanSprint = () => {
+    goToProjectTab('backlog');
+    dispatch(setActiveSettingsSection('sprints'));
+    dispatch(setDrawerProjectId(projectId));
+    if (selectedProject?.id === projectId) {
+      dispatch(setProjectData(selectedProject));
+    }
+    dispatch(fetchProjectData(projectId))
+      .unwrap()
+      .catch(() => {
+        if (selectedProject?.id === projectId) {
+          dispatch(setProjectData(selectedProject));
+        }
+      })
+      .finally(() => dispatch(openProjectSettingsModal()));
+  };
+
   const secondaryTextStyle = { color: token.colorTextSecondary };
 
   if (!activeSprint) {
@@ -53,7 +81,7 @@ export const SprintHealthBar = ({ projectId }: SprintHealthBarProps) => {
         <strong style={{ color: token.colorText }}>
           {t('sprintHealthNoActiveSprint', { defaultValue: 'No active sprint' })}
         </strong>
-        <Button size="small" type="primary" onClick={() => goToProjectTab('backlog')}>
+        <Button size="small" type="primary" onClick={handlePlanSprint}>
           {t('sprintHealthPlanSprint', { defaultValue: 'Plan sprint' })}
         </Button>
       </div>
