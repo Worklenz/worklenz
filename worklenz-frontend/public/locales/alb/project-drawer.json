@@ -97,6 +97,8 @@
   "restrictTaskCreationBusinessPlanDescription": "Kufizimi i krijimit të detyrave te Administratorët, Drejtuesit e Ekipit dhe Menaxherët e Projektit është i disponueshëm në planet Business dhe Enterprise.",
   "restrictTaskCreation": "Kufizo caktimin e detyrave te Administratorët, Drejtuesit e Ekipit dhe Menaxherët e Projektit",
   "restrictTaskCreationTooltip": "Kur aktivizohet, vetëm Administratorët, Drejtuesit e Ekipit dhe Menaxherët e Projektit mund të krijojnë dhe caktojnë detyra. Anëtarët e ekipit mund të shohin vetëm detyrat e caktuara për ta.",
+  "membersCanViewClientTeam": "Lejo anëtarët të shohin ekipin e klientit",
+  "membersCanViewClientTeamTooltip": "Kur aktivizohet, anëtarët normalë të projektit mund të shohin skedën e ekipit të klientit në faqen \"Anëtarët\". Pronarët, administratorët, drejtuesit e ekipit dhe menaxherët e projektit e shohin gjithmonë atë.",
   "phaseAssigneesSettings": "Të Caktuar për Fazë",
   "phaseAssigneesSettingsDescription": "Kur aktivizohet, çdo fazë e pipeline-it mund të ketë një të caktuar të dedikuar. Detyrat mund të avancohen vetëm nga i caktuari i fazës (administratorët mund të anashkalojnë gjithmonë).",
   "phaseAssigneesEnabled": "Aktivizo Të Caktuarit për Fazë",

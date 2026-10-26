@@ -97,6 +97,8 @@
   "restrictTaskCreationBusinessPlanDescription": "La restriction de la création de tâches aux administrateurs, aux chefs d'équipe et aux chefs de projet est disponible sur les forfaits Business et Enterprise.",
   "restrictTaskCreation": "Restreindre l'attribution des tâches aux administrateurs, aux chefs d'équipe et aux chefs de projet",
   "restrictTaskCreationTooltip": "Lorsqu'il est activé, seuls les administrateurs, les chefs d'équipe et les chefs de projet peuvent créer et attribuer des tâches. Les membres de l'équipe peuvent uniquement afficher les tâches qui leur sont assignées.",
+  "membersCanViewClientTeam": "Autoriser les membres à voir l'équipe du client",
+  "membersCanViewClientTeamTooltip": "Lorsqu'il est activé, les membres normaux du projet peuvent voir l'onglet Équipe du client sur la page Membres. Les propriétaires, les administrateurs, les chefs d'équipe et les chefs de projet le voient toujours.",
   "phaseAssigneesSettings": "Responsables de phase",
   "phaseAssigneesSettingsDescription": "Lorsqu'elle est activée, chaque phase du pipeline peut avoir un responsable dédié. Les tâches ne peuvent être avancées que par leur responsable de phase (les administrateurs peuvent toujours les remplacer).",
   "phaseAssigneesEnabled": "Activer les responsables de phase",

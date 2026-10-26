@@ -97,6 +97,8 @@
   "restrictTaskCreationBusinessPlanDescription": "Restringir a criação de tarefas a Admins, Líderes de Equipe e Gestores de Projeto está disponível nos planos Business e Enterprise.",
   "restrictTaskCreation": "Restringir atribuição de tarefas a Admins, Líderes de Equipe e Gestores de Projeto",
   "restrictTaskCreationTooltip": "Quando habilitado, apenas Admins, Líderes de Equipe e Gestores de Projeto podem criar e atribuir tarefas. Os membros da equipe só podem visualizar as tarefas atribuídas a eles.",
+  "membersCanViewClientTeam": "Permitir que os membros visualizem a equipe do Cliente",
+  "membersCanViewClientTeamTooltip": "Quando ativado, os membros normais do projeto podem ver a guia da equipe do Cliente na página Membros. Proprietários, administradores, líderes de equipe e gerentes de projeto sempre veem isso.",
   "phaseAssigneesSettings": "Responsáveis por Fase",
   "phaseAssigneesSettingsDescription": "Quando habilitado, cada fase do pipeline pode ter um responsável dedicado. As tarefas só podem ser avançadas pelo responsável da fase (admins sempre podem substituir).",
   "phaseAssigneesEnabled": "Habilitar Responsáveis por Fase",
