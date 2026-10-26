@@ -202,7 +202,7 @@
   "sundayShort": "niedziela",
   "tabTitle": "Zadanie bez dat rozpoczęcia i zakończenia",
   "task": "Zadanie",
-  "taskCreationRestricted": "Tworzenie zadań jest ograniczone wyłącznie do administratorów i liderów zespołów. Aby uzyskać dostęp, skontaktuj się z administratorem.",
+  "taskCreationRestricted": "Tworzenie zadań jest ograniczone wyłącznie do administratorów, liderów zespołów i kierowników projektów. Aby uzyskać dostęp, skontaktuj się z administratorem.",
   "taskCreationRestrictedTitle": "Tworzenie zadań ograniczone",
   "taskName": "Nazwa zadania",
   "taskNameRequired": "Nazwa zadania jest wymagana",

@@ -538,5 +538,6 @@
     "completeFailed": "Die Aufgabe konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut."
   },
   "projectsAtRisk": "Gefährdete Projekte",
-  "flagged": "markiert"
+  "flagged": "markiert",
+  "taskCreationRestricted": "Die Aufgabenerstellung ist nur für Administratoren, Teamleiter und Projektmanager erlaubt. Wenden Sie sich an Ihren Administrator."
 }

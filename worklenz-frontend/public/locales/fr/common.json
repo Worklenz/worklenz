@@ -135,5 +135,22 @@
   "refreshingData": "Actualisation des données...",
   "loadingData": "Chargement des données...",
   "noDataAvailable": "Aucune donnée disponible",
-  "licennse-expired-contacting-support": "Contacter l'assistance..."
+  "licennse-expired-contacting-support": "Contacter l'assistance...",
+  "addComment": "Ajouter un commentaire...",
+  "peopleYouCanMention": "Personnes que vous pouvez mentionner",
+  "noMatchingPeople": "Aucune personne correspondante",
+  "formatting": "Mise en forme",
+  "bold": "Gras",
+  "italic": "Italique",
+  "strikethrough": "Barré",
+  "codeBlock": "Bloc de code",
+  "quoteBlock": "Bloc de citation",
+  "checklist": "Liste de contrôle",
+  "numberedList": "Liste numérotée",
+  "unorderedList": "Liste à puces",
+  "linkAddress": "URL du lien",
+  "linkPlaceholder": "https://exemple.com",
+  "apply": "Appliquer",
+  "link": "Lien",
+  "textColor": "Couleur du texte"
 }

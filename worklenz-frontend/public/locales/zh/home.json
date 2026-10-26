@@ -538,5 +538,6 @@
     "completeFailed": "无法更新该待办事项，请重试。"
   },
   "projectsAtRisk": "面临风险的项目",
-  "flagged": "标记的"
+  "flagged": "标记的",
+  "taskCreationRestricted": "任务创建仅限于管理员、团队负责人和项目经理。请联系您的管理员。"
 }

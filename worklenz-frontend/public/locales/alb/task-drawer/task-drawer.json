@@ -165,7 +165,8 @@
       "updatedTime": "Përditësuar {{time}}",
       "copyLink": "Kopjo lidhjen",
       "linkCopied": "Lidhja e komentit u kopjua",
-      "linkCopyFailed": "Kopjimi i lidhjes dështoi"
+      "linkCopyFailed": "Kopjimi i lidhjes dështoi",
+      "pressCmdEnterToSubmit": "Shtypni Ctrl+Enter (ose Cmd+Enter) për të dërguar"
     },
     "searchInputPlaceholder": "Kërko sipas emrit",
     "pendingInvitation": "Ftesë në pritje"

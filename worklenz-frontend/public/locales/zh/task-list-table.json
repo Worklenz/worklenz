@@ -275,5 +275,6 @@
   "setDueTime": "设置截止时间",
   "save": "保存",
   "cancel": "取消",
-  "changeStatus": "更改状态: {{status}}"
+  "changeStatus": "更改状态: {{status}}",
+  "ellipsis": "..."
 }

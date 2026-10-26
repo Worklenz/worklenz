@@ -275,5 +275,6 @@
   "setDueTime": "Fälligkeitszeit festlegen",
   "save": "Speichern",
   "cancel": "Abbrechen",
-  "changeStatus": "Status ändern: {{status}}"
+  "changeStatus": "Status ändern: {{status}}",
+  "ellipsis": "..."
 }

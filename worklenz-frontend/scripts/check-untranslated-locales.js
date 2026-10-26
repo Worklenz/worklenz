@@ -199,7 +199,7 @@ const LANGUAGE_SOURCE_VALUES = {
   fr: new Set(['Urgent', 'Description', 'Discussions', 'Conversation', '← Discussions']),
   de: new Set(['Portal', 'Link']),
   es: new Set(['Portal']),
-  pt: new Set(['Portal']),
+  pt: new Set(['Portal', 'Link']),
   pl: new Set(['Link']),
 };
 const namespaceArgument = process.argv.find(argument => argument.startsWith('--namespace='));

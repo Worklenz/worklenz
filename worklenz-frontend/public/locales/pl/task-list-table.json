@@ -275,5 +275,6 @@
   "setDueTime": "Ustaw czas wykonania",
   "save": "Zapisz",
   "cancel": "Anuluj",
-  "changeStatus": "Zmień status: {{status}}"
+  "changeStatus": "Zmień status: {{status}}",
+  "ellipsis": "..."
 }

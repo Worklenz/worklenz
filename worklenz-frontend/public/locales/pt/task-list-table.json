@@ -275,5 +275,6 @@
   "setDueTime": "Definir hora de vencimento",
   "save": "Salvar",
   "cancel": "Cancelar",
-  "changeStatus": "Alterar status: {{status}}"
+  "changeStatus": "Alterar status: {{status}}",
+  "ellipsis": "..."
 }

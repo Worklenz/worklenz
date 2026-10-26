@@ -538,5 +538,6 @@
     "completeFailed": "Nie można zaktualizować zadania. Spróbuj ponownie."
   },
   "projectsAtRisk": "Projekty zagrożone",
-  "flagged": "oflagowany"
+  "flagged": "oflagowany",
+  "taskCreationRestricted": "Tworzenie zadań jest ograniczone wyłącznie do administratorów, liderów zespołów i kierowników projektów. Skontaktuj się ze swoim administratorem."
 }

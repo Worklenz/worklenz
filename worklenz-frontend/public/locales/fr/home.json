@@ -538,5 +538,6 @@
     "completeFailed": "Impossible de mettre à jour cette tâche. Veuillez réessayer."
   },
   "projectsAtRisk": "Projets à risque",
-  "flagged": "signalé"
+  "flagged": "signalé",
+  "taskCreationRestricted": "La création de tâches est réservée aux administrateurs, aux chefs d'équipe et aux chefs de projet uniquement. Veuillez contacter votre administrateur."
 }

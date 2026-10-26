@@ -538,5 +538,6 @@
     "completeFailed": "Detyra nuk u përditësua. Ju lutemi provoni përsëri."
   },
   "projectsAtRisk": "Projektet në rrezik",
-  "flagged": "me flamur"
+  "flagged": "me flamur",
+  "taskCreationRestricted": "Krijimi i detyrave është kufizuar vetëm për administratorët, udhëheqësit e ekipit dhe menaxherët e projektit. Ju lutemi kontaktoni administratorin."
 }

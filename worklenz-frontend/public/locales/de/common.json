@@ -135,5 +135,22 @@
   "refreshingData": "Daten werden aktualisiert...",
   "loadingData": "Daten werden geladen...",
   "noDataAvailable": "Keine Daten verfügbar",
-  "licennse-expired-contacting-support": "Support kontaktieren..."
+  "licennse-expired-contacting-support": "Support kontaktieren...",
+  "addComment": "Kommentar hinzufügen...",
+  "peopleYouCanMention": "Personen, die Sie erwähnen können",
+  "noMatchingPeople": "Keine passenden Personen",
+  "formatting": "Formatierung",
+  "bold": "Fett",
+  "italic": "Kursiv",
+  "strikethrough": "Durchgestrichen",
+  "codeBlock": "Codeblock",
+  "quoteBlock": "Zitatblock",
+  "checklist": "Checkliste",
+  "numberedList": "Nummerierte Liste",
+  "unorderedList": "Aufzählungsliste",
+  "linkAddress": "Link-URL",
+  "linkPlaceholder": "https://beispiel.de",
+  "apply": "Anwenden",
+  "link": "Link",
+  "textColor": "Textfarbe"
 }

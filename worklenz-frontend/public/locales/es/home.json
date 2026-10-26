@@ -538,5 +538,6 @@
     "completeFailed": "No se pudo actualizar esa tarea. Inténtalo de nuevo."
   },
   "projectsAtRisk": "Proyectos en riesgo",
-  "flagged": "marcado"
+  "flagged": "marcado",
+  "taskCreationRestricted": "La creación de tareas está restringida solo a administradores, líderes de equipo y gerentes de proyecto. Contacta a tu administrador."
 }

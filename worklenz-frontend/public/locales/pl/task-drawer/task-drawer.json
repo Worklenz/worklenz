@@ -165,7 +165,8 @@
       "updatedTime": "Zaktualizowano {{time}}",
       "copyLink": "Skopiuj link",
       "linkCopied": "Link do komentarza skopiowany",
-      "linkCopyFailed": "Nie udało się skopiować linku"
+      "linkCopyFailed": "Nie udało się skopiować linku",
+      "pressCmdEnterToSubmit": "Naciśnij Ctrl+Enter (lub Cmd+Enter), aby przesłać"
     },
     "searchInputPlaceholder": "Szukaj według nazwy",
     "pendingInvitation": "Oczekujące zaproszenie"

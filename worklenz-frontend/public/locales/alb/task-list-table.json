@@ -275,5 +275,6 @@
   "setDueTime": "Cakto kohën e skadimit",
   "save": "Ruaj",
   "cancel": "Anulo",
-  "changeStatus": "Ndrysho statusin: {{status}}"
+  "changeStatus": "Ndrysho statusin: {{status}}",
+  "ellipsis": "..."
 }

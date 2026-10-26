@@ -56,5 +56,7 @@
   "deleteSuccess": "Komenti u fshi me sukses",
   "deleteError": "Fshirja e komentit dështoi",
   "editSuccess": "Komenti u përditësua me sukses",
-  "editError": "Redaktimi i komentit dështoi"
+  "editError": "Redaktimi i komentit dështoi",
+  "writeComment": "Shkruani një koment...",
+  "pressCmdEnterToSubmit": "Shtypni Ctrl+Enter (ose Cmd+Enter) për të dërguar"
 }
