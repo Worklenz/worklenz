@@ -453,14 +453,22 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
-    const { segment1, segment2 } = req.body as {
+    const { segment1, segment2 } = (req.body || {}) as {
       segment1: { seconds_spent: number; formatted_start: string; description?: string };
       segment2: { seconds_spent: number; formatted_start: string };
     };
 
     if (
-      !segment1?.seconds_spent || !segment1?.formatted_start ||
-      !segment2?.seconds_spent || !segment2?.formatted_start
+      typeof segment1?.seconds_spent !== "number" ||
+      !Number.isFinite(segment1.seconds_spent) ||
+      segment1.seconds_spent <= 0 ||
+      typeof segment2?.seconds_spent !== "number" ||
+      !Number.isFinite(segment2.seconds_spent) ||
+      segment2.seconds_spent <= 0 ||
+      typeof segment1?.formatted_start !== "string" ||
+      Number.isNaN(Date.parse(segment1.formatted_start)) ||
+      typeof segment2?.formatted_start !== "string" ||
+      Number.isNaN(Date.parse(segment2.formatted_start))
     ) {
       return res.status(400).send(
         new ServerResponse(false, null, "Both segment1 and segment2 must include seconds_spent and formatted_start.")
@@ -468,34 +476,30 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     }
 
     const canEditOthers = isTeamOwner(req.user) || isTeamAdmin(req.user);
-
-    // Verify the caller may edit the original log; also fetch the original user_id and task_id.
-    const accessQ = `
-      SELECT twl.task_id, twl.user_id
-      FROM task_work_log AS twl
-      WHERE twl.id = $1
-        AND ${timeLogModifiableByUser(2, 3, 4)}
-      LIMIT 1;
-    `;
-    const accessResult = await db.query(accessQ, [
-      req.params.id,
-      req.user?.id,
-      canEditOthers,
-      req.user?.team_id,
-    ]);
-    const originalLog = accessResult.rows[0];
-    if (!originalLog) {
-      return res.status(403).send(
-        new ServerResponse(false, null, "You can only edit your own time entries.")
-      );
-    }
-
-    const { task_id: taskId, user_id: originalUserId } = originalLog;
+    let taskId: string | undefined;
 
     // Execute both writes atomically.
     const client = await db.connect();
     try {
       await client.query("BEGIN");
+
+      const lockResult = await client.query(
+        `SELECT twl.task_id, twl.user_id
+         FROM task_work_log AS twl
+         WHERE twl.id = $1
+           AND ${timeLogModifiableByUser(2, 3, 4)}
+         FOR UPDATE`,
+        [req.params.id, req.user?.id, canEditOthers, req.user?.team_id]
+      );
+      const originalLog = lockResult.rows[0];
+      if (!originalLog) {
+        await client.query("ROLLBACK");
+        return res.status(403).send(
+          new ServerResponse(false, null, "You can only edit your own time entries.")
+        );
+      }
+      const { task_id: originalTaskId, user_id: originalUserId } = originalLog;
+      taskId = originalTaskId;
 
       // Update segment 1 (the existing row).
       await client.query(
@@ -519,7 +523,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
         [
           segment2.seconds_spent,
           segment1.description ?? null,  // carry the same description as segment 1
-          taskId,
+          originalTaskId,
           originalUserId,               // ← preserve original member's id
           segment2.formatted_start,
         ]

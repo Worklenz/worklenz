@@ -8,7 +8,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { fetchOrgConfig } from '@/features/org-config/org-config.slice';
 import { themeWiseColor } from '@/utils/themeWiseColor';
-import { computeTimeRangeSplits, TimeRangeSplitResult } from '@/utils/timeUtils';
+import { computeTimeRangeSplits, getTimeRangeBounds, TimeRangeSplitResult } from '@/utils/timeUtils';
 import { useAuthService } from '@/hooks/useAuth';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -187,31 +187,11 @@ const TimeLogForm = ({
         return { hours: 0, minutes: 0 };
       }
 
-      const base = dateValue || dayjs();
-
-      const fullStart = dayjs(base)
-        .hour(startTimeValue.hour())
-        .minute(startTimeValue.minute())
-        .second(0)
-        .millisecond(0);
-
-      // Preserve the end date when endTimeValue already carries a later calendar day
-      // (e.g. switching from timeRange→duration for an existing overnight log).
-      const endCarriesLaterDate = endTimeValue.startOf('day').isAfter(dayjs(base).startOf('day'));
-      let fullEnd: Dayjs;
-      if (endCarriesLaterDate) {
-        fullEnd = endTimeValue.second(0).millisecond(0);
-      } else {
-        fullEnd = dayjs(base)
-          .hour(endTimeValue.hour())
-          .minute(endTimeValue.minute())
-          .second(0)
-          .millisecond(0);
-        // If end time is before start time, it rolls over to next day
-        if (fullEnd.isBefore(fullStart)) {
-          fullEnd = fullEnd.add(1, 'day');
-        }
-      }
+      const { fullStart, fullEnd } = getTimeRangeBounds(
+        dateValue || dayjs(),
+        startTimeValue,
+        endTimeValue
+      );
 
       const totalMinutes = fullEnd.diff(fullStart, 'minute');
       return {
@@ -524,28 +504,7 @@ const TimeLogForm = ({
         return;
       }
 
-      const fullStart = dayjs(date)
-        .hour(startTime.hour())
-        .minute(startTime.minute())
-        .second(0)
-        .millisecond(0);
-      // Preserve the end date when endTime already carries a later calendar day
-      // (e.g. an existing overnight log loaded into the form). Re-anchoring to
-      // `date` would collapse a 10:00→11:00+1d (25 h) entry to 1 h.
-      const endCarriesLaterDate = endTime.startOf('day').isAfter(dayjs(date).startOf('day'));
-      let fullEnd: Dayjs;
-      if (endCarriesLaterDate) {
-        fullEnd = endTime.second(0).millisecond(0);
-      } else {
-        fullEnd = dayjs(date)
-          .hour(endTime.hour())
-          .minute(endTime.minute())
-          .second(0)
-          .millisecond(0);
-        if (fullEnd.isBefore(fullStart)) {
-          fullEnd = fullEnd.add(1, 'day');
-        }
-      }
+      const { fullStart, fullEnd } = getTimeRangeBounds(date, startTime, endTime);
 
       const diffMinutes = fullEnd.diff(fullStart, 'minute');
       if (diffMinutes <= 0) {
@@ -743,29 +702,11 @@ const TimeLogForm = ({
     if (inputMode === 'timeRange') {
       if (!formValues.startTime || !formValues.endTime) return false;
 
-      const fullStart = dayjs(formValues.date)
-        .hour(formValues.startTime.hour())
-        .minute(formValues.startTime.minute())
-        .second(0)
-        .millisecond(0);
-      // Preserve the end date when endTime already carries a later calendar day
-      const endCarriesLaterDate = formValues.endTime
-        .startOf('day')
-        .isAfter(dayjs(formValues.date).startOf('day'));
-      let fullEnd: Dayjs;
-      if (endCarriesLaterDate) {
-        fullEnd = formValues.endTime.second(0).millisecond(0);
-      } else {
-        fullEnd = dayjs(formValues.date)
-          .hour(formValues.endTime.hour())
-          .minute(formValues.endTime.minute())
-          .second(0)
-          .millisecond(0);
-        if (fullEnd.isBefore(fullStart)) {
-          fullEnd = fullEnd.add(1, 'day');
-        }
-      }
-
+      const { fullStart, fullEnd } = getTimeRangeBounds(
+        formValues.date,
+        formValues.startTime,
+        formValues.endTime
+      );
       return fullEnd.diff(fullStart, 'minute') > 0;
     }
 

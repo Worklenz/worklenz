@@ -36,37 +36,40 @@ export interface OvernightSplitInfo {
   splits: TimeRangeSplitResult[];
 }
 
-export function computeTimeRangeSplits(
+export function getTimeRangeBounds(
   dateValue: dayjs.Dayjs,
   startTimeValue: dayjs.Dayjs,
   endTimeValue: dayjs.Dayjs
-): OvernightSplitInfo {
+): { fullStart: dayjs.Dayjs; fullEnd: dayjs.Dayjs } {
   const fullStart = dayjs(dateValue)
     .hour(startTimeValue.hour())
     .minute(startTimeValue.minute())
     .second(0)
     .millisecond(0);
 
-  // If endTimeValue already carries a calendar date that is strictly later than dateValue
-  // (e.g. loaded from an existing overnight log), preserve that date so a 10:00→11:00+1d
-  // entry stays 25 h instead of collapsing to 1 h.
-  const endCarriesLaterDate = endTimeValue.startOf('day').isAfter(dayjs(dateValue).startOf('day'));
-  let fullEnd: dayjs.Dayjs;
-  if (endCarriesLaterDate) {
-    // Use the end datetime as-is (seconds/ms already zeroed by the form).
-    fullEnd = endTimeValue.second(0).millisecond(0);
-  } else {
-    fullEnd = dayjs(dateValue)
-      .hour(endTimeValue.hour())
-      .minute(endTimeValue.minute())
-      .second(0)
-      .millisecond(0);
+  const calendarDayOffset = endTimeValue
+    .startOf('day')
+    .diff(startTimeValue.startOf('day'), 'day');
+  let fullEnd = dayjs(dateValue)
+    .add(calendarDayOffset, 'day')
+    .hour(endTimeValue.hour())
+    .minute(endTimeValue.minute())
+    .second(0)
+    .millisecond(0);
 
-    // If end time is before start time, it rolls over to next day
-    if (fullEnd.isBefore(fullStart)) {
-      fullEnd = fullEnd.add(1, 'day');
-    }
+  if (fullEnd.isBefore(fullStart)) {
+    fullEnd = fullEnd.add(1, 'day');
   }
+
+  return { fullStart, fullEnd };
+}
+
+export function computeTimeRangeSplits(
+  dateValue: dayjs.Dayjs,
+  startTimeValue: dayjs.Dayjs,
+  endTimeValue: dayjs.Dayjs
+): OvernightSplitInfo {
+  const { fullStart, fullEnd } = getTimeRangeBounds(dateValue, startTimeValue, endTimeValue);
 
   const isOvernight = !fullStart.isSame(fullEnd, 'day');
   const totalSeconds = Math.max(0, fullEnd.diff(fullStart, 'second'));

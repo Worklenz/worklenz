@@ -18,6 +18,29 @@ describe('computeTimeRangeSplits', () => {
     expect(dayjs(result.splits[0].formatted_start).hour()).toBe(9);
   });
 
+  it('re-anchors a same-day range to an earlier selected date without adding a day', () => {
+    const selectedDate = dayjs('2026-10-10');
+    const start = dayjs('2026-10-15 09:00:00');
+    const end = dayjs('2026-10-15 10:00:00');
+
+    const result = computeTimeRangeSplits(selectedDate, start, end);
+    expect(result.totalSeconds).toBe(3600);
+    expect(result.splits).toHaveLength(1);
+    expect(dayjs(result.splits[0].formatted_start).format('YYYY-MM-DD HH:mm')).toBe('2026-10-10 09:00');
+  });
+
+  it('preserves the overnight day offset when re-anchoring the range', () => {
+    const selectedDate = dayjs('2026-10-10');
+    const start = dayjs('2026-10-15 22:00:00');
+    const end = dayjs('2026-10-16 02:00:00');
+
+    const result = computeTimeRangeSplits(selectedDate, start, end);
+    expect(result.totalSeconds).toBe(14400);
+    expect(result.splits).toHaveLength(2);
+    expect(dayjs(result.splits[0].formatted_start).format('YYYY-MM-DD HH:mm')).toBe('2026-10-10 22:00');
+    expect(dayjs(result.splits[1].formatted_start).format('YYYY-MM-DD HH:mm')).toBe('2026-10-11 00:00');
+  });
+
   it('splits overnight range crossing midnight into two entries (e.g. 22:00 to 02:00)', () => {
     const date = dayjs('2026-10-15');
     const start = dayjs('2026-10-15 22:00:00');
