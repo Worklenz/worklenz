@@ -1253,7 +1253,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
       }
     }
 
-    if (unmapped.length) {
+    // Always keep Backlog (Unmapped) when grouping by phase, even if empty.
+    if (groupBy === GroupBy.PHASE || unmapped.length) {
       map[UNMAPPED] = {
         name: UNMAPPED,
         category_id: null,
@@ -2454,8 +2455,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
       });
     }
 
-    // Create unmapped group if there are tasks without proper phase assignment
-    if (unmappedTasks.length > 0 && groupBy === GroupBy.PHASE) {
+    // Always include the Backlog (Unmapped) section when grouping by phase,
+    // even when it has no issues — Create sprint must not remove it.
+    if (groupBy === GroupBy.PHASE) {
       const unmappedGroup = {
         id: UNMAPPED,
         title: UNMAPPED,
@@ -2474,7 +2476,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
         done_progress: 0,
       };
 
-      // Calculate progress stats for unmapped group
       if (unmappedTasks.length > 0) {
         const todoCount = unmappedTasks.filter((task: any) => {
           const originalTask = tasks.find((t) => t.id === task.id);

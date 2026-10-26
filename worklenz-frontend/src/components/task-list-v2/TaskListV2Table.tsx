@@ -1676,18 +1676,34 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const virtuosoGroups = useMemo(() => {
     let currentTaskIndex = 0;
 
-    // Software backlog: active sprint first, then planned sprints, Backlog last.
+    // Software backlog: always keep Backlog (Unmapped), even when empty; active sprint first.
     const orderedGroups =
       isBacklogMode && isSoftwareProject
-        ? [...groups].sort((a, b) => {
-            if (a.id === UNMAPPED_PHASE_ID) return 1;
-            if (b.id === UNMAPPED_PHASE_ID) return -1;
-            const aStatus = phaseList.find(phase => phase.id === a.id)?.sprint_status;
-            const bStatus = phaseList.find(phase => phase.id === b.id)?.sprint_status;
-            const rank = (status?: string | null) =>
-              status === 'active' ? 0 : status === 'planned' ? 1 : 2;
-            return rank(aStatus) - rank(bStatus);
-          })
+        ? (() => {
+            const hasBacklog = groups.some(group => group.id === UNMAPPED_PHASE_ID);
+            const withBacklog = hasBacklog
+              ? groups
+              : [
+                  ...groups,
+                  {
+                    id: UNMAPPED_PHASE_ID,
+                    title: UNMAPPED_PHASE_ID,
+                    taskIds: [] as string[],
+                    type: 'phase' as const,
+                    color: '#fbc84c69',
+                    groupValue: UNMAPPED_PHASE_ID.toLowerCase(),
+                  },
+                ];
+            return [...withBacklog].sort((a, b) => {
+              if (a.id === UNMAPPED_PHASE_ID) return 1;
+              if (b.id === UNMAPPED_PHASE_ID) return -1;
+              const aStatus = phaseList.find(phase => phase.id === a.id)?.sprint_status;
+              const bStatus = phaseList.find(phase => phase.id === b.id)?.sprint_status;
+              const rank = (status?: string | null) =>
+                status === 'active' ? 0 : status === 'planned' ? 1 : 2;
+              return rank(aStatus) - rank(bStatus);
+            });
+          })()
         : groups;
 
     return orderedGroups.map(group => {
