@@ -22,6 +22,7 @@ import {
   useVisibilityToast,
 } from '@/components/client-portal/v2';
 import type { Milestone, MilestoneSource, MilestoneStatus, PortalProject, PortalVisibility } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { CompleteMilestoneModal, MilestoneModal } from './MilestoneModals';
 import { PortalLoader } from '@/components/client-portal/v2';
 import { RichTextView } from '../../shared/rich-text/RichTextView';
@@ -141,7 +142,7 @@ export const MilestonesTab = ({ project }: MilestonesTabProps) => {
           <div style={{ opacity: milestone.visibility === 'internal' ? 0.8 : 1 }}>
             <Flex align="center" gap={6} style={{ fontWeight: 600, fontSize: 13 }}>
               {milestone.visibility === 'internal' && <LockOutlined aria-hidden style={{ fontSize: 12 }} />}
-              {milestone.name}
+              {decodeHtmlEntities(milestone.name)}
             </Flex>
             {milestone.description && (
               <div style={{ fontSize: 11.5, color: token.colorTextSecondary }}>

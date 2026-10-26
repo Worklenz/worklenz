@@ -1,4 +1,5 @@
 import { Typography, theme } from '@/shared/antd-imports';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface ProjectNameProps {
   name: string;
@@ -8,14 +9,15 @@ interface ProjectNameProps {
 /** A project's name with its colour dot. Falls back to a neutral dot when the project has no colour. */
 export const ProjectName = ({ name, color }: ProjectNameProps) => {
   const { token } = theme.useToken();
+  const decodedName = decodeHtmlEntities(name);
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: token.marginXS, minWidth: 0 }}>
       <span
         aria-hidden
         style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: color || token.colorTextQuaternary }}
       />
-      <Typography.Text strong ellipsis style={{ minWidth: 0 }}>
-        {name}
+      <Typography.Text strong ellipsis style={{ minWidth: 0 }} title={decodedName}>
+        {decodedName}
       </Typography.Text>
     </span>
   );

@@ -92,7 +92,7 @@ export const ThreadView = ({ threadId, onBack }: ThreadViewProps) => {
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span aria-hidden>{CONTEXT_ICONS[thread.context.type]}</span>
-              <span style={{ overflowWrap: 'anywhere' }}>{thread.context.label}</span>
+              <span style={{ overflowWrap: 'anywhere' }}>{decodeHtmlEntities(thread.context.label)}</span>
             </div>
             <Flex align="center" gap={4} wrap="wrap" style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 2 }}>
               <Typography.Text
@@ -110,7 +110,7 @@ export const ThreadView = ({ threadId, onBack }: ThreadViewProps) => {
               </Typography.Text>
               <span aria-hidden>·</span>
               <span>
-                {thread.organization_name} · {decodeHtmlEntities(thread.project_name)}
+                {decodeHtmlEntities(thread.organization_name)} · {decodeHtmlEntities(thread.project_name)}
               </span>
             </Flex>
           </div>

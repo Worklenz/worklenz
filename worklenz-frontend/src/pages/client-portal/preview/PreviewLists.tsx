@@ -57,7 +57,9 @@ const includesText = (needle: string, ...values: Array<string | null | undefined
   needle === '' || values.some(value => (value ?? '').toLowerCase().includes(needle));
 
 const toOptions = (entries: Array<[string, string]>) =>
-  Array.from(new Map(entries), ([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+  Array.from(new Map(entries), ([value, label]) => ({ value, label: decodeHtmlEntities(label) })).sort((a, b) =>
+    a.label.localeCompare(b.label)
+  );
 
 const useProjectColors = (projects: ClientProjectView[]) =>
   useMemo(() => new Map(projects.map(project => [project.id, project.color])), [projects]);
@@ -430,7 +432,13 @@ export const PreviewApprovals = ({ approvals, projects, role, canApprove }: Prev
       approval =>
         (projectFilter.length === 0 || projectFilter.includes(approval.project_id)) &&
         (statusFilter.length === 0 || statusFilter.includes(approval.status)) &&
-        includesText(needle, approval.title, approval.ref_no, approval.project_name, approval.linked_item.name)
+        includesText(
+          needle,
+          decodeHtmlEntities(approval.title),
+          approval.ref_no,
+          approval.project_name,
+          approval.linked_item.name
+        )
     );
   }, [viewRows, searchText, projectFilter, statusFilter]);
 
@@ -506,7 +514,9 @@ export const PreviewApprovals = ({ approvals, projects, role, canApprove }: Prev
       title: t('approvals.approval', { defaultValue: 'Approval' }),
       key: 'title',
       sorter: (a, b) => a.title.localeCompare(b.title),
-      render: (_: unknown, approval) => <Typography.Text strong>{approval.title}</Typography.Text>,
+      render: (_: unknown, approval) => (
+        <Typography.Text strong>{decodeHtmlEntities(approval.title)}</Typography.Text>
+      ),
     },
     {
       title: t('approvals.project', { defaultValue: 'Project' }),
@@ -518,7 +528,7 @@ export const PreviewApprovals = ({ approvals, projects, role, canApprove }: Prev
       key: 'linked',
       render: (_: unknown, approval) =>
         approval.linked_item.available
-          ? approval.linked_item.name
+          ? decodeHtmlEntities(approval.linked_item.name)
           : t('approvals.noLongerShared', { defaultValue: 'The linked item is no longer shared' }),
     },
     { title: t('approvals.linkedType', { defaultValue: 'Item type' }), key: 'type', render: (_: unknown, approval) => linkTypeLabel(approval.linked_item.type) },
@@ -641,7 +651,13 @@ export const PreviewChangeRequests = ({ requests, projects }: PreviewChangeReque
         (statusFilter.length === 0 || statusFilter.includes(request.status)) &&
         (priorityFilter.length === 0 || priorityFilter.includes(request.priority)) &&
         (projectFilter.length === 0 || projectFilter.includes(request.project_id)) &&
-        includesText(needle, request.title, request.cr_no, request.requester_name, request.project_name)
+        includesText(
+          needle,
+          decodeHtmlEntities(request.title),
+          request.cr_no,
+          request.requester_name,
+          request.project_name
+        )
     );
   }, [requests, searchText, statusFilter, priorityFilter, projectFilter]);
 
@@ -700,7 +716,9 @@ export const PreviewChangeRequests = ({ requests, projects }: PreviewChangeReque
       title: t('changeRequests.request', { defaultValue: 'Request' }),
       key: 'title',
       sorter: (a, b) => a.title.localeCompare(b.title),
-      render: (_: unknown, request) => <Typography.Text strong>{request.title}</Typography.Text>,
+      render: (_: unknown, request) => (
+        <Typography.Text strong>{decodeHtmlEntities(request.title)}</Typography.Text>
+      ),
     },
     { title: t('changeRequests.requester', { defaultValue: 'Requested by' }), key: 'requester', dataIndex: 'requester_name' },
     {
