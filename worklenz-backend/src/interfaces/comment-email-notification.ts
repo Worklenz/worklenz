@@ -17,4 +17,6 @@ export interface IProjectCommentEmailNotification {
   comment: string;
   settings_url: string;
   project_url: string;
+  /** Organization branding logo; falls back to Worklenz default when unset. */
+  logo_url: string;
 }
