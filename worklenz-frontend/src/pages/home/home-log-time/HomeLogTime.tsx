@@ -103,6 +103,16 @@ const resolvePriorityFields = (
     ...(priority?.color_code_dark ? { priority_color_dark: priority.color_code_dark } : {}),
   };
 };
+// Lower rank = higher priority. Unknown/missing priorities sort last.
+const PRIORITY_RANK: Record<string, number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
+const getPriorityRank = (name?: string): number =>
+  PRIORITY_RANK[(name || '').trim().toLowerCase()] ?? Number.MAX_SAFE_INTEGER;
 
 const formatSeconds = (seconds: number): string => {
   const total = Math.max(0, Math.round(seconds || 0));
@@ -640,6 +650,9 @@ const HomeLogTime: React.FC = () => {
       if (logSortField === 'time_spent') return ((a.time_spent || 0) - (b.time_spent || 0)) * dir;
       if (logSortField === 'created_at') {
         return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
+      }
+      if (logSortField === 'priority_name') {
+        return (getPriorityRank(a.priority_name) - getPriorityRank(b.priority_name)) * dir;
       }
       const av = (a[logSortField] || '').toString().toLowerCase();
       const bv = (b[logSortField] || '').toString().toLowerCase();
