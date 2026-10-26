@@ -12,6 +12,7 @@ import {
 import { formatCalendarDate } from '@/utils/date-presets';
 import logger from '@/utils/errorLogger';
 import { ELLIPSIS_STYLE, EmptyCell, MemberCell, TextCell } from './time-logs-cells';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Text } = Typography;
 
@@ -189,7 +190,7 @@ export const TimeLogsGroupEntries: React.FC<TimeLogsGroupEntriesProps> = ({
           <EmptyCell />
         );
       case 'task':
-        return <TextCell value={entry.task_name} />;
+        return <TextCell value={decodeHtmlEntities(entry.task_name)} />;
       case 'member':
         return (
           <MemberCell
@@ -199,9 +200,9 @@ export const TimeLogsGroupEntries: React.FC<TimeLogsGroupEntriesProps> = ({
           />
         );
       case 'project':
-        return <span style={ELLIPSIS_STYLE}>{entry.project_name}</span>;
+        return <span style={ELLIPSIS_STYLE}>{decodeHtmlEntities(entry.project_name)}</span>;
       case 'client':
-        return <TextCell value={entry.client_name} />;
+        return <TextCell value={decodeHtmlEntities(entry.client_name)} />;
       case 'description':
         return <TextCell value={entry.description} />;
       case 'duration':

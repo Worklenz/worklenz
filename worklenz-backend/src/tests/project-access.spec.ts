@@ -86,6 +86,7 @@ describe("buildProjectAccess (Phase 1)", () => {
     expect(access.permissions.saveAsTemplate).toBe(false);
     expect(access.permissions.finance).toBe(false);
     expect(access.permissions.tasks).toBe(true);
+    expect(access.permissions.docs).toBe(true);
   });
 
   it("Admin gets full access including archive/delete/assignPm regardless of PM row", () => {
@@ -133,6 +134,7 @@ describe("buildProjectAccess (Phase 1)", () => {
     expect(access.permissions.settings).toBe(false);
     expect(access.permissions.finance).toBe(false);
     expect(access.permissions.members.add).toBe(false);
+    expect(access.permissions.docs).toBe(false);
     expect(access.canCreateProjectsFromTemplates).toBe(false);
   });
 

@@ -3,6 +3,7 @@ import { Button, Flex, Tag, Typography, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useClientAccess } from '@/hooks/useClientAccess';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import type { ClientThreadMessageV2 } from '@/types/v2';
 import { LockedNote } from './LockedNote';
 import { RichTextField } from './RichTextField';
@@ -34,7 +35,7 @@ export const MessageList = ({ messages, bubbles = false, emptyText }: MessageLis
   return (
     <div>
       {messages.map(message => {
-        const mine = bubbles && message.author === me?.name;
+        const mine = bubbles && decodeHtmlEntities(message.author) === decodeHtmlEntities(me?.name);
         return (
           <Flex
             key={message.id}
@@ -43,7 +44,7 @@ export const MessageList = ({ messages, bubbles = false, emptyText }: MessageLis
             style={{ marginBottom: 12 }}
           >
             <Typography.Text style={{ fontSize: token.fontSizeSM }} strong>
-              {message.author}
+              {decodeHtmlEntities(message.author)}
               {message.side === 'internal' && (
                 <Tag color="blue" style={{ marginInlineStart: 6 }}>
                   {t('discussions.team', { defaultValue: 'Team' })}

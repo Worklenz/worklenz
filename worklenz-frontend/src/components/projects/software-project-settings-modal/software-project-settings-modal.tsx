@@ -15,7 +15,6 @@ import {
   NumberOutlined,
   ProfileOutlined,
   Skeleton,
-  TableOutlined,
   Tag,
   TeamOutlined,
   ThunderboltOutlined,
@@ -38,6 +37,7 @@ import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/pr
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { fetchProjectPriorities } from '@/features/projects/priority/projectPrioritySlice';
 import { mergeProject, setProject, setProjectId } from '@/features/project/project.slice';
+import { mergeProjectData } from '@/features/project/project-drawer.slice';
 import {
   setProjectData,
   setProjectId as setDrawerProjectId,
@@ -54,7 +54,6 @@ import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 import ManageStatusContent from '@/components/task-management/ManageStatusContent';
-import CustomColumnsSettingsSection from '../project-settings-modal/sections/custom-columns-settings-section';
 import IntegrationsSettingsSection from '../project-settings-modal/sections/integrations-settings-section';
 import TaskExportSettingsSection from '../project-settings-modal/sections/task-export-settings-section';
 import DangerZoneSection from '../project-settings-modal/sections/danger-zone-section';
@@ -82,9 +81,11 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
   const { projectId, projectLoading, project } = useAppSelector(
     state => state.projectDrawerReducer
   );
-  const { isOpen, navigateToProjectOnUpdate } = useAppSelector(
-    state => state.projectSettingsModalReducer
-  );
+  const {
+    isOpen,
+    navigateToProjectOnUpdate,
+    activeSection: requestedSection,
+  } = useAppSelector(state => state.projectSettingsModalReducer);
   const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
   const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
@@ -127,6 +128,11 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
     setSelectedProjectLead(projectLead);
   }, [isOpen, project, projectLoading, form]);
 
+  // Deep link (e.g. GitHub from the integrations overlay) asks for a specific section.
+  useEffect(() => {
+    if (isOpen && requestedSection === 'integrations') setActiveSection('integrations');
+  }, [isOpen, requestedSection]);
+
   const handleUpgrade = useCallback(() => dispatch(toggleUpgradeModal()), [dispatch]);
 
   const handleClose = useCallback(() => {
@@ -154,15 +160,16 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
         return;
       }
 
+      const projectModel = buildProjectModel({
+        project,
+        values,
+        projectLead: selectedProjectLead,
+        canAssignLead: permissions.assignPm,
+        canManageVisibility: canEditSettings,
+      });
       const response = await updateProject({
         id: projectId,
-        project: buildProjectModel({
-          project,
-          values,
-          projectLead: selectedProjectLead,
-          canAssignLead: permissions.assignPm,
-          canManageVisibility: canEditSettings,
-        }),
+        project: projectModel,
       });
 
       if (!response?.data?.done) {
@@ -174,7 +181,11 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
         return;
       }
 
-      if (response.data.body) dispatch(mergeProject(response.data.body));
+      if (response.data.body) {
+        const mergedProject = { ...response.data.body, ...projectModel };
+        dispatch(mergeProject(mergedProject));
+        dispatch(mergeProjectData({ projectId, changes: mergedProject }));
+      }
       notification.success({
         message: t('softwareSettings.saved', { defaultValue: 'Project settings saved' }),
         duration: 2,
@@ -319,18 +330,6 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
             disabled={!canEditSettings}
           />
         ) : null,
-      },
-      {
-        key: 'customFields',
-        group: 'configuration',
-        icon: <TableOutlined />,
-        label: t('softwareSettings.customFieldsTab', { defaultValue: 'Custom fields' }),
-        content: (
-          <CustomColumnsSettingsSection
-            projectId={projectId}
-            disabled={!canEditSettings && !permissions.customColumns}
-          />
-        ),
       },
       {
         key: 'integrations',
@@ -580,6 +579,7 @@ const buildFormValues = (project: IProjectViewModel): SoftwareSettingsFormValues
       : true,
   auto_assign_task_creator: Boolean(project.auto_assign_task_creator),
   restrict_task_creation: Boolean(project.restrict_task_creation),
+  members_can_view_client_team: Boolean(project.members_can_view_client_team),
   restrict_tasks_to_assignee: Boolean(project.restrict_tasks_to_assignee),
 });
 
@@ -610,6 +610,7 @@ const buildProjectModel = ({
   ...(canAssignLead ? { finance_access: values.finance_access !== false } : {}),
   auto_assign_task_creator: Boolean(values.auto_assign_task_creator),
   restrict_task_creation: Boolean(values.restrict_task_creation),
+  members_can_view_client_team: Boolean(values.members_can_view_client_team),
   ...(canManageVisibility
     ? { restrict_tasks_to_assignee: Boolean(values.restrict_tasks_to_assignee) }
     : {}),
@@ -667,6 +668,7 @@ interface SoftwareSettingsFormValues {
   finance_access?: boolean;
   auto_assign_task_creator?: boolean;
   restrict_task_creation?: boolean;
+  members_can_view_client_team?: boolean;
   restrict_tasks_to_assignee?: boolean;
 }
 

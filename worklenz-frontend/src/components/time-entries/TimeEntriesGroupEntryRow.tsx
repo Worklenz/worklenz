@@ -13,6 +13,7 @@ import { TimeEntryMemberAvatars } from './TimeEntryMemberAvatars';
 import { useCanEditTimeEntry } from './useCanEditTimeEntry';
 import { EditTimeEntryModal } from './EditTimeEntryModal';
 import '@/pages/time-entries/time-entries.css';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Text } = Typography;
 
@@ -67,9 +68,9 @@ export const TimeEntriesGroupEntryRow: React.FC<TimeEntriesGroupEntryRowProps> =
           <Badge color={entry.project_color || token.colorPrimary} />
           <Text
             style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-            title={entry.task_name}
+            title={decodeHtmlEntities(entry.task_name)}
           >
-            {entry.task_name}
+            {decodeHtmlEntities(entry.task_name)}
           </Text>
         </Flex>
 
@@ -92,7 +93,7 @@ export const TimeEntriesGroupEntryRow: React.FC<TimeEntriesGroupEntryRowProps> =
           <Flex align="center" gap={6} style={{ ...flexCol(GROUPED_COLUMN_WIDTHS.project), overflow: 'hidden' }}>
             <Badge color={entry.project_color || token.colorPrimary} />
             <Text style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {entry.project_name}
+              {decodeHtmlEntities(entry.project_name)}
             </Text>
           </Flex>
         )}

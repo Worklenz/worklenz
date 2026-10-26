@@ -10,5 +10,12 @@
   "commentAdded": "<b>{{user}}</b> adicionou um comentário em <b>{{task}}</b>",
   "mentionedInComment": "<b>{{user}}</b> mencionou-o num comentário em <b>{{task}}</b>",
   "mentionedInProjectComment": "<b>{{user}}</b> mencionou-o num comentário em <b>{{project}}</b>",
-  "phaseTaskAssigned": "Foi-lhe atribuída uma tarefa em <b>{{phase}}</b>: <b>{{task}}</b>"
+  "mentionedInProjectDocument": "<b>{{user}}</b> mencionou-o num documento em <b>{{project}}</b>",
+  "phaseTaskAssigned": "Foi-lhe atribuída uma tarefa em <b>{{phase}}</b>: <b>{{task}}</b>",
+  "security": {
+    "invitationLimit": "Este espaço de trabalho atingiu o limite de segurança de convites. Tente novamente mais tarde.",
+    "invitationsPaused": "Os convites estão temporariamente suspensos. Entre em contato com seu administrador.",
+    "blockedTaskHost": "Esta tarefa contém um link bloqueado. Remova-o e tente novamente.",
+    "blockedSignupDomain": "Este provedor de e-mail não é compatível. Use outro endereço de e-mail."
+  }
 }

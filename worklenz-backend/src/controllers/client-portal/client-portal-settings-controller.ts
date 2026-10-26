@@ -7,6 +7,7 @@ import db from "../../config/db";
 import { uploadBase64, getClientPortalLogoKey, deleteObject } from "../../shared/storage";
 import { log_error } from "../../shared/utils";
 import { getClientPortalBaseUrl } from "../../cron_jobs/helpers";
+import { teamCanUseFeature } from "../../shared/entitlements/gates";
 
 /** `portal_theme` / `invoice_template_style` are stored as free TEXT with a DB CHECK constraint — validate here too so a bad value fails fast with a clear message instead of a raw constraint-violation error. */
 const PORTAL_THEMES = ["light", "dark"];
@@ -129,8 +130,6 @@ export default class ClientPortalSettingsController extends ClientPortalControll
       const organizationTeamId = teamId;
 
       const {
-        logo_url,
-        primary_color,
         welcome_message,
         contact_email,
         contact_phone,
@@ -147,7 +146,9 @@ export default class ClientPortalSettingsController extends ClientPortalControll
         portal_title,
       } = req.body;
 
-      const portal_theme = PORTAL_THEMES.includes(req.body.portal_theme)
+      let logo_url = req.body.logo_url;
+      let primary_color = req.body.primary_color;
+      let portal_theme = PORTAL_THEMES.includes(req.body.portal_theme)
         ? req.body.portal_theme
         : "light";
       const invoice_template_style = INVOICE_TEMPLATE_STYLES.includes(req.body.invoice_template_style)
@@ -175,12 +176,23 @@ export default class ClientPortalSettingsController extends ClientPortalControll
       const keepPocCanRemoveUsers = req.body.poc_can_remove_users === undefined;
       const invoice_show_logo = toBool(req.body.invoice_show_logo, true);
       // Omitted (e.g. by a caller that predates the Branding toggle) must leave the stored value alone.
-      const show_powered_by = toBool(req.body.show_powered_by, true);
-      const keepShowPoweredBy = req.body.show_powered_by === undefined;
+      let show_powered_by = toBool(req.body.show_powered_by, true);
+      let keepShowPoweredBy = req.body.show_powered_by === undefined;
 
       // Check if settings exist
-      const checkQ = `SELECT id FROM client_portal_settings WHERE organization_team_id = $1`;
+      const checkQ = `SELECT * FROM client_portal_settings WHERE organization_team_id = $1`;
       const existingResult = await db.query(checkQ, [organizationTeamId]);
+
+      // Portal branding (logo, colors, theme, hiding the Worklenz footer) is Business-only. Other
+      // plans keep whatever is stored, or the defaults, regardless of what the request sends.
+      if (!(await teamCanUseFeature(teamId, "client_portal_branding"))) {
+        const stored = existingResult.rows[0];
+        logo_url = stored ? stored.logo_url : null;
+        primary_color = stored ? stored.primary_color : "#3b7ad4";
+        portal_theme = stored ? stored.portal_theme : "light";
+        show_powered_by = true;
+        keepShowPoweredBy = !!stored;
+      }
 
       let result;
       if (existingResult.rows.length > 0) {
@@ -331,6 +343,12 @@ export default class ClientPortalSettingsController extends ClientPortalControll
       // since client portal settings are organization-wide
       const organizationTeamId = teamId;
 
+      if (!(await teamCanUseFeature(teamId, "client_portal_branding"))) {
+        return res
+          .status(403)
+          .json(new ServerResponse(false, null, "This feature requires a Business plan"));
+      }
+
       const { logoData } = req.body;
       if (!logoData) {
         return res
@@ -460,6 +478,14 @@ export default class ClientPortalSettingsController extends ClientPortalControll
         visible_chat: true,
         show_powered_by: true,
       };
+
+      // Stored branding is kept for a future upgrade, but only Business workspaces show it to clients.
+      if (!(await teamCanUseFeature(organizationId, "client_portal_branding"))) {
+        settings.logo_url = null;
+        settings.primary_color = "#3b7ad4";
+        settings.portal_theme = "light";
+        settings.show_powered_by = true;
+      }
 
       return res.json(new ServerResponse(true, settings, null));
     } catch (error) {

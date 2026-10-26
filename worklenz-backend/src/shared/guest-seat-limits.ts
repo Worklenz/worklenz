@@ -49,9 +49,9 @@ export function resolveLegacyGuestPlan(subscriptionData: any): { guestLimit: num
   } else if (
     subscriptionData?.subscription_type === "LIFE_TIME_DEAL"
   ) {
-    // AppSumo LTD users with 1-4 codes get limited guest access (5 guests)
-    // Guests don't count towards seat limits, but are limited to 5
-    guestLimit = APPSUMO_LTD_GUEST_LIMIT; // 5 guests
+    // AppSumo LTD users with 1-4 codes are treated as Pro: unlimited guests
+    // Guests don't count towards seat limits
+    guestLimit = APPSUMO_LTD_GUEST_LIMIT; // unlimited, same as Pro
     planTier = "APPSUMO_LTD";
   } else if (
     subscriptionData?.subscription_type === "PADDLE" &&
@@ -86,7 +86,9 @@ export function resolveEntitlementGuestPlan(subscriptionData: any): { guestLimit
       planTier = "SELF_HOSTED";
       break;
     case "appsumo_ltd":
-      planTier = entitlements.guestLimit === BUSINESS_GUEST_LIMIT ? "APPSUMO_BUSINESS" : "APPSUMO_LTD";
+      planTier = subscriptionData?.redeemed_codes_count >= APPSUMO_BUSINESS_UNLOCK_CODE_COUNT
+        ? "APPSUMO_BUSINESS"
+        : "APPSUMO_LTD";
       break;
     default:
       planTier = entitlements.tier === "pro" ? "PROFESSIONAL" : entitlements.tier.toUpperCase();
@@ -103,8 +105,8 @@ export function resolveEntitlementGuestPlan(subscriptionData: any): { guestLimit
  * 
  * Plan-based guest limits:
  * - FREE/TRIAL: 0 guests (no guest access)
- * - PROFESSIONAL: 5 guests
- * - APPSUMO_LTD (1-4 codes): 5 guests
+ * - PROFESSIONAL: Unlimited guests
+ * - APPSUMO_LTD (1-4 codes): Unlimited guests (Pro equivalent)
  * - APPSUMO_BUSINESS (5+ codes): Unlimited guests
  * - BUSINESS/SELF_HOSTED: Unlimited guests
  *
@@ -192,7 +194,7 @@ export function getGuestLimitByTier(planTier: string): number {
     case "APPSUMO_BUSINESS":
       return BUSINESS_GUEST_LIMIT; // Unlimited (5+ codes)
     case "APPSUMO_LTD":
-      return APPSUMO_LTD_GUEST_LIMIT; // 5 guests (1-4 codes)
+      return APPSUMO_LTD_GUEST_LIMIT; // Unlimited (1-4 codes, Pro equivalent)
     case "FREE":
     case "TRIAL":
     default:

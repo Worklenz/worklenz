@@ -202,6 +202,7 @@
   "noActiveInviteLink": "Brak aktywnego linku z zaproszeniem",
   "linkExpiredPlaceholder": "Link wygasł",
   "inviteLinkCopied": "Link do zaproszenia skopiowany do schowka",
+  "inviteLinkCopyFailed": "Wygenerowano link z zaproszeniem. Skopiuj go ręcznie z pola poniżej.",
   "inviteLinkGenerateError": "Nie udało się wygenerować linku z zaproszeniem",
   "inviteLinkDeactivated": "Link do zaproszenia został dezaktywowany",
   "inviteLinkDeactivateError": "Nie udało się dezaktywować linku",
@@ -236,9 +237,9 @@
   "partialSuccess": "{{count}} goście zostali zaproszeni. Niepowodzenie: {{emails}}",
   "selectProjectFirst": "Najpierw wybierz projekt",
   "inviteLinkGeneratedCopyFailed": "Wygenerowano link z zaproszeniem, ale nie można go skopiować automatycznie. Skopiuj go ręcznie.",
+  "noManagedProjectsFound": "Brak projektów, w których jesteś kierownikiem projektu",
   "projectInvite_guestLimitExceeded": "Przekroczono limit gości w tym planie. Uaktualnij, aby dodać więcej gości.",
-  "assign_team_lead": "Przypisz lidera zespołu",
-  "Failed to fetch job titles": "Nie udało się pobrać tytułów stanowisk",
   "license-expired-subtitle": "Twoja subskrypcja Worklenz dobiegła końca. Odnów subskrypcję, aby móc nadal korzystać ze wszystkich funkcji.",
-  "noManagedProjectsFound": "Brak projektów, w których jesteś kierownikiem projektu"
+  "Failed to fetch job titles": "Nie udało się pobrać tytułów stanowisk",
+  "assign_team_lead": "Przypisz lidera zespołu"
 }

@@ -6,6 +6,7 @@ import { durationDateFormat } from '@utils/durationDateFormat';
 import type { TableProps } from 'antd';
 import type { ITaskAttachmentViewModel } from '@/types/tasks/task-attachment-view-model';
 import { getFileTypeIcon } from '../utils';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface TaskAttachmentsTableColumnsProps {
   t: TFunction;
@@ -47,13 +48,16 @@ export const getTaskAttachmentsTableColumns = ({
       key: 'task',
       title: t('taskColumn', { defaultValue: 'Task' }),
       width: 220,
-      render: (_: unknown, record) => (
-        <Typography.Text>
-          {record.task_key && record.task_name
-            ? `${record.task_key} - ${record.task_name}`
-            : record.task_name || '--'}
-        </Typography.Text>
-      ),
+      render: (_: unknown, record) => {
+        const taskName = decodeHtmlEntities(record.task_name);
+        return (
+          <Typography.Text>
+            {record.task_key && record.task_name
+              ? `${record.task_key} - ${taskName}`
+              : taskName || '--'}
+          </Typography.Text>
+        );
+      },
     },
     {
       key: 'size',

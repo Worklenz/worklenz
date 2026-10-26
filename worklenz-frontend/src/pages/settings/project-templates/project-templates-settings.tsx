@@ -21,6 +21,7 @@ import logger from '@/utils/errorLogger';
 import { ICustomTemplate } from '@/types/project-templates/project-templates.types';
 import { ProjectTemplateImportPayload } from '@/components/project-templates/project-template-preview-modal';
 import { presentCustomTemplateImportResult } from '@/utils/project-template-import-result';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const ProjectTemplatesSettings = () => {
   const { t } = useTranslation('settings/project-templates');
@@ -108,6 +109,7 @@ const ProjectTemplatesSettings = () => {
       key: 'name',
        title: t('nameColumn', { defaultValue: 'Template Name' }),
       dataIndex: 'name',
+      render: (name: string) => decodeHtmlEntities(name),
     },
     {
       key: 'button',
@@ -118,7 +120,7 @@ const ProjectTemplatesSettings = () => {
               size="small"
               onClick={() => {
                 setPreviewTemplateId(record.id);
-                setPreviewTemplateName(record.name);
+                setPreviewTemplateName(decodeHtmlEntities(record.name));
                 setPreviewModalVisible(true);
               }}
             >
@@ -131,7 +133,7 @@ const ProjectTemplatesSettings = () => {
               size="small"
               onClick={() => {
                 setSelectedTemplateId(record.id);
-                setSelectedTemplateName(record.name);
+                setSelectedTemplateName(decodeHtmlEntities(record.name));
                 setRenameModalVisible(true);
               }}
             >

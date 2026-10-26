@@ -13,6 +13,7 @@ import {
   ISingleMemberActivityLogs,
 } from '@/types/reporting/reporting.types';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { setProjectId } from '@/features/project/project.slice';
 
 type TaskStatus = {
@@ -99,8 +100,8 @@ const ActivityLogCard = ({ data }: ActivityLogCardProps) => {
               >
                 {t('updatedText')} <strong>{formatAttributeType(log.attribute_type)}</strong>{' '}
                 {t('fromText')} {renderTag(log, 'previous')} {t('toText')}{' '}
-                {renderTag(log, 'current')} {t('inText')} <strong>{log.task_name}</strong>{' '}
-                {t('withinText')} <strong>{log.project_name}</strong> <Tag>{log.task_key}</Tag>
+                {renderTag(log, 'current')} {t('inText')} <strong>{decodeHtmlEntities(log.task_name)}</strong>{' '}
+                {t('withinText')} <strong>{decodeHtmlEntities(log.project_name)}</strong> <Tag>{log.task_key}</Tag>
               </Typography.Text>
             </Timeline.Item>
           ))}

@@ -10,5 +10,12 @@
   "commentAdded": "<b>{{user}}</b> hat einen Kommentar zu <b>{{task}}</b> hinzugefügt",
   "mentionedInComment": "<b>{{user}}</b> hat Sie in einem Kommentar zu <b>{{task}}</b> erwähnt",
   "mentionedInProjectComment": "<b>{{user}}</b> hat Sie in einem Kommentar zu <b>{{project}}</b> erwähnt",
-  "phaseTaskAssigned": "Ihnen wurde eine Aufgabe in <b>{{phase}}</b> zugewiesen: <b>{{task}}</b>"
+  "mentionedInProjectDocument": "<b>{{user}}</b> hat Sie in einem Dokument zu <b>{{project}}</b> erwähnt",
+  "phaseTaskAssigned": "Ihnen wurde eine Aufgabe in <b>{{phase}}</b> zugewiesen: <b>{{task}}</b>",
+  "security": {
+    "invitationLimit": "Dieser Arbeitsbereich hat das Sicherheitslimit für Einladungen erreicht. Bitte versuchen Sie es später erneut.",
+    "invitationsPaused": "Einladungen sind vorübergehend pausiert. Bitte wenden Sie sich an Ihren Administrator.",
+    "blockedTaskHost": "Diese Aufgabe enthält einen gesperrten Link. Bitte entfernen Sie ihn und versuchen Sie es erneut.",
+    "blockedSignupDomain": "Dieser E-Mail-Anbieter wird nicht unterstützt. Bitte verwenden Sie eine andere E-Mail-Adresse."
+  }
 }

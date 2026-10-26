@@ -19,6 +19,7 @@ import {
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { releaseDocsEditors } from '@/pages/projects/project-view-1/docs/docs-editor-release';
 import { useState, useCallback, useMemo, memo, useRef, useEffect } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 
@@ -60,7 +61,7 @@ import { getGroupIdByGroupedColumn } from '@/services/task-list/taskList.service
 import logger from '@/utils/errorLogger';
 import ImportTaskTemplate from '@/components/task-templates/import-task-template';
 import ImportSourceModal from '@/pages/settings/import-export/ImportSourceModal';
-import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/project-settings-modal';
+import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/ProjectSettingsModal';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import useProjectPermissions from '@/hooks/useProjectPermissions';
@@ -155,6 +156,7 @@ const ProjectViewHeader = memo(() => {
           case 'all-attachments':
           case 'members':
           case 'updates':
+          case 'docs':
             await Promise.all([
               projectPromise,
               new Promise(resolve => setTimeout(resolve, 1000)), // minimum 1s spin
@@ -336,6 +338,7 @@ const ProjectViewHeader = memo(() => {
   }, [dispatch, projectId, tab]);
 
   const handleNavigateToProjects = useCallback(() => {
+    releaseDocsEditors();
     navigate('/worklenz/projects');
   }, [navigate]);
 
@@ -416,7 +419,7 @@ const ProjectViewHeader = memo(() => {
       elements.push(
         <Tooltip
           key="category-tooltip"
-          title={`${t('projectCategoryTooltip', { defaultValue: 'Project category' })}: ${selectedProject.category_name}`}
+          title={`${t('projectCategoryTooltip', { defaultValue: 'Project category' })}: ${decodeHtmlEntities(selectedProject.category_name)}`}
         >
           <Tag
             key="category"
@@ -426,7 +429,7 @@ const ProjectViewHeader = memo(() => {
               margin: 0,
             }}
           >
-            <span style={{ fontSize: 12, color: textColor }}>{selectedProject.category_name}</span>
+            <span style={{ fontSize: 12, color: textColor }}>{decodeHtmlEntities(selectedProject.category_name)}</span>
           </Tag>
         </Tooltip>
       );
@@ -598,7 +601,7 @@ const ProjectViewHeader = memo(() => {
         <div key="integrations" className={styles.actionButton}>
           <ProjectIntegrationsButton
             projectId={selectedProject?.id || ''}
-            projectName={selectedProject?.name}
+            projectName={decodeHtmlEntities(selectedProject?.name)}
           />
         </div>
       );

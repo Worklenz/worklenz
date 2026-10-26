@@ -27,6 +27,7 @@ import {
   ClockCircleOutlined,
 } from '@/shared/antd-imports';
 import PillToggle from '@/pages/home/PillToggle';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { FilePreviewModal } from '@/components/common/FilePreviewModal';
 import { ProjectLinksTab } from './components/ProjectLinksTab';
 import type { UploadFile } from 'antd/es/upload/interface';
@@ -753,8 +754,8 @@ const ProjectViewFiles = () => {
       render: (_: unknown, record) => (
         <Typography.Text>
           {record.task_key && record.task_name
-            ? `${record.task_key} - ${record.task_name}`
-            : record.task_name || '--'}
+            ? `${record.task_key} ${decodeHtmlEntities(record.task_name)}`
+            : decodeHtmlEntities(record.task_name) || '--'}
         </Typography.Text>
       ),
     },

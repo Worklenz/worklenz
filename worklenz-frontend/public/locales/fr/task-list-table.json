@@ -13,6 +13,7 @@
   "labelsColumn": "Étiquettes",
   "attachmentsColumn": "Pièces jointes",
   "commentsColumn": "Dernier commentaire",
+  "openLatestComment": "Ouvrir le dernier commentaire",
   "attachmentsAdd": "Ajouter",
   "attachmentsOpen": "Ouvert",
   "attachmentsDownload": "Télécharger",

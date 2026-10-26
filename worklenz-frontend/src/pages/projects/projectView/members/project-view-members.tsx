@@ -39,12 +39,15 @@ import { useAuthService } from '@/hooks/useAuth';
 import { IProjectMembersViewModel, IProjectMemberViewModel } from '@/types/projectMember.types';
 
 // Constants & Utils
-import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import { colors } from '../../../../styles/colors';
 import logger from '@/utils/errorLogger';
 
 // Components
 import EmptyListPlaceholder from '../../../../components/EmptyListPlaceholder';
+import TablePagination from '@/components/TablePagination';
+import { ProjectClientPortalMembers } from './ProjectClientPortalMembers';
+import PillToggle from '@/pages/home/PillToggle';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { evt_project_members_visit } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -65,14 +68,14 @@ import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import useProjectPermissions from '@/hooks/useProjectPermissions';
 
+type MembersTab = 'team' | 'guests' | 'client';
+
 interface PaginationType {
   current: number;
   pageSize: number;
   field: string;
   order: string;
   total: number;
-  pageSizeOptions: string[];
-  size: 'small' | 'default';
 }
 
 const ProjectViewMembers = () => {
@@ -83,7 +86,7 @@ const ProjectViewMembers = () => {
   const user = auth.getCurrentSession();
   const isOwnerOrAdmin = auth.isOwnerOrAdmin();
   const isTeamLead = isTeamLeadRole(auth.role);
-  const { permissions } = useProjectPermissions(projectId);
+  const { permissions, isProjectManager } = useProjectPermissions(projectId);
 
   const effectiveRole = getSessionRoleName(user);
 
@@ -101,12 +104,13 @@ const ProjectViewMembers = () => {
   const { trackMixpanelEvent } = useMixpanelTracking();
   const dispatch = useAppDispatch();
 
-  const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
+  const { refreshTimestamp, project: currentProject } = useAppSelector(state => state.projectReducer);
   const membersRefreshCount = useAppSelector(state => state.projectMemberReducer.membersRefreshCount);
   const billingInfo = useAppSelector(state => state.adminCenterReducer.billingInfo);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   // State
+  const [activeTab, setActiveTab] = useState<MembersTab>('team');
   const [isLoading, setIsLoading] = useState(false);
   const [members, setMembers] = useState<IProjectMembersViewModel>();
   const [pagination, setPagination] = useState<PaginationType>({
@@ -115,10 +119,10 @@ const ProjectViewMembers = () => {
     field: 'role_level',
     order: 'ascend',
     total: 0,
-    pageSizeOptions: ['10', '20', '50', '100'],
-    size: 'small',
   });
+  const pageSizeNumberOptions = useMemo(() => PAGE_SIZE_OPTIONS.map(Number), []);
   const [searchQuery, setSearchQuery] = useState(''); // <-- Add search state
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [selectedMemberRole, setSelectedMemberRole] = useState<string | null>(null);
   const [selectedMemberName, setSelectedMemberName] = useState<string | null>(null);
@@ -156,20 +160,54 @@ const ProjectViewMembers = () => {
     });
   }, [totalAvailableSeats, totalUsedSeats, t]);
 
+  // Privileged roles always see Client's team; ordinary members need the project setting
+  // (backend GET access allows the same set — Owner/Admin portal guard is bypassed for that read).
+  const canViewClientTeamTab =
+    isOwnerOrAdmin ||
+    isTeamLead ||
+    isProjectManager ||
+    currentProject?.members_can_view_client_team === true;
+
+  const membersTabOptions = useMemo(() => {
+    const options: { value: MembersTab; label: string }[] = [
+      {
+        value: 'team',
+        label: t('tabs.teamMembers', { defaultValue: 'Team members' }),
+      },
+      {
+        value: 'guests',
+        label: t('tabs.guests', { defaultValue: 'Guests' }),
+      },
+    ];
+    if (canViewClientTeamTab) {
+      options.push({
+        value: 'client',
+        label: t('tabs.clientTeam', { defaultValue: "Client's team" }),
+      });
+    }
+    return options;
+  }, [t, canViewClientTeamTab]);
+
+  const membersListMemberType = activeTab === 'guests' ? 'guest' : 'team';
+  const isMembersListTab = activeTab === 'team' || activeTab === 'guests';
+
   // API Functions
-  const getProjectMembers = async (search: string = searchQuery) => {
+  const getProjectMembers = async (
+    search: string = searchQuery,
+    memberType: 'team' | 'guest' = membersListMemberType
+  ) => {
     if (!projectId) return;
 
     setIsLoading(true);
     try {
-      const offset = (pagination.current - 1) * pagination.pageSize;
       const res = await projectsApiService.getMembers(
         projectId,
         pagination.current,
         pagination.pageSize,
         pagination.field,
         pagination.order,
-        search
+        search,
+        memberType
       );
       if (res.done) {
         setMembers(res.body);
@@ -352,19 +390,28 @@ const ProjectViewMembers = () => {
     return Math.floor((completed / total) * 100);
   };
 
-  const handleTableChange = (tablePagination: any, filters: any, sorter: any) => {
+  // Sorting only — page / pageSize come from TablePagination (same as projects list).
+  const handleTableChange = (_tablePagination: unknown, _filters: unknown, sorter: any) => {
     setPagination(prev => ({
       ...prev,
-      current: tablePagination.current,
-      pageSize: tablePagination.pageSize,
-      field: sorter.order ? sorter.field : 'role_level',   // reset to default field when sort cancelled
-      order: sorter.order ?? 'ascend',               // reset to default order when sort cancelled
+      current: 1,
+      field: sorter.order ? sorter.field : 'role_level',
+      order: sorter.order ?? 'ascend',
     }));
   };
 
+  const handlePageChange = useCallback((page: number, pageSize: number) => {
+    setPagination(prev => ({
+      ...prev,
+      current: page,
+      pageSize,
+    }));
+  }, []);
+
   // Effects
   useEffect(() => {
-    void getProjectMembers();
+    if (!isMembersListTab) return;
+    void getProjectMembers(searchQuery, membersListMemberType);
   }, [
     refreshTimestamp,
     membersRefreshCount,
@@ -373,8 +420,28 @@ const ProjectViewMembers = () => {
     pagination.pageSize,
     pagination.field,
     pagination.order,
+    activeTab,
     // searchQuery, // <-- Do NOT include here, search is triggered manually
   ]);
+
+  const handleMembersTabChange = (tab: MembersTab) => {
+    setActiveTab(tab);
+    if (tab === 'team' || tab === 'guests') {
+      setIsLoading(true);
+      setMembers(undefined);
+      setPagination(prev => ({ ...prev, current: 1 }));
+      setSearchQuery('');
+    } else {
+      setClientSearchQuery('');
+    }
+  };
+
+  // If Client's team becomes hidden while active, fall back to Team members.
+  useEffect(() => {
+    if (activeTab === 'client' && !canViewClientTeamTab) {
+      setActiveTab('team');
+    }
+  }, [activeTab, canViewClientTeamTab]);
 
   useEffect(() => {
     if (isOwnerOrAdmin && !billingInfo) {
@@ -606,168 +673,227 @@ const ProjectViewMembers = () => {
       <Card
         style={{ width: '100%' }}
         title={
-          <Flex justify="space-between" align="center">
-            <Typography.Text style={{ fontSize: 16, fontWeight: 500 }}>
-              {members?.total} {members?.total !== 1 ? t('membersCountPlural') : t('memberCount')}
-            </Typography.Text>
+          <Flex justify="space-between" align="center" gap={12} wrap="wrap">
+            <PillToggle<MembersTab>
+              value={activeTab}
+              options={membersTabOptions}
+              onChange={handleMembersTabChange}
+              ariaLabel={t('tabs.ariaLabel', { defaultValue: 'Members sections' })}
+            />
 
-            <Flex gap={8} align="center">
-              {isOwnerOrAdmin && (
-                <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-                  {seatUsageText}
-                </Typography.Text>
-              )}
-              {permissions.members.add && (
-                <Popover
-                  trigger="click"
-                  placement="bottomRight"
-                  open={isSeatLimitPopoverOpen}
-                  onOpenChange={open => {
-                    // Only allow opening via the button when seat limit is reached;
-                    // always allow closing (open === false) so outside-click works.
-                    if (!open || hasReachedSeatLimit) {
-                      setIsSeatLimitPopoverOpen(open);
-                      if (isAppSumoUser) {
-                        trackAppSumoEvent(
-                          open ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
-                          { feature: 'seat_limit_project_members' }
-                        );
-                        if (!open) {
-                          trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_INVITE_CANCELLED, { feature: 'project_members' });
-                        }
-                      }
-                    }
-                  }}
-                  title={
-                    <Flex align="center" justify="space-between" style={{ width: '100%' }}>
-                      <Typography.Text strong>
-                        {t('seatLimitPopoverTitle', { defaultValue: t('seatLimitPopoverTitle') })}
-                      </Typography.Text>
-                      <Button
-                        type="text"
-                        size="small"
-                        aria-label={t('closePopover', { defaultValue: t('closePopover') })}
-                        onClick={event => {
-                          event.stopPropagation();
-                          setIsSeatLimitPopoverOpen(false);
-                        }}
-                      >
-                        ×
-                      </Button>
-                    </Flex>
-                  }
-                  content={
-                    <Flex vertical gap={12} style={{ maxWidth: 280 }}>
-                      <Typography.Text>
-                        {t('seatLimitPopoverBody', {
-                          defaultValue:
-                            t('seatLimitPopoverBody'),
-                          used: totalUsedSeats,
-                          total: totalAvailableSeats,
-                        })}
-                      </Typography.Text>
-                      <Typography.Text type="secondary">
-                        {t('seatRemainingText', {
-                          defaultValue: t('seatRemainingText'),
-                          remaining: remainingSeats,
-                        })}
-                      </Typography.Text>
-                      <Button
-                        type="primary"
-                        onClick={() => {
-                          setIsSeatLimitPopoverOpen(false);
+            <Flex gap={8} align="center" wrap="wrap">
+              {isMembersListTab && (
+                <>
+                  {isOwnerOrAdmin && (
+                    <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                      {seatUsageText}
+                    </Typography.Text>
+                  )}
+                  {permissions.members.add && (
+                    <Popover
+                      trigger="click"
+                      placement="bottomRight"
+                      open={isSeatLimitPopoverOpen}
+                      onOpenChange={open => {
+                        // Only allow opening via the button when seat limit is reached;
+                        // always allow closing (open === false) so outside-click works.
+                        if (!open || hasReachedSeatLimit) {
+                          setIsSeatLimitPopoverOpen(open);
                           if (isAppSumoUser) {
-                            trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'seat_limit_project_members' });
-                            trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_ADD_MORE_CLICKED, { feature: 'project_members' });
+                            trackAppSumoEvent(
+                              open
+                                ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN
+                                : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
+                              { feature: 'seat_limit_project_members' }
+                            );
+                            if (!open) {
+                              trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_INVITE_CANCELLED, {
+                                feature: 'project_members',
+                              });
+                            }
                           }
-                          dispatch(toggleUpgradeModal());
+                        }
+                      }}
+                      title={
+                        <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+                          <Typography.Text strong>
+                            {t('seatLimitPopoverTitle', {
+                              defaultValue: t('seatLimitPopoverTitle'),
+                            })}
+                          </Typography.Text>
+                          <Button
+                            type="text"
+                            size="small"
+                            aria-label={t('closePopover', { defaultValue: t('closePopover') })}
+                            onClick={event => {
+                              event.stopPropagation();
+                              setIsSeatLimitPopoverOpen(false);
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </Flex>
+                      }
+                      content={
+                        <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+                          <Typography.Text>
+                            {t('seatLimitPopoverBody', {
+                              defaultValue: t('seatLimitPopoverBody'),
+                              used: totalUsedSeats,
+                              total: totalAvailableSeats,
+                            })}
+                          </Typography.Text>
+                          <Typography.Text type="secondary">
+                            {t('seatRemainingText', {
+                              defaultValue: t('seatRemainingText'),
+                              remaining: remainingSeats,
+                            })}
+                          </Typography.Text>
+                          <Button
+                            type="primary"
+                            onClick={() => {
+                              setIsSeatLimitPopoverOpen(false);
+                              if (isAppSumoUser) {
+                                trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, {
+                                  feature: 'seat_limit_project_members',
+                                });
+                                trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_ADD_MORE_CLICKED, {
+                                  feature: 'project_members',
+                                });
+                              }
+                              dispatch(toggleUpgradeModal());
+                            }}
+                          >
+                            {t('seatLimitPopoverCta', {
+                              defaultValue: t('seatLimitPopoverCta'),
+                            })}
+                          </Button>
+                        </Flex>
+                      }
+                    >
+                      <Button
+                        onClick={() => {
+                          if (hasReachedSeatLimit) {
+                            setIsSeatLimitPopoverOpen(true);
+                          } else {
+                            dispatch(toggleProjectMemberDrawer());
+                          }
                         }}
                       >
-                        {t('seatLimitPopoverCta', { defaultValue: t('seatLimitPopoverCta') })}
+                        {t('Invite', { defaultValue: t('Invite') })}
                       </Button>
-                    </Flex>
-                  }
-                >
-                  <Button
-                    onClick={() => {
-                      if (hasReachedSeatLimit) {
-                        setIsSeatLimitPopoverOpen(true);
-                      } else {
-                        dispatch(toggleProjectMemberDrawer());
-                      }
+                    </Popover>
+                  )}
+                  <Input.Search
+                    allowClear
+                    placeholder={t('searchPlaceholder', { defaultValue: t('searchPlaceholder') })}
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onSearch={value => {
+                      setPagination(p => ({ ...p, current: 1 }));
+                      void getProjectMembers(value, membersListMemberType);
                     }}
-                  >
-                    {t('Invite', { defaultValue: t('Invite') })}
-                  </Button>
-                </Popover>
+                    style={{ width: 220 }}
+                    enterButton
+                    size="middle"
+                  />
+                </>
               )}
-              <Input.Search
-                allowClear
-                placeholder={t('searchPlaceholder', { defaultValue: t('searchPlaceholder') })}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onSearch={value => {
-                  setPagination(p => ({ ...p, current: 1 })); // Reset to first page
-                  void getProjectMembers(value);
-                }}
-                style={{ width: 220 }}
-                enterButton
-                size="middle"
-              />
-              <Tooltip title={t('refreshButtonTooltip')}>
-                <Button
-                  shape="circle"
-                  icon={<SyncOutlined spin={isLoading} />}
-                  onClick={() => void getProjectMembers()}
+
+              {activeTab === 'client' && (
+                <Input.Search
+                  allowClear
+                  placeholder={t('clientPortal.searchPlaceholder', {
+                    defaultValue: 'Search client users',
+                  })}
+                  value={clientSearchQuery}
+                  onChange={e => setClientSearchQuery(e.target.value)}
+                  style={{ width: 220 }}
+                  enterButton
+                  size="middle"
+                  aria-label={t('clientPortal.searchPlaceholder', {
+                    defaultValue: 'Search client users',
+                  })}
                 />
-              </Tooltip>
+              )}
             </Flex>
           </Flex>
         }
       >
-        {members?.total === 0 ? (
-          <EmptyListPlaceholder
-            imageSrc="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/empty-box.webp"
-            imageHeight={120}
-            text={t('emptyText')}
-          />
-        ) : isLoading ? (
-          <Skeleton />
+        {isMembersListTab ? (
+          members?.total === 0 ? (
+            <EmptyListPlaceholder
+              imageSrc="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/empty-box.webp"
+              imageHeight={120}
+              text={
+                activeTab === 'guests'
+                  ? t('emptyGuestsText', {
+                      defaultValue: 'There are no guests in this project.',
+                    })
+                  : t('emptyTeamMembersText', {
+                      defaultValue: 'There are no team members in this project.',
+                    })
+              }
+            />
+          ) : isLoading ? (
+            <Skeleton />
+          ) : (
+            <>
+              <Table
+                className="custom-two-colors-row-table"
+                dataSource={members?.data}
+                columns={columns}
+                rowKey={record => record.id}
+                pagination={false}
+                onChange={handleTableChange}
+                onRow={record => ({
+                  style: {
+                    cursor: 'pointer',
+                    height: 42,
+                  },
+                })}
+              />
+              <TablePagination
+                page={pagination.current}
+                pageSize={pagination.pageSize}
+                total={pagination.total}
+                onPageChange={handlePageChange}
+                pageSizeOptions={pageSizeNumberOptions}
+                rowsPerPageLabel={t('rowsPerPage', { defaultValue: 'Rows per page:' })}
+                renderSummary={(range, total) =>
+                  t('paginationSummary', {
+                    range,
+                    total,
+                    defaultValue: `${range} of ${total}`,
+                  })
+                }
+              />
+            </>
+          )
         ) : (
-          <Table
-            className="custom-two-colors-row-table"
-            dataSource={members?.data}
-            columns={columns}
-            rowKey={record => record.id}
-            pagination={{
-              current: pagination.current,
-              pageSize: pagination.pageSize,
-              total: pagination.total,
-              showSizeChanger: true,
-              pageSizeOptions: pagination.pageSizeOptions,
-              size: pagination.size,
-            }}
-            onChange={handleTableChange}
-            onRow={record => ({
-              style: {
-                cursor: 'pointer',
-                height: 42,
-              },
-            })}
-          />
+          projectId && (
+            <ProjectClientPortalMembers
+              projectId={projectId}
+              clientId={currentProject?.client_id}
+              clientName={currentProject?.client_name}
+              searchQuery={clientSearchQuery}
+              canManageAccess={isOwnerOrAdmin}
+            />
+          )
         )}
       </Card>
+
       <TimeOffCalendar
         members={
           timeOffTargetMember
             ? [timeOffTargetMember]
             : (members?.data || [])
-              .filter(m => Boolean(m.id))
-              .map(m => ({
-                id: m.id!,
-                name: m.name || '',
-                email: m.email,
-              }))
+                .filter(m => Boolean(m.id))
+                .map(m => ({
+                  id: m.id!,
+                  name: m.name || '',
+                  email: m.email,
+                }))
         }
         visible={timeOffModalVisible}
         onClose={() => {
@@ -785,8 +911,6 @@ const ProjectViewMembers = () => {
         />,
         document.body
       )}
-
-
     </>
   );
 };

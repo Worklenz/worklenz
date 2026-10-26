@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -18,6 +18,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   fetchTask,
@@ -32,6 +33,7 @@ import {
 import { FinanceKpiCard } from './FinanceKpiCard';
 import { fmtHours, fmtMoney, getRangeDates } from './finance-report-utils';
 import { useFinanceReportFetch } from './useFinanceReportFetch';
+import { useTaskNameRealtimeSync } from '@/hooks/useTaskNameRealtimeSync';
 
 const { Text, Title } = Typography;
 
@@ -56,7 +58,16 @@ export const FinanceBillableTimePage = () => {
     });
   }, [page, pageSize, preset]);
 
-  const entries: IFinanceBillableEntry[] = data?.entries ?? [];
+  const [entries, setEntries] = useState<IFinanceBillableEntry[]>([]);
+
+  useEffect(() => {
+    setEntries(data?.entries ?? []);
+  }, [data?.entries]);
+
+  useTaskNameRealtimeSync({
+    items: entries,
+    setItems: setEntries,
+  });
   const total = data?.total ?? 0;
   const summary = data?.summary ?? {
     logged_hours: 0,
@@ -106,9 +117,9 @@ export const FinanceBillableTimePage = () => {
                 display: 'inline-block',
               }}
             />
-            <Tooltip title={value}>
+            <Tooltip title={decodeHtmlEntities(value)}>
               <Text ellipsis style={{ maxWidth: 160 }}>
-                {value}
+                {decodeHtmlEntities(value)}
               </Text>
             </Tooltip>
           </Flex>
@@ -118,19 +129,22 @@ export const FinanceBillableTimePage = () => {
         title: t('billableTime.table.task', { defaultValue: 'Task' }),
         dataIndex: 'task_name',
         key: 'task_name',
-        render: (value: string, record) => (
+        render: (value: string, record) => {
+          const taskName = decodeHtmlEntities(value);
+          return (
           <Button
             type="link"
             style={{ padding: 0, height: 'auto' }}
             onClick={() => handleTaskClick(record.task_id, record.project_id)}
           >
-            <Tooltip title={value}>
+            <Tooltip title={taskName}>
               <Text ellipsis style={{ maxWidth: 180 }}>
-                {value}
+                {taskName}
               </Text>
             </Tooltip>
           </Button>
-        ),
+          );
+        },
       },
       {
         title: t('billableTime.table.date', { defaultValue: 'Date' }),

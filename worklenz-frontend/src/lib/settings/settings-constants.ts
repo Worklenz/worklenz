@@ -19,6 +19,7 @@ import {
   DollarCircleOutlined,
   ApiOutlined,
   UsergroupAddOutlined,
+  QuestionCircleOutlined,
 } from '@/shared/antd-imports';
 import { MobileOutlined, SwapOutlined } from '@ant-design/icons';
 import React, { ReactNode, lazy } from 'react';
@@ -70,6 +71,8 @@ const ConfigurationSettings = lazy(
 const OrganizationCurrencySettings = lazy(
   () => import('@/pages/settings/organization-currency/organization-currency-settings')
 );
+
+const HelpSettings = lazy(() => import('@/pages/settings/help/help-settings'));
 
 // type of menu item in settings sidebar
 type SettingMenuItem = {
@@ -327,6 +330,16 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(SettingOutlined),
     element: React.createElement(ConfigurationSettings),
     adminOnly: true,
+  },
+  {
+    key: 'help',
+    name: 'help',
+    defaultValue: 'Help',
+    endpoint: 'help',
+    groupKey: 'help-support',
+    groupDefaultValue: 'Help & Support',
+    icon: React.createElement(QuestionCircleOutlined),
+    element: React.createElement(HelpSettings),
   },
   // Danger zone - always at the bottom
   {

@@ -102,7 +102,7 @@ const ThemeWrapper = memo(({ children }: ChildrenProp) => {
   // Add CSS transition classes to prevent flash
   useEffect(() => {
     if (configRef.current) {
-      configRef.current.style.transition = 'background-color 0.3s ease';
+      configRef.current.style.transition = 'background-color 0.2s ease';
     }
   }, []);
 

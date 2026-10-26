@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { DollarCircleOutlined, DownOutlined, RightOutlined } from '@ant-design/icons';
 import { themeWiseColor } from '@/utils/themeWiseColor';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { colors } from '@/styles/colors';
 import {
   financeTableColumns,
@@ -394,7 +395,7 @@ const FinanceTable = ({ table, loading, onTaskClick, columns }: FinanceTableProp
     switch (columnKey) {
       case FinanceTableColumnKeys.TASK:
         return (
-          <Tooltip title={task.name}>
+          <Tooltip title={decodeHtmlEntities(task.name)}>
             <Flex gap={8} align="center" style={{ paddingLeft: getTaskIndentation(level) }}>
               {/* Expand/collapse icon for parent tasks */}
               {task.sub_tasks_count > 0 && (
@@ -454,7 +455,7 @@ const FinanceTable = ({ table, loading, onTaskClick, columns }: FinanceTableProp
                   e.currentTarget.style.textDecoration = 'none';
                 }}
               >
-                {task.name}
+                {decodeHtmlEntities(task.name)}
               </Typography.Text>
               {task.billable && <DollarCircleOutlined style={{ fontSize: 12, flexShrink: 0 }} />}
             </Flex>

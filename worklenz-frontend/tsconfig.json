@@ -17,6 +17,7 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
+      "@tiptap/react/menus": ["node_modules/@tiptap/react/dist/menus/index.d.ts"],
       "@/*": ["src/*"],
       "@components/*": ["src/components/*"],
       "@features/*": ["src/features/*"],

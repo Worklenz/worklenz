@@ -28,6 +28,7 @@ import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
 import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
 import { withTeamSeatLock } from "../shared/team-seat-lock";
+import { isSelfHostedDeployment } from "../shared/deployment-mode";
 import {
   canAssignRole,
   canManageTargetRole,
@@ -135,6 +136,32 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     const [data] = result.rows;
     return data.exists;
+  }
+
+  /**
+   * A self-hosted deployment is licensed at the deployment level, so the
+   * organization's license row (which may be a stale trial) must not apply seat limits.
+   */
+  private static isSelfHostedLicense(subscriptionData: {
+    subscription_type?: string;
+  } | null | undefined): boolean {
+    return (
+      isSelfHostedDeployment() ||
+      subscriptionData?.subscription_type === "SELF_HOSTED"
+    );
+  }
+
+  /** Returns true when the email is already a member (or has a pending invite) in this team. */
+  public static async checkIfEmailInTeam(
+    team_id: string,
+    email: string,
+  ): Promise<boolean> {
+    const q = `SELECT EXISTS(SELECT 1
+                             FROM team_member_info_view
+                             WHERE team_id = $1::UUID
+                               AND LOWER(email) = LOWER($2::TEXT));`;
+    const result = await db.query(q, [team_id, email]);
+    return result.rows[0]?.exists === true;
   }
 
   public static async checkIfUserActiveInOtherTeams(
@@ -266,6 +293,39 @@ export default class TeamMembersController extends WorklenzControllerBase {
         .send(new ServerResponse(false, "Required fields are missing."));
     }
 
+    // Normalize (trim/lowercase), drop blanks and in-request duplicates, then skip
+    // addresses that are already members or have a pending invite in this team.
+    const requestedEmails: string[] = Array.isArray(req.body.emails)
+      ? req.body.emails
+      : [];
+    const uniqueEmails = [
+      ...new Set(
+        requestedEmails
+          .map((email) => String(email ?? "").trim().toLowerCase())
+          .filter((email) => email.length > 0),
+      ),
+    ];
+    const teamId = req.user.team_id;
+    const memberFlags = await Promise.all(
+      uniqueEmails.map((email) => this.checkIfEmailInTeam(teamId, email)),
+    );
+    const newEmails = uniqueEmails.filter((_, index) => !memberFlags[index]);
+
+    if (newEmails.length === 0) {
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            uniqueEmails.length > 0
+              ? "All of these email addresses are already team members or have a pending invitation."
+              : "Required fields are missing.",
+          ),
+        );
+    }
+    req.body.emails = newEmails;
+
     /**
      * Checks the subscription status of the team.
      * @type {Object} subscriptionData - Object containing subscription information
@@ -277,7 +337,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     let incrementBy = 0;
 
     // Handle self-hosted subscriptions differently
-    if (subscriptionData.subscription_type === "SELF_HOSTED") {
+    if (TeamMembersController.isSelfHostedLicense(subscriptionData)) {
       // Check if users exist and add them if they don't
       await Promise.all(
         req.body.emails.map(async (email: string) => {
@@ -2421,7 +2481,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
 
     // Handle self-hosted subscriptions - allow link generation
-    if (subscriptionData.subscription_type === "SELF_HOSTED") {
+    if (TeamMembersController.isSelfHostedLicense(subscriptionData)) {
       // Self-hosted can generate links without restrictions
     } else {
       // Check if subscription status is valid
@@ -2808,7 +2868,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       const subscriptionData = await checkTeamSubscriptionStatus(teamId);
 
       // Handle self-hosted subscriptions
-      if (subscriptionData.subscription_type === "SELF_HOSTED") {
+      if (TeamMembersController.isSelfHostedLicense(subscriptionData)) {
         // Self-hosted can accept invitations without restrictions
       } else {
         // Check if subscription status is valid

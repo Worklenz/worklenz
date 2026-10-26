@@ -23,6 +23,7 @@ import type { IMyTask } from '@/types/home/my-tasks.types';
 import HomeAddTaskModal from '../task-list/HomeAddTaskModal';
 import { HomeWidgetCard, WidgetEmpty, WidgetError, WidgetLoading } from '../home-widgets/HomeWidgetCard';
 import { useHomeWidget } from '../home-widgets/HomeWidgetContext';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useOpenHomeTask } from '../home-widgets/useOpenHomeTask';
 import { MAX_ROWS, useRowsViewport } from '../home-widgets/useRowsViewport';
 import { WIDGET_DATA_ATTRIBUTE } from '../home-widgets/widgetInteraction';
@@ -124,7 +125,11 @@ export const HomeAssignedByMeWidget: React.FC = () => {
   );
 
   const projectFilterOptions = useMemo(
-    () => (filterOptionsData?.body?.projects ?? []).map(p => ({ text: p.project_name, value: p.project_id })),
+    () =>
+      (filterOptionsData?.body?.projects ?? []).map(p => ({
+        text: decodeHtmlEntities(p.project_name),
+        value: p.project_id,
+      })),
     [filterOptionsData?.body?.projects]
   );
   const assigneeFilterOptions = useMemo(
@@ -154,7 +159,7 @@ export const HomeAssignedByMeWidget: React.FC = () => {
             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
           >
             <Typography.Text ellipsis style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
-              {record.name}
+              {decodeHtmlEntities(record.name)}
             </Typography.Text>
             <div className="row-action-button">
               <Tooltip title={t('myTasksView.openTask', { defaultValue: 'Open task' })} placement="right">
@@ -189,7 +194,7 @@ export const HomeAssignedByMeWidget: React.FC = () => {
             style={{ margin: 0, paddingInlineEnd: 6, cursor: 'pointer' }}
           >
             <Badge color={record.project_color || 'blue'} style={{ marginInlineEnd: 4 }} />
-            {record.project_name}
+            {decodeHtmlEntities(record.project_name)}
           </Typography.Paragraph>
         ),
       },
@@ -282,10 +287,10 @@ export const HomeAssignedByMeWidget: React.FC = () => {
                     />
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <Typography.Text ellipsis style={{ display: 'block', fontSize: 13, fontWeight: 500 }}>
-                        {task.name}
+                        {decodeHtmlEntities(task.name)}
                       </Typography.Text>
                       <Typography.Text ellipsis style={{ display: 'block', fontSize: 12, color: token.colorTextSecondary }}>
-                        {task.project_name}
+                        {decodeHtmlEntities(task.project_name)}
                       </Typography.Text>
                     </span>
                     <DueDate task={task} />

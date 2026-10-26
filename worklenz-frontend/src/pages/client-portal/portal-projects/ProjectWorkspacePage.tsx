@@ -14,6 +14,7 @@ import { MilestonesTab } from './tabs/MilestonesTab';
 import { OverviewTab } from './tabs/OverviewTab';
 import { TasksTab } from './tabs/TasksTab';
 import { PortalLoader } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 /**
  * One project's client-facing side (Overview, Milestones, Tasks, Files, Discussions, Client Access), opened as a modal over the Portal Projects list (the same
@@ -116,12 +117,14 @@ const ProjectWorkspacePage = () => {
             <span style={{ fontSize: 12, fontWeight: 400, color: token.colorTextSecondary }}>
               {t('workspace.projectNameLabel', { defaultValue: 'Project name:' })}
             </span>{' '}
-            {project.name}
+            {decodeHtmlEntities(project.name)}
           </Typography.Title>
           <Flex align="center" gap={8} wrap="wrap" style={{ fontSize: 12, color: token.colorTextSecondary }}>
             <span>{t('workspace.clientLabel', { defaultValue: 'Client:' })}</span>
             {project.organization_id ? (
-              <Link to={clientWorkspacePath(project.organization_id)}>{project.organization_name}</Link>
+              <Link to={clientWorkspacePath(project.organization_id)}>
+                {decodeHtmlEntities(project.organization_name)}
+              </Link>
             ) : (
               <span>{t('workspace.noClient', { defaultValue: 'No client assigned' })}</span>
             )}

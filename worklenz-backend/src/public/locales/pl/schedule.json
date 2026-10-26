@@ -56,6 +56,7 @@
   "done": "Gotowe",
   "duration": "Czas trwania",
   "endDate": "Data zakończenia",
+  "endDateBeforeStartDate": "Data zakończenia nie może być wcześniejsza niż data rozpoczęcia",
   "estHoursPerDay": "Szacowane godziny",
   "estHoursRequired": "Wymagane są szacunkowe godziny",
   "estimate": "Oszacuj",

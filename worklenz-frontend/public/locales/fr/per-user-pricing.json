@@ -19,6 +19,7 @@
   "currentPlan": "Offre actuelle",
   "select": "Choisir cette offre",
   "switch": "Passer à cette offre",
+  "updateSeats": "Mettre à jour les places",
   "unavailable": "Cette offre n’est pas disponible pour la période de facturation sélectionnée.",
   "plans": {
     "pro": {
@@ -29,7 +30,7 @@
         "Projets illimités",
         "Suivi du temps et rapports",
         "Champs et modèles personnalisés",
-        "Jusqu’à 5 invités"
+        "Invités illimités et portail client"
       ]
     },
     "business": {
@@ -38,8 +39,8 @@
       "features": [
         "Tout ce que comprend Pro",
         "Planificateur, chronologie, charge de travail",
-        "Finances et portail client",
-        "Invités illimités et Slack"
+        "Finances et personnalisation du portail",
+        "Intégration Slack"
       ]
     },
     "expansion": {
@@ -82,6 +83,7 @@
   "messages": {
     "success": "Abonnement mis à jour !",
     "changed": "Offre d’abonnement modifiée !",
+    "seatsUpdated": "Places mises à jour. Le nouveau nombre s’affichera sous peu.",
     "error": "Impossible de démarrer le paiement. Veuillez réessayer.",
     "checkoutError": "Erreur lors du paiement : {{message}}"
   },
