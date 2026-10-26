@@ -1,5 +1,20 @@
 import DOMPurify from 'dompurify';
 
+const getPurify = () => {
+  if (DOMPurify && typeof (DOMPurify as any).sanitize === 'function') {
+    return DOMPurify;
+  }
+  if (typeof DOMPurify === 'function') {
+    const win = typeof window !== 'undefined' ? window : (globalThis as any).window;
+    if (win) {
+      return (DOMPurify as any)(win);
+    }
+  }
+  return DOMPurify;
+};
+
+
+
 /**
  * Sanitizes user input to prevent XSS attacks
  *
@@ -16,7 +31,7 @@ export const sanitizeInput = (input: string, options?: DOMPurify.Config): string
     ALLOWED_ATTR: [],
   };
 
-  return DOMPurify.sanitize(input, options || defaultOptions);
+  return getPurify().sanitize(input, options || defaultOptions);
 };
 
 /**
@@ -36,7 +51,7 @@ export const stripHtmlTags = (input: string): string => {
 
   // Return a DOM fragment so we can read decoded text (`R&D`) instead of the
   // serialized form (`R&amp;D`) that would otherwise be rendered verbatim.
-  const fragment = DOMPurify.sanitize(input, {
+  const fragment = getPurify().sanitize(input, {
     ALLOWED_TAGS: [],
     ALLOWED_ATTR: [],
     KEEP_CONTENT: true,
@@ -56,7 +71,7 @@ export const stripHtmlTags = (input: string): string => {
 export const sanitizeHtml = (input: string): string => {
   if (!input) return '';
 
-  return DOMPurify.sanitize(input, {
+  return getPurify().sanitize(input, {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'span'],
     // NOTE: Array form required - DOMPurify ignores the object form (tag-specific ALLOWED_ATTR)
     // which silently allows ALL attributes including style="javascript:..."
@@ -87,16 +102,18 @@ export const sanitizeHtml = (input: string): string => {
 export const sanitizeCommentContent = (input: string): string => {
   if (!input) return '';
 
-  return DOMPurify.sanitize(input, {
-    // Only allow safe formatting tags - NO links to prevent open redirect attacks
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'p', 'br', 'span'],
-    // NOTE: Array form required - DOMPurify ignores the object form (tag-specific ALLOWED_ATTR)
-    // which silently allows ALL attributes including style="javascript:..."
-    ALLOWED_ATTR: ['class'],
-    // No URL schemes allowed since we're not allowing links
-    ALLOWED_URI_REGEXP: /^$/,
-    // Remove any script tags, event handlers, and dangerous attributes
-    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'a', 'link'],
+  const sanitized = getPurify().sanitize(input, {
+    ALLOWED_TAGS: [
+      'b', 'i', 'em', 'strong', 'p', 'br', 'span', 's', 'del', 'strike', 'u',
+      'code', 'pre', 'blockquote', 'ul', 'ol', 'li', 'a', 'label', 'input', 'div'
+    ],
+    ALLOWED_ATTR: [
+      'class', 'style', 'href', 'target', 'rel', 'data-type', 'data-id',
+      'data-label', 'data-checked', 'data-color', 'type', 'checked', 'disabled',
+      'aria-label', 'contenteditable'
+    ],
+    ALLOWED_URI_REGEXP: /^(?:https?|mailto):/i,
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'button', 'link'],
     FORBID_ATTR: [
       'onerror',
       'onload',
@@ -104,14 +121,27 @@ export const sanitizeCommentContent = (input: string): string => {
       'onmouseover',
       'onfocus',
       'onblur',
-      'href',
       'src',
-      'style',
     ],
-    // Enforce HTML boundary
     KEEP_CONTENT: true,
     RETURN_DOM: false,
     RETURN_DOM_FRAGMENT: false,
     RETURN_TRUSTED_TYPE: false,
   });
+
+  // Ensure inputs are strictly checkboxes and links open in new tab safely
+  if (typeof document !== 'undefined' && (sanitized.includes('<a') || sanitized.includes('<input'))) {
+    const div = document.createElement('div');
+    div.innerHTML = sanitized;
+    div.querySelectorAll('input').forEach(input => {
+      input.setAttribute('type', 'checkbox');
+    });
+    div.querySelectorAll('a').forEach(anchor => {
+      anchor.setAttribute('target', '_blank');
+      anchor.setAttribute('rel', 'noopener noreferrer nofollow');
+    });
+    return div.innerHTML;
+  }
+
+  return sanitized;
 };

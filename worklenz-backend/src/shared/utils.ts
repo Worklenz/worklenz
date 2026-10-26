@@ -347,27 +347,45 @@ export function sanitizeSVG(svgContent: string): string {
 export function sanitizeCommentContent(content: string): string {
   if (!content) return "";
 
-  // Use sanitize-html with strict configuration
-  // This allows mentions (<span class="mentions">) and basic formatting but NO external links
+  // Use sanitize-html with safe rich-text configuration supporting:
+  // bold, italic, strikethrough, code/pre, blockquote, lists, checklist, links, and text colors.
   return sanitizeHtml(content, {
-    // Only allow safe formatting tags - NO links to prevent open redirect attacks
-    allowedTags: ['b', 'i', 'em', 'strong', 'p', 'br', 'span'],
+    allowedTags: [
+      'b', 'i', 'em', 'strong', 'p', 'br', 'span', 's', 'del', 'strike', 'u',
+      'code', 'pre', 'blockquote', 'ul', 'ol', 'li', 'a', 'label', 'input', 'div'
+    ],
     allowedAttributes: {
-      // Only allow class attribute on span for mentions
-      'span': ['class']
+      'span': ['class', 'style', 'data-type', 'data-id', 'data-label', 'data-color'],
+      'a': ['href', 'target', 'rel', 'class'],
+      'ul': ['class', 'data-type'],
+      'ol': ['class', 'start'],
+      'li': ['class', 'data-type', 'data-checked'],
+      'input': ['type', 'checked', 'disabled', 'aria-label'],
+      'label': ['contenteditable'],
+      'code': ['class'],
+      'pre': ['class'],
+      'div': ['class', 'style']
     },
-    // No URL schemes allowed since we're not allowing links
-    allowedSchemes: [],
-    // Remove dangerous protocols and event handlers
-    allowedScriptHostnames: [],
-    allowedScriptDomains: [],
-    // Remove any script tags, event handlers, and dangerous attributes
+    allowedSchemes: ['http', 'https', 'mailto'],
+    allowedStyles: {
+      '*': {
+        'color': [
+          /^#(0x)?[0-9a-f]{3,8}$/i,
+          /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i,
+          /^rgba\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*([\d.]+)\s*\)$/i,
+          /^hsl\(\s*(\d{1,3})\s*,\s*(\d{1,3}%)\s*,\s*(\d{1,3}%)\s*\)$/i,
+          /^[a-z]+$/i
+        ]
+      }
+    },
+    transformTags: {
+      'a': sanitizeHtml.simpleTransform('a', {
+        target: '_blank',
+        rel: 'noopener noreferrer nofollow'
+      })
+    },
     disallowedTagsMode: 'discard',
-    enforceHtmlBoundary: true,
-    // Additional security: remove all attributes except explicitly allowed ones
-    allowedClasses: {
-      'span': ['mentions']
-    }
+    enforceHtmlBoundary: true
   });
 }
 

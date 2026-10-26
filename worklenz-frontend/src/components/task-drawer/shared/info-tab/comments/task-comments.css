@@ -179,7 +179,11 @@
   box-shadow: none !important;
 }
 
+.is-editing-comment .ant-comment-content-detail,
+.ant-comment:has(.comment-edit-container) .ant-comment-content-detail,
 .current-user-comment:has(.comment-edit-container) .ant-comment-content-detail {
+  width: 100% !important;
+  max-width: 100% !important;
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -299,12 +303,17 @@
 /* ─── Hover bar (floats above the bubble on hover) ───────────────────────── */
 .comment-hover-bar {
   position: absolute;
-  bottom: -52px;
-  right: 4px;
-  display: flex;
-  align-items: center;
+  top: -14px;
+  right: 8px;
+  width: max-content !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
   gap: 4px;
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 20px;
   opacity: 0;
   visibility: hidden;
@@ -319,7 +328,7 @@
 /* Left-side comments (other users) → put the bar on the left */
 .ant-comment:not(.current-user-comment) .comment-hover-bar {
   right: auto;
-  left: 4px;
+  left: 8px;
 }
 
 .comment-hover-bar.theme-light {
@@ -346,7 +355,7 @@
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    bottom: -44px;
+    top: -14px;
     padding: 4px 8px;
   }
 
@@ -359,8 +368,11 @@
 /* ─── Quick emoji reactions in the hover bar ─────────────────────────────── */
 
 .quick-reactions {
-  display: flex;
-  align-items: center;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
   gap: 2px;
 }
 
@@ -485,21 +497,19 @@
 
 .comment-edit-container {
   position: relative;
-  width: max-content;
-  min-width: 160px;
-  max-width: 85%;
-  margin-left: auto;
-  padding: 8px 12px;
-  border-radius: 8px;
+  width: 100%;
+  max-width: 100%;
+  margin: 4px 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
 .theme-light .comment-edit-container {
-  background-color: #f0f2f5;
+  background-color: transparent;
 }
 
 .theme-dark .comment-edit-container {
-  background-color: #2a2a2a;
+  background-color: transparent;
 }
 
 .comment-edit-input {
@@ -596,4 +606,127 @@
   color: #d1d0d3;
   border-color: #434343;
   background: #1f1f1f;
+}
+
+
+/* Rendered Rich Comments Styles */
+.rich-comment-rendered {
+  word-break: break-word;
+  line-height: 1.5;
+  font-size: 13.5px;
+}
+
+.rich-comment-rendered p {
+  margin: 0 0 6px;
+}
+
+.rich-comment-rendered p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-comment-rendered blockquote {
+  border-left: 3px solid #1890ff;
+  margin: 6px 0;
+  padding-left: 10px;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.theme-dark .rich-comment-rendered blockquote {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.rich-comment-rendered pre {
+  background-color: #282c34;
+  color: #abb2bf;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin: 6px 0;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12.5px;
+}
+
+.theme-dark .rich-comment-rendered pre {
+  background-color: #141414;
+  color: #d9d9d9;
+}
+
+.rich-comment-rendered code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.06);
+  color: #eb2f96;
+}
+
+.theme-dark .rich-comment-rendered code {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ff7875;
+}
+
+.rich-comment-rendered pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.rich-comment-rendered ul {
+  list-style: disc outside;
+  margin: 4px 0 6px 20px;
+  padding-left: 0;
+}
+
+.rich-comment-rendered ol {
+  list-style: decimal outside;
+  margin: 4px 0 6px 20px;
+  padding-left: 0;
+}
+
+.rich-comment-rendered li {
+  display: list-item;
+  margin-bottom: 2px;
+}
+
+.rich-comment-rendered ul[data-type="taskList"] {
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin: 4px 0 6px !important;
+}
+
+.rich-comment-rendered li[data-type="taskItem"] {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 3px 0;
+}
+
+.rich-comment-rendered li[data-type="taskItem"] > label {
+  flex-shrink: 0;
+  margin-top: 3px;
+  user-select: none;
+}
+
+.rich-comment-rendered li[data-type="taskItem"] > label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: #1890ff;
+}
+
+.rich-comment-rendered li[data-type="taskItem"][data-checked="true"] > div,
+.rich-comment-rendered li[data-type="taskItem"].is-checked > div {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.rich-comment-rendered a {
+  color: #1890ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+
+.rich-comment-rendered a:hover {
+  text-decoration: underline;
 }

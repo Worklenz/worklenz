@@ -10,6 +10,7 @@ import {
   Tooltip,
   Input,
   message,
+  Typography,
   Popover,
 } from '@/shared/antd-imports';
 import {
@@ -55,7 +56,7 @@ import { projectCommentsApiService } from '@/api/projects/comments/project-comme
 import { useAuthService } from '@/hooks/useAuth';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
-import CustomMentionsInput from './CustomMentionsInput';
+import { RichCommentEditor, RichCommentChange, MentionMemberOption } from '@/components/common/rich-comment-editor';
 import { formatDateForSeparator, isDifferentDay } from '@/utils/chatDateFormat';
 import { fromNow } from '@/utils/dateUtils';
 import { themeWiseColor } from '@utils/themeWiseColor';
@@ -249,22 +250,14 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
     }
   }, [updatesList]);
 
-  const mentionsOptions = useMemo(
+  const mentionMemberOptions: MentionMemberOption[] = useMemo(
     () =>
       projectMembers
         .filter(member => member.name && member.user_id)
         .map(member => ({
-          value: member.name,
-          label: (
-            <Space>
-              <SingleAvatar avatarUrl={member.avatar_url} name={member.name} />
-              <span>{member.name}</span>
-              {member.role && (
-                <span style={{ color: '#999', fontSize: '12px' }}>({member.role})</span>
-              )}
-            </Space>
-          ),
-          key: member.user_id,
+          id: member.user_id!,
+          name: member.name!,
+          avatar_url: member.avatar_url,
         })),
     [projectMembers]
   );
@@ -494,21 +487,9 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
 
   const startEdit = (commentId: string, content: string, mentions?: any[]) => {
     setEditingCommentId(commentId);
-    // Strip any HTML tags from content before editing
-    const stripHtml = (html: string) => {
-      const div = document.createElement('div');
-      div.innerHTML = html;
-      return div.textContent || div.innerText || '';
-    };
-
-    let editableContent = stripHtml(content);
+    setEditContent(content || '');
 
     if (mentions && mentions.length > 0) {
-      mentions.forEach((mention, index) => {
-        const userName = mention.user_name || mention.name;
-        editableContent = editableContent.replace(`{${index}}`, `@${userName}`);
-      });
-
       setEditSelectedMembers(
         mentions.map(mention => ({
           id: mention.user_id || mention.id,
@@ -520,8 +501,6 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
     } else {
       setEditSelectedMembers([]);
     }
-
-    setEditContent(editableContent);
   };
 
   const processMentions = (content: string, mentions: any[]) => {
@@ -705,7 +684,7 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
                         </div>
                       )}
 
-                      <div className="chat-msg-wrapper" style={{ maxWidth: '60%' }}>
+                      <div className="chat-msg-wrapper" style={{ maxWidth: editingCommentId === item.id ? '85%' : '60%', width: editingCommentId === item.id ? '100%' : undefined }}>
                         <div
                           className="chat-msg-toolbar"
                           style={{
@@ -813,14 +792,42 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
                             </span>
                           </div>
                         ) : editingCommentId === item.id ? (
-                          <div>
-                            <Input.TextArea
+                          <div className="updates-edit-container" style={{ width: '100%', minWidth: 320, margin: '4px 0' }}>
+                            <RichCommentEditor
                               value={editContent}
-                              onChange={e => setEditContent(e.target.value)}
-                              autoSize={{ minRows: 2, maxRows: 6 }}
-                              style={{ marginBottom: 8 }}
+                              controlled
+                              onChange={({ html, mentions }: RichCommentChange) => {
+                                setEditContent(html);
+                                setEditSelectedMembers(
+                                  mentions.map(m => ({
+                                    id: m.id,
+                                    team_member_id: m.id,
+                                    name: m.name,
+                                    user_id: m.id,
+                                  }))
+                                );
+                              }}
+                              onSubmit={() => handleEdit(item.id!, item.content || '')}
+                              mentionOptions={mentionMemberOptions}
+                              themeMode={themeMode}
+                              autoFocus
+                              placeholder={t('writeComment', { defaultValue: 'Write a comment...' })}
+                              minHeight={80}
+                              maxHeight={240}
+                              maxLength={5000}
                             />
-                            <Space>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+                              <Typography.Text
+                                type="secondary"
+                                style={{ fontSize: 11, marginRight: 'auto' }}
+                              >
+                                {t('pressCmdEnterToSubmit', {
+                                  defaultValue: 'Press Ctrl+Enter (or Cmd+Enter) to submit',
+                                })}
+                              </Typography.Text>
+                              <Button size="small" onClick={() => setEditingCommentId(null)}>
+                                {t('cancelButton', { defaultValue: 'Cancel' })}
+                              </Button>
                               <Button
                                 size="small"
                                 type="primary"
@@ -828,10 +835,7 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
                               >
                                 {t('actions.save', { defaultValue: 'Save' })}
                               </Button>
-                              <Button size="small" onClick={() => setEditingCommentId(null)}>
-                                {t('cancelButton', { defaultValue: 'Cancel' })}
-                              </Button>
-                            </Space>
+                            </div>
                           </div>
                         ) : (
                           <div className={`chat-msg-bubble ${isUserComment ? 'mine' : 'theirs'}`}>
@@ -1020,34 +1024,29 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <CustomMentionsInput
-              placeholder={t('inputPlaceholder')}
-              options={mentionsOptions}
+            <RichCommentEditor
+              placeholder={t('inputPlaceholder', { defaultValue: 'Write an update...' })}
+              mentionOptions={mentionMemberOptions}
               value={commentValue}
-              onSelect={memberSelectHandler}
-              onChange={handleCommentChange}
-              onKeyDown={handleKeyDown}
-              prefix="@"
-              filterOption={(input: string, option: any) => {
-                if (!input) return true;
-
-                const optionLabel =
-                  option?.label?.props?.children?.[1]?.props?.children ||
-                  option?.value ||
-                  '';
-
-                return optionLabel
-                  .toLowerCase()
-                  .includes(input.toLowerCase());
+              controlled
+              onChange={({ html, mentions }) => {
+                setCommentValue(html);
+                setSelectedMembers(
+                  mentions.map(m => {
+                    const pm = projectMembers.find(member => member.user_id === m.id);
+                    return {
+                      id: m.id,
+                      team_member_id: pm?.id || m.id,
+                      name: m.name,
+                      user_id: m.id,
+                    };
+                  })
+                );
               }}
-              style={{
-                width: '100%',
-                minHeight: 40,
-                maxHeight: 120,
-                borderRadius: 20,
-                padding: '8px 16px',
-              }}
+              onSubmit={onFinish}
               themeMode={themeMode}
+              minHeight={55}
+              maxHeight={160}
             />
           </div>
 

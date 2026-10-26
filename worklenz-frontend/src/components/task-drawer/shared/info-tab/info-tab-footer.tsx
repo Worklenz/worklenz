@@ -17,7 +17,7 @@ import { fromNow, formatDate } from '@/utils/dateUtils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
-import CustomMentionsInput, { MentionOption } from './comments/custom-mentions-input';
+import { RichCommentEditor, RichCommentChange, MentionMemberOption } from '@/components/common/rich-comment-editor';
 import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import './info-tab-footer.css';
@@ -148,12 +148,15 @@ const InfoTabFooter = () => {
     }
   }, [projectId]);
 
-  const mentionsOptions =
-    members?.map(member => ({
-      value: member.name,
-      label: member.name,
-      key: member.id,
-    })) ?? [];
+  const mentionMemberOptions: MentionMemberOption[] = useMemo(
+    () =>
+      members?.map(member => ({
+        id: member.id || '',
+        name: member.name || '',
+        avatar_url: (member as { avatar_url?: string }).avatar_url,
+      })) ?? [],
+    [members]
+  );
 
   const memberSelectHandler = useCallback(
     (member: IMentionMemberSelectOption) => {
@@ -177,9 +180,12 @@ const InfoTabFooter = () => {
     [members]
   );
 
-  const handleCommentChange = useCallback((value: string) => {
-    setCommentValue(value);
-    setCharacterLength(value.trim().length);
+  const handleCommentChange = useCallback(({ html, text, mentions }: RichCommentChange) => {
+    setCommentValue(html);
+    setCharacterLength(text.length);
+    setSelectedMembers(
+      mentions.map(m => ({ team_member_id: m.id, name: m.name }))
+    );
   }, []);
 
   const handleSubmit = useCallback(async () => {
@@ -376,31 +382,21 @@ const InfoTabFooter = () => {
             transition: 'all 0.3s ease-in-out',
           }}
         >
-          <CustomMentionsInput
-            placeholder={t('taskInfoTab.comments.addCommentPlaceholder', {
-              defaultValue: 'Add a comment...',
-            })}
-            options={mentionsOptions}
-            value={commentValue}
-            onClick={() => setIsCommentBoxExpand(true)}
-            onChange={(e: string) => {
-              setCommentValue(e);
-              setCharacterLength(e.length);
-            }}
-            prefix="@"
-            filterOption={(input: string, option: any) => {
-              if (!input) return true;
-              const optionLabel = option?.label || '';
-              return optionLabel.toLowerCase().includes(input.toLowerCase());
-            }}
-            style={{
-              minHeight: 60,
-              resize: 'none',
-              borderRadius: 4,
-              transition: 'all 0.3s ease-in-out',
-            }}
-            themeMode={themeMode}
-          />
+          <div onClick={() => setIsCommentBoxExpand(true)} style={{ cursor: 'text' }}>
+            <RichCommentEditor
+              placeholder={t('taskInfoTab.comments.addCommentPlaceholder', {
+                defaultValue: 'Add a comment...',
+              })}
+              mentionOptions={mentionMemberOptions}
+              value={commentValue}
+              controlled
+              onChange={handleCommentChange}
+              onFocus={() => setIsCommentBoxExpand(true)}
+              themeMode={themeMode}
+              minHeight={40}
+              maxHeight={80}
+            />
+          </div>
         </Flex>
       ) : (
         <Form
@@ -485,51 +481,27 @@ const InfoTabFooter = () => {
           )}
 
           <Form.Item name={'comment'} style={{ marginBlock: 12 }}>
-            <div style={{ position: 'relative' }}>
-              <CustomMentionsInput
-                placeholder={t('taskInfoTab.comments.addCommentPlaceholder', {
-                  defaultValue: 'Add a comment...',
-                })}
-                options={mentionsOptions}
-                autoFocus
-                value={commentValue}
-                onSelect={(option: any) =>
-                  memberSelectHandler(option as IMentionMemberSelectOption)
-                }
-                onChange={handleCommentChange}
-                onSubmit={handleSubmit}
-                prefix="@"
-                filterOption={(input: string, option: any) => {
-                  if (!input) return true;
-                  const optionLabel = option?.label || '';
-                  return optionLabel.toLowerCase().includes(input.toLowerCase());
-                }}
-                style={{
-                  minHeight: 100,
-                  maxHeight: 200,
-                  paddingBlockEnd: 24,
-                  borderRadius: 4,
-                }}
-                themeMode={themeMode}
-              />
-              <span
-                style={{
-                  position: 'absolute',
-                  bottom: 4,
-                  right: 12,
-                  color: colors.lightGray,
-                  fontSize: 12,
-                  zIndex: 10,
-                  pointerEvents: 'none',
-                }}
-              >{`${characterLength}/5000`}</span>
-            </div>
+            <RichCommentEditor
+              placeholder={t('taskInfoTab.comments.addCommentPlaceholder', {
+                defaultValue: 'Add a comment...',
+              })}
+              mentionOptions={mentionMemberOptions}
+              autoFocus
+              value={commentValue}
+              controlled
+              onChange={handleCommentChange}
+              onSubmit={handleSubmit}
+              themeMode={themeMode}
+              maxLength={MAX_COMMENT_LENGTH}
+              minHeight={100}
+              maxHeight={220}
+            />
             <Typography.Text
               type="secondary"
               style={{ fontSize: 11, marginTop: 4, display: 'block' }}
             >
-              {t('taskInfoTab.comments.enterHint', {
-                defaultValue: 'Enter to send  ·  Shift+Enter for new line',
+              {t('taskInfoTab.comments.pressCmdEnterToSubmit', {
+                defaultValue: 'Press Ctrl+Enter (or Cmd+Enter) to submit',
               })}
             </Typography.Text>
           </Form.Item>

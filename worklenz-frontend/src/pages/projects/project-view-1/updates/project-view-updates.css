@@ -518,13 +518,18 @@
 /* Hover bar - appears above message */
 .comment-hover-bar {
   position: absolute;
-  top: 0px;
-  right: 0px;
-   transform: translateY(-100%);
-  display: flex;
+  top: -14px;
+  right: 8px;
+  transform: translateY(0);
+  display: inline-flex !important;
+  flex-direction: row !important;
+  width: max-content !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
   align-items: center;
   gap: 4px;
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: 20px;
   opacity: 0;
   visibility: hidden;
@@ -643,3 +648,126 @@
   display: none !important;
 }
 
+
+
+/* Rendered Rich Comments Styles in Project Updates */
+.rich-comment-rendered {
+  word-break: break-word;
+  line-height: 1.5;
+  font-size: 13.5px;
+}
+
+.rich-comment-rendered p {
+  margin: 0 0 6px;
+}
+
+.rich-comment-rendered p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-comment-rendered blockquote {
+  border-left: 3px solid #1890ff;
+  margin: 6px 0;
+  padding-left: 10px;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.theme-dark .rich-comment-rendered blockquote {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.rich-comment-rendered pre {
+  background-color: #282c34;
+  color: #abb2bf;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin: 6px 0;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12.5px;
+}
+
+.theme-dark .rich-comment-rendered pre {
+  background-color: #141414;
+  color: #d9d9d9;
+}
+
+.rich-comment-rendered code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.06);
+  color: #eb2f96;
+}
+
+.theme-dark .rich-comment-rendered code {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ff7875;
+}
+
+.rich-comment-rendered pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.rich-comment-rendered ul {
+  list-style: disc outside;
+  margin: 4px 0 6px 20px;
+  padding-left: 0;
+}
+
+.rich-comment-rendered ol {
+  list-style: decimal outside;
+  margin: 4px 0 6px 20px;
+  padding-left: 0;
+}
+
+.rich-comment-rendered li {
+  display: list-item;
+  margin-bottom: 2px;
+}
+
+.rich-comment-rendered ul[data-type="taskList"] {
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin: 4px 0 6px !important;
+}
+
+.rich-comment-rendered li[data-type="taskItem"] {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 3px 0;
+}
+
+.rich-comment-rendered li[data-type="taskItem"] > label {
+  flex-shrink: 0;
+  margin-top: 3px;
+  user-select: none;
+}
+
+.rich-comment-rendered li[data-type="taskItem"] > label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: #1890ff;
+}
+
+.rich-comment-rendered li[data-type="taskItem"][data-checked="true"] > div,
+.rich-comment-rendered li[data-type="taskItem"].is-checked > div {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.rich-comment-rendered a {
+  color: #1890ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+
+.rich-comment-rendered a:hover {
+  text-decoration: underline;
+}

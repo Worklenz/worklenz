@@ -1,7 +1,9 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { Tooltip } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import type { Task } from '@/types/task-management.types';
+import { sanitizeCommentContent } from '@/utils/sanitizeInput';
+import './CommentsColumn.css';
 
 interface CommentsColumnProps {
   width: string;
@@ -9,7 +11,7 @@ interface CommentsColumnProps {
   onOpenComment?: (commentId: string) => void;
 }
 
-/** Strip HTML tags so rich-text comments render as plain, single-line text. */
+/** Strip HTML tags so accessible text / aria labels stay plain. */
 const stripHtml = (html: string): string => {
   if (!html) return '';
   const tmp = document.createElement('div');
@@ -25,12 +27,89 @@ const formatCommentDate = (value?: string | null): string => {
 };
 
 /**
- * Shows the text of the most recent comment posted on a task so recent activity
- * can be scanned without opening the task drawer.
+ * Extracts the first meaningful line / block for single-row cell preview,
+ * preserving inline rich formatting while ignoring subsequent blocks.
+ */
+export const extractFirstLinePreview = (html: string): { previewHtml: string; hasMore: boolean } => {
+  if (!html) return { previewHtml: '', hasMore: false };
+
+  if (typeof document !== 'undefined') {
+    const container = document.createElement('div');
+    container.innerHTML = html;
+
+    const children = Array.from(container.children);
+    if (children.length === 0) {
+      return { previewHtml: html, hasMore: false };
+    }
+
+    // Look for first block with non-whitespace content
+    let firstBlock: Element | null = null;
+    let firstBlockIndex = -1;
+
+    for (let i = 0; i < children.length; i++) {
+      if ((children[i].textContent || '').trim().length > 0) {
+        firstBlock = children[i];
+        firstBlockIndex = i;
+        break;
+      }
+    }
+
+    if (!firstBlock) {
+      return { previewHtml: container.innerHTML, hasMore: false };
+    }
+
+    // Check if there are other subsequent blocks with content
+    const hasSubsequentBlocks = children
+      .slice(firstBlockIndex + 1)
+      .some(c => (c.textContent || '').trim().length > 0);
+
+    // If it's a list (ul/ol), grab the first <li>
+    const tagName = firstBlock.tagName.toLowerCase();
+    if (tagName === 'ul' || tagName === 'ol') {
+      const lis = Array.from(firstBlock.querySelectorAll('li'));
+      const firstLi = lis.find(li => (li.textContent || '').trim().length > 0);
+      if (firstLi) {
+        return {
+          previewHtml: firstLi.innerHTML,
+          hasMore: hasSubsequentBlocks || lis.length > 1,
+        };
+      }
+    }
+
+    // If first block has line breaks (<br>), take only the first line
+    const htmlContent = firstBlock.innerHTML;
+    const brMatch = htmlContent.match(/<br\s*\/?>/i);
+    if (brMatch && brMatch.index !== undefined) {
+      const firstPart = htmlContent.slice(0, brMatch.index);
+      return {
+        previewHtml: firstPart,
+        hasMore: true,
+      };
+    }
+
+    return {
+      previewHtml: htmlContent,
+      hasMore: hasSubsequentBlocks,
+    };
+  }
+
+  return { previewHtml: html, hasMore: false };
+};
+
+/**
+ * Shows the formatted latest comment posted on a task with full rich hover preview
+ * so recent activity can be scanned with full fidelity without opening the task drawer.
  */
 export const CommentsColumn: React.FC<CommentsColumnProps> = memo(({ width, task, onOpenComment }) => {
   const { t } = useTranslation('task-list-table');
-  const comment = stripHtml(task.latest_comment || '');
+  const rawComment = task.latest_comment || '';
+  const plainTextComment = useMemo(() => stripHtml(rawComment), [rawComment]);
+  const sanitizedComment = useMemo(() => sanitizeCommentContent(rawComment), [rawComment]);
+  const { previewHtml, hasMore } = useMemo(
+    () => extractFirstLinePreview(sanitizedComment),
+    [sanitizedComment]
+  );
+
   const latestCommentId = task.latest_comment_id;
   const author = task.latest_comment_author ? String(task.latest_comment_author) : '';
   const date = formatCommentDate(task.latest_comment_at);
@@ -38,7 +117,7 @@ export const CommentsColumn: React.FC<CommentsColumnProps> = memo(({ width, task
   const columnLabel = t('commentsColumn', { defaultValue: 'Latest Comment' });
   const openCommentLabel = t('openLatestComment', { defaultValue: 'Open latest comment' });
   const canOpenComment = Boolean(
-    comment && latestCommentId && onOpenComment && !task.is_parent_container
+    plainTextComment && latestCommentId && onOpenComment && !task.is_parent_container
   );
 
   return (
@@ -46,12 +125,16 @@ export const CommentsColumn: React.FC<CommentsColumnProps> = memo(({ width, task
       className="flex h-full items-center overflow-hidden border-r border-gray-200 px-2 dark:border-gray-700"
       style={{ width }}
     >
-      {comment ? (
+      {plainTextComment ? (
         <Tooltip
+          rootClassName="latest-comment-tooltip"
           title={
-            <div className="max-w-[360px] whitespace-pre-wrap break-words">
-              <div>{comment}</div>
-              {meta && <div className="mt-1 text-xs opacity-70">{meta}</div>}
+            <div className="latest-comment-tooltip-body" data-testid="latest-comment-tooltip-content">
+              <div
+                className="rich-comment-rendered"
+                dangerouslySetInnerHTML={{ __html: sanitizedComment }}
+              />
+              {meta && <div className="latest-comment-tooltip-meta">{meta}</div>}
             </div>
           }
         >
@@ -65,14 +148,20 @@ export const CommentsColumn: React.FC<CommentsColumnProps> = memo(({ width, task
                 if (latestCommentId) onOpenComment?.(latestCommentId);
               }}
             >
-              {comment}
+              <span className="comments-column-preview">
+                <span dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                {hasMore && <span className="comments-column-ellipsis">...</span>}
+              </span>
             </button>
           ) : (
             <span
               className="w-full truncate text-sm text-gray-600 dark:text-gray-300"
               aria-label={columnLabel}
             >
-              {comment}
+              <span className="comments-column-preview">
+                <span dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                {hasMore && <span className="comments-column-ellipsis">...</span>}
+              </span>
             </span>
           )}
         </Tooltip>

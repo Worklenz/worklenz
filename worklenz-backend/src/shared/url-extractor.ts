@@ -53,10 +53,19 @@ function trimTrailingPunctuation(url: string): string {
 }
 
 export function extractUrls(html: string): string[] {
+  if (!html) return [];
+  const hrefUrls: string[] = [];
+  const hrefRegex = /href=["'](https?:\/\/[^\s"'>]+)["']/gi;
+  let match: RegExpExecArray | null;
+  while ((match = hrefRegex.exec(html)) !== null) {
+    hrefUrls.push(trimTrailingPunctuation(match[1]));
+  }
+
   const text = stripHtml(html);
   const matches = text.match(URL_REGEX);
-  if (!matches) return [];
-  return [...new Set(matches.map(trimTrailingPunctuation))];
+  const textUrls = matches ? matches.map(trimTrailingPunctuation) : [];
+
+  return [...new Set([...hrefUrls, ...textUrls])];
 }
 
 export async function syncTaskDescriptionLinks(

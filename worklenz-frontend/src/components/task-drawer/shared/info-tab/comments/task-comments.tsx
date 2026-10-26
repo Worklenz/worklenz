@@ -7,6 +7,7 @@ import {
   Space,
   Popover,
   message,
+  Typography,
 } from '@/shared/antd-imports';
 import { EditOutlined, DeleteOutlined, LinkOutlined } from '@ant-design/icons';
 import { Comment } from '@ant-design/compatible';
@@ -35,7 +36,7 @@ import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMember } from '@/types/teamMembers/teamMember.types';
-import CustomMentionsInput, { MentionOption } from './custom-mentions-input';
+import { RichCommentEditor, RichCommentChange, MentionMemberOption } from '@/components/common/rich-comment-editor';
 import '../info-tab-footer.css';
 import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
@@ -185,8 +186,8 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
   const [members, setMembers] = useState<ITeamMember[]>([]);
   const { projectId } = useAppSelector(state => state.projectReducer);
 
-  const mentionOptions: MentionOption[] = useMemo(
-    () => members.map(m => ({ key: m.id!, value: m.name!, label: m.name! })),
+  const mentionMemberOptions: MentionMemberOption[] = useMemo(
+    () => members.map(m => ({ id: m.id!, name: m.name!, avatar_url: (m as { avatar_url?: string }).avatar_url })),
     [members]
   );
 
@@ -475,7 +476,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
 
   const startEdit = (item: ITaskCommentViewModel) => {
     setEditingCommentId(item.id || null);
-    setEditContent(prepareContentForEditing(item.content || ''));
+    setEditContent(item.content || '');
     setEditSelectedMembers([]);
   };
 
@@ -490,7 +491,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
 
     if (!item.id || !resolvedTaskId || !editContent.trim()) return;
 
-    const originalContent = prepareContentForEditing(item.content || '');
+    const originalContent = item.content || '';
     if (editContent.trim() === originalContent.trim()) {
       cancelEdit();
       return;
@@ -831,48 +832,49 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
                           ) : isEditing ? (
                             <div className="comment-edit-container">
                               <div className="comment-edit-input">
-                                <CustomMentionsInput
+                                <RichCommentEditor
                                   value={editContent}
-                                  onChange={(val: string) => setEditContent(val)}
-                                  onSelect={(option: MentionOption) => {
-                                    const member = members.find(m => m.id === option.key);
-                                    if (!member) return;
-
-                                    setEditSelectedMembers(prev =>
-                                      prev.some(p => p.team_member_id === member.id)
-                                        ? prev
-                                        : [
-                                          ...prev,
-                                          {
-                                            team_member_id: member.id!,
-                                            name: member.name!,
-                                          },
-                                        ]
+                                  controlled
+                                  onChange={({ html, mentions }: RichCommentChange) => {
+                                    setEditContent(html);
+                                    setEditSelectedMembers(
+                                      mentions.map(m => ({
+                                        team_member_id: m.id,
+                                        name: m.name,
+                                      }))
                                     );
                                   }}
-                                  options={mentionOptions}
+                                  onSubmit={() => saveEdit(item)}
+                                  mentionOptions={mentionMemberOptions}
                                   themeMode={themeMode}
                                   autoFocus
                                   placeholder={t('taskInfoTab.comments.addCommentPlaceholder', {
                                     defaultValue: 'Add a comment...',
                                   })}
-                                  filterOption={(input: string, option: MentionOption) => {
-                                    if (!input) return true;
-
-                                    return option.label
-                                      .toLowerCase()
-                                      .includes(input.toLowerCase());
-                                  }}
-                                  style={{
-                                    width: '100%',
-                                    minHeight: 60,
-                                    maxHeight: 200,
-                                    borderRadius: 6,
-                                  }}
+                                  minHeight={90}
+                                  maxHeight={200}
                                 />
                               </div>
 
                               <div className="comment-edit-actions">
+                                <Typography.Text
+                                  type="secondary"
+                                  style={{ fontSize: 11, marginRight: 'auto' }}
+                                >
+                                  {t('taskInfoTab.comments.pressCmdEnterToSubmit', {
+                                    defaultValue: 'Press Ctrl+Enter (or Cmd+Enter) to submit',
+                                  })}
+                                </Typography.Text>
+
+                                <Button
+                                  size="small"
+                                  onClick={cancelEdit}
+                                >
+                                  {t('taskInfoTab.comments.cancel', {
+                                    defaultValue: 'Cancel',
+                                  })}
+                                </Button>
+
                                 <Button
                                   size="small"
                                   type="primary"
@@ -883,20 +885,11 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
                                     defaultValue: 'Save',
                                   })}
                                 </Button>
-
-                                <Button
-                                  size="small"
-                                  onClick={cancelEdit}
-                                >
-                                  {t('taskInfoTab.comments.cancel', {
-                                    defaultValue: 'Cancel',
-                                  })}
-                                </Button>
                               </div>
                             </div>
                           ) : (
                             <>
-                              <p dangerouslySetInnerHTML={{ __html: item.content || '' }} />
+                              <div className="rich-comment-rendered" dangerouslySetInnerHTML={{ __html: item.content || '' }} />
                               {item.attachments && item.attachments.length > 0 && (
                                 <div className="ant-upload-list ant-upload-list-picture-card">
                                   <AttachmentsGrid
@@ -942,7 +935,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
                         </div>
                       </div>
                     }
-                    className={isUserComment ? 'current-user-comment' : ''}
+                    className={`${isUserComment ? 'current-user-comment' : ''} ${isEditing ? 'is-editing-comment' : ''} theme-${themeMode}`}
                   />
                 </div>
               );
