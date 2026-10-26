@@ -186,7 +186,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
     } else {
       isDeleting.current = false;
     }
-  };                 
+  };
 
   const renderPopup = () => {
     return (
@@ -217,9 +217,8 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
             placement="top"
           >
             <div
-              className={`task-drawer-dropdown-item task-drawer-dropdown-item--default ${
-                taskFormViewModel?.task?.is_sub_task ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={`task-drawer-dropdown-item task-drawer-dropdown-item--default ${taskFormViewModel?.task?.is_sub_task ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               onClick={() => {
                 if (!taskFormViewModel?.task?.is_sub_task) {
                   setDropdownOpen(false);
@@ -307,7 +306,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
 
     const prevTaskId =
       navigationContext.taskIds[
-        navigationContext.currentIndex - 1
+      navigationContext.currentIndex - 1
       ];
 
     if (prevTaskId && navigationContext.projectId) {
@@ -327,7 +326,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
 
     const nextTaskId =
       navigationContext.taskIds[
-        navigationContext.currentIndex + 1
+      navigationContext.currentIndex + 1
       ];
 
     if (nextTaskId && navigationContext.projectId) {
@@ -457,6 +456,11 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
                   <Button
                     size="small"
                     type="link"
+                    style={{
+                      color: '#1677ff',
+                      opacity: 1,
+                      visibility: 'visible',
+                    }}
                     onClick={() => navigate(`/worklenz/t/${copiedTaskId}`)}
                   >
                     {tDuplicate('copyToProject.openTask', { defaultValue: 'Open task' })}
