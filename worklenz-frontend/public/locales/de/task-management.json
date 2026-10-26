@@ -20,6 +20,7 @@
   "completeSprint": "Kompletter Sprint",
   "startSprint": "Sprint starten",
   "createSprint": "Sprint erstellen",
+  "sprintSetupRequiredHint": "Erstellen Sie einen Sprint, um das Backlog freizuschalten und Issues hinzuzufügen.",
   "editSprint": "Sprint bearbeiten",
   "noTasksInGroupDescription": "Fügen Sie eine Aufgabe hinzu, um zu beginnen",
   "addFirstTask": "Fügen Sie Ihre erste Aufgabe hinzu",

@@ -20,6 +20,7 @@
   "completeSprint": "Sprint completo",
   "startSprint": "Iniciar sprint",
   "createSprint": "Crear sprint",
+  "sprintSetupRequiredHint": "Crea un sprint para desbloquear el backlog y empezar a añadir issues.",
   "editSprint": "Editar sprint",
   "noTasksInGroupDescription": "Añade una tarea para comenzar",
   "addFirstTask": "Añade tu primera tarea",

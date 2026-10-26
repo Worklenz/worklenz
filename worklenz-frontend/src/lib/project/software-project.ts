@@ -6,6 +6,15 @@ export const isSoftwareProjectType = (
 ): boolean => projectType === 'software';
 
 /**
+ * Software projects start with only the default Backlog. Work-item create/edit
+ * stays locked until the team creates at least one sprint.
+ */
+export const isSoftwareSprintSetupRequired = (
+  projectType?: ProjectType | string | null,
+  sprintCount = 0
+): boolean => isSoftwareProjectType(projectType) && sprintCount === 0;
+
+/**
  * Tab a project opens on from project lists. Software projects land on the
  * Backlog unless the member pinned the Board.
  */
