@@ -19,6 +19,7 @@
   "viewOnBoard": "View on Board",
   "completeSprint": "Complete sprint",
   "startSprint": "Start sprint",
+  "createSprint": "Create sprint",
   "editSprint": "Edit sprint",
   "noTasksInGroupDescription": "Add a task to get started",
   "addFirstTask": "Add your first task",

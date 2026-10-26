@@ -19,6 +19,7 @@
   "viewOnBoard": "机上查看",
   "completeSprint": "完成冲刺",
   "startSprint": "开始冲刺",
+  "createSprint": "创建冲刺",
   "editSprint": "编辑冲刺",
   "noTasksInGroupDescription": "添加任务开始使用",
   "addFirstTask": "添加你的第一个任务",
