@@ -502,7 +502,7 @@ const ExampleTaskRows: React.FC<{
                   height: '100%',
                   display: 'flex',
                   alignItems: 'center',
-                  backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff',
+                  backgroundColor: 'var(--tl-sticky-cell-bg)',
                 }),
               };
 
@@ -1362,33 +1362,45 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     const container = outerScrollRef.current;
     if (!container) return;
 
-    const tagStickyWrappers = () => {
-      container.querySelectorAll<HTMLElement>('*').forEach(el => {
-        if (window.getComputedStyle(el).position !== 'sticky') return;
-        const child = el.firstElementChild as HTMLElement | null;
-        if (
-          child &&
-          (child.classList.contains('mt-2') || child.querySelector('[data-group-header]'))
-        ) {
-          el.classList.add('virtuoso-group-header-wrapper');
-          // Use Ant Design's colorBgContainer token — matches the actual page background
-          // in both light (#ffffff) and dark (#141414) modes. Backlog cards sit on the layout background.
-          el.style.backgroundColor = isBacklogMode
-            ? themeToken.colorBgLayout
-            : themeToken.colorBgContainer;
-        }
-      });
+    const tagStickyWrapper = (el: Element) => {
+      if (!(el instanceof HTMLElement)) return;
+      if (el.classList.contains('virtuoso-group-header-wrapper')) return;
+      if (window.getComputedStyle(el).position !== 'sticky') return;
+      const child = el.firstElementChild;
+      if (
+        child &&
+        (child.classList.contains('mt-2') || child.querySelector('[data-group-header]'))
+      ) {
+        // Background color comes from CSS variables (--tl-group-header-bg /
+        // --tl-backlog-group-header-bg) so theme changes never touch this code path.
+        el.classList.add('virtuoso-group-header-wrapper');
+      }
     };
 
-    const timeoutId = setTimeout(tagStickyWrappers, 100);
-    const observer = new MutationObserver(tagStickyWrappers);
+    const tagStickyWrappersIn = (root: ParentNode) => {
+      tagStickyWrapper(root as Element);
+      root.querySelectorAll('*').forEach(tagStickyWrapper);
+    };
+
+    tagStickyWrappersIn(container);
+    const observer = new MutationObserver(mutations => {
+      // Only inspect newly added subtrees instead of rescanning the whole
+      // list on every DOM mutation.
+      for (const mutation of mutations) {
+        mutation.addedNodes.forEach(node => {
+          if (node instanceof HTMLElement) {
+            tagStickyWrapper(node);
+            node.querySelectorAll('*').forEach(tagStickyWrapper);
+          }
+        });
+      }
+    });
     observer.observe(container, { childList: true, subtree: true });
 
     return () => {
-      clearTimeout(timeoutId);
       observer.disconnect();
     };
-  }, [loading, loadingColumns, themeToken.colorBgContainer, themeToken.colorBgLayout, isBacklogMode]);
+  }, [loading, loadingColumns]);
 
   // Cleanup column resize listeners on unmount to prevent memory leaks
   useEffect(() => {
@@ -1898,7 +1910,9 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
             style={{
               width: '100%',
               minWidth: 'max-content',
-              backgroundColor: isDarkMode ? '#141414' : '#f9fafb',
+              backgroundColor: 'var(--tl-header-bg)',
+              transition:
+                'background-color 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
             <div
@@ -1928,7 +1942,9 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                     position: 'sticky' as const,
                     left: leftPosition,
                     zIndex: 15,
-                    backgroundColor: isDarkMode ? '#141414' : '#f9fafb', // custom dark header : bg-gray-50
+                    backgroundColor: 'var(--tl-header-bg)',
+                    transition:
+                      'background-color 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1)',
                     height: '100%', // Fill the header height
                     display: 'flex', // Use flex to contain child
                     alignItems: 'center', // Center content vertically
@@ -2376,7 +2392,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           onDragOver={handleDragOver}
           onDragEnd={handleDragEndWrapper}
         >
-          <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
+          <div className="flex flex-col bg-[var(--tl-surface-bg)] h-full overflow-hidden">
             <div
               className="border border-gray-200 dark:border-gray-700 rounded-lg"
               style={{
@@ -2388,7 +2404,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
             >
               <div
                 ref={outerScrollRef}
-                className="flex-1 bg-white dark:bg-gray-900 relative"
+                className="flex-1 bg-[var(--tl-surface-bg)] relative"
                 style={{ overflowX: 'auto', overflowY: 'auto', minHeight: 0 }}
               >
                 <div
@@ -2397,7 +2413,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 >
                   {/* Sticky Column Headers */}
                   <div
-                    className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800"
+                    className="sticky top-0 z-30 bg-[var(--tl-header-bg)] transition-colors duration-200"
                     style={{ minWidth: 'max-content' }}
                   >
                     {renderColumnHeaders()}
@@ -2456,7 +2472,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
 
     // For other groupings, show the empty state message
     return (
-      <div className="flex flex-col bg-white dark:bg-gray-900 h-full">
+      <div className="flex flex-col bg-[var(--tl-surface-bg)] h-full">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -2476,22 +2492,26 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       {/* CSS for sticky column hover effects */}
       <style>
         {`
-          .hover\\:bg-gray-50:hover .sticky-column-hover,
-          .dark .hover\\:bg-gray-800:hover .sticky-column-hover {
-            background-color: var(--hover-bg) !important;
+          /* Sticky cells track the row hover overlay so the sticky column and
+             the scrolled row always share the same surface color. */
+          .group:hover .sticky-column-hover {
+            background-color: var(--tl-sticky-cell-hover-bg) !important;
           }
 
           /* GroupedVirtuoso wraps each groupContent in a position:sticky div with top:0.
              Override top to 40px so the group header sticks below the column header row.
-             Background is set via JS using Ant Design's colorBgContainer token. */
+             Background comes from [data-theme]-driven CSS variables. */
           .virtuoso-group-header-wrapper {
             top: 40px !important;
             z-index: 20 !important;
+            background-color: var(--tl-group-header-bg) !important;
+            transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
           }
 
           /* Software Backlog: sprint cards have no global column header and no cell dividers. */
           .tasklist-backlog .virtuoso-group-header-wrapper {
             top: 0 !important;
+            background-color: var(--tl-backlog-group-header-bg) !important;
           }
 
           .tasklist-backlog .border-r {
@@ -2551,7 +2571,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
         <div
           id="task-list-container"
           className={`flex flex-col h-full overflow-hidden ${
-            isBacklogMode ? 'tasklist-backlog' : 'bg-white dark:bg-gray-900'
+            isBacklogMode ? 'tasklist-backlog' : 'bg-[var(--tl-surface-bg)]'
           }`}
           style={containerStyle}
         >
@@ -2570,7 +2590,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 TaskGroupHeader's sticky left:0 containing block is this element — full scroll width. */}
             <div
               ref={outerScrollRef}
-              className={`flex-1 relative ${isBacklogMode ? '' : 'bg-white dark:bg-gray-900'}`}
+              className={`flex-1 relative ${isBacklogMode ? '' : 'bg-[var(--tl-surface-bg)] transition-colors duration-200'}`}
               style={{
                 overflowX: 'auto',
                 overflowY: 'auto',
@@ -2590,7 +2610,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 {/* Sticky Column Headers (Backlog cards render their own per section) */}
                 {!isBacklogMode && (
                   <div
-                    className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800"
+                    className="sticky top-0 z-30 bg-[var(--tl-header-bg)] transition-colors duration-200"
                     style={{ minWidth: 'max-content' }}
                   >
                     {renderColumnHeaders()}

@@ -49,7 +49,7 @@ const TaskDrawer = () => {
   const [activeTab, setActiveTab] = useState<string>('info');
   const [refreshTimeLogTrigger, setRefreshTimeLogTrigger] = useState(0);
   const { canCreateTask } = useTaskCreationPermission();
-  const { showTaskDrawer, timeLogEditing, taskAccessDenied, taskAccessFrom, targetDrawerTab } =
+  const { showTaskDrawer, timeLogEditing, taskAccessDenied, taskAccessFrom, targetDrawerTab, lastDeletedTaskId } =
     useAppSelector(state => state.taskDrawerReducer);
   const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const { projectId, project } = useAppSelector(state => state.projectReducer);
@@ -131,6 +131,7 @@ const TaskDrawer = () => {
 
       if (
         selectedTaskId &&
+        selectedTaskId !== lastDeletedTaskId &&
         (
           taskFormViewModel?.task?.id !== selectedTaskId ||
           !taskFormViewModel?.task?.name

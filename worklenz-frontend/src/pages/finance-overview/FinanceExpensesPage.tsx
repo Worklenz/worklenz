@@ -31,6 +31,7 @@ import {
 import { setProjectId } from '@/features/project/project.slice';
 import { TASK_FIXED_COST_CHANGED_EVENT } from '@/shared/constants';
 import AddExpenseModal from '@/components/expenses/AddExpenseModal';
+import { useTaskNameRealtimeSync } from '@/hooks/useTaskNameRealtimeSync';
 
 const FinanceExpensesPage: React.FC = () => {
   const { token } = theme.useToken();
@@ -43,6 +44,11 @@ const FinanceExpensesPage: React.FC = () => {
   // task's current running total, not a per-submission ledger — tasks.fixed_cost
   // has no history of individual additions.
   const [recentItems, setRecentItems] = useState<ITeamFixedCostItem[]>([]);
+
+  useTaskNameRealtimeSync({
+    items: recentItems,
+    setItems: setRecentItems,
+  });
   const [recentTotal, setRecentTotal] = useState(0);
   const [recentLoading, setRecentLoading] = useState(false);
   const [page, setPage] = useState(1);

@@ -128,7 +128,7 @@ _**Client Portal**_
 
 ### Requirements
 
-- Node.js version v20 or newer
+- Node.js version v22.12.0 or newer
 - PostgreSQL version v15 or newer
 - Docker and Docker Compose (for containerized setup)
 
@@ -204,7 +204,7 @@ Use this path to run the services individually, either for development or on a
 server that does not use Docker.
 
 **📋 Prerequisites:**
-- Node.js (version 20 or higher)
+- Node.js (version 22.12.0 or higher)
 - PostgreSQL (version 15 or higher)
 - An S3-compatible storage service (SeaweedFS is bundled) or Azure Blob Storage
 
