@@ -1,13 +1,12 @@
 import { useMemo } from 'react';
+import { useStore } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { Dropdown, Flex, Typography, message } from '@/shared/antd-imports';
 
-import { softwareIssuesApiService } from '@/api/software-issues/software-issues.api.service';
 import { IssueTypeBadge, getIssueTypeLabel } from '@/components/projects/software/issue-type-badge';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useOptimisticTaskUpdate } from '@/hooks/useOptimisticTaskUpdate';
-import { setTaskIssueType } from '@/features/task-drawer/task-drawer.slice';
-import { updateEnhancedKanbanTaskIssueType } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { saveIssueTypeForTask } from '@/lib/project/issue-type-update';
+import type { RootState } from '@/app/store';
 import { IssueType } from '@/types/project/softwareIssue.types';
 
 interface TaskDrawerIssueIdentityProps {
@@ -33,7 +32,7 @@ export const TaskDrawerIssueIdentity = ({
   const { t } = useTranslation('task-drawer/task-drawer');
   const { t: tProjectView } = useTranslation('project-view');
   const dispatch = useAppDispatch();
-  const updateTaskOptimistically = useOptimisticTaskUpdate();
+  const store = useStore<RootState>();
   const currentType: IssueType = issueType ?? 'task';
 
   const items = useMemo(
@@ -53,16 +52,16 @@ export const TaskDrawerIssueIdentity = ({
   const handleChange = async (nextType: IssueType) => {
     if (!taskId || !projectId || nextType === currentType) return;
 
-    dispatch(setTaskIssueType({ id: taskId, issue_type: nextType }));
-    dispatch(updateEnhancedKanbanTaskIssueType({ taskId, issueType: nextType }));
-
-    const isSaved = await updateTaskOptimistically(taskId, 'issue_type', nextType, () =>
-      softwareIssuesApiService.updateType(projectId, taskId, nextType)
-    );
+    const isSaved = await saveIssueTypeForTask({
+      taskId,
+      projectId,
+      nextType,
+      previousType: currentType,
+      dispatch,
+      store,
+    });
 
     if (!isSaved) {
-      dispatch(setTaskIssueType({ id: taskId, issue_type: currentType }));
-      dispatch(updateEnhancedKanbanTaskIssueType({ taskId, issueType: currentType }));
       message.error(
         tProjectView('issueTypeSaveError', {
           defaultValue: 'Could not change the issue type. Please try again.',

@@ -4,15 +4,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mocks = vi.hoisted(() => ({
   dispatch: vi.fn(),
   updateType: vi.fn(),
-  updateTaskOptimistically: vi.fn(),
   messageError: vi.fn(),
+  getState: vi.fn(() => ({ taskManagement: { entities: {} } })),
 }));
 
 vi.mock('@/hooks/useAppDispatch', () => ({ useAppDispatch: () => mocks.dispatch }));
 
-vi.mock('@/hooks/useOptimisticTaskUpdate', () => ({
-  useOptimisticTaskUpdate: () => mocks.updateTaskOptimistically,
-}));
+vi.mock('react-redux', async () => {
+  const actual = await vi.importActual<typeof import('react-redux')>('react-redux');
+  return {
+    ...actual,
+    useStore: () => ({ getState: mocks.getState, dispatch: mocks.dispatch }),
+  };
+});
 
 vi.mock('@/api/software-issues/software-issues.api.service', () => ({
   softwareIssuesApiService: {
@@ -41,18 +45,16 @@ vi.mock('@/components/projects/software/issue-type-badge', () => ({
   getIssueTypeLabel: (type: string) => type,
 }));
 
+import { resetIssueTypeSaveStateForTests } from '@/lib/project/issue-type-update';
 import { TaskDrawerIssueIdentity } from './task-drawer-issue-identity';
 
 describe('TaskDrawerIssueIdentity', () => {
   beforeEach(() => {
-    Object.values(mocks).forEach(fn => fn.mockReset());
-    mocks.updateTaskOptimistically.mockImplementation(
-      async (_id: string, _field: string, value: string, save: () => Promise<{ done: boolean }>) => {
-        mocks.dispatch({ type: 'optimistic', payload: value });
-        const response = await save();
-        return response.done;
-      }
-    );
+    resetIssueTypeSaveStateForTests();
+    Object.values(mocks).forEach(fn => {
+      if (typeof fn === 'function' && 'mockReset' in fn) fn.mockReset();
+    });
+    mocks.getState.mockReturnValue({ taskManagement: { entities: {} } });
     mocks.updateType.mockResolvedValue({ done: true, body: { id: 'task-1', issue_type: 'bug' } });
   });
 
@@ -86,12 +88,7 @@ describe('TaskDrawerIssueIdentity', () => {
     fireEvent.click(await screen.findByRole('menuitem', { name: /bug/i }));
 
     await waitFor(() =>
-      expect(mocks.updateTaskOptimistically).toHaveBeenCalledWith(
-        'task-1',
-        'issue_type',
-        'bug',
-        expect.any(Function)
-      )
+      expect(mocks.updateType).toHaveBeenCalledWith('project-1', 'task-1', 'bug')
     );
     expect(mocks.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -102,7 +99,7 @@ describe('TaskDrawerIssueIdentity', () => {
   });
 
   it('rolls back and shows an error when saving fails', async () => {
-    mocks.updateTaskOptimistically.mockResolvedValueOnce(false);
+    mocks.updateType.mockResolvedValueOnce({ done: false, message: 'failed' });
 
     render(
       <TaskDrawerIssueIdentity
@@ -117,10 +114,13 @@ describe('TaskDrawerIssueIdentity', () => {
     fireEvent.click((await screen.findByTestId('badge-task')).closest('[role="menuitem"]')!);
 
     await waitFor(() => expect(mocks.messageError).toHaveBeenCalled());
-    expect(mocks.dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payload: { id: 'task-1', issue_type: 'story' },
-      })
+    await waitFor(() =>
+      expect(mocks.dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: expect.stringContaining('setTaskIssueType'),
+          payload: { id: 'task-1', issue_type: 'story' },
+        })
+      )
     );
   });
 });
