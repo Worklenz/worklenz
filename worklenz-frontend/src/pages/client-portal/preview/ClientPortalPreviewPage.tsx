@@ -29,7 +29,6 @@ import {
 } from './PreviewViews';
 import { PortalLoader } from '@/components/client-portal/v2';
 import { PortalPreviewShell, type PreviewTab } from './PortalPreviewShell';
-import { useAppSelector } from '@/hooks/useAppSelector';
 
 const CAPABILITY_ROWS: { capability: ClientCapability; key: string; defaultValue: string }[] = [
   { capability: 'view', key: 'capability.view', defaultValue: 'View assigned projects, milestones, client-visible tasks and files' },
@@ -68,7 +67,6 @@ const ClientPortalPreviewPage = () => {
   const { t } = useTranslation('client-portal-v2-preview');
   const { t: tShared } = useTranslation('client-portal-v2');
   const { token } = theme.useToken();
-  const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [searchParams] = useSearchParams();
   const projectParam = searchParams.get('project');
   const branding = usePortalBranding();
@@ -110,7 +108,7 @@ const ClientPortalPreviewPage = () => {
   );
 
   const brandColor = branding?.primary_color || CLIENT_PORTAL_BRAND_COLORS[0];
-  const isDarkPortal = themeMode === 'dark';
+  const isDarkPortal = branding?.portal_theme === 'dark';
   const portalTitle = branding?.portal_title || branding?.company_name || t('frame.defaultTitle', { defaultValue: 'Client Portal' });
 
   const header = (
@@ -267,6 +265,8 @@ const ClientPortalPreviewPage = () => {
         >
           {/* The frame uses the portal's own colour and light/dark theme, not the admin app's. */}
           <ConfigProvider
+            // Isolate portal components from the admin app's global .dark .ant-* overrides.
+            prefixCls="portal-preview"
             theme={{
               // Keep the portal theme independent of the main app theme.
               inherit: false,
