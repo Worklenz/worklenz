@@ -11,5 +11,11 @@
   "mentionedInComment": "<b>{{user}}</b> te mencionó en un comentario en <b>{{task}}</b>",
   "mentionedInProjectComment": "<b>{{user}}</b> te mencionó en un comentario en <b>{{project}}</b>",
   "mentionedInProjectDocument": "<b>{{user}}</b> te mencionó en un documento en <b>{{project}}</b>",
-  "phaseTaskAssigned": "Se te ha asignado una tarea en <b>{{phase}}</b>: <b>{{task}}</b>"
+  "phaseTaskAssigned": "Se te ha asignado una tarea en <b>{{phase}}</b>: <b>{{task}}</b>",
+  "security": {
+    "invitationLimit": "Este espacio de trabajo ha alcanzado el límite de seguridad de invitaciones. Vuelve a intentarlo más tarde.",
+    "invitationsPaused": "Las invitaciones están pausadas temporalmente. Ponte en contacto con tu administrador.",
+    "blockedTaskHost": "Esta tarea contiene un enlace bloqueado. Elimínalo y vuelve a intentarlo.",
+    "blockedSignupDomain": "Este proveedor de correo no es compatible. Utiliza otra dirección de correo electrónico."
+  }
 }

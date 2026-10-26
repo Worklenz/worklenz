@@ -75,6 +75,12 @@ const RecurringTasksPage = lazy(
 const FilesPage = lazy(
   ChunkErrorHandler.wrapLazyImport(() => import('@/pages/files/FilesPage'), 'FilesPage')
 );
+const TeamDocsPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/projects/team-docs/team-docs-page'),
+    'TeamDocsPage'
+  )
+);
 const TemplatesPage = lazy(
   ChunkErrorHandler.wrapLazyImport(
     () => import('@/pages/projects/templates/TemplatesPage'),
@@ -449,6 +455,14 @@ const mainRoutes: RouteObject[] = [
             element: (
               <Suspense fallback={<SuspenseFallback />}>
                 <FilesPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'docs',
+            element: (
+              <Suspense fallback={<SuspenseFallback />}>
+                <TeamDocsPage />
               </Suspense>
             ),
           },

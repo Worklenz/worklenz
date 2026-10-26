@@ -126,20 +126,21 @@ const ConfigurationSettings = () => {
               <Flex gap={8} align="center">
                 <Typography.Text>
                   {t('restrictTaskCreation', {
-                    defaultValue: 'Restrict task assignment to Admins and Team Leads',
+                    defaultValue:
+                      'Restrict task assignment to Admins, Team Leads, and Project Managers',
                   })}
                 </Typography.Text>
                 <Tooltip
                   title={t('restrictTaskCreationTooltip', {
                     defaultValue:
-                      'When enabled, only Admins and Team Leads can create and assign tasks across all projects. Team Members can only view tasks assigned to them. Project-level settings override this organization-level setting.',
+                      'When enabled, only Admins, Team Leads, and Project Managers can create and assign tasks across all projects. Team Members can only view tasks assigned to them. Project-level settings override this organization-level setting.',
                   })}
                 >
                   <InfoCircleOutlined
                     style={{ color: token.colorTextSecondary }}
                     aria-label={t('restrictTaskCreationTooltip', {
                       defaultValue:
-                        'When enabled, only Admins and Team Leads can create and assign tasks across all projects.',
+                        'When enabled, only Admins, Team Leads, and Project Managers can create and assign tasks across all projects.',
                     })}
                   />
                 </Tooltip>
@@ -151,7 +152,8 @@ const ConfigurationSettings = () => {
               loading={orgConfig.isLoading}
               onChange={handleRestrictTaskCreationChange}
               aria-label={t('restrictTaskCreation', {
-                defaultValue: 'Restrict task assignment to Admins and Team Leads',
+                defaultValue:
+                  'Restrict task assignment to Admins, Team Leads, and Project Managers',
               })}
             />
           </Form.Item>

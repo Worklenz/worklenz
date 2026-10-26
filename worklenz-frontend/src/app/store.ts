@@ -14,7 +14,7 @@ import userActivityReducer from '@features/home-page/user-activity.slice';
 import accountSetupReducer from '@features/account-setup/account-setup.slice';
 
 // Core UI
-import themeReducer from '@features/theme/themeSlice';
+import themeReducer, { themeDomSyncMiddleware } from '@features/theme/themeSlice';
 import localesReducer from '@features/i18n/localesSlice';
 import alertsReducer from '@/services/alerts/alertSlice';
 import navPreferencesReducer from '@features/navigation/navPreferences.slice';
@@ -278,6 +278,7 @@ export const store = configureStore({
       serializableCheck: false,
       immutableCheck: false,
     }).concat(
+      themeDomSyncMiddleware,
       homePageApiService.middleware,
       personalOverviewApi.middleware,
       projectsApi.middleware,

@@ -85,4 +85,35 @@ describe('getTaskCreationPermission', () => {
 
     expect(result).toEqual({ canCreateTask: true, canAddTask: true, isRestricted: true });
   });
+
+  it('blocks plain members from creating tasks when restrictions are enabled', () => {
+    const result = getTaskCreationPermission({
+      session: makeSession('member', true),
+      project: { restrict_task_creation: true },
+      orgConfig: {},
+    });
+
+    expect(result).toEqual({ canCreateTask: false, isRestricted: true });
+  });
+
+  it('allows project managers with member team role to create tasks when restrictions are enabled', () => {
+    const result = getTaskCreationPermission({
+      session: makeSession('member', true),
+      project: { restrict_task_creation: true, is_project_manager: true },
+      orgConfig: {},
+    });
+
+    expect(result).toEqual({ canCreateTask: true, isRestricted: true });
+  });
+
+  it('allows project managers via isProjectManager flag when project flag is absent', () => {
+    const result = getTaskCreationPermission({
+      session: makeSession('member', true),
+      project: { restrict_task_creation: true },
+      orgConfig: {},
+      isProjectManager: true,
+    });
+
+    expect(result).toEqual({ canCreateTask: true, isRestricted: true });
+  });
 });

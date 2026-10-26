@@ -35,6 +35,13 @@ export interface IProjectDocumentSummary {
   position: number;
   updated_at: string;
   updated_by_name: string | null;
+  project_name?: string | null;
+  project_color?: string | null;
+}
+
+export interface ITeamDocumentSummary extends IProjectDocumentSummary {
+  project_name: string;
+  project_color: string | null;
 }
 
 export type DocsTextSectionType = 'paragraph' | 'heading' | 'quote' | 'callout';
@@ -133,6 +140,13 @@ export interface IProjectDocumentSearchResult {
   title: string;
   snippet: string;
   updated_at: string;
+  project_id?: string;
+  project_name?: string | null;
+}
+
+export interface ITeamDocumentSearchResult extends IProjectDocumentSearchResult {
+  project_id: string;
+  project_name: string;
 }
 
 export interface IProjectDocumentBacklink {

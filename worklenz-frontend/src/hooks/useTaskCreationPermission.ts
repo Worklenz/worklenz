@@ -1,6 +1,9 @@
 import { useMemo } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
+import useIsProjectManager from '@/hooks/useIsProjectManager';
+import { ILocalSession } from '@/types/auth/local-session.types';
+import { ROLE_NAMES } from '@/types/roles/role.types';
 import { canUseFeature } from '@/utils/subscription-utils';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
 import { ROLE_NAMES } from '@/types/roles/role.types';
@@ -44,10 +47,12 @@ export const getTaskCreationPermission = ({
   session,
   project,
   orgConfig,
+  isProjectManager = false,
 }: {
   session: ILocalSession | null | undefined;
   project?: IProjectTaskCreationContext | null;
   orgConfig?: { restrict_task_creation?: boolean } | null;
+  isProjectManager?: boolean;
 }): ITaskCreationPermission => {
   // Scheme grants are the baseline; the project/org restriction can only narrow them
   const canEditBySchema = !isProjectTaskEditingReadOnly(project);
@@ -63,6 +68,7 @@ export const getTaskCreationPermission = ({
     roleName === ROLE_NAMES.OWNER ||
     roleName === ROLE_NAMES.ADMIN ||
     roleName === ROLE_NAMES.TEAM_LEAD;
+  const isPm = isProjectManager || Boolean(project?.is_project_manager);
 
   return {
     canCreateTask: canEditBySchema && isAllowedByRestriction,
@@ -80,11 +86,17 @@ const useTaskCreationPermission = (
   const session = auth.getCurrentSession();
   const reduxProject = useAppSelector(state => state.projectReducer.project);
   const orgConfig = useAppSelector(state => state.orgConfigReducer);
+  const isProjectManager = useIsProjectManager();
 
   return useMemo<ITaskCreationPermission>(() => {
     const project = projectOverride !== undefined ? projectOverride : reduxProject;
-    return getTaskCreationPermission({ session, project, orgConfig });
-  }, [session, reduxProject, orgConfig, projectOverride]);
+    return getTaskCreationPermission({
+      session,
+      project,
+      orgConfig,
+      isProjectManager,
+    });
+  }, [session, reduxProject, orgConfig, projectOverride, isProjectManager]);
 };
 
 export default useTaskCreationPermission;

@@ -171,14 +171,20 @@ export default class TasksController extends TasksControllerBase {
 
   private static notifyProjectUpdates(socketId: string, projectId: string, notifySender = true) {
     // Emit to the sender's socket directly
-    const socket = IO.getSocketById(socketId);
-    if (notifySender) {
-      socket?.emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+    const socket = socketId ? IO.getSocketById(socketId) : null;
+    if (socket) {
+      if (notifySender) {
+        socket.emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
     }
     // Also broadcast to others in the project room
     socket
       ?.to(projectId)
       .emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+    } else {
+      IO.getInstance()
+        ?.to(projectId)
+        .emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+    }
   }
 
   public static async uploadAttachment(
@@ -894,6 +900,12 @@ export default class TasksController extends TasksControllerBase {
 
     await insertToActivityLogs(activityLog);
 
+    TasksController.notifyProjectUpdates(
+      req.user?.socket_id as string,
+      taskDetails.project_id,
+      false,
+    );
+
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
@@ -1076,6 +1088,7 @@ export default class TasksController extends TasksControllerBase {
     TasksController.notifyProjectUpdates(
       req.user?.socket_id as string,
       req.query.project as string,
+      false,
     );
 
     return res
@@ -1185,6 +1198,7 @@ export default class TasksController extends TasksControllerBase {
     TasksController.notifyProjectUpdates(
       req.user?.socket_id as string,
       req.query.project as string,
+      false,
     );
     return res.status(200).send(new ServerResponse(true, { deleted_tasks: taskIds }));
   }

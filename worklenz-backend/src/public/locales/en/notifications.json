@@ -11,5 +11,11 @@
   "mentionedInComment": "<b>{{user}}</b> mentioned you in a comment on <b>{{task}}</b>",
   "mentionedInProjectComment": "<b>{{user}}</b> mentioned you in a comment on <b>{{project}}</b>",
   "mentionedInProjectDocument": "<b>{{user}}</b> mentioned you in a document on <b>{{project}}</b>",
-  "phaseTaskAssigned": "A task has been assigned to you in <b>{{phase}}</b>: <b>{{task}}</b>"
+  "phaseTaskAssigned": "A task has been assigned to you in <b>{{phase}}</b>: <b>{{task}}</b>",
+  "security": {
+    "invitationLimit": "This workspace has reached its invitation safety limit. Please try again later.",
+    "invitationsPaused": "Invitations are temporarily paused. Please contact your administrator.",
+    "blockedTaskHost": "This task contains a blocked link. Please remove it and try again.",
+    "blockedSignupDomain": "This email provider is not supported. Please use a different email address."
+  }
 }

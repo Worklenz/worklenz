@@ -252,7 +252,12 @@ const ClientWorkspacePage = () => {
         width="min(1440px, 96vw)"
         style={{ top: 24 }}
         styles={{
-          body: { maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', overflowX: 'hidden' },
+          body: {
+            maxHeight: 'calc(100vh - 160px)',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            marginInlineEnd: 32,
+          },
         }}
       >
         {body}

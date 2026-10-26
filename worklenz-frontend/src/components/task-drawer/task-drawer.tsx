@@ -135,6 +135,7 @@ const TaskDrawer = () => {
 
       if (
         selectedTaskId &&
+        selectedTaskId !== lastDeletedTaskId &&
         (
           taskFormViewModel?.task?.id !== selectedTaskId ||
           !taskFormViewModel?.task?.name

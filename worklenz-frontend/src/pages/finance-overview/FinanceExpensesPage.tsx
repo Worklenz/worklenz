@@ -45,6 +45,11 @@ const FinanceExpensesPage: React.FC = () => {
   // task's current running total, not a per-submission ledger — tasks.fixed_cost
   // has no history of individual additions.
   const [recentItems, setRecentItems] = useState<ITeamFixedCostItem[]>([]);
+
+  useTaskNameRealtimeSync({
+    items: recentItems,
+    setItems: setRecentItems,
+  });
   const [recentTotal, setRecentTotal] = useState(0);
   const [recentLoading, setRecentLoading] = useState(false);
   const [page, setPage] = useState(1);

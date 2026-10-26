@@ -52,6 +52,7 @@ import { useTaskDrawerStatuses } from '@/hooks/useTaskDrawerStatuses';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
 import logger from '@/utils/errorLogger';
 import homePageApi from '@/api/home-page/home-page.api.service';
+import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
 import CopyTaskToProjectModal from '@/components/task-list-v2/components/CopyTaskToProjectModal';
 import { duplicateTask } from '@/features/task-management/task-management.slice';
 import taskDuplicateApiService from '@/api/tasks/task-duplicate.api.service';
@@ -85,7 +86,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
 
   const statusesForDropdown = useTaskDrawerStatuses();
   const isSoftwareProject = useAppSelector(state =>
-    isSoftwareProjectType(state.projectReducer.project?.project_type)
+    isSoftwareProjectType(state.projectReducer?.project?.project_type)
   );
 
   const currentSession = useAuthService().getCurrentSession();
@@ -150,9 +151,6 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
 
       dispatch(setSelectedTaskId(null));
 
-      dispatch(deleteTask({ taskId: selectedTaskId }));
-      dispatch(deleteBoardTask({ sectionId: '', taskId: selectedTaskId }));
-
       if (taskFormViewModel?.task?.is_sub_task) {
         dispatch(
           updateEnhancedKanbanSubtask({
@@ -172,13 +170,11 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
 
       // Invalidate home page cache to refresh the task list
       dispatch(homePageApi.util.invalidateTags(['myTasks', 'taskCounts']));
+      dispatch(roadmapApi.util.invalidateTags(['RoadmapTasks', 'ProjectPhases']));
 
+      clearTaskFromUrl();
       dispatch(setShowTaskDrawer(false));
-
-      setTimeout(() => {
-        clearTaskFromUrl();
-        isDeleting.current = false;
-      }, 100);
+      isDeleting.current = false;
 
       if (taskFormViewModel?.task?.parent_task_id) {
         socket?.emit(
@@ -189,7 +185,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
     } else {
       isDeleting.current = false;
     }
-  };                 
+  };
 
   const renderPopup = () => {
     return (
@@ -220,9 +216,8 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
             placement="top"
           >
             <div
-              className={`task-drawer-dropdown-item task-drawer-dropdown-item--default ${
-                taskFormViewModel?.task?.is_sub_task ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={`task-drawer-dropdown-item task-drawer-dropdown-item--default ${taskFormViewModel?.task?.is_sub_task ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               onClick={() => {
                 if (!taskFormViewModel?.task?.is_sub_task) {
                   setDropdownOpen(false);
@@ -310,7 +305,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
 
     const prevTaskId =
       navigationContext.taskIds[
-        navigationContext.currentIndex - 1
+      navigationContext.currentIndex - 1
       ];
 
     if (prevTaskId && navigationContext.projectId) {
@@ -330,7 +325,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
 
     const nextTaskId =
       navigationContext.taskIds[
-        navigationContext.currentIndex + 1
+      navigationContext.currentIndex + 1
       ];
 
     if (nextTaskId && navigationContext.projectId) {
@@ -460,6 +455,11 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
                   <Button
                     size="small"
                     type="link"
+                    style={{
+                      color: '#1677ff',
+                      opacity: 1,
+                      visibility: 'visible',
+                    }}
                     onClick={() => navigate(`/worklenz/t/${copiedTaskId}`)}
                   >
                     {tDuplicate('copyToProject.openTask', { defaultValue: 'Open task' })}
