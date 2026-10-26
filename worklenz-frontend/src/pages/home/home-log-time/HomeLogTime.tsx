@@ -164,6 +164,7 @@ const HomeLogTime: React.FC = () => {
   const [tasks, setTasks] = useState<ITaskInProject[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [taskSearch, setTaskSearch] = useState('');
+  const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const quickEntryRef = useRef<HTMLDivElement>(null);
 
@@ -418,17 +419,20 @@ const HomeLogTime: React.FC = () => {
   ]);
 
   useEffect(() => {
+    let cancelled = false;
+    setTasks([]);
     if (!selProjectId) {
-      setTasks([]);
+      setTasksLoading(false);
       return;
     }
     setTasksLoading(true);
     taskTimeLogsApiService
       .getMyTasksInProject(selProjectId, taskSearch || undefined)
-      .then(res => { if (res.done) setTasks(res.body as ITaskInProject[]); })
-      .catch(() => setTasks([]))
-      .finally(() => setTasksLoading(false));
-  }, [selProjectId, taskSearch]);
+      .then(res => { if (!cancelled && res.done) setTasks(res.body as ITaskInProject[]); })
+      .catch(() => { if (!cancelled) setTasks([]); })
+      .finally(() => { if (!cancelled) setTasksLoading(false); });
+    return () => { cancelled = true; };
+  }, [selProjectId, taskSearch, tasksRefreshKey]);
 
   const projectOptions = projects.map((p: IProject) => ({
     value: p.id,
@@ -1225,14 +1229,14 @@ const HomeLogTime: React.FC = () => {
       <HomeAddTaskModal
         open={addTaskOpen}
         defaultDate={null}
-        onClose={() => {
-          setAddTaskOpen(false);
-          if (selProjectId) {
-            taskTimeLogsApiService.getMyTasksInProject(selProjectId, taskSearch || undefined)
-              .then(res => { if (res.done) setTasks(res.body as ITaskInProject[]); })
-              .catch(() => {});
-          }
+        defaultProjectId={selProjectId}
+        onTaskCreated={(task) => {
+          if (task.project_id) handleProjectChange(task.project_id);
+          if (task.id) setSelTaskId(task.id);
+          setTaskSearch('');
+          setTasksRefreshKey(value => value + 1);
         }}
+        onClose={() => setAddTaskOpen(false)}
       />
     </div>
   );

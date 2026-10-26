@@ -144,7 +144,7 @@ const AdvancedSettingsSection = ({
                 <Typography.Text>
                   {t('restrictTaskCreationBusinessPlanDescription', {
                     defaultValue:
-                      'Restricting task creation to Admins and Team Leads is available on Business and Enterprise plans.',
+                      'Restricting task creation to Admins, Team Leads, and Project Managers is available on Business and Enterprise plans.',
                   })}
                 </Typography.Text>
                 <Button
@@ -166,13 +166,14 @@ const AdvancedSettingsSection = ({
             <Space>
               <Typography.Text>
                 {t('restrictTaskCreation', {
-                  defaultValue: 'Restrict task assignment to Admins and Team Leads',
+                  defaultValue:
+                    'Restrict task assignment to Admins, Team Leads, and Project Managers',
                 })}
               </Typography.Text>
               <Tooltip
                 title={t('restrictTaskCreationTooltip', {
                   defaultValue:
-                    'When enabled, only Admins and Team Leads can create and assign tasks. Team Members can only view their assigned tasks.',
+                    'When enabled, only Admins, Team Leads, and Project Managers can create and assign tasks. Team Members can only view their assigned tasks.',
                 })}
               >
                 <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />
@@ -182,6 +183,30 @@ const AdvancedSettingsSection = ({
           valuePropName="checked"
         >
           <Switch disabled={disabled || !canRestrictTaskCreation} />
+        </Form.Item>
+
+        <Form.Item
+          name="members_can_view_client_team"
+          label={
+            <Space>
+              <Typography.Text>
+                {t('membersCanViewClientTeam', {
+                  defaultValue: "Allow members to view Client's team",
+                })}
+              </Typography.Text>
+              <Tooltip
+                title={t('membersCanViewClientTeamTooltip', {
+                  defaultValue:
+                    "When enabled, normal project members can see the Client's team tab on the Members page. Owners, Admins, Team Leads, and Project Managers always see it.",
+                })}
+              >
+                <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />
+              </Tooltip>
+            </Space>
+          }
+          valuePropName="checked"
+        >
+          <Switch disabled={disabled} />
         </Form.Item>
       </SettingsCard>
 

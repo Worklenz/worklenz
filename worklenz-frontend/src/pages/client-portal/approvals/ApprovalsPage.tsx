@@ -40,6 +40,7 @@ import {
 } from '@/components/client-portal/v2';
 import type { PortalField, PortalFilterGroup } from '@/components/client-portal/v2';
 import type { Approval, ApprovalStatus } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { portalPaths } from '../portal-paths';
 import { EditApprovalModal } from './EditApprovalModal';
 
@@ -102,7 +103,10 @@ const ApprovalsPage = () => {
     value: option.value,
     label: tShared(option.key, { defaultValue: option.defaultValue }),
   }));
-  const clientOptions = (organizations.data?.body?.items ?? []).map(item => ({ value: item.id, label: item.name }));
+  const clientOptions = (organizations.data?.body?.items ?? []).map(item => ({
+    value: item.id,
+    label: decodeHtmlEntities(item.name),
+  }));
 
   const filterGroups: PortalFilterGroup[] = [
     {
@@ -240,7 +244,9 @@ const ApprovalsPage = () => {
           help={t('list.columnHelp.approval', { defaultValue: 'What the client is asked to approve.' })}
         />
       ),
-      render: (_value, approval) => <span style={{ fontSize: 13, fontWeight: 600 }}>{approval.title}</span>,
+      render: (_value, approval) => (
+        <span style={{ fontSize: 13, fontWeight: 600 }}>{decodeHtmlEntities(approval.title)}</span>
+      ),
     },
     {
       key: 'client',
@@ -251,7 +257,9 @@ const ApprovalsPage = () => {
           help={t('list.columnHelp.client', { defaultValue: 'The client organization asked to approve.' })}
         />
       ),
-      render: (_value, approval) => <span style={{ fontSize: 12.5 }}>{approval.organization_name}</span>,
+      render: (_value, approval) => (
+        <span style={{ fontSize: 12.5 }}>{decodeHtmlEntities(approval.organization_name)}</span>
+      ),
     },
     {
       key: 'project',
@@ -275,7 +283,7 @@ const ApprovalsPage = () => {
       ),
       render: (_value, approval) => (
         <div style={{ fontSize: 12.5 }}>
-          {approval.linked_item.name}
+          {decodeHtmlEntities(approval.linked_item.name)}
           {approval.linked_item.file_version ? ` \u00b7 v${approval.linked_item.file_version}` : ''}
           {approval.revision > 1 && (
             <span style={{ marginLeft: 6 }}>

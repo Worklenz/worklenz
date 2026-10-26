@@ -643,11 +643,14 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     }
 
     if (response?.project_id) {
-      const socket = IO.getSocketById(req.user?.socket_id as string);
-      if (socket) {
-        socket.emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
-        socket.to(response.project_id).emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+      const event = SocketEvents.PROJECT_UPDATES_AVAILABLE.toString();
+      const senderSocketId = req.user?.socket_id as string | undefined;
+      if (senderSocketId) {
+        IO.getSocketById(senderSocketId)?.emit(event);
       }
+      IO.emitToProjectRoom(response.project_id, event, undefined, {
+        excludeSocketId: senderSocketId,
+      });
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));

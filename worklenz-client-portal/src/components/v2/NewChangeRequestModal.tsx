@@ -9,6 +9,7 @@ import { errorMessage } from '@/components/v2/queryErrors';
 import { RichTextField } from '@/components/v2/RichTextField';
 import { isRichTextEmpty } from '@/components/v2/richTextUtils';
 import type { ChangeRequestPriority } from '@/types/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024;
@@ -128,7 +129,7 @@ export const NewChangeRequestModal = ({ open, onClose }: { open: boolean; onClos
             setProjectId(value);
             setAttachments([]);
           }}
-          options={(projects ?? []).map(project => ({ value: project.id, label: project.name }))}
+          options={(projects ?? []).map(project => ({ value: project.id, label: decodeHtmlEntities(project.name) }))}
         />
       </FormRow>
       <FormRow label={t('changeRequests.titleField', { defaultValue: 'Title' })} required>

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Flex, theme } from '@/shared/antd-imports';
 import { OrganizationAccessTag, PortalAvatar } from '@/components/client-portal/v2';
 import type { ClientOrganization } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface WorkspaceHeaderProps {
   organization: ClientOrganization;
@@ -15,9 +16,9 @@ export const WorkspaceHeader = ({ organization }: WorkspaceHeaderProps) => {
 
   return (
     <Flex align="center" gap={14} style={{ marginBottom: 20 }}>
-      <PortalAvatar name={organization.name} color={organization.color} size={44} />
+      <PortalAvatar name={decodeHtmlEntities(organization.name)} color={organization.color} size={44} />
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: 17 }}>{organization.name}</div>
+        <div style={{ fontWeight: 700, fontSize: 17 }}>{decodeHtmlEntities(organization.name)}</div>
         <Flex align="center" gap={8} wrap="wrap" style={{ fontSize: 12, color: token.colorTextSecondary }}>
           <OrganizationAccessTag access={organization.portal_access} />
           <span>
