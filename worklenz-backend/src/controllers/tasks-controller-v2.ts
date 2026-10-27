@@ -28,6 +28,9 @@ import TasksControllerBase, {
   UNASSIGNED_GROUP_ID,
 } from "./tasks-controller-base";
 
+/** Internal map key for the synthetic Backlog group; avoids colliding with a phase named "Unmapped". */
+const SYNTHETIC_UNMAPPED_GROUP_KEY = "__worklenz_unmapped__";
+
 const normalizePeopleCustomColumnValue = (value: unknown): string[] => {
   if (Array.isArray(value)) {
     return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
@@ -1125,11 +1128,19 @@ export default class TasksControllerV2 extends TasksControllerBase {
         `;
         break;
       case GroupBy.PHASE:
+        // Active sprint first, then planned, then completed; sort_index breaks ties.
         q = `
-          SELECT id, name, color_code, color_code AS color_code_dark, start_date, end_date, sort_index
+          SELECT id, name, color_code, color_code AS color_code_dark, start_date, end_date, sort_index, sprint_status
           FROM project_phases
           WHERE project_id = $1
-          ORDER BY sort_index DESC;
+          ORDER BY
+            CASE COALESCE(sprint_status, 'planned')
+              WHEN 'active' THEN 0
+              WHEN 'planned' THEN 1
+              WHEN 'completed' THEN 2
+              ELSE 3
+            END,
+            sort_index DESC;
         `;
         params = [projectId];
         break;
@@ -1245,7 +1256,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
       }
     }
 
-    if (unmapped.length) {
+    // Always keep Backlog (Unmapped) when grouping by phase, even if empty.
+    if (groupBy === GroupBy.PHASE || unmapped.length) {
       map[UNMAPPED] = {
         name: UNMAPPED,
         category_id: null,
@@ -2446,8 +2458,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
       });
     }
 
-    // Create unmapped group if there are tasks without proper phase assignment
-    if (unmappedTasks.length > 0 && groupBy === GroupBy.PHASE) {
+    // Always include the Backlog (Unmapped) section when grouping by phase,
+    // even when it has no issues — Create sprint must not remove it.
+    // Stored under a reserved key so a real phase named "Unmapped" is not overwritten.
+    if (groupBy === GroupBy.PHASE) {
       const unmappedGroup = {
         id: UNMAPPED,
         title: UNMAPPED,
@@ -2466,7 +2480,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
         done_progress: 0,
       };
 
-      // Calculate progress stats for unmapped group
       if (unmappedTasks.length > 0) {
         const todoCount = unmappedTasks.filter((task: any) => {
           const originalTask = tasks.find((t) => t.id === task.id);
@@ -2493,7 +2506,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
           total > 0 ? +((doneCount / total) * 100).toFixed(0) : 0;
       }
 
-      groupedResponse[UNMAPPED.toLowerCase()] = unmappedGroup;
+      groupedResponse[SYNTHETIC_UNMAPPED_GROUP_KEY] = unmappedGroup;
     }
 
     // Sort tasks within each group by order
@@ -2535,10 +2548,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
         }
       );
 
-    // Add unmapped group when not filtered out (or when Unmapped is explicitly selected)
-    if (groupedResponse[UNMAPPED.toLowerCase()] && includeUnmappedGroup) {
+    // Add synthetic Backlog group when not filtered out (or when Unmapped is explicitly selected)
+    if (groupedResponse[SYNTHETIC_UNMAPPED_GROUP_KEY] && includeUnmappedGroup) {
       if (groupBy === GroupBy.PHASE) {
-        responseGroups.push(groupedResponse[UNMAPPED.toLowerCase()]);
+        responseGroups.push(groupedResponse[SYNTHETIC_UNMAPPED_GROUP_KEY]);
       }
     }
 

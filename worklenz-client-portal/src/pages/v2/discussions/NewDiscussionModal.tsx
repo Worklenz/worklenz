@@ -12,6 +12,7 @@ import {
 import { errorMessage } from '@/components/v2';
 import { RichTextEditor, type RichTextChange } from '@/components/v2/RichTextEditor';
 import type { ClientProjectV2, ThreadContextType } from '@/types/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { AttachButton, AttachmentChips } from './AttachmentPicker';
 import { useMessageAttachments } from './useMessageAttachments';
 
@@ -81,17 +82,17 @@ export const NewDiscussionModal = ({ open, project, uploadBlockedReason, onClose
       { value: GENERAL, label: t('discussions.aboutProject', { defaultValue: 'The project in general' }) },
       ...(tasks ?? []).map(task => ({
         value: `task:${task.id}`,
-        label: t('discussions.aboutTask', { title: task.title, defaultValue: 'Task: {{title}}' }),
+        label: t('discussions.aboutTask', { title: decodeHtmlEntities(task.title), defaultValue: 'Task: {{title}}' }),
       })),
       ...(files ?? []).map(file => ({
         value: `file:${file.id}`,
-        label: t('discussions.aboutFile', { name: file.name, defaultValue: 'File: {{name}}' }),
+        label: t('discussions.aboutFile', { name: decodeHtmlEntities(file.name), defaultValue: 'File: {{name}}' }),
       })),
       ...(approvals ?? [])
         .filter(approval => approval.project_id === effectiveProjectId)
         .map(approval => ({
           value: `approval:${approval.id}`,
-          label: t('discussions.aboutApproval', { name: `${approval.ref_no} · ${approval.title}`, defaultValue: 'Approval: {{name}}' }),
+          label: t('discussions.aboutApproval', { name: `${approval.ref_no} · ${decodeHtmlEntities(approval.title)}`, defaultValue: 'Approval: {{name}}' }),
         })),
     ],
     [tasks, files, approvals, effectiveProjectId, t]
@@ -156,7 +157,7 @@ export const NewDiscussionModal = ({ open, project, uploadBlockedReason, onClose
                 setContext(GENERAL);
               }}
               placeholder={t('discussions.projectPlaceholder', { defaultValue: 'Choose a project…' })}
-              options={(projects ?? []).map(item => ({ value: item.id, label: item.name }))}
+              options={(projects ?? []).map(item => ({ value: item.id, label: decodeHtmlEntities(item.name) }))}
             />
           </Form.Item>
         )}

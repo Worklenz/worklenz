@@ -9,6 +9,7 @@
   "backlogNoActiveSprint": "Pas de sprint actif",
   "backlogNoSprintsHint": "Pas encore de sprints : créez votre premier sprint pour commencer la planification.",
   "createSprint": "Créer un sprint",
+  "sprintSetupRequiredHint": "Créez un sprint pour déverrouiller le backlog et commencer à ajouter des issues.",
   "cancel": "Cancel",
   "save": "Enregistrer",
   "pointScaleButton": "Échelle de points",

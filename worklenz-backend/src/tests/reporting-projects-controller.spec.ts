@@ -94,7 +94,7 @@ describe("ReportingProjectsController", () => {
       ["last_activity", "last_activity_at"],
       ["days_left", "days_left"],
       ["project_manager_name", "project_manager_name"],
-      ["priority_name", "priority_name"],
+
       ["health_name", "health_name"],
       ["category_name", "category_name"],
       ["client", "client"],
@@ -136,6 +136,26 @@ describe("ReportingProjectsController", () => {
       expect(query[0]).toContain("WHEN 'proposed' THEN 1");
       expect(query[0]).toContain("LOWER(p.name) ASC, p.id");
       expect(query[0]).toContain("ORDER BY CASE LOWER(t.status_name)");
+    });
+
+    it("preserves priority level ordering and stable pagination", async () => {
+      const req = createMockRequest({
+        query: { field: "priority_name", order: "ascend", index: "1", size: "10" },
+        user: { id: "u-1", team_id: "t-1", name: "Test", email: "test@example.com", owner: true }
+      });
+      const res = createMockResponse();
+      await ReportingProjectsController.get(req, res);
+
+      const query = (db.query as jest.Mock).mock.calls.find(
+        ([sql]: [string]) => sql.includes("AS projects") && sql.includes("LIMIT $2 OFFSET $3")
+      );
+      expect(query[0]).toContain("ORDER BY CASE LOWER(pr.name)");
+      expect(query[0]).toContain("WHEN 'critical' THEN 1");
+      expect(query[0]).toContain("WHEN 'high' THEN 2");
+      expect(query[0]).toContain("WHEN 'medium' THEN 3");
+      expect(query[0]).toContain("WHEN 'low' THEN 4");
+      expect(query[0]).toContain("LOWER(p.name) ASC, p.id");
+      expect(query[0]).toContain("ORDER BY CASE LOWER(t.priority_name)");
     });
 
     it("should query projects with pagination and format metrics", async () => {

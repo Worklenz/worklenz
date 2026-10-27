@@ -9,6 +9,7 @@
   "backlogNoActiveSprint": "没有主动冲刺",
   "backlogNoSprintsHint": "还没有冲刺 - 创建您的第一个冲刺以开始计划。",
   "createSprint": "创建冲刺",
+  "sprintSetupRequiredHint": "创建冲刺以解锁待办事项并开始添加工作项。",
   "cancel": "Cancel",
   "save": "保存",
   "pointScaleButton": "点尺度",

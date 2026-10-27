@@ -1,9 +1,24 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import debounce from 'lodash-es/debounce';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAppDispatch } from './useAppDispatch';
 import { scheduleApi } from '@/api/schedule/scheduleApi';
 import logger from '@/utils/errorLogger';
+
+type ScheduleTag =
+  | 'Settings'
+  | 'DateList'
+  | 'Members'
+  | 'MemberProjects'
+  | 'Workload'
+  | 'Allocation'
+  | 'CapacityReport'
+  | 'Conflicts'
+  | 'TaskTimeline'
+  | 'TimeOff'
+  | 'Capacity'
+  | 'ProjectsTimeline';
 
 /**
  * Custom hook to handle real-time socket events for schedule updates
@@ -12,9 +27,26 @@ import logger from '@/utils/errorLogger';
 export const useScheduleSocketHandlers = () => {
   const { socket, connected } = useSocket();
   const dispatch = useAppDispatch();
+  const pendingTags = useRef<Set<ScheduleTag>>(new Set());
+  const flush = useRef<ReturnType<typeof debounce> | null>(null);
 
   useEffect(() => {
+    if (!flush.current) {
+      flush.current = debounce(() => {
+        if (pendingTags.current.size > 0) {
+          const tags = Array.from(pendingTags.current);
+          pendingTags.current.clear();
+          dispatch(scheduleApi.util.invalidateTags(tags));
+        }
+      }, 200);
+    }
+
     if (!socket || !connected) return;
+
+    const queueInvalidate = (tags: ScheduleTag[]) => {
+      tags.forEach(t => pendingTags.current.add(t));
+      flush.current?.();
+    };
 
     // Handler for billable status changes
     const handleBillableChange = (data: { id: string; error?: string; billable?: boolean }) => {
@@ -28,51 +60,32 @@ export const useScheduleSocketHandlers = () => {
         billable: data.billable,
       });
 
-      // Invalidate schedule-related cache tags to trigger refetch
-      dispatch(
-        scheduleApi.util.invalidateTags([
-          'Members', // Invalidate member summary data
-          'TaskTimeline', // Invalidate task timeline data
-          'MemberProjects', // Invalidate member projects data
-          'Workload', // Invalidate workload data
-        ])
-      );
+      queueInvalidate(['Members', 'TaskTimeline', 'MemberProjects', 'Workload']);
     };
 
     // Handler for time estimation changes
     const handleTimeEstimationChange = (data: { id: string }) => {
       logger.info('Task time estimation changed, refreshing schedule data', { taskId: data.id });
-
-      dispatch(
-        scheduleApi.util.invalidateTags(['Members', 'TaskTimeline', 'MemberProjects', 'Workload'])
-      );
+      queueInvalidate(['Members', 'TaskTimeline', 'MemberProjects', 'Workload']);
     };
 
-    // Handler for task assignee changes
-    const handleAssigneesChange = (data: { task_id: string }) => {
-      logger.info('Task assignees changed, refreshing schedule data', { taskId: data.task_id });
-
-      dispatch(
-        scheduleApi.util.invalidateTags(['Members', 'TaskTimeline', 'MemberProjects', 'Workload'])
-      );
+    // Handler for task assignee changes (supports both TASK_ASSIGNEES_CHANGE and QUICK_ASSIGNEES_UPDATE)
+    const handleAssigneesChange = (data?: { task_id?: string; id?: string }) => {
+      const taskId = data?.task_id || data?.id;
+      logger.info('Task assignees changed, refreshing schedule data', { taskId });
+      queueInvalidate(['Members', 'TaskTimeline', 'MemberProjects', 'Workload']);
     };
 
     // Handler for task date changes
     const handleTaskDateChange = (data: { id: string }) => {
       logger.info('Task dates changed, refreshing schedule data', { taskId: data.id });
-
-      dispatch(
-        scheduleApi.util.invalidateTags(['Members', 'TaskTimeline', 'MemberProjects', 'Workload'])
-      );
+      queueInvalidate(['Members', 'TaskTimeline', 'MemberProjects', 'Workload']);
     };
 
     // Handler for task status changes
     const handleTaskStatusChange = (data: { id: string }) => {
       logger.info('Task status changed, refreshing schedule data', { taskId: data.id });
-
-      dispatch(
-        scheduleApi.util.invalidateTags(['Members', 'TaskTimeline', 'MemberProjects', 'Workload'])
-      );
+      queueInvalidate(['Members', 'TaskTimeline', 'MemberProjects', 'Workload']);
     };
 
     // Generic "something changed in this project" signal, broadcast to every other
@@ -81,95 +94,75 @@ export const useScheduleSocketHandlers = () => {
     // TASK_STATUS_CHANGE above is only echoed back to the socket that triggered it.
     const handleProjectUpdatesAvailable = () => {
       logger.info('Project updates available, refreshing schedule data');
-
-      dispatch(
-        scheduleApi.util.invalidateTags([
-          'Members',
-          'TaskTimeline',
-          'MemberProjects',
-          'Workload',
-          'ProjectsTimeline',
-        ])
-      );
+      queueInvalidate([
+        'Members',
+        'TaskTimeline',
+        'MemberProjects',
+        'Workload',
+        'ProjectsTimeline',
+      ]);
     };
 
     // Handler for task time log updates
     const handleTimeLogUpdate = (data: { task_id: string }) => {
       logger.info('Task time log updated, refreshing schedule data', { taskId: data.task_id });
-
-      dispatch(
-        scheduleApi.util.invalidateTags([
-          'Members', // Member summary includes logged hours
-          'Workload',
-          'TaskTimeline', // Task list includes logged time (total_minutes_spent)
-        ])
-      );
+      queueInvalidate(['Members', 'Workload', 'TaskTimeline']);
     };
 
     // Handler for new task/subtask creation
     const handleNewTaskReceived = (data: any) => {
       if (!data) return;
       logger.info('New task created, refreshing schedule data', { taskId: data.id });
-
-      dispatch(
-        scheduleApi.util.invalidateTags(['Members', 'TaskTimeline', 'MemberProjects', 'Workload'])
-      );
+      queueInvalidate(['Members', 'TaskTimeline', 'MemberProjects', 'Workload']);
     };
 
     // Handler for task priority changes
     const handleTaskPriorityChange = (data: any) => {
       if (!data) return;
       logger.info('Task priority changed, refreshing schedule data', { taskId: data.id });
-
-      dispatch(scheduleApi.util.invalidateTags(['TaskTimeline', 'MemberProjects']));
+      queueInvalidate(['TaskTimeline', 'MemberProjects']);
     };
 
     // Handler for task phase changes
     const handleTaskPhaseChange = (data: any) => {
       if (!data) return;
       logger.info('Task phase changed, refreshing schedule data', { taskId: data.id });
-
-      dispatch(scheduleApi.util.invalidateTags(['TaskTimeline', 'MemberProjects']));
+      queueInvalidate(['TaskTimeline', 'MemberProjects']);
     };
 
     // Handler for task progress updates
     const handleTaskProgressUpdate = (data: { task_id?: string }) => {
       if (!data) return;
       logger.info('Task progress updated, refreshing schedule data', { taskId: data.task_id });
-
-      dispatch(scheduleApi.util.invalidateTags(['TaskTimeline', 'MemberProjects', 'Workload']));
+      queueInvalidate(['TaskTimeline', 'MemberProjects', 'Workload']);
     };
 
     // Handler for task recurring settings changes
     const handleTaskRecurringChange = (data: any) => {
       if (!data) return;
       logger.info('Task recurring settings changed, refreshing schedule data', { taskId: data.id });
-
-      dispatch(scheduleApi.util.invalidateTags(['TaskTimeline', 'MemberProjects', 'Workload']));
+      queueInvalidate(['TaskTimeline', 'MemberProjects', 'Workload']);
     };
 
     // Handler for task timer start
     const handleTaskTimerStart = (data: any) => {
       if (!data) return;
       logger.info('Task timer started, refreshing schedule data', { taskId: data.id });
-
-      dispatch(scheduleApi.util.invalidateTags(['Members']));
+      queueInvalidate(['Members']);
     };
 
     // Handler for task timer stop (creates a new time log entry)
     const handleTaskTimerStop = (data: any) => {
       if (!data) return;
       logger.info('Task timer stopped, refreshing schedule data', { taskId: data.id });
-
-      dispatch(
-        scheduleApi.util.invalidateTags(['Members', 'MemberProjects', 'TaskTimeline', 'Workload'])
-      );
+      queueInvalidate(['Members', 'MemberProjects', 'TaskTimeline', 'Workload']);
     };
 
     // Register socket event listeners
     socket.on(SocketEvents.TASK_BILLABLE_CHANGE.toString(), handleBillableChange);
     socket.on(SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString(), handleTimeEstimationChange);
     socket.on(SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), handleAssigneesChange);
+    socket.on(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), handleAssigneesChange);
     socket.on(SocketEvents.TASK_START_DATE_CHANGE.toString(), handleTaskDateChange);
     socket.on(SocketEvents.TASK_END_DATE_CHANGE.toString(), handleTaskDateChange);
     socket.on(SocketEvents.TASK_STATUS_CHANGE.toString(), handleTaskStatusChange);
@@ -188,6 +181,7 @@ export const useScheduleSocketHandlers = () => {
       socket.off(SocketEvents.TASK_BILLABLE_CHANGE.toString(), handleBillableChange);
       socket.off(SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString(), handleTimeEstimationChange);
       socket.off(SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), handleAssigneesChange);
+      socket.off(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), handleAssigneesChange);
       socket.off(SocketEvents.TASK_START_DATE_CHANGE.toString(), handleTaskDateChange);
       socket.off(SocketEvents.TASK_END_DATE_CHANGE.toString(), handleTaskDateChange);
       socket.off(SocketEvents.TASK_STATUS_CHANGE.toString(), handleTaskStatusChange);
@@ -200,6 +194,9 @@ export const useScheduleSocketHandlers = () => {
       socket.off(SocketEvents.TASK_RECURRING_CHANGE.toString(), handleTaskRecurringChange);
       socket.off(SocketEvents.TASK_TIMER_START.toString(), handleTaskTimerStart);
       socket.off(SocketEvents.TASK_TIMER_STOP.toString(), handleTaskTimerStop);
+
+      flush.current?.cancel();
+      pendingTags.current.clear();
     };
   }, [socket, connected, dispatch]);
 };

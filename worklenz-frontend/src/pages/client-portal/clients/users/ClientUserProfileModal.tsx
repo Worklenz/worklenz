@@ -53,7 +53,7 @@ export const ClientUserProfileModal = ({ user, onClose }: ClientUserProfileModal
           <div style={{ fontWeight: 700, fontSize: 16 }}>{user.name}</div>
           <div style={{ fontSize: 12.5, color: token.colorTextSecondary, marginTop: 2 }}>
             {user.job_title || t('profile.noJobTitle', { defaultValue: 'No job title on file' })} ·{' '}
-            {user.organization_name}
+            {decodeHtmlEntities(user.organization_name)}
           </div>
           <Flex gap={6} wrap style={{ marginTop: 6 }}>
             <RoleTag role={user.role} />

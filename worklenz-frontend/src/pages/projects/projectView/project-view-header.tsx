@@ -279,7 +279,16 @@ const ProjectViewHeader = memo(() => {
       logger.error('Error creating task', error);
       setCreatingTask(false);
     }
-  }, [isSoftwareProject, selectedProject?.id, currentSession, socket, dispatch, groupBy, tab, t]);
+  }, [
+    isSoftwareProject,
+    selectedProject?.id,
+    currentSession,
+    socket,
+    dispatch,
+    groupBy,
+    tab,
+    t,
+  ]);
 
   const handleImportTaskTemplate = useCallback(() => {
     if (isFreeUser(currentSession)) {

@@ -97,6 +97,8 @@
   "restrictTaskCreationBusinessPlanDescription": "将任务创建限制为管理员和团队负责人在商业和企业计划中可用。",
   "restrictTaskCreation": "将任务分配限制为管理员和团队负责人",
   "restrictTaskCreationTooltip": "启用后，只有管理员和团队负责人可以创建和分配任务。",
+  "membersCanViewClientTeam": "允许成员查看客户团队",
+  "membersCanViewClientTeamTooltip": "启用后，普通项目成员可在成员页面看到客户团队标签。所有者、管理员、团队负责人和项目经理始终可见。",
   "phaseAssigneesSettings": "阶段负责人",
   "phaseAssigneesSettingsDescription": "启用后，管道中的每个阶段可以有一个专属负责人。任务只能由其阶段负责人推进（管理员始终可以覆盖）。",
   "phaseAssigneesEnabled": "启用阶段负责人",
