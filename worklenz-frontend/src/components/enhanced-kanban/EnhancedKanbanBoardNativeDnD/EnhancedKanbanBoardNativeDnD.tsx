@@ -92,6 +92,18 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
   const { project } = useAppSelector(state => state.projectReducer);
   const kanbanPhases = useSelector((state: RootState) => state.enhancedKanbanReducer.phases);
   const activeSprintFilterAppliedRef = useRef(false);
+  const statusReorderVersionRef = useRef(0);
+  const statusReorderQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const statusReorderProjectIdRef = useRef(projectId);
+  const currentProjectIdRef = useRef(projectId);
+  currentProjectIdRef.current = projectId;
+
+  useEffect(() => {
+    if (statusReorderProjectIdRef.current === projectId) return;
+    statusReorderProjectIdRef.current = projectId;
+    statusReorderVersionRef.current++;
+    statusReorderQueueRef.current = Promise.resolve();
+  }, [projectId]);
 
   useEffect(() => {
     if (projectId && loadedProjectId !== projectId) {
@@ -99,6 +111,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
       dispatch(fetchEnhancedKanbanTaskAssignees(projectId) as any);
       dispatch(fetchEnhancedKanbanLabels(projectId) as any);
       activeSprintFilterAppliedRef.current = false;
+      statusReorderQueueRef.current = Promise.resolve();
     }
     if (!statusCategories.length) {
       dispatch(fetchStatusesCategories() as any);
@@ -247,22 +260,45 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
       );
       dragStateRef.current = initialDragState;
 
-      try {
-        if (groupBy === 'status') {
-          const response = await statusApiService.updateStatusOrder(
-            { status_order: reorderedGroups.map(g => g.id) },
-            projectId
-          );
-          if (!response.done) {
-            const revertedGroups = [...reorderedGroups];
-            const [movedBack] = revertedGroups.splice(toIdx, 1);
-            revertedGroups.splice(fromIdx, 0, movedBack);
-            dispatch(
-              reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups })
-            );
-            alertService.error(t('failedToUpdateColumnOrder'), t('pleaseTryAgain'));
-          }
-        } else if (groupBy === 'phase') {
+      if (groupBy === 'status') {
+        const reorderVersion = ++statusReorderVersionRef.current;
+        const statusOrder = reorderedGroups.map(g => g.id);
+
+        statusReorderQueueRef.current = statusReorderQueueRef.current
+          .catch(() => {
+            // Ensure a prior failed request does not prevent later queued orders from being sent
+          })
+          .then(async () => {
+            try {
+              const response = await statusApiService.updateStatusOrder(
+                { status_order: statusOrder },
+                projectId
+              );
+              if (!response.done) {
+                if (
+                  statusReorderVersionRef.current === reorderVersion &&
+                  statusReorderProjectIdRef.current === projectId &&
+                  currentProjectIdRef.current === projectId
+                ) {
+                  dispatch(fetchEnhancedKanbanGroups(projectId) as any);
+                  alertService.error(t('failedToUpdateColumnOrder'), t('pleaseTryAgain'));
+                }
+              }
+            } catch (err) {
+              logger.error('Failed to update column order', err);
+              if (
+                statusReorderVersionRef.current === reorderVersion &&
+                statusReorderProjectIdRef.current === projectId &&
+                currentProjectIdRef.current === projectId
+              ) {
+                dispatch(fetchEnhancedKanbanGroups(projectId) as any);
+              }
+            }
+          });
+
+        await statusReorderQueueRef.current;
+      } else if (groupBy === 'phase') {
+        try {
           const newPhaseList = [...phaseList];
           const [movedItem] = newPhaseList.splice(fromIdx, 1);
           newPhaseList.splice(toIdx, 0, movedItem);
@@ -276,9 +312,9 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: bool
           // Refresh task list and groups so Task List reflects new phase ordering immediately
           dispatch(fetchTasksV3(projectId) as any);
           dispatch(fetchTaskGroups(projectId) as any);
+        } catch (err) {
+          logger.error('Failed to update column order', err);
         }
-      } catch (err) {
-        logger.error('Failed to update column order', err);
       }
     },
     [taskGroups, groupBy, phaseList, projectId, dispatch, t]
