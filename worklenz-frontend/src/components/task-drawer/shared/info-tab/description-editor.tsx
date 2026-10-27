@@ -7,6 +7,7 @@ import { SocketEvents } from '@/shared/socket-events';
 import { Button, message } from '@/shared/antd-imports';
 import logger from '@/utils/errorLogger';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
+import { createMentionEnterBinding } from './description-editor-keyboard';
 import 'react-quill-new/dist/quill.snow.css';
 import './description-editor.css';
 
@@ -183,10 +184,11 @@ const DescriptionEditor = ({
   const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
   const mentionMembersCacheRef = useRef<{ projectId: string; members: MentionMember[] } | null>(null);
   const mentionQueryRef = useRef(mentionQuery);
-
-  useEffect(() => {
-    mentionQueryRef.current = mentionQuery;
-  }, [mentionQuery]);
+  const filteredMentionMembersRef = useRef<MentionMember[]>([]);
+  const selectedMentionIndexRef = useRef(selectedMentionIndex);
+  const insertMentionRef = useRef<(member: MentionMember) => void>(() => undefined);
+  mentionQueryRef.current = mentionQuery;
+  selectedMentionIndexRef.current = selectedMentionIndex;
 
   useEffect(() => {
     if (!isEditorOpen || !projectId) {
@@ -345,6 +347,15 @@ const DescriptionEditor = ({
       ],
       clipboard: {
         matchVisual: false,
+      },
+      keyboard: {
+        bindings: {
+          mentionEnter: createMentionEnterBinding(
+            () => Boolean(mentionQueryRef.current),
+            () => filteredMentionMembersRef.current[selectedMentionIndexRef.current],
+            member => insertMentionRef.current(member)
+          ),
+        },
       },
     }),
     []
@@ -614,6 +625,7 @@ const DescriptionEditor = ({
       .filter(member => member.name.toLocaleLowerCase().includes(query))
       .slice(0, 8);
   }, [mentionMembers, mentionQuery]);
+  filteredMentionMembersRef.current = filteredMentionMembers;
   const shouldShowMentionSuggestions =
     mentionQuery &&
     (isLoadingMentionMembers ||
@@ -679,6 +691,7 @@ const DescriptionEditor = ({
     },
     [mentionQuery]
   );
+  insertMentionRef.current = insertMention;
 
   const handleEditorKeyDown: React.KeyboardEventHandler<HTMLDivElement> = event => {
     if (!mentionQuery) return;
@@ -691,13 +704,6 @@ const DescriptionEditor = ({
       setSelectedMentionIndex(
         index => (index - 1 + filteredMentionMembers.length) % filteredMentionMembers.length
       );
-    } else if (
-      event.key === 'Enter' &&
-      !event.nativeEvent.isComposing &&
-      filteredMentionMembers[selectedMentionIndex]
-    ) {
-      event.preventDefault();
-      insertMention(filteredMentionMembers[selectedMentionIndex]);
     } else if (event.key === 'Escape') {
       event.preventDefault();
       setMentionQuery(null);
