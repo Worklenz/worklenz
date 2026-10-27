@@ -6,6 +6,7 @@
     "approverPlaceholder": "Select an approver…",
     "drafted": "{{ref}} u ruajt si draft. Klienti nuk mund ta shohë ende.",
     "dueDate": "Data e skadimit (opsionale)",
+    "dueDatePlaceholder": "Select due date",
     "existingHint": "Mund të lidhen vetëm skedarët, momentet dhe detyrat e dukshme nga klienti. Versioni i saktë i skedarit është regjistruar.",
     "existingItem": "Artikulli ekzistues",
     "failed": "Kërkesa për miratim nuk mund të ruhej.",

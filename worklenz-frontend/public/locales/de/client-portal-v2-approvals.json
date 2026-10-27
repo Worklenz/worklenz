@@ -6,6 +6,7 @@
     "approverPlaceholder": "Select an approver…",
     "drafted": "{{ref}} als Entwurf gespeichert. Der Kunde kann es noch nicht sehen.",
     "dueDate": "Fälligkeitsdatum (optional)",
+    "dueDatePlaceholder": "Select due date",
     "existingHint": "Es können nur für den Kunden sichtbare Dateien, Meilensteine und Aufgaben verknüpft werden. Die genaue Dateiversion wird aufgezeichnet.",
     "existingItem": "Vorhandener Artikel",
     "failed": "Die Genehmigungsanfrage konnte nicht gespeichert werden.",

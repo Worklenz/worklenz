@@ -6,6 +6,7 @@
     "approverPlaceholder": "Select an approver…",
     "drafted": "{{ref}} guardado como borrador. El cliente aún no puede verlo.",
     "dueDate": "Fecha de vencimiento (opcional)",
+    "dueDatePlaceholder": "Select due date",
     "existingHint": "Solo se pueden vincular archivos, hitos y tareas visibles para el cliente. Se registra la versión exacta del archivo.",
     "existingItem": "Artículo existente",
     "failed": "No se pudo guardar la solicitud de aprobación.",
