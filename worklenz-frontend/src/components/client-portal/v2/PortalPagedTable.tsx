@@ -160,6 +160,11 @@ export const PortalPagedTable = <T extends object>({
       </PortalLoadingOverlay>
       {total > 0 && (
         <TablePagination
+          navigationLabel={t('common:paginationNavigation')}
+          firstPageLabel={t('common:firstPage')}
+          previousPageLabel={t('common:previousPage')}
+          nextPageLabel={t('common:nextPage')}
+          lastPageLabel={t('common:lastPage')}
           page={paging.page}
           pageSize={paging.limit}
           total={total}

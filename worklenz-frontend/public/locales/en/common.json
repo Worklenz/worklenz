@@ -135,5 +135,10 @@
   "refreshingData": "Refreshing data...",
   "loadingData": "Loading data...",
   "noDataAvailable": "No data available",
-  "licennse-expired-contacting-support": "Contacting support..."
+  "licennse-expired-contacting-support": "Contacting support...",
+  "paginationNavigation": "Pagination",
+  "firstPage": "First page",
+  "previousPage": "Previous page",
+  "nextPage": "Next page",
+  "lastPage": "Last page"
 }

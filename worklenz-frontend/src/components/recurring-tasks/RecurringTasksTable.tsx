@@ -466,6 +466,11 @@ export const RecurringTasksTable: React.FC<RecurringTasksTableProps> = ({
         }}
       />
       <TablePagination
+        navigationLabel={t('common:paginationNavigation')}
+        firstPageLabel={t('common:firstPage')}
+        previousPageLabel={t('common:previousPage')}
+        nextPageLabel={t('common:nextPage')}
+        lastPageLabel={t('common:lastPage')}
         page={page}
         pageSize={pageSize}
         total={total}

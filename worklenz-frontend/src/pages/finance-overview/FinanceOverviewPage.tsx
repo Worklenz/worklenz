@@ -534,6 +534,11 @@ const FinanceOverviewPage = () => {
                             scroll={{ x: 900 }}
                         />
                         <TablePagination
+                            navigationLabel={t('common:paginationNavigation')}
+                            firstPageLabel={t('common:firstPage')}
+                            previousPageLabel={t('common:previousPage')}
+                            nextPageLabel={t('common:nextPage')}
+                            lastPageLabel={t('common:lastPage')}
                             page={page}
                             pageSize={pageSize}
                             total={filteredProjects.length}

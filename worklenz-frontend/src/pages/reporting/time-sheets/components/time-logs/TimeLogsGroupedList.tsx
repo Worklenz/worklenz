@@ -355,6 +355,11 @@ export const TimeLogsGroupedList: React.FC<TimeLogsGroupedListProps> = ({
 
       <div style={{ flexShrink: 0 }}>
         <TablePagination
+          navigationLabel={t('common:paginationNavigation')}
+          firstPageLabel={t('common:firstPage')}
+          previousPageLabel={t('common:previousPage')}
+          nextPageLabel={t('common:nextPage')}
+          lastPageLabel={t('common:lastPage')}
           variant="dropdown"
           page={page}
           pageSize={pageSize}

@@ -590,6 +590,11 @@ export const TimeEntriesLogTable: React.FC<TimeEntriesLogTableProps> = ({
 
       <div style={{ flexShrink: 0 }}>
         <TablePagination
+          navigationLabel={t('common:paginationNavigation')}
+          firstPageLabel={t('common:firstPage')}
+          previousPageLabel={t('common:previousPage')}
+          nextPageLabel={t('common:nextPage')}
+          lastPageLabel={t('common:lastPage')}
           page={page}
           pageSize={pageSize}
           total={total}

@@ -971,6 +971,11 @@ const ProjectViewFiles = () => {
           />
 
           <TablePagination
+            navigationLabel={t('common:paginationNavigation')}
+            firstPageLabel={t('common:firstPage')}
+            previousPageLabel={t('common:previousPage')}
+            nextPageLabel={t('common:nextPage')}
+            lastPageLabel={t('common:lastPage')}
             page={paginationConfig.pageIndex}
             pageSize={paginationConfig.pageSize}
             total={paginationConfig.total}
@@ -1009,6 +1014,11 @@ const ProjectViewFiles = () => {
 
 
           <TablePagination
+            navigationLabel={t('common:paginationNavigation')}
+            firstPageLabel={t('common:firstPage')}
+            previousPageLabel={t('common:previousPage')}
+            nextPageLabel={t('common:nextPage')}
+            lastPageLabel={t('common:lastPage')}
             page={taskAttachmentsPagination.pageIndex}
             pageSize={taskAttachmentsPagination.pageSize}
             total={taskAttachmentsPagination.total}

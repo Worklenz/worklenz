@@ -74,6 +74,11 @@ export const ActivityTab = ({ organizationId, organizationName }: ActivityTabPro
           }))}
         />
         <TablePagination
+          navigationLabel={t('common:paginationNavigation')}
+          firstPageLabel={t('common:firstPage')}
+          previousPageLabel={t('common:previousPage')}
+          nextPageLabel={t('common:nextPage')}
+          lastPageLabel={t('common:lastPage')}
           page={paging.page}
           pageSize={paging.limit}
           total={list.total}

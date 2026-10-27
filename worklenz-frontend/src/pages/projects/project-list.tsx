@@ -725,6 +725,11 @@ const ProjectList: React.FC = () => {
               />
             </div>
             <TablePagination
+              navigationLabel={t('common:paginationNavigation')}
+              firstPageLabel={t('common:firstPage')}
+              previousPageLabel={t('common:previousPage')}
+              nextPageLabel={t('common:nextPage')}
+              lastPageLabel={t('common:lastPage')}
               page={requestParams.index}
               pageSize={requestParams.size}
               total={projectsData?.body?.total || 0}
@@ -750,6 +755,11 @@ const ProjectList: React.FC = () => {
             </div>
             {!groupedProjects.loading && hasGroups && (
               <TablePagination
+                navigationLabel={t('common:paginationNavigation')}
+                firstPageLabel={t('common:firstPage')}
+                previousPageLabel={t('common:previousPage')}
+                nextPageLabel={t('common:nextPage')}
+                lastPageLabel={t('common:lastPage')}
                 page={groupedRequestParams.index}
                 pageSize={groupedRequestParams.size}
                 total={groupedProjects.data?.total_groups || 0}

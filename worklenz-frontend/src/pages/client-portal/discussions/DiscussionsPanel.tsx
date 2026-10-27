@@ -277,6 +277,11 @@ export const DiscussionsPanel = ({ projectId, embedded = false, initialThreadId 
           </div>
           {list && list.total > list.limit && (
             <TablePagination
+              navigationLabel={t('common:paginationNavigation')}
+              firstPageLabel={t('common:firstPage')}
+              previousPageLabel={t('common:previousPage')}
+              nextPageLabel={t('common:nextPage')}
+              lastPageLabel={t('common:lastPage')}
               page={paging.page}
               pageSize={paging.limit}
               total={list.total}

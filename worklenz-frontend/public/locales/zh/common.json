@@ -135,5 +135,10 @@
   "refreshingData": "正在刷新数据...",
   "loadingData": "正在加载数据...",
   "noDataAvailable": "无可用数据",
-  "licennse-expired-contacting-support": "联系支持..."
+  "licennse-expired-contacting-support": "联系支持...",
+  "paginationNavigation": "分页",
+  "firstPage": "首页",
+  "previousPage": "上一页",
+  "nextPage": "下一页",
+  "lastPage": "末页"
 }
