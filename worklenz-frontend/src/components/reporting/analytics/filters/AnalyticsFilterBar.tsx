@@ -25,8 +25,8 @@ export interface AnalyticsFilterBarProps {
   teamOptions?: FilterOption[];
   selectedTeamIds?: string[];
   onTeamsChange?: (ids: string[]) => void;
-  datePreset: AnalyticsDatePreset;
-  onDatePresetChange: (preset: AnalyticsDatePreset) => void;
+  datePreset?: AnalyticsDatePreset;
+  onDatePresetChange?: (preset: AnalyticsDatePreset) => void;
   statusOptions?: FilterOption[];
   selectedStatusIds?: string[];
   onStatusesChange?: (ids: string[]) => void;
@@ -100,21 +100,23 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
         />
       )}
 
-      <Select
-        value={datePreset}
-        onChange={onDatePresetChange}
-        style={{ minWidth: 160 }}
-        options={[
-          { value: 'last_7_days', label: t('dateLast7', { defaultValue: 'Last 7 days' }) },
-          { value: 'last_14_days', label: t('dateLast14', { defaultValue: 'Last 14 days' }) },
-          { value: 'last_30_days', label: t('dateLast30', { defaultValue: 'Last 30 days' }) },
-          { value: 'last_60_days', label: t('dateLast60', { defaultValue: 'Last 60 days' }) },
-          { value: 'last_90_days', label: t('dateLast90', { defaultValue: 'Last 90 days' }) },
-          { value: 'this_quarter', label: t('dateThisQuarter', { defaultValue: 'This quarter' }) },
-          { value: 'custom', label: t('dateCustom', { defaultValue: 'Custom' }) },
-        ]}
-        aria-label={t('datePreset', { defaultValue: 'Date range' })}
-      />
+      {datePreset && onDatePresetChange && (
+        <Select
+          value={datePreset}
+          onChange={onDatePresetChange}
+          style={{ minWidth: 160 }}
+          options={[
+            { value: 'last_7_days', label: t('dateLast7', { defaultValue: 'Last 7 days' }) },
+            { value: 'last_14_days', label: t('dateLast14', { defaultValue: 'Last 14 days' }) },
+            { value: 'last_30_days', label: t('dateLast30', { defaultValue: 'Last 30 days' }) },
+            { value: 'last_60_days', label: t('dateLast60', { defaultValue: 'Last 60 days' }) },
+            { value: 'last_90_days', label: t('dateLast90', { defaultValue: 'Last 90 days' }) },
+            { value: 'this_quarter', label: t('dateThisQuarter', { defaultValue: 'This quarter' }) },
+            { value: 'custom', label: t('dateCustom', { defaultValue: 'Custom' }) },
+          ]}
+          aria-label={t('datePreset', { defaultValue: 'Date range' })}
+        />
+      )}
 
       {onStatusesChange && statusOptions.length > 0 && (
         <MultiSelectFilterPill

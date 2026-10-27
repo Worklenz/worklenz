@@ -14,6 +14,7 @@ import PlannedVsActualTasksController from "../../controllers/reporting-analytic
 import PlannedVsActualMilestonesController from "../../controllers/reporting-analytics/planned-vs-actual-milestones-controller";
 import UtilizationController from "../../controllers/reporting-analytics/utilization-controller";
 import TimeReportController from "../../controllers/reporting-analytics/time-report-controller";
+import BudgetTrackingController from "../../controllers/reporting-analytics/budget-tracking-controller";
 import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
 
 const router = express.Router();
@@ -54,6 +55,7 @@ router.get(
             "planned-vs-actual-milestones",
             "utilization",
             "time-report",
+            "budget-tracking",
           ],
         })
       )
@@ -186,6 +188,21 @@ router.post(
   requireAnalyticsAccess,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(TimeReportController.exportCsv)
+);
+
+// —— Budget Tracking (budget vs spent by project) ——
+router.get(
+  "/budget-tracking/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(BudgetTrackingController.getSeries)
+);
+
+router.post(
+  "/budget-tracking/export/csv",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(BudgetTrackingController.exportCsv)
 );
 
 // —— Report templates ——

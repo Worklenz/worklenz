@@ -105,7 +105,7 @@ export const ANALYTICS_NAV: {
           path: 'budget-tracking',
           labelKey: 'budgetTracking',
           defaultLabel: 'Budget Tracking',
-          enabled: false,
+          enabled: true,
         },
       ],
     },
