@@ -128,9 +128,12 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
     setSelectedProjectLead(projectLead);
   }, [isOpen, project, projectLoading, form]);
 
-  // Deep link (e.g. GitHub from the integrations overlay) asks for a specific section.
+  // Deep link (e.g. GitHub from integrations, Plan sprint from the health bar) asks for a section.
   useEffect(() => {
-    if (isOpen && requestedSection === 'integrations') setActiveSection('integrations');
+    if (!isOpen) return;
+    if (requestedSection === 'integrations' || requestedSection === 'sprints') {
+      setActiveSection(requestedSection);
+    }
   }, [isOpen, requestedSection]);
 
   const handleUpgrade = useCallback(() => dispatch(toggleUpgradeModal()), [dispatch]);

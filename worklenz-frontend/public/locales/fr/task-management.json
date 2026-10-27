@@ -19,6 +19,8 @@
   "viewOnBoard": "Voir à bord",
   "completeSprint": "Sprint complet",
   "startSprint": "Démarrer le sprint",
+  "createSprint": "Créer un sprint",
+  "sprintSetupRequiredHint": "Créez un sprint pour déverrouiller le backlog et commencer à ajouter des issues.",
   "editSprint": "Modifier le sprint",
   "noTasksInGroupDescription": "Ajoutez une tâche pour commencer",
   "addFirstTask": "Ajoutez votre première tâche",

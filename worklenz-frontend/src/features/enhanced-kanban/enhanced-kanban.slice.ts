@@ -1067,6 +1067,17 @@ const enhancedKanbanSlice = createSlice({
       state.taskCache[taskId] = result.task;
     },
 
+    updateEnhancedKanbanTaskIssueType: (
+      state,
+      action: PayloadAction<{ taskId: string; issueType: Task['issue_type'] }>
+    ) => {
+      const { taskId, issueType } = action.payload;
+      const result = findTaskInAllGroups(state.taskGroups, taskId);
+      if (!result) return;
+      result.task.issue_type = issueType;
+      state.taskCache[taskId] = result.task;
+    },
+
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
       if (!action.payload) return;
       const { id: task_id, priority_id } = action.payload;
@@ -1578,6 +1589,7 @@ export const {
   updateEnhancedKanbanTaskName,
   updateEnhancedKanbanTaskStoryPoints,
   updateEnhancedKanbanTaskBlocked,
+  updateEnhancedKanbanTaskIssueType,
   updateEnhancedKanbanTaskEndDate,
   updateEnhancedKanbanTaskStartDate,
   updateEnhancedKanbanSubtask,
