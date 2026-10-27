@@ -182,6 +182,11 @@ const DescriptionEditor = ({
   const [mentionQuery, setMentionQuery] = useState<MentionQuery | null>(null);
   const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
   const mentionMembersCacheRef = useRef<{ projectId: string; members: MentionMember[] } | null>(null);
+  const mentionQueryRef = useRef(mentionQuery);
+
+  useEffect(() => {
+    mentionQueryRef.current = mentionQuery;
+  }, [mentionQuery]);
 
   useEffect(() => {
     if (!isEditorOpen || !projectId) {
@@ -593,6 +598,7 @@ const DescriptionEditor = ({
     if (!isEditorOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        if (mentionQueryRef.current) return;
         event.stopPropagation();
         handleDiscardClick();
       }
@@ -608,6 +614,12 @@ const DescriptionEditor = ({
       .filter(member => member.name.toLocaleLowerCase().includes(query))
       .slice(0, 8);
   }, [mentionMembers, mentionQuery]);
+  const shouldShowMentionSuggestions =
+    mentionQuery &&
+    (isLoadingMentionMembers ||
+      mentionMembersLoadFailed ||
+      filteredMentionMembers.length > 0 ||
+      !/\s/.test(mentionQuery.query));
 
   const updateMentionQuery = useCallback((editor: QuillEditorInstance | null) => {
     if (!editor) {
@@ -679,7 +691,11 @@ const DescriptionEditor = ({
       setSelectedMentionIndex(
         index => (index - 1 + filteredMentionMembers.length) % filteredMentionMembers.length
       );
-    } else if (event.key === 'Enter' && filteredMentionMembers[selectedMentionIndex]) {
+    } else if (
+      event.key === 'Enter' &&
+      !event.nativeEvent.isComposing &&
+      filteredMentionMembers[selectedMentionIndex]
+    ) {
       event.preventDefault();
       insertMention(filteredMentionMembers[selectedMentionIndex]);
     } else if (event.key === 'Escape') {
@@ -740,7 +756,7 @@ const DescriptionEditor = ({
               formats={formats}
             />
           </Suspense>
-          {mentionQuery && (
+          {shouldShowMentionSuggestions && mentionQuery && (
             <div
               className={`description-mention-suggestions ${isDarkMode ? 'is-dark' : 'is-light'}`}
               role="listbox"

@@ -233,7 +233,9 @@ describe('DescriptionEditor', () => {
     fireEvent.mouseDown(suggestion);
 
     expect(textarea).toHaveValue('@Alice Example ');
-    expect(quillMock.formatText).toHaveBeenCalledWith(0, 14, 'mention', true, 'silent');
+    await waitFor(() =>
+      expect(quillMock.formatText).toHaveBeenCalledWith(0, 14, 'mention', true, 'silent')
+    );
   });
 
   it('highlights a matching member mention while the description is still being edited', async () => {
@@ -256,6 +258,89 @@ describe('DescriptionEditor', () => {
     await waitFor(() => expect(projectCommentsApiService.getMentionMembers).toHaveBeenCalled());
     fireEvent.change(textarea, { target: { value: '@Alice Example' } });
 
-    expect(quillMock.formatText).toHaveBeenCalledWith(0, 14, 'mention', true, 'silent');
+    await waitFor(() =>
+      expect(quillMock.formatText).toHaveBeenCalledWith(0, 14, 'mention', true, 'silent')
+    );
+  });
+
+  it('closes mention suggestions on Escape without discarding the draft', async () => {
+    vi.mocked(projectCommentsApiService.getMentionMembers).mockResolvedValue({
+      done: true,
+      body: [{ id: 'member-1', name: 'Alice Example', role: <span /> }],
+    });
+
+    render(
+      <DescriptionEditor
+        description={null}
+        taskId="task-123"
+        parentTaskId={null}
+        projectId="project-123"
+      />
+    );
+
+    fireEvent.click(screen.getByText('Click to add description'));
+    const textarea = await screen.findByTestId('mock-quill-textarea');
+    await waitFor(() => expect(projectCommentsApiService.getMentionMembers).toHaveBeenCalled());
+    fireEvent.change(textarea, { target: { value: 'Draft @Ali' } });
+    expect(await screen.findByRole('option', { name: 'Alice Example' })).toBeInTheDocument();
+
+    fireEvent.keyDown(textarea, { key: 'Escape' });
+
+    expect(screen.queryByTestId('description-mention-suggestions')).not.toBeInTheDocument();
+    expect(screen.getByTestId('mock-quill-editor')).toBeInTheDocument();
+    expect(textarea).toHaveValue('Draft @Ali');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+
+  it('does not insert a mention when Enter confirms active IME composition', async () => {
+    vi.mocked(projectCommentsApiService.getMentionMembers).mockResolvedValue({
+      done: true,
+      body: [{ id: 'member-1', name: 'Alice Example', role: <span /> }],
+    });
+
+    render(
+      <DescriptionEditor
+        description={null}
+        taskId="task-123"
+        parentTaskId={null}
+        projectId="project-123"
+      />
+    );
+
+    fireEvent.click(screen.getByText('Click to add description'));
+    const textarea = await screen.findByTestId('mock-quill-textarea');
+    await waitFor(() => expect(projectCommentsApiService.getMentionMembers).toHaveBeenCalled());
+    fireEvent.change(textarea, { target: { value: '@Ali' } });
+    expect(await screen.findByRole('option', { name: 'Alice Example' })).toBeInTheDocument();
+
+    fireEvent.keyDown(textarea, { key: 'Enter', isComposing: true });
+
+    expect(textarea).toHaveValue('@Ali');
+    expect(screen.getByTestId('description-mention-suggestions')).toBeInTheDocument();
+  });
+
+  it('hides an unmatched suggestion query containing whitespace', async () => {
+    vi.mocked(projectCommentsApiService.getMentionMembers).mockResolvedValue({
+      done: true,
+      body: [{ id: 'member-1', name: 'Alice Example', role: <span /> }],
+    });
+
+    render(
+      <DescriptionEditor
+        description={null}
+        taskId="task-123"
+        parentTaskId={null}
+        projectId="project-123"
+      />
+    );
+
+    fireEvent.click(screen.getByText('Click to add description'));
+    const textarea = await screen.findByTestId('mock-quill-textarea');
+    await waitFor(() => expect(projectCommentsApiService.getMentionMembers).toHaveBeenCalled());
+    fireEvent.change(textarea, { target: { value: '@Unknown Member' } });
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('description-mention-suggestions')).not.toBeInTheDocument()
+    );
   });
 });
