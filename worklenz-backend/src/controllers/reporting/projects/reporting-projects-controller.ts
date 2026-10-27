@@ -17,11 +17,7 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     // teamId is $1, size is $2, offset is $3, so search params start at $4
-    let { searchQuery, searchParams, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 4);
-
-    if (sortField === "days_left" || sortField === "p.days_left") {
-      sortField = "p.end_date";
-    }
+    const { searchQuery, searchParams, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 4);
     const archived = req.query.archived === "true";
 
     const teamId = this.getCurrentTeamId(req);
