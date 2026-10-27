@@ -964,6 +964,26 @@ export default class TeamMembersController extends WorklenzControllerBase {
       return res.status(200).send(roleAssignmentError);
     }
 
+    // Only Owners/Admins may create job titles; everyone else (including
+    // self-edits) can only pick one that already exists in the team.
+    if (!canManageTeamMembers(req.user)) {
+      const requestedJobTitle = typeof req.body.job_title === "string"
+        ? req.body.job_title.trim()
+        : "";
+      if (requestedJobTitle) {
+        const existingTitle = await db.query(
+          `SELECT name FROM job_titles WHERE team_id = $1 AND LOWER(name) = LOWER($2) LIMIT 1;`,
+          [req.user?.team_id, requestedJobTitle],
+        );
+        if (!existingTitle.rows.length) {
+          return res
+            .status(200)
+            .send(new ServerResponse(false, null, "Only owners and admins can create new job titles"));
+        }
+        req.body.job_title = existingTitle.rows[0].name;
+      }
+    }
+
     req.body.id = req.params.id;
     req.body.team_id = req.user?.team_id || null;
     req.body.is_admin = !canManageTeamMembers(req.user) || isSelf
