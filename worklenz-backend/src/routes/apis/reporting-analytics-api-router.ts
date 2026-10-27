@@ -10,6 +10,7 @@ import VelocityController from "../../controllers/reporting-analytics/velocity-c
 import CfdController from "../../controllers/reporting-analytics/cfd-controller";
 import TimeInStatusController from "../../controllers/reporting-analytics/time-in-status-controller";
 import ProjectHealthController from "../../controllers/reporting-analytics/project-health-controller";
+import PlannedVsActualTasksController from "../../controllers/reporting-analytics/planned-vs-actual-tasks-controller";
 import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
 
 const router = express.Router();
@@ -46,6 +47,7 @@ router.get(
             "sla",
             "time-in-status",
             "project-health",
+            "planned-vs-actual-tasks",
           ],
         })
       )
@@ -118,6 +120,21 @@ router.post(
   requireAnalyticsAccess,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(ProjectHealthController.exportCsv)
+);
+
+// —— Planned vs Actual: Tasks ——
+router.get(
+  "/planned-vs-actual-tasks/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(PlannedVsActualTasksController.getSeries)
+);
+
+router.post(
+  "/planned-vs-actual-tasks/export/csv",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(PlannedVsActualTasksController.exportCsv)
 );
 
 // —— Report templates ——

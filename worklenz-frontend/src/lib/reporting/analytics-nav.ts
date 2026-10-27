@@ -63,7 +63,7 @@ export const ANALYTICS_NAV: {
           path: 'planned-vs-actual-tasks',
           labelKey: 'plannedVsActualTasks',
           defaultLabel: 'Planned vs Actual: Tasks',
-          enabled: false,
+          enabled: true,
         },
         {
           key: 'planned-vs-actual-milestones',
