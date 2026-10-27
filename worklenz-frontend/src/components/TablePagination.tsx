@@ -163,8 +163,12 @@ const TablePagination: React.FC<TablePaginationProps> = ({
         </span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap', rowGap: 4 }}>
+      <nav
+        aria-label="Pagination"
+        style={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap', rowGap: 4 }}
+      >
         <button
+          aria-label="First page"
           style={navBtnStyle(safePage > 1)}
           disabled={safePage === 1}
           onClick={() => onPageChange(1, pageSize)}
@@ -172,6 +176,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           «
         </button>
         <button
+          aria-label="Previous page"
           style={navBtnStyle(safePage > 1)}
           disabled={safePage === 1}
           onClick={() => onPageChange(Math.max(1, safePage - 1), pageSize)}
@@ -182,18 +187,24 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           typeof p === 'number' ? (
             <button
               key={i}
+              aria-current={p === safePage ? 'page' : undefined}
               style={pageBtnStyle(p === safePage)}
               onClick={() => onPageChange(p, pageSize)}
             >
               {p}
             </button>
           ) : (
-            <span key={i} style={{ fontSize: 12, padding: '0 4px', opacity: 0.5 }}>
+            <span
+              key={i}
+              aria-hidden="true"
+              style={{ fontSize: 12, padding: '0 4px', opacity: 0.5 }}
+            >
               …
             </span>
           )
         )}
         <button
+          aria-label="Next page"
           style={navBtnStyle(safePage < totalPages)}
           disabled={safePage === totalPages}
           onClick={() => onPageChange(Math.min(totalPages, safePage + 1), pageSize)}
@@ -201,13 +212,14 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           ›
         </button>
         <button
+          aria-label="Last page"
           style={navBtnStyle(safePage < totalPages)}
           disabled={safePage === totalPages}
           onClick={() => onPageChange(totalPages, pageSize)}
         >
           »
         </button>
-      </div>
+      </nav>
     </div>
   );
 };
