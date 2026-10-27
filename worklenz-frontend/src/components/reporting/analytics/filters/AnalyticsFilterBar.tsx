@@ -31,6 +31,8 @@ export interface AnalyticsFilterBarProps {
   includeDone?: boolean;
   onIncludeDoneChange?: (include: boolean) => void;
   loading?: boolean;
+  /** Keep controls on one horizontal row (no wrap). */
+  inline?: boolean;
 }
 
 export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
@@ -51,11 +53,12 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   includeDone,
   onIncludeDoneChange,
   loading,
+  inline = false,
 }) => {
   const { t } = useTranslation('reporting-analytics');
 
   return (
-    <Flex gap={8} wrap="wrap" align="center">
+    <Flex gap={8} wrap={inline ? 'nowrap' : 'wrap'} align="center" style={inline ? { flexShrink: 0 } : undefined}>
       <MultiSelectFilterPill
         label={t('filterProjects', { defaultValue: 'Projects' })}
         options={projectOptions}

@@ -413,7 +413,7 @@ const VelocityPage: React.FC = () => {
   };
 
   const velocityFilters = (
-    <Flex vertical gap={12}>
+    <Flex gap={8} wrap="nowrap" align="center" style={{ overflowX: 'auto', width: '100%' }}>
       <Segmented
         value={viewBy}
         onChange={val => setViewBy(val as VelocityViewBy)}
@@ -438,59 +438,60 @@ const VelocityPage: React.FC = () => {
         datePreset={datePreset}
         onDatePresetChange={setDatePreset}
         loading={filtersLoading}
+        inline
       />
 
-      <Flex gap={8} wrap="wrap" align="center">
-        {datePreset === 'custom' && (
-          <RangePicker
-            value={customRange}
-            onChange={vals => {
-              if (vals?.[0] && vals?.[1]) setCustomRange([vals[0], vals[1]]);
-              else setCustomRange(null);
-            }}
-          />
-        )}
-        <Select
-          value={metric}
-          onChange={setMetric}
-          style={{ minWidth: 160 }}
-          options={[
-            {
-              value: 'story_points',
-              label: t('metricStoryPointsLabel', { defaultValue: 'Story points' }),
-            },
-            {
-              value: 'issue_count',
-              label: t('metricIssueCountLabel', { defaultValue: 'Issue count' }),
-            },
-          ]}
-          aria-label={t('metric', { defaultValue: 'Metric' })}
+      {datePreset === 'custom' && (
+        <RangePicker
+          value={customRange}
+          onChange={vals => {
+            if (vals?.[0] && vals?.[1]) setCustomRange([vals[0], vals[1]]);
+            else setCustomRange(null);
+          }}
         />
-        <Select
-          value={sprintCount}
-          onChange={setSprintCount}
-          style={{ minWidth: 140 }}
-          options={[3, 6, 10, 12, 20, 30].map(n => ({
-            value: n,
-            label: t('lastNSprints', { defaultValue: 'Last {{count}} sprints', count: n }),
-          }))}
-          aria-label={t('sprintRange', { defaultValue: 'Sprint range' })}
-        />
-        <Select
-          value={avgWindow}
-          onChange={setAvgWindow}
-          style={{ minWidth: 150 }}
-          options={[2, 3, 4, 5, 6].map(n => ({
-            value: n,
-            label: t('avgWindow', { defaultValue: '{{count}}-sprint average', count: n }),
-          }))}
-          aria-label={t('avgWindowLabel', { defaultValue: 'Average window' })}
-        />
-        <Space>
-          <Switch checked={showTrend} onChange={setShowTrend} />
-          <Text>{t('showTrend', { defaultValue: 'Trend line' })}</Text>
-        </Space>
-      </Flex>
+      )}
+      <Select
+        value={metric}
+        onChange={setMetric}
+        style={{ minWidth: 140 }}
+        options={[
+          {
+            value: 'story_points',
+            label: t('metricStoryPointsLabel', { defaultValue: 'Story points' }),
+          },
+          {
+            value: 'issue_count',
+            label: t('metricIssueCountLabel', { defaultValue: 'Issue count' }),
+          },
+        ]}
+        aria-label={t('metric', { defaultValue: 'Metric' })}
+      />
+      <Select
+        value={sprintCount}
+        onChange={setSprintCount}
+        style={{ minWidth: 140 }}
+        options={[3, 6, 10, 12, 20, 30].map(n => ({
+          value: n,
+          label: t('lastNSprints', { defaultValue: 'Last {{count}} sprints', count: n }),
+        }))}
+        aria-label={t('sprintRange', { defaultValue: 'Sprint range' })}
+      />
+      <Select
+        value={avgWindow}
+        onChange={setAvgWindow}
+        style={{ minWidth: 150 }}
+        options={[2, 3, 4, 5, 6].map(n => ({
+          value: n,
+          label: t('avgWindow', { defaultValue: '{{count}}-sprint average', count: n }),
+        }))}
+        aria-label={t('avgWindowLabel', { defaultValue: 'Average window' })}
+      />
+      <Space size={6} style={{ flexShrink: 0 }}>
+        <Switch checked={showTrend} onChange={setShowTrend} />
+        <Text style={{ whiteSpace: 'nowrap' }}>
+          {t('showTrend', { defaultValue: 'Trend line' })}
+        </Text>
+      </Space>
     </Flex>
   );
 
