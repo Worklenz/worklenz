@@ -25,6 +25,8 @@ export interface ReportPageShellProps {
   onViewModeChange?: (mode: ChartTableMode) => void;
   onExport?: (format: AnalyticsExportFormat) => void;
   exportDisabled?: boolean;
+  exportFormats?: AnalyticsExportFormat[];
+  exportLoading?: boolean;
   actions?: React.ReactNode;
   children: React.ReactNode;
 }
@@ -38,6 +40,8 @@ export const ReportPageShell: React.FC<ReportPageShellProps> = ({
   onViewModeChange,
   onExport,
   exportDisabled,
+  exportFormats,
+  exportLoading,
   actions,
   children,
 }) => {
@@ -76,7 +80,12 @@ export const ReportPageShell: React.FC<ReportPageShellProps> = ({
             <ChartTableToggle value={viewMode} onChange={onViewModeChange} />
           )}
           {onExport && (
-            <AnalyticsExportMenu onExport={onExport} disabled={exportDisabled} />
+            <AnalyticsExportMenu
+              onExport={onExport}
+              disabled={exportDisabled}
+              formats={exportFormats}
+              loading={exportLoading}
+            />
           )}
           {actions}
         </Space>

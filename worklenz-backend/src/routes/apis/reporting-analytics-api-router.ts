@@ -6,6 +6,8 @@ import { withLastUpdated } from "../../redis/analytics-cache";
 import { ServerResponse } from "../../models/server-response";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
+import VelocityController from "../../controllers/reporting-analytics/velocity-controller";
+import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
 
 const router = express.Router();
 
@@ -20,10 +22,6 @@ async function requireAnalyticsAccess(
   return next();
 }
 
-/**
- * Phase 1 stub endpoints — real report controllers land in later phases.
- * Every route runs project-scoped access middleware.
- */
 router.get(
   "/meta",
   requireAnalyticsAccess,
@@ -43,6 +41,58 @@ router.get(
       )
     );
   })
+);
+
+// —— Velocity (Phase 2) ——
+router.get(
+  "/velocity/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(VelocityController.getSeries)
+);
+
+router.post(
+  "/velocity/export/excel",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(VelocityController.exportExcel)
+);
+
+// —— Report templates ——
+router.get(
+  "/templates",
+  requireAnalyticsAccess,
+  safeControllerFunction(AnalyticsTemplatesController.list)
+);
+
+router.post(
+  "/templates",
+  requireAnalyticsAccess,
+  safeControllerFunction(AnalyticsTemplatesController.create)
+);
+
+router.patch(
+  "/templates/:id",
+  requireAnalyticsAccess,
+  safeControllerFunction(AnalyticsTemplatesController.rename)
+);
+
+router.delete(
+  "/templates/:id",
+  requireAnalyticsAccess,
+  safeControllerFunction(AnalyticsTemplatesController.remove)
+);
+
+router.post(
+  "/templates/:id/default",
+  requireAnalyticsAccess,
+  safeControllerFunction(AnalyticsTemplatesController.setDefault)
+);
+
+router.post(
+  "/templates/:id/share",
+  requireAnalyticsAccess,
+  safeControllerFunction(AnalyticsTemplatesController.setShare)
 );
 
 export default router;
