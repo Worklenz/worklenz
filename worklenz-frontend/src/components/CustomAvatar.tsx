@@ -11,16 +11,19 @@ interface CustomAvatarProps {
 }
 
 const CustomAvatar = React.forwardRef<HTMLDivElement, CustomAvatarProps>(
-  ({ avatarName, size = 35, avatarUrl, fallbackUrl }, ref) => {
+  ({ avatarName, size = 32, avatarUrl, fallbackUrl }, ref) => {
     const avatarCharacter = avatarName[0]?.toUpperCase() || '';
 
     return (
       <Tooltip title={avatarName}>
         <div ref={ref} style={{ display: 'inline-block' }}>
           <Avatar
-            src={avatarUrl}
+            src={avatarUrl || undefined}
             style={{
-              backgroundColor: '#ffffff',
+              backgroundColor:
+                !avatarUrl && fallbackUrl
+                  ? '#ffffff'
+                  : AvatarNamesMap[avatarCharacter],
               verticalAlign: 'middle',
               width: size,
               height: size,
@@ -28,18 +31,21 @@ const CustomAvatar = React.forwardRef<HTMLDivElement, CustomAvatarProps>(
               outline: 'none',
             }}
           >
-            {!avatarUrl && fallbackUrl && (
-              <img
-                src={fallbackUrl}
-                alt="Worklenz"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  padding: 0,
-                }}
-              />
-            )}
+            {!avatarUrl &&
+              (fallbackUrl ? (
+                <img
+                  src={fallbackUrl}
+                  alt="Worklenz"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    padding: 0,
+                  }}
+                />
+              ) : (
+                avatarCharacter
+              ))}
           </Avatar>
         </div>
       </Tooltip>
