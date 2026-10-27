@@ -25,6 +25,20 @@ const schedule = (overrides: Partial<IRecurringSchedule>): IRecurringSchedule =>
 const last = (date: string) => moment.tz(date, "UTC");
 
 describe("resolveNextOccurrence", () => {
+  it("skips more than 4000 missed daily occurrences", () => {
+    const previous = last("2010-01-01");
+    const result = resolveNextOccurrence(schedule({}), previous, now);
+    expect(result.nextEndDate.format(FORMAT)).toBe("2026-10-22");
+    expect(result.skippedCount).toBe(now.clone().startOf("day").diff(previous, "days") - 1);
+  });
+
+  it("stops when the schedule does not advance", () => {
+    const previous = last("2026-01-01");
+    const result = resolveNextOccurrence(schedule({ schedule_type: "every_x_days", interval_days: -1 }), previous, now);
+    expect(result.nextEndDate.format(FORMAT)).toBe("2025-12-31");
+    expect(result.skippedCount).toBe(0);
+  });
+
   it("returns the next occurrence unchanged when nothing was missed", () => {
     const result = resolveNextOccurrence(schedule({}), last("2026-10-21"), now);
     expect(result.nextEndDate.format(FORMAT)).toBe("2026-10-22");

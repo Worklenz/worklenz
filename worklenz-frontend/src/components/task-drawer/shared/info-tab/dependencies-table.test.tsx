@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ConfigProvider, theme } from 'antd';
 import { TFunction } from 'i18next';
@@ -29,6 +29,33 @@ vi.mock('@/api/tasks/task-dependencies.api.service', () => ({
 const t = ((key: string) => key) as TFunction;
 
 describe('dependency task selector', () => {
+  it('keeps typed search results when the opening search finishes later', async () => {
+    const user = userEvent.setup();
+    let resolveOpeningSearch!: (value: Awaited<ReturnType<typeof tasksApiService.searchTask>>) => void;
+    vi.mocked(tasksApiService.searchTask).mockImplementationOnce(() => new Promise(resolve => {
+      resolveOpeningSearch = resolve;
+    }));
+    render(
+      <DependenciesTable
+        task={{ id: 'task-1' } as ITaskViewModel}
+        t={t}
+        taskDependencies={[]}
+        loadingTaskDependencies={false}
+        refreshTaskDependencies={vi.fn()}
+      />
+    );
+    await user.click(screen.getByRole('button', { name: 'taskInfoTab.dependencies.addDependency' }));
+    await user.click(screen.getByRole('combobox'));
+    await user.type(screen.getByRole('combobox'), 'a');
+    expect(await screen.findByText('Available task')).toBeInTheDocument();
+    await act(async () => resolveOpeningSearch({
+      done: true,
+      body: [{ label: 'Outdated task', value: 'outdated-task' }],
+    }));
+    expect(screen.getByText('Available task')).toBeInTheDocument();
+    expect(screen.queryByText('Outdated task')).not.toBeInTheDocument();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(tasksApiService.searchTask).mockResolvedValue({

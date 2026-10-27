@@ -11,7 +11,7 @@ import {
   Tag,
   Typography,
 } from '@/shared/antd-imports';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DeleteOutlined, ExclamationCircleFilled } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -52,6 +52,7 @@ const DependenciesTable = ({
   const [taskList, setTaskList] = useState<{ label: string; value: string }[]>([]);
   const [loadingTaskList, setLoadingTaskList] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const latestSearchRequest = useRef(0);
 
   const invalidateRoadmapTasks = () => {
     if (!projectId) return;
@@ -93,17 +94,18 @@ const DependenciesTable = ({
   const handleSearchTask = async (value: string) => {
     if (!task.id || !projectId) return;
     setSearchTerm(value);
+    const requestId = ++latestSearchRequest.current;
 
     try {
       setLoadingTaskList(true);
       const res = await tasksApiService.searchTask(task.id, projectId, value);
-      if (res.done) {
+      if (requestId === latestSearchRequest.current && res.done) {
         setTaskList(res.body);
       }
     } catch (error) {
       console.error('Error searching tasks:', error);
     } finally {
-      setLoadingTaskList(false);
+      if (requestId === latestSearchRequest.current) setLoadingTaskList(false);
     }
   };
 
