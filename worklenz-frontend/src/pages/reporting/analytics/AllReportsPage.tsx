@@ -78,7 +78,7 @@ const REPORT_DESCRIPTIONS: Record<string, { descKey: string; defaultDesc: string
   },
   'time-report': {
     descKey: 'descTimeReport',
-    defaultDesc: 'Logged time by project, member and date',
+    defaultDesc: 'Logged vs estimated hours with billable split',
     color: '#fa8c16',
   },
   'budget-tracking': {

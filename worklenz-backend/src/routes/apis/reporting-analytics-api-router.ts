@@ -13,6 +13,7 @@ import ProjectHealthController from "../../controllers/reporting-analytics/proje
 import PlannedVsActualTasksController from "../../controllers/reporting-analytics/planned-vs-actual-tasks-controller";
 import PlannedVsActualMilestonesController from "../../controllers/reporting-analytics/planned-vs-actual-milestones-controller";
 import UtilizationController from "../../controllers/reporting-analytics/utilization-controller";
+import TimeReportController from "../../controllers/reporting-analytics/time-report-controller";
 import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
 
 const router = express.Router();
@@ -52,6 +53,7 @@ router.get(
             "planned-vs-actual-tasks",
             "planned-vs-actual-milestones",
             "utilization",
+            "time-report",
           ],
         })
       )
@@ -169,6 +171,21 @@ router.post(
   requireAnalyticsAccess,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(UtilizationController.exportCsv)
+);
+
+// —— Time Report (logged vs estimated + billable split) ——
+router.get(
+  "/time-report/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(TimeReportController.getSeries)
+);
+
+router.post(
+  "/time-report/export/csv",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(TimeReportController.exportCsv)
 );
 
 // —— Report templates ——

@@ -98,7 +98,7 @@ export const ANALYTICS_NAV: {
           path: 'time-report',
           labelKey: 'timeReport',
           defaultLabel: 'Time Report',
-          enabled: false,
+          enabled: true,
         },
         {
           key: 'budget-tracking',

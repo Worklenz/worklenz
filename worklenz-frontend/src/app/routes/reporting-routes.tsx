@@ -25,6 +25,7 @@ const PlannedVsActualMilestonesPage = lazy(
   () => import('@/pages/reporting/analytics/PlannedVsActualMilestonesPage')
 );
 const UtilizationPage = lazy(() => import('@/pages/reporting/analytics/UtilizationPage'));
+const TimeReportPage = lazy(() => import('@/pages/reporting/analytics/TimeReportPage'));
 const AnalyticsComingSoonPage = lazy(
   () => import('@/pages/reporting/analytics/AnalyticsComingSoonPage')
 );
@@ -69,6 +70,7 @@ const enabledAnalyticsElements: Record<string, React.ReactNode> = {
   'planned-vs-actual-tasks': <PlannedVsActualTasksPage />,
   'planned-vs-actual-milestones': <PlannedVsActualMilestonesPage />,
   utilization: <UtilizationPage />,
+  'time-report': <TimeReportPage />,
   sla: <SlaPage />,
   dashboards: <DashboardsPage />,
 };
