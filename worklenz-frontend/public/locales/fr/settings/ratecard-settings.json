@@ -42,6 +42,7 @@
   "jobRolesTitle": "Rôles professionnels",
   "noJobTitlesMessage": "Veuillez d'abord créer des titres de poste dans les paramètres Titres de poste avant d'ajouter des rôles aux tableaux de tarifs.",
   "createNewJobTitle": "Créer un nouveau titre de poste",
+  "createJobTitleButtonText": "Créer un intitulé de poste",
   "jobTitleNamePlaceholder": "Entrez le nom du titre du poste",
   "jobTitleNameRequired": "Le nom du titre du poste est requis",
   "jobTitleCreatedSuccess": "Titre de poste créé avec succès",

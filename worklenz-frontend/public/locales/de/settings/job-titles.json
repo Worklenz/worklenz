@@ -5,6 +5,7 @@
   "deleteConfirmationCancel": "Abbrechen",
   "searchPlaceholder": "Nach Namen suchen",
   "createJobTitleButton": "Jobtitel erstellen",
+  "createJobTitleButtonText": "Berufsbezeichnung erstellen",
   "pinTooltip": "Zum Anheften an das Hauptmenü klicken",
   "createJobTitleDrawerTitle": "Jobtitel erstellen",
   "updateJobTitleDrawerTitle": "Jobtitel aktualisieren",

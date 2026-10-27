@@ -37,6 +37,7 @@
   "memberEmailRequiredError": "Veuillez saisir une adresse e-mail valide",
   "jobTitleLabel": "Titre du poste",
   "jobTitlePlaceholder": "Sélectionnez ou recherchez le titre du poste (facultatif)",
+  "createJobTitleButtonText": "Créer un intitulé de poste",
   "memberAccessLabel": "Niveau d'accès",
   "createFromTemplatesLabel": "Créer des projets à partir de modèles",
   "createFromTemplatesHint": "Permet à ce membre de créer des projets à partir de modèles. Ils deviennent chef de projet du nouveau projet sans accès au financement. Ne permet pas la création de projets vides.",
