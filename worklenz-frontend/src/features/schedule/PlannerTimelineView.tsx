@@ -19,7 +19,7 @@ import {
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
+
 import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { decodeHtmlEntities } from '@/utils/html-entities';
@@ -637,7 +637,10 @@ const TimelineExpandedProjectTasks: React.FC<TimelineExpandedProjectTasksProps> 
   endDate,
   onTasksChange,
 }) => {
-  const { data, isLoading } = useFetchTaskTimelineQuery({ projectId, startDate, endDate });
+  const { data, isLoading } = useFetchTaskTimelineQuery(
+    { projectId, startDate, endDate },
+    { refetchOnMountOrArgChange: true }
+  );
 
   useEffect(() => {
     onTasksChange(projectId, isLoading ? undefined : (data?.body ?? []));
@@ -677,7 +680,10 @@ const TimelineExpandedProjectsBatchTasks: React.FC<TimelineExpandedProjectsBatch
   // across re-renders as long as the actual id set doesn't change) rather than the
   // `projectIds` array reference, which is a new array every render.
   const projectIdParam = projectIds.join(',');
-  const { data, isLoading } = useFetchTaskTimelineQuery({ projectId: projectIdParam, startDate, endDate });
+  const { data, isLoading } = useFetchTaskTimelineQuery(
+    { projectId: projectIdParam, startDate, endDate },
+    { refetchOnMountOrArgChange: true }
+  );
 
   useEffect(() => {
     if (isLoading) return;
@@ -980,7 +986,7 @@ const PlannerTimelineView: React.FC = () => {
   // Live sync: date/status changes made here (or in any other project view) refresh
   // this view's data via RTK Query cache invalidation — see useScheduleSocketHandlers
   // for exactly which socket events it listens for.
-  useScheduleSocketHandlers();
+  // Handled by useScheduleSocketHandlers in MainLayout.tsx
 
   const [zoom, setZoom] = useState<TimelineZoom>('months');
   const [filterProjects, setFilterProjects] = useState<string[]>([]);
