@@ -346,9 +346,12 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
     >
       {isSoftwareProject ? (
         <TaskDrawerIssueIdentity
+          taskId={taskFormViewModel?.task?.id ?? selectedTaskId}
+          projectId={sourceProjectId}
           taskKey={taskFormViewModel?.task?.task_key}
           issueType={taskFormViewModel?.task?.issue_type}
           isSubTask={isSubTask}
+          disabled={isGuest || !canCreateTask}
         />
       ) : (
         <div />

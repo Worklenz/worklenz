@@ -819,7 +819,9 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
                 {decodeHtmlEntities(invoice.client?.name) || '-'}
               </Text>
               {invoice.client?.companyName && (
-                <Text style={{ display: 'block' }}>{invoice.client.companyName}</Text>
+                <Text style={{ display: 'block' }}>
+                  {decodeHtmlEntities(invoice.client.companyName)}
+                </Text>
               )}
               {invoice.client?.address && (
                 <Text type="secondary" style={{ display: 'block' }}>

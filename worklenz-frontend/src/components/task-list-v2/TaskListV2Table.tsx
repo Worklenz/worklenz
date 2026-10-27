@@ -284,6 +284,8 @@ const ExampleTaskRows: React.FC<{
   groupColor: string;
   projectId: string;
   canCreateTask?: boolean;
+  /** When false, examples are visual only (used before the first sprint exists). */
+  interactive?: boolean;
   onTaskCreated: (
     task: any,
     options?: { openDrawer: boolean; insertAfterTaskId?: string | null }
@@ -298,6 +300,7 @@ const ExampleTaskRows: React.FC<{
   groupColor,
   projectId,
   canCreateTask = true,
+  interactive = true,
   onTaskCreated,
 }) => {
   const { t } = useTranslation('task-list-table');
@@ -476,13 +479,22 @@ const ExampleTaskRows: React.FC<{
           updated_at: '',
         };
 
+        const canActivateRow = interactive && canCreateTask && activeRowIndex === null;
+
         return (
           <div
             key={rowIndex}
-            className="flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/30"
-            style={{ height: '40px', cursor: canCreateTask ? 'text' : 'default' }}
+            className={`flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 ${
+              interactive ? 'hover:bg-gray-50 dark:hover:bg-gray-800/30' : ''
+            }`}
+            style={{
+              height: '40px',
+              cursor: canActivateRow ? 'text' : 'default',
+              pointerEvents: interactive ? undefined : 'none',
+              userSelect: interactive ? undefined : 'none',
+            }}
             onClick={() => {
-              if (canCreateTask && activeRowIndex === null) setActiveRowIndex(rowIndex);
+              if (canActivateRow) setActiveRowIndex(rowIndex);
             }}
           >
             {visibleColumns.map((column, colIndex) => {
@@ -862,6 +874,8 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
   const isSoftwareProject = isSoftwareProjectType(projectType);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
+  const canCreateTask = canCreateTaskPermission;
+  const isWorkReadOnly = isGuest;
   const activeSprintGroupIds = useMemo(
     () =>
       new Set(
@@ -876,10 +890,10 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const loadingColumns = useAppSelector(selectLoadingColumns);
 
   useEffect(() => {
-    if (isGuest && selectedTaskIds.length > 0) {
+    if (isWorkReadOnly && selectedTaskIds.length > 0) {
       dispatch(clearSelection());
     }
-  }, [dispatch, isGuest, selectedTaskIds.length]);
+  }, [dispatch, isWorkReadOnly, selectedTaskIds.length]);
 
   // Refs for scroll synchronization
   const headerScrollRef = useRef<HTMLDivElement>(null);
@@ -954,21 +968,21 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     handleDragEnd,
   } = useDragAndDrop(allTasks, groups);
 
-  // Wrap drag handlers to prevent dragging for guests
+  // Wrap drag handlers to prevent dragging when work items are locked
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    if (isGuest) return;
+    if (isWorkReadOnly) return;
     originalHandleDragStart(event);
-  }, [isGuest, originalHandleDragStart]);
+  }, [isWorkReadOnly, originalHandleDragStart]);
 
   const handleDragOver = useCallback((event: any) => {
-    if (isGuest) return;
+    if (isWorkReadOnly) return;
     originalHandleDragOver(event);
-  }, [isGuest, originalHandleDragOver]);
+  }, [isWorkReadOnly, originalHandleDragOver]);
 
   const handleDragEndWrapper = useCallback((event: DragEndEvent) => {
-    if (isGuest) return;
+    if (isWorkReadOnly) return;
     handleDragEnd(event);
-  }, [isGuest, handleDragEnd]);
+  }, [isWorkReadOnly, handleDragEnd]);
 
   const bulkActions = useBulkActions();
 
@@ -1662,7 +1676,37 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const virtuosoGroups = useMemo(() => {
     let currentTaskIndex = 0;
 
-    return groups.map(group => {
+    // Software backlog: always keep Backlog (Unmapped), even when empty; active sprint first.
+    const orderedGroups =
+      isBacklogMode && isSoftwareProject
+        ? (() => {
+            const hasBacklog = groups.some(group => group.id === UNMAPPED_PHASE_ID);
+            const withBacklog = hasBacklog
+              ? groups
+              : [
+                  ...groups,
+                  {
+                    id: UNMAPPED_PHASE_ID,
+                    title: UNMAPPED_PHASE_ID,
+                    taskIds: [] as string[],
+                    type: 'phase' as const,
+                    color: '#fbc84c69',
+                    groupValue: UNMAPPED_PHASE_ID.toLowerCase(),
+                  },
+                ];
+            return [...withBacklog].sort((a, b) => {
+              if (a.id === UNMAPPED_PHASE_ID) return 1;
+              if (b.id === UNMAPPED_PHASE_ID) return -1;
+              const aStatus = phaseList.find(phase => phase.id === a.id)?.sprint_status;
+              const bStatus = phaseList.find(phase => phase.id === b.id)?.sprint_status;
+              const rank = (status?: string | null) =>
+                status === 'active' ? 0 : status === 'planned' ? 1 : 2;
+              return rank(aStatus) - rank(bStatus);
+            });
+          })()
+        : groups;
+
+    return orderedGroups.map(group => {
       const isCurrentGroupCollapsed = collapsedGroups.has(group.id);
 
       const visibleTasksInGroup = isCurrentGroupCollapsed
@@ -1721,7 +1765,17 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       currentTaskIndex += itemsWithAddTask.length;
       return groupData;
     });
-  }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId, insertAnchor]);
+  }, [
+    groups,
+    allTasks,
+    collapsedGroups,
+    currentGrouping,
+    urlProjectId,
+    insertAnchor,
+    isBacklogMode,
+    isSoftwareProject,
+    phaseList,
+  ]);
 
   const virtuosoGroupCounts = useMemo(() => {
     return virtuosoGroups.map(group => group.count);
@@ -2417,7 +2471,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                         onToggle={() => {}}
                         projectId={urlProjectId || ''}
                       />
-                      {hasNoTasks && !isGuest && (
+                      {hasNoTasks && !isGuest && !isWorkReadOnly && (
                         <ExampleTaskRows
                           visibleColumns={visibleColumns}
                           isDarkMode={isDarkMode}
@@ -2428,6 +2482,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                           groupColor="#fbc84c69"
                           projectId={urlProjectId || ''}
                           canCreateTask={canCreateTask}
+                          interactive
                           onTaskCreated={(task, options) =>
                             handleTaskCreated(task, unmappedGroupId, !!options?.openDrawer, null)
                           }
@@ -2755,7 +2810,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           </DragOverlay>
 
           {/* Bulk Action Bar */}
-          {selectedTaskIds.length > 0 && urlProjectId && !isGuest && (
+          {selectedTaskIds.length > 0 && urlProjectId && !isWorkReadOnly && (
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
               <OptimizedBulkActionBar
                 selectedTaskIds={selectedTaskIds}

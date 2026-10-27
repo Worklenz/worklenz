@@ -168,6 +168,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     const { statusCategories, status } = useAppSelector(state => state.taskStatusReducer);
     const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
     const isSoftwareProject = isSoftwareProjectType(project?.project_type);
+    const canCreateTask = canCreateTaskPermission;
     const { trackMixpanelEvent } = useMixpanelTracking();
     const [showNewCardTop, setShowNewCardTop] = useState(false);
     const [showNewCardBottom, setShowNewCardBottom] = useState(false);
@@ -435,6 +436,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     };
 
     const handleOpenCreateCard = (position: 'top' | 'bottom') => {
+      if (!canCreateTask) return;
       if (isSoftwareProject) {
         dispatch(openCreateIssueModal(getCreateIssueTarget()));
         return;

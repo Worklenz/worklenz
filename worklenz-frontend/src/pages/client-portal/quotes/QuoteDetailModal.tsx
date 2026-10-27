@@ -223,7 +223,10 @@ const QuoteDetailModal = () => {
                       {decodeHtmlEntities(quote.client?.name) || '-'}
                     </Flex>
                   )}
-                  {field(t('companyName', { defaultValue: 'Company' }), quote.client?.companyName || '-')}
+                  {field(
+                    t('companyName', { defaultValue: 'Company' }),
+                    decodeHtmlEntities(quote.client?.companyName) || '-'
+                  )}
                   {field(t('email', { defaultValue: 'Email' }), quote.client?.email || '-')}
                 </div>
               </Card>
@@ -262,7 +265,7 @@ const QuoteDetailModal = () => {
                     )}
                     {field(
                       t('serviceName', { defaultValue: 'Service' }),
-                      quote.request.service?.name || quote.projectName || '-'
+                      decodeHtmlEntities(quote.request.service?.name || quote.projectName) || '-'
                     )}
                   </div>
                 </Card>

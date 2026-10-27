@@ -346,7 +346,7 @@ const PlannerScheduleView: React.FC = () => {
 
   // ── Data ──
   const { data: teamDataResponse, isLoading: teamLoading, refetch: refetchMembers } =
-    useFetchScheduleMembersQuery();
+    useFetchScheduleMembersQuery(undefined, { refetchOnMountOrArgChange: true });
   const teamData = teamDataResponse?.body || [];
 
   const startDate = days[0]?.date.format('YYYY-MM-DD');
@@ -459,7 +459,7 @@ const PlannerScheduleView: React.FC = () => {
       // Only pass priorityId if we're filtering individual tasks by priority (when no project/status filter is active)
       priorityId: (effectiveProjectIds.length === 0 && filterPriorities.length > 0) ? filterPriorities.join(',') : undefined,
     },
-    { skip: shouldSkipTaskQuery }
+    { skip: shouldSkipTaskQuery, refetchOnMountOrArgChange: true }
   );
 
   const { data: capacityResponse } = useFetchDailyCapacityQuery(
@@ -552,8 +552,17 @@ const PlannerScheduleView: React.FC = () => {
   // Keeps this view's socket room membership in sync with the projects currently
   // loaded, so PROJECT_UPDATES_AVAILABLE broadcasts — e.g. a new subtask created
   // elsewhere — actually reach it instead of only showing up after a hard refresh.
-  const loadedProjectIds = useMemo(() => projectIdsFromTasks(rawTasks), [rawTasks]);
-  useProjectRoomSync(loadedProjectIds);
+  const relevantProjectIds = useMemo(() => {
+    const ids = new Set<string>();
+    projectList.forEach((p: any) => {
+      if (p?.id) ids.add(p.id);
+    });
+    rawTasks.forEach((t: any) => {
+      if (t?.project_id) ids.add(t.project_id);
+    });
+    return ids;
+  }, [projectList, rawTasks]);
+  useProjectRoomSync(relevantProjectIds);
 
   // Drop the resize live-preview once the refetched tasks[] genuinely reflects the
   // committed value — hoursForTaskOnDay then reads identically whether or not

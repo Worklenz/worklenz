@@ -5,6 +5,10 @@ import db from "../config/db";
 import {ServerResponse} from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
+import {
+  buildSprintMembershipPredicate,
+  buildSprintScopeTasksFrom,
+} from "../shared/sprint-report-scope";
 import {isValidUuid} from "../shared/validation-helpers";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -105,8 +109,10 @@ export default class SoftwareReportsController extends WorklenzControllerBase {
     );
     const sprint = activeSprint.rows[0] ?? null;
 
+    // Include issues in the active sprint, plus inherited descendants at any depth
+    // (no own task_phase row — same visibility as the Backlog sprint list).
     const scopeFilter = sprint
-      ? "AND EXISTS (SELECT 1 FROM task_phase tp WHERE tp.task_id = t.id AND tp.phase_id = $2)"
+      ? `AND ${buildSprintMembershipPredicate("t", "$2")}`
       : "";
     const scopeParams = sprint ? [projectId, sprint.id] : [projectId];
 
@@ -122,7 +128,6 @@ export default class SoftwareReportsController extends WorklenzControllerBase {
          INNER JOIN sys_task_status_categories cat ON cat.id = ts.category_id
          LEFT JOIN tasks t ON t.status_id = ts.id
                           AND t.archived IS FALSE
-                          AND t.parent_task_id IS NULL
                           ${scopeFilter}
          WHERE ts.project_id = $1
          GROUP BY ts.id, ts.name, ts.sort_order, cat.color_code, cat.color_code_dark, cat.is_done, cat.is_doing
@@ -254,8 +259,7 @@ export default class SoftwareReportsController extends WorklenzControllerBase {
               COUNT(*) FILTER (WHERE t.is_blocked IS TRUE AND cat.is_done IS NOT TRUE)::INT AS blocked_count,
               COUNT(*) FILTER (WHERE added.added_at IS NOT NULL)::INT AS scope_added_count,
               COALESCE(SUM(t.story_points) FILTER (WHERE added.added_at IS NOT NULL), 0)::FLOAT AS scope_added_points
-       FROM task_phase tp
-       INNER JOIN tasks t ON t.id = tp.task_id AND t.archived IS FALSE AND t.project_id = $2
+       FROM (${buildSprintScopeTasksFrom("$1::UUID")}) t
        LEFT JOIN task_statuses ts ON ts.id = t.status_id
        LEFT JOIN sys_task_status_categories cat ON cat.id = ts.category_id
        LEFT JOIN task_priorities tp_pr ON tp_pr.id = t.priority_id
@@ -268,7 +272,7 @@ export default class SoftwareReportsController extends WorklenzControllerBase {
            AND $3::TIMESTAMPTZ IS NOT NULL
            AND tal.created_at > $3::TIMESTAMPTZ
        ) added ON TRUE
-       WHERE tp.phase_id = $1::UUID;`,
+       WHERE t.project_id = $2;`,
       [sprint.id, projectId, sprintStart]
     );
     const metrics = result.rows[0];
@@ -326,11 +330,9 @@ export default class SoftwareReportsController extends WorklenzControllerBase {
                  AND tal.attribute_type = 'phase'
                  AND tal.new_value = $1::TEXT
                  AND tal.created_at > $2::TIMESTAMPTZ) AS added_at
-       FROM task_phase tp
-       INNER JOIN tasks t ON t.id = tp.task_id AND t.archived IS FALSE
+       FROM (${buildSprintScopeTasksFrom("$1::UUID")}) t
        LEFT JOIN task_statuses ts ON ts.id = t.status_id
-       LEFT JOIN sys_task_status_categories cat ON cat.id = ts.category_id
-       WHERE tp.phase_id = $1::UUID;`,
+       LEFT JOIN sys_task_status_categories cat ON cat.id = ts.category_id;`,
       [sprint.id, startValue]
     );
 
@@ -380,11 +382,10 @@ export default class SoftwareReportsController extends WorklenzControllerBase {
        FROM project_phases pp
        LEFT JOIN LATERAL (
          SELECT SUM(t.story_points) AS points
-         FROM task_phase tp
-         INNER JOIN tasks t ON t.id = tp.task_id AND t.archived IS FALSE
+         FROM (${buildSprintScopeTasksFrom("pp.id")}) t
          INNER JOIN task_statuses ts ON ts.id = t.status_id
          INNER JOIN sys_task_status_categories cat ON cat.id = ts.category_id
-         WHERE tp.phase_id = pp.id AND cat.is_done IS TRUE
+         WHERE cat.is_done IS TRUE
        ) done ON TRUE
        WHERE pp.project_id = $1
          AND pp.sprint_status IN ('active', 'completed')

@@ -348,7 +348,9 @@ export const QuotesTable = () => {
       title: t('projectColumn', { defaultValue: 'Project' }),
       render: (_v, record) => (
         <div>
-          <Text type="secondary">{record.projectName || record.serviceName || '-'}</Text>
+          <Text type="secondary">
+            {decodeHtmlEntities(record.projectName || record.serviceName) || '-'}
+          </Text>
           {record.changeRequestNumber && (
             <div>
               <Text style={{ fontSize: 12 }}>{record.changeRequestNumber}</Text>

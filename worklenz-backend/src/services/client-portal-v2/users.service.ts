@@ -58,7 +58,15 @@ const STATUS_SQL = `
   END
 `;
 
-/** One row per client user of a team with everything the admin console shows. Parameter $1 = team id. */
+/**
+ * One row per client user of a team with everything the admin console shows. Parameter $1 = team id.
+ *
+ * Projects match what the user can open (see CONTACT_CAN_OPEN_PROJECT_SQL): a Client Admin opens every
+ * portal-enabled project of their organization without rows in client_contact_project_access, so the
+ * Clients table and Client Users table stay aligned when projects are linked at the organization level.
+ * Members and Viewers still list only their explicit assignments (including portal-off rows staff may
+ * keep for later), matching the Assign Projects modal.
+ */
 export const USER_VIEW_SQL = `
   SELECT cc.id, cc.client_id, cc.name, cc.email, cc.phone, cc.job_title, cc.role,
          cc.email_verified_at, cc.new_link_requested_at, cc.created_at,
@@ -68,12 +76,24 @@ export const USER_VIEW_SQL = `
          (${STATUS_SQL}) AS status_key,
          (inv.id IS NOT NULL AND inv.status = 'pending' AND inv.expires_at <= NOW()) AS invitation_lapsed,
          (inv.id IS NULL) AS no_invitation,
-         COALESCE((
-           SELECT json_agg(json_build_object('id', p.id, 'name', p.name) ORDER BY p.name)
-             FROM client_contact_project_access a
-             JOIN projects p ON p.id = a.project_id AND p.client_id = cc.client_id
-            WHERE a.client_contact_id = cc.id
-         ), '[]'::json) AS projects
+         COALESCE(
+           CASE
+             WHEN cc.role = 'admin' THEN (
+               SELECT json_agg(json_build_object('id', p.id, 'name', p.name) ORDER BY p.name)
+                 FROM projects p
+                 JOIN project_client_settings pcs
+                   ON pcs.project_id = p.id AND pcs.portal_enabled IS TRUE
+                WHERE p.client_id = cc.client_id AND p.team_id = cc.team_id
+             )
+             ELSE (
+               SELECT json_agg(json_build_object('id', p.id, 'name', p.name) ORDER BY p.name)
+                 FROM client_contact_project_access a
+                 JOIN projects p ON p.id = a.project_id AND p.client_id = cc.client_id
+                WHERE a.client_contact_id = cc.id
+             )
+           END,
+           '[]'::json
+         ) AS projects
     FROM client_contacts cc
     JOIN clients c ON c.id = cc.client_id AND c.deleted_at IS NULL
     ${CONTACT_STATE_JOINS_SQL}
