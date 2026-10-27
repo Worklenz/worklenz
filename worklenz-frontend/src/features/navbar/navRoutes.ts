@@ -53,11 +53,12 @@ export const navRoutes: NavRoutesType[] = [
   },
   {
     name: 'reporting',
-    // Bare surface root — resolves to whichever item is pinned as default
-    // (or 'overview' if nothing is pinned) via the reporting index route.
-    path: '/worklenz/reporting',
-    adminOnly: true,
+    // Opens the new Reporting & Analytics experience (prototype sidebar).
+    // Classic Owner/Admin reports remain at /worklenz/reporting/overview etc.
+    path: '/worklenz/reporting/analytics',
+    adminOnly: false,
     freePlanFeature: false,
+    guestExcluded: true,
   },
   {
     name: 'Team Reports',

@@ -1,11 +1,26 @@
-import { RouteObject } from 'react-router-dom';
-import { Suspense } from 'react';
+import { RouteObject, Navigate } from 'react-router-dom';
+import { Suspense, lazy, memo } from 'react';
 import ReportingLayout from '@/layouts/ReportingLayout';
+import AnalyticsReportingLayout from '@/layouts/AnalyticsReportingLayout';
 import { ReportingMenuItems, reportingsItems } from '@/lib/reporting/reporting-constants';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import NavSurfaceIndexRedirect from '@/features/navigation/NavSurfaceIndexRedirect';
+import GuestRedirect from '@/guards/GuestRedirect';
+import { useAuthStatus } from '@/hooks/useAuthStatus';
+import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
+import { flatAnalyticsNavItems } from '@/lib/reporting/analytics-nav';
 
-//  function to flatten nested menu items
+const AllReportsPage = lazy(() => import('@/pages/reporting/analytics/AllReportsPage'));
+const DashboardsPage = lazy(() => import('@/pages/reporting/analytics/DashboardsPage'));
+const DashboardDetailPage = lazy(() => import('@/pages/reporting/analytics/DashboardDetailPage'));
+const VelocityPage = lazy(() => import('@/pages/reporting/analytics/VelocityPage'));
+const CumulativeFlowPage = lazy(() => import('@/pages/reporting/analytics/CumulativeFlowPage'));
+const SlaPage = lazy(() => import('@/pages/reporting/analytics/SlaPage'));
+const TimeInStatusPage = lazy(() => import('@/pages/reporting/analytics/TimeInStatusPage'));
+const AnalyticsComingSoonPage = lazy(
+  () => import('@/pages/reporting/analytics/AnalyticsComingSoonPage')
+);
+
 const flattenItems = (items: ReportingMenuItems[]): ReportingMenuItems[] => {
   return items.reduce<ReportingMenuItems[]>((acc, item) => {
     if (item.children) {
@@ -17,16 +32,83 @@ const flattenItems = (items: ReportingMenuItems[]): ReportingMenuItems[] => {
 
 const flattenedItems = flattenItems(reportingsItems);
 
+const withSuspense = (element: React.ReactNode) => (
+  <Suspense fallback={<SuspenseFallback />}>{element}</Suspense>
+);
+
+/** Classic reporting pages remain Owner/Admin (paid) only. */
+const ExistingReportingAdminGuard = memo(({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isAdmin, location } = useAuthStatus();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to={ANALYTICS_BASE_PATH} replace />;
+  }
+
+  return <>{children}</>;
+});
+
+ExistingReportingAdminGuard.displayName = 'ExistingReportingAdminGuard';
+
+const enabledAnalyticsElements: Record<string, React.ReactNode> = {
+  velocity: <VelocityPage />,
+  'cumulative-flow': <CumulativeFlowPage />,
+  'time-in-status': <TimeInStatusPage />,
+  sla: <SlaPage />,
+  dashboards: <DashboardsPage />,
+};
+
+const comingSoonPaths = flatAnalyticsNavItems()
+  .filter(item => item.path && !item.enabled)
+  .map(item => item.path);
+
 const reportingRoutes: RouteObject[] = [
+  // New Reporting & Analytics (prototype sidebar) — listed first for specificity
+  {
+    path: 'worklenz/reporting/analytics',
+    element: (
+      <GuestRedirect blockPathPrefix="/worklenz/reporting">
+        <AnalyticsReportingLayout />
+      </GuestRedirect>
+    ),
+    children: [
+      { index: true, element: withSuspense(<AllReportsPage />) },
+      ...Object.entries(enabledAnalyticsElements).map(([path, element]) => ({
+        path,
+        element: withSuspense(element),
+      })),
+      {
+        path: 'dashboards/:id',
+        element: withSuspense(<DashboardDetailPage />),
+      },
+      ...comingSoonPaths.map(path => ({
+        path,
+        element: withSuspense(<AnalyticsComingSoonPage />),
+      })),
+      { path: '*', element: <Navigate to={ANALYTICS_BASE_PATH} replace /> },
+    ],
+  },
+  // Classic reporting (NavRail) — Owner/Admin only
   {
     path: 'worklenz/reporting',
-    element: <ReportingLayout />,
+    element: (
+      <GuestRedirect blockPathPrefix="/worklenz/reporting">
+        <ExistingReportingAdminGuard>
+          <ReportingLayout />
+        </ExistingReportingAdminGuard>
+      </GuestRedirect>
+    ),
     children: [
       { index: true, element: <NavSurfaceIndexRedirect surfaceKey="reporting" /> },
       ...flattenedItems.map(item => ({
         path: item.endpoint,
-        element: <Suspense fallback={<SuspenseFallback />}>{item.element}</Suspense>,
+        element: withSuspense(item.element),
       })),
+      // Non-matching paths (except /analytics, handled by sibling route) bounce home
+      { path: '*', element: <Navigate to="/worklenz/reporting" replace /> },
     ],
   },
 ];

@@ -38,6 +38,11 @@ export interface NavItem {
   guestExcluded?: boolean;
   // Hide from users who are not team Owner or Admin (e.g. Members, Team Leads)
   adminOnly?: boolean;
+  /**
+   * ISO timestamp — while Date.now() is before this value, the rail shows a NEW badge.
+   * Prefer setting from analytics launch + ANALYTICS_NEW_BADGE_DAYS.
+   */
+  newUntil?: string;
 }
 
 export interface NavGroup {

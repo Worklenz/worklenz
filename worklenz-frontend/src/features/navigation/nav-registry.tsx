@@ -120,10 +120,9 @@ export const PLANNER_NAV_SURFACE: NavSurface = {
   ],
 };
 
-// ─── Reporting ──────────────────────────────────────────────────────────────
-// Mirrors reporting-constants.ts's reportingsItems. The parent 'time-sheet'
-// entry renders as a group header + divider today (antd type:'group'), never
-// a clickable target itself, so it becomes a NavGroup label, not a NavItem.
+// ─── Reporting (classic / Owner-Admin) ──────────────────────────────────────
+// Reporting & Analytics uses a separate prototype-style sidebar under
+// /worklenz/reporting/analytics — do not add those items here.
 export const REPORTING_NAV_SURFACE: NavSurface = {
   key: 'reporting',
   defaultItemKey: 'overview',

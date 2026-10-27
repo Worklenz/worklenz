@@ -205,7 +205,9 @@ const publicRoutes = [...rootRoutes, ...authRoutes, notFoundRoute];
 
 // Apply combined guard to main routes that require both auth and setup completion
 const protectedMainRoutes = wrapRoutes(mainRoutes, AuthAndSetupGuard);
-const adminRoutes = wrapRoutes(reportingRoutes, AdminGuard);
+// Reporting is authenticated for all non-guests; existing report pages keep
+// Owner/Admin guards on their child routes. Analytics is open to Members/Managers.
+const adminRoutes = wrapRoutes(reportingRoutes, AuthAndSetupGuard);
 const adminclientPortalRoutes = wrapRoutes(clientPortalRoutes, AdminGuard);
 const setupRoutes = wrapRoutes([accountSetupRoute], AuthGuard);
 

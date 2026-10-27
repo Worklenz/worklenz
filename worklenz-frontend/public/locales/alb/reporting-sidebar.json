@@ -1,4 +1,4 @@
-{
+﻿{
   "overview": "Përmbledhje",
   "projects": "Projektet",
   "members": "Anëtarët",
@@ -8,5 +8,12 @@
   "logs": "Regjistrat",
   "allTasks": "Detyrat",
   "progressTracking": "Ndjekja e progresit",
-  "currentOrganizationTooltip": "Organizata aktuale"
+  "currentOrganizationTooltip": "Organizata aktuale",
+  "analyticsGroup": "Reporting & Analytics",
+  "dashboards": "Dashboards",
+  "velocity": "Velocity",
+  "cumulativeFlow": "Cumulative Flow",
+  "sla": "SLA Tracking",
+  "timeInStatus": "Time in Status",
+  "newBadge": "NEW"
 }

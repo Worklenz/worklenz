@@ -79,6 +79,9 @@ import TextArea from 'antd/es/input/TextArea';
 // Icons - Import commonly used ones
 export {
   EditOutlined,
+  HeartOutlined,
+  CheckSquareOutlined,
+  PartitionOutlined,
   FormOutlined,
   DeleteOutlined,
   PlusOutlined,
@@ -112,6 +115,8 @@ export {
   UnorderedListOutlined,
   TableOutlined,
   BarChartOutlined,
+  LineChartOutlined,
+  FundOutlined,
   FileOutlined,
   MessageOutlined,
   FlagOutlined,

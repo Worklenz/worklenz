@@ -1,4 +1,4 @@
-{
+﻿{
   "overview": "Aperçu",
   "projects": "Projets",
   "members": "Membres",
@@ -8,5 +8,12 @@
   "logs": "Journaux de temps",
   "allTasks": "Tâches",
   "progressTracking": "Suivi des progrès",
-  "currentOrganizationTooltip": "Organisation actuelle"
+  "currentOrganizationTooltip": "Organisation actuelle",
+  "analyticsGroup": "Reporting & Analytics",
+  "dashboards": "Dashboards",
+  "velocity": "Velocity",
+  "cumulativeFlow": "Cumulative Flow",
+  "sla": "SLA Tracking",
+  "timeInStatus": "Time in Status",
+  "newBadge": "NEW"
 }
