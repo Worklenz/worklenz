@@ -1,0 +1,51 @@
+.cfd-kpi-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 992px) {
+  .cfd-kpi-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .cfd-kpi-tiles {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cfd-kpi-tile {
+  border: 1px solid;
+  border-radius: 8px;
+  padding: 14px 16px;
+  text-align: left;
+  width: 100%;
+}
+
+.cfd-kpi-tile__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.cfd-kpi-tile__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cfd-kpi-tile__value {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.cfd-kpi-tile__sub {
+  font-size: 12px;
+  margin-top: 2px;
+}

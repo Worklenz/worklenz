@@ -20,6 +20,7 @@ import {startTaskExportCleanupJob} from "../cron_jobs/task-export-cleanup-job";
 import {startAuditLogExportCleanupJob} from "../cron_jobs/audit-log-export-cleanup-job";
 import {startAuditLogRetentionJob} from "../cron_jobs/audit-log-retention-job";
 import {startSeatReconciliationJob} from "../cron_jobs/seat-reconciliation-job";
+import {startCfdDailySnapshotJob} from "../cron_jobs/cfd-daily-snapshot-job";
 import FileConstants from "../shared/file-constants";
 import {initRedis} from "../redis/client";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
@@ -138,6 +139,7 @@ function onListening() {
   startAuditLogExportCleanupJob();
   startAuditLogRetentionJob();
   startSeatReconciliationJob();
+  startCfdDailySnapshotJob();
   if (getDeploymentMode() === "cloud" && !isPaddleServiceConfigured()) {
     console.error("[config] The license manager URL is not set (PRODUCTION_SERVER_URL or UAT_SERVER_URL); Paddle checkout will fail.");
   }

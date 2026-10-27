@@ -7,6 +7,7 @@ import { ServerResponse } from "../../models/server-response";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import VelocityController from "../../controllers/reporting-analytics/velocity-controller";
+import CfdController from "../../controllers/reporting-analytics/cfd-controller";
 import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
 
 const router = express.Router();
@@ -56,6 +57,21 @@ router.post(
   requireAnalyticsAccess,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(VelocityController.exportExcel)
+);
+
+// —— Cumulative Flow (Phase 3) ——
+router.get(
+  "/cfd/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(CfdController.getSeries)
+);
+
+router.post(
+  "/cfd/export/csv",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(CfdController.exportCsv)
 );
 
 // —— Report templates ——

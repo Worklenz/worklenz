@@ -8,7 +8,9 @@ import {
 
 export type AnalyticsDatePreset =
   | 'last_7_days'
+  | 'last_14_days'
   | 'last_30_days'
+  | 'last_60_days'
   | 'last_90_days'
   | 'this_quarter'
   | 'custom';
@@ -101,7 +103,9 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
         style={{ minWidth: 160 }}
         options={[
           { value: 'last_7_days', label: t('dateLast7', { defaultValue: 'Last 7 days' }) },
+          { value: 'last_14_days', label: t('dateLast14', { defaultValue: 'Last 14 days' }) },
           { value: 'last_30_days', label: t('dateLast30', { defaultValue: 'Last 30 days' }) },
+          { value: 'last_60_days', label: t('dateLast60', { defaultValue: 'Last 60 days' }) },
           { value: 'last_90_days', label: t('dateLast90', { defaultValue: 'Last 90 days' }) },
           { value: 'this_quarter', label: t('dateThisQuarter', { defaultValue: 'This quarter' }) },
           { value: 'custom', label: t('dateCustom', { defaultValue: 'Custom' }) },
