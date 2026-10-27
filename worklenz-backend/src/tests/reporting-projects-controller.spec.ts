@@ -120,9 +120,9 @@ describe("ReportingProjectsController", () => {
       expect(query[1].slice(1, 3)).toEqual([10, 10]);
     });
 
-    it("sorts days left by absolute distance from today before pagination", async () => {
+    it.each(["days_left", "p.days_left"])("sorts %s by absolute distance from today before pagination", async (field) => {
       const req = createMockRequest({
-        query: { field: "days_left", order: "descend", index: "2", size: "10" },
+        query: { field, order: "descend", index: "2", size: "10" },
         user: { id: "u-1", team_id: "t-1", name: "Test", email: "test@example.com", owner: true }
       });
       const res = createMockResponse();
