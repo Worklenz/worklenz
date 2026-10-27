@@ -62,6 +62,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
         value={selectedProjectIds}
         onChange={onProjectsChange}
         loading={loading}
+        showBulkActions
         searchPlaceholder={t('searchProjects', { defaultValue: 'Search projects' })}
         emptyText={t('noProjects', { defaultValue: 'No projects found' })}
       />
@@ -85,6 +86,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
           value={selectedTeamIds}
           onChange={onTeamsChange}
           loading={loading}
+          showBulkActions
           searchPlaceholder={t('searchTeams', { defaultValue: 'Search teams' })}
           emptyText={t('noTeams', { defaultValue: 'No teams found' })}
         />

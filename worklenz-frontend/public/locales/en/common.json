@@ -135,5 +135,7 @@
   "refreshingData": "Refreshing data...",
   "loadingData": "Loading data...",
   "noDataAvailable": "No data available",
-  "licennse-expired-contacting-support": "Contacting support..."
+  "licennse-expired-contacting-support": "Contacting support...",
+  "selectAll": "Select all",
+  "clearAll": "Clear all"
 }

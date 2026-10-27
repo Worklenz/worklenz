@@ -11,10 +11,14 @@ import {
   List,
   Space,
   Spin,
+  Typography,
   theme,
 } from '@/shared/antd-imports';
 import { CaretDownFilled } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
+
+const { Text } = Typography;
 
 // Matches the outer "Filter" trigger button's own size exactly, so every
 // pill inside a filter panel (and the trigger itself) reads as one consistent row.
@@ -44,6 +48,8 @@ export interface MultiSelectFilterPillProps {
   loading?: boolean;
   /** Server-side search: when set, typed text is passed here and `options` are shown unfiltered. */
   onSearchChange?: (search: string) => void;
+  /** Show Select all / Clear all actions above the list. */
+  showBulkActions?: boolean;
 }
 
 // Multi-select checklist pill — mirrors the Task List "Status" filter's Card
@@ -58,7 +64,9 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
   emptyText,
   loading = false,
   onSearchChange,
+  showBulkActions = false,
 }) => {
+  const { t } = useTranslation('common');
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [open, setOpen] = React.useState(false);
@@ -78,6 +86,15 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
     onChange(value.includes(val) ? value.filter(v => v !== val) : [...value, val]);
   };
 
+  const selectAllVisible = () => {
+    const visibleIds = filtered.map(o => o.value);
+    onChange([...new Set([...value, ...visibleIds])]);
+  };
+
+  const clearAll = () => {
+    onChange([]);
+  };
+
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
     // A half-typed search should not linger into the next time the pill opens.
@@ -88,7 +105,7 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
     <Card
       className="custom-card"
       style={{ width: 'min(240px, calc(100vw - 32px))' }}
-      styles={{ body: { padding: searchable ? 8 : 0 } }}
+      styles={{ body: { padding: searchable || showBulkActions ? 8 : 0 } }}
     >
       <Flex vertical gap={8}>
         {searchable && (
@@ -100,6 +117,27 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
             allowClear
             size="small"
           />
+        )}
+        {showBulkActions && !loading && filtered.length > 0 && (
+          <Flex justify="space-between" align="center" style={{ paddingInline: 4 }}>
+            <Button
+              type="link"
+              size="small"
+              onClick={selectAllVisible}
+              style={{ paddingInline: 0, height: 'auto', fontSize: 12 }}
+            >
+              {t('selectAll', { defaultValue: 'Select all' })}
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              onClick={clearAll}
+              disabled={value.length === 0}
+              style={{ paddingInline: 0, height: 'auto', fontSize: 12 }}
+            >
+              {t('clearAll', { defaultValue: 'Clear all' })}
+            </Button>
+          </Flex>
         )}
         {loading ? (
           <Flex justify="center" style={{ padding: 16 }}>
@@ -127,7 +165,7 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
             ) : (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={emptyText}
+                description={emptyText ?? <Text type="secondary">{label}</Text>}
                 style={{ padding: 8 }}
               />
             )}
