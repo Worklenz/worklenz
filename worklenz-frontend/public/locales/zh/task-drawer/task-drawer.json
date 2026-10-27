@@ -2,6 +2,10 @@
   "upgradeNow": "立即升级",
   "description": {
     "loadingEditor": "正在加载编辑器...",
+    "mentionSuggestions": "团队成员建议",
+    "loadingMembers": "正在加载团队成员...",
+    "membersLoadFailed": "无法加载团队成员。",
+    "noMembersFound": "未找到团队成员。",
     "wordCount": "{{count}} 字",
     "save": "保存",
     "discard": "放弃",

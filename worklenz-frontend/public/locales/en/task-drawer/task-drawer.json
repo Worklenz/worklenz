@@ -2,6 +2,10 @@
   "upgradeNow": "Upgrade Now",
   "description": {
     "loadingEditor": "Loading editor...",
+    "mentionSuggestions": "Team member suggestions",
+    "loadingMembers": "Loading team members...",
+    "membersLoadFailed": "Team members could not be loaded.",
+    "noMembersFound": "No team members found.",
     "wordCount": "{{count}} words",
     "save": "Save",
     "discard": "Discard",

@@ -2,6 +2,10 @@
   "upgradeNow": "Bëj upgrade tani",
   "description": {
     "loadingEditor": "Duke ngarkuar editorin...",
+    "mentionSuggestions": "Sugjerime për anëtarët e ekipit",
+    "loadingMembers": "Duke ngarkuar anëtarët e ekipit...",
+    "membersLoadFailed": "Anëtarët e ekipit nuk mund të ngarkoheshin.",
+    "noMembersFound": "Nuk u gjet asnjë anëtar i ekipit.",
     "wordCount": "{{count}} fjalë",
     "save": "Ruaj",
     "discard": "Anulo",
