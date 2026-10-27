@@ -2,6 +2,10 @@
   "upgradeNow": "Mettre à niveau maintenant",
   "description": {
     "loadingEditor": "Chargement de l'éditeur...",
+    "mentionSuggestions": "Suggestions de membres de l’équipe",
+    "loadingMembers": "Chargement des membres de l’équipe...",
+    "membersLoadFailed": "Impossible de charger les membres de l’équipe.",
+    "noMembersFound": "Aucun membre de l’équipe trouvé.",
     "wordCount": "{{count}} mots",
     "save": "Enregistrer",
     "discard": "Jeter",

@@ -511,6 +511,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
             description={taskFormViewModel?.task?.description || null}
             taskId={taskFormViewModel?.task?.id || ''}
             parentTaskId={taskFormViewModel?.task?.parent_task_id || ''}
+            projectId={projectId}
             isGuest={isGuest}
           />
           {selectedTaskId ? <MentionedInDocs taskId={selectedTaskId} isGuest={isGuest} /> : null}

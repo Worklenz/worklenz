@@ -2,6 +2,10 @@
   "upgradeNow": "Uaktualnij teraz",
   "description": {
     "loadingEditor": "Ładowanie edytora...",
+    "mentionSuggestions": "Sugestie członków zespołu",
+    "loadingMembers": "Ładowanie członków zespołu...",
+    "membersLoadFailed": "Nie udało się załadować członków zespołu.",
+    "noMembersFound": "Nie znaleziono członków zespołu.",
     "wordCount": "{{count}} słów",
     "save": "Zapisz",
     "discard": "Odrzuć",
