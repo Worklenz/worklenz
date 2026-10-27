@@ -84,7 +84,7 @@ export const ANALYTICS_NAV: {
           path: 'utilization',
           labelKey: 'utilization',
           defaultLabel: 'Utilization',
-          enabled: false,
+          enabled: true,
         },
       ],
     },

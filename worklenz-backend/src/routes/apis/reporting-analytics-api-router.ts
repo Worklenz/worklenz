@@ -12,6 +12,7 @@ import TimeInStatusController from "../../controllers/reporting-analytics/time-i
 import ProjectHealthController from "../../controllers/reporting-analytics/project-health-controller";
 import PlannedVsActualTasksController from "../../controllers/reporting-analytics/planned-vs-actual-tasks-controller";
 import PlannedVsActualMilestonesController from "../../controllers/reporting-analytics/planned-vs-actual-milestones-controller";
+import UtilizationController from "../../controllers/reporting-analytics/utilization-controller";
 import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
 
 const router = express.Router();
@@ -50,6 +51,7 @@ router.get(
             "project-health",
             "planned-vs-actual-tasks",
             "planned-vs-actual-milestones",
+            "utilization",
           ],
         })
       )
@@ -152,6 +154,21 @@ router.post(
   requireAnalyticsAccess,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(PlannedVsActualMilestonesController.exportCsv)
+);
+
+// —— Utilization (capacity = working hours, logged = logged time) ——
+router.get(
+  "/utilization/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(UtilizationController.getSeries)
+);
+
+router.post(
+  "/utilization/export/csv",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(UtilizationController.exportCsv)
 );
 
 // —— Report templates ——

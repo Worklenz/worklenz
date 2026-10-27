@@ -73,7 +73,7 @@ const REPORT_DESCRIPTIONS: Record<string, { descKey: string; defaultDesc: string
   },
   utilization: {
     descKey: 'descUtilization',
-    defaultDesc: 'Team capacity and billable utilization',
+    defaultDesc: 'Team capacity (working hours) vs logged time',
     color: '#13c2c2',
   },
   'time-report': {
