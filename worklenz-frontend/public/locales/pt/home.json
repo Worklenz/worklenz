@@ -254,7 +254,9 @@
     "weekdaySat": "Sáb",
     "weekdaySun": "Dom",
     "createdTimeColumn": "Hora de criação",
-    "minutesPlaceholder": "0"
+    "minutesPlaceholder": "0",
+    "totalDurationBadge": "Total: {{duration}}",
+    "overnightSplitBreakdown": "({{day1Duration}} em {{day1Date}}, {{day2Duration}} em {{day2Date}})"
   },
   "expenses": {
     "emptyTitle": "Ainda não há despesas registradas",

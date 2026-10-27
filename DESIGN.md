@@ -55,6 +55,7 @@ Baseline repo tokens currently include:
 - Use Ant Design `Form` validation patterns.
 - Show validation feedback near the field and keep error copy actionable.
 - Required fields must be clearly indicated.
+- For date-time ranges (e.g., time logging), provide explicit Start Date and End Date alongside Start Time and End Time to support overnight sessions spanning midnight without forcing multi-entry workarounds.
 
 ### Tables and Lists
 - Optimize for scanning:
