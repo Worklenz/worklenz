@@ -273,9 +273,11 @@ const ClientPortalSettings = () => {
       if (response.done) {
         setCustomLogo(null);
         setIsLogoSynced(true);
+        message.success(t('settingsSavedText', { defaultValue: 'Settings saved successfully' }));
       }
     } catch (error) {
       console.error('Failed to reset to organization logo:', error);
+      message.error(t('settingsSaveFailedError', { defaultValue: 'Failed to save settings.' }));
     } finally {
       setSaving(false);
     }
