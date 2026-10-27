@@ -165,6 +165,9 @@ export const PortalPagedTable = <T extends object>({
           previousPageLabel={t('common:previousPage')}
           nextPageLabel={t('common:nextPage')}
           lastPageLabel={t('common:lastPage')}
+          renderDefaultSummary={(range, total) =>
+            t('common:paginationSummary', { range, total })
+          }
           page={paging.page}
           pageSize={paging.limit}
           total={total}

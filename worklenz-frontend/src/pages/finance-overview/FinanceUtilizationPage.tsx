@@ -238,6 +238,7 @@ export const FinanceUtilizationPage = () => {
           previousPageLabel={t('common:previousPage')}
           nextPageLabel={t('common:nextPage')}
           lastPageLabel={t('common:lastPage')}
+          renderDefaultSummary={(range, total) => t('common:paginationSummary', { range, total })}
           page={page}
           pageSize={pageSize}
           total={members.length}

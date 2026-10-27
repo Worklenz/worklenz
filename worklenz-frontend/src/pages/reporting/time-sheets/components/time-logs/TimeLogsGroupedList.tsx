@@ -360,6 +360,7 @@ export const TimeLogsGroupedList: React.FC<TimeLogsGroupedListProps> = ({
           previousPageLabel={t('common:previousPage')}
           nextPageLabel={t('common:nextPage')}
           lastPageLabel={t('common:lastPage')}
+          renderDefaultSummary={(range, total) => t('common:paginationSummary', { range, total })}
           variant="dropdown"
           page={page}
           pageSize={pageSize}

@@ -137,6 +137,7 @@
   "noDataAvailable": "Brak dostępnych danych",
   "licennse-expired-contacting-support": "Kontaktuję się z pomocą techniczną...",
   "paginationNavigation": "Paginacja",
+  "paginationSummary": "{{range}} z {{total}}",
   "firstPage": "Pierwsza strona",
   "previousPage": "Poprzednia strona",
   "nextPage": "Następna strona",

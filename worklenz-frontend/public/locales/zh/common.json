@@ -137,6 +137,7 @@
   "noDataAvailable": "无可用数据",
   "licennse-expired-contacting-support": "联系支持...",
   "paginationNavigation": "分页",
+  "paginationSummary": "{{range}} / 共 {{total}}",
   "firstPage": "首页",
   "previousPage": "上一页",
   "nextPage": "下一页",

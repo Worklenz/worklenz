@@ -13,6 +13,7 @@ export interface TablePaginationProps {
   previousPageLabel: string;
   nextPageLabel: string;
   lastPageLabel: string;
+  renderDefaultSummary: (range: string, total: number) => React.ReactNode;
   /** Given the "start-end" range text and the total count, render the summary label. */
   renderSummary?: (range: string, total: number) => React.ReactNode;
   /**
@@ -50,6 +51,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
   previousPageLabel,
   nextPageLabel,
   lastPageLabel,
+  renderDefaultSummary,
   renderSummary,
   insetStart = DEFAULT_INSET,
   insetEnd = DEFAULT_INSET,
@@ -169,7 +171,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           </select>
         )}
         <span style={{ fontSize: 12, color: token.colorTextSecondary, marginLeft: 4 }}>
-          {renderSummary ? renderSummary(range, total) : `${range} of ${total}`}
+          {renderSummary ? renderSummary(range, total) : renderDefaultSummary(range, total)}
         </span>
       </div>
 

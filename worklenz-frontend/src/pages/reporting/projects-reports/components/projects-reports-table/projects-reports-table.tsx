@@ -462,7 +462,15 @@ const ProjectsReportsTable = () => {
 
       const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
       dispatch(setField(activeSorter?.order ? activeSorter.field : 'name'));
-      dispatch(setOrder(activeSorter?.order === 'descend' ? 'desc' : 'asc'));
+      dispatch(
+        setOrder(
+          activeSorter?.order === 'descend'
+            ? 'desc'
+            : activeSorter?.order === 'ascend'
+              ? 'asc'
+              : ''
+        )
+      );
       dispatch(setIndex(1));
     },
     [dispatch, pageSize]
@@ -544,6 +552,7 @@ const ProjectsReportsTable = () => {
         previousPageLabel={t('common:previousPage')}
         nextPageLabel={t('common:nextPage')}
         lastPageLabel={t('common:lastPage')}
+        renderDefaultSummary={(range, total) => t('common:paginationSummary', { range, total })}
         page={index}
         pageSize={pageSize}
         total={total}

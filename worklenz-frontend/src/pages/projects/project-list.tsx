@@ -730,6 +730,9 @@ const ProjectList: React.FC = () => {
               previousPageLabel={t('common:previousPage')}
               nextPageLabel={t('common:nextPage')}
               lastPageLabel={t('common:lastPage')}
+              renderDefaultSummary={(range, total) =>
+                t('common:paginationSummary', { range, total })
+              }
               page={requestParams.index}
               pageSize={requestParams.size}
               total={projectsData?.body?.total || 0}
@@ -760,6 +763,9 @@ const ProjectList: React.FC = () => {
                 previousPageLabel={t('common:previousPage')}
                 nextPageLabel={t('common:nextPage')}
                 lastPageLabel={t('common:lastPage')}
+                renderDefaultSummary={(range, total) =>
+                  t('common:paginationSummary', { range, total })
+                }
                 page={groupedRequestParams.index}
                 pageSize={groupedRequestParams.size}
                 total={groupedProjects.data?.total_groups || 0}

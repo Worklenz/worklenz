@@ -608,16 +608,10 @@ const ProjectViewFiles = () => {
   };
 
   const handleTableChange: TableProps<ProjectFile>['onChange'] = (
-    pagination,
+    _pagination,
     _filters,
     sorterParam
   ) => {
-    setPaginationConfig(prev => ({
-      ...prev,
-      pageIndex: pagination.current || 1,
-      pageSize: pagination.pageSize || DEFAULT_PAGE_SIZE,
-    }));
-
     if (!Array.isArray(sorterParam)) {
       const sortField = (sorterParam.field as ProjectFilesSortField) || 'created_at';
       const sortOrder: ProjectFilesSortOrder =
@@ -976,6 +970,9 @@ const ProjectViewFiles = () => {
             previousPageLabel={t('common:previousPage')}
             nextPageLabel={t('common:nextPage')}
             lastPageLabel={t('common:lastPage')}
+            renderDefaultSummary={(range, total) =>
+              t('common:paginationSummary', { range, total })
+            }
             page={paginationConfig.pageIndex}
             pageSize={paginationConfig.pageSize}
             total={paginationConfig.total}
@@ -1019,6 +1016,9 @@ const ProjectViewFiles = () => {
             previousPageLabel={t('common:previousPage')}
             nextPageLabel={t('common:nextPage')}
             lastPageLabel={t('common:lastPage')}
+            renderDefaultSummary={(range, total) =>
+              t('common:paginationSummary', { range, total })
+            }
             page={taskAttachmentsPagination.pageIndex}
             pageSize={taskAttachmentsPagination.pageSize}
             total={taskAttachmentsPagination.total}
