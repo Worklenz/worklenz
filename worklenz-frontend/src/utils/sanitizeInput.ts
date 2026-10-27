@@ -93,13 +93,98 @@ export const sanitizeHtml = (input: string): string => {
   });
 };
 
+const COMMENT_SANITIZE_MARKER = '__worklenzCommentSanitize';
+
+const SAFE_COLOR_REGEX = /^(?:#(?:[0-9a-f]{3,4}){1,2}|rgba?\([^)]+\)|hsla?\([^)]+\)|[a-z]+)$/i;
+
+const COMMENT_ALLOWED_CLASSES = new Set([
+  'mention',
+  'mentions',
+  'comment-link',
+  'rich-task-list',
+  'rich-task-item',
+  'is-checked',
+  'rich-task-item-content',
+  'rich-code-block',
+  'rich-blockquote',
+]);
+
+interface CommentSanitizeConfig extends DOMPurify.Config {
+  [COMMENT_SANITIZE_MARKER]?: boolean;
+}
+
+type PurifyHookFn = (node: Element, data: unknown, config: DOMPurify.Config) => void;
+
+interface PurifyWithHooks {
+  addHook(entryPoint: string, cb: PurifyHookFn): void;
+}
+
+let commentHooksInstalled = false;
+
+/**
+ * Registers comment-content transformations as a DOMPurify hook on the shared
+ * instance. The hook checks the config marker, so it only affects comment
+ * sanitization and leaves every other DOMPurify call site untouched.
+ *
+ * Running these transformations inside DOMPurify (on the DOM it parsed) means
+ * they are enforced in every environment - including when no global `document`
+ * exists - so unfiltered styles, classes, or input types can never survive on
+ * the no-document fallback path.
+ *
+ * @param purify - The DOMPurify instance to register the hook on
+ */
+const installCommentSanitizeHooks = (purify: PurifyWithHooks): void => {
+  if (commentHooksInstalled || typeof purify.addHook !== 'function') return;
+  commentHooksInstalled = true;
+
+  purify.addHook('afterSanitizeAttributes', (node: Element, _data: unknown, config: DOMPurify.Config) => {
+    if (!config || (config as CommentSanitizeConfig)[COMMENT_SANITIZE_MARKER] !== true) return;
+
+    const el = node as HTMLElement;
+
+    // Inline styles are reduced to a single validated color declaration so
+    // position/url()/expression() payloads can never survive.
+    if (el.hasAttribute('style')) {
+      const rawStyle = el.getAttribute('style') || '';
+      el.removeAttribute('style');
+      const match = rawStyle.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
+      if (match) {
+        const val = match[1].trim();
+        if (SAFE_COLOR_REGEX.test(val)) {
+          el.setAttribute('style', `color: ${val};`);
+        }
+      }
+    }
+
+    // Classes are restricted to the editor allowlist.
+    if (el.hasAttribute('class')) {
+      const filtered = Array.from(el.classList).filter(cls => COMMENT_ALLOWED_CLASSES.has(cls));
+      if (filtered.length > 0) {
+        el.setAttribute('class', filtered.join(' '));
+      } else {
+        el.removeAttribute('class');
+      }
+    }
+
+    // Inputs are strictly checkboxes and links open safely in a new tab.
+    if (el.tagName === 'INPUT') {
+      el.setAttribute('type', 'checkbox');
+    }
+    if (el.tagName === 'A') {
+      el.setAttribute('target', '_blank');
+      el.setAttribute('rel', 'noopener noreferrer nofollow');
+    }
+  });
+};
+
 /**
  * Sanitizes comment HTML while retaining rich formatting, mentions, and checklists.
  * Link URLs must start with http:, https:, or mailto:.
- * When document is available, retains only matching color declarations in styles,
- * converts inputs to checkboxes, and sets anchors to target="_blank" with
- * rel="noopener noreferrer nofollow". Otherwise returns the DOMPurify output
- * without these additional transformations.
+ * Style attributes are reduced to validated color declarations, classes are
+ * restricted to the editor allowlist, inputs are forced to checkboxes, and
+ * anchors are set to target="_blank" with rel="noopener noreferrer nofollow".
+ * These transformations run inside a DOMPurify hook, so they apply even when
+ * no global `document` is available.
  *
  * @param input - The comment content to sanitize
  * @returns Sanitized comment HTML, or an empty string for empty input
@@ -107,7 +192,10 @@ export const sanitizeHtml = (input: string): string => {
 export const sanitizeCommentContent = (input: string): string => {
   if (!input) return '';
 
-  const sanitized = getPurify().sanitize(input, {
+  const purify = getPurify();
+  installCommentSanitizeHooks(purify as unknown as PurifyWithHooks);
+
+  const options = {
     ALLOWED_TAGS: [
       'b', 'i', 'em', 'strong', 'p', 'br', 'span', 's', 'del', 'strike', 'u',
       'code', 'pre', 'blockquote', 'ul', 'ol', 'li', 'a', 'label', 'input', 'div'
@@ -132,57 +220,8 @@ export const sanitizeCommentContent = (input: string): string => {
     RETURN_DOM: false,
     RETURN_DOM_FRAGMENT: false,
     RETURN_TRUSTED_TYPE: false,
-  });
+    [COMMENT_SANITIZE_MARKER]: true,
+  } as CommentSanitizeConfig;
 
-  // Retain only validated color declarations in style attributes,
-  // ensure inputs are strictly checkboxes, and links open in new tab safely
-  if (typeof document !== 'undefined') {
-    const div = document.createElement('div');
-    div.innerHTML = sanitized;
-    const SAFE_COLOR_REGEX = /^(?:#(?:[0-9a-f]{3,4}){1,2}|rgba?\([^)]+\)|hsla?\([^)]+\)|[a-z]+)$/i;
-
-    div.querySelectorAll('[style]').forEach(el => {
-      const rawStyle = el.getAttribute('style') || '';
-      el.removeAttribute('style');
-      const match = rawStyle.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
-      if (match) {
-        const val = match[1].trim();
-        if (SAFE_COLOR_REGEX.test(val)) {
-          el.setAttribute('style', `color: ${val};`);
-        }
-      }
-    });
-
-    const ALLOWED_CLASSES = new Set([
-      'mention',
-      'mentions',
-      'comment-link',
-      'rich-task-list',
-      'rich-task-item',
-      'is-checked',
-      'rich-task-item-content',
-      'rich-code-block',
-      'rich-blockquote',
-    ]);
-
-    div.querySelectorAll('[class]').forEach(el => {
-      const filtered = Array.from(el.classList).filter(cls => ALLOWED_CLASSES.has(cls));
-      if (filtered.length > 0) {
-        el.setAttribute('class', filtered.join(' '));
-      } else {
-        el.removeAttribute('class');
-      }
-    });
-
-    div.querySelectorAll('input').forEach(input => {
-      input.setAttribute('type', 'checkbox');
-    });
-    div.querySelectorAll('a').forEach(anchor => {
-      anchor.setAttribute('target', '_blank');
-      anchor.setAttribute('rel', 'noopener noreferrer nofollow');
-    });
-    return div.innerHTML;
-  }
-
-  return sanitized;
+  return purify.sanitize(input, options);
 };

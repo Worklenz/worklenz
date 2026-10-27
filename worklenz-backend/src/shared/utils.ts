@@ -338,9 +338,11 @@ export function sanitizeSVG(svgContent: string): string {
 
 /**
  * Sanitizes comment HTML while retaining rich formatting, mentions, and checklists.
- * Permits HTTP(S) and mailto links, as well as relative URLs, and sets all anchors
- * to target="_blank" with rel="noopener noreferrer nofollow". Inline styles are
- * limited to allowed color declarations, and input types to checkbox.
+ * Permits HTTP(S), mailto, and same-origin relative links, but rejects
+ * protocol-relative URLs (href="//evil.example") to prevent open redirects.
+ * Anchors are set to target="_blank" with rel="noopener noreferrer nofollow".
+ * Inline styles are limited to color declarations, checklist labels are forced
+ * to contenteditable="false", and input types to checkbox.
  *
  * @param content - The comment content to sanitize
  * @returns Sanitized HTML, or an empty string for empty input
@@ -371,10 +373,15 @@ export function sanitizeCommentContent(content: string): string {
         'disabled',
         'aria-label'
       ],
-      'label': ['contenteditable'],
+      'label': [
+        {
+          name: 'contenteditable',
+          values: ['false']
+        }
+      ],
       'code': ['class'],
       'pre': ['class'],
-      'div': ['class', 'style']
+      'div': ['class']
     },
     allowedClasses: {
       'span': ['mention', 'mentions'],
@@ -387,6 +394,7 @@ export function sanitizeCommentContent(content: string): string {
       'code': ['rich-code-block']
     },
     allowedSchemes: ['http', 'https', 'mailto'],
+    allowProtocolRelative: false,
     allowedStyles: {
       '*': {
         'color': [

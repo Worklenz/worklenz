@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sanitizeCommentContent } from './sanitizeInput';
 
 describe('sanitizeCommentContent', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('allows safe formatting: bold, italic, strike, code, blockquote, lists', () => {
     const input = '<b>Bold</b> <i>Italic</i> <s>Strike</s> <code>inline</code> <blockquote>Quote</blockquote>';
     const output = sanitizeCommentContent(input);
@@ -32,6 +36,61 @@ describe('sanitizeCommentContent', () => {
     const input = '<span style="color: #1890ff;">Blue text</span>';
     const output = sanitizeCommentContent(input);
     expect(output).toContain('color: #1890ff');
+  });
+
+  it('keeps only validated color declarations from style attributes', () => {
+    const input =
+      '<span style="color: #1890ff; position: fixed; top: 0; left: 0; z-index: 99999;">Text</span>';
+    const output = sanitizeCommentContent(input);
+    expect(output).toContain('color: #1890ff');
+    expect(output).not.toContain('position');
+    expect(output).not.toContain('z-index');
+  });
+
+  it('strips url(...) payloads from style attributes', () => {
+    const input = '<span style="background: url(//evil.example/pixel.png); color: red;">Text</span>';
+    const output = sanitizeCommentContent(input);
+    expect(output).toContain('color: red');
+    expect(output).not.toContain('url(');
+    expect(output).not.toContain('evil.example');
+  });
+
+  it('strips expression(...) payloads from style attributes', () => {
+    const input = '<span style="width: expression(alert(1)); color: green;">Text</span>';
+    const output = sanitizeCommentContent(input);
+    expect(output).toContain('color: green');
+    expect(output).not.toContain('expression');
+  });
+
+  it('filters styles on every allowed tag, not just spans', () => {
+    const input =
+      '<div style="position: fixed; bottom: 0; color: blue;">Pinned</div><b style="display: none; color: red;">Hidden</b>';
+    const output = sanitizeCommentContent(input);
+    expect(output).not.toContain('position');
+    expect(output).not.toContain('display');
+    expect(output).toContain('color: blue');
+    expect(output).toContain('color: red');
+  });
+
+  it('enforces transformations when no global document is available', () => {
+    vi.stubGlobal('document', undefined);
+    const input =
+      '<span class="mention evil" style="color: #1890ff; position: fixed;">@John</span>' +
+      '<input type="text" /><a href="https://example.com">Link</a>';
+    const output = sanitizeCommentContent(input);
+    expect(output).toContain('color: #1890ff');
+    expect(output).not.toContain('position');
+    expect(output).toContain('class="mention"');
+    expect(output).not.toContain('evil');
+    expect(output).toContain('type="checkbox"');
+    expect(output).toContain('target="_blank"');
+    expect(output).toContain('rel="noopener noreferrer nofollow"');
+  });
+
+  it('strips protocol-relative URLs from links', () => {
+    const input = '<a href="//evil.example/phish">Click</a>';
+    const output = sanitizeCommentContent(input);
+    expect(output).not.toContain('evil.example');
   });
 
   it('strips dangerous scripts and malicious event handlers', () => {
