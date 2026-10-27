@@ -6,7 +6,7 @@
     "approverPlaceholder": "Select an approver…",
     "drafted": "{{ref}} zapisany jako wersja robocza. Klient jeszcze tego nie widzi.",
     "dueDate": "Termin płatności (opcjonalnie)",
-    "dueDatePlaceholder": "Select due date",
+    "dueDatePlaceholder": "Wybierz termin",
     "existingHint": "Można łączyć tylko pliki, kamienie milowe i zadania widoczne dla klienta. Rejestrowana jest dokładna wersja pliku.",
     "existingItem": "Istniejący element",
     "failed": "Nie można zapisać prośby o zatwierdzenie.",

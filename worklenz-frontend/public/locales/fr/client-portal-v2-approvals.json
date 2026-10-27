@@ -6,7 +6,7 @@
     "approverPlaceholder": "Select an approver…",
     "drafted": "{{ref}} enregistré en tant que brouillon. Le client ne peut pas encore le voir.",
     "dueDate": "Date d'échéance (facultatif)",
-    "dueDatePlaceholder": "Select due date",
+    "dueDatePlaceholder": "Sélectionner la date d'échéance",
     "existingHint": "Seuls les fichiers, jalons et tâches visibles par le client peuvent être liés. La version exacte du fichier est enregistrée.",
     "existingItem": "Article existant",
     "failed": "La demande d'approbation n'a pas pu être enregistrée.",
