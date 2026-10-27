@@ -1,0 +1,138 @@
+.all-reports-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 100%;
+}
+
+.all-reports-gallery__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.all-reports-gallery__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+@media (max-width: 992px) {
+  .all-reports-gallery__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .all-reports-gallery__stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.all-reports-gallery__stat {
+  border: 1px solid;
+  border-radius: 8px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  text-align: left;
+  background: transparent;
+  width: 100%;
+}
+
+.all-reports-gallery__stat:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.all-reports-gallery__stat-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.all-reports-gallery__stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.all-reports-gallery__stat-value {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.all-reports-gallery__stat-sub {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.all-reports-gallery__tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid;
+  margin: 16px 0 0;
+  overflow-x: auto;
+}
+
+.all-reports-gallery__tab {
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.all-reports-gallery__tab.is-active {
+  font-weight: 600;
+}
+
+.all-reports-gallery__tab-count {
+  font-size: 12px;
+  margin-left: 4px;
+  opacity: 0.65;
+}
+
+.all-reports-gallery__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+  align-items: center;
+}
+
+.all-reports-gallery__table-card {
+  border: 1px solid;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.all-reports-gallery__rname {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.all-reports-gallery__rico {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 14px;
+  flex: none;
+}
+
+.all-reports-gallery__empty {
+  padding: 48px 16px;
+  text-align: center;
+}

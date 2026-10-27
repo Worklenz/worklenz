@@ -159,6 +159,7 @@ export {
   BankOutlined,
   ProjectOutlined,
   StarFilled,
+  StarOutlined,
   SortAscendingOutlined,
   SortDescendingOutlined,
   CaretDownOutlined,

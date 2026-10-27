@@ -84,6 +84,10 @@ const reportingRoutes: RouteObject[] = [
         path: 'dashboards/:id',
         element: withSuspense(<DashboardDetailPage />),
       },
+      {
+        path: 'custom/:id',
+        element: withSuspense(<AnalyticsComingSoonPage />),
+      },
       ...comingSoonPaths.map(path => ({
         path,
         element: withSuspense(<AnalyticsComingSoonPage />),

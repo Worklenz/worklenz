@@ -11,7 +11,6 @@ import {
   FundOutlined,
   FieldTimeOutlined,
   SafetyCertificateOutlined,
-  EditOutlined,
   PartitionOutlined,
 } from '@/shared/antd-imports';
 
@@ -146,24 +145,10 @@ export const ANALYTICS_NAV: {
       ],
     },
     {
-      key: 'custom-reports',
-      labelKey: 'navGroupCustomReports',
-      defaultLabel: 'Custom reports',
+      key: 'share',
+      labelKey: 'navGroupShare',
+      defaultLabel: 'Share',
       items: [
-        {
-          key: 'weekly-overdue',
-          path: 'weekly-overdue',
-          labelKey: 'weeklyOverdue',
-          defaultLabel: 'Weekly overdue tasks',
-          enabled: false,
-        },
-        {
-          key: 'billable-hours-client',
-          path: 'billable-hours-client',
-          labelKey: 'billableHoursClient',
-          defaultLabel: 'Billable hours by client',
-          enabled: false,
-        },
         {
           key: 'dashboards',
           path: 'dashboards',
@@ -171,13 +156,6 @@ export const ANALYTICS_NAV: {
           defaultLabel: 'Dashboards',
           enabled: true,
         },
-      ],
-    },
-    {
-      key: 'share',
-      labelKey: 'navGroupShare',
-      defaultLabel: 'Share',
-      items: [
         {
           key: 'client-dashboard',
           path: 'client-dashboard',
@@ -203,8 +181,6 @@ export const getAnalyticsNavIcon = (key: string): ReactNode => {
     'cumulative-flow': React.createElement(FundOutlined),
     'time-in-status': React.createElement(FieldTimeOutlined),
     sla: React.createElement(SafetyCertificateOutlined),
-    'weekly-overdue': React.createElement(EditOutlined),
-    'billable-hours-client': React.createElement(DollarOutlined),
     dashboards: React.createElement(PartitionOutlined),
     'client-dashboard': React.createElement(AppstoreOutlined),
   };
@@ -214,7 +190,42 @@ export const getAnalyticsNavIcon = (key: string): ReactNode => {
 export const analyticsPath = (segment = ''): string =>
   segment ? `${ANALYTICS_BASE_PATH}/${segment}` : ANALYTICS_BASE_PATH;
 
-export const flatAnalyticsNavItems = (): AnalyticsNavItem[] => [
+export const CUSTOM_REPORTS_GROUP_KEY = 'custom-reports';
+
+/** Path for a user-saved custom report. */
+export const customReportPath = (id: string): string => `custom/${id}`;
+
+/**
+ * Built-in groups plus an optional Custom reports group when the user has saved any.
+ * Inserted before Share so personal reports sit above shared views.
+ */
+export const buildAnalyticsNavGroups = (
+  customReports: Array<{ id: string; name: string }>
+): AnalyticsNavGroup[] => {
+  const builtin = ANALYTICS_NAV.groups;
+  if (customReports.length === 0) return builtin;
+
+  const customGroup: AnalyticsNavGroup = {
+    key: CUSTOM_REPORTS_GROUP_KEY,
+    labelKey: 'navGroupCustomReports',
+    defaultLabel: 'Custom reports',
+    items: customReports.map(report => ({
+      key: `custom-${report.id}`,
+      path: customReportPath(report.id),
+      labelKey: `customReport.${report.id}`,
+      defaultLabel: report.name,
+      enabled: true,
+    })),
+  };
+
+  const shareIndex = builtin.findIndex(g => g.key === 'share');
+  if (shareIndex === -1) return [...builtin, customGroup];
+  return [...builtin.slice(0, shareIndex), customGroup, ...builtin.slice(shareIndex)];
+};
+
+export const flatAnalyticsNavItems = (
+  customReports: Array<{ id: string; name: string }> = []
+): AnalyticsNavItem[] => [
   ANALYTICS_NAV.allReports,
-  ...ANALYTICS_NAV.groups.flatMap(g => g.items),
+  ...buildAnalyticsNavGroups(customReports).flatMap(g => g.items),
 ];

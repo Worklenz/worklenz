@@ -6,10 +6,12 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import {
   ANALYTICS_NAV,
   analyticsPath,
+  buildAnalyticsNavGroups,
   getAnalyticsNavIcon,
   type AnalyticsNavItem,
 } from '@/lib/reporting/analytics-nav';
 import { isAnalyticsNewBadgeActive } from '@/lib/reporting/analytics-constants';
+import { useAnalyticsCustomReports } from '@/features/reporting/analytics-custom-reports';
 import './analytics-sidebar.css';
 
 const AnalyticsSidebarLink: React.FC<{
@@ -17,7 +19,9 @@ const AnalyticsSidebarLink: React.FC<{
   active: boolean;
   isDark: boolean;
   showNew?: boolean;
-}> = ({ item, active, isDark, showNew }) => {
+  /** When set, render this label instead of i18n (user-named custom reports). */
+  labelOverride?: string;
+}> = ({ item, active, isDark, showNew, labelOverride }) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
   const to = analyticsPath(item.path);
@@ -37,12 +41,12 @@ const AnalyticsSidebarLink: React.FC<{
       }
     >
       <span className="analytics-sider-link-icon" aria-hidden>
-        {getAnalyticsNavIcon(item.key)}
+        {getAnalyticsNavIcon(item.key.startsWith('custom-') ? 'dashboards' : item.key)}
       </span>
       <span className="analytics-sider-link-label">
-        {t(item.labelKey, { defaultValue: item.defaultLabel })}
+        {labelOverride ?? t(item.labelKey, { defaultValue: item.defaultLabel })}
       </span>
-      {showNew && item.enabled && (
+      {showNew && item.enabled && !item.key.startsWith('custom-') && (
         <span className="analytics-sider-new">{t('newBadge', { defaultValue: 'NEW' })}</span>
       )}
     </NavLink>
@@ -51,7 +55,7 @@ const AnalyticsSidebarLink: React.FC<{
 
 /**
  * Prototype-style reports sidebar — horizontal list with group headers.
- * Intentionally not NavRail (icon column).
+ * Custom reports group appears only when the user has saved custom reports.
  */
 export const AnalyticsSidebar: React.FC = () => {
   const { t } = useTranslation('reporting-analytics');
@@ -60,10 +64,17 @@ export const AnalyticsSidebar: React.FC = () => {
   const isDark = themeMode === 'dark';
   const location = useLocation();
   const showNew = isAnalyticsNewBadgeActive();
+  const { customReports } = useAnalyticsCustomReports();
+
+  const groups = useMemo(
+    () => buildAnalyticsNavGroups(customReports),
+    [customReports]
+  );
 
   const activeKey = useMemo(() => {
     const rest = location.pathname.replace(/^\/worklenz\/reporting\/analytics\/?/, '');
     if (!rest) return 'all-reports';
+    if (rest.startsWith('custom/')) return `custom-${rest.slice('custom/'.length).split('/')[0]}`;
     return rest.split('/')[0];
   }, [location.pathname]);
 
@@ -84,7 +95,7 @@ export const AnalyticsSidebar: React.FC = () => {
           isDark={isDark}
         />
 
-        {ANALYTICS_NAV.groups.map(group => (
+        {groups.map(group => (
           <div key={group.key} className="analytics-sider-group">
             <h4
               className="analytics-sider-group-label"
@@ -96,9 +107,15 @@ export const AnalyticsSidebar: React.FC = () => {
               <AnalyticsSidebarLink
                 key={item.key}
                 item={item}
-                active={activeKey === item.key || (item.key === 'dashboards' && activeKey === 'dashboards')}
+                active={
+                  activeKey === item.key ||
+                  (item.key === 'dashboards' && activeKey === 'dashboards')
+                }
                 isDark={isDark}
                 showNew={showNew}
+                labelOverride={
+                  item.key.startsWith('custom-') ? item.defaultLabel : undefined
+                }
               />
             ))}
           </div>
