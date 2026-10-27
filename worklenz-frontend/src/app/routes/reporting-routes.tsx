@@ -17,6 +17,7 @@ const VelocityPage = lazy(() => import('@/pages/reporting/analytics/VelocityPage
 const CumulativeFlowPage = lazy(() => import('@/pages/reporting/analytics/CumulativeFlowPage'));
 const SlaPage = lazy(() => import('@/pages/reporting/analytics/SlaPage'));
 const TimeInStatusPage = lazy(() => import('@/pages/reporting/analytics/TimeInStatusPage'));
+const ProjectHealthPage = lazy(() => import('@/pages/reporting/analytics/ProjectHealthPage'));
 const AnalyticsComingSoonPage = lazy(
   () => import('@/pages/reporting/analytics/AnalyticsComingSoonPage')
 );
@@ -57,6 +58,7 @@ const enabledAnalyticsElements: Record<string, React.ReactNode> = {
   velocity: <VelocityPage />,
   'cumulative-flow': <CumulativeFlowPage />,
   'time-in-status': <TimeInStatusPage />,
+  'project-health': <ProjectHealthPage />,
   sla: <SlaPage />,
   dashboards: <DashboardsPage />,
 };

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Dropdown,
@@ -31,6 +31,8 @@ import {
   type AnalyticsNavItem,
 } from '@/lib/reporting/analytics-nav';
 import { useAnalyticsCustomReports } from '@/features/reporting/analytics-custom-reports';
+import { analyticsProjectHealthApiService } from '@/api/reporting/analytics-project-health.api.service';
+import type { ProjectHealthKpis } from '@/types/reporting/analytics-project-health.types';
 import './all-reports-gallery.css';
 
 const { Title, Text, Link } = Typography;
@@ -251,33 +253,57 @@ const AllReportsPage: React.FC = () => {
     navigate(analyticsPath(row.path));
   };
 
-  // Placeholder portfolio health stats — wired to real APIs in a later phase
+  const [healthKpis, setHealthKpis] = useState<ProjectHealthKpis>({
+    on_track: 0,
+    at_risk: 0,
+    off_track: 0,
+    not_set: 0,
+    overdue_tasks: 0,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await analyticsProjectHealthApiService.getSeries({});
+        if (!cancelled && res.done && res.body?.kpis) {
+          setHealthKpis(res.body.kpis);
+        }
+      } catch {
+        // Keep zeros on failure — gallery still usable
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const stats = [
     {
       key: 'on-track',
       label: t('statOnTrack', { defaultValue: 'On track' }),
-      value: 0,
+      value: healthKpis.on_track,
       sub: t('statProjects', { defaultValue: 'projects' }),
       tone: 'ok' as const,
     },
     {
       key: 'at-risk',
       label: t('statAtRisk', { defaultValue: 'At risk' }),
-      value: 0,
+      value: healthKpis.at_risk,
       sub: t('statProjects', { defaultValue: 'projects' }),
       tone: 'warn' as const,
     },
     {
       key: 'off-track',
       label: t('statOffTrack', { defaultValue: 'Off track' }),
-      value: 0,
+      value: healthKpis.off_track,
       sub: t('statProjects', { defaultValue: 'projects' }),
       tone: 'bad' as const,
     },
     {
       key: 'overdue',
       label: t('statOverdueTasks', { defaultValue: 'Overdue tasks' }),
-      value: 0,
+      value: healthKpis.overdue_tasks,
       sub: t('statAcrossProjects', { defaultValue: 'across all projects' }),
       tone: 'bad' as const,
     },

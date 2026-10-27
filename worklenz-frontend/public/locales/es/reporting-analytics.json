@@ -1,4 +1,4 @@
-﻿{
+{
   "analyticsGroup": "Reporting & Analytics",
   "analyticsNavAria": "Reports navigation",
   "allReports": "All reports",
@@ -218,5 +218,21 @@
   "cfdNoSelectionTitle": "Select projects",
   "cfdNoSelectionDescription": "Choose one or more projects (up to 20) to view cumulative flow. Selecting every project at once can freeze the chart.",
   "cfdWipBreachTitle": "WIP limit exceeded",
-  "cfdWipBreachDescription": "{{count}} status(es) are above their WIP threshold on the latest day."
+  "cfdWipBreachDescription": "{{count}} status(es) are above their WIP threshold on the latest day.",
+  "statAcrossSelection": "across selection",
+  "phLegendProgress": "Progress %",
+  "phLegendBudget": "Budget used %",
+  "phChartEmpty": "No projects match these filters.",
+  "phColProject": "Project",
+  "phColHealth": "Health",
+  "phColProgress": "Progress",
+  "phColDue": "Due",
+  "phColOpenTasks": "Open tasks",
+  "phColOverdue": "Overdue",
+  "phColBudgetUsed": "Budget used",
+  "phColLead": "Project lead",
+  "phHealthNotSet": "Not set",
+  "phNoSelectionTitle": "Select projects or teams",
+  "phNoSelectionDescription": "Choose one or more projects (or a team) to view project health.",
+  "filterHealth": "Health"
 }

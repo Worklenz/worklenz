@@ -8,6 +8,8 @@ import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import VelocityController from "../../controllers/reporting-analytics/velocity-controller";
 import CfdController from "../../controllers/reporting-analytics/cfd-controller";
+import TimeInStatusController from "../../controllers/reporting-analytics/time-in-status-controller";
+import ProjectHealthController from "../../controllers/reporting-analytics/project-health-controller";
 import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
 
 const router = express.Router();
@@ -37,7 +39,14 @@ router.get(
         true,
         withLastUpdated({
           accessible_project_count: projectIds.length,
-          reports: ["dashboards", "velocity", "cumulative-flow", "sla", "time-in-status"],
+          reports: [
+            "dashboards",
+            "velocity",
+            "cumulative-flow",
+            "sla",
+            "time-in-status",
+            "project-health",
+          ],
         })
       )
     );
@@ -72,6 +81,43 @@ router.post(
   requireAnalyticsAccess,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(CfdController.exportCsv)
+);
+
+// —— Time in Status (Phase 4) ——
+router.get(
+  "/time-in-status/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(TimeInStatusController.getSeries)
+);
+
+router.get(
+  "/time-in-status/filter-options",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(TimeInStatusController.getFilterOptions)
+);
+
+router.post(
+  "/time-in-status/export/csv",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(TimeInStatusController.exportCsv)
+);
+
+// —— Project Health ——
+router.get(
+  "/project-health/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(ProjectHealthController.getSeries)
+);
+
+router.post(
+  "/project-health/export/csv",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(ProjectHealthController.exportCsv)
 );
 
 // —— Report templates ——

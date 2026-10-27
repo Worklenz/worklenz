@@ -56,7 +56,7 @@ export const ANALYTICS_NAV: {
           path: 'project-health',
           labelKey: 'projectHealth',
           defaultLabel: 'Project Health',
-          enabled: false,
+          enabled: true,
         },
         {
           key: 'planned-vs-actual-tasks',

@@ -30,6 +30,8 @@ export interface AnalyticsFilterBarProps {
   statusOptions?: FilterOption[];
   selectedStatusIds?: string[];
   onStatusesChange?: (ids: string[]) => void;
+  /** Override label for the status/health multi-select (defaults to Statuses). */
+  statusFilterLabel?: string;
   includeDone?: boolean;
   onIncludeDoneChange?: (include: boolean) => void;
   loading?: boolean;
@@ -52,6 +54,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   statusOptions = [],
   selectedStatusIds = [],
   onStatusesChange,
+  statusFilterLabel,
   includeDone,
   onIncludeDoneChange,
   loading,
@@ -115,7 +118,9 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
 
       {onStatusesChange && statusOptions.length > 0 && (
         <MultiSelectFilterPill
-          label={t('filterStatuses', { defaultValue: 'Statuses' })}
+          label={
+            statusFilterLabel ?? t('filterStatuses', { defaultValue: 'Statuses' })
+          }
           options={statusOptions}
           value={selectedStatusIds}
           onChange={onStatusesChange}
