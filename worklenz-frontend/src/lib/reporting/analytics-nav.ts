@@ -70,7 +70,7 @@ export const ANALYTICS_NAV: {
           path: 'planned-vs-actual-milestones',
           labelKey: 'plannedVsActualMilestones',
           defaultLabel: 'Planned vs Actual: Milestones',
-          enabled: false,
+          enabled: true,
         },
       ],
     },

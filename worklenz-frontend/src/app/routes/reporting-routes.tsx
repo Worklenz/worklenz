@@ -21,6 +21,9 @@ const ProjectHealthPage = lazy(() => import('@/pages/reporting/analytics/Project
 const PlannedVsActualTasksPage = lazy(
   () => import('@/pages/reporting/analytics/PlannedVsActualTasksPage')
 );
+const PlannedVsActualMilestonesPage = lazy(
+  () => import('@/pages/reporting/analytics/PlannedVsActualMilestonesPage')
+);
 const AnalyticsComingSoonPage = lazy(
   () => import('@/pages/reporting/analytics/AnalyticsComingSoonPage')
 );
@@ -63,6 +66,7 @@ const enabledAnalyticsElements: Record<string, React.ReactNode> = {
   'time-in-status': <TimeInStatusPage />,
   'project-health': <ProjectHealthPage />,
   'planned-vs-actual-tasks': <PlannedVsActualTasksPage />,
+  'planned-vs-actual-milestones': <PlannedVsActualMilestonesPage />,
   sla: <SlaPage />,
   dashboards: <DashboardsPage />,
 };

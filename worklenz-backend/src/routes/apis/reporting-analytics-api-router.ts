@@ -11,6 +11,7 @@ import CfdController from "../../controllers/reporting-analytics/cfd-controller"
 import TimeInStatusController from "../../controllers/reporting-analytics/time-in-status-controller";
 import ProjectHealthController from "../../controllers/reporting-analytics/project-health-controller";
 import PlannedVsActualTasksController from "../../controllers/reporting-analytics/planned-vs-actual-tasks-controller";
+import PlannedVsActualMilestonesController from "../../controllers/reporting-analytics/planned-vs-actual-milestones-controller";
 import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
 
 const router = express.Router();
@@ -48,6 +49,7 @@ router.get(
             "time-in-status",
             "project-health",
             "planned-vs-actual-tasks",
+            "planned-vs-actual-milestones",
           ],
         })
       )
@@ -135,6 +137,21 @@ router.post(
   requireAnalyticsAccess,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(PlannedVsActualTasksController.exportCsv)
+);
+
+// —— Planned vs Actual: Milestones ——
+router.get(
+  "/planned-vs-actual-milestones/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(PlannedVsActualMilestonesController.getSeries)
+);
+
+router.post(
+  "/planned-vs-actual-milestones/export/csv",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(PlannedVsActualMilestonesController.exportCsv)
 );
 
 // —— Report templates ——
