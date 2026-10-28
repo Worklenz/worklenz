@@ -86,8 +86,11 @@ import {
   setTaskEstimation,
   setTaskDrawerStatuses,
   setTaskPhase,
+  setTaskCustomColumnValue,
   fetchTask,
 } from '@/features/task-drawer/task-drawer.slice';
+import { useTranslation } from 'react-i18next';
+import { message } from '@/shared/antd-imports';
 import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { useMixpanelTracking } from './useMixpanelTracking';
@@ -96,8 +99,26 @@ import {
   evt_project_task_list_create_subtask,
 } from '@/shared/worklenz-analytics-events';
 
+interface ICustomColumnUpdateEvent {
+  task_id: string;
+  column_key: string;
+  value: string | number | boolean | string[] | null;
+  /** Sender only: the server refused the write (e.g. invalid dependent Selection value). */
+  rejected?: boolean;
+  error_code?: string;
+  message?: string;
+  /** Sender only: the value was cleared because its parent Selection field changed. */
+  auto_cleared?: {
+    field_name: string;
+    previous_value: string;
+    parent_field_name: string;
+    parent_value: string | null;
+  };
+}
+
 export const useTaskSocketHandlers = () => {
   const dispatch = useAppDispatch();
+  const { t: tTaskList } = useTranslation('task-list-table');
   const { socket } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
   const { trackMixpanelEvent } = useMixpanelTracking();
@@ -1006,18 +1027,64 @@ export const useTaskSocketHandlers = () => {
   );
 
   const handleCustomColumnUpdate = useCallback(
-    (
-      data:
-        | string
-        | {
-          task_id: string;
-          column_key: string;
-          value: string | number | boolean | string[] | null;
-        }
-    ) => {
-      const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+    (data: string | ICustomColumnUpdateEvent) => {
+      const parsedData: ICustomColumnUpdateEvent = typeof data === 'string' ? JSON.parse(data) : data;
 
       if (!parsedData || !parsedData.task_id || !parsedData.column_key) return;
+
+      dispatch(
+        setTaskCustomColumnValue({
+          taskId: parsedData.task_id,
+          columnKey: parsedData.column_key,
+          value: parsedData.value,
+        })
+      );
+
+      if (parsedData.rejected) {
+        const rejectedReasonByCode: Record<string, string> = {
+          CASCADE_PARENT_VALUE_REQUIRED: tTaskList(
+            'customColumns.dependentSelection.parentValueRequired',
+            {
+              defaultValue: 'Select the parent field value first.',
+            }
+          ),
+          CASCADE_INVALID_PAIR: tTaskList('customColumns.dependentSelection.invalidPair', {
+            defaultValue: 'That option is not valid for the current parent value.',
+          }),
+        };
+        const reason =
+          (parsedData.error_code && rejectedReasonByCode[parsedData.error_code]) ||
+          parsedData.message ||
+          '';
+
+        message.error(
+          tTaskList('customColumns.dependentSelection.rejected', {
+            defaultValue: 'Value not saved: {{reason}}',
+            reason,
+          })
+        );
+      }
+
+      if (parsedData.auto_cleared) {
+        const { field_name, previous_value, parent_field_name, parent_value } =
+          parsedData.auto_cleared;
+        message.info(
+          parent_value
+            ? tTaskList('customColumns.dependentSelection.autoCleared', {
+                defaultValue:
+                  '{{field}} was cleared: "{{value}}" is not available when {{parent}} is "{{parentValue}}".',
+                field: field_name,
+                value: previous_value,
+                parent: parent_field_name,
+                parentValue: parent_value,
+              })
+            : tTaskList('customColumns.dependentSelection.autoClearedParentEmpty', {
+                defaultValue: '{{field}} was cleared because {{parent}} was cleared.',
+                field: field_name,
+                parent: parent_field_name,
+              })
+        );
+      }
 
       // Update the task-management slice for task-list-v2 components
       const currentTask = store.getState().taskManagement.entities[parsedData.task_id];
@@ -1037,7 +1104,7 @@ export const useTaskSocketHandlers = () => {
         dispatch(updateTask(updatedTask));
       }
     },
-    [dispatch]
+    [dispatch, tTaskList]
   );
 
   const handleCustomColumnCreated = useCallback(

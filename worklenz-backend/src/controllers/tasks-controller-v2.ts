@@ -27,6 +27,10 @@ import TasksControllerBase, {
   ITaskGroup,
   UNASSIGNED_GROUP_ID,
 } from "./tasks-controller-base";
+import {
+  clearInvalidDependentValues,
+  validateDependentSelectionValue,
+} from "../services/cascading-selection-service";
 
 /** Internal map key for the synthetic Backlog group; avoids colliding with a phase named "Unmapped". */
 const SYNTHETIC_UNMAPPED_GROUP_KEY = "__worklenz_unmapped__";
@@ -1764,108 +1768,154 @@ export default class TasksControllerV2 extends TasksControllerBase {
       (Array.isArray(value) && value.length === 0) ||
       (fieldType === "people" && normalizedPeopleValue !== null && normalizedPeopleValue.length === 0);
 
-    if (isEmptyValue) {
-      await db.query(
-        `
-          DELETE FROM cc_column_values
-          WHERE task_id = $1 AND column_id = $2
-        `,
-        [taskId, columnId]
-      );
+    const client = await db.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(`SELECT 1 FROM tasks WHERE id = $1 FOR UPDATE`, [taskId]);
+
+      if (fieldType === "selection" && !isEmptyValue) {
+        const cascadeError = await validateDependentSelectionValue(
+          taskId,
+          columnId,
+          value,
+          client
+        );
+        if (cascadeError) {
+          await client.query("ROLLBACK");
+          return res
+            .status(400)
+            .send(new ServerResponse(false, { error_code: cascadeError.error_code }, cascadeError.message));
+        }
+      }
+
+      if (isEmptyValue) {
+        await client.query(
+          `
+            DELETE FROM cc_column_values
+            WHERE task_id = $1 AND column_id = $2
+          `,
+          [taskId, columnId]
+        );
+
+        const clearedDependents =
+          fieldType === "selection"
+            ? await clearInvalidDependentValues(taskId, columnId, client)
+            : [];
+
+        await client.query("COMMIT");
+
+        return res.status(200).send(
+          new ServerResponse(true, {
+            task_id: taskId,
+            column_key,
+            value: null,
+            cleared_dependents: clearedDependents,
+          })
+        );
+      }
+
+      // Determine which value field to use based on the field_type
+      let textValue = null;
+      let numberValue = null;
+      let dateValue = null;
+      let booleanValue = null;
+      let jsonValue = null;
+
+      switch (fieldType) {
+        case "text":
+          textValue = String(value);
+          break;
+        case "number":
+          numberValue = parseFloat(String(value));
+          break;
+        case "date":
+          dateValue = new Date(String(value));
+          break;
+        case "checkbox":
+          booleanValue = Boolean(value);
+          break;
+        case "people":
+          jsonValue = JSON.stringify(normalizedPeopleValue || []);
+          break;
+        default:
+          textValue = String(value);
+      }
+
+      // Check if a value already exists
+      const existingValueQuery = `
+        SELECT id
+        FROM cc_column_values
+        WHERE task_id = $1 AND column_id = $2
+      `;
+      const existingValueResult = await client.query(existingValueQuery, [
+        taskId,
+        columnId,
+      ]);
+
+      if (existingValueResult.rowCount && existingValueResult.rowCount > 0) {
+        // Update existing value
+        const updateQuery = `
+          UPDATE cc_column_values
+          SET text_value = $1,
+              number_value = $2,
+              date_value = $3,
+              boolean_value = $4,
+              json_value = $5,
+              updated_at = NOW()
+          WHERE task_id = $6 AND column_id = $7
+        `;
+        await client.query(updateQuery, [
+          textValue,
+          numberValue,
+          dateValue,
+          booleanValue,
+          jsonValue,
+          taskId,
+          columnId,
+        ]);
+      } else {
+        // Insert new value
+        const insertQuery = `
+          INSERT INTO cc_column_values
+          (task_id, column_id, text_value, number_value, date_value, boolean_value, json_value, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+        `;
+        await client.query(insertQuery, [
+          taskId,
+          columnId,
+          textValue,
+          numberValue,
+          dateValue,
+          booleanValue,
+          jsonValue,
+        ]);
+      }
+
+      const clearedDependents =
+        fieldType === "selection"
+          ? await clearInvalidDependentValues(taskId, columnId, client)
+          : [];
+
+      await client.query("COMMIT");
 
       return res.status(200).send(
         new ServerResponse(true, {
           task_id: taskId,
           column_key,
-          value: null,
+          value,
+          cleared_dependents: clearedDependents,
         })
       );
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // ignore rollback errors
+      }
+      throw error;
+    } finally {
+      client.release();
     }
-
-    // Determine which value field to use based on the field_type
-    let textValue = null;
-    let numberValue = null;
-    let dateValue = null;
-    let booleanValue = null;
-    let jsonValue = null;
-
-    switch (fieldType) {
-      case "text":
-        textValue = String(value);
-        break;
-      case "number":
-        numberValue = parseFloat(String(value));
-        break;
-      case "date":
-        dateValue = new Date(String(value));
-        break;
-      case "checkbox":
-        booleanValue = Boolean(value);
-        break;
-      case "people":
-        jsonValue = JSON.stringify(normalizedPeopleValue || []);
-        break;
-      default:
-        textValue = String(value);
-    }
-
-    // Check if a value already exists
-    const existingValueQuery = `
-      SELECT id
-      FROM cc_column_values
-      WHERE task_id = $1 AND column_id = $2
-    `;
-    const existingValueResult = await db.query(existingValueQuery, [
-      taskId,
-      columnId,
-    ]);
-
-    if (existingValueResult.rowCount && existingValueResult.rowCount > 0) {
-      // Update existing value
-      const updateQuery = `
-        UPDATE cc_column_values
-        SET text_value = $1,
-            number_value = $2,
-            date_value = $3,
-            boolean_value = $4,
-            json_value = $5,
-            updated_at = NOW()
-        WHERE task_id = $6 AND column_id = $7
-      `;
-      await db.query(updateQuery, [
-        textValue,
-        numberValue,
-        dateValue,
-        booleanValue,
-        jsonValue,
-        taskId,
-        columnId,
-      ]);
-    } else {
-      // Insert new value
-      const insertQuery = `
-        INSERT INTO cc_column_values
-        (task_id, column_id, text_value, number_value, date_value, boolean_value, json_value, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-      `;
-      await db.query(insertQuery, [
-        taskId,
-        columnId,
-        textValue,
-        numberValue,
-        dateValue,
-        booleanValue,
-        jsonValue,
-      ]);
-    }
-
-    return res.status(200).send(
-      new ServerResponse(true, {
-        task_id: taskId,
-        column_key,
-        value,
-      })
-    );
   }
 
   public static async refreshProjectTaskProgressValues(
