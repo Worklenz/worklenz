@@ -11,6 +11,11 @@ jest.mock("../config/db", () => ({
   },
 }));
 
+jest.mock("../shared/organization-permissions", () => ({
+  ...jest.requireActual("../shared/organization-permissions"),
+  getProjectSchemeRoleGrants: jest.fn(async (_t: string, _p: string, role: string, permissions: string[]) => (role === "Guest" ? [] : permissions)),
+}));
+
 import db from "../config/db";
 import {
   ProjectIdSource,

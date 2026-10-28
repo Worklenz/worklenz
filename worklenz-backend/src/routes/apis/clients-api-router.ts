@@ -51,9 +51,8 @@ clientsApiRouter.get(
   safeControllerFunction(PortalProjectsController.access)
 );
 
-// Every Client Portal admin route is Owner/Admin only. Most of /portal/* previously had no role check,
-// so any signed-in member could reach it by URL; the guard is applied once here for all of it.
-clientsApiRouter.use("/portal", teamOwnerOrAdminValidator);
+// Role checks for /portal/* are applied above (reads need "View clients", writes are Owner/Admin-only),
+// so no further blanket Owner/Admin guard here: it would defeat "View clients" and the chats exception.
 
 // Client Portal v2 admin API (roles, settings, projects, approvals, change requests, discussions,
 // audit log, preview). Namespaced under /v2 so it never collides with the v1 routes below.

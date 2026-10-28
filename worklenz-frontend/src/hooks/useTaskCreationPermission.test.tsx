@@ -93,7 +93,7 @@ describe('getTaskCreationPermission', () => {
       orgConfig: {},
     });
 
-    expect(result).toEqual({ canCreateTask: false, isRestricted: true });
+    expect(result).toEqual({ canCreateTask: false, canAddTask: false, isRestricted: true });
   });
 
   it('allows project managers with member team role to create tasks when restrictions are enabled', () => {
@@ -103,7 +103,7 @@ describe('getTaskCreationPermission', () => {
       orgConfig: {},
     });
 
-    expect(result).toEqual({ canCreateTask: true, isRestricted: true });
+    expect(result).toEqual({ canCreateTask: true, canAddTask: true, isRestricted: true });
   });
 
   it('allows project managers via isProjectManager flag when project flag is absent', () => {
@@ -114,6 +114,6 @@ describe('getTaskCreationPermission', () => {
       isProjectManager: true,
     });
 
-    expect(result).toEqual({ canCreateTask: true, isRestricted: true });
+    expect(result).toEqual({ canCreateTask: true, canAddTask: true, isRestricted: true });
   });
 });

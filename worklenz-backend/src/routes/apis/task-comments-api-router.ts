@@ -21,7 +21,7 @@ taskCommentsApiRouter.delete("/attachment/:id/:taskId", idParamValidator, verify
 taskCommentsApiRouter.delete("/:id/:taskId", idParamValidator, verifyTaskAccess('params', 'taskId'), verifyTaskRolePermission('params', 'taskId', COMMENT), safeControllerFunction(TaskCommentsController.deleteById));
 
 taskCommentsApiRouter.put("/reaction/:id", verifyTaskAccessViaComment('params', 'id'), safeControllerFunction(TaskCommentsController.updateReaction));
-taskCommentsApiRouter.put("/:id", taskCommentBodyValidator, verifyTaskAccessViaComment('params', 'id'), safeControllerFunction(TaskCommentsController.update));
+taskCommentsApiRouter.put("/:id", taskCommentBodyValidator, verifyTaskAccessViaComment('params', 'id', COMMENT), safeControllerFunction(TaskCommentsController.update));
 taskCommentsApiRouter.post("/attachment", taskCommentAttachmentValidator, verifyTaskAccess('body', 'task_id'), verifyTaskRolePermission('body', 'task_id', COMMENT), safeControllerFunction(TaskCommentsController.createAttachment));
 
 export default taskCommentsApiRouter;

@@ -551,7 +551,8 @@ export function verifyBulkTaskAccessMiddleware(
  */
 export function verifyTaskAccessViaComment(
   location: 'params' | 'body' | 'query' = 'params',
-  fieldName: string = 'id'
+  fieldName: string = 'id',
+  permission?: ProjectRolePermission
 ) {
   return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
     const userId = req.user?.id;
@@ -591,6 +592,15 @@ export function verifyTaskAccessViaComment(
           const mayEdit = await canUserEditTask(userId, taskId, req.user);
           if (!mayEdit) {
             return denyAssigneeReadonly(res);
+          }
+        }
+
+        if (permission) {
+          const rolePermission = await checkTaskRolePermission(userId, taskId, permission);
+          if (!rolePermission.allowed) {
+            return res.status(403).send(
+              new ServerResponse(false, null, "You do not have permission to perform this action on this task")
+            );
           }
         }
 

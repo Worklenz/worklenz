@@ -15,6 +15,7 @@
   "schemeCreateTitle": "Krijo skemë lejesh",
   "schemeDeleteConfirm": "Të fshihet kjo skemë? Ky veprim nuk mund të zhbëhet.",
   "schemeDeleteButton": "Fshi",
+  "schemeDeleteAriaLabel": "Fshi {{name}}",
   "schemeLockedTooltip": "Kjo skemë është e kyçur dhe nuk mund të modifikohet.",
   "schemeDefaultBadge": "E parazgjedhur",
   "schemeCustomBadge": "E personalizuar",

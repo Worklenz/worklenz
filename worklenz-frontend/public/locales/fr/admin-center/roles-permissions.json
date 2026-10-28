@@ -15,6 +15,7 @@
   "schemeCreateTitle": "Créer un schéma d'autorisations",
   "schemeDeleteConfirm": "Supprimer ce schéma ? Cette action est irréversible.",
   "schemeDeleteButton": "Supprimer",
+  "schemeDeleteAriaLabel": "Supprimer {{name}}",
   "schemeLockedTooltip": "Ce schéma est verrouillé et ne peut pas être modifié.",
   "schemeDefaultBadge": "Par défaut",
   "schemeCustomBadge": "Personnalisé",

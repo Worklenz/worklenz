@@ -15,6 +15,7 @@
   "schemeCreateTitle": "Utwórz schemat uprawnień",
   "schemeDeleteConfirm": "Usunąć ten schemat? Tej operacji nie można cofnąć.",
   "schemeDeleteButton": "Usuń",
+  "schemeDeleteAriaLabel": "Usuń {{name}}",
   "schemeLockedTooltip": "Ten schemat jest zablokowany i nie można go edytować.",
   "schemeDefaultBadge": "Domyślny",
   "schemeCustomBadge": "Niestandardowy",
@@ -80,8 +81,8 @@
   "projectSchemeAriaLabel": "Schemat uprawnień dla {{project}}",
   "projectsLoadError": "Nie udało się załadować projektów",
   "projectsTotal_one": "{{count}} projekt",
-  "projectsTotal_few": "{{count}} projekty",
-  "projectsTotal_many": "{{count}} projektów",
   "projectsTotal_other": "{{count}} projektu",
-  "retry": "Spróbuj ponownie"
+  "retry": "Spróbuj ponownie",
+  "projectsTotal_few": "{{count}} projekty",
+  "projectsTotal_many": "{{count}} projektów"
 }

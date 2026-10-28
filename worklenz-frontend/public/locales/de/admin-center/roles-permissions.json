@@ -15,6 +15,7 @@
   "schemeCreateTitle": "Berechtigungsschema erstellen",
   "schemeDeleteConfirm": "Dieses Schema löschen? Dies kann nicht rückgängig gemacht werden.",
   "schemeDeleteButton": "Löschen",
+  "schemeDeleteAriaLabel": "{{name}} löschen",
   "schemeLockedTooltip": "Dieses Schema ist gesperrt und kann nicht bearbeitet werden.",
   "schemeDefaultBadge": "Standard",
   "schemeCustomBadge": "Benutzerdefiniert",

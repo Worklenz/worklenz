@@ -15,6 +15,7 @@
   "schemeCreateTitle": "创建权限方案",
   "schemeDeleteConfirm": "删除此方案？此操作无法撤销。",
   "schemeDeleteButton": "删除",
+  "schemeDeleteAriaLabel": "删除 {{name}}",
   "schemeLockedTooltip": "此方案已锁定，无法编辑。",
   "schemeDefaultBadge": "默认",
   "schemeCustomBadge": "自定义",
@@ -79,6 +80,7 @@
   "projectSearchPlaceholder": "搜索项目",
   "projectSchemeAriaLabel": "{{project}} 的权限方案",
   "projectsLoadError": "无法加载项目",
+  "projectsTotal_one": "{{count}} 个项目",
   "projectsTotal_other": "{{count}} 个项目",
   "retry": "重试"
 }

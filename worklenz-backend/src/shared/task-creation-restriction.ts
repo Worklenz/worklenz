@@ -21,8 +21,8 @@ import { checkProjectRolePermission, checkTaskRolePermission } from "./project-r
 
 /**
  * Returns TRUE when task creation/modification is restricted for the given user
- * in the given project. Fails open (returns FALSE) on any error so a transient DB
- * issue never blocks legitimate edits.
+ * in the given project. Fails closed (returns TRUE) on any error so a lookup failure
+ * never grants access.
  */
 export async function isTaskCreationRestricted(
   userId?: string | null,
@@ -40,7 +40,8 @@ export async function isTaskCreationRestricted(
     const rolePermission = await checkProjectRolePermission(userId, projectId, permission);
     return !rolePermission.allowed;
   } catch {
-    return false;
+    // Fail closed: an authorization lookup error must not grant access
+    return true;
   }
 }
 
@@ -64,6 +65,7 @@ export async function isTaskCreationRestrictedForTask(
     const rolePermission = await checkTaskRolePermission(userId, taskId, permission);
     return !rolePermission.allowed;
   } catch {
-    return false;
+    // Fail closed: an authorization lookup error must not grant access
+    return true;
   }
 }

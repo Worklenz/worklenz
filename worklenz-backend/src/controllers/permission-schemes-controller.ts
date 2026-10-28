@@ -173,6 +173,16 @@ async function seedDefaultScheme(teamId: string): Promise<void> {
 // Controller
 // ---------------------------------------------------------------------------
 
+const isProjectInTeam = async (projectId: string, teamId: string): Promise<boolean> => {
+  const result = await db.query('SELECT 1 FROM projects WHERE id = $1 AND team_id = $2', [projectId, teamId]);
+  return (result.rowCount ?? 0) > 0;
+};
+
+const isSchemeInTeam = async (schemeId: string, teamId: string): Promise<boolean> => {
+  const result = await db.query('SELECT 1 FROM permission_schemes WHERE id = $1 AND team_id = $2', [schemeId, teamId]);
+  return (result.rowCount ?? 0) > 0;
+};
+
 export default class PermissionSchemesController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getMyOrganizationPermissions(
@@ -402,7 +412,16 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
       return res.status(200).send(new ServerResponse(false, null, 'Scheme is locked and cannot be edited'));
 
     const allowedPermissions = row.is_default ? DEFAULT_PERMISSIONS : PROJECT_PERMISSIONS;
-    if (grants.some(grant => !allowedPermissions.includes(grant.permission)))
+    const roleNames = DEFAULT_ROLES.map(role => role.name);
+    if (
+      grants.some(
+        grant =>
+          !grant ||
+          typeof grant.granted !== 'boolean' ||
+          !roleNames.includes(grant.role_name) ||
+          !allowedPermissions.includes(grant.permission)
+      )
+    )
       return res.status(200).send(new ServerResponse(false, null, 'Invalid permission for this scheme'));
 
     const client = await db.connect();
@@ -546,7 +565,8 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
 
     const { id } = req.params;
     const name = (req.body?.name || '').trim();
-    const memberIds: string[] = Array.isArray(req.body?.member_ids) ? req.body.member_ids : [];
+    const hasMemberIds = Array.isArray(req.body?.member_ids);
+    const memberIds: string[] = hasMemberIds ? req.body.member_ids : [];
 
     const groupRes = await db.query(
       'SELECT team_id FROM permission_groups WHERE id = $1',
@@ -556,6 +576,15 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
       return res.status(200).send(new ServerResponse(false, null, 'Group not found'));
     if (groupRes.rows[0].team_id !== teamId)
       return res.status(403).send(new ServerResponse(false, null, 'Forbidden'));
+
+    if (memberIds.length > 0) {
+      const validMembers = await db.query(
+        'SELECT COUNT(*)::INT AS count FROM team_members WHERE team_id = $1 AND id = ANY($2::UUID[])',
+        [teamId, memberIds]
+      );
+      if (validMembers.rows[0].count !== new Set(memberIds).size)
+        return res.status(200).send(new ServerResponse(false, null, 'Invalid group members'));
+    }
 
     const client = await db.connect();
     try {
@@ -568,7 +597,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
         );
       }
 
-      if (memberIds.length > 0) {
+      if (hasMemberIds) {
         // Replace members: delete old, insert new
         await client.query('DELETE FROM permission_group_members WHERE group_id = $1', [id]);
         for (const memberId of memberIds) {
@@ -658,6 +687,8 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     if (!teamId) return res.status(200).send(new ServerResponse(false, null, 'Team not found'));
 
     const { projectId } = req.params;
+    if (!(await isProjectInTeam(projectId, teamId)))
+      return res.status(403).send(new ServerResponse(false, null, 'Forbidden'));
 
     const result = await db.query(
       `SELECT psa.project_id,
@@ -718,6 +749,11 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     const { projectId } = req.params;
     const schemeId: string | null = req.body?.scheme_id ?? null;
 
+    if (!(await isProjectInTeam(projectId, teamId)))
+      return res.status(403).send(new ServerResponse(false, null, 'Forbidden'));
+    if (schemeId && !(await isSchemeInTeam(schemeId, teamId)))
+      return res.status(403).send(new ServerResponse(false, null, 'Forbidden'));
+
     const result = await db.query(
       `INSERT INTO project_scheme_assignments (project_id, scheme_id)
        VALUES ($1, $2)
@@ -747,6 +783,19 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
       return res.status(200).send(
         new ServerResponse(false, null, 'Exactly one of team_member_id or group_id is required')
       );
+
+    if (!(await isProjectInTeam(projectId, teamId)) || !(await isSchemeInTeam(scheme_id, teamId)))
+      return res.status(403).send(new ServerResponse(false, null, 'Forbidden'));
+    if (!DEFAULT_ROLES.some(role => role.name === role_name))
+      return res.status(200).send(new ServerResponse(false, null, 'Invalid role'));
+    if (team_member_id) {
+      const member = await db.query('SELECT 1 FROM team_members WHERE id = $1 AND team_id = $2', [team_member_id, teamId]);
+      if (member.rowCount === 0) return res.status(403).send(new ServerResponse(false, null, 'Forbidden'));
+    }
+    if (group_id) {
+      const group = await db.query('SELECT 1 FROM permission_groups WHERE id = $1 AND team_id = $2', [group_id, teamId]);
+      if (group.rowCount === 0) return res.status(403).send(new ServerResponse(false, null, 'Forbidden'));
+    }
 
     const result = await db.query(
       `INSERT INTO scheme_role_members (project_id, scheme_id, role_name, team_member_id, group_id)

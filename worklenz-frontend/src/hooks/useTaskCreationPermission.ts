@@ -6,8 +6,6 @@ import { ILocalSession } from '@/types/auth/local-session.types';
 import { ROLE_NAMES } from '@/types/roles/role.types';
 import { canUseFeature } from '@/utils/subscription-utils';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
-import { ROLE_NAMES } from '@/types/roles/role.types';
-import { ILocalSession } from '@/types/auth/local-session.types';
 import { IProjectRolePermissions } from '@/types/project/projectViewModel.types';
 import {
   canCreateProjectTasks,
@@ -40,6 +38,7 @@ export interface ITaskCreationPermission {
 export interface IProjectTaskCreationContext {
   restrict_task_creation?: boolean;
   is_guest?: boolean;
+  is_project_manager?: boolean;
   role_permissions?: IProjectRolePermissions;
 }
 
@@ -63,12 +62,13 @@ export const getTaskCreationPermission = ({
     ((project?.restrict_task_creation ?? false) || (orgConfig?.restrict_task_creation ?? false));
 
   const roleName = getSessionRoleName(session ?? null);
+  const isPm = isProjectManager || Boolean(project?.is_project_manager);
   const isAllowedByRestriction =
     !isRestricted ||
     roleName === ROLE_NAMES.OWNER ||
     roleName === ROLE_NAMES.ADMIN ||
-    roleName === ROLE_NAMES.TEAM_LEAD;
-  const isPm = isProjectManager || Boolean(project?.is_project_manager);
+    roleName === ROLE_NAMES.TEAM_LEAD ||
+    isPm;
 
   return {
     canCreateTask: canEditBySchema && isAllowedByRestriction,

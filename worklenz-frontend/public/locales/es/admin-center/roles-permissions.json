@@ -15,6 +15,7 @@
   "schemeCreateTitle": "Crear esquema de permisos",
   "schemeDeleteConfirm": "¿Eliminar este esquema? Esta acción no se puede deshacer.",
   "schemeDeleteButton": "Eliminar",
+  "schemeDeleteAriaLabel": "Eliminar {{name}}",
   "schemeLockedTooltip": "Este esquema está bloqueado y no se puede editar.",
   "schemeDefaultBadge": "Predeterminado",
   "schemeCustomBadge": "Personalizado",

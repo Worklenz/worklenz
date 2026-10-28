@@ -282,11 +282,13 @@ const SchemesSection: React.FC<SchemesSectionProps> = ({ schemes, loading }) => 
   // Seed grantsState from server whenever the loaded scheme detail changes
   useEffect(() => {
     if (!schemeDetail?.grants || !schemeDetail.scheme?.id) return;
+    // RTK Query keeps the previous arg's data while the next scheme loads
+    if (schemeDetail.scheme.id !== activeId) return;
     // Only re-seed when we've switched to a different scheme
     if (seededSchemeIdRef.current === schemeDetail.scheme.id) return;
     seededSchemeIdRef.current = schemeDetail.scheme.id;
     setGrantsState(toGrantsState(schemeDetail.grants));
-  }, [schemeDetail]);
+  }, [schemeDetail, activeId]);
 
   const handleCloseAddPermissions = () => {
     setAddPermissionsModalOpen(false);
@@ -514,6 +516,7 @@ const SchemesSection: React.FC<SchemesSectionProps> = ({ schemes, loading }) => 
                 aria-pressed={isActive}
                 icon={scheme.is_locked ? <LockOutlined /> : undefined}
                 onClick={() => {
+                  if (isActive) return;
                   setActiveSchemeId(scheme.id);
                   seededSchemeIdRef.current = null; // allow re-seed for the new scheme
                   setGrantsState({});
