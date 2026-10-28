@@ -363,18 +363,6 @@ const ProjectsReportsTable = () => {
           />
         ),
         filtered: Boolean(selectedProjectCategories?.length),
-        onCell: () => ({ className: 'category-cell' }),
-        render: (_, record: IRPTProject) => {
-          const catName = record.category_name || '';
-          return (
-            <ProjectCategoryCell
-              projectId={record.id}
-              id={record.category_id || ''}
-              name={catName}
-              color_code={record.category_color || ''}
-            />
-          );
-        },
         width: 200,
       },
       {

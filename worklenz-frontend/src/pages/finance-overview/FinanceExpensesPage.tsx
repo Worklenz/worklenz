@@ -32,6 +32,7 @@ import { setProjectId } from '@/features/project/project.slice';
 import { TASK_FIXED_COST_CHANGED_EVENT } from '@/shared/constants';
 import AddExpenseModal from '@/components/expenses/AddExpenseModal';
 import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
+import { useTaskNameRealtimeSync } from '@/hooks/useTaskNameRealtimeSync';
 
 const FinanceExpensesPage: React.FC = () => {
   const { token } = theme.useToken();

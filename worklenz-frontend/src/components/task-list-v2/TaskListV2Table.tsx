@@ -874,7 +874,6 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
   const isSoftwareProject = isSoftwareProjectType(projectType);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
-  const canCreateTask = canCreateTaskPermission;
   const isWorkReadOnly = isGuest;
   const activeSprintGroupIds = useMemo(
     () =>
