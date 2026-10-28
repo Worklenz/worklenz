@@ -1,8 +1,13 @@
 import { Server, Socket } from "socket.io";
 import { SocketEvents } from "../events";
 import db from "../../config/db";
-import { getLoggedInUserIdFromSocket, log_error } from "../util";
+import { log_error } from "../util";
 import { verifyNonGuestTaskAccessSocket, logUnauthorizedSocketAccess } from "../authorization";
+import {
+  clearInvalidDependentValues,
+  IClearedDependentValue,
+  validateDependentSelectionValue,
+} from "../../services/cascading-selection-service";
 
 interface TaskCustomColumnUpdateData {
   task_id: string;
@@ -33,6 +38,40 @@ const normalizePeopleCustomColumnValue = (value: unknown): string[] => {
   }
 
   return [];
+};
+
+/**
+ * After a Selection value changes, clears dependent-field values on the same task that are
+ * no longer valid. Everyone in the project gets the plain update; only the sender gets
+ * `auto_cleared`, so only they see the explanation toast.
+ */
+const broadcastClearedDependentValues = (
+  socket: Socket,
+  projectId: string,
+  taskId: string,
+  parentColumnName: string,
+  parentValue: unknown,
+  cleared: IClearedDependentValue[]
+) => {
+  for (const item of cleared) {
+    const payload = { task_id: taskId, column_key: item.column_key, value: null };
+    socket.to(`project:${projectId}`).emit(
+      SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(),
+      JSON.stringify(payload)
+    );
+    socket.emit(
+      SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(),
+      JSON.stringify({
+        ...payload,
+        auto_cleared: {
+          field_name: item.column_name,
+          previous_value: item.previous_value,
+          parent_field_name: parentColumnName,
+          parent_value: parentValue === null || parentValue === undefined ? null : String(parentValue),
+        },
+      })
+    );
+  }
 };
 
 export const on_task_custom_column_update = async (_io: Server, socket: Socket, data: string) => {
@@ -66,7 +105,7 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
 
     // Get column information
     const columnQuery = `
-      SELECT id, field_type 
+      SELECT id, name, field_type 
       FROM cc_custom_columns 
       WHERE project_id = $1 AND key = $2
     `;
@@ -90,133 +129,170 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
       (Array.isArray(value) && value.length === 0) ||
       (fieldType === "people" && normalizedPeopleValue !== null && normalizedPeopleValue.length === 0);
 
-    if (isEmptyValue) {
-      await db.query(
-        `
-          DELETE FROM cc_column_values
+    const client = await db.pool.connect();
+    let clearedDependents: IClearedDependentValue[] = [];
+    let responseValue: unknown = isEmptyValue ? null : value;
+
+    try {
+      await client.query("BEGIN");
+      await client.query(`SELECT 1 FROM tasks WHERE id = $1 FOR UPDATE`, [task_id]);
+
+      if (fieldType === "selection" && !isEmptyValue) {
+        const cascadeError = await validateDependentSelectionValue(task_id, columnId, value, client);
+        if (cascadeError) {
+          // Revert the sender's optimistic update to the stored value.
+          const storedResult = await client.query(
+            `SELECT text_value FROM cc_column_values WHERE task_id = $1 AND column_id = $2 LIMIT 1`,
+            [task_id, columnId]
+          );
+          await client.query("ROLLBACK");
+
+          socket.emit(
+            SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(),
+            JSON.stringify({
+              task_id,
+              column_key,
+              value: storedResult.rows[0]?.text_value ?? null,
+              rejected: true,
+              error_code: cascadeError.error_code,
+              message: cascadeError.message,
+            })
+          );
+          return;
+        }
+      }
+
+      if (isEmptyValue) {
+        await client.query(
+          `
+            DELETE FROM cc_column_values
+            WHERE task_id = $1 AND column_id = $2
+          `,
+          [task_id, columnId]
+        );
+      } else {
+        // Determine which value field to use based on the field_type
+        let textValue = null;
+        let numberValue = null;
+        let dateValue = null;
+        let booleanValue = null;
+        let jsonValue = null;
+        
+        switch (fieldType) {
+          case "text":
+            textValue = String(value);
+            break;
+          case "number":
+            numberValue = parseFloat(String(value));
+            break;
+          case "date":
+            dateValue = new Date(String(value));
+            break;
+          case "checkbox":
+            booleanValue = Boolean(value);
+            break;
+          case "people":
+            jsonValue = JSON.stringify(normalizedPeopleValue || []);
+            break;
+          default:
+            textValue = String(value);
+        }
+        
+        // Check if a value already exists
+        const existingValueQuery = `
+          SELECT id 
+          FROM cc_column_values 
           WHERE task_id = $1 AND column_id = $2
-        `,
-        [task_id, columnId]
-      );
+        `;
+        const existingValueResult = await client.query(existingValueQuery, [task_id, columnId]);
+        
+        if (existingValueResult.rowCount && existingValueResult.rowCount > 0) {
+          // Update existing value
+          const updateQuery = `
+            UPDATE cc_column_values 
+            SET text_value = $1, 
+                number_value = $2, 
+                date_value = $3, 
+                boolean_value = $4, 
+                json_value = $5, 
+                updated_at = NOW() 
+            WHERE task_id = $6 AND column_id = $7
+          `;
+          await client.query(updateQuery, [
+            textValue, 
+            numberValue, 
+            dateValue, 
+            booleanValue, 
+            jsonValue, 
+            task_id, 
+            columnId
+          ]);
+        } else {
+          // Insert new value
+          const insertQuery = `
+            INSERT INTO cc_column_values 
+            (task_id, column_id, text_value, number_value, date_value, boolean_value, json_value, created_at, updated_at) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+          `;
+          await client.query(insertQuery, [
+            task_id, 
+            columnId, 
+            textValue, 
+            numberValue, 
+            dateValue, 
+            booleanValue, 
+            jsonValue
+          ]);
+        }
+      }
 
-      socket.to(`project:${project_id}`).emit(
-        SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(),
-        JSON.stringify({
-          task_id,
-          column_key,
-          value: null
-        })
-      );
+      if (fieldType === "selection") {
+        clearedDependents = await clearInvalidDependentValues(task_id, columnId, client);
+      }
 
-      socket.emit(
-        SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(),
-        JSON.stringify({
-          task_id,
-          column_key,
-          value: null
-        })
-      );
-
-      return;
+      await client.query("COMMIT");
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // ignore rollback errors
+      }
+      throw error;
+    } finally {
+      client.release();
     }
 
-    // Determine which value field to use based on the field_type
-    let textValue = null;
-    let numberValue = null;
-    let dateValue = null;
-    let booleanValue = null;
-    let jsonValue = null;
-    
-    switch (fieldType) {
-      case "text":
-        textValue = String(value);
-        break;
-      case "number":
-        numberValue = parseFloat(String(value));
-        break;
-      case "date":
-        dateValue = new Date(String(value));
-        break;
-      case "checkbox":
-        booleanValue = Boolean(value);
-        break;
-      case "people":
-        jsonValue = JSON.stringify(normalizedPeopleValue || []);
-        break;
-      default:
-        textValue = String(value);
-    }
-    
-    // Check if a value already exists
-    const existingValueQuery = `
-      SELECT id 
-      FROM cc_column_values 
-      WHERE task_id = $1 AND column_id = $2
-    `;
-    const existingValueResult = await db.query(existingValueQuery, [task_id, columnId]);
-    
-    if (existingValueResult.rowCount && existingValueResult.rowCount > 0) {
-      // Update existing value
-      const updateQuery = `
-        UPDATE cc_column_values 
-        SET text_value = $1, 
-            number_value = $2, 
-            date_value = $3, 
-            boolean_value = $4, 
-            json_value = $5, 
-            updated_at = NOW() 
-        WHERE task_id = $6 AND column_id = $7
-      `;
-      await db.query(updateQuery, [
-        textValue, 
-        numberValue, 
-        dateValue, 
-        booleanValue, 
-        jsonValue, 
-        task_id, 
-        columnId
-      ]);
-    } else {
-      // Insert new value
-      const insertQuery = `
-        INSERT INTO cc_column_values 
-        (task_id, column_id, text_value, number_value, date_value, boolean_value, json_value, created_at, updated_at) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-      `;
-      await db.query(insertQuery, [
-        task_id, 
-        columnId, 
-        textValue, 
-        numberValue, 
-        dateValue, 
-        booleanValue, 
-        jsonValue
-      ]);
-    }
-
-    // Broadcast the update to all clients in the project room
+    // Broadcast only after the transaction commits.
     socket.to(`project:${project_id}`).emit(
       SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(),
       JSON.stringify({
         task_id,
         column_key,
-        value
+        value: responseValue
       })
     );
 
-    // Also send back to the sender for confirmation
     socket.emit(
       SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(),
       JSON.stringify({
         task_id,
         column_key,
-        value
+        value: responseValue
       })
     );
 
-    // console.log("Task custom column updated successfully", { task_id, column_key });
+    if (fieldType === "selection" && clearedDependents.length > 0) {
+      broadcastClearedDependentValues(
+        socket,
+        project_id,
+        task_id,
+        column.name,
+        responseValue,
+        clearedDependents
+      );
+    }
   } catch (error) {
     log_error(error);
     console.error("Error updating task custom column", error);
   }
-}; 
+};

@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { Link, useNavigate } from 'react-router-dom';
 import TablePagination from '@/components/TablePagination';
 import {
@@ -419,7 +420,7 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
       key: 'download',
       label: t('downloadInvoiceMenuItem', { defaultValue: 'Download Invoice' }),
       icon: <DownloadOutlined />,
-      onClick: () => window.open(getInvoiceDownloadUrl(invoice.id), '_blank', 'noopener,noreferrer'),
+      onClick: () => downloadPortalPdf(getInvoiceDownloadUrl(invoice.id), 'invoice.pdf', t('downloadFailed', { defaultValue: 'Failed to download the PDF. Please try again.' })),
     },
     {
       key: 'duplicate',
@@ -486,7 +487,9 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
       title: t('serviceColumn', { defaultValue: 'Service' }),
       render: (_v, record: ClientPortalInvoice) => (
         <div>
-          <Text type="secondary">{record.projectName || record.serviceName || '-'}</Text>
+          <Text type="secondary">
+            {decodeHtmlEntities(record.projectName || record.serviceName) || '-'}
+          </Text>
           {record.changeRequestNumber && (
             <div>
               <Text style={{ fontSize: 12 }}>{record.changeRequestNumber}</Text>

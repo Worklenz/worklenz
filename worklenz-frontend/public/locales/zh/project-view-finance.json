@@ -43,6 +43,7 @@
   "labourHoursColumn": "工时",
   "actions": "操作",
   "selectJobTitle": "选择职位",
+  "createJobTitleButtonText": "创建职位",
   "ratecardsPluralText": "费率卡模板",
   "deleteConfirm": "您确定吗？",
   "yes": "是",

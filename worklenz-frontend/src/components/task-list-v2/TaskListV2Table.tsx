@@ -284,6 +284,8 @@ const ExampleTaskRows: React.FC<{
   groupColor: string;
   projectId: string;
   canCreateTask?: boolean;
+  /** When false, examples are visual only (used before the first sprint exists). */
+  interactive?: boolean;
   onTaskCreated: (
     task: any,
     options?: { openDrawer: boolean; insertAfterTaskId?: string | null }
@@ -298,6 +300,7 @@ const ExampleTaskRows: React.FC<{
   groupColor,
   projectId,
   canCreateTask = true,
+  interactive = true,
   onTaskCreated,
 }) => {
   const { t } = useTranslation('task-list-table');
@@ -476,13 +479,22 @@ const ExampleTaskRows: React.FC<{
           updated_at: '',
         };
 
+        const canActivateRow = interactive && canCreateTask && activeRowIndex === null;
+
         return (
           <div
             key={rowIndex}
-            className="flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/30"
-            style={{ height: '40px', cursor: canCreateTask ? 'text' : 'default' }}
+            className={`flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 ${
+              interactive ? 'hover:bg-gray-50 dark:hover:bg-gray-800/30' : ''
+            }`}
+            style={{
+              height: '40px',
+              cursor: canActivateRow ? 'text' : 'default',
+              pointerEvents: interactive ? undefined : 'none',
+              userSelect: interactive ? undefined : 'none',
+            }}
             onClick={() => {
-              if (canCreateTask && activeRowIndex === null) setActiveRowIndex(rowIndex);
+              if (canActivateRow) setActiveRowIndex(rowIndex);
             }}
           >
             {visibleColumns.map((column, colIndex) => {
@@ -502,7 +514,7 @@ const ExampleTaskRows: React.FC<{
                   height: '100%',
                   display: 'flex',
                   alignItems: 'center',
-                  backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff',
+                  backgroundColor: 'var(--tl-sticky-cell-bg)',
                 }),
               };
 
@@ -838,7 +850,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const { token: themeToken } = theme.useToken();
 
   // Task creation/assignment restriction (Business Plan feature)
-  const { canCreateTask } = useTaskCreationPermission();
+  const { canCreateTask: canCreateTaskPermission } = useTaskCreationPermission();
 
   // Redux state selectors
   const allTasks = useAppSelector(selectAllTasksArray);
@@ -862,6 +874,8 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
   const isSoftwareProject = isSoftwareProjectType(projectType);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
+  const canCreateTask = canCreateTaskPermission;
+  const isWorkReadOnly = isGuest;
   const activeSprintGroupIds = useMemo(
     () =>
       new Set(
@@ -876,10 +890,10 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const loadingColumns = useAppSelector(selectLoadingColumns);
 
   useEffect(() => {
-    if (isGuest && selectedTaskIds.length > 0) {
+    if (isWorkReadOnly && selectedTaskIds.length > 0) {
       dispatch(clearSelection());
     }
-  }, [dispatch, isGuest, selectedTaskIds.length]);
+  }, [dispatch, isWorkReadOnly, selectedTaskIds.length]);
 
   // Refs for scroll synchronization
   const headerScrollRef = useRef<HTMLDivElement>(null);
@@ -952,23 +966,23 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     handleDragStart: originalHandleDragStart,
     handleDragOver: originalHandleDragOver,
     handleDragEnd,
-  } = useDragAndDrop(allTasks, groups);
+  } = useDragAndDrop(allTasks, groups, t);
 
-  // Wrap drag handlers to prevent dragging for guests
+  // Wrap drag handlers to prevent dragging when work items are locked
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    if (isGuest) return;
+    if (isWorkReadOnly) return;
     originalHandleDragStart(event);
-  }, [isGuest, originalHandleDragStart]);
+  }, [isWorkReadOnly, originalHandleDragStart]);
 
   const handleDragOver = useCallback((event: any) => {
-    if (isGuest) return;
+    if (isWorkReadOnly) return;
     originalHandleDragOver(event);
-  }, [isGuest, originalHandleDragOver]);
+  }, [isWorkReadOnly, originalHandleDragOver]);
 
   const handleDragEndWrapper = useCallback((event: DragEndEvent) => {
-    if (isGuest) return;
+    if (isWorkReadOnly) return;
     handleDragEnd(event);
-  }, [isGuest, handleDragEnd]);
+  }, [isWorkReadOnly, handleDragEnd]);
 
   const bulkActions = useBulkActions();
 
@@ -1362,33 +1376,45 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     const container = outerScrollRef.current;
     if (!container) return;
 
-    const tagStickyWrappers = () => {
-      container.querySelectorAll<HTMLElement>('*').forEach(el => {
-        if (window.getComputedStyle(el).position !== 'sticky') return;
-        const child = el.firstElementChild as HTMLElement | null;
-        if (
-          child &&
-          (child.classList.contains('mt-2') || child.querySelector('[data-group-header]'))
-        ) {
-          el.classList.add('virtuoso-group-header-wrapper');
-          // Use Ant Design's colorBgContainer token — matches the actual page background
-          // in both light (#ffffff) and dark (#141414) modes. Backlog cards sit on the layout background.
-          el.style.backgroundColor = isBacklogMode
-            ? themeToken.colorBgLayout
-            : themeToken.colorBgContainer;
-        }
-      });
+    const tagStickyWrapper = (el: Element) => {
+      if (!(el instanceof HTMLElement)) return;
+      if (el.classList.contains('virtuoso-group-header-wrapper')) return;
+      if (window.getComputedStyle(el).position !== 'sticky') return;
+      const child = el.firstElementChild;
+      if (
+        child &&
+        (child.classList.contains('mt-2') || child.querySelector('[data-group-header]'))
+      ) {
+        // Background color comes from CSS variables (--tl-group-header-bg /
+        // --tl-backlog-group-header-bg) so theme changes never touch this code path.
+        el.classList.add('virtuoso-group-header-wrapper');
+      }
     };
 
-    const timeoutId = setTimeout(tagStickyWrappers, 100);
-    const observer = new MutationObserver(tagStickyWrappers);
+    const tagStickyWrappersIn = (root: ParentNode) => {
+      tagStickyWrapper(root as Element);
+      root.querySelectorAll('*').forEach(tagStickyWrapper);
+    };
+
+    tagStickyWrappersIn(container);
+    const observer = new MutationObserver(mutations => {
+      // Only inspect newly added subtrees instead of rescanning the whole
+      // list on every DOM mutation.
+      for (const mutation of mutations) {
+        mutation.addedNodes.forEach(node => {
+          if (node instanceof HTMLElement) {
+            tagStickyWrapper(node);
+            node.querySelectorAll('*').forEach(tagStickyWrapper);
+          }
+        });
+      }
+    });
     observer.observe(container, { childList: true, subtree: true });
 
     return () => {
-      clearTimeout(timeoutId);
       observer.disconnect();
     };
-  }, [loading, loadingColumns, themeToken.colorBgContainer, themeToken.colorBgLayout, isBacklogMode]);
+  }, [loading, loadingColumns]);
 
   // Cleanup column resize listeners on unmount to prevent memory leaks
   useEffect(() => {
@@ -1650,7 +1676,37 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const virtuosoGroups = useMemo(() => {
     let currentTaskIndex = 0;
 
-    return groups.map(group => {
+    // Software backlog: always keep Backlog (Unmapped), even when empty; active sprint first.
+    const orderedGroups =
+      isBacklogMode && isSoftwareProject
+        ? (() => {
+            const hasBacklog = groups.some(group => group.id === UNMAPPED_PHASE_ID);
+            const withBacklog = hasBacklog
+              ? groups
+              : [
+                  ...groups,
+                  {
+                    id: UNMAPPED_PHASE_ID,
+                    title: UNMAPPED_PHASE_ID,
+                    taskIds: [] as string[],
+                    type: 'phase' as const,
+                    color: '#fbc84c69',
+                    groupValue: UNMAPPED_PHASE_ID.toLowerCase(),
+                  },
+                ];
+            return [...withBacklog].sort((a, b) => {
+              if (a.id === UNMAPPED_PHASE_ID) return 1;
+              if (b.id === UNMAPPED_PHASE_ID) return -1;
+              const aStatus = phaseList.find(phase => phase.id === a.id)?.sprint_status;
+              const bStatus = phaseList.find(phase => phase.id === b.id)?.sprint_status;
+              const rank = (status?: string | null) =>
+                status === 'active' ? 0 : status === 'planned' ? 1 : 2;
+              return rank(aStatus) - rank(bStatus);
+            });
+          })()
+        : groups;
+
+    return orderedGroups.map(group => {
       const isCurrentGroupCollapsed = collapsedGroups.has(group.id);
 
       const visibleTasksInGroup = isCurrentGroupCollapsed
@@ -1709,7 +1765,17 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       currentTaskIndex += itemsWithAddTask.length;
       return groupData;
     });
-  }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId, insertAnchor]);
+  }, [
+    groups,
+    allTasks,
+    collapsedGroups,
+    currentGrouping,
+    urlProjectId,
+    insertAnchor,
+    isBacklogMode,
+    isSoftwareProject,
+    phaseList,
+  ]);
 
   const virtuosoGroupCounts = useMemo(() => {
     return virtuosoGroups.map(group => group.count);
@@ -1720,13 +1786,30 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   }, [virtuosoGroups]);
 
   // Assignee grouping can repeat an issue across groups; sortable ids must stay unique.
+  // Also include expanded subtasks so they can be dragged to a new parent in the outer DndContext.
   const sortableTaskIds = useMemo(() => {
-    const ids = virtuosoItems
-      .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
-      .map(item => item.id)
-      .filter((id): id is string => id !== undefined);
+    const taskById = new Map(allTasks.map(task => [task.id, task]));
+
+    const collectExpandedSubtaskIds = (taskId: string, acc: string[]) => {
+      const task = taskById.get(taskId);
+      if (!task?.show_sub_tasks || !task.sub_tasks?.length) return;
+      for (const subtask of task.sub_tasks) {
+        if (!subtask.id) continue;
+        acc.push(subtask.id);
+        collectExpandedSubtaskIds(subtask.id, acc);
+      }
+    };
+
+    const ids: string[] = [];
+    for (const item of virtuosoItems) {
+      if ('isAddTaskRow' in item || !item.id) continue;
+      if (!item.parent_task_id) {
+        ids.push(item.id);
+        collectExpandedSubtaskIds(item.id, ids);
+      }
+    }
     return Array.from(new Set(ids));
-  }, [virtuosoItems]);
+  }, [allTasks, virtuosoItems]);
 
   // Render functions
   const renderGroup = useCallback(
@@ -1760,7 +1843,12 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 isActiveSprint={activeSprintGroupIds.has(group.id)}
               />
             )}
-            {isGroupEmpty && !isGroupCollapsed && hasNoTasks && !isGuest && (
+            {isGroupEmpty &&
+              !isGroupCollapsed &&
+              hasNoTasks &&
+              !isGuest &&
+              !isWorkReadOnly &&
+              (!(isBacklogMode && isSoftwareProject) || group.id === UNMAPPED_PHASE_ID) && (
               <ExampleTaskRows
                 visibleColumns={visibleColumns}
                 isDarkMode={isDarkMode}
@@ -1771,6 +1859,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 groupColor={(isDarkMode ? group.color_code_dark || group.color : group.color) || ''}
                 projectId={urlProjectId || ''}
                 canCreateTask={canCreateTask}
+                interactive
                 onTaskCreated={(task, options) =>
                   handleTaskCreated(task, group.id, !!options?.openDrawer, null)
                 }
@@ -1793,6 +1882,9 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       activeId,
       overGroupId,
       canCreateTask,
+      isGuest,
+      isWorkReadOnly,
+      isSoftwareProject,
       isBacklogMode,
       activeSprintGroupIds,
     ]
@@ -1806,7 +1898,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
 
       if ('isAddTaskRow' in item && item.isAddTaskRow) {
         // Hide the add-task row entirely when task creation is restricted or user is guest
-        if (!canCreateTask || isGuest) return null;
+        if (!canCreateTask || isWorkReadOnly) return null;
         return (
           <AddTaskRow
             groupId={item.groupId}
@@ -1841,7 +1933,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           isFirstInGroup={isFirstInGroup}
           updateTaskCustomColumnValue={updateTaskCustomColumnValue}
           canCreateTask={canCreateTask}
-          isGuest={isGuest}
+          isGuest={isWorkReadOnly}
         />
       );
     },
@@ -1855,7 +1947,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       handleDeactivateAddRow,
       handleTaskCreated,
       canCreateTask,
-      isGuest,
+      isWorkReadOnly,
     ]
   );
 
@@ -1881,7 +1973,9 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
             style={{
               width: '100%',
               minWidth: 'max-content',
-              backgroundColor: isDarkMode ? '#141414' : '#f9fafb',
+              backgroundColor: 'var(--tl-header-bg)',
+              transition:
+                'background-color 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
             <div
@@ -1911,7 +2005,9 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                     position: 'sticky' as const,
                     left: leftPosition,
                     zIndex: 15,
-                    backgroundColor: isDarkMode ? '#141414' : '#f9fafb', // custom dark header : bg-gray-50
+                    backgroundColor: 'var(--tl-header-bg)',
+                    transition:
+                      'background-color 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1)',
                     height: '100%', // Fill the header height
                     display: 'flex', // Use flex to contain child
                     alignItems: 'center', // Center content vertically
@@ -2359,7 +2455,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           onDragOver={handleDragOver}
           onDragEnd={handleDragEndWrapper}
         >
-          <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
+          <div className="flex flex-col bg-[var(--tl-surface-bg)] h-full overflow-hidden">
             <div
               className="border border-gray-200 dark:border-gray-700 rounded-lg"
               style={{
@@ -2371,7 +2467,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
             >
               <div
                 ref={outerScrollRef}
-                className="flex-1 bg-white dark:bg-gray-900 relative"
+                className="flex-1 bg-[var(--tl-surface-bg)] relative"
                 style={{ overflowX: 'auto', overflowY: 'auto', minHeight: 0 }}
               >
                 <div
@@ -2380,7 +2476,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 >
                   {/* Sticky Column Headers */}
                   <div
-                    className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800"
+                    className="sticky top-0 z-30 bg-[var(--tl-header-bg)] transition-colors duration-200"
                     style={{ minWidth: 'max-content' }}
                   >
                     {renderColumnHeaders()}
@@ -2399,7 +2495,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                         onToggle={() => {}}
                         projectId={urlProjectId || ''}
                       />
-                      {hasNoTasks && !isGuest && (
+                      {hasNoTasks && !isGuest && !isWorkReadOnly && (
                         <ExampleTaskRows
                           visibleColumns={visibleColumns}
                           isDarkMode={isDarkMode}
@@ -2410,13 +2506,14 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                           groupColor="#fbc84c69"
                           projectId={urlProjectId || ''}
                           canCreateTask={canCreateTask}
+                          interactive
                           onTaskCreated={(task, options) =>
                             handleTaskCreated(task, unmappedGroupId, !!options?.openDrawer, null)
                           }
                         />
                       )}
                       {/* Single add task row - reused for all tasks */}
-                      {canCreateTask && !isGuest && (
+                      {canCreateTask && !isWorkReadOnly && (
                         <AddTaskRow
                           groupId={unmappedGroupId}
                           groupType="phase"
@@ -2439,7 +2536,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
 
     // For other groupings, show the empty state message
     return (
-      <div className="flex flex-col bg-white dark:bg-gray-900 h-full">
+      <div className="flex flex-col bg-[var(--tl-surface-bg)] h-full">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -2459,22 +2556,26 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       {/* CSS for sticky column hover effects */}
       <style>
         {`
-          .hover\\:bg-gray-50:hover .sticky-column-hover,
-          .dark .hover\\:bg-gray-800:hover .sticky-column-hover {
-            background-color: var(--hover-bg) !important;
+          /* Sticky cells track the row hover overlay so the sticky column and
+             the scrolled row always share the same surface color. */
+          .group:hover .sticky-column-hover {
+            background-color: var(--tl-sticky-cell-hover-bg) !important;
           }
 
           /* GroupedVirtuoso wraps each groupContent in a position:sticky div with top:0.
              Override top to 40px so the group header sticks below the column header row.
-             Background is set via JS using Ant Design's colorBgContainer token. */
+             Background comes from [data-theme]-driven CSS variables. */
           .virtuoso-group-header-wrapper {
             top: 40px !important;
             z-index: 20 !important;
+            background-color: var(--tl-group-header-bg) !important;
+            transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
           }
 
           /* Software Backlog: sprint cards have no global column header and no cell dividers. */
           .tasklist-backlog .virtuoso-group-header-wrapper {
             top: 0 !important;
+            background-color: var(--tl-backlog-group-header-bg) !important;
           }
 
           .tasklist-backlog .border-r {
@@ -2534,7 +2635,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
         <div
           id="task-list-container"
           className={`flex flex-col h-full overflow-hidden ${
-            isBacklogMode ? 'tasklist-backlog' : 'bg-white dark:bg-gray-900'
+            isBacklogMode ? 'tasklist-backlog' : 'bg-[var(--tl-surface-bg)]'
           }`}
           style={containerStyle}
         >
@@ -2553,7 +2654,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 TaskGroupHeader's sticky left:0 containing block is this element — full scroll width. */}
             <div
               ref={outerScrollRef}
-              className={`flex-1 relative ${isBacklogMode ? '' : 'bg-white dark:bg-gray-900'}`}
+              className={`flex-1 relative ${isBacklogMode ? '' : 'bg-[var(--tl-surface-bg)] transition-colors duration-200'}`}
               style={{
                 overflowX: 'auto',
                 overflowY: 'auto',
@@ -2573,7 +2674,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 {/* Sticky Column Headers (Backlog cards render their own per section) */}
                 {!isBacklogMode && (
                   <div
-                    className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800"
+                    className="sticky top-0 z-30 bg-[var(--tl-header-bg)] transition-colors duration-200"
                     style={{ minWidth: 'max-content' }}
                   >
                     {renderColumnHeaders()}
@@ -2615,6 +2716,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                         activeId && overId === item.id && !('isAddTaskRow' in item);
                       const showBefore = isOverThisTask && dropPosition === 'before';
                       const showAfter = isOverThisTask && dropPosition === 'after';
+                      const showIntoParent = isOverThisTask && dropPosition === 'into';
                       const isLastItemOfGroup = indexInGroup === (group?.tasks.length ?? 0) - 1;
                       const backlogCardStyle: React.CSSProperties = isBacklogMode
                         ? {
@@ -2635,7 +2737,11 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                       return (
                         <div
                           style={{ minWidth: 'max-content', ...backlogCardStyle }}
-                          className="relative"
+                          className={`relative ${
+                            showIntoParent
+                              ? 'ring-2 ring-inset ring-blue-400 dark:ring-blue-500 bg-blue-50/50 dark:bg-blue-900/20 rounded'
+                              : ''
+                          }`}
                           onMouseMove={e => {
                             // Find the InsertTaskDivider button inside this row and update
                             // its left position to follow the cursor — direct DOM update,
@@ -2658,7 +2764,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                               isDarkMode={isDarkMode}
                             />
                           )}
-                           {showInsertDivider && previousItem && canCreateTask && !isGuest && (
+                           {showInsertDivider && previousItem && canCreateTask && !isWorkReadOnly && (
                              <InsertTaskDivider
                                key="insert-divider"
                                isVisible={true}
@@ -2676,7 +2782,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                           <React.Fragment key={item.id ?? `virtuoso-item-${index}`}>
                             {renderTask(index, isFirstInGroup)}
                           </React.Fragment>
-                          {isLastInGroup && canCreateTask && !isGuest && (
+                          {isLastInGroup && canCreateTask && !isWorkReadOnly && (
                             <InsertTaskDivider
                               key="insert-divider-bottom"
                               isVisible={true}
@@ -2733,7 +2839,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           </DragOverlay>
 
           {/* Bulk Action Bar */}
-          {selectedTaskIds.length > 0 && urlProjectId && !isGuest && (
+          {selectedTaskIds.length > 0 && urlProjectId && !isWorkReadOnly && (
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
               <OptimizedBulkActionBar
                 selectedTaskIds={selectedTaskIds}

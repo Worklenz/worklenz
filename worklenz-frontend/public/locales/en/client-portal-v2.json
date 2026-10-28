@@ -93,5 +93,8 @@
   "toolbarSelectAll": "Select All",
   "toolbarClearAll": "Clear All",
   "toolbarFields": "Fields",
-  "toolbarShowFields": "Show fields"
+  "toolbarShowFields": "Show fields",
+  "userDeleted": "Account deleted",
+  "userDeletedHint": "Deleted by the user on {{deleted}}. It can be restored until {{until}}.",
+  "userDeletedHintExpired": "Deleted by the user on {{deleted}}."
 }

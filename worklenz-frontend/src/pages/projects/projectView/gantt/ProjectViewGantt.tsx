@@ -114,6 +114,13 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const priorities = useAppSelector(state => state.priorityReducer?.priorities || []);
   const currentProject = useAppSelector(state => state.projectReducer?.project);
   const isSoftwareProject = isSoftwareProjectType(currentProject?.project_type);
+  const lastDeletedTaskId = useAppSelector(state => state.taskDrawerReducer?.lastDeletedTaskId);
+  const [locallyDeletedTaskIds, setLocallyDeletedTaskIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setLocallyDeletedTaskIds(new Set());
+  }, [projectId]);
+
 
   // RTK Query hooks
   const {
@@ -144,6 +151,12 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     }
   );
 
+  useEffect(() => {
+    if (!lastDeletedTaskId) return;
+    setLocallyDeletedTaskIds(prev => new Set(prev).add(lastDeletedTaskId));
+    refetchTasks();
+    refetchPhases();
+  }, [lastDeletedTaskId, refetchTasks, refetchPhases]);
   // Keep roadmap phase grouping in sync when a task's phase (or dates/status/
   // priority) changes — e.g. assigning a dated task to a phase from the drawer.
   // Without this, the view only updates on the 30s poll.
@@ -182,7 +195,18 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   // Transform API data to component format based on grouping mode
   const tasks = useMemo(() => {
     if (tasksResponse?.body) {
-      const apiTasks = tasksResponse.body;
+      let apiTasks = tasksResponse.body;
+      if (locallyDeletedTaskIds.size > 0) {
+        apiTasks = apiTasks
+          .filter(task => !locallyDeletedTaskIds.has(task.id))
+          .map(task => ({
+            ...task,
+            subtasks: task.subtasks ? task.subtasks.filter(st => !locallyDeletedTaskIds.has(st.id)) : [],
+            dependencies: task.dependencies
+              ? task.dependencies.filter(dep => !locallyDeletedTaskIds.has(dep.related_task_id))
+              : [],
+          }));
+      }
       const projectColor = currentProject?.color_code;
       
       switch (groupingMode) {
@@ -301,7 +325,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
       }
     }
     return [];
-  }, [tasksResponse, phasesResponse, statusCategories, statuses, groupingMode, phaseSortMode, currentProject, priorities, themeMode, isSoftwareProject, t])
+  }, [tasksResponse, phasesResponse, statusCategories, statuses, groupingMode, phaseSortMode, currentProject, priorities, themeMode, isSoftwareProject, t, locallyDeletedTaskIds])
 
   // Ids of top-level sections that actually exist right now (phase/status/priority
   // groups) for the active grouping mode. Used below instead of raw `expandedTasks.size`

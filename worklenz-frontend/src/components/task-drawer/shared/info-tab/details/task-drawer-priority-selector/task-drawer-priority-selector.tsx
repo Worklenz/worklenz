@@ -15,6 +15,7 @@ import { ITaskViewModel } from '@/types/tasks/task.types';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { isListTabKey } from '@/features/projects/singleProject/saved-views/saved-view-config';
 import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
 import { setTaskPriority } from '@/features/task-drawer/task-drawer.slice';
 import { updateTaskPriority as updateBoardTaskPriority } from '@/features/board/board-slice';
@@ -43,7 +44,7 @@ const PriorityDropdown = ({ task }: PriorityDropdownProps) => {
       // ignore responses for other tasks instead of applying them here.
       if (data.id !== task?.id) return;
       dispatch(setTaskPriority(data));
-      if (tab === 'tasks-list') {
+      if (isListTabKey(tab)) {
         dispatch(updateTasksListTaskPriority(data));
       }
       if (tab === 'board') {

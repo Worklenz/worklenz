@@ -6,6 +6,8 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { Button, message } from '@/shared/antd-imports';
 import logger from '@/utils/errorLogger';
+import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
+import { createMentionEnterBinding } from './description-editor-keyboard';
 import 'react-quill-new/dist/quill.snow.css';
 import './description-editor.css';
 
@@ -16,15 +18,80 @@ interface DescriptionChangeAck {
 
 const SAVE_ACK_TIMEOUT_MS = 10000;
 
+interface MentionMember {
+  id: string;
+  name: string;
+}
+
+interface QuillBounds {
+  left: number;
+  top: number;
+  bottom: number;
+}
+
+interface QuillEditorInstance {
+  root: HTMLDivElement;
+  getText: () => string;
+  getSelection: (focus?: boolean) => { index: number; length: number } | null;
+  getBounds: (index: number, length?: number) => QuillBounds | null;
+  getFormat: (index: number, length?: number) => Record<string, unknown>;
+  formatText: (
+    index: number,
+    length: number,
+    format: string,
+    value: unknown,
+    source?: 'api' | 'user' | 'silent'
+  ) => void;
+  deleteText: (index: number, length: number, source?: 'api' | 'user' | 'silent') => void;
+  insertText: (
+    index: number,
+    text: string,
+    formats?: Record<string, unknown>,
+    source?: 'api' | 'user' | 'silent'
+  ) => void;
+  setSelection: (
+    index: number,
+    length?: number,
+    source?: 'api' | 'user' | 'silent'
+  ) => void;
+  focus: () => void;
+}
+
+interface QuillEditorHandle {
+  getEditor: () => QuillEditorInstance;
+}
+
+interface MentionQuery {
+  query: string;
+  start: number;
+  end: number;
+  top: number;
+  left: number;
+}
+
+const registerMentionFormat = (Quill: typeof import('react-quill-new').Quill) => {
+  const InlineBlot = Quill.import('blots/inline') as typeof import('quill/blots/inline').default;
+
+  class MentionBlot extends InlineBlot {
+    static blotName = 'mention';
+    static tagName = 'span';
+    static className = 'mentions';
+  }
+
+  Quill.register(MentionBlot, true);
+};
+
 const LazyQuillEditor = lazy(() =>
-  import('react-quill-new').then(module => ({
-    default: module.default as unknown as ComponentType<any>,
-  }))
+  import('react-quill-new').then(module => {
+    registerMentionFormat(module.Quill);
+    return { default: module.default as unknown as ComponentType<any> };
+  })
 );
 interface DescriptionEditorProps {
   description: string | null;
   taskId: string;
   parentTaskId: string | null;
+  projectId?: string | null;
   isGuest?: boolean;
 }
 
@@ -41,9 +108,59 @@ const COLLAPSE_MAX_HEIGHT = 120;
 // overlay for no benefit. Matches the backend's sanitizeRichTextDescription.
 const SANITIZE_CONFIG = {
   ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'data-list'],
-} as const;
+};
 
-const DescriptionEditor = ({ description, taskId, parentTaskId, isGuest = false }: DescriptionEditorProps) => {
+const findMentionRanges = (text: string, members: MentionMember[]) => {
+  const normalizedText = text.toLocaleLowerCase();
+  const ranges: Array<{ start: number; length: number }> = [];
+  const orderedMembers = [...members].sort((a, b) => b.name.length - a.name.length);
+
+  orderedMembers.forEach(member => {
+    const mention = `@${member.name.trim()}`;
+    if (mention.length < 2) return;
+    const normalizedMention = mention.toLocaleLowerCase();
+    let searchFrom = 0;
+    let matchIndex = normalizedText.indexOf(normalizedMention, searchFrom);
+
+    while (matchIndex !== -1) {
+      const previousCharacter = matchIndex > 0 ? text[matchIndex - 1] : '';
+      const nextCharacter = text[matchIndex + mention.length] || '';
+      const hasValidStart = !previousCharacter || /[\s([{,:;.!?]/.test(previousCharacter);
+      const hasValidEnd = !nextCharacter || /[\s.,;:!?)}\]]/.test(nextCharacter);
+      const overlapsExisting = ranges.some(
+        range =>
+          matchIndex < range.start + range.length &&
+          matchIndex + mention.length > range.start
+      );
+
+      if (hasValidStart && hasValidEnd && !overlapsExisting) {
+        ranges.push({ start: matchIndex, length: mention.length });
+      }
+
+      searchFrom = matchIndex + mention.length;
+      matchIndex = normalizedText.indexOf(normalizedMention, searchFrom);
+    }
+  });
+
+  return ranges;
+};
+
+const applyMentionFormatting = (editor: QuillEditorInstance, members: MentionMember[]) => {
+  const text = editor.getText();
+  findMentionRanges(text, members).forEach(({ start, length }) => {
+    if (editor.getFormat(start, length).mention !== true) {
+      editor.formatText(start, length, 'mention', true, 'silent');
+    }
+  });
+};
+
+const DescriptionEditor = ({
+  description,
+  taskId,
+  parentTaskId,
+  projectId,
+  isGuest = false,
+}: DescriptionEditorProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
   const { socket, connected } = useSocket();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -56,9 +173,82 @@ const DescriptionEditor = ({ description, taskId, parentTaskId, isGuest = false 
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const quillRef = useRef<QuillEditorHandle | null>(null);
   const previewContentRef = useRef<HTMLDivElement>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLongContent, setIsLongContent] = useState(false);
+  const [mentionMembers, setMentionMembers] = useState<MentionMember[]>([]);
+  const [isLoadingMentionMembers, setIsLoadingMentionMembers] = useState(false);
+  const [mentionMembersLoadFailed, setMentionMembersLoadFailed] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState<MentionQuery | null>(null);
+  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
+  const mentionMembersCacheRef = useRef<{ projectId: string; members: MentionMember[] } | null>(null);
+  const mentionQueryRef = useRef(mentionQuery);
+  const filteredMentionMembersRef = useRef<MentionMember[]>([]);
+  const selectedMentionIndexRef = useRef(selectedMentionIndex);
+  const insertMentionRef = useRef<(member: MentionMember) => void>(() => undefined);
+  mentionQueryRef.current = mentionQuery;
+  selectedMentionIndexRef.current = selectedMentionIndex;
+
+  useEffect(() => {
+    if (!isEditorOpen || !projectId) {
+      setMentionQuery(null);
+      return;
+    }
+
+    const cachedMembers = mentionMembersCacheRef.current;
+    if (cachedMembers?.projectId === projectId) {
+      setMentionMembers(cachedMembers.members);
+      setMentionMembersLoadFailed(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setMentionMembers([]);
+    setMentionMembersLoadFailed(false);
+    setIsLoadingMentionMembers(true);
+
+    projectCommentsApiService
+      .getMentionMembers(projectId, 1, 200, null, null, '')
+      .then(response => {
+        if (isCancelled) return;
+        if (!response.done) {
+          throw new Error(response.message || 'Member request was unsuccessful');
+        }
+        const members: MentionMember[] = [];
+        (response.body || []).forEach(member => {
+          if (member.id && member.name) {
+            members.push({
+              id: member.id,
+              name: member.name,
+            });
+          }
+        });
+        mentionMembersCacheRef.current = { projectId, members };
+        setMentionMembers(members);
+      })
+      .catch(error => {
+        if (isCancelled) return;
+        logger.error('Failed to load task description mention members', { projectId, error });
+        setMentionMembersLoadFailed(true);
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoadingMentionMembers(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isEditorOpen, projectId]);
+
+  useEffect(() => {
+    if (!isEditorOpen || mentionMembers.length === 0) return;
+    const frame = requestAnimationFrame(() => {
+      const editor = quillRef.current?.getEditor();
+      if (editor) applyMentionFormatting(editor, mentionMembers);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isEditorOpen, mentionMembers]);
 
   // Mirrors of state used inside effect cleanups / callbacks that must see
   // the latest value without re-subscribing (avoids stale closures).
@@ -158,6 +348,15 @@ const DescriptionEditor = ({ description, taskId, parentTaskId, isGuest = false 
       clipboard: {
         matchVisual: false,
       },
+      keyboard: {
+        bindings: {
+          mentionEnter: createMentionEnterBinding(
+            () => Boolean(mentionQueryRef.current),
+            () => filteredMentionMembersRef.current[selectedMentionIndexRef.current],
+            member => insertMentionRef.current(member)
+          ),
+        },
+      },
     }),
     []
   );
@@ -176,7 +375,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId, isGuest = false 
   // ordered and bulleted variants. Leaving it in makes Quill log an error for
   // an unknown format on init.
   const formats = useMemo(
-    () => ['header', 'bold', 'italic', 'underline', 'strike', 'list', 'link'],
+    () => ['header', 'bold', 'italic', 'underline', 'strike', 'list', 'link', 'mention'],
     []
   );
 
@@ -410,6 +609,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId, isGuest = false 
     if (!isEditorOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        if (mentionQueryRef.current) return;
         event.stopPropagation();
         handleDiscardClick();
       }
@@ -418,10 +618,112 @@ const DescriptionEditor = ({ description, taskId, parentTaskId, isGuest = false 
     return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [isEditorOpen, handleDiscardClick]);
 
+  const filteredMentionMembers = useMemo(() => {
+    if (!mentionQuery) return [];
+    const query = mentionQuery.query.trim().toLocaleLowerCase();
+    return mentionMembers
+      .filter(member => member.name.toLocaleLowerCase().includes(query))
+      .slice(0, 8);
+  }, [mentionMembers, mentionQuery]);
+  filteredMentionMembersRef.current = filteredMentionMembers;
+  const shouldShowMentionSuggestions =
+    mentionQuery &&
+    (isLoadingMentionMembers ||
+      mentionMembersLoadFailed ||
+      filteredMentionMembers.length > 0 ||
+      !/\s/.test(mentionQuery.query));
+
+  const updateMentionQuery = useCallback((editor: QuillEditorInstance | null) => {
+    if (!editor) {
+      setMentionQuery(null);
+      return;
+    }
+
+    const selection = editor.getSelection();
+    if (!selection || selection.length > 0) {
+      setMentionQuery(null);
+      return;
+    }
+
+    const beforeCursor = editor.getText().slice(0, selection.index);
+    const match = /(^|[\s([{,:;.!?])@([^\n@]*)$/u.exec(beforeCursor);
+    if (!match) {
+      setMentionQuery(null);
+      return;
+    }
+
+    const start = match.index + match[1].length;
+    const bounds = editor.getBounds(selection.index);
+    const editorRect = editor.root.getBoundingClientRect();
+    const left = Math.max(8, editorRect.left + (bounds?.left || 0));
+    const caretTop = editorRect.top + (bounds?.bottom || 0);
+    const top =
+      typeof window !== 'undefined' && caretTop + 220 > window.innerHeight
+        ? Math.max(8, editorRect.top + (bounds?.top || 0) - 210)
+        : caretTop;
+
+    setSelectedMentionIndex(0);
+    setMentionQuery({
+      query: match[2],
+      start,
+      end: selection.index,
+      top,
+      left:
+        typeof window !== 'undefined'
+          ? Math.min(left, Math.max(8, window.innerWidth - 288))
+          : left,
+    });
+  }, []);
+
+  const insertMention = useCallback(
+    (member: MentionMember) => {
+      if (!mentionQuery || !quillRef.current) return;
+      const editor = quillRef.current.getEditor();
+      const mention = `@${member.name}`;
+      const mentionEnd = mentionQuery.start + mention.length;
+
+      editor.focus();
+      editor.deleteText(mentionQuery.start, mentionQuery.end - mentionQuery.start, 'user');
+      editor.insertText(mentionQuery.start, mention, { mention: true }, 'user');
+      editor.insertText(mentionEnd, ' ', {}, 'user');
+      editor.setSelection(mentionEnd + 1, 0, 'silent');
+      setMentionQuery(null);
+    },
+    [mentionQuery]
+  );
+  insertMentionRef.current = insertMention;
+
+  const handleEditorKeyDown: React.KeyboardEventHandler<HTMLDivElement> = event => {
+    if (!mentionQuery) return;
+
+    if (event.key === 'ArrowDown' && filteredMentionMembers.length > 0) {
+      event.preventDefault();
+      setSelectedMentionIndex(index => (index + 1) % filteredMentionMembers.length);
+    } else if (event.key === 'ArrowUp' && filteredMentionMembers.length > 0) {
+      event.preventDefault();
+      setSelectedMentionIndex(
+        index => (index - 1 + filteredMentionMembers.length) % filteredMentionMembers.length
+      );
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      setMentionQuery(null);
+    }
+  };
+
   const handleEditorChange = (nextHtml: string) => {
-    const sanitizedContent = DOMPurify.sanitize(nextHtml, SANITIZE_CONFIG);
+    const editor = quillRef.current?.getEditor();
+    if (editor) applyMentionFormatting(editor, mentionMembers);
+    const currentHtml = editor?.root.innerHTML || nextHtml;
+    const sanitizedContent = DOMPurify.sanitize(currentHtml, SANITIZE_CONFIG);
     setContent(sanitizedContent);
     setWordCount(extractWordCount(sanitizedContent));
+    updateMentionQuery(editor || null);
+  };
+
+  const handleEditorSelectionChange = () => {
+    const editor = quillRef.current?.getEditor();
+    if (editor) applyMentionFormatting(editor, mentionMembers);
+    updateMentionQuery(editor || null);
   };
 
   const handleOpenEditor = () => {
@@ -450,13 +752,68 @@ const DescriptionEditor = ({ description, taskId, parentTaskId, isGuest = false 
             }
           >
             <LazyQuillEditor
+              ref={quillRef}
               theme="snow"
               value={content}
               onChange={handleEditorChange}
+              onChangeSelection={handleEditorSelectionChange}
+              onKeyDown={handleEditorKeyDown}
               modules={modules}
               formats={formats}
             />
           </Suspense>
+          {shouldShowMentionSuggestions && mentionQuery && (
+            <div
+              className={`description-mention-suggestions ${isDarkMode ? 'is-dark' : 'is-light'}`}
+              role="listbox"
+              aria-label={t('description.mentionSuggestions', {
+                defaultValue: 'Team member suggestions',
+              })}
+              data-testid="description-mention-suggestions"
+              style={{ top: mentionQuery.top, left: mentionQuery.left }}
+            >
+              {isLoadingMentionMembers ? (
+                <div className="description-mention-suggestion-message" role="status">
+                  {t('description.loadingMembers', {
+                    defaultValue: 'Loading team members...',
+                  })}
+                </div>
+              ) : mentionMembersLoadFailed ? (
+                <div className="description-mention-suggestion-message" role="status">
+                  {t('description.membersLoadFailed', {
+                    defaultValue: 'Team members could not be loaded.',
+                  })}
+                </div>
+              ) : filteredMentionMembers.length > 0 ? (
+                filteredMentionMembers.map((member, index) => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    role="option"
+                    aria-selected={index === selectedMentionIndex}
+                    className={
+                      index === selectedMentionIndex
+                        ? 'description-mention-suggestion is-selected'
+                        : 'description-mention-suggestion'
+                    }
+                    onMouseDown={event => {
+                      event.preventDefault();
+                      insertMention(member);
+                    }}
+                    onClick={() => insertMention(member)}
+                  >
+                    {member.name}
+                  </button>
+                ))
+              ) : (
+                <div className="description-mention-suggestion-message">
+                  {t('description.noMembersFound', {
+                    defaultValue: 'No team members found.',
+                  })}
+                </div>
+              )}
+            </div>
+          )}
           <div className="description-editor-footer">
             <span>
               {t('description.wordCount', { defaultValue: '{{count}} words', count: wordCount })}

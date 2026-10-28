@@ -42,6 +42,7 @@
   "jobRolesTitle": "职位角色",
   "noJobTitlesMessage": "请先在职位名称设置中创建职位名称，然后再向费率卡添加角色。",
   "createNewJobTitle": "创建新职位名称",
+  "createJobTitleButtonText": "创建职位",
   "jobTitleNamePlaceholder": "输入职位名称",
   "jobTitleNameRequired": "职位名称为必填项",
   "jobTitleCreatedSuccess": "职位名称创建成功",

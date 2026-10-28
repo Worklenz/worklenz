@@ -5,6 +5,7 @@
   "deleteConfirmationCancel": "Cancelar",
   "searchPlaceholder": "Buscar por nombre",
   "createJobTitleButton": "Crear Cargo",
+  "createJobTitleButtonText": "Crear un puesto de trabajo",
   "pinTooltip": "Haz clic para fijar esto en el menú principal",
   "createJobTitleDrawerTitle": "Crear Cargo",
   "updateJobTitleDrawerTitle": "Actualizar Cargo",
@@ -17,6 +18,9 @@
   "createJobTitleErrorMessage": "¡Error al crear el cargo!",
   "updateJobTitleSuccessMessage": "¡Cargo actualizado exitosamente!",
   "updateJobTitleErrorMessage": "¡Error al actualizar el cargo!",
+  "paginationTotal": "{{start}}-{{end}} de {{total}} elementos",
+  "editTooltip": "Editar",
+  "deleteTooltip": "Eliminar",
   "fetchJobTitleErrorMessage": "No se pudo recuperar el puesto de trabajo. Por favor inténtalo de nuevo.",
   "pageTitle": "Administrar títulos de trabajo"
 }

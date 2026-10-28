@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { EditOutlined, MessageOutlined, MoreOutlined } from '@ant-design/icons';
+import {
+  CheckCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  MessageOutlined,
+  MoreOutlined,
+  StopOutlined,
+} from '@ant-design/icons';
 import { Badge, Button, Col, Dropdown, Flex, Modal, Result, Row, Tabs } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -23,7 +30,8 @@ import { UsersTab } from './UsersTab';
 import { WorkspaceHeader } from './WorkspaceHeader';
 import { WorkspaceRail } from './WorkspaceRail';
 import { CLIENTS_PATH, DEFAULT_WORKSPACE_TAB, WorkspaceTab, parseWorkspaceTab } from './workspace-helpers';
-import { PortalLoader } from '@/components/client-portal/v2';
+import { PortalLoader, useClientOrganizationActions } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 /**
  * One record for a client organization: who they are, who can sign in, what they are waiting on
@@ -46,6 +54,7 @@ const ClientWorkspacePage = () => {
   const overviewQuery = useGetOrganizationOverviewQuery(id, { skip: !id });
   const overview = overviewQuery.data?.body;
   const organization = overview?.organization;
+  const organizationDisplayName = decodeHtmlEntities(organization?.name);
 
   // Count one view per opened client, once we know it exists.
   const trackedClientId = useRef<string | null>(null);
@@ -82,6 +91,11 @@ const ClientWorkspacePage = () => {
   const openInviteWizard = () => {
     if (organization) dispatch(openAddCompanyUserDrawer({ id: organization.id, name: organization.name }));
   };
+
+  // A deleted client has no workspace any more, so leave it for the list (where it can be restored).
+  const { actions: organizationActions, modals: organizationModals } = useClientOrganizationActions({
+    onDeleted: () => navigate(CLIENTS_PATH, { replace: true }),
+  });
 
   let body;
 
@@ -144,23 +158,23 @@ const ClientWorkspacePage = () => {
         key: 'users',
         label: t('workspace.tabs.users', { defaultValue: 'Users & Access' }),
         children: (
-          <UsersTab organizationId={id} organizationName={organization.name} onInviteUser={openInviteWizard} />
+          <UsersTab organizationId={id} organizationName={organizationDisplayName} onInviteUser={openInviteWizard} />
         ),
       },
       {
         key: 'projects',
         label: t('workspace.tabs.projects', { defaultValue: 'Projects' }),
-        children: <ProjectsTab organizationId={id} organizationName={organization.name} />,
+        children: <ProjectsTab organizationId={id} organizationName={organizationDisplayName} />,
       },
       {
         key: 'approvals',
         label: tabLabel(t('workspace.tabs.approvals', { defaultValue: 'Approvals' }), awaitingApprovals),
-        children: <ApprovalsTab organizationId={id} organizationName={organization.name} />,
+        children: <ApprovalsTab organizationId={id} organizationName={organizationDisplayName} />,
       },
       {
         key: 'change-requests',
         label: tabLabel(t('workspace.tabs.changeRequests', { defaultValue: 'Change Requests' }), needsReview),
-        children: <ChangeRequestsTab organizationId={id} organizationName={organization.name} />,
+        children: <ChangeRequestsTab organizationId={id} organizationName={organizationDisplayName} />,
       },
       {
         key: 'billing',
@@ -168,7 +182,7 @@ const ClientWorkspacePage = () => {
         children: (
           <BillingTab
             organizationId={id}
-            organizationName={organization.name}
+            organizationName={organizationDisplayName}
             portalAccess={organization.portal_access}
             onOpenTab={goToTab}
           />
@@ -177,7 +191,7 @@ const ClientWorkspacePage = () => {
       {
         key: 'activity',
         label: t('workspace.tabs.activity', { defaultValue: 'Activity' }),
-        children: <ActivityTab organizationId={id} organizationName={organization.name} />,
+        children: <ActivityTab organizationId={id} organizationName={organizationDisplayName} />,
       },
     ];
 
@@ -220,6 +234,27 @@ const ClientWorkspacePage = () => {
                           label: t('workspace.header.edit', { defaultValue: 'Edit client' }),
                           onClick: () => dispatch(toggleClientDetailsDrawer(id)),
                         },
+                        { type: 'divider' as const },
+                        organization.status === 'inactive'
+                          ? {
+                              key: 'reactivate',
+                              icon: <CheckCircleOutlined />,
+                              label: t('orgActions.menu.reactivate', { defaultValue: 'Reactivate client' }),
+                              onClick: () => organizationActions.onReactivate(organization),
+                            }
+                          : {
+                              key: 'deactivate',
+                              icon: <StopOutlined />,
+                              label: t('orgActions.menu.deactivate', { defaultValue: 'Deactivate client' }),
+                              onClick: () => organizationActions.onDeactivate(organization),
+                            },
+                        {
+                          key: 'delete',
+                          danger: true,
+                          icon: <DeleteOutlined />,
+                          label: t('orgActions.menu.delete', { defaultValue: 'Delete client' }),
+                          onClick: () => organizationActions.onDelete(organization),
+                        },
                       ],
                     }}
                     trigger={['click']}
@@ -248,12 +283,18 @@ const ClientWorkspacePage = () => {
         width="min(1440px, 96vw)"
         style={{ top: 24 }}
         styles={{
-          body: { maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', overflowX: 'hidden' },
+          body: {
+            maxHeight: 'calc(100vh - 160px)',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            marginInlineEnd: 32,
+          },
         }}
       >
         {body}
       </Modal>
       {isMessaging && <MessageClientModal target={{ organizationId: id }} onClose={() => setIsMessaging(false)} />}
+      {organizationModals}
     </>
   );
 };

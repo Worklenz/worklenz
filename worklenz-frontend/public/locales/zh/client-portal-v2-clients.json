@@ -9,7 +9,9 @@
     "removeFailed": "无法删除该用户。",
     "removed": "{{name}} 已从门户中删除。",
     "resendFailed": "无法重新发送邀请。",
-    "resent": "邀请已重新发送至 {{email}}。该链接的有效期为 7 天。"
+    "resent": "邀请已重新发送至 {{email}}。该链接的有效期为 7 天。",
+    "accountRestored": "{{name}} 的账户已恢复，可以再次登录。",
+    "restoreAccountFailed": "无法恢复该账户。"
   },
   "assign": {
     "description": "用户只能看到此处分配的项目，即使它们属于 {{organization}}。他们在每个项目中可以做什么取决于他们的角色：",
@@ -47,6 +49,7 @@
   },
   "lastAdmin": {
     "confirm": "仍然继续",
+    "pendingApprovalsTitle": "这将使一项审批没有审批人",
     "title": "这是最后一个客户端管理员"
   },
   "menu": {
@@ -59,7 +62,8 @@
     "remove": "删除用户",
     "resend": "重新发送邀请",
     "resendShort": "重新发送",
-    "view": "查看个人资料"
+    "view": "查看个人资料",
+    "restoreAccount": "恢复账户"
   },
   "organizations": {
     "accessFilter": {
@@ -110,6 +114,14 @@
       "contactName": "该客户端的第一个活跃门户管理员。",
       "projects": "在门户中与该客户共享的项目。",
       "users": "该客户端的所有用户中已登录的用户。"
+    },
+    "deleted": {
+      "show": "已删除（{{count}}）",
+      "hide": "返回客户列表",
+      "banner": "已删除的客户可在 {{days}} 天内恢复，之后将被永久删除。",
+      "columnDeleted": "删除时间",
+      "columnRemoval": "永久删除时间",
+      "empty": "没有已删除的客户。您删除的客户会在此保留 {{days}} 天，以便恢复。"
     }
   },
   "overview": {
@@ -333,5 +345,60 @@
       "description": "{{name}} 中可以登录的人员。每个人只能看到分配给他们的项目。",
       "invite": "邀请用户"
     }
+  },
+  "orgActions": {
+    "menu": {
+      "deactivate": "停用客户",
+      "reactivate": "重新启用客户",
+      "delete": "删除客户",
+      "restore": "恢复客户"
+    },
+    "deactivate": {
+      "title": "停用 {{name}}？",
+      "body": "{{name}} 的所有人员将立即失去门户访问权限，已登录的人员会在下一次请求时被登出。所有数据都会保留，您可以随时重新启用该客户。",
+      "confirm": "停用客户",
+      "success": "{{name}} 已停用，其用户无法再登录。",
+      "failed": "无法停用该客户。"
+    },
+    "reactivate": {
+      "title": "重新启用 {{name}}？",
+      "body": "其用户可以再次登录，并拥有与之前相同的访问权限。",
+      "confirm": "重新启用客户",
+      "success": "{{name}} 已重新启用。",
+      "failed": "无法重新启用该客户。"
+    },
+    "delete": {
+      "title": "删除 {{name}}？",
+      "checking": "正在检查删除该客户会产生的影响……",
+      "checkFailed": "无法检查删除该客户会产生的影响。",
+      "usersAffected": "将立即失去访问权限的用户：{{count}}",
+      "effect": "他们的下一次请求将失败并被登出。目前不会删除任何内容：该客户及其用户、项目、批准、讨论和发票会保留 {{days}} 天。",
+      "restorable": "在此期间，您可以在“已删除”视图中恢复该客户及其全部历史记录。之后将被永久删除；发票会作为记录保留。",
+      "blockedTitle": "未付款发票",
+      "blocked": "{{numbers}}。请先结清或取消这些发票，然后再删除该客户。",
+      "approvals": "仍在等待决定的批准：{{refs}}。",
+      "approvalsAck": "我了解这些批准将无法再被处理。",
+      "changeRequests": "未完成的变更请求：{{titles}}。",
+      "changeRequestsAck": "我了解这些变更请求将无法再被处理。",
+      "warningsTitle": "删除前请确认",
+      "confirm": "删除客户",
+      "success": "{{name}} 已删除。您可以在 {{date}} 之前恢复。",
+      "failed": "无法删除该客户。"
+    },
+    "restore": {
+      "title": "恢复 {{name}}？",
+      "body": "其用户可以再次登录，其项目、批准、讨论、发票和历史记录将完全恢复原样。",
+      "confirm": "恢复客户",
+      "success": "{{name}} 已恢复。",
+      "failed": "无法恢复该客户。",
+      "nameTaken": "已有另一个客户名为“{{name}}”。请为该客户设置新名称后再恢复。",
+      "newName": "新的客户名称",
+      "newNameRequired": "请输入客户名称。"
+    }
+  },
+  "restoreAccount": {
+    "title": "恢复此账户？",
+    "body": "此账户已由 {{name}} 删除。仅在对方提出要求时才恢复；恢复后对方可以使用之前的角色和项目再次登录。",
+    "confirm": "恢复账户"
   }
 }

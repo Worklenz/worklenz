@@ -8,7 +8,7 @@ dayjs.extend(isoWeek);
 
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Badge, Button, DatePicker, Flex, Space, theme, Tooltip } from '@/shared/antd-imports';
+import { Badge, Button, DatePicker, Flex, Space, theme, Tooltip, message } from '@/shared/antd-imports';
 import {
   ZoomInOutlined,
   ZoomOutOutlined,
@@ -19,11 +19,12 @@ import {
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
+
 import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 import PlannerMultiFilterDropdown from '@/features/schedule/PlannerMultiFilterDropdown';
+import { useTimelineDateFilter } from '@/features/schedule/plannerTimelineDateFilter';
 import {
   useFetchProjectsTimelineQuery,
   useUpdateProjectTimelineDatesMutation,
@@ -636,7 +637,10 @@ const TimelineExpandedProjectTasks: React.FC<TimelineExpandedProjectTasksProps> 
   endDate,
   onTasksChange,
 }) => {
-  const { data, isLoading } = useFetchTaskTimelineQuery({ projectId, startDate, endDate });
+  const { data, isLoading } = useFetchTaskTimelineQuery(
+    { projectId, startDate, endDate },
+    { refetchOnMountOrArgChange: true }
+  );
 
   useEffect(() => {
     onTasksChange(projectId, isLoading ? undefined : (data?.body ?? []));
@@ -676,7 +680,10 @@ const TimelineExpandedProjectsBatchTasks: React.FC<TimelineExpandedProjectsBatch
   // across re-renders as long as the actual id set doesn't change) rather than the
   // `projectIds` array reference, which is a new array every render.
   const projectIdParam = projectIds.join(',');
-  const { data, isLoading } = useFetchTaskTimelineQuery({ projectId: projectIdParam, startDate, endDate });
+  const { data, isLoading } = useFetchTaskTimelineQuery(
+    { projectId: projectIdParam, startDate, endDate },
+    { refetchOnMountOrArgChange: true }
+  );
 
   useEffect(() => {
     if (isLoading) return;
@@ -979,7 +986,7 @@ const PlannerTimelineView: React.FC = () => {
   // Live sync: date/status changes made here (or in any other project view) refresh
   // this view's data via RTK Query cache invalidation — see useScheduleSocketHandlers
   // for exactly which socket events it listens for.
-  useScheduleSocketHandlers();
+  // Handled by useScheduleSocketHandlers in MainLayout.tsx
 
   const [zoom, setZoom] = useState<TimelineZoom>('months');
   const [filterProjects, setFilterProjects] = useState<string[]>([]);
@@ -990,7 +997,16 @@ const PlannerTimelineView: React.FC = () => {
   // Portfolio-wide date range filter — narrows both which projects are shown and, once
   // applied, becomes the visible grid range itself (see rangeStart/rangeEnd below)
   // instead of the range being auto-derived from the filtered projects' own dates.
-  const [dateFilter, setDateFilter] = useState<[Dayjs, Dayjs] | null>(null);
+  const {
+    dateFilter,
+    dateRangeError,
+    disabledDate,
+    onCalendarChange,
+    onChange: handleDateRangeChange,
+    onFocus: handleRangePickerFocus,
+    onOpenChange: handleRangePickerOpenChange,
+    clearAll: clearDateFilter,
+  } = useTimelineDateFilter({ t });
   const anyFilterActive =
     filterProjects.length > 0 ||
     filterStatuses.length > 0 ||
@@ -1004,7 +1020,7 @@ const PlannerTimelineView: React.FC = () => {
     setFilterPriorities([]);
     setFilterCategories([]);
     setFilterClients([]);
-    setDateFilter(null);
+    clearDateFilter();
   };
 
   // Which projects are expanded to show their tasks in place, and the tasks fetched for
@@ -1581,16 +1597,29 @@ const PlannerTimelineView: React.FC = () => {
           selected={filterClients}
           onChange={setFilterClients}
         />
-        <DatePicker.RangePicker
-          size="small"
-          value={dateFilter}
-          onChange={v => setDateFilter(v && v[0] && v[1] ? [v[0], v[1]] : null)}
-          placeholder={[
-            t('startDate', { defaultValue: 'Start date' }),
-            t('endDate', { defaultValue: 'End date' }),
-          ]}
-          style={{ fontSize: 12 }}
-        />
+        <Tooltip
+          title={dateRangeError}
+          open={!!dateRangeError}
+          placement="topLeft"
+          color="red"
+        >
+          <DatePicker.RangePicker
+            size="small"
+            status={dateRangeError ? 'error' : undefined}
+            order={false}
+            value={dateFilter}
+            onChange={handleDateRangeChange}
+            onFocus={handleRangePickerFocus}
+            onCalendarChange={onCalendarChange}
+            onOpenChange={handleRangePickerOpenChange}
+            disabledDate={disabledDate}
+            placeholder={[
+              t('startDate', { defaultValue: 'Start date' }),
+              t('endDate', { defaultValue: 'End date' }),
+            ]}
+            style={{ fontSize: 12 }}
+          />
+        </Tooltip>
       </Flex>
 
       {/* Range label + zoom row */}

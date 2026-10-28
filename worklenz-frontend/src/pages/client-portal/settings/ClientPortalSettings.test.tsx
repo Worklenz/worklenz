@@ -57,6 +57,12 @@ vi.mock('@/hooks/useMixpanelTracking', () => ({
   useMixpanelTracking: () => ({ trackMixpanelEvent: vi.fn() }),
 }));
 
+vi.mock('@/hooks/useAuth', () => ({
+  useAuthService: () => ({
+    getCurrentSession: () => ({ subscription_type: 'BUSINESS' }),
+  }),
+}));
+
 // The three legacy sections are stand-ins: this spec is about how the page saves, not about their fields.
 vi.mock('./sections/CompanyDetailsSection', () => ({
   CompanyDetailsSection: ({ onChange }: { onChange: (patch: Record<string, unknown>) => void }) => (
@@ -170,6 +176,8 @@ describe('ClientPortalSettings', () => {
     expect(payload).not.toHaveProperty('poc_can_add_users');
     expect(payload).not.toHaveProperty('poc_can_remove_users');
     expect(state.saveV2).not.toHaveBeenCalled();
+    await waitFor(() => expect(state.messageSuccess).toHaveBeenCalledTimes(1));
+    expect(state.messageSuccess).toHaveBeenCalledWith('Settings saved successfully');
   });
 
   it('has no sign-in configuration: clients always sign in with an emailed code', async () => {
