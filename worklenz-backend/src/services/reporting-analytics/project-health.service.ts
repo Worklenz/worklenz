@@ -52,7 +52,8 @@ export interface ProjectHealthResult {
   last_updated_at: string;
 }
 
-const MAX_PROJECTS = 50;
+/** Safety cap only — high enough for org portfolios; was 50 and under-counted KPIs/donut. */
+const MAX_PROJECTS = 5000;
 
 function parseCsvIds(value: unknown): string[] {
   if (Array.isArray(value)) {

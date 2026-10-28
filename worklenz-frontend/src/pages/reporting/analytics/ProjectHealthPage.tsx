@@ -28,6 +28,7 @@ import {
   ProjectHealthChart,
   type ProjectHealthChartHandle,
 } from '@/components/reporting/analytics/project-health/ProjectHealthChart';
+import { ProjectHealthDonutChart } from '@/components/reporting/analytics/project-health/ProjectHealthDonutChart';
 import { ProjectHealthKpiTiles } from '@/components/reporting/analytics/project-health/ProjectHealthKpiTiles';
 import { ProjectHealthTable } from '@/components/reporting/analytics/project-health/ProjectHealthTable';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
@@ -305,6 +306,9 @@ const ProjectHealthPage: React.FC = () => {
     </Flex>
   );
 
+  // Keep the grouped bar chart readable; KPIs/donut/table use the full project set.
+  const barChartProjectLimit = 50;
+
   let body: React.ReactNode;
   if (!hasSelection) {
     body = (
@@ -325,7 +329,46 @@ const ProjectHealthPage: React.FC = () => {
         <ProjectHealthKpiTiles kpis={data.kpis} />
         <ChartTableWrapper
           mode={viewMode}
-          chart={<ProjectHealthChart ref={chartRef} projects={data.projects} />}
+          chart={
+            <Flex gap={16} wrap="wrap" align="stretch" style={{ width: '100%' }}>
+              <div
+                style={{
+                  flex: '2 1 420px',
+                  minWidth: 280,
+                  padding: 12,
+                  borderRadius: 8,
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                  background: token.colorBgContainer,
+                }}
+              >
+                <Text strong style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
+                  {t('phProgressBudgetTitle', { defaultValue: 'Progress & budget' })}
+                </Text>
+                {data.projects.length > barChartProjectLimit ? (
+                  <Text
+                    type="secondary"
+                    style={{ display: 'block', marginBottom: 8, fontSize: 12 }}
+                  >
+                    {t('phBarChartLimited', {
+                      defaultValue:
+                        'Showing {{shown}} of {{total}} projects (use table for full list)',
+                      shown: barChartProjectLimit,
+                      total: data.projects.length,
+                    })}
+                  </Text>
+                ) : (
+                  <div style={{ marginBottom: 8 }} />
+                )}
+                <ProjectHealthChart
+                  ref={chartRef}
+                  projects={data.projects.slice(0, barChartProjectLimit)}
+                />
+              </div>
+              <div style={{ flex: '1 1 280px', minWidth: 260, maxWidth: 420 }}>
+                <ProjectHealthDonutChart projects={data.projects} kpis={data.kpis} />
+              </div>
+            </Flex>
+          }
           table={<ProjectHealthTable projects={data.projects} loading={loading} />}
         />
         {data.projects.length === 0 && (
