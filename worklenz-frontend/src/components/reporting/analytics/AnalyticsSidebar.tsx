@@ -10,7 +10,6 @@ import {
   getAnalyticsNavIcon,
   type AnalyticsNavItem,
 } from '@/lib/reporting/analytics-nav';
-import { isAnalyticsNewBadgeActive } from '@/lib/reporting/analytics-constants';
 import { useAnalyticsCustomReports } from '@/features/reporting/analytics-custom-reports';
 import './analytics-sidebar.css';
 
@@ -18,10 +17,9 @@ const AnalyticsSidebarLink: React.FC<{
   item: AnalyticsNavItem;
   active: boolean;
   isDark: boolean;
-  showNew?: boolean;
   /** When set, render this label instead of i18n (user-named custom reports). */
   labelOverride?: string;
-}> = ({ item, active, isDark, showNew, labelOverride }) => {
+}> = ({ item, active, isDark, labelOverride }) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
   const to = analyticsPath(item.path);
@@ -51,9 +49,6 @@ const AnalyticsSidebarLink: React.FC<{
           {t('comingSoonBadge', { defaultValue: 'Coming soon' })}
         </span>
       )}
-      {showNew && item.enabled && !item.key.startsWith('custom-') && (
-        <span className="analytics-sider-new">{t('newBadge', { defaultValue: 'NEW' })}</span>
-      )}
     </NavLink>
   );
 };
@@ -68,7 +63,6 @@ export const AnalyticsSidebar: React.FC = () => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
   const location = useLocation();
-  const showNew = isAnalyticsNewBadgeActive();
   const { customReports } = useAnalyticsCustomReports();
 
   const groups = useMemo(
@@ -117,7 +111,6 @@ export const AnalyticsSidebar: React.FC = () => {
                   (item.key === 'dashboards' && activeKey === 'dashboards')
                 }
                 isDark={isDark}
-                showNew={showNew}
                 labelOverride={
                   item.key.startsWith('custom-') ? item.defaultLabel : undefined
                 }

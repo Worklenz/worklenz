@@ -1,128 +1,148 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Button,
-  Dropdown,
-  Empty,
-  Flex,
-  Input,
-  Select,
-  Table,
-  Tag,
-  Typography,
-  theme,
-} from '@/shared/antd-imports';
-import {
-  MoreOutlined,
-  PlusOutlined,
-  StarFilled,
-  StarOutlined,
-} from '@/shared/antd-imports';
-import type { ColumnsType } from 'antd/es/table';
+import { Empty, LockOutlined, Typography, theme } from '@/shared/antd-imports';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import {
-  ANALYTICS_NAV,
-  CUSTOM_REPORTS_GROUP_KEY,
-  analyticsPath,
-  customReportPath,
-  getAnalyticsNavIcon,
-  type AnalyticsNavItem,
-} from '@/lib/reporting/analytics-nav';
-import { useAnalyticsCustomReports } from '@/features/reporting/analytics-custom-reports';
+import { ANALYTICS_NAV, analyticsPath } from '@/lib/reporting/analytics-nav';
 import { analyticsProjectHealthApiService } from '@/api/reporting/analytics-project-health.api.service';
-import type { ProjectHealthKpis } from '@/types/reporting/analytics-project-health.types';
+import { analyticsTimeReportApiService } from '@/api/reporting/analytics-time-report.api.service';
+import { analyticsBudgetTrackingApiService } from '@/api/reporting/analytics-budget-tracking.api.service';
+import { analyticsUtilizationApiService } from '@/api/reporting/analytics-utilization.api.service';
+import { analyticsVelocityApiService } from '@/api/reporting/analytics-velocity.api.service';
+import { analyticsPlannedVsActualTasksApiService } from '@/api/reporting/analytics-planned-vs-actual-tasks.api.service';
+import { analyticsPlannedVsActualMilestonesApiService } from '@/api/reporting/analytics-planned-vs-actual-milestones.api.service';
 import './all-reports-gallery.css';
 
-const { Title, Text, Link } = Typography;
+const { Title, Text } = Typography;
 
-type GalleryTab = 'all' | 'builtin' | 'custom' | 'sched' | 'fav';
-type GallerySort = 'recent' | 'created' | 'name' | 'type';
+type HubTab = 'reports' | 'scheduled' | 'custom';
 
-interface GalleryReportRow {
+interface HubCardDef {
   key: string;
   path: string;
-  name: string;
-  description: string;
-  category: string;
+  titleKey: string;
+  defaultTitle: string;
+  descKey: string;
+  defaultDesc: string;
+  metricSubKey: string;
+  defaultMetricSub: string;
+  sparkHeights: number[];
   categoryKey: string;
-  type: 'builtin' | 'custom';
-  creator: string;
-  lastAccessed: string;
-  scheduled: string | null;
-  enabled?: boolean;
-  iconColor: string;
+  comingSoon?: boolean;
 }
 
-const REPORT_DESCRIPTIONS: Record<string, { descKey: string; defaultDesc: string; color: string }> = {
+interface CardMetrics {
+  primary: string;
+  spark: number[];
+}
+
+/** Descriptions + spark fallbacks for hub chart cards. */
+const REPORT_CARD_META: Record<
+  string,
+  {
+    descKey: string;
+    defaultDesc: string;
+    metricSubKey: string;
+    defaultMetricSub: string;
+    sparkHeights: number[];
+    comingSoon?: boolean;
+  }
+> = {
   'project-health': {
     descKey: 'descProjectHealth',
     defaultDesc: 'Status, progress and overdue work by project',
-    color: '#52c41a',
+    metricSubKey: 'hubProjectHealthMetricSub',
+    defaultMetricSub: 'need attention',
+    sparkHeights: [70, 55, 48, 62, 40, 52, 36, 44, 30, 38],
   },
   'planned-vs-actual-tasks': {
     descKey: 'descPlannedVsActualTasks',
     defaultDesc: 'Compare planned task dates with actual completion',
-    color: '#1890ff',
+    metricSubKey: 'hubPvaTasksMetricSub',
+    defaultMetricSub: 'completed vs planned',
+    sparkHeights: [40, 52, 48, 64, 58, 70, 62, 74, 68, 80],
   },
   'planned-vs-actual-milestones': {
     descKey: 'descPlannedVsActualMilestones',
     defaultDesc: 'Milestone plan vs delivery variance',
-    color: '#722ed1',
+    metricSubKey: 'hubPvaMsMetricSub',
+    defaultMetricSub: 'late milestones',
+    sparkHeights: [30, 42, 36, 50, 44, 58, 48, 62, 54, 66],
   },
   utilization: {
     descKey: 'descUtilization',
     defaultDesc: 'Team capacity (working hours) vs logged time',
-    color: '#13c2c2',
+    metricSubKey: 'hubUtilizationMetricSub',
+    defaultMetricSub: 'team average',
+    sparkHeights: [55, 62, 58, 70, 66, 74, 68, 72, 64, 76],
   },
   'time-report': {
     descKey: 'descTimeReport',
     defaultDesc: 'Logged vs estimated hours with billable split',
-    color: '#fa8c16',
+    metricSubKey: 'hubTimeBillingMetricSub',
+    defaultMetricSub: 'billable this period',
+    sparkHeights: [38, 52, 44, 68, 56, 72, 48, 80, 60, 74],
   },
   'budget-tracking': {
     descKey: 'descBudgetTracking',
     defaultDesc: 'Budget spent vs remaining by project',
-    color: '#eb2f96',
+    metricSubKey: 'hubBudgetBurnMetricSub',
+    defaultMetricSub: 'of budget used',
+    sparkHeights: [30, 40, 48, 56, 62, 70, 66, 74, 78, 84],
   },
   velocity: {
     descKey: 'descVelocity',
     defaultDesc: 'Committed vs completed work per sprint',
-    color: '#2f54eb',
+    metricSubKey: 'hubVelocityMetricSub',
+    defaultMetricSub: 'avg velocity',
+    sparkHeights: [45, 58, 52, 66, 60, 72, 64, 70, 68, 76],
   },
   'cumulative-flow': {
     descKey: 'descCumulativeFlow',
     defaultDesc: 'Work in each status over time',
-    color: '#1890ff',
+    metricSubKey: 'hubCfdMetricSub',
+    defaultMetricSub: 'current WIP',
+    sparkHeights: [28, 36, 44, 52, 58, 64, 70, 74, 78, 82],
   },
   'time-in-status': {
     descKey: 'descTimeInStatus',
     defaultDesc: 'Average days work spends in each status',
-    color: '#faad14',
+    metricSubKey: 'hubTisMetricSub',
+    defaultMetricSub: 'avg cycle days',
+    sparkHeights: [62, 54, 48, 58, 42, 50, 38, 46, 34, 40],
   },
   sla: {
     descKey: 'descSla',
     defaultDesc: 'Response and resolution SLA compliance',
-    color: '#f5222d',
-  },
-  dashboards: {
-    descKey: 'descDashboards',
-    defaultDesc: 'Personalised dashboards with gadgets',
-    color: '#597ef7',
-  },
-  'client-dashboard': {
-    descKey: 'descClientDashboard',
-    defaultDesc: 'Read-only shared view for clients',
-    color: '#36cfc9',
+    metricSubKey: 'hubSlaMetricSub',
+    defaultMetricSub: 'on-time rate',
+    sparkHeights: [72, 68, 74, 70, 78, 66, 80, 72, 76, 82],
+    comingSoon: true,
   },
 };
 
-const STAT_TONES = {
-  ok: '#52c41a',
-  warn: '#faad14',
-  bad: '#ff4d4f',
-} as const;
+/** Share views (dashboards) excluded — chart reports (+ coming-soon chart cards). */
+const CHART_REPORT_KEYS = new Set(Object.keys(REPORT_CARD_META));
+
+const DEFAULT_SPARK = [40, 52, 44, 60, 50, 68, 56, 72, 58, 66];
+
+const formatHours = (hours: number): string => {
+  if (!Number.isFinite(hours)) return '0h';
+  const rounded = Math.round(hours * 10) / 10;
+  return `${rounded.toLocaleString()}h`;
+};
+
+const formatPct = (pct: number): string => {
+  if (!Number.isFinite(pct)) return '0%';
+  return `${Math.round(pct)}%`;
+};
+
+const toSpark = (values: number[], fallback: number[]): number[] => {
+  if (values.length === 0) return fallback;
+  const max = Math.max(...values, 1);
+  return values.slice(0, 10).map(v => Math.max(12, Math.round((v / max) * 100)));
+};
 
 const AllReportsPage: React.FC = () => {
   const { t } = useTranslation('reporting-analytics');
@@ -132,520 +152,367 @@ const AllReportsPage: React.FC = () => {
   const isDark = themeMode === 'dark';
   useDocumentTitle(t('reportsTitle', { defaultValue: 'Reports' }));
 
-  const { customReports, hasCustomReports } = useAnalyticsCustomReports();
-  const session = useAppSelector(state => state.auth.user);
+  const [tab, setTab] = useState<HubTab>('reports');
+  const [metricsByKey, setMetricsByKey] = useState<Record<string, CardMetrics>>({});
 
-  const [tab, setTab] = useState<GalleryTab>('all');
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<string>('all');
-  const [sort, setSort] = useState<GallerySort>('name');
-  const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
-
-  const borderColor = isDark ? '#303030' : '#f0f0f0';
-  const cardBg = token.colorBgContainer;
-  const muted = token.colorTextSecondary;
-
-  // If custom reports disappear while that tab is selected, fall back to All.
-  React.useEffect(() => {
-    if (tab === 'custom' && !hasCustomReports) setTab('all');
-  }, [tab, hasCustomReports]);
-
-  const allRows: GalleryReportRow[] = useMemo(() => {
-    const builtinRows = ANALYTICS_NAV.groups.flatMap(group =>
-      group.items.map((item: AnalyticsNavItem) => {
-        const meta = REPORT_DESCRIPTIONS[item.key] ?? {
-          descKey: 'descGeneric',
-          defaultDesc: 'Analytics report',
-          color: token.colorPrimary,
-        };
-        return {
-          key: item.key,
-          path: item.path,
-          name: t(item.labelKey, { defaultValue: item.defaultLabel }),
-          description: t(meta.descKey, { defaultValue: meta.defaultDesc }),
-          category: t(group.labelKey, { defaultValue: group.defaultLabel }),
-          categoryKey: group.key,
-          type: 'builtin' as const,
-          creator: t('worklenzSystem', { defaultValue: 'Worklenz' }),
-          lastAccessed: '—',
-          scheduled: null,
-          enabled: item.enabled,
-          iconColor: meta.color,
-        };
-      })
-    );
-
-    const customRows: GalleryReportRow[] = customReports.map(report => ({
-      key: `custom-${report.id}`,
-      path: customReportPath(report.id),
-      name: report.name,
-      description:
-        report.description ||
-        t('descCustomReport', { defaultValue: 'Saved custom report' }),
-      category: t('navGroupCustomReports', { defaultValue: 'Custom reports' }),
-      categoryKey: CUSTOM_REPORTS_GROUP_KEY,
-      type: 'custom' as const,
-      creator: report.creatorName || session?.name || t('you', { defaultValue: 'You' }),
-      lastAccessed: report.accessedAt
-        ? new Date(report.accessedAt).toLocaleDateString()
-        : '—',
-      scheduled: null,
-      enabled: true,
-      iconColor: '#597ef7',
-    }));
-
-    return [...builtinRows, ...customRows];
-  }, [t, token.colorPrimary, customReports, session?.name]);
-
-  const tabCounts = useMemo(
-    () => ({
-      all: allRows.length,
-      builtin: allRows.filter(r => r.type === 'builtin').length,
-      custom: allRows.filter(r => r.type === 'custom').length,
-      sched: allRows.filter(r => r.scheduled).length,
-      fav: allRows.filter(r => favorites.has(r.key)).length,
-    }),
-    [allRows, favorites]
+  const cards: HubCardDef[] = useMemo(
+    () =>
+      ANALYTICS_NAV.groups.flatMap(group =>
+        group.items
+          .filter(item => {
+            if (!item.path || !CHART_REPORT_KEYS.has(item.key)) return false;
+            const meta = REPORT_CARD_META[item.key];
+            return item.enabled || !!meta.comingSoon;
+          })
+          .map(item => {
+            const meta = REPORT_CARD_META[item.key];
+            return {
+              key: item.key,
+              path: item.path,
+              titleKey: item.labelKey,
+              defaultTitle: item.defaultLabel,
+              descKey: meta.descKey,
+              defaultDesc: meta.defaultDesc,
+              metricSubKey: meta.metricSubKey,
+              defaultMetricSub: meta.defaultMetricSub,
+              sparkHeights: meta.sparkHeights,
+              categoryKey: group.key,
+              comingSoon: !!meta.comingSoon,
+            };
+          })
+      ),
+    []
   );
-
-  const filteredRows = useMemo(() => {
-    let rows = allRows.filter(r => {
-      if (tab === 'builtin') return r.type === 'builtin';
-      if (tab === 'custom') return r.type === 'custom';
-      if (tab === 'sched') return !!r.scheduled;
-      if (tab === 'fav') return favorites.has(r.key);
-      return true;
-    });
-
-    if (category !== 'all') {
-      rows = rows.filter(r => r.categoryKey === category);
-    }
-
-    const q = query.trim().toLowerCase();
-    if (q) {
-      rows = rows.filter(
-        r =>
-          r.name.toLowerCase().includes(q) ||
-          r.creator.toLowerCase().includes(q) ||
-          r.description.toLowerCase().includes(q)
-      );
-    }
-
-    const sorters: Record<GallerySort, (a: GalleryReportRow, b: GalleryReportRow) => number> = {
-      recent: (a, b) => a.name.localeCompare(b.name),
-      created: (a, b) => a.name.localeCompare(b.name),
-      name: (a, b) => a.name.localeCompare(b.name),
-      type: (a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name),
-    };
-    return [...rows].sort(sorters[sort]);
-  }, [allRows, tab, category, query, sort, favorites]);
-
-  const toggleFavorite = (key: string) => {
-    setFavorites(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  const openReport = (row: GalleryReportRow) => {
-    navigate(analyticsPath(row.path));
-  };
-
-  const [healthKpis, setHealthKpis] = useState<ProjectHealthKpis>({
-    on_track: 0,
-    at_risk: 0,
-    off_track: 0,
-    not_set: 0,
-    overdue_tasks: 0,
-  });
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      try {
-        const res = await analyticsProjectHealthApiService.getSeries({});
-        if (!cancelled && res.done && res.body?.kpis) {
-          setHealthKpis(res.body.kpis);
+      const next: Record<string, CardMetrics> = {};
+
+      const settle = async <T,>(promise: Promise<T>): Promise<T | null> => {
+        try {
+          return await promise;
+        } catch {
+          return null;
         }
-      } catch {
-        // Keep zeros on failure — gallery still usable
+      };
+
+      const [
+        healthRes,
+        timeRes,
+        budgetRes,
+        utilRes,
+        velocityRes,
+        pvaTasksRes,
+        pvaMsRes,
+      ] = await Promise.all([
+        settle(analyticsProjectHealthApiService.getSeries({})),
+        settle(analyticsTimeReportApiService.getSeries({})),
+        settle(analyticsBudgetTrackingApiService.getSeries({})),
+        settle(analyticsUtilizationApiService.getSeries({})),
+        settle(analyticsVelocityApiService.getSeries({ view_by: 'project' })),
+        settle(analyticsPlannedVsActualTasksApiService.getSeries({})),
+        settle(analyticsPlannedVsActualMilestonesApiService.getSeries({})),
+      ]);
+
+      if (cancelled) return;
+
+      if (healthRes?.done && healthRes.body) {
+        const kpis = healthRes.body.kpis;
+        const attention = (kpis.at_risk ?? 0) + (kpis.off_track ?? 0);
+        const counted =
+          (kpis.on_track ?? 0) +
+          (kpis.at_risk ?? 0) +
+          (kpis.off_track ?? 0) +
+          (kpis.not_set ?? 0);
+        const total = counted || healthRes.body.meta?.project_count || 0;
+        next['project-health'] = {
+          primary: t('hubProjectHealthMetric', {
+            defaultValue: '{{attention}} of {{total}}',
+            attention,
+            total,
+          }),
+          spark: toSpark(
+            [kpis.on_track, kpis.at_risk, kpis.off_track, kpis.not_set].map(n => n ?? 0),
+            REPORT_CARD_META['project-health'].sparkHeights
+          ),
+        };
       }
+
+      if (timeRes?.done && timeRes.body) {
+        next['time-report'] = {
+          primary: formatHours(timeRes.body.kpis.billable_hours ?? 0),
+          spark: toSpark(
+            (timeRes.body.projects ?? []).map(p => p.logged_hours || 0),
+            REPORT_CARD_META['time-report'].sparkHeights
+          ),
+        };
+      }
+
+      if (budgetRes?.done && budgetRes.body) {
+        next['budget-tracking'] = {
+          primary: formatPct(budgetRes.body.kpis.utilization_pct ?? 0),
+          spark: toSpark(
+            (budgetRes.body.projects ?? []).map(p => p.burn_pct || 0),
+            REPORT_CARD_META['budget-tracking'].sparkHeights
+          ),
+        };
+      }
+
+      if (utilRes?.done && utilRes.body) {
+        next.utilization = {
+          primary: formatPct(utilRes.body.kpis.avg_utilization_pct ?? 0),
+          spark: toSpark(
+            (utilRes.body.members ?? []).map(m => m.utilization_pct || 0),
+            REPORT_CARD_META.utilization.sparkHeights
+          ),
+        };
+      }
+
+      if (velocityRes?.done && velocityRes.body) {
+        const kpis = velocityRes.body.kpis;
+        next.velocity = {
+          primary: `${Math.round(kpis.avg_velocity ?? 0)}`,
+          spark: toSpark(
+            (velocityRes.body.series ?? []).map(s => s.completed ?? 0),
+            REPORT_CARD_META.velocity.sparkHeights
+          ),
+        };
+      }
+
+      if (pvaTasksRes?.done && pvaTasksRes.body) {
+        const kpis = pvaTasksRes.body.kpis;
+        const planned = kpis.planned ?? 0;
+        const completed = kpis.completed ?? 0;
+        next['planned-vs-actual-tasks'] = {
+          primary: planned > 0 ? `${completed}/${planned}` : `${completed}`,
+          spark: toSpark(
+            (pvaTasksRes.body.projects ?? []).map(p => p.completed ?? 0),
+            REPORT_CARD_META['planned-vs-actual-tasks'].sparkHeights
+          ),
+        };
+      }
+
+      if (pvaMsRes?.done && pvaMsRes.body) {
+        const kpis = pvaMsRes.body.kpis;
+        next['planned-vs-actual-milestones'] = {
+          primary: `${kpis.late ?? 0}`,
+          spark: toSpark(
+            (pvaMsRes.body.milestones ?? []).map(m => Math.abs(m.variance_days ?? 0)),
+            REPORT_CARD_META['planned-vs-actual-milestones'].sparkHeights
+          ),
+        };
+      }
+
+      setMetricsByKey(next);
     })();
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
-  const stats = [
-    {
-      key: 'on-track',
-      label: t('statOnTrack', { defaultValue: 'On track' }),
-      value: healthKpis.on_track,
-      sub: t('statProjects', { defaultValue: 'projects' }),
-      tone: 'ok' as const,
-    },
-    {
-      key: 'at-risk',
-      label: t('statAtRisk', { defaultValue: 'At risk' }),
-      value: healthKpis.at_risk,
-      sub: t('statProjects', { defaultValue: 'projects' }),
-      tone: 'warn' as const,
-    },
-    {
-      key: 'off-track',
-      label: t('statOffTrack', { defaultValue: 'Off track' }),
-      value: healthKpis.off_track,
-      sub: t('statProjects', { defaultValue: 'projects' }),
-      tone: 'bad' as const,
-    },
-    {
-      key: 'overdue',
-      label: t('statOverdueTasks', { defaultValue: 'Overdue tasks' }),
-      value: healthKpis.overdue_tasks,
-      sub: t('statAcrossProjects', { defaultValue: 'across all projects' }),
-      tone: 'bad' as const,
-    },
-  ];
+  const borderColor = isDark ? '#303030' : '#f0f0f0';
+  const cardBg = token.colorBgContainer;
+  const muted = token.colorTextSecondary;
+  const pageMuted = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
+  const sparkColor = token.colorPrimary;
+  const tabsBg = isDark ? 'rgba(255,255,255,0.04)' : '#f5f5f5';
 
-  const columns: ColumnsType<GalleryReportRow> = [
-    {
-      key: 'fav',
-      width: 48,
-      render: (_, row) => {
-        const isFav = favorites.has(row.key);
-        return (
-          <Button
-            type="text"
-            size="small"
-            aria-label={
-              isFav
-                ? t('removeFavorite', { defaultValue: 'Remove from favourites' })
-                : t('addFavorite', { defaultValue: 'Add to favourites' })
-            }
-            aria-pressed={isFav}
-            icon={
-              isFav ? (
-                <StarFilled style={{ color: '#faad14' }} />
-              ) : (
-                <StarOutlined style={{ color: muted }} />
-              )
-            }
-            onClick={e => {
-              e.stopPropagation();
-              toggleFavorite(row.key);
-            }}
-          />
-        );
-      },
-    },
-    {
-      title: t('colName', { defaultValue: 'Name' }),
-      key: 'name',
-      render: (_, row) => (
-        <div className="all-reports-gallery__rname">
-          <span className="all-reports-gallery__rico" style={{ background: row.iconColor }}>
-            {getAnalyticsNavIcon(row.type === 'custom' ? 'dashboards' : row.key)}
-          </span>
-          <div>
-            <Flex align="center" gap={8} wrap="wrap">
-              <Link onClick={() => openReport(row)}>
-                <Text strong style={{ color: 'inherit' }}>
-                  {row.name}
-                </Text>
-              </Link>
-              {row.enabled === false && row.key === 'sla' && (
-                <Tag color="orange">
-                  {t('comingSoonBadge', { defaultValue: 'Coming soon' })}
-                </Tag>
-              )}
-            </Flex>
-            <div>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {row.description}
-              </Text>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: t('colType', { defaultValue: 'Type' }),
-      key: 'type',
-      width: 120,
-      render: (_, row) => (
-        <Tag color={row.type === 'custom' ? 'blue' : undefined}>
-          {row.type === 'custom'
-            ? t('typeCustom', { defaultValue: 'Custom' })
-            : t('typeWorklenz', { defaultValue: 'Worklenz' })}
-        </Tag>
-      ),
-    },
-    {
-      title: t('colCategory', { defaultValue: 'Category' }),
-      dataIndex: 'category',
-      key: 'category',
-      responsive: ['md'],
-    },
-    {
-      title: t('colCreatedBy', { defaultValue: 'Created by' }),
-      dataIndex: 'creator',
-      key: 'creator',
-      responsive: ['lg'],
-    },
-    {
-      title: t('colLastAccessed', { defaultValue: 'Last accessed' }),
-      dataIndex: 'lastAccessed',
-      key: 'lastAccessed',
-      responsive: ['lg'],
-    },
-    {
-      title: t('colScheduled', { defaultValue: 'Scheduled' }),
-      key: 'scheduled',
-      width: 110,
-      render: (_, row) =>
-        row.scheduled ? (
-          <Tag color="success">{row.scheduled}</Tag>
-        ) : (
-          <Text type="secondary">—</Text>
-        ),
-    },
-    {
-      key: 'actions',
-      width: 48,
-      render: (_, row) => (
-        <Dropdown
-          trigger={['click']}
-          menu={{
-            items: [
-              {
-                key: 'open',
-                label: t('actionOpen', { defaultValue: 'Open' }),
-                onClick: () => openReport(row),
-              },
-              {
-                key: 'dup',
-                label:
-                  row.type === 'custom'
-                    ? t('actionDuplicate', { defaultValue: 'Duplicate' })
-                    : t('actionSaveAsCustom', { defaultValue: 'Save as custom report' }),
-                disabled: true,
-              },
-              {
-                key: 'share',
-                label: t('actionShare', { defaultValue: 'Share' }),
-                disabled: true,
-              },
-              {
-                key: 'sched',
-                label: t('actionSchedule', { defaultValue: 'Schedule' }),
-                disabled: true,
-              },
-            ],
-          }}
-        >
-          <Button
-            type="text"
-            size="small"
-            icon={<MoreOutlined />}
-            aria-label={t('rowActions', { defaultValue: 'Actions', name: row.name })}
-            onClick={e => e.stopPropagation()}
-          />
-        </Dropdown>
-      ),
-    },
-  ];
+  const getMetrics = (card: HubCardDef): CardMetrics =>
+    metricsByKey[card.key] ?? {
+      primary: '—',
+      spark: card.sparkHeights.length ? card.sparkHeights : DEFAULT_SPARK,
+    };
 
-  const tabs: { key: GalleryTab; label: string; count: number }[] = [
-    { key: 'all', label: t('tabAll', { defaultValue: 'All' }), count: tabCounts.all },
+  const tabs: { key: HubTab; label: string; disabled?: boolean }[] = [
+    { key: 'reports', label: t('hubTabReports', { defaultValue: 'Reports' }) },
+    { key: 'scheduled', label: t('hubTabScheduled', { defaultValue: 'Scheduled' }) },
     {
-      key: 'builtin',
-      label: t('tabWorklenz', { defaultValue: 'Worklenz reports' }),
-      count: tabCounts.builtin,
-    },
-    ...(hasCustomReports
-      ? [
-          {
-            key: 'custom' as const,
-            label: t('tabCustom', { defaultValue: 'Custom reports' }),
-            count: tabCounts.custom,
-          },
-        ]
-      : []),
-    {
-      key: 'sched',
-      label: t('tabScheduled', { defaultValue: 'Scheduled' }),
-      count: tabCounts.sched,
-    },
-    {
-      key: 'fav',
-      label: t('tabFavourites', { defaultValue: 'Favourites' }),
-      count: tabCounts.fav,
+      key: 'custom',
+      label: t('hubTabCustomSoon', { defaultValue: 'Custom — soon' }),
+      disabled: true,
     },
   ];
 
   return (
-    <div className="all-reports-gallery">
-      <div className="all-reports-gallery__header">
+    <div className={`all-reports-hub${isDark ? ' theme-dark' : ''}`}>
+      <div className="all-reports-hub__header">
         <div>
-          <Title level={2} style={{ margin: 0, fontSize: 28, fontWeight: 600 }}>
+          <Title level={2} className="all-reports-hub__title">
             {t('reportsTitle', { defaultValue: 'Reports' })}
           </Title>
-          <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
-            {t('allReportsSubtitle', {
+          <Text type="secondary" className="all-reports-hub__subtitle">
+            {t('hubSubtitle', {
               defaultValue:
-                'Every report in one place. Open, filter, save as your own, schedule or share.',
+                'The questions agencies ask every month-end, answered from one set of numbers.',
             })}
           </Text>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} disabled>
-          {t('newReport', { defaultValue: 'New report' })}
-        </Button>
+
+        <div
+          className="all-reports-hub__tabs"
+          style={{ borderColor, background: tabsBg }}
+          role="tablist"
+          aria-label={t('hubTabsAria', { defaultValue: 'Report categories' })}
+        >
+          {tabs.map(item => {
+            const active = tab === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                disabled={item.disabled}
+                className={`all-reports-hub__tab${active ? ' is-active' : ''}`}
+                style={{
+                  color: active ? token.colorText : muted,
+                  background: active ? cardBg : 'transparent',
+                  boxShadow: active
+                    ? isDark
+                      ? '0 0 0 1px #303030'
+                      : '0 1px 2px rgba(0,0,0,0.06)'
+                    : 'none',
+                }}
+                onClick={() => {
+                  if (!item.disabled) setTab(item.key);
+                }}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="all-reports-gallery__stats">
-        {stats.map(stat => (
-          <button
-            key={stat.key}
-            type="button"
-            className="all-reports-gallery__stat"
-            style={{
-              borderColor,
-              background: cardBg,
-              color: token.colorText,
-            }}
-            onClick={() => navigate(analyticsPath('project-health'))}
-          >
-            <div className="all-reports-gallery__stat-label" style={{ color: muted }}>
-              <span
-                className="all-reports-gallery__stat-dot"
-                style={{ background: STAT_TONES[stat.tone] }}
-              />
-              {stat.label}
-            </div>
-            <div className="all-reports-gallery__stat-value">{stat.value}</div>
-            <div className="all-reports-gallery__stat-sub" style={{ color: muted }}>
-              {stat.sub}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      <div className="all-reports-gallery__tabs" style={{ borderColor }} role="tablist">
-        {tabs.map(item => {
-          const active = tab === item.key;
-          return (
-            <button
-              key={item.key}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              className={`all-reports-gallery__tab${active ? ' is-active' : ''}`}
-              style={{
-                color: active ? token.colorPrimary : muted,
-                borderBottomColor: active ? token.colorPrimary : 'transparent',
-              }}
-              onClick={() => setTab(item.key)}
-            >
-              {item.label}
-              <span className="all-reports-gallery__tab-count">{item.count}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="all-reports-gallery__filters">
-        <Input.Search
-          allowClear
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder={t('searchReports', { defaultValue: 'Search by name or creator' })}
-          aria-label={t('searchReports', { defaultValue: 'Search by name or creator' })}
-          style={{ width: 260, maxWidth: '100%' }}
-        />
-        <Select
-          value={category}
-          onChange={setCategory}
-          style={{ minWidth: 160 }}
-          aria-label={t('filterCategory', { defaultValue: 'Category' })}
-          options={[
-            { value: 'all', label: t('allCategories', { defaultValue: 'All categories' }) },
-            ...ANALYTICS_NAV.groups
-              .filter(g => g.key !== 'share')
-              .map(g => ({
-                value: g.key,
-                label: t(g.labelKey, { defaultValue: g.defaultLabel }),
-              })),
-            ...(hasCustomReports
-              ? [
-                  {
-                    value: CUSTOM_REPORTS_GROUP_KEY,
-                    label: t('navGroupCustomReports', { defaultValue: 'Custom reports' }),
-                  },
-                ]
-              : []),
-          ]}
-        />
-        <Select
-          value={sort}
-          onChange={setSort}
-          style={{ minWidth: 180 }}
-          aria-label={t('sortReports', { defaultValue: 'Sort reports' })}
-          options={[
-            { value: 'recent', label: t('sortRecent', { defaultValue: 'Recently accessed' }) },
-            { value: 'created', label: t('sortCreated', { defaultValue: 'Created date' }) },
-            { value: 'name', label: t('sortName', { defaultValue: 'Name' }) },
-            { value: 'type', label: t('sortType', { defaultValue: 'Type' }) },
-          ]}
-        />
-      </div>
-
-      <div
-        className="all-reports-gallery__table-card"
-        style={{ borderColor, background: cardBg }}
-      >
-        {filteredRows.length === 0 ? (
-          <div className="all-reports-gallery__empty">
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <Flex vertical gap={4} align="center">
-                  <Text strong>
-                    {t('noReportsFound', { defaultValue: 'No reports found' })}
-                  </Text>
-                  <Text type="secondary">
-                    {tab === 'sched'
-                      ? t('noScheduledHint', {
-                          defaultValue:
-                            'Open any report and choose Schedule to email it on a recurring basis.',
-                        })
-                      : t('noReportsHint', {
-                          defaultValue: 'Try a different search or create a custom report.',
-                        })}
-                  </Text>
-                </Flex>
-              }
-            >
-              <Button type="primary" icon={<PlusOutlined />} disabled>
-                {t('newReport', { defaultValue: 'New report' })}
-              </Button>
-            </Empty>
-          </div>
-        ) : (
-          <Table
-            rowKey="key"
-            columns={columns}
-            dataSource={filteredRows}
-            pagination={false}
-            size="middle"
-            onRow={row => ({
-              onClick: () => openReport(row),
-              style: { cursor: 'pointer' },
-            })}
+      {tab === 'scheduled' ? (
+        <div className="all-reports-hub__empty" style={{ borderColor, background: cardBg }}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <>
+                <Text strong>
+                  {t('hubNoScheduledTitle', { defaultValue: 'No scheduled reports yet' })}
+                </Text>
+                <br />
+                <Text type="secondary">
+                  {t('hubNoScheduledHint', {
+                    defaultValue:
+                      'Open any report and choose Schedule to email it on a recurring basis.',
+                  })}
+                </Text>
+              </>
+            }
           />
-        )}
-      </div>
+        </div>
+      ) : (
+        <>
+          <div className="all-reports-hub__cards">
+            {cards.map(card => {
+              const metrics = getMetrics(card);
+              const isComingSoon = !!card.comingSoon;
+              return (
+                <button
+                  key={card.key}
+                  type="button"
+                  className="all-reports-hub__card"
+                  style={{ borderColor, background: cardBg, color: token.colorText }}
+                  onClick={() => {
+                    if (!isComingSoon) navigate(analyticsPath(card.path));
+                  }}
+                  aria-label={
+                    isComingSoon
+                      ? t('hubComingSoonAria', {
+                          defaultValue: '{{name}} — coming soon',
+                          name: t(card.titleKey, { defaultValue: card.defaultTitle }),
+                        })
+                      : t('hubOpenReportAria', {
+                          defaultValue: 'Open {{name}}',
+                          name: t(card.titleKey, { defaultValue: card.defaultTitle }),
+                        })
+                  }
+                >
+                  <div className="all-reports-hub__card-top">
+                    <span className="all-reports-hub__card-title">
+                      {t(card.titleKey, { defaultValue: card.defaultTitle })}
+                    </span>
+                    <span
+                      className={`all-reports-hub__badge all-reports-hub__badge--${
+                        isComingSoon ? 'soon' : 'included'
+                      }`}
+                    >
+                      {isComingSoon
+                        ? t('comingSoonBadge', { defaultValue: 'Coming soon' })
+                        : t('hubBadgeIncluded', { defaultValue: 'Included' })}
+                    </span>
+                  </div>
+
+                  <Text type="secondary" className="all-reports-hub__card-desc">
+                    {t(card.descKey, { defaultValue: card.defaultDesc })}
+                  </Text>
+
+                  <div className={`all-reports-hub__card-body${isComingSoon ? ' is-locked' : ''}`}>
+                    <div>
+                      <div className="all-reports-hub__metric">
+                        {isComingSoon ? '—' : metrics.primary}
+                      </div>
+                      <div className="all-reports-hub__metric-sub" style={{ color: muted }}>
+                        {t(card.metricSubKey, { defaultValue: card.defaultMetricSub })}
+                      </div>
+                    </div>
+                    <div className="all-reports-hub__spark" aria-hidden>
+                      {metrics.spark.map((height, index) => (
+                        <span
+                          key={`${card.key}-bar-${index}`}
+                          className="all-reports-hub__spark-bar"
+                          style={{
+                            height: `${height}%`,
+                            background: sparkColor,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {isComingSoon ? (
+                    <div className="all-reports-hub__card-footer" style={{ color: muted }}>
+                      <LockOutlined aria-hidden />
+                      {t('comingSoonBadge', { defaultValue: 'Coming soon' })}
+                    </div>
+                  ) : (
+                    <div className="all-reports-hub__card-footer is-open">
+                      {t('hubOpenReport', { defaultValue: 'Open report →' })}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div
+            className="all-reports-hub__custom"
+            style={{ borderColor: isDark ? '#434343' : '#d9d9d9' }}
+          >
+            <div className="all-reports-hub__custom-title" style={{ color: token.colorText }}>
+              {t('hubCustomTitle', { defaultValue: 'Custom reports' })}
+            </div>
+            <Text type="secondary" className="all-reports-hub__custom-desc">
+              {t('hubCustomDesc', {
+                defaultValue:
+                  'Pick a row type, choose columns, save a view. Arrives after the five core reports.',
+              })}
+            </Text>
+          </div>
+        </>
+      )}
+
+      <Text className="all-reports-hub__footnote" style={{ color: pageMuted }}>
+        {t('hubFootnote', {
+          defaultValue:
+            'Figures reflect your workspace data for the current period. Open a report to change date range, projects, and filters.',
+        })}
+      </Text>
     </div>
   );
 };
