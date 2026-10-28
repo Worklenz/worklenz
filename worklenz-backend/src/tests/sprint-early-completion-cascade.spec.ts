@@ -102,6 +102,9 @@ describe("completeSprintRecord end_date handling", () => {
     (db.connect as jest.Mock).mockResolvedValueOnce({
       query: jest.fn().mockImplementation(async (sql: string) => {
         if (sql === "BEGIN" || sql === "COMMIT") return {};
+        if (sql.includes("SELECT start_date, end_date")) {
+          return { rows: [{ start_date: "2026-10-15T00:00:00.000Z", end_date: "2026-10-29T23:59:59.000Z" }] };
+        }
         if (sql.includes("UPDATE project_phases")) {
           expect(sql).toContain("WHEN end_date IS NOT NULL AND end_date > CURRENT_TIMESTAMP THEN CURRENT_TIMESTAMP");
           return {
@@ -129,6 +132,7 @@ describe("completeSprintRecord end_date handling", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.data.phase.sprint_status).toBe("completed");
+      expect(result.data.plannedLengthDays).toBe(15);
     }
   });
 });
@@ -181,11 +185,16 @@ describe("startNextSprintNow", () => {
       end_date: "2026-11-11T23:59:59.000Z",
     });
 
-    // Verify subsequent planned sprints were shifted with the exact -2 days parameter
+    // Verify subsequent planned sprints were shifted with start_date >= $4 condition
     const subsequentShiftQuery = executedQueries.find(q =>
       q.sql.includes("SET start_date = start_date + $3::INT")
     );
     expect(subsequentShiftQuery).toBeDefined();
-    expect(subsequentShiftQuery?.params).toEqual(["sprint-2", "project-1", -2]);
+    expect(subsequentShiftQuery?.params).toEqual([
+      "sprint-2",
+      "project-1",
+      -2,
+      "2026-10-30T00:00:00.000Z",
+    ]);
   });
 });

@@ -461,10 +461,10 @@ export default class TaskPhasesController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, result.error));
     }
 
-    const {phase, archivedCount, movedCount} = result.data;
+    const {phase, archivedCount, movedCount, plannedLengthDays} = result.data;
 
     const startedSprint = await tryStartNextSprintAfterCompletion(
-      projectId, destinationPhaseId, getSprintLengthDays(phase)
+      projectId, destinationPhaseId, plannedLengthDays ?? getSprintLengthDays(phase)
     );
     if (startedSprint) startedSprint.color_code = startedSprint.color_code + TASK_STATUS_COLOR_ALPHA;
 

@@ -13,6 +13,7 @@ export interface ICompletedSprint {
   archivedCount: number;
   movedCount: number;
   destinationPhaseId: string | null;
+  plannedLengthDays: number;
 }
 
 /** Marks a planned sprint active and snapshots its committed scope. Only one sprint may be active per project. */
@@ -116,8 +117,8 @@ export async function startNextSprintNow(
       [nextId, projectId, shiftDays, Math.max(1, Math.round(fallbackLengthDays))]
     );
 
-    // 2. Shift all subsequent planned sprints by the exact same shift so there is NO GAP
-    if (shiftDays !== 0) {
+    // 2. Shift all subsequent planned sprints whose start date is at or after this sprint's start date
+    if (shiftDays !== 0 && nextRow?.start_date) {
       await client.query(
         `UPDATE project_phases
          SET start_date = start_date + $3::INT * INTERVAL '1 day',
@@ -126,8 +127,9 @@ export async function startNextSprintNow(
            AND sprint_status = 'planned'
            AND id <> $1
            AND start_date IS NOT NULL
-           AND end_date IS NOT NULL;`,
-        [nextId, projectId, shiftDays]
+           AND end_date IS NOT NULL
+           AND start_date >= $4;`,
+        [nextId, projectId, shiftDays, nextRow.start_date]
       );
     }
 
@@ -307,6 +309,15 @@ export async function completeSprintRecord(
   try {
     await client.query("BEGIN");
 
+    const currentPhase = await client.query(
+      `SELECT start_date, end_date
+       FROM project_phases
+       WHERE id = $1 AND project_id = $2
+       LIMIT 1;`,
+      [phaseId, projectId]
+    );
+    const plannedLengthDays = getSprintLengthDays(currentPhase.rows[0] ?? {});
+
     const phaseResult = await client.query(
       `UPDATE project_phases
        SET sprint_status = 'completed',
@@ -397,6 +408,7 @@ export async function completeSprintRecord(
         archivedCount,
         movedCount: movedResult.rowCount || 0,
         destinationPhaseId,
+        plannedLengthDays,
       },
     };
   } catch (error) {
