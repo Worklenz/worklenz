@@ -11,6 +11,7 @@ export interface PlannedVsActualTasksRow {
   completed: number;
   overdue: number;
   variance_days: number;
+  updated_at: string | null;
 }
 
 export interface PlannedVsActualTasksKpis {

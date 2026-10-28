@@ -284,6 +284,19 @@ const PlannedVsActualTasksPage: React.FC = () => {
     </Flex>
   );
 
+  // Chart: latest-updated projects only; KPIs/table use the full filtered set.
+  const chartProjectLimit = 20;
+  const chartProjects = useMemo(() => {
+    if (!data?.projects?.length) return [];
+    return [...data.projects]
+      .sort((a, b) => {
+        const aTs = a.updated_at ? Date.parse(a.updated_at) : 0;
+        const bTs = b.updated_at ? Date.parse(b.updated_at) : 0;
+        return bTs - aTs;
+      })
+      .slice(0, chartProjectLimit);
+  }, [data?.projects]);
+
   let body: React.ReactNode;
   if (!hasSelection) {
     body = (
@@ -305,7 +318,29 @@ const PlannedVsActualTasksPage: React.FC = () => {
         <PvaTasksKpiTiles kpis={data.kpis} />
         <ChartTableWrapper
           mode={viewMode}
-          chart={<PvaTasksChart ref={chartRef} projects={data.projects} />}
+          chart={
+            <div
+              style={{
+                width: '100%',
+                padding: 12,
+                borderRadius: 8,
+                border: `1px solid ${token.colorBorderSecondary}`,
+                background: token.colorBgContainer,
+              }}
+            >
+              <Text
+                type="secondary"
+                style={{ display: 'block', marginBottom: 8, fontSize: 12 }}
+              >
+                {t('phBarChartLatestNote', {
+                  defaultValue:
+                    'Showing the latest updated {{count}} projects in this graph. Use the projects dropdown for the full team list.',
+                  count: Math.min(chartProjectLimit, data.projects.length),
+                })}
+              </Text>
+              <PvaTasksChart ref={chartRef} projects={chartProjects} />
+            </div>
+          }
           table={<PvaTasksTable projects={data.projects} loading={loading} />}
         />
         {data.projects.length === 0 && (

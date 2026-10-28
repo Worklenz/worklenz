@@ -33,6 +33,7 @@ export interface ProjectHealthRow {
   overdue_tasks: number;
   budget: number;
   lead_name: string | null;
+  updated_at: string | null;
 }
 
 export interface ProjectHealthKpis {
@@ -186,6 +187,7 @@ export async function getProjectHealthSeries(
       COALESCE(sph.name, 'Not Set') AS health_name,
       COALESCE(sph.color_code, '#a9a9a9') AS health_color,
       TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS due_date,
+      TO_CHAR(p.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS updated_at,
       COALESCE(p.budget, 0)::FLOAT AS budget,
       (
         SELECT tmiv.name
@@ -278,6 +280,7 @@ export async function getProjectHealthSeries(
       overdue_tasks: Number(row.overdue_tasks) || 0,
       budget,
       lead_name: row.lead_name ? String(row.lead_name) : null,
+      updated_at: row.updated_at ? String(row.updated_at) : null,
     };
   });
 

@@ -20,6 +20,7 @@ export interface PlannedVsActualTasksRow {
   completed: number;
   overdue: number;
   variance_days: number;
+  updated_at: string | null;
 }
 
 export interface PlannedVsActualTasksKpis {
@@ -39,7 +40,8 @@ export interface PlannedVsActualTasksResult {
   last_updated_at: string;
 }
 
-const MAX_PROJECTS = 50;
+/** Safety cap only — high enough for org portfolios (chart still shows latest 20). */
+const MAX_PROJECTS = 5000;
 
 function parseCsvIds(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -148,6 +150,7 @@ export async function getPlannedVsActualTasksSeries(
     SELECT
       p.id AS project_id,
       p.name AS project_name,
+      TO_CHAR(p.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS updated_at,
       COALESCE((
         SELECT COUNT(*)::INT
         FROM tasks ta
@@ -204,6 +207,7 @@ export async function getPlannedVsActualTasksSeries(
     completed: Number(row.completed) || 0,
     overdue: Number(row.overdue) || 0,
     variance_days: round1(Number(row.variance_days) || 0),
+    updated_at: row.updated_at ? String(row.updated_at) : null,
   }));
 
   const plannedSum = projects.reduce((sum, p) => sum + p.planned, 0);

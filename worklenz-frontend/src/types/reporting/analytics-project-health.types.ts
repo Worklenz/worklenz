@@ -21,6 +21,7 @@ export interface ProjectHealthRow {
   overdue_tasks: number;
   budget: number;
   lead_name: string | null;
+  updated_at: string | null;
 }
 
 export interface ProjectHealthKpis {

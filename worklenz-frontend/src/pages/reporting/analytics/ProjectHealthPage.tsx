@@ -306,8 +306,18 @@ const ProjectHealthPage: React.FC = () => {
     </Flex>
   );
 
-  // Keep the grouped bar chart readable; KPIs/donut/table use the full project set.
-  const barChartProjectLimit = 50;
+  // Progress & budget chart: latest-updated projects only; KPIs/donut/table use full set.
+  const barChartProjectLimit = 20;
+  const barChartProjects = useMemo(() => {
+    if (!data?.projects?.length) return [];
+    return [...data.projects]
+      .sort((a, b) => {
+        const aTs = a.updated_at ? Date.parse(a.updated_at) : 0;
+        const bTs = b.updated_at ? Date.parse(b.updated_at) : 0;
+        return bTs - aTs;
+      })
+      .slice(0, barChartProjectLimit);
+  }, [data?.projects]);
 
   let body: React.ReactNode;
   if (!hasSelection) {
@@ -344,25 +354,17 @@ const ProjectHealthPage: React.FC = () => {
                 <Text strong style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
                   {t('phProgressBudgetTitle', { defaultValue: 'Progress & budget' })}
                 </Text>
-                {data.projects.length > barChartProjectLimit ? (
-                  <Text
-                    type="secondary"
-                    style={{ display: 'block', marginBottom: 8, fontSize: 12 }}
-                  >
-                    {t('phBarChartLimited', {
-                      defaultValue:
-                        'Showing {{shown}} of {{total}} projects (use table for full list)',
-                      shown: barChartProjectLimit,
-                      total: data.projects.length,
-                    })}
-                  </Text>
-                ) : (
-                  <div style={{ marginBottom: 8 }} />
-                )}
-                <ProjectHealthChart
-                  ref={chartRef}
-                  projects={data.projects.slice(0, barChartProjectLimit)}
-                />
+                <Text
+                  type="secondary"
+                  style={{ display: 'block', marginBottom: 8, fontSize: 12 }}
+                >
+                  {t('phBarChartLatestNote', {
+                    defaultValue:
+                      'Showing the latest updated {{count}} projects in this graph. Use the projects dropdown for the full team list.',
+                    count: Math.min(barChartProjectLimit, data.projects.length),
+                  })}
+                </Text>
+                <ProjectHealthChart ref={chartRef} projects={barChartProjects} />
               </div>
               <div style={{ flex: '1 1 280px', minWidth: 260, maxWidth: 420 }}>
                 <ProjectHealthDonutChart projects={data.projects} kpis={data.kpis} />
