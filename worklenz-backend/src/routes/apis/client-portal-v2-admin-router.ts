@@ -29,6 +29,11 @@ router.delete("/overview/layout", safeControllerFunction(PortalOverviewControlle
 // ── Organizations and client users ──
 router.get("/organizations", safeControllerFunction(PortalAccessController.organizations));
 router.get("/organizations/:organizationId/overview", safeControllerFunction(PortalAccessController.organizationOverview));
+router.get("/organizations/:organizationId/delete-preview", safeControllerFunction(PortalAccessController.deletePreview));
+router.delete("/organizations/:organizationId", safeControllerFunction(PortalAccessController.deleteOrganization));
+router.post("/organizations/:organizationId/restore", safeControllerFunction(PortalAccessController.restoreOrganization));
+router.post("/organizations/:organizationId/deactivate", safeControllerFunction(PortalAccessController.deactivateOrganization));
+router.post("/organizations/:organizationId/reactivate", safeControllerFunction(PortalAccessController.reactivateOrganization));
 router.get("/client-users", safeControllerFunction(PortalAccessController.users));
 router.get("/client-users/:userId", safeControllerFunction(PortalAccessController.user));
 router.put("/client-users/:userId", safeControllerFunction(PortalAccessController.updateUser));
@@ -36,6 +41,7 @@ router.put("/client-users/:userId/projects", safeControllerFunction(PortalAccess
 router.post("/client-users/:userId/resend", safeControllerFunction(PortalAccessController.resend));
 router.post("/client-users/:userId/deactivate", safeControllerFunction(PortalAccessController.deactivate));
 router.post("/client-users/:userId/reactivate", safeControllerFunction(PortalAccessController.reactivate));
+router.post("/client-users/:userId/restore-account", safeControllerFunction(PortalAccessController.restoreAccount));
 router.delete("/client-users/:userId", safeControllerFunction(PortalAccessController.remove));
 router.post("/add-client", safeControllerFunction(PortalAccessController.addClient));
 

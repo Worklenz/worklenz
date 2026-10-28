@@ -12,6 +12,7 @@ import {
   theme,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
+import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import {
   PrinterOutlined,
   DownloadOutlined,
@@ -62,10 +63,15 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
     .join(' ');
   const organizationCountry = invoice.organization?.country || '';
   const organizationLogo = invoice.organization?.logoUrl || undefined;
-  const invoiceFooterMessage = invoice.organization?.invoiceFooterMessage || '';
   const templateStyle = invoice.organization?.templateStyle === 'modern' ? 'modern' : 'classic';
   const showLogo = invoice.organization?.showLogo !== false;
   const { t } = useTranslation('client-portal-invoices');
+  const invoiceFooterMessage =
+    invoice.organization?.invoiceFooterMessage?.trim() ||
+    t('defaultInvoiceFooter', {
+      defaultValue:
+        'Thank you for your business. If you have any questions about this invoice, please contact us using the details above.',
+    });
   const printRef = useRef<HTMLDivElement>(null);
   const { token } = useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -80,7 +86,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
 
   // Handle download invoice
   const handleDownload = () => {
-    window.open(getInvoiceDownloadUrl(invoice.id), '_blank', 'noopener,noreferrer');
+    downloadPortalPdf(getInvoiceDownloadUrl(invoice.id), 'invoice.pdf', t('downloadFailed', { defaultValue: 'Failed to download the PDF. Please try again.' }));
   };
 
   // Theme-aware colors

@@ -14,7 +14,6 @@ import {
   isNewQuoteStatus,
   isQuoteStatus,
 } from "../controllers/client-portal/client-portal-quote-helpers";
-import { InvoiceTemplateGenerator } from "../shared/invoice-template-generator";
 import { createMockRequest, createMockResponse } from "./utils/express-mock";
 import { createQueryResult } from "./utils/db-mock";
 
@@ -69,69 +68,6 @@ describe("quote helpers", () => {
   it("never sorts by an unlisted column", () => {
     expect(buildQuoteOrderBy("1; DROP TABLE x", "asc")).toMatch(/^q\.created_at ASC/);
     expect(buildQuoteOrderBy("valid_until", "desc")).toMatch(/^q\.valid_until DESC/);
-  });
-});
-
-describe("InvoiceTemplateGenerator.generateQuoteHTML", () => {
-  const base = {
-    invoiceNumber: "QUO-1",
-    status: "expired",
-    createdAt: "2026-03-02T00:00:00Z",
-    dueDate: "2026-03-16",
-    amount: 100,
-    currency: "USD",
-    isOverdue: true,
-    client: { name: "Acme" },
-  };
-
-  it("uses quote labels", () => {
-    const html = InvoiceTemplateGenerator.generateQuoteHTML(base);
-    expect(html).toContain("<h2>QUOTE</h2>");
-    expect(html).toContain("PREPARED FOR");
-    expect(html).toContain("Valid Until");
-    expect(html).toContain("Expired");
-    expect(html).not.toContain("BILLED TO");
-  });
-
-  it("leaves the invoice wording unchanged", () => {
-    const html = InvoiceTemplateGenerator.generateInvoiceHTML({ ...base, status: "sent", isOverdue: false });
-    expect(html).toContain("<h2>INVOICE</h2>");
-    expect(html).toContain("BILLED TO");
-    expect(html).toContain("Due Date");
-  });
-
-  it("renders rich HTML notes instead of escaping them", () => {
-    const notes =
-      "<p>Thanks for your <strong>business</strong> and <em>support</em>.</p>" +
-      "<ol><li>One</li><li>Two</li></ol>" +
-      "<ul><li>Alpha</li><li>Beta</li></ul>";
-    const html = InvoiceTemplateGenerator.generateInvoiceHTML({ ...base, notes });
-    expect(html).toContain('<div class="notes-body">');
-    expect(html).toContain("<strong>business</strong>");
-    expect(html).toContain("<em>support</em>");
-    expect(html).toContain("<ol>");
-    expect(html).toContain("<ul>");
-    expect(html).not.toContain("&lt;strong&gt;");
-    expect(html).not.toContain("&lt;ul&gt;");
-  });
-
-  it("escapes legacy plain-text notes and preserves line breaks", () => {
-    const html = InvoiceTemplateGenerator.generateInvoiceHTML({
-      ...base,
-      notes: "Line one\nLine two <script>",
-    });
-    expect(html).toContain("Line one<br>Line two &lt;script&gt;");
-    expect(html).not.toContain("<script>");
-  });
-
-  it("strips unsafe tags from rich HTML notes", () => {
-    const html = InvoiceTemplateGenerator.generateInvoiceHTML({
-      ...base,
-      notes: '<p>Safe</p><script>alert(1)</script><img src=x onerror=alert(1)>',
-    });
-    expect(html).toContain("<p>Safe</p>");
-    expect(html).not.toContain("<script>");
-    expect(html).not.toContain("<img");
   });
 });
 

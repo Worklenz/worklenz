@@ -7,7 +7,7 @@ import {
   ClientOrganization,
   PaginatedResponse
 } from '@/types';
-import { isAccessRemovedResponse, signalAccessRemoved } from '@/utils/accessRemoved';
+import { getAccessRemovedReason, isAccessRemovedResponse, signalAccessRemoved } from '@/utils/accessRemoved';
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/client-portal',
@@ -32,7 +32,7 @@ const baseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> =
 ) => {
   const result = await rawBaseQuery(args, api, extraOptions);
   if (result.error && isAccessRemovedResponse(result.error.status, result.error.data)) {
-    signalAccessRemoved();
+    signalAccessRemoved(getAccessRemovedReason(result.error.data));
   }
   return result;
 };

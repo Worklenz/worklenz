@@ -161,8 +161,8 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId, disabled = false }: 
           popupMatchSelectWidth={false}
           style={
             {
-              width: 160,
-              minWidth: 160,
+              width: 'fit-content',
+              minWidth: 90,
               maxWidth: 160,
               backgroundColor: resolvedStatusBackground,
               borderRadius: 16,

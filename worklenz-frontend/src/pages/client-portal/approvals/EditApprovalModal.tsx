@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Form, Input, Modal, Select, message } from '@/shared/antd-imports';
+import { Button, DatePicker, Form, Input, Modal, Select, dayjs, message } from '@/shared/antd-imports';
 import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
 import { useGetApprovalOptionsQuery, useUpdateApprovalMutation } from '@/api/client-portal/portal-workflow-api';
 import type { Approval, UpdateApprovalRequest } from '@/types/client-portal/v2';
@@ -143,13 +143,17 @@ export const EditApprovalModal = ({ approval, onClose }: EditApprovalModalProps)
           />
         </Form.Item>
         <Form.Item label={t('create.dueDate', { defaultValue: 'Due date (optional)' })}>
-          <Input
-            aria-label={t('create.dueDate', { defaultValue: 'Due date (optional)' })}
-            type="date"
-            value={dueDate}
-            onChange={event => setDueDate(event.target.value)}
-            style={{ maxWidth: 220 }}
-          />
+          <div style={{ position: 'relative', display: 'inline-block', width: '100%', maxWidth: 220 }}>
+            <DatePicker
+              style={{ width: '100%' }}
+              value={dueDate ? dayjs(dueDate) : null}
+              onChange={date => setDueDate(date ? date.format('YYYY-MM-DD') : '')}
+              placeholder={t('create.dueDatePlaceholder', { defaultValue: 'Select due date' })}
+              placement="topLeft"
+              getPopupContainer={trigger => trigger.parentElement || document.body}
+              aria-label={t('create.dueDate', { defaultValue: 'Due date (optional)' })}
+            />
+          </div>
         </Form.Item>
       </Form>
     </Modal>

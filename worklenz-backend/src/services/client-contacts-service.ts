@@ -600,6 +600,7 @@ export async function inviteContact(input: {
   const contactResult = await db.query(
     `SELECT cc.id, cc.client_id, cc.name, cc.email, cc.disabled_at,
             c.name AS client_name, c.company_name, c.phone AS client_phone,
+            c.deleted_at AS client_deleted_at, c.status AS client_status,
             EXISTS (SELECT 1 FROM client_users cu WHERE cu.id = cc.client_user_id AND cu.status = 'active') AS is_active,
             t.name AS team_name
      FROM client_contacts cc
@@ -610,7 +611,12 @@ export async function inviteContact(input: {
   );
 
   const contact = contactResult.rows[0];
-  if (!contact) throw new ContactServiceError("NOT_FOUND", "Company user not found");
+  // A deleted client has no users to invite (they come back with a restore), and a deactivated one must be
+  // reactivated first: an invitation must never quietly end a suspension staff chose.
+  if (!contact || contact.client_deleted_at) throw new ContactServiceError("NOT_FOUND", "Company user not found");
+  if (contact.client_status === "inactive") {
+    throw new ContactServiceError("DISABLED", "This client is deactivated. Reactivate it before inviting.");
+  }
   if (contact.disabled_at) {
     throw new ContactServiceError("DISABLED", "This user is disabled. Enable them before inviting.");
   }

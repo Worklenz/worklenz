@@ -434,6 +434,114 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, data));
   }
 
+  /**
+   * Time Entries page ONLY (POST /task-time-log/entries/:id/split).
+   *
+   * Atomically turns a single time log into an overnight pair by:
+   *   1. Updating the existing log (segment 1: the day-1 portion).
+   *   2. Inserting a new log for segment 2 (the day-2 portion) that carries the
+   *      ORIGINAL log's `user_id` and `task_id` — not the editing admin's id —
+   *      so ownership is preserved when an owner/admin splits another member's log.
+   *
+   * Both writes happen inside a single transaction; neither is committed if the
+   * other fails. The caller must supply:
+   *   - `segment1`: `{ seconds_spent, formatted_start, description }` — the day-1 slice.
+   *   - `segment2`: `{ seconds_spent, formatted_start }` — the day-2 slice.
+   */
+  @HandleExceptions()
+  public static async splitTimeEntry(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const { segment1, segment2 } = (req.body || {}) as {
+      segment1: { seconds_spent: number; formatted_start: string; description?: string };
+      segment2: { seconds_spent: number; formatted_start: string };
+    };
+
+    if (
+      typeof segment1?.seconds_spent !== "number" ||
+      !Number.isFinite(segment1.seconds_spent) ||
+      segment1.seconds_spent <= 0 ||
+      typeof segment2?.seconds_spent !== "number" ||
+      !Number.isFinite(segment2.seconds_spent) ||
+      segment2.seconds_spent <= 0 ||
+      typeof segment1?.formatted_start !== "string" ||
+      Number.isNaN(Date.parse(segment1.formatted_start)) ||
+      typeof segment2?.formatted_start !== "string" ||
+      Number.isNaN(Date.parse(segment2.formatted_start))
+    ) {
+      return res.status(400).send(
+        new ServerResponse(false, null, "Both segment1 and segment2 must include seconds_spent and formatted_start.")
+      );
+    }
+
+    const canEditOthers = isTeamOwner(req.user) || isTeamAdmin(req.user);
+    let taskId: string | undefined;
+
+    // Execute both writes atomically.
+    const client = await db.connect();
+    try {
+      await client.query("BEGIN");
+
+      const lockResult = await client.query(
+        `SELECT twl.task_id, twl.user_id
+         FROM task_work_log AS twl
+         WHERE twl.id = $1
+           AND ${timeLogModifiableByUser(2, 3, 4)}
+         FOR UPDATE`,
+        [req.params.id, req.user?.id, canEditOthers, req.user?.team_id]
+      );
+      const originalLog = lockResult.rows[0];
+      if (!originalLog) {
+        await client.query("ROLLBACK");
+        return res.status(403).send(
+          new ServerResponse(false, null, "You can only edit your own time entries.")
+        );
+      }
+      const { task_id: originalTaskId, user_id: originalUserId } = originalLog;
+      taskId = originalTaskId;
+
+      // Update segment 1 (the existing row).
+      await client.query(
+        `UPDATE task_work_log
+         SET time_spent  = $2,
+             description = $3,
+             created_at  = $4
+         WHERE id = $1;`,
+        [
+          req.params.id,
+          segment1.seconds_spent,
+          segment1.description ?? null,
+          segment1.formatted_start,
+        ]
+      );
+
+      // Insert segment 2 with the ORIGINAL user_id so ownership is preserved.
+      await client.query(
+        `INSERT INTO task_work_log (time_spent, description, task_id, user_id, created_at)
+         VALUES ($1, $2, $3, $4, $5);`,
+        [
+          segment2.seconds_spent,
+          segment1.description ?? null,  // carry the same description as segment 1
+          originalTaskId,
+          originalUserId,               // ← preserve original member's id
+          segment2.formatted_start,
+        ]
+      );
+
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    await this.emitTaskTimeLogUpdated(req.user?.team_id, taskId);
+
+    return res.status(200).send(new ServerResponse(true, null));
+  }
+
   private static async getExportMetadata(id: string) {
     const q = `SELECT name, (SELECT name FROM projects WHERE id = tasks.project_id) AS project_name
                FROM tasks

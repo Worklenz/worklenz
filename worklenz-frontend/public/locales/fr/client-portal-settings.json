@@ -208,5 +208,6 @@
     "defaultStatusesLabel": "Statuts par défaut",
     "defaultStatusesHint": "Ceux-ci existent toujours et ne peuvent pas être supprimés.",
     "customStatusesLabel": "Statuts personnalisés"
-  }
+  },
+  "defaultInvoiceFooter": "Merci pour votre confiance. Pour toute question concernant cette facture, veuillez nous contacter à l’aide des coordonnées ci-dessus."
 }
