@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Avatar, Flex, Progress, Table, Tag, Typography } from '@/shared/antd-imports';
+import { Avatar, Flex, Table, Tag, Typography } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import type {
@@ -85,21 +85,11 @@ export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loa
         title: t('utilColUtilization', { defaultValue: 'Utilization' }),
         dataIndex: 'utilization_pct',
         key: 'utilization_pct',
-        width: 200,
+        width: 110,
+        align: 'right',
         sorter: (a, b) => a.utilization_pct - b.utilization_pct,
         render: (pct: number) => (
-          <Flex align="center" gap={8}>
-            <Progress
-              percent={Math.min(pct, 100)}
-              showInfo={false}
-              strokeColor={utilizationStroke(pct)}
-              size="small"
-              style={{ flex: 1, margin: 0 }}
-            />
-            <Text style={{ fontSize: 12, minWidth: 36, color: utilizationStroke(pct) }}>
-              {pct}%
-            </Text>
-          </Flex>
+          <Text style={{ color: utilizationStroke(pct) }}>{pct}%</Text>
         ),
       },
       {

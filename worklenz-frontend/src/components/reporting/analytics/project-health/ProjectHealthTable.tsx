@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Progress, Table, Tag, Typography } from '@/shared/antd-imports';
+import { Table, Tag, Typography } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
@@ -64,15 +64,10 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         title: t('phColProgress', { defaultValue: 'Progress' }),
         dataIndex: 'progress_pct',
         key: 'progress_pct',
-        width: 160,
+        width: 100,
+        align: 'right',
         sorter: (a, b) => a.progress_pct - b.progress_pct,
-        render: (value: number) => (
-          <Progress
-            percent={Math.min(100, Math.round(value))}
-            size="small"
-            status={value >= 100 ? 'success' : 'active'}
-          />
-        ),
+        render: (value: number) => `${Math.round(value)}%`,
       },
       {
         title: t('phColDue', { defaultValue: 'Due' }),

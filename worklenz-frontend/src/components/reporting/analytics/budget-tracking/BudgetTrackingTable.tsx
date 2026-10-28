@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Flex, Progress, Table, Tag, Typography } from '@/shared/antd-imports';
+import { Flex, Table, Tag, Typography } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import type {
@@ -119,20 +119,12 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
       {
         title: t('btColBurn', { defaultValue: 'Burn rate' }),
         key: 'burn',
-        width: 180,
+        width: 110,
+        align: 'right',
         sorter: (a, b) => a.burn_pct - b.burn_pct,
         render: (_: unknown, record) =>
           record.has_budget ? (
-            <Flex align="center" gap={8}>
-              <Progress
-                percent={Math.min(record.burn_pct, 100)}
-                showInfo={false}
-                strokeColor={burnColor(record.burn_pct)}
-                size="small"
-                style={{ flex: 1, margin: 0 }}
-              />
-              <Text style={{ fontSize: 12, minWidth: 40 }}>{record.burn_pct}%</Text>
-            </Flex>
+            <Text style={{ color: burnColor(record.burn_pct) }}>{record.burn_pct}%</Text>
           ) : (
             <Text type="secondary">—</Text>
           ),
