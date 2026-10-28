@@ -966,7 +966,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     handleDragStart: originalHandleDragStart,
     handleDragOver: originalHandleDragOver,
     handleDragEnd,
-  } = useDragAndDrop(allTasks, groups);
+  } = useDragAndDrop(allTasks, groups, t);
 
   // Wrap drag handlers to prevent dragging when work items are locked
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -1786,13 +1786,30 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   }, [virtuosoGroups]);
 
   // Assignee grouping can repeat an issue across groups; sortable ids must stay unique.
+  // Also include expanded subtasks so they can be dragged to a new parent in the outer DndContext.
   const sortableTaskIds = useMemo(() => {
-    const ids = virtuosoItems
-      .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
-      .map(item => item.id)
-      .filter((id): id is string => id !== undefined);
+    const taskById = new Map(allTasks.map(task => [task.id, task]));
+
+    const collectExpandedSubtaskIds = (taskId: string, acc: string[]) => {
+      const task = taskById.get(taskId);
+      if (!task?.show_sub_tasks || !task.sub_tasks?.length) return;
+      for (const subtask of task.sub_tasks) {
+        if (!subtask.id) continue;
+        acc.push(subtask.id);
+        collectExpandedSubtaskIds(subtask.id, acc);
+      }
+    };
+
+    const ids: string[] = [];
+    for (const item of virtuosoItems) {
+      if ('isAddTaskRow' in item || !item.id) continue;
+      if (!item.parent_task_id) {
+        ids.push(item.id);
+        collectExpandedSubtaskIds(item.id, ids);
+      }
+    }
     return Array.from(new Set(ids));
-  }, [virtuosoItems]);
+  }, [allTasks, virtuosoItems]);
 
   // Render functions
   const renderGroup = useCallback(
@@ -2699,6 +2716,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                         activeId && overId === item.id && !('isAddTaskRow' in item);
                       const showBefore = isOverThisTask && dropPosition === 'before';
                       const showAfter = isOverThisTask && dropPosition === 'after';
+                      const showIntoParent = isOverThisTask && dropPosition === 'into';
                       const isLastItemOfGroup = indexInGroup === (group?.tasks.length ?? 0) - 1;
                       const backlogCardStyle: React.CSSProperties = isBacklogMode
                         ? {
@@ -2719,7 +2737,11 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                       return (
                         <div
                           style={{ minWidth: 'max-content', ...backlogCardStyle }}
-                          className="relative"
+                          className={`relative ${
+                            showIntoParent
+                              ? 'ring-2 ring-inset ring-blue-400 dark:ring-blue-500 bg-blue-50/50 dark:bg-blue-900/20 rounded'
+                              : ''
+                          }`}
                           onMouseMove={e => {
                             // Find the InsertTaskDivider button inside this row and update
                             // its left position to follow the cursor — direct DOM update,
