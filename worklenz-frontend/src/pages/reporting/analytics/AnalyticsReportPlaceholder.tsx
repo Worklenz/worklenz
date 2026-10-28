@@ -9,7 +9,6 @@ import {
   ReportPageShell,
   type AnalyticsDatePreset,
   type AnalyticsExportFormat,
-  type ChartTableMode,
 } from '@/components/reporting/analytics';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 
@@ -19,8 +18,8 @@ interface AnalyticsReportPlaceholderProps {
 }
 
 /**
- * Phase 1 shell for analytics reports — real chart/data APIs land in later phases.
- * Provides filter bar, export menu, chart/table toggle, and empty state.
+ * Phase 1 shell for analytics reports ? real chart/data APIs land in later phases.
+ * Provides filter bar, export menu, stacked chart + table, and empty state.
  */
 export const AnalyticsReportPlaceholder: React.FC<AnalyticsReportPlaceholderProps> = ({
   titleKey,
@@ -29,8 +28,6 @@ export const AnalyticsReportPlaceholder: React.FC<AnalyticsReportPlaceholderProp
   const { t } = useTranslation('reporting-analytics');
   const title = t(titleKey, { defaultValue: titleDefault });
   useDocumentTitle(title);
-
-  const [viewMode, setViewMode] = useState<ChartTableMode>('chart');
   const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
   const [projectIds, setProjectIds] = useState<string[]>([]);
   const [includeDone, setIncludeDone] = useState(false);
@@ -50,8 +47,6 @@ export const AnalyticsReportPlaceholder: React.FC<AnalyticsReportPlaceholderProp
         { label: title },
       ]}
       lastUpdatedAt={null}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
       onExport={handleExport}
       filters={
         <AnalyticsFilterBar
@@ -66,7 +61,7 @@ export const AnalyticsReportPlaceholder: React.FC<AnalyticsReportPlaceholderProp
       }
     >
       <ChartTableWrapper
-        mode={viewMode}
+        chartTitle={title}
         chart={<InChartEmptyState />}
         table={
           <ReportEmptyState

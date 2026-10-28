@@ -14,6 +14,7 @@ const TONES = {
   primary: '#1890ff',
   success: '#52c41a',
   warn: '#faad14',
+  muted: '#722ed1',
 } as const;
 
 export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({ kpis, metricLabel }) => {
@@ -32,7 +33,10 @@ export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({ kpis, metric
         kpis.completed_sprint_count > 0
           ? String(Math.round(kpis.avg_velocity * 10) / 10)
           : '—',
-      sub: metricLabel,
+      sub: t('kpiPointsPerSprint', {
+        defaultValue: '{{metric}} per sprint',
+        metric: metricLabel,
+      }),
       tone: TONES.primary,
     },
     {
@@ -42,21 +46,25 @@ export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({ kpis, metric
         kpis.last_sprint_velocity === null || kpis.last_sprint_velocity === undefined
           ? '—'
           : String(Math.round(kpis.last_sprint_velocity * 10) / 10),
-      sub: metricLabel,
+      sub: '\u00a0',
       tone: TONES.success,
     },
     {
       key: 'commitment',
-      label: t('kpiCommitment', { defaultValue: 'Commitment accuracy' }),
+      label: t('kpiCommitmentMet', { defaultValue: 'Commitment met' }),
       value:
         kpis.commitment_accuracy_pct === null || kpis.commitment_accuracy_pct === undefined
           ? '—'
           : `${Math.round(kpis.commitment_accuracy_pct)}%`,
-      sub: t('kpiAcrossSprints', {
-        defaultValue: 'across {{count}} sprints',
-        count: kpis.completed_sprint_count,
-      }),
+      sub: '\u00a0',
       tone: TONES.warn,
+    },
+    {
+      key: 'sprints',
+      label: t('kpiSprints', { defaultValue: 'Sprints' }),
+      value: String(kpis.completed_sprint_count),
+      sub: '\u00a0',
+      tone: TONES.muted,
     },
   ];
 

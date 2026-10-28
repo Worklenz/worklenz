@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
-import { Table, Tooltip, Typography } from '@/shared/antd-imports';
+import { Table, Tooltip, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
 import type { VelocitySeriesPoint } from '@/types/reporting/analytics-velocity.types';
 
 const { Text } = Typography;
@@ -14,7 +13,6 @@ interface VelocityTableProps {
 interface VelocityRow {
   key: string;
   sprint_name: string;
-  completed_at: string | null;
   committed: number;
   completed: number;
   commitment_accuracy: number | null;
@@ -22,13 +20,13 @@ interface VelocityRow {
 
 export const VelocityTable: React.FC<VelocityTableProps> = ({ series }) => {
   const { t } = useTranslation('reporting-analytics');
+  const { token } = theme.useToken();
 
   const data: VelocityRow[] = useMemo(
     () =>
       series.map(point => ({
         key: point.sprint_id,
         sprint_name: point.sprint_name,
-        completed_at: point.completed_at,
         committed: point.committed,
         completed: point.completed,
         commitment_accuracy: point.commitment_accuracy,
@@ -41,31 +39,28 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({ series }) => {
       title: t('colSprint', { defaultValue: 'Sprint' }),
       dataIndex: 'sprint_name',
       key: 'sprint_name',
-    },
-    {
-      title: t('colCompletedAt', { defaultValue: 'Completed' }),
-      dataIndex: 'completed_at',
-      key: 'completed_at',
-      render: (value: string | null) =>
-        value ? dayjs(value).format('MMM D, YYYY') : '—',
+      sorter: (a, b) => a.sprint_name.localeCompare(b.sprint_name),
     },
     {
       title: t('legendCommitted', { defaultValue: 'Committed' }),
       dataIndex: 'committed',
       key: 'committed',
       align: 'right',
+      sorter: (a, b) => a.committed - b.committed,
     },
     {
       title: t('legendCompleted', { defaultValue: 'Completed' }),
       dataIndex: 'completed',
       key: 'completed',
       align: 'right',
+      sorter: (a, b) => a.completed - b.completed,
     },
     {
       title: t('colCommitmentPct', { defaultValue: 'Commitment %' }),
       dataIndex: 'commitment_accuracy',
       key: 'commitment_accuracy',
       align: 'right',
+      sorter: (a, b) => (a.commitment_accuracy ?? -1) - (b.commitment_accuracy ?? -1),
       render: (value: number | null, row) => {
         if (value === null || value === undefined) {
           return (
@@ -95,11 +90,15 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({ series }) => {
 
   return (
     <Table
-      size="small"
+      size="middle"
       rowKey="key"
       columns={columns}
       dataSource={data}
       pagination={false}
+      showSorterTooltip={false}
+      style={{
+        borderRadius: token.borderRadiusLG,
+      }}
       locale={{
         emptyText: t('velocityChartEmpty', {
           defaultValue: 'No completed sprints match these filters.',

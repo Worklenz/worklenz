@@ -1,10 +1,16 @@
 .velocity-kpi-tiles {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1000px) {
+  .velocity-kpi-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
   .velocity-kpi-tiles {
     grid-template-columns: 1fr;
   }
@@ -13,7 +19,7 @@
 .velocity-kpi-tile {
   border: 1px solid;
   border-radius: 8px;
-  padding: 14px 16px;
+  padding: 16px;
   text-align: left;
   width: 100%;
 }
@@ -21,7 +27,7 @@
 .velocity-kpi-tile__label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 13px;
   margin-bottom: 6px;
 }
@@ -42,4 +48,5 @@
 .velocity-kpi-tile__sub {
   font-size: 12px;
   margin-top: 2px;
+  min-height: 18px;
 }

@@ -10,7 +10,6 @@ import {
   Switch,
   Typography,
   message,
-  theme,
 } from '@/shared/antd-imports';
 import { SaveOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -35,7 +34,6 @@ import {
   ReportPageShell,
   type AnalyticsDatePreset,
   type AnalyticsExportFormat,
-  type ChartTableMode,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
 import { VelocityChart, type VelocityChartHandle } from '@/components/reporting/analytics/velocity/VelocityChart';
@@ -75,7 +73,6 @@ const downloadText = (content: string, filename: string, mime: string) => {
 
 const VelocityPage: React.FC = () => {
   const { t } = useTranslation('reporting-analytics');
-  const { token } = theme.useToken();
   const dispatch = useAppDispatch();
   const title = t('velocity', { defaultValue: 'Velocity' });
   useDocumentTitle(title);
@@ -101,8 +98,6 @@ const VelocityPage: React.FC = () => {
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
-
-  const [viewMode, setViewMode] = useState<ChartTableMode>('chart');
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -356,7 +351,7 @@ const VelocityPage: React.FC = () => {
           t('kpiAvgVelocity', { defaultValue: 'Avg velocity' }) +
             `: ${data.kpis.avg_velocity}  |  ` +
             t('kpiCommitment', { defaultValue: 'Commitment accuracy' }) +
-            `: ${data.kpis.commitment_accuracy_pct ?? 'â€”'}%`,
+            `: ${data.kpis.commitment_accuracy_pct ?? '—'}%`,
           40,
           60
         );
@@ -507,8 +502,6 @@ const VelocityPage: React.FC = () => {
       ]}
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={velocityFilters}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
       onExport={handleExport}
       exportDisabled={!data || !hasSelection}
       exportFormats={['excel', 'pdf', 'png', 'svg', 'csv']}
@@ -562,28 +555,20 @@ const VelocityPage: React.FC = () => {
             <VelocityKpiTiles kpis={data.kpis} metricLabel={metricLabel} />
           )}
 
-          <div
-            style={{
-              border: `1px solid ${token.colorBorderSecondary}`,
-              borderRadius: token.borderRadiusLG,
-              padding: 16,
-              background: token.colorBgContainer,
-            }}
-          >
-            <ChartTableWrapper
-              mode={viewMode}
-              chart={
-                <VelocityChart
-                  ref={chartRef}
-                  series={data?.series ?? []}
-                  averageLine={data?.average_line ?? []}
-                  trendLine={data?.trend_line ?? null}
-                  viewBy={viewBy}
-                />
-              }
-              table={<VelocityTable series={data?.series ?? []} />}
-            />
-          </div>
+          <ChartTableWrapper
+            chartTitle={title}
+            rowCount={data?.series.length}
+            chart={
+              <VelocityChart
+                ref={chartRef}
+                series={data?.series ?? []}
+                averageLine={data?.average_line ?? []}
+                trendLine={data?.trend_line ?? null}
+                viewBy={viewBy}
+              />
+            }
+            table={<VelocityTable series={data?.series ?? []} />}
+          />
         </Flex>
       )}
 

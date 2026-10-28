@@ -3,7 +3,9 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
+  BarController,
   BarElement,
+  LineController,
   LineElement,
   PointElement,
   Legend,
@@ -29,7 +31,9 @@ import type {
 ChartJS.register(
   CategoryScale,
   LinearScale,
+  BarController,
   BarElement,
+  LineController,
   LineElement,
   PointElement,
   Legend,
@@ -163,25 +167,40 @@ export const VelocityChart = forwardRef<VelocityChartHandle, VelocityChartProps>
         }
       }
 
+      // Match reporting prototype: dual line chart (committed + completed).
+      const committedColor = '#722ed1';
+      const completedColor = chartTheme.primaryColor;
       const datasets: ChartData<'bar'>['datasets'] = [
         {
-          type: 'bar',
+          type: 'line' as never,
           label: t('legendCommitted', { defaultValue: 'Committed' }),
           data: series.map(p => p.committed),
-          backgroundColor: chartTheme.mutedColor,
-          borderRadius: 4,
-          maxBarThickness: 28,
+          borderColor: committedColor,
+          backgroundColor: committedColor,
+          borderWidth: 2.5,
+          pointRadius: 3.5,
+          pointBackgroundColor: token.colorBgContainer,
+          pointBorderColor: committedColor,
+          pointBorderWidth: 2,
+          fill: false,
+          tension: 0,
           order: 2,
-        },
+        } as never,
         {
-          type: 'bar',
+          type: 'line' as never,
           label: t('legendCompleted', { defaultValue: 'Completed' }),
           data: series.map(p => p.completed),
-          backgroundColor: chartTheme.primaryColor,
-          borderRadius: 4,
-          maxBarThickness: 28,
+          borderColor: completedColor,
+          backgroundColor: completedColor,
+          borderWidth: 2.5,
+          pointRadius: 3.5,
+          pointBackgroundColor: token.colorBgContainer,
+          pointBorderColor: completedColor,
+          pointBorderWidth: 2,
+          fill: false,
+          tension: 0,
           order: 2,
-        },
+        } as never,
         {
           type: 'line' as never,
           label: t('legendAverage', { defaultValue: 'Average' }),

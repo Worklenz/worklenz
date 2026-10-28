@@ -21,7 +21,6 @@ import {
   ReportPageShell,
   type AnalyticsDatePreset,
   type AnalyticsExportFormat,
-  type ChartTableMode,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
 import {
@@ -73,8 +72,6 @@ const ProjectHealthPage: React.FC = () => {
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
-
-  const [viewMode, setViewMode] = useState<ChartTableMode>('chart');
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -344,19 +341,11 @@ const ProjectHealthPage: React.FC = () => {
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <ProjectHealthKpiTiles kpis={data.kpis} />
         <ChartTableWrapper
-          mode={viewMode}
+          chartTitle={title}
+          rowCount={data.projects.length}
           chart={
             <Flex gap={16} wrap="wrap" align="stretch" style={{ width: '100%' }}>
-              <div
-                style={{
-                  flex: '2 1 420px',
-                  minWidth: 280,
-                  padding: 12,
-                  borderRadius: 8,
-                  border: `1px solid ${token.colorBorderSecondary}`,
-                  background: token.colorBgContainer,
-                }}
-              >
+              <div style={{ flex: '2 1 420px', minWidth: 280 }}>
                 <Text strong style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
                   {t('phProgressBudgetTitle', { defaultValue: 'Progress & budget' })}
                 </Text>
@@ -402,8 +391,6 @@ const ProjectHealthPage: React.FC = () => {
       ]}
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={filterBar}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.projects.length === 0}

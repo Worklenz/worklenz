@@ -8,7 +8,6 @@ import {
   Switch,
   Typography,
   message,
-  theme,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs, { Dayjs } from 'dayjs';
@@ -30,7 +29,6 @@ import {
   ReportPageShell,
   type AnalyticsDatePreset,
   type AnalyticsExportFormat,
-  type ChartTableMode,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
 import { CfdChart, type CfdChartHandle } from '@/components/reporting/analytics/cfd/CfdChart';
@@ -64,7 +62,6 @@ const downloadText = (content: string, filename: string, mime: string) => {
 
 const CumulativeFlowPage: React.FC = () => {
   const { t } = useTranslation('reporting-analytics');
-  const { token } = theme.useToken();
   const title = t('cumulativeFlow', { defaultValue: 'Cumulative Flow' });
   useDocumentTitle(title);
 
@@ -86,15 +83,13 @@ const CumulativeFlowPage: React.FC = () => {
   const [wipThresholds, setWipThresholds] = useState<Record<string, number>>({});
   const [statusOrder, setStatusOrder] = useState<string[]>([]);
   const [visibleStatusIds, setVisibleStatusIds] = useState<string[]>([]);
-
-  const [viewMode, setViewMode] = useState<ChartTableMode>('chart');
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<CfdSeriesResponse | null>(null);
 
   const chartRef = useRef<CfdChartHandle>(null);
-  /** CFD requires explicit projects â€” selecting a whole teamâ€™s projects freezes the chart. */
+  /** CFD requires explicit projects — selecting a whole team’s projects freezes the chart. */
   const hasSelection = selectedProjectIds.length > 0;
 
   const dateBounds = useMemo(() => {
@@ -422,8 +417,6 @@ const CumulativeFlowPage: React.FC = () => {
       ]}
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={cfdFilters}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
       onExport={handleExport}
       exportDisabled={!data || !hasSelection}
       exportFormats={['csv', 'pdf', 'png', 'svg']}
@@ -464,83 +457,75 @@ const CumulativeFlowPage: React.FC = () => {
 
           {data && <CfdKpiTiles indicators={data.indicators} />}
 
-          <div
-            style={{
-              border: `1px solid ${token.colorBorderSecondary}`,
-              borderRadius: token.borderRadiusLG,
-              padding: 16,
-              background: token.colorBgContainer,
-            }}
-          >
-            <Flex gap={16} wrap="wrap" align="flex-start">
-              <div style={{ flex: '1 1 480px', minWidth: 0 }}>
-                <ChartTableWrapper
-                  mode={viewMode}
-                  chart={
-                    data ? (
-                      <CfdChart
-                        ref={chartRef}
-                        data={data}
-                        visibleStatusIds={visibleStatusIds}
-                        statusOrder={statusOrder}
-                        breachedStatusIds={breachedStatusIds}
-                        showSprintOverlay={sprintOverlay}
-                      />
-                    ) : null
-                  }
-                  table={
-                    data ? (
-                      <CfdTable
-                        data={data}
-                        visibleStatusIds={visibleStatusIds}
-                        statusOrder={statusOrder}
-                      />
-                    ) : null
-                  }
+          <ChartTableWrapper
+            chartTitle={title}
+            rowCount={data?.series.length}
+            chart={
+              <Flex gap={16} wrap="wrap" align="flex-start">
+                <div style={{ flex: '1 1 480px', minWidth: 0 }}>
+                  {data ? (
+                    <CfdChart
+                      ref={chartRef}
+                      data={data}
+                      visibleStatusIds={visibleStatusIds}
+                      statusOrder={statusOrder}
+                      breachedStatusIds={breachedStatusIds}
+                      showSprintOverlay={sprintOverlay}
+                    />
+                  ) : null}
+                </div>
+                {data && (
+                  <CfdStatusLegend
+                    items={statusOrder
+                      .map(id => data.statuses.find(s => s.id === id))
+                      .filter((s): s is CfdStatusMeta => !!s)
+                      .map(status => ({
+                        status,
+                        visible: visibleStatusIds.includes(status.id),
+                        threshold: wipThresholds[status.id],
+                      }))}
+                    onToggle={(statusId, visible) => {
+                      setVisibleStatusIds(prev =>
+                        visible
+                          ? prev.includes(statusId)
+                            ? prev
+                            : [...prev, statusId]
+                          : prev.filter(id => id !== statusId)
+                      );
+                    }}
+                    onReorder={(from, to) => {
+                      setStatusOrder(prev => {
+                        const next = [...prev];
+                        const [moved] = next.splice(from, 1);
+                        next.splice(to, 0, moved);
+                        return next;
+                      });
+                    }}
+                    onThresholdChange={(statusId, value) => {
+                      setWipThresholds(prev => {
+                        const next = { ...prev };
+                        if (value === null || value === undefined) {
+                          delete next[statusId];
+                        } else {
+                          next[statusId] = value;
+                        }
+                        return next;
+                      });
+                    }}
+                  />
+                )}
+              </Flex>
+            }
+            table={
+              data ? (
+                <CfdTable
+                  data={data}
+                  visibleStatusIds={visibleStatusIds}
+                  statusOrder={statusOrder}
                 />
-              </div>
-              {data && viewMode === 'chart' && (
-                <CfdStatusLegend
-                  items={statusOrder
-                    .map(id => data.statuses.find(s => s.id === id))
-                    .filter((s): s is CfdStatusMeta => !!s)
-                    .map(status => ({
-                      status,
-                      visible: visibleStatusIds.includes(status.id),
-                      threshold: wipThresholds[status.id],
-                    }))}
-                  onToggle={(statusId, visible) => {
-                    setVisibleStatusIds(prev =>
-                      visible
-                        ? prev.includes(statusId)
-                          ? prev
-                          : [...prev, statusId]
-                        : prev.filter(id => id !== statusId)
-                    );
-                  }}
-                  onReorder={(from, to) => {
-                    setStatusOrder(prev => {
-                      const next = [...prev];
-                      const [moved] = next.splice(from, 1);
-                      next.splice(to, 0, moved);
-                      return next;
-                    });
-                  }}
-                  onThresholdChange={(statusId, value) => {
-                    setWipThresholds(prev => {
-                      const next = { ...prev };
-                      if (value === null || value === undefined) {
-                        delete next[statusId];
-                      } else {
-                        next[statusId] = value;
-                      }
-                      return next;
-                    });
-                  }}
-                />
-              )}
-            </Flex>
-          </div>
+              ) : null
+            }
+          />
         </Flex>
       )}
     </ReportPageShell>

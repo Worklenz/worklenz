@@ -23,7 +23,6 @@ import {
   ReportPageShell,
   type AnalyticsDatePreset,
   type AnalyticsExportFormat,
-  type ChartTableMode,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
 import {
@@ -72,8 +71,6 @@ const UtilizationPage: React.FC = () => {
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
-
-  const [viewMode, setViewMode] = useState<ChartTableMode>('chart');
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,7 +98,7 @@ const UtilizationPage: React.FC = () => {
     if (datePreset === 'last_60_days') start = end.subtract(60, 'day');
     if (datePreset === 'last_90_days') start = end.subtract(90, 'day');
     if (datePreset === 'this_quarter') start = end.startOf('quarter');
-    // Custom range picker not wired yet — fall back to last 30 days.
+    // Custom range picker not wired yet ? fall back to last 30 days.
     if (datePreset === 'custom') start = end.subtract(30, 'day');
     return {
       date_from: start.startOf('day').toISOString(),
@@ -326,7 +323,7 @@ const UtilizationPage: React.FC = () => {
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <UtilizationKpiTiles kpis={data.kpis} />
         <ChartTableWrapper
-          mode={viewMode}
+          chartTitle={title}
           chart={<UtilizationChart ref={chartRef} members={data.members} />}
           table={<UtilizationTable members={data.members} loading={loading} />}
         />
@@ -353,8 +350,6 @@ const UtilizationPage: React.FC = () => {
       ]}
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={filterBar}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.members.length === 0}

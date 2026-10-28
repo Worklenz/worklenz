@@ -19,7 +19,6 @@ import {
   ReportLoadingSkeleton,
   ReportPageShell,
   type AnalyticsExportFormat,
-  type ChartTableMode,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
 import {
@@ -73,8 +72,6 @@ const BudgetTrackingPage: React.FC = () => {
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
-
-  const [viewMode, setViewMode] = useState<ChartTableMode>('chart');
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -311,7 +308,7 @@ const BudgetTrackingPage: React.FC = () => {
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <BudgetTrackingKpiTiles kpis={data.kpis} currency={displayCurrency} />
         <ChartTableWrapper
-          mode={viewMode}
+          chartTitle={title}
           chart={<BudgetTrackingChart ref={chartRef} projects={data.projects} />}
           table={<BudgetTrackingTable projects={data.projects} loading={loading} />}
         />
@@ -338,8 +335,6 @@ const BudgetTrackingPage: React.FC = () => {
       ]}
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={filterBar}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.projects.length === 0}

@@ -20,7 +20,6 @@ import {
   ReportPageShell,
   type AnalyticsDatePreset,
   type AnalyticsExportFormat,
-  type ChartTableMode,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
 import {
@@ -71,8 +70,6 @@ const PlannedVsActualMilestonesPage: React.FC = () => {
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
-
-  const [viewMode, setViewMode] = useState<ChartTableMode>('chart');
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -306,7 +303,7 @@ const PlannedVsActualMilestonesPage: React.FC = () => {
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <PvaMilestonesKpiTiles kpis={data.kpis} />
         <ChartTableWrapper
-          mode={viewMode}
+          chartTitle={title}
           chart={<PvaMilestonesChart ref={chartRef} milestones={data.milestones} />}
           table={<PvaMilestonesTable milestones={data.milestones} loading={loading} />}
         />
@@ -333,8 +330,6 @@ const PlannedVsActualMilestonesPage: React.FC = () => {
       ]}
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={filterBar}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.milestones.length === 0}

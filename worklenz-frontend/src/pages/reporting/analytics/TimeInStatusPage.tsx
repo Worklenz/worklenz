@@ -7,7 +7,6 @@ import {
   Switch,
   Typography,
   message,
-  theme,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs, { Dayjs } from 'dayjs';
@@ -32,7 +31,6 @@ import {
   ReportPageShell,
   type AnalyticsDatePreset,
   type AnalyticsExportFormat,
-  type ChartTableMode,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
 import { MultiSelectFilterPill } from '@/components/common/filters/MultiSelectFilterPill';
@@ -75,7 +73,6 @@ const downloadText = (content: string, filename: string, mime: string) => {
 
 const TimeInStatusPage: React.FC = () => {
   const { t } = useTranslation('reporting-analytics');
-  const { token } = theme.useToken();
   const dispatch = useAppDispatch();
   const title = t('timeInStatus', { defaultValue: 'Time in Status' });
   useDocumentTitle(title);
@@ -106,8 +103,6 @@ const TimeInStatusPage: React.FC = () => {
   const [excludeWeekends, setExcludeWeekends] = useState(false);
   const [reportView, setReportView] = useState<TimeInStatusViewMode>('aggregate');
   const [sort, setSort] = useState<TimeInStatusSort>('avg_desc');
-
-  const [viewMode, setViewMode] = useState<ChartTableMode>('chart');
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -391,26 +386,26 @@ const TimeInStatusPage: React.FC = () => {
   const sortOptions =
     reportView === 'aggregate'
       ? [
-          { value: 'avg_desc', label: t('tisSortAvgDesc', { defaultValue: 'Avg (high → low)' }) },
-          { value: 'avg_asc', label: t('tisSortAvgAsc', { defaultValue: 'Avg (low → high)' }) },
+          { value: 'avg_desc', label: t('tisSortAvgDesc', { defaultValue: 'Avg (high ? low)' }) },
+          { value: 'avg_asc', label: t('tisSortAvgAsc', { defaultValue: 'Avg (low ? high)' }) },
           {
             value: 'median_desc',
-            label: t('tisSortMedianDesc', { defaultValue: 'Median (high → low)' }),
+            label: t('tisSortMedianDesc', { defaultValue: 'Median (high ? low)' }),
           },
           {
             value: 'count_desc',
-            label: t('tisSortCountDesc', { defaultValue: 'Count (high → low)' }),
+            label: t('tisSortCountDesc', { defaultValue: 'Count (high ? low)' }),
           },
           { value: 'name_asc', label: t('tisSortNameAsc', { defaultValue: 'Status name' }) },
         ]
       : [
           {
             value: 'total_desc',
-            label: t('tisSortTotalDesc', { defaultValue: 'Total (high → low)' }),
+            label: t('tisSortTotalDesc', { defaultValue: 'Total (high ? low)' }),
           },
           {
             value: 'total_asc',
-            label: t('tisSortTotalAsc', { defaultValue: 'Total (low → high)' }),
+            label: t('tisSortTotalAsc', { defaultValue: 'Total (low ? high)' }),
           },
           { value: 'key_asc', label: t('tisSortKeyAsc', { defaultValue: 'Task key' }) },
           { value: 'name_asc', label: t('tisSortTaskNameAsc', { defaultValue: 'Task name' }) },
@@ -563,8 +558,6 @@ const TimeInStatusPage: React.FC = () => {
       ]}
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={tisFilters}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
       onExport={handleExport}
       exportDisabled={!data || !hasSelection}
       exportFormats={['csv', 'pdf', 'png', 'svg']}
@@ -588,40 +581,38 @@ const TimeInStatusPage: React.FC = () => {
         <Flex vertical gap={16}>
           {data && <TisKpiTiles summary={data.summary} />}
 
-          <div
-            style={{
-              border: `1px solid ${token.colorBorderSecondary}`,
-              borderRadius: token.borderRadiusLG,
-              padding: 16,
-              background: token.colorBgContainer,
-            }}
-          >
-            <ChartTableWrapper
-              mode={viewMode}
-              chart={
-                data ? (
-                  reportView === 'aggregate' ? (
-                    <TisAggregateChart ref={aggregateChartRef} rows={data.aggregate} />
-                  ) : (
-                    <TisPerIssueChart
-                      ref={perIssueChartRef}
-                      issues={data.issues}
-                      statuses={data.statuses}
-                    />
-                  )
-                ) : null
-              }
-              table={
-                data ? (
-                  reportView === 'aggregate' ? (
-                    <TisAggregateTable rows={data.aggregate} />
-                  ) : (
-                    <TisPerIssueTable issues={data.issues} />
-                  )
-                ) : null
-              }
-            />
-          </div>
+          <ChartTableWrapper
+            chartTitle={title}
+            rowCount={
+              data
+                ? reportView === 'aggregate'
+                  ? data.aggregate.length
+                  : data.issues.length
+                : undefined
+            }
+            chart={
+              data ? (
+                reportView === 'aggregate' ? (
+                  <TisAggregateChart ref={aggregateChartRef} rows={data.aggregate} />
+                ) : (
+                  <TisPerIssueChart
+                    ref={perIssueChartRef}
+                    issues={data.issues}
+                    statuses={data.statuses}
+                  />
+                )
+              ) : null
+            }
+            table={
+              data ? (
+                reportView === 'aggregate' ? (
+                  <TisAggregateTable rows={data.aggregate} />
+                ) : (
+                  <TisPerIssueTable issues={data.issues} />
+                )
+              ) : null
+            }
+          />
         </Flex>
       )}
     </ReportPageShell>

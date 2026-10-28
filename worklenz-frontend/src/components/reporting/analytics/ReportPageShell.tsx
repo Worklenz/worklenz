@@ -5,7 +5,6 @@ import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { AnalyticsExportMenu, type AnalyticsExportFormat } from './AnalyticsExportMenu';
-import { ChartTableToggle, type ChartTableMode } from './ChartTableToggle';
 
 dayjs.extend(relativeTime);
 
@@ -21,8 +20,6 @@ export interface ReportPageShellProps {
   crumbs?: ReportPageShellCrumb[];
   lastUpdatedAt?: string | Date | null;
   filters?: React.ReactNode;
-  viewMode?: ChartTableMode;
-  onViewModeChange?: (mode: ChartTableMode) => void;
   onExport?: (format: AnalyticsExportFormat) => void;
   exportDisabled?: boolean;
   exportFormats?: AnalyticsExportFormat[];
@@ -36,8 +33,6 @@ export const ReportPageShell: React.FC<ReportPageShellProps> = ({
   crumbs,
   lastUpdatedAt,
   filters,
-  viewMode = 'chart',
-  onViewModeChange,
   onExport,
   exportDisabled,
   exportFormats,
@@ -76,9 +71,6 @@ export const ReportPageShell: React.FC<ReportPageShellProps> = ({
         </Flex>
 
         <Space wrap>
-          {onViewModeChange && (
-            <ChartTableToggle value={viewMode} onChange={onViewModeChange} />
-          )}
           {onExport && (
             <AnalyticsExportMenu
               onExport={onExport}

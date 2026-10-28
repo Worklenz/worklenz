@@ -1,8 +1,7 @@
 export { AnalyticsSidebar } from './AnalyticsSidebar';
 export { ReportPageShell } from './ReportPageShell';
 export type { ReportPageShellProps, ReportPageShellCrumb } from './ReportPageShell';
-export { ChartTableToggle, ChartTableWrapper } from './ChartTableToggle';
-export type { ChartTableMode } from './ChartTableToggle';
+export { ChartTableWrapper } from './ChartTableWrapper';
 export { AnalyticsExportMenu } from './AnalyticsExportMenu';
 export type { AnalyticsExportFormat } from './AnalyticsExportMenu';
 export { AnalyticsFilterBar } from './filters/AnalyticsFilterBar';

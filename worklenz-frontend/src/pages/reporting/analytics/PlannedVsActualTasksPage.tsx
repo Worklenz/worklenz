@@ -20,7 +20,6 @@ import {
   ReportPageShell,
   type AnalyticsDatePreset,
   type AnalyticsExportFormat,
-  type ChartTableMode,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
 import {
@@ -69,8 +68,6 @@ const PlannedVsActualTasksPage: React.FC = () => {
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
-
-  const [viewMode, setViewMode] = useState<ChartTableMode>('chart');
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -323,17 +320,10 @@ const PlannedVsActualTasksPage: React.FC = () => {
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <PvaTasksKpiTiles kpis={data.kpis} />
         <ChartTableWrapper
-          mode={viewMode}
+          chartTitle={title}
+          rowCount={data.projects.length}
           chart={
-            <div
-              style={{
-                width: '100%',
-                padding: 12,
-                borderRadius: 8,
-                border: `1px solid ${token.colorBorderSecondary}`,
-                background: token.colorBgContainer,
-              }}
-            >
+            <>
               <Text
                 type="secondary"
                 style={{ display: 'block', marginBottom: 8, fontSize: 12 }}
@@ -345,7 +335,7 @@ const PlannedVsActualTasksPage: React.FC = () => {
                 })}
               </Text>
               <PvaTasksChart ref={chartRef} projects={chartProjects} />
-            </div>
+            </>
           }
           table={<PvaTasksTable projects={data.projects} loading={loading} />}
         />
@@ -372,8 +362,6 @@ const PlannedVsActualTasksPage: React.FC = () => {
       ]}
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={filterBar}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.projects.length === 0}
