@@ -37,7 +37,7 @@ const NotificationSettings: React.FC = () => {
       render: (_: unknown, type) =>
         offered.has(type) ? (
           <Checkbox
-            checked={prefs?.[type] ?? true}
+            checked={prefs?.[type] ?? false}
             aria-label={`${t('account.notifications.email', { defaultValue: 'Email' })}: ${type}`}
             onChange={event => void update({ [type]: event.target.checked })}
           />

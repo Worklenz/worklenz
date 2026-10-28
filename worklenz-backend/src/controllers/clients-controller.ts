@@ -16,7 +16,6 @@ import ClientPortalInvoicesController from "../controllers/client-portal/client-
 import ClientPortalChatController from "../controllers/client-portal/client-portal-chat-controller";
 import ClientPortalDashboardController from "../controllers/client-portal/client-portal-dashboard-controller";
 import ClientPortalAuthController from "../controllers/client-portal/client-portal-auth-controller";
-import ClientPortalBulkController from "../controllers/client-portal/client-portal-bulk-controller";
 import {uploadBase64, deleteObject, getClientPortalStorageKey} from "../shared/storage";
 import {sendClientPortalRequestCommentNotification} from "../shared/email-notifications";
 import {getClientPortalBaseUrl} from "../cron_jobs/helpers";
@@ -52,7 +51,7 @@ export default class ClientsController extends WorklenzControllerBase {
     const q = `
       SELECT id, name
       FROM clients
-      WHERE team_id = $1 ${searchCondition}
+      WHERE team_id = $1 AND deleted_at IS NULL ${searchCondition}
       ORDER BY name ASC
     `;
     const result = await db.query(q, params);
@@ -73,11 +72,11 @@ export default class ClientsController extends WorklenzControllerBase {
                             name,
                             (SELECT COUNT(*) FROM projects WHERE client_id = clients.id) AS projects_count
                     FROM clients
-                    WHERE team_id = $1 ${searchQuery}
+                    WHERE team_id = $1 AND deleted_at IS NULL ${searchQuery}
                     ORDER BY ${sortField} ${sortOrder}
                     LIMIT $${limitParam} OFFSET $${offsetParam}) t) AS data
       FROM clients
-      WHERE team_id = $1 ${searchQuery}) rec;
+      WHERE team_id = $1 AND deleted_at IS NULL ${searchQuery}) rec;
     `;
     const result = await db.query(q, [req.user?.team_id || null, ...searchParams, size, offset]);
     const [data] = result.rows;
@@ -87,7 +86,7 @@ export default class ClientsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT id, name FROM clients WHERE id = $1 AND team_id = $2`;
+    const q = `SELECT id, name FROM clients WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL`;
     const result = await db.query(q, [req.params.id, req.user?.team_id || null]);
     const [data] = result.rows;
     return res.status(200).send(new ServerResponse(true, data));
@@ -95,16 +94,50 @@ export default class ClientsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `UPDATE clients SET name = $3 WHERE id = $1 AND team_id = $2; `;
+    const q = `UPDATE clients SET name = $3 WHERE id = $1 AND team_id = $2 AND deleted_at IS NULL; `;
     const result = await db.query(q, [req.params.id, req.user?.team_id || null, req.body.name]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
   @HandleExceptions()
   public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `DELETE FROM clients WHERE id = $1 AND team_id = $2;`;
-    const result = await db.query(q, [req.params.id, req.user?.team_id || null]);
-    return res.status(200).send(new ServerResponse(true, result.rows));
+    const teamId = req.user?.team_id || null;
+
+    // A bare DELETE here would cascade away a Client Portal client's users, invitations, approvals,
+    // change requests and discussions with no warning and no way back. A client that is part of the Client
+    // Portal is deleted from there instead: it checks for unpaid invoices and can be restored for 30 days.
+    const portalClientMessage =
+      "This client is part of the Client Portal. Delete it from Client Portal > Clients instead, where it can be restored for 30 days.";
+    const footprint = await db.query(
+      `SELECT (
+         EXISTS (SELECT 1 FROM client_portal_access WHERE client_id = c.id)
+         OR EXISTS (SELECT 1 FROM client_contacts WHERE client_id = c.id)
+         OR EXISTS (SELECT 1 FROM client_users WHERE client_id = c.id)
+         OR EXISTS (SELECT 1 FROM client_invitations WHERE client_id = c.id)
+         OR EXISTS (SELECT 1 FROM client_portal_invoices WHERE client_id = c.id)
+         OR EXISTS (SELECT 1 FROM client_portal_quotes WHERE client_id = c.id)
+         OR EXISTS (SELECT 1 FROM client_portal_approvals WHERE client_id = c.id)
+         OR EXISTS (SELECT 1 FROM client_portal_change_requests WHERE client_id = c.id)
+         OR EXISTS (SELECT 1 FROM client_portal_threads WHERE client_id = c.id)
+       ) AS in_portal
+         FROM clients c
+        WHERE c.id = $1 AND c.team_id = $2`,
+      [req.params.id, teamId]
+    );
+    if (footprint.rows[0]?.in_portal === true) {
+      return res.status(409).send(new ServerResponse(false, { code: "PORTAL_CLIENT" }, portalClientMessage));
+    }
+
+    try {
+      const result = await db.query(`DELETE FROM clients WHERE id = $1 AND team_id = $2;`, [req.params.id, teamId]);
+      return res.status(200).send(new ServerResponse(true, result.rows));
+    } catch (error) {
+      // A foreign key still points at it (legacy portal requests, tickets or chat): same answer, no raw 500.
+      if ((error as { code?: string })?.code === "23503") {
+        return res.status(409).send(new ServerResponse(false, { code: "PORTAL_CLIENT" }, portalClientMessage));
+      }
+      throw error;
+    }
   }
 
   @HandleExceptions()
@@ -138,8 +171,16 @@ export default class ClientsController extends WorklenzControllerBase {
 
     // Whitelisted against the subquery's own SELECT aliases below — never interpolate the raw
     // query param into ORDER BY.
-    const SORTABLE_FIELDS = new Set(["req_no", "client_name", "service_name", "status", "created_at"]);
-    const safeSortField = SORTABLE_FIELDS.has(String(sortBy)) ? String(sortBy) : "created_at";
+    const sortColumns: Record<string, string> = {
+      req_no: "req_no",
+      client_name: "client_name",
+      service_name: "service_name",
+      status: "status",
+      created_at: "created_at",
+    };
+    const safeSortField = typeof sortBy === "string" && Object.prototype.hasOwnProperty.call(sortColumns, sortBy)
+      ? sortColumns[sortBy]
+      : "created_at";
     const safeSortOrder = String(sortOrder).toLowerCase() === "asc" ? "ASC" : "DESC";
 
     // Build filter conditions
@@ -577,8 +618,17 @@ export default class ClientsController extends WorklenzControllerBase {
 
     // Whitelisted against the subquery's own SELECT aliases below — never interpolate the raw
     // query param into ORDER BY.
-    const SORTABLE_FIELDS = new Set(["ticket_no", "client_name", "subject", "priority", "status", "created_at"]);
-    const safeSortField = SORTABLE_FIELDS.has(String(sortBy)) ? String(sortBy) : "created_at";
+    const sortColumns: Record<string, string> = {
+      ticket_no: "ticket_no",
+      client_name: "client_name",
+      subject: "subject",
+      priority: "priority",
+      status: "status",
+      created_at: "created_at",
+    };
+    const safeSortField = typeof sortBy === "string" && Object.prototype.hasOwnProperty.call(sortColumns, sortBy)
+      ? sortColumns[sortBy]
+      : "created_at";
     const safeSortOrder = String(sortOrder).toLowerCase() === "asc" ? "ASC" : "DESC";
 
     // Client/Priority/Status columns are multi-select in the admin UI — each arrives as a
@@ -1188,8 +1238,19 @@ export default class ClientsController extends WorklenzControllerBase {
 
     // Whitelisted against the subquery's own SELECT aliases below — never interpolate the raw
     // query param into ORDER BY.
-    const SORTABLE_FIELDS = new Set(["name", "status", "is_public", "category", "billing_type", "requests_count", "created_at", "updated_at"]);
-    const safeSortField = SORTABLE_FIELDS.has(String(sortBy)) ? String(sortBy) : "name";
+    const sortColumns: Record<string, string> = {
+      name: "name",
+      status: "status",
+      is_public: "is_public",
+      category: "category",
+      billing_type: "billing_type",
+      requests_count: "requests_count",
+      created_at: "created_at",
+      updated_at: "updated_at",
+    };
+    const safeSortField = typeof sortBy === "string" && Object.prototype.hasOwnProperty.call(sortColumns, sortBy)
+      ? sortColumns[sortBy]
+      : "name";
     const safeSortOrder = String(sortOrder).toLowerCase() === "desc" ? "DESC" : "ASC";
 
     const conditions = [];
@@ -1911,24 +1972,6 @@ export default class ClientsController extends WorklenzControllerBase {
       user: req.user
     } as any;
     return ClientPortalClientsController.exportClientData(modifiedReq, res as any);
-  }
-
-  @HandleExceptions()
-  public static async bulkUpdatePortalClients(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const modifiedReq = {
-      ...req,
-      user: req.user
-    } as any;
-    return ClientPortalBulkController.bulkUpdateClients(modifiedReq, res as any);
-  }
-
-  @HandleExceptions()
-  public static async bulkDeletePortalClients(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const modifiedReq = {
-      ...req,
-      user: req.user
-    } as any;
-    return ClientPortalBulkController.bulkDeleteClients(modifiedReq, res as any);
   }
 
   // Organization-side Client Portal Projects Management (wrapper methods)

@@ -1,5 +1,7 @@
-import { lookup } from "dns/promises";
-import { isIP } from "net";
+import dns from "dns";
+import http, { IncomingMessage } from "http";
+import https from "https";
+import { isIP, LookupFunction } from "net";
 import { assertSafeExternalHost, isPrivateIPv4, isPrivateIPv6 } from "../ssrf-guard";
 
 const LOGO_TIMEOUT_MS = 5000;
@@ -12,34 +14,51 @@ const isJpeg = (b: Buffer): boolean => b.length > 3 && b[0] === 0xff && b[1] ===
 const isPrivateAddress = (address: string): boolean =>
   isIP(address) === 6 ? isPrivateIPv6(address) : isPrivateIPv4(address);
 
-/** Rejects non-http(s) URLs and hosts that are, or resolve to, internal addresses. */
-const isSafeLogoUrl = async (rawUrl: string): Promise<boolean> => {
+/**
+ * DNS lookup used for the actual connection. Validating the host and then letting fetch() resolve it again
+ * would leave a DNS-rebinding gap, so the check runs on the very addresses the socket connects to.
+ */
+export const safeLookup: LookupFunction = (hostname, options, callback) => {
+  dns.lookup(hostname, { all: true, verbatim: true }, (error, addresses) => {
+    if (error) return callback(error, "", 4);
+    if (!addresses.length || addresses.some(({ address }) => isPrivateAddress(address))) {
+      return callback(new Error(`Blocked non-public address for ${hostname}`), "", 4);
+    }
+    if (options.all) return (callback as unknown as (e: null, a: dns.LookupAddress[]) => void)(null, addresses);
+    return callback(null, addresses[0].address, addresses[0].family);
+  });
+};
+
+/** Rejects non-http(s) URLs and internal hosts or IP literals. Hostnames are checked again at connect time by safeLookup. */
+const isSafeLogoUrl = (rawUrl: string): boolean => {
   try {
     if (!/^https?:\/\//i.test(rawUrl)) return false;
-    const host = assertSafeExternalHost(rawUrl).replace(/^\[|\]$/g, "");
-    if (isIP(host)) return true; // literal IPs are already checked by assertSafeExternalHost
-    const addresses = await lookup(host, { all: true });
-    return addresses.length > 0 && addresses.every(({ address }) => !isPrivateAddress(address));
+    assertSafeExternalHost(rawUrl);
+    return true;
   } catch {
     return false;
   }
 };
 
+const requestPublic = (url: string, signal: AbortSignal): Promise<IncomingMessage> =>
+  new Promise((resolve, reject) => {
+    const client = url.startsWith("https:") ? https : http;
+    const request = client.request(url, { method: "GET", lookup: safeLookup, signal }, resolve);
+    request.on("error", reject);
+    request.end();
+  });
+
 /** Reads the body while counting bytes, so an oversized or unannounced-length response is cut off early. */
-const readLimited = async (response: Response): Promise<Buffer | null> => {
-  if (!response.body) return null;
-  const reader = response.body.getReader();
+const readLimited = async (response: IncomingMessage): Promise<Buffer | null> => {
   const chunks: Buffer[] = [];
   let total = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    total += value.byteLength;
+  for await (const chunk of response) {
+    total += (chunk as Buffer).length;
     if (total > LOGO_MAX_BYTES) {
-      await reader.cancel();
+      response.destroy();
       return null;
     }
-    chunks.push(Buffer.from(value));
+    chunks.push(chunk as Buffer);
   }
   return Buffer.concat(chunks, total);
 };
@@ -59,20 +78,28 @@ export const loadLogo = async (logoUrl: string | null | undefined): Promise<Buff
     let currentUrl = logoUrl;
 
     for (let hop = 0; hop <= LOGO_MAX_REDIRECTS; hop++) {
-      if (!(await isSafeLogoUrl(currentUrl))) return null;
+      if (!isSafeLogoUrl(currentUrl)) return null;
 
-      const response = await fetch(currentUrl, { signal, redirect: "manual" });
+      const response = await requestPublic(currentUrl, signal);
+      const status = response.statusCode ?? 0;
 
-      if (response.status >= 300 && response.status < 400) {
-        const location = response.headers.get("location");
+      if (status >= 300 && status < 400) {
+        response.resume();
+        const location = response.headers.location;
         if (!location) return null;
         currentUrl = new URL(location, currentUrl).toString();
         continue;
       }
-      if (!response.ok) return null;
+      if (status < 200 || status >= 300) {
+        response.resume();
+        return null;
+      }
 
-      const declaredLength = Number(response.headers.get("content-length") || 0);
-      if (declaredLength > LOGO_MAX_BYTES) return null;
+      const declaredLength = Number(response.headers["content-length"] || 0);
+      if (declaredLength > LOGO_MAX_BYTES) {
+        response.destroy();
+        return null;
+      }
 
       const buffer = await readLimited(response);
       if (!buffer) return null;

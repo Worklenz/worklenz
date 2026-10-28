@@ -18,6 +18,7 @@ import { evt_project_board_column_setting_click } from '@/shared/worklenz-analyt
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   deleteStatusToggleDrawer,
   seletedStatusCategory,
@@ -155,7 +156,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
     const [isEditable, setIsEditable] = useState(false);
     const isProjectManager = useIsProjectManager();
-    const { canCreateTask } = useTaskCreationPermission();
+    const { canCreateTask: canCreateTaskPermission } = useTaskCreationPermission();
     const [name, setName] = useState(group.name);
     const inputRef = useRef<InputRef>(null);
     const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -167,6 +168,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     const { statusCategories, status } = useAppSelector(state => state.taskStatusReducer);
     const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
     const isSoftwareProject = isSoftwareProjectType(project?.project_type);
+    const canCreateTask = canCreateTaskPermission;
     const { trackMixpanelEvent } = useMixpanelTracking();
     const [showNewCardTop, setShowNewCardTop] = useState(false);
     const [showNewCardBottom, setShowNewCardBottom] = useState(false);
@@ -434,6 +436,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     };
 
     const handleOpenCreateCard = (position: 'top' | 'bottom') => {
+      if (!canCreateTask) return;
       if (isSoftwareProject) {
         dispatch(openCreateIssueModal(getCreateIssueTarget()));
         return;
@@ -484,7 +487,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
           label: (
             <div className="flex items-center gap-2">
               <Badge color={category.color_code} />
-              <span>{category.name}</span>
+              <span>{decodeHtmlEntities(category.name)}</span>
             </div>
           ),
           onClick: (info: any) => {

@@ -378,3 +378,123 @@ describe("verifySignInCode", () => {
     });
   });
 });
+
+describe("requestSignInCode: an address that is in a portal but cannot sign in", () => {
+  const BLOCKED = /AS login_deleted/;
+  const EARLIER_NOTICE = /code_hash = \$2 AND created_at > NOW\(\) - INTERVAL '24 hours'/;
+  const blockedRow = (overrides: Record<string, unknown> = {}) =>
+    createQueryResult([
+      { disabled_at: null, client_status: "active", client_deleted_at: null, portal_active: true, login_deleted: false, ...overrides },
+    ]);
+
+  const typedRoute = (rows: ReturnType<typeof blockedRow>, extra: Handler[] = []) =>
+    route(mockTxQuery, [
+      [RECENT, recent(0, null)],
+      ...extra,
+      // The block-reasons query also reads `FROM client_contacts cc`, so it must be matched before TARGETS.
+      [BLOCKED, rows],
+      [TARGETS, createQueryResult([])],
+    ]);
+
+  const settle = () => new Promise(resolve => setImmediate(resolve));
+
+  it("tells the owner of the mailbox why, instead of a code, and answers the page exactly as for any address", async () => {
+    typedRoute(blockedRow({ login_deleted: true }));
+
+    const result = await requestSignInCode({ email: EMAIL });
+    await settle();
+
+    // Same response as an unknown address: nothing on screen reveals that this address is a client.
+    expect(result).toMatchObject({ email: EMAIL, expires_in_seconds: 600 });
+    expect(storedHash()).toBe("-");
+
+    expect(mockedSend).toHaveBeenCalledTimes(1);
+    const [recipients, subject, html] = mockedEmailRequest.mock.calls[0];
+    expect(recipients).toEqual([EMAIL]);
+    expect(String(subject)).toContain("can't sign in");
+    expect(String(html)).toContain("was deleted");
+    expect(String(html)).toContain("restored for 30 days");
+  });
+
+  it.each([
+    [{ disabled_at: new Date() }, "deactivated"],
+    [{ client_status: "inactive" }, "no longer available"],
+    [{ client_deleted_at: new Date() }, "no longer available"],
+    [{ portal_active: false }, "no longer available"],
+  ])("explains %j", async (overrides, text) => {
+    typedRoute(blockedRow(overrides));
+    await requestSignInCode({ email: EMAIL });
+    await settle();
+    expect(String(mockedEmailRequest.mock.calls[0][2])).toContain(text);
+  });
+
+  it("uses a fixed template: no company, team or contact name ever appears in it", async () => {
+    typedRoute(blockedRow({ client_status: "inactive", team_name: "Evil <b>Bank</b>", name: "Brandbase" }));
+    await requestSignInCode({ email: EMAIL });
+    await settle();
+    const html = String(mockedEmailRequest.mock.calls[0][2]);
+    expect(html).not.toContain("Evil");
+    expect(html).not.toContain("Brandbase");
+    expect(html).not.toContain("Ceydigital");
+  });
+
+  it("sends nothing for an address that is not in any portal", async () => {
+    typedRoute(createQueryResult([]));
+    const result = await requestSignInCode({ email: "nobody@example.com" });
+    await settle();
+    expect(mockedSend).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ email: "nobody@example.com", expires_in_seconds: 600 });
+  });
+
+  it("sends nothing for an address that can sign in", async () => {
+    route(mockTxQuery, [[RECENT, recent(0, null)], [TARGETS, createQueryResult([TARGET])]]);
+    await requestSignInCode({ email: EMAIL });
+    await settle();
+    // A code goes out, never the "can't sign in" notice.
+    expect(String(mockedEmailRequest.mock.calls[0][1])).toContain("is your sign-in code");
+    expect(mockedSend).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends at most one notice per address per day, however often the page is used", async () => {
+    typedRoute(blockedRow({ login_deleted: true }), [[EARLIER_NOTICE, createQueryResult([{ "?column?": 1 }])]]);
+    await requestSignInCode({ email: EMAIL });
+    await settle();
+    expect(mockedSend).not.toHaveBeenCalled();
+  });
+
+  it("does not make the person wait for the email, and never reveals a failed send", async () => {
+    typedRoute(blockedRow({ login_deleted: true }));
+    mockedSend.mockResolvedValue({ success: false, error: new Error("ses down") });
+    jest.spyOn(console, "error").mockImplementation(() => undefined);
+    await expect(requestSignInCode({ email: EMAIL })).resolves.toMatchObject({ email: EMAIL });
+  });
+
+  it("tells a person holding the private invitation link which of the cases it is", async () => {
+    tokens.getInvitationByToken.mockResolvedValue({ id: "inv-1", email: EMAIL });
+    typedRoute(blockedRow({ login_deleted: true }));
+    await expect(requestSignInCode({ inviteToken: "wli_abc" })).rejects.toMatchObject({
+      status: 403,
+      code: "ACCESS_UNAVAILABLE",
+      details: { reason: "account_deleted" },
+      message: expect.stringContaining("deleted"),
+    });
+
+    typedRoute(blockedRow({ client_deleted_at: new Date() }));
+    await expect(requestSignInCode({ inviteToken: "wli_abc" })).rejects.toMatchObject({
+      code: "ACCESS_UNAVAILABLE",
+      details: { reason: "organization_unavailable" },
+    });
+
+    typedRoute(blockedRow({ disabled_at: new Date() }));
+    await expect(requestSignInCode({ inviteToken: "wli_abc" })).rejects.toMatchObject({
+      details: { reason: "access_disabled" },
+    });
+
+    // Nothing left to explain: they were removed.
+    typedRoute(createQueryResult([]));
+    await expect(requestSignInCode({ inviteToken: "wli_abc" })).rejects.toMatchObject({
+      details: { reason: "access_removed" },
+    });
+    expect(mockedSend).not.toHaveBeenCalled();
+  });
+});

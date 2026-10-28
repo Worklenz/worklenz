@@ -240,6 +240,7 @@ export const fetchTasks = createAsyncThunk(
             comments_count: task.comments_count || 0,
             attachments_count: task.attachments_count || 0,
             attachments: task.attachments || [],
+            latest_comment_id: task.latest_comment_id || null,
             latest_comment: task.latest_comment || null,
             latest_comment_at: task.latest_comment_at || null,
             latest_comment_author: task.latest_comment_author || null,
@@ -412,6 +413,7 @@ export const fetchTasksV3 = createAsyncThunk(
           comments_count: task.comments_count || 0,
           attachments_count: task.attachments_count || 0,
           attachments: task.attachments || [],
+          latest_comment_id: task.latest_comment_id || null,
           latest_comment: task.latest_comment || null,
           latest_comment_at: task.latest_comment_at || null,
           latest_comment_author: task.latest_comment_author || null,
@@ -1300,12 +1302,13 @@ const taskManagementSlice = createSlice({
       state,
       action: PayloadAction<{
         taskId: string;
-        comment: { text: string; at?: string | null; author?: string | null } | null;
+        comment: { id?: string | null; text: string; at?: string | null; author?: string | null } | null;
       }>
     ) => {
       const { taskId, comment } = action.payload;
       const task = state.entities[taskId];
       if (!task) return;
+      task.latest_comment_id = comment?.id ?? null;
       task.latest_comment = comment?.text ?? null;
       task.latest_comment_at = comment?.at ?? null;
       task.latest_comment_author = comment?.author ?? null;
@@ -1441,6 +1444,7 @@ const taskManagementSlice = createSlice({
               has_subscribers: subtask.has_subscribers || false,
               attachments_count: subtask.attachments_count || 0,
               attachments: subtask.attachments || [],
+              latest_comment_id: subtask.latest_comment_id || null,
               latest_comment: subtask.latest_comment || null,
               latest_comment_at: subtask.latest_comment_at || null,
               latest_comment_author: subtask.latest_comment_author || null,

@@ -214,7 +214,7 @@ const notificationsFor = (s: Subject): ClientNotificationV2[] => {
 };
 
 const prefsFor = (s: Subject): NotificationPrefs =>
-  state.prefs[s.user.id] ?? (Object.fromEntries(ALL_TYPES.map(t => [t, true])) as NotificationPrefs);
+  state.prefs[s.user.id] ?? (Object.fromEntries(ALL_TYPES.map(t => [t, false])) as NotificationPrefs);
 
 const meDto = (s: Subject): ClientMe => {
   const sc = getScenario();
@@ -309,7 +309,12 @@ route('PUT', '/v2/me', ({ s, body }) => {
   if (body.timezone !== undefined) s.user.timezone = body.timezone;
   return ok(meDto(s), 'Saved');
 });
+route('POST', '/v2/me/account-deletion-request', ({ s }) => {
+  if (s.user.role === 'admin') return fail(409, 'USE_DELETE', 'As a Client Admin you can delete your account yourself.');
+  return ok({ sent: true }, 'Your request was sent');
+});
 route('POST', '/v2/me/account-deletion', ({ s, body }) => {
+  if (s.user.role !== 'admin') return fail(403, 'ADMIN_ONLY', 'Only a Client Admin can delete an account here.');
   if (body.confirmation !== 'DELETE') return fail(400, 'INVALID_CONFIRMATION', 'Type DELETE to confirm');
   if (s.user.role === 'admin' && state.users.filter(u => u.role === 'admin').length <= 1) {
     return fail(409, 'LAST_ADMIN', 'You are the only Client Admin of your organization. Make another person a Client Admin before deleting your account.');

@@ -51,6 +51,7 @@ import {
 } from '../invoices-list-helpers';
 import '../invoices.css';
 import { PortalLoadingOverlay } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Text } = Typography;
 
@@ -458,10 +459,12 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
           style={{ textTransform: 'capitalize' }}
           onClick={event => event.stopPropagation()}
         >
-          {record.clientName || '-'}
+          {decodeHtmlEntities(record.clientName) || '-'}
         </Link>
       ) : (
-        <Text style={{ textTransform: 'capitalize' }}>{record.clientName || '-'}</Text>
+        <Text style={{ textTransform: 'capitalize' }}>
+          {decodeHtmlEntities(record.clientName) || '-'}
+        </Text>
       ),
   };
 
@@ -484,7 +487,9 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
       title: t('serviceColumn', { defaultValue: 'Service' }),
       render: (_v, record: ClientPortalInvoice) => (
         <div>
-          <Text type="secondary">{record.projectName || record.serviceName || '-'}</Text>
+          <Text type="secondary">
+            {decodeHtmlEntities(record.projectName || record.serviceName) || '-'}
+          </Text>
           {record.changeRequestNumber && (
             <div>
               <Text style={{ fontSize: 12 }}>{record.changeRequestNumber}</Text>

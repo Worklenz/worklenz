@@ -22,6 +22,7 @@ import {
 import { portalPaths } from '../portal-paths';
 import { formatDate } from '../../../utils/dateUtils';
 import QuotePreviewModal from './quote-preview-modal';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   QUOTE_STATUS_TAG_COLOR,
   formatMoney,
@@ -217,11 +218,16 @@ const QuoteDetailModal = () => {
                   {field(
                     t('clientLabel', { defaultValue: 'Client' }),
                     <Flex align="center" gap={6}>
-                      {quote.client?.name && <PortalAvatar name={quote.client.name} />}
-                      {quote.client?.name || '-'}
+                      {quote.client?.name && (
+                        <PortalAvatar name={decodeHtmlEntities(quote.client.name)} />
+                      )}
+                      {decodeHtmlEntities(quote.client?.name) || '-'}
                     </Flex>
                   )}
-                  {field(t('companyName', { defaultValue: 'Company' }), quote.client?.companyName || '-')}
+                  {field(
+                    t('companyName', { defaultValue: 'Company' }),
+                    decodeHtmlEntities(quote.client?.companyName) || '-'
+                  )}
                   {field(t('email', { defaultValue: 'Email' }), quote.client?.email || '-')}
                 </div>
               </Card>
@@ -260,7 +266,7 @@ const QuoteDetailModal = () => {
                     )}
                     {field(
                       t('serviceName', { defaultValue: 'Service' }),
-                      quote.request.service?.name || quote.projectName || '-'
+                      decodeHtmlEntities(quote.request.service?.name || quote.projectName) || '-'
                     )}
                   </div>
                 </Card>

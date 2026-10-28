@@ -13,6 +13,7 @@ import type { Thread, ThreadContextType } from '@/types/client-portal/v2';
 import { NewDiscussionModal } from './NewDiscussionModal';
 import { ThreadView } from './ThreadView';
 import { PortalLoader } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface DiscussionsPanelProps {
   /** Limits the inbox to one project (the project's Discussions tab). */
@@ -118,11 +119,11 @@ export const DiscussionsPanel = ({ projectId, embedded = false, initialThreadId 
             background: thread.unread ? token.colorError : 'transparent',
           }}
         />
-        <PortalAvatar name={thread.organization_name} />
+        <PortalAvatar name={decodeHtmlEntities(thread.organization_name)} />
         <span style={{ flex: 1, minWidth: 0 }}>
           <Flex align="center" gap={6} wrap="wrap">
             <span style={{ fontWeight: thread.unread ? 700 : 600, fontSize: 13, overflowWrap: 'anywhere' }}>
-              {thread.context.label}
+              {decodeHtmlEntities(thread.context.label)}
             </span>
             {thread.hidden_from_client && (
               <Tooltip title={t('list.hiddenHint', { defaultValue: 'The linked item is Internal Only, so the client cannot see this thread.' })}>
@@ -135,7 +136,8 @@ export const DiscussionsPanel = ({ projectId, embedded = false, initialThreadId 
             )}
           </Flex>
           <span style={{ display: 'block', fontSize: 11.5, color: token.colorTextSecondary }}>
-            {thread.ref_no} · {thread.organization_name} · {thread.project_name}
+            {thread.ref_no} · {decodeHtmlEntities(thread.organization_name)} ·{' '}
+            {decodeHtmlEntities(thread.project_name)}
           </span>
           <span
             style={{

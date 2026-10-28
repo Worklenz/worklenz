@@ -19,6 +19,8 @@
   "viewOnBoard": "Shiko në bord",
   "completeSprint": "Sprint i plotë",
   "startSprint": "Filloni sprintin",
+  "createSprint": "Krijo sprint",
+  "sprintSetupRequiredHint": "Krijo një sprint për të shkyçur backlog-un dhe për të filluar shtimin e çështjeve.",
   "editSprint": "Redakto sprint",
   "noTasksInGroupDescription": "Shto një detyrë për të filluar",
   "addFirstTask": "Shto detyrën e parë",

@@ -19,6 +19,7 @@ import type {
   DashboardWidgetType,
 } from '@/types/client-portal/v2';
 import { ActionRow, DueTag, PageHeader, StatTile, useContainerWidth } from './PreviewShared';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, ChartTooltip, Legend);
 
@@ -229,8 +230,8 @@ const NeedsActionCard = ({ dashboard, canApprove }: { dashboard: ClientDashboard
         <ActionRow
           key={`${item.kind}-${item.id}`}
           icon={item.kind === 'approval' ? <AuditOutlined /> : <SwapOutlined />}
-          title={item.title}
-          subtitle={`${item.ref_no} · ${item.project_name}`}
+          title={decodeHtmlEntities(item.title)}
+          subtitle={`${item.ref_no} · ${decodeHtmlEntities(item.project_name)}`}
           right={
             <>
               {item.due_date && <DueTag date={item.due_date} />}
@@ -259,7 +260,7 @@ const NeedsActionCard = ({ dashboard, canApprove }: { dashboard: ClientDashboard
             <ActionRow
               key={item.id}
               icon={<AuditOutlined />}
-              title={item.title}
+              title={decodeHtmlEntities(item.title)}
               subtitle={t('dashboard.waitingFor', { name: item.waiting_for, defaultValue: 'Waiting for {{name}}' })}
               right={<ApprovalStatusTag status="awaiting" />}
             />
@@ -283,8 +284,8 @@ const UpcomingMilestonesCard = ({ dashboard }: { dashboard: ClientDashboardView 
         <ActionRow
           key={milestone.id}
           icon={<FlagOutlined />}
-          title={milestone.name}
-          subtitle={milestone.project_name}
+          title={decodeHtmlEntities(milestone.name)}
+          subtitle={decodeHtmlEntities(milestone.project_name)}
           right={
             <Flex vertical align="flex-end" gap={2}>
               <Typography.Text style={{ fontSize: token.fontSizeSM }}>
@@ -409,7 +410,7 @@ const ProjectCard = ({ project, fields, isCompact, nextMilestone }: ProjectCardP
   return (
     <Card size={isCompact ? 'small' : 'default'} style={{ height: '100%' }}>
       <Flex justify="space-between" align="flex-start" gap={8}>
-        <Typography.Text strong>{project.name}</Typography.Text>
+        <Typography.Text strong>{decodeHtmlEntities(project.name)}</Typography.Text>
         {has('status') && <ClientProjectStatusTag status={project.status} />}
       </Flex>
       {has('progress') && (
@@ -478,7 +479,7 @@ const ProjectProgressChart = ({ projects }: { projects: ClientProjectView[] }) =
     <ChartCard title={t('dashboard.projectProgress', { defaultValue: 'Project progress' })} isEmpty={projects.length === 0}>
       <Bar
         data={{
-          labels: projects.map(project => project.name),
+          labels: projects.map(project => decodeHtmlEntities(project.name)),
           datasets: [
             {
               data: projects.map(project => project.progress),
@@ -509,7 +510,7 @@ const OpenItemsChart = ({ projects }: { projects: ClientProjectView[] }) => {
     <ChartCard title={t('dashboard.openItems', { defaultValue: 'Open items by project' })} isEmpty={rows.length === 0}>
       <Bar
         data={{
-          labels: rows.map(project => project.name),
+          labels: rows.map(project => decodeHtmlEntities(project.name)),
           datasets: [
             { label: t('dashboard.approvals', { defaultValue: 'Approvals' }), data: rows.map(project => project.open_approvals ?? 0), backgroundColor: token.colorWarning },
             {

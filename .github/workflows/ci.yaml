@@ -31,7 +31,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # sanitize-html@>=2.18 requires Node >=22.12.0 (engines + require(ESM))
+          node-version: "22.12"
           cache: 'npm'
           cache-dependency-path: ./worklenz-backend/package-lock.json
 

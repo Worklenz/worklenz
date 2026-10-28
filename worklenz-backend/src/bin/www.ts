@@ -8,6 +8,7 @@ import http, {IncomingHttpHeaders} from "http";
 
 import app, { startBackgroundWorkers } from "../app";
 import {register} from "../socket.io";
+import {on_login} from "../socket.io/commands/on-connect";
 import {IO} from "../shared/io";
 import sessionMiddleware from "../middlewares/session-middleware";
 import {getLoggedInUserIdFromSocket} from "../socket.io/util";
@@ -82,6 +83,13 @@ io.engine.on("initial_headers", (headers: IncomingHttpHeaders) => {
 });
 
 io.on("connection", (socket: Socket) => {
+  // Bind users.socket_id from the authenticated session immediately so
+  // real-time broadcasts (and REST→room fan-out) work even if the client
+  // misses re-emitting LOGIN after a silent reconnect.
+  const userId = getLoggedInUserIdFromSocket(socket);
+  if (userId) {
+    void on_login(io, socket, userId);
+  }
   register(io, socket);
 });
 

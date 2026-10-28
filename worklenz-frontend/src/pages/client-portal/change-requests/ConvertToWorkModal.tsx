@@ -6,6 +6,7 @@ import { useGetPortalStaffQuery } from '@/api/client-portal/portal-access-api';
 import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
 import { useConvertChangeRequestMutation, useGetLinkableTasksQuery } from '@/api/client-portal/portal-workflow-api';
 import type { ChangeRequest, ConvertToWorkRequest, PortalVisibility } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface ConvertToWorkModalProps {
   changeRequest: ChangeRequest;
@@ -22,7 +23,7 @@ export const ConvertToWorkModal = ({ changeRequest, onClose }: ConvertToWorkModa
   const { t } = useTranslation('client-portal-v2-change-requests');
   const { t: tShared } = useTranslation('client-portal-v2');
   const [mode, setMode] = useState<Mode>('create');
-  const [title, setTitle] = useState(`${changeRequest.cr_no}: ${changeRequest.title}`);
+  const [title, setTitle] = useState(`${changeRequest.cr_no}: ${decodeHtmlEntities(changeRequest.title)}`);
   const [assigneeId, setAssigneeId] = useState<string | null>(changeRequest.assignee?.id ?? null);
   const [visibility, setVisibility] = useState<PortalVisibility>('internal');
   const [taskId, setTaskId] = useState<string | undefined>();
@@ -162,7 +163,11 @@ export const ConvertToWorkModal = ({ changeRequest, onClose }: ConvertToWorkModa
                 placeholder={t('convert.chooseTask', { defaultValue: 'Choose a task…' })}
                 options={linkable.map(task => ({
                   value: task.id,
-                  label: t('convert.taskOption', { key: task.key, title: task.title, defaultValue: '{{key}} · {{title}}' }),
+                  label: t('convert.taskOption', {
+                    key: task.key,
+                    title: decodeHtmlEntities(task.title),
+                    defaultValue: '{{key}} · {{title}}',
+                  }),
                 }))}
               />
             </Form.Item>

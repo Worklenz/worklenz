@@ -14,6 +14,7 @@ import {
 } from './quotes-list-helpers';
 import '../invoices/invoices.css';
 import { RichTextView } from '../shared/rich-text/RichTextView';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 // The quote renders as a sheet of paper, so it keeps paper colours in both app themes: what is
 // previewed is what prints and downloads.
@@ -161,7 +162,8 @@ const QuotePreviewModal = ({ open, onClose, quote }: QuotePreviewModalProps) => 
         >
           <div>
             <div style={{ fontWeight: 700, fontSize: 20, color: accent }}>
-              {quote.organization?.name || t('yourCompany', { defaultValue: 'Your Company' })}
+              {decodeHtmlEntities(quote.organization?.name) ||
+                t('yourCompany', { defaultValue: 'Your Company' })}
             </div>
             {[quote.organization?.email, quote.organization?.phone, quote.organization?.addressLine1]
               .filter(Boolean)
@@ -196,8 +198,15 @@ const QuotePreviewModal = ({ open, onClose, quote }: QuotePreviewModalProps) => 
         >
           <div>
             <div style={labelStyle}>{t('preparedFor', { defaultValue: 'Prepared for' })}</div>
-            <div style={{ fontWeight: 700, fontSize: 14 }}>{quote.client?.name || '-'}</div>
-            {[quote.client?.companyName, quote.client?.address, quote.client?.email, quote.client?.phone]
+            <div style={{ fontWeight: 700, fontSize: 14 }}>
+              {decodeHtmlEntities(quote.client?.name) || '-'}
+            </div>
+            {[
+              decodeHtmlEntities(quote.client?.companyName) || undefined,
+              quote.client?.address,
+              quote.client?.email,
+              quote.client?.phone,
+            ]
               .filter(Boolean)
               .map(line => (
                 <div key={line} style={{ fontSize: 12, color: PAPER.secondary }}>

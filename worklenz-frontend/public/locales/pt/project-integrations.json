@@ -7,7 +7,7 @@
   "cancel": "Cancelar",
   "slack": {
     "title": "Folga",
-    "description": "Enviar notificações para canais do Slack",
+    "description": "Receba atualizações de tarefas, status e comentários nos seus canais do Slack",
     "notConnected": "Por favor conecte seu espaço de trabalho do Slack nas Configurações primeiro",
     "quickAddTitle": "Adicionar Slack ao Projeto",
     "currentProject": "Projeto",
@@ -21,11 +21,14 @@
   },
   "teams": {
     "title": "Equipes da Microsoft",
-    "description": "Enviar notificações para canais do Teams"
+    "description": "Publique atualizações de tarefas e status nos seus canais do Teams"
   },
   "github": {
     "title": "GitHub",
-    "description": "Sincronizar tarefas com issues do GitHub"
+    "description": "Acompanhe branches, pull requests e commits nas tarefas",
+    "softwareDescription": "Branches, pull requests e commits em cada tarefa, com atualização automática de status",
+    "softwareOnly": "Projetos de software",
+    "connectDescription": "Conecte o GitHub para vincular repositórios, acompanhar pull requests e automatizar o status das tarefas"
   },
   "notificationTypes": {
     "taskCreated": "Tarefa criada",

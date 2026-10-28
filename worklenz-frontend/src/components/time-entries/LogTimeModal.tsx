@@ -15,14 +15,20 @@ import {
   appMessage,
   dayjs,
   type Dayjs,
+  Tag,
+  ClockCircleOutlined,
+  theme,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { computeTimeRangeSplits } from '@/utils/timeUtils';
 import {
   taskTimeLogsApiService,
   IRecentProject,
   ITaskInProject,
 } from '@/api/tasks/task-time-logs.api.service';
 import { projectsApiService } from '@/api/projects/projects.api.service';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { TextArea } = Input;
 
@@ -36,6 +42,7 @@ type TimeLogInputMode = 'duration' | 'timeRange';
 
 export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslation('time-entries');
+  const { token } = theme.useToken();
   const [form] = Form.useForm();
   const minutesAutoClearedRef = React.useRef(false);
 
@@ -144,12 +151,23 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     () =>
       projects.map(p => ({
         value: p.id,
-        label: p.name,
+        label: decodeHtmlEntities(p.name),
       })),
     [projects]
   );
 
-  const taskOptions = tasks.map(task => ({ value: task.id, label: task.name }));
+  const taskOptions = tasks.map(task => ({
+    value: task.id,
+    label: decodeHtmlEntities(task.name),
+  }));
+
+  const backdateLimitDays = useAppSelector(
+    state => state.orgConfigReducer?.timelog_backdate_limit_days
+  );
+  const minLogDate = React.useMemo(() => {
+    if (!backdateLimitDays || backdateLimitDays <= 0) return null;
+    return dayjs().startOf('day').subtract(backdateLimitDays, 'day');
+  }, [backdateLimitDays]);
 
   const handleProjectChange = (projectId: string | undefined) => {
     const found = projects.find(p => p.id === projectId) || null;
@@ -164,12 +182,13 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     (current: Dayjs) => {
       if (!current) return false;
       if (current.toDate() > new Date()) return true;
+      if (minLogDate && current.isBefore(minLogDate, 'day')) return true;
       if (selectedProject?.start_date && current.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')) {
         return true;
       }
       return false;
     },
-    [selectedProject]
+    [minLogDate, selectedProject]
   );
 
   const isFormValid = () => {
@@ -183,8 +202,88 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
       return h * 60 + m > 0;
     }
     if (!formValues.startTime || !formValues.endTime) return false;
-    return formValues.endTime.isAfter(formValues.startTime);
+    const fullStart = dayjs(formValues.date)
+      .hour(formValues.startTime.hour())
+      .minute(formValues.startTime.minute())
+      .second(0)
+      .millisecond(0);
+    let fullEnd = dayjs(formValues.date)
+      .hour(formValues.endTime.hour())
+      .minute(formValues.endTime.minute())
+      .second(0)
+      .millisecond(0);
+    if (fullEnd.isBefore(fullStart)) {
+      fullEnd = fullEnd.add(1, 'day');
+    }
+    return fullEnd.diff(fullStart, 'second') > 0;
   };
+
+  const handleModeChange = (nextMode: TimeLogInputMode) => {
+    if (nextMode === inputMode) return;
+    const currentDate = form.getFieldValue('date') || formValues.date || dayjs();
+    const currentStartTime = form.getFieldValue('startTime') || formValues.startTime || dayjs().second(0).millisecond(0);
+    const currentEndTime = form.getFieldValue('endTime') || formValues.endTime || currentStartTime.add(30, 'minute');
+    const currentHours = form.getFieldValue('hours') ?? formValues.hours ?? 0;
+    const currentMinutes = form.getFieldValue('minutes') ?? formValues.minutes ?? 30;
+
+    if (nextMode === 'duration') {
+      const fullStart = dayjs(currentDate)
+        .hour(currentStartTime.hour())
+        .minute(currentStartTime.minute())
+        .second(0)
+        .millisecond(0);
+      let fullEnd = dayjs(currentDate)
+        .hour(currentEndTime.hour())
+        .minute(currentEndTime.minute())
+        .second(0)
+        .millisecond(0);
+      if (fullEnd.isBefore(fullStart)) {
+        fullEnd = fullEnd.add(1, 'day');
+      }
+      const diffMins = Math.max(0, fullEnd.diff(fullStart, 'minute'));
+      const h = Math.floor(diffMins / 60);
+      const m = diffMins % 60;
+      form.setFieldsValue({ date: currentDate, hours: h, minutes: m });
+      setFormValues(prev => ({ ...prev, date: currentDate, hours: h, minutes: m }));
+    } else {
+      const totalMins = Math.max(0, Number(currentHours) * 60 + Number(currentMinutes));
+      const fullStart = dayjs(currentDate)
+        .hour(currentStartTime.hour())
+        .minute(currentStartTime.minute())
+        .second(0)
+        .millisecond(0);
+      const fullEnd = fullStart.add(totalMins, 'minute');
+      form.setFieldsValue({ date: currentDate, startTime: fullStart, endTime: fullEnd });
+      setFormValues(prev => ({ ...prev, date: currentDate, startTime: fullStart, endTime: fullEnd }));
+    }
+    setInputMode(nextMode);
+  };
+
+  const activeDurationInfo = React.useMemo(() => {
+    if (inputMode === 'duration') {
+      const h = Math.max(0, Number(formValues.hours || 0));
+      const m = Math.max(0, Math.min(59, Number(formValues.minutes || 0)));
+      const totalMins = h * 60 + m;
+      return {
+        hours: h,
+        minutes: m,
+        totalMinutes: totalMins,
+        isOvernight: false,
+        splits: [],
+      };
+    }
+    if (!formValues.date || !formValues.startTime || !formValues.endTime) {
+      return { hours: 0, minutes: 0, totalMinutes: 0, isOvernight: false, splits: [] };
+    }
+    const splitInfo = computeTimeRangeSplits(formValues.date, formValues.startTime, formValues.endTime);
+    return {
+      hours: splitInfo.totalHours,
+      minutes: splitInfo.remainingMinutes,
+      totalMinutes: splitInfo.totalMinutes,
+      isOvernight: splitInfo.isOvernight,
+      splits: splitInfo.splits,
+    };
+  }, [inputMode, formValues]);
 
   const handleSubmit = async (values: any) => {
     if (!selectedProject || !selectedTaskId) {
@@ -193,30 +292,13 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
     }
 
     const date: Dayjs = values.date;
-
-    if (
-      selectedProject.start_date &&
-      date.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')
-    ) {
-      const errorMsg = t('projectStartDateError', {
-        date: dayjs(selectedProject.start_date).format('MMM DD, YYYY'),
-        defaultValue: 'Time cannot be logged before the project start date ({{date}})',
-      });
-      appMessage.warning({
-        content: errorMsg,
-        key: 'log-time-modal-project-start-date',
-      });
-      form.setFields([
-        {
-          name: 'date',
-          errors: [errorMsg],
-        },
-      ]);
-      return;
-    }
-
-    let secondsSpent = 0;
-    let formattedStart: Dayjs;
+    const entries: Array<{
+      id: string;
+      project_id: string;
+      formatted_start: string;
+      seconds_spent: number;
+      description: string;
+    }> = [];
 
     if (inputMode === 'duration') {
       const hours = Math.max(0, Number(values.hours || 0));
@@ -225,40 +307,60 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
         form.setFields([{ name: 'minutes', errors: [t('minutesRangeError', { defaultValue: 'Minutes must be between 0 and 59' })] }]);
         return;
       }
-      secondsSpent = hours * 3600 + minutes * 60;
+      const secondsSpent = hours * 3600 + minutes * 60;
       if (secondsSpent <= 0) {
         form.setFields([{ name: 'hours', errors: [t('invalidTimeLoggedError', { defaultValue: 'Enter at least 1 minute' })] }]);
         return;
       }
       const now = dayjs();
-      formattedStart = date.hour(now.hour()).minute(now.minute()).second(0).millisecond(0);
+      const formattedStart = date.hour(now.hour()).minute(now.minute()).second(0).millisecond(0);
+      entries.push({
+        id: selectedTaskId,
+        project_id: selectedProject.id,
+        formatted_start: formattedStart.toISOString(),
+        seconds_spent: secondsSpent,
+        description: values.description || '',
+      });
     } else {
       const startTime: Dayjs = values.startTime;
       const endTime: Dayjs = values.endTime;
-      if (!startTime || !endTime || !endTime.isAfter(startTime)) {
+      if (!startTime || !endTime) {
         form.setFields([
           {
             name: 'endTime',
-            errors: [t('endTimeAfterStartError', { defaultValue: 'End time must be after start time' })],
+            errors: [t('selectEndTimeError', { defaultValue: 'Select an end time' })],
           },
         ]);
         return;
       }
-      secondsSpent = endTime.diff(startTime, 'second');
-      formattedStart = date.hour(startTime.hour()).minute(startTime.minute()).second(0).millisecond(0);
-    }
 
-    const requestBody = {
-      id: selectedTaskId,
-      project_id: selectedProject.id,
-      formatted_start: formattedStart.toISOString(),
-      seconds_spent: secondsSpent,
-      description: values.description || '',
-    };
+      const splitInfo = computeTimeRangeSplits(date, startTime, endTime);
+      if (splitInfo.totalSeconds <= 0) {
+        form.setFields([
+          {
+            name: 'endTime',
+            errors: [t('durationGreaterThanZeroError', { defaultValue: 'Duration must be greater than 0 minutes' })],
+          },
+        ]);
+        return;
+      }
+
+      for (const split of splitInfo.splits) {
+        entries.push({
+          id: selectedTaskId,
+          project_id: selectedProject.id,
+          formatted_start: split.formatted_start,
+          seconds_spent: split.seconds_spent,
+          description: values.description || '',
+        });
+      }
+    }
 
     setSubmitting(true);
     try {
-      await taskTimeLogsApiService.create(requestBody);
+      for (const reqBody of entries) {
+        await taskTimeLogsApiService.create(reqBody);
+      }
       onSuccess();
       onClose();
     } catch (error: any) {
@@ -356,7 +458,7 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
           <Segmented
             block
             value={inputMode}
-            onChange={value => setInputMode(value as TimeLogInputMode)}
+            onChange={value => handleModeChange(value as TimeLogInputMode)}
             options={[
               { label: t('durationMode', { defaultValue: 'Duration' }), value: 'duration' },
               { label: t('timeRangeMode', { defaultValue: 'Time Range' }), value: 'timeRange' },
@@ -460,6 +562,19 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
             autoSize={{ minRows: 2, maxRows: 3 }}
           />
         </Form.Item>
+
+        {activeDurationInfo.totalMinutes > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <Flex align="center" gap={6} wrap="wrap">
+              <Tag color="blue" icon={<ClockCircleOutlined />}>
+                {t('totalDurationBadge', {
+                  duration: `${activeDurationInfo.hours}h ${activeDurationInfo.minutes}m`,
+                  defaultValue: `Total: ${activeDurationInfo.hours}h ${activeDurationInfo.minutes}m`,
+                })}
+              </Tag>
+            </Flex>
+          </div>
+        )}
 
         <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
           <Button

@@ -8,6 +8,7 @@ import {
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { CaretDownFilled } from '@/shared/antd-imports';
 import {
   Badge,
@@ -26,7 +27,13 @@ import { useTranslation } from 'react-i18next';
 
 const NO_CATEGORY_ID = '__no_category__';
 
-const ProjectCategoriesFilterDropdown = () => {
+interface ProjectCategoriesFilterDropdownProps {
+  inline?: boolean;
+}
+
+const ProjectCategoriesFilterDropdown = ({
+  inline = false,
+}: ProjectCategoriesFilterDropdownProps) => {
   const { t } = useTranslation('reporting-projects-filters');
   const dispatch = useAppDispatch();
 
@@ -134,7 +141,7 @@ const ProjectCategoriesFilterDropdown = () => {
                 >
                   <Flex gap={8}>
                     <Badge color={category.color_code} />
-                    {category.name}
+                    {decodeHtmlEntities(category.name)}
                   </Flex>
                 </Checkbox>
               </List.Item>
@@ -146,6 +153,10 @@ const ProjectCategoriesFilterDropdown = () => {
       </Flex>
     </Card>
   );
+
+  if (inline) {
+  return projectCategoryDropdownContent;
+}
 
   return (
     <Dropdown

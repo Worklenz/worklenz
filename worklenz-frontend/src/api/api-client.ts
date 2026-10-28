@@ -384,9 +384,10 @@ apiClient.interceptors.response.use(
       const errorData = error.response.data as any;
       const errorMessage = errorData?.message || 'Access denied';
 
-      // Check if this is a project access error - don't show alert, let component handle it
+      // Check if this is a project or task drawer access error - don't show alert, let component handle it
       if (
         errorMessage.toLowerCase().includes('project') ||
+        errorData?.body?.code === 'TASK_NOT_FOUND' ||
         errorData?.body?.requiresTeamSwitch ||
         errorData?.body?.code === 'TASK_ASSIGNEE_RESTRICTED' ||
         errorData?.body?.code === 'TASK_ASSIGNEE_READONLY'

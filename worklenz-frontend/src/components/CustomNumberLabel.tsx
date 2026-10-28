@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tooltip } from '@/shared/antd-imports';
 import { NumbersColorMap } from '@/shared/constants';
+import { getContrastColor } from '@/utils/colorUtils';
 
 interface CustomNumberLabelProps {
   labelList: string[];
@@ -18,13 +19,14 @@ const CustomNumberLabel = React.forwardRef<HTMLSpanElement, CustomNumberLabelPro
         const firstDigit = namesString.match(/\d/)?.[0] || '0';
         return NumbersColorMap[firstDigit] || NumbersColorMap['0'];
       })();
+    const textColor = getContrastColor(backgroundColor);
 
     return (
       <Tooltip title={labelList.join(', ')}>
         <span
           ref={ref}
           className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium cursor-help"
-          style={{ backgroundColor, color: 'white' }}
+          style={{ backgroundColor, color: textColor }}
         >
           {namesString}
         </span>

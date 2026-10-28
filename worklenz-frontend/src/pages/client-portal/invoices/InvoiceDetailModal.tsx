@@ -33,6 +33,7 @@ import { formatDate } from '../../../utils/dateUtils';
 import { PortalAvatar } from '@/components/client-portal/v2';
 import { portalPaths } from '../portal-paths';
 import InvoicePreviewModal from './invoice-details/invoice-preview-modal';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { RecordPaymentModal } from './RecordPaymentModal';
 import {
   formatMoney,
@@ -310,11 +311,16 @@ const InvoiceDetailModal = () => {
                   {field(
                     t('clientLabel', { defaultValue: 'Client' }),
                     <Flex align="center" gap={6}>
-                      {invoice.client?.name && <PortalAvatar name={invoice.client.name} />}
-                      {invoice.client?.name || '-'}
+                      {invoice.client?.name && (
+                        <PortalAvatar name={decodeHtmlEntities(invoice.client.name)} />
+                      )}
+                      {decodeHtmlEntities(invoice.client?.name) || '-'}
                     </Flex>
                   )}
-                  {field(t('companyName', { defaultValue: 'Company' }), invoice.client?.companyName || '-')}
+                  {field(
+                    t('companyName', { defaultValue: 'Company' }),
+                    decodeHtmlEntities(invoice.client?.companyName) || '-'
+                  )}
                   {field(t('email', { defaultValue: 'Email' }), invoice.client?.email || '-')}
                 </div>
               </Card>
@@ -342,7 +348,10 @@ const InvoiceDetailModal = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 12 }}>
                   {/* A standalone invoice has no request; these read "-" rather than erroring. */}
                   {field(t('requestNumber', { defaultValue: 'Request Number' }), invoice.request?.requestNumber || '-')}
-                  {field(t('serviceName', { defaultValue: 'Service' }), invoice.request?.service?.name || invoice.projectName || '-')}
+                  {field(
+                    t('serviceName', { defaultValue: 'Service' }),
+                    decodeHtmlEntities(invoice.request?.service?.name || invoice.projectName) || '-'
+                  )}
                 </div>
                 <div className="invoices-detail-label" style={{ color: token.colorTextSecondary }}>
                   {t('serviceDescription', { defaultValue: 'Service Description' })}

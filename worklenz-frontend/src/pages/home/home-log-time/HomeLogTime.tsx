@@ -14,9 +14,8 @@ import {
   TableProps,
   Badge,
   Pagination,
-  CaretUpOutlined,
-  CaretDownOutlined,
   Tag,
+  ClockCircleOutlined,
 } from '@/shared/antd-imports';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
@@ -48,6 +47,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 import { toSolidTagColor } from '@/utils/colorUtils';
+import { computeTimeRangeSplits } from '@/utils/timeUtils';
 import { useResponsive } from '@/hooks/useResponsive';
 import { store } from '@/app/store';
 import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
@@ -105,6 +105,16 @@ const resolvePriorityFields = (
     ...(priority?.color_code_dark ? { priority_color_dark: priority.color_code_dark } : {}),
   };
 };
+// Lower rank = higher priority. Unknown/missing priorities sort last.
+const PRIORITY_RANK: Record<string, number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
+const getPriorityRank = (name?: string): number =>
+  PRIORITY_RANK[(name || '').trim().toLowerCase()] ?? Number.MAX_SAFE_INTEGER;
 
 const formatSeconds = (seconds: number): string => {
   const total = Math.max(0, Math.round(seconds || 0));
@@ -153,35 +163,48 @@ const HomeLogTime: React.FC = () => {
 
   type LogSortField = 'project_name' | 'task_name' | 'priority_name' | 'time_spent' | 'created_at' | null;
 
-  // Matches the Overview page's priority-table sort affordance (TasksList.tsx) —
-  // stacked up/down carets, active direction highlighted in the theme's primary color.
-  const SortArrows: React.FC<{ active: 'asc' | 'desc' | null }> = ({ active }) => {
-    const { token } = theme.useToken();
-    return (
-      <span style={{ display: 'inline-flex', flexDirection: 'column', marginLeft: 4, lineHeight: 0 }}>
-        <CaretUpOutlined
-          style={{ fontSize: 9, color: active === 'asc' ? token.colorPrimary : token.colorTextQuaternary }}
-        />
-        <CaretDownOutlined
-          style={{ fontSize: 9, marginTop: -2, color: active === 'desc' ? token.colorPrimary : token.colorTextQuaternary }}
-        />
-      </span>
-    );
-  };
-
   const { data: projectListData } = useGetProjectsByTeamQuery();
   const projects = useMemo(() => projectListData?.body || [], [projectListData]);
   const priorities = useAppSelector(state => state.priorityReducer.priorities);
+  const backdateLimitDays = useAppSelector(
+    state => state.orgConfigReducer?.timelog_backdate_limit_days
+  );
+  const minLogDate = useMemo(() => {
+    if (!backdateLimitDays || backdateLimitDays <= 0) return null;
+    return dayjs().startOf('day').subtract(backdateLimitDays, 'day');
+  }, [backdateLimitDays]);
+
+  const [selProjectId, setSelProjectId] = useState<string | undefined>(undefined);
+  const [selTaskId, setSelTaskId] = useState<string | undefined>(undefined);
+
+  const selectedProject = useMemo(
+    () => (selProjectId ? projects.find((p: IProject) => p.id === selProjectId) || null : null),
+    [projects, selProjectId]
+  );
+
+  const isDateDisabled = useCallback(
+    (current: Dayjs) => {
+      if (!current) return false;
+      if (minLogDate && current.isBefore(minLogDate, 'day')) return true;
+      if (
+        selectedProject?.start_date &&
+        current.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')
+      ) {
+        return true;
+      }
+      return false;
+    },
+    [minLogDate, selectedProject]
+  );
 
   useEffect(() => {
     dispatch(fetchPriorities());
   }, [dispatch]);
 
-  const [selProjectId, setSelProjectId] = useState<string | undefined>(undefined);
-  const [selTaskId, setSelTaskId] = useState<string | undefined>(undefined);
   const [tasks, setTasks] = useState<ITaskInProject[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [taskSearch, setTaskSearch] = useState('');
+  const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const quickEntryRef = useRef<HTMLDivElement>(null);
 
@@ -201,8 +224,8 @@ const HomeLogTime: React.FC = () => {
   const [recentLogsLoading, setRecentLogsLoading] = useState(false);
 
   // Recently Logged table — sort/filter/pagination state
-  const [logSortField, setLogSortField] = useState<LogSortField>('created_at');
-  const [logSortOrder, setLogSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [logSortField, setLogSortField] = useState<LogSortField>(null);
+  const [logSortOrder, setLogSortOrder] = useState<'asc' | 'desc'>('asc');
   const [logCurrentPage, setLogCurrentPage] = useState(1);
   const logPageSize = 10;
   const [selectedLogProjectIds, setSelectedLogProjectIds] = useState<React.Key[]>([]);
@@ -213,19 +236,43 @@ const HomeLogTime: React.FC = () => {
   // Store original task names to restore if drawer closes without saving
   const originalTaskNamesRef = useRef<Map<string, string>>(new Map());
 
+  // Only the latest request may update the rows or clear loading.
+  const recentLogsRequestId = useRef(0);
+
+  const refreshRecentLogs = useCallback(async () => {
+    const requestId = ++recentLogsRequestId.current;
+    setRecentLogsLoading(true);
+
+    try {
+      const res = await taskTimeLogsApiService.getRecentTimeLogs(100);
+
+      if (requestId === recentLogsRequestId.current && res.done) {
+        setRecentLogs(res.body as IRecentTimeLog[]);
+      }
+    } catch {
+      // Keep the existing rows if the refresh fails.
+    } finally {
+      if (requestId === recentLogsRequestId.current) {
+        setRecentLogsLoading(false);
+      }
+    }
+  }, []);
+
   const refreshData = useCallback(() => {
     taskTimeLogsApiService.getMySummary()
-      .then(res => { if (res.done) setSummary(res.body as IMySummary); })
+      .then(res => {
+        if (res.done) setSummary(res.body as IMySummary);
+      })
       .catch(() => {});
+
     taskTimeLogsApiService.getMyWeeklyBreakdown()
-      .then(res => { if (res.done) setWeekly(res.body as IWeeklyBreakdownDay[]); })
+      .then(res => {
+        if (res.done) setWeekly(res.body as IWeeklyBreakdownDay[]);
+      })
       .catch(() => setWeekly([]));
-    setRecentLogsLoading(true);
-    taskTimeLogsApiService.getRecentTimeLogs(100)
-      .then(res => { if (res.done) setRecentLogs(res.body as IRecentTimeLog[]); })
-      .catch(() => {})
-      .finally(() => setRecentLogsLoading(false));
-  }, []);
+
+    void refreshRecentLogs();
+  }, [refreshRecentLogs]);
 
   useEffect(() => { refreshData(); }, [refreshData]);
 
@@ -412,43 +459,55 @@ const HomeLogTime: React.FC = () => {
   ]);
 
   useEffect(() => {
+    let cancelled = false;
+    setTasks([]);
     if (!selProjectId) {
-      setTasks([]);
+      setTasksLoading(false);
       return;
     }
     setTasksLoading(true);
     taskTimeLogsApiService
       .getMyTasksInProject(selProjectId, taskSearch || undefined)
-      .then(res => { if (res.done) setTasks(res.body as ITaskInProject[]); })
-      .catch(() => setTasks([]))
-      .finally(() => setTasksLoading(false));
-  }, [selProjectId, taskSearch]);
+      .then(res => { if (!cancelled && res.done) setTasks(res.body as ITaskInProject[]); })
+      .catch(() => { if (!cancelled) setTasks([]); })
+      .finally(() => { if (!cancelled) setTasksLoading(false); });
+    return () => { cancelled = true; };
+  }, [selProjectId, taskSearch, tasksRefreshKey]);
 
-  const projectOptions = projects.map((p: IProject) => ({ value: p.id, label: p.name }));
-  const taskOptions = tasks.map(t => ({ value: t.id, label: t.name }));
+  const projectOptions = projects.map((p: IProject) => ({
+    value: p.id,
+    label: decodeHtmlEntities(p.name),
+  }));
+  const taskOptions = tasks.map(t => ({ value: t.id, label: decodeHtmlEntities(t.name) }));
+
+  const overnightSplitInfo = useMemo(() => {
+    if (inputMode !== 'Time Range' || !startTime || !endTime || !date) return null;
+    return computeTimeRangeSplits(date, startTime, endTime);
+  }, [inputMode, startTime, endTime, date]);
 
   const loggedSeconds = useMemo(() => {
     if (inputMode === 'Duration') {
       return Math.max(0, timeHours) * 3600 + Math.max(0, Math.min(59, timeMinutes)) * 60;
     }
-    if (!startTime || !endTime) return 0;
-    const diff = endTime.diff(startTime, 'second');
-    return diff > 0 ? diff : 0;
-  }, [inputMode, timeHours, timeMinutes, startTime, endTime]);
+    if (!startTime || !endTime || !date) return 0;
+    return overnightSplitInfo ? overnightSplitInfo.totalSeconds : 0;
+  }, [inputMode, timeHours, timeMinutes, startTime, endTime, date, overnightSplitInfo]);
 
-  const selectedProject = useMemo(() => projects.find(p => p.id === selProjectId), [projects, selProjectId]);
-
-  const isDateDisabled = useCallback(
-    (current: Dayjs) => {
-      if (!current) return false;
-      if (current.toDate() > new Date()) return true;
-      if (selectedProject?.start_date && current.isBefore(dayjs(selectedProject.start_date).startOf('day'), 'day')) {
-        return true;
-      }
-      return false;
-    },
-    [selectedProject]
-  );
+  const handleModeChange = (nextMode: 'Duration' | 'Time Range') => {
+    if (nextMode === inputMode) return;
+    if (nextMode === 'Duration') {
+      const totalMins = Math.floor(loggedSeconds / 60);
+      setTimeHours(Math.floor(totalMins / 60));
+      setTimeMinutes(totalMins % 60);
+    } else {
+      const totalMins = Math.max(0, timeHours * 60 + timeMinutes);
+      const safeStart = startTime || dayjs().second(0).millisecond(0);
+      const safeEnd = safeStart.add(totalMins, 'minute');
+      setStartTime(safeStart);
+      setEndTime(safeEnd);
+    }
+    setInputMode(nextMode);
+  };
 
   const isFormValid = useMemo(() => {
     if (!selProjectId || !selTaskId || !date || loggedSeconds <= 0) return false;
@@ -464,7 +523,7 @@ const HomeLogTime: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!isFormValid) return;
+    if (!isFormValid || !selTaskId) return;
 
     if (
       selectedProject?.start_date &&
@@ -481,35 +540,40 @@ const HomeLogTime: React.FC = () => {
     }
     setSubmitting(true);
     try {
-      // Persist the actual start clock time — backend stores formatted_start as
-      // created_at, and the task-drawer edit form derives start/end from that.
-      // Sending only the DatePicker value kept "now" (or midnight) and dropped
-      // the Time Range start, so edit showed current time + same duration.
-      let formattedStart: string;
-      if (inputMode === 'Time Range' && startTime) {
-        formattedStart = dayjs(date)
-          .hour(startTime.hour())
-          .minute(startTime.minute())
-          .second(0)
-          .millisecond(0)
-          .toISOString();
+      if (
+        inputMode === 'Time Range' &&
+        startTime &&
+        endTime &&
+        overnightSplitInfo &&
+        overnightSplitInfo.splits.length > 0
+      ) {
+        for (const split of overnightSplitInfo.splits) {
+          await taskTimeLogsApiService.create({
+            id: selTaskId,
+            project_id: selProjectId,
+            formatted_start: split.formatted_start,
+            seconds_spent: split.seconds_spent,
+            description: notes || undefined,
+          });
+        }
       } else {
         const now = dayjs().second(0).millisecond(0);
-        formattedStart = dayjs(date)
+        const formattedStart = dayjs(date)
           .hour(now.hour())
           .minute(now.minute())
           .second(0)
           .millisecond(0)
           .toISOString();
+
+        await taskTimeLogsApiService.create({
+          id: selTaskId,
+          project_id: selProjectId,
+          formatted_start: formattedStart,
+          seconds_spent: loggedSeconds,
+          description: notes || undefined,
+        });
       }
 
-      await taskTimeLogsApiService.create({
-        id: selTaskId,
-        project_id: selProjectId,
-        formatted_start: formattedStart,
-        seconds_spent: loggedSeconds,
-        description: notes || undefined,
-      });
       setTimeHours(0);
       setTimeMinutes(30);
       minutesAutoClearedRef.current = false;
@@ -531,7 +595,10 @@ const HomeLogTime: React.FC = () => {
     recentLogs.forEach(l => {
       if (l.project_id && l.project_name && !seen.has(l.project_id)) seen.set(l.project_id, l.project_name);
     });
-    return Array.from(seen.entries()).map(([value, text]) => ({ text, value }));
+    return Array.from(seen.entries()).map(([value, text]) => ({
+      text: decodeHtmlEntities(text),
+      value,
+    }));
   }, [recentLogs]);
 
   const logStatusFilterOptions = useMemo(() => {
@@ -551,29 +618,55 @@ const HomeLogTime: React.FC = () => {
     { text: t('logTime.no', { defaultValue: 'No' }), value: 'no' },
   ];
 
-  const handleLogSortClick = useCallback(
-    (field: LogSortField) => {
-      setLogCurrentPage(1);
-      setLogSortOrder(prev => (logSortField === field && prev === 'asc' ? 'desc' : 'asc'));
-      setLogSortField(field);
-    },
-    [logSortField]
+  const getLogSortProps = useCallback(
+    (field: Exclude<LogSortField, null>) => ({
+      dataIndex: field,
+      sorter: true,
+      sortOrder:
+        logSortField === field
+          ? logSortOrder === 'asc'
+            ? ('ascend' as const)
+            : ('descend' as const)
+          : null,
+    }),
+    [logSortField, logSortOrder]
   );
 
-  const renderLogSortableTitle = useCallback(
-    (label: string, field: LogSortField) => (
-        <span
-        onClick={() => handleLogSortClick(field)}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', minWidth: 0, cursor: 'pointer', userSelect: 'none' }}
-      >
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{label}</span>
-        <span style={{ flexShrink: 0 }}>
-          <SortArrows active={logSortField === field ? logSortOrder : null} />
-        </span>
-      </span>
-    ),
-    [logSortField, logSortOrder, handleLogSortClick]
-  );
+  const handleLogTableChange: NonNullable<
+    TableProps<IRecentTimeLog>['onChange']
+  > = (_pagination, filters, sorter, extra) => {
+    setLogCurrentPage(1);
+
+    setSelectedLogProjectIds(
+      (filters.project as React.Key[]) || []
+    );
+    setSelectedLogStatusNames(
+      (filters.status as React.Key[]) || []
+    );
+    setSelectedLogPriorityNames(
+      (filters.priority as React.Key[]) || []
+    );
+    setSelectedLogBillable(
+      (filters.billable as React.Key[]) || []
+    );
+
+    if (extra.action !== 'sort') return;
+
+    const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+
+    if (activeSorter?.order) {
+      setLogSortField(activeSorter.field as LogSortField);
+      setLogSortOrder(
+        activeSorter.order === 'ascend' ? 'asc' : 'desc'
+      );
+    } else {
+      // Third click: remove the active sort.
+      setLogSortField(null);
+      setLogSortOrder('asc');
+    }
+
+    void refreshRecentLogs();
+  };
 
   const filteredSortedLogs = useMemo(() => {
     let logs = recentLogs;
@@ -589,13 +682,22 @@ const HomeLogTime: React.FC = () => {
     if (selectedLogBillable.length) {
       logs = logs.filter(l => selectedLogBillable.includes(l.billable ? 'yes' : 'no'));
     }
-    if (!logSortField) return logs;
+    if (!logSortField) {
+      return [...logs].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
+      );
+    }
 
     const dir = logSortOrder === 'asc' ? 1 : -1;
     return [...logs].sort((a, b) => {
       if (logSortField === 'time_spent') return ((a.time_spent || 0) - (b.time_spent || 0)) * dir;
       if (logSortField === 'created_at') {
         return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
+      }
+      if (logSortField === 'priority_name') {
+        return (getPriorityRank(a.priority_name) - getPriorityRank(b.priority_name)) * dir;
       }
       const av = (a[logSortField] || '').toString().toLowerCase();
       const bv = (b[logSortField] || '').toString().toLowerCase();
@@ -612,7 +714,7 @@ const HomeLogTime: React.FC = () => {
       // Pre-populate Redux with available task data to prevent loading flash
       dispatch(updateTask({
         id: record.task_id,
-        title: record.task_name,
+        title: decodeHtmlEntities(record.task_name),
         projectId: record.project_id,
       } as Partial<Task> as Task));
 
@@ -638,7 +740,7 @@ const HomeLogTime: React.FC = () => {
     () => [
       {
         key: 'task',
-        title: renderLogSortableTitle(t('logTime.taskColumn', { defaultValue: 'Task' }), 'task_name'),
+        title: t('logTime.taskColumn', { defaultValue: 'Task' }),...getLogSortProps('task_name'),
         width: '20%',
         render: (_, record) => (
           <span
@@ -647,13 +749,13 @@ const HomeLogTime: React.FC = () => {
             onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }}
             onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}
           >
-            {record.task_name}
+            {decodeHtmlEntities(record.task_name)}
           </span>
         ),
       },
       {
         key: 'project',
-        title: renderLogSortableTitle(t('logTime.projectColumn', { defaultValue: 'Project' }), 'project_name'),
+        title: t('logTime.projectColumn', { defaultValue: 'Project' }),...getLogSortProps('project_name'),
         width: '18%',
         filters: logProjectFilterOptions,
         filteredValue: selectedLogProjectIds,
@@ -664,7 +766,7 @@ const HomeLogTime: React.FC = () => {
             onClick={() => record.project_id && navigate(`/worklenz/projects/${record.project_id}?tab=tasks-list&pinned_tab=tasks-list`)}
           >
             <Badge color={record.project_color || token.colorPrimary} />
-            <span style={{ fontWeight: 500 }}>{record.project_name}</span>
+            <span style={{ fontWeight: 500 }}>{decodeHtmlEntities(record.project_name)}</span>
           </span>
         ),
       },
@@ -686,7 +788,7 @@ const HomeLogTime: React.FC = () => {
       },
       {
         key: 'priority',
-        title: renderLogSortableTitle(t('logTime.priorityColumn', { defaultValue: 'Priority' }), 'priority_name'),
+        title: t('logTime.priorityColumn', { defaultValue: 'Priority' }),...getLogSortProps('priority_name'),
         width: '12%',
         ellipsis: true,
         filters: logPriorityFilterOptions,
@@ -722,7 +824,7 @@ const HomeLogTime: React.FC = () => {
       },
       {
         key: 'time',
-        title: renderLogSortableTitle(t('logTime.timeColumn', { defaultValue: 'Time' }), 'time_spent'),
+        title: t('logTime.timeColumn', { defaultValue: 'Time' }),...getLogSortProps('time_spent'),
         width: '10%',
         render: (_, record) => (
           <Tag color="#1677ff" style={{ margin: 0, fontSize: 11 }}>
@@ -732,7 +834,7 @@ const HomeLogTime: React.FC = () => {
       },
       {
         key: 'date',
-        title: renderLogSortableTitle(t('logTime.dateColumn', { defaultValue: 'Date' }), 'created_at'),
+        title: t('logTime.dateColumn', { defaultValue: 'Date' }),...getLogSortProps('created_at'),
         width: '10%',
         ellipsis: true,
         render: (_, record) => <span style={{ opacity: 0.5, fontSize: 11 }}>{formatLogDate(record.created_at)}</span>,
@@ -755,7 +857,8 @@ const HomeLogTime: React.FC = () => {
       },
     ],
     [
-      renderLogSortableTitle,
+      getLogSortProps,
+      t,
       logProjectFilterOptions,
       logStatusFilterOptions,
       logPriorityFilterOptions,
@@ -784,7 +887,18 @@ const HomeLogTime: React.FC = () => {
   );
 
   return (
-    <div style={{ padding: 24, height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+    <div
+      style={{
+        padding: 24,
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        height: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <div style={{ marginBottom: 20, flexShrink: 0 }}>
          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>{t('logTime.pageTitle', { defaultValue: 'Log Time' })}</h1>
          <p style={{ opacity: 0.5, fontSize: 13, margin: '4px 0 0' }}>{t('logTime.pageSubtitle', { defaultValue: 'Track time spent on your tasks.' })}</p>
@@ -798,6 +912,7 @@ const HomeLogTime: React.FC = () => {
           alignItems: isDesktop ? 'stretch' : undefined,
           flex: 1,
           minHeight: 0,
+          minWidth: 0,
         }}
       >
         {/* Quick Time Entry */}
@@ -806,7 +921,10 @@ const HomeLogTime: React.FC = () => {
           style={{
             ...cardStyle,
             flex: isDesktop ? '0 0 360px' : '1 1 auto',
-            width: isDesktop ? undefined : '100%',
+            width: isDesktop ? 360 : '100%',
+            minWidth: 0,
+            maxWidth: '100%',
+            boxSizing: 'border-box',
             alignSelf: isDesktop ? 'flex-start' : 'stretch',
           }}
         >
@@ -831,6 +949,7 @@ const HomeLogTime: React.FC = () => {
           <div style={{ marginBottom: 10 }}>
             <label style={fldLbl}>{t('logTime.projectLabel', { defaultValue: 'Project' })}</label>
             <Select
+              className="quick-entry-name-select"
               classNames={{ popup: { root: 'quick-entry-dropdown' } }}
               styles={{ popup: { root: quickEntryDropdownStyle } }}
               showSearch
@@ -846,6 +965,7 @@ const HomeLogTime: React.FC = () => {
           <div style={{ marginBottom: 10 }}>
             <label style={fldLbl}>{t('logTime.taskLabel', { defaultValue: 'Task' })}</label>
             <Select
+              className="quick-entry-name-select"
               showSearch
               styles={{
                 popup: {
@@ -888,7 +1008,7 @@ const HomeLogTime: React.FC = () => {
             <Segmented
               block
               value={inputMode}
-              onChange={v => setInputMode(v as 'Duration' | 'Time Range')}
+              onChange={v => handleModeChange(v as 'Duration' | 'Time Range')}
               options={[
                 { value: 'Duration', label: t('logTime.durationMode', { defaultValue: 'Duration' }) },
                 { value: 'Time Range', label: t('logTime.timeRangeMode', { defaultValue: 'Time Range' }) },
@@ -968,7 +1088,7 @@ const HomeLogTime: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
                 <div style={{ flex: 1, minWidth: 140 }}>
                   <label style={fldLbl}><span style={{ color: token.colorError }}>*</span> {t('logTime.requiredStartTime', { defaultValue: 'Start Time' })}</label>
                   <TimePicker
@@ -999,6 +1119,19 @@ const HomeLogTime: React.FC = () => {
               onChange={e => setNotes(e.target.value)}
             />
           </div>
+
+          {loggedSeconds > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <Tag color="blue" icon={<ClockCircleOutlined />}>
+                  {t('logTime.totalDurationBadge', {
+                    duration: `${Math.floor(loggedSeconds / 3600)}h ${Math.floor((loggedSeconds % 3600) / 60)}m`,
+                    defaultValue: `Total: ${Math.floor(loggedSeconds / 3600)}h ${Math.floor((loggedSeconds % 3600) / 60)}m`,
+                  })}
+                </Tag>
+              </div>
+            </div>
+          )}
 
           <Button
             type="primary"
@@ -1109,17 +1242,18 @@ const HomeLogTime: React.FC = () => {
               }}
             >
               <Table<IRecentTimeLog>
-                dataSource={
-                  recentLogsLoading
-                    ? []
-                    : filteredSortedLogs.slice((logCurrentPage - 1) * logPageSize, logCurrentPage * logPageSize)
-                }
+                dataSource={filteredSortedLogs.slice(
+                  (logCurrentPage - 1) * logPageSize,
+                  logCurrentPage * logPageSize
+                )}
                 rowKey={record => record.id}
                 columns={logColumns}
                 size="middle"
                 pagination={false}
                 tableLayout="fixed"
                 loading={recentLogsLoading}
+                sortDirections={['ascend', 'descend']}
+                showSorterTooltip={{ target: 'full-header' }}
                 locale={{
                    emptyText: (
                      <div style={{ padding: '32px 16px', textAlign: 'center' }}>
@@ -1139,13 +1273,7 @@ const HomeLogTime: React.FC = () => {
                      </div>
                    ),
                 }}
-                onChange={(_pagination, filters) => {
-                  setLogCurrentPage(1);
-                  setSelectedLogProjectIds((filters.project as React.Key[]) || []);
-                  setSelectedLogStatusNames((filters.status as React.Key[]) || []);
-                  setSelectedLogPriorityNames((filters.priority as React.Key[]) || []);
-                  setSelectedLogBillable((filters.billable as React.Key[]) || []);
-                }}
+                onChange={handleLogTableChange}
               />
             </div>
 
@@ -1168,14 +1296,14 @@ const HomeLogTime: React.FC = () => {
       <HomeAddTaskModal
         open={addTaskOpen}
         defaultDate={null}
-        onClose={() => {
-          setAddTaskOpen(false);
-          if (selProjectId) {
-            taskTimeLogsApiService.getMyTasksInProject(selProjectId, taskSearch || undefined)
-              .then(res => { if (res.done) setTasks(res.body as ITaskInProject[]); })
-              .catch(() => {});
-          }
+        defaultProjectId={selProjectId}
+        onTaskCreated={(task) => {
+          if (task.project_id) handleProjectChange(task.project_id);
+          if (task.id) setSelTaskId(task.id);
+          setTaskSearch('');
+          setTasksRefreshKey(value => value + 1);
         }}
+        onClose={() => setAddTaskOpen(false)}
       />
     </div>
   );

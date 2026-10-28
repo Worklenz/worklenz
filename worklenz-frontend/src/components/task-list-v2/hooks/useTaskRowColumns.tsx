@@ -30,6 +30,8 @@ import { selectGroups } from '@/features/task-management/task-management.slice';
 import { useTaskListMode } from '@/features/task-management/task-list-mode-context';
 import {
   fetchTask as fetchTaskDrawer,
+  setTargetCommentId,
+  setTargetDrawerTab,
   setNavigationContext,
   setSelectedTaskId,
   setShowTaskDrawer,
@@ -120,12 +122,16 @@ export const useTaskRowColumns = ({
 }: UseTaskRowColumnsProps) => {
   const dispatch = useAppDispatch();
   const groups = useAppSelector(selectGroups);
+  const isTaskDrawerOpenForTask = useAppSelector(
+    state => state.taskDrawerReducer.showTaskDrawer && state.taskDrawerReducer.selectedTaskId === task.id
+  );
   const cellVariant = useTaskListMode() === 'backlog' ? 'inline' : 'pill';
 
   // Opens the task drawer — used by DescriptionColumn when rich formatting
   // is present and inline plain-text editing would destroy it.
   const openDrawerForTask = useCallback(() => {
     if (!task.id || !projectId) return;
+    if (isTaskDrawerOpenForTask) return;
     const taskIds = groups.flatMap(g => g.taskIds);
     const currentIndex = taskIds.indexOf(task.id);
     dispatch(
@@ -139,7 +145,16 @@ export const useTaskRowColumns = ({
     dispatch(setSelectedTaskId(task.id));
     dispatch(setShowTaskDrawer(true));
     dispatch(fetchTaskDrawer({ taskId: task.id, projectId }));
-  }, [dispatch, groups, task.id, projectId]);
+  }, [dispatch, groups, task.id, projectId, isTaskDrawerOpenForTask]);
+
+  const openLatestComment = useCallback(
+    (commentId: string) => {
+      dispatch(setTargetCommentId(commentId));
+      dispatch(setTargetDrawerTab('info'));
+      openDrawerForTask();
+    },
+    [dispatch, openDrawerForTask]
+  );
 
   const isReadOnly = isGuest;
 
@@ -149,8 +164,7 @@ export const useTaskRowColumns = ({
       width: string,
       isSticky?: boolean,
       index?: number,
-      currentBg?: string,
-      rowBackgrounds?: any
+      currentBg?: string
     ) => {
       // Calculate left position for sticky columns - must account for ALL previous columns
       let leftPosition = 0; // Start at 0 to cover the row's left padding
@@ -167,7 +181,9 @@ export const useTaskRowColumns = ({
             position: 'sticky' as const,
             left: leftPosition,
             zIndex: 5, // Lower than header but above regular content
-            backgroundColor: currentBg || (isDarkMode ? (isSubtask ? '#141414' : '#1e1e1e') : '#ffffff'), // Use dynamic background or fallback
+            backgroundColor: currentBg || 'var(--tl-sticky-cell-bg)',
+            transition:
+              'background-color 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1)',
             width: width,
             height: '100%', // Fill the row height
             display: 'flex', // Use flex to contain child
@@ -395,7 +411,7 @@ export const useTaskRowColumns = ({
             return <ReporterColumn width={width} reporter={task.reporter || ''} />;
 
           case 'comments':
-            return <CommentsColumn width={width} task={task} />;
+            return <CommentsColumn width={width} task={task} onOpenComment={openLatestComment} />;
 
           default:
             // Handle custom columns
@@ -422,17 +438,14 @@ export const useTaskRowColumns = ({
       // Wrap content with sticky positioning if needed
       const content = renderColumnContent();
       if (isSticky) {
-        const hoverBg = rowBackgrounds?.hover || (isDarkMode ? '#2a2a2a' : '#f9fafb');
         return (
           <div
             data-column-id={columnId}
             style={{
               ...wrapperStyle,
               width: `var(--col-width-${columnId})`,
-              // @ts-ignore - CSS custom property
-              '--hover-bg': hoverBg,
             }}
-            className="border-r border-gray-200 dark:border-gray-700 overflow-hidden sticky-column-hover hover:bg-[var(--hover-bg)]"
+            className="border-r border-gray-200 dark:border-gray-700 overflow-hidden sticky-column-hover"
           >
             {content}
           </div>

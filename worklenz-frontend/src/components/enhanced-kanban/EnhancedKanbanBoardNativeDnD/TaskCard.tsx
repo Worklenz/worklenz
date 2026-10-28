@@ -3,12 +3,14 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/app/store';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
+import { setSelectedTaskId, setShowTaskDrawer, setLastDeletedTaskId } from '@/features/task-drawer/task-drawer.slice';
+import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
 import { useTranslation } from 'react-i18next';
 import AvatarGroup from '@/components/AvatarGroup';
 import LazyAssigneeSelectorWrapper from '@/components/task-management/lazy-assignee-selector';
 import { format } from 'date-fns';
 import logger from '@/utils/errorLogger';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { createPortal } from 'react-dom';
 
 // Format date as local date to avoid timezone issues
@@ -357,6 +359,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
           if (!task.id) return;
           const res = await tasksApiService.deleteTask(task.id);
           if (res.done) {
+            dispatch(setLastDeletedTaskId(task.id));
             dispatch(setSelectedTaskId(null));
             if (task.is_sub_task) {
               dispatch(
@@ -374,6 +377,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
               dispatch(deleteKanbanTask(task.id));
             }
             dispatch(setShowTaskDrawer(false));
+            dispatch(roadmapApi.util.invalidateTags(['RoadmapTasks', 'ProjectPhases']));
             if (task.parent_task_id) {
               socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.parent_task_id);
             }
@@ -710,7 +714,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                         minWidth: 0,
                       }}
                     >
-                      {label.name}
+                      {decodeHtmlEntities(label.name)}
                     </div>
                   );
                 })}
@@ -719,8 +723,8 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                 {!task.is_parent_container &&
                   !isSoftwareProject &&
                   renderPriorityIcon(task.priority_value, task.priority_color, task.priority_color_dark)}
-                <div className="task-title" title={task.name} style={{ marginLeft: 0 }}>
-                  {task.name}
+                <div className="task-title" title={decodeHtmlEntities(task.name)} style={{ marginLeft: 0 }}>
+                  {decodeHtmlEntities(task.name)}
                 </div>
               </div>
 
@@ -993,9 +997,9 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                         {!sub.is_parent_container && renderPriorityIcon(sub.priority_value, sub.priority_color, sub.priority_color_dark)}
                         <span
                           className="flex-1 truncate text-xs text-gray-800 dark:text-gray-100"
-                          title={sub.name}
+                          title={decodeHtmlEntities(sub.name)}
                         >
-                          {sub.name}
+                          {decodeHtmlEntities(sub.name)}
                         </span>
                         <span className="task-due-date ml-2 text-[10px] text-gray-500 dark:text-gray-400">
                           {sub.end_date ? formatDate(sub.end_date) : ''}

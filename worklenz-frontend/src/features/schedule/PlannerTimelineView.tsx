@@ -8,7 +8,7 @@ dayjs.extend(isoWeek);
 
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Badge, Button, DatePicker, Flex, Space, theme, Tooltip } from '@/shared/antd-imports';
+import { Badge, Button, DatePicker, Flex, Space, theme, Tooltip, message } from '@/shared/antd-imports';
 import {
   ZoomInOutlined,
   ZoomOutOutlined,
@@ -19,10 +19,12 @@ import {
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
+
 import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
 import { themeWiseColor } from '@/utils/themeWiseColor';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import PlannerMultiFilterDropdown from '@/features/schedule/PlannerMultiFilterDropdown';
+import { useTimelineDateFilter } from '@/features/schedule/plannerTimelineDateFilter';
 import {
   useFetchProjectsTimelineQuery,
   useUpdateProjectTimelineDatesMutation,
@@ -166,7 +168,7 @@ const TimelineProjectInfoRow: React.FC<TimelineRowProps> = ({
           accidentally navigates away. */}
       <div
         onClick={goToProject}
-        title={project.name}
+        title={decodeHtmlEntities(project.name)}
         style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, cursor: 'pointer', flex: 1 }}
         onMouseEnter={e => {
           const nameEl = e.currentTarget.querySelector('[data-project-name]') as HTMLDivElement | null;
@@ -183,7 +185,7 @@ const TimelineProjectInfoRow: React.FC<TimelineRowProps> = ({
             data-project-name
             style={{ fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
           >
-            {project.name}
+            {decodeHtmlEntities(project.name)}
           </div>
           <div style={{ fontSize: 12, color: token.colorTextSecondary }}>
             {hasDates ? `${startDateStr} - ${endDateStr}` : t('noDatesSet', { defaultValue: 'No dates set' })}
@@ -361,7 +363,7 @@ const TimelineProjectBarRow: React.FC<TimelineBarRowProps> = ({
   // label/value layout of Schedule's own task tooltip (opacity-dimmed label, plain value).
   const projectTooltip = (
     <div style={{ minWidth: 170 }}>
-      <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>{project.name}</div>
+      <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>{decodeHtmlEntities(project.name)}</div>
       {isOverdue && (
         <div style={{ fontSize: 12, fontWeight: 700, color: token.colorError, marginBottom: 6 }}>
           ⚠ {t('overdue', { defaultValue: 'Overdue' })}
@@ -635,7 +637,10 @@ const TimelineExpandedProjectTasks: React.FC<TimelineExpandedProjectTasksProps> 
   endDate,
   onTasksChange,
 }) => {
-  const { data, isLoading } = useFetchTaskTimelineQuery({ projectId, startDate, endDate });
+  const { data, isLoading } = useFetchTaskTimelineQuery(
+    { projectId, startDate, endDate },
+    { refetchOnMountOrArgChange: true }
+  );
 
   useEffect(() => {
     onTasksChange(projectId, isLoading ? undefined : (data?.body ?? []));
@@ -675,7 +680,10 @@ const TimelineExpandedProjectsBatchTasks: React.FC<TimelineExpandedProjectsBatch
   // across re-renders as long as the actual id set doesn't change) rather than the
   // `projectIds` array reference, which is a new array every render.
   const projectIdParam = projectIds.join(',');
-  const { data, isLoading } = useFetchTaskTimelineQuery({ projectId: projectIdParam, startDate, endDate });
+  const { data, isLoading } = useFetchTaskTimelineQuery(
+    { projectId: projectIdParam, startDate, endDate },
+    { refetchOnMountOrArgChange: true }
+  );
 
   useEffect(() => {
     if (isLoading) return;
@@ -719,7 +727,7 @@ const TimelineTaskInfoRow: React.FC<TimelineTaskInfoRowProps> = ({ task, borderC
   return (
     <div
       onClick={onClick}
-      title={task.name}
+      title={decodeHtmlEntities(task.name)}
       style={{
         height: MAIN_ROW_HEIGHT,
         minHeight: MAIN_ROW_HEIGHT,
@@ -744,7 +752,7 @@ const TimelineTaskInfoRow: React.FC<TimelineTaskInfoRowProps> = ({ task, borderC
           opacity: task.is_done_status ? 0.6 : 1,
         }}
       >
-        {task.name}
+        {decodeHtmlEntities(task.name)}
       </div>
       {task.subtask_count > 0 && (
         <span style={{ fontSize: 11, opacity: 0.5, flexShrink: 0 }}>
@@ -920,7 +928,7 @@ const TimelineTaskBarRow: React.FC<TimelineTaskBarRowProps> = ({
         <Tooltip
           title={
             <div style={{ minWidth: 170 }}>
-              <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>{task.name}</div>
+              <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>{decodeHtmlEntities(task.name)}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12 }}>
                 <div>
                   <span style={{ opacity: 0.65 }}>{t('dates', { defaultValue: 'Dates' })}: </span>
@@ -978,7 +986,7 @@ const PlannerTimelineView: React.FC = () => {
   // Live sync: date/status changes made here (or in any other project view) refresh
   // this view's data via RTK Query cache invalidation — see useScheduleSocketHandlers
   // for exactly which socket events it listens for.
-  useScheduleSocketHandlers();
+  // Handled by useScheduleSocketHandlers in MainLayout.tsx
 
   const [zoom, setZoom] = useState<TimelineZoom>('months');
   const [filterProjects, setFilterProjects] = useState<string[]>([]);
@@ -989,7 +997,16 @@ const PlannerTimelineView: React.FC = () => {
   // Portfolio-wide date range filter — narrows both which projects are shown and, once
   // applied, becomes the visible grid range itself (see rangeStart/rangeEnd below)
   // instead of the range being auto-derived from the filtered projects' own dates.
-  const [dateFilter, setDateFilter] = useState<[Dayjs, Dayjs] | null>(null);
+  const {
+    dateFilter,
+    dateRangeError,
+    disabledDate,
+    onCalendarChange,
+    onChange: handleDateRangeChange,
+    onFocus: handleRangePickerFocus,
+    onOpenChange: handleRangePickerOpenChange,
+    clearAll: clearDateFilter,
+  } = useTimelineDateFilter({ t });
   const anyFilterActive =
     filterProjects.length > 0 ||
     filterStatuses.length > 0 ||
@@ -1003,7 +1020,7 @@ const PlannerTimelineView: React.FC = () => {
     setFilterPriorities([]);
     setFilterCategories([]);
     setFilterClients([]);
-    setDateFilter(null);
+    clearDateFilter();
   };
 
   // Which projects are expanded to show their tasks in place, and the tasks fetched for
@@ -1552,7 +1569,7 @@ const PlannerTimelineView: React.FC = () => {
       <Flex align="center" gap={8} wrap="wrap" style={{ padding: '10px 12px' }}>
         <PlannerMultiFilterDropdown
           label={t('allProjects', { defaultValue: 'Projects' })}
-          options={allProjects.map(p => ({ value: p.id, label: p.name || '' }))}
+          options={allProjects.map(p => ({ value: p.id, label: decodeHtmlEntities(p.name) || '' }))}
           selected={filterProjects}
           onChange={setFilterProjects}
         />
@@ -1580,16 +1597,29 @@ const PlannerTimelineView: React.FC = () => {
           selected={filterClients}
           onChange={setFilterClients}
         />
-        <DatePicker.RangePicker
-          size="small"
-          value={dateFilter}
-          onChange={v => setDateFilter(v && v[0] && v[1] ? [v[0], v[1]] : null)}
-          placeholder={[
-            t('startDate', { defaultValue: 'Start date' }),
-            t('endDate', { defaultValue: 'End date' }),
-          ]}
-          style={{ fontSize: 12 }}
-        />
+        <Tooltip
+          title={dateRangeError}
+          open={!!dateRangeError}
+          placement="topLeft"
+          color="red"
+        >
+          <DatePicker.RangePicker
+            size="small"
+            status={dateRangeError ? 'error' : undefined}
+            order={false}
+            value={dateFilter}
+            onChange={handleDateRangeChange}
+            onFocus={handleRangePickerFocus}
+            onCalendarChange={onCalendarChange}
+            onOpenChange={handleRangePickerOpenChange}
+            disabledDate={disabledDate}
+            placeholder={[
+              t('startDate', { defaultValue: 'Start date' }),
+              t('endDate', { defaultValue: 'End date' }),
+            ]}
+            style={{ fontSize: 12 }}
+          />
+        </Tooltip>
       </Flex>
 
       {/* Range label + zoom row */}

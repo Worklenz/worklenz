@@ -5,6 +5,7 @@ import { StatusTag } from '@/components/client-portal/v2/StatusTag';
 import { PriorityTag } from '@/components/client-portal/v2/portal-tags';
 import { formatPortalDate, formatRelativeTime } from '@/components/client-portal/v2/format';
 import { OVERVIEW_NS, resolveStatus, WidgetFrame, WidgetRow, type WidgetProps } from './WidgetFrame';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 export const PendingApprovalsWidget = ({ result, loading, onRetry }: WidgetProps<'pending_approvals'>) => {
   const { t, i18n } = useTranslation(OVERVIEW_NS);
@@ -22,8 +23,8 @@ export const PendingApprovalsWidget = ({ result, loading, onRetry }: WidgetProps
           <WidgetRow
             key={item.id}
             to={portalPaths.approval(item.id)}
-            title={`${item.ref_no} · ${item.title}`}
-            subtitle={`${item.organization_name} · ${item.approver_name}`}
+            title={`${item.ref_no} · ${decodeHtmlEntities(item.title)}`}
+            subtitle={`${decodeHtmlEntities(item.organization_name)} · ${item.approver_name}`}
             right={
               item.due_date ? (
                 <StatusTone overdue={item.is_overdue}>
@@ -66,8 +67,8 @@ export const ChangeRequestsWidget = ({ result, loading, onRetry }: WidgetProps<'
           <WidgetRow
             key={item.id}
             to={portalPaths.changeRequest(item.id)}
-            title={`${item.cr_no} · ${item.title}`}
-            subtitle={`${item.organization_name} · ${formatRelativeTime(item.submitted_at, i18n.language) ?? ''}`}
+            title={`${item.cr_no} · ${decodeHtmlEntities(item.title)}`}
+            subtitle={`${decodeHtmlEntities(item.organization_name)} · ${formatRelativeTime(item.submitted_at, i18n.language) ?? ''}`}
             right={<PriorityTag priority={item.priority} />}
           />
         ))
@@ -92,8 +93,10 @@ export const UpcomingMilestonesWidget = ({ result, loading, onRetry }: WidgetPro
           <WidgetRow
             key={item.id}
             to={portalPaths.project(item.project_id, 'milestones')}
-            title={item.name}
-            subtitle={[item.project_name, item.organization_name].filter(Boolean).join(' · ')}
+            title={decodeHtmlEntities(item.name)}
+            subtitle={[decodeHtmlEntities(item.project_name), decodeHtmlEntities(item.organization_name)]
+              .filter(Boolean)
+              .join(' · ')}
             right={
               <StatusTag tone={item.is_late ? 'red' : 'gray'}>
                 {formatPortalDate(item.target_date, i18n.language) ?? ''}
@@ -123,7 +126,7 @@ export const LatestDiscussionsWidget = ({ result, loading, onRetry }: WidgetProp
             key={item.id}
             to={portalPaths.discussion(item.id)}
             unread={item.unread}
-            title={`${item.organization_name} · ${item.context_label}`}
+            title={`${decodeHtmlEntities(item.organization_name)} · ${decodeHtmlEntities(item.context_label)}`}
             subtitle={item.last_text}
             right={formatRelativeTime(item.last_at, i18n.language)}
           />
@@ -152,7 +155,7 @@ export const MentionsMeWidget = ({ result, loading, onRetry }: WidgetProps<'ment
             unread={item.unread}
             title={t('widgets.mentions_me.row', {
               name: item.author_name,
-              project: item.project_name,
+              project: decodeHtmlEntities(item.project_name),
               defaultValue: '{{name}} in {{project}}',
             })}
             subtitle={item.excerpt}
@@ -193,7 +196,7 @@ export const NeedsAttentionWidget = ({ result, loading, onRetry }: WidgetProps<'
           <WidgetRow
             key={`${item.kind}-${item.target.id}`}
             to={targetPath(item.target)}
-            title={item.label}
+            title={decodeHtmlEntities(item.label)}
             subtitle={`${KIND_LABELS[item.kind]} · ${item.detail}`}
             right={formatPortalDate(item.at, i18n.language)}
           />

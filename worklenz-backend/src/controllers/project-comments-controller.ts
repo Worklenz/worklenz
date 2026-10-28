@@ -10,6 +10,7 @@ import { escapeRegExp, getColor, slugify, sanitizeCommentContent, megabytesToByt
 import { HTML_TAG_REGEXP } from "../shared/constants";
 import { IProjectCommentEmailNotification } from "../interfaces/comment-email-notification";
 import { sendProjectComment } from "../shared/email-notifications";
+import { getOrganizationLogoUrl } from "../shared/email-templates";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
@@ -34,6 +35,7 @@ interface IMailConfig {
   receiverName: string;
   content: string;
   projectId: string;
+  teamId: string;
   teamName: string;
   projectName: string;
 }
@@ -87,6 +89,7 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
 
   private static async sendMail(config: IMailConfig) {
     const subject = config.message.replace(HTML_TAG_REGEXP, "");
+    const logoUrl = await getOrganizationLogoUrl(config.teamId);
 
     const data: IProjectCommentEmailNotification = {
       greeting: `Hi ${config.receiverName}`,
@@ -95,7 +98,8 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
       project_name: config.projectName,
       comment: config.content,
       settings_url: `${getBaseUrl()}/worklenz/settings/notifications`,
-      project_url: `${getBaseUrl()}/worklenz/projects/${config.projectId}`
+      project_url: `${getBaseUrl()}/worklenz/projects/${config.projectId}`,
+      logo_url: logoUrl,
     };
 
     await sendProjectComment(config.receiverEmail, data);
@@ -253,6 +257,7 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
           receiverName: member.name,
           content: emailCommentContent,
           projectId,
+          teamId: teamId as string,
           teamName: data.comment.team_name,
           projectName: data.comment.project_name
         });
@@ -286,6 +291,7 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
             receiverName: member.name,
             content: emailCommentContent,
             projectId,
+            teamId: teamId as string,
             teamName: data.comment.team_name,
             projectName: data.comment.project_name
           });

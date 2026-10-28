@@ -18,6 +18,7 @@ import {
 import type { PortalProject, PortalTask, PortalVisibility } from '@/types/client-portal/v2';
 import { TaskDrawer } from './TaskDrawer';
 import { useTaskStatusLabels } from './task-labels';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface TasksTabProps {
   project: PortalProject;
@@ -60,7 +61,8 @@ export const TasksTab = ({ project }: TasksTabProps) => {
   const changeVisibility = async (task: PortalTask, visibility: PortalVisibility) => {
     try {
       await updateTask({ projectId: project.id, taskId: task.id, body: { visibility } }).unwrap();
-      showVisibilityToast('task', task.client_title || task.title, visibility);
+      // client_title is plain text; only legacy task.title may contain encoded entities.
+      showVisibilityToast('task', task.client_title || decodeHtmlEntities(task.title), visibility);
     } catch (error) {
       message.error(getPortalErrorMessage(error, t('tasks.visibilityFailed', { defaultValue: 'The visibility could not be changed.' })));
     }
@@ -72,7 +74,7 @@ export const TasksTab = ({ project }: TasksTabProps) => {
       title: t('tasks.columns.task', { defaultValue: 'Task' }),
       render: (_value, task) => (
         <div>
-          <div style={{ fontWeight: 600, fontSize: 13 }}>{task.title}</div>
+          <div style={{ fontWeight: 600, fontSize: 13 }}>{decodeHtmlEntities(task.title)}</div>
           <div style={{ fontSize: 11.5, color: token.colorTextTertiary }}>{task.key}</div>
         </div>
       ),
@@ -107,7 +109,7 @@ export const TasksTab = ({ project }: TasksTabProps) => {
       render: (_value, task) =>
         task.visibility === 'client' ? (
           <div style={{ fontSize: 12.5 }}>
-            {task.client_title || task.title}
+            {task.client_title || decodeHtmlEntities(task.title)}
             <div style={{ fontSize: 11.5, color: token.colorTextSecondary }}>{labels.client[task.status]}</div>
           </div>
         ) : (
@@ -122,7 +124,7 @@ export const TasksTab = ({ project }: TasksTabProps) => {
         <span onClick={event => event.stopPropagation()}>
           <VisibilitySwitch
             visibility={task.visibility}
-            itemLabel={task.title}
+            itemLabel={decodeHtmlEntities(task.title)}
             disabled={isUpdating}
             onChange={visibility => void changeVisibility(task, visibility)}
           />

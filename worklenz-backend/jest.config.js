@@ -173,8 +173,8 @@ module.exports = {
   },
 
   // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
-  // yoga-layout (a react-pdf dependency) ships untranspiled TS/ESM sources, so it must be transformed.
-  transformIgnorePatterns: ["[\\\\/]node_modules[\\\\/](?!yoga-layout)", "\\.pnp\\.[^\\\\]+$"],
+  // yoga-layout (a react-pdf dependency) and the ESM-only htmlparser2 family (sanitize-html, possibly nested) must be transformed.
+  transformIgnorePatterns: ["[\\\\/]node_modules[\\\\/](?!(?:yoga-layout|htmlparser2|domhandler|domutils|domelementtype|dom-serializer|entities)[\\\\/])(?!.*[\\\\/]node_modules[\\\\/](?:yoga-layout|htmlparser2|domhandler|domutils|domelementtype|dom-serializer|entities)[\\\\/])", "\\.pnp\\.[^\\\\]+$"],
 
   // An array of regexp pattern strings that are matched against all modules before the module loader will automatically return a mock for them
   // unmockedModulePathPatterns: undefined,

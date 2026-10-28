@@ -49,6 +49,7 @@ import {
 // Quotes share the invoices module's type scale and table/modal styling.
 import '../invoices/invoices.css';
 import { PortalLoadingOverlay } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Text } = Typography;
 
@@ -333,10 +334,12 @@ export const QuotesTable = () => {
             style={{ textTransform: 'capitalize' }}
             onClick={event => event.stopPropagation()}
           >
-            {record.clientName || '-'}
+            {decodeHtmlEntities(record.clientName) || '-'}
           </Link>
         ) : (
-          <Text style={{ textTransform: 'capitalize' }}>{record.clientName || '-'}</Text>
+          <Text style={{ textTransform: 'capitalize' }}>
+            {decodeHtmlEntities(record.clientName) || '-'}
+          </Text>
         ),
     },
     {
@@ -344,7 +347,9 @@ export const QuotesTable = () => {
       title: t('projectColumn', { defaultValue: 'Project' }),
       render: (_v, record) => (
         <div>
-          <Text type="secondary">{record.projectName || record.serviceName || '-'}</Text>
+          <Text type="secondary">
+            {decodeHtmlEntities(record.projectName || record.serviceName) || '-'}
+          </Text>
           {record.changeRequestNumber && (
             <div>
               <Text style={{ fontSize: 12 }}>{record.changeRequestNumber}</Text>

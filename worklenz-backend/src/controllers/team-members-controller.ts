@@ -28,11 +28,15 @@ import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
 import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
 import { withTeamSeatLock } from "../shared/team-seat-lock";
+import { isSelfHostedDeployment } from "../shared/deployment-mode";
 import {
   canAssignRole,
   canManageTargetRole,
+  canManageTeamMembers,
   getTeamMemberRoleName,
   hasTeamAdminPrivileges,
+  isSelfTeamMember,
+  normalizeTeamRoleName,
   TEAM_ROLE_NAMES,
 } from "../shared/team-permissions";
 import { NotificationsService } from "../services/notifications/notifications.service";
@@ -56,23 +60,59 @@ import {
 import { AUDIT_EVENT_TYPE } from "../shared/audit-log-constants";
 
 export default class TeamMembersController extends WorklenzControllerBase {
+  private static async isSelfMemberInTeam(
+    userId?: string,
+    teamId?: string,
+    teamMemberId?: string,
+  ): Promise<boolean> {
+    if (!userId || !teamId || !teamMemberId) return false;
+    try {
+      const q = `
+        SELECT EXISTS(
+          SELECT 1 FROM team_members
+          WHERE id = $1::UUID AND user_id = $2::UUID AND team_id = $3::UUID
+        ) AS is_self;
+      `;
+      const result = await db.query(q, [teamMemberId, userId, teamId]);
+      return result?.rows?.[0]?.is_self || false;
+    } catch {
+      return false;
+    }
+  }
+
   private static async ensureAssignableRole(
     req: IWorkLenzRequest,
     roleName?: string | null,
     teamMemberId?: string,
+    currentRoleName?: string | null,
   ): Promise<IWorkLenzResponse | null> {
     if (!roleName) {
       return null;
     }
+
+    const isSelf =
+      isSelfTeamMember(req.user, teamMemberId) ||
+      (await this.isSelfMemberInTeam(req.user?.id, req.user?.team_id, teamMemberId));
 
     // Allow team owner to maintain their own role (Owner)
     if (
       req.user?.owner &&
       roleName === TEAM_ROLE_NAMES.OWNER &&
       teamMemberId &&
-      teamMemberId === req.user.team_member_id
+      isSelf
     ) {
       return null; // Allow owner to keep their own role
+    }
+
+    // Allow any user maintaining their current role on self-edit
+    if (isSelf && teamMemberId && req.user?.team_id) {
+      const existingRole = currentRoleName || (await getTeamMemberRoleName(teamMemberId, req.user.team_id));
+      if (
+        existingRole &&
+        normalizeTeamRoleName(roleName) === normalizeTeamRoleName(existingRole)
+      ) {
+        return null;
+      }
     }
 
     if (!canAssignRole(req.user, roleName)) {
@@ -89,6 +129,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
   private static async ensureManageableTarget(
     req: IWorkLenzRequest,
     teamMemberId?: string,
+    options?: { allowSelf?: boolean },
   ): Promise<IWorkLenzResponse | null> {
     if (!teamMemberId || !req.user?.team_id) {
       return new ServerResponse(
@@ -104,8 +145,17 @@ export default class TeamMembersController extends WorklenzControllerBase {
       return new ServerResponse(false, null, "Team member not found.") as unknown as IWorkLenzResponse;
     }
 
+    const isSelf =
+      isSelfTeamMember(req.user, teamMemberId) ||
+      (await this.isSelfMemberInTeam(req.user?.id, req.user?.team_id, teamMemberId));
+
     // If team owner is viewing/managing their own details, allow it
-    if (req.user.owner && teamMemberId === req.user.team_member_id) {
+    if (req.user?.owner && isSelf) {
+      return null;
+    }
+
+    // Allow self-view and self-update when allowSelf is enabled
+    if (options?.allowSelf && isSelf) {
       return null;
     }
 
@@ -135,6 +185,32 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     const [data] = result.rows;
     return data.exists;
+  }
+
+  /**
+   * A self-hosted deployment is licensed at the deployment level, so the
+   * organization's license row (which may be a stale trial) must not apply seat limits.
+   */
+  private static isSelfHostedLicense(subscriptionData: {
+    subscription_type?: string;
+  } | null | undefined): boolean {
+    return (
+      isSelfHostedDeployment() ||
+      subscriptionData?.subscription_type === "SELF_HOSTED"
+    );
+  }
+
+  /** Returns true when the email is already a member (or has a pending invite) in this team. */
+  public static async checkIfEmailInTeam(
+    team_id: string,
+    email: string,
+  ): Promise<boolean> {
+    const q = `SELECT EXISTS(SELECT 1
+                             FROM team_member_info_view
+                             WHERE team_id = $1::UUID
+                               AND LOWER(email) = LOWER($2::TEXT));`;
+    const result = await db.query(q, [team_id, email]);
+    return result.rows[0]?.exists === true;
   }
 
   public static async checkIfUserActiveInOtherTeams(
@@ -266,6 +342,39 @@ export default class TeamMembersController extends WorklenzControllerBase {
         .send(new ServerResponse(false, "Required fields are missing."));
     }
 
+    // Normalize (trim/lowercase), drop blanks and in-request duplicates, then skip
+    // addresses that are already members or have a pending invite in this team.
+    const requestedEmails: string[] = Array.isArray(req.body.emails)
+      ? req.body.emails
+      : [];
+    const uniqueEmails = [
+      ...new Set(
+        requestedEmails
+          .map((email) => String(email ?? "").trim().toLowerCase())
+          .filter((email) => email.length > 0),
+      ),
+    ];
+    const teamId = req.user.team_id;
+    const memberFlags = await Promise.all(
+      uniqueEmails.map((email) => this.checkIfEmailInTeam(teamId, email)),
+    );
+    const newEmails = uniqueEmails.filter((_, index) => !memberFlags[index]);
+
+    if (newEmails.length === 0) {
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            uniqueEmails.length > 0
+              ? "All of these email addresses are already team members or have a pending invitation."
+              : "Required fields are missing.",
+          ),
+        );
+    }
+    req.body.emails = newEmails;
+
     /**
      * Checks the subscription status of the team.
      * @type {Object} subscriptionData - Object containing subscription information
@@ -277,7 +386,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     let incrementBy = 0;
 
     // Handle self-hosted subscriptions differently
-    if (subscriptionData.subscription_type === "SELF_HOSTED") {
+    if (TeamMembersController.isSelfHostedLicense(subscriptionData)) {
       // Check if users exist and add them if they don't
       await Promise.all(
         req.body.emails.map(async (email: string) => {
@@ -738,6 +847,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     const targetManagementError = await this.ensureManageableTarget(
       req,
       req.params.id,
+      { allowSelf: true },
     );
 
     if (targetManagementError) {
@@ -819,10 +929,25 @@ export default class TeamMembersController extends WorklenzControllerBase {
     const targetManagementError = await this.ensureManageableTarget(
       req,
       req.params.id,
+      { allowSelf: true },
     );
 
     if (targetManagementError) {
       return res.status(200).send(targetManagementError);
+    }
+
+    const previousRoleName = await getTeamMemberRoleName(req.params.id, req.user?.team_id || "");
+    const memberBefore = await captureTeamMember(req.user, req.params.id);
+
+    const isSelf =
+      isSelfTeamMember(req.user, req.params.id) ||
+      (await this.isSelfMemberInTeam(req.user?.id, req.user?.team_id, req.params.id));
+
+    // If caller cannot manage team members or is editing their own record,
+    // protect role/admin fields from unauthorized modification or escalation.
+    if (!canManageTeamMembers(req.user) || isSelf) {
+      req.body.role_name = previousRoleName;
+      req.body.is_admin = previousRoleName === TEAM_ROLE_NAMES.ADMIN;
     }
 
     const requestedRoleName =
@@ -832,24 +957,38 @@ export default class TeamMembersController extends WorklenzControllerBase {
       req,
       requestedRoleName,
       req.params.id,
+      previousRoleName,
     );
 
     if (roleAssignmentError) {
       return res.status(200).send(roleAssignmentError);
     }
 
-    // captured before update_team_member() runs so there's an old value
-    // to compare against. Note: the Owner role is never an assignable target of this endpoint
-    // (see ensureAssignableRole/MANAGEABLE_ROLE_MAP in shared/team-permissions.ts — Owner can
-    // only "keep their own role", never be assigned to someone else), so there is no
-    // "ownership transferred" code path to instrument here or anywhere else in this
-    // codebase today. Only Admin/Team Lead/Member transitions are logged below.
-    const previousRoleName = await getTeamMemberRoleName(req.params.id, req.user?.team_id || "");
-    const memberBefore = await captureTeamMember(req.user, req.params.id);
+    // Only Owners/Admins may create job titles; everyone else (including
+    // self-edits) can only pick one that already exists in the team.
+    if (!canManageTeamMembers(req.user)) {
+      const requestedJobTitle = typeof req.body.job_title === "string"
+        ? req.body.job_title.trim()
+        : "";
+      if (requestedJobTitle) {
+        const existingTitle = await db.query(
+          `SELECT name FROM job_titles WHERE team_id = $1 AND LOWER(name) = LOWER($2) LIMIT 1;`,
+          [req.user?.team_id, requestedJobTitle],
+        );
+        if (!existingTitle.rows.length) {
+          return res
+            .status(200)
+            .send(new ServerResponse(false, null, "Only owners and admins can create new job titles"));
+        }
+        req.body.job_title = existingTitle.rows[0].name;
+      }
+    }
 
     req.body.id = req.params.id;
     req.body.team_id = req.user?.team_id || null;
-    req.body.is_admin = !!req.body.is_admin;
+    req.body.is_admin = !canManageTeamMembers(req.user) || isSelf
+      ? previousRoleName === TEAM_ROLE_NAMES.ADMIN
+      : !!req.body.is_admin;
 
     const q = `SELECT update_team_member($1) AS team_member;`;
     const result = await db.query(q, [JSON.stringify(req.body)]);
@@ -928,7 +1067,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
     const { id } = req.params;
     const { name } = req.body;
 
-    const targetManagementError = await this.ensureManageableTarget(req, id);
+    const targetManagementError = await this.ensureManageableTarget(req, id, {
+      allowSelf: true,
+    });
 
     if (targetManagementError) {
       return res.status(200).send(targetManagementError);
@@ -2421,7 +2562,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
 
     // Handle self-hosted subscriptions - allow link generation
-    if (subscriptionData.subscription_type === "SELF_HOSTED") {
+    if (TeamMembersController.isSelfHostedLicense(subscriptionData)) {
       // Self-hosted can generate links without restrictions
     } else {
       // Check if subscription status is valid
@@ -2808,7 +2949,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       const subscriptionData = await checkTeamSubscriptionStatus(teamId);
 
       // Handle self-hosted subscriptions
-      if (subscriptionData.subscription_type === "SELF_HOSTED") {
+      if (TeamMembersController.isSelfHostedLicense(subscriptionData)) {
         // Self-hosted can accept invitations without restrictions
       } else {
         // Check if subscription status is valid

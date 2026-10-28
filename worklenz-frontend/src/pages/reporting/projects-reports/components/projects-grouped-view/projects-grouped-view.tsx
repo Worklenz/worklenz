@@ -18,6 +18,7 @@ import { IRPTProject } from '@/types/reporting/reporting.types';
 import { fetchGroupedProjects } from '@/features/reporting/projectReports/project-reports-slice';
 import ProjectTasksModal from './project-tasks-modal';
 import { colors } from '@/styles/colors';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import './projects-grouped-view.css';
 
 // Pagination constants for expanding projects within groups (client-side)
@@ -276,7 +277,7 @@ const ProjectsGroupedView = () => {
             <Flex align="center" gap={8} style={{ flex: 1, minWidth: 0 }}>
               <Badge color={project.color_code} />
               <Typography.Text ellipsis style={{ flex: 1 }} className="project-name-text">
-                {project.name}
+                {decodeHtmlEntities(project.name)}
               </Typography.Text>
             </Flex>
             <Flex align="center" gap={16} style={{ flexShrink: 0 }}>

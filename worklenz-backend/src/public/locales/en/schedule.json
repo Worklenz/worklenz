@@ -22,6 +22,7 @@
   "tasks": "tasks",
   "startDate": "Start Date",
   "endDate": "End Date",
+  "endDateBeforeStartDate": "End date cannot be earlier than start date",
   "hoursPerDay": "Hours Per Day",
   "totalHours": "Total Hours",
   "deleteButton": "Delete",

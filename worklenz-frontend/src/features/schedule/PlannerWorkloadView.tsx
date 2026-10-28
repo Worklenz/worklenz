@@ -25,6 +25,7 @@ import { SettingOutlined, SearchOutlined, BranchesOutlined } from '@ant-design/i
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@/utils/themeWiseColor';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import CustomAvatar from '@/components/CustomAvatar';
 import {
   useFetchScheduleMembersQuery,
@@ -353,7 +354,9 @@ const PlannerWorkloadView: React.FC = () => {
   const endDate = visibleDateStrs[visibleDateStrs.length - 1];
 
   // ── Data: members & projects (real, shared with the rest of Planner) ──
-  const { data: membersResp, isLoading: membersLoading } = useFetchScheduleMembersQuery();
+  const { data: membersResp, isLoading: membersLoading } = useFetchScheduleMembersQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
   const wlMembers: WlMember[] = useMemo(
     () =>
       (membersResp?.body || []).map((m: any) => ({
@@ -447,7 +450,7 @@ const PlannerWorkloadView: React.FC = () => {
   // ── Data: scheduled tasks in the visible window ──
   const { data: taskTimelineResp, isLoading: tasksLoading } = useFetchTaskTimelineQuery(
     { startDate, endDate },
-    { skip: !startDate || !endDate }
+    { skip: !startDate || !endDate, refetchOnMountOrArgChange: true }
   );
 
   const { data: capacityResponse } = useFetchDailyCapacityQuery(
@@ -455,7 +458,7 @@ const PlannerWorkloadView: React.FC = () => {
       startDate: startDate || '',
       endDate: endDate || '',
     },
-    { skip: !startDate || !endDate }
+    { skip: !startDate || !endDate, refetchOnMountOrArgChange: true }
   );
 
   const memberCapacityMap = useMemo(() => {
@@ -511,7 +514,7 @@ const PlannerWorkloadView: React.FC = () => {
           memberId: a.id,
           projectId: task.project_id,
           day,
-          title: task.name,
+          title: decodeHtmlEntities(task.name),
           estHours: task.total_minutes != null ? Math.round((task.total_minutes / 60) * 10) / 10 : null,
           color: task.project_color || projectById[task.project_id]?.color || token.colorPrimary,
           multiAssignee: assignees.length > 1,
@@ -520,7 +523,7 @@ const PlannerWorkloadView: React.FC = () => {
           phaseName: task.phase_name,
           assigneeNames: assignees.map((x: any) => x.name).filter(Boolean),
           isSubTask: !!task.parent_task_id,
-          parentTaskName: task.parent_task_name,
+          parentTaskName: decodeHtmlEntities(task.parent_task_name),
           parentTaskId: task.parent_task_id ?? null,
         });
       });
@@ -531,8 +534,17 @@ const PlannerWorkloadView: React.FC = () => {
   // Keeps this view's socket room membership in sync with the projects currently
   // loaded, so PROJECT_UPDATES_AVAILABLE broadcasts — e.g. a new subtask created
   // elsewhere — actually reach it instead of only showing up after a hard refresh.
-  const loadedProjectIds = useMemo(() => projectIdsFromTasks(taskTimelineResp?.body || []), [taskTimelineResp]);
-  useProjectRoomSync(loadedProjectIds);
+  const relevantProjectIds = useMemo(() => {
+    const ids = new Set<string>();
+    orgProjects.forEach((p: any) => {
+      if (p?.id) ids.add(p.id);
+    });
+    (taskTimelineResp?.body || []).forEach((t: any) => {
+      if (t?.project_id) ids.add(t.project_id);
+    });
+    return ids;
+  }, [orgProjects, taskTimelineResp]);
+  useProjectRoomSync(relevantProjectIds);
 
   const refreshAfterMutation = () => {
     dispatch(scheduleApi.util.invalidateTags(['TaskTimeline', 'Workload', 'MemberProjects', 'Capacity', 'TimeOff']));
@@ -690,7 +702,7 @@ const PlannerWorkloadView: React.FC = () => {
     return wlProjects.map(p => ({
       axis: 'project' as Axis,
       key: p.id,
-      label: p.name,
+      label: decodeHtmlEntities(p.name),
       sub: p.client,
       meterColor: p.color,
       avatar: (
@@ -1759,7 +1771,7 @@ const WorkloadAddPopover: React.FC<{
         message.error(
           task?.message ||
             t('taskCreationRestricted', {
-              defaultValue: 'Task creation is restricted to Admins and Team Leads only. Please contact your admin for access.',
+              defaultValue: 'Task creation is restricted to Admins, Team Leads, and Project Managers only. Please contact your admin for access.',
             })
         );
         return;
@@ -1774,7 +1786,7 @@ const WorkloadAddPopover: React.FC<{
         })
       );
       const memberId = ctx.axis === 'member' ? ctx.rowKey : otherAxisVal;
-      onScheduleTask(task.id, taskProjectId, memberId, dateStr, task.name);
+      onScheduleTask(task.id, taskProjectId, memberId, dateStr, decodeHtmlEntities(task.name));
       onClose();
     });
   };
@@ -1843,7 +1855,7 @@ const WorkloadAddPopover: React.FC<{
                 optionFilterProp="label"
                 placeholder={t('selectProject', { defaultValue: 'Select project…' })}
                 style={{ width: '100%' }}
-                options={projects.map(p => ({ value: p.id, label: p.name }))}
+                options={projects.map(p => ({ value: p.id, label: decodeHtmlEntities(p.name) }))}
               />
             </Form.Item>
           )}
@@ -1893,7 +1905,7 @@ const WorkloadAddPopover: React.FC<{
                 optionFilterProp="label"
                 placeholder={t('selectProject', { defaultValue: 'Select project…' })}
                 style={{ width: '100%' }}
-                options={projects.map(p => ({ value: p.id, label: p.name }))}
+                options={projects.map(p => ({ value: p.id, label: decodeHtmlEntities(p.name) }))}
               />
             </Form.Item>
           )}
@@ -2002,7 +2014,7 @@ const WorkloadAddPopover: React.FC<{
                 value={otherAxisVal}
                 onChange={setOtherAxisVal}
                 style={{ width: '100%' }}
-                options={projects.map(p => ({ value: p.id, label: p.name }))}
+                options={projects.map(p => ({ value: p.id, label: decodeHtmlEntities(p.name) }))}
               />
             </Form.Item>
           ) : (

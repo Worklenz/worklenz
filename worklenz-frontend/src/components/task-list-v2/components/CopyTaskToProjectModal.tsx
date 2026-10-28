@@ -3,6 +3,7 @@ import { Alert, Button, Empty, Modal, Select, Spin, Switch, Typography } from '@
 import { useTranslation } from 'react-i18next';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import logger from '@/utils/errorLogger';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface CopyTaskToProjectModalProps {
   open: boolean;
@@ -130,7 +131,7 @@ const CopyTaskToProjectModal = ({
                 style={{ backgroundColor: project.color_code }}
               />
             )}
-            <span>{project.name}</span>
+            <span>{decodeHtmlEntities(project.name)}</span>
           </span>
         ),
         searchLabel: project.name,

@@ -43,5 +43,38 @@
   "changeMemberStatusConfirmation": "Voulez-vous vraiment modifier le statut de ce membre ?",
   "yesProceed": "Oui, continuer",
   "cancel": "Annuler",
-  "removeFromProject": "Supprimer du projet"
+  "removeFromProject": "Supprimer du projet",
+  "guestCount": "Invité",
+  "guestsCountPlural": "Invités",
+  "emptyGuestsText": "Il n'y a aucun invité dans ce projet.",
+  "emptyTeamMembersText": "Il n'y a aucun membre de l'équipe dans ce projet.",
+  "rowsPerPage": "Lignes par page :",
+  "paginationSummary": "{{range}} sur {{total}}",
+  "tabs": {
+    "ariaLabel": "Sections des membres",
+    "teamMembers": "Membres de l'équipe",
+    "guests": "Invités",
+    "clientTeam": "Équipe client"
+  },
+  "clientPortal": {
+    "title": "Équipe client",
+    "summary": "{{count}} utilisateur(s) chez {{client}} peuvent ouvrir ce projet dans le Portail client.",
+    "unknownClient": "Client",
+    "viewClient": "Voir le client",
+    "manageAccess": "Gérer l'accès",
+    "nameColumn": "Nom",
+    "emailColumn": "Courriel",
+    "roleColumn": "Rôle",
+    "statusColumn": "Statut",
+    "lastAccessColumn": "Dernier accès",
+    "neverAccessed": "Jamais",
+    "loadFailed": "Impossible de charger les utilisateurs du portail client.",
+    "retry": "Réessayer",
+    "tableLabel": "Utilisateurs du portail client ayant accès à ce projet",
+    "empty": "Aucun utilisateur client n'est encore assigné à ce projet. Assignez-les depuis le Portail client.",
+    "searchPlaceholder": "Rechercher des utilisateurs clients",
+    "searchEmpty": "Aucun utilisateur client ne correspond à votre recherche.",
+    "noClientLinked": "Ce projet n'est pas encore lié à un client. Assignez un client dans le Portail client pour gérer l'accès de l'équipe client ici.",
+    "goToClientPortal": "Aller au Portail client"
+  }
 }

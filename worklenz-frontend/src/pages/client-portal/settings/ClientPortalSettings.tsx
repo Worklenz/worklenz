@@ -1,5 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuthService } from '@/hooks/useAuth';
+import { canUseFeature } from '@/utils/subscription-utils';
 import { Alert, Button, Flex, Typography, message, theme } from '@/shared/antd-imports';
 import {
   BankOutlined,
@@ -30,6 +32,7 @@ import {
 import type { PortalSettingsV2 } from '@/types/client-portal/v2';
 import { CompanyDetailsSection } from './sections/CompanyDetailsSection';
 import { BrandingSection } from './sections/BrandingSection';
+import { LogoCropModal } from './sections/LogoCropModal';
 import { InvoiceTemplateSection } from './sections/InvoiceTemplateSection';
 import { SharingVisibilitySection } from './sections/SharingVisibilitySection';
 import { ClientRolesSection } from './sections/ClientRolesSection';
@@ -78,6 +81,8 @@ const PERMISSION_SWITCHES: ((settings: PortalSettingsV2) => boolean)[] = [
 const ClientPortalSettings = () => {
   const { t } = useTranslation('client-portal-settings');
   const { t: tV2 } = useTranslation('client-portal-v2-settings');
+  const authService = useAuthService();
+  const canBrand = canUseFeature(authService.getCurrentSession(), 'client_portal_branding');
   const { token } = theme.useToken();
   const { trackMixpanelEvent } = useMixpanelTracking();
 
@@ -96,6 +101,8 @@ const ClientPortalSettings = () => {
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [pendingLogoUrl, setPendingLogoUrl] = useState<string | null>(null);
   const [pendingLogoRemoval, setPendingLogoRemoval] = useState(false);
+  const [cropRawSrc, setCropRawSrc] = useState<string | null>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
   // v2 settings: the server copy comes from RTK Query, and `draftV2` holds the user's edits.
   // `null` means "no edits yet", so a background refetch can never overwrite typed changes.
@@ -200,10 +207,45 @@ const ClientPortalSettings = () => {
       message.error(t('logoFileTooLargeError', { defaultValue: 'Logo must be smaller than 2MB.' }));
       return;
     }
-    if (pendingLogoUrl) URL.revokeObjectURL(pendingLogoUrl);
-    setPendingLogoFile(file);
-    setPendingLogoUrl(URL.createObjectURL(file));
-    setPendingLogoRemoval(false);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropRawSrc(reader.result as string);
+      setIsCropModalOpen(true);
+    };
+    reader.onerror = () => {
+      message.error(t('logoUploadFailedError', { defaultValue: 'Failed to upload logo.' }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropDone = async (croppedBase64: string) => {
+    try {
+      const res = await fetch(croppedBase64);
+      const blob = await res.blob();
+      const croppedFile = new File([blob], 'logo-cropped.png', { type: 'image/png' });
+
+      if (croppedFile.size / 1024 / 1024 >= 2) {
+        message.error(t('logoFileTooLargeError', { defaultValue: 'Logo must be smaller than 2MB.' }));
+        setIsCropModalOpen(false);
+        setCropRawSrc(null);
+        return;
+      }
+
+      if (pendingLogoUrl) URL.revokeObjectURL(pendingLogoUrl);
+      setPendingLogoFile(croppedFile);
+      setPendingLogoUrl(URL.createObjectURL(croppedFile));
+      setPendingLogoRemoval(false);
+      setIsCropModalOpen(false);
+      setCropRawSrc(null);
+    } catch (err) {
+      console.error('Failed to process cropped logo', err);
+      message.error(t('logoUploadFailedError', { defaultValue: 'Failed to upload logo.' }));
+    }
+  };
+
+  const handleCropCancel = () => {
+    setIsCropModalOpen(false);
+    setCropRawSrc(null);
   };
 
   const handleStageLogoRemoval = () => {
@@ -231,9 +273,11 @@ const ClientPortalSettings = () => {
       if (response.done) {
         setCustomLogo(null);
         setIsLogoSynced(true);
+        message.success(t('settingsSavedText', { defaultValue: 'Settings saved successfully' }));
       }
     } catch (error) {
       console.error('Failed to reset to organization logo:', error);
+      message.error(t('settingsSaveFailedError', { defaultValue: 'Failed to save settings.' }));
     } finally {
       setSaving(false);
     }
@@ -244,6 +288,8 @@ const ClientPortalSettings = () => {
     setPendingLogoFile(null);
     setPendingLogoUrl(null);
     setPendingLogoRemoval(false);
+    setCropRawSrc(null);
+    setIsCropModalOpen(false);
   };
 
   const hasLegacyChanges = useMemo(
@@ -452,7 +498,24 @@ const ClientPortalSettings = () => {
           {section === 'company' && (
             <CompanyDetailsSection settings={settings} onChange={handleSettingsChange} />
           )}
+          {section === 'branding' && !canBrand && (
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={t('brandingBusinessOnly', {
+                defaultValue:
+                  'Portal logo, colors and removing the Worklenz footer are available on the Business plan.',
+              })}
+            />
+          )}
           {section === 'branding' && (
+            <div
+              style={canBrand ? undefined : { pointerEvents: 'none', opacity: 0.55 }}
+              aria-disabled={!canBrand}
+              // React 18 only forwards `inert` as a string attribute; it blocks keyboard focus too.
+              {...(canBrand ? {} : { inert: '' as unknown as boolean })}
+            >
             <BrandingSection
               settings={settings}
               onChange={handleSettingsChange}
@@ -467,6 +530,7 @@ const ClientPortalSettings = () => {
               onCancelLogoRemoval={handleCancelLogoRemoval}
               onUseOrganizationLogo={handleUseOrganizationLogo}
             />
+            </div>
           )}
           {section === 'invoiceTemplate' && (
             <InvoiceTemplateSection settings={settings} onChange={handleSettingsChange} />
@@ -514,6 +578,14 @@ const ClientPortalSettings = () => {
           )}
         </div>
       </div>
+
+      <LogoCropModal
+        open={isCropModalOpen}
+        imageSrc={cropRawSrc}
+        aspect={1}
+        onCancel={handleCropCancel}
+        onCropComplete={handleCropDone}
+      />
     </div>
   );
 };
