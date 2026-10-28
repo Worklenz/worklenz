@@ -1,29 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  DatePicker,
-  Flex,
-  Select,
-  Space,
-  Switch,
-  Typography,
-  message,
-} from '@/shared/antd-imports';
+import { Alert, Button, Flex, Select, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import { jsPDF } from 'jspdf';
 
 dayjs.extend(quarterOfYear);
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { analyticsCfdApiService } from '@/api/reporting/analytics-cfd.api.service';
+import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import { useAuthService } from '@/hooks/useAuth';
 import {
   AnalyticsFilterBar,
   ChartTableWrapper,
-  ReportEmptyState,
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
@@ -37,15 +30,14 @@ import { CfdStatusLegend } from '@/components/reporting/analytics/cfd/CfdStatusL
 import { CfdTable } from '@/components/reporting/analytics/cfd/CfdTable';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import type {
-  CfdGroupBy,
   CfdSeriesFilters,
   CfdSeriesResponse,
-  CfdSmoothing,
   CfdStatusMeta,
 } from '@/types/reporting/analytics-cfd.types';
+import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
-const { Text } = Typography;
-const { RangePicker } = DatePicker;
+const DEFAULT_GROUP_BY = 'all' as const;
+const DEFAULT_SMOOTHING = 'raw' as const;
 
 const downloadBlob = (blob: Blob, filename: string) => {
   const url = URL.createObjectURL(blob);
@@ -62,24 +54,21 @@ const downloadText = (content: string, filename: string, mime: string) => {
 
 const CumulativeFlowPage: React.FC = () => {
   const { t } = useTranslation('reporting-analytics');
+  const dispatch = useAppDispatch();
   const title = t('cumulativeFlow', { defaultValue: 'Cumulative Flow' });
   useDocumentTitle(title);
 
   const authService = useAuthService();
   const session = authService.getCurrentSession();
+  const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
   const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [customRange, setCustomRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-  const [selectedStatusIds, setSelectedStatusIds] = useState<string[]>([]);
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
-  const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
 
-  const [groupBy, setGroupBy] = useState<CfdGroupBy>('all');
-  const [smoothing, setSmoothing] = useState<CfdSmoothing>('raw');
-  const [sprintOverlay, setSprintOverlay] = useState(false);
   const [wipThresholds, setWipThresholds] = useState<Record<string, number>>({});
   const [statusOrder, setStatusOrder] = useState<string[]>([]);
   const [visibleStatusIds, setVisibleStatusIds] = useState<string[]>([]);
@@ -89,59 +78,63 @@ const CumulativeFlowPage: React.FC = () => {
   const [data, setData] = useState<CfdSeriesResponse | null>(null);
 
   const chartRef = useRef<CfdChartHandle>(null);
-  /** CFD requires explicit projects — selecting a whole team’s projects freezes the chart. */
-  const hasSelection = selectedProjectIds.length > 0;
+  /** Tracks last rollup mode so switching category ? detail resets visible bands. */
+  const lastRollupMode = useRef<boolean | null>(null);
+
+  const memberOptions: FilterOption[] = useMemo(() => {
+    const list = (teamMembersState?.data ?? []) as ITeamMemberViewModel[];
+    return list
+      .filter(m => m.id)
+      .map(m => ({
+        value: String(m.id),
+        label: m.name || m.email || String(m.id),
+      }));
+  }, [teamMembersState]);
 
   const dateBounds = useMemo(() => {
-    if (datePreset === 'custom' && customRange) {
-      return {
-        date_from: customRange[0].startOf('day').toISOString(),
-        date_to: customRange[1].endOf('day').toISOString(),
-      };
-    }
     const end = dayjs();
     let start = end.subtract(30, 'day');
     if (datePreset === 'last_7_days') start = end.subtract(7, 'day');
-    if (datePreset === 'last_14_days') start = end.subtract(14, 'day');
-    if (datePreset === 'last_30_days') start = end.subtract(30, 'day');
-    if (datePreset === 'last_60_days') start = end.subtract(60, 'day');
     if (datePreset === 'last_90_days') start = end.subtract(90, 'day');
     if (datePreset === 'this_quarter') start = end.startOf('quarter');
-    if (datePreset === 'custom') return { date_from: null, date_to: null };
     return {
       date_from: start.startOf('day').toISOString(),
       date_to: end.endOf('day').toISOString(),
     };
-  }, [datePreset, customRange]);
+  }, [datePreset]);
 
   const filters: CfdSeriesFilters = useMemo(
     () => ({
       project_ids: selectedProjectIds,
       team_ids: selectedTeamIds,
-      status_ids: selectedStatusIds,
+      status_ids: [],
       date_from: dateBounds.date_from,
       date_to: dateBounds.date_to,
-      group_by: groupBy,
-      smoothing,
+      group_by: DEFAULT_GROUP_BY,
+      smoothing: DEFAULT_SMOOTHING,
       wip_thresholds: wipThresholds,
-      sprint_overlay: sprintOverlay,
+      sprint_overlay: false,
     }),
-    [
-      selectedProjectIds,
-      selectedTeamIds,
-      selectedStatusIds,
-      dateBounds,
-      groupBy,
-      smoothing,
-      wipThresholds,
-      sprintOverlay,
-    ]
+    [selectedProjectIds, selectedTeamIds, dateBounds, wipThresholds]
   );
 
-  const loadTeams = useCallback(async () => {
+  const loadTeamsAndMembers = useCallback(async () => {
     setFiltersLoading(true);
     try {
-      const teamsRes = await reportingApiService.getOverviewTeams(true);
+      const [teamsRes] = await Promise.all([
+        reportingApiService.getOverviewTeams(true),
+        dispatch(
+          getTeamMembers({
+            index: 0,
+            size: 100,
+            field: null,
+            order: null,
+            search: null,
+            all: true,
+          })
+        ),
+      ]);
+
       const teams =
         teamsRes.done && Array.isArray(teamsRes.body)
           ? teamsRes.body.map((team: { id?: string; name?: string }) => ({
@@ -149,7 +142,7 @@ const CumulativeFlowPage: React.FC = () => {
               label: team.name || String(team.id),
             }))
           : [];
-      setTeamOptions(teams);
+
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
       setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
@@ -161,7 +154,7 @@ const CumulativeFlowPage: React.FC = () => {
     } finally {
       setFiltersLoading(false);
     }
-  }, [session?.team_id, t]);
+  }, [dispatch, session?.team_id, t]);
 
   const loadProjectsForTeams = useCallback(async (teamIds: string[]) => {
     if (teamIds.length === 0) {
@@ -196,32 +189,57 @@ const CumulativeFlowPage: React.FC = () => {
   }, []);
 
   const loadSeries = useCallback(async () => {
-    if (!hasSelection) {
-      setData(null);
-      return;
-    }
-    if (datePreset === 'custom' && !customRange) {
-      setData(null);
-      return;
-    }
     setLoading(true);
     setError(null);
     try {
       const res = await analyticsCfdApiService.getSeries(filters);
       if (res.done && res.body) {
-        setData(res.body);
-        const statuses = res.body.statuses;
+        const localizedStatuses = res.body.statuses.map(status => {
+          if (status.id === '__cfd_todo__') {
+            return {
+              ...status,
+              name: t('cfdCategoryTodo', { defaultValue: 'To do' }),
+            };
+          }
+          if (status.id === '__cfd_doing__') {
+            return {
+              ...status,
+              name: t('cfdCategoryDoing', { defaultValue: 'In progress' }),
+            };
+          }
+          if (status.id === '__cfd_done__') {
+            return {
+              ...status,
+              name: t('cfdCategoryDone', { defaultValue: 'Done' }),
+            };
+          }
+          return status;
+        });
+        const body = { ...res.body, statuses: localizedStatuses };
+        setData(body);
+        const statuses = body.statuses;
         const ids = statuses.map(s => s.id);
+        const isRollup = !!res.body.meta.rollup_by_category;
+        const modeChanged =
+          lastRollupMode.current !== null && lastRollupMode.current !== isRollup;
+        lastRollupMode.current = isRollup;
+
         setStatusOrder(prev => {
+          if (modeChanged || isRollup) return ids;
           const retained = prev.filter(id => ids.includes(id));
           const missing = ids.filter(id => !retained.includes(id));
           return [...retained, ...missing];
         });
-        // Cap initial visible bands so Chart.js stays responsive.
+
+        // Category mode: always show To do / In progress / Done.
+        // Project mode: cap bands so Chart.js stays responsive.
         const DEFAULT_VISIBLE = 12;
         setVisibleStatusIds(prev => {
-          const stillValid = prev.filter(id => ids.includes(id));
-          if (stillValid.length > 0) return stillValid;
+          if (isRollup) return ids;
+          if (!modeChanged) {
+            const stillValid = prev.filter(id => ids.includes(id));
+            if (stillValid.length > 0) return stillValid;
+          }
           const preferred = [
             ...statuses.filter(s => s.is_doing),
             ...statuses.filter(s => s.is_todo),
@@ -254,28 +272,27 @@ const CumulativeFlowPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, hasSelection, datePreset, customRange, t]);
+  }, [filters, t]);
 
   useEffect(() => {
-    void loadTeams();
-  }, [loadTeams]);
+    void loadTeamsAndMembers();
+  }, [loadTeamsAndMembers]);
 
   useEffect(() => {
     void loadProjectsForTeams(selectedTeamIds);
   }, [selectedTeamIds, loadProjectsForTeams]);
 
   useEffect(() => {
+    if (filtersLoading) return;
     void loadSeries();
-  }, [loadSeries]);
+  }, [loadSeries, filtersLoading]);
 
-  const statusOptions: FilterOption[] = useMemo(
-    () =>
-      (data?.statuses ?? []).map(s => ({
-        value: s.id,
-        label: s.name,
-      })),
-    [data?.statuses]
-  );
+  const handleClearFilters = () => {
+    setSelectedProjectIds([]);
+    setSelectedMemberIds([]);
+    setDatePreset('last_30_days');
+    setWipThresholds({});
+  };
 
   const breachedStatusIds = useMemo(() => {
     if (!data) return [];
@@ -342,66 +359,36 @@ const CumulativeFlowPage: React.FC = () => {
   };
 
   const cfdFilters = (
-    <Flex gap={8} wrap="nowrap" align="center" style={{ overflowX: 'auto', width: '100%' }}>
+    <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
+      <Select
+        value={datePreset}
+        onChange={setDatePreset}
+        style={{ minWidth: 160 }}
+        options={[
+          { value: 'last_7_days', label: t('dateLast7', { defaultValue: 'Last 7 days' }) },
+          { value: 'last_30_days', label: t('dateLast30', { defaultValue: 'Last 30 days' }) },
+          { value: 'last_90_days', label: t('dateLast90', { defaultValue: 'Last 90 days' }) },
+          {
+            value: 'this_quarter',
+            label: t('dateThisQuarter', { defaultValue: 'This quarter' }),
+          },
+        ]}
+        aria-label={t('datePreset', { defaultValue: 'Date range' })}
+      />
+
       <AnalyticsFilterBar
         projectOptions={projectOptions}
         selectedProjectIds={selectedProjectIds}
         onProjectsChange={setSelectedProjectIds}
-        teamOptions={teamOptions}
-        selectedTeamIds={selectedTeamIds}
-        onTeamsChange={setSelectedTeamIds}
-        datePreset={datePreset}
-        onDatePresetChange={setDatePreset}
-        statusOptions={statusOptions}
-        selectedStatusIds={selectedStatusIds}
-        onStatusesChange={setSelectedStatusIds}
+        memberOptions={memberOptions}
+        selectedMemberIds={selectedMemberIds}
+        onMembersChange={setSelectedMemberIds}
         loading={filtersLoading}
-        inline
       />
 
-      {datePreset === 'custom' && (
-        <RangePicker
-          value={customRange}
-          onChange={vals => {
-            if (vals?.[0] && vals?.[1]) setCustomRange([vals[0], vals[1]]);
-            else setCustomRange(null);
-          }}
-        />
-      )}
-
-      <Select
-        value={groupBy}
-        onChange={setGroupBy}
-        style={{ minWidth: 140 }}
-        options={[
-          { value: 'all', label: t('cfdGroupAll', { defaultValue: 'All issues' }) },
-          { value: 'epic', label: t('cfdGroupEpic', { defaultValue: 'By epic' }) },
-          { value: 'label', label: t('cfdGroupLabel', { defaultValue: 'By label' }) },
-          { value: 'assignee', label: t('cfdGroupAssignee', { defaultValue: 'By assignee' }) },
-        ]}
-        aria-label={t('cfdGroupBy', { defaultValue: 'Group by' })}
-      />
-
-      <Select
-        value={smoothing}
-        onChange={setSmoothing}
-        style={{ minWidth: 160 }}
-        options={[
-          { value: 'raw', label: t('cfdSmoothingRaw', { defaultValue: 'Raw daily' }) },
-          {
-            value: 'rolling_7',
-            label: t('cfdSmoothingRolling7', { defaultValue: '7-day rolling average' }),
-          },
-        ]}
-        aria-label={t('cfdSmoothing', { defaultValue: 'Smoothing' })}
-      />
-
-      <Space size={6} style={{ flexShrink: 0 }}>
-        <Switch checked={sprintOverlay} onChange={setSprintOverlay} />
-        <Text style={{ whiteSpace: 'nowrap' }}>
-          {t('cfdSprintOverlay', { defaultValue: 'Sprint overlay' })}
-        </Text>
-      </Space>
+      <Button onClick={handleClearFilters}>
+        {t('clearFilters', { defaultValue: 'Clear' })}
+      </Button>
     </Flex>
   );
 
@@ -418,23 +405,11 @@ const CumulativeFlowPage: React.FC = () => {
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={cfdFilters}
       onExport={handleExport}
-      exportDisabled={!data || !hasSelection}
+      exportDisabled={!data}
       exportFormats={['csv', 'pdf', 'png', 'svg']}
       exportLoading={exporting}
     >
-      {!hasSelection ? (
-        <Flex align="center" justify="center" style={{ minHeight: 320 }}>
-          <ReportEmptyState
-            title={t('cfdNoSelectionTitle', {
-              defaultValue: 'Select projects',
-            })}
-            description={t('cfdNoSelectionDescription', {
-              defaultValue:
-                'Choose one or more projects (up to 20) to view cumulative flow. Selecting every project at once can freeze the chart.',
-            })}
-          />
-        </Flex>
-      ) : loading ? (
+      {loading && !data ? (
         <ReportLoadingSkeleton />
       ) : error ? (
         <ReportErrorState message={error} onRetry={() => void loadSeries()} />
@@ -470,7 +445,7 @@ const CumulativeFlowPage: React.FC = () => {
                       visibleStatusIds={visibleStatusIds}
                       statusOrder={statusOrder}
                       breachedStatusIds={breachedStatusIds}
-                      showSprintOverlay={sprintOverlay}
+                      showSprintOverlay={false}
                     />
                   ) : null}
                 </div>

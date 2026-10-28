@@ -21,6 +21,11 @@ export interface CfdSeriesFilters {
   sprintOverlay: boolean;
   sessionTeamId: string;
   teamIds: string[];
+  /**
+   * When true (no projects explicitly selected), series are rolled up into
+   * the three main categories: To do / In progress / Done across all projects.
+   */
+  rollupByCategory: boolean;
 }
 
 export interface CfdStatusMeta {
@@ -68,9 +73,54 @@ export interface CfdSeriesResult {
     group_by: CfdGroupBy;
     smoothing: CfdSmoothing;
     project_count: number;
+    rollup_by_category: boolean;
+    /** Always week for CFD chart/table (mockup). */
+    granularity: "week";
+    /** Monday (UTC) ISO date for each week label in `dates`. */
+    week_starts: string[];
   };
   last_updated_at: string;
 }
+
+/** Synthetic status ids used when rollupByCategory is on. */
+export const CFD_CATEGORY_STATUS = {
+  todo: "__cfd_todo__",
+  doing: "__cfd_doing__",
+  done: "__cfd_done__",
+} as const;
+
+const CATEGORY_STATUS_META: CfdStatusMeta[] = [
+  {
+    id: CFD_CATEGORY_STATUS.todo,
+    name: "To do",
+    color: "#fa8c16",
+    category: "todo",
+    sort_order: 1,
+    is_todo: true,
+    is_doing: false,
+    is_done: false,
+  },
+  {
+    id: CFD_CATEGORY_STATUS.doing,
+    name: "In progress",
+    color: "#1890ff",
+    category: "doing",
+    sort_order: 2,
+    is_todo: false,
+    is_doing: true,
+    is_done: false,
+  },
+  {
+    id: CFD_CATEGORY_STATUS.done,
+    name: "Done",
+    color: "#52c41a",
+    category: "done",
+    sort_order: 3,
+    is_todo: false,
+    is_doing: false,
+    is_done: true,
+  },
+];
 
 function parseCsvIds(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -145,8 +195,10 @@ function eachDateInclusive(from: string, to: string): string[] {
   return dates;
 }
 
-/** Hard cap — CFD with hundreds of projects freezes the chart and backfill. */
+/** Hard cap when user picks projects — detail statuses freeze with too many. */
 const MAX_CFD_PROJECTS = 20;
+/** Soft cap for all-projects category rollup (still needs snapshots). */
+const MAX_CFD_CATEGORY_PROJECTS = 200;
 
 export function parseCfdFilters(
   query: Record<string, unknown>,
@@ -155,15 +207,24 @@ export function parseCfdFilters(
 ): CfdSeriesFilters {
   const defaults = defaultDateRange();
   const allowed = new Set(accessibleProjectIds);
-  // Require explicit project_ids — never expand to the whole workspace.
-  let projectIds = parseCsvIds(query.project_ids).filter(id => allowed.has(id));
-  if (projectIds.length > MAX_CFD_PROJECTS) {
+  const requested = parseCsvIds(query.project_ids).filter(id => allowed.has(id));
+  // No explicit projects → all accessible, rolled into To do / In progress / Done.
+  const rollupByCategory = requested.length === 0;
+  let projectIds = rollupByCategory ? [...accessibleProjectIds] : requested;
+
+  if (rollupByCategory) {
+    if (projectIds.length > MAX_CFD_CATEGORY_PROJECTS) {
+      projectIds = projectIds.slice(0, MAX_CFD_CATEGORY_PROJECTS);
+    }
+  } else if (projectIds.length > MAX_CFD_PROJECTS) {
     projectIds = projectIds.slice(0, MAX_CFD_PROJECTS);
   }
 
   const groupRaw = String(query.group_by ?? "all");
-  const groupBy: CfdGroupBy =
-    groupRaw === "epic" || groupRaw === "label" || groupRaw === "assignee"
+  // Category rollup always uses flat (non-grouped) series.
+  const groupBy: CfdGroupBy = rollupByCategory
+    ? "all"
+    : groupRaw === "epic" || groupRaw === "label" || groupRaw === "assignee"
       ? groupRaw
       : "all";
 
@@ -187,6 +248,7 @@ export function parseCfdFilters(
     sprintOverlay: String(query.sprint_overlay ?? "false") === "true",
     sessionTeamId,
     teamIds: parseCsvIds(query.team_ids),
+    rollupByCategory,
   };
 }
 
@@ -592,6 +654,52 @@ async function loadSprints(
   }));
 }
 
+function categoryBucketId(status: CfdStatusMeta): string {
+  if (status.is_done || status.category === "done") return CFD_CATEGORY_STATUS.done;
+  if (status.is_doing || status.category === "doing") return CFD_CATEGORY_STATUS.doing;
+  return CFD_CATEGORY_STATUS.todo;
+}
+
+/**
+ * Roll every custom status into the three main categories (To do / In progress / Done).
+ * Used when no project is selected so the chart stays readable across the workspace.
+ */
+function collapseByCategory(
+  statuses: CfdStatusMeta[],
+  series: CfdSeriesRow[],
+  dates: string[]
+): { statuses: CfdStatusMeta[]; series: CfdSeriesRow[] } {
+  const idToCategory = new Map<string, string>();
+  for (const status of statuses) {
+    idToCategory.set(status.id, categoryBucketId(status));
+  }
+
+  const totals = new Map<string, number[]>([
+    [CFD_CATEGORY_STATUS.todo, dates.map(() => 0)],
+    [CFD_CATEGORY_STATUS.doing, dates.map(() => 0)],
+    [CFD_CATEGORY_STATUS.done, dates.map(() => 0)],
+  ]);
+
+  for (const row of series) {
+    const bucket = idToCategory.get(row.status_id) ?? CFD_CATEGORY_STATUS.todo;
+    const values = totals.get(bucket);
+    if (!values) continue;
+    for (let i = 0; i < dates.length; i++) {
+      values[i] += Number(row.values[i] ?? 0);
+    }
+  }
+
+  return {
+    statuses: CATEGORY_STATUS_META.map(s => ({ ...s })),
+    series: CATEGORY_STATUS_META.map(status => ({
+      status_id: status.id,
+      group_id: null,
+      group_name: null,
+      values: [...(totals.get(status.id) ?? dates.map(() => 0))],
+    })),
+  };
+}
+
 /**
  * Merge statuses that share the same name across projects into one band.
  * Keeps chart usable when several projects are selected.
@@ -645,6 +753,81 @@ function collapseByStatusName(
   return { statuses: collapsedStatuses, series: [...seriesMap.values()] };
 }
 
+/** Monday (UTC) of the ISO week containing `dateStr` (YYYY-MM-DD). */
+function startOfIsoWeek(dateStr: string): string {
+  const d = new Date(`${dateStr.slice(0, 10)}T00:00:00.000Z`);
+  const day = d.getUTCDay(); // 0 = Sun … 6 = Sat
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setUTCDate(d.getUTCDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Collapse daily series into one point per week (last day in the week).
+ * Labels match the mockup: W1, W2, …
+ */
+function aggregateToWeeks(
+  dates: string[],
+  series: CfdSeriesRow[],
+  breaches: CfdSeriesResult["wip_breaches"]
+): {
+  dates: string[];
+  series: CfdSeriesRow[];
+  wip_breaches: CfdSeriesResult["wip_breaches"];
+  week_starts: string[];
+} {
+  if (dates.length === 0) {
+    return { dates: [], series: [], wip_breaches: [], week_starts: [] };
+  }
+
+  const weekStarts: string[] = [];
+  const dateToWeekIdx = new Map<string, number>();
+  for (const d of dates) {
+    const ws = startOfIsoWeek(d);
+    let idx = dateToWeekIdx.get(ws);
+    if (idx === undefined) {
+      idx = weekStarts.length;
+      dateToWeekIdx.set(ws, idx);
+      weekStarts.push(ws);
+    }
+  }
+
+  const labels = weekStarts.map((_, i) => `W${i + 1}`);
+
+  const weekSeries = series.map(row => {
+    const values = weekStarts.map(() => 0);
+    const lastDayIdx = weekStarts.map(() => -1);
+    dates.forEach((d, i) => {
+      const wi = dateToWeekIdx.get(startOfIsoWeek(d));
+      if (wi === undefined) return;
+      if (i >= lastDayIdx[wi]) {
+        lastDayIdx[wi] = i;
+        values[wi] = Number(row.values[i] ?? 0);
+      }
+    });
+    return { ...row, values };
+  });
+
+  const breachByKey = new Map<string, CfdSeriesResult["wip_breaches"][number]>();
+  for (const b of breaches) {
+    const wi = dateToWeekIdx.get(startOfIsoWeek(b.date));
+    if (wi === undefined) continue;
+    const label = labels[wi];
+    const key = `${b.status_id}|${label}`;
+    const existing = breachByKey.get(key);
+    if (!existing || b.count > existing.count) {
+      breachByKey.set(key, { ...b, date: label });
+    }
+  }
+
+  return {
+    dates: labels,
+    series: weekSeries,
+    wip_breaches: [...breachByKey.values()],
+    week_starts: weekStarts,
+  };
+}
+
 function computeBreaches(
   dates: string[],
   series: CfdSeriesRow[],
@@ -686,7 +869,9 @@ export async function getCfdSeries(
   const empty = (): CfdSeriesResult =>
     withLastUpdated({
       dates: [],
-      statuses: [],
+      statuses: filters.rollupByCategory
+        ? CATEGORY_STATUS_META.map(s => ({ ...s }))
+        : [],
       series: [],
       sprints: filters.sprintOverlay ? [] : null,
       indicators: {
@@ -700,14 +885,19 @@ export async function getCfdSeries(
         group_by: filters.groupBy,
         smoothing: filters.smoothing,
         project_count: 0,
+        rollup_by_category: filters.rollupByCategory,
+        granularity: "week",
+        week_starts: [],
       },
     });
 
   if (filters.projectIds.length === 0) return empty();
 
   const hash = cacheKeyHash(filters);
+  // Namespace bumped when chart grain changed from day → week.
+  const cacheNs = "cfd_week";
   const cached = await getAnalyticsCache<Omit<CfdSeriesResult, "last_updated_at">>(
-    "cfd",
+    cacheNs,
     filters.sessionTeamId,
     hash
   );
@@ -721,45 +911,54 @@ export async function getCfdSeries(
   }
   await backfillRange(filters.projectIds, filters.dateFrom, filters.dateTo);
 
-  const dates = eachDateInclusive(filters.dateFrom, filters.dateTo);
+  const dailyDates = eachDateInclusive(filters.dateFrom, filters.dateTo);
   let statuses = await loadStatuses(filters.projectIds, filters.statusIds);
 
   let series =
     filters.groupBy === "all"
-      ? await loadSnapshotSeries(filters, dates, statuses)
-      : await loadGroupedSeries(filters, dates, statuses);
+      ? await loadSnapshotSeries(filters, dailyDates, statuses)
+      : await loadGroupedSeries(filters, dailyDates, statuses);
 
-  if (filters.projectIds.length > 1 && filters.groupBy === "all") {
-    const collapsed = collapseByStatusName(statuses, series, dates);
+  if (filters.rollupByCategory) {
+    const collapsed = collapseByCategory(statuses, series, dailyDates);
+    statuses = collapsed.statuses;
+    series = collapsed.series;
+  } else if (filters.projectIds.length > 1 && filters.groupBy === "all") {
+    const collapsed = collapseByStatusName(statuses, series, dailyDates);
     statuses = collapsed.statuses;
     series = collapsed.series;
   }
 
   series = applySmoothing(series, filters.smoothing);
 
+  // KPIs stay day-based; chart/table roll up to weeks (mockup).
   const [indicators, sprints] = await Promise.all([
-    loadIndicators(filters, dates, statuses, series),
+    loadIndicators(filters, dailyDates, statuses, series),
     loadSprints(filters),
   ]);
 
-  const wip_breaches = computeBreaches(dates, series, filters.wipThresholds);
+  const dailyBreaches = computeBreaches(dailyDates, series, filters.wipThresholds);
+  const weekly = aggregateToWeeks(dailyDates, series, dailyBreaches);
 
   const payload: Omit<CfdSeriesResult, "last_updated_at"> = {
-    dates,
+    dates: weekly.dates,
     statuses,
-    series,
+    series: weekly.series,
     sprints,
     indicators,
-    wip_breaches,
+    wip_breaches: weekly.wip_breaches,
     meta: {
       group_by: filters.groupBy,
       smoothing: filters.smoothing,
       project_count: filters.projectIds.length,
+      rollup_by_category: filters.rollupByCategory,
+      granularity: "week",
+      week_starts: weekly.week_starts,
     },
   };
 
   const cachedPayload = await setAnalyticsCache(payload, [
-    "cfd",
+    cacheNs,
     filters.sessionTeamId,
     hash,
   ]);
@@ -776,7 +975,8 @@ export function buildCfdCsvMatrix(data: CfdSeriesResult): string {
   });
 
   const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
-  const header = ["Date", ...columns].map(escape).join(",");
+  const periodHeader = data.meta.granularity === "week" ? "Week" : "Date";
+  const header = [periodHeader, ...columns].map(escape).join(",");
   const lines = [header];
 
   for (let i = 0; i < data.dates.length; i++) {

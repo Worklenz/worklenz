@@ -160,7 +160,14 @@ export const CfdChart = forwardRef<CfdChartHandle, CfdChartProps>(
           data.sprints.forEach(sprint => {
             if (!sprint.start_date) return;
             const startDay = sprint.start_date.slice(0, 10);
-            const idx = data.dates.indexOf(startDay);
+            const weekStarts = data.meta.week_starts ?? [];
+            let idx = data.dates.indexOf(startDay);
+            if (idx < 0 && weekStarts.length > 0) {
+              idx = weekStarts.findIndex((ws, i) => {
+                const next = weekStarts[i + 1];
+                return startDay >= ws && (!next || startDay < next);
+              });
+            }
             if (idx < 0) return;
             const x = xScale.getPixelForValue(idx);
             ctx.beginPath();
@@ -172,7 +179,7 @@ export const CfdChart = forwardRef<CfdChartHandle, CfdChartProps>(
           ctx.restore();
         },
       };
-    }, [showSprintOverlay, data.sprints, data.dates, token]);
+    }, [showSprintOverlay, data.sprints, data.dates, data.meta.week_starts, token]);
 
     const options = useMemo((): ChartOptions<'line'> => {
       const base = getBaseChartOptions(chartTheme);

@@ -66,6 +66,12 @@ export interface CfdSeriesResponse {
     group_by: CfdGroupBy;
     smoothing: CfdSmoothing;
     project_count: number;
+    /** True when no projects selected — statuses rolled into To do / In progress / Done. */
+    rollup_by_category?: boolean;
+    /** Chart/table period grain (always week). */
+    granularity?: 'week' | 'day';
+    /** Monday ISO dates aligned with each `dates` week label (W1, W2, …). */
+    week_starts?: string[];
   };
   last_updated_at: string;
 }

@@ -33,11 +33,11 @@ export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, stat
   const columns: ColumnsType<RowRecord> = useMemo(() => {
     const cols: ColumnsType<RowRecord> = [
       {
-        title: t('cfdColDate', { defaultValue: 'Date' }),
+        title: t('cfdColWeek', { defaultValue: 'Week' }),
         dataIndex: 'date',
         key: 'date',
         fixed: 'left',
-        width: 120,
+        width: 100,
       },
     ];
     orderedVisible.forEach(statusId => {
