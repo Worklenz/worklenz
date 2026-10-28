@@ -11,15 +11,20 @@ import {
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
-import { theme } from '@/shared/antd-imports';
+import { Flex, Typography, theme } from '@/shared/antd-imports';
 import {
   getBaseChartOptions,
   getChartTheme,
 } from '@/components/projects/reports/report-utils';
 import { InChartEmptyState } from '../states/ReportStateViews';
-import type { ProjectHealthRow } from '@/types/reporting/analytics-project-health.types';
+import type {
+  ProjectHealthRow,
+  ProjectHealthTone,
+} from '@/types/reporting/analytics-project-health.types';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Legend, Tooltip);
+
+const { Text } = Typography;
 
 export interface ProjectHealthChartHandle {
   toPngDataUrl: () => string | null;
@@ -30,12 +35,37 @@ interface ProjectHealthChartProps {
   projects: ProjectHealthRow[];
 }
 
-const PROGRESS_COLOR = '#1890ff';
+const PROGRESS_FALLBACK = '#1890ff';
 const BUDGET_COLOR = '#fa8c16';
+
+const TONE_FALLBACK: Record<ProjectHealthTone, string> = {
+  on_track: '#75c997',
+  at_risk: '#f37070',
+  off_track: '#fbc84c',
+  not_set: '#a9a9a9',
+};
+
+const TONE_LABEL: Record<
+  ProjectHealthTone,
+  { key: string; defaultValue: string }
+> = {
+  on_track: { key: 'statOnTrack', defaultValue: 'On track' },
+  at_risk: { key: 'statAtRisk', defaultValue: 'At risk' },
+  off_track: { key: 'statOffTrack', defaultValue: 'Off track' },
+  not_set: { key: 'phHealthNotSet', defaultValue: 'Not set' },
+};
 
 const shortLabel = (name: string, max = 14): string => {
   if (name.length <= max) return name;
   return `${name.slice(0, max - 1)}…`;
+};
+
+const resolveHealthColor = (row: ProjectHealthRow): string => {
+  const raw = (row.health_color || '').trim();
+  if (raw) {
+    return raw.startsWith('#') ? raw : `#${raw}`;
+  }
+  return TONE_FALLBACK[row.health_tone] || PROGRESS_FALLBACK;
 };
 
 export const ProjectHealthChart = forwardRef<ProjectHealthChartHandle, ProjectHealthChartProps>(
@@ -65,6 +95,23 @@ export const ProjectHealthChart = forwardRef<ProjectHealthChartHandle, ProjectHe
       },
     }));
 
+    const healthLegend = useMemo(() => {
+      const seen = new Map<ProjectHealthTone, string>();
+      for (const project of projects) {
+        if (!seen.has(project.health_tone)) {
+          seen.set(project.health_tone, resolveHealthColor(project));
+        }
+      }
+      const order: ProjectHealthTone[] = ['on_track', 'at_risk', 'off_track', 'not_set'];
+      return order
+        .filter(tone => seen.has(tone))
+        .map(tone => ({
+          tone,
+          color: seen.get(tone) || TONE_FALLBACK[tone],
+          ...TONE_LABEL[tone],
+        }));
+    }, [projects]);
+
     const chartData = useMemo((): ChartData<'bar'> => {
       return {
         labels: projects.map(p => shortLabel(p.project_name)),
@@ -72,7 +119,8 @@ export const ProjectHealthChart = forwardRef<ProjectHealthChartHandle, ProjectHe
           {
             label: t('phLegendProgress', { defaultValue: 'Progress %' }),
             data: projects.map(p => p.progress_pct),
-            backgroundColor: PROGRESS_COLOR,
+            // Progress bars use the manually set project health color from settings.
+            backgroundColor: projects.map(p => resolveHealthColor(p)),
             borderRadius: 3,
             maxBarThickness: 28,
           },
@@ -102,6 +150,25 @@ export const ProjectHealthChart = forwardRef<ProjectHealthChartHandle, ProjectHe
               color: chartTheme.textColor,
               usePointStyle: true,
               boxWidth: 8,
+              generateLabels: chart => {
+                const datasets = chart.data.datasets;
+                return datasets.map((dataset, index) => {
+                  const isProgress = index === 0;
+                  const fill = isProgress
+                    ? PROGRESS_FALLBACK
+                    : typeof dataset.backgroundColor === 'string'
+                      ? dataset.backgroundColor
+                      : BUDGET_COLOR;
+                  return {
+                    text: dataset.label || '',
+                    fillStyle: fill,
+                    strokeStyle: fill,
+                    hidden: !chart.isDatasetVisible(index),
+                    datasetIndex: index,
+                    pointStyle: 'circle' as const,
+                  };
+                });
+              },
             },
           },
           tooltip: {
@@ -110,6 +177,18 @@ export const ProjectHealthChart = forwardRef<ProjectHealthChartHandle, ProjectHe
               title: items => {
                 const index = items[0]?.dataIndex ?? 0;
                 return projects[index]?.project_name ?? '';
+              },
+              beforeBody: items => {
+                const index = items[0]?.dataIndex ?? 0;
+                const row = projects[index];
+                if (!row) return [];
+                const toneMeta = TONE_LABEL[row.health_tone];
+                const healthLabel =
+                  row.health_name ||
+                  t(toneMeta.key, { defaultValue: toneMeta.defaultValue });
+                return [
+                  `${t('phColHealth', { defaultValue: 'Health' })}: ${healthLabel}`,
+                ];
               },
               label: item => {
                 const label = item.dataset.label ?? '';
@@ -140,7 +219,7 @@ export const ProjectHealthChart = forwardRef<ProjectHealthChartHandle, ProjectHe
           },
         },
       };
-    }, [chartTheme, projects]);
+    }, [chartTheme, projects, t]);
 
     if (projects.length === 0) {
       return (
@@ -151,8 +230,44 @@ export const ProjectHealthChart = forwardRef<ProjectHealthChartHandle, ProjectHe
     }
 
     return (
-      <div style={{ height: 360, width: '100%' }}>
-        <Chart ref={chartRef} type="bar" data={chartData} options={options} />
+      <div style={{ width: '100%' }}>
+        <div style={{ height: 360, width: '100%' }}>
+          <Chart ref={chartRef} type="bar" data={chartData} options={options} />
+        </div>
+        {healthLegend.length > 0 ? (
+          <Flex
+            wrap="wrap"
+            gap={12}
+            align="center"
+            justify="center"
+            style={{ marginTop: 4, paddingBottom: 4 }}
+            aria-label={t('phHealthLegendAria', {
+              defaultValue: 'Project health from project settings',
+            })}
+          >
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {t('phHealthLegend', { defaultValue: 'Health (from project settings):' })}
+            </Text>
+            {healthLegend.map(item => (
+              <Flex key={item.tone} gap={6} align="center">
+                <span
+                  aria-hidden
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: item.color,
+                    display: 'inline-block',
+                    flexShrink: 0,
+                  }}
+                />
+                <Text style={{ fontSize: 12 }}>
+                  {t(item.key, { defaultValue: item.defaultValue })}
+                </Text>
+              </Flex>
+            ))}
+          </Flex>
+        ) : null}
       </div>
     );
   }

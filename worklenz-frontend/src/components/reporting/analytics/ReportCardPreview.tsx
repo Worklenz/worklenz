@@ -212,14 +212,15 @@ const HorizontalBarsPreview: React.FC<{
   );
 };
 
-/** Mirrors Project Health chart: Progress % + Budget used % grouped bars. */
+/** Mirrors Project Health chart: progress bars colored by manual health + budget %. */
 const HealthPreview: React.FC<{ palette: PreviewPalette; series: number[] }> = ({
   palette,
   series,
 }) => {
   const width = 200;
   const height = 72;
-  const progressColor = palette.primary;
+  // Matches sys_project_healths colors (Good / At Risk / Needs Attention / Not Set).
+  const healthColors = [palette.success, palette.danger, palette.warning, '#a9a9a9', palette.success];
   const budgetColor = palette.warning;
   const progress = clampSeries(
     series.map((v, i) => (i % 2 === 0 ? v : Math.max(20, v - 14))),
@@ -259,7 +260,7 @@ const HealthPreview: React.FC<{ palette: PreviewPalette; series: number[] }> = (
               width={barWidth}
               height={ph}
               rx={2}
-              fill={progressColor}
+              fill={healthColors[index % healthColors.length]}
               opacity={0.95}
             />
             <rect
