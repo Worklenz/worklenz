@@ -89,7 +89,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 248px;
+  min-height: 268px;
   border: 1px solid;
   border-radius: 14px;
   padding: 16px;
@@ -181,21 +181,6 @@
   font-size: 12px;
   margin-top: 4px;
   margin-bottom: 14px;
-}
-
-.all-reports-hub__spark {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  height: 56px;
-  margin-top: auto;
-}
-
-.all-reports-hub__spark-bar {
-  flex: 1;
-  border-radius: 3px 3px 1px 1px;
-  min-height: 8px;
-  opacity: 0.85;
 }
 
 .all-reports-hub__card-footer {

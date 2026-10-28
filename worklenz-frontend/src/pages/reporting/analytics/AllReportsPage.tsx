@@ -12,6 +12,7 @@ import { analyticsUtilizationApiService } from '@/api/reporting/analytics-utiliz
 import { analyticsVelocityApiService } from '@/api/reporting/analytics-velocity.api.service';
 import { analyticsPlannedVsActualTasksApiService } from '@/api/reporting/analytics-planned-vs-actual-tasks.api.service';
 import { analyticsPlannedVsActualMilestonesApiService } from '@/api/reporting/analytics-planned-vs-actual-milestones.api.service';
+import { ReportCardPreview } from '@/components/reporting/analytics/ReportCardPreview';
 import './all-reports-gallery.css';
 
 const { Title, Text } = Typography;
@@ -316,7 +317,6 @@ const AllReportsPage: React.FC = () => {
   const cardBg = token.colorBgContainer;
   const muted = token.colorTextSecondary;
   const pageMuted = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
-  const sparkColor = token.colorPrimary;
   const tabsBg = isDark ? 'rgba(255,255,255,0.04)' : '#f5f5f5';
 
   const getMetrics = (card: HubCardDef): CardMetrics =>
@@ -461,18 +461,11 @@ const AllReportsPage: React.FC = () => {
                         {t(card.metricSubKey, { defaultValue: card.defaultMetricSub })}
                       </div>
                     </div>
-                    <div className="all-reports-hub__spark" aria-hidden>
-                      {metrics.spark.map((height, index) => (
-                        <span
-                          key={`${card.key}-bar-${index}`}
-                          className="all-reports-hub__spark-bar"
-                          style={{
-                            height: `${height}%`,
-                            background: sparkColor,
-                          }}
-                        />
-                      ))}
-                    </div>
+                    <ReportCardPreview
+                      kind={card.key}
+                      series={metrics.spark}
+                      muted={isComingSoon}
+                    />
                   </div>
 
                   {isComingSoon ? (
