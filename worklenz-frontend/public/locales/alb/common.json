@@ -135,5 +135,11 @@
   "refreshingData": "Të dhënat po rifreskohen...",
   "loadingData": "Duke ngarkuar të dhënat...",
   "noDataAvailable": "Nuk ka të dhëna të disponueshme",
-  "licennse-expired-contacting-support": "Po kontakton me mbështetjen..."
+  "licennse-expired-contacting-support": "Po kontakton me mbështetjen...",
+  "paginationNavigation": "Navigimi i faqeve",
+  "paginationSummary": "{{range}} nga {{total}}",
+  "firstPage": "Faqja e parë",
+  "previousPage": "Faqja e mëparshme",
+  "nextPage": "Faqja tjetër",
+  "lastPage": "Faqja e fundit"
 }

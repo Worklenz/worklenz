@@ -200,5 +200,7 @@
   "closeButton": "Mbyll",
   "linkedChangeRequest": "Kërkesë e lidhur për ndryshim",
   "openChangeRequest": "Hap kërkesën për ndryshim",
-  "projectColumn": "Projekti"
+  "projectColumn": "Projekti",
+  "downloadFailed": "Shkarkimi i PDF dështoi. Ju lutemi provoni përsëri.",
+  "defaultInvoiceFooter": "Faleminderit për bashkëpunimin. Nëse keni pyetje rreth kësaj fature, ju lutemi na kontaktoni duke përdorur të dhënat e mësipërme."
 }

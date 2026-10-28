@@ -25,6 +25,7 @@ import {
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useIsAdminSurfaceReadOnly, withoutRowActionColumns } from '@/hooks/useIsAdminSurfaceReadOnly';
+import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { Link, useNavigate } from 'react-router-dom';
 import TablePagination from '@/components/TablePagination';
 import {
@@ -421,7 +422,7 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
       key: 'download',
       label: t('downloadInvoiceMenuItem', { defaultValue: 'Download Invoice' }),
       icon: <DownloadOutlined />,
-      onClick: () => window.open(getInvoiceDownloadUrl(invoice.id), '_blank', 'noopener,noreferrer'),
+      onClick: () => downloadPortalPdf(getInvoiceDownloadUrl(invoice.id), 'invoice.pdf', t('downloadFailed', { defaultValue: 'Failed to download the PDF. Please try again.' })),
     },
     {
       key: 'duplicate',
@@ -831,6 +832,14 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
 
         <div ref={paginationRef}>
           <TablePagination
+            navigationLabel={t('common:paginationNavigation')}
+            firstPageLabel={t('common:firstPage')}
+            previousPageLabel={t('common:previousPage')}
+            nextPageLabel={t('common:nextPage')}
+            lastPageLabel={t('common:lastPage')}
+            renderDefaultSummary={(range, total) =>
+              t('common:paginationSummary', { range, total })
+            }
             page={page}
             pageSize={limit}
             total={totalInvoices}

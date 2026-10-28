@@ -46,4 +46,6 @@
   "updatedBy": "par {{name}}",
   "editConfidence": "Définir la confiance de livraison pour {{project}}",
   "readOnlyConfidence": "Confiance de livraison pour {{project}}"
+,
+  "rowsPerPage": "Lignes par page :"
 }

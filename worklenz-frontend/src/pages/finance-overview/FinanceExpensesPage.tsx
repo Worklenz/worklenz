@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  Select,
   Button,
   Card,
   Flex,
@@ -15,6 +14,7 @@ import {
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
+import TablePagination from '@/components/TablePagination';
 import './finance-expenses.css';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 import Avatars from '@/components/avatars/avatars';
@@ -197,61 +197,61 @@ const FinanceExpensesPage: React.FC = () => {
     },
   ];
 
-  
 
-     return (
-  <Flex vertical gap={16}>
-    {/* Page Header */}
-    <Flex align="center" justify="space-between">
-      <div>
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          {t('expenses.pageTitle')}
-        </Typography.Title>
 
-        <Typography.Text
-          type="secondary"
-          style={{
-            fontSize: 13,
-            marginTop: 2,
-            display: 'block',
-          }}
-        >
-          {t('expenses.pageSubtitle')}
-        </Typography.Text>
-      </div>
+  return (
+    <Flex vertical gap={16}>
+      {/* Page Header */}
+      <Flex align="center" justify="space-between">
+        <div>
+          <Typography.Title level={4} style={{ margin: 0 }}>
+            {t('expenses.pageTitle')}
+          </Typography.Title>
 
-      {!isReadOnly && (
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setIsAddExpenseOpen(true)}
-        >
-          {t('expenses.addExpense', 'Add Expense')}
-        </Button>
-      )}
-    </Flex>
+          <Typography.Text
+            type="secondary"
+            style={{
+              fontSize: 13,
+              marginTop: 2,
+              display: 'block',
+            }}
+          >
+            {t('expenses.pageSubtitle')}
+          </Typography.Text>
+        </div>
 
-    {/* Existing Add Expense Modal */}
-    <AddExpenseModal
-      open={isAddExpenseOpen}
-      onClose={() => setIsAddExpenseOpen(false)}
-      onSuccess={() => {
-        setIsAddExpenseOpen(false);
-        setPage(1);
-        fetchRecentExpenses(1, pageSize);
-      }}
-    />
+        {!isReadOnly && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setIsAddExpenseOpen(true)}
+          >
+            {t('expenses.addExpense', 'Add Expense')}
+          </Button>
+        )}
+      </Flex>
 
-    {/* Main Expenses Table */}
-    <Card
-      className="finance-expenses-card"
-      style={{
-        width: '100%',
-        borderRadius: token.borderRadiusLG,
-        border: `1px solid ${token.colorBorderSecondary}`,
-      }}
-      styles={{ body: { padding: 20 } }}
-    >
+      {/* Existing Add Expense Modal */}
+      <AddExpenseModal
+        open={isAddExpenseOpen}
+        onClose={() => setIsAddExpenseOpen(false)}
+        onSuccess={() => {
+          setIsAddExpenseOpen(false);
+          setPage(1);
+          fetchRecentExpenses(1, pageSize);
+        }}
+      />
+
+      {/* Main Expenses Table */}
+      <Card
+        className="finance-expenses-card"
+        style={{
+          width: '100%',
+          borderRadius: token.borderRadiusLG,
+          border: `1px solid ${token.colorBorderSecondary}`,
+        }}
+        styles={{ body: { padding: 20 } }}
+      >
         <Table
           dataSource={recentItems}
           columns={columns}
@@ -273,7 +273,9 @@ const FinanceExpensesPage: React.FC = () => {
                   padding: '32px 0',
                 }}
               >
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{t('expenses.emptyTitle')}</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>
+                  {t('expenses.emptyTitle')}
+                </div>
                 <p style={{ opacity: 0.6, fontSize: 12, margin: 0, maxWidth: 320 }}>
                   {t('expenses.emptySubtitle')}
                 </p>
@@ -282,41 +284,26 @@ const FinanceExpensesPage: React.FC = () => {
           }}
         />
 
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8,
-            paddingTop: 16,
-            marginTop: 8,
-            borderTop: `1px solid ${token.colorBorderSecondary}`,
+        <TablePagination
+          navigationLabel={t('common:paginationNavigation')}
+          firstPageLabel={t('common:firstPage')}
+          previousPageLabel={t('common:previousPage')}
+          nextPageLabel={t('common:nextPage')}
+          lastPageLabel={t('common:lastPage')}
+          renderDefaultSummary={(range, total) => t('common:paginationSummary', { range, total })}
+          page={page}
+          pageSize={pageSize}
+          total={recentTotal}
+          onPageChange={(nextPage, nextPageSize) => {
+            setPage(nextPage);
+            setPageSize(nextPageSize);
+            fetchRecentExpenses(nextPage, nextPageSize);
           }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 12, color: token.colorTextSecondary }}>{t('expenses.rowsPerPage')}</span>
-            <Select
-              size="small"
-              style={{ width: 64 }}
-              value={pageSize}
-              onChange={v => {
-                setPageSize(v);
-                setPage(1);
-                fetchRecentExpenses(1, v);
-              }}
-              options={[10, 20, 50, 100].map(n => ({ value: n, label: n }))}
-            />
-            <span style={{ fontSize: 12, color: token.colorTextSecondary, marginLeft: 4 }}>
-              {recentTotal === 0 ? '0' : `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, recentTotal)}`} of {recentTotal}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Button size="small" disabled={page === 1} onClick={() => goToPage(Math.max(1, page - 1))}>‹</Button>
-            <span style={{ fontSize: 12 }}>{page} / {totalPages}</span>
-            <Button size="small" disabled={page === totalPages} onClick={() => goToPage(Math.min(totalPages, page + 1))}>›</Button>
-          </div>
-        </div>
+          rowsPerPageLabel={t('expenses.rowsPerPage', {
+            defaultValue: 'Rows per page',
+          })}
+          variant="dropdown"
+        />
       </Card>
     </Flex>
   );

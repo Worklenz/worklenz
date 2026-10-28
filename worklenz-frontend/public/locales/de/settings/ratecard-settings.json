@@ -42,6 +42,7 @@
   "jobRolesTitle": "Job-Rollen",
   "noJobTitlesMessage": "Bitte erstellen Sie zuerst Berufsbezeichnungen in den Einstellungen, bevor Sie Rollen zu Rate Cards hinzufügen.",
   "createNewJobTitle": "Neue Berufsbezeichnung erstellen",
+  "createJobTitleButtonText": "Berufsbezeichnung erstellen",
   "jobTitleNamePlaceholder": "Name der Berufsbezeichnung eingeben",
   "jobTitleNameRequired": "Name der Berufsbezeichnung ist erforderlich",
   "jobTitleCreatedSuccess": "Berufsbezeichnung erfolgreich erstellt",

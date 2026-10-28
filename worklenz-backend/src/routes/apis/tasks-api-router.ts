@@ -91,6 +91,7 @@ tasksApiRouter.delete("/:id", verifyNonGuestTaskAccess('params', 'id', PROJECT_R
 tasksApiRouter.post("/quick-task", quickTaskBodyValidator, verifyNonGuestProjectAccess('body', 'project_id', PROJECT_ROLE_PERMISSIONS.CREATE_TASKS), safeControllerFunction(TasksController.createQuickTask));
 tasksApiRouter.post("/home-task", homeTaskBodyValidator, verifyNonGuestProjectAccess('body', 'project_id', PROJECT_ROLE_PERMISSIONS.CREATE_TASKS), safeControllerFunction(TasksController.createHomeTask));
 tasksApiRouter.post("/convert-to-subtask", verifyNonGuestTaskAccess('body', 'id'), safeControllerFunction(TasksControllerV2.convertToSubtask));
+tasksApiRouter.post("/move-subtask", verifyNonGuestTaskAccess('body', 'id'), safeControllerFunction(TasksControllerV2.moveSubtask));
 tasksApiRouter.get("/subscribers/:id", verifyTaskAccess('params', 'id'), safeControllerFunction(TasksControllerV2.getSubscribers));
 tasksApiRouter.get("/search", verifyProjectAccess('query', 'projectId'), safeControllerFunction(TasksControllerV2.searchTasks));
 tasksApiRouter.get("/dependency-status", verifyTaskAccess('query', 'taskId'), safeControllerFunction(TasksControllerV2.getTaskDependencyStatus));

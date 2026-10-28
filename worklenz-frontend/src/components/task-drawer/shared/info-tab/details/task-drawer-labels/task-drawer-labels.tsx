@@ -23,6 +23,7 @@ import { useSocket } from '@/socket/socketContext';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { TFunction } from 'i18next';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { isListTabKey } from '@/features/projects/singleProject/saved-views/saved-view-config';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setTaskLabels } from '@/features/task-drawer/task-drawer.slice';
@@ -82,7 +83,7 @@ const TaskDrawerLabels = ({ task, t, isGuest = false }: TaskDrawerLabelsProps) =
       setSearchQuery('');
       socket?.once(SocketEvents.TASK_LABELS_CHANGE.toString(), (data: ILabelsChangeResponse) => {
         dispatch(setTaskLabels(data));
-        if (tab === 'tasks-list') {
+        if (isListTabKey(tab)) {
           dispatch(updateTaskLabel(data));
         }
         if (tab === 'board') {
@@ -110,7 +111,7 @@ const TaskDrawerLabels = ({ task, t, isGuest = false }: TaskDrawerLabelsProps) =
     setSearchQuery('');
     socket?.once(SocketEvents.CREATE_LABEL.toString(), (data: ILabelsChangeResponse) => {
         dispatch(setTaskLabels(data));
-        if (tab === 'tasks-list') {
+        if (isListTabKey(tab)) {
           dispatch(updateTaskLabel(data));
         }
         if (tab === 'board') {

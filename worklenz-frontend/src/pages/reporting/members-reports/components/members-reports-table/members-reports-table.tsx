@@ -17,6 +17,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import MembersReportsDrawer from '@/features/reporting/membersReports/membersReportsDrawer/members-reports-drawer';
 import type { TableProps } from 'antd';
 import type { IRPTMember } from '@/types/reporting/reporting.types';
+import TablePagination from '@/components/TablePagination';
 
 const MembersReportsTable = () => {
   const { t } = useTranslation('reporting-members');
@@ -25,16 +26,16 @@ const MembersReportsTable = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
   const {
-  membersList,
-  isLoading,
-  total,
-  archived,
-  searchQuery,
-  index,
-  pageSize,
-  field,
-  order,
-} = useAppSelector(state => state.membersReportsReducer);
+    membersList,
+    isLoading,
+    total,
+    archived,
+    searchQuery,
+    index,
+    pageSize,
+    field,
+    order,
+  } = useAppSelector(state => state.membersReportsReducer);
 
   // function to handle drawer toggle
   const handleDrawerOpen = (id: string) => {
@@ -43,38 +44,18 @@ const MembersReportsTable = () => {
   };
 
   const handleOnChange: NonNullable<TableProps<IRPTMember>['onChange']> = (
-    pagination,
+    _pagination,
     _filters,
     sorter,
     extra
   ) => {
-    if (isLoading) return;
+    if (isLoading || extra.action !== 'sort') return;
 
-    if (extra.action === 'sort') {
-      const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+    const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
 
-      dispatch(setField('name'));
-      dispatch(
-        setOrder(activeSorter?.order === 'descend' ? 'desc' : 'asc')
-      );
-      dispatch(
-        setPagination({
-          index: 1,
-          pageSize: pagination.pageSize ?? pageSize,
-        })
-      );
-
-      return;
-    }
-
-    if (extra.action === 'paginate') {
-      dispatch(
-        setPagination({
-          index: pagination.current ?? 1,
-          pageSize: pagination.pageSize ?? pageSize,
-        })
-      );
-    }
+    dispatch(setField('name'));
+    dispatch(setOrder(activeSorter?.order === 'descend' ? 'desc' : 'asc'));
+    dispatch(setPagination({ index: 1, pageSize }));
   };
 
   const columns: TableColumnsType<IRPTMember> = [
@@ -99,7 +80,7 @@ const MembersReportsTable = () => {
         };
       },
       render: record => <MemberCell member={record} />,
-  },
+    },
     {
       key: 'tasksProgress',
       title: <CustomTableTitle title={t('tasksProgressColumn')} />,
@@ -187,12 +168,7 @@ const MembersReportsTable = () => {
         columns={columns}
         dataSource={membersList}
         rowKey={record => record.id}
-        pagination={{
-          current: index,
-          pageSize,
-          showSizeChanger: true,
-          total,
-        }}
+        pagination={false}
         onChange={handleOnChange}
         scroll={{ x: 'max-content' }}
         loading={isLoading}
@@ -202,6 +178,29 @@ const MembersReportsTable = () => {
             className: 'group even:bg-[#4e4e4e10]',
           };
         }}
+      />
+      <TablePagination
+        navigationLabel={t('common:paginationNavigation')}
+        firstPageLabel={t('common:firstPage')}
+        previousPageLabel={t('common:previousPage')}
+        nextPageLabel={t('common:nextPage')}
+        lastPageLabel={t('common:lastPage')}
+        renderDefaultSummary={(range, total) => t('common:paginationSummary', { range, total })}
+        page={index}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={(nextPage, nextPageSize) => {
+          dispatch(
+            setPagination({
+              index: nextPage,
+              pageSize: nextPageSize,
+            })
+          );
+        }}
+        rowsPerPageLabel={t('rowsPerPage', {
+          defaultValue: 'Rows per page',
+        })}
+        variant="dropdown"
       />
 
       <MembersReportsDrawer memberId={selectedId} />

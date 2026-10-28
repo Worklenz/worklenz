@@ -169,4 +169,8 @@
     },
     "empty": "Za mało historii, żeby prognozować. Rejestruj czas i wysyłaj faktury, aby zbudować trend."
   }
+,
+  "myTasksView": {
+    "rowsPerPage": "Wiersze na stronę:"
+  }
 }

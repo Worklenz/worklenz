@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import DOMPurify from 'dompurify';
 import { useTranslation } from 'react-i18next';
+import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
@@ -145,7 +146,7 @@ const InvoiceDetailModal = () => {
   };
 
   const handleDownload = () => {
-    if (invoiceId) window.open(getInvoiceDownloadUrl(invoiceId), '_blank', 'noopener,noreferrer');
+    if (invoiceId) downloadPortalPdf(getInvoiceDownloadUrl(invoiceId), 'invoice.pdf', t('downloadFailed', { defaultValue: 'Failed to download the PDF. Please try again.' }));
   };
 
   const field = (label: string, value: React.ReactNode) => (

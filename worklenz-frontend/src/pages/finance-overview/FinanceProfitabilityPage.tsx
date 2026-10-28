@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bar } from 'react-chartjs-2';
 import {
@@ -35,6 +35,7 @@ import { FinanceKpiCard } from './FinanceKpiCard';
 import { alertColor, burnColor, fmtMoney } from './finance-report-utils';
 import { useFinanceReportFetch } from './useFinanceReportFetch';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import TablePagination from '@/components/TablePagination';
 
 Chart.register(CategoryScale, LinearScale, BarElement, ChartTooltip, Legend);
 
@@ -54,6 +55,8 @@ export const FinanceProfitabilityPage = () => {
   const { t } = useTranslation('finance-reports');
   const { token } = theme.useToken();
   useDocumentTitle(t('profitability.pageTitle', { defaultValue: 'Profitability' }));
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data, loading, error, refetch } = useFinanceReportFetch(
     () => financeOverviewApiService.getProfitability(),
@@ -65,6 +68,10 @@ export const FinanceProfitabilityPage = () => {
   const trend = data?.trend ?? [];
   const breakdown = data?.cost_breakdown ?? [];
   const breakdownTotal = breakdown.reduce((sum, item) => sum + item.amount, 0) || 1;
+  const paginatedProjects = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return projects.slice(start, start + pageSize);
+  }, [projects, page, pageSize]);
 
   const chartData = useMemo(
     () => ({
@@ -115,23 +122,23 @@ export const FinanceProfitabilityPage = () => {
         render: (name: string, record) => {
           const decodedName = decodeHtmlEntities(name);
           return (
-          <Flex align="center" gap={8}>
-            <span
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: '50%',
-                background: record.color_code,
-                flexShrink: 0,
-                display: 'inline-block',
-              }}
-            />
-            <Tooltip title={decodedName}>
-              <Text ellipsis style={{ maxWidth: 220 }}>
-                {decodedName}
-              </Text>
-            </Tooltip>
-          </Flex>
+            <Flex align="center" gap={8}>
+              <span
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  background: record.color_code,
+                  flexShrink: 0,
+                  display: 'inline-block',
+                }}
+              />
+              <Tooltip title={decodedName}>
+                <Text ellipsis style={{ maxWidth: 220 }}>
+                  {decodedName}
+                </Text>
+              </Tooltip>
+            </Flex>
           );
         },
       },
@@ -205,12 +212,12 @@ export const FinanceProfitabilityPage = () => {
         message={
           summary.has_revenue
             ? t('profitability.revenueNote', {
-                defaultValue:
-                  'Revenue is paid client-portal invoices. Project-level revenue is not tracked yet.',
-              })
+              defaultValue:
+                'Revenue is paid client-portal invoices. Project-level revenue is not tracked yet.',
+            })
             : t('profitability.noRevenueNote', {
-                defaultValue: 'No paid invoices yet, so revenue, profit, and margin stay empty.',
-              })
+              defaultValue: 'No paid invoices yet, so revenue, profit, and margin stay empty.',
+            })
         }
       />
 
@@ -298,9 +305,9 @@ export const FinanceProfitabilityPage = () => {
         <Table<IFinanceProfitabilityProject>
           rowKey="id"
           columns={columns}
-          dataSource={projects}
+          dataSource={paginatedProjects}
           loading={loading}
-          pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50, 100] }}
+          pagination={false}
           locale={{
             emptyText: (
               <Empty
@@ -309,6 +316,26 @@ export const FinanceProfitabilityPage = () => {
             ),
           }}
           scroll={{ x: 700 }}
+        />
+
+        <TablePagination
+          navigationLabel={t('common:paginationNavigation')}
+          firstPageLabel={t('common:firstPage')}
+          previousPageLabel={t('common:previousPage')}
+          nextPageLabel={t('common:nextPage')}
+          lastPageLabel={t('common:lastPage')}
+          renderDefaultSummary={(range, total) => t('common:paginationSummary', { range, total })}
+          page={page}
+          pageSize={pageSize}
+          total={projects.length}
+          onPageChange={(nextPage, nextPageSize) => {
+            setPage(nextPage);
+            setPageSize(nextPageSize);
+          }}
+          rowsPerPageLabel={t('myTasksView.rowsPerPage', {
+            defaultValue: 'Rows per page',
+          })}
+          variant="dropdown"
         />
       </Card>
     </Flex>

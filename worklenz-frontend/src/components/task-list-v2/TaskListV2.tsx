@@ -5,6 +5,7 @@ import TaskListV2Section from './TaskListV2Table';
 import type { TaskListMode } from '@/features/task-management/task-list-mode-context';
 import { TaskListModeContext } from '@/features/task-management/task-list-mode-context';
 import { isProjectTaskEditingReadOnly } from '@/lib/project/project-view-guest';
+import { SavedViewControls } from '@/components/projects/saved-views/saved-view-controls';
 
 interface TaskListV2Props {
   mode?: TaskListMode;
@@ -22,7 +23,20 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ mode = 'default', toolbarAction
     <TaskListModeContext.Provider value={mode}>
       <div>
         <div className="flex-none" style={{ minHeight: '54px', flexShrink: 0 }}>
-          <ImprovedTaskFilters position="list" mode={mode} extraActions={toolbarActions} />
+          <ImprovedTaskFilters
+            position="list"
+            mode={mode}
+            extraActions={
+              mode === 'default' ? (
+                <>
+                  <SavedViewControls />
+                  {toolbarActions}
+                </>
+              ) : (
+                toolbarActions
+              )
+            }
+          />
         </div>
         {belowToolbar}
         <TaskListV2Section isGuest={isGuest} />
