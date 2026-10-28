@@ -224,6 +224,12 @@ const PracticesSettings = () => {
         onChange={handleTableChange}
       />
       <TablePagination
+        navigationLabel={t('common:paginationNavigation')}
+        firstPageLabel={t('common:firstPage')}
+        previousPageLabel={t('common:previousPage')}
+        nextPageLabel={t('common:nextPage')}
+        lastPageLabel={t('common:lastPage')}
+        renderDefaultSummary={(range, total) => t('common:paginationSummary', { range, total })}
         page={pagination.current}
         pageSize={pagination.pageSize}
         total={pagination.total}

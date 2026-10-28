@@ -22,7 +22,12 @@ import {
   updateTaskAssignees,
 } from '@/features/task-management/task-management.slice';
 import { deselectAll, selectTasks } from '@/features/projects/bulkActions/bulkActionSlice';
-import { setConvertToSubtaskDrawerOpen } from '@/features/tasks/tasks.slice';
+import {
+  setConvertToSubtaskDrawerMode,
+  setConvertToSubtaskDrawerOpen,
+} from '@/features/tasks/tasks.slice';
+import { setLastDeletedTaskId, setShowTaskDrawer, setSelectedTaskId } from '@/features/task-drawer/task-drawer.slice';
+import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
 import { useTranslation } from 'react-i18next';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
@@ -78,6 +83,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   const isSoftwareProject = isSoftwareProjectType(projectType);
   const currentGrouping = useAppSelector(state => state.grouping.currentGrouping);
   const archived = useAppSelector(state => state.taskManagement.archived);
+  const selectedTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
 
   const [updatingAssignToMe, setUpdatingAssignToMe] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -247,6 +253,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
           })
         );
         dispatch(deselectAll());
+        dispatch(roadmapApi.util.invalidateTags(['RoadmapTasks', 'ProjectPhases']));
 
         // Note: We DON'T call fetchTasksV3 here because:
         // - If archiving: task is moved to archived list, not needed in current view
@@ -276,8 +283,14 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
 
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_context_menu_delete);
+        dispatch(setLastDeletedTaskId(task.id));
+        if (selectedTaskId === task.id) {
+          dispatch(setShowTaskDrawer(false));
+          dispatch(setSelectedTaskId(null));
+        }
         dispatch(deleteTask(task.id));
         dispatch(deselectAll());
+        dispatch(roadmapApi.util.invalidateTags(['RoadmapTasks', 'ProjectPhases']));
         if (task.parent_task_id) {
           socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.parent_task_id);
         }
@@ -287,7 +300,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     } finally {
       onClose();
     }
-  }, [projectId, task.id, dispatch, onClose, trackMixpanelEvent]);
+  }, [projectId, task.id, selectedTaskId, dispatch, onClose, trackMixpanelEvent]);
 
   const handleDeleteCancel = useCallback(() => {
     setShowDeleteConfirm(false);
@@ -486,6 +499,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       const res = await tasksApiService.convertToTask(task.id as string, projectId as string);
       if (res.done) {
         dispatch(deselectAll());
+        dispatch(roadmapApi.util.invalidateTags(['RoadmapTasks', 'ProjectPhases']));
         dispatch(fetchTasksV3(projectId));
       }
     } catch (error) {
@@ -640,6 +654,39 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       });
     }
 
+    const buildParentChangeSelection = () => ({
+      id: task.id,
+      name: task.title || task.name || '',
+      task_key: task.task_key,
+      status: task.status,
+      status_id: task.status,
+      priority: task.priority,
+      phase_id: task.phase,
+      phase_name: task.phase,
+      description: task.description,
+      start_date: task.startDate,
+      end_date: task.dueDate,
+      total_hours: task.timeTracking?.estimated || 0,
+      total_minutes: task.timeTracking?.logged || 0,
+      progress: task.progress,
+      sub_tasks_count: task.sub_tasks_count || 0,
+      parent_task_id: task.parent_task_id,
+      assignees:
+        task.assignees?.map((assigneeId: string) => ({
+          id: assigneeId,
+          name: '',
+          email: '',
+          avatar_url: '',
+          team_member_id: assigneeId,
+          project_member_id: assigneeId,
+        })) || [],
+      labels: task.labels || [],
+      manual_progress: false,
+      created_at: task.createdAt,
+      updated_at: task.updatedAt,
+      sort_order: task.order,
+    });
+
     // Add Convert to Sub Task for parent tasks with no subtasks
     if (task?.sub_tasks_count === 0 && !task?.parent_task_id) {
       items.push({
@@ -647,41 +694,15 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         label: (
           <button
             disabled={!canCreateTask}
-            onClick={canCreateTask ? () => {
-              const projectTask = {
-                id: task.id,
-                name: task.title || task.name || '',
-                task_key: task.task_key,
-                status: task.status,
-                status_id: task.status,
-                priority: task.priority,
-                phase_id: task.phase,
-                phase_name: task.phase,
-                description: task.description,
-                start_date: task.startDate,
-                end_date: task.dueDate,
-                total_hours: task.timeTracking?.estimated || 0,
-                total_minutes: task.timeTracking?.logged || 0,
-                progress: task.progress,
-                sub_tasks_count: task.sub_tasks_count || 0,
-                assignees:
-                  task.assignees?.map((assigneeId: string) => ({
-                    id: assigneeId,
-                    name: '',
-                    email: '',
-                    avatar_url: '',
-                    team_member_id: assigneeId,
-                    project_member_id: assigneeId,
-                  })) || [],
-                labels: task.labels || [],
-                manual_progress: false,
-                created_at: task.createdAt,
-                updated_at: task.updatedAt,
-                sort_order: task.order,
-              };
-              dispatch(selectTasks([projectTask]));
-              dispatch(setConvertToSubtaskDrawerOpen(true));
-            } : undefined}
+            onClick={
+              canCreateTask
+                ? () => {
+                    dispatch(selectTasks([buildParentChangeSelection()]));
+                    dispatch(setConvertToSubtaskDrawerMode('convert'));
+                    dispatch(setConvertToSubtaskDrawerOpen(true));
+                  }
+                : undefined
+            }
             className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left ${!canCreateTask ? disabledCls : ''}`}
           >
             <DoubleRightOutlined className="text-gray-500 dark:text-gray-400" />
@@ -691,8 +712,33 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       });
     }
 
-    // Add Convert to Task for subtasks
+    // Add Convert to Task / Move to parent for subtasks
     if (task?.parent_task_id) {
+      items.push({
+        key: 'moveSubtask',
+        label: (
+          <button
+            disabled={!canCreateTask}
+            onClick={
+              canCreateTask
+                ? () => {
+                    dispatch(selectTasks([buildParentChangeSelection()]));
+                    dispatch(setConvertToSubtaskDrawerMode('move'));
+                    dispatch(setConvertToSubtaskDrawerOpen(true));
+                    onClose();
+                  }
+                : undefined
+            }
+            className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left ${!canCreateTask ? disabledCls : ''}`}
+          >
+            <RetweetOutlined className="text-gray-500 dark:text-gray-400" />
+            <span>
+              {t('contextMenu.moveSubtask', { defaultValue: 'Move to parent task' })}
+            </span>
+          </button>
+        ),
+      });
+
       items.push({
         key: 'convertToTask',
         label: (
@@ -769,6 +815,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     sprintMoveOptions,
     dispatch,
     handleDuplicateTask,
+    onClose,
     t,
   ]);
 

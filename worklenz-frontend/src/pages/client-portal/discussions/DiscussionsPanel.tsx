@@ -119,11 +119,11 @@ export const DiscussionsPanel = ({ projectId, embedded = false, initialThreadId 
             background: thread.unread ? token.colorError : 'transparent',
           }}
         />
-        <PortalAvatar name={thread.organization_name} />
+        <PortalAvatar name={decodeHtmlEntities(thread.organization_name)} />
         <span style={{ flex: 1, minWidth: 0 }}>
           <Flex align="center" gap={6} wrap="wrap">
             <span style={{ fontWeight: thread.unread ? 700 : 600, fontSize: 13, overflowWrap: 'anywhere' }}>
-              {thread.context.label}
+              {decodeHtmlEntities(thread.context.label)}
             </span>
             {thread.hidden_from_client && (
               <Tooltip title={t('list.hiddenHint', { defaultValue: 'The linked item is Internal Only, so the client cannot see this thread.' })}>
@@ -136,7 +136,8 @@ export const DiscussionsPanel = ({ projectId, embedded = false, initialThreadId 
             )}
           </Flex>
           <span style={{ display: 'block', fontSize: 11.5, color: token.colorTextSecondary }}>
-            {thread.ref_no} · {thread.organization_name} · {decodeHtmlEntities(thread.project_name)}
+            {thread.ref_no} · {decodeHtmlEntities(thread.organization_name)} ·{' '}
+            {decodeHtmlEntities(thread.project_name)}
           </span>
           <span
             style={{
@@ -277,6 +278,14 @@ export const DiscussionsPanel = ({ projectId, embedded = false, initialThreadId 
           </div>
           {list && list.total > list.limit && (
             <TablePagination
+              navigationLabel={t('common:paginationNavigation')}
+              firstPageLabel={t('common:firstPage')}
+              previousPageLabel={t('common:previousPage')}
+              nextPageLabel={t('common:nextPage')}
+              lastPageLabel={t('common:lastPage')}
+              renderDefaultSummary={(range, total) =>
+                t('common:paginationSummary', { range, total })
+              }
               page={paging.page}
               pageSize={paging.limit}
               total={list.total}

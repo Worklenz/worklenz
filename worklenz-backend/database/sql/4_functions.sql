@@ -673,7 +673,8 @@ BEGIN
     INSERT INTO projects (name, key, notes, color_code, team_id, client_id, owner_id, status_id, health_id, priority_id, start_date,
                           end_date, folder_id, category_id, estimated_working_days, estimated_man_days, hours_per_day,
                           use_manual_progress, use_weighted_progress, use_time_progress, auto_assign_task_creator,
-                          restrict_task_creation, phase_assignees_enabled, restrict_tasks_to_assignee)
+                          restrict_task_creation, phase_assignees_enabled, restrict_tasks_to_assignee,
+                          members_can_view_client_team)
     VALUES (_project_name, (_body ->> 'key')::TEXT, (_body ->> 'notes')::TEXT, (_body ->> 'color_code')::TEXT, _team_id,
             _client_id, _user_id, (_body ->> 'status_id')::UUID, (_body ->> 'health_id')::UUID,
             COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM sys_project_priorities WHERE name = 'Medium' LIMIT 1)),
@@ -686,7 +687,8 @@ BEGIN
             COALESCE((_body ->> 'auto_assign_task_creator')::BOOLEAN, FALSE),
             COALESCE((_body ->> 'restrict_task_creation')::BOOLEAN, FALSE),
             COALESCE((_body ->> 'phase_assignees_enabled')::BOOLEAN, FALSE),
-            COALESCE((_body ->> 'restrict_tasks_to_assignee')::BOOLEAN, FALSE))
+            COALESCE((_body ->> 'restrict_tasks_to_assignee')::BOOLEAN, FALSE),
+            COALESCE((_body ->> 'members_can_view_client_team')::BOOLEAN, FALSE))
     RETURNING id INTO _project_id;
 
     -- log record
@@ -6152,6 +6154,11 @@ BEGIN
             WHEN (_body::JSONB) ? 'restrict_tasks_to_assignee'
             THEN COALESCE((_body ->> 'restrict_tasks_to_assignee')::BOOLEAN, FALSE)
             ELSE restrict_tasks_to_assignee
+        END,
+        members_can_view_client_team = CASE
+            WHEN (_body::JSONB) ? 'members_can_view_client_team'
+            THEN COALESCE((_body ->> 'members_can_view_client_team')::BOOLEAN, FALSE)
+            ELSE members_can_view_client_team
         END
     WHERE id = (_body ->> 'id')::UUID
       AND team_id = _team_id

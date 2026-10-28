@@ -80,36 +80,27 @@ export default class AdminCenterOrganizationController extends WorklenzControlle
       "outer_tmiv.email",
     ], false, 4);
 
+    // Use users.last_active instead of correlated scans of task_work_log /
+    // task_activity_logs. Those tables grow huge in production, so the old
+    // per-row GREATEST(...) subqueries made this endpoint very slow there
+    // while staying fast on small local/test datasets. last_active is kept
+    // current on each authenticated session (passport deserialize).
     const q = `SELECT ROW_TO_JSON(rec) AS users
             FROM (SELECT COUNT(*) AS total,
                         (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
-                          FROM (SELECT email,
-                                      STRING_AGG(DISTINCT CAST(user_id AS VARCHAR), ', ') AS user_id,
-                                      STRING_AGG(DISTINCT name, ', ') AS name,
-                                      STRING_AGG(DISTINCT avatar_url, ', ') AS avatar_url,
-                                      (SELECT GREATEST(
-                                        (SELECT twl.created_at
-                                          FROM task_work_log twl
-                                          WHERE twl.user_id IN (SELECT tmiv.user_id
-                                                                FROM team_member_info_view tmiv
-                                                                WHERE tmiv.email = outer_tmiv.email)
-                                          ORDER BY created_at DESC
-                                          LIMIT 1),
-                                        (SELECT tal.created_at
-                                          FROM task_activity_logs tal
-                                          WHERE tal.user_id IN (SELECT tmiv.user_id
-                                                                FROM team_member_info_view tmiv
-                                                                WHERE tmiv.email = outer_tmiv.email)
-                                          ORDER BY created_at DESC
-                                          LIMIT 1)
-                                      )) AS last_logged
+                          FROM (SELECT outer_tmiv.email,
+                                      STRING_AGG(DISTINCT CAST(outer_tmiv.user_id AS VARCHAR), ', ') AS user_id,
+                                      STRING_AGG(DISTINCT outer_tmiv.name, ', ') AS name,
+                                      STRING_AGG(DISTINCT outer_tmiv.avatar_url, ', ') AS avatar_url,
+                                      MAX(u.last_active) AS last_logged
                                  FROM team_member_info_view outer_tmiv
+                                 LEFT JOIN users u ON u.id = outer_tmiv.user_id
                                  WHERE outer_tmiv.team_id IN (SELECT id
                                                              FROM teams
                                                              WHERE teams.user_id = $1)
                                    ${searchQuery}
-                                 GROUP BY email
-                                 ORDER BY email LIMIT $2 OFFSET $3) t) AS data
+                                 GROUP BY outer_tmiv.email
+                                 ORDER BY outer_tmiv.email LIMIT $2 OFFSET $3) t) AS data
                    FROM (SELECT DISTINCT email
                          FROM team_member_info_view outer_tmiv
                          WHERE outer_tmiv.team_id IN

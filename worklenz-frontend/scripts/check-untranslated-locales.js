@@ -196,7 +196,15 @@ const ENGLISH_MARKERS = /\b(projected|revenue|profit|forecast|this month|next mo
 // Words that are correctly spelled the same in these languages (cognates/loanwords), not missed
 // translations.
 const LANGUAGE_SOURCE_VALUES = {
-  fr: new Set(['Urgent', 'Description', 'Discussions', 'Conversation', '← Discussions']),
+  fr: new Set([
+    'Urgent',
+    'Description',
+    'Discussions',
+    'Conversation',
+    '← Discussions',
+    // "Pagination" is also the correct French label for the navigation landmark.
+    'Pagination',
+  ]),
   de: new Set(['Portal', 'Link']),
   es: new Set(['Portal']),
   pt: new Set(['Portal']),

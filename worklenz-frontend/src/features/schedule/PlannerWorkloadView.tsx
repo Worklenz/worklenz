@@ -354,7 +354,9 @@ const PlannerWorkloadView: React.FC = () => {
   const endDate = visibleDateStrs[visibleDateStrs.length - 1];
 
   // ── Data: members & projects (real, shared with the rest of Planner) ──
-  const { data: membersResp, isLoading: membersLoading } = useFetchScheduleMembersQuery();
+  const { data: membersResp, isLoading: membersLoading } = useFetchScheduleMembersQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
   const wlMembers: WlMember[] = useMemo(
     () =>
       (membersResp?.body || []).map((m: any) => ({
@@ -448,7 +450,7 @@ const PlannerWorkloadView: React.FC = () => {
   // ── Data: scheduled tasks in the visible window ──
   const { data: taskTimelineResp, isLoading: tasksLoading } = useFetchTaskTimelineQuery(
     { startDate, endDate },
-    { skip: !startDate || !endDate }
+    { skip: !startDate || !endDate, refetchOnMountOrArgChange: true }
   );
 
   const { data: capacityResponse } = useFetchDailyCapacityQuery(
@@ -456,7 +458,7 @@ const PlannerWorkloadView: React.FC = () => {
       startDate: startDate || '',
       endDate: endDate || '',
     },
-    { skip: !startDate || !endDate }
+    { skip: !startDate || !endDate, refetchOnMountOrArgChange: true }
   );
 
   const memberCapacityMap = useMemo(() => {
@@ -532,8 +534,17 @@ const PlannerWorkloadView: React.FC = () => {
   // Keeps this view's socket room membership in sync with the projects currently
   // loaded, so PROJECT_UPDATES_AVAILABLE broadcasts — e.g. a new subtask created
   // elsewhere — actually reach it instead of only showing up after a hard refresh.
-  const loadedProjectIds = useMemo(() => projectIdsFromTasks(taskTimelineResp?.body || []), [taskTimelineResp]);
-  useProjectRoomSync(loadedProjectIds);
+  const relevantProjectIds = useMemo(() => {
+    const ids = new Set<string>();
+    orgProjects.forEach((p: any) => {
+      if (p?.id) ids.add(p.id);
+    });
+    (taskTimelineResp?.body || []).forEach((t: any) => {
+      if (t?.project_id) ids.add(t.project_id);
+    });
+    return ids;
+  }, [orgProjects, taskTimelineResp]);
+  useProjectRoomSync(relevantProjectIds);
 
   const refreshAfterMutation = () => {
     dispatch(scheduleApi.util.invalidateTags(['TaskTimeline', 'Workload', 'MemberProjects', 'Capacity', 'TimeOff']));
@@ -1760,7 +1771,7 @@ const WorkloadAddPopover: React.FC<{
         message.error(
           task?.message ||
             t('taskCreationRestricted', {
-              defaultValue: 'Task creation is restricted to Admins and Team Leads only. Please contact your admin for access.',
+              defaultValue: 'Task creation is restricted to Admins, Team Leads, and Project Managers only. Please contact your admin for access.',
             })
         );
         return;

@@ -141,6 +141,19 @@ export const tasksApiService = {
     return response.data;
   },
 
+  moveSubtask: async (
+    taskId: string,
+    projectId: string,
+    parentTaskId: string
+  ): Promise<IServerResponse<void>> => {
+    const response = await apiClient.post(`${rootUrl}/move-subtask`, {
+      id: taskId,
+      project_id: projectId,
+      parent_task_id: parentTaskId,
+    });
+    return response.data;
+  },
+
   convertToTask: async (taskId: string, projectId: string): Promise<IServerResponse<void>> => {
     const response = await apiClient.post(`${rootUrl}/convert`, {
       id: taskId,

@@ -17,6 +17,26 @@ export class IO {
     return this.instance?.sockets.sockets?.get(socketId) || null;
   }
 
+  /**
+   * Broadcast to everyone currently in a project room.
+   * Prefer this over `getSocketById(sender).to(room)` — room fan-out must not
+   * depend on the sender's DB socket_id still being valid.
+   */
+  public static emitToProjectRoom(
+    projectId: string,
+    event: SocketEvents | string,
+    data?: unknown,
+    options?: { excludeSocketId?: string }
+  ) {
+    if (!projectId || !this.instance) return;
+    const eventName = typeof event === "string" ? event : event.toString();
+    if (options?.excludeSocketId) {
+      this.instance.to(projectId).except(options.excludeSocketId).emit(eventName, data);
+    } else {
+      this.instance.to(projectId).emit(eventName, data);
+    }
+  }
+
   public static emit(event: SocketEvents, socketId: string, data?: any) {
     this.getSocketById(socketId)?.emit(event.toString(), data);
   }

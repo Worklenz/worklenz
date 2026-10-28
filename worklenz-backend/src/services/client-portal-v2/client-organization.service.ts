@@ -9,7 +9,7 @@ import { assignContactToProject, removeContactFromProject } from "./project-core
 import { getPortalSettingsV2 } from "./settings.service";
 import { ClientSubject } from "./subject";
 import { Queryable } from "./types";
-import { USER_VIEW_SQL, updateClientUser } from "./users.service";
+import { USER_VIEW_SQL, removeContact, updateClientUser } from "./users.service";
 
 /**
  * Account > Organization for a client user: the people in their own organization, and (when the
@@ -25,7 +25,7 @@ export interface ClientOrgUserDto {
   email: string;
   jobTitle: string;
   role: ClientSubject["role"];
-  status: "Active" | "Invited" | "Deactivated";
+  status: "Active" | "Invited" | "Deactivated" | "Deleted";
   isYou: boolean;
 }
 
@@ -33,6 +33,7 @@ const STATUS_LABEL: Record<string, ClientOrgUserDto["status"]> = {
   active: "Active",
   invited: "Invited",
   deactivated: "Deactivated",
+  deleted: "Deleted",
 };
 
 export const INVITE_LINK_DAYS = 7;
@@ -138,45 +139,28 @@ export async function removeOrganizationUser(subject: ClientSubject, userId: str
   }
   if (userId === subject.contactId) throw conflict("You can't remove yourself.", "CANNOT_REMOVE_SELF");
 
-  await withTransaction(async tx => {
-    const found = await tx.query(
-      `SELECT cc.id, cc.name, cc.email, cc.role, COALESCE(NULLIF(TRIM(c.company_name), ''), c.name) AS client_name
-         FROM client_contacts cc JOIN clients c ON c.id = cc.client_id
-        WHERE cc.id = $1 AND cc.client_id = $2 AND cc.team_id = $3
-        FOR UPDATE OF cc`,
-      [userId, subject.clientId, subject.teamId]
-    );
-    const target = found.rows[0];
-    // Someone from another organization is indistinguishable from someone who does not exist.
-    if (!target) throw notFound("User");
-
-    if (target.role === "admin") {
-      const others = await tx.query(
-        `SELECT COUNT(*)::int AS n
-           FROM (${USER_VIEW_SQL}) u
-          WHERE u.client_id = $2 AND u.role = 'admin' AND u.status_key = 'active' AND u.id <> $3`,
-        [subject.teamId, subject.clientId, userId]
-      );
-      if ((others.rows[0]?.n ?? 0) === 0) {
-        throw conflict("An organization needs at least one Client Admin.", "LAST_ADMIN");
-      }
-    }
-
-    await tx.query(`DELETE FROM client_contacts WHERE id = $1 AND client_id = $2 AND team_id = $3`, [
-      userId,
-      subject.clientId,
-      subject.teamId,
-    ]);
-    await recordAuditEvent(tx, {
+  // The same removal staff use (see removeContact), with no way to confirm past a protection: a Client
+  // Admin cannot leave the organization without an admin, nor strand an approval nobody else can decide.
+  await withTransaction(tx =>
+    removeContact(tx, {
       teamId: subject.teamId,
-      event: "Client removed",
+      userId,
       actor: { side: "client", name: subject.name, contactId: subject.contactId },
-      clientId: subject.clientId,
-      clientName: target.client_name,
-      targetType: "client_user",
-      targetId: target.id,
-      targetLabel: `${target.name} · ${target.client_name}`,
-    });
+      onlyOrganizationId: subject.clientId,
+      refuseStaffManaged: true,
+    })
+  ).catch(error => {
+    if (error instanceof PortalError && error.code === "LAST_CLIENT_ADMIN") {
+      throw conflict("An organization needs at least one Client Admin.", "LAST_ADMIN");
+    }
+    if (error instanceof PortalError && error.code === "PENDING_APPROVALS") {
+      throw conflict(
+        "This person is the only approver of an approval that is still waiting. Ask your project team to name another approver first.",
+        "PENDING_APPROVALS",
+        error.details
+      );
+    }
+    throw error;
   });
 }
 

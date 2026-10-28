@@ -110,6 +110,12 @@ export const clientPortalV2Api = clientPortalApi
         query: body => ({ url: '/v2/me/account-deletion', method: 'POST', body }),
         transformResponse: unwrap<AccountDeletionResult>,
       }),
+      // A Client Member or Viewer cannot delete their own account; they ask their project team to. Asking again
+      // within a day changes nothing (`sent: false`).
+      submitAccountDeletionRequest: builder.mutation<{ sent: boolean }, void>({
+        query: () => ({ url: '/v2/me/account-deletion-request', method: 'POST', body: {} }),
+        transformResponse: unwrap<{ sent: boolean }>,
+      }),
       getTimezones: builder.query<ClientTimezoneV2[], void>({
         query: () => '/v2/timezones',
         transformResponse: unwrap<ClientTimezoneV2[]>,
@@ -350,6 +356,7 @@ export const {
   useGetMeQuery,
   useUpdateMeMutation,
   useRequestAccountDeletionMutation,
+  useSubmitAccountDeletionRequestMutation,
   useGetTimezonesQuery,
   useGetDashboardV2Query,
   useGetProjectsV2Query,

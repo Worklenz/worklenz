@@ -170,17 +170,23 @@ const TaskRow: React.FC<TaskRowProps> = memo(
         ref={setNodeRef}
         data-task-id={taskId}
         style={{ ...style, height: '40px', position: 'relative', zIndex: 1 }}
-        className={`group flex items-center min-w-max px-1 border-t border-b border-gray-200 dark:border-gray-700 hover:bg-black/5 dark:hover:bg-white/5 transition-colors ${
+        className={`group flex items-center min-w-max px-1 border-t border-b border-gray-200 dark:border-gray-700 hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-200 ease ${
           isDragging ? 'opacity-50' : ''
-        } ${isOver && !isDragging ? 'bg-black/5 dark:bg-white/5' : ''} ${
-          isDrawerActive ? 'bg-black/[0.04] dark:bg-white/[0.05]' : ''
-        }`}
+        } ${
+          isOver && !isDragging
+            ? isSubtask
+              ? 'bg-black/5 dark:bg-white/5'
+              : 'bg-blue-50/70 dark:bg-blue-900/30 ring-1 ring-inset ring-blue-400/70 dark:ring-blue-500/70'
+            : ''
+        } ${isDrawerActive ? 'bg-black/[0.04] dark:bg-white/[0.05]' : ''}`}
       >
         {visibleColumns.map((column, index) => {
+          // Surface colors live in CSS variables flipped by html[data-theme],
+          // so sticky cells and the scrolled row recolor in the same recalc.
           const rowBackgrounds = {
-            normal: isDarkMode ? (isSubtask ? '#141414' : '#1e1e1e') : '#ffffff',
-            hover: isDarkMode ? '#2a2a2a' : '#f5f5f5',
-            dragOver: isDarkMode ? '#303030' : '#f0f0f0',
+            normal: 'var(--tl-sticky-cell-bg)',
+            hover: 'var(--tl-sticky-cell-hover-bg)',
+            dragOver: 'var(--tl-sticky-cell-drag-bg)',
           };
 
           let currentBg = rowBackgrounds.normal;
@@ -195,8 +201,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(
                 column.width,
                 column.isSticky,
                 index,
-                currentBg,
-                rowBackgrounds
+                currentBg
               )}
             </React.Fragment>
           );

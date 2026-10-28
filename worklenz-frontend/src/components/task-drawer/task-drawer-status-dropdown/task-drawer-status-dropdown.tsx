@@ -4,6 +4,7 @@ import { updateTaskStatus } from '@/features/tasks/tasks.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { isListTabKey } from '@/features/projects/singleProject/saved-views/saved-view-config';
 import alertService from '@/services/alerts/alertService';
 import { SocketEvents } from '@/shared/socket-events';
 import { useSocket } from '@/socket/socketContext';
@@ -96,7 +97,7 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId, disabled = false }: 
         }
 
         // Update old tasks slice
-        if (tab === 'tasks-list') {
+        if (isListTabKey(tab)) {
           dispatch(updateTaskStatus(data));
         }
 
@@ -129,9 +130,9 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId, disabled = false }: 
     const statusColor =
       themeMode === 'dark'
         ? selectedStatus?.color_code_dark ||
-          selectedStatus?.color_code ||
-          task.status_color_dark ||
-          task.status_color
+        selectedStatus?.color_code ||
+        task.status_color_dark ||
+        task.status_color
         : selectedStatus?.color_code || task.status_color || task.status_color_dark;
 
     return statusColor || (themeMode === 'dark' ? '#4b5563' : '#9ca3af');
@@ -161,8 +162,8 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId, disabled = false }: 
           style={
             {
               width: 'fit-content',
-              minWidth: 120,
-              maxWidth: 220,
+              minWidth: 90,
+              maxWidth: 160,
               backgroundColor: resolvedStatusBackground,
               borderRadius: 16,
               '--task-drawer-status-bg': resolvedStatusBackground,
@@ -173,7 +174,18 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId, disabled = false }: 
           }
           labelRender={status => {
             return (
-              <span style={{ fontSize: 13, color: resolvedStatusTextColor }}>
+              <span
+                title={String(status.label ?? '')}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 13,
+                  color: resolvedStatusTextColor,
+                }}
+              >
                 {status.label}
               </span>
             );

@@ -1067,6 +1067,17 @@ const enhancedKanbanSlice = createSlice({
       state.taskCache[taskId] = result.task;
     },
 
+    updateEnhancedKanbanTaskIssueType: (
+      state,
+      action: PayloadAction<{ taskId: string; issueType: Task['issue_type'] }>
+    ) => {
+      const { taskId, issueType } = action.payload;
+      const result = findTaskInAllGroups(state.taskGroups, taskId);
+      if (!result) return;
+      result.task.issue_type = issueType;
+      state.taskCache[taskId] = result.task;
+    },
+
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
       if (!action.payload) return;
       const { id: task_id, priority_id } = action.payload;
@@ -1385,6 +1396,8 @@ const enhancedKanbanSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchEnhancedKanbanGroups.fulfilled, (state, action) => {
+        if (state.projectId !== action.meta.arg) return;
+
         state.loadingGroups = false;
         const groups = toArray(action.payload);
         state.taskGroups = groups;
@@ -1421,6 +1434,8 @@ const enhancedKanbanSlice = createSlice({
         }
       })
       .addCase(fetchEnhancedKanbanGroups.rejected, (state, action) => {
+        if (state.projectId !== action.meta.arg) return;
+
         state.loadingGroups = false;
         state.error = action.payload as string;
       })
@@ -1578,6 +1593,7 @@ export const {
   updateEnhancedKanbanTaskName,
   updateEnhancedKanbanTaskStoryPoints,
   updateEnhancedKanbanTaskBlocked,
+  updateEnhancedKanbanTaskIssueType,
   updateEnhancedKanbanTaskEndDate,
   updateEnhancedKanbanTaskStartDate,
   updateEnhancedKanbanSubtask,

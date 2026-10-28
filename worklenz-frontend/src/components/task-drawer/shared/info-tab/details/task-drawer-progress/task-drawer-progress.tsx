@@ -18,6 +18,7 @@ import {
   updateEnhancedKanbanTaskProgress,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { isListTabKey } from '@/features/projects/singleProject/saved-views/saved-view-config';
 import { updateTask } from '@/features/task-management/task-management.slice';
 import { store } from '@/app/store';
 
@@ -121,7 +122,7 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
         }
 
         // Update old tasks slice (for backward compatibility)
-        if (tab === 'tasks-list') {
+        if (isListTabKey(tab)) {
           dispatch(
             updateTaskProgress({
               taskId: task.id,
@@ -215,7 +216,7 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
               (data: ITaskListStatusChangeResponse) => {
                 dispatch(setTaskStatus(data));
 
-                if (tab === 'tasks-list') {
+                if (isListTabKey(tab)) {
                   dispatch(updateTaskStatus(data));
                 }
                 if (tab === 'board') {

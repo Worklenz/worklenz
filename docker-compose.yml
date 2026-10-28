@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: chamikajaycey/worklenz-frontend:3.2.1
+    image: chamikajaycey/worklenz-frontend:3.3.1
     container_name: worklenz_frontend
     ports:
       - "5000:5000"
@@ -13,7 +13,7 @@ services:
       - worklenz
 
   backend:
-    image: chamikajaycey/worklenz-backend:3.2.1
+    image: chamikajaycey/worklenz-backend:3.3.1
     container_name: worklenz_backend
     ports:
       - "3000:3000"
@@ -42,7 +42,7 @@ services:
       - worklenz
 
   client-portal:
-    image: chamikajaycey/worklenz-client-portal:3.2.1
+    image: chamikajaycey/worklenz-client-portal:3.3.1
     container_name: worklenz_client_portal
     ports:
       - "5174:5174"

@@ -138,6 +138,8 @@ export interface ITaskState {
   members: string[];
   activeTimers: Record<string, number | null>;
   convertToSubtaskDrawerOpen: boolean;
+  /** 'convert' turns a task into a subtask; 'move' reassigns an existing subtask's parent */
+  convertToSubtaskDrawerMode: 'convert' | 'move';
   customColumns: ITaskListColumn[];
   customColumnValues: Record<string, Record<string, any>>;
   allTasks: IProjectTask[];
@@ -145,6 +147,8 @@ export interface ITaskState {
   totalTasks: number;
   projectId: string | null;
   isRestoringFilters: boolean;
+  /** A saved view tab owns the filter state; it must not overwrite the List tab's persisted filters. */
+  isSavedViewActive: boolean;
 }
 
 const initialState: ITaskState = {
@@ -169,6 +173,7 @@ const initialState: ITaskState = {
   members: [],
   activeTimers: {},
   convertToSubtaskDrawerOpen: false,
+  convertToSubtaskDrawerMode: 'convert',
   customColumns: [],
   customColumnValues: {},
   allTasks: [],
@@ -176,6 +181,7 @@ const initialState: ITaskState = {
   totalTasks: 0,
   projectId: null,
   isRestoringFilters: false,
+  isSavedViewActive: false,
 };
 
 export const COLUMN_KEYS = {
@@ -595,6 +601,13 @@ const taskSlice = createSlice({
 
     setConvertToSubtaskDrawerOpen: (state, action: PayloadAction<boolean>) => {
       state.convertToSubtaskDrawerOpen = action.payload;
+      if (!action.payload) {
+        state.convertToSubtaskDrawerMode = 'convert';
+      }
+    },
+
+    setConvertToSubtaskDrawerMode: (state, action: PayloadAction<'convert' | 'move'>) => {
+      state.convertToSubtaskDrawerMode = action.payload;
     },
 
     setTaskListProjectId: (state, action: PayloadAction<string | null>) => {
@@ -1205,7 +1218,7 @@ const taskSlice = createSlice({
       // Never persist while a restoration is in progress, otherwise stale
       // filters (from before restoration completes) would clobber the
       // saved filters for the project.
-      if (state.isRestoringFilters) return;
+      if (state.isRestoringFilters || state.isSavedViewActive) return;
 
       saveFiltersToLocalStorage(
         {
@@ -1219,6 +1232,10 @@ const taskSlice = createSlice({
         },
         state.projectId
       );
+    },
+
+    setSavedViewActive: (state, action: PayloadAction<boolean>) => {
+      state.isSavedViewActive = action.payload;
     },
 
     // Mark the start of filter restoration to prevent useFilterPersistence from persisting stale filters
@@ -1461,6 +1478,7 @@ export const {
   updateTaskStatusColor,
   updateTaskGroupColor,
   setConvertToSubtaskDrawerOpen,
+  setConvertToSubtaskDrawerMode,
   setTaskListProjectId,
   reorderTasks,
   updateTaskDescription,
@@ -1473,6 +1491,7 @@ export const {
   updateCustomColumnPinned,
   updateRecurringChange,
   persistFilters,
+  setSavedViewActive,
   startFilterRestoration,
   restoreFilters,
   endFilterRestoration,

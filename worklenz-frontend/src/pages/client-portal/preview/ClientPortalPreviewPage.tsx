@@ -29,6 +29,7 @@ import {
 } from './PreviewViews';
 import { PortalLoader } from '@/components/client-portal/v2';
 import { PortalPreviewShell, type PreviewTab } from './PortalPreviewShell';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const CAPABILITY_ROWS: { capability: ClientCapability; key: string; defaultValue: string }[] = [
   { capability: 'view', key: 'capability.view', defaultValue: 'View assigned projects, milestones, client-visible tasks and files' },
@@ -227,7 +228,7 @@ const ClientPortalPreviewPage = () => {
             setOpenProjectId(null);
             setTab('dashboard');
           }}
-          options={clients.map(client => ({ value: client.id, label: client.name }))}
+          options={clients.map(client => ({ value: client.id, label: decodeHtmlEntities(client.name) }))}
         />
         <Select<string>
           showSearch
@@ -265,9 +266,30 @@ const ClientPortalPreviewPage = () => {
         >
           {/* The frame uses the portal's own colour and light/dark theme, not the admin app's. */}
           <ConfigProvider
+            // Isolate portal components from the admin app's global .dark .ant-* overrides.
+            prefixCls="portal-preview"
             theme={{
-              algorithm: isDarkPortal ? theme.darkAlgorithm : theme.defaultAlgorithm,
-              token: { colorPrimary: brandColor },
+              // Keep the portal theme independent of the main app theme.
+              inherit: false,
+              algorithm: isDarkPortal
+                ? theme.darkAlgorithm
+                : theme.defaultAlgorithm,
+              token: {
+                colorPrimary: brandColor,
+                borderRadius: 6,
+                fontFamily: token.fontFamily,
+                colorBgLayout: isDarkPortal ? '#141414' : '#f5f5f5',
+                colorBgContainer: isDarkPortal ? '#1f1f1f' : '#ffffff',
+                colorText: isDarkPortal
+                  ? 'rgba(255, 255, 255, 0.85)'
+                  : 'rgba(0, 0, 0, 0.88)',
+                colorTextSecondary: isDarkPortal
+                  ? 'rgba(255, 255, 255, 0.65)'
+                  : 'rgba(0, 0, 0, 0.65)',
+                colorTextTertiary: isDarkPortal
+                  ? 'rgba(255, 255, 255, 0.65)'
+                  : 'rgba(0, 0, 0, 0.65)',
+              },
             }}
           >
             <PortalPreviewShell

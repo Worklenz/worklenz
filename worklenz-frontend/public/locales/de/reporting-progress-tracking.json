@@ -46,4 +46,6 @@
   "updatedBy": "von {{name}}",
   "editConfidence": "Lieferzuverlässigkeit für {{project}} festlegen",
   "readOnlyConfidence": "Lieferzuverlässigkeit für {{project}}"
+,
+  "rowsPerPage": "Zeilen pro Seite:"
 }

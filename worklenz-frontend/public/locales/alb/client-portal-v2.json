@@ -93,5 +93,8 @@
   "toolbarSelectAll": "Zgjidh të gjitha",
   "toolbarClearAll": "Pastro të gjitha",
   "toolbarFields": "Fushat",
-  "toolbarShowFields": "Shfaq fushat"
+  "toolbarShowFields": "Shfaq fushat",
+  "userDeleted": "Llogari e fshirë",
+  "userDeletedHint": "U fshi nga vetë përdoruesi më {{deleted}}. Mund të rikthehet deri më {{until}}.",
+  "userDeletedHintExpired": "U fshi nga vetë përdoruesi më {{deleted}}."
 }
