@@ -17,6 +17,7 @@ import projectManagerValidator from "../../middlewares/validators/project-manage
 import chatIdParamValidator from "../../middlewares/validators/chat-id-param-validator";
 import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
 import { requireFeature } from "../../shared/entitlements/gates";
+import PortalProjectsController from "../../controllers/client-portal/v2/portal-projects-controller";
 import { clientsReadOnlyValidator } from "../../middlewares/validators/organization-permission-validator";
 
 const clientsApiRouter = express.Router();
