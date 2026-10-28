@@ -91,6 +91,7 @@
   "emptyTitle": "No data for this time period",
   "emptyDescription": "Try adjusting filters or selecting another project.",
   "emptyCta": "Clear filters",
+  "clearFilters": "Clear",
   "inChartEmpty": "No data for this time period",
   "errorTitle": "Something went wrong",
   "errorDescription": "We could not load this report. Please try again.",

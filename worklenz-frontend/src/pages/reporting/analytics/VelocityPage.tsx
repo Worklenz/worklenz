@@ -2,18 +2,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Button,
-  DatePicker,
   Flex,
-  Segmented,
   Select,
   Space,
-  Switch,
-  Typography,
   message,
 } from '@/shared/antd-imports';
 import { SaveOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import { jsPDF } from 'jspdf';
 
@@ -48,15 +44,15 @@ import {
 } from '@/lib/reporting/analytics-permissions';
 import type {
   AnalyticsReportTemplate,
-  VelocityMetric,
   VelocitySeriesFilters,
   VelocitySeriesResponse,
-  VelocityViewBy,
 } from '@/types/reporting/analytics-velocity.types';
 import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
-const { Text } = Typography;
-const { RangePicker } = DatePicker;
+const DEFAULT_VIEW_BY = 'project' as const;
+const DEFAULT_METRIC = 'story_points' as const;
+const DEFAULT_SPRINT_COUNT = 6;
+const DEFAULT_AVG_WINDOW = 3;
 
 const downloadBlob = (blob: Blob, filename: string) => {
   const url = URL.createObjectURL(blob);
@@ -85,18 +81,11 @@ const VelocityPage: React.FC = () => {
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
-  const [viewBy, setViewBy] = useState<VelocityViewBy>('project');
-  const [metric, setMetric] = useState<VelocityMetric>('story_points');
-  const [sprintCount, setSprintCount] = useState(6);
-  const [avgWindow, setAvgWindow] = useState(3);
-  const [showTrend, setShowTrend] = useState(false);
-  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_90_days');
-  const [customRange, setCustomRange] = useState<[Dayjs, Dayjs] | null>(null);
+  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
-  const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -121,54 +110,34 @@ const VelocityPage: React.FC = () => {
   }, [teamMembersState]);
 
   const dateBounds = useMemo(() => {
-    if (datePreset === 'custom' && customRange) {
-      return {
-        date_from: customRange[0].startOf('day').toISOString(),
-        date_to: customRange[1].endOf('day').toISOString(),
-      };
-    }
     const end = dayjs();
-    let start = end.subtract(90, 'day');
+    let start = end.subtract(30, 'day');
     if (datePreset === 'last_7_days') start = end.subtract(7, 'day');
-    if (datePreset === 'last_30_days') start = end.subtract(30, 'day');
+    if (datePreset === 'last_90_days') start = end.subtract(90, 'day');
     if (datePreset === 'this_quarter') start = end.startOf('quarter');
-    if (datePreset === 'custom') return { date_from: null, date_to: null };
     return {
       date_from: start.startOf('day').toISOString(),
       date_to: end.endOf('day').toISOString(),
     };
-  }, [datePreset, customRange]);
+  }, [datePreset]);
 
   const filters: VelocitySeriesFilters = useMemo(
     () => ({
-      view_by: viewBy,
+      view_by: DEFAULT_VIEW_BY,
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,
       team_ids: selectedTeamIds,
-      sprint_count: sprintCount,
+      sprint_count: DEFAULT_SPRINT_COUNT,
       date_from: dateBounds.date_from,
       date_to: dateBounds.date_to,
-      metric,
-      avg_window: avgWindow,
-      trend: showTrend,
+      metric: DEFAULT_METRIC,
+      avg_window: DEFAULT_AVG_WINDOW,
+      trend: false,
     }),
-    [
-      viewBy,
-      selectedProjectIds,
-      selectedMemberIds,
-      selectedTeamIds,
-      sprintCount,
-      dateBounds,
-      metric,
-      avgWindow,
-      showTrend,
-    ]
+    [selectedProjectIds, selectedMemberIds, selectedTeamIds, dateBounds]
   );
 
-  const metricLabel =
-    metric === 'issue_count'
-      ? t('metricIssueCount', { defaultValue: 'issues' })
-      : t('metricStoryPoints', { defaultValue: 'story points' });
+  const metricLabel = t('metricStoryPoints', { defaultValue: 'story points' });
 
   const loadTeamsAndMembers = useCallback(async () => {
     setFiltersLoading(true);
@@ -194,7 +163,6 @@ const VelocityPage: React.FC = () => {
               label: team.name || String(team.id),
             }))
           : [];
-      setTeamOptions(teams);
 
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
       setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
@@ -209,49 +177,41 @@ const VelocityPage: React.FC = () => {
     }
   }, [dispatch, session?.team_id, t]);
 
-  const loadProjectsForTeams = useCallback(
-    async (teamIds: string[]) => {
-      if (teamIds.length === 0) {
-        setProjectOptions([]);
-        return;
-      }
-      try {
-        const projectResponses = await Promise.all(
-          teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
-        );
-        const projects: FilterOption[] = [];
-        const seen = new Set<string>();
-        projectResponses.forEach(res => {
-          if (res.done && Array.isArray(res.body)) {
-            (res.body as Array<{ id: string; name: string }>).forEach(project => {
-              if (!seen.has(project.id)) {
-                seen.add(project.id);
-                projects.push({ value: project.id, label: project.name });
-              }
-            });
-          }
-        });
-        setProjectOptions(projects);
-        setSelectedProjectIds(prev => {
-          if (prev.length === 0) return projects.map(p => p.value);
-          const allowed = new Set(projects.map(p => p.value));
-          const next = prev.filter(id => allowed.has(id));
-          return next.length > 0 ? next : projects.map(p => p.value);
-        });
-      } catch {
-        setProjectOptions([]);
-      }
-    },
-    []
-  );
+  const loadProjectsForTeams = useCallback(async (teamIds: string[]) => {
+    if (teamIds.length === 0) {
+      setProjectOptions([]);
+      return;
+    }
+    try {
+      const projectResponses = await Promise.all(
+        teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
+      );
+      const projects: FilterOption[] = [];
+      const seen = new Set<string>();
+      projectResponses.forEach(res => {
+        if (res.done && Array.isArray(res.body)) {
+          (res.body as Array<{ id: string; name: string }>).forEach(project => {
+            if (!seen.has(project.id)) {
+              seen.add(project.id);
+              projects.push({ value: project.id, label: project.name });
+            }
+          });
+        }
+      });
+      setProjectOptions(projects);
+      setSelectedProjectIds(prev => {
+        if (prev.length === 0) return projects.map(p => p.value);
+        const allowed = new Set(projects.map(p => p.value));
+        const next = prev.filter(id => allowed.has(id));
+        return next.length > 0 ? next : projects.map(p => p.value);
+      });
+    } catch {
+      setProjectOptions([]);
+    }
+  }, []);
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     const f = template.filters_json ?? {};
-    if (typeof f.view_by === 'string') setViewBy(f.view_by as VelocityViewBy);
-    if (typeof f.metric === 'string') setMetric(f.metric as VelocityMetric);
-    if (typeof f.sprint_count === 'number') setSprintCount(f.sprint_count);
-    if (typeof f.avg_window === 'number') setAvgWindow(f.avg_window);
-    if (typeof f.trend === 'boolean') setShowTrend(f.trend);
     if (Array.isArray(f.project_ids)) setSelectedProjectIds(f.project_ids.map(String));
     if (Array.isArray(f.member_ids)) setSelectedMemberIds(f.member_ids.map(String));
     if (Array.isArray(f.team_ids)) setSelectedTeamIds(f.team_ids.map(String));
@@ -287,11 +247,20 @@ const VelocityPage: React.FC = () => {
       if (res.done && res.body) {
         setData(res.body);
       } else {
-        setError(res.message || t('errorDescription', { defaultValue: 'We could not load this report. Please try again.' }));
+        setError(
+          res.message ||
+            t('errorDescription', {
+              defaultValue: 'We could not load this report. Please try again.',
+            })
+        );
         setData(null);
       }
     } catch {
-      setError(t('errorDescription', { defaultValue: 'We could not load this report. Please try again.' }));
+      setError(
+        t('errorDescription', {
+          defaultValue: 'We could not load this report. Please try again.',
+        })
+      );
       setData(null);
     } finally {
       setLoading(false);
@@ -310,6 +279,12 @@ const VelocityPage: React.FC = () => {
   useEffect(() => {
     void loadSeries();
   }, [loadSeries]);
+
+  const handleClearFilters = () => {
+    setSelectedProjectIds([]);
+    setSelectedMemberIds([]);
+    setDatePreset('last_30_days');
+  };
 
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;
@@ -351,7 +326,7 @@ const VelocityPage: React.FC = () => {
           t('kpiAvgVelocity', { defaultValue: 'Avg velocity' }) +
             `: ${data.kpis.avg_velocity}  |  ` +
             t('kpiCommitment', { defaultValue: 'Commitment accuracy' }) +
-            `: ${data.kpis.commitment_accuracy_pct ?? '—'}%`,
+            `: ${data.kpis.commitment_accuracy_pct ?? '?'}%`,
           40,
           60
         );
@@ -408,16 +383,21 @@ const VelocityPage: React.FC = () => {
   };
 
   const velocityFilters = (
-    <Flex gap={8} wrap="nowrap" align="center" style={{ overflowX: 'auto', width: '100%' }}>
-      <Segmented
-        value={viewBy}
-        onChange={val => setViewBy(val as VelocityViewBy)}
+    <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
+      <Select
+        value={datePreset}
+        onChange={setDatePreset}
+        style={{ minWidth: 160 }}
         options={[
-          { value: 'project', label: t('viewByProject', { defaultValue: 'Project' }) },
-          { value: 'member', label: t('viewByMember', { defaultValue: 'Member' }) },
-          { value: 'team', label: t('viewByTeam', { defaultValue: 'Team' }) },
+          { value: 'last_7_days', label: t('dateLast7', { defaultValue: 'Last 7 days' }) },
+          { value: 'last_30_days', label: t('dateLast30', { defaultValue: 'Last 30 days' }) },
+          { value: 'last_90_days', label: t('dateLast90', { defaultValue: 'Last 90 days' }) },
+          {
+            value: 'this_quarter',
+            label: t('dateThisQuarter', { defaultValue: 'This quarter' }),
+          },
         ]}
-        aria-label={t('viewBy', { defaultValue: 'View by' })}
+        aria-label={t('datePreset', { defaultValue: 'Date range' })}
       />
 
       <AnalyticsFilterBar
@@ -426,67 +406,13 @@ const VelocityPage: React.FC = () => {
         onProjectsChange={setSelectedProjectIds}
         memberOptions={memberOptions}
         selectedMemberIds={selectedMemberIds}
-        onMembersChange={viewBy === 'member' ? setSelectedMemberIds : undefined}
-        teamOptions={teamOptions}
-        selectedTeamIds={selectedTeamIds}
-        onTeamsChange={setSelectedTeamIds}
-        datePreset={datePreset}
-        onDatePresetChange={setDatePreset}
+        onMembersChange={setSelectedMemberIds}
         loading={filtersLoading}
-        inline
       />
 
-      {datePreset === 'custom' && (
-        <RangePicker
-          value={customRange}
-          onChange={vals => {
-            if (vals?.[0] && vals?.[1]) setCustomRange([vals[0], vals[1]]);
-            else setCustomRange(null);
-          }}
-        />
-      )}
-      <Select
-        value={metric}
-        onChange={setMetric}
-        style={{ minWidth: 140 }}
-        options={[
-          {
-            value: 'story_points',
-            label: t('metricStoryPointsLabel', { defaultValue: 'Story points' }),
-          },
-          {
-            value: 'issue_count',
-            label: t('metricIssueCountLabel', { defaultValue: 'Issue count' }),
-          },
-        ]}
-        aria-label={t('metric', { defaultValue: 'Metric' })}
-      />
-      <Select
-        value={sprintCount}
-        onChange={setSprintCount}
-        style={{ minWidth: 140 }}
-        options={[3, 6, 10, 12, 20, 30].map(n => ({
-          value: n,
-          label: t('lastNSprints', { defaultValue: 'Last {{count}} sprints', count: n }),
-        }))}
-        aria-label={t('sprintRange', { defaultValue: 'Sprint range' })}
-      />
-      <Select
-        value={avgWindow}
-        onChange={setAvgWindow}
-        style={{ minWidth: 150 }}
-        options={[2, 3, 4, 5, 6].map(n => ({
-          value: n,
-          label: t('avgWindow', { defaultValue: '{{count}}-sprint average', count: n }),
-        }))}
-        aria-label={t('avgWindowLabel', { defaultValue: 'Average window' })}
-      />
-      <Space size={6} style={{ flexShrink: 0 }}>
-        <Switch checked={showTrend} onChange={setShowTrend} />
-        <Text style={{ whiteSpace: 'nowrap' }}>
-          {t('showTrend', { defaultValue: 'Trend line' })}
-        </Text>
-      </Space>
+      <Button onClick={handleClearFilters}>
+        {t('clearFilters', { defaultValue: 'Clear' })}
+      </Button>
     </Flex>
   );
 
@@ -551,9 +477,7 @@ const VelocityPage: React.FC = () => {
             />
           )}
 
-          {data && (
-            <VelocityKpiTiles kpis={data.kpis} metricLabel={metricLabel} />
-          )}
+          {data && <VelocityKpiTiles kpis={data.kpis} metricLabel={metricLabel} />}
 
           <ChartTableWrapper
             chartTitle={title}
@@ -563,8 +487,8 @@ const VelocityPage: React.FC = () => {
                 ref={chartRef}
                 series={data?.series ?? []}
                 averageLine={data?.average_line ?? []}
-                trendLine={data?.trend_line ?? null}
-                viewBy={viewBy}
+                trendLine={null}
+                viewBy={DEFAULT_VIEW_BY}
               />
             }
             table={<VelocityTable series={data?.series ?? []} />}
