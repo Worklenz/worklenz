@@ -111,7 +111,7 @@ export async function startNextSprintNow(
            end_date = CASE
              WHEN start_date IS NOT NULL AND end_date IS NOT NULL
                THEN end_date + $3::INT * INTERVAL '1 day'
-             ELSE CURRENT_TIMESTAMP + ($4::INT - 1) * INTERVAL '1 day'
+             ELSE CURRENT_TIMESTAMP + $4::INT * INTERVAL '1 day'
            END
        WHERE id = $1 AND project_id = $2;`,
       [nextId, projectId, shiftDays, Math.max(1, Math.round(fallbackLengthDays))]
@@ -313,7 +313,7 @@ export async function completeSprintRecord(
       `SELECT start_date, end_date
        FROM project_phases
        WHERE id = $1 AND project_id = $2
-       LIMIT 1;`,
+       LIMIT 1 FOR UPDATE;`,
       [phaseId, projectId]
     );
     const plannedLengthDays = getSprintLengthDays(currentPhase.rows[0] ?? {});
