@@ -1,6 +1,8 @@
 {
   "analyticsGroup": "Reporting & Analytics",
   "analyticsNavAria": "Reports navigation",
+  "collapseSidebar": "Collapse sidebar",
+  "expandSidebar": "Expand sidebar",
   "allReports": "All reports",
   "allReportsSubtitle": "Every report in one place. Open, filter, save as your own, schedule or share.",
   "hubSubtitle": "The questions agencies ask every month-end, answered from one set of numbers.",

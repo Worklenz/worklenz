@@ -1,7 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { theme } from '@/shared/antd-imports';
+import {
+  Button,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  Tooltip,
+  theme,
+} from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {
   ANALYTICS_NAV,
@@ -13,22 +19,36 @@ import {
 import { useAnalyticsCustomReports } from '@/features/reporting/analytics-custom-reports';
 import './analytics-sidebar.css';
 
+const COLLAPSED_STORAGE_KEY = 'worklenz.analyticsSidebar.collapsed';
+
+const readCollapsedPreference = (): boolean => {
+  try {
+    return localStorage.getItem(COLLAPSED_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+
 const AnalyticsSidebarLink: React.FC<{
   item: AnalyticsNavItem;
   active: boolean;
   isDark: boolean;
+  collapsed: boolean;
   /** When set, render this label instead of i18n (user-named custom reports). */
   labelOverride?: string;
-}> = ({ item, active, isDark, labelOverride }) => {
+}> = ({ item, active, isDark, collapsed, labelOverride }) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
   const to = analyticsPath(item.path);
+  const label = labelOverride ?? t(item.labelKey, { defaultValue: item.defaultLabel });
+  const showComingSoon = !item.enabled && item.key === 'sla';
 
-  return (
+  const link = (
     <NavLink
       to={to}
       end={item.path === ''}
-      className={`analytics-sider-link${active ? ' is-active' : ''}`}
+      className={`analytics-sider-link${active ? ' is-active' : ''}${collapsed ? ' is-collapsed' : ''}`}
+      aria-label={label}
       style={
         {
           '--analytics-sider-active-bg': isDark ? 'rgba(24, 144, 255, 0.18)' : 'rgba(24, 144, 255, 0.1)',
@@ -41,15 +61,32 @@ const AnalyticsSidebarLink: React.FC<{
       <span className="analytics-sider-link-icon" aria-hidden>
         {getAnalyticsNavIcon(item.key.startsWith('custom-') ? 'dashboards' : item.key)}
       </span>
-      <span className="analytics-sider-link-label">
-        {labelOverride ?? t(item.labelKey, { defaultValue: item.defaultLabel })}
-      </span>
-      {!item.enabled && item.key === 'sla' && (
-        <span className="analytics-sider-coming-soon">
-          {t('comingSoonBadge', { defaultValue: 'Coming soon' })}
-        </span>
+      {!collapsed && (
+        <>
+          <span className="analytics-sider-link-label">{label}</span>
+          {showComingSoon && (
+            <span className="analytics-sider-coming-soon">
+              {t('comingSoonBadge', { defaultValue: 'Coming soon' })}
+            </span>
+          )}
+        </>
       )}
     </NavLink>
+  );
+
+  if (!collapsed) return link;
+
+  return (
+    <Tooltip
+      title={
+        showComingSoon
+          ? `${label} (${t('comingSoonBadge', { defaultValue: 'Coming soon' })})`
+          : label
+      }
+      placement="right"
+    >
+      {link}
+    </Tooltip>
   );
 };
 
@@ -64,6 +101,19 @@ export const AnalyticsSidebar: React.FC = () => {
   const isDark = themeMode === 'dark';
   const location = useLocation();
   const { customReports } = useAnalyticsCustomReports();
+  const [collapsed, setCollapsed] = useState(readCollapsedPreference);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLLAPSED_STORAGE_KEY, collapsed ? '1' : '0');
+    } catch {
+      // Ignore storage failures (private mode, quota, etc.)
+    }
+  }, [collapsed]);
+
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed(prev => !prev);
+  }, []);
 
   const groups = useMemo(
     () => buildAnalyticsNavGroups(customReports),
@@ -77,9 +127,13 @@ export const AnalyticsSidebar: React.FC = () => {
     return rest.split('/')[0];
   }, [location.pathname]);
 
+  const collapseLabel = collapsed
+    ? t('expandSidebar', { defaultValue: 'Expand sidebar' })
+    : t('collapseSidebar', { defaultValue: 'Collapse sidebar' });
+
   return (
     <nav
-      className="analytics-sider"
+      className={`analytics-sider${collapsed ? ' is-collapsed' : ''}`}
       aria-label={t('analyticsNavAria', { defaultValue: 'Reports navigation' })}
       style={{
         background: isDark ? '#141414' : '#fafafa',
@@ -87,21 +141,44 @@ export const AnalyticsSidebar: React.FC = () => {
         color: token.colorText,
       }}
     >
+      <div className="analytics-sider-toolbar">
+        {!collapsed && (
+          <span className="analytics-sider-toolbar-title" style={{ color: token.colorTextSecondary }}>
+            {t('reportsTitle', { defaultValue: 'Reports' })}
+          </span>
+        )}
+        <Tooltip title={collapseLabel} placement="right">
+          <Button
+            type="text"
+            size="small"
+            className="analytics-sider-toggle"
+            aria-label={collapseLabel}
+            aria-expanded={!collapsed}
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={toggleCollapsed}
+          />
+        </Tooltip>
+      </div>
+
       <div className="analytics-sider-scroll">
         <AnalyticsSidebarLink
           item={ANALYTICS_NAV.allReports}
           active={activeKey === 'all-reports'}
           isDark={isDark}
+          collapsed={collapsed}
         />
 
         {groups.map(group => (
           <div key={group.key} className="analytics-sider-group">
-            <h4
-              className="analytics-sider-group-label"
-              style={{ color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)' }}
-            >
-              {t(group.labelKey, { defaultValue: group.defaultLabel })}
-            </h4>
+            {!collapsed && (
+              <h4
+                className="analytics-sider-group-label"
+                style={{ color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)' }}
+              >
+                {t(group.labelKey, { defaultValue: group.defaultLabel })}
+              </h4>
+            )}
+            {collapsed && <div className="analytics-sider-group-divider" aria-hidden />}
             {group.items.map(item => (
               <AnalyticsSidebarLink
                 key={item.key}
@@ -111,6 +188,7 @@ export const AnalyticsSidebar: React.FC = () => {
                   (item.key === 'dashboards' && activeKey === 'dashboards')
                 }
                 isDark={isDark}
+                collapsed={collapsed}
                 labelOverride={
                   item.key.startsWith('custom-') ? item.defaultLabel : undefined
                 }
