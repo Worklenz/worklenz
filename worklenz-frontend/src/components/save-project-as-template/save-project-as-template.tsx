@@ -30,6 +30,7 @@ import alertService from '@/services/alerts/alertService';
 import { canUseFeature } from '@/utils/subscription-utils';
 import { useAuthService } from '@/hooks/useAuth';
 import useProjectPermissions from '@/hooks/useProjectPermissions';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   SaveOutlined,
   ProjectOutlined,
@@ -116,7 +117,7 @@ const SaveProjectAsTemplate = () => {
         month: 'short',
         day: 'numeric',
       });
-      return `${project.name} - ${timestamp}`;
+      return `${decodeHtmlEntities(project.name)} - ${timestamp}`;
     }
     const timestamp = new Date().toLocaleDateString('en-US', {
       month: 'short',

@@ -54,6 +54,7 @@ import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { setProjectId } from '@/features/project/project.slice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 /** However few tasks there are, the table area keeps room for this many rows. */
 const MIN_ROWS = 5;
@@ -124,7 +125,11 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
   const { data: filterOptionsData } = useGetTaskFilterOptionsQuery({ group_by: homeTasksConfig.tasks_group_by });
 
   const projectFilterOptions = useMemo(
-    () => (filterOptionsData?.body?.projects || []).map(p => ({ text: p.project_name, value: p.project_id })),
+    () =>
+      (filterOptionsData?.body?.projects || []).map(p => ({
+        text: decodeHtmlEntities(p.project_name),
+        value: p.project_id,
+      })),
     [filterOptionsData?.body?.projects]
   );
 
@@ -274,7 +279,7 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
               </Tooltip>
             </div>
             <Typography.Text ellipsis style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
-              {record.name}
+              {decodeHtmlEntities(record.name)}
             </Typography.Text>
             <div className="row-action-button">
               {/* No custom `color`/`styles` override — antd's default Tooltip
@@ -307,7 +312,7 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
             style={{ margin: 0, paddingInlineEnd: 6, cursor: 'pointer' }}
           >
             <Badge color={record.project_color || 'blue'} style={{ marginInlineEnd: 4 }} />
-            {record.project_name}
+            {decodeHtmlEntities(record.project_name)}
           </Typography.Paragraph>
         ),
       },

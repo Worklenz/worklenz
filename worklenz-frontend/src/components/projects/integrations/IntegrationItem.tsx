@@ -10,6 +10,7 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
   badge,
   channels,
   comingSoon,
+  note,
   locked,
   onClick,
 }) => {
@@ -28,20 +29,20 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
   const itemStyles = useMemo(
     () => ({
       padding: '12px 16px',
-      cursor: comingSoon ? 'not-allowed' : 'pointer',
+      cursor: comingSoon ? 'not-allowed' : onClick ? 'pointer' : 'default',
       opacity: comingSoon ? 0.6 : 1,
       borderBottom: `1px solid ${token.colorBorder}`,
       transition: 'background-color 0.2s',
       color: token.colorText,
     }),
-    [comingSoon, token.colorBorder, token.colorText]
+    [comingSoon, onClick, token.colorBorder, token.colorText]
   );
 
   // Memoize hover background color
   const hoverBgColor = token.colorBgTextHover;
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!comingSoon) {
+    if (!comingSoon && onClick) {
       e.currentTarget.style.backgroundColor = hoverBgColor;
     }
   };
@@ -75,7 +76,7 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
 
   return (
     <div
-      className={`integration-item ${comingSoon ? 'disabled' : 'clickable'}`}
+      className={`integration-item ${comingSoon ? 'disabled' : onClick ? 'clickable' : ''}`}
       onClick={!comingSoon ? onClick : undefined}
       style={itemStyles}
       onMouseEnter={handleMouseEnter}
@@ -90,6 +91,9 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
               <Tag color="purple" style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>
                 🔜 {t('comingSoon', { defaultValue: 'Coming Soon' })}
               </Tag>
+            )}
+            {note && !comingSoon && (
+              <Tag style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>{note}</Tag>
             )}
             {locked && !comingSoon && (
               <Tag color="gold" style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>

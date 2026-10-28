@@ -6,6 +6,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { IInsightTasks } from '@/types/project/projectInsights.types';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
 import { useTranslation } from 'react-i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const OverdueTasksTable = ({
   projectId,
@@ -42,7 +43,7 @@ const OverdueTasksTable = ({
     {
       key: 'name',
       title: t('common.name', { defaultValue: 'Name' }),
-      render: (_: any, record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
+      render: (_: any, record: IInsightTasks) => <Typography.Text>{decodeHtmlEntities(record.name)}</Typography.Text>,
     },
     {
       key: 'status',

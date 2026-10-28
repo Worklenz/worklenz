@@ -27,14 +27,14 @@ export async function notifyProjectUpdates(socket: Socket, taskId: string) {
     const result = await db.query("SELECT project_id FROM tasks WHERE id = $1;", [taskId]);
     const [data] = result.rows;
     if (data.project_id) {
-      // PROJECT_UPDATES_AVAILABLE is a refetch ping (no task payload). Restrict
+      // PROJECT_UPDATES_AVAILABLE is a refetch ping (empty payload). Restrict
       // delivery so members who cannot see this task do not churn their lists.
       await emitToTaskVisibleProjectMembers(
         socket,
         data.project_id,
         taskId,
         SocketEvents.PROJECT_UPDATES_AVAILABLE.toString(),
-        undefined,
+        {},
         { excludeSocketId: socket.id }
       );
     }

@@ -23,6 +23,7 @@ export interface IProjectPermissions {
   insights: boolean;
   files: boolean;
   updates: boolean;
+  docs: boolean;
   roadmap: boolean;
   workload: boolean;
 }
@@ -107,6 +108,8 @@ export interface IProjectViewModel extends IProject {
   auto_assign_task_creator?: boolean;
   restrict_task_creation?: boolean;
   phase_assignees_enabled?: boolean;
+  /** When true, normal members can see the Client's team tab on Members. */
+  members_can_view_client_team?: boolean;
   restrict_tasks_to_assignee?: boolean;
   auto_assign_subtask_phase?: boolean;
   currency?: string;

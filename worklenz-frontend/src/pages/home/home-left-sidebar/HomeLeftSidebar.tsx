@@ -41,8 +41,7 @@ export type HomeView =
   | 'inbox'
   | 'log-time'
   | 'todo'
-  | 'my-team'
-  | 'add-client';
+  | 'my-team';
 
 interface HomeLeftSidebarProps {
   activeView: HomeView;

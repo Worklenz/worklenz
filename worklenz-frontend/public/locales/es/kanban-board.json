@@ -57,6 +57,7 @@
   "newIssueNamePlaceholder": "Escribe el título de un problema",
   "loadingFilters": "Cargando filtros...",
   "failedToUpdateColumnOrder": "Error al actualizar el orden de las columnas",
+  "projectIdRequired": "El ID del proyecto es obligatorio",
   "failedToUpdatePhaseOrder": "Error al actualizar el orden de las fases",
   "pleaseTryAgain": "Por favor, inténtalo de nuevo",
   "taskNotCompleted": "La tarea no está completada",

@@ -24,6 +24,7 @@ import { WorkspaceHeader } from './WorkspaceHeader';
 import { WorkspaceRail } from './WorkspaceRail';
 import { CLIENTS_PATH, DEFAULT_WORKSPACE_TAB, WorkspaceTab, parseWorkspaceTab } from './workspace-helpers';
 import { PortalLoader } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 /**
  * One record for a client organization: who they are, who can sign in, what they are waiting on
@@ -46,6 +47,7 @@ const ClientWorkspacePage = () => {
   const overviewQuery = useGetOrganizationOverviewQuery(id, { skip: !id });
   const overview = overviewQuery.data?.body;
   const organization = overview?.organization;
+  const organizationDisplayName = decodeHtmlEntities(organization?.name);
 
   // Count one view per opened client, once we know it exists.
   const trackedClientId = useRef<string | null>(null);
@@ -144,23 +146,23 @@ const ClientWorkspacePage = () => {
         key: 'users',
         label: t('workspace.tabs.users', { defaultValue: 'Users & Access' }),
         children: (
-          <UsersTab organizationId={id} organizationName={organization.name} onInviteUser={openInviteWizard} />
+          <UsersTab organizationId={id} organizationName={organizationDisplayName} onInviteUser={openInviteWizard} />
         ),
       },
       {
         key: 'projects',
         label: t('workspace.tabs.projects', { defaultValue: 'Projects' }),
-        children: <ProjectsTab organizationId={id} organizationName={organization.name} />,
+        children: <ProjectsTab organizationId={id} organizationName={organizationDisplayName} />,
       },
       {
         key: 'approvals',
         label: tabLabel(t('workspace.tabs.approvals', { defaultValue: 'Approvals' }), awaitingApprovals),
-        children: <ApprovalsTab organizationId={id} organizationName={organization.name} />,
+        children: <ApprovalsTab organizationId={id} organizationName={organizationDisplayName} />,
       },
       {
         key: 'change-requests',
         label: tabLabel(t('workspace.tabs.changeRequests', { defaultValue: 'Change Requests' }), needsReview),
-        children: <ChangeRequestsTab organizationId={id} organizationName={organization.name} />,
+        children: <ChangeRequestsTab organizationId={id} organizationName={organizationDisplayName} />,
       },
       {
         key: 'billing',
@@ -168,7 +170,7 @@ const ClientWorkspacePage = () => {
         children: (
           <BillingTab
             organizationId={id}
-            organizationName={organization.name}
+            organizationName={organizationDisplayName}
             portalAccess={organization.portal_access}
             onOpenTab={goToTab}
           />
@@ -177,7 +179,7 @@ const ClientWorkspacePage = () => {
       {
         key: 'activity',
         label: t('workspace.tabs.activity', { defaultValue: 'Activity' }),
-        children: <ActivityTab organizationId={id} organizationName={organization.name} />,
+        children: <ActivityTab organizationId={id} organizationName={organizationDisplayName} />,
       },
     ];
 
@@ -248,7 +250,12 @@ const ClientWorkspacePage = () => {
         width="min(1440px, 96vw)"
         style={{ top: 24 }}
         styles={{
-          body: { maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', overflowX: 'hidden' },
+          body: {
+            maxHeight: 'calc(100vh - 160px)',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            marginInlineEnd: 32,
+          },
         }}
       >
         {body}

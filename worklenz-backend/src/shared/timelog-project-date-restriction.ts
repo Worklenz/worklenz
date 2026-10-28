@@ -6,6 +6,8 @@ interface ProjectStartDateViolationOptions {
   workLogId?: string | null;
   formattedStart?: string | null;
   userId?: string | null;
+  /** Whether an edit may keep its original date even if it predates the project. */
+  allowUnchangedDate?: boolean;
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -27,6 +29,7 @@ export async function getProjectStartDateViolation({
   workLogId,
   formattedStart,
   userId,
+  allowUnchangedDate = true,
 }: ProjectStartDateViolationOptions): Promise<string | null> {
   if (!formattedStart) return null;
 
@@ -72,7 +75,7 @@ export async function getProjectStartDateViolation({
           }
         } else {
           // If the entry's date was not changed in this edit, keep it allowed
-          if (existingCreatedAt) {
+          if (allowUnchangedDate && existingCreatedAt) {
             const existingDay = momentTime.tz(existingCreatedAt, timezone).startOf("day");
             const logDay = momentTime.tz(formattedStart, timezone).startOf("day");
             if (existingDay.isValid() && logDay.isValid() && existingDay.isSame(logDay)) {

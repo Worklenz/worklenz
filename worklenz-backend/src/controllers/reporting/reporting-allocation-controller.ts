@@ -54,7 +54,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       let archivedClause = "";
       let archivedParams: any[] = [];
       if (!archived) {
-        archivedClause = `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND user_id = $${paramOffset})`;
+        archivedClause = `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND user_id = $${Number(paramOffset)})`;
         archivedParams = [user_id];
       }
 
@@ -730,10 +730,10 @@ export default class ReportingAllocationController extends ReportingControllerBa
       const start = moment(date_range[0]).format("YYYY-MM-DD");
       const end = moment(date_range[1]).format("YYYY-MM-DD");
       if (start === end) {
-        customDurationClause = `AND twl.created_at::DATE = $${paramOffsetForFilters}::DATE`;
+        customDurationClause = `AND twl.created_at::DATE = $${Number(paramOffsetForFilters)}::DATE`;
         customDurationParams = [start];
       } else {
-        customDurationClause = `AND twl.created_at::DATE >= $${paramOffsetForFilters}::DATE AND twl.created_at < $${paramOffsetForFilters + 1}::DATE + INTERVAL '1 day'`;
+        customDurationClause = `AND twl.created_at::DATE >= $${Number(paramOffsetForFilters)}::DATE AND twl.created_at < $${Number(paramOffsetForFilters) + 1}::DATE + INTERVAL '1 day'`;
         customDurationParams = [start, end];
       }
       paramOffsetForFilters += customDurationParams.length;
@@ -780,7 +780,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     let archivedClause = "";
     let archivedParams: any[] = [];
     if (!archived) {
-      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffsetForFilters}::uuid)`;
+      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${Number(paramOffsetForFilters)}::uuid)`;
       archivedParams = [req.user?.id];
       paramOffsetForFilters += 1;
     }

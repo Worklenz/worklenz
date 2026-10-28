@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button, Divider, Flex, Popconfirm, Typography, Space } from '@/shared/antd-imports';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
-import { formatDateTimeWithUserTimezone } from '@/utils/format-date-time-with-user-timezone';
+import { formatLogTimeline } from '@/utils/format-date-time-with-user-timezone';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import './time-log-item.css';
 import { taskTimeLogsApiService } from '@/api/tasks/task-time-logs.api.service';
@@ -57,11 +57,21 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
   const canManageLog =
     !isGuest && (isOwnLog || isOwnerOrAdmin || isProjectManager);
 
-  const handleDeleteTimeLog = async (logId: string | undefined) => {
-    if (!logId || !selectedTaskId) return;
-    const res = await taskTimeLogsApiService.delete(logId, selectedTaskId);
-    if (res.done) {
-      if (onDelete) onDelete();
+  const handleDeleteTimeLog = async () => {
+    if (!selectedTaskId) return;
+    const idsToDelete =
+      log.part_log_ids && log.part_log_ids.length > 0 ? log.part_log_ids : log.id ? [log.id] : [];
+    if (idsToDelete.length === 0) return;
+
+    let allDone = true;
+    for (const id of idsToDelete) {
+      const res = await taskTimeLogsApiService.delete(id, selectedTaskId);
+      if (!res.done) {
+        allDone = false;
+      }
+    }
+    if (allDone && onDelete) {
+      onDelete();
     }
   };
 
@@ -91,7 +101,7 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
           title={t('taskTimeLogTab.confirmDelete', {
             defaultValue: 'Are you sure you want to delete this time log?',
           })}
-          onConfirm={() => handleDeleteTimeLog(log.id)}
+          onConfirm={handleDeleteTimeLog}
           okText={t('taskTimeLogTab.confirmDeleteYes', { defaultValue: 'Yes' })}
           cancelText={t('taskTimeLogTab.confirmDeleteNo', { defaultValue: 'No' })}
         >
@@ -121,7 +131,7 @@ const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
                   {renderLoggedByTimer()} {calculateTimeGap(created_at || '')}
                 </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {formatDateTimeWithUserTimezone(created_at || '', currentSession?.timezone_name)}
+                  {formatLogTimeline(log.start_time || created_at, log.end_time, currentSession?.timezone_name)}
                 </Typography.Text>
               </Flex>
               {renderActionButtons()}

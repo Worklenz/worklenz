@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { Alert, Button, Form, Input, Modal, Select, message } from '@/shared/antd-imports';
+import { Alert, Button, DatePicker, Form, Input, Modal, Select, dayjs, message } from '@/shared/antd-imports';
 import PillToggle from '@/pages/home/PillToggle';
 import { buildApproverOptions } from './approverOptions';
 import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
 import { useGetPortalProjectsQuery } from '@/api/client-portal/portal-projects-api';
 import { useCreateApprovalMutation, useGetApprovalOptionsQuery } from '@/api/client-portal/portal-workflow-api';
 import type { CreateApprovalRequest } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { portalPaths } from '../portal-paths';
 import { useModalRouteClose } from '../useModalRouteClose';
 import { RichTextField } from '../shared/rich-text/RichTextField';
@@ -67,13 +68,20 @@ export const CreateApprovalModal = () => {
       },
       {
         label: t('create.groupMilestones', { defaultValue: 'Milestones' }),
-        options: (linkable?.milestones ?? []).map(milestone => ({ value: `milestone:${milestone.id}`, label: milestone.name })),
+        options: (linkable?.milestones ?? []).map(milestone => ({
+          value: `milestone:${milestone.id}`,
+          label: decodeHtmlEntities(milestone.name),
+        })),
       },
       {
         label: t('create.groupTasks', { defaultValue: 'Tasks' }),
         options: (linkable?.tasks ?? []).map(task => ({
           value: `task:${task.id}`,
-          label: t('create.taskOption', { key: task.key, title: task.client_title, defaultValue: '{{key}} · {{title}}' }),
+          label: t('create.taskOption', {
+            key: task.key,
+            title: decodeHtmlEntities(task.client_title),
+            defaultValue: '{{key}} · {{title}}',
+          }),
         })),
       },
     ],
@@ -174,8 +182,8 @@ export const CreateApprovalModal = () => {
             options={projects.map(project => ({
               value: project.id,
               label: t('create.projectOption', {
-                name: project.name,
-                client: project.organization_name ?? '',
+                name: decodeHtmlEntities(project.name),
+                client: decodeHtmlEntities(project.organization_name ?? ''),
                 defaultValue: '{{name}} · {{client}}',
               }),
             }))}
@@ -309,7 +317,17 @@ export const CreateApprovalModal = () => {
           />
         </Form.Item>
         <Form.Item label={t('create.dueDate', { defaultValue: 'Due date (optional)' })}>
-          <Input aria-label={t('create.dueDate', { defaultValue: 'Due date (optional)' })} type="date" value={dueDate} onChange={event => setDueDate(event.target.value)} style={{ maxWidth: 220 }} />
+          <div style={{ position: 'relative', display: 'inline-block', width: '100%', maxWidth: 220 }}>
+            <DatePicker
+              style={{ width: '100%' }}
+              value={dueDate ? dayjs(dueDate) : null}
+              onChange={date => setDueDate(date ? date.format('YYYY-MM-DD') : '')}
+              placeholder={t('create.dueDatePlaceholder', { defaultValue: 'Select due date' })}
+              placement="topLeft"
+              getPopupContainer={trigger => trigger.parentElement || document.body}
+              aria-label={t('create.dueDate', { defaultValue: 'Due date (optional)' })}
+            />
+          </div>
         </Form.Item>
       </Form>
     </Modal>

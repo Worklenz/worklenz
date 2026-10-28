@@ -7,7 +7,6 @@ import {
   ClockCircleOutlined,
   UnorderedListOutlined,
   TeamOutlined,
-  UserAddOutlined,
   TableOutlined,
   BarChartOutlined,
   DashboardOutlined,
@@ -84,12 +83,6 @@ export const HOME_NAV_SURFACE: NavSurface = {
           key: 'my-team',
           label: { i18nNs: 'home-sidebar', i18nKey: 'myTeam', defaultValue: 'My Team' },
           icon: <TeamOutlined />,
-        },
-        {
-          key: 'add-client',
-          label: { i18nNs: 'home-sidebar', i18nKey: 'addClient', defaultValue: 'Add\nClient' },
-          icon: <UserAddOutlined />,
-          adminOnly: true, // Owner/Admin only — Members must not manage clients
         },
       ],
     },
@@ -348,6 +341,12 @@ export const PROJECTS_NAV_SURFACE: NavSurface = {
           label: { i18nNs: 'projects-sidebar', i18nKey: 'files', defaultValue: 'Files' },
           icon: <FolderOutlined />,
           guestExcluded: true, // Hide from guest users
+        },
+        {
+          key: 'docs',
+          label: { i18nNs: 'projects-sidebar', i18nKey: 'docs', defaultValue: 'Docs' },
+          icon: <FileTextOutlined />,
+          guestExcluded: true, // Guests do not have project docs access
         },
         {
           key: 'templates',

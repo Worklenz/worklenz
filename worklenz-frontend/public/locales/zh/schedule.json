@@ -67,6 +67,7 @@
   "durationType": "时长类型",
   "edit": "编辑",
   "endDate": "结束日期",
+  "endDateBeforeStartDate": "结束日期不能早于开始日期",
   "enterTaskName": "输入任务名称…",
   "estHoursPerDay": "预估每天小时数",
   "estHoursRequired": "请输入预估小时数",

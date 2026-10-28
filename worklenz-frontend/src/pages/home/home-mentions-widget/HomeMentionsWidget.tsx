@@ -9,6 +9,7 @@ import { HomeWidgetCard, WidgetEmpty, WidgetError, WidgetLoading } from '../home
 import { useOpenHomeTask } from '../home-widgets/useOpenHomeTask';
 import { WIDGET_DATA_ATTRIBUTE } from '../home-widgets/widgetInteraction';
 import { MentionReplyForm } from './MentionReplyForm';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 dayjs.extend(relativeTime);
 
@@ -78,7 +79,7 @@ export const HomeMentionsWidget: React.FC = () => {
                     {mention.excerpt}
                   </span>
                   <Typography.Text ellipsis style={{ display: 'block', fontSize: 11, color: token.colorTextSecondary }}>
-                    {mention.task_name} · {mention.project_name}
+                    {decodeHtmlEntities(mention.task_name)} · {decodeHtmlEntities(mention.project_name)}
                   </Typography.Text>
                 </span>
               </button>

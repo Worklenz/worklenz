@@ -15,6 +15,7 @@ import {
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { handleNewTaskReceived as handleTaskReceived } from '@/utils/taskHandlers';
 import logger from '@/utils/errorLogger';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import type { IDuplicateOptions } from '@/types/tasks/task-duplicate.types';
 
 const { Title, Text } = Typography;
@@ -141,7 +142,7 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
       className={isDarkMode ? 'dark-modal' : ''}
     >
       <Text className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-        {task.title || 'Task Title'}
+        {decodeHtmlEntities(task.title) || 'Task Title'}
       </Text>
 
       <div className="mt-6">

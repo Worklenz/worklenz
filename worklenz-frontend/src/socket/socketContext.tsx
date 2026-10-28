@@ -38,6 +38,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       isInitialized.current = true;
       globalSocketInstance = io(SOCKET_CONFIG.url, {
         ...SOCKET_CONFIG.options,
+        // Connect only after listeners (incl. LOGIN-on-connect) are registered.
+        autoConnect: false,
         reconnection: true,
         reconnectionAttempts: Infinity,
         reconnectionDelay: 1000,
@@ -59,20 +61,21 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!socket) return;
     
 
-    // Set up event listeners before connecting
+    // Re-bind users.socket_id on every connect (including silent reconnects).
+    // Without this, disconnect clears socket_id and peers stop receiving
+    // PROJECT_UPDATES_AVAILABLE / REST-triggered room broadcasts until a hard refresh.
     socket.on('connect', () => {
       logger.info('Socket connected');
       setConnected(true);
-      // Connection alerts hidden for better UX
+      const session = getUserSession();
+      if (session?.id) {
+        socket.emit(SocketEvents.LOGIN.toString(), session.id);
+      }
     });
 
-    // Emit login event
-    if (profile && profile.id) {
-      socket.emit(SocketEvents.LOGIN.toString(), profile.id);
-      socket.once(SocketEvents.LOGIN.toString(), () => {
-        logger.info('Socket login success');
-      });
-    }
+    socket.on(SocketEvents.LOGIN.toString(), () => {
+      logger.info('Socket login success');
+    });
 
     socket.on('connect_error', error => {
       logger.error('Connection error', { error });
@@ -84,11 +87,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       logger.info('Socket disconnected');
       setConnected(false);
       // Disconnect alerts hidden for better UX
-
-      // Emit logout event
-      if (profile && profile.id) {
-        socket.emit(SocketEvents.LOGOUT.toString(), profile.id);
-      }
+      // Do not emit LOGOUT here — the socket is already disconnected, and the
+      // server clears users.socket_id in on_disconnect.
     });
 
     // Add team-related socket events
@@ -130,6 +130,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         socketRef.current.off('connect');
         socketRef.current.off('connect_error');
         socketRef.current.off('disconnect');
+        socketRef.current.off(SocketEvents.LOGIN.toString());
         socketRef.current.off(SocketEvents.INVITATIONS_UPDATE.toString());
         socketRef.current.off(SocketEvents.TEAM_MEMBER_REMOVED.toString());
         socketRef.current.removeAllListeners();

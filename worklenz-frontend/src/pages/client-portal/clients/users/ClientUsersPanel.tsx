@@ -36,6 +36,7 @@ import {
 } from '@/components/client-portal/v2';
 import type { PortalField, PortalFilterGroup } from '@/components/client-portal/v2';
 import { CLIENT_ROLES, type ClientRole, type ClientUser, type ClientUserStatus } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useClientUserActions } from './useClientUserActions';
 
 type StatusFilter = ClientUserStatus | 'invite_expired';
@@ -233,9 +234,9 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
             // Same avatar + bold name as the Clients table, so a client looks the same in both lists.
             render: (_value: unknown, user: ClientUser) => (
               <Flex align="center" gap={10}>
-                <PortalAvatar name={user.organization_name} />
+                <PortalAvatar name={decodeHtmlEntities(user.organization_name)} />
                 <ClickableName onClick={onOpenOrganization ? () => onOpenOrganization(user.organization_id) : undefined}>
-                  {user.organization_name}
+                  {decodeHtmlEntities(user.organization_name)}
                 </ClickableName>
               </Flex>
             ),
@@ -349,7 +350,7 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
       ),
       render: (_value, user) =>
         user.projects.length > 0 ? (
-          <span title={user.projects.map(project => project.name).join('\n')}>
+          <span title={user.projects.map(project => decodeHtmlEntities(project.name)).join('\n')}>
             {t('users.projectCount', { count: user.projects.length, defaultValue: '{{count}} projects' })}
           </span>
         ) : (
@@ -417,7 +418,10 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
     { value: 'invite_expired', label: tShared('userInviteExpired', { defaultValue: 'Invite expired' }) },
     { value: 'deactivated', label: tShared('userDeactivated', { defaultValue: 'Deactivated' }) },
   ];
-  const clientOptions = (organizations.data?.body?.items ?? []).map(item => ({ value: item.id, label: item.name }));
+  const clientOptions = (organizations.data?.body?.items ?? []).map(item => ({
+    value: item.id,
+    label: decodeHtmlEntities(item.name),
+  }));
 
   const filterGroups: PortalFilterGroup[] = [
     {
@@ -511,11 +515,11 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
                 getKey: user => user.organization_id,
                 renderHeader: (_key, users) => (
                   <Flex align="center" gap={10}>
-                    <PortalAvatar name={users[0].organization_name} />
+                    <PortalAvatar name={decodeHtmlEntities(users[0].organization_name)} />
                     <ClickableName
                       onClick={onOpenOrganization ? () => onOpenOrganization(users[0].organization_id) : undefined}
                     >
-                      {users[0].organization_name}
+                      {decodeHtmlEntities(users[0].organization_name)}
                     </ClickableName>
                     <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
                       {t('users.groupBy.count', { count: users.length, defaultValue: '{{count}} users' })}

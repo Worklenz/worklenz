@@ -9,7 +9,7 @@ import {
   Button,
   Popover,
 } from '@/shared/antd-imports';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRightOutlined } from '@/shared/antd-imports';
 
@@ -36,8 +36,12 @@ const TaskDrawerActivityLog = () => {
   const [activityLogs, setActivityLogs] = useState<IActivityLogsResponse>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
-  const { selectedTaskId, taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
+  const { selectedTaskId, taskFormViewModel, lastDeletedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const { mode: themeMode } = useAppSelector(state => state.themeReducer);
+  const selectedTaskIdRef = useRef(selectedTaskId);
+  selectedTaskIdRef.current = selectedTaskId;
+  const lastDeletedTaskIdRef = useRef(lastDeletedTaskId);
+  lastDeletedTaskIdRef.current = lastDeletedTaskId;
   const { t, i18n } = useTranslation('task-drawer/task-drawer');
   const currentSession = useAuthService().getCurrentSession();
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
@@ -49,17 +53,24 @@ const TaskDrawerActivityLog = () => {
   }, [taskFormViewModel]);
 
   const fetchActivityLogs = async () => {
-    if (!selectedTaskId) return;
+    if (!selectedTaskId || selectedTaskId === lastDeletedTaskId) return;
+    const requestedTaskId = selectedTaskId;
     setLoading(true);
     try {
-      const res = await taskActivityLogsApiService.getActivityLogsByTaskId(selectedTaskId);
-      if (res.done) {
+      const res = await taskActivityLogsApiService.getActivityLogsByTaskId(requestedTaskId);
+      if (
+        res.done &&
+        selectedTaskIdRef.current === requestedTaskId &&
+        lastDeletedTaskIdRef.current !== requestedTaskId
+      ) {
         setActivityLogs(res.body);
       }
     } catch (error) {
       logger.error('Error fetching activity logs', error);
     } finally {
-      setLoading(false);
+      if (selectedTaskIdRef.current === requestedTaskId) {
+        setLoading(false);
+      }
     }
   };
 
@@ -130,6 +141,11 @@ const TaskDrawerActivityLog = () => {
             >
               {truncateText(activity.next_status?.name) || t('taskActivityLogTab.none')}
             </Tag>
+            {activity.source && (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {activity.source}
+              </Typography.Text>
+            )}
           </Flex>
         );
 
