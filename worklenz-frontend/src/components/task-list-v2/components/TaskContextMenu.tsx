@@ -26,6 +26,8 @@ import {
   setConvertToSubtaskDrawerMode,
   setConvertToSubtaskDrawerOpen,
 } from '@/features/tasks/tasks.slice';
+import { setLastDeletedTaskId, setShowTaskDrawer, setSelectedTaskId } from '@/features/task-drawer/task-drawer.slice';
+import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
 import { useTranslation } from 'react-i18next';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {

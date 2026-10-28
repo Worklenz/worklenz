@@ -51,7 +51,7 @@ describe('moveSubtaskToParent', () => {
       dispatch: dispatch as never,
       moveSubtaskApi: async () => {
         order.push('moveSubtask');
-        return movePromise;
+        return movePromise as never;
       },
     });
 
@@ -89,7 +89,7 @@ describe('moveSubtaskToParent', () => {
       projectId,
       oldParentId,
       dispatch: dispatch as never,
-      moveSubtaskApi: async () => ({ done: false, message: 'cycle' }),
+      moveSubtaskApi: async () => ({ done: false, message: 'cycle' }) as never,
     });
 
     expect(ok).toBe(false);
