@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import TimeLogForm from '@/components/task-drawer/shared/time-log/time-log-form';
 import { useAuthService } from '@/hooks/useAuth';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Text } = Typography;
 
@@ -56,12 +57,14 @@ export const EditTimeEntryModal: React.FC<EditTimeEntryModalProps> = ({ entry, o
       id
         ? {
             id,
+            task_id: shown.task_id,
+            project_id: shown.project_id,
             time_spent: Number(timeSpent) || 0,
             description: description ?? undefined,
             created_at: createdAt,
           }
         : undefined,
-    [id, timeSpent, description, createdAt]
+    [id, shown?.task_id, shown?.project_id, timeSpent, description, createdAt]
   );
 
   if (!shown) return null;
@@ -91,13 +94,13 @@ export const EditTimeEntryModal: React.FC<EditTimeEntryModalProps> = ({ entry, o
           background: token.colorFillQuaternary,
         }}
       >
-        <Text strong ellipsis={{ tooltip: shown.task_name }}>
-          {shown.task_name}
+        <Text strong ellipsis={{ tooltip: decodeHtmlEntities(shown.task_name) }}>
+          {decodeHtmlEntities(shown.task_name)}
         </Text>
         <Flex align="center" gap={6} style={{ minWidth: 0 }}>
           <Badge color={shown.project_color || token.colorPrimary} />
           <Text type="secondary" ellipsis style={{ fontSize: 12 }}>
-            {shown.project_name}
+            {decodeHtmlEntities(shown.project_name)}
           </Text>
         </Flex>
         {isSomeoneElses && (

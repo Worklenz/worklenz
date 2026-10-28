@@ -148,11 +148,11 @@ describe("updating your own profile and preferences (PUT /me)", () => {
 });
 
 describe("email notification preferences", () => {
-  it("defaults every event to on and honours a stored off", async () => {
-    stubDb([[/FROM client_contact_notification_prefs/, createQueryResult([{ event_type: "file_shared", email: false }])]]);
+  it("defaults every event to off and honours a stored on", async () => {
+    stubDb([[/FROM client_contact_notification_prefs/, createQueryResult([{ event_type: "file_shared", email: true }])]]);
     const prefs = await getNotificationPrefs(db as any, subject());
-    expect(prefs.File).toBe(false);
-    expect(prefs.Approval).toBe(true);
+    expect(prefs.File).toBe(true);
+    expect(prefs.Approval).toBe(false);
     expect(Object.keys(prefs)).toHaveLength(7);
   });
 
@@ -194,7 +194,7 @@ describe("client notifications", () => {
     // Read state is the person's own.
     expect(list).toMatch(/client_portal_notification_reads r/);
     expect(result.unread_count).toBe(3);
-    expect(result.items[0]).toMatchObject({ id: "n1", type: "Approval", unread: true, target: { page: "approval", id: "ap1" } });
+    expect(result.items[0]).toMatchObject({ id: "n1", type: "Approval", unread: true, emailed: false, target: { page: "approval", id: "ap1" } });
   });
 
   it("maps each stored type to the client's type and deep link", async () => {
@@ -214,6 +214,17 @@ describe("client notifications", () => {
       ["Project", { page: "project", projectId: "project-1" }],
       ["Change Request", { page: "change_request", id: "cr1" }],
     ]);
+  });
+
+  it("marks emailed true only when operator allows event and client opted in", async () => {
+    stubDb([
+      PROJECT_ROW,
+      [/SELECT n\.id, n\.type/, createQueryResult([row])],
+      [/FROM client_portal_settings/, createQueryResult([{ client_email_events: { approval_request: true } }])],
+      [/FROM client_contact_notification_prefs/, createQueryResult([{ event_type: "approval_request", email: true }])],
+    ]);
+    const res = await listClientNotifications(db as any, subject());
+    expect(res.items[0].emailed).toBe(true);
   });
 
   it("marks one read or unread only when it is visible to this person, else 404", async () => {

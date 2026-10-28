@@ -35,6 +35,7 @@ import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
 import { getCountries } from 'libphonenumber-js';
 import type { CountryCode } from 'libphonenumber-js';
 import { PortalLoadingOverlay, useClientOrganizationActions } from '@/components/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Title, Text } = Typography;
 
@@ -261,7 +262,7 @@ const ClientDetailsDrawer = () => {
             />
             <div>
               <Title level={4} style={{ margin: 0, lineHeight: 1.3 }}>
-                {client?.name || t('loadingText', { defaultValue: 'Loading…' })}
+                {decodeHtmlEntities(client?.name) || t('loadingText', { defaultValue: 'Loading…' })}
               </Title>
               <Flex gap={8} align="center" style={{ marginTop: 2 }}>
                 <Text type="secondary" style={{ fontSize: 13 }}>

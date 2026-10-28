@@ -20,6 +20,7 @@ import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { useGetProjectsQuery } from '@/api/home-page/home-page.api.service';
 import { useNavigate } from 'react-router-dom';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 const MY_PROJECTS_FILTER_KEY = 'my-dashboard-active-projects-filter';
 
 const RecentAndFavouriteProjectList = () => {
@@ -85,7 +86,7 @@ const RecentAndFavouriteProjectList = () => {
             }
           >
             <Badge color={record.color_code} style={{ marginInlineEnd: 4 }} />
-            {record.name}
+            {decodeHtmlEntities(record.name)}
           </Typography.Paragraph>
         ),
       },

@@ -9,6 +9,7 @@ import { SettingOutlined, SyncOutlined, BranchesOutlined } from '@ant-design/ico
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@/utils/themeWiseColor';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import CustomAvatar from '@/components/CustomAvatar';
 import PlannerMultiFilterDropdown from '@/features/schedule/PlannerMultiFilterDropdown';
 import PlannerAddTaskModal from '@/features/schedule/PlannerAddTaskModal';
@@ -342,7 +343,7 @@ const PlannerScheduleView: React.FC = () => {
 
   // ── Data ──
   const { data: teamDataResponse, isLoading: teamLoading, refetch: refetchMembers } =
-    useFetchScheduleMembersQuery();
+    useFetchScheduleMembersQuery(undefined, { refetchOnMountOrArgChange: true });
   const teamData = teamDataResponse?.body || [];
 
   const startDate = days[0]?.date.format('YYYY-MM-DD');
@@ -455,7 +456,7 @@ const PlannerScheduleView: React.FC = () => {
       // Only pass priorityId if we're filtering individual tasks by priority (when no project/status filter is active)
       priorityId: (effectiveProjectIds.length === 0 && filterPriorities.length > 0) ? filterPriorities.join(',') : undefined,
     },
-    { skip: shouldSkipTaskQuery }
+    { skip: shouldSkipTaskQuery, refetchOnMountOrArgChange: true }
   );
 
   const { data: capacityResponse } = useFetchDailyCapacityQuery(
@@ -548,8 +549,17 @@ const PlannerScheduleView: React.FC = () => {
   // Keeps this view's socket room membership in sync with the projects currently
   // loaded, so PROJECT_UPDATES_AVAILABLE broadcasts — e.g. a new subtask created
   // elsewhere — actually reach it instead of only showing up after a hard refresh.
-  const loadedProjectIds = useMemo(() => projectIdsFromTasks(rawTasks), [rawTasks]);
-  useProjectRoomSync(loadedProjectIds);
+  const relevantProjectIds = useMemo(() => {
+    const ids = new Set<string>();
+    projectList.forEach((p: any) => {
+      if (p?.id) ids.add(p.id);
+    });
+    rawTasks.forEach((t: any) => {
+      if (t?.project_id) ids.add(t.project_id);
+    });
+    return ids;
+  }, [projectList, rawTasks]);
+  useProjectRoomSync(relevantProjectIds);
 
   // Drop the resize live-preview once the refetched tasks[] genuinely reflects the
   // committed value — hoursForTaskOnDay then reads identically whether or not
@@ -621,9 +631,9 @@ const PlannerScheduleView: React.FC = () => {
   // When a Status/Priority/Client filter is active, show the filtered projects
   const filteredProjectOptions = useMemo(() => {
     if (filterClients.length > 0 && clientProjectList.length > 0) {
-      return clientProjectList.map((p: any) => ({ value: p.id, label: p.name }));
+      return clientProjectList.map((p: any) => ({ value: p.id, label: decodeHtmlEntities(p.name) }));
     }
-    return projectList.map((p: any) => ({ value: p.id, label: p.name }));
+    return projectList.map((p: any) => ({ value: p.id, label: decodeHtmlEntities(p.name) }));
   }, [filterClients, clientProjectList, projectList]);
 
   const statusOrPriorityActive = filterStatuses.length > 0 || filterPriorities.length > 0;
@@ -720,10 +730,12 @@ const PlannerScheduleView: React.FC = () => {
   // Shared chip label — used by the full-density chip, compact-density chip, and
   // the "+N" hidden-overflow popover chip, so the subtask prefix/wording stays
   // identical across all three instead of being repeated at each call site.
-  const taskChipLabel = (task: any) =>
-    task.parent_task_id
-      ? `↳ ${t('subtask', { defaultValue: 'Subtask' })}: ${task.name}`
-      : `${t('task', { defaultValue: 'Task' })}: ${task.name}`;
+  const taskChipLabel = (task: any) => {
+    const name = decodeHtmlEntities(task.name);
+    return task.parent_task_id
+      ? `↳ ${t('subtask', { defaultValue: 'Subtask' })}: ${name}`
+      : `${t('task', { defaultValue: 'Task' })}: ${name}`;
+  };
 
   // Shared hover-tooltip content (project, est time, status, phase, assignees) —
   // used both by visible grid chips and by the "+N" collapsed task list rows,
@@ -753,17 +765,17 @@ const PlannerScheduleView: React.FC = () => {
         )}
         <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>
           {task.parent_task_id && '↳ '}
-          {task.name}
+          {decodeHtmlEntities(task.name)}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12 }}>
           <div>
             <span style={{ opacity: 0.65 }}>{t('project', { defaultValue: 'Project' })}: </span>
-            {task.project_name || '-'}
+            {decodeHtmlEntities(task.project_name) || '-'}
           </div>
           {task.parent_task_id && (
             <div>
               <span style={{ opacity: 0.65 }}>{t('subtaskOf', { defaultValue: 'Subtask of' })}: </span>
-              {task.parent_task_name || '-'}
+              {decodeHtmlEntities(task.parent_task_name) || '-'}
             </div>
           )}
           {isWorkingDay(date) && (
@@ -1925,7 +1937,7 @@ const PlannerScheduleView: React.FC = () => {
                                             textOverflow: 'ellipsis',
                                           }}
                                         >
-                                          {t('project', { defaultValue: 'Project' })}: {task.project_name}
+                                          {t('project', { defaultValue: 'Project' })}: {decodeHtmlEntities(task.project_name)}
                                         </span>
                                       </div>
                                       <div

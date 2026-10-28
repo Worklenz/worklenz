@@ -120,27 +120,22 @@ export default class PtTaskStatusesController extends WorklenzControllerBase {
     }
   })
   public static async updateName(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `DO
-              $$
-              BEGIN
-                  -- check whether the status name is already in
-                  IF EXISTS(SELECT name
-                            FROM cpt_task_statuses
-                            WHERE name = '${req.body.name}'::TEXT
-                              AND template_id = '${req.body.template_id}'::UUID)
-                  THEN
-                      RAISE 'STATUS_EXISTS_ERROR:%', ('${req.body.name}')::TEXT;
-                  END IF;
-
-                  UPDATE cpt_task_statuses
-                  SET name = '${req.body.name}'::TEXT
-                  WHERE id = '${req.params.id}'::UUID
-                    AND template_id = '${req.body.template_id}'::UUID;
-              END
-              $$;`;
-    const result = await db.query(q, []);
-    const [data] = result.rows;
-    return res.status(200).send(new ServerResponse(true, data));
+    // Keep the duplicate check and update in one statement, with all values bound.
+    const q = `WITH duplicate AS (
+                 SELECT 1 FROM cpt_task_statuses
+                 WHERE name = $1::TEXT AND template_id = $2::UUID
+               ), updated AS (
+                 UPDATE cpt_task_statuses SET name = $1::TEXT
+                 WHERE id = $3::UUID AND template_id = $2::UUID
+                   AND NOT EXISTS (SELECT 1 FROM duplicate)
+                 RETURNING id
+               )
+               SELECT EXISTS (SELECT 1 FROM duplicate) AS has_duplicate;`;
+    const result = await db.query(q, [req.body.name, req.body.template_id, req.params.id]);
+    if (result.rows[0]?.has_duplicate) {
+      throw new Error(`STATUS_EXISTS_ERROR:${req.body.name}`);
+    }
+    return res.status(200).send(new ServerResponse(true, undefined));
   }
 
 }

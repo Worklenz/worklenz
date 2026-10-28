@@ -23,6 +23,7 @@ import { formatDateLocal } from '../../utils/date-utils';
 import { useTranslation } from 'react-i18next';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const buildTaskMap = (tasks: GanttTask[]): Map<string, GanttTask> => {
   const taskMap = new Map<string, GanttTask>();
@@ -858,7 +859,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
             width: `${width}px`,
           }}
           title={t('task.phaseTitle', 'Phase: {{name}} - {{startDate}} to {{endDate}}', {
-            name: task.name,
+            name: decodeHtmlEntities(task.name),
             startDate: actualStartDate.toLocaleDateString(),
             endDate: actualEndDate.toLocaleDateString(),
           })}
@@ -879,7 +880,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
             <div className="flex-1 flex items-center px-3 min-w-0 h-full pointer-events-none relative">
               {/* Phase name */}
               <div className="truncate flex-1 select-none font-bold tracking-wide text-shadow">
-                {task.name}
+                {decodeHtmlEntities(task.name)}
               </div>
 
               {/* Progress indicator if phase has children */}
@@ -945,11 +946,11 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
               <div
                 className="px-2 py-1 mt-1 rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis cursor-default"
                 title={t('task.undatedTaskReadOnly', 'Task without dates (read-only for guests)', {
-                  name: task.name,
+                  name: decodeHtmlEntities(task.name),
                   duration: getDurationText()
                 })}
               >
-                {task.name} ({getDurationText()})
+                {decodeHtmlEntities(task.name)} ({getDurationText()})
               </div>
             </div>
           );
@@ -1185,7 +1186,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
               ['--gantt-bar-accent' as string]: accentColor,
             }}
             title={t('task.taskTitle', '{{name}} - {{startDate}} to {{endDate}}', {
-              name: task.name,
+              name: decodeHtmlEntities(task.name),
               startDate: tempDates.start?.toLocaleDateString() || t('common.noStart', 'No start'),
               endDate: tempDates.end?.toLocaleDateString() || t('common.noEnd', 'No end'),
             })}
@@ -1308,7 +1309,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
               ) : (
                 <div className="w-5 h-5" />
               )}
-              <span className="pointer-events-none">{task.name}</span>
+              <span className="pointer-events-none">{decodeHtmlEntities(task.name)}</span>
             </div>
           </div>
 

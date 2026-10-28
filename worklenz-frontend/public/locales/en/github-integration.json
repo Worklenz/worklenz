@@ -98,6 +98,16 @@
     "branchDeleted": "Deleted",
     "showFewer": "Show fewer",
     "showAll": "Show all {{count}} commits",
+    "remove": {
+      "button": "Remove link",
+      "confirm": "Remove",
+      "cancel": "Cancel",
+      "success": "Link removed.",
+      "failed": "Could not remove the link.",
+      "branch": { "title": "Remove branch from this task?", "description": "{{name}} will no longer be shown on this task. The branch is not deleted on GitHub." },
+      "pullRequest": { "title": "Remove pull request from this task?", "description": "{{name}} will no longer be shown on this task. The pull request is not changed on GitHub." },
+      "commit": { "title": "Remove commit from this task?", "description": "{{name}} will no longer be shown on this task. The commit is not changed on GitHub." }
+    },
     "createBranch": {
       "button": "Create branch",
       "title": "Create branch",

@@ -98,6 +98,16 @@
     "branchDeleted": "Usunięta",
     "showFewer": "Pokaż mniej",
     "showAll": "Pokaż wszystkie commity ({{count}})",
+    "remove": {
+      "button": "Usuń powiązanie",
+      "confirm": "Usuń",
+      "cancel": "Anuluj",
+      "success": "Powiązanie usunięte.",
+      "failed": "Nie udało się usunąć powiązania.",
+      "branch": { "title": "Usunąć gałąź z tego zadania?", "description": "{{name}} nie będzie już wyświetlana w tym zadaniu. Gałąź nie zostanie usunięta w GitHub." },
+      "pullRequest": { "title": "Usunąć pull request z tego zadania?", "description": "{{name}} nie będzie już wyświetlany w tym zadaniu. Pull request nie zostanie zmieniony w GitHub." },
+      "commit": { "title": "Usunąć commit z tego zadania?", "description": "{{name}} nie będzie już wyświetlany w tym zadaniu. Commit nie zostanie zmieniony w GitHub." }
+    },
     "createBranch": {
       "button": "Utwórz gałąź",
       "title": "Utwórz gałąź",

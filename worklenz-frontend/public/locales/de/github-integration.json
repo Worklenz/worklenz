@@ -98,6 +98,16 @@
     "branchDeleted": "Gelöscht",
     "showFewer": "Weniger anzeigen",
     "showAll": "Alle {{count}} Commits anzeigen",
+    "remove": {
+      "button": "Verknüpfung entfernen",
+      "confirm": "Entfernen",
+      "cancel": "Abbrechen",
+      "success": "Verknüpfung entfernt.",
+      "failed": "Die Verknüpfung konnte nicht entfernt werden.",
+      "branch": { "title": "Branch von dieser Aufgabe entfernen?", "description": "{{name}} wird nicht mehr bei dieser Aufgabe angezeigt. Der Branch wird auf GitHub nicht gelöscht." },
+      "pullRequest": { "title": "Pull Request von dieser Aufgabe entfernen?", "description": "{{name}} wird nicht mehr bei dieser Aufgabe angezeigt. Der Pull Request wird auf GitHub nicht geändert." },
+      "commit": { "title": "Commit von dieser Aufgabe entfernen?", "description": "{{name}} wird nicht mehr bei dieser Aufgabe angezeigt. Der Commit wird auf GitHub nicht geändert." }
+    },
     "createBranch": {
       "button": "Branch erstellen",
       "title": "Branch erstellen",

@@ -25,6 +25,7 @@ import {
   useResendPortalInvitationMutation,
 } from '@/api/client-portal/portal-access-api';
 import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   InvitationLinkModal,
   OrganizationAccessTag,
@@ -277,8 +278,8 @@ export const OrganizationsPanel = ({ toolbarLead }: OrganizationsPanelProps) => 
       ),
       render: (_value, organization) => (
         <Flex align="center" gap={10}>
-          <PortalAvatar name={organization.name} />
-          <span style={{ fontWeight: 600, fontSize: 13 }}>{organization.name}</span>
+          <PortalAvatar name={decodeHtmlEntities(organization.name)} />
+          <span style={{ fontWeight: 600, fontSize: 13 }}>{decodeHtmlEntities(organization.name)}</span>
         </Flex>
       ),
     },
@@ -400,7 +401,7 @@ export const OrganizationsPanel = ({ toolbarLead }: OrganizationsPanelProps) => 
               type="text"
               icon={<MoreOutlined />}
               aria-label={t('organizations.rowActions', {
-                name: organization.name,
+                name: decodeHtmlEntities(organization.name),
                 defaultValue: 'Actions for {{name}}',
               })}
             />

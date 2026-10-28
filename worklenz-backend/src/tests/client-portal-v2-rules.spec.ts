@@ -22,10 +22,55 @@ import { PortalError, conflict, forbidden } from "../services/client-portal-v2/e
 import { formatApprovalRef, formatChangeRequestNo } from "../services/client-portal-v2/sequences";
 import { DEFAULT_PORTAL_SETTINGS_V2, applySettingsPatch } from "../services/client-portal-v2/settings.service";
 import { toStaffRef } from "../services/client-portal-v2/staff";
-import { mapUserRow } from "../services/client-portal-v2/users.service";
+import { mapUserRow, USER_VIEW_SQL } from "../services/client-portal-v2/users.service";
 import { CLIENT_ROLE_DEFINITIONS, clientRoleCan, isClientContactRole } from "../shared/client-portal-permissions";
 import { sanitizeDisplayName } from "../shared/project-file-rules";
 import { createMockResponse } from "./utils/express-mock";
+
+describe("client user project list SQL", () => {
+  it("lists portal-enabled org projects for Client Admins, not only access rows", () => {
+    // Production assigns projects at the organization level; admins inherit them without
+    // client_contact_project_access rows. The Clients and Client Users counts must match.
+    expect(USER_VIEW_SQL).toContain("WHEN cc.role = 'admin'");
+    expect(USER_VIEW_SQL).toContain("pcs.portal_enabled IS TRUE");
+    expect(USER_VIEW_SQL).toContain("client_contact_project_access");
+
+    const adminBranch = /WHEN cc\.role = 'admin' THEN \(([\s\S]*?)\)\s*ELSE/i.exec(USER_VIEW_SQL)?.[1] ?? "";
+    const memberBranch = /ELSE \(([\s\S]*?)\)\s*END/i.exec(USER_VIEW_SQL)?.[1] ?? "";
+    expect(adminBranch).toContain("project_client_settings");
+    expect(adminBranch).not.toContain("client_contact_project_access");
+    expect(memberBranch).toContain("client_contact_project_access");
+    expect(memberBranch).not.toContain("project_client_settings");
+  });
+
+  it("maps admin and member project lists from query rows without swapping them", () => {
+    const adminProjects = [
+      { id: "p1", name: "Alpha" },
+      { id: "p2", name: "Beta" },
+    ];
+    const memberProjects = [{ id: "p1", name: "Alpha" }];
+    const row = {
+      id: "u1",
+      client_id: "c1",
+      name: "Priyanka Mendis",
+      email: "p@avant.lk",
+      phone: null,
+      job_title: null,
+      email_verified_at: null,
+      new_link_requested_at: null,
+      invited_at: "2026-05-31T10:00:00Z",
+      last_access_at: null,
+      organization_name: "Avant",
+      status_key: "active",
+      invitation_lapsed: false,
+      no_invitation: false,
+    };
+
+    expect(mapUserRow({ ...row, role: "admin", projects: adminProjects }).projects).toEqual(adminProjects);
+    expect(mapUserRow({ ...row, role: "member", projects: memberProjects }).projects).toEqual(memberProjects);
+    expect(mapUserRow({ ...row, role: "admin", projects: null }).projects).toEqual([]);
+  });
+});
 
 describe("client roles", () => {
   it("has exactly the three v2 roles, and the retired poc role is not one of them", () => {
@@ -93,7 +138,8 @@ describe("applySettingsPatch", () => {
     expect(defaults.allow_client_uploads_default).toBe(true);
     expect(defaults.admins_can_invite_users).toBe(false);
     expect(defaults).not.toHaveProperty("authentication");
-    expect(defaults.team_email_events.client_file_upload).toBe(false);
+    expect(Object.values(defaults.client_email_events).every(v => v === false)).toBe(true);
+    expect(Object.values(defaults.team_email_events).every(v => v === false)).toBe(true);
   });
 
   it("merges a partial patch and leaves everything else alone", () => {
@@ -103,7 +149,7 @@ describe("applySettingsPatch", () => {
     });
     expect(next.show_invoices).toBe(true);
     expect(next.client_email_events.file_shared).toBe(true);
-    expect(next.client_email_events.approval_request).toBe(true);
+    expect(next.client_email_events.approval_request).toBe(false);
     expect(next.admins_can_remove_users).toBe(false);
   });
 

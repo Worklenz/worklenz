@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTeamSwitch } from '@/hooks/useTeamSwitch';
 import type { ClientOrganization } from '@/types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 // The pill is fully rounded, tinted with the portal's colour at a fixed opacity per theme.
 const PILL_TINT_LIGHT = 14;
@@ -18,11 +19,13 @@ const initialOf = (value: string | null | undefined): string => (value?.trim()[0
  * not set one. The Worklenz team name is an internal label and is never shown to a client.
  */
 export const teamDisplayName = (team: ClientOrganization, defaultName: string): string =>
-  team.portalTitle?.trim() || defaultName;
+  decodeHtmlEntities(team.portalTitle?.trim() || defaultName);
 
 /** The client company the person acts for in this portal, shown above its name. */
-export const teamSecondaryLabel = (team: ClientOrganization, defaultName: string): string | null =>
-  team.clientName && team.clientName !== teamDisplayName(team, defaultName) ? team.clientName : null;
+export const teamSecondaryLabel = (team: ClientOrganization, defaultName: string): string | null => {
+  const clientName = decodeHtmlEntities(team.clientName);
+  return clientName && clientName !== teamDisplayName(team, defaultName) ? clientName : null;
+};
 
 /**
  * Top bar team (workspace) switcher, laid out like the main app's: a rounded pill with the current
@@ -41,8 +44,10 @@ export const TeamSwitcher = () => {
   const visibleTeams = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return teams;
-    return teams.filter(team => `${teamDisplayName(team, defaultName)} ${team.clientName ?? ''}`.toLowerCase().includes(needle));
-  }, [teams, query]);
+    return teams.filter(team =>
+      `${teamDisplayName(team, defaultName)} ${decodeHtmlEntities(team.clientName)}`.toLowerCase().includes(needle)
+    );
+  }, [teams, query, defaultName]);
 
   const pillStyle: React.CSSProperties = {
     display: 'inline-flex',

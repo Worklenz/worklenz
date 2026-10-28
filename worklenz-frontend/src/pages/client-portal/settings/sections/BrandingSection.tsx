@@ -143,7 +143,10 @@ export const BrandingSection: React.FC<BrandingSectionProps> = ({
             accept="image/png,image/jpeg,image/jpg,image/webp"
             style={{ display: 'none' }}
             onChange={e => {
-              if (e.target.files && e.target.files[0]) onLogoFileSelected(e.target.files[0]);
+              if (e.target.files && e.target.files[0]) {
+                onLogoFileSelected(e.target.files[0]);
+              }
+              e.target.value = '';
             }}
           />
 

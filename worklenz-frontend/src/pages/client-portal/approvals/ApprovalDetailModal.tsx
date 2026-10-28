@@ -10,6 +10,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { Alert, Button, Card, Col, Descriptions, Flex, Form, Modal, Result, Row, Timeline, Typography, message, theme } from '@/shared/antd-imports';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
 import {
   useCancelApprovalMutation,
@@ -131,10 +132,10 @@ export const ApprovalDetailModal = () => {
       <Row gutter={[20, 16]}>
         <Col xs={24} md={15}>
           <Typography.Title level={5} style={{ margin: '0 0 2px' }}>
-            {item.title}
+            {decodeHtmlEntities(item.title)}
           </Typography.Title>
           <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 14 }}>
-            {item.organization_name} · {item.project_name}
+            {decodeHtmlEntities(item.organization_name)} · {decodeHtmlEntities(item.project_name)}
           </Typography.Text>
 
           <Card size="small" style={{ marginBottom: 12 }} title={t('detail.linkedItem', { defaultValue: 'Linked item' })}>
@@ -142,7 +143,7 @@ export const ApprovalDetailModal = () => {
               <Flex align="center" gap={10}>
                 <span style={{ fontSize: 18, color: token.colorTextSecondary }}>{LINK_ICONS[linked.type]}</span>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{linked.name}</div>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>{decodeHtmlEntities(linked.name)}</div>
                   <div style={{ fontSize: 11.5, color: token.colorTextSecondary }}>{subline}</div>
                 </div>
               </Flex>

@@ -38,6 +38,7 @@ import {
 import { useClientAccess } from '@/hooks/useClientAccess';
 import { QueryState, StatusTag, errorMessage } from '@/components/v2';
 import { InviteLinkModal } from '@/components/v2/InviteLinkModal';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { TablePagination } from '@/components/v2/TablePagination';
 import { useRoleLabel } from '@/components/v2/useRoleLabel';
 import type { ClientOrgUserV2, ClientRole } from '@/types/v2';
@@ -76,7 +77,7 @@ const MembersSettings: React.FC = () => {
   const removeUser = async (user: ClientOrgUserV2) => {
     try {
       await remove(user.id).unwrap();
-      void message.success(t('account.org.removed', { name: user.name, defaultValue: '{{name}} was removed. Their access ended immediately.' }));
+      void message.success(t('account.org.removed', { name: decodeHtmlEntities(user.name), defaultValue: '{{name}} was removed. Their access ended immediately.' }));
     } catch (error) {
       // Someone else (your project team, or another Client Admin) removed them first: the row on screen is
       // stale, so show the list as it is now instead of leaving a person who is already gone.
@@ -187,8 +188,8 @@ const MembersSettings: React.FC = () => {
       showSorterTooltip: false,
       render: (_: unknown, user) => (
         <Flex gap={8} align="center">
-          <Avatar size={26} style={{ backgroundColor: token.colorPrimary }}>{user.name[0]}</Avatar>
-          {user.name}
+          <Avatar size={26} style={{ backgroundColor: token.colorPrimary }}>{decodeHtmlEntities(user.name)[0]}</Avatar>
+          {decodeHtmlEntities(user.name)}
           {user.isYou && <Tag style={{ marginInlineEnd: 0 }}>{t('account.org.you', { defaultValue: 'You' })}</Tag>}
         </Flex>
       ),
@@ -239,7 +240,7 @@ const MembersSettings: React.FC = () => {
                   type="text"
                   size="small"
                   icon={<MoreOutlined />}
-                  aria-label={t('account.org.actionsFor', { name: user.name, defaultValue: 'Actions for {{name}}' })}
+                  aria-label={t('account.org.actionsFor', { name: decodeHtmlEntities(user.name), defaultValue: 'Actions for {{name}}' })}
                 />
               </Dropdown>
             ),
@@ -268,11 +269,11 @@ const MembersSettings: React.FC = () => {
           users.data
             ? t('account.org.peopleCount', {
                 count: users.data.length,
-                name: me?.organizationName ?? '',
+                name: decodeHtmlEntities(me?.organizationName),
                 defaultValue_one: '{{count}} Member in {{name}}',
                 defaultValue_other: '{{count}} Members in {{name}}',
               })
-            : t('account.org.people', { name: me?.organizationName ?? '', defaultValue: 'Members in {{name}}' })
+            : t('account.org.people', { name: decodeHtmlEntities(me?.organizationName), defaultValue: 'Members in {{name}}' })
         }
         extra={
           canInvite && (
@@ -319,7 +320,7 @@ const MembersSettings: React.FC = () => {
       <Modal
         open={removing !== null}
         onCancel={() => setRemoving(null)}
-        title={t('account.org.removeTitle', { name: removing?.name ?? '', defaultValue: 'Remove {{name}}?' })}
+        title={t('account.org.removeTitle', { name: decodeHtmlEntities(removing?.name), defaultValue: 'Remove {{name}}?' })}
         okText={t('account.org.remove', { defaultValue: 'Remove' })}
         okButtonProps={{ danger: true }}
         cancelText={t('common.cancel', { defaultValue: 'Cancel' })}
@@ -354,7 +355,7 @@ const AssignProjectsModal: React.FC<{ user: ClientOrgUserV2 | null; onClose: () 
     if (!user) return;
     try {
       await save({ id: user.id, project_ids: selected }).unwrap();
-      void message.success(t('account.org.projectsSaved', { name: user.name, defaultValue: 'Project access updated for {{name}}.' }));
+      void message.success(t('account.org.projectsSaved', { name: decodeHtmlEntities(user.name), defaultValue: 'Project access updated for {{name}}.' }));
       onClose();
     } catch (error) {
       void message.error(errorMessage(error) ?? t('account.org.saveFailed', { defaultValue: 'We could not save your changes.' }));
@@ -366,7 +367,7 @@ const AssignProjectsModal: React.FC<{ user: ClientOrgUserV2 | null; onClose: () 
       open={user !== null}
       onCancel={onClose}
       width={460}
-      title={t('account.org.assignTitle', { name: user?.name ?? '', defaultValue: 'Assign projects to {{name}}' })}
+      title={t('account.org.assignTitle', { name: decodeHtmlEntities(user?.name), defaultValue: 'Assign projects to {{name}}' })}
       okText={t('common.save', { defaultValue: 'Save' })}
       cancelText={t('common.cancel', { defaultValue: 'Cancel' })}
       okButtonProps={{ loading: isSaving, disabled: query.isLoading || query.isError }}
@@ -392,7 +393,7 @@ const AssignProjectsModal: React.FC<{ user: ClientOrgUserV2 | null; onClose: () 
           </Typography.Paragraph>
           <Checkbox.Group value={selected} onChange={values => setSelected(values as string[])} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {projects.map(project => (
-              <Checkbox key={project.id} value={project.id}>{project.name}</Checkbox>
+              <Checkbox key={project.id} value={project.id}>{decodeHtmlEntities(project.name)}</Checkbox>
             ))}
           </Checkbox.Group>
         </>
@@ -419,7 +420,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ target, roleLabel, on
 
   useEffect(() => {
     if (target) {
-      setName(target.user.name);
+      setName(decodeHtmlEntities(target.user.name));
       setJobTitle(target.user.jobTitle);
       setRole(target.user.role);
     }
@@ -443,7 +444,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ target, roleLabel, on
       width={420}
       title={
         isRoleMode
-          ? t('account.org.changeRoleTitle', { name: target?.user.name ?? '', defaultValue: 'Change role for {{name}}' })
+          ? t('account.org.changeRoleTitle', { name: decodeHtmlEntities(target?.user.name), defaultValue: 'Change role for {{name}}' })
           : t('account.org.editTitle', { defaultValue: 'Edit member' })
       }
       okText={t('common.save', { defaultValue: 'Save' })}

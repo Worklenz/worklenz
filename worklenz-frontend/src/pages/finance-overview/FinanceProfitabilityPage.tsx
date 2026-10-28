@@ -34,6 +34,7 @@ import {
 import { FinanceKpiCard } from './FinanceKpiCard';
 import { alertColor, burnColor, fmtMoney } from './finance-report-utils';
 import { useFinanceReportFetch } from './useFinanceReportFetch';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 Chart.register(CategoryScale, LinearScale, BarElement, ChartTooltip, Legend);
 
@@ -111,7 +112,9 @@ export const FinanceProfitabilityPage = () => {
         title: t('profitability.table.project', { defaultValue: 'Project' }),
         dataIndex: 'name',
         key: 'name',
-        render: (name: string, record) => (
+        render: (name: string, record) => {
+          const decodedName = decodeHtmlEntities(name);
+          return (
           <Flex align="center" gap={8}>
             <span
               style={{
@@ -123,13 +126,14 @@ export const FinanceProfitabilityPage = () => {
                 display: 'inline-block',
               }}
             />
-            <Tooltip title={name}>
+            <Tooltip title={decodedName}>
               <Text ellipsis style={{ maxWidth: 220 }}>
-                {name}
+                {decodedName}
               </Text>
             </Tooltip>
           </Flex>
-        ),
+          );
+        },
       },
       {
         title: t('profitability.table.cost', { defaultValue: 'Cost' }),

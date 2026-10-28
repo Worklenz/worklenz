@@ -6,6 +6,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import dayjs from 'dayjs';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 
 interface ScheduleTaskRowProps {
@@ -174,7 +175,7 @@ const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
       >
         <div className="flex items-center h-full gap-2 pr-0 transition-[padding] duration-200 group-hover:pr-14">
           <span className="text-sm text-gray-900 dark:text-gray-100 truncate flex-1">
-            {task.name}
+            {decodeHtmlEntities(task.name)}
           </span>
         </div>
 

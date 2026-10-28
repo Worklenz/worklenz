@@ -214,7 +214,7 @@ const notificationsFor = (s: Subject): ClientNotificationV2[] => {
 };
 
 const prefsFor = (s: Subject): NotificationPrefs =>
-  state.prefs[s.user.id] ?? (Object.fromEntries(ALL_TYPES.map(t => [t, true])) as NotificationPrefs);
+  state.prefs[s.user.id] ?? (Object.fromEntries(ALL_TYPES.map(t => [t, false])) as NotificationPrefs);
 
 const meDto = (s: Subject): ClientMe => {
   const sc = getScenario();

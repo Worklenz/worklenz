@@ -11,5 +11,11 @@
   "mentionedInComment": "<b>{{user}}</b> wspomniał(a) o Tobie w komentarzu do <b>{{task}}</b>",
   "mentionedInProjectComment": "<b>{{user}}</b> wspomniał(a) o Tobie w komentarzu do <b>{{project}}</b>",
   "mentionedInProjectDocument": "<b>{{user}}</b> wspomniał(a) o Tobie w dokumencie w <b>{{project}}</b>",
-  "phaseTaskAssigned": "Przypisano Ci zadanie w <b>{{phase}}</b>: <b>{{task}}</b>"
+  "phaseTaskAssigned": "Przypisano Ci zadanie w <b>{{phase}}</b>: <b>{{task}}</b>",
+  "security": {
+    "invitationLimit": "Ten obszar roboczy osiągnął limit bezpieczeństwa zaproszeń. Spróbuj ponownie później.",
+    "invitationsPaused": "Zaproszenia zostały tymczasowo wstrzymane. Skontaktuj się z administratorem.",
+    "blockedTaskHost": "To zadanie zawiera zablokowany link. Usuń go i spróbuj ponownie.",
+    "blockedSignupDomain": "Ten dostawca poczty nie jest obsługiwany. Użyj innego adresu e-mail."
+  }
 }

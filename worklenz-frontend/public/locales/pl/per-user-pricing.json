@@ -30,7 +30,7 @@
         "Nieograniczona liczba projektów",
         "Śledzenie czasu i raporty",
         "Pola i szablony niestandardowe",
-        "Do 5 gości"
+        "Nieograniczeni goście i portal klienta"
       ]
     },
     "business": {
@@ -39,8 +39,8 @@
       "features": [
         "Wszystko z Pro",
         "Planer, oś czasu, obciążenie pracą",
-        "Finanse i portal klienta",
-        "Nieograniczeni goście i Slack"
+        "Finanse i branding portalu",
+        "Integracja ze Slack"
       ]
     },
     "expansion": {

@@ -11,13 +11,14 @@ import {
   Tag,
   Typography,
 } from '@/shared/antd-imports';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DeleteOutlined, ExclamationCircleFilled } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 import { colors } from '@/styles/colors';
 import { TFunction } from 'i18next';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { IDependencyType, ITaskDependency } from '@/types/tasks/task-dependency.types';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { taskDependenciesApiService } from '@/api/tasks/task-dependencies.api.service';
@@ -51,6 +52,7 @@ const DependenciesTable = ({
   const [taskList, setTaskList] = useState<{ label: string; value: string }[]>([]);
   const [loadingTaskList, setLoadingTaskList] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const latestSearchRequest = useRef(0);
 
   const invalidateRoadmapTasks = () => {
     if (!projectId) return;
@@ -92,17 +94,18 @@ const DependenciesTable = ({
   const handleSearchTask = async (value: string) => {
     if (!task.id || !projectId) return;
     setSearchTerm(value);
+    const requestId = ++latestSearchRequest.current;
 
     try {
       setLoadingTaskList(true);
       const res = await tasksApiService.searchTask(task.id, projectId, value);
-      if (res.done) {
+      if (requestId === latestSearchRequest.current && res.done) {
         setTaskList(res.body);
       }
     } catch (error) {
       console.error('Error searching tasks:', error);
     } finally {
-      setLoadingTaskList(false);
+      if (requestId === latestSearchRequest.current) setLoadingTaskList(false);
     }
   };
 
@@ -136,8 +139,8 @@ const DependenciesTable = ({
       key: 'name',
       render: (record: ITaskDependency) => (
         <Flex align="center" gap={8}>
-          <Typography.Text ellipsis={{ tooltip: record.task_name }}>
-            {record.task_name}
+          <Typography.Text ellipsis={{ tooltip: decodeHtmlEntities(record.task_name) }}>
+            {decodeHtmlEntities(record.task_name)}
           </Typography.Text>
           <Tag>{record.task_key}</Tag>
         </Flex>
@@ -195,26 +198,24 @@ const DependenciesTable = ({
             <Col span={14}>
               <Form.Item name="taskName" style={{ marginBottom: 0 }}>
                 <Select
-                  placeholder={t('taskInfoTab.dependencies.searchTask')}
+                  placeholder={t('taskInfoTab.dependencies.searchTask', { defaultValue: 'Search task' })}
                   size="small"
                   showSearch
-                  value={searchTerm}
+                  searchValue={searchTerm}
                   onSearch={handleSearchTask}
+                  onOpenChange={isOpen => {
+                    if (isOpen) void handleSearchTask(searchTerm);
+                  }}
                   options={taskList}
                   loading={loadingTaskList}
                   onSelect={handleAddDependency}
                   className="dependency-search-select"
                   popupClassName="dependency-search-select-dropdown"
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      handleAddDependency;
-                    }
-                  }}
                   filterOption={false}
                   notFoundContent={
-                    <span style={{ color: '#7b7b7b' }}>
-                      {t('taskInfoTab.dependencies.noTasksFound')}
-                    </span>
+                    <Typography.Text type="secondary">
+                      {t('taskInfoTab.dependencies.noTasksFound', { defaultValue: 'No tasks found' })}
+                    </Typography.Text>
                   }
                 />
               </Form.Item>

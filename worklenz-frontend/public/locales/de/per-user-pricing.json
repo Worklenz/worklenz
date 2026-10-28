@@ -24,7 +24,7 @@
         "Unbegrenzte Projekte",
         "Zeiterfassung und Berichte",
         "Benutzerdefinierte Felder und Vorlagen",
-        "Bis zu 5 Gäste"
+        "Unbegrenzte Gäste und Kundenportal"
       ]
     },
     "business": {
@@ -33,8 +33,8 @@
       "features": [
         "Alles aus Pro",
         "Planer, Timeline, Auslastung",
-        "Finanzen und Kundenportal",
-        "Unbegrenzte Gäste und Slack"
+        "Finanzen und Portal-Branding",
+        "Slack-Integration"
       ]
     },
     "expansion": {

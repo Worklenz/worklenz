@@ -1,5 +1,5 @@
 # --- Stage 1: Build ---
-FROM node:20-slim AS builder
+FROM node:22.12-slim AS builder
 
 ARG RELEASE_VERSION
 RUN apt-get update && apt-get install -y \
@@ -21,7 +21,7 @@ RUN npm run build
 RUN echo "$RELEASE_VERSION" > release
 
 # --- Stage 2: Production Image ---
-FROM node:20-slim
+FROM node:22.12-slim
 
 RUN apt-get update && apt-get install -y libpq5 && rm -rf /var/lib/apt/lists/*
 

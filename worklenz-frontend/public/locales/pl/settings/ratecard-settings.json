@@ -42,6 +42,7 @@
   "jobRolesTitle": "Role służbowe",
   "noJobTitlesMessage": "Przed dodaniem ról do arkuszy stawek utwórz najpierw nazwy stanowisk w ustawieniach Stanowiska stanowisk.",
   "createNewJobTitle": "Utwórz nowy tytuł pracy",
+  "createJobTitleButtonText": "Utwórz stanowisko",
   "jobTitleNamePlaceholder": "Wprowadź nazwę stanowiska",
   "jobTitleNameRequired": "Nazwa stanowiska jest wymagana",
   "jobTitleCreatedSuccess": "Stanowisko zostało utworzone pomyślnie",

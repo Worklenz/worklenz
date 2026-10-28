@@ -23,6 +23,7 @@ import {
   MultiSelectFilterPill,
 } from '@/components/common/filters/MultiSelectFilterPill';
 import { DateFilter } from './TimeEntriesFilters';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const { Text } = Typography;
 
@@ -249,7 +250,7 @@ export const TimeEntriesFilterPanel: React.FC<TimeEntriesFilterPanelProps> = ({
 
   const clientFilterOptions: FilterOption[] = [
     { value: 'none', label: t('noClient', { defaultValue: 'No client' }) },
-    ...clientOptions.map(c => ({ value: c.id, label: c.name })),
+    ...clientOptions.map(c => ({ value: c.id, label: decodeHtmlEntities(c.name) })),
   ];
 
   const searchPlaceholder = t('searchFilterPlaceholder', { defaultValue: 'Search...' });
@@ -270,7 +271,7 @@ export const TimeEntriesFilterPanel: React.FC<TimeEntriesFilterPanelProps> = ({
         <MultiSelectFilterPill
           searchPlaceholder={searchPlaceholder}
           label={t('filterProject', { defaultValue: 'Project' })}
-          options={projects.map(p => ({ value: p.id, label: p.name }))}
+          options={projects.map(p => ({ value: p.id, label: decodeHtmlEntities(p.name) }))}
           value={draftProjectIds}
           onChange={setDraftProjectIds}
         />

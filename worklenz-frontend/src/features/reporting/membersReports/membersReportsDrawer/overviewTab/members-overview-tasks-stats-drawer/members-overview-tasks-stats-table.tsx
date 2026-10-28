@@ -20,6 +20,7 @@ import {
 } from '@/features/task-drawer/task-drawer.slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { setProjectId } from '@/features/project/project.slice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface ReportingTaskRecord {
   id: string;
@@ -82,7 +83,7 @@ const MembersOverviewTasksStatsTable = ({
       render: record => (
         <Flex>
           {Number(record.sub_tasks_count) > 0 && <DoubleRightOutlined />}
-          <Typography.Text className="group-hover:text-[#1890ff]">{record.name}</Typography.Text>
+          <Typography.Text className="group-hover:text-[#1890ff]">{decodeHtmlEntities(record.name)}</Typography.Text>
         </Flex>
       ),
       width: 260,

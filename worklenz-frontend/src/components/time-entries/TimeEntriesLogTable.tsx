@@ -14,6 +14,7 @@ import { ExpandAltOutlined, EditOutlined, DeleteOutlined } from '@ant-design/ico
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
@@ -227,7 +228,7 @@ export const TimeEntriesLogTable: React.FC<TimeEntriesLogTableProps> = ({
   );
 
   const projectFilterOptions = useMemo(
-    () => projectOptions.map(p => ({ text: p.name, value: p.id })),
+    () => projectOptions.map(p => ({ text: decodeHtmlEntities(p.name), value: p.id })),
     [projectOptions]
   );
   const statusFilterOptions = useMemo(
@@ -281,7 +282,7 @@ export const TimeEntriesLogTable: React.FC<TimeEntriesLogTableProps> = ({
       // Pre-populate Redux with available task data to prevent loading flash
       dispatch(updateTask({
         id: record.task_id,
-        title: record.task_name,
+        title: decodeHtmlEntities(record.task_name),
         projectId: record.project_id,
       } as Partial<Task> as Task));
 
@@ -328,7 +329,7 @@ export const TimeEntriesLogTable: React.FC<TimeEntriesLogTableProps> = ({
             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
           >
             <span style={{ flex: 1, minWidth: 0, marginRight: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {record.task_name}
+              {decodeHtmlEntities(record.task_name)}
             </span>
             <div className="row-action-button">
               <Tooltip title={t('openTaskTooltip', { defaultValue: 'Open task details' })} placement="right">
@@ -362,7 +363,7 @@ export const TimeEntriesLogTable: React.FC<TimeEntriesLogTableProps> = ({
             onClick={() => record.project_id && navigate(`/worklenz/projects/${record.project_id}?tab=tasks-list&pinned_tab=tasks-list`)}
           >
             <Badge color={record.project_color || token.colorPrimary} />
-            <span style={{ fontWeight: 500 }}>{record.project_name}</span>
+            <span style={{ fontWeight: 500 }}>{decodeHtmlEntities(record.project_name)}</span>
           </span>
         ),
       },

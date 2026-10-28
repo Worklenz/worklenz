@@ -34,8 +34,6 @@ import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service'
 import AttachmentsGrid from './attachments/attachments-grid';
 import TaskComments from './comments/task-comments';
 import { TaskAttachmentUploadItem } from './attachments/upload-progress';
-import { ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
-import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import TaskDrawerCustomFields from './details/task-drawer-custom-fields/task-drawer-custom-fields';
 import { hasDrawerSupportedCustomFields, getDrawerSupportedCustomFields } from '@/utils/task-custom-columns';
@@ -72,9 +70,13 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   const isSoftwareProject = useAppSelector(state =>
     isSoftwareProjectType(state.projectReducer.project?.project_type)
   );
-  const { taskFormViewModel, loadingTask, selectedTaskId, targetCommentId } = useAppSelector(
+  const { taskFormViewModel, loadingTask, selectedTaskId, targetCommentId, lastDeletedTaskId } = useAppSelector(
     state => state.taskDrawerReducer
   );
+  const selectedTaskIdRef = useRef(selectedTaskId);
+  selectedTaskIdRef.current = selectedTaskId;
+  const lastDeletedTaskIdRef = useRef(lastDeletedTaskId);
+  lastDeletedTaskIdRef.current = lastDeletedTaskId;
   const [subTasks, setSubTasks] = useState<ISubTask[]>([]);
   const [loadingSubTasks, setLoadingSubTasks] = useState<boolean>(false);
 
@@ -90,9 +92,6 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
 
   const [taskAttachments, setTaskAttachments] = useState<ITaskAttachmentViewModel[]>([]);
   const [loadingTaskAttachments, setLoadingTaskAttachments] = useState<boolean>(false);
-
-  const [taskComments, setTaskComments] = useState<ITaskCommentViewModel[]>([]);
-  const [loadingTaskComments, setLoadingTaskComments] = useState<boolean>(false);
 
   // Tab-level drag-and-drop state
   const [isTabDragOver, setIsTabDragOver] = useState(false);
@@ -307,26 +306,27 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     handleFilesSelected(files);
   };
 
-  const fetchTaskData = () => {
-    if (!loadingTask && selectedTaskId && projectId) {
-      dispatch(fetchTask({ taskId: selectedTaskId, projectId }));
-    }
-  };
-
   const fetchSubTasks = useCallback(async () => {
-    if (!selectedTaskId) return;
+    if (!selectedTaskId || selectedTaskId === lastDeletedTaskId) return;
+    const requestedTaskId = selectedTaskId;
     try {
       setLoadingSubTasks(true);
-      const res = await subTasksApiService.getSubTasks(selectedTaskId);
-      if (res.done) {
+      const res = await subTasksApiService.getSubTasks(requestedTaskId);
+      if (
+        res.done &&
+        selectedTaskIdRef.current === requestedTaskId &&
+        lastDeletedTaskIdRef.current !== requestedTaskId
+      ) {
         setSubTasks(res.body);
       }
     } catch (error) {
       logger.error('Error fetching sub tasks:', error);
     } finally {
-      setLoadingSubTasks(false);
+      if (selectedTaskIdRef.current === requestedTaskId) {
+        setLoadingSubTasks(false);
+      }
     }
-  }, [selectedTaskId]);
+  }, [selectedTaskId, lastDeletedTaskId]);
 
   // ── Socket listener: keep drawer subtasks in sync with task list ──────────
   useEffect(() => {
@@ -349,6 +349,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
 
     // Project updates (e.g., status renamed) — re-fetch subtasks to sync status names
     const handleProjectUpdatesAvailable = () => {
+      if (!selectedTaskId || selectedTaskId === lastDeletedTaskId) return;
       fetchSubTasks();
     };
 
@@ -380,15 +381,20 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
   }, [socket, selectedTaskId, isSoftwareProject]);
 
   const fetchTaskDependencies = useCallback(async () => {
-    if (!selectedTaskId) return;
+    if (!selectedTaskId || selectedTaskId === lastDeletedTaskId) return;
+    const requestedTaskId = selectedTaskId;
     try {
       setLoadingTaskDependencies(true);
-      const res = await taskDependenciesApiService.getTaskDependencies(selectedTaskId);
-      if (res.done) {
+      const res = await taskDependenciesApiService.getTaskDependencies(requestedTaskId);
+      if (
+        res.done &&
+        selectedTaskIdRef.current === requestedTaskId &&
+        lastDeletedTaskIdRef.current !== requestedTaskId
+      ) {
         setTaskDependencies(res.body);
         dispatch(
           updateTaskCounts({
-            taskId: selectedTaskId,
+            taskId: requestedTaskId,
             counts: { has_dependencies: res.body.length > 0 },
           })
         );
@@ -396,20 +402,27 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     } catch (error) {
       logger.error('Error fetching task dependencies:', error);
     } finally {
-      setLoadingTaskDependencies(false);
+      if (selectedTaskIdRef.current === requestedTaskId) {
+        setLoadingTaskDependencies(false);
+      }
     }
-  }, [selectedTaskId, dispatch]);
+  }, [selectedTaskId, lastDeletedTaskId, dispatch]);
 
   const fetchTaskAttachments = useCallback(async () => {
-    if (!selectedTaskId) return;
+    if (!selectedTaskId || selectedTaskId === lastDeletedTaskId) return;
+    const requestedTaskId = selectedTaskId;
     try {
       setLoadingTaskAttachments(true);
-      const res = await taskAttachmentsApiService.getTaskAttachments(selectedTaskId);
-      if (res.done) {
+      const res = await taskAttachmentsApiService.getTaskAttachments(requestedTaskId);
+      if (
+        res.done &&
+        selectedTaskIdRef.current === requestedTaskId &&
+        lastDeletedTaskIdRef.current !== requestedTaskId
+      ) {
         setTaskAttachments(res.body);
         dispatch(
           updateTaskCounts({
-            taskId: selectedTaskId,
+            taskId: requestedTaskId,
             counts: { attachments_count: res.body.length },
           })
         );
@@ -417,24 +430,28 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     } catch (error) {
       logger.error('Error fetching task attachments:', error);
     } finally {
-      setLoadingTaskAttachments(false);
-    }
-  }, [selectedTaskId, dispatch]);
-
-  const fetchTaskComments = useCallback(async () => {
-    if (!selectedTaskId) return;
-    try {
-      setLoadingTaskComments(true);
-      const res = await taskCommentsApiService.getByTaskId(selectedTaskId);
-      if (res.done) {
-        setTaskComments(res.body);
+      if (selectedTaskIdRef.current === requestedTaskId) {
+        setLoadingTaskAttachments(false);
       }
-    } catch (error) {
-      logger.error('Error fetching task comments:', error);
-    } finally {
-      setLoadingTaskComments(false);
     }
-  }, [selectedTaskId]);
+  }, [selectedTaskId, lastDeletedTaskId, dispatch]);
+
+  // Keep drawer attachments in sync with socket updates (uploads/deletions)
+  useEffect(() => {
+    if (!socket || !selectedTaskId) return;
+
+    const handleAttachmentsUpdated = (data: string | { task_id?: string }) => {
+      const taskId = typeof data === 'string' ? data : data?.task_id;
+      if (taskId === selectedTaskId) {
+        fetchTaskAttachments();
+      }
+    };
+
+    socket.on(SocketEvents.TASK_ATTACHMENTS_UPDATED.toString(), handleAttachmentsUpdated);
+    return () => {
+      socket.off(SocketEvents.TASK_ATTACHMENTS_UPDATED.toString(), handleAttachmentsUpdated);
+    };
+  }, [socket, selectedTaskId, fetchTaskAttachments]);
 
   const panelStyle: React.CSSProperties = {
     border: 'none',
@@ -494,6 +511,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
             description={taskFormViewModel?.task?.description || null}
             taskId={taskFormViewModel?.task?.id || ''}
             parentTaskId={taskFormViewModel?.task?.parent_task_id || ''}
+            projectId={projectId}
             isGuest={isGuest}
           />
           {selectedTaskId ? <MentionedInDocs taskId={selectedTaskId} isGuest={isGuest} /> : null}
@@ -595,6 +613,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
           taskKey={(taskFormViewModel?.task as ITaskViewModel | undefined)?.task_key}
           refreshToken={githubRefreshToken}
           canCreateBranch={canCreateTask && !isGuest}
+          canRemoveLinks={canCreateTask && !isGuest}
         />
       ),
       style: panelStyle,
@@ -631,66 +650,39 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     : levelInfoItems;
 
   useEffect(() => {
-    // FIX: Only fetch and reset data when selectedTaskId changes to a REAL
-    // task ID (non-null). When the drawer closes, resetTaskState() sets
-    // selectedTaskId → null after a 300ms timeout. Without this guard, that
-    // null change re-triggers this effect: the cleanup wipes all local state,
-    // then fetchTaskData() runs with null and dispatches fetchTask(null),
-    // which clears taskFormViewModel in Redux. So when the drawer reopens the
-    // task, every field (phase, priority, labels, assignees, due date,
-    // estimation) shows blank until the API round-trip completes again.
-    if (!selectedTaskId) {
-      // Reset the prevTaskIdRef when drawer closes
+    if (!selectedTaskId || !projectId) {
       prevTaskIdRef.current = null;
-      return;
-    }
-
-    // Check if we need to fetch data:
-    // 1. If it's a different task than before, OR
-    // 2. If it's the same task but taskFormViewModel is empty (drawer was closed and reopened), OR
-    // 3. If it's the same task but local state is incomplete (e.g., no assignee metadata yet)
-    const isDifferentTask = selectedTaskId !== prevTaskIdRef.current;
-    const isDataMissing =
-      !taskFormViewModel?.task?.id ||
-      !taskFormViewModel.task?.name ||
-      (
-        !taskFormViewModel.task?.assignee_names?.length &&
-        !!taskFormViewModel.task?.assignees?.length
-      ) ||
-      (
-        !taskFormViewModel.task?.names?.length &&
-        !!taskFormViewModel.task?.assignees?.length
-      );
-
-    if (!isDifferentTask && !isDataMissing) {
-      // Same task and task details are already loaded, skip fetch.
-      return;
-    }
-
-    prevTaskIdRef.current = selectedTaskId;
-
-    fetchTaskData();
-    fetchSubTasks();
-    fetchTaskDependencies();
-    fetchTaskAttachments();
-    fetchTaskComments();
-
-    return () => {
-      // Only clear local data when we're actually switching to a different
-      // task, not when selectedTaskId is being reset to null on drawer close.
       setSubTasks([]);
       setTaskDependencies([]);
       setTaskAttachments([]);
       selectedFilesRef.current = [];
-      setTaskComments([]);
-    };
-  }, [selectedTaskId, projectId, fetchSubTasks, loadingTask, taskFormViewModel?.task?.id, taskFormViewModel?.task?.name]);
+      return;
+    }
+
+    const isDifferentTask = selectedTaskId !== prevTaskIdRef.current;
+    prevTaskIdRef.current = selectedTaskId;
+
+    if (isDifferentTask) {
+      setSubTasks([]);
+      setTaskDependencies([]);
+      setTaskAttachments([]);
+      selectedFilesRef.current = [];
+    }
+
+    fetchSubTasks();
+    fetchTaskDependencies();
+    fetchTaskAttachments();
+  }, [selectedTaskId, projectId, fetchSubTasks, fetchTaskDependencies, fetchTaskAttachments]);
 
   useEffect(() => {
     if (!selectedTaskId || !projectId || loadingTask) return;
 
+    const isDifferentTask = selectedTaskId !== taskFormViewModel?.task?.id;
     const hasIncompleteTaskData =
-      taskFormViewModel?.task?.id === selectedTaskId && !taskFormViewModel.task?.name;
+      isDifferentTask ||
+      !taskFormViewModel?.task?.name ||
+      (!taskFormViewModel?.task?.assignee_names?.length && !!taskFormViewModel?.task?.assignees?.length) ||
+      (!taskFormViewModel?.task?.names?.length && !!taskFormViewModel?.task?.assignees?.length);
 
     if (hasIncompleteTaskData) {
       dispatch(fetchTask({ taskId: selectedTaskId, projectId }));
@@ -701,6 +693,9 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     loadingTask,
     taskFormViewModel?.task?.id,
     taskFormViewModel?.task?.name,
+    taskFormViewModel?.task?.assignees,
+    taskFormViewModel?.task?.assignee_names,
+    taskFormViewModel?.task?.names,
     dispatch,
   ]);
 

@@ -16,7 +16,7 @@ import HandleExceptions from "../decorators/handle-exceptions";
 import { PasswordStrengthChecker } from "../shared/password-strength-check";
 import FileConstants from "../shared/file-constants";
 import axios from "axios";
-import { BLOCKED_SIGNUP_EMAIL_MESSAGE, isSignupEmailDomainBlocked } from "../shared/signup-email-domain-policy";
+import { getBlockedSignupEmailMessage, isSignupEmailDomainBlocked } from "../shared/signup-email-domain-policy";
 import { log_error } from "../shared/utils";
 import { DEFAULT_ERROR_MESSAGE } from "../shared/constants";
 import { getAppSumoPopupFrequencyDays } from "../shared/appsumo-popup";
@@ -568,7 +568,7 @@ export default class AuthController extends WorklenzControllerBase {
         }
       } else {
         if (await isSignupEmailDomainBlocked(normalizedProfileEmail))
-          return res.status(400).send(new ServerResponse(false, null, BLOCKED_SIGNUP_EMAIL_MESSAGE));
+          return res.status(400).send(new ServerResponse(false, null, getBlockedSignupEmailMessage(req.headers["accept-language"])));
 
         // New user - register
         const googleUserData = {

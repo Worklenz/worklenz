@@ -92,3 +92,25 @@ describe("delivery confidence parsers", () => {
     expect(parseDeliveryConfidenceNote("a".repeat(281)).ok).toBe(false);
   });
 });
+
+
+describe("delivery confidence note security", () => {
+  it("discards scripts, comments, and incomplete tags using an HTML parser", () => {
+    expect(parseDeliveryConfidenceNote('<script>alert(1)</script><b>Late</b><!-- hidden -->')).toEqual({ ok: true, note: "Late" });
+    expect(parseDeliveryConfidenceNote('<img src=x onerror=alert(1)>')).toEqual({ ok: true, note: null });
+    const result = parseDeliveryConfidenceNote('<script');
+    expect(result.ok && result.note).not.toContain('<script');
+  });
+
+  it("rejects oversized markup before parsing it", () => {
+    expect(parseDeliveryConfidenceNote('<'.repeat(100_000))).toEqual({ ok: false });
+    expect(parseDeliveryConfidenceNote(`<b ${' '.repeat(100_000)}>short</b>`)).toEqual({ ok: false });
+  });
+
+  it("counts Unicode code points and preserves plain text symbols", () => {
+    expect(parseDeliveryConfidenceNote('😀'.repeat(280))).toEqual({ ok: true, note: '😀'.repeat(280) });
+    expect(parseDeliveryConfidenceNote('😀'.repeat(281))).toEqual({ ok: false });
+    expect(parseDeliveryConfidenceNote('A & B > C')).toEqual({ ok: true, note: 'A & B > C' });
+    expect(parseDeliveryConfidenceNote('  line  one\nline two  ')).toEqual({ ok: true, note: 'line  one\nline two' });
+  });
+});

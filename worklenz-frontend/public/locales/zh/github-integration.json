@@ -98,6 +98,16 @@
     "branchDeleted": "已删除",
     "showFewer": "收起",
     "showAll": "显示全部 {{count}} 个提交",
+    "remove": {
+      "button": "移除关联",
+      "confirm": "移除",
+      "cancel": "取消",
+      "success": "已移除关联。",
+      "failed": "无法移除关联。",
+      "branch": { "title": "从此任务中移除该分支？", "description": "{{name}} 将不再显示在此任务中。GitHub 上的分支不会被删除。" },
+      "pullRequest": { "title": "从此任务中移除该拉取请求？", "description": "{{name}} 将不再显示在此任务中。GitHub 上的拉取请求不会被更改。" },
+      "commit": { "title": "从此任务中移除该提交？", "description": "{{name}} 将不再显示在此任务中。GitHub 上的提交不会被更改。" }
+    },
     "createBranch": {
       "button": "创建分支",
       "title": "创建分支",

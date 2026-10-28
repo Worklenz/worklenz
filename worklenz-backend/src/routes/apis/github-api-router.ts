@@ -67,4 +67,10 @@ githubApiRouter.post(
   safeControllerFunction(GithubController.createBranch),
 );
 
+githubApiRouter.delete(
+  "/tasks/:id/links/:linkId",
+  idParamValidator,
+  safeControllerFunction(GithubController.removeTaskLink),
+);
+
 export default githubApiRouter;
