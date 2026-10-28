@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import {
   Button,
   theme,
-  Select,
   Dropdown,
   Popconfirm,
   MenuProps,
@@ -28,8 +27,8 @@ import { useAuthService } from '@/hooks/useAuth';
 import { getRoleColor, ROLE_NAMES } from '@/types/roles/role.types';
 import { canManageUserRole, getSessionRoleName } from '@/utils/role-permissions.utils';
 import { fetchBillingInfo } from '@/features/admin-center/admin-center.slice';
+import TablePagination from '@/components/TablePagination';
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 const HomeMyTeam: React.FC = () => {
   const { token } = theme.useToken();
@@ -241,7 +240,6 @@ const HomeMyTeam: React.FC = () => {
     whiteSpace: 'nowrap',
   };
 
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const columnCount = 7;
 
   return (
@@ -370,24 +368,28 @@ const HomeMyTeam: React.FC = () => {
             borderTop: `1px solid ${token.colorBorderSecondary}`,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 12, color: token.colorTextSecondary }}>{t('myTeam.rowsPerPage', { defaultValue: 'Rows per page' })}</span>
-            <Select
-              size="small"
-              style={{ width: 64 }}
-              value={pageSize}
-              onChange={v => { setPageSize(v); setPage(1); }}
-              options={PAGE_SIZE_OPTIONS.map(n => ({ value: n, label: n }))}
-            />
-            <span style={{ fontSize: 12, color: token.colorTextSecondary, marginLeft: 4 }}>
-              {total === 0 ? '0' : `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)}`} of {total}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Button size="small" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>‹</Button>
-            <span style={{ fontSize: 12 }}>{page} / {totalPages}</span>
-            <Button size="small" disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>›</Button>
-          </div>
+          <TablePagination
+            navigationLabel={t('common:paginationNavigation')}
+            firstPageLabel={t('common:firstPage')}
+            previousPageLabel={t('common:previousPage')}
+            nextPageLabel={t('common:nextPage')}
+            lastPageLabel={t('common:lastPage')}
+            renderDefaultSummary={(range, total) =>
+              t('common:paginationSummary', { range, total })
+            }
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            rowsPerPageLabel={t('myTeam.rowsPerPage', {
+              defaultValue: 'Rows per page',
+            })}
+            variant="dropdown"
+            onPageChange={(nextPage, nextPageSize) => {
+              setPage(nextPage);
+              setPageSize(nextPageSize);
+            }}
+            renderSummary={(range, count) => `${range} of ${count}`}
+          />
         </div>
       </div>
 

@@ -46,4 +46,6 @@
   "updatedBy": "通过 {{name}}",
   "editConfidence": "设置 {{project}} 的交付置信度",
   "readOnlyConfidence": "{{project}} 的交付信心"
+,
+  "rowsPerPage": "每页行数："
 }

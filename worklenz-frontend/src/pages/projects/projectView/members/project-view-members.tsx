@@ -885,6 +885,14 @@ const ProjectViewMembers = () => {
                 })}
               />
               <TablePagination
+                navigationLabel={t('common:paginationNavigation', { defaultValue: 'Pagination' })}
+                firstPageLabel={t('common:firstPage', { defaultValue: 'First page' })}
+                previousPageLabel={t('common:previousPage', { defaultValue: 'Previous page' })}
+                nextPageLabel={t('common:nextPage', { defaultValue: 'Next page' })}
+                lastPageLabel={t('common:lastPage', { defaultValue: 'Last page' })}
+                renderDefaultSummary={(range, count) =>
+                  t('common:paginationSummary', { range, total: count, defaultValue: `${range} of ${count}` })
+                }
                 page={pagination.current}
                 pageSize={pagination.pageSize}
                 total={pagination.total}

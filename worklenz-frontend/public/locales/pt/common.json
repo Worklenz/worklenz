@@ -135,5 +135,11 @@
   "refreshingData": "Atualizando dados...",
   "loadingData": "A carregar dados...",
   "noDataAvailable": "Sem dados disponíveis",
-  "licennse-expired-contacting-support": "Entrando em contato com o suporte..."
+  "licennse-expired-contacting-support": "Entrando em contato com o suporte...",
+  "paginationNavigation": "Paginação",
+  "paginationSummary": "{{range}} de {{total}}",
+  "firstPage": "Primeira página",
+  "previousPage": "Página anterior",
+  "nextPage": "Próxima página",
+  "lastPage": "Última página"
 }
