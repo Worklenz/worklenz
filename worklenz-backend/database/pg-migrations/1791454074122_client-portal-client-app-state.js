@@ -31,6 +31,25 @@ exports.up = async (pgm) => {
     CREATE INDEX IF NOT EXISTS idx_client_portal_thread_client_reads_contact
         ON client_portal_thread_client_reads (contact_id);
 
+    -- If an obsolete legacy client_portal_notification_reads table exists without contact_id, drop it first.
+    DO $$
+    BEGIN
+        IF EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+              AND table_name = 'client_portal_notification_reads'
+        ) AND NOT EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'client_portal_notification_reads'
+              AND column_name = 'contact_id'
+        ) THEN
+            DROP TABLE client_portal_notification_reads CASCADE;
+        END IF;
+    END $$;
+
     CREATE TABLE IF NOT EXISTS client_portal_notification_reads (
         notification_id UUID                     NOT NULL REFERENCES client_portal_notifications (id) ON DELETE CASCADE,
         contact_id      UUID                     NOT NULL REFERENCES client_contacts (id) ON DELETE CASCADE,
