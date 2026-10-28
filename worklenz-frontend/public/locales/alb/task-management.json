@@ -42,6 +42,9 @@
   "inProgress": "Në Progres",
   "done": "E Kryer",
   "defaultTaskName": "Detyrë Pa Emër",
+  "editSprintName": "Klikoni për të riemërtuar",
+  "editSprintDates": "Klikoni për të ndryshuar datat",
+  "addDates": "Shtoni datat",
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} nëndetyrë",

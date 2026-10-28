@@ -42,6 +42,9 @@
   "inProgress": "Faire",
   "done": "Terminé",
   "defaultTaskName": "Tâche sans titre",
+  "editSprintName": "Cliquez pour renommer",
+  "editSprintDates": "Cliquez pour modifier les dates",
+  "addDates": "Ajouter des dates",
   "indicators": {
     "tooltips": {
       "subtasks": "sous-tâche {{count}}",

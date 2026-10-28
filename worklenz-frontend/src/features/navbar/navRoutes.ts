@@ -43,7 +43,7 @@ export const navRoutes: NavRoutesType[] = [
     path: '/worklenz/client-portal',
     adminOnly: true,
     freePlanFeature: false,
-    selfHostedExcluded: true,
+    //selfHostedExcluded: true,
   },
   {
     name: 'finance',
@@ -60,7 +60,7 @@ export const navRoutes: NavRoutesType[] = [
     freePlanFeature: false,
   },
   {
-    name: 'Team Reports',
+    name: 'my-team-reports',
     path: '/worklenz/team-lead-reports',
     adminOnly: false,
     freePlanFeature: true,

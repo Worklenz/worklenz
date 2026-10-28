@@ -42,6 +42,9 @@
   "inProgress": "In Bearbeitung",
   "done": "Erledigt",
   "defaultTaskName": "Unbenannte Aufgabe",
+  "editSprintName": "Zum Umbenennen klicken",
+  "editSprintDates": "Klicken, um die Daten zu ändern",
+  "addDates": "Daten hinzufügen",
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} Unteraufgabe",

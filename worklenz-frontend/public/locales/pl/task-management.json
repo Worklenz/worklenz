@@ -42,6 +42,9 @@
   "inProgress": "Robię",
   "done": "Gotowe",
   "defaultTaskName": "Zadanie bez tytułu",
+  "editSprintName": "Kliknij, aby zmienić nazwę",
+  "editSprintDates": "Kliknij, aby zmienić daty",
+  "addDates": "Dodaj daty",
   "indicators": {
     "tooltips": {
       "subtasks": "Podzadanie {{count}}",

@@ -43,6 +43,9 @@
   "done": "Done",
   "defaultTaskName": "Untitled Task",
 
+  "editSprintName": "Click to rename",
+  "editSprintDates": "Click to change dates",
+  "addDates": "Add dates",
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} subtask",
