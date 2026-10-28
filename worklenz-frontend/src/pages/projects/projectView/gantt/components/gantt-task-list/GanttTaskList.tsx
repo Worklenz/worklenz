@@ -634,7 +634,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
     },
     ref
   ) => {
-    const { canCreateTask } = useTaskCreationPermission();
+    const { canCreateTask, canAddTask } = useTaskCreationPermission();
     const { token } = theme.useToken();
     const { t } = useTranslation('gantt');
     // Collapsed by default — `task.expanded` is a data artifact set true on every task by
@@ -957,7 +957,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
                 // (handled in ProjectViewGantt.tsx's handleCreateQuickTask), same as how
                 // Status-section creation assigns its own status.
                 if ('isAddTaskRow' in row) {
-                  if (!canCreateTask) {
+                  if (!canAddTask) {
                     return (
                       <div
                         key={row.id}

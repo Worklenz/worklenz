@@ -3,13 +3,13 @@ import db from "../../config/db";
 import { SocketEvents } from "../events";
 
 import { log_error } from "../util";
-import {verifyProjectAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
+import {verifyProjectSettingsAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 
 export async function on_project_category_change(_io: Server, socket: Socket, data?: string) {
     try {
         const body = JSON.parse(data as string);
         
-        const hasAccess = await verifyProjectAccessSocket(socket, body.project_id);
+        const hasAccess = await verifyProjectSettingsAccessSocket(socket, body.project_id);
         if (!hasAccess) {
             logUnauthorizedSocketAccess(socket, 'PROJECT_CATEGORY_CHANGE', 'project', body.project_id);
             return;

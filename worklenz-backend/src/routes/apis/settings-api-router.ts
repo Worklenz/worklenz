@@ -11,6 +11,7 @@ import profileSettingsBodyValidator from "../../middlewares/validators/profile-s
 import setupValidator from "../../middlewares/validators/setup-validator";
 import teamSettingsBodyValidator from "../../middlewares/validators/team-settings-body-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
+import { ownerOrAdminWriteValidator } from "../../middlewares/validators/organization-permission-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 
 const settingsApiRouter = express.Router();
@@ -31,8 +32,8 @@ settingsApiRouter.post("/appsumo-popup/claim", safeControllerFunction(ProfileSet
 
 // Client Portal Settings (for organization-side management)
 settingsApiRouter.get("/client-portal", safeControllerFunction(ClientPortalSettingsController.getSettings));
-settingsApiRouter.put("/client-portal", safeControllerFunction(ClientPortalSettingsController.updateSettings));
-settingsApiRouter.post("/client-portal/upload-logo", safeControllerFunction(ClientPortalSettingsController.uploadLogo));
+settingsApiRouter.put("/client-portal", ownerOrAdminWriteValidator, safeControllerFunction(ClientPortalSettingsController.updateSettings));
+settingsApiRouter.post("/client-portal/upload-logo", ownerOrAdminWriteValidator, safeControllerFunction(ClientPortalSettingsController.uploadLogo));
 settingsApiRouter.get("/client-portal/base-url", safeControllerFunction(ClientPortalSettingsController.getClientPortalBaseUrl));
 
 // Organization Configuration Settings (Business Plan feature)

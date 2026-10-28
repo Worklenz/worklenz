@@ -34,6 +34,7 @@ interface TaskRowWithSubtasksProps {
   depth?: number;
   maxDepth?: number;
   canCreateTask?: boolean;
+  canAddTask?: boolean;
   /** Enables drag-and-drop on subtask rows (handled by the outer task-list DndContext) */
   enableSubtaskDnd?: boolean;
   /** Guest access restriction - prevents viewing and editing */
@@ -276,6 +277,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
     depth = 0,
     maxDepth = 3,
     canCreateTask = true,
+    canAddTask = true,
     enableSubtaskDnd = false,
     isGuest = false,
   }) => {
@@ -452,6 +454,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
                     depth={effectiveDepth + 1}
                     maxDepth={maxDepth}
                     canCreateTask={canCreateTask}
+                    canAddTask={canAddTask}
                     enableSubtaskDnd={true}
                     isGuest={isGuest}
                   />
@@ -461,8 +464,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
             {/* Add subtask row - only show when not loading and task creation is allowed */}
             {!isLoadingSubtasks &&
               !task.is_parent_container &&
-              canCreateTask &&
-              !isGuest &&
+              canAddTask &&
               !task.assignee_scope_readonly && (
               <div
                 className={`${getSubtaskBackgroundColor(effectiveDepth + 1)} border-l-4 ${getBorderColor(effectiveDepth + 1)}`}

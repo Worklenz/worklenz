@@ -1,7 +1,7 @@
 import express from "express";
 import FinanceOverviewController from "../../controllers/finance-overview-controller";
 import FinanceReportsController from "../../controllers/finance-reports-controller";
-import teamLeadFinanceValidator from "../../middlewares/validators/team-lead-finance-validator";
+import { viewFinanceValidator } from "../../middlewares/validators/organization-permission-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { requireFeature } from "../../shared/entitlements/gates";
 
@@ -14,17 +14,17 @@ financeOverviewApiRouter.use(requireFeature("finance_module"));
 /**
  * GET /api/finance-overview/portfolio
  * Returns one row per project with budget / cost aggregates.
- * Team leads are blocked by teamLeadFinanceValidator (same as per-project finance).
+ * Requires the "View finance" organization permission (all finance-overview routes are read-only).
  */
 financeOverviewApiRouter.get(
     "/portfolio",
-    teamLeadFinanceValidator,
+    viewFinanceValidator,
     safeControllerFunction(FinanceOverviewController.getPortfolioFinance)
 );
 
 financeOverviewApiRouter.get(
     "/export",
-    teamLeadFinanceValidator,
+    viewFinanceValidator,
     safeControllerFunction(FinanceOverviewController.exportPortfolioFinance)
 );
 
@@ -36,43 +36,43 @@ financeOverviewApiRouter.get(
  */
 financeOverviewApiRouter.get(
     "/fixed-costs",
-    teamLeadFinanceValidator,
+    viewFinanceValidator,
     safeControllerFunction(FinanceOverviewController.getTeamFixedCosts)
 );
 
 financeOverviewApiRouter.get(
     "/budgets",
-    teamLeadFinanceValidator,
+    viewFinanceValidator,
     safeControllerFunction(FinanceReportsController.getBudgets)
 );
 
 financeOverviewApiRouter.get(
     "/invoices",
-    teamLeadFinanceValidator,
+    viewFinanceValidator,
     safeControllerFunction(FinanceReportsController.getInvoices)
 );
 
 financeOverviewApiRouter.get(
     "/billable-time",
-    teamLeadFinanceValidator,
+    viewFinanceValidator,
     safeControllerFunction(FinanceReportsController.getBillableTime)
 );
 
 financeOverviewApiRouter.get(
     "/utilization",
-    teamLeadFinanceValidator,
+    viewFinanceValidator,
     safeControllerFunction(FinanceReportsController.getUtilization)
 );
 
 financeOverviewApiRouter.get(
     "/profitability",
-    teamLeadFinanceValidator,
+    viewFinanceValidator,
     safeControllerFunction(FinanceReportsController.getProfitability)
 );
 
 financeOverviewApiRouter.get(
     "/forecasts",
-    teamLeadFinanceValidator,
+    viewFinanceValidator,
     safeControllerFunction(FinanceReportsController.getForecasts)
 );
 

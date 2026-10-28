@@ -19,8 +19,16 @@ import phoneNumberValidator from "../../middlewares/validators/phone-number-vali
 import { requireFeature } from "../../shared/entitlements/gates";
 import { ServerResponse } from "../../models/server-response";
 import PortalProjectsController from "../../controllers/client-portal/v2/portal-projects-controller";
+import { clientsReadOnlyValidator } from "../../middlewares/validators/organization-permission-validator";
 
 const clientsApiRouter = express.Router();
+
+// Client Portal management: reads need "View clients", writes stay Owner/Admin-only.
+// Chats are excluded because Home > Inbox lets every member message clients.
+clientsApiRouter.use("/portal", (req, res, next) => {
+  if (req.path.startsWith("/chats")) return next();
+  return clientsReadOnlyValidator(req, res, next);
+});
 
 /**
  * Legacy (v1) client-portal writes that skip the v2 safeguards: no last-admin or sole-approver check, no
@@ -61,9 +69,8 @@ clientsApiRouter.get(
   safeControllerFunction(PortalProjectsController.access)
 );
 
-// Every Client Portal admin route is Owner/Admin only. Most of /portal/* previously had no role check,
-// so any signed-in member could reach it by URL; the guard is applied once here for all of it.
-clientsApiRouter.use("/portal", teamOwnerOrAdminValidator);
+// Role checks for /portal/* are applied above (reads need "View clients", writes are Owner/Admin-only),
+// so no further blanket Owner/Admin guard here: it would defeat "View clients" and the chats exception.
 
 // Client Portal v2 admin API (roles, settings, projects, approvals, change requests, discussions,
 // audit log, preview). Namespaced under /v2 so it never collides with the v1 routes below.

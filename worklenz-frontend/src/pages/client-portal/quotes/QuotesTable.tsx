@@ -23,6 +23,7 @@ import {
 } from '@ant-design/icons';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useIsAdminSurfaceReadOnly, withoutRowActionColumns } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { Link, useNavigate } from 'react-router-dom';
 import TablePagination from '@/components/TablePagination';
@@ -67,6 +68,7 @@ const SORT_FIELDS: Record<string, string> = {
 
 export const QuotesTable = () => {
   const { t } = useTranslation('client-portal-quotes');
+  const isReadOnly = useIsAdminSurfaceReadOnly();
   const navigate = useNavigate();
   const { token } = theme.useToken();
 
@@ -587,7 +589,7 @@ export const QuotesTable = () => {
         {showsTable ? (
           <PortalLoadingOverlay loading={isFetching}>
           <Table
-            columns={columns}
+            columns={isReadOnly ? withoutRowActionColumns(columns) : columns}
             dataSource={quotes}
             rowKey="id"
             size="middle"

@@ -13,6 +13,8 @@ import {
   TASK_ASSIGNEE_RESTRICTED_CODE,
 } from "../shared/assignee-task-scope";
 import {userHasProjectAccessInTeam} from "./verify-project-access";
+import {GUEST_ROLE_NAME, PROJECT_ROLE_PERMISSIONS, ProjectRolePermission} from "../shared/organization-permissions";
+import {checkProjectRolePermission, checkTaskRolePermission} from "../shared/project-role-permissions";
 
 export interface VerifyTaskAccessOptions {
   /**
@@ -291,9 +293,14 @@ export default function verifyTaskAccess(
   };
 }
 
+/**
+ * Requires the given project role permission from the default permission scheme
+ * (default "Edit tasks"). Guests pass only when the scheme grants them that permission.
+ */
 export function verifyNonGuestTaskAccess(
   location: 'params' | 'body' | 'query' = 'params',
-  fieldName: string = 'id'
+  fieldName: string = 'id',
+  permission: ProjectRolePermission = PROJECT_ROLE_PERMISSIONS.EDIT_TASKS
 ) {
   return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
     const userId = req.user?.id;
@@ -309,6 +316,14 @@ export function verifyNonGuestTaskAccess(
     }
 
     try {
+      const rolePermission = await checkTaskRolePermission(userId, taskId, permission);
+      if (!rolePermission.allowed) {
+        return res.status(403).send(
+          new ServerResponse(false, null, "You do not have permission to perform this action on this task")
+        );
+      }
+      if (rolePermission.roleName === GUEST_ROLE_NAME) return next();
+
       const q = `
         SELECT 1
         FROM tasks t
@@ -329,6 +344,67 @@ export function verifyNonGuestTaskAccess(
           "You do not have permission to modify this task. Only non-guest members of the task's team can make changes."
         )
       );
+    } catch (error) {
+      log_error(error);
+      return res.status(500).send(
+        new ServerResponse(false, null, "An error occurred while verifying task access")
+      );
+    }
+  };
+}
+
+/**
+ * Requires a project role permission from the default permission scheme for the
+ * task's project. Use after verifyTaskAccess, which handles team/assignee access.
+ */
+export function verifyTaskRolePermission(
+  location: 'params' | 'body' | 'query',
+  fieldName: string,
+  permission: ProjectRolePermission
+) {
+  return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
+    const taskId = req[location]?.[fieldName];
+
+    try {
+      const rolePermission = await checkTaskRolePermission(req.user?.id, taskId, permission);
+      if (rolePermission.allowed) return next();
+
+      return res.status(403).send(
+        new ServerResponse(false, null, "You do not have permission to perform this action on this task")
+      );
+    } catch (error) {
+      log_error(error);
+      return res.status(500).send(
+        new ServerResponse(false, null, "An error occurred while verifying task access")
+      );
+    }
+  };
+}
+
+/** Bulk variant of verifyTaskRolePermission for `{ tasks: [...] }` request bodies. */
+export function verifyBulkTaskRolePermission(permission: ProjectRolePermission) {
+  return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
+    const tasks: unknown[] = Array.isArray(req.body?.tasks) ? req.body.tasks : [];
+    const taskIds = tasks
+      .map(task => (typeof task === 'string' ? task : (task as { id?: string })?.id))
+      .filter((id): id is string => Boolean(id));
+
+    try {
+      const projectsResult = await db.query(
+        `SELECT DISTINCT project_id FROM tasks WHERE id = ANY($1::UUID[])`,
+        [taskIds]
+      );
+
+      for (const row of projectsResult.rows) {
+        const rolePermission = await checkProjectRolePermission(req.user?.id, row.project_id, permission);
+        if (!rolePermission.allowed) {
+          return res.status(403).send(
+            new ServerResponse(false, null, "You do not have permission to perform this action on these tasks")
+          );
+        }
+      }
+
+      return next();
     } catch (error) {
       log_error(error);
       return res.status(500).send(
@@ -475,7 +551,8 @@ export function verifyBulkTaskAccessMiddleware(
  */
 export function verifyTaskAccessViaComment(
   location: 'params' | 'body' | 'query' = 'params',
-  fieldName: string = 'id'
+  fieldName: string = 'id',
+  permission?: ProjectRolePermission
 ) {
   return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
     const userId = req.user?.id;
@@ -515,6 +592,15 @@ export function verifyTaskAccessViaComment(
           const mayEdit = await canUserEditTask(userId, taskId, req.user);
           if (!mayEdit) {
             return denyAssigneeReadonly(res);
+          }
+        }
+
+        if (permission) {
+          const rolePermission = await checkTaskRolePermission(userId, taskId, permission);
+          if (!rolePermission.allowed) {
+            return res.status(403).send(
+              new ServerResponse(false, null, "You do not have permission to perform this action on this task")
+            );
           }
         }
 

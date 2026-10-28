@@ -57,12 +57,14 @@ import ProjectManagersFilterDropdown from '../projects-reports-filters/project-m
 import ProjectClientFilterDropdown from '../projects-reports-filters/project-client-filter-dropdown';
 import ProjectPriorityFilterDropdown from '../projects-reports-filters/project-priority-filter-dropdown';
 import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
+import { useCanEditReports } from '@/hooks/useCanEditReports';
 import TablePagination from '@/components/TablePagination';
 
 const ProjectsReportsTable = () => {
   const dispatch = useAppDispatch();
+  const { socket } = useSocket();
+  const isReadOnly = !useCanEditReports();
   const { t } = useTranslation('reporting-projects');
- const { socket } = useSocket();
 
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
@@ -253,6 +255,7 @@ const ProjectsReportsTable = () => {
           <ProjectStatusCell
             currentStatus={record.status_id}
             projectId={record.id}
+            isReadOnly={isReadOnly}
           />
         ),
         width: 200,
@@ -299,6 +302,7 @@ const ProjectsReportsTable = () => {
             projectId={record.id}
             startDate={record.start_date}
             endDate={record.end_date}
+            isReadOnly={isReadOnly}
           />
         ),
         width: 275,
@@ -336,6 +340,7 @@ const ProjectsReportsTable = () => {
             label={record.health_name}
             color={record.health_color}
             projectId={record.id}
+            isReadOnly={isReadOnly}
           />
         ),
         width: 200,
@@ -346,24 +351,18 @@ const ProjectsReportsTable = () => {
         sortOrder: getColumnSortOrder('category_name'),
         title: <CustomTableTitle title={t('categoryColumn')} />,
         sorter: true,
-        filterDropdown: () => (
-          <div className="table-filter-menu-popup">
-            <ProjectCategoriesFilterDropdown inline />
-          </div>
+        // ← Add className on the <td> so our CSS can target it
+        onCell: () => ({ className: 'category-cell' }),
+        render: (_, record: IRPTProject) => (
+          <ProjectCategoryCell
+            projectId={record.id}
+            id={record.category_id || ''}
+            name={record.category_name || ''}
+            color_code={record.category_color || ''}
+            isReadOnly={isReadOnly}
+          />
         ),
         filtered: Boolean(selectedProjectCategories?.length),
-        onCell: () => ({ className: 'category-cell' }),
-        render: (_, record: IRPTProject) => {
-          const catName = record.category_name || '';
-          return (
-            <ProjectCategoryCell
-              projectId={record.id}
-              id={record.category_id || ''}
-              name={catName}
-              color_code={record.category_color || ''}
-            />
-          );
-        },
         width: 200,
       },
       {
@@ -435,20 +434,7 @@ const ProjectsReportsTable = () => {
         width: 200,
       },
     ],
-    [
-      t,
-      getColumnSortOrder,
-      handleDrawerOpen,
-      projectStatuses,
-      selectedProjectStatuses,
-      selectedProjectHealths,
-      selectedProjectCategories,
-      selectedProjectManagers,
-      selectedClients,
-      selectedProjectPriorities,
-      teams,
-      projectList,
-    ]
+    [t, order, handleDrawerOpen, isReadOnly]
   );
 
   const visibleColumns = useMemo(

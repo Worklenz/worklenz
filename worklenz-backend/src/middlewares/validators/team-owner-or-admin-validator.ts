@@ -13,5 +13,5 @@ export default function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: Ne
     (currentRole === TEAM_ROLE_NAMES.OWNER || currentRole === TEAM_ROLE_NAMES.ADMIN)
   )
     return next();
-  return res.status(401).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
+  return res.status(403).send(new ServerResponse(false, null, "You are not authorized to perform this action"));
 }

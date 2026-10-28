@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useIsAdminSurfaceReadOnly, withoutRowActionColumns } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { Link, useNavigate } from 'react-router-dom';
 import TablePagination from '@/components/TablePagination';
@@ -126,6 +127,7 @@ const PaidAmountInput = ({
 export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps = {}) => {
   // localization
   const { t } = useTranslation('client-portal-invoices');
+  const isReadOnly = useIsAdminSurfaceReadOnly();
   const navigate = useNavigate();
   const { token } = theme.useToken();
 
@@ -810,7 +812,7 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
         {showsTable ? (
           <PortalLoadingOverlay loading={isFetching}>
           <Table
-            columns={columns}
+            columns={isReadOnly ? withoutRowActionColumns(columns) : columns}
             dataSource={invoices}
             rowKey="id"
             size="middle"

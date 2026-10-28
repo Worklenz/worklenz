@@ -31,6 +31,7 @@ import {
 import { setProjectId } from '@/features/project/project.slice';
 import { TASK_FIXED_COST_CHANGED_EVENT } from '@/shared/constants';
 import AddExpenseModal from '@/components/expenses/AddExpenseModal';
+import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { useTaskNameRealtimeSync } from '@/hooks/useTaskNameRealtimeSync';
 
 const FinanceExpensesPage: React.FC = () => {
@@ -38,6 +39,7 @@ const FinanceExpensesPage: React.FC = () => {
   const { t } = useTranslation('home');
   const dispatch = useAppDispatch();
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const isReadOnly = useIsAdminSurfaceReadOnly();
 
   // Lists every task across the active team that currently has a fixed cost
   // set (see financeOverviewApiService.getTeamFixedCosts). Each row is a
@@ -219,13 +221,15 @@ const FinanceExpensesPage: React.FC = () => {
           </Typography.Text>
         </div>
 
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setIsAddExpenseOpen(true)}
-        >
-          {t('expenses.addExpense', 'Add Expense')}
-        </Button>
+        {!isReadOnly && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setIsAddExpenseOpen(true)}
+          >
+            {t('expenses.addExpense', 'Add Expense')}
+          </Button>
+        )}
       </Flex>
 
       {/* Existing Add Expense Modal */}
