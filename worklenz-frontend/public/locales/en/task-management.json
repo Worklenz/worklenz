@@ -46,6 +46,9 @@
   "editSprintName": "Click to rename",
   "editSprintDates": "Click to change dates",
   "addDates": "Add dates",
+  "sprintUpdated": "Sprint updated",
+  "sprintUpdateError": "Could not update sprint",
+  "sprintNameRequired": "Sprint name is required",
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} subtask",

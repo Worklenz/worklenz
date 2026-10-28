@@ -45,6 +45,9 @@
   "editSprintName": "Cliquez pour renommer",
   "editSprintDates": "Cliquez pour modifier les dates",
   "addDates": "Ajouter des dates",
+  "sprintUpdated": "Sprint mis à jour",
+  "sprintUpdateError": "Impossible de mettre à jour le sprint",
+  "sprintNameRequired": "Le nom du sprint est obligatoire",
   "indicators": {
     "tooltips": {
       "subtasks": "sous-tâche {{count}}",
