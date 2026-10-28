@@ -306,8 +306,6 @@
   "statAcrossSelection": "across selection",
   "phLegendProgress": "Progress %",
   "phLegendBudget": "Budget used %",
-  "phHealthLegend": "Health (from project settings):",
-  "phHealthLegendAria": "Project health from project settings",
   "phChartEmpty": "No projects match these filters.",
   "phColProject": "Project",
   "phColHealth": "Health",
