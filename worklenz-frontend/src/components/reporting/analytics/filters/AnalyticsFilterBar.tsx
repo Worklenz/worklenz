@@ -19,6 +19,8 @@ export interface AnalyticsFilterBarProps {
   projectOptions: FilterOption[];
   selectedProjectIds: string[];
   onProjectsChange: (ids: string[]) => void;
+  /** Projects currently shown on the chart — checkboxes appear marked when no explicit filter is set. */
+  indicatedProjectIds?: string[];
   memberOptions?: FilterOption[];
   selectedMemberIds?: string[];
   onMembersChange?: (ids: string[]) => void;
@@ -43,6 +45,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   projectOptions,
   selectedProjectIds,
   onProjectsChange,
+  indicatedProjectIds = [],
   memberOptions = [],
   selectedMemberIds = [],
   onMembersChange,
@@ -69,6 +72,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
         options={projectOptions}
         value={selectedProjectIds}
         onChange={onProjectsChange}
+        indicatedValues={indicatedProjectIds}
         loading={loading}
         showBulkActions
         searchPlaceholder={t('searchProjects', { defaultValue: 'Search projects' })}

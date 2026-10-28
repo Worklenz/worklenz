@@ -40,6 +40,11 @@ export interface MultiSelectFilterPillProps {
   options: FilterOption[];
   value: string[];
   onChange: (value: string[]) => void;
+  /**
+   * Values shown as checked when `value` is empty (e.g. projects currently on the chart).
+   * Does not change the filter until the user toggles a checkbox.
+   */
+  indicatedValues?: string[];
   searchable?: boolean;
   /** Placeholder (and accessible name) of the search box; pass a translated string. */
   searchPlaceholder?: string;
@@ -59,6 +64,7 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
   options,
   value,
   onChange,
+  indicatedValues = [],
   searchable = true,
   searchPlaceholder,
   emptyText,
@@ -77,18 +83,23 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
       ? options.filter(o => o.label.toLowerCase().includes(search.trim().toLowerCase()))
       : options;
 
+  // When nothing is explicitly selected, show indicated values as checked.
+  const checkedValues = value.length > 0 ? value : indicatedValues;
+
   const handleSearchChange = (next: string) => {
     setSearch(next);
     onSearchChange?.(next);
   };
 
   const toggle = (val: string) => {
-    onChange(value.includes(val) ? value.filter(v => v !== val) : [...value, val]);
+    const current = value.length > 0 ? value : indicatedValues;
+    onChange(current.includes(val) ? current.filter(v => v !== val) : [...current, val]);
   };
 
   const selectAllVisible = () => {
     const visibleIds = filtered.map(o => o.value);
-    onChange([...new Set([...value, ...visibleIds])]);
+    const current = value.length > 0 ? value : indicatedValues;
+    onChange([...new Set([...current, ...visibleIds])]);
   };
 
   const clearAll = () => {
@@ -154,7 +165,7 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
                 >
                   {/* The label fills the row, so a click anywhere on it toggles exactly once. */}
                   <Checkbox
-                    checked={value.includes(opt.value)}
+                    checked={checkedValues.includes(opt.value)}
                     onChange={() => toggle(opt.value)}
                     style={{ width: '100%', cursor: 'pointer' }}
                   >
@@ -175,6 +186,8 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
     </Card>
   );
 
+  const badgeCount = value.length > 0 ? value.length : indicatedValues.length;
+
   return (
     <Dropdown
       overlayClassName="custom-dropdown"
@@ -187,7 +200,7 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
         icon={<CaretDownFilled />}
         iconPosition="end"
         style={
-          open || value.length > 0
+          open || badgeCount > 0
             ? {
                 ...FILTER_PILL_BUTTON_STYLE,
                 borderColor: token.colorPrimary,
@@ -198,10 +211,10 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
       >
         <Space>
           {label}
-          {value.length > 0 && (
+          {badgeCount > 0 && (
             <Badge
               size="small"
-              count={value.length}
+              count={badgeCount}
               style={{ backgroundColor: token.colorPrimary }}
             />
           )}

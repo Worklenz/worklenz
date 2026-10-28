@@ -265,25 +265,6 @@ const PlannedVsActualTasksPage: React.FC = () => {
     }
   };
 
-  const filterBar = (
-    <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
-      <AnalyticsFilterBar
-        projectOptions={projectOptions}
-        selectedProjectIds={selectedProjectIds}
-        onProjectsChange={setSelectedProjectIds}
-        memberOptions={memberOptions}
-        selectedMemberIds={selectedMemberIds}
-        onMembersChange={setSelectedMemberIds}
-        teamOptions={teamOptions}
-        selectedTeamIds={selectedTeamIds}
-        onTeamsChange={setSelectedTeamIds}
-        datePreset={datePreset}
-        onDatePresetChange={setDatePreset}
-        loading={filtersLoading}
-      />
-    </Flex>
-  );
-
   // Chart: latest-updated projects only; KPIs/table use the full filtered set.
   const chartProjectLimit = 20;
   const chartProjects = useMemo(() => {
@@ -296,6 +277,31 @@ const PlannedVsActualTasksPage: React.FC = () => {
       })
       .slice(0, chartProjectLimit);
   }, [data?.projects]);
+
+  const chartProjectIds = useMemo(
+    () => chartProjects.map(p => p.project_id),
+    [chartProjects]
+  );
+
+  const filterBar = (
+    <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
+      <AnalyticsFilterBar
+        projectOptions={projectOptions}
+        selectedProjectIds={selectedProjectIds}
+        onProjectsChange={setSelectedProjectIds}
+        indicatedProjectIds={chartProjectIds}
+        memberOptions={memberOptions}
+        selectedMemberIds={selectedMemberIds}
+        onMembersChange={setSelectedMemberIds}
+        teamOptions={teamOptions}
+        selectedTeamIds={selectedTeamIds}
+        onTeamsChange={setSelectedTeamIds}
+        datePreset={datePreset}
+        onDatePresetChange={setDatePreset}
+        loading={filtersLoading}
+      />
+    </Flex>
+  );
 
   let body: React.ReactNode;
   if (!hasSelection) {

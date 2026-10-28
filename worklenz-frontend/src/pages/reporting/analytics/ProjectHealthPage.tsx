@@ -283,12 +283,31 @@ const ProjectHealthPage: React.FC = () => {
     }
   };
 
+  // Progress & budget chart: latest-updated projects only; KPIs/donut/table use full set.
+  const barChartProjectLimit = 20;
+  const barChartProjects = useMemo(() => {
+    if (!data?.projects?.length) return [];
+    return [...data.projects]
+      .sort((a, b) => {
+        const aTs = a.updated_at ? Date.parse(a.updated_at) : 0;
+        const bTs = b.updated_at ? Date.parse(b.updated_at) : 0;
+        return bTs - aTs;
+      })
+      .slice(0, barChartProjectLimit);
+  }, [data?.projects]);
+
+  const chartProjectIds = useMemo(
+    () => barChartProjects.map(p => p.project_id),
+    [barChartProjects]
+  );
+
   const filterBar = (
     <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
       <AnalyticsFilterBar
         projectOptions={projectOptions}
         selectedProjectIds={selectedProjectIds}
         onProjectsChange={setSelectedProjectIds}
+        indicatedProjectIds={chartProjectIds}
         memberOptions={memberOptions}
         selectedMemberIds={selectedMemberIds}
         onMembersChange={setSelectedMemberIds}
@@ -305,19 +324,6 @@ const ProjectHealthPage: React.FC = () => {
       />
     </Flex>
   );
-
-  // Progress & budget chart: latest-updated projects only; KPIs/donut/table use full set.
-  const barChartProjectLimit = 20;
-  const barChartProjects = useMemo(() => {
-    if (!data?.projects?.length) return [];
-    return [...data.projects]
-      .sort((a, b) => {
-        const aTs = a.updated_at ? Date.parse(a.updated_at) : 0;
-        const bTs = b.updated_at ? Date.parse(b.updated_at) : 0;
-        return bTs - aTs;
-      })
-      .slice(0, barChartProjectLimit);
-  }, [data?.projects]);
 
   let body: React.ReactNode;
   if (!hasSelection) {
