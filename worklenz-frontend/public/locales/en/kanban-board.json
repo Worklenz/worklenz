@@ -57,6 +57,7 @@
   "newIssueNamePlaceholder": "Write an issue title",
   "loadingFilters": "Loading filters...",
   "failedToUpdateColumnOrder": "Failed to update column order",
+  "projectIdRequired": "Project ID is required",
   "failedToUpdatePhaseOrder": "Failed to update phase order",
   "pleaseTryAgain": "Please try again",
   "taskNotCompleted": "Task is not completed",

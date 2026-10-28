@@ -39,6 +39,7 @@ import {
 } from '@/components/client-portal/v2';
 import type { PortalField, PortalFilterGroup } from '@/components/client-portal/v2';
 import type { ChangeRequest, ChangeRequestPriority, ChangeRequestStatus } from '@/types/client-portal/v2';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { portalPaths } from '../portal-paths';
 import { isBillable, isTerminal } from './cr-helpers';
 
@@ -112,7 +113,10 @@ const ChangeRequestsPage = () => {
     value: option.value,
     label: tShared(option.key, { defaultValue: option.defaultValue }),
   }));
-  const clientOptions = (organizations.data?.body?.items ?? []).map(item => ({ value: item.id, label: item.name }));
+  const clientOptions = (organizations.data?.body?.items ?? []).map(item => ({
+    value: item.id,
+    label: decodeHtmlEntities(item.name),
+  }));
 
   const filterGroups: PortalFilterGroup[] = [
     {
@@ -275,7 +279,9 @@ const ChangeRequestsPage = () => {
           help={t('list.columnHelp.request', { defaultValue: 'A short summary of the change the client asked for.' })}
         />
       ),
-      render: (_value, request) => <span style={{ fontSize: 13, fontWeight: 600 }}>{request.title}</span>,
+      render: (_value, request) => (
+        <span style={{ fontSize: 13, fontWeight: 600 }}>{decodeHtmlEntities(request.title)}</span>
+      ),
     },
     {
       key: 'project',
@@ -315,7 +321,9 @@ const ChangeRequestsPage = () => {
           help={t('list.columnHelp.client', { defaultValue: 'The client organization that sent the request.' })}
         />
       ),
-      render: (_value, request) => <span style={{ fontSize: 12.5 }}>{request.organization_name || '—'}</span>,
+      render: (_value, request) => (
+        <span style={{ fontSize: 12.5 }}>{decodeHtmlEntities(request.organization_name) || '—'}</span>
+      ),
     },
     {
       key: 'priority',

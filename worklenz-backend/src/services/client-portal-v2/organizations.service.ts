@@ -3,13 +3,16 @@ import { containsPattern, splitList } from "./list-params";
 import { getColor } from "../../shared/utils";
 import { listUnreadThreadsForClient } from "./discussions.service";
 import { badRequest, notFound } from "./errors";
+import { CLIENT_DELETION_RETENTION_DAYS } from "./organization-lock";
 import { Queryable } from "./types";
 import { USER_VIEW_SQL } from "./users.service";
 
 /**
  * Client organizations (the `clients` table) as the v2 admin console lists them. An organization's
  * portal access is derived from its users: Active when any user is Active, otherwise Invited,
- * Deactivated, or none.
+ * Deactivated, or none. An organization staff deactivated is always Deactivated, whatever its users'
+ * own state, because no one in it can sign in. A deleted organization (`deleted_at`) is hidden from
+ * the normal list and shown in the Deleted view until the retention window ends.
  */
 
 export type OrganizationPortalAccess = "active" | "invited" | "deactivated" | "none";
@@ -19,6 +22,12 @@ export interface OrganizationView {
   name: string;
   initials: string;
   color: string;
+  /** `clients.status`: staff deactivate an organization by setting it to inactive. */
+  status: string;
+  /** Set only in the Deleted view. */
+  deleted_at: string | null;
+  /** When a deleted organization stops being restorable and is purged. */
+  purge_on: string | null;
   /** The client user the invitation link is created for; null when the organization has no portal admin. */
   primary_contact_id: string | null;
   primary_contact_name: string | null;
@@ -50,16 +59,19 @@ export const initialsOf = (name: string): string =>
 const USER_STATE_SQL = `
   CASE
     WHEN cc.disabled_at IS NOT NULL THEN 'deactivated'
-    WHEN cc.client_user_id IS NOT NULL AND cu.status IS DISTINCT FROM 'active' THEN 'deactivated'
+    WHEN cc.client_user_id IS NOT NULL AND (cu.status IS DISTINCT FROM 'active' OR cu.deleted_at IS NOT NULL) THEN 'deactivated'
     WHEN cc.client_user_id IS NOT NULL AND cc.activated_at IS NOT NULL THEN 'active'
     ELSE 'invited'
   END
 `;
 
-// $1 = team id. Every counter a list row or workspace header needs, per organization.
-const ORGANIZATIONS_SQL = `
+// $1 = team id. Every counter a list row or workspace header needs, per organization. `deleted` picks
+// the live list or the Deleted view; the retention window is a constant, never a client value.
+const organizationsSql = (deleted: boolean): string => `
   SELECT c.id,
          COALESCE(NULLIF(TRIM(c.company_name), ''), c.name) AS display_name,
+         c.status AS client_status, c.deleted_at,
+         c.deleted_at + INTERVAL '${CLIENT_DELETION_RETENTION_DAYS} days' AS purge_on,
          c.phone, c.contact_person, c.email,
          pc.id AS primary_id, pc.name AS primary_name, pc.email AS primary_email,
          COALESCE(uc.total, 0)::int AS total_users,
@@ -118,21 +130,32 @@ const ORGANIZATIONS_SQL = `
           HAVING SUM(i.amount - COALESCE(i.paid_amount, 0)) > 0
         ) b
     ) bal ON TRUE
-   WHERE c.team_id = $1 AND c.deleted_at IS NULL
+   WHERE c.team_id = $1 AND ${
+     deleted
+       ? `c.deleted_at IS NOT NULL AND c.deleted_at > NOW() - INTERVAL '${CLIENT_DELETION_RETENTION_DAYS} days'`
+       : "c.deleted_at IS NULL"
+   }
 `;
 
 const accessOf = (row: any): OrganizationPortalAccess => {
+  if (row.client_status === "inactive") return "deactivated";
   if (row.active_users > 0) return "active";
   if (row.invited_users > 0) return "invited";
   if (row.total_users > 0) return "deactivated";
   return "none";
 };
 
+const toIso = (value: unknown): string | null =>
+  value instanceof Date ? value.toISOString() : typeof value === "string" ? value : null;
+
 export const mapOrganizationRow = (row: any): OrganizationView => ({
   id: row.id,
   name: row.display_name,
   initials: initialsOf(row.display_name),
   color: getColor(row.display_name),
+  status: row.client_status ?? "active",
+  deleted_at: toIso(row.deleted_at),
+  purge_on: toIso(row.purge_on),
   primary_contact_id: row.primary_id ?? null,
   primary_contact_name: row.primary_name ?? row.contact_person ?? null,
   primary_contact_email: row.primary_email ?? row.email ?? null,
@@ -162,14 +185,18 @@ const ORGANIZATION_SORTS: Record<string, string> = {
   users: "o.total_users",
   projects: "o.portal_projects",
   awaiting: "o.awaiting_client",
-  access: "CASE WHEN o.active_users > 0 THEN 1 WHEN o.invited_users > 0 THEN 2 WHEN o.total_users > 0 THEN 3 ELSE 4 END",
+  access:
+    "CASE WHEN o.client_status = 'inactive' THEN 3 WHEN o.active_users > 0 THEN 1 WHEN o.invited_users > 0 THEN 2 WHEN o.total_users > 0 THEN 3 ELSE 4 END",
+  deleted_at: "o.deleted_at",
 };
 
+// A deactivated organization is Deactivated whatever its users' own state (see accessOf).
 const ORGANIZATION_ACCESS_FILTERS: Record<string, string> = {
-  active: "o.active_users > 0",
-  invited: "o.active_users = 0 AND o.invited_users > 0",
-  deactivated: "o.active_users = 0 AND o.invited_users = 0 AND o.total_users > 0",
-  none: "o.total_users = 0",
+  active: "o.client_status <> 'inactive' AND o.active_users > 0",
+  invited: "o.client_status <> 'inactive' AND o.active_users = 0 AND o.invited_users > 0",
+  deactivated:
+    "o.client_status = 'inactive' OR (o.active_users = 0 AND o.invited_users = 0 AND o.total_users > 0)",
+  none: "o.client_status <> 'inactive' AND o.total_users = 0",
 };
 
 export interface OrganizationsParams {
@@ -177,6 +204,8 @@ export interface OrganizationsParams {
   sort?: string;
   order?: string;
   access?: string;
+  /** true lists the deleted organizations still inside the retention window instead of the live ones. */
+  deleted?: boolean;
   page?: number;
   limit?: number;
 }
@@ -213,7 +242,7 @@ export async function listOrganizations(teamId: string, params: OrganizationsPar
 
   const rows = await db.query(
     `SELECT o.*, COUNT(*) OVER()::int AS total_count
-       FROM (${ORGANIZATIONS_SQL} ${searchClause}) o
+       FROM (${organizationsSql(params.deleted === true)} ${searchClause}) o
       ${accessClause}
       ORDER BY ${orderBy}
       LIMIT $${values.length - 1} OFFSET $${values.length}`,
@@ -229,13 +258,15 @@ export async function listOrganizations(teamId: string, params: OrganizationsPar
 }
 
 export async function getOrganization(q: Queryable, teamId: string, organizationId: string): Promise<OrganizationView> {
-  const result = await q.query(`${ORGANIZATIONS_SQL} AND c.id = $2`, [teamId, organizationId]);
+  const result = await q.query(`${organizationsSql(false)} AND c.id = $2`, [teamId, organizationId]);
   if (result.rows.length === 0) throw notFound("Client");
   return mapOrganizationRow(result.rows[0]);
 }
 
 export interface OrganizationStats {
   organizations: number;
+  /** Deleted organizations still inside the retention window (restorable). */
+  deleted_organizations: number;
   active_users: number;
   invited_users: number;
   expired_invites: number;
@@ -251,12 +282,17 @@ export async function getOrganizationStats(q: Queryable, teamId: string): Promis
   const result = await q.query(
     `SELECT
        (SELECT COUNT(*)::int FROM clients c WHERE c.team_id = $1 AND c.deleted_at IS NULL) AS organizations,
+       (SELECT COUNT(*)::int FROM clients c
+         WHERE c.team_id = $1 AND c.deleted_at IS NOT NULL
+           AND c.deleted_at > NOW() - INTERVAL '${CLIENT_DELETION_RETENTION_DAYS} days') AS deleted_organizations,
        COUNT(*) FILTER (WHERE s.state = 'active')::int AS active_users,
        COUNT(*) FILTER (WHERE s.state = 'invited')::int AS invited_users,
        COUNT(*) FILTER (WHERE s.state = 'invited' AND s.lapsed)::int AS expired_invites,
        (SELECT COUNT(*)::int FROM client_portal_approvals a
+         JOIN clients ac ON ac.id = a.client_id AND ac.deleted_at IS NULL
          WHERE a.organization_team_id = $1 AND a.status = 'awaiting')
        + (SELECT COUNT(*)::int FROM client_portal_change_requests r
+           JOIN clients rc ON rc.id = r.client_id AND rc.deleted_at IS NULL
            WHERE r.organization_team_id = $1 AND r.status = 'more_info') AS awaiting_client_action
      FROM (
        SELECT (${USER_STATE_SQL}) AS state,
@@ -276,6 +312,7 @@ export async function getOrganizationStats(q: Queryable, teamId: string): Promis
   const row = result.rows[0] ?? {};
   return {
     organizations: row.organizations ?? 0,
+    deleted_organizations: row.deleted_organizations ?? 0,
     active_users: row.active_users ?? 0,
     invited_users: row.invited_users ?? 0,
     expired_invites: row.expired_invites ?? 0,

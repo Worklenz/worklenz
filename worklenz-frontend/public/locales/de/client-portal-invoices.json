@@ -200,5 +200,7 @@
   "closeButton": "Schließen",
   "linkedChangeRequest": "Verknüpfter Änderungsantrag",
   "openChangeRequest": "Offene Änderungsanfrage",
-  "projectColumn": "Projekt"
+  "projectColumn": "Projekt",
+  "downloadFailed": "Der PDF-Download ist fehlgeschlagen. Bitte versuchen Sie es erneut.",
+  "defaultInvoiceFooter": "Vielen Dank für Ihr Vertrauen. Bei Fragen zu dieser Rechnung kontaktieren Sie uns bitte über die oben genannten Angaben."
 }

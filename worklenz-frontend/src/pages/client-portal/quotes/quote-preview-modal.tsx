@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { Button, Flex, Modal, Tag, Typography } from '@/shared/antd-imports';
 import { DownloadOutlined, PrinterOutlined } from '@ant-design/icons';
 import type { ClientPortalQuoteDetails } from '../../../api/client-portal/client-portal-quotes-api';
@@ -107,7 +108,7 @@ const QuotePreviewModal = ({ open, onClose, quote }: QuotePreviewModalProps) => 
   };
 
   const handleDownload = () => {
-    window.open(getQuoteDownloadUrl(quote.id), '_blank', 'noopener,noreferrer');
+    downloadPortalPdf(getQuoteDownloadUrl(quote.id), 'quote.pdf', t('downloadFailed', { defaultValue: 'Failed to download the PDF. Please try again.' }));
   };
 
   return (
@@ -161,7 +162,8 @@ const QuotePreviewModal = ({ open, onClose, quote }: QuotePreviewModalProps) => 
         >
           <div>
             <div style={{ fontWeight: 700, fontSize: 20, color: accent }}>
-              {quote.organization?.name || t('yourCompany', { defaultValue: 'Your Company' })}
+              {decodeHtmlEntities(quote.organization?.name) ||
+                t('yourCompany', { defaultValue: 'Your Company' })}
             </div>
             {[quote.organization?.email, quote.organization?.phone, quote.organization?.addressLine1]
               .filter(Boolean)
@@ -199,7 +201,12 @@ const QuotePreviewModal = ({ open, onClose, quote }: QuotePreviewModalProps) => 
             <div style={{ fontWeight: 700, fontSize: 14 }}>
               {decodeHtmlEntities(quote.client?.name) || '-'}
             </div>
-            {[quote.client?.companyName, quote.client?.address, quote.client?.email, quote.client?.phone]
+            {[
+              decodeHtmlEntities(quote.client?.companyName) || undefined,
+              quote.client?.address,
+              quote.client?.email,
+              quote.client?.phone,
+            ]
               .filter(Boolean)
               .map(line => (
                 <div key={line} style={{ fontSize: 12, color: PAPER.secondary }}>

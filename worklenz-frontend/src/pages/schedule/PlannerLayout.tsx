@@ -8,7 +8,6 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import ScheduleDrawer from '@/features/schedule/ScheduleDrawer';
 import PlannerLeftSidebar, { PlannerView } from '@/features/schedule/PlannerLeftSidebar';
 import { createPortal } from 'react-dom';
-import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -92,9 +91,8 @@ const PlannerLayout: React.FC = () => {
     [t]
   );
 
-  // Initialize schedule socket handlers for real-time updates
-  useScheduleSocketHandlers();
-  // Also mount the task list's shared socket handlers here — the Task Drawer is rendered
+  // Note: useScheduleSocketHandlers is mounted in MainLayout.tsx so schedule cache stays fresh
+  // across navigation. Also mount the task list's shared socket handlers here — the Task Drawer is rendered
   // in this layout (below) but this hook is otherwise only mounted by the task list/kanban
   // components, so without this, external field changes (estimation, status, etc.) never
   // live-sync into a drawer opened from a Planner page.

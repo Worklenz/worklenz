@@ -35,13 +35,17 @@ export interface PreviewUserView {
   role: string;
 }
 
-/** Active users who are assigned to at least one project. An Invited or Deactivated user cannot be previewed. */
+/**
+ * Active users who can open at least one portal project. Client Admins inherit org portal projects
+ * (no client_contact_project_access rows), so the filter uses USER_VIEW_SQL.projects rather than
+ * assignment rows alone. Invited or Deactivated users cannot be previewed.
+ */
 export async function listPreviewUsers(q: Queryable, teamId: string): Promise<PreviewUserView[]> {
   const result = await q.query(
     `SELECT u.id, u.name, u.email, u.client_id, u.organization_name, u.role
        FROM (${USER_VIEW_SQL}) u
       WHERE u.status_key = 'active'
-        AND EXISTS (SELECT 1 FROM client_contact_project_access a WHERE a.client_contact_id = u.id)
+        AND json_array_length(u.projects) > 0
       ORDER BY u.organization_name, u.name`,
     [teamId]
   );

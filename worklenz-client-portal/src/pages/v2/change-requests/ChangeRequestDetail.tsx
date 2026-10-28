@@ -25,6 +25,7 @@ import { useFormatters } from '@/hooks/useFormatters';
 import { useFileAccess } from '@/hooks/useFileActions';
 import { DetailModal, LockedNote, QueryState, RichTextField, RichTextView, StatusTag, errorMessage, isRichTextEmpty } from '@/components/v2';
 import { formatEstimate } from '@/utils/estimate';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import type { ChangeRequestStatus, ClientChangeRequestDetailV2 } from '@/types/v2';
 
 const STEPS = ['Submitted', 'Under review', 'Decision', 'In progress', 'Completed'] as const;
@@ -149,10 +150,10 @@ const ChangeRequestBody: React.FC<{ request: ClientChangeRequestDetailV2 }> = ({
       <Flex justify="space-between" align="flex-start" gap={12} wrap="wrap" style={{ marginBottom: 14 }}>
         <div style={{ minWidth: 0 }}>
           <Typography.Title level={4} style={{ margin: 0 }}>
-            {request.title}
+            {decodeHtmlEntities(request.title)}
           </Typography.Title>
           <Typography.Text type="secondary">
-            {request.cr_no} · {request.project_name} ·{' '}
+            {request.cr_no} · {decodeHtmlEntities(request.project_name)} ·{' '}
             {t('changeRequests.submittedBy', { date: date(request.submitted_at), name: request.requester_name, defaultValue: 'Submitted {{date}} by {{name}}' })}
           </Typography.Text>
         </div>

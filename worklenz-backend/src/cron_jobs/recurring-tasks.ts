@@ -1,6 +1,7 @@
 import { CronJob } from "cron";
 import { PoolClient } from "pg";
-import { calculateNextEndDate, log_error } from "../shared/utils";
+import { log_error } from "../shared/utils";
+import { resolveNextOccurrence } from "./recurring-occurrence";
 import db from "../config/db";
 import { IRecurringSchedule, ITaskTemplate } from "../interfaces/recurring-tasks";
 import moment from "moment-timezone";
@@ -13,7 +14,21 @@ const TIME_FORMAT = "YYYY-MM-DD";
 const ADVISORY_LOCK_ID = 900100;
 
 // Maximum number of tasks created per single cron tick (across all schedules)
-const MAX_TASKS_PER_TICK = 50;
+const DEFAULT_MAX_TASKS_PER_TICK = 50;
+
+function parsePositiveInt(value: string | undefined, fallback: number): number {
+  const trimmed = (value ?? "").trim();
+  // Accept only a whole positive integer; "10abc", "5.5" or "1e3" must not be partially parsed
+  if (!/^\d+$/.test(trimmed)) return fallback;
+  const parsed = Number(trimmed);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const MAX_TASKS_PER_TICK = parsePositiveInt(process.env.RECURRING_JOBS_MAX_PER_TICK, DEFAULT_MAX_TASKS_PER_TICK);
+
+// By default a schedule that fell behind resumes at its latest due occurrence instead of
+// replaying every missed date. Set RECURRING_JOBS_BACKFILL_MISSED=true to replay them.
+const BACKFILL_MISSED = process.env.RECURRING_JOBS_BACKFILL_MISSED === "true";
 
 const log = (value: string) => console.log("recurring-task-cron-job:", value);
 
@@ -317,8 +332,8 @@ async function onRecurringTaskJobTick() {
           ? moment(template.last_task_end_date).tz(tz)
           : moment(template.schedule_created_at).tz(tz);
 
-        // Calculate the next occurrence date
-        const nextEndDate = calculateNextEndDate(template, lastTaskEndDate);
+        // Calculate the next occurrence date, passing over missed ones unless backfill is enabled
+        const { nextEndDate, skippedCount } = resolveNextOccurrence(template, lastTaskEndDate, now, !BACKFILL_MISSED);
 
         // Safeguard 4: End condition — don't create past the schedule's end_date
         if (template.schedule_end_date && nextEndDate.isAfter(moment(template.schedule_end_date).tz(tz))) {
@@ -355,6 +370,9 @@ async function onRecurringTaskJobTick() {
 
         if (created) {
           createdTaskCount++;
+          if (skippedCount > 0) {
+            log(`Skipped ${skippedCount} missed occurrence(s) for "${template.name}" (schedule_id: ${template.schedule_id}), resumed at ${nextEndDate.format(TIME_FORMAT)}`);
+          }
         }
       } catch (templateError) {
         log_error(`Error processing template "${template.name}" (schedule: ${template.schedule_id})`);

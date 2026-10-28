@@ -42,6 +42,7 @@
   "jobRolesTitle": "Funções de trabalho",
   "noJobTitlesMessage": "Por favor, crie cargos primeiro nas configurações antes de adicionar funções aos rate cards.",
   "createNewJobTitle": "Criar novo cargo",
+  "createJobTitleButtonText": "Criar um cargo",
   "jobTitleNamePlaceholder": "Digite o nome do cargo",
   "jobTitleNameRequired": "O nome do cargo é obrigatório",
   "jobTitleCreatedSuccess": "Cargo criado com sucesso",

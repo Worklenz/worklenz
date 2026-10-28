@@ -7,6 +7,7 @@ import {
   Button,
   Dropdown,
   MenuProps,
+  PlusOutlined,
   Tooltip,
   theme,
 } from '@/shared/antd-imports';
@@ -58,9 +59,19 @@ export const SprintSectionHeader = ({
   const visibleWidth = useVisibleScrollWidth(headerRef);
   const [isHovered, setIsHovered] = useState(false);
   const [sprintFormMode, setSprintFormMode] = useState<SprintFormMode | null>(null);
+  const [isCreatingSprint, setIsCreatingSprint] = useState(false);
+  const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
+  const hasNoSprints = phaseList.length === 0;
 
   const isActiveSprint = sprint?.sprint_status === 'active';
   const isPlannedSprint = sprint?.sprint_status === 'planned';
+  const isBacklogSection = !sprint;
+
+  const handleCreateSprint = async () => {
+    setIsCreatingSprint(true);
+    await sprintActions.createSprint();
+    setIsCreatingSprint(false);
+  };
 
   const sprintStats = useMemo(() => {
     const doneStatusIds = new Set(statusList.filter(s => s.is_done).map(s => s.id));
@@ -240,6 +251,17 @@ export const SprintSectionHeader = ({
           onKeyDown={e => e.stopPropagation()}
         >
           {extraControls}
+          {isBacklogSection && canManage && (
+            <Button
+              size="small"
+              type={hasNoSprints ? 'primary' : 'default'}
+              icon={<PlusOutlined />}
+              loading={isCreatingSprint}
+              onClick={handleCreateSprint}
+            >
+              {t('createSprint', { defaultValue: 'Create sprint' })}
+            </Button>
+          )}
           {sprint && canManage && (
             <>
               {isActiveSprint && (

@@ -113,5 +113,6 @@
   "deleteQuoteSuccess": "Angebot erfolgreich gelöscht",
   "deleteQuoteError": "Angebot konnte nicht gelöscht werden",
   "linkedChangeRequest": "Verknüpfter Änderungsantrag",
-  "openChangeRequest": "Offene Änderungsanfrage"
+  "openChangeRequest": "Offene Änderungsanfrage",
+  "downloadFailed": "Der PDF-Download ist fehlgeschlagen. Bitte versuchen Sie es erneut."
 }

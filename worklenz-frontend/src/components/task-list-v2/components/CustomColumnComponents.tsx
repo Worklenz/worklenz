@@ -1,7 +1,9 @@
 import React, { useState, useCallback, useMemo, memo, useEffect, useRef } from 'react';
 import { CUSTOM_COLUMN_DEFAULT_WIDTH } from '@/utils/column-width-validation';
 import { Tooltip, Flex, Dropdown, DatePicker, Input, Popover, Button, Typography, message } from '@/shared/antd-imports';
-import { PlusOutlined, SettingOutlined, CrownOutlined } from '@/shared/antd-imports';
+import { PlusOutlined, SettingOutlined, CrownOutlined, WarningOutlined } from '@/shared/antd-imports';
+import { ITaskCustomColumn } from '@/types/tasks/task.types';
+import { findSelectionOption, getDependentSelectionState } from '@/utils/cascading-selection';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -985,12 +987,25 @@ export const SelectionCustomColumnCell: React.FC<{
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
+  const projectCustomColumns = useAppSelector(selectCustomColumns) as ITaskCustomColumn[];
   const { t } = useTranslation('task-list-table');
-  const selectionsList = columnObj?.selectionsList || [];
 
-  const selectedOption = selectionsList.find(
-    (option: any) => option.selection_name === customValue
+  const dependentState = useMemo(
+    () =>
+      getDependentSelectionState(
+        { key: columnKey, custom_column_obj: columnObj } as ITaskCustomColumn,
+        projectCustomColumns || [],
+        task.custom_column_values
+      ),
+    [columnKey, columnObj, projectCustomColumns, task.custom_column_values]
   );
+  const selectionsList = dependentState.allowedOptions;
+  const parentFieldName = dependentState.parentColumn
+    ? getTaskCustomFieldDisplayName(dependentState.parentColumn)
+    : '';
+  const hasValue = typeof customValue === 'string' && customValue !== '';
+  const selectedOption = findSelectionOption(columnObj?.selectionsList || [], customValue);
+  const isWaitingForParent = dependentState.isAwaitingParent && !hasValue;
 
   const handleOptionSelect = async (option: any) => {
     if (!task.id) return;
@@ -1011,6 +1026,40 @@ export const SelectionCustomColumnCell: React.FC<{
       setIsLoading(false);
     }
   };
+
+  const handleClear = () => {
+    if (!task.id) return;
+    setIsDropdownOpen(false);
+    updateTaskCustomColumnValue(task.id, columnKey, null);
+  };
+
+  if (isWaitingForParent) {
+    const waitingText = t('customColumns.dependentSelection.selectParentFirst', {
+      defaultValue: 'Select {{parent}} first',
+      parent: parentFieldName,
+    });
+
+    return (
+      <div className="px-2 relative custom-column-cell" style={{ minWidth: 0, width: '100%' }}>
+        <Tooltip title={waitingText}>
+          <div
+            role="combobox"
+            aria-disabled="true"
+            aria-expanded={false}
+            aria-label={waitingText}
+            className={`flex items-center gap-2 rounded-md px-2 py-1 min-h-[28px] cursor-not-allowed ${
+              isDarkMode ? 'text-gray-500' : 'text-gray-400'
+            }`}
+            style={{ minWidth: 0, width: '100%' }}
+          >
+            <span className="text-sm italic truncate" style={{ minWidth: 0 }}>
+              {waitingText}
+            </span>
+          </div>
+        </Tooltip>
+      </div>
+    );
+  }
 
   const dropdownContent = (
     <div
@@ -1087,15 +1136,52 @@ export const SelectionCustomColumnCell: React.FC<{
           >
             <div className="mb-2">📋</div>
             <div>
-              {t('customColumns.noOptionsAvailable', {
-                defaultValue: 'No options available',
-              })}
+              {dependentState.isDependent && dependentState.parentOption
+                ? t('customColumns.dependentSelection.noOptionsForParent', {
+                    defaultValue: 'No options under {{value}}',
+                    value: dependentState.parentOption.selection_name,
+                  })
+                : t('customColumns.noOptionsAvailable', {
+                    defaultValue: 'No options available',
+                  })}
             </div>
+          </div>
+        )}
+
+        {hasValue && (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleClear}
+            onKeyDown={event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handleClear();
+              }
+            }}
+            className={`
+              mt-1 border-t px-2 pt-2 pb-1 text-sm cursor-pointer rounded-md
+              ${
+                isDarkMode
+                  ? 'border-gray-600 text-gray-400 hover:bg-gray-700'
+                  : 'border-gray-200 text-gray-500 hover:bg-gray-100'
+              }
+            `}
+          >
+            {t('customColumns.dependentSelection.clearValue', { defaultValue: 'Clear selection' })}
           </div>
         )}
       </div>
     </div>
   );
+
+  const invalidValueText = dependentState.isCurrentValueInvalid
+    ? t('customColumns.dependentSelection.invalidValue', {
+        defaultValue: '"{{value}}" is not valid for the current {{parent}}. Pick a new option or clear it.',
+        value: String(customValue),
+        parent: parentFieldName,
+      })
+    : '';
 
   return (
     <div
@@ -1140,17 +1226,26 @@ export const SelectionCustomColumnCell: React.FC<{
                 })}
               </span>
             </div>
-          ) : selectedOption ? (
+          ) : selectedOption || dependentState.isCurrentValueInvalid ? (
             <>
-              <div
-                className="w-3 h-3 rounded-full border border-white/20 shadow-sm flex-shrink-0"
-                style={{ backgroundColor: selectedOption.selection_color || '#6b7280' }}
-              />
+              {dependentState.isCurrentValueInvalid ? (
+                <Tooltip title={invalidValueText}>
+                  <WarningOutlined
+                    aria-label={invalidValueText}
+                    className="flex-shrink-0 text-amber-500"
+                  />
+                </Tooltip>
+              ) : (
+                <div
+                  className="w-3 h-3 rounded-full border border-white/20 shadow-sm flex-shrink-0"
+                  style={{ backgroundColor: selectedOption?.selection_color || '#6b7280' }}
+                />
+              )}
               <span
                 className={`text-sm font-medium truncate flex-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}
                 style={{ minWidth: 0 }}
               >
-                {selectedOption.selection_name}
+                {selectedOption?.selection_name || String(customValue)}
               </span>
               <svg
                 className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
