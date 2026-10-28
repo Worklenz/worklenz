@@ -242,5 +242,19 @@
   "projectInvite_guestLimitExceeded": "Guest limit exceeded for this plan. Please upgrade to add more guests.",
   "license-expired-subtitle": "Your Worklenz subscription has ended. Please renew to continue enjoying all features.",
   "Failed to fetch job titles": "Failed to fetch job titles",
-  "assign_team_lead": "Assign team lead"
+  "assign_team_lead": "Assign team lead",
+  "assign_department": "Assign Department",
+  "assign_practice": "Assign Practice",
+  "select_department": "Select department",
+  "select_practice": "Select practice",
+  "no_departments_found": "No departments found",
+  "no_practices_found": "No practices found",
+  "please_select_assignment_and_members": "Please select a department or practice and team members",
+  "bulk_organization_assignment_success": "{{count}} team member(s) assigned to {{organization}}",
+  "bulk_organization_assignment_failed": "Failed to assign {{organization}}",
+  "bulk_assignment_member_missing_id": "A selected team member has no ID",
+  "bulk_assignment_member_load_failed": "Could not load team member: {{member}}",
+  "bulk_assignment_role_verify_failed": "Could not verify the current role for {{member}}",
+  "bulk_assignment_member_update_failed": "Failed to update team member: {{member}}",
+  "member": "member"
 }
