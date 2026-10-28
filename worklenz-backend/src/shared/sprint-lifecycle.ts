@@ -76,45 +76,71 @@ export async function startNextSprintNow(
   try {
     await client.query("BEGIN");
     const next = await client.query(
-      `SELECT id
+      `SELECT id, start_date
        FROM project_phases
        WHERE project_id = $1 AND sprint_status = 'planned'
        ORDER BY (id = $2::UUID) DESC, start_date ASC NULLS LAST, sort_index ASC
        LIMIT 1 FOR UPDATE;`,
       [projectId, preferredPhaseId]
     );
-    const nextId: string | undefined = next.rows[0]?.id;
+    const nextRow = next.rows[0];
+    const nextId: string | undefined = nextRow?.id;
     if (!nextId) {
       await client.query("ROLLBACK");
       return null;
     }
 
+    // Calculate the whole-day shift from the original start date before modifying it
+    const shiftResult = await client.query(
+      `SELECT FLOOR(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - start_date)) / 86400)::INT AS days
+       FROM project_phases
+       WHERE id = $1;`,
+      [nextId]
+    );
+    const shiftDays: number = shiftResult.rows[0]?.days ?? 0;
+
+    // 1. Shift the next sprint so it starts today and keeps its planned length
     await client.query(
       `UPDATE project_phases
        SET start_date = CASE
              WHEN start_date IS NOT NULL AND end_date IS NOT NULL
-               THEN start_date + shift.days * INTERVAL '1 day'
+               THEN start_date + $3::INT * INTERVAL '1 day'
              ELSE CURRENT_TIMESTAMP
            END,
            end_date = CASE
              WHEN start_date IS NOT NULL AND end_date IS NOT NULL
-               THEN end_date + shift.days * INTERVAL '1 day'
-             ELSE CURRENT_TIMESTAMP + ($3::INT - 1) * INTERVAL '1 day'
+               THEN end_date + $3::INT * INTERVAL '1 day'
+             ELSE CURRENT_TIMESTAMP + ($4::INT - 1) * INTERVAL '1 day'
            END
-       FROM (
-         SELECT FLOOR(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - start_date)) / 86400)::INT AS days
-         FROM project_phases
-         WHERE id = $1
-       ) shift
        WHERE id = $1 AND project_id = $2;`,
-      [nextId, projectId, Math.max(1, Math.round(fallbackLengthDays))]
+      [nextId, projectId, shiftDays, Math.max(1, Math.round(fallbackLengthDays))]
     );
+
+    // 2. Shift all subsequent planned sprints by the exact same shift so there is NO GAP
+    if (shiftDays !== 0) {
+      await client.query(
+        `UPDATE project_phases
+         SET start_date = start_date + $3::INT * INTERVAL '1 day',
+             end_date = end_date + $3::INT * INTERVAL '1 day'
+         WHERE project_id = $2
+           AND sprint_status = 'planned'
+           AND id <> $1
+           AND start_date IS NOT NULL
+           AND end_date IS NOT NULL;`,
+        [nextId, projectId, shiftDays]
+      );
+    }
 
     const started = await startSprintRecord(projectId, nextId, client);
     if (!started.ok) {
       await client.query("ROLLBACK");
       return null;
     }
+
+    if (!nextRow?.start_date && started.data.end_date) {
+      await cascadeUpcomingSprintDates(client, projectId, started.data.end_date, nextId);
+    }
+
     await client.query("COMMIT");
     return started.data;
   } catch (error) {
@@ -122,6 +148,58 @@ export async function startNextSprintNow(
     throw error;
   } finally {
     client.release();
+  }
+}
+
+/**
+ * Reschedules all subsequent planned sprints so each starts the day after the previous
+ * sprint's end date, preserving each sprint's planned length in days.
+ */
+export async function cascadeUpcomingSprintDates(
+  client: PoolClient,
+  projectId: string,
+  anchorEndDate: Date | string,
+  excludePhaseId?: string
+): Promise<void> {
+  const remaining = await client.query(
+    `SELECT id, start_date, end_date
+     FROM project_phases
+     WHERE project_id = $1
+       AND sprint_status = 'planned'
+       ${excludePhaseId ? "AND id <> $2::UUID" : ""}
+     ORDER BY start_date ASC NULLS LAST, sort_index ASC
+     FOR UPDATE;`,
+    excludePhaseId ? [projectId, excludePhaseId] : [projectId]
+  );
+
+  let prevEnd = new Date(anchorEndDate);
+  for (const row of remaining.rows) {
+    if (!row.start_date || !row.end_date) continue;
+
+    const oldStart = new Date(row.start_date);
+    const oldEnd = new Date(row.end_date);
+    const durationMs = Math.max(0, oldEnd.getTime() - oldStart.getTime());
+
+    // Next sprint starts on the calendar day after the previous sprint ends
+    const newStart = new Date(prevEnd);
+    newStart.setUTCDate(newStart.getUTCDate() + 1);
+    newStart.setUTCHours(
+      oldStart.getUTCHours(),
+      oldStart.getUTCMinutes(),
+      oldStart.getUTCSeconds(),
+      oldStart.getUTCMilliseconds()
+    );
+
+    const newEnd = new Date(newStart.getTime() + durationMs);
+
+    await client.query(
+      `UPDATE project_phases
+       SET start_date = $1, end_date = $2
+       WHERE id = $3 AND project_id = $4;`,
+      [newStart.toISOString(), newEnd.toISOString(), row.id, projectId]
+    );
+
+    prevEnd = newEnd;
   }
 }
 
@@ -232,7 +310,10 @@ export async function completeSprintRecord(
     const phaseResult = await client.query(
       `UPDATE project_phases
        SET sprint_status = 'completed',
-           end_date = COALESCE(end_date, CURRENT_TIMESTAMP),
+           end_date = CASE
+             WHEN end_date IS NOT NULL AND end_date > CURRENT_TIMESTAMP THEN CURRENT_TIMESTAMP
+             ELSE COALESCE(end_date, CURRENT_TIMESTAMP)
+           END,
            started_at = COALESCE(started_at, start_date),
            completed_at = CURRENT_TIMESTAMP,
            completed_points = outcome.done_points,
