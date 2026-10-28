@@ -103,6 +103,20 @@ export default class ProjectsController extends WorklenzControllerBase {
     req.body.priority_id = req.body.priority_id || null;
     req.body.project_type = req.body.project_type === "software" ? "software" : "general";
 
+    if (Object.prototype.hasOwnProperty.call(req.body, "members_can_view_client_team")) {
+      if (typeof req.body.members_can_view_client_team !== "boolean") {
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(
+              false,
+              null,
+              "members_can_view_client_team must be a boolean."
+            )
+          );
+      }
+    }
+
     // FIX: Format dates consistently like tasks - parse as date-only strings to avoid timezone issues
     if (req.body.start_date) {
       req.body.start_date = req.body.start_date.toString().split('T')[0]; // Ensure YYYY-MM-DD format
@@ -119,18 +133,6 @@ export default class ProjectsController extends WorklenzControllerBase {
 
     // Log project creation after successful database operation
     if (data.project?.id) {
-      if (Object.prototype.hasOwnProperty.call(req.body, "members_can_view_client_team")) {
-        await db.query(
-          `
-            UPDATE projects
-            SET members_can_view_client_team = $1
-            WHERE id = $2
-              AND team_id = $3
-          `,
-          [Boolean(req.body.members_can_view_client_team), data.project.id, req.user?.team_id || null]
-        );
-      }
-
       await this.setProjectPriority(data.project.id, req.body.priority_id, req.user?.team_id || null);
 
       if (data.project.project_type === "software") {
@@ -1024,7 +1026,7 @@ export default class ProjectsController extends WorklenzControllerBase {
       delete req.body.restrict_tasks_to_assignee;
     }
 
-    // Reject non-booleans so string "false" is not coerced.
+    // Written only by update_project(); reject non-booleans so string "false" is not coerced.
     const hasMembersCanViewClientTeam = Object.prototype.hasOwnProperty.call(
       req.body,
       "members_can_view_client_team"
@@ -1164,18 +1166,6 @@ export default class ProjectsController extends WorklenzControllerBase {
             newValue: String(nextRestrictTasksToAssignee),
           });
         }
-      }
-
-      if (canUpdateProjectPrivacy && hasMembersCanViewClientTeam) {
-        await db.query(
-          `
-            UPDATE projects
-            SET members_can_view_client_team = $1
-            WHERE id = $2
-              AND team_id = $3
-          `,
-          [Boolean(req.body.members_can_view_client_team), req.params.id, req.user?.team_id || null]
-        );
       }
 
       // Phase 4: Owner/Admin may set finance_access on the PM assignment.
