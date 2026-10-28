@@ -12,6 +12,7 @@ import projectMemberValidator from "../../middlewares/validators/project-member-
 import verifyProjectAccess from "../../middlewares/verify-project-access";
 import projectFilesApiRouter from "./project-files-api-router";
 import projectLinksApiRouter from "./project-links-api-router";
+import projectSavedViewsApiRouter from "./project-saved-views-api-router";
 import taskExportApiRouter from "./task-export-api-router";
 
 const projectsApiRouter = express.Router();
@@ -134,6 +135,7 @@ projectsApiRouter.get(
 
 projectsApiRouter.use("/:projectId/files", projectFilesApiRouter);
 projectsApiRouter.use("/:projectId/links", projectLinksApiRouter);
+projectsApiRouter.use("/:projectId/saved-views", projectSavedViewsApiRouter);
 projectsApiRouter.use("/:projectId/task-exports", taskExportApiRouter);
 
 export default projectsApiRouter;
