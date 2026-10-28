@@ -1434,6 +1434,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
       }
     } catch (error) {
       log_error(`Error resetting parent task manual progress: ${error}`);
+      // Inside a caller's transaction, let the caller roll back instead of committing a partial move
+      if (client) throw error;
     }
   }
 
