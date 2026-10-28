@@ -92,6 +92,8 @@ describe("ReportingProjectsController", () => {
   describe("get", () => {
     it.each([
       ["last_activity", "last_activity_at"],
+      ["days_left", "days_left"],
+      ["p.days_left", "days_left"],
       ["project_manager_name", "project_manager_name"],
 
       ["health_name", "health_name"],
@@ -114,29 +116,12 @@ describe("ReportingProjectsController", () => {
       expect(query).toBeDefined();
       expect(query[0]).toContain(`ORDER BY ${column} DESC NULLS LAST, p.id`);
       expect(query[0]).toContain(`ORDER BY t.${column} DESC NULLS LAST, t.id`);
+      if (field === "p.days_left") {
+        expect(query[0]).not.toContain("ORDER BY name DESC NULLS LAST, p.id");
+      }
       expect(query[0]).toContain("MAX(tal.created_at)");
       expect(query[0]).toContain("ABS(p.end_date::DATE - CURRENT_DATE) AS days_left");
       expect(query[0]).toContain("AS project_manager_name");
-      expect(query[1].slice(1, 3)).toEqual([10, 10]);
-    });
-
-    it.each(["days_left", "p.days_left"])("sorts %s by absolute distance from today before pagination", async (field) => {
-      const req = createMockRequest({
-        query: { field, order: "descend", index: "2", size: "10" },
-        user: { id: "u-1", team_id: "t-1", name: "Test", email: "test@example.com", owner: true }
-      });
-      const res = createMockResponse();
-
-      await ReportingProjectsController.get(req, res);
-
-      const query = (db.query as jest.Mock).mock.calls.find(
-        ([sql]: [string]) => sql.includes("AS projects") && sql.includes("LIMIT $2 OFFSET $3")
-      );
-      expect(query).toBeDefined();
-      expect(query[0]).toContain("ORDER BY days_left DESC NULLS LAST, p.id");
-      expect(query[0]).toContain("ORDER BY t.days_left DESC NULLS LAST, t.id");
-      expect(query[0]).toContain("ABS(p.end_date::DATE - CURRENT_DATE) AS days_left");
-      expect(query[0]).not.toContain("ORDER BY name DESC NULLS LAST, p.id");
       expect(query[1].slice(1, 3)).toEqual([10, 10]);
     });
 
