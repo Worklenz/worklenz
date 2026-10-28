@@ -40,6 +40,7 @@ import {
   resolveBillableChangeRequest,
 } from "../../services/client-portal-v2/change-request-billing";
 import { PortalError } from "../../services/client-portal-v2/errors";
+import { buildInvoicePdf } from "../../shared/pdf";
 
 /**
  * Organization-side (admin) client portal quotes: pre-sale estimates that mirror invoices but with
@@ -776,28 +777,8 @@ export default class ClientPortalQuotesController {
         organization,
       };
 
-      const puppeteer = require("puppeteer");
-      const { InvoiceTemplateGenerator } = require("../../shared/invoice-template-generator");
-
       try {
-        const html = InvoiceTemplateGenerator.generateQuoteHTML(quoteData);
-        const browser = await puppeteer.launch({
-          headless: true,
-          args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
-        });
-
-        let pdfBuffer: Buffer;
-        try {
-          const page = await browser.newPage();
-          await page.setContent(html, { waitUntil: "networkidle0" });
-          pdfBuffer = await page.pdf({
-            format: "A4",
-            printBackground: true,
-            margin: { top: "20mm", right: "20mm", bottom: "20mm", left: "20mm" },
-          });
-        } finally {
-          await browser.close();
-        }
+        const pdfBuffer = await buildInvoicePdf(quoteData, "quote");
 
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", `attachment; filename="quote-${quote.quote_no}.pdf"`);

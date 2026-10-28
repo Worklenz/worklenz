@@ -208,5 +208,6 @@
     "defaultStatusesLabel": "Status padrão",
     "defaultStatusesHint": "Estes sempre existem e não podem ser removidos.",
     "customStatusesLabel": "Status personalizados"
-  }
+  },
+  "defaultInvoiceFooter": "Obrigado pela sua preferência. Se tiver alguma dúvida sobre esta fatura, entre em contacto connosco através dos dados acima."
 }

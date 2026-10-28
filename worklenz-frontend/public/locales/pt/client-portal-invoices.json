@@ -200,5 +200,7 @@
   "closeButton": "Fechar",
   "linkedChangeRequest": "Solicitação de alteração vinculada",
   "openChangeRequest": "Abrir solicitação de alteração",
-  "projectColumn": "Projeto"
+  "projectColumn": "Projeto",
+  "downloadFailed": "Falha ao baixar o PDF. Tente novamente.",
+  "defaultInvoiceFooter": "Obrigado pela sua preferência. Se tiver alguma dúvida sobre esta fatura, entre em contacto connosco através dos dados acima."
 }

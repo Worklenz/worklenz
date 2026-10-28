@@ -214,7 +214,7 @@ app.use(cors({
     "Pragma",
     "pragma",
   ],
-  exposedHeaders: ["Set-Cookie", "X-CSRF-Token"]
+  exposedHeaders: ["Set-Cookie", "X-CSRF-Token", "Content-Disposition"]
 }));
 
 // Handle preflight requests
