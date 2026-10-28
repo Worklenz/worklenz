@@ -93,5 +93,8 @@
   "toolbarSelectAll": "Alle auswählen",
   "toolbarClearAll": "Alle löschen",
   "toolbarFields": "Felder",
-  "toolbarShowFields": "Felder anzeigen"
+  "toolbarShowFields": "Felder anzeigen",
+  "userDeleted": "Konto gelöscht",
+  "userDeletedHint": "Vom Benutzer selbst am {{deleted}} gelöscht. Kann bis zum {{until}} wiederhergestellt werden.",
+  "userDeletedHintExpired": "Vom Benutzer selbst am {{deleted}} gelöscht."
 }

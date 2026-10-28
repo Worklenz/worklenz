@@ -17,9 +17,27 @@ import projectManagerValidator from "../../middlewares/validators/project-manage
 import chatIdParamValidator from "../../middlewares/validators/chat-id-param-validator";
 import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
 import { requireFeature } from "../../shared/entitlements/gates";
+import { ServerResponse } from "../../models/server-response";
 import PortalProjectsController from "../../controllers/client-portal/v2/portal-projects-controller";
 
 const clientsApiRouter = express.Router();
+
+/**
+ * Legacy (v1) client-portal writes that skip the v2 safeguards: no last-admin or sole-approver check, no
+ * audit entry, and some delete the shared login of a person who also belongs to other portals. The admin
+ * console no longer calls any of them; the v2 routes under /portal/v2 do the same jobs safely. They answer
+ * 410 so a stale client gets a clear message instead of a silent, unprotected change.
+ */
+const movedInV2: express.RequestHandler = (_req, res) =>
+  res
+    .status(410)
+    .json(
+      new ServerResponse(
+        false,
+        { code: "MOVED_IN_V2" },
+        "This action has moved. Use the Clients and Client Users pages of the Client Portal admin console."
+      )
+    );
 
 clientsApiRouter.post("/", projectManagerValidator, clientsBodyValidator, safeControllerFunction(ClientsController.create));
 clientsApiRouter.get("/", safeControllerFunction(ClientsController.get));
@@ -105,11 +123,12 @@ clientsApiRouter.post("/portal/clients", teamOwnerOrAdminValidator, phoneNumberV
 // NOTE: Must be defined before the /portal/clients/:id routes so "stats" is not read as an :id.
 clientsApiRouter.get("/portal/clients/stats", safeControllerFunction(ClientsController.getPortalClientsStats));
 
-// Organization-side Client Portal Bulk Operations
+// Organization-side Client Portal Bulk Operations (retired: they wrote client_users.status for logins shared
+// across workspaces and had no audit trail).
 // NOTE: These MUST be defined before the /:id parameterized routes to avoid Express
 // matching "bulk-update" or "bulk-delete" as an :id parameter value.
-clientsApiRouter.put("/portal/clients/bulk-update", safeControllerFunction(ClientsController.bulkUpdatePortalClients));
-clientsApiRouter.delete("/portal/clients/bulk-delete", safeControllerFunction(ClientsController.bulkDeletePortalClients));
+clientsApiRouter.put("/portal/clients/bulk-update", movedInV2);
+clientsApiRouter.delete("/portal/clients/bulk-delete", movedInV2);
 
 clientsApiRouter.get("/portal/clients/:id", idParamValidator, safeControllerFunction(ClientsController.getPortalClientById));
 clientsApiRouter.get("/portal/clients/:id/details", idParamValidator, safeControllerFunction(ClientsController.getPortalClientDetails));
@@ -126,12 +145,12 @@ clientsApiRouter.get("/portal/clients/:id/projects", idParamValidator, safeContr
 clientsApiRouter.post("/portal/clients/:id/projects", idParamValidator, safeControllerFunction(ClientsController.assignProjectToPortalClient));
 clientsApiRouter.delete("/portal/clients/:id/projects/:projectId", idParamValidator, safeControllerFunction(ClientsController.removeProjectFromPortalClient));
 
-// Organization-side Client Portal Team Management
+// Organization-side Client Portal Team Management (writes retired, see movedInV2; the v2 client-users routes replace them)
 clientsApiRouter.get("/portal/clients/:id/team", idParamValidator, safeControllerFunction(ClientsController.getPortalClientTeam));
-clientsApiRouter.post("/portal/clients/:id/team", idParamValidator, safeControllerFunction(ClientsController.invitePortalTeamMember));
-clientsApiRouter.put("/portal/clients/:id/team/:memberId", idParamValidator, safeControllerFunction(ClientsController.updatePortalTeamMember));
-clientsApiRouter.delete("/portal/clients/:id/team/:memberId", idParamValidator, safeControllerFunction(ClientsController.removePortalTeamMember));
-clientsApiRouter.post("/portal/clients/:id/team/:memberId/resend-invitation", idParamValidator, safeControllerFunction(ClientsController.resendPortalTeamInvitation));
+clientsApiRouter.post("/portal/clients/:id/team", idParamValidator, movedInV2);
+clientsApiRouter.put("/portal/clients/:id/team/:memberId", idParamValidator, movedInV2);
+clientsApiRouter.delete("/portal/clients/:id/team/:memberId", idParamValidator, movedInV2);
+clientsApiRouter.post("/portal/clients/:id/team/:memberId/resend-invitation", idParamValidator, movedInV2);
 
 // Organization-side Client Portal Company Users (the people at each client company).
 // Wired straight to the controller: it already reads req.user and returns real HTTP statuses.
@@ -141,11 +160,13 @@ clientsApiRouter.get("/portal/company-users", safeControllerFunction(ClientPorta
 clientsApiRouter.get("/portal/company-users/stats", safeControllerFunction(ClientPortalCompanyUsersController.stats));
 clientsApiRouter.get("/portal/company-users/:userId", userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.getById));
 clientsApiRouter.put("/portal/company-users/:userId", teamOwnerOrAdminValidator, userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.update));
-clientsApiRouter.put("/portal/company-users/:userId/role", teamOwnerOrAdminValidator, userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.setRole));
-clientsApiRouter.put("/portal/company-users/:userId/status", teamOwnerOrAdminValidator, userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.setStatus));
+// Role, status and removal are retired: v1 had no last-admin or sole-approver check and no audit entry, and
+// `remove` deleted the shared login. Use PUT/POST/DELETE /portal/v2/client-users/:userId.
+clientsApiRouter.put("/portal/company-users/:userId/role", teamOwnerOrAdminValidator, userIdParamValidator, movedInV2);
+clientsApiRouter.put("/portal/company-users/:userId/status", teamOwnerOrAdminValidator, userIdParamValidator, movedInV2);
 clientsApiRouter.put("/portal/company-users/:userId/projects", teamOwnerOrAdminValidator, userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.setProjects));
 clientsApiRouter.post("/portal/company-users/:userId/invite", teamOwnerOrAdminValidator, userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.invite));
-clientsApiRouter.delete("/portal/company-users/:userId", teamOwnerOrAdminValidator, userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.remove));
+clientsApiRouter.delete("/portal/company-users/:userId", teamOwnerOrAdminValidator, userIdParamValidator, movedInV2);
 
 // Organization-side Add Client wizard writes. Admin-only, like the other company-user writes.
 // NOTE: These POST paths do not clash with the /portal/clients/:id routes (different verbs and

@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { EditOutlined, MessageOutlined, MoreOutlined } from '@ant-design/icons';
+import {
+  CheckCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  MessageOutlined,
+  MoreOutlined,
+  StopOutlined,
+} from '@ant-design/icons';
 import { Badge, Button, Col, Dropdown, Flex, Modal, Result, Row, Tabs } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -23,7 +30,7 @@ import { UsersTab } from './UsersTab';
 import { WorkspaceHeader } from './WorkspaceHeader';
 import { WorkspaceRail } from './WorkspaceRail';
 import { CLIENTS_PATH, DEFAULT_WORKSPACE_TAB, WorkspaceTab, parseWorkspaceTab } from './workspace-helpers';
-import { PortalLoader } from '@/components/client-portal/v2';
+import { PortalLoader, useClientOrganizationActions } from '@/components/client-portal/v2';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 
 /**
@@ -84,6 +91,11 @@ const ClientWorkspacePage = () => {
   const openInviteWizard = () => {
     if (organization) dispatch(openAddCompanyUserDrawer({ id: organization.id, name: organization.name }));
   };
+
+  // A deleted client has no workspace any more, so leave it for the list (where it can be restored).
+  const { actions: organizationActions, modals: organizationModals } = useClientOrganizationActions({
+    onDeleted: () => navigate(CLIENTS_PATH, { replace: true }),
+  });
 
   let body;
 
@@ -222,6 +234,27 @@ const ClientWorkspacePage = () => {
                           label: t('workspace.header.edit', { defaultValue: 'Edit client' }),
                           onClick: () => dispatch(toggleClientDetailsDrawer(id)),
                         },
+                        { type: 'divider' as const },
+                        organization.status === 'inactive'
+                          ? {
+                              key: 'reactivate',
+                              icon: <CheckCircleOutlined />,
+                              label: t('orgActions.menu.reactivate', { defaultValue: 'Reactivate client' }),
+                              onClick: () => organizationActions.onReactivate(organization),
+                            }
+                          : {
+                              key: 'deactivate',
+                              icon: <StopOutlined />,
+                              label: t('orgActions.menu.deactivate', { defaultValue: 'Deactivate client' }),
+                              onClick: () => organizationActions.onDeactivate(organization),
+                            },
+                        {
+                          key: 'delete',
+                          danger: true,
+                          icon: <DeleteOutlined />,
+                          label: t('orgActions.menu.delete', { defaultValue: 'Delete client' }),
+                          onClick: () => organizationActions.onDelete(organization),
+                        },
                       ],
                     }}
                     trigger={['click']}
@@ -261,6 +294,7 @@ const ClientWorkspacePage = () => {
         {body}
       </Modal>
       {isMessaging && <MessageClientModal target={{ organizationId: id }} onClose={() => setIsMessaging(false)} />}
+      {organizationModals}
     </>
   );
 };

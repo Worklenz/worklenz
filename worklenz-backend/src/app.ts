@@ -38,6 +38,7 @@ import linkPreviewMiddleware from "./middlewares/link-preview-middleware";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
 import db from "./config/db";
+import { pathWithoutQuery } from "./shared/path-without-query";
 import { IWorkLenzRequest } from "./interfaces/worklenz-request";
 
 const app = express();
@@ -238,7 +239,7 @@ app.use(flash());
 // Auth check middleware
 async function isLoggedIn(req: Request, res: Response, next: NextFunction) {
   // Allow client portal invitation routes to bypass authentication
-  const fullPath = req.originalUrl || req.url;
+  const fullPath = pathWithoutQuery(req.originalUrl || req.url || "");
 
   if (
     req.path.includes("/client-portal/invitation/") ||
@@ -333,7 +334,8 @@ app.use((req, res, next) => {
 
   // Get all possible path variations early
   const path = req.path || "";
-  const originalUrl = req.originalUrl || req.url || "";
+  // Query string stripped: an exemption must never be triggered by `?x=/client-portal/` or `?x=/webhook/...`.
+  const originalUrl = pathWithoutQuery(req.originalUrl || req.url || "");
   const baseUrl = req.baseUrl || "";
 
   // Always exclude webhooks (external services can't provide CSRF tokens)

@@ -179,7 +179,8 @@ class TokenService {
   // Get invitation by token
   async getInvitationByToken(token: string): Promise<any> {
     const query = `
-      SELECT ci.*, c.name as client_name, c.company_name, c.team_id, t.name as team_name
+      SELECT ci.*, c.name as client_name, c.company_name, c.team_id, t.name as team_name,
+             c.deleted_at AS client_deleted_at, c.status AS client_status
       FROM client_invitations ci
       JOIN clients c ON ci.client_id = c.id
       LEFT JOIN teams t ON c.team_id = t.id

@@ -6,6 +6,7 @@ import {
   useReactivatePortalUserMutation,
   useRemovePortalUserMutation,
   useResendPortalInvitationMutation,
+  useRestorePortalAccountMutation,
 } from '@/api/client-portal/portal-access-api';
 import { getPortalErrorCode, getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
 import { ConfirmEffectModal, InvitationLinkModal } from '@/components/client-portal/v2';
@@ -25,9 +26,11 @@ export interface ClientUserActions {
   onDeactivate: (user: ClientUser) => void;
   onReactivate: (user: ClientUser) => void;
   onRemove: (user: ClientUser) => void;
+  /** Brings back a person who deleted their own account, inside the 30-day window. */
+  onRestoreAccount: (user: ClientUser) => void;
 }
 
-type ConfirmKind = 'deactivate' | 'remove';
+type ConfirmKind = 'deactivate' | 'remove' | 'restoreAccount';
 
 interface PendingConfirm {
   kind: ConfirmKind;
@@ -58,6 +61,7 @@ export const useClientUserActions = () => {
   const [deactivateUser, { isLoading: isDeactivating }] = useDeactivatePortalUserMutation();
   const [reactivateUser] = useReactivatePortalUserMutation();
   const [removeUser, { isLoading: isRemoving }] = useRemovePortalUserMutation();
+  const [restoreAccount, { isLoading: isRestoringAccount }] = useRestorePortalAccountMutation();
 
   const handleResend = async (user: ClientUser) => {
     try {
@@ -119,8 +123,34 @@ export const useClientUserActions = () => {
     }
   };
 
+  /** Restoring reverses a decision the person made themselves, so it always asks first. */
+  const runRestoreAccount = async (user: ClientUser) => {
+    try {
+      await restoreAccount(user.id).unwrap();
+      message.success(
+        t('actions.accountRestored', {
+          name: user.name,
+          defaultValue: '{{name}}’s account was restored. They can sign in again.',
+        })
+      );
+    } catch (error) {
+      message.error(
+        getPortalErrorMessage(
+          error,
+          t('actions.restoreAccountFailed', { defaultValue: 'The account could not be restored.' })
+        )
+      );
+    } finally {
+      setConfirm(null);
+    }
+  };
+
   const runConfirmed = async (pending: PendingConfirm, confirmLastAdmin: boolean) => {
     const { kind, user } = pending;
+    if (kind === 'restoreAccount') {
+      await runRestoreAccount(user);
+      return;
+    }
     try {
       if (kind === 'deactivate') {
         await deactivateUser({ userId: user.id, confirmLastAdmin }).unwrap();
@@ -179,11 +209,12 @@ export const useClientUserActions = () => {
     onDeactivate: user => setConfirm({ kind: 'deactivate', user, lastAdminWarning: null }),
     onReactivate: user => void handleReactivate(user),
     onRemove: user => setConfirm({ kind: 'remove', user, lastAdminWarning: null }),
+    onRestoreAccount: user => setConfirm({ kind: 'restoreAccount', user, lastAdminWarning: null }),
   };
 
   const confirmUser = confirm?.user;
   const isLastAdminStep = confirm?.lastAdminWarning != null;
-  const isBusy = isDeactivating || isRemoving;
+  const isBusy = isDeactivating || isRemoving || isRestoringAccount;
 
   const modals = (
     <>
@@ -235,6 +266,22 @@ export const useClientUserActions = () => {
             name: confirmUser.name,
             defaultValue:
               '{{name}} and their project assignments are removed. Comments and approvals they made stay in the history.',
+          })}
+      </ConfirmEffectModal>
+
+      <ConfirmEffectModal
+        open={confirm?.kind === 'restoreAccount'}
+        title={t('restoreAccount.title', { defaultValue: 'Restore this account?' })}
+        confirmLabel={t('restoreAccount.confirm', { defaultValue: 'Restore account' })}
+        loading={isBusy}
+        onClose={() => setConfirm(null)}
+        onConfirm={() => confirm && void runConfirmed(confirm, false)}
+      >
+        {confirmUser &&
+          t('restoreAccount.body', {
+            name: confirmUser.name,
+            defaultValue:
+              'This account was deleted by {{name}}. Only restore it if they asked you to; they can then sign in again with their previous role and projects.',
           })}
       </ConfirmEffectModal>
 
