@@ -391,7 +391,6 @@ const HomeMyTeam: React.FC = () => {
             renderSummary={(range, count) => `${range} of ${count}`}
           />
         </div>
-        </div>
       </div>
 
       {createPortal(
