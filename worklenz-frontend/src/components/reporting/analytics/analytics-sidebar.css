@@ -82,3 +82,16 @@
   padding: 1px 5px;
   flex-shrink: 0;
 }
+
+.analytics-sider-coming-soon {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #d46b08;
+  background: rgba(250, 173, 20, 0.15);
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}

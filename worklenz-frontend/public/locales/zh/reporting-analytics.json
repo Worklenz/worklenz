@@ -25,6 +25,7 @@
   "sla": "SLA Tracking",
   "timeInStatus": "Time in Status",
   "newBadge": "NEW",
+  "comingSoonBadge": "即将推出",
   "lastUpdatedRelative": "Last updated: {{time}}",
   "lastUpdatedUnknown": "Last updated: ?",
   "viewAsChart": "View as chart",

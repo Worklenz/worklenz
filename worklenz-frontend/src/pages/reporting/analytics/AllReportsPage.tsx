@@ -349,11 +349,18 @@ const AllReportsPage: React.FC = () => {
             {getAnalyticsNavIcon(row.type === 'custom' ? 'dashboards' : row.key)}
           </span>
           <div>
-            <Link onClick={() => openReport(row)}>
-              <Text strong style={{ color: 'inherit' }}>
-                {row.name}
-              </Text>
-            </Link>
+            <Flex align="center" gap={8} wrap="wrap">
+              <Link onClick={() => openReport(row)}>
+                <Text strong style={{ color: 'inherit' }}>
+                  {row.name}
+                </Text>
+              </Link>
+              {row.enabled === false && row.key === 'sla' && (
+                <Tag color="orange">
+                  {t('comingSoonBadge', { defaultValue: 'Coming soon' })}
+                </Tag>
+              )}
+            </Flex>
             <div>
               <Text type="secondary" style={{ fontSize: 12 }}>
                 {row.description}

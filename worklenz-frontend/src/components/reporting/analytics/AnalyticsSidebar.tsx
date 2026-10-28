@@ -46,6 +46,11 @@ const AnalyticsSidebarLink: React.FC<{
       <span className="analytics-sider-link-label">
         {labelOverride ?? t(item.labelKey, { defaultValue: item.defaultLabel })}
       </span>
+      {!item.enabled && item.key === 'sla' && (
+        <span className="analytics-sider-coming-soon">
+          {t('comingSoonBadge', { defaultValue: 'Coming soon' })}
+        </span>
+      )}
       {showNew && item.enabled && !item.key.startsWith('custom-') && (
         <span className="analytics-sider-new">{t('newBadge', { defaultValue: 'NEW' })}</span>
       )}

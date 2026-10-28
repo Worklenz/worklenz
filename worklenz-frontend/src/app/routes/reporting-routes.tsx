@@ -15,7 +15,6 @@ const DashboardsPage = lazy(() => import('@/pages/reporting/analytics/Dashboards
 const DashboardDetailPage = lazy(() => import('@/pages/reporting/analytics/DashboardDetailPage'));
 const VelocityPage = lazy(() => import('@/pages/reporting/analytics/VelocityPage'));
 const CumulativeFlowPage = lazy(() => import('@/pages/reporting/analytics/CumulativeFlowPage'));
-const SlaPage = lazy(() => import('@/pages/reporting/analytics/SlaPage'));
 const TimeInStatusPage = lazy(() => import('@/pages/reporting/analytics/TimeInStatusPage'));
 const ProjectHealthPage = lazy(() => import('@/pages/reporting/analytics/ProjectHealthPage'));
 const PlannedVsActualTasksPage = lazy(
@@ -73,7 +72,6 @@ const enabledAnalyticsElements: Record<string, React.ReactNode> = {
   utilization: <UtilizationPage />,
   'time-report': <TimeReportPage />,
   'budget-tracking': <BudgetTrackingPage />,
-  sla: <SlaPage />,
   dashboards: <DashboardsPage />,
 };
 

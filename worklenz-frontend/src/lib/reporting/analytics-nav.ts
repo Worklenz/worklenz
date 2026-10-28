@@ -140,7 +140,7 @@ export const ANALYTICS_NAV: {
           path: 'sla',
           labelKey: 'sla',
           defaultLabel: 'SLA Tracking',
-          enabled: true,
+          enabled: false,
         },
       ],
     },
