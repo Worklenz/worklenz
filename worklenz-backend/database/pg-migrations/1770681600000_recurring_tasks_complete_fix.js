@@ -43,28 +43,9 @@ ADD COLUMN IF NOT EXISTS duration_days INTEGER;
 -- PART 3: Add unique constraint to prevent duplicate recurring tasks
 -- ============================================================================
 
-DO $$
-DECLARE
-    _type TEXT;
-    _expr TEXT;
-BEGIN
-    SELECT data_type INTO _type
-    FROM information_schema.columns
-    WHERE table_schema = current_schema()
-      AND table_name = 'tasks'
-      AND column_name = 'end_date';
-
-    IF _type = 'timestamp with time zone' THEN
-        _expr := '((end_date AT TIME ZONE ''UTC'')::DATE)';
-    ELSE
-        _expr := '(end_date::DATE)';
-    END IF;
-
-    EXECUTE format(
-        'CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_schedule_end_date_unique ON tasks (schedule_id, %s) WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL',
-        _expr
-    );
-END $$;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_schedule_end_date_unique
+ON tasks (schedule_id, ((end_date AT TIME ZONE 'UTC')::DATE))
+WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL;
 
 -- ============================================================================
 -- PART 4: Add foreign key constraints

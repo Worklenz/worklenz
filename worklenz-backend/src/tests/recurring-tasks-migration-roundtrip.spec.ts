@@ -5,26 +5,6 @@ interface Migration {
   down: (builder: { sql: (statement: string) => void }) => Promise<void>;
 }
 
-describe("1770681600000_recurring_tasks_complete_fix migration index", () => {
-  const migrationPath = path.resolve(
-    __dirname,
-    "../../database/pg-migrations/1770681600000_recurring_tasks_complete_fix.js"
-  );
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const migration = require(migrationPath) as Migration;
-
-  it("selects an immutable date expression for the end_date column type", async () => {
-    const statements: string[] = [];
-    await migration.up({ sql: statement => statements.push(statement) });
-    const sql = statements.join("\n");
-
-    expect(sql).toContain("_type = 'timestamp with time zone'");
-    expect(sql).toContain("((end_date AT TIME ZONE ''UTC'')::DATE)");
-    expect(sql).toContain("(end_date::DATE)");
-    expect(sql).toContain("CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_schedule_end_date_unique");
-  });
-});
-
 describe("1791364628703_fix_recurring_tasks_immutable_index migration round-trip", () => {
   const migrationPath = path.resolve(
     __dirname,
