@@ -1,15 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  DatePicker,
-  Flex,
-  Select,
-  Space,
-  Switch,
-  Typography,
-  message,
-} from '@/shared/antd-imports';
+import { Button, Flex, Select, Space, Switch, Typography, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import { jsPDF } from 'jspdf';
 
@@ -25,7 +17,6 @@ import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import {
   AnalyticsFilterBar,
   ChartTableWrapper,
-  ReportEmptyState,
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
@@ -33,7 +24,6 @@ import {
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
-import { MultiSelectFilterPill } from '@/components/common/filters/MultiSelectFilterPill';
 import {
   TisAggregateChart,
   type TisAggregateChartHandle,
@@ -47,7 +37,6 @@ import { TisPerIssueTable } from '@/components/reporting/analytics/time-in-statu
 import { TisKpiTiles } from '@/components/reporting/analytics/time-in-status/TisKpiTiles';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import type {
-  TimeInStatusDateMode,
   TimeInStatusFilters,
   TimeInStatusSeriesResponse,
   TimeInStatusSort,
@@ -56,7 +45,8 @@ import type {
 import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 const { Text } = Typography;
-const { RangePicker } = DatePicker;
+
+const DEFAULT_DATE_MODE = 'overlapping' as const;
 
 const downloadBlob = (blob: Blob, filename: string) => {
   const url = URL.createObjectURL(blob);
@@ -82,27 +72,16 @@ const TimeInStatusPage: React.FC = () => {
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
   const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [customRange, setCustomRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-  const [selectedStatusIds, setSelectedStatusIds] = useState<string[]>([]);
-  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
-  const [selectedIssueTypes, setSelectedIssueTypes] = useState<string[]>([]);
-  const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
-  const [selectedEpicIds, setSelectedEpicIds] = useState<string[]>([]);
-  const [selectedSprintIds, setSelectedSprintIds] = useState<string[]>([]);
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
-  const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
-  const [statusOptions, setStatusOptions] = useState<FilterOption[]>([]);
-  const [labelOptions, setLabelOptions] = useState<FilterOption[]>([]);
-  const [epicOptions, setEpicOptions] = useState<FilterOption[]>([]);
-  const [sprintOptions, setSprintOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
 
-  const [dateMode, setDateMode] = useState<TimeInStatusDateMode>('overlapping');
-  const [excludeWeekends, setExcludeWeekends] = useState(false);
   const [reportView, setReportView] = useState<TimeInStatusViewMode>('aggregate');
   const [sort, setSort] = useState<TimeInStatusSort>('avg_desc');
+  const [excludeWeekends, setExcludeWeekends] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +89,6 @@ const TimeInStatusPage: React.FC = () => {
 
   const aggregateChartRef = useRef<TisAggregateChartHandle>(null);
   const perIssueChartRef = useRef<TisPerIssueChartHandle>(null);
-  const hasSelection = selectedProjectIds.length > 0;
 
   const memberOptions: FilterOption[] = useMemo(() => {
     const list = (teamMembersState?.data ?? []) as ITeamMemberViewModel[];
@@ -123,40 +101,30 @@ const TimeInStatusPage: React.FC = () => {
   }, [teamMembersState?.data]);
 
   const dateBounds = useMemo(() => {
-    if (datePreset === 'custom' && customRange) {
-      return {
-        date_from: customRange[0].startOf('day').toISOString(),
-        date_to: customRange[1].endOf('day').toISOString(),
-      };
-    }
     const end = dayjs();
     let start = end.subtract(30, 'day');
     if (datePreset === 'last_7_days') start = end.subtract(7, 'day');
-    if (datePreset === 'last_14_days') start = end.subtract(14, 'day');
-    if (datePreset === 'last_30_days') start = end.subtract(30, 'day');
-    if (datePreset === 'last_60_days') start = end.subtract(60, 'day');
     if (datePreset === 'last_90_days') start = end.subtract(90, 'day');
     if (datePreset === 'this_quarter') start = end.startOf('quarter');
-    if (datePreset === 'custom') return { date_from: null, date_to: null };
     return {
       date_from: start.startOf('day').toISOString(),
       date_to: end.endOf('day').toISOString(),
     };
-  }, [datePreset, customRange]);
+  }, [datePreset]);
 
   const filters: TimeInStatusFilters = useMemo(
     () => ({
       project_ids: selectedProjectIds,
       team_ids: selectedTeamIds,
-      status_ids: selectedStatusIds,
-      assignee_ids: selectedAssigneeIds,
-      issue_types: selectedIssueTypes,
-      label_ids: selectedLabelIds,
-      epic_ids: selectedEpicIds,
-      sprint_ids: selectedSprintIds,
+      status_ids: [],
+      assignee_ids: selectedMemberIds,
+      issue_types: [],
+      label_ids: [],
+      epic_ids: [],
+      sprint_ids: [],
       date_from: dateBounds.date_from,
       date_to: dateBounds.date_to,
-      date_mode: dateMode,
+      date_mode: DEFAULT_DATE_MODE,
       exclude_weekends: excludeWeekends,
       view_mode: reportView,
       sort,
@@ -166,25 +134,31 @@ const TimeInStatusPage: React.FC = () => {
     [
       selectedProjectIds,
       selectedTeamIds,
-      selectedStatusIds,
-      selectedAssigneeIds,
-      selectedIssueTypes,
-      selectedLabelIds,
-      selectedEpicIds,
-      selectedSprintIds,
+      selectedMemberIds,
       dateBounds,
-      dateMode,
       excludeWeekends,
       reportView,
       sort,
     ]
   );
 
-  const loadTeams = useCallback(async () => {
+  const loadTeamsAndMembers = useCallback(async () => {
     setFiltersLoading(true);
     try {
-      void dispatch(getTeamMembers());
-      const teamsRes = await reportingApiService.getOverviewTeams(true);
+      const [teamsRes] = await Promise.all([
+        reportingApiService.getOverviewTeams(true),
+        dispatch(
+          getTeamMembers({
+            index: 0,
+            size: 100,
+            field: null,
+            order: null,
+            search: null,
+            all: true,
+          })
+        ),
+      ]);
+
       const teams =
         teamsRes.done && Array.isArray(teamsRes.body)
           ? teamsRes.body.map((team: { id?: string; name?: string }) => ({
@@ -192,7 +166,7 @@ const TimeInStatusPage: React.FC = () => {
               label: team.name || String(team.id),
             }))
           : [];
-      setTeamOptions(teams);
+
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
       setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
@@ -230,6 +204,7 @@ const TimeInStatusPage: React.FC = () => {
       setProjectOptions(projects);
       setSelectedProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
+        // Keep prior picks that are still valid; never auto-select every project.
         return prev.filter(id => allowed.has(id));
       });
     } catch {
@@ -237,49 +212,51 @@ const TimeInStatusPage: React.FC = () => {
     }
   }, []);
 
-  const loadFilterOptions = useCallback(async (projectIds: string[], teamIds: string[]) => {
-    if (projectIds.length === 0) {
-      setStatusOptions([]);
-      setLabelOptions([]);
-      setEpicOptions([]);
-      setSprintOptions([]);
-      return;
-    }
-    try {
-      const res = await analyticsTimeInStatusApiService.getFilterOptions({
-        project_ids: projectIds,
-        team_ids: teamIds,
-      });
-      if (res.done && res.body) {
-        setStatusOptions(
-          res.body.statuses.map(s => ({ value: s.id, label: s.name }))
-        );
-        setLabelOptions(res.body.labels.map(l => ({ value: l.id, label: l.name })));
-        setEpicOptions(res.body.epics.map(e => ({ value: e.id, label: e.name })));
-        setSprintOptions(
-          res.body.sprints.map(s => ({ value: s.id, label: s.name }))
-        );
+  const localizeCategoryLabel = useCallback(
+    (statusId: string, fallback: string) => {
+      if (statusId === '__tis_todo__') {
+        return t('cfdCategoryTodo', { defaultValue: 'To do' });
       }
-    } catch {
-      // keep prior options
-    }
-  }, []);
+      if (statusId === '__tis_doing__') {
+        return t('cfdCategoryDoing', { defaultValue: 'In progress' });
+      }
+      if (statusId === '__tis_done__') {
+        return t('cfdCategoryDone', { defaultValue: 'Done' });
+      }
+      return fallback;
+    },
+    [t]
+  );
 
   const loadSeries = useCallback(async () => {
-    if (!hasSelection) {
-      setData(null);
-      return;
-    }
-    if (datePreset === 'custom' && !customRange) {
-      setData(null);
-      return;
-    }
     setLoading(true);
     setError(null);
     try {
+      // Empty project_ids → all accessible projects rolled into To do / Doing / Done.
+      // Selected project_ids → that project's full status list.
       const res = await analyticsTimeInStatusApiService.getSeries(filters);
       if (res.done && res.body) {
-        setData(res.body);
+        const localizedStatuses = res.body.statuses.map(status => ({
+          ...status,
+          name: localizeCategoryLabel(status.id, status.name),
+        }));
+        const localizedAggregate = res.body.aggregate.map(row => ({
+          ...row,
+          status_name: localizeCategoryLabel(row.status_id, row.status_name),
+        }));
+        const localizedIssues = res.body.issues.map(issue => ({
+          ...issue,
+          segments: issue.segments.map(seg => ({
+            ...seg,
+            status_name: localizeCategoryLabel(seg.status_id, seg.status_name),
+          })),
+        }));
+        setData({
+          ...res.body,
+          statuses: localizedStatuses,
+          aggregate: localizedAggregate,
+          issues: localizedIssues,
+        });
       } else {
         setError(
           res.message ||
@@ -299,27 +276,32 @@ const TimeInStatusPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, hasSelection, datePreset, customRange, t]);
+  }, [filters, localizeCategoryLabel, t]);
 
   useEffect(() => {
-    void loadTeams();
-  }, [loadTeams]);
+    void loadTeamsAndMembers();
+  }, [loadTeamsAndMembers]);
 
   useEffect(() => {
     void loadProjectsForTeams(selectedTeamIds);
   }, [selectedTeamIds, loadProjectsForTeams]);
 
   useEffect(() => {
-    void loadFilterOptions(selectedProjectIds, selectedTeamIds);
-  }, [selectedProjectIds, selectedTeamIds, loadFilterOptions]);
-
-  useEffect(() => {
+    if (filtersLoading) return;
     void loadSeries();
-  }, [loadSeries]);
+  }, [loadSeries, filtersLoading]);
 
   useEffect(() => {
     setSort(reportView === 'per_issue' ? 'total_desc' : 'avg_desc');
   }, [reportView]);
+
+  const handleClearFilters = () => {
+    setSelectedProjectIds([]);
+    setSelectedMemberIds([]);
+    setDatePreset('last_30_days');
+    setExcludeWeekends(false);
+    setReportView('aggregate');
+  };
 
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;
@@ -386,163 +368,102 @@ const TimeInStatusPage: React.FC = () => {
   const sortOptions =
     reportView === 'aggregate'
       ? [
-          { value: 'avg_desc', label: t('tisSortAvgDesc', { defaultValue: 'Avg (high ? low)' }) },
-          { value: 'avg_asc', label: t('tisSortAvgAsc', { defaultValue: 'Avg (low ? high)' }) },
+          { value: 'avg_desc', label: t('tisSortAvgDesc', { defaultValue: 'Avg (high → low)' }) },
+          { value: 'avg_asc', label: t('tisSortAvgAsc', { defaultValue: 'Avg (low → high)' }) },
           {
             value: 'median_desc',
-            label: t('tisSortMedianDesc', { defaultValue: 'Median (high ? low)' }),
+            label: t('tisSortMedianDesc', { defaultValue: 'Median (high → low)' }),
           },
           {
             value: 'count_desc',
-            label: t('tisSortCountDesc', { defaultValue: 'Count (high ? low)' }),
+            label: t('tisSortCountDesc', { defaultValue: 'Count (high → low)' }),
           },
           { value: 'name_asc', label: t('tisSortNameAsc', { defaultValue: 'Status name' }) },
         ]
       : [
           {
             value: 'total_desc',
-            label: t('tisSortTotalDesc', { defaultValue: 'Total (high ? low)' }),
+            label: t('tisSortTotalDesc', { defaultValue: 'Total (high → low)' }),
           },
           {
             value: 'total_asc',
-            label: t('tisSortTotalAsc', { defaultValue: 'Total (low ? high)' }),
+            label: t('tisSortTotalAsc', { defaultValue: 'Total (low → high)' }),
           },
           { value: 'key_asc', label: t('tisSortKeyAsc', { defaultValue: 'Task key' }) },
           { value: 'name_asc', label: t('tisSortTaskNameAsc', { defaultValue: 'Task name' }) },
         ];
 
   const tisFilters = (
-    <Flex gap={8} wrap="nowrap" align="center" style={{ overflowX: 'auto', width: '100%' }}>
-      <AnalyticsFilterBar
-        projectOptions={projectOptions}
-        selectedProjectIds={selectedProjectIds}
-        onProjectsChange={setSelectedProjectIds}
-        teamOptions={teamOptions}
-        selectedTeamIds={selectedTeamIds}
-        onTeamsChange={setSelectedTeamIds}
-        memberOptions={memberOptions}
-        selectedMemberIds={selectedAssigneeIds}
-        onMembersChange={setSelectedAssigneeIds}
-        datePreset={datePreset}
-        onDatePresetChange={setDatePreset}
-        statusOptions={statusOptions}
-        selectedStatusIds={selectedStatusIds}
-        onStatusesChange={setSelectedStatusIds}
-        loading={filtersLoading}
-        inline
-      />
-
-      {datePreset === 'custom' && (
-        <RangePicker
-          value={customRange}
-          onChange={vals => {
-            if (vals?.[0] && vals?.[1]) setCustomRange([vals[0], vals[1]]);
-            else setCustomRange(null);
-          }}
+    <Flex vertical gap={8} style={{ width: '100%' }}>
+      <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
+        <Select
+          value={datePreset}
+          onChange={setDatePreset}
+          style={{ minWidth: 160 }}
+          options={[
+            { value: 'last_7_days', label: t('dateLast7', { defaultValue: 'Last 7 days' }) },
+            { value: 'last_30_days', label: t('dateLast30', { defaultValue: 'Last 30 days' }) },
+            { value: 'last_90_days', label: t('dateLast90', { defaultValue: 'Last 90 days' }) },
+            {
+              value: 'this_quarter',
+              label: t('dateThisQuarter', { defaultValue: 'This quarter' }),
+            },
+          ]}
+          aria-label={t('datePreset', { defaultValue: 'Date range' })}
         />
-      )}
 
-      <Select
-        mode="multiple"
-        allowClear
-        maxTagCount="responsive"
-        placeholder={t('tisFilterType', { defaultValue: 'Type' })}
-        style={{ minWidth: 120 }}
-        value={selectedIssueTypes}
-        onChange={setSelectedIssueTypes}
-        options={[
-          { value: 'task', label: t('tisTypeTask', { defaultValue: 'Task' }) },
-          { value: 'story', label: t('tisTypeStory', { defaultValue: 'Story' }) },
-          { value: 'bug', label: t('tisTypeBug', { defaultValue: 'Bug' }) },
-        ]}
-        aria-label={t('tisFilterType', { defaultValue: 'Type' })}
-      />
-
-      {labelOptions.length > 0 && (
-        <MultiSelectFilterPill
-          label={t('tisFilterLabels', { defaultValue: 'Labels' })}
-          options={labelOptions}
-          value={selectedLabelIds}
-          onChange={setSelectedLabelIds}
-          searchPlaceholder={t('tisSearchLabels', { defaultValue: 'Search labels' })}
-          emptyText={t('tisNoLabels', { defaultValue: 'No labels found' })}
+        <AnalyticsFilterBar
+          projectOptions={projectOptions}
+          selectedProjectIds={selectedProjectIds}
+          onProjectsChange={setSelectedProjectIds}
+          memberOptions={memberOptions}
+          selectedMemberIds={selectedMemberIds}
+          onMembersChange={setSelectedMemberIds}
+          loading={filtersLoading}
         />
-      )}
 
-      {epicOptions.length > 0 && (
-        <MultiSelectFilterPill
-          label={t('tisFilterEpics', { defaultValue: 'Epics' })}
-          options={epicOptions}
-          value={selectedEpicIds}
-          onChange={setSelectedEpicIds}
-          searchPlaceholder={t('tisSearchEpics', { defaultValue: 'Search epics' })}
-          emptyText={t('tisNoEpics', { defaultValue: 'No epics found' })}
+        <Button onClick={handleClearFilters}>
+          {t('clearFilters', { defaultValue: 'Clear' })}
+        </Button>
+      </Flex>
+
+      <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
+        <Select
+          value={reportView}
+          onChange={setReportView}
+          style={{ minWidth: 140 }}
+          options={[
+            {
+              value: 'aggregate',
+              label: t('tisViewAggregate', { defaultValue: 'Aggregate' }),
+            },
+            {
+              value: 'per_issue',
+              label: t('tisViewPerIssue', { defaultValue: 'Per issue' }),
+            },
+          ]}
+          aria-label={t('tisViewMode', { defaultValue: 'View mode' })}
         />
-      )}
 
-      {sprintOptions.length > 0 && (
-        <MultiSelectFilterPill
-          label={t('tisFilterSprints', { defaultValue: 'Sprints' })}
-          options={sprintOptions}
-          value={selectedSprintIds}
-          onChange={setSelectedSprintIds}
-          searchPlaceholder={t('tisSearchSprints', { defaultValue: 'Search sprints' })}
-          emptyText={t('tisNoSprints', { defaultValue: 'No sprints found' })}
+        <Select
+          value={sort}
+          onChange={setSort}
+          style={{ minWidth: 160 }}
+          options={sortOptions}
+          aria-label={t('tisSort', { defaultValue: 'Sort' })}
         />
-      )}
 
-      <Select
-        value={dateMode}
-        onChange={setDateMode}
-        style={{ minWidth: 150 }}
-        options={[
-          {
-            value: 'overlapping',
-            label: t('tisDateModeOverlapping', { defaultValue: 'In range' }),
-          },
-          {
-            value: 'entered',
-            label: t('tisDateModeEntered', { defaultValue: 'Entered status' }),
-          },
-          {
-            value: 'exited',
-            label: t('tisDateModeExited', { defaultValue: 'Exited status' }),
-          },
-        ]}
-        aria-label={t('tisDateMode', { defaultValue: 'Date mode' })}
-      />
-
-      <Select
-        value={reportView}
-        onChange={setReportView}
-        style={{ minWidth: 140 }}
-        options={[
-          {
-            value: 'aggregate',
-            label: t('tisViewAggregate', { defaultValue: 'Aggregate' }),
-          },
-          {
-            value: 'per_issue',
-            label: t('tisViewPerIssue', { defaultValue: 'Per issue' }),
-          },
-        ]}
-        aria-label={t('tisViewMode', { defaultValue: 'View mode' })}
-      />
-
-      <Select
-        value={sort}
-        onChange={setSort}
-        style={{ minWidth: 160 }}
-        options={sortOptions}
-        aria-label={t('tisSort', { defaultValue: 'Sort' })}
-      />
-
-      <Space size={6} style={{ flexShrink: 0 }}>
-        <Switch checked={excludeWeekends} onChange={setExcludeWeekends} />
-        <Text style={{ whiteSpace: 'nowrap' }}>
-          {t('tisExcludeWeekends', { defaultValue: 'Exclude weekends' })}
-        </Text>
-      </Space>
+        <Space size={6} style={{ flexShrink: 0 }}>
+          <Switch
+            checked={excludeWeekends}
+            onChange={setExcludeWeekends}
+            aria-label={t('tisExcludeWeekends', { defaultValue: 'Exclude weekends' })}
+          />
+          <Text style={{ whiteSpace: 'nowrap' }}>
+            {t('tisExcludeWeekends', { defaultValue: 'Exclude weekends' })}
+          </Text>
+        </Space>
+      </Flex>
     </Flex>
   );
 
@@ -559,21 +480,11 @@ const TimeInStatusPage: React.FC = () => {
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={tisFilters}
       onExport={handleExport}
-      exportDisabled={!data || !hasSelection}
+      exportDisabled={!data}
       exportFormats={['csv', 'pdf', 'png', 'svg']}
       exportLoading={exporting}
     >
-      {!hasSelection ? (
-        <Flex align="center" justify="center" style={{ minHeight: 320 }}>
-          <ReportEmptyState
-            title={t('tisNoSelectionTitle', { defaultValue: 'Select projects' })}
-            description={t('tisNoSelectionDescription', {
-              defaultValue:
-                'Choose one or more projects (up to 20) to analyze time spent in each status.',
-            })}
-          />
-        </Flex>
-      ) : loading ? (
+      {loading && !data ? (
         <ReportLoadingSkeleton />
       ) : error ? (
         <ReportErrorState message={error} onRetry={() => void loadSeries()} />

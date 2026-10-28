@@ -92,6 +92,7 @@ export interface TimeInStatusSeriesResponse {
   };
   meta: {
     project_count: number;
+    rollup_by_category?: boolean;
   };
   last_updated_at: string;
 }

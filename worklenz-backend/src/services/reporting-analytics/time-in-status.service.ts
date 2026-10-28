@@ -37,6 +37,8 @@ export interface TimeInStatusFilters {
   /** Cap for per-issue rows returned in JSON (CSV can request higher via limit). */
   limit: number;
   offset: number;
+  /** No explicit projects → roll durations into To do / Doing / Done. */
+  rollupByCategory: boolean;
 }
 
 export interface TimeInStatusStatusMeta {
@@ -102,11 +104,46 @@ export interface TimeInStatusResult {
   };
   meta: {
     project_count: number;
+    rollup_by_category: boolean;
   };
   last_updated_at: string;
 }
 
+/** Synthetic status ids used when rollupByCategory is on. */
+export const TIS_CATEGORY_STATUS = {
+  todo: "__tis_todo__",
+  doing: "__tis_doing__",
+  done: "__tis_done__",
+} as const;
+
+const CATEGORY_STATUS_META: TimeInStatusStatusMeta[] = [
+  {
+    id: TIS_CATEGORY_STATUS.todo,
+    name: "To do",
+    color: "#fa8c16",
+    sort_order: 1,
+    category: "todo",
+  },
+  {
+    id: TIS_CATEGORY_STATUS.doing,
+    name: "In progress",
+    color: "#1890ff",
+    sort_order: 2,
+    category: "doing",
+  },
+  {
+    id: TIS_CATEGORY_STATUS.done,
+    name: "Done",
+    color: "#52c41a",
+    sort_order: 3,
+    category: "done",
+  },
+];
+
+/** Hard cap when user picks projects — detail statuses freeze with too many. */
 const MAX_TIS_PROJECTS = 20;
+/** Soft cap for all-projects category rollup. */
+const MAX_TIS_CATEGORY_PROJECTS = 200;
 const OUTLIER_MULTIPLIER = 1.5;
 const MS_PER_DAY = 86_400_000;
 const DEFAULT_PER_ISSUE_LIMIT = 100;
@@ -191,8 +228,16 @@ export function parseTimeInStatusFilters(
 ): TimeInStatusFilters {
   const defaults = defaultDateRange();
   const allowed = new Set(accessibleProjectIds);
-  let projectIds = parseCsvIds(query.project_ids).filter(id => allowed.has(id));
-  if (projectIds.length > MAX_TIS_PROJECTS) {
+  const requested = parseCsvIds(query.project_ids).filter(id => allowed.has(id));
+  // No explicit projects → all accessible, rolled into To do / In progress / Done.
+  const rollupByCategory = requested.length === 0;
+  let projectIds = rollupByCategory ? [...accessibleProjectIds] : requested;
+
+  if (rollupByCategory) {
+    if (projectIds.length > MAX_TIS_CATEGORY_PROJECTS) {
+      projectIds = projectIds.slice(0, MAX_TIS_CATEGORY_PROJECTS);
+    }
+  } else if (projectIds.length > MAX_TIS_PROJECTS) {
     projectIds = projectIds.slice(0, MAX_TIS_PROJECTS);
   }
 
@@ -238,6 +283,7 @@ export function parseTimeInStatusFilters(
     teamIds: parseCsvIds(query.team_ids),
     limit,
     offset,
+    rollupByCategory,
   };
 }
 
@@ -507,6 +553,152 @@ function buildStatuses(visits: ComputedVisit[]): TimeInStatusStatusMeta[] {
   );
 }
 
+/** All statuses for selected projects (including zero-duration), like CFD. */
+async function loadProjectStatuses(
+  projectIds: string[],
+  statusIds: string[]
+): Promise<TimeInStatusStatusMeta[]> {
+  if (projectIds.length === 0) return [];
+
+  const params: unknown[] = [projectIds];
+  let statusFilter = "";
+  if (statusIds.length > 0) {
+    params.push(statusIds);
+    statusFilter = `AND ts.id = ANY($${params.length}::UUID[])`;
+  }
+
+  const result = await db.query(
+    `
+    SELECT DISTINCT ON (ts.id)
+           ts.id,
+           ts.name,
+           COALESCE(ts.color_code, cat.color_code) AS color,
+           COALESCE(ts.sort_order, 0) AS sort_order,
+           COALESCE(cat.is_todo, FALSE) AS is_todo,
+           COALESCE(cat.is_doing, FALSE) AS is_doing,
+           COALESCE(cat.is_done, FALSE) AS is_done
+    FROM task_statuses ts
+    LEFT JOIN sys_task_status_categories cat ON cat.id = ts.category_id
+    WHERE ts.project_id = ANY($1::UUID[])
+      ${statusFilter}
+    ORDER BY ts.id, ts.sort_order
+    `,
+    params
+  );
+
+  return (
+    result.rows as Array<{
+      id: string;
+      name: string;
+      color: string | null;
+      sort_order: number;
+      is_todo: boolean;
+      is_doing: boolean;
+      is_done: boolean;
+    }>
+  )
+    .map(row => ({
+      id: String(row.id),
+      name: String(row.name ?? ""),
+      color: row.color ? String(row.color) : null,
+      sort_order: Number(row.sort_order ?? 0),
+      category: categoryOf(row),
+    }))
+    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+}
+
+/**
+ * Merge same-named statuses across projects into one row (multi-project detail mode).
+ */
+function collapseStatusesByName(
+  statuses: TimeInStatusStatusMeta[]
+): { statuses: TimeInStatusStatusMeta[]; idMap: Map<string, string> } {
+  const byName = new Map<string, TimeInStatusStatusMeta>();
+  const idMap = new Map<string, string>();
+
+  for (const status of statuses) {
+    const key = status.name.trim().toLowerCase();
+    const existing = byName.get(key);
+    if (!existing) {
+      byName.set(key, status);
+      idMap.set(status.id, status.id);
+    } else {
+      idMap.set(status.id, existing.id);
+      if (status.category === "doing" && existing.category !== "doing") {
+        byName.set(key, { ...existing, ...status, id: existing.id, name: existing.name });
+      }
+    }
+  }
+
+  return {
+    statuses: [...byName.values()].sort(
+      (a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name)
+    ),
+    idMap,
+  };
+}
+
+function remapVisitsByStatusId(
+  visits: ComputedVisit[],
+  idMap: Map<string, string>,
+  statuses: TimeInStatusStatusMeta[]
+): ComputedVisit[] {
+  const metaById = new Map(statuses.map(s => [s.id, s]));
+  return visits.map(v => {
+    const canonicalId = idMap.get(v.row.status_id) ?? v.row.status_id;
+    const meta = metaById.get(canonicalId);
+    if (!meta || canonicalId === v.row.status_id) return v;
+    return {
+      ...v,
+      row: {
+        ...v.row,
+        status_id: meta.id,
+        status_name: meta.name,
+        status_color: meta.color,
+        status_sort_order: meta.sort_order,
+        is_todo: meta.category === "todo",
+        is_doing: meta.category === "doing",
+        is_done: meta.category === "done",
+      },
+    };
+  });
+}
+
+function categoryBucketId(row: {
+  is_todo: boolean;
+  is_doing: boolean;
+  is_done: boolean;
+}): string {
+  if (row.is_done) return TIS_CATEGORY_STATUS.done;
+  if (row.is_doing) return TIS_CATEGORY_STATUS.doing;
+  return TIS_CATEGORY_STATUS.todo;
+}
+
+/**
+ * Roll every custom status into the three main categories (To do / In progress / Done).
+ * Used when no project is selected so the chart stays readable across the workspace.
+ */
+function remapVisitsToCategories(visits: ComputedVisit[]): ComputedVisit[] {
+  const metaById = new Map(CATEGORY_STATUS_META.map(s => [s.id, s]));
+  return visits.map(v => {
+    const bucketId = categoryBucketId(v.row);
+    const meta = metaById.get(bucketId) ?? CATEGORY_STATUS_META[0];
+    return {
+      ...v,
+      row: {
+        ...v.row,
+        status_id: meta.id,
+        status_name: meta.name,
+        status_color: meta.color,
+        status_sort_order: meta.sort_order,
+        is_todo: meta.category === "todo",
+        is_doing: meta.category === "doing",
+        is_done: meta.category === "done",
+      },
+    };
+  });
+}
+
 function buildAggregate(
   visits: ComputedVisit[],
   statuses: TimeInStatusStatusMeta[],
@@ -691,9 +883,53 @@ function buildIssues(
 export async function getTimeInStatusSeries(
   filters: TimeInStatusFilters
 ): Promise<TimeInStatusResult> {
+  const empty = (): TimeInStatusResult =>
+    withLastUpdated({
+      view_mode: filters.viewMode,
+      statuses: filters.rollupByCategory
+        ? CATEGORY_STATUS_META.map(s => ({ ...s }))
+        : [],
+      aggregate: filters.rollupByCategory
+        ? CATEGORY_STATUS_META.map(status => ({
+            status_id: status.id,
+            status_name: status.name,
+            color: status.color,
+            avg_days: 0,
+            median_days: 0,
+            min_days: 0,
+            max_days: 0,
+            count: 0,
+            pct_cycle_time: 0,
+            sort_order: status.sort_order,
+          }))
+        : [],
+      issues: [],
+      summary: {
+        issue_count: 0,
+        status_visit_count: 0,
+        avg_cycle_days: null,
+        outlier_count: 0,
+        exclude_weekends: filters.excludeWeekends,
+        date_mode: filters.dateMode,
+      },
+      pagination: {
+        total: 0,
+        limit: filters.limit,
+        offset: filters.offset,
+      },
+      meta: {
+        project_count: 0,
+        rollup_by_category: filters.rollupByCategory,
+      },
+    });
+
+  if (filters.projectIds.length === 0) return empty();
+
   const hash = cacheKeyHash(filters);
+  // Namespace bumped when category rollup (empty project selection) was added.
+  const cacheNs = "tis_cat";
   const cached = await getAnalyticsCache<Omit<TimeInStatusResult, "last_updated_at">>(
-    "tis",
+    cacheNs,
     filters.sessionTeamId,
     hash
   );
@@ -703,11 +939,38 @@ export async function getTimeInStatusSeries(
 
   const now = new Date();
   const history = await loadHistoryRows(filters);
-  const visits = computeVisits(history, filters.excludeWeekends, now);
-  const statuses = buildStatuses(visits);
+  let visits = computeVisits(history, filters.excludeWeekends, now);
+
+  let statuses: TimeInStatusStatusMeta[];
+  if (filters.rollupByCategory) {
+    // No project selected → counts from all accessible projects, rolled into 3 categories.
+    visits = remapVisitsToCategories(visits);
+    statuses = CATEGORY_STATUS_META.map(s => ({ ...s }));
+  } else {
+    // Project(s) selected → full status list for those projects (zeros included).
+    const loaded = await loadProjectStatuses(filters.projectIds, filters.statusIds);
+    if (filters.projectIds.length > 1) {
+      const collapsed = collapseStatusesByName(
+        loaded.length > 0 ? loaded : buildStatuses(visits)
+      );
+      statuses = collapsed.statuses;
+      visits = remapVisitsByStatusId(visits, collapsed.idMap, statuses);
+    } else {
+      statuses = loaded.length > 0 ? loaded : buildStatuses(visits);
+    }
+  }
+
   const aggregateSort =
     filters.viewMode === "aggregate" ? filters.sort : "avg_desc";
-  const aggregate = buildAggregate(visits, statuses, aggregateSort);
+  // Category mode keeps To do → Doing → Done order instead of avg sort.
+  const aggregate = buildAggregate(
+    visits,
+    statuses,
+    filters.rollupByCategory ? "name_asc" : aggregateSort
+  );
+  if (filters.rollupByCategory) {
+    aggregate.sort((a, b) => a.sort_order - b.sort_order);
+  }
 
   const issuePage =
     filters.viewMode === "per_issue"
@@ -743,11 +1006,12 @@ export async function getTimeInStatusSeries(
     },
     meta: {
       project_count: filters.projectIds.length,
+      rollup_by_category: filters.rollupByCategory,
     },
   };
 
   const cachedPayload = await setAnalyticsCache(payload, [
-    "tis",
+    cacheNs,
     filters.sessionTeamId,
     hash,
   ]);
