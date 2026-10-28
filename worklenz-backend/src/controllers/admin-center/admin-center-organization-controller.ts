@@ -232,24 +232,6 @@ export default class AdminCenterOrganizationController extends WorklenzControlle
     const oldLogoResult = await db.query(oldLogoQuery, [organizationId]);
     const oldLogoUrl = oldLogoResult.rows[0]?.logo_url;
 
-    // Delete old logo from S3 if exists
-    if (oldLogoUrl) {
-      try {
-        // Extract the storage key from the old logo URL
-        // Logo URLs are typically in format: {S3_URL}/{env}/organization-logos/{orgId}.{ext}
-        const urlParts = oldLogoUrl.split("/organization-logos/");
-        if (urlParts.length > 1) {
-          const keyPart = urlParts[1].split("?")[0]; // Remove query params if any
-          // Reconstruct the storage key using the same pattern as getOrganizationLogoKey
-          const oldStorageKey = `organization-logos/${getRootDir()}/${keyPart}`;
-          await deleteObject(oldStorageKey);
-        }
-      } catch (deleteError) {
-        // Log but don't fail if old logo deletion fails
-        log_error(deleteError);
-      }
-    }
-
     // Generate storage key
     const storageKey = getOrganizationLogoKey(organizationId, fileExtension);
 
@@ -279,6 +261,25 @@ export default class AdminCenterOrganizationController extends WorklenzControlle
       )
     `;
     await db.query(syncQuery, [logoUrl, ownerId, organizationId]);
+
+    // Delete the old logo only after the new one is saved, and keep it if it was overwritten in place.
+    if (oldLogoUrl) {
+      try {
+        // Logo URLs are typically in format: {S3_URL}/{env}/organization-logos/{orgId}.{ext}
+        const urlParts = oldLogoUrl.split("/organization-logos/");
+        if (urlParts.length > 1) {
+          const keyPart = urlParts[1].split("?")[0]; // Remove query params if any
+          // Reconstruct the storage key using the same pattern as getOrganizationLogoKey
+          const oldStorageKey = `organization-logos/${getRootDir()}/${keyPart}`;
+          if (oldStorageKey !== storageKey) {
+            await deleteObject(oldStorageKey);
+          }
+        }
+      } catch (deleteError) {
+        // Log but don't fail if old logo deletion fails
+        log_error(deleteError);
+      }
+    }
 
     return res.status(200).send(
       new ServerResponse(

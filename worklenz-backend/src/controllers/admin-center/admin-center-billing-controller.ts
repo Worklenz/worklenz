@@ -486,10 +486,16 @@ export default class AdminCenterBillingController extends WorklenzControllerBase
     const limits = await getFreePlanSettings();
     const ownerId = await getOwnerIdByTeam(teamId);
 
+    if (!ownerId || ownerId !== req.user?.owner_id) {
+      return res
+        .status(403)
+        .send(new ServerResponse(false, [], "You are not allowed to change the plan of this team."));
+    }
+
     if (limits && ownerId) {
       if (parseInt(limits.team_member_limit) !== 0) {
         const teamMemberCount = await getTeamMemberCount(ownerId);
-        if (parseInt(teamMemberCount) > parseInt(limits.team_member_limit)) {
+        if (Number(teamMemberCount?.user_count ?? 0) > parseInt(limits.team_member_limit)) {
           return res
             .status(200)
             .send(
@@ -567,63 +573,86 @@ export default class AdminCenterBillingController extends WorklenzControllerBase
   ): Promise<IWorkLenzResponse> {
     const { code } = req.body;
 
-    const q = `SELECT * FROM licensing_coupon_codes WHERE coupon_code = $1 AND is_redeemed IS FALSE AND is_refunded IS FALSE;`;
-    const result = await db.query(q, [code]);
-    const [data] = result.rows;
+    const failure = new ServerResponse(
+      false,
+      [],
+      "Redeem Code verification Failed! Please try again."
+    );
 
-    if (!result.rows.length)
-      return res
-        .status(200)
-        .send(
-          new ServerResponse(
-            false,
-            [],
-            "Redeem Code verification Failed! Please try again."
-          )
-        );
+    const client = await db.connect();
+    try {
+      await client.query("BEGIN");
 
-    const checkQ = `SELECT  sum(team_members_limit) AS team_member_total FROM licensing_coupon_codes WHERE redeemed_by = $1 AND is_redeemed IS TRUE;`;
-    const checkResult = await db.query(checkQ, [req.user?.owner_id]);
-    const [total] = checkResult.rows;
+      const q = `SELECT * FROM licensing_coupon_codes WHERE coupon_code = $1 AND is_redeemed IS FALSE AND is_refunded IS FALSE;`;
+      const result = await client.query(q, [code]);
+      const [data] = result.rows;
 
-    if (parseInt(total.team_member_total) > 50)
-      return res
-        .status(200)
-        .send(
-          new ServerResponse(false, [], "Maximum number of codes redeemed!")
-        );
+      if (!result.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(200).send(failure);
+      }
 
-    const updateQ = `UPDATE licensing_coupon_codes
-                SET is_redeemed  = TRUE, redeemed_at = CURRENT_TIMESTAMP,
-                    redeemed_by = $1
-                WHERE id = $2;`;
-    await db.query(updateQ, [req.user?.owner_id, data.id]);
+      const checkQ = `SELECT  sum(team_members_limit) AS team_member_total FROM licensing_coupon_codes WHERE redeemed_by = $1 AND is_redeemed IS TRUE;`;
+      const checkResult = await client.query(checkQ, [req.user?.owner_id]);
+      const [total] = checkResult.rows;
 
-    const updateQ2 = `UPDATE organizations
-        SET subscription_status = 'life_time_deal',
-            trial_in_progress   = FALSE,
-            storage = (SELECT sum(storage_limit) FROM licensing_coupon_codes WHERE redeemed_by = $1),
-            license_type_id = (SELECT id FROM sys_license_types WHERE key = 'LIFE_TIME_DEAL') 
-        WHERE user_id = $1;`;
-    await db.query(updateQ2, [req.user?.owner_id]);
+      if (parseInt(total.team_member_total) > 50) {
+        await client.query("ROLLBACK");
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(false, [], "Maximum number of codes redeemed!")
+          );
+      }
 
-    // Check if user has redeemed 5 codes and upgrade to Business Plan
-    const redeemedCountQ = `SELECT COUNT(*)::INT AS redeemed_count 
-                           FROM licensing_coupon_codes 
-                           WHERE redeemed_by = $1 
-                             AND is_redeemed = TRUE 
-                             AND is_refunded = FALSE;`;
-    const redeemedResult = await db.query(redeemedCountQ, [req.user?.owner_id]);
-    const redeemedCount = redeemedResult.rows[0]?.redeemed_count || 0;
+      // Claim the code only if it is still unredeemed, so concurrent requests cannot both redeem it.
+      const updateQ = `UPDATE licensing_coupon_codes
+                  SET is_redeemed  = TRUE, redeemed_at = CURRENT_TIMESTAMP,
+                      redeemed_by = $1
+                  WHERE id = $2
+                    AND is_redeemed IS FALSE
+                    AND is_refunded IS FALSE
+                  RETURNING id;`;
+      const claimResult = await client.query(updateQ, [req.user?.owner_id, data.id]);
 
-	    if (redeemedCount >= 5) {
-	      // Upgrade to Business Plan
-	      const businessPlanQ = `UPDATE organizations
-	        SET business_plan_override = TRUE,
-	            team_member_limit_override = TRUE
-	        WHERE user_id = $1;`;
-	      await db.query(businessPlanQ, [req.user?.owner_id]);
-	    }
+      if (!claimResult.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(200).send(failure);
+      }
+
+      const updateQ2 = `UPDATE organizations
+          SET subscription_status = 'life_time_deal',
+              trial_in_progress   = FALSE,
+              storage = (SELECT sum(storage_limit) FROM licensing_coupon_codes WHERE redeemed_by = $1),
+              license_type_id = (SELECT id FROM sys_license_types WHERE key = 'LIFE_TIME_DEAL') 
+          WHERE user_id = $1;`;
+      await client.query(updateQ2, [req.user?.owner_id]);
+
+      // Check if user has redeemed 5 codes and upgrade to Business Plan
+      const redeemedCountQ = `SELECT COUNT(*)::INT AS redeemed_count 
+                             FROM licensing_coupon_codes 
+                             WHERE redeemed_by = $1 
+                               AND is_redeemed = TRUE 
+                               AND is_refunded = FALSE;`;
+      const redeemedResult = await client.query(redeemedCountQ, [req.user?.owner_id]);
+      const redeemedCount = redeemedResult.rows[0]?.redeemed_count || 0;
+
+      if (redeemedCount >= 5) {
+        // Upgrade to Business Plan
+        const businessPlanQ = `UPDATE organizations
+          SET business_plan_override = TRUE,
+              team_member_limit_override = TRUE
+          WHERE user_id = $1;`;
+        await client.query(businessPlanQ, [req.user?.owner_id]);
+      }
+
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
 
     return res
       .status(200)

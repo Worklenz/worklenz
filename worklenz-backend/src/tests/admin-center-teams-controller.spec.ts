@@ -82,7 +82,7 @@ describe("AdminCenterTeamsController", () => {
             team_members: [{ name: "Alice" }],
           },
         ],
-        current_team: {
+        current_team_data: {
           id: "team-1",
           name: "Engineering",
           members_count: 5,
@@ -105,6 +105,7 @@ describe("AdminCenterTeamsController", () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.done).toBe(true);
       expect(res.body.body).toEqual(teamsData);
+      expect(res.body.body.current_team_data.names[0].color_code).toBeDefined();
     });
 
     it("returns 200 with teams data when offset > 0 and search is applied", async () => {
@@ -160,11 +161,26 @@ describe("AdminCenterTeamsController", () => {
 
       await AdminCenterTeamsController.getTeamDetails(req, res);
 
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining("user_id = $2"), ["team-2", "owner-1"]);
       expect(res.statusCode).toBe(200);
       expect(res.body.done).toBe(true);
       expect(res.body.body.id).toBe("team-2");
       expect(res.body.body.names).toBeDefined();
       expect(res.body.body.names[0].color_code).toBeDefined();
+    });
+  });
+
+  describe("getTeamDetails ownership", () => {
+    it("returns 404 when the team is not owned by the session owner", async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+
+      const req = createMockRequest({ user: mockUser, params: { id: "foreign-team" } });
+      const res = createMockResponse();
+
+      await AdminCenterTeamsController.getTeamDetails(req, res);
+
+      expect(res.statusCode).toBe(404);
+      expect(res.body.done).toBe(false);
     });
   });
 

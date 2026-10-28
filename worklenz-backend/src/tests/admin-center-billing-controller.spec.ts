@@ -23,6 +23,7 @@ import { appSumoService } from "../shared/private-extensions";
 
 jest.mock("../config/db", () => ({
   query: jest.fn(),
+  connect: jest.fn(),
 }));
 
 jest.mock("../shared/paddle-utils", () => ({
@@ -80,8 +81,17 @@ describe("AdminCenterBillingController", () => {
     name: "John Doe",
   };
 
+  const mockClientRelease = jest.fn();
+
   beforeEach(() => {
     jest.clearAllMocks();
+    // Transaction control statements are not part of the mocked result sequence.
+    (db.connect as jest.Mock).mockResolvedValue({
+      query: jest.fn((sql: string, params?: unknown[]) =>
+        /^(BEGIN|COMMIT|ROLLBACK)$/.test(sql) ? Promise.resolve({ rows: [] }) : mockQuery(sql, params)
+      ),
+      release: mockClientRelease,
+    });
   });
 
   describe("getBillingInfo", () => {
@@ -471,7 +481,7 @@ describe("AdminCenterBillingController", () => {
         free_tier_storage: "100",
       });
       mockGetOwnerIdByTeam.mockResolvedValueOnce("owner-1");
-      mockGetTeamMemberCount.mockResolvedValueOnce("5"); // 5 > 3
+      mockGetTeamMemberCount.mockResolvedValueOnce({ user_count: 5 }); // 5 > 3
 
       const req = createMockRequest({
         user: mockUser,
@@ -539,7 +549,7 @@ describe("AdminCenterBillingController", () => {
         free_tier_storage: "500",
       });
       mockGetOwnerIdByTeam.mockResolvedValueOnce("owner-1");
-      mockGetTeamMemberCount.mockResolvedValueOnce("2");
+      mockGetTeamMemberCount.mockResolvedValueOnce({ user_count: 2 });
       mockGetCurrentProjectsCount.mockResolvedValueOnce("2");
       mockGetUsedStorage.mockResolvedValueOnce("1000");
       mockQuery.mockResolvedValueOnce({ rows: [] }); // update query
@@ -558,7 +568,44 @@ describe("AdminCenterBillingController", () => {
     });
   });
 
+  describe("switchToFreePlan ownership", () => {
+    it("rejects a team that belongs to a different organization", async () => {
+      mockGetFreePlanSettings.mockResolvedValueOnce({
+        team_member_limit: "0",
+        projects_limit: "5",
+        free_tier_storage: "100",
+      });
+      mockGetOwnerIdByTeam.mockResolvedValueOnce("other-owner");
+
+      const req = createMockRequest({ user: mockUser, params: { id: "foreign-team" } });
+      const res = createMockResponse();
+
+      await AdminCenterBillingController.switchToFreePlan(req, res);
+
+      expect(res.statusCode).toBe(403);
+      expect(res.body.done).toBe(false);
+      expect(mockQuery).not.toHaveBeenCalled();
+    });
+  });
+
   describe("redeem", () => {
+    it("aborts when a concurrent request already claimed the code", async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ id: "coupon-1" }] })
+        .mockResolvedValueOnce({ rows: [{ team_member_total: "10" }] })
+        .mockResolvedValueOnce({ rows: [] }); // claim lost the race
+
+      const req = createMockRequest({ user: mockUser, body: { code: "CODE-1" } });
+      const res = createMockResponse();
+
+      await AdminCenterBillingController.redeem(req, res);
+
+      expect(res.body.done).toBe(false);
+      expect(res.body.message).toContain("Redeem Code verification Failed");
+      expect(mockQuery).toHaveBeenCalledTimes(3);
+      expect(mockClientRelease).toHaveBeenCalled();
+    });
+
     it("returns error when coupon code verification fails", async () => {
       mockQuery.mockResolvedValueOnce({ rows: [] }); // invalid or redeemed code
 
@@ -597,7 +644,7 @@ describe("AdminCenterBillingController", () => {
       mockQuery
         .mockResolvedValueOnce({ rows: [{ id: "coupon-5" }] }) // code exists
         .mockResolvedValueOnce({ rows: [{ team_member_total: "30" }] }) // total members <= 50
-        .mockResolvedValueOnce({ rows: [] }) // update licensing_coupon_codes
+        .mockResolvedValueOnce({ rows: [{ id: "coupon-5" }] }) // claim licensing_coupon_codes
         .mockResolvedValueOnce({ rows: [] }) // update organizations
         .mockResolvedValueOnce({ rows: [{ redeemed_count: 5 }] }) // check count >= 5
         .mockResolvedValueOnce({ rows: [] }); // business plan update

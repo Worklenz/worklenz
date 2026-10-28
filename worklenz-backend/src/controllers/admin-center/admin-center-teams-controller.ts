@@ -197,10 +197,17 @@ export default class AdminCenterTeamsController extends WorklenzControllerBase {
                              WHERE tm.team_id = teams.id
                              ORDER BY r.name = 'Owner' DESC, u.name) rec)          AS team_members
                FROM teams
-               WHERE id = $1;`;
-    const result = await db.query(q, [id]);
+               WHERE id = $1
+                 AND user_id = $2;`;
+    const result = await db.query(q, [id, req.user?.owner_id]);
 
     const [obj] = result.rows;
+
+    if (!obj) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Team not found"));
+    }
 
     obj.names = this.createTagList(obj?.team_members);
     obj.names.map((a: any) => (a.color_code = getColor(a.name)));
@@ -218,8 +225,8 @@ export default class AdminCenterTeamsController extends WorklenzControllerBase {
  
     try {
       // 1. Update team name
-      const updateNameQuery = `UPDATE teams SET name = $1 WHERE id = $2 RETURNING id;`;
-      const nameResult = await db.query(updateNameQuery, [name, id]);
+      const updateNameQuery = `UPDATE teams SET name = $1 WHERE id = $2 AND user_id = $3 RETURNING id;`;
+      const nameResult = await db.query(updateNameQuery, [name, id, req.user?.owner_id]);
  
       if (!nameResult.rows.length) {
         return res
