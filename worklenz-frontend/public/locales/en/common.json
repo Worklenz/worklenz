@@ -152,5 +152,16 @@
   "linkPlaceholder": "https://example.com",
   "apply": "Apply",
   "link": "Link",
-  "textColor": "Text color"
+  "textColor": "Text color",
+  "colorDefault": "Default",
+  "colorBlue": "Blue",
+  "colorPurple": "Purple",
+  "colorCyan": "Cyan",
+  "colorGreen": "Green",
+  "colorYellow": "Yellow",
+  "colorOrange": "Orange",
+  "colorRed": "Red",
+  "colorMagenta": "Magenta",
+  "colorGray": "Gray",
+  "commentInput": "Comment input"
 }

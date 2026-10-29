@@ -152,5 +152,16 @@
   "linkPlaceholder": "https://przyklad.pl",
   "apply": "Zastosuj",
   "link": "Łącze",
-  "textColor": "Kolor tekstu"
+  "textColor": "Kolor tekstu",
+  "colorDefault": "Domyślny",
+  "colorBlue": "Niebieski",
+  "colorPurple": "Fioletowy",
+  "colorCyan": "Cyjan",
+  "colorGreen": "Zielony",
+  "colorYellow": "Żółty",
+  "colorOrange": "Pomarańczowy",
+  "colorRed": "Czerwony",
+  "colorMagenta": "Magenta",
+  "colorGray": "Szary",
+  "commentInput": "Pole komentarza"
 }

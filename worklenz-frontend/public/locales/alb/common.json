@@ -152,5 +152,16 @@
   "linkPlaceholder": "https://shembull.com",
   "apply": "Apliko",
   "link": "Lidhje",
-  "textColor": "Ngjyra e tekstit"
+  "textColor": "Ngjyra e tekstit",
+  "colorDefault": "Parazgjedhur",
+  "colorBlue": "Blu",
+  "colorPurple": "Vjollcë",
+  "colorCyan": "Cian",
+  "colorGreen": "Jeshile",
+  "colorYellow": "E verdhë",
+  "colorOrange": "Portokalli",
+  "colorRed": "E kuqe",
+  "colorMagenta": "Magenta",
+  "colorGray": "Gri",
+  "commentInput": "Fusha e komentit"
 }

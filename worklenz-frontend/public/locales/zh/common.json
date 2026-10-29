@@ -152,5 +152,16 @@
   "linkPlaceholder": "https://example.com",
   "apply": "应用",
   "link": "链接",
-  "textColor": "文字颜色"
+  "textColor": "文字颜色",
+  "colorDefault": "默认",
+  "colorBlue": "蓝色",
+  "colorPurple": "紫色",
+  "colorCyan": "青色",
+  "colorGreen": "绿色",
+  "colorYellow": "黄色",
+  "colorOrange": "橙色",
+  "colorRed": "红色",
+  "colorMagenta": "洋红",
+  "colorGray": "灰色",
+  "commentInput": "评论输入"
 }

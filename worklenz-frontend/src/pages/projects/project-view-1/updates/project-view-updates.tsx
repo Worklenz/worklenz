@@ -503,9 +503,22 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
   };
 
   /** Opens the inline editor with the existing HTML and normalizes supplied mention IDs. */
+  // Saved comments store mentions as {0}, {1}; the editor needs mention markup to rebuild them.
+  const restoreMentionSpans = (content: string, mentions?: any[]) => {
+    if (!mentions?.length || !/\{\d+\}/.test(content)) return content;
+    return mentions.reduce((acc: string, mention, index) => {
+      const name = mention.user_name || mention.name;
+      if (!name) return acc;
+      return acc.replace(
+        new RegExp(`\\{${index}\\}`, 'g'),
+        `<span class="mentions">@${escapeHtml(name)}</span>`
+      );
+    }, content);
+  };
+
   const startEdit = (commentId: string, content: string, mentions?: any[]) => {
     setEditingCommentId(commentId);
-    setEditContent(content || '');
+    setEditContent(restoreMentionSpans(content || '', mentions));
 
     if (mentions && mentions.length > 0) {
       setEditSelectedMembers(

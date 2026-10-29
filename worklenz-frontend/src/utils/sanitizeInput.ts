@@ -169,6 +169,7 @@ const installCommentSanitizeHooks = (purify: PurifyWithHooks): void => {
     // Inputs are strictly checkboxes and links open safely in a new tab.
     if (el.tagName === 'INPUT') {
       el.setAttribute('type', 'checkbox');
+      el.setAttribute('disabled', '');
     }
     if (el.tagName === 'A') {
       el.setAttribute('target', '_blank');

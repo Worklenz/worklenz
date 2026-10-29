@@ -152,5 +152,16 @@
   "linkPlaceholder": "https://exemple.com",
   "apply": "Appliquer",
   "link": "Lien",
-  "textColor": "Couleur du texte"
+  "textColor": "Couleur du texte",
+  "colorDefault": "Par défaut",
+  "colorBlue": "Bleu",
+  "colorPurple": "Violet",
+  "colorCyan": "Cyan",
+  "colorGreen": "Vert",
+  "colorYellow": "Jaune",
+  "colorOrange": "Orange",
+  "colorRed": "Rouge",
+  "colorMagenta": "Magenta",
+  "colorGray": "Gris",
+  "commentInput": "Saisie du commentaire"
 }

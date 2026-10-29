@@ -75,7 +75,11 @@ export function extractUrls(html: string): string[] {
   const matches = text.match(URL_REGEX);
   const textUrls = matches ? matches.map(cleanUrl) : [];
 
-  return [...new Set([...hrefUrls, ...textUrls])];
+  // Autolinked text usually equals its href; skip text URLs that match an href once trimmed.
+  const extraTextUrls = textUrls.filter(
+    url => !hrefUrls.some(href => trimTrailingPunctuation(href) === url)
+  );
+  return [...new Set([...hrefUrls, ...extraTextUrls])];
 }
 
 export async function syncTaskDescriptionLinks(

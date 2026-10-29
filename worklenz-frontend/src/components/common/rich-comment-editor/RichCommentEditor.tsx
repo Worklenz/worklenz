@@ -66,16 +66,16 @@ const MAX_SUGGESTIONS = 8;
 const SAFE_URL_REGEX = /^(?:https?:\/\/|mailto:)/i;
 
 const COLOR_PALETTE = [
-  { label: 'Default', value: '' },
-  { label: 'Blue', value: '#1890ff' },
-  { label: 'Purple', value: '#722ed1' },
-  { label: 'Cyan', value: '#13c2c2' },
-  { label: 'Green', value: '#52c41a' },
-  { label: 'Yellow', value: '#faad14' },
-  { label: 'Orange', value: '#fa8c16' },
-  { label: 'Red', value: '#f5222d' },
-  { label: 'Magenta', value: '#eb2f96' },
-  { label: 'Gray', value: '#8c8c8c' },
+  { key: 'Default', label: 'Default', value: '' },
+  { key: 'Blue', label: 'Blue', value: '#1890ff' },
+  { key: 'Purple', label: 'Purple', value: '#722ed1' },
+  { key: 'Cyan', label: 'Cyan', value: '#13c2c2' },
+  { key: 'Green', label: 'Green', value: '#52c41a' },
+  { key: 'Yellow', label: 'Yellow', value: '#faad14' },
+  { key: 'Orange', label: 'Orange', value: '#fa8c16' },
+  { key: 'Red', label: 'Red', value: '#f5222d' },
+  { key: 'Magenta', label: 'Magenta', value: '#eb2f96' },
+  { key: 'Gray', label: 'Gray', value: '#8c8c8c' },
 ];
 
 /**
@@ -152,7 +152,7 @@ export const RichCommentEditor = ({
   onFocus,
   onBlur,
   placeholder,
-  ariaLabel = 'Comment input',
+  ariaLabel,
   maxLength,
   minHeight = 60,
   maxHeight = 220,
@@ -315,7 +315,7 @@ export const RichCommentEditor = ({
       attributes: {
         role: 'textbox',
         'aria-multiline': 'true',
-        'aria-label': ariaLabel,
+        'aria-label': ariaLabel || t('commentInput', { defaultValue: 'Comment input' }),
       },
       handleKeyDown: (_view, event) => {
         if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
@@ -703,10 +703,10 @@ const ColorControl = ({
         <div className="rich-comment-color-palette">
           {COLOR_PALETTE.map(item => (
             <button
-              key={item.label}
+              key={item.key}
               type="button"
               className="rich-comment-color-btn"
-              title={item.label}
+              title={t(`color${item.key}`, { defaultValue: item.label })}
               style={{
                 backgroundColor: item.value || 'transparent',
                 borderColor: item.value ? 'transparent' : '#bfbfbf',
