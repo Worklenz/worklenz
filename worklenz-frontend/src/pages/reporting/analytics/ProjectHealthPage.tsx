@@ -39,7 +39,6 @@ import {
 } from '@/lib/reporting/analytics-chart-projects';
 import type {
   ProjectHealthFilters,
-  ProjectHealthKpis,
   ProjectHealthSeriesResponse,
 } from '@/types/reporting/analytics-project-health.types';
 import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
@@ -108,14 +107,16 @@ const ProjectHealthPage: React.FC = () => {
     [projectHealths]
   );
 
+  // Load the full team set for KPIs / health donut / table.
+  // Projects selection only scopes the Progress & budget bar chart (latest 20 by default).
   const filters: ProjectHealthFilters = useMemo(
     () => ({
-      project_ids: selectedProjectIds,
+      project_ids: [],
       team_ids: selectedTeamIds,
       health_ids: selectedHealthIds,
       member_ids: selectedMemberIds,
     }),
-    [selectedProjectIds, selectedTeamIds, selectedHealthIds, selectedMemberIds]
+    [selectedTeamIds, selectedHealthIds, selectedMemberIds]
   );
 
   const loadTeams = useCallback(async () => {
@@ -324,11 +325,11 @@ const ProjectHealthPage: React.FC = () => {
     }
   };
 
-  // Chart/donut/table: latest 20 by default; all projects only after Select all.
+  // Progress & budget bar only: latest 20 by default; all after Select all / custom picks.
   const isSelectAllProjects =
     projectOptions.length > 0 && selectedProjectIds.length >= projectOptions.length;
 
-  const displayProjects = useMemo(() => {
+  const barChartProjects = useMemo(() => {
     if (!data?.projects?.length) return [];
     return resolveAnalyticsDisplayProjects(data.projects, {
       selectedProjectIds,
@@ -337,24 +338,9 @@ const ProjectHealthPage: React.FC = () => {
     });
   }, [data?.projects, selectedProjectIds, projectOptions.length]);
 
-  const displayKpis = useMemo((): ProjectHealthKpis => {
-    const kpis: ProjectHealthKpis = {
-      on_track: 0,
-      at_risk: 0,
-      off_track: 0,
-      not_set: 0,
-      overdue_tasks: 0,
-    };
-    for (const project of displayProjects) {
-      kpis[project.health_tone] += 1;
-      kpis.overdue_tasks += project.overdue_tasks;
-    }
-    return kpis;
-  }, [displayProjects]);
-
   const chartProjectIds = useMemo(
-    () => displayProjects.map(p => p.project_id),
-    [displayProjects]
+    () => barChartProjects.map(p => p.project_id),
+    [barChartProjects]
   );
 
   const filterBar = (
@@ -398,10 +384,10 @@ const ProjectHealthPage: React.FC = () => {
   } else if (data) {
     body = (
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <ProjectHealthKpiTiles kpis={displayKpis} />
+        <ProjectHealthKpiTiles kpis={data.kpis} />
         <ChartTableWrapper
           chartTitle={title}
-          rowCount={displayProjects.length}
+          rowCount={data.projects.length}
           chart={
             <Flex gap={16} wrap="wrap" align="stretch" style={{ width: '100%' }}>
               <div style={{ flex: '2 1 420px', minWidth: 280 }}>
@@ -409,7 +395,7 @@ const ProjectHealthPage: React.FC = () => {
                   {t('phProgressBudgetTitle', { defaultValue: 'Progress & budget' })}
                 </Text>
                 {!isSelectAllProjects &&
-                  projectOptions.length > DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT && (
+                  data.projects.length > DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT && (
                     <Text
                       type="secondary"
                       style={{ display: 'block', marginBottom: 8, fontSize: 12 }}
@@ -419,21 +405,21 @@ const ProjectHealthPage: React.FC = () => {
                           'Showing the latest updated {{count}} projects in this graph. Select all projects to show every project.',
                         count: Math.min(
                           DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
-                          displayProjects.length
+                          barChartProjects.length
                         ),
                       })}
                     </Text>
                   )}
-                <ProjectHealthChart ref={chartRef} projects={displayProjects} />
+                <ProjectHealthChart ref={chartRef} projects={barChartProjects} />
               </div>
               <div style={{ flex: '1 1 280px', minWidth: 260, maxWidth: 420 }}>
-                <ProjectHealthDonutChart projects={displayProjects} kpis={displayKpis} />
+                <ProjectHealthDonutChart projects={data.projects} kpis={data.kpis} />
               </div>
             </Flex>
           }
-          table={<ProjectHealthTable projects={displayProjects} loading={loading} />}
+          table={<ProjectHealthTable projects={data.projects} loading={loading} />}
         />
-        {displayProjects.length === 0 && (
+        {data.projects.length === 0 && (
           <Text type="secondary" style={{ color: token.colorTextSecondary }}>
             {t('phChartEmpty', { defaultValue: 'No projects match these filters.' })}
           </Text>
