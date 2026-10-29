@@ -52,6 +52,22 @@ describe("ClientPortalSettingsController.updateSettings", () => {
     expect(db.query).not.toHaveBeenCalled();
   });
 
+  it("rejects non-string numeric contact phone with 400 Bad Request", async () => {
+    const req = createMockRequest({
+      body: {
+        contact_phone: 94112345678, // non-string number
+      },
+    });
+    const res = createMockResponse();
+
+    await ClientPortalSettingsController.updateSettings(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.body.done).toBe(false);
+    expect(res.body.message).toBe("Invalid contact phone number format");
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
   it("accepts a valid international contact phone number", async () => {
     const req = createMockRequest({
       body: {

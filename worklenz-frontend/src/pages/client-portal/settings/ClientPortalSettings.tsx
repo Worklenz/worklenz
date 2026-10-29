@@ -383,7 +383,7 @@ const ClientPortalSettings = () => {
   };
 
   const handleSaveChanges = async () => {
-    if (settings.contact_phone && !validatePhoneNumber(settings.contact_phone)) {
+    if (hasLegacyChanges && settings.contact_phone && !validatePhoneNumber(settings.contact_phone)) {
       setSection('company');
       message.error(
         t('invalidPhoneNumberFormat', {

@@ -245,4 +245,20 @@ describe('ClientPortalSettings', () => {
     expect(payload.contact_phone).toBe('+94 11 234 5678');
     expect(state.messageSuccess).toHaveBeenCalledWith('Settings saved successfully');
   });
+
+  it('allows v2 changes to save when hasLegacyChanges is false even if stored phone is invalid', async () => {
+    state.getLegacy.mockResolvedValue({
+      done: true,
+      body: { ...legacyBody, contact_phone: 'invalid-old-phone' },
+    });
+    render(<ClientPortalSettings />);
+    await openSection('Sharing & Visibility');
+
+    await userEvent.click(await screen.findByRole('switch', { name: 'Show Invoices in the client portal' }));
+    await userEvent.click(screen.getByRole('button', { name: /Save Changes/ }));
+
+    await waitFor(() => expect(state.saveV2).toHaveBeenCalledWith({ ...v2Defaults, show_invoices: true }));
+    expect(state.updateLegacy).not.toHaveBeenCalled();
+    expect(state.messageError).not.toHaveBeenCalled();
+  });
 });

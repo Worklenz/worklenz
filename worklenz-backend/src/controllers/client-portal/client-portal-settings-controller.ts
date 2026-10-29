@@ -146,16 +146,15 @@ export default class ClientPortalSettingsController extends ClientPortalControll
         portal_title,
       } = req.body;
 
-      if (
-        contact_phone !== undefined &&
-        contact_phone !== null &&
-        typeof contact_phone === "string" &&
-        contact_phone.trim() !== "" &&
-        !isValidPhoneNumber(contact_phone)
-      ) {
-        return res
-          .status(400)
-          .json(new ServerResponse(false, null, "Invalid contact phone number format"));
+      if (contact_phone !== undefined && contact_phone !== null) {
+        if (
+          typeof contact_phone !== "string" ||
+          (contact_phone.trim() !== "" && !isValidPhoneNumber(contact_phone))
+        ) {
+          return res
+            .status(400)
+            .json(new ServerResponse(false, null, "Invalid contact phone number format"));
+        }
       }
 
       let logo_url = req.body.logo_url;

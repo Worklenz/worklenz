@@ -49,18 +49,22 @@ export const CompanyDetailsSection: React.FC<CompanyDetailsSectionProps> = ({ se
               label={t('contactPhoneLabel', { defaultValue: 'Contact Phone' })}
               validateStatus={isPhoneInvalid ? 'error' : undefined}
               help={
-                isPhoneInvalid
-                  ? t('invalidPhoneNumberFormat', {
+                isPhoneInvalid ? (
+                  <span id="contact-phone-error">
+                    {t('invalidPhoneNumberFormat', {
                       defaultValue:
                         'Invalid phone number format. Use international format (e.g., +1-234-567-8900)',
-                    })
-                  : undefined
+                    })}
+                  </span>
+                ) : undefined
               }
             >
               <PhoneInput
                 placeholder={t('contactPhonePlaceholder', { defaultValue: 'Enter contact phone' })}
                 value={settings.contact_phone || ''}
                 onChange={value => onChange({ contact_phone: value })}
+                aria-invalid={isPhoneInvalid}
+                aria-describedby={isPhoneInvalid ? 'contact-phone-error' : undefined}
               />
             </Form.Item>
           </Col>
