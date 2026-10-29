@@ -17,10 +17,10 @@ import {
   type AnalyticsNavItem,
 } from '@/lib/reporting/analytics-nav';
 import {
-  syncVelocityTemplatesToCustomReports,
+  syncTemplatesToCustomReports,
   useAnalyticsCustomReports,
 } from '@/features/reporting/analytics-custom-reports';
-import { analyticsVelocityApiService } from '@/api/reporting/analytics-velocity.api.service';
+import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
 import './analytics-sidebar.css';
 
 const COLLAPSED_STORAGE_KEY = 'worklenz.analyticsSidebar.collapsed';
@@ -115,14 +115,14 @@ export const AnalyticsSidebar: React.FC = () => {
     }
   }, [collapsed]);
 
-  // Sync API-saved velocity templates into the Custom templates sidebar group.
+  // Sync API-saved templates (all report kinds) into the Custom templates sidebar group.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await analyticsVelocityApiService.listTemplates('velocity');
+        const res = await analyticsTemplatesApiService.listTemplates('all');
         if (!cancelled && res.done && Array.isArray(res.body)) {
-          syncVelocityTemplatesToCustomReports(res.body);
+          syncTemplatesToCustomReports(res.body);
           refreshCustomReports();
         }
       } catch {

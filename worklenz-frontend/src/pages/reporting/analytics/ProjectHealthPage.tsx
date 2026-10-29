@@ -14,6 +14,7 @@ import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/pr
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import {
   AnalyticsFilterBar,
+  AnalyticsTemplateActions,
   ChartTableWrapper,
   ReportEmptyState,
   ReportErrorState,
@@ -30,7 +31,13 @@ import {
 import { ProjectHealthDonutChart } from '@/components/reporting/analytics/project-health/ProjectHealthDonutChart';
 import { ProjectHealthKpiTiles } from '@/components/reporting/analytics/project-health/ProjectHealthKpiTiles';
 import { ProjectHealthTable } from '@/components/reporting/analytics/project-health/ProjectHealthTable';
+import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
+import {
+  getAnalyticsDashboardPermissions,
+  resolveAnalyticsActorRole,
+} from '@/lib/reporting/analytics-permissions';
 import {
   DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
   latestUpdatedOptionIds,
@@ -41,6 +48,7 @@ import type {
   ProjectHealthFilters,
   ProjectHealthSeriesResponse,
 } from '@/types/reporting/analytics-project-health.types';
+import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-velocity.types';
 import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 const { Text } = Typography;
@@ -58,15 +66,26 @@ const downloadText = (content: string, filename: string, mime: string) => {
   downloadBlob(new Blob([content], { type: mime }), filename);
 };
 
-const ProjectHealthPage: React.FC = () => {
+export interface ProjectHealthPageProps {
+  customTemplateId?: string;
+  customTemplateName?: string;
+}
+
+const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
+  customTemplateId,
+  customTemplateName,
+}) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
-  const title = t('projectHealth', { defaultValue: 'Project Health' });
-  useDocumentTitle(title);
+  const baseTitle = t('projectHealth', { defaultValue: 'Project Health' });
 
   const authService = useAuthService();
   const session = authService.getCurrentSession();
+  const permissions = getAnalyticsDashboardPermissions({
+    role: resolveAnalyticsActorRole(session),
+    userId: session?.id,
+  });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
 
@@ -87,6 +106,41 @@ const ProjectHealthPage: React.FC = () => {
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const seededProjectsForTeamsRef = useRef<string>('');
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
+
+  const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
+    applyCommonAnalyticsTemplateFilters(template.filters_json, {
+      setSelectedProjectIds,
+      setSelectedMemberIds,
+      setSelectedTeamIds,
+      setSelectedHealthIds,
+      setDatePreset,
+    });
+  }, []);
+
+  const {
+    templates,
+    saveOpen,
+    setSaveOpen,
+    savingTemplate,
+    isCustomTemplateView,
+    loadTemplates,
+    handleSaveTemplate,
+    applyTemplate,
+  } = useAnalyticsReportTemplates({
+    reportKind: 'project-health',
+    customTemplateId,
+    onApply: applyTemplateFilters,
+    getFilters: () => ({
+      project_ids: selectedProjectIds,
+      member_ids: selectedMemberIds,
+      team_ids: selectedTeamIds,
+      health_ids: selectedHealthIds,
+      date_preset: datePreset,
+    }),
+  });
+
+  const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
+  useDocumentTitle(title);
 
   const memberOptions: FilterOption[] = useMemo(() => {
     const list = (teamMembersState?.data ?? []) as ITeamMemberViewModel[];
@@ -433,18 +487,47 @@ const ProjectHealthPage: React.FC = () => {
   return (
     <ReportPageShell
       title={title}
-      crumbs={[
-        {
-          label: t('allReports', { defaultValue: 'All reports' }),
-          path: ANALYTICS_BASE_PATH,
-        },
-        { label: title },
-      ]}
+      crumbs={
+        isCustomTemplateView
+          ? [
+              {
+                label: t('allReports', { defaultValue: 'All reports' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              {
+                label: t('tabCustom', { defaultValue: 'Custom templates' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              { label: title },
+            ]
+          : [
+              {
+                label: t('allReports', { defaultValue: 'All reports' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              { label: title },
+            ]
+      }
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={filterBar}
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.projects.length === 0}
+      actions={
+        !isCustomTemplateView ? (
+          <AnalyticsTemplateActions
+            templates={templates}
+            canShare={permissions.canShare}
+            saveDisabled={!hasSelection}
+            saveOpen={saveOpen}
+            savingTemplate={savingTemplate}
+            onSaveOpenChange={setSaveOpen}
+            onRefresh={() => void loadTemplates()}
+            onApply={applyTemplate}
+            onSave={values => void handleSaveTemplate(values)}
+          />
+        ) : undefined
+      }
     >
       {body}
     </ReportPageShell>

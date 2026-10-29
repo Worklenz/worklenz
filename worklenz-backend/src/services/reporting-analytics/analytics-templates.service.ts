@@ -55,6 +55,23 @@ export async function listTemplates(
   userId: string,
   reportKind: string = VELOCITY_REPORT_KIND
 ): Promise<AnalyticsTemplateRow[]> {
+  // report_kind "all" (or empty) → every kind for Custom templates hub / sidebar.
+  if (!reportKind || reportKind === "all") {
+    const result = await db.query(
+      `SELECT t.id, t.team_id, t.owner_id, t.report_kind, t.name,
+              t.is_workspace_shared, t.is_default, t.filters_json,
+              t.created_at, t.updated_at,
+              u.name AS owner_name
+       FROM analytics_report_templates t
+       LEFT JOIN users u ON u.id = t.owner_id
+       WHERE t.team_id = $1::UUID
+         AND (t.owner_id = $2::UUID OR t.is_workspace_shared IS TRUE)
+       ORDER BY t.updated_at DESC`,
+      [teamId, userId]
+    );
+    return result.rows.map(mapRow);
+  }
+
   const result = await db.query(
     `SELECT t.id, t.team_id, t.owner_id, t.report_kind, t.name,
             t.is_workspace_shared, t.is_default, t.filters_json,

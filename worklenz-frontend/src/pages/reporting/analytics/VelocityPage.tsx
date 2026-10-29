@@ -20,6 +20,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { analyticsVelocityApiService } from '@/api/reporting/analytics-velocity.api.service';
+import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import { syncVelocityTemplatesToCustomReports } from '@/features/reporting/analytics-custom-reports';
 import {
@@ -251,8 +252,20 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       const res = await analyticsVelocityApiService.listTemplates('velocity');
       if (res.done && Array.isArray(res.body)) {
         setTemplates(res.body);
-        // Keep All reports → Custom templates + sidebar in sync with API.
-        syncVelocityTemplatesToCustomReports(res.body);
+
+        // Keep All reports → Custom templates + sidebar in sync with every
+        // report kind's templates (not just velocity), so saves made on
+        // other report pages aren't wiped out when this page syncs.
+        try {
+          const all = await analyticsTemplatesApiService.listTemplates('all');
+          if (all.done && Array.isArray(all.body)) {
+            syncVelocityTemplatesToCustomReports(all.body);
+          } else {
+            syncVelocityTemplatesToCustomReports(res.body);
+          }
+        } catch {
+          syncVelocityTemplatesToCustomReports(res.body);
+        }
 
         const queryTemplateId = pendingQueryTemplateId.current;
         if (queryTemplateId && appliedQueryTemplate.current !== queryTemplateId) {

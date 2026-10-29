@@ -13,6 +13,7 @@ import { analyticsBudgetTrackingApiService } from '@/api/reporting/analytics-bud
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import {
   AnalyticsFilterBar,
+  AnalyticsTemplateActions,
   ChartTableWrapper,
   ReportEmptyState,
   ReportErrorState,
@@ -27,7 +28,13 @@ import {
 } from '@/components/reporting/analytics/budget-tracking/BudgetTrackingChart';
 import { BudgetTrackingKpiTiles } from '@/components/reporting/analytics/budget-tracking/BudgetTrackingKpiTiles';
 import { BudgetTrackingTable } from '@/components/reporting/analytics/budget-tracking/BudgetTrackingTable';
+import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
+import {
+  getAnalyticsDashboardPermissions,
+  resolveAnalyticsActorRole,
+} from '@/lib/reporting/analytics-permissions';
 import {
   DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
   latestUpdatedOptionIds,
@@ -38,6 +45,7 @@ import type {
   BudgetTrackingFilters,
   BudgetTrackingSeriesResponse,
 } from '@/types/reporting/analytics-budget-tracking.types';
+import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-velocity.types';
 import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 const { Text } = Typography;
@@ -61,15 +69,26 @@ const fmtMoney = (value: number, currency = 'USD'): string =>
     maximumFractionDigits: 0,
   }).format(value)}`;
 
-const BudgetTrackingPage: React.FC = () => {
+export interface BudgetTrackingPageProps {
+  customTemplateId?: string;
+  customTemplateName?: string;
+}
+
+const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
+  customTemplateId,
+  customTemplateName,
+}) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
-  const title = t('budgetTracking', { defaultValue: 'Budget Tracking' });
-  useDocumentTitle(title);
+  const baseTitle = t('budgetTracking', { defaultValue: 'Budget Tracking' });
 
   const authService = useAuthService();
   const session = authService.getCurrentSession();
+  const permissions = getAnalyticsDashboardPermissions({
+    role: resolveAnalyticsActorRole(session),
+    userId: session?.id,
+  });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
@@ -87,6 +106,37 @@ const BudgetTrackingPage: React.FC = () => {
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const seededProjectsForTeamsRef = useRef<string>('');
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
+
+  const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
+    applyCommonAnalyticsTemplateFilters(template.filters_json, {
+      setSelectedProjectIds,
+      setSelectedMemberIds,
+      setSelectedTeamIds,
+    });
+  }, []);
+
+  const {
+    templates,
+    saveOpen,
+    setSaveOpen,
+    savingTemplate,
+    isCustomTemplateView,
+    loadTemplates,
+    handleSaveTemplate,
+    applyTemplate,
+  } = useAnalyticsReportTemplates({
+    reportKind: 'budget-tracking',
+    customTemplateId,
+    onApply: applyTemplateFilters,
+    getFilters: () => ({
+      project_ids: selectedProjectIds,
+      member_ids: selectedMemberIds,
+      team_ids: selectedTeamIds,
+    }),
+  });
+
+  const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
+  useDocumentTitle(title);
 
   const memberOptions: FilterOption[] = useMemo(() => {
     const list = (teamMembersState?.data ?? []) as ITeamMemberViewModel[];
@@ -402,18 +452,47 @@ const BudgetTrackingPage: React.FC = () => {
   return (
     <ReportPageShell
       title={title}
-      crumbs={[
-        {
-          label: t('allReports', { defaultValue: 'All reports' }),
-          path: ANALYTICS_BASE_PATH,
-        },
-        { label: title },
-      ]}
+      crumbs={
+        isCustomTemplateView
+          ? [
+              {
+                label: t('allReports', { defaultValue: 'All reports' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              {
+                label: t('tabCustom', { defaultValue: 'Custom templates' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              { label: title },
+            ]
+          : [
+              {
+                label: t('allReports', { defaultValue: 'All reports' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              { label: title },
+            ]
+      }
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={filterBar}
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.projects.length === 0}
+      actions={
+        !isCustomTemplateView ? (
+          <AnalyticsTemplateActions
+            templates={templates}
+            canShare={permissions.canShare}
+            saveDisabled={!hasSelection}
+            saveOpen={saveOpen}
+            savingTemplate={savingTemplate}
+            onSaveOpenChange={setSaveOpen}
+            onRefresh={() => void loadTemplates()}
+            onApply={applyTemplate}
+            onSave={values => void handleSaveTemplate(values)}
+          />
+        ) : undefined
+      }
     >
       {body}
     </ReportPageShell>

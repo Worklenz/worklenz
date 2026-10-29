@@ -13,6 +13,7 @@ import { analyticsPlannedVsActualMilestonesApiService } from '@/api/reporting/an
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import {
   AnalyticsFilterBar,
+  AnalyticsTemplateActions,
   ChartTableWrapper,
   ReportEmptyState,
   ReportErrorState,
@@ -28,11 +29,18 @@ import {
 } from '@/components/reporting/analytics/planned-vs-actual-milestones/PvaMilestonesChart';
 import { PvaMilestonesKpiTiles } from '@/components/reporting/analytics/planned-vs-actual-milestones/PvaMilestonesKpiTiles';
 import { PvaMilestonesTable } from '@/components/reporting/analytics/planned-vs-actual-milestones/PvaMilestonesTable';
+import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
+import {
+  getAnalyticsDashboardPermissions,
+  resolveAnalyticsActorRole,
+} from '@/lib/reporting/analytics-permissions';
 import type {
   PlannedVsActualMilestonesFilters,
   PlannedVsActualMilestonesSeriesResponse,
 } from '@/types/reporting/analytics-planned-vs-actual-milestones.types';
+import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-velocity.types';
 import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 const { Text } = Typography;
@@ -50,17 +58,28 @@ const downloadText = (content: string, filename: string, mime: string) => {
   downloadBlob(new Blob([content], { type: mime }), filename);
 };
 
-const PlannedVsActualMilestonesPage: React.FC = () => {
+export interface PlannedVsActualMilestonesPageProps {
+  customTemplateId?: string;
+  customTemplateName?: string;
+}
+
+const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps> = ({
+  customTemplateId,
+  customTemplateName,
+}) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
-  const title = t('plannedVsActualMilestones', {
+  const baseTitle = t('plannedVsActualMilestones', {
     defaultValue: 'Planned vs Actual: Milestones',
   });
-  useDocumentTitle(title);
 
   const authService = useAuthService();
   const session = authService.getCurrentSession();
+  const permissions = getAnalyticsDashboardPermissions({
+    role: resolveAnalyticsActorRole(session),
+    userId: session?.id,
+  });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
   const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
@@ -77,6 +96,39 @@ const PlannedVsActualMilestonesPage: React.FC = () => {
 
   const chartRef = useRef<PvaMilestonesChartHandle>(null);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
+
+  const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
+    applyCommonAnalyticsTemplateFilters(template.filters_json, {
+      setSelectedProjectIds,
+      setSelectedMemberIds,
+      setSelectedTeamIds,
+      setDatePreset,
+    });
+  }, []);
+
+  const {
+    templates,
+    saveOpen,
+    setSaveOpen,
+    savingTemplate,
+    isCustomTemplateView,
+    loadTemplates,
+    handleSaveTemplate,
+    applyTemplate,
+  } = useAnalyticsReportTemplates({
+    reportKind: 'planned-vs-actual-milestones',
+    customTemplateId,
+    onApply: applyTemplateFilters,
+    getFilters: () => ({
+      project_ids: selectedProjectIds,
+      member_ids: selectedMemberIds,
+      team_ids: selectedTeamIds,
+      date_preset: datePreset,
+    }),
+  });
+
+  const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
+  useDocumentTitle(title);
 
   const memberOptions: FilterOption[] = useMemo(() => {
     const list = (teamMembersState?.data ?? []) as ITeamMemberViewModel[];
@@ -321,18 +373,47 @@ const PlannedVsActualMilestonesPage: React.FC = () => {
   return (
     <ReportPageShell
       title={title}
-      crumbs={[
-        {
-          label: t('allReports', { defaultValue: 'All reports' }),
-          path: ANALYTICS_BASE_PATH,
-        },
-        { label: title },
-      ]}
+      crumbs={
+        isCustomTemplateView
+          ? [
+              {
+                label: t('allReports', { defaultValue: 'All reports' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              {
+                label: t('tabCustom', { defaultValue: 'Custom templates' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              { label: title },
+            ]
+          : [
+              {
+                label: t('allReports', { defaultValue: 'All reports' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              { label: title },
+            ]
+      }
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={filterBar}
       onExport={handleExport}
       exportLoading={exporting}
       exportDisabled={!data || data.milestones.length === 0}
+      actions={
+        !isCustomTemplateView ? (
+          <AnalyticsTemplateActions
+            templates={templates}
+            canShare={permissions.canShare}
+            saveDisabled={!hasSelection}
+            saveOpen={saveOpen}
+            savingTemplate={savingTemplate}
+            onSaveOpenChange={setSaveOpen}
+            onRefresh={() => void loadTemplates()}
+            onApply={applyTemplate}
+            onSave={values => void handleSaveTemplate(values)}
+          />
+        ) : undefined
+      }
     >
       {body}
     </ReportPageShell>

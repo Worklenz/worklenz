@@ -16,6 +16,7 @@ import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import { useAuthService } from '@/hooks/useAuth';
 import {
   AnalyticsFilterBar,
+  AnalyticsTemplateActions,
   ChartTableWrapper,
   ReportErrorState,
   ReportLoadingSkeleton,
@@ -28,12 +29,19 @@ import { CfdChart, type CfdChartHandle } from '@/components/reporting/analytics/
 import { CfdKpiTiles } from '@/components/reporting/analytics/cfd/CfdKpiTiles';
 import { CfdStatusLegend } from '@/components/reporting/analytics/cfd/CfdStatusLegend';
 import { CfdTable } from '@/components/reporting/analytics/cfd/CfdTable';
+import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
+import {
+  getAnalyticsDashboardPermissions,
+  resolveAnalyticsActorRole,
+} from '@/lib/reporting/analytics-permissions';
 import type {
   CfdSeriesFilters,
   CfdSeriesResponse,
   CfdStatusMeta,
 } from '@/types/reporting/analytics-cfd.types';
+import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-velocity.types';
 import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 const DEFAULT_GROUP_BY = 'all' as const;
@@ -52,14 +60,25 @@ const downloadText = (content: string, filename: string, mime: string) => {
   downloadBlob(new Blob([content], { type: mime }), filename);
 };
 
-const CumulativeFlowPage: React.FC = () => {
+export interface CumulativeFlowPageProps {
+  customTemplateId?: string;
+  customTemplateName?: string;
+}
+
+const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
+  customTemplateId,
+  customTemplateName,
+}) => {
   const { t } = useTranslation('reporting-analytics');
   const dispatch = useAppDispatch();
-  const title = t('cumulativeFlow', { defaultValue: 'Cumulative Flow' });
-  useDocumentTitle(title);
+  const baseTitle = t('cumulativeFlow', { defaultValue: 'Cumulative Flow' });
 
   const authService = useAuthService();
   const session = authService.getCurrentSession();
+  const permissions = getAnalyticsDashboardPermissions({
+    role: resolveAnalyticsActorRole(session),
+    userId: session?.id,
+  });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
   const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
@@ -80,6 +99,39 @@ const CumulativeFlowPage: React.FC = () => {
   const chartRef = useRef<CfdChartHandle>(null);
   /** Tracks last rollup mode so switching category ? detail resets visible bands. */
   const lastRollupMode = useRef<boolean | null>(null);
+
+  const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
+    applyCommonAnalyticsTemplateFilters(template.filters_json, {
+      setSelectedProjectIds,
+      setSelectedMemberIds,
+      setSelectedTeamIds,
+      setDatePreset,
+    });
+  }, []);
+
+  const {
+    templates,
+    saveOpen,
+    setSaveOpen,
+    savingTemplate,
+    isCustomTemplateView,
+    loadTemplates,
+    handleSaveTemplate,
+    applyTemplate,
+  } = useAnalyticsReportTemplates({
+    reportKind: 'cumulative-flow',
+    customTemplateId,
+    onApply: applyTemplateFilters,
+    getFilters: () => ({
+      project_ids: selectedProjectIds,
+      member_ids: selectedMemberIds,
+      team_ids: selectedTeamIds,
+      date_preset: datePreset,
+    }),
+  });
+
+  const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
+  useDocumentTitle(title);
 
   const memberOptions: FilterOption[] = useMemo(() => {
     const list = (teamMembersState?.data ?? []) as ITeamMemberViewModel[];
@@ -369,19 +421,48 @@ const CumulativeFlowPage: React.FC = () => {
   return (
     <ReportPageShell
       title={title}
-      crumbs={[
-        {
-          label: t('allReports', { defaultValue: 'All reports' }),
-          path: ANALYTICS_BASE_PATH,
-        },
-        { label: title },
-      ]}
+      crumbs={
+        isCustomTemplateView
+          ? [
+              {
+                label: t('allReports', { defaultValue: 'All reports' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              {
+                label: t('tabCustom', { defaultValue: 'Custom templates' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              { label: title },
+            ]
+          : [
+              {
+                label: t('allReports', { defaultValue: 'All reports' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              { label: title },
+            ]
+      }
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={cfdFilters}
       onExport={handleExport}
       exportDisabled={!data}
       exportFormats={['csv', 'pdf', 'png', 'svg']}
       exportLoading={exporting}
+      actions={
+        !isCustomTemplateView ? (
+          <AnalyticsTemplateActions
+            templates={templates}
+            canShare={permissions.canShare}
+            saveDisabled={false}
+            saveOpen={saveOpen}
+            savingTemplate={savingTemplate}
+            onSaveOpenChange={setSaveOpen}
+            onRefresh={() => void loadTemplates()}
+            onApply={applyTemplate}
+            onSave={values => void handleSaveTemplate(values)}
+          />
+        ) : undefined
+      }
     >
       {loading && !data ? (
         <ReportLoadingSkeleton />

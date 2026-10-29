@@ -16,6 +16,7 @@ import { analyticsTimeInStatusApiService } from '@/api/reporting/analytics-time-
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import {
   AnalyticsFilterBar,
+  AnalyticsTemplateActions,
   ChartTableWrapper,
   ReportErrorState,
   ReportLoadingSkeleton,
@@ -38,13 +39,20 @@ import {
 } from '@/components/reporting/analytics/time-in-status/TisPerIssueChart';
 import { TisPerIssueTable } from '@/components/reporting/analytics/time-in-status/TisPerIssueTable';
 import { TisKpiTiles } from '@/components/reporting/analytics/time-in-status/TisKpiTiles';
+import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
+import {
+  getAnalyticsDashboardPermissions,
+  resolveAnalyticsActorRole,
+} from '@/lib/reporting/analytics-permissions';
 import type {
   TimeInStatusFilters,
   TimeInStatusSeriesResponse,
   TimeInStatusSort,
   TimeInStatusViewMode,
 } from '@/types/reporting/analytics-time-in-status.types';
+import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-velocity.types';
 import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 const { Text } = Typography;
@@ -64,14 +72,25 @@ const downloadText = (content: string, filename: string, mime: string) => {
   downloadBlob(new Blob([content], { type: mime }), filename);
 };
 
-const TimeInStatusPage: React.FC = () => {
+export interface TimeInStatusPageProps {
+  customTemplateId?: string;
+  customTemplateName?: string;
+}
+
+const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
+  customTemplateId,
+  customTemplateName,
+}) => {
   const { t } = useTranslation('reporting-analytics');
   const dispatch = useAppDispatch();
-  const title = t('timeInStatus', { defaultValue: 'Time in Status' });
-  useDocumentTitle(title);
+  const baseTitle = t('timeInStatus', { defaultValue: 'Time in Status' });
 
   const authService = useAuthService();
   const session = authService.getCurrentSession();
+  const permissions = getAnalyticsDashboardPermissions({
+    role: resolveAnalyticsActorRole(session),
+    userId: session?.id,
+  });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
   const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
@@ -92,6 +111,39 @@ const TimeInStatusPage: React.FC = () => {
 
   const aggregateChartRef = useRef<TisAggregateChartHandle>(null);
   const perIssueChartRef = useRef<TisPerIssueChartHandle>(null);
+
+  const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
+    applyCommonAnalyticsTemplateFilters(template.filters_json, {
+      setSelectedProjectIds,
+      setSelectedMemberIds,
+      setSelectedTeamIds,
+      setDatePreset,
+    });
+  }, []);
+
+  const {
+    templates,
+    saveOpen,
+    setSaveOpen,
+    savingTemplate,
+    isCustomTemplateView,
+    loadTemplates,
+    handleSaveTemplate,
+    applyTemplate,
+  } = useAnalyticsReportTemplates({
+    reportKind: 'time-in-status',
+    customTemplateId,
+    onApply: applyTemplateFilters,
+    getFilters: () => ({
+      project_ids: selectedProjectIds,
+      member_ids: selectedMemberIds,
+      team_ids: selectedTeamIds,
+      date_preset: datePreset,
+    }),
+  });
+
+  const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
+  useDocumentTitle(title);
 
   const memberOptions: FilterOption[] = useMemo(() => {
     const list = (teamMembersState?.data ?? []) as ITeamMemberViewModel[];
@@ -452,19 +504,48 @@ const TimeInStatusPage: React.FC = () => {
   return (
     <ReportPageShell
       title={title}
-      crumbs={[
-        {
-          label: t('allReports', { defaultValue: 'All reports' }),
-          path: ANALYTICS_BASE_PATH,
-        },
-        { label: title },
-      ]}
+      crumbs={
+        isCustomTemplateView
+          ? [
+              {
+                label: t('allReports', { defaultValue: 'All reports' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              {
+                label: t('tabCustom', { defaultValue: 'Custom templates' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              { label: title },
+            ]
+          : [
+              {
+                label: t('allReports', { defaultValue: 'All reports' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              { label: title },
+            ]
+      }
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={tisFilters}
       onExport={handleExport}
       exportDisabled={!data}
       exportFormats={['csv', 'pdf', 'png', 'svg']}
       exportLoading={exporting}
+      actions={
+        !isCustomTemplateView ? (
+          <AnalyticsTemplateActions
+            templates={templates}
+            canShare={permissions.canShare}
+            saveDisabled={false}
+            saveOpen={saveOpen}
+            savingTemplate={savingTemplate}
+            onSaveOpenChange={setSaveOpen}
+            onRefresh={() => void loadTemplates()}
+            onApply={applyTemplate}
+            onSave={values => void handleSaveTemplate(values)}
+          />
+        ) : undefined
+      }
     >
       {loading && !data ? (
         <ReportLoadingSkeleton />

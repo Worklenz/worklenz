@@ -20,9 +20,10 @@ import { analyticsCfdApiService } from '@/api/reporting/analytics-cfd.api.servic
 import { analyticsTimeInStatusApiService } from '@/api/reporting/analytics-time-in-status.api.service';
 import { ReportCardPreview } from '@/components/reporting/analytics/ReportCardPreview';
 import {
-  syncVelocityTemplatesToCustomReports,
+  syncTemplatesToCustomReports,
   useAnalyticsCustomReports,
 } from '@/features/reporting/analytics-custom-reports';
+import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
 import './all-reports-gallery.css';
 
 const { Title, Text } = Typography;
@@ -157,14 +158,14 @@ const AllReportsPage: React.FC = () => {
   const [tab, setTab] = useState<HubTab>('reports');
   const [metricsByKey, setMetricsByKey] = useState<Record<string, CardMetrics>>({});
 
-  // Backfill Custom templates from API (templates saved before hub sync).
+  // Backfill Custom templates from API (all report kinds).
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await analyticsVelocityApiService.listTemplates('velocity');
+        const res = await analyticsTemplatesApiService.listTemplates('all');
         if (!cancelled && res.done && Array.isArray(res.body)) {
-          syncVelocityTemplatesToCustomReports(res.body);
+          syncTemplatesToCustomReports(res.body);
           refreshCustomReports();
         }
       } catch {

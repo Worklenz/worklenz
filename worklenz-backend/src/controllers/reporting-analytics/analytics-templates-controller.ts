@@ -38,7 +38,7 @@ export default class AnalyticsTemplatesController extends WorklenzControllerBase
     const kind =
       typeof req.query.report_kind === "string" && req.query.report_kind
         ? req.query.report_kind
-        : VELOCITY_REPORT_KIND;
+        : "all";
 
     const rows = await listTemplates(teamId, userId, kind);
     return res.status(200).send(new ServerResponse(true, rows));

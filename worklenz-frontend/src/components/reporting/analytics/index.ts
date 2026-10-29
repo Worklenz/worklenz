@@ -12,3 +12,7 @@ export {
   ReportErrorState,
   InChartEmptyState,
 } from './states/ReportStateViews';
+export { AnalyticsTemplateActions } from './templates/AnalyticsTemplateActions';
+export { AnalyticsTemplatesMenu } from './templates/AnalyticsTemplatesMenu';
+export { SaveAnalyticsTemplateModal } from './templates/SaveAnalyticsTemplateModal';
+export type { SaveAnalyticsTemplateValues } from './templates/SaveAnalyticsTemplateModal';
