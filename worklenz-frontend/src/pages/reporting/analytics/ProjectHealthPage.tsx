@@ -31,6 +31,11 @@ import { ProjectHealthDonutChart } from '@/components/reporting/analytics/projec
 import { ProjectHealthKpiTiles } from '@/components/reporting/analytics/project-health/ProjectHealthKpiTiles';
 import { ProjectHealthTable } from '@/components/reporting/analytics/project-health/ProjectHealthTable';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
+import {
+  DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
+  latestUpdatedProjectIds,
+  projectsForAnalyticsChart,
+} from '@/lib/reporting/analytics-chart-projects';
 import type {
   ProjectHealthFilters,
   ProjectHealthSeriesResponse,
@@ -78,6 +83,8 @@ const ProjectHealthPage: React.FC = () => {
   const [data, setData] = useState<ProjectHealthSeriesResponse | null>(null);
 
   const chartRef = useRef<ProjectHealthChartHandle>(null);
+  /** Tracks team keys we already seeded with the latest-20 project default. */
+  const seededProjectsForTeamsRef = useRef<string>('');
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
 
   const memberOptions: FilterOption[] = useMemo(() => {
@@ -225,6 +232,22 @@ const ProjectHealthPage: React.FC = () => {
     void loadSeries();
   }, [loadSeries]);
 
+  // Default project filter: latest updated 20 (once per team selection).
+  useEffect(() => {
+    const teamKey = [...selectedTeamIds].sort().join(',');
+    if (selectedProjectIds.length > 0) {
+      seededProjectsForTeamsRef.current = teamKey;
+      return;
+    }
+    if (!data?.projects?.length) return;
+    if (seededProjectsForTeamsRef.current === teamKey) return;
+
+    const topIds = latestUpdatedProjectIds(data.projects);
+    if (topIds.length === 0) return;
+    seededProjectsForTeamsRef.current = teamKey;
+    setSelectedProjectIds(topIds);
+  }, [data, selectedProjectIds.length, selectedTeamIds]);
+
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;
     setExporting(true);
@@ -280,18 +303,16 @@ const ProjectHealthPage: React.FC = () => {
     }
   };
 
-  // Progress & budget chart: latest-updated projects only; KPIs/donut/table use full set.
-  const barChartProjectLimit = 20;
+  // Chart: latest 20 when no project filter; all returned projects after Select all / explicit picks.
+  // KPIs/donut/table always use the full API result.
+  const hasExplicitProjectFilter = selectedProjectIds.length > 0;
   const barChartProjects = useMemo(() => {
     if (!data?.projects?.length) return [];
-    return [...data.projects]
-      .sort((a, b) => {
-        const aTs = a.updated_at ? Date.parse(a.updated_at) : 0;
-        const bTs = b.updated_at ? Date.parse(b.updated_at) : 0;
-        return bTs - aTs;
-      })
-      .slice(0, barChartProjectLimit);
-  }, [data?.projects]);
+    return projectsForAnalyticsChart(data.projects, {
+      explicitProjectFilter: hasExplicitProjectFilter,
+      limit: DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
+    });
+  }, [data?.projects, hasExplicitProjectFilter]);
 
   const chartProjectIds = useMemo(
     () => barChartProjects.map(p => p.project_id),
@@ -349,16 +370,19 @@ const ProjectHealthPage: React.FC = () => {
                 <Text strong style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
                   {t('phProgressBudgetTitle', { defaultValue: 'Progress & budget' })}
                 </Text>
-                <Text
-                  type="secondary"
-                  style={{ display: 'block', marginBottom: 8, fontSize: 12 }}
-                >
-                  {t('phBarChartLatestNote', {
-                    defaultValue:
-                      'Showing the latest updated {{count}} projects in this graph. Use the projects dropdown for the full team list.',
-                    count: Math.min(barChartProjectLimit, data.projects.length),
-                  })}
-                </Text>
+                {!hasExplicitProjectFilter &&
+                  data.projects.length > DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT && (
+                    <Text
+                      type="secondary"
+                      style={{ display: 'block', marginBottom: 8, fontSize: 12 }}
+                    >
+                      {t('phBarChartLatestNote', {
+                        defaultValue:
+                          'Showing the latest updated {{count}} projects in this graph. Select all projects to show every project.',
+                        count: DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
+                      })}
+                    </Text>
+                  )}
                 <ProjectHealthChart ref={chartRef} projects={barChartProjects} />
               </div>
               <div style={{ flex: '1 1 280px', minWidth: 260, maxWidth: 420 }}>

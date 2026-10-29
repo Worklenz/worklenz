@@ -321,7 +321,7 @@
   "phDonutHint": "Based on health set in project settings",
   "phDonutTooltip": "{{count}} projects ({{pct}}%)",
   "phProgressBudgetTitle": "Progress & budget",
-  "phBarChartLatestNote": "Showing the latest updated {{count}} projects in this graph. Use the projects dropdown for the full team list.",
+  "phBarChartLatestNote": "Showing the latest updated {{count}} projects in this graph. Select all projects to show every project.",
   "phChartEmpty": "No projects match these filters.",
   "phColProject": "Project",
   "phColHealth": "Health",
