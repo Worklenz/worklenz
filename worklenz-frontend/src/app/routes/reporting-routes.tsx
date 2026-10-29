@@ -29,6 +29,7 @@ const BudgetTrackingPage = lazy(() => import('@/pages/reporting/analytics/Budget
 const AnalyticsComingSoonPage = lazy(
   () => import('@/pages/reporting/analytics/AnalyticsComingSoonPage')
 );
+const CustomReportPage = lazy(() => import('@/pages/reporting/analytics/CustomReportPage'));
 
 const flattenItems = (items: ReportingMenuItems[]): ReportingMenuItems[] => {
   return items.reduce<ReportingMenuItems[]>((acc, item) => {
@@ -100,7 +101,7 @@ const reportingRoutes: RouteObject[] = [
       },
       {
         path: 'custom/:id',
-        element: withSuspense(<AnalyticsComingSoonPage />),
+        element: withSuspense(<CustomReportPage />),
       },
       ...comingSoonPaths.map(path => ({
         path,

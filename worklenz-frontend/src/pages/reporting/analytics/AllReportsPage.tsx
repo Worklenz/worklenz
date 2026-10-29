@@ -1,10 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Empty, LockOutlined, Typography, theme } from '@/shared/antd-imports';
+import { Empty, Typography, theme } from '@/shared/antd-imports';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { ANALYTICS_NAV, analyticsPath } from '@/lib/reporting/analytics-nav';
+import {
+  ANALYTICS_NAV,
+  analyticsPath,
+  customReportPath,
+} from '@/lib/reporting/analytics-nav';
 import { analyticsProjectHealthApiService } from '@/api/reporting/analytics-project-health.api.service';
 import { analyticsTimeReportApiService } from '@/api/reporting/analytics-time-report.api.service';
 import { analyticsBudgetTrackingApiService } from '@/api/reporting/analytics-budget-tracking.api.service';
@@ -12,7 +16,10 @@ import { analyticsUtilizationApiService } from '@/api/reporting/analytics-utiliz
 import { analyticsVelocityApiService } from '@/api/reporting/analytics-velocity.api.service';
 import { analyticsPlannedVsActualTasksApiService } from '@/api/reporting/analytics-planned-vs-actual-tasks.api.service';
 import { analyticsPlannedVsActualMilestonesApiService } from '@/api/reporting/analytics-planned-vs-actual-milestones.api.service';
+import { analyticsCfdApiService } from '@/api/reporting/analytics-cfd.api.service';
+import { analyticsTimeInStatusApiService } from '@/api/reporting/analytics-time-in-status.api.service';
 import { ReportCardPreview } from '@/components/reporting/analytics/ReportCardPreview';
+import { useAnalyticsCustomReports } from '@/features/reporting/analytics-custom-reports';
 import './all-reports-gallery.css';
 
 const { Title, Text } = Typography;
@@ -30,7 +37,6 @@ interface HubCardDef {
   defaultMetricSub: string;
   sparkHeights: number[];
   categoryKey: string;
-  comingSoon?: boolean;
 }
 
 interface CardMetrics {
@@ -38,7 +44,7 @@ interface CardMetrics {
   spark: number[];
 }
 
-/** Descriptions + spark fallbacks for hub chart cards. */
+/** Descriptions + spark fallbacks for hub chart cards (enabled reports only). */
 const REPORT_CARD_META: Record<
   string,
   {
@@ -47,7 +53,6 @@ const REPORT_CARD_META: Record<
     metricSubKey: string;
     defaultMetricSub: string;
     sparkHeights: number[];
-    comingSoon?: boolean;
   }
 > = {
   'project-health': {
@@ -113,17 +118,9 @@ const REPORT_CARD_META: Record<
     defaultMetricSub: 'avg cycle days',
     sparkHeights: [62, 54, 48, 58, 42, 50, 38, 46, 34, 40],
   },
-  sla: {
-    descKey: 'descSla',
-    defaultDesc: 'Response and resolution SLA compliance',
-    metricSubKey: 'hubSlaMetricSub',
-    defaultMetricSub: 'on-time rate',
-    sparkHeights: [72, 68, 74, 70, 78, 66, 80, 72, 76, 82],
-    comingSoon: true,
-  },
 };
 
-/** Share views (dashboards) excluded — chart reports (+ coming-soon chart cards). */
+/** Share views (dashboards) excluded — enabled chart reports only. */
 const CHART_REPORT_KEYS = new Set(Object.keys(REPORT_CARD_META));
 
 const DEFAULT_SPARK = [40, 52, 44, 60, 50, 68, 56, 72, 58, 66];
@@ -151,20 +148,23 @@ const AllReportsPage: React.FC = () => {
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
+  const { customReports, hasCustomReports } = useAnalyticsCustomReports();
   useDocumentTitle(t('reportsTitle', { defaultValue: 'Reports' }));
 
   const [tab, setTab] = useState<HubTab>('reports');
   const [metricsByKey, setMetricsByKey] = useState<Record<string, CardMetrics>>({});
 
+  useEffect(() => {
+    if (tab === 'custom' && !hasCustomReports) {
+      setTab('reports');
+    }
+  }, [tab, hasCustomReports]);
+
   const cards: HubCardDef[] = useMemo(
     () =>
       ANALYTICS_NAV.groups.flatMap(group =>
         group.items
-          .filter(item => {
-            if (!item.path || !CHART_REPORT_KEYS.has(item.key)) return false;
-            const meta = REPORT_CARD_META[item.key];
-            return item.enabled || !!meta.comingSoon;
-          })
+          .filter(item => !!item.enabled && !!item.path && CHART_REPORT_KEYS.has(item.key))
           .map(item => {
             const meta = REPORT_CARD_META[item.key];
             return {
@@ -178,7 +178,6 @@ const AllReportsPage: React.FC = () => {
               defaultMetricSub: meta.defaultMetricSub,
               sparkHeights: meta.sparkHeights,
               categoryKey: group.key,
-              comingSoon: !!meta.comingSoon,
             };
           })
       ),
@@ -206,6 +205,8 @@ const AllReportsPage: React.FC = () => {
         velocityRes,
         pvaTasksRes,
         pvaMsRes,
+        cfdRes,
+        tisRes,
       ] = await Promise.all([
         settle(analyticsProjectHealthApiService.getSeries({})),
         settle(analyticsTimeReportApiService.getSeries({})),
@@ -214,6 +215,8 @@ const AllReportsPage: React.FC = () => {
         settle(analyticsVelocityApiService.getSeries({ view_by: 'project' })),
         settle(analyticsPlannedVsActualTasksApiService.getSeries({})),
         settle(analyticsPlannedVsActualMilestonesApiService.getSeries({})),
+        settle(analyticsCfdApiService.getSeries({})),
+        settle(analyticsTimeInStatusApiService.getSeries({ view_mode: 'aggregate' })),
       ]);
 
       if (cancelled) return;
@@ -305,6 +308,36 @@ const AllReportsPage: React.FC = () => {
         };
       }
 
+      if (cfdRes?.done && cfdRes.body) {
+        const { indicators, series, dates } = cfdRes.body;
+        const pointCount = dates?.length ?? 0;
+        const sparkValues =
+          pointCount > 0
+            ? Array.from({ length: Math.min(10, pointCount) }, (_, offset) => {
+                const index = pointCount - Math.min(10, pointCount) + offset;
+                return (series ?? []).reduce((sum, row) => sum + (row.values[index] ?? 0), 0);
+              })
+            : [];
+        next['cumulative-flow'] = {
+          primary: `${indicators.current_wip ?? 0}`,
+          spark: toSpark(sparkValues, REPORT_CARD_META['cumulative-flow'].sparkHeights),
+        };
+      }
+
+      if (tisRes?.done && tisRes.body) {
+        const cycleDays = tisRes.body.summary.avg_cycle_days;
+        next['time-in-status'] = {
+          primary:
+            cycleDays == null || !Number.isFinite(cycleDays)
+              ? '—'
+              : `${Math.round(cycleDays * 10) / 10}`,
+          spark: toSpark(
+            (tisRes.body.aggregate ?? []).map(row => row.avg_days ?? 0),
+            REPORT_CARD_META['time-in-status'].sparkHeights
+          ),
+        };
+      }
+
       setMetricsByKey(next);
     })();
 
@@ -325,14 +358,12 @@ const AllReportsPage: React.FC = () => {
       spark: card.sparkHeights.length ? card.sparkHeights : DEFAULT_SPARK,
     };
 
-  const tabs: { key: HubTab; label: string; disabled?: boolean }[] = [
+  const tabs: { key: HubTab; label: string }[] = [
     { key: 'reports', label: t('hubTabReports', { defaultValue: 'Reports' }) },
     { key: 'scheduled', label: t('hubTabScheduled', { defaultValue: 'Scheduled' }) },
-    {
-      key: 'custom',
-      label: t('hubTabCustomSoon', { defaultValue: 'Custom — soon' }),
-      disabled: true,
-    },
+    ...(hasCustomReports
+      ? [{ key: 'custom' as const, label: t('tabCustom', { defaultValue: 'Custom reports' }) }]
+      : []),
   ];
 
   return (
@@ -364,7 +395,6 @@ const AllReportsPage: React.FC = () => {
                 type="button"
                 role="tab"
                 aria-selected={active}
-                disabled={item.disabled}
                 className={`all-reports-hub__tab${active ? ' is-active' : ''}`}
                 style={{
                   color: active ? token.colorText : muted,
@@ -375,9 +405,7 @@ const AllReportsPage: React.FC = () => {
                       : '0 1px 2px rgba(0,0,0,0.06)'
                     : 'none',
                 }}
-                onClick={() => {
-                  if (!item.disabled) setTab(item.key);
-                }}
+                onClick={() => setTab(item.key)}
               >
                 {item.label}
               </button>
@@ -406,98 +434,82 @@ const AllReportsPage: React.FC = () => {
             }
           />
         </div>
-      ) : (
-        <>
-          <div className="all-reports-hub__cards">
-            {cards.map(card => {
-              const metrics = getMetrics(card);
-              const isComingSoon = !!card.comingSoon;
-              return (
-                <button
-                  key={card.key}
-                  type="button"
-                  className="all-reports-hub__card"
-                  style={{ borderColor, background: cardBg, color: token.colorText }}
-                  onClick={() => {
-                    if (!isComingSoon) navigate(analyticsPath(card.path));
-                  }}
-                  aria-label={
-                    isComingSoon
-                      ? t('hubComingSoonAria', {
-                          defaultValue: '{{name}} — coming soon',
-                          name: t(card.titleKey, { defaultValue: card.defaultTitle }),
-                        })
-                      : t('hubOpenReportAria', {
-                          defaultValue: 'Open {{name}}',
-                          name: t(card.titleKey, { defaultValue: card.defaultTitle }),
-                        })
-                  }
-                >
-                  <div className="all-reports-hub__card-top">
-                    <span className="all-reports-hub__card-title">
-                      {t(card.titleKey, { defaultValue: card.defaultTitle })}
-                    </span>
-                    <span
-                      className={`all-reports-hub__badge all-reports-hub__badge--${
-                        isComingSoon ? 'soon' : 'included'
-                      }`}
-                    >
-                      {isComingSoon
-                        ? t('comingSoonBadge', { defaultValue: 'Coming soon' })
-                        : t('hubBadgeIncluded', { defaultValue: 'Included' })}
-                    </span>
-                  </div>
-
-                  <Text type="secondary" className="all-reports-hub__card-desc">
-                    {t(card.descKey, { defaultValue: card.defaultDesc })}
-                  </Text>
-
-                  <div className={`all-reports-hub__card-body${isComingSoon ? ' is-locked' : ''}`}>
-                    <div>
-                      <div className="all-reports-hub__metric">
-                        {isComingSoon ? '—' : metrics.primary}
-                      </div>
-                      <div className="all-reports-hub__metric-sub" style={{ color: muted }}>
-                        {t(card.metricSubKey, { defaultValue: card.defaultMetricSub })}
-                      </div>
-                    </div>
-                    <ReportCardPreview
-                      kind={card.key}
-                      series={metrics.spark}
-                      muted={isComingSoon}
-                    />
-                  </div>
-
-                  {isComingSoon ? (
-                    <div className="all-reports-hub__card-footer" style={{ color: muted }}>
-                      <LockOutlined aria-hidden />
-                      {t('comingSoonBadge', { defaultValue: 'Coming soon' })}
-                    </div>
-                  ) : (
-                    <div className="all-reports-hub__card-footer is-open">
-                      {t('hubOpenReport', { defaultValue: 'Open report →' })}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div
-            className="all-reports-hub__custom"
-            style={{ borderColor: isDark ? '#434343' : '#d9d9d9' }}
-          >
-            <div className="all-reports-hub__custom-title" style={{ color: token.colorText }}>
-              {t('hubCustomTitle', { defaultValue: 'Custom reports' })}
-            </div>
-            <Text type="secondary" className="all-reports-hub__custom-desc">
-              {t('hubCustomDesc', {
-                defaultValue:
-                  'Pick a row type, choose columns, save a view. Arrives after the five core reports.',
+      ) : tab === 'custom' ? (
+        <div className="all-reports-hub__cards">
+          {customReports.map(report => (
+            <button
+              key={report.id}
+              type="button"
+              className="all-reports-hub__card"
+              style={{ borderColor, background: cardBg, color: token.colorText }}
+              onClick={() => navigate(analyticsPath(customReportPath(report.id)))}
+              aria-label={t('hubOpenReportAria', {
+                defaultValue: 'Open {{name}}',
+                name: report.name,
               })}
-            </Text>
-          </div>
-        </>
+            >
+              <div className="all-reports-hub__card-top">
+                <span className="all-reports-hub__card-title">{report.name}</span>
+                <span className="all-reports-hub__badge all-reports-hub__badge--included">
+                  {t('typeCustom', { defaultValue: 'Custom' })}
+                </span>
+              </div>
+              <Text type="secondary" className="all-reports-hub__card-desc">
+                {report.description ||
+                  t('descCustomReport', { defaultValue: 'Saved custom report' })}
+              </Text>
+              <div className="all-reports-hub__card-footer is-open">
+                {t('hubOpenReport', { defaultValue: 'Open report →' })}
+              </div>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="all-reports-hub__cards">
+          {cards.map(card => {
+            const metrics = getMetrics(card);
+            return (
+              <button
+                key={card.key}
+                type="button"
+                className="all-reports-hub__card"
+                style={{ borderColor, background: cardBg, color: token.colorText }}
+                onClick={() => navigate(analyticsPath(card.path))}
+                aria-label={t('hubOpenReportAria', {
+                  defaultValue: 'Open {{name}}',
+                  name: t(card.titleKey, { defaultValue: card.defaultTitle }),
+                })}
+              >
+                <div className="all-reports-hub__card-top">
+                  <span className="all-reports-hub__card-title">
+                    {t(card.titleKey, { defaultValue: card.defaultTitle })}
+                  </span>
+                  <span className="all-reports-hub__badge all-reports-hub__badge--included">
+                    {t('hubBadgeIncluded', { defaultValue: 'Included' })}
+                  </span>
+                </div>
+
+                <Text type="secondary" className="all-reports-hub__card-desc">
+                  {t(card.descKey, { defaultValue: card.defaultDesc })}
+                </Text>
+
+                <div className="all-reports-hub__card-body">
+                  <div>
+                    <div className="all-reports-hub__metric">{metrics.primary}</div>
+                    <div className="all-reports-hub__metric-sub" style={{ color: muted }}>
+                      {t(card.metricSubKey, { defaultValue: card.defaultMetricSub })}
+                    </div>
+                  </div>
+                  <ReportCardPreview kind={card.key} series={metrics.spark} />
+                </div>
+
+                <div className="all-reports-hub__card-footer is-open">
+                  {t('hubOpenReport', { defaultValue: 'Open report →' })}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       )}
 
       <Text className="all-reports-hub__footnote" style={{ color: pageMuted }}>
