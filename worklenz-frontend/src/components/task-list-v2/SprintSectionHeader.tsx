@@ -85,7 +85,9 @@ export const SprintSectionHeader = ({
     if (!sprint) return Promise.resolve();
     const run = async () => {
       try {
-        await dispatch(updateSprintDetails({ phase: sprint, projectId, details: changes })).unwrap();
+        await dispatch(
+          updateSprintDetails({ phase: sprint, projectId, details: changes })
+        ).unwrap();
         message.success(t('sprintUpdated', { defaultValue: 'Sprint updated' }));
       } catch (error: unknown) {
         if (isAnnouncedApiError(error)) return;
