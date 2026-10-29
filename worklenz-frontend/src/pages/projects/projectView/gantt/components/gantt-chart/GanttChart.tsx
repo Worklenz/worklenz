@@ -1425,10 +1425,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
               : '' // Removed cursor pointer for phases
           } ${animationClass} ${dependencyTargetTaskId === task.id && dependencySourceTaskId !== task.id ? 'gantt-dependency-target' : ''}`}
           onClick={handleClick}
-          style={{
-            // Set lower z-index when no phase click handler so parent can receive clicks
-            ...(isPhase && !onPhaseClick ? { position: 'relative', zIndex: 1 } : {}),
-          }}
+          style={(isPhase && !onPhaseClick ? { position: 'relative', zIndex: 1 } : {})}
         >
           {isPhase ? renderMilestone() : renderTaskBar()}
         </div>
@@ -1910,7 +1907,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
       setDependencyDragType(null);
       setDependencyDragStartPoint(null);
       setDependencyDragPosition(null);
-    }, [message, onRefresh, taskMap, t, validateDependencySelection]);
+    }, [onRefresh, taskMap, t, validateDependencySelection]);
 
     // API mutation for updating task dates
     const [updateTaskDates, { isLoading: isUpdatingDates }] = useUpdateTaskDatesMutation();

@@ -79,7 +79,7 @@ export const sanitizeHtml = (input: string): string => {
     // which silently allows ALL attributes including style="javascript:..."
     ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
     // Restricts URI schemes to http(s)/mailto
-    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
     // Ensure all links have proper security attributes
     ADD_ATTR: ['target', 'rel'],
     // Remove any script tags, event handlers, and dangerous attributes
@@ -207,7 +207,7 @@ export const sanitizeCommentContent = (input: string): string => {
       'aria-label', 'contenteditable'
     ],
     // http(s), mailto, and same-origin absolute paths (/docs); rejects //host and /\host
-    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|\/(?![\/\\]))/i,
+    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|\/(?![/\\]))/i,
     FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'button', 'link'],
     FORBID_ATTR: [
       'onerror',
