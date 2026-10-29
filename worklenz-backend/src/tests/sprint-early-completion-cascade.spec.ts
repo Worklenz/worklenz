@@ -182,13 +182,18 @@ describe("startNextSprintNow", () => {
       end_date: "2026-11-11T23:59:59.000Z",
     });
 
-    // Every other dated planned sprint shifts by the same days, including ones that start earlier
+    // Only sprints starting at or after the started sprint's original start shift; earlier ones stay put
     const subsequentShiftQuery = executedQueries.find(q =>
       q.sql.includes("SET start_date = start_date + $3::INT")
     );
     expect(subsequentShiftQuery).toBeDefined();
-    expect(subsequentShiftQuery?.params).toEqual(["sprint-2", "project-1", -2]);
-    expect(subsequentShiftQuery?.sql).not.toContain("start_date >=");
+    expect(subsequentShiftQuery?.params).toEqual([
+      "sprint-2",
+      "project-1",
+      -2,
+      "2026-10-30T00:00:00.000Z",
+    ]);
+    expect(subsequentShiftQuery?.sql).toContain("start_date >= $4");
   });
 
   it("keeps the inclusive fallback length (length - 1 days) for undated sprints", async () => {

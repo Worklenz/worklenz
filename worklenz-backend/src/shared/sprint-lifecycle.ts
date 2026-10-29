@@ -117,8 +117,8 @@ export async function startNextSprintNow(
       [nextId, projectId, shiftDays, Math.max(1, Math.round(fallbackLengthDays))]
     );
 
-    // 2. Shift every other dated planned sprint by the same amount so the schedule keeps its relative
-    //    order and gaps, even when the preferred sprint is not the earliest one
+    // 2. Shift only planned sprints that start at or after this sprint's original start. Earlier ones
+    //    were skipped on purpose and must not be dragged (possibly into the past) by the same delta.
     if (shiftDays !== 0 && nextRow?.start_date) {
       await client.query(
         `UPDATE project_phases
@@ -128,8 +128,9 @@ export async function startNextSprintNow(
            AND sprint_status = 'planned'
            AND id <> $1
            AND start_date IS NOT NULL
-           AND end_date IS NOT NULL;`,
-        [nextId, projectId, shiftDays]
+           AND end_date IS NOT NULL
+           AND start_date >= $4;`,
+        [nextId, projectId, shiftDays, nextRow.start_date]
       );
     }
 
