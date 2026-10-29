@@ -1,5 +1,7 @@
 export type VelocityViewBy = 'project' | 'member' | 'team';
 export type VelocityMetric = 'story_points' | 'issue_count';
+/** software → sprint, general → phase, both selected → mixed */
+export type VelocityBucket = 'sprint' | 'phase' | 'mixed';
 
 export interface VelocitySeriesFilters {
   view_by: VelocityViewBy;
@@ -51,6 +53,7 @@ export interface VelocitySeriesResponse {
     view_by: VelocityViewBy;
     metric: VelocityMetric;
     avg_window: number;
+    bucket?: VelocityBucket;
   };
   last_updated_at: string;
 }

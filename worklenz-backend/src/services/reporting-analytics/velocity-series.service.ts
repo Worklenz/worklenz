@@ -5,7 +5,11 @@ import {
   setAnalyticsCache,
   withLastUpdated,
 } from "../../redis/analytics-cache";
-import { backfillVelocityGaps } from "./velocity-aggregator.service";
+import {
+  backfillVelocityGaps,
+  resolveVelocityBucket,
+  type VelocityBucketKind,
+} from "./velocity-aggregator.service";
 
 export type VelocityViewBy = "project" | "member" | "team";
 export type VelocityMetric = "story_points" | "issue_count";
@@ -65,6 +69,8 @@ export interface VelocitySeriesResult {
     view_by: VelocityViewBy;
     metric: VelocityMetric;
     avg_window: number;
+    /** sprint = software, phase = general, mixed = both project types selected */
+    bucket: VelocityBucketKind;
   };
   last_updated_at: string;
 }
@@ -237,6 +243,8 @@ function parseMemberBreakdown(raw: unknown): Array<{
 export async function getVelocitySeries(
   filters: VelocitySeriesFilters
 ): Promise<VelocitySeriesResult> {
+  const bucket = await resolveVelocityBucket(filters.projectIds);
+
   if (filters.projectIds.length === 0 && filters.viewBy !== "team") {
     return withLastUpdated({
       series: [],
@@ -253,18 +261,26 @@ export async function getVelocitySeries(
         view_by: filters.viewBy,
         metric: filters.metric,
         avg_window: filters.avgWindow,
+        bucket,
       },
     });
   }
 
   const hash = cacheKeyHash(filters);
-  const cached = await getAnalyticsCache<Omit<VelocitySeriesResult, "last_updated_at">>(
-    "velocity",
-    filters.sessionTeamId,
-    hash
-  );
-  if (cached) {
-    return withLastUpdated(cached.data, cached.lastUpdatedAt);
+  // General-project phases use live task metrics — skip Redis so charts stay current.
+  const useSeriesCache = bucket === "sprint";
+  if (useSeriesCache) {
+    const cached = await getAnalyticsCache<Omit<VelocitySeriesResult, "last_updated_at">>(
+      "velocity",
+      filters.sessionTeamId,
+      hash
+    );
+    if (cached) {
+      return withLastUpdated(
+        { ...cached.data, meta: { ...cached.data.meta, bucket } },
+        cached.lastUpdatedAt
+      );
+    }
   }
 
   if (filters.projectIds.length > 0) {
@@ -286,11 +302,15 @@ export async function getVelocitySeries(
     where += ` AND vsc.project_id = ANY(${push(filters.projectIds)}::UUID[])`;
   }
 
-  if (filters.dateFrom) {
-    where += ` AND vsc.completed_at >= ${push(filters.dateFrom)}::TIMESTAMPTZ`;
-  }
-  if (filters.dateTo) {
-    where += ` AND vsc.completed_at <= ${push(filters.dateTo)}::TIMESTAMPTZ`;
+  // Date range applies to completed software sprints only. General-project phases
+  // are structural buckets (like sprints), so include all phases with task activity.
+  if (bucket === "sprint") {
+    if (filters.dateFrom) {
+      where += ` AND vsc.completed_at >= ${push(filters.dateFrom)}::TIMESTAMPTZ`;
+    }
+    if (filters.dateTo) {
+      where += ` AND vsc.completed_at <= ${push(filters.dateTo)}::TIMESTAMPTZ`;
+    }
   }
 
   const limitParam = push(filters.sprintCount);
@@ -429,16 +449,20 @@ export async function getVelocitySeries(
       view_by: filters.viewBy,
       metric: filters.metric,
       avg_window: filters.avgWindow,
+      bucket,
     },
   };
 
-  const stored = await setAnalyticsCache(payload, [
-    "velocity",
-    filters.sessionTeamId,
-    hash,
-  ]);
+  if (useSeriesCache) {
+    const stored = await setAnalyticsCache(payload, [
+      "velocity",
+      filters.sessionTeamId,
+      hash,
+    ]);
+    return withLastUpdated(payload, stored.lastUpdatedAt);
+  }
 
-  return withLastUpdated(payload, stored.lastUpdatedAt);
+  return withLastUpdated(payload);
 }
 
 function commitmentPct(committed: number, completed: number): number | null {

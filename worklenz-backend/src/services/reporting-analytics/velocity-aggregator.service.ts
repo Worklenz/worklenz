@@ -3,6 +3,8 @@ import { buildSprintScopeTasksFrom } from "../../shared/sprint-report-scope";
 import { log_error } from "../../shared/utils";
 import { invalidateAnalyticsCache } from "../../redis/analytics-cache";
 
+export type VelocityBucketKind = "sprint" | "phase" | "mixed";
+
 export interface VelocityMemberBreakdownRow {
   team_member_id: string;
   name: string;
@@ -12,26 +14,36 @@ export interface VelocityMemberBreakdownRow {
   completed_issue_count: number;
 }
 
-interface SprintSnapshotRow {
+interface PhaseSnapshotRow {
   id: string;
   name: string;
   project_id: string;
   team_id: string;
+  project_type: string;
+  sprint_status: string;
   start_date: Date | null;
   end_date: Date | null;
   completed_at: Date | null;
+  created_at: Date | null;
   committed_points: number | null;
   completed_points: number | null;
   committed_issue_count: number | null;
   completed_issue_count: number | null;
 }
 
+interface LivePhaseMetrics {
+  committed_points: number;
+  completed_points: number;
+  committed_issue_count: number;
+  completed_issue_count: number;
+}
+
 /**
  * Builds member breakdown with proportional split across assignees
- * so stacked totals match sprint committed/completed totals.
+ * so stacked totals match sprint/phase committed/completed totals.
  */
 async function computeMemberBreakdown(
-  sprintId: string
+  phaseId: string
 ): Promise<VelocityMemberBreakdownRow[]> {
   const result = await db.query(
     `WITH scope AS (
@@ -70,7 +82,7 @@ async function computeMemberBreakdown(
      LEFT JOIN team_member_info_view tmiv ON tmiv.team_member_id = s.team_member_id
      GROUP BY s.team_member_id, tmiv.name
      ORDER BY name ASC;`,
-    [sprintId]
+    [phaseId]
   );
 
   return result.rows.map((row: Record<string, unknown>) => ({
@@ -83,37 +95,87 @@ async function computeMemberBreakdown(
   }));
 }
 
+/** Live committed/completed metrics from tasks assigned to a phase (general projects). */
+async function computeLivePhaseMetrics(phaseId: string): Promise<LivePhaseMetrics> {
+  const result = await db.query(
+    `SELECT
+       COALESCE(SUM(t.story_points), 0)::FLOAT AS committed_points,
+       COALESCE(SUM(t.story_points) FILTER (WHERE cat.is_done IS TRUE), 0)::FLOAT AS completed_points,
+       COUNT(*)::INT AS committed_issue_count,
+       COUNT(*) FILTER (WHERE cat.is_done IS TRUE)::INT AS completed_issue_count
+     FROM (${buildSprintScopeTasksFrom("$1::UUID")}) t
+     LEFT JOIN task_statuses ts ON ts.id = t.status_id
+     LEFT JOIN sys_task_status_categories cat ON cat.id = ts.category_id`,
+    [phaseId]
+  );
+
+  const row = result.rows[0] ?? {};
+  return {
+    committed_points: Number(row.committed_points ?? 0),
+    completed_points: Number(row.completed_points ?? 0),
+    committed_issue_count: Number(row.committed_issue_count ?? 0),
+    completed_issue_count: Number(row.completed_issue_count ?? 0),
+  };
+}
+
 function commitmentAccuracy(committed: number, completed: number): number | null {
   if (!committed || committed <= 0) return null;
   return Math.round((completed / committed) * 10000) / 100;
 }
 
-/** Upsert velocity cache for one completed sprint and invalidate Redis keys. */
+function isSoftwareProject(projectType: string | null | undefined): boolean {
+  return projectType === "software";
+}
+
+/** Upsert velocity cache for one sprint/phase and invalidate Redis keys. */
 export async function upsertVelocityForSprint(
   projectId: string,
   sprintId: string
 ): Promise<void> {
-  const sprintResult = await db.query(
+  const phaseResult = await db.query(
     `SELECT pp.id, pp.name, pp.project_id, p.team_id,
-            pp.start_date, pp.end_date, pp.completed_at,
+            COALESCE(p.project_type, 'general') AS project_type,
+            pp.sprint_status,
+            pp.start_date, pp.end_date, pp.completed_at, pp.created_at,
             pp.committed_points, pp.completed_points,
             pp.committed_issue_count, pp.completed_issue_count
      FROM project_phases pp
      INNER JOIN projects p ON p.id = pp.project_id
      WHERE pp.id = $1::UUID
-       AND pp.project_id = $2::UUID
-       AND pp.sprint_status = 'completed'`,
+       AND pp.project_id = $2::UUID`,
     [sprintId, projectId]
   );
 
-  const sprint = sprintResult.rows[0] as SprintSnapshotRow | undefined;
-  if (!sprint) return;
+  const phase = phaseResult.rows[0] as PhaseSnapshotRow | undefined;
+  if (!phase) return;
 
-  const committedPoints = Number(sprint.committed_points ?? 0);
-  const completedPoints = Number(sprint.completed_points ?? 0);
-  const committedIssues = Number(sprint.committed_issue_count ?? 0);
-  const completedIssues = Number(sprint.completed_issue_count ?? 0);
+  const software = isSoftwareProject(phase.project_type);
+
+  // Software velocity is based on completed sprints only.
+  if (software && phase.sprint_status !== "completed") return;
+
+  let committedPoints: number;
+  let completedPoints: number;
+  let committedIssues: number;
+  let completedIssues: number;
+
+  if (software) {
+    committedPoints = Number(phase.committed_points ?? 0);
+    completedPoints = Number(phase.completed_points ?? 0);
+    committedIssues = Number(phase.committed_issue_count ?? 0);
+    completedIssues = Number(phase.completed_issue_count ?? 0);
+  } else {
+    // General projects: phases are the sprint equivalent — compute live from tasks.
+    const live = await computeLivePhaseMetrics(sprintId);
+    committedPoints = live.committed_points;
+    completedPoints = live.completed_points;
+    committedIssues = live.committed_issue_count;
+    completedIssues = live.completed_issue_count;
+  }
+
   const memberBreakdown = await computeMemberBreakdown(sprintId);
+  const completedAt =
+    phase.completed_at ?? phase.end_date ?? phase.start_date ?? phase.created_at ?? null;
 
   await db.query(
     `INSERT INTO velocity_sprint_cache (
@@ -144,13 +206,13 @@ export async function upsertVelocityForSprint(
        member_breakdown = EXCLUDED.member_breakdown,
        computed_at = CURRENT_TIMESTAMP`,
     [
-      sprint.team_id,
-      sprint.project_id,
-      sprint.id,
-      sprint.name,
-      sprint.start_date,
-      sprint.end_date,
-      sprint.completed_at,
+      phase.team_id,
+      phase.project_id,
+      phase.id,
+      phase.name,
+      phase.start_date,
+      phase.end_date,
+      completedAt,
       committedPoints,
       completedPoints,
       committedIssues,
@@ -160,7 +222,7 @@ export async function upsertVelocityForSprint(
     ]
   );
 
-  await invalidateAnalyticsCache("velocity", sprint.team_id);
+  await invalidateAnalyticsCache("velocity", phase.team_id);
 }
 
 /** Fire-and-forget wrapper for sprint-complete hook. */
@@ -170,21 +232,47 @@ export function scheduleVelocityUpsert(projectId: string, sprintId: string): voi
   });
 }
 
-/** Backfill missing cache rows for completed sprints in a project. */
+/**
+ * Backfill / refresh cache rows for a project.
+ * - Software: completed sprints missing from cache
+ * - General: all phases that have tasks (live metrics refreshed each run)
+ */
 export async function backfillProjectVelocity(projectId: string): Promise<number> {
-  const missing = await db.query(
-    `SELECT pp.id
-     FROM project_phases pp
-     WHERE pp.project_id = $1::UUID
-       AND pp.sprint_status = 'completed'
-       AND NOT EXISTS (
-         SELECT 1 FROM velocity_sprint_cache vsc WHERE vsc.sprint_id = pp.id
-       )`,
+  const projectResult = await db.query(
+    `SELECT COALESCE(project_type, 'general') AS project_type FROM projects WHERE id = $1::UUID`,
     [projectId]
   );
+  const projectType = String(projectResult.rows[0]?.project_type ?? "general");
+  const software = isSoftwareProject(projectType);
+
+  const phaseResult = software
+    ? await db.query(
+        `SELECT pp.id
+         FROM project_phases pp
+         WHERE pp.project_id = $1::UUID
+           AND pp.sprint_status = 'completed'
+           AND NOT EXISTS (
+             SELECT 1 FROM velocity_sprint_cache vsc WHERE vsc.sprint_id = pp.id
+           )`,
+        [projectId]
+      )
+    : await db.query(
+        `SELECT pp.id
+         FROM project_phases pp
+         WHERE pp.project_id = $1::UUID
+           AND EXISTS (
+             SELECT 1
+             FROM task_phase tp
+             INNER JOIN tasks t ON t.id = tp.task_id AND t.archived IS FALSE
+             WHERE tp.phase_id = pp.id
+           )
+         ORDER BY COALESCE(pp.end_date, pp.start_date, pp.created_at) ASC NULLS LAST,
+                  pp.sort_index ASC`,
+        [projectId]
+      );
 
   let count = 0;
-  for (const row of missing.rows) {
+  for (const row of phaseResult.rows) {
     await upsertVelocityForSprint(projectId, row.id);
     count += 1;
   }
@@ -196,4 +284,28 @@ export async function backfillVelocityGaps(projectIds: string[]): Promise<void> 
   for (const projectId of projectIds) {
     await backfillProjectVelocity(projectId);
   }
+}
+
+/** Resolve UI bucket label from the selected projects' types. */
+export async function resolveVelocityBucket(
+  projectIds: string[]
+): Promise<VelocityBucketKind> {
+  if (projectIds.length === 0) return "sprint";
+
+  const result = await db.query(
+    `SELECT DISTINCT COALESCE(project_type, 'general') AS project_type
+     FROM projects
+     WHERE id = ANY($1::UUID[])`,
+    [projectIds]
+  );
+
+  const types = new Set(
+    result.rows.map((row: { project_type: string }) =>
+      isSoftwareProject(row.project_type) ? "software" : "general"
+    )
+  );
+
+  if (types.has("software") && types.has("general")) return "mixed";
+  if (types.has("general")) return "phase";
+  return "sprint";
 }

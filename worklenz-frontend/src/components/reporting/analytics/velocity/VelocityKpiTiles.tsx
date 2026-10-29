@@ -2,12 +2,16 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import type { VelocitySeriesResponse } from '@/types/reporting/analytics-velocity.types';
+import type {
+  VelocityBucket,
+  VelocitySeriesResponse,
+} from '@/types/reporting/analytics-velocity.types';
 import './velocity-kpi-tiles.css';
 
 interface VelocityKpiTilesProps {
   kpis: VelocitySeriesResponse['kpis'];
   metricLabel: string;
+  bucket?: VelocityBucket;
 }
 
 const TONES = {
@@ -17,13 +21,47 @@ const TONES = {
   muted: '#722ed1',
 } as const;
 
-export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({ kpis, metricLabel }) => {
+export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({
+  kpis,
+  metricLabel,
+  bucket = 'sprint',
+}) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
   const borderColor = isDark ? '#303030' : '#f0f0f0';
   const muted = token.colorTextSecondary;
+
+  const perBucketSub =
+    bucket === 'phase'
+      ? t('kpiPointsPerPhase', {
+          defaultValue: '{{metric}} per phase',
+          metric: metricLabel,
+        })
+      : bucket === 'mixed'
+        ? t('kpiPointsPerSprintOrPhase', {
+            defaultValue: '{{metric}} per sprint/phase',
+            metric: metricLabel,
+          })
+        : t('kpiPointsPerSprint', {
+            defaultValue: '{{metric}} per sprint',
+            metric: metricLabel,
+          });
+
+  const lastBucketLabel =
+    bucket === 'phase'
+      ? t('kpiLastPhase', { defaultValue: 'Last phase' })
+      : bucket === 'mixed'
+        ? t('kpiLastSprintOrPhase', { defaultValue: 'Last sprint/phase' })
+        : t('kpiLastSprint', { defaultValue: 'Last sprint' });
+
+  const countLabel =
+    bucket === 'phase'
+      ? t('kpiPhases', { defaultValue: 'Phases' })
+      : bucket === 'mixed'
+        ? t('kpiSprintsOrPhases', { defaultValue: 'Sprints / Phases' })
+        : t('kpiSprints', { defaultValue: 'Sprints' });
 
   const tiles = [
     {
@@ -33,15 +71,12 @@ export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({ kpis, metric
         kpis.completed_sprint_count > 0
           ? String(Math.round(kpis.avg_velocity * 10) / 10)
           : '—',
-      sub: t('kpiPointsPerSprint', {
-        defaultValue: '{{metric}} per sprint',
-        metric: metricLabel,
-      }),
+      sub: perBucketSub,
       tone: TONES.primary,
     },
     {
       key: 'last',
-      label: t('kpiLastSprint', { defaultValue: 'Last sprint' }),
+      label: lastBucketLabel,
       value:
         kpis.last_sprint_velocity === null || kpis.last_sprint_velocity === undefined
           ? '—'
@@ -61,7 +96,7 @@ export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({ kpis, metric
     },
     {
       key: 'sprints',
-      label: t('kpiSprints', { defaultValue: 'Sprints' }),
+      label: countLabel,
       value: String(kpis.completed_sprint_count),
       sub: '\u00a0',
       tone: TONES.muted,

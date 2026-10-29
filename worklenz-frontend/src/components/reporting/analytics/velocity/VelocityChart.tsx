@@ -23,6 +23,7 @@ import {
 } from '@/components/projects/reports/report-utils';
 import { InChartEmptyState } from '../states/ReportStateViews';
 import type {
+  VelocityBucket,
   VelocitySeriesPoint,
   VelocitySeriesResponse,
   VelocityViewBy,
@@ -50,6 +51,7 @@ interface VelocityChartProps {
   averageLine: VelocitySeriesResponse['average_line'];
   trendLine: VelocitySeriesResponse['trend_line'];
   viewBy: VelocityViewBy;
+  bucket?: VelocityBucket;
 }
 
 const STACK_PALETTE = [
@@ -64,7 +66,7 @@ const STACK_PALETTE = [
 ];
 
 export const VelocityChart = forwardRef<VelocityChartHandle, VelocityChartProps>(
-  ({ series, averageLine, trendLine, viewBy }, ref) => {
+  ({ series, averageLine, trendLine, viewBy, bucket = 'sprint' }, ref) => {
     const { t } = useTranslation('reporting-analytics');
     const { token } = theme.useToken();
     const chartTheme = getChartTheme(token);
@@ -276,13 +278,19 @@ export const VelocityChart = forwardRef<VelocityChartHandle, VelocityChartProps>
     }, [chartTheme, series, t, viewBy]);
 
     if (!series.length) {
-      return (
-        <InChartEmptyState
-          message={t('velocityChartEmpty', {
-            defaultValue: 'No completed sprints match these filters.',
-          })}
-        />
-      );
+      const emptyMessage =
+        bucket === 'phase'
+          ? t('velocityChartEmptyPhases', {
+              defaultValue: 'No phases with tasks match these filters.',
+            })
+          : bucket === 'mixed'
+            ? t('velocityChartEmptyMixed', {
+                defaultValue: 'No completed sprints or phases match these filters.',
+              })
+            : t('velocityChartEmpty', {
+                defaultValue: 'No completed sprints match these filters.',
+              });
+      return <InChartEmptyState message={emptyMessage} />;
     }
 
     return (

@@ -96,7 +96,8 @@ const VelocityPage: React.FC = () => {
 
   const chartRef = useRef<VelocityChartHandle>(null);
   const appliedDefaultTemplate = useRef(false);
-  const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
+  /** Velocity chart is project-wise — require an explicit project before loading. */
+  const hasProjectSelection = selectedProjectIds.length > 0;
 
   const memberOptions: FilterOption[] = useMemo(() => {
     const list = (teamMembersState?.data ?? []) as ITeamMemberViewModel[];
@@ -198,11 +199,10 @@ const VelocityPage: React.FC = () => {
         }
       });
       setProjectOptions(projects);
+      // Keep prior picks that are still valid; never auto-select projects.
       setSelectedProjectIds(prev => {
-        if (prev.length === 0) return projects.map(p => p.value);
         const allowed = new Set(projects.map(p => p.value));
-        const next = prev.filter(id => allowed.has(id));
-        return next.length > 0 ? next : projects.map(p => p.value);
+        return prev.filter(id => allowed.has(id));
       });
     } catch {
       setProjectOptions([]);
@@ -235,8 +235,10 @@ const VelocityPage: React.FC = () => {
   }, [applyTemplateFilters]);
 
   const loadSeries = useCallback(async () => {
-    if (!hasSelection) {
+    if (!hasProjectSelection) {
       setData(null);
+      setError(null);
+      setLoading(false);
       return;
     }
     setLoading(true);
@@ -264,7 +266,7 @@ const VelocityPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, hasSelection, t]);
+  }, [filters, hasProjectSelection, t]);
 
   useEffect(() => {
     void loadTeamsAndMembers();
@@ -401,9 +403,9 @@ const VelocityPage: React.FC = () => {
         { label: title },
       ]}
       lastUpdatedAt={data?.last_updated_at ?? null}
-      filters={velocityFilters}
-      onExport={handleExport}
-      exportDisabled={!data || !hasSelection}
+      filters={hasProjectSelection ? velocityFilters : undefined}
+      onExport={hasProjectSelection ? handleExport : undefined}
+      exportDisabled={!data || !hasProjectSelection}
       exportFormats={['excel', 'pdf', 'png', 'svg', 'csv']}
       exportLoading={exporting}
       actions={
@@ -414,22 +416,34 @@ const VelocityPage: React.FC = () => {
             onRefresh={() => void loadTemplates()}
             onApply={applyTemplateFilters}
           />
-          <Button icon={<SaveOutlined />} onClick={() => setSaveOpen(true)} disabled={!hasSelection}>
+          <Button
+            icon={<SaveOutlined />}
+            onClick={() => setSaveOpen(true)}
+            disabled={!hasProjectSelection}
+          >
             {t('saveAsTemplate', { defaultValue: 'Save as Template' })}
           </Button>
         </Space>
       }
     >
-      {!hasSelection ? (
-        <Flex align="center" justify="center" style={{ minHeight: 320 }}>
+      {!hasProjectSelection ? (
+        <Flex
+          vertical
+          align="center"
+          justify="center"
+          gap={16}
+          style={{ minHeight: 320, width: '100%' }}
+        >
           <ReportEmptyState
             title={t('velocityNoSelectionTitle', {
-              defaultValue: 'Select projects or teams',
+              defaultValue: 'Select a project first',
             })}
             description={t('velocityNoSelectionDescription', {
-              defaultValue: 'Choose at least one project or team to view velocity.',
+              defaultValue:
+                'Choose one or more projects with the Filter button below to view the velocity diagram.',
             })}
           />
+          {velocityFilters}
         </Flex>
       ) : loading && !data ? (
         <ReportLoadingSkeleton />
@@ -441,17 +455,36 @@ const VelocityPage: React.FC = () => {
             <Alert
               type="info"
               showIcon
-              message={t('velocityMinSprintsTitle', {
-                defaultValue: 'Need more completed sprints',
-              })}
-              description={t('velocityMinSprintsDescription', {
-                defaultValue:
-                  'Velocity trends are most useful with at least 2 completed sprints. Complete more sprints or widen filters.',
-              })}
+              message={
+                data.meta.bucket === 'phase'
+                  ? t('velocityMinPhasesTitle', {
+                      defaultValue: 'Need more phases',
+                    })
+                  : t('velocityMinSprintsTitle', {
+                      defaultValue: 'Need more completed sprints',
+                    })
+              }
+              description={
+                data.meta.bucket === 'phase'
+                  ? t('velocityMinPhasesDescription', {
+                      defaultValue:
+                        'Velocity trends are most useful with at least 2 phases that have tasks. Add phases or widen filters.',
+                    })
+                  : t('velocityMinSprintsDescription', {
+                      defaultValue:
+                        'Velocity trends are most useful with at least 2 completed sprints. Complete more sprints or widen filters.',
+                    })
+              }
             />
           )}
 
-          {data && <VelocityKpiTiles kpis={data.kpis} metricLabel={metricLabel} />}
+          {data && (
+            <VelocityKpiTiles
+              kpis={data.kpis}
+              metricLabel={metricLabel}
+              bucket={data.meta.bucket}
+            />
+          )}
 
           <ChartTableWrapper
             chartTitle={title}
@@ -463,9 +496,12 @@ const VelocityPage: React.FC = () => {
                 averageLine={data?.average_line ?? []}
                 trendLine={null}
                 viewBy={DEFAULT_VIEW_BY}
+                bucket={data?.meta.bucket}
               />
             }
-            table={<VelocityTable series={data?.series ?? []} />}
+            table={
+              <VelocityTable series={data?.series ?? []} bucket={data?.meta.bucket} />
+            }
           />
         </Flex>
       )}

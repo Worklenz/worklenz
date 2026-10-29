@@ -2,12 +2,16 @@ import React, { useMemo } from 'react';
 import { Table, Tooltip, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
-import type { VelocitySeriesPoint } from '@/types/reporting/analytics-velocity.types';
+import type {
+  VelocityBucket,
+  VelocitySeriesPoint,
+} from '@/types/reporting/analytics-velocity.types';
 
 const { Text } = Typography;
 
 interface VelocityTableProps {
   series: VelocitySeriesPoint[];
+  bucket?: VelocityBucket;
 }
 
 interface VelocityRow {
@@ -18,9 +22,32 @@ interface VelocityRow {
   commitment_accuracy: number | null;
 }
 
-export const VelocityTable: React.FC<VelocityTableProps> = ({ series }) => {
+export const VelocityTable: React.FC<VelocityTableProps> = ({
+  series,
+  bucket = 'sprint',
+}) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
+
+  const bucketColumnTitle =
+    bucket === 'phase'
+      ? t('colPhase', { defaultValue: 'Phase' })
+      : bucket === 'mixed'
+        ? t('colSprintOrPhase', { defaultValue: 'Sprint / Phase' })
+        : t('colSprint', { defaultValue: 'Sprint' });
+
+  const emptyText =
+    bucket === 'phase'
+      ? t('velocityChartEmptyPhases', {
+          defaultValue: 'No phases with tasks match these filters.',
+        })
+      : bucket === 'mixed'
+        ? t('velocityChartEmptyMixed', {
+            defaultValue: 'No completed sprints or phases match these filters.',
+          })
+        : t('velocityChartEmpty', {
+            defaultValue: 'No completed sprints match these filters.',
+          });
 
   const data: VelocityRow[] = useMemo(
     () =>
@@ -36,7 +63,7 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({ series }) => {
 
   const columns: ColumnsType<VelocityRow> = [
     {
-      title: t('colSprint', { defaultValue: 'Sprint' }),
+      title: bucketColumnTitle,
       dataIndex: 'sprint_name',
       key: 'sprint_name',
       sorter: (a, b) => a.sprint_name.localeCompare(b.sprint_name),
@@ -100,9 +127,7 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({ series }) => {
         borderRadius: token.borderRadiusLG,
       }}
       locale={{
-        emptyText: t('velocityChartEmpty', {
-          defaultValue: 'No completed sprints match these filters.',
-        }),
+        emptyText,
       }}
     />
   );
