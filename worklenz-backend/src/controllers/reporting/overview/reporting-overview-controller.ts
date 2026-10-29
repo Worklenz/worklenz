@@ -122,6 +122,9 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
       ? ""
       : `AND id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND archived_projects.user_id = '${req.user?.id}')`;
 
+    // Organization for reporting = all teams owned by the current team's owner
+    // (same rule as getStatistics org_teams). Prefer user_id over in_organization()
+    // so teams with null/mismatched organization_id still appear after a team switch.
     const q = `
       SELECT id,
              name,
@@ -139,7 +142,7 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
                        AND (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id) IS NOT NULL
                    ) rec) AS members
       FROM teams
-      WHERE in_organization(id, $1)
+      WHERE user_id = (SELECT user_id FROM teams WHERE id = $1)
       ORDER BY name;
     `;
     const result = await db.query(q, [teamId]);

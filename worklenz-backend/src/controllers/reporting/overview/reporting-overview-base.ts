@@ -30,21 +30,26 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
       projectFilterClause = projectFilterClause.replace('p.id', 'projects.id');
     }
 
+    // Match getTeams / getStatistics: org = all teams owned by the current team's owner.
     const q = `
-    WITH team_count AS (
+    WITH org_teams AS (
+        SELECT id
+        FROM teams
+        WHERE user_id = (SELECT user_id FROM teams WHERE id = $1)
+    ),
+    team_count AS (
     SELECT COUNT(*) AS count
-    FROM teams
-    WHERE in_organization(id, $1)
+    FROM org_teams
     ),
     project_count AS (
         SELECT COUNT(*) AS count
         FROM projects
-        WHERE in_organization(team_id, $1) ${archivedQuery} ${projectFilterClause}
+        WHERE team_id IN (SELECT id FROM org_teams) ${archivedQuery} ${projectFilterClause}
     ),
     team_member_count AS (
         SELECT COUNT(DISTINCT email) AS count
         FROM team_member_info_view
-        WHERE in_organization(team_id, $1)
+        WHERE team_id IN (SELECT id FROM org_teams)
     )
     SELECT JSON_BUILD_OBJECT(
         'teams', (SELECT count FROM team_count),
