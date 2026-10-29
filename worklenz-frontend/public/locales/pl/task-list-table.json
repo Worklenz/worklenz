@@ -190,7 +190,16 @@
       "showInTaskList": "Pokaż na liście zadań",
       "createErrorMessage": "Nie udało się utworzyć kolumny niestandardowej",
       "updateErrorMessage": "Nie udało się zaktualizować kolumny niestandardowej",
-      "typeCannotBeChanged": "Typu kolumny nie można zmienić po utworzeniu."
+      "typeCannotBeChanged": "Typu kolumny nie można zmienić po utworzeniu.",
+      "changeTypeConfirmTitle": "Zmienić typ kolumny?",
+      "changeTypeConfirmDescription": "Zmiana typu kolumny spowoduje usunięcie wszystkich istniejących danych w tej kolumnie. Tych danych nie można przywrócić. Czy na pewno chcesz zmienić typ kolumny?",
+      "changeTypeWarningTitle": "Dane w tej kolumnie zostaną usunięte",
+      "changeTypeWarningDesc": "Dane w kolumnie zostaną usunięte i po zapisaniu nie będzie można ich przywrócić. Przed aktualizacją sprawdź dokładnie.",
+      "changeTypeSaveConfirmTitle": "Potwierdź zmianę typu kolumny",
+      "changeTypeSaveConfirmDescription": "Wszystkie istniejące dane w tej kolumnie zostaną trwale usunięte i nie będzie można ich przywrócić. Czy na pewno chcesz kontynuować?",
+      "confirmChangeTypeButton": "Zmień typ",
+      "saveAndChangeTypeButton": "Zaktualizuj i usuń",
+      "updateAndDeleteButton": "Zaktualizuj i usuń"
     },
     "fieldTypes": {
       "people": "Ludzie",
@@ -273,7 +282,8 @@
       "autoClearedParentEmpty": "{{field}} zostało wyczyszczone, ponieważ wyczyszczono {{parent}}.",
       "rejected": "Wartość nie została zapisana: {{reason}}",
       "parentValueRequired": "Najpierw wybierz wartość pola nadrzędnego.",
-      "invalidPair": "Ta opcja jest nieprawidłowa dla bieżącej wartości nadrzędnej."
+      "invalidPair": "Ta opcja jest nieprawidłowa dla bieżącej wartości nadrzędnej.",
+      "hasDependentsTypeHint": "{{fields}} zależy od tego pola, więc nie można zmienić jego typu."
     },
     "newColumn": "Nowa kolumna",
     "projectNotFound": "Nie znaleziono projektu",

@@ -437,20 +437,7 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
       }
 
       const existingFieldType = existingColumnResult.rows[0].field_type;
-      const isTypeLocked = existingColumnResult.rows[0].type_locked === true;
 
-      if (field_type && field_type !== existingFieldType && isTypeLocked) {
-        await client.query("ROLLBACK");
-        return res.status(400).send(
-          new ServerResponse(
-            false,
-            { error_code: "CUSTOM_COLUMN_TYPE_IMMUTABLE" },
-            "Custom column type cannot be changed after creation"
-          )
-        );
-      }
-
-      // A locked type would have been rejected above, so any surviving change is allowed.
       const resolvedFieldType =
         field_type && field_type !== existingFieldType ? field_type : existingFieldType;
 
@@ -507,15 +494,14 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
         columnId,
       ]);
 
-      if (lock_field_type === true) {
-        await client.query(
-          `UPDATE cc_custom_columns SET type_locked = TRUE WHERE id = $1`,
-          [columnId]
-        );
-      }
-
       if (resolvedFieldType !== existingFieldType) {
         await client.query(`DELETE FROM cc_column_values WHERE column_id = $1`, [columnId]);
+        if (resolvedFieldType !== 'selection') {
+          await client.query(`DELETE FROM cc_selection_options WHERE column_id = $1`, [columnId]);
+        }
+        if (resolvedFieldType !== 'labels') {
+          await client.query(`DELETE FROM cc_label_options WHERE column_id = $1`, [columnId]);
+        }
       }
 
       // 2. Update the configuration when it exists. column_id is not unique

@@ -87,7 +87,7 @@ const CustomColumnsSettingsSection = ({
         modalType: 'edit',
         columnId,
         columnData: column,
-        canChangeColumnType: false,
+        canChangeColumnType: true,
         projectId: projectId ?? null,
       })
     );
