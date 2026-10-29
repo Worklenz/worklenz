@@ -32,7 +32,7 @@ const ROUTE_ICONS: Record<string, ReactNode> = {
   'client-portal': React.createElement(GroupOutlined),
   finance: React.createElement(DollarOutlined),
   reporting: React.createElement(ReadOutlined),
-  'Team Reports': React.createElement(BarChartOutlined),
+  'my-team-reports': React.createElement(BarChartOutlined),
 };
 const DEFAULT_ROUTE_ICON = React.createElement(AppstoreOutlined);
 

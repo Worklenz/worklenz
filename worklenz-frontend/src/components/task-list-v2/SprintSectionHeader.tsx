@@ -71,33 +71,31 @@ export const SprintSectionHeader = ({
   const [isEditingDates, setIsEditingDates] = useState(false);
   const skipBlurRef = useRef(false);
 
-  const saveSprintDetails = async (
+  // Saves run one at a time; the thunk merges each change into the latest stored sprint.
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  const saveSprintDetails = (
     changes: Partial<{ name: string; start_date: string | null; end_date: string | null }>
   ) => {
-    if (!sprint) return;
-    try {
-      await dispatch(
-        updateSprintDetails({
-          phase: sprint,
-          projectId,
-          details: {
-            name: sprint.name,
-            sprint_goal: sprint.sprint_goal ?? null,
-            start_date: sprint.start_date ?? null,
-            end_date: sprint.end_date ?? null,
-            ...changes,
-          },
-        })
-      ).unwrap();
-      message.success(t('sprintUpdated', { defaultValue: 'Sprint updated' }));
-    } catch (error: unknown) {
-      if (isAnnouncedApiError(error)) return;
-      message.error(
-        (error as { message?: string } | undefined)?.message ||
-          t('sprintUpdateError', { defaultValue: 'Could not update sprint' })
-      );
-    }
+    if (!sprint) return Promise.resolve();
+    const run = async () => {
+      try {
+        await dispatch(updateSprintDetails({ phase: sprint, projectId, details: changes })).unwrap();
+        message.success(t('sprintUpdated', { defaultValue: 'Sprint updated' }));
+      } catch (error: unknown) {
+        if (isAnnouncedApiError(error)) return;
+        message.error(
+          (error as { message?: string } | undefined)?.message ||
+            t('sprintUpdateError', { defaultValue: 'Could not update sprint' })
+        );
+      }
+    };
+    saveQueueRef.current = saveQueueRef.current.then(run);
+    return saveQueueRef.current;
   };
+
+  // Completed sprints are historical records, so their name and dates are read-only.
+  const canEditSprint = canManage && sprint?.sprint_status !== 'completed';
 
   const startEditName = () => {
     if (!sprint) return;
@@ -239,7 +237,7 @@ export const SprintSectionHeader = ({
           style={{ transform: isCollapsed ? 'rotate(0deg)' : 'rotate(90deg)' }}
         />
 
-        {sprint && canManage ? (
+        {sprint && canEditSprint ? (
           isEditingName ? (
             <span onClick={stopEventPropagation} onKeyDown={stopEventPropagation}>
               <Input
@@ -249,7 +247,8 @@ export const SprintSectionHeader = ({
                 value={nameDraft}
                 style={{ width: 180 }}
                 onChange={e => setNameDraft(e.target.value)}
-                onPressEnter={() => {
+                onPressEnter={e => {
+                  if (e.nativeEvent.isComposing) return;
                   skipBlurRef.current = true;
                   void commitName();
                 }}
@@ -336,7 +335,7 @@ export const SprintSectionHeader = ({
           </span>
         )}
 
-        {sprint && canManage ? (
+        {sprint && canEditSprint ? (
           isEditingDates ? (
             <span onClick={stopEventPropagation} onKeyDown={stopEventPropagation} className="pl-2">
               <DatePicker.RangePicker
