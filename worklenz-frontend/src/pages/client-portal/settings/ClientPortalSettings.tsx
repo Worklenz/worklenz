@@ -20,6 +20,7 @@ import {
 } from '@/api/client-portal/portal-access-api';
 import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 import {
   MixpanelEvents,
   ClientPortalEventProps,
@@ -81,8 +82,7 @@ const PERMISSION_SWITCHES: ((settings: PortalSettingsV2) => boolean)[] = [
 const ClientPortalSettings = () => {
   const { t } = useTranslation('client-portal-settings');
   const { t: tV2 } = useTranslation('client-portal-v2-settings');
-  const authService = useAuthService();
-  const canBrand = canUseFeature(authService.getCurrentSession(), 'client_portal_branding');
+  const isReadOnly = useIsAdminSurfaceReadOnly();
   const { token } = theme.useToken();
   const { trackMixpanelEvent } = useMixpanelTracking();
 
@@ -548,7 +548,7 @@ const ClientPortalSettings = () => {
           {section === 'notifications' &&
             renderV2Section(current => <NotificationsSection settings={current} onChange={handleV2Change} />)}
 
-          {hasUnsavedChanges && (
+          {hasUnsavedChanges && !isReadOnly && (
             <Flex
               justify="flex-start"
               gap={8}

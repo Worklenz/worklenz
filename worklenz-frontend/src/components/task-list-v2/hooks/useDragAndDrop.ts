@@ -1,9 +1,11 @@
 import { useState, useCallback } from 'react';
 import { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {
   moveTaskToGroupWithAPI,
+  reorderSubtasks,
   reorderTasksInGroup,
 } from '@/features/task-management/task-management.slice';
 import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
@@ -20,6 +22,8 @@ import { UNMAPPED } from '@/shared/constants';
 import { useParams } from 'react-router-dom';
 import { useAuthService } from '@/hooks/useAuth';
 import logger from '@/utils/errorLogger';
+import type { TFunction } from 'i18next';
+import { moveSubtaskToParent as performMoveSubtaskToParent } from './move-subtask-to-parent';
 
 interface TaskSortUpdate {
   task_id: string;
@@ -29,7 +33,13 @@ interface TaskSortUpdate {
   phase_id?: string;
 }
 
-export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
+export type DropPosition = 'before' | 'after' | 'into' | null;
+
+export const useDragAndDrop = (
+  allTasks: Task[],
+  groups: TaskGroup[],
+  t?: TFunction
+) => {
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
   const { projectId } = useParams();
@@ -38,11 +48,31 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [overGroupId, setOverGroupId] = useState<string | null>(null);
-  const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
+  const [dropPosition, setDropPosition] = useState<DropPosition>(null);
+
+  const getTaskById = useCallback(
+    (taskId: string | undefined | null) =>
+      taskId ? allTasks.find(task => task.id === taskId) : undefined,
+    [allTasks]
+  );
 
   const getTaskGroup = useCallback(
-    (taskId: string) => groups.find(group => group.taskIds.includes(taskId)),
-    [groups]
+    (taskId: string) => {
+      const direct = groups.find(group => group.taskIds.includes(taskId));
+      if (direct) return direct;
+
+      // Subtasks are not in group.taskIds — resolve via ancestor parent chain
+      let current = getTaskById(taskId);
+      const visited = new Set<string>();
+      while (current?.parent_task_id && !visited.has(current.id)) {
+        visited.add(current.id);
+        const parentGroup = groups.find(group => group.taskIds.includes(current!.parent_task_id!));
+        if (parentGroup) return parentGroup;
+        current = getTaskById(current.parent_task_id);
+      }
+      return null;
+    },
+    [getTaskById, groups]
   );
 
   const getOverGroup = useCallback(
@@ -79,6 +109,82 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       return allTasks.find(task => task.id === over.id) || null;
     },
     [allTasks]
+  );
+
+  const isDescendantOf = useCallback(
+    (candidateId: string, ancestorId: string) => {
+      let current = getTaskById(candidateId);
+      const visited = new Set<string>();
+      while (current?.parent_task_id && !visited.has(current.id)) {
+        if (current.parent_task_id === ancestorId) return true;
+        visited.add(current.id);
+        current = getTaskById(current.parent_task_id);
+      }
+      return false;
+    },
+    [getTaskById]
+  );
+
+  /** Resolve the parent task id to move a subtask under when dropping on `overTask`. */
+  const resolveMoveTargetParentId = useCallback(
+    (activeTask: Task, overTask: Task): string | null => {
+      if (activeTask.id === overTask.id) return null;
+
+      // Dropping onto a top-level task → that task becomes the new parent
+      if (!overTask.parent_task_id) {
+        if (overTask.id === activeTask.parent_task_id) return null; // already under it
+        if (isDescendantOf(overTask.id, activeTask.id)) return null; // cycle
+        return overTask.id;
+      }
+
+      // Dropping onto a subtask of a different parent → move under that subtask's parent
+      if (overTask.parent_task_id !== activeTask.parent_task_id) {
+        // Own child: would set parent to self (isDescendantOf does not treat self as descendant)
+        if (overTask.parent_task_id === activeTask.id) return null;
+        if (isDescendantOf(overTask.parent_task_id, activeTask.id)) return null;
+        return overTask.parent_task_id;
+      }
+
+      // Same parent — reorder, not move
+      return null;
+    },
+    [isDescendantOf]
+  );
+
+  const emitSubtaskReorder = useCallback(
+    (parentTaskId: string, orderedSubtasks: Task[]) => {
+      dispatch(reorderSubtasks({ parentTaskId, orderedSubtasks }));
+
+      if (!socket || !connected) return;
+
+      socket.emit(SocketEvents.SUBTASK_SORT_ORDER_CHANGE.toString(), {
+        parent_task_id: parentTaskId,
+        subtask_updates: orderedSubtasks.map((subtask, index) => ({
+          task_id: subtask.id,
+          sort_order: index,
+        })),
+      });
+    },
+    [connected, dispatch, socket]
+  );
+
+  const moveSubtaskToParent = useCallback(
+    async (subtaskId: string, newParentId: string) => {
+      if (!projectId) return;
+
+      const oldParentId =
+        store.getState().taskManagement.entities[subtaskId]?.parent_task_id ?? null;
+
+      await performMoveSubtaskToParent({
+        subtaskId,
+        newParentId,
+        projectId,
+        oldParentId,
+        dispatch,
+        t,
+      });
+    },
+    [dispatch, projectId, t]
   );
 
   // Keep Task Drawer Phase/Status/Priority fields in sync when the open task is dragged
@@ -276,9 +382,23 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       if (overTask) {
         setOverId(overTask.id);
 
+        // Subtask over a different parent (or top-level task) → nest/move indicator
+        if (activeTask.parent_task_id) {
+          const moveTarget = resolveMoveTargetParentId(activeTask, overTask);
+          if (moveTarget) {
+            setDropPosition('into');
+            return;
+          }
+        }
+
         if (activeGroup.id === overGroup.id) {
           const activeIndex = activeGroup.taskIds.indexOf(activeTask.id);
           const overIndex = overGroup.taskIds.indexOf(overTask.id);
+          // Subtask↔sibling reorder doesn't use group indexes
+          if (activeTask.parent_task_id && overTask.parent_task_id === activeTask.parent_task_id) {
+            setDropPosition('before');
+            return;
+          }
           setDropPosition(activeIndex < overIndex ? 'after' : 'before');
         } else {
           setDropPosition('before');
@@ -288,7 +408,36 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
         setDropPosition(activeGroup.id === overGroup.id ? null : 'after');
       }
     },
-    [allTasks, getOverGroup, getOverTask, getTaskGroup]
+    [allTasks, getOverGroup, getOverTask, getTaskGroup, resolveMoveTargetParentId]
+  );
+
+  const handleSubtaskDragEnd = useCallback(
+    (activeTask: Task, overTask: Task) => {
+      const moveTargetParentId = resolveMoveTargetParentId(activeTask, overTask);
+
+      if (moveTargetParentId) {
+        void moveSubtaskToParent(activeTask.id, moveTargetParentId);
+        return;
+      }
+
+      // Same-parent sibling reorder
+      if (
+        !activeTask.parent_task_id ||
+        overTask.parent_task_id !== activeTask.parent_task_id ||
+        activeTask.id === overTask.id
+      ) {
+        return;
+      }
+
+      const parent = getTaskById(activeTask.parent_task_id);
+      const siblings = parent?.sub_tasks ? [...parent.sub_tasks] : [];
+      const oldIndex = siblings.findIndex(s => s.id === activeTask.id);
+      const newIndex = siblings.findIndex(s => s.id === overTask.id);
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+
+      emitSubtaskReorder(activeTask.parent_task_id, arrayMove(siblings, oldIndex, newIndex));
+    },
+    [emitSubtaskReorder, getTaskById, moveSubtaskToParent, resolveMoveTargetParentId]
   );
 
   const handleDragEnd = useCallback(
@@ -303,22 +452,29 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
         return;
       }
 
-      const activeId = active.id;
-      // Find the active task
-      const activeTask = allTasks.find(task => task.id === activeId);
+      const draggedId = active.id;
+      const activeTask = allTasks.find(task => task.id === draggedId);
       if (!activeTask) {
-        logger.error('Active task not found:', activeId);
-        return;
-      }
-
-      // Find the active task's group
-      const activeGroup = getTaskGroup(activeTask.id);
-      if (!activeGroup) {
-        logger.error('Could not find active group for task:', activeId);
+        logger.error('Active task not found:', draggedId);
         return;
       }
 
       const overTask = getOverTask(over);
+
+      // Subtasks: reorder within parent or move to a new parent
+      if (activeTask.parent_task_id) {
+        if (!overTask) return;
+        handleSubtaskDragEnd(activeTask, overTask);
+        return;
+      }
+
+      // Top-level tasks: existing group reorder / cross-group move
+      const activeGroup = getTaskGroup(activeTask.id);
+      if (!activeGroup) {
+        logger.error('Could not find active group for task:', draggedId);
+        return;
+      }
+
       const overGroup = getOverGroup(over);
 
       if (!overGroup) {
@@ -335,26 +491,33 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
         return;
       }
 
+      // Don't reorder top-level tasks against a subtask target — resolve to parent row
+      const effectiveOverTask =
+        overTask?.parent_task_id ? getTaskById(overTask.parent_task_id) || overTask : overTask;
+      const effectiveOverIndex = effectiveOverTask
+        ? overGroup.taskIds.indexOf(effectiveOverTask.id)
+        : overIndex;
+
       const insertIndex =
-        overTask && overIndex !== -1
-          ? overIndex
+        effectiveOverTask && effectiveOverIndex !== -1
+          ? effectiveOverIndex
           : overGroup.taskIds.filter(taskId => taskId !== activeTask.id).length;
 
-      if (!isSameGroup || activeIndex !== overIndex) {
+      if (!isSameGroup || activeIndex !== effectiveOverIndex) {
         dispatch(
           reorderTasksInGroup({
-            sourceTaskId: activeId as string,
-            destinationTaskId: (overTask?.id || activeId) as string,
+            sourceTaskId: draggedId as string,
+            destinationTaskId: (effectiveOverTask?.id || draggedId) as string,
             sourceGroupId: activeGroup.id,
             destinationGroupId: overGroup.id,
           })
         );
 
         if (!isSameGroup) {
-          syncOpenTaskDrawerGrouping(activeId as string, overGroup.id);
+          syncOpenTaskDrawerGrouping(draggedId as string, overGroup.id);
         }
 
-        emitTaskSortChange(activeId as string, activeGroup, overGroup, insertIndex);
+        emitTaskSortChange(draggedId as string, activeGroup, overGroup, insertIndex);
       }
     },
     [
@@ -364,7 +527,9 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       emitTaskSortChange,
       getOverGroup,
       getOverTask,
+      getTaskById,
       getTaskGroup,
+      handleSubtaskDragEnd,
       syncOpenTaskDrawerGrouping,
     ]
   );

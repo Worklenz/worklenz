@@ -202,7 +202,7 @@
   "sundayShort": "So",
   "tabTitle": "Aufgaben ohne Start- & Enddatum",
   "task": "Aufgabe",
-  "taskCreationRestricted": "Aufgabenerstellung ist nur für Administratoren und Teamleiter möglich. Wenden Sie sich an Ihren Administrator für den Zugriff.",
+  "taskCreationRestricted": "Aufgabenerstellung ist nur für Administratoren, Teamleiter und Projektmanager möglich. Wenden Sie sich an Ihren Administrator für den Zugriff.",
   "taskCreationRestrictedTitle": "Aufgabenerstellung Eingeschränkt",
   "taskName": "Aufgabenname",
   "taskNameRequired": "Bitte geben Sie einen Aufgabennamen ein",

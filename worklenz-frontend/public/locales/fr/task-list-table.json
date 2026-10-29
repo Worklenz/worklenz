@@ -100,7 +100,15 @@
     "unarchive": "Désarchiver",
     "archive": "Archiver",
     "convertToSubTask": "Convertir en sous-tâche",
+    "convertToSubTaskDescription": "Sélectionnez une tâche parente pour convertir cette tâche en sous-tâche.",
+    "convertToSubTaskSuccess": "Tâche convertie en sous-tâche avec succès",
+    "convertToSubTaskFailed": "Échec de la conversion en sous-tâche",
     "convertToTask": "Convertir en tâche",
+    "moveSubtask": "Déplacer vers une tâche parente",
+    "moveSubtaskDescription": "Sélectionnez une tâche parente dans ce projet. La sous-tâche conserve son titre, sa description, son assigné, ses dates, son statut et ses heures enregistrées.",
+    "moveSubtaskSuccess": "Sous-tâche déplacée avec succès",
+    "moveSubtaskFailed": "Échec du déplacement de la sous-tâche",
+    "taskColumn": "Tâche",
     "delete": "Supprimer",
     "searchByNameInputPlaceholder": "Rechercher par nom",
     "deleteConfirmTitle": "Supprimer la tâche",
@@ -316,5 +324,6 @@
   "setDueTime": "Définir l'heure d'échéance",
   "save": "Enregistrer",
   "cancel": "Annuler",
-  "changeStatus": "Changer de statut : {{status}}"
+  "changeStatus": "Changer de statut : {{status}}",
+  "ellipsis": "..."
 }

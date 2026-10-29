@@ -202,7 +202,7 @@
   "sundayShort": "Die",
   "tabTitle": "Detyra pa Data Fillimi & Përfundimi",
   "task": "Detyra",
-  "taskCreationRestricted": "Krijimi i detyrave është i kufizuar vetëm për Administratorët dhe Drejtuesit e Ekipit. Kontaktoni administratorin tuaj për akses.",
+  "taskCreationRestricted": "Krijimi i detyrave është i kufizuar vetëm për Administratorët, Drejtuesit e Ekipit dhe Menaxherët e Projektit. Kontaktoni administratorin tuaj për akses.",
   "taskCreationRestrictedTitle": "Krijimi i Detyrave është i Kufizuar",
   "taskName": "Emri i Detyrës",
   "taskNameRequired": "Ju lutemi vendosni emrin e detyrës",

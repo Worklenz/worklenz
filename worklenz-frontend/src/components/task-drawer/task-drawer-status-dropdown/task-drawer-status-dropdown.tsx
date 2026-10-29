@@ -4,6 +4,7 @@ import { updateTaskStatus } from '@/features/tasks/tasks.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { isListTabKey } from '@/features/projects/singleProject/saved-views/saved-view-config';
 import alertService from '@/services/alerts/alertService';
 import { SocketEvents } from '@/shared/socket-events';
 import { useSocket } from '@/socket/socketContext';
@@ -96,7 +97,7 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId, disabled = false }: 
         }
 
         // Update old tasks slice
-        if (tab === 'tasks-list') {
+        if (isListTabKey(tab)) {
           dispatch(updateTaskStatus(data));
         }
 

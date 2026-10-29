@@ -20,6 +20,7 @@ import {
 import { buildPinLimitReachedBody, isPinLimitReached } from "../shared/home-pins";
 import { toMentionExcerpt, IMentionedName } from "../shared/home-mentions";
 import { isValidUuid } from "../shared/validation-helpers";
+import { canViewAllProjects } from "../shared/organization-permissions";
 import {
   buildMultiProjectAssigneeScopeClause,
   isAssigneeScopeSessionExempt,
@@ -1159,10 +1160,9 @@ export default class HomePageController extends WorklenzControllerBase {
     const team_id = req.user?.team_id;
     const user_id = req.user?.id;
     const queryParams = [team_id, user_id];
-    // Owners/admins see every team project, matching the access rule used by
-    // the main projects list; regular members only see projects they belong to.
+    // Matches the access rule used by the main projects list
     let filterByMember = "";
-    if (!req.user?.owner && !req.user?.is_admin) {
+    if (!(await canViewAllProjects(req.user))) {
       filterByMember = " AND is_member_of_project(projects.id, $2, $1) ";
     }
     const q = `

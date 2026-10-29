@@ -23,6 +23,7 @@ import { fetchLabelsByProject, fetchTaskGroups, setLabels } from '@/features/tas
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setBoardLabels } from '@/features/board/board-slice';
 import { fetchBoardTaskGroups } from '@/features/board/board-slice';
+import { isListTabKey } from '@/features/projects/singleProject/saved-views/saved-view-config';
 
 const LabelsFilterDropdown = () => {
   const dispatch = useAppDispatch();
@@ -38,7 +39,7 @@ const LabelsFilterDropdown = () => {
   const { projectId } = useAppSelector(state => state.projectReducer);
 
   const tab = searchParams.get('tab');
-  const projectView = tab === 'tasks-list' ? 'list' : 'kanban';
+  const projectView = isListTabKey(tab) ? 'list' : 'kanban';
 
   // Fetch labels when component mounts or projectId changes
   useEffect(() => {

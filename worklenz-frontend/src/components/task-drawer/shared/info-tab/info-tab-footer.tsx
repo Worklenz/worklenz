@@ -17,12 +17,17 @@ import { fromNow, formatDate } from '@/utils/dateUtils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
-import CustomMentionsInput, { MentionOption } from './comments/custom-mentions-input';
+import { RichCommentEditor, RichCommentChange, MentionMemberOption } from '@/components/common/rich-comment-editor';
 import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import './info-tab-footer.css';
 
-// Utility function to convert file to base64
+/**
+ * Converts a browser File object to a base64 Data URL string.
+ *
+ * @param file - The file to read
+ * @returns Promise resolving to base64 data string
+ */
 const getBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -32,7 +37,12 @@ const getBase64 = (file: File): Promise<string> => {
   });
 };
 
-// Utility function to format file size
+/**
+ * Formats a raw byte count into a human-readable file size string (Bytes, KB, MB, GB).
+ *
+ * @param bytes - Size in bytes
+ * @returns Formatted size string
+ */
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
@@ -44,6 +54,12 @@ const formatFileSize = (bytes: number): string => {
 const COMMENT_ATTACHMENT_SIZE_LIMIT_BYTES = 25 * 1024 * 1024;
 const MAX_COMMENT_LENGTH = 5000;
 
+/**
+ * Footer component for the task drawer's info tab, hosting the rich comment composer,
+ * mentions, file attachment handling, and quick submit actions.
+ *
+ * @returns The rendered footer element
+ */
 const InfoTabFooter = () => {
   const { t, i18n } = useTranslation('task-drawer/task-drawer');
   const MAXIMUM_FILE_COUNT = 5;
@@ -69,6 +85,8 @@ const InfoTabFooter = () => {
   >([]);
   const [commentValue, setCommentValue] = useState<string>('');
   const [uploading, setUploading] = useState<boolean>(false);
+  // Synchronous guard: state updates are async, so rapid Enter presses could otherwise submit twice.
+  const isSubmittingComment = useRef(false);
 
   const [form] = Form.useForm();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -148,12 +166,15 @@ const InfoTabFooter = () => {
     }
   }, [projectId]);
 
-  const mentionsOptions =
-    members?.map(member => ({
-      value: member.name,
-      label: member.name,
-      key: member.id,
-    })) ?? [];
+  const mentionMemberOptions: MentionMemberOption[] = useMemo(
+    () =>
+      members?.map(member => ({
+        id: member.id || '',
+        name: member.name || '',
+        avatar_url: (member as { avatar_url?: string }).avatar_url,
+      })) ?? [],
+    [members]
+  );
 
   const memberSelectHandler = useCallback(
     (member: IMentionMemberSelectOption) => {
@@ -177,12 +198,17 @@ const InfoTabFooter = () => {
     [members]
   );
 
-  const handleCommentChange = useCallback((value: string) => {
-    setCommentValue(value);
-    setCharacterLength(value.trim().length);
+  /** Stores comment HTML and mentions, using plain-text length to enable submission. */
+  const handleCommentChange = useCallback(({ html, text, mentions }: RichCommentChange) => {
+    setCommentValue(html);
+    setCharacterLength(text.trim().length);
+    setSelectedMembers(
+      mentions.map(m => ({ team_member_id: m.id, name: m.name }))
+    );
   }, []);
 
   const handleSubmit = useCallback(async () => {
+    if (isSubmittingComment.current) return;
     if (!selectedTaskId || !projectId) return;
 
     if (!isCommentValid()) {
@@ -204,6 +230,7 @@ const InfoTabFooter = () => {
       return;
     }
 
+    isSubmittingComment.current = true;
     try {
       const hasOversizedAttachment = selectedFiles.some(
         file => Number(file.size || 0) > COMMENT_ATTACHMENT_SIZE_LIMIT_BYTES
@@ -265,6 +292,7 @@ const InfoTabFooter = () => {
         })
       );
     } finally {
+      isSubmittingComment.current = false;
       setUploading(false);
     }
   }, [
@@ -376,31 +404,21 @@ const InfoTabFooter = () => {
             transition: 'all 0.3s ease-in-out',
           }}
         >
-          <CustomMentionsInput
-            placeholder={t('taskInfoTab.comments.addCommentPlaceholder', {
-              defaultValue: 'Add a comment...',
-            })}
-            options={mentionsOptions}
-            value={commentValue}
-            onClick={() => setIsCommentBoxExpand(true)}
-            onChange={(e: string) => {
-              setCommentValue(e);
-              setCharacterLength(e.length);
-            }}
-            prefix="@"
-            filterOption={(input: string, option: any) => {
-              if (!input) return true;
-              const optionLabel = option?.label || '';
-              return optionLabel.toLowerCase().includes(input.toLowerCase());
-            }}
-            style={{
-              minHeight: 60,
-              resize: 'none',
-              borderRadius: 4,
-              transition: 'all 0.3s ease-in-out',
-            }}
-            themeMode={themeMode}
-          />
+          <div onClick={() => setIsCommentBoxExpand(true)} style={{ cursor: 'text' }}>
+            <RichCommentEditor
+              placeholder={t('taskInfoTab.comments.addCommentPlaceholder', {
+                defaultValue: 'Add a comment...',
+              })}
+              mentionOptions={mentionMemberOptions}
+              value={commentValue}
+              controlled
+              onChange={handleCommentChange}
+              onFocus={() => setIsCommentBoxExpand(true)}
+              themeMode={themeMode}
+              minHeight={40}
+              maxHeight={80}
+            />
+          </div>
         </Flex>
       ) : (
         <Form
@@ -485,51 +503,27 @@ const InfoTabFooter = () => {
           )}
 
           <Form.Item name={'comment'} style={{ marginBlock: 12 }}>
-            <div style={{ position: 'relative' }}>
-              <CustomMentionsInput
-                placeholder={t('taskInfoTab.comments.addCommentPlaceholder', {
-                  defaultValue: 'Add a comment...',
-                })}
-                options={mentionsOptions}
-                autoFocus
-                value={commentValue}
-                onSelect={(option: any) =>
-                  memberSelectHandler(option as IMentionMemberSelectOption)
-                }
-                onChange={handleCommentChange}
-                onSubmit={handleSubmit}
-                prefix="@"
-                filterOption={(input: string, option: any) => {
-                  if (!input) return true;
-                  const optionLabel = option?.label || '';
-                  return optionLabel.toLowerCase().includes(input.toLowerCase());
-                }}
-                style={{
-                  minHeight: 100,
-                  maxHeight: 200,
-                  paddingBlockEnd: 24,
-                  borderRadius: 4,
-                }}
-                themeMode={themeMode}
-              />
-              <span
-                style={{
-                  position: 'absolute',
-                  bottom: 4,
-                  right: 12,
-                  color: colors.lightGray,
-                  fontSize: 12,
-                  zIndex: 10,
-                  pointerEvents: 'none',
-                }}
-              >{`${characterLength}/5000`}</span>
-            </div>
+            <RichCommentEditor
+              placeholder={t('taskInfoTab.comments.addCommentPlaceholder', {
+                defaultValue: 'Add a comment...',
+              })}
+              mentionOptions={mentionMemberOptions}
+              autoFocus
+              value={commentValue}
+              controlled
+              onChange={handleCommentChange}
+              onSubmit={handleSubmit}
+              themeMode={themeMode}
+              maxLength={MAX_COMMENT_LENGTH}
+              minHeight={100}
+              maxHeight={220}
+            />
             <Typography.Text
               type="secondary"
               style={{ fontSize: 11, marginTop: 4, display: 'block' }}
             >
-              {t('taskInfoTab.comments.enterHint', {
-                defaultValue: 'Enter to send  ·  Shift+Enter for new line',
+              {t('taskInfoTab.comments.pressCmdEnterToSubmit', {
+                defaultValue: 'Press Ctrl+Enter (or Cmd+Enter) to submit',
               })}
             </Typography.Text>
           </Form.Item>

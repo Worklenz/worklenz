@@ -2,7 +2,12 @@ import { NextFunction, Response } from "express";
 import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import { ClientCapability, clientRoleCan } from "../shared/client-portal-permissions";
-import { ClientSubject, loadClientSubject } from "../services/client-portal-v2/subject";
+import {
+  ACCESS_LOSS_MESSAGES,
+  ClientSubject,
+  explainAccessLoss,
+  loadClientSubject,
+} from "../services/client-portal-v2/subject";
 import { AuthenticatedClientRequest } from "./client-auth-middleware";
 
 /**
@@ -31,10 +36,16 @@ export const requireClientSubject = async (req: ClientSubjectRequest, res: Respo
     });
 
     if (!subject) {
-      // Deactivated, removed, not yet activated or the organization is inactive. The client signs out.
+      // Deactivated, removed, deleted, not yet activated or the organization is unavailable. The client
+      // signs out; `reason` only chooses the wording they see.
+      const reason = await explainAccessLoss(db, {
+        clientUserId: req.clientUserId,
+        clientId: req.clientId,
+        teamId: req.organizationId,
+      });
       return res
         .status(403)
-        .json(new ServerResponse(false, { code: "ACCESS_REVOKED" }, "Your access has been removed. Please contact your administrator."));
+        .json(new ServerResponse(false, { code: "ACCESS_REVOKED", reason }, ACCESS_LOSS_MESSAGES[reason]));
     }
 
     req.clientSubject = subject;

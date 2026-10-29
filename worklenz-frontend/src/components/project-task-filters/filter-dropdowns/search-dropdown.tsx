@@ -16,6 +16,7 @@ import { setSearch } from '@/features/tasks/tasks.slice';
 import { SearchOutlined } from '@/shared/antd-imports';
 
 import { setBoardSearch } from '@/features/board/board-slice';
+import { isListTabKey } from '@/features/projects/singleProject/saved-views/saved-view-config';
 
 const SearchDropdown = () => {
   const { t } = useTranslation('task-list-filters');
@@ -26,7 +27,7 @@ const SearchDropdown = () => {
   const [searchParams] = useSearchParams();
 
   const tab = searchParams.get('tab');
-  const projectView = tab === 'tasks-list' ? 'list' : 'kanban';
+  const projectView = isListTabKey(tab) ? 'list' : 'kanban';
 
   // Debounced search dispatch
   const debouncedSearch = useCallback(

@@ -93,6 +93,7 @@ describe("ReportingProjectsController", () => {
     it.each([
       ["last_activity", "last_activity_at"],
       ["days_left", "days_left"],
+      ["p.days_left", "days_left"],
       ["project_manager_name", "project_manager_name"],
 
       ["health_name", "health_name"],

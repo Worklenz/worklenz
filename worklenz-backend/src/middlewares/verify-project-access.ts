@@ -5,6 +5,13 @@ import {ServerResponse} from "../models/server-response";
 import db from "../config/db";
 import {log_error} from "../shared/utils";
 import {NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE} from "../shared/guest-access-sql";
+import {
+  canViewAllProjects,
+  PROJECT_ROLE_PERMISSIONS,
+  ProjectRolePermission,
+  GUEST_ROLE_NAME,
+} from "../shared/organization-permissions";
+import {checkProjectRolePermission} from "../shared/project-role-permissions";
 
 /**
  * Middleware to verify user has access to a project
@@ -13,6 +20,7 @@ import {NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE} from "../shared/guest
  * - Owner: Can access all projects in their team
  * - Admin: Can access all projects in their team
  * - Team Lead: Can access all projects in their team
+ * - Roles granted "View all projects" in the default permission scheme: all projects in their team
  * - Member: Can only access projects they are explicitly added to as project members
  *
  * Usage:
@@ -138,8 +146,8 @@ export default function verifyProjectAccess(
       }
 
       // Project belongs to user's current team, now check role-based access
-      // If user is Owner or Admin, they can access all projects in their team
-      if (isOwner || isAdmin) {
+      // Owners, Admins, and roles granted "View all projects" can access all projects in their team
+      if (isOwner || isAdmin || (await canViewAllProjects(req.user))) {
         return next();
       }
 
@@ -202,7 +210,8 @@ export default function verifyProjectAccess(
  */
 export function verifyNonGuestProjectAccess(
   location: 'params' | 'body' | 'query' = 'params',
-  fieldName: string = 'id'
+  fieldName: string = 'id',
+  permission: ProjectRolePermission = PROJECT_ROLE_PERMISSIONS.EDIT_TASKS
 ) {
   return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
     const userId = req.user?.id;
@@ -221,6 +230,14 @@ export function verifyNonGuestProjectAccess(
     }
 
     try {
+      const rolePermission = await checkProjectRolePermission(userId, projectId, permission);
+      if (!rolePermission.allowed) {
+        return res.status(403).send(
+          new ServerResponse(false, null, "You do not have permission to perform this action in this project")
+        );
+      }
+      if (rolePermission.roleName === GUEST_ROLE_NAME) return next();
+
       const q = `
         SELECT 1
         FROM projects p

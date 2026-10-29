@@ -242,5 +242,19 @@
   "projectInvite_guestLimitExceeded": "Kufiri i vizitorëve u tejkalua për këtë plan. Përmirësoje për të shtuar më shumë të ftuar.",
   "license-expired-subtitle": "Periudhja juaj e provës në Worklenz ka përfunduar. Ju lutemi përditesohuni për të vazhduar të shijoni të gjitha veçoritë.",
   "Failed to fetch job titles": "Dështoi marrja e titujve të punës",
-  "assign_team_lead": "Cakto Drejtuesin e Ekipit"
+  "assign_team_lead": "Cakto Drejtuesin e Ekipit",
+  "assign_department": "Cakto Departamentin",
+  "assign_practice": "Cakto Praktikën",
+  "select_department": "Zgjidh departamentin",
+  "select_practice": "Zgjidh praktikën",
+  "no_departments_found": "Nuk u gjetën departamente",
+  "no_practices_found": "Nuk u gjetën praktika",
+  "please_select_assignment_and_members": "Zgjidh departamentin ose praktikën dhe anëtarët e ekipit",
+  "bulk_organization_assignment_success": "{{count}} anëtarë të ekipit u caktuan te {{organization}}",
+  "bulk_organization_assignment_failed": "Caktimi i {{organization}} dështoi",
+  "bulk_assignment_member_missing_id": "Një anëtar i zgjedhur nuk ka ID",
+  "bulk_assignment_member_load_failed": "Ngarkimi dështoi për {{member}}",
+  "bulk_assignment_role_verify_failed": "Verifikimi i rolit dështoi për {{member}}",
+  "bulk_assignment_member_update_failed": "Përditësimi dështoi për {{member}}",
+  "member": "anëtar"
 }

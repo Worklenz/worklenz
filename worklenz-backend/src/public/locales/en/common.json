@@ -23,5 +23,22 @@
   "business-trial-then-plan": "you'll continue on {{plan}} after that",
   "licennse-expired-contacting-support": "Contacting support...",
   "loadingData": "Loading data...",
-  "refreshingData": "Refreshing data..."
+  "refreshingData": "Refreshing data...",
+  "addComment": "Add a comment...",
+  "peopleYouCanMention": "People you can mention",
+  "noMatchingPeople": "No matching people",
+  "formatting": "Formatting",
+  "bold": "Bold",
+  "italic": "Italic",
+  "strikethrough": "Strikethrough",
+  "codeBlock": "Code block",
+  "quoteBlock": "Quote block",
+  "checklist": "Checklist",
+  "numberedList": "Numbered list",
+  "unorderedList": "Bullet list",
+  "linkAddress": "Link URL",
+  "linkPlaceholder": "https://example.com",
+  "apply": "Apply",
+  "link": "Link",
+  "textColor": "Text color"
 }

@@ -100,7 +100,15 @@
     "unarchive": "Dearchivieren",
     "archive": "Archivieren",
     "convertToSubTask": "In Unteraufgabe umwandeln",
+    "convertToSubTaskDescription": "Wählen Sie eine übergeordnete Aufgabe, um diese Aufgabe in eine Unteraufgabe umzuwandeln.",
+    "convertToSubTaskSuccess": "Aufgabe erfolgreich in Unteraufgabe umgewandelt",
+    "convertToSubTaskFailed": "Umwandlung in Unteraufgabe fehlgeschlagen",
     "convertToTask": "In Aufgabe umwandeln",
+    "moveSubtask": "Zu übergeordneter Aufgabe verschieben",
+    "moveSubtaskDescription": "Wählen Sie eine übergeordnete Aufgabe in diesem Projekt. Die Unteraufgabe behält Titel, Beschreibung, Zuweisung, Daten, Status und erfasste Stunden.",
+    "moveSubtaskSuccess": "Unteraufgabe erfolgreich verschoben",
+    "moveSubtaskFailed": "Verschieben der Unteraufgabe fehlgeschlagen",
+    "taskColumn": "Aufgabe",
     "delete": "Löschen",
     "searchByNameInputPlaceholder": "Nach Namen suchen",
     "deleteConfirmTitle": "Aufgabe löschen",
@@ -316,5 +324,6 @@
   "setDueTime": "Fälligkeitszeit festlegen",
   "save": "Speichern",
   "cancel": "Abbrechen",
-  "changeStatus": "Status ändern: {{status}}"
+  "changeStatus": "Status ändern: {{status}}",
+  "ellipsis": "..."
 }

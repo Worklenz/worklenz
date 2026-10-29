@@ -200,5 +200,7 @@
   "closeButton": "关闭",
   "linkedChangeRequest": "链接的变更请求",
   "openChangeRequest": "打开变更请求",
-  "projectColumn": "项目"
+  "projectColumn": "项目",
+  "downloadFailed": "下载 PDF 失败，请重试。",
+  "defaultInvoiceFooter": "感谢您的惠顾。如对本发票有任何疑问，请通过上方信息联系我们。"
 }

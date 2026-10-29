@@ -100,7 +100,15 @@
     "unarchive": "Desarquivar",
     "archive": "Arquivar",
     "convertToSubTask": "Converter em Subtarefa",
+    "convertToSubTaskDescription": "Selecione uma tarefa pai para converter esta tarefa em subtarefa.",
+    "convertToSubTaskSuccess": "Tarefa convertida em subtarefa com sucesso",
+    "convertToSubTaskFailed": "Falha ao converter em subtarefa",
     "convertToTask": "Converter em Tarefa",
+    "moveSubtask": "Mover para tarefa pai",
+    "moveSubtaskDescription": "Selecione uma tarefa pai neste projeto. A subtarefa mantém título, descrição, responsável, datas, status e horas registradas.",
+    "moveSubtaskSuccess": "Subtarefa movida com sucesso",
+    "moveSubtaskFailed": "Falha ao mover a subtarefa",
+    "taskColumn": "Tarefa",
     "delete": "Excluir",
     "searchByNameInputPlaceholder": "Buscar por nome",
     "deleteConfirmTitle": "Excluir tarefa",
@@ -316,5 +324,6 @@
   "setDueTime": "Definir hora de vencimento",
   "save": "Salvar",
   "cancel": "Cancelar",
-  "changeStatus": "Alterar status: {{status}}"
+  "changeStatus": "Alterar status: {{status}}",
+  "ellipsis": "..."
 }

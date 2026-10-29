@@ -45,7 +45,6 @@ import { colors } from '@/styles/colors';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import { IRPTProject } from '@/types/reporting/reporting.types';
 import ProjectReportsDrawer from '@/features/reporting/projectReports/projectReportsDrawer/ProjectReportsDrawer';
-import { PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import './projects-reports-table.css';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { useSocket } from '@/socket/socketContext';
@@ -58,11 +57,14 @@ import ProjectManagersFilterDropdown from '../projects-reports-filters/project-m
 import ProjectClientFilterDropdown from '../projects-reports-filters/project-client-filter-dropdown';
 import ProjectPriorityFilterDropdown from '../projects-reports-filters/project-priority-filter-dropdown';
 import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
+import { useCanEditReports } from '@/hooks/useCanEditReports';
+import TablePagination from '@/components/TablePagination';
 
 const ProjectsReportsTable = () => {
   const dispatch = useAppDispatch();
+  const { socket } = useSocket();
+  const isReadOnly = !useCanEditReports();
   const { t } = useTranslation('reporting-projects');
-  const { socket, connected } = useSocket();
 
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
@@ -253,6 +255,7 @@ const ProjectsReportsTable = () => {
           <ProjectStatusCell
             currentStatus={record.status_id}
             projectId={record.id}
+            isReadOnly={isReadOnly}
           />
         ),
         width: 200,
@@ -299,6 +302,7 @@ const ProjectsReportsTable = () => {
             projectId={record.id}
             startDate={record.start_date}
             endDate={record.end_date}
+            isReadOnly={isReadOnly}
           />
         ),
         width: 275,
@@ -336,6 +340,7 @@ const ProjectsReportsTable = () => {
             label={record.health_name}
             color={record.health_color}
             projectId={record.id}
+            isReadOnly={isReadOnly}
           />
         ),
         width: 200,
@@ -346,24 +351,18 @@ const ProjectsReportsTable = () => {
         sortOrder: getColumnSortOrder('category_name'),
         title: <CustomTableTitle title={t('categoryColumn')} />,
         sorter: true,
-        filterDropdown: () => (
-          <div className="table-filter-menu-popup">
-            <ProjectCategoriesFilterDropdown inline />
-          </div>
+        // ← Add className on the <td> so our CSS can target it
+        onCell: () => ({ className: 'category-cell' }),
+        render: (_, record: IRPTProject) => (
+          <ProjectCategoryCell
+            projectId={record.id}
+            id={record.category_id || ''}
+            name={record.category_name || ''}
+            color_code={record.category_color || ''}
+            isReadOnly={isReadOnly}
+          />
         ),
         filtered: Boolean(selectedProjectCategories?.length),
-        onCell: () => ({ className: 'category-cell' }),
-        render: (_, record: IRPTProject) => {
-          const catName = record.category_name || '';
-          return (
-            <ProjectCategoryCell
-              projectId={record.id}
-              id={record.category_id || ''}
-              name={catName}
-              color_code={record.category_color || ''}
-            />
-          );
-        },
         width: 200,
       },
       {
@@ -435,20 +434,7 @@ const ProjectsReportsTable = () => {
         width: 200,
       },
     ],
-    [
-      t,
-      getColumnSortOrder,
-      handleDrawerOpen,
-      projectStatuses,
-      selectedProjectStatuses,
-      selectedProjectHealths,
-      selectedProjectCategories,
-      selectedProjectManagers,
-      selectedClients,
-      selectedProjectPriorities,
-      teams,
-      projectList,
-    ]
+    [t, order, handleDrawerOpen, isReadOnly]
   );
 
   const visibleColumns = useMemo(
@@ -456,23 +442,22 @@ const ProjectsReportsTable = () => {
     [columns, columnsVisibility]
   );
 
-  const handleTableChange = useCallback<NonNullable<TableProps<IRPTProject>['onChange']>>(
-    (pagination, _filters, sorter, extra) => {
-      if (extra.action === 'sort') {
-        const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
-        const sortField = Array.isArray(activeSorter.field)
-          ? activeSorter.field[0]
-          : activeSorter.field;
-        dispatch(setField(activeSorter.order && sortField ? String(sortField) : 'name'));
-        dispatch(setOrder(activeSorter.order ?? ''));
-        dispatch(setIndex(1));
-        return;
-      }
+  const handleTableChange = useCallback(
+    (_pagination: any, _filters: any, sorter: any, extra: any) => {
+      if (extra.action !== 'sort') return;
 
-      if (extra.action === 'paginate') {
-        dispatch(setIndex(pagination.current ?? 1));
-        dispatch(setPageSize(pagination.pageSize ?? pageSize));
-      }
+      const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+      dispatch(setField(activeSorter?.order ? activeSorter.field : 'name'));
+      dispatch(
+        setOrder(
+          activeSorter?.order === 'descend'
+            ? 'desc'
+            : activeSorter?.order === 'ascend'
+              ? 'asc'
+              : ''
+        )
+      );
+      dispatch(setIndex(1));
     },
     [dispatch, pageSize]
   );
@@ -529,35 +514,44 @@ const ProjectsReportsTable = () => {
     []
   );
 
-  const paginationConfig = useMemo(
-    () => ({
-      showSizeChanger: true,
-      pageSize,
-      total: total,
-      current: index,
-      pageSizeOptions: PAGE_SIZE_OPTIONS,
-    }),
-    [total, index, pageSize]
-  );
-
   const scrollConfig = useMemo(() => ({ x: 'max-content' }), []);
   const getRowKey = useCallback((record: IRPTProject) => record.id, []);
   const getRowProps = useCallback(() => tableRowProps, [tableRowProps]);
 
-  return (
+  return(
     <ConfigProvider {...tableConfig}>
-      {/* ← className enables our CSS to scope to this table */}
       <Table
         className="projects-reports-table"
         columns={visibleColumns}
         dataSource={projectList}
-        pagination={paginationConfig}
+        pagination={false}
         scroll={scrollConfig}
         loading={isLoading}
         onChange={handleTableChange}
         rowKey={getRowKey}
         onRow={getRowProps}
       />
+
+      <TablePagination
+        navigationLabel={t('common:paginationNavigation')}
+        firstPageLabel={t('common:firstPage')}
+        previousPageLabel={t('common:previousPage')}
+        nextPageLabel={t('common:nextPage')}
+        lastPageLabel={t('common:lastPage')}
+        renderDefaultSummary={(range, total) => t('common:paginationSummary', { range, total })}
+        page={index}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={(nextPage, nextPageSize) => {
+          dispatch(setIndex(nextPage));
+          dispatch(setPageSize(nextPageSize));
+        }}
+        rowsPerPageLabel={t('myTasksView.rowsPerPage', {
+          defaultValue: 'Rows per page',
+        })}
+        variant="dropdown"
+      />
+
       {createPortal(<ProjectReportsDrawer selectedProject={selectedProject} />, document.body)}
     </ConfigProvider>
   );

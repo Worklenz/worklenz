@@ -100,7 +100,7 @@
     "noUnassignedTasks": "Nenhuma tarefa não atribuída encontrada",
     "pickUnassignedTaskRequired": "Selecione uma tarefa não atribuída",
     "taskCreationRestrictedTitle": "Criação de tarefas restrita",
-    "taskCreationRestricted": "A criação de tarefas é restrita apenas a administradores e líderes de equipe. Entre em contato com o administrador.",
+    "taskCreationRestricted": "A criação de tarefas é restrita apenas a administradores, líderes de equipe e gestores de projeto. Entre em contato com o administrador.",
     "assignees": "Responsáveis",
     "searchMembers": "Buscar por nome ou e-mail…",
     "noMembersFound": "Nenhum membro encontrado",

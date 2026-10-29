@@ -90,17 +90,17 @@ beforeEach(() => {
   upgradeToPaidPlan.mockResolvedValue({ done: true, body: checkoutPayload });
 });
 
-describe('PerUserUpgradePlans Free and Enterprise cards', () => {
-  it('shows Free and Enterprise next to the paid plans', () => {
+describe('PerUserUpgradePlans Free card', () => {
+  it('shows Free next to the paid plans', () => {
     render(<PerUserUpgradePlans data={data()} />);
     expect(screen.getByText('plans.free.name')).toBeTruthy();
-    expect(screen.getByText('plans.enterprise.name')).toBeTruthy();
+    expect(screen.queryByText('plans.enterprise.name')).toBeNull();
   });
 
   it('hides the Free card for AppSumo customers', () => {
     render(<PerUserUpgradePlans data={data({ has_ltd_codes: true })} />);
     expect(screen.queryByText('plans.free.name')).toBeNull();
-    expect(screen.getByText('plans.enterprise.name')).toBeTruthy();
+    expect(screen.queryByText('plans.enterprise.name')).toBeNull();
   });
 
   it('disables the Free button for a team already on Free', () => {
@@ -122,12 +122,6 @@ describe('PerUserUpgradePlans Free and Enterprise cards', () => {
 
     await user.click(screen.getByText('freeConfirm.ok'));
     await waitFor(() => expect(switchToFreePlan).toHaveBeenCalledWith('team-1'));
-  });
-
-  it('links Enterprise to sales', () => {
-    render(<PerUserUpgradePlans data={data()} />);
-    const link = screen.getByText('contactSales').closest('a');
-    expect(link?.getAttribute('href')).toContain('mailto:');
   });
 });
 

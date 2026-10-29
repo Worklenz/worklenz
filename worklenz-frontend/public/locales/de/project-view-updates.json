@@ -56,5 +56,7 @@
   "deleteSuccess": "Kommentar erfolgreich gelöscht",
   "deleteError": "Kommentar konnte nicht gelöscht werden",
   "editSuccess": "Kommentar erfolgreich aktualisiert",
-  "editError": "Kommentar konnte nicht bearbeitet werden"
+  "editError": "Kommentar konnte nicht bearbeitet werden",
+  "writeComment": "Schreiben Sie einen Kommentar...",
+  "pressCmdEnterToSubmit": "Drücken Sie Strg+Eingabe (oder Cmd+Eingabe) zum Absenden"
 }

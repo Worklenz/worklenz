@@ -99,3 +99,6 @@ playwright-mcp
 worklenz-backend/src/private/
 worklenz-backend/database/pg-migrations-private/
 worklenz-backend/database/migrations-private/
+
+# Frontend dependency backup
+/worklenz-frontend/node_modules.bak/

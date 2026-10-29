@@ -10,23 +10,88 @@ import {
   Flex,
   Input,
   Modal,
+  Skeleton,
   Typography,
 } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useClientAccess } from '@/hooks/useClientAccess';
 import { useMessage } from '@/hooks/useMessage';
 import { logoutUser } from '@/store/slices/authSlice';
-import { useRequestAccountDeletionMutation } from '@/store/api-v2';
+import { useRequestAccountDeletionMutation, useSubmitAccountDeletionRequestMutation } from '@/store/api-v2';
 import { errorMessage } from '@/components/v2';
 
 /**
- * Soft-deletes the person's whole login (every portal they belong to). Same rules as the main app's
- * account deletion: deactivated now, data removed within 30 days, restored only by support.
+ * What a Client Member or Viewer sees instead of the delete button. A Client Admin decides who has an identity
+ * in the organization's portal, so only an admin deletes their own account directly. Everyone else is never left
+ * without a way to ask: the request is recorded and goes to the project team, and a Client Admin can also remove
+ * them at once under Members.
+ */
+const RequestAccountDeletion: React.FC = () => {
+  const { t } = useTranslation();
+  const message = useMessage();
+  const [submit, { isLoading }] = useSubmitAccountDeletionRequestMutation();
+  const [isSent, setIsSent] = useState(false);
+
+  const onRequest = async () => {
+    try {
+      const result = await submit().unwrap();
+      setIsSent(true);
+      void message.success(
+        result.sent
+          ? t('settings.deleteAccount.request.sent', { defaultValue: 'Your request was sent to your project team.' })
+          : t('settings.deleteAccount.request.alreadySent', {
+              defaultValue: 'You already sent a request today. Your project team has been notified.',
+            })
+      );
+    } catch (error) {
+      void message.error(
+        errorMessage(error) ??
+          t('settings.deleteAccount.request.failed', { defaultValue: 'We could not send your request. Please try again.' })
+      );
+    }
+  };
+
+  return (
+    <Card title={t('settings.deleteAccount.title', { defaultValue: 'Delete Account' })}>
+      <Flex vertical gap={16}>
+        <Alert
+          type="info"
+          showIcon
+          message={t('settings.deleteAccount.request.adminOnly', {
+            defaultValue: 'Only a Client Admin can delete an account here.',
+          })}
+          description={t('settings.deleteAccount.request.explain', {
+            defaultValue:
+              'A Client Admin of your organization decides who has access to your portal, so you cannot delete your account yourself. You can ask your project team to delete yours. A Client Admin can also remove you right away under Settings > Members.',
+          })}
+        />
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+          {t('settings.deleteAccount.request.note', {
+            defaultValue:
+              'Your request is recorded and sent to your project team. They will follow up with you, including about any data you want erased.',
+          })}
+        </Typography.Paragraph>
+        <div>
+          <Button type="primary" icon={<DeleteOutlined />} onClick={onRequest} loading={isLoading} disabled={isSent}>
+            {t('settings.deleteAccount.request.button', { defaultValue: 'Request account deletion' })}
+          </Button>
+        </div>
+      </Flex>
+    </Card>
+  );
+};
+
+/**
+ * A Client Admin soft-deletes their own whole login (every portal they belong to). Same rules as the main app's
+ * account deletion: deactivated now, data removed within 30 days, restored only by support or the project team.
+ * The profile stays in the project team's admin console, marked "Account deleted", until the window ends.
  */
 const DeleteAccountSettings: React.FC = () => {
   const { t } = useTranslation();
   const message = useMessage();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { can, isLoading: isAccessLoading } = useClientAccess();
   const [requestDeletion, { isLoading }] = useRequestAccountDeletionMutation();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -54,6 +119,17 @@ const DeleteAccountSettings: React.FC = () => {
     await dispatch(logoutUser());
     navigate('/auth/login', { replace: true });
   };
+
+  // The role is known before anything about deleting is shown: the delete form is never flashed at someone
+  // who cannot use it. The server enforces the same rule.
+  if (isAccessLoading) {
+    return (
+      <Card title={t('settings.deleteAccount.title', { defaultValue: 'Delete Account' })}>
+        <Skeleton active />
+      </Card>
+    );
+  }
+  if (!can.manageUsers) return <RequestAccountDeletion />;
 
   return (
     <Card title={t('settings.deleteAccount.title', { defaultValue: 'Delete Account' })}>

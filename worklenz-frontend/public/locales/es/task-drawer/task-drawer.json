@@ -169,7 +169,8 @@
       "updatedTime": "Actualizado {{time}}",
       "copyLink": "Copiar enlace",
       "linkCopied": "Enlace del comentario copiado",
-      "linkCopyFailed": "No se pudo copiar el enlace"
+      "linkCopyFailed": "No se pudo copiar el enlace",
+      "pressCmdEnterToSubmit": "Presione Ctrl+Enter (o Cmd+Enter) para enviar"
     },
     "searchInputPlaceholder": "Buscar por nombre",
     "pendingInvitation": "Invitación pendiente"

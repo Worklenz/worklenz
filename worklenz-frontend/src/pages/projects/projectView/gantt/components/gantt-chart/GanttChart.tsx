@@ -1646,7 +1646,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
   ) => {
     const { t } = useTranslation('gantt');
     const { token } = theme.useToken();
-    const { canCreateTask } = useTaskCreationPermission();
+    const { canCreateTask, canAddTask } = useTaskCreationPermission();
     // Get timeline calculator, grouping mode, highlighted date range, and shouldScroll from context
     const contextValue = useGanttContext();
     const { timelineCalculator, groupingMode, setHighlightedDateRange, shouldScroll } = contextValue;
@@ -2424,7 +2424,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
     // phase/status/priority id derived from the section this row belongs to.
     const handleAddTaskRowClick = useCallback(
       (e: React.MouseEvent<HTMLDivElement>, parentSectionId: string) => {
-        if (!dateRange || !onCreateQuickTask || !canCreateTask) return;
+        if (!dateRange || !onCreateQuickTask || !canAddTask) return;
 
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -2453,7 +2453,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
           visible: true,
         });
       },
-      [dateRange, onCreateQuickTask, canCreateTask, calculateDateFromPosition, actualColumnWidth, contextValue, viewMode]
+      [dateRange, onCreateQuickTask, canAddTask, calculateDateFromPosition, actualColumnWidth, contextValue, viewMode]
     );
 
     // Click handler for the rollover shown on an expanded task's subtask rows — creates
@@ -2462,7 +2462,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
     // just flagged isSubtask so it shows "subtask" copy and forwards parentTaskId through.
     const handleAddSubtaskRowClick = useCallback(
       (e: React.MouseEvent<HTMLDivElement>, parentTaskId: string) => {
-        if (!dateRange || !onCreateQuickTask || !canCreateTask) return;
+        if (!dateRange || !onCreateQuickTask || !canAddTask) return;
 
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -2488,7 +2488,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
           visible: true,
         });
       },
-      [dateRange, onCreateQuickTask, canCreateTask, calculateDateFromPosition, actualColumnWidth, contextValue, viewMode]
+      [dateRange, onCreateQuickTask, canAddTask, calculateDateFromPosition, actualColumnWidth, contextValue, viewMode]
     );
 
     // Handle task creation
@@ -2742,7 +2742,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
                       key={item.id}
                       parentSectionId={parentSectionId}
                       columnWidth={actualColumnWidth}
-                      canCreateTask={canCreateTask}
+                      canCreateTask={canAddTask}
                       calculateDateFromPosition={calculateDateFromPosition}
                       setHighlightedDateRange={contextValue.setHighlightedDateRange}
                       onOpenPopover={handleAddTaskRowClick}
@@ -2795,7 +2795,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
                 const hasOwnDates = isPhase || (!!effectiveTaskStart && !!effectiveTaskEnd);
                 const showCreateOverlay =
                   (groupingMode === 'phase' || groupingMode === 'status' || groupingMode === 'priority') &&
-                  canCreateTask &&
+                  canAddTask &&
                   hasOwnDates;
 
                 // This row's own bar occupies [left, right] in pixels — the ghost/click-to-add
@@ -2952,7 +2952,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
                             (groupingMode === 'phase' ||
                               groupingMode === 'status' ||
                               groupingMode === 'priority') &&
-                            canCreateTask &&
+                            canAddTask &&
                             !!effectiveSubtaskStart &&
                             !!effectiveSubtaskEnd;
 

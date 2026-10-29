@@ -9,7 +9,18 @@ jest.mock("../shared/utils", () => ({
   log_error: jest.fn(),
 }));
 
+jest.mock("../shared/organization-permissions", () => ({
+  ...jest.requireActual("../shared/organization-permissions"),
+  canViewAllProjects: jest.fn().mockResolvedValue(false),
+}));
+
+jest.mock("../shared/project-role-permissions", () => ({
+  checkProjectRolePermission: jest.fn().mockResolvedValue({ allowed: true, roleName: "Member" }),
+}));
+
 import db from "../config/db";
+import { canViewAllProjects } from "../shared/organization-permissions";
+import { checkProjectRolePermission } from "../shared/project-role-permissions";
 import verifyProjectAccess, {
   verifyNonGuestProjectAccess,
   hasProjectAccess,
@@ -19,10 +30,16 @@ import { createMockRequest, createMockResponse } from "./utils/express-mock";
 import { createQueryResult } from "./utils/db-mock";
 
 const mockedDb = db as jest.Mocked<typeof db>;
+const mockedCanViewAllProjects = canViewAllProjects as jest.MockedFunction<typeof canViewAllProjects>;
+const mockedCheckProjectRolePermission = checkProjectRolePermission as jest.MockedFunction<
+  typeof checkProjectRolePermission
+>;
 
 describe("verify-project-access middleware", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedCanViewAllProjects.mockResolvedValue(false);
+    mockedCheckProjectRolePermission.mockResolvedValue({ allowed: true, roleName: "Member" });
   });
 
   describe("verifyProjectAccess", () => {
@@ -194,6 +211,26 @@ describe("verify-project-access middleware", () => {
       expect(next).not.toHaveBeenCalled();
     });
 
+    it("allows unassigned member whose role is granted View all projects", async () => {
+      const req = createMockRequest({
+        user: { id: "u-member", team_id: "t-1" },
+        params: { id: "p-1" },
+      });
+      const res = createMockResponse();
+      const next = jest.fn();
+
+      mockedCanViewAllProjects.mockResolvedValueOnce(true);
+      mockedDb.query
+        .mockResolvedValueOnce(createQueryResult([{ id: 1 }])) // active member
+        .mockResolvedValueOnce(createQueryResult([{ team_id: "t-1" }])); // project team
+
+      const middleware = verifyProjectAccess("params", "id");
+      await middleware(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(mockedDb.query).toHaveBeenCalledTimes(2);
+    });
+
     it("handles auto team switch when project belongs to user's other team", async () => {
       const req = createMockRequest({
         user: { id: "u-multi", team_id: "team-a" },
@@ -296,6 +333,41 @@ describe("verify-project-access middleware", () => {
       expect(res.statusCode).toBe(403);
       expect(res.body.message).toContain("Guests do not have permission");
       expect(next).not.toHaveBeenCalled();
+    });
+
+    it("denies users whose role lacks the required scheme permission", async () => {
+      const req = createMockRequest({
+        user: { id: "u-member" },
+        body: { project_id: "p-1" },
+      });
+      const res = createMockResponse();
+      const next = jest.fn();
+
+      mockedCheckProjectRolePermission.mockResolvedValueOnce({ allowed: false, roleName: "Member" });
+
+      const middleware = verifyNonGuestProjectAccess("body", "project_id");
+      await middleware(req, res, next);
+
+      expect(res.statusCode).toBe(403);
+      expect(mockedDb.query).not.toHaveBeenCalled();
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("allows guests granted the permission without the non-guest check", async () => {
+      const req = createMockRequest({
+        user: { id: "u-guest" },
+        body: { project_id: "p-1" },
+      });
+      const res = createMockResponse();
+      const next = jest.fn();
+
+      mockedCheckProjectRolePermission.mockResolvedValueOnce({ allowed: true, roleName: "Guest" });
+
+      const middleware = verifyNonGuestProjectAccess("body", "project_id");
+      await middleware(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(mockedDb.query).not.toHaveBeenCalled();
     });
   });
 

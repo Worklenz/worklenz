@@ -242,5 +242,19 @@
   "projectInvite_guestLimitExceeded": "Przekroczono limit gości w tym planie. Uaktualnij, aby dodać więcej gości.",
   "license-expired-subtitle": "Twoja subskrypcja Worklenz dobiegła końca. Odnów subskrypcję, aby móc nadal korzystać ze wszystkich funkcji.",
   "Failed to fetch job titles": "Nie udało się pobrać tytułów stanowisk",
-  "assign_team_lead": "Przypisz lidera zespołu"
+  "assign_team_lead": "Przypisz lidera zespołu",
+  "assign_department": "Przypisz dział",
+  "assign_practice": "Przypisz praktykę",
+  "select_department": "Wybierz dział",
+  "select_practice": "Wybierz praktykę",
+  "no_departments_found": "Nie znaleziono działów",
+  "no_practices_found": "Nie znaleziono praktyk",
+  "please_select_assignment_and_members": "Wybierz dział lub praktykę oraz członków zespołu",
+  "bulk_organization_assignment_success": "Przypisano {{count}} członków zespołu do: {{organization}}",
+  "bulk_organization_assignment_failed": "Nie udało się przypisać: {{organization}}",
+  "bulk_assignment_member_missing_id": "Wybrany członek zespołu nie ma identyfikatora",
+  "bulk_assignment_member_load_failed": "Nie można załadować: {{member}}",
+  "bulk_assignment_role_verify_failed": "Nie można zweryfikować roli: {{member}}",
+  "bulk_assignment_member_update_failed": "Nie można zaktualizować: {{member}}",
+  "member": "członek"
 }

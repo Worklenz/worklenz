@@ -100,7 +100,15 @@
     "unarchive": "Ç'arkivizo",
     "archive": "Arkivizo",
     "convertToSubTask": "Shndërro në Nën-Detyrë",
+    "convertToSubTaskDescription": "Zgjidhni një detyrë prind për ta shndërruar këtë detyrë në nën-detyrë.",
+    "convertToSubTaskSuccess": "Detyra u shndërrua me sukses në nën-detyrë",
+    "convertToSubTaskFailed": "Shndërrimi në nën-detyrë dështoi",
     "convertToTask": "Shndërro në Detyrë",
+    "moveSubtask": "Lëviz te detyra prind",
+    "moveSubtaskDescription": "Zgjidhni një detyrë prind në këtë projekt. Nën-detyra ruan titullin, përshkrimin, caktimin, datat, statusin dhe orët e regjistruara.",
+    "moveSubtaskSuccess": "Nën-detyra u lëviz me sukses",
+    "moveSubtaskFailed": "Lëvizja e nën-detyrës dështoi",
+    "taskColumn": "Detyra",
     "delete": "Fshi",
     "searchByNameInputPlaceholder": "Kërko sipas emrit",
     "deleteConfirmTitle": "Fshi detyrën",
@@ -316,5 +324,6 @@
   "setDueTime": "Cakto kohën e skadimit",
   "save": "Ruaj",
   "cancel": "Anulo",
-  "changeStatus": "Ndrysho statusin: {{status}}"
+  "changeStatus": "Ndrysho statusin: {{status}}",
+  "ellipsis": "..."
 }

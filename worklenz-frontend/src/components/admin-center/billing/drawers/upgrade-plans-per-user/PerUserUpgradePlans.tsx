@@ -57,7 +57,6 @@ const POST_CHECKOUT_REFRESH_STEPS_MS = [3000, 6000];
 const MAX_SEATS = 10000;
 const FREE_USER_LIMIT = 5;
 const MOST_POPULAR_KEY = 'pro';
-const SALES_MAILTO = 'mailto:info@worklenz.com?subject=Enterprise%20Plan%20Inquiry';
 
 interface PerUserUpgradePlansProps {
   data: IPerUserPlansResponse;
@@ -151,7 +150,7 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
         (group.monthly?.id === billingInfo.plan_id || group.annual?.id === billingInfo.plan_id)
     )?.key ?? null;
   const hasCurrentCard = currentGroupKey !== null || isFreeUser;
-  const cardCount = groups.length + 1 + (showFreeCard ? 1 : 0);
+  const cardCount = groups.length + (showFreeCard ? 1 : 0);
   const cardColumns = cardCount >= 5 ? 8 : cardCount === 4 ? 6 : 8;
 
   const trackingProps = (plan?: IPerUserPlan, seatCount?: number) => ({
@@ -488,7 +487,7 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
   };
 
   const renderSimpleCard = (
-    key: 'free' | 'enterprise',
+    key: 'free',
     price: React.ReactNode,
     priceNote: string,
     action: React.ReactNode,
@@ -567,16 +566,6 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
       isFreeUser ? <Tag color="green">{t('currentPlan')}</Tag> : undefined
     );
 
-  const renderEnterpriseCard = () =>
-    renderSimpleCard(
-      'enterprise',
-      t('custom'),
-      t('customNote'),
-      <Button size="large" block href={SALES_MAILTO} target="_blank" rel="noopener noreferrer">
-        {t('contactSales')}
-      </Button>
-    );
-
   return (
     <div className="upgrade-plans-responsive">
       <Flex vertical align="center" gap={4} style={{ marginBottom: 16 }}>
@@ -629,7 +618,6 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
       <Row gutter={[16, 16]} justify="center">
         {showFreeCard && renderFreeCard()}
         {groups.map(renderCard)}
-        {renderEnterpriseCard()}
       </Row>
 
       <Flex vertical align="center" gap={4} style={{ marginTop: 20 }}>

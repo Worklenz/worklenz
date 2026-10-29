@@ -57,4 +57,8 @@
     "estHours": "Horas est.",
     "searchPlaceholder": "Pesquisar projetos"
   }
+,
+  "myTasksView": {
+    "rowsPerPage": "Linhas por página:"
+  }
 }

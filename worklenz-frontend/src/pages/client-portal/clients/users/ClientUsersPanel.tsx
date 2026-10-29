@@ -12,6 +12,7 @@ import {
   MoreOutlined,
   ProjectOutlined,
   StopOutlined,
+  UndoOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import { Button, Dropdown, Flex, Typography, theme } from '@/shared/antd-imports';
@@ -146,7 +147,41 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
     if (list) onTotalChange?.(list.total);
   }, [list, onTotalChange]);
 
-  const menuFor = (user: ClientUser): MenuProps['items'] => [
+  /**
+   * A person who deleted their own account can only be looked at, restored (inside the 30-day window) or removed.
+   * Reactivate would not bring the account back, so it is not offered.
+   */
+  const deletedAccountMenu = (user: ClientUser): MenuProps['items'] => [
+    {
+      key: 'view',
+      icon: <EyeOutlined />,
+      label: t('menu.view', { defaultValue: 'View profile' }),
+      onClick: () => actions.onView(user),
+    },
+    ...(user.restorable_until
+      ? [
+          {
+            key: 'restoreAccount',
+            icon: <UndoOutlined />,
+            label: t('menu.restoreAccount', { defaultValue: 'Restore account' }),
+            onClick: () => actions.onRestoreAccount(user),
+          },
+        ]
+      : []),
+    { type: 'divider' as const },
+    {
+      key: 'remove',
+      danger: true,
+      icon: <DeleteOutlined />,
+      label: t('menu.remove', { defaultValue: 'Remove user' }),
+      onClick: () => actions.onRemove(user),
+    },
+  ];
+
+  const menuFor = (user: ClientUser): MenuProps['items'] =>
+    user.status === 'deleted'
+      ? deletedAccountMenu(user)
+      : [
     {
       key: 'view',
       icon: <EyeOutlined />,
@@ -252,7 +287,11 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
         />
       ),
       render: (_value, user) => (
-        <Flex align="center" gap={10} style={{ opacity: user.status === 'deactivated' ? 0.6 : 1 }}>
+        <Flex
+          align="center"
+          gap={10}
+          style={{ opacity: user.status === 'deactivated' || user.status === 'deleted' ? 0.6 : 1 }}
+        >
           <PortalAvatar name={user.name} />
           <ClickableName onClick={() => actions.onView(user)}>{user.name}</ClickableName>
         </Flex>
@@ -317,6 +356,7 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
         { text: tShared('userInvited', { defaultValue: 'Invited' }), value: 'invited' },
         { text: tShared('userInviteExpired', { defaultValue: 'Invite expired' }), value: 'invite_expired' },
         { text: tShared('userDeactivated', { defaultValue: 'Deactivated' }), value: 'deactivated' },
+        { text: tShared('userDeleted', { defaultValue: 'Account deleted' }), value: 'deleted' },
       ],
       filteredValue: statuses.length ? statuses : null,
       title: (
@@ -417,6 +457,7 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
     { value: 'invited', label: tShared('userInvited', { defaultValue: 'Invited' }) },
     { value: 'invite_expired', label: tShared('userInviteExpired', { defaultValue: 'Invite expired' }) },
     { value: 'deactivated', label: tShared('userDeactivated', { defaultValue: 'Deactivated' }) },
+    { value: 'deleted', label: tShared('userDeleted', { defaultValue: 'Account deleted' }) },
   ];
   const clientOptions = (organizations.data?.body?.items ?? []).map(item => ({
     value: item.id,

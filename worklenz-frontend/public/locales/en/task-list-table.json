@@ -100,7 +100,15 @@
     "unarchive": "Unarchive",
     "archive": "Archive",
     "convertToSubTask": "Convert to Sub task",
+    "convertToSubTaskDescription": "Select a parent task to convert this task into a subtask.",
+    "convertToSubTaskSuccess": "Task converted to subtask successfully",
+    "convertToSubTaskFailed": "Failed to convert to subtask",
     "convertToTask": "Convert to Task",
+    "moveSubtask": "Move to parent task",
+    "moveSubtaskDescription": "Select a parent task in this project. The subtask keeps its title, description, assignee, dates, status, and logged hours.",
+    "moveSubtaskSuccess": "Subtask moved successfully",
+    "moveSubtaskFailed": "Failed to move subtask",
+    "taskColumn": "Task",
     "delete": "Delete",
     "searchByNameInputPlaceholder": "Search by name",
     "deleteConfirmTitle": "Delete Task",
@@ -316,5 +324,6 @@
   "setDueTime": "Set due time",
   "save": "Save",
   "cancel": "Cancel",
-  "changeStatus": "Change status: {{status}}"
+  "changeStatus": "Change status: {{status}}",
+  "ellipsis": "..."
 }

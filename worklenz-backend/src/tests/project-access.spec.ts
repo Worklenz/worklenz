@@ -203,6 +203,64 @@ describe("buildProjectAccess (Phase 1)", () => {
   });
 });
 
+describe("buildProjectAccess scheme grants", () => {
+  it("Member granted members/settings/finance by the project scheme can use them", () => {
+    const access = buildProjectAccess(
+      memberCtx({ schemeGrants: { members: true, settings: true, finance: true } })
+    );
+
+    expect(access.permissions.members.add).toBe(true);
+    expect(access.permissions.members.removeMember).toBe(true);
+    expect(access.permissions.settings).toBe(true);
+    expect(access.permissions.finance).toBe(true);
+    expect(access.financeAccess).toBe(true);
+    expect(access.permissions.delete).toBe(false);
+  });
+
+  it("Team Lead loses baseline actions the project scheme revokes", () => {
+    const access = buildProjectAccess(
+      memberCtx({
+        teamRole: TEAM_ROLE_NAMES.TEAM_LEAD,
+        schemeGrants: { members: false, statuses: false },
+      })
+    );
+
+    expect(access.permissions.members.add).toBe(false);
+    expect(access.permissions.statuses).toBe(false);
+    expect(access.permissions.settings).toBe(true);
+  });
+
+  it("Guest granted members by the project scheme can manage members", () => {
+    const access = buildProjectAccess(
+      memberCtx({ isGuest: true, schemeGrants: { members: true } })
+    );
+
+    expect(access.permissions.members.add).toBe(true);
+    expect(access.permissions.settings).toBe(false);
+  });
+
+  it("Project Manager keeps PM actions even when the scheme revokes them", () => {
+    const access = buildProjectAccess(
+      memberCtx({
+        accessLevel: "PROJECT_MANAGER",
+        schemeGrants: { members: false, settings: false },
+      })
+    );
+
+    expect(access.permissions.members.add).toBe(true);
+    expect(access.permissions.settings).toBe(true);
+  });
+
+  it("Member not on the project gets nothing even if the scheme grants it", () => {
+    const access = buildProjectAccess(
+      memberCtx({ isProjectMember: false, schemeGrants: { members: true, settings: true } })
+    );
+
+    expect(access.permissions.members.add).toBe(false);
+    expect(access.permissions.settings).toBe(false);
+  });
+});
+
 describe("getProjectAccessForRequest cache", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -237,10 +295,11 @@ describe("getProjectAccessForRequest cache", () => {
     const req = { user } as IWorkLenzRequest;
 
     const first = await getProjectAccessForRequest(req, "project-a");
+    const queriesForFirstLookup = mockedDb.query.mock.calls.length;
     const second = await getProjectAccessForRequest(req, "project-a");
 
     expect(first).toBe(second);
-    expect(mockedDb.query).toHaveBeenCalledTimes(1);
+    expect(mockedDb.query).toHaveBeenCalledTimes(queriesForFirstLookup);
     expect(first.isProjectManager).toBe(true);
     expect(first.permissions.settings).toBe(true);
   });

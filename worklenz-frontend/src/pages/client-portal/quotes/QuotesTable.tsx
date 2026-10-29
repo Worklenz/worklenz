@@ -23,6 +23,8 @@ import {
 } from '@ant-design/icons';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useIsAdminSurfaceReadOnly, withoutRowActionColumns } from '@/hooks/useIsAdminSurfaceReadOnly';
+import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { Link, useNavigate } from 'react-router-dom';
 import TablePagination from '@/components/TablePagination';
 import {
@@ -66,6 +68,7 @@ const SORT_FIELDS: Record<string, string> = {
 
 export const QuotesTable = () => {
   const { t } = useTranslation('client-portal-quotes');
+  const isReadOnly = useIsAdminSurfaceReadOnly();
   const navigate = useNavigate();
   const { token } = theme.useToken();
 
@@ -283,7 +286,7 @@ export const QuotesTable = () => {
       key: 'download',
       label: t('downloadQuoteMenuItem', { defaultValue: 'Download Quote' }),
       icon: <DownloadOutlined />,
-      onClick: () => window.open(getQuoteDownloadUrl(quote.id), '_blank', 'noopener,noreferrer'),
+      onClick: () => downloadPortalPdf(getQuoteDownloadUrl(quote.id), 'quote.pdf', t('downloadFailed', { defaultValue: 'Failed to download the PDF. Please try again.' })),
     },
     {
       key: 'duplicate',
@@ -586,7 +589,7 @@ export const QuotesTable = () => {
         {showsTable ? (
           <PortalLoadingOverlay loading={isFetching}>
           <Table
-            columns={columns}
+            columns={isReadOnly ? withoutRowActionColumns(columns) : columns}
             dataSource={quotes}
             rowKey="id"
             size="middle"
@@ -606,6 +609,14 @@ export const QuotesTable = () => {
 
         <div ref={paginationRef}>
           <TablePagination
+            navigationLabel={t('common:paginationNavigation')}
+            firstPageLabel={t('common:firstPage')}
+            previousPageLabel={t('common:previousPage')}
+            nextPageLabel={t('common:nextPage')}
+            lastPageLabel={t('common:lastPage')}
+            renderDefaultSummary={(range, total) =>
+              t('common:paginationSummary', { range, total })
+            }
             page={page}
             pageSize={limit}
             total={totalQuotes}

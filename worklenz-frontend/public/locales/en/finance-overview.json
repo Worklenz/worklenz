@@ -56,5 +56,8 @@
     "budgetUtilization": "Budget Utilization",
     "estHours": "Est. Hours",
     "searchPlaceholder": "Search Projects"
+  },
+  "myTasksView": {
+    "rowsPerPage": "Rows per page:"
   }
 }
