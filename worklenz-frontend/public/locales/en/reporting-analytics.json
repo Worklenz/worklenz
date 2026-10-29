@@ -28,6 +28,7 @@
   "hubCustomTitle": "Custom reports",
   "hubCustomDesc": "Saved filter views from reports like Velocity.",
   "templateSavedToCustom": "Template saved. Find it under Custom reports.",
+  "saveAsTemplateUpgradeAria": "Save as Template — Business plan required",
   "hubFootnote": "Figures reflect your workspace data for the current period. Open a report to change date range, projects, and filters.",
   "hubNoScheduledTitle": "No scheduled reports yet",
   "hubNoScheduledHint": "Open any report and choose Schedule to email it on a recurring basis.",

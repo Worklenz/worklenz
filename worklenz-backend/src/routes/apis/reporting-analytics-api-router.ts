@@ -16,6 +16,7 @@ import UtilizationController from "../../controllers/reporting-analytics/utiliza
 import TimeReportController from "../../controllers/reporting-analytics/time-report-controller";
 import BudgetTrackingController from "../../controllers/reporting-analytics/budget-tracking-controller";
 import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
+import { requireFeature } from "../../shared/entitlements/gates";
 
 const router = express.Router();
 
@@ -215,30 +216,35 @@ router.get(
 router.post(
   "/templates",
   requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
   safeControllerFunction(AnalyticsTemplatesController.create)
 );
 
 router.patch(
   "/templates/:id",
   requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
   safeControllerFunction(AnalyticsTemplatesController.rename)
 );
 
 router.delete(
   "/templates/:id",
   requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
   safeControllerFunction(AnalyticsTemplatesController.remove)
 );
 
 router.post(
   "/templates/:id/default",
   requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
   safeControllerFunction(AnalyticsTemplatesController.setDefault)
 );
 
 router.post(
   "/templates/:id/share",
   requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
   safeControllerFunction(AnalyticsTemplatesController.setShare)
 );
 

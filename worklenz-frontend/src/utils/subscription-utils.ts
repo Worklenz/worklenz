@@ -1,10 +1,29 @@
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import { ILocalSession } from '@/types/auth/local-session.types';
 
+/** Once an AppSumo/LTD account redeems this many codes they unlock Business Plan features. */
+const APPSUMO_BUSINESS_UNLOCK_CODE_COUNT = 5;
+
+const isTruthyFlag = (value: unknown): boolean =>
+  value === true || value === 1 || value === 'true' || value === 't';
+
+/**
+ * AppSumo Business (5+ codes / eligible / Business Plan name / override) — not AppSumo Pro.
+ */
+export const isAppSumoBusiness = (session: ILocalSession | null): boolean => {
+  if (!session || session.subscription_type !== ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL) return false;
+  if (isTruthyFlag(session.business_plan_override)) return true;
+  if (isTruthyFlag(session.appsumo_business_eligible)) return true;
+  if ((session.redeemed_codes_count ?? 0) >= APPSUMO_BUSINESS_UNLOCK_CODE_COUNT) return true;
+  const planName = session.plan_name?.toLowerCase() || '';
+  return planName === 'business plan' || planName.includes('business');
+};
+
 /**
  * Checks if user has access to business features (client portal, project finance)
  * PADDLE users with business or enterprise plans, ANNUAL_BUSINESS users, SELF_HOSTED users,
- * users on active Business plan trials, manual overrides, and AppSumo users with 5+ codes have access.
+ * users on active Business plan trials, manual overrides, and AppSumo Business (5+ codes) have access.
+ * AppSumo Pro (LTD with fewer than 5 codes) does not.
  */
 export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean => {
   if (!session) return false;
@@ -15,18 +34,14 @@ export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean
     return true;
   }
 
-  const isTruthy = (value: unknown): boolean =>
-    value === true || value === 1 || value === 'true' || value === 't';
-
   // PRIORITY 1: Manual override flag (highest priority)
-  if (isTruthy(session.business_plan_override)) {
+  if (isTruthyFlag(session.business_plan_override)) {
     return true;
   }
 
-  // Strict LTD rule: LTD users should not have Business feature access,
-  // unless they're currently within an active Business trial (checked below).
+  // AppSumo Business unlocks Business features; AppSumo Pro stays on Pro.
   if (session.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL) {
-    return false;
+    return isAppSumoBusiness(session);
   }
 
   // Check for active Business plan trial
@@ -78,6 +93,7 @@ const LEGACY_BUSINESS_FEATURES = new Set([
   'planner_timeline',
   'planner_workload',
   'task_export',
+  'advanced_reporting',
 ]);
 
 /**
@@ -118,18 +134,14 @@ export const canUseFeature = (
 export const isBusinessPlan = (session: ILocalSession | null): boolean => {
   if (!session) return false;
 
-  const isTruthy = (value: unknown): boolean =>
-    value === true || value === 1 || value === 'true' || value === 't';
-
   // PRIORITY 1: Manual override flag (highest priority)
-  if (isTruthy(session.business_plan_override)) {
+  if (isTruthyFlag(session.business_plan_override)) {
     return true;
   }
 
-  // Strict LTD rule: LTD users should not be treated as Business plan users,
-  // unless they're currently within an active Business trial (checked below).
+  // AppSumo Business counts as Business; AppSumo Pro does not.
   if (session.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL) {
-    return false;
+    return isAppSumoBusiness(session);
   }
 
   // Check for active Business plan trial
@@ -339,11 +351,6 @@ export const isAppSumoUser = (
 
   return fields.some(field => LIFETIME_KEYWORDS.some(keyword => field.includes(keyword)));
 };
-
-// Once an AppSumo/LTD user redeems this many codes they're already on Business
-// Plan (see deserialize_user's appsumo_business_eligible), same threshold used
-// for the in-app "redeem more codes" prompt in CurrentPlanDetails.tsx.
-const APPSUMO_BUSINESS_UNLOCK_CODE_COUNT = 5;
 
 /**
  * Checks if an AppSumo/LTD user should still see promotional upsell surfaces

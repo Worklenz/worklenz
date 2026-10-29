@@ -1,11 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
-  Button,
   Flex,
   message,
 } from '@/shared/antd-imports';
-import { SaveOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -24,6 +22,7 @@ import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import { syncVelocityTemplatesToCustomReports } from '@/features/reporting/analytics-custom-reports';
 import {
   AnalyticsFilterBar,
+  AnalyticsTemplateActions,
   ChartTableWrapper,
   ReportEmptyState,
   ReportErrorState,
@@ -36,7 +35,6 @@ import type { FilterOption } from '@/components/common/filters/MultiSelectFilter
 import { VelocityChart, type VelocityChartHandle } from '@/components/reporting/analytics/velocity/VelocityChart';
 import { VelocityKpiTiles } from '@/components/reporting/analytics/velocity/VelocityKpiTiles';
 import { VelocityTable } from '@/components/reporting/analytics/velocity/VelocityTable';
-import { SaveVelocityTemplateModal } from '@/components/reporting/analytics/velocity/SaveVelocityTemplateModal';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
   getAnalyticsDashboardPermissions,
@@ -493,13 +491,14 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       exportLoading={exporting}
       actions={
         isCustomTemplateView ? undefined : (
-          <Button
-            icon={<SaveOutlined />}
-            onClick={() => setSaveOpen(true)}
-            disabled={!hasProjectSelection}
-          >
-            {t('saveAsTemplate', { defaultValue: 'Save as Template' })}
-          </Button>
+          <AnalyticsTemplateActions
+            canShare={permissions.canShare}
+            saveDisabled={!hasProjectSelection}
+            saveOpen={saveOpen}
+            savingTemplate={savingTemplate}
+            onSaveOpenChange={setSaveOpen}
+            onSave={values => void handleSaveTemplate(values)}
+          />
         )
       }
     >
@@ -583,13 +582,6 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
         </Flex>
       )}
 
-      <SaveVelocityTemplateModal
-        open={saveOpen}
-        canShare={permissions.canShare}
-        confirmLoading={savingTemplate}
-        onCancel={() => setSaveOpen(false)}
-        onSave={values => void handleSaveTemplate(values)}
-      />
     </ReportPageShell>
   );
 };
