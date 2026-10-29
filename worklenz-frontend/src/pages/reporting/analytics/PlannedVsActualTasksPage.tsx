@@ -94,13 +94,15 @@ const PlannedVsActualTasksPage: React.FC = () => {
       }));
   }, [teamMembersState]);
 
+  // Load the full team set for KPIs / table.
+  // Projects selection only scopes the bar chart (latest 20 by default).
   const filters: PlannedVsActualTasksFilters = useMemo(
     () => ({
-      project_ids: selectedProjectIds,
+      project_ids: [],
       team_ids: selectedTeamIds,
       member_ids: selectedMemberIds,
     }),
-    [selectedProjectIds, selectedTeamIds, selectedMemberIds]
+    [selectedTeamIds, selectedMemberIds]
   );
 
   const loadTeams = useCallback(async () => {
@@ -308,7 +310,8 @@ const PlannedVsActualTasksPage: React.FC = () => {
   const isSelectAllProjects =
     projectOptions.length > 0 && selectedProjectIds.length >= projectOptions.length;
 
-  const displayProjects = useMemo(() => {
+  // Bar chart only: latest 20 by default; all after Select all / custom picks.
+  const barChartProjects = useMemo(() => {
     if (!data?.projects?.length) return [];
     return resolveAnalyticsDisplayProjects(data.projects, {
       selectedProjectIds,
@@ -318,8 +321,8 @@ const PlannedVsActualTasksPage: React.FC = () => {
   }, [data?.projects, selectedProjectIds, projectOptions.length]);
 
   const chartProjectIds = useMemo(
-    () => displayProjects.map(p => p.project_id),
-    [displayProjects]
+    () => barChartProjects.map(p => p.project_id),
+    [barChartProjects]
   );
 
   const filterBar = (
@@ -363,11 +366,11 @@ const PlannedVsActualTasksPage: React.FC = () => {
         <PvaTasksKpiTiles kpis={data.kpis} />
         <ChartTableWrapper
           chartTitle={title}
-          rowCount={displayProjects.length}
+          rowCount={data.projects.length}
           chart={
             <>
               {!isSelectAllProjects &&
-                projectOptions.length > DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT && (
+                data.projects.length > DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT && (
                   <Text
                     type="secondary"
                     style={{ display: 'block', marginBottom: 8, fontSize: 12 }}
@@ -377,15 +380,15 @@ const PlannedVsActualTasksPage: React.FC = () => {
                         'Showing the latest updated {{count}} projects in this graph. Select all projects to show every project.',
                       count: Math.min(
                         DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
-                        displayProjects.length
+                        barChartProjects.length
                       ),
                     })}
                   </Text>
                 )}
-              <PvaTasksChart ref={chartRef} projects={displayProjects} />
+              <PvaTasksChart ref={chartRef} projects={barChartProjects} />
             </>
           }
-          table={<PvaTasksTable projects={displayProjects} loading={loading} />}
+          table={<PvaTasksTable projects={data.projects} loading={loading} />}
         />
         {data.projects.length === 0 && (
           <Text type="secondary" style={{ color: token.colorTextSecondary }}>
