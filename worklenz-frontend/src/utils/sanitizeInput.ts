@@ -180,7 +180,7 @@ const installCommentSanitizeHooks = (purify: PurifyWithHooks): void => {
 
 /**
  * Sanitizes comment HTML while retaining rich formatting, mentions, and checklists.
- * Link URLs must start with http:, https:, or mailto:.
+ * Link URLs must start with http:, https:, mailto:, or a single "/" (same-origin path).
  * Style attributes are reduced to validated color declarations, classes are
  * restricted to the editor allowlist, inputs are forced to checkboxes, and
  * anchors are set to target="_blank" with rel="noopener noreferrer nofollow".
@@ -206,7 +206,8 @@ export const sanitizeCommentContent = (input: string): string => {
       'data-label', 'data-checked', 'data-color', 'type', 'checked', 'disabled',
       'aria-label', 'contenteditable'
     ],
-    ALLOWED_URI_REGEXP: /^(?:https?|mailto):/i,
+    // http(s), mailto, and same-origin absolute paths (/docs); rejects //host and /\host
+    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|\/(?![\/\\]))/i,
     FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'button', 'link'],
     FORBID_ATTR: [
       'onerror',

@@ -93,6 +93,15 @@ describe('sanitizeCommentContent', () => {
     expect(output).not.toContain('evil.example');
   });
 
+  it('keeps same-origin relative links but strips backslash and scheme-less host variants', () => {
+    expect(sanitizeCommentContent('<a href="/docs/page?x=1">Docs</a>')).toContain('href="/docs/page?x=1"');
+    const output = sanitizeCommentContent(
+      '<a href="/\\evil.example">A</a><a href="\\\\evil.example">B</a><a href="javascript:alert(1)">C</a>'
+    );
+    expect(output).not.toContain('evil.example');
+    expect(output).not.toContain('javascript');
+  });
+
   it('strips dangerous scripts and malicious event handlers', () => {
     const input = '<script>alert(1)</script><img src="x" onerror="alert(1)" /><a href="javascript:alert(1)">Click</a>';
     const output = sanitizeCommentContent(input);
