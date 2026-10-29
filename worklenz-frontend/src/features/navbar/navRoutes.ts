@@ -69,7 +69,7 @@ export const navRoutes: NavRoutesType[] = [
     freePlanFeature: false,
   },
   {
-    name: 'Team Reports',
+    name: 'my-team-reports',
     path: '/worklenz/team-lead-reports',
     adminOnly: false,
     freePlanFeature: true,

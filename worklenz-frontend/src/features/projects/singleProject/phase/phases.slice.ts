@@ -157,13 +157,20 @@ export interface SprintDetailsUpdate {
 export const updateSprintDetails = createAsyncThunk(
   'phase/updateSprintDetails',
   async (
-    { phase, projectId, details }: { phase: ITaskPhase; projectId: string; details: SprintDetailsUpdate },
-    { rejectWithValue }
+    {
+      phase,
+      projectId,
+      details,
+    }: { phase: ITaskPhase; projectId: string; details: Partial<SprintDetailsUpdate> },
+    { rejectWithValue, getState }
   ) => {
     try {
+      // Build the request from the latest stored sprint so a stale prop cannot revert another edit.
+      const { phaseList } = (getState() as { phaseReducer: { phaseList: ITaskPhase[] } }).phaseReducer;
+      const latest = phaseList.find(p => p.id === phase.id) ?? phase;
       const response = await phasesApiService.updateNameOfPhase(
         phase.id,
-        { ...phase, ...details },
+        { ...latest, ...details },
         projectId
       );
       if (!response.done) return rejectWithValue(response);

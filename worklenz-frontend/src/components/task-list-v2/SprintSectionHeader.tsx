@@ -1,17 +1,23 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 // @ts-ignore: Heroicons module types
 import { ChevronRightIcon, EllipsisHorizontalIcon, PencilIcon } from '@heroicons/react/24/outline';
 import {
   Button,
+  DatePicker,
   Dropdown,
+  Input,
   MenuProps,
   PlusOutlined,
   Tooltip,
+  message,
   theme,
 } from '@/shared/antd-imports';
 
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { updateSprintDetails } from '@/features/projects/singleProject/phase/phases.slice';
+import { isAnnouncedApiError } from '@/utils/api-errors';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSprintActions } from '@/hooks/useSprintActions';
 import { useProjectTabNavigation } from '@/hooks/useProjectTabNavigation';
@@ -62,6 +68,65 @@ export const SprintSectionHeader = ({
   const [isCreatingSprint, setIsCreatingSprint] = useState(false);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
   const hasNoSprints = phaseList.length === 0;
+
+  const dispatch = useAppDispatch();
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [isEditingDates, setIsEditingDates] = useState(false);
+  const skipBlurRef = useRef(false);
+
+  // Saves run one at a time; the thunk merges each change into the latest stored sprint.
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  const saveSprintDetails = (
+    changes: Partial<{ name: string; start_date: string | null; end_date: string | null }>
+  ) => {
+    if (!sprint) return Promise.resolve();
+    const run = async () => {
+      try {
+        await dispatch(updateSprintDetails({ phase: sprint, projectId, details: changes })).unwrap();
+        message.success(t('sprintUpdated', { defaultValue: 'Sprint updated' }));
+      } catch (error: unknown) {
+        if (isAnnouncedApiError(error)) return;
+        message.error(
+          (error as { message?: string } | undefined)?.message ||
+            t('sprintUpdateError', { defaultValue: 'Could not update sprint' })
+        );
+      }
+    };
+    saveQueueRef.current = saveQueueRef.current.then(run);
+    return saveQueueRef.current;
+  };
+
+  // Completed sprints are historical records, so their name and dates are read-only.
+  const canEditSprint = canManage && sprint?.sprint_status !== 'completed';
+
+  const startEditName = () => {
+    if (!sprint) return;
+    skipBlurRef.current = false;
+    setNameDraft(sprint.name);
+    setIsEditingName(true);
+  };
+
+  const commitName = async () => {
+    const name = nameDraft.trim();
+    setIsEditingName(false);
+    if (!sprint || name === sprint.name) return;
+    if (!name) {
+      message.warning(t('sprintNameRequired', { defaultValue: 'Sprint name is required' }));
+      return;
+    }
+    await saveSprintDetails({ name });
+  };
+
+  const handleDatesChange = async (dates: [Dayjs | null, Dayjs | null] | null) => {
+    if (!dates?.[0] || !dates?.[1]) return;
+    setIsEditingDates(false);
+    await saveSprintDetails({
+      start_date: dates[0].startOf('day').toISOString(),
+      end_date: dates[1].endOf('day').toISOString(),
+    });
+  };
 
   const isActiveSprint = sprint?.sprint_status === 'active';
   const isPlannedSprint = sprint?.sprint_status === 'planned';
@@ -183,8 +248,61 @@ export const SprintSectionHeader = ({
           style={{ transform: isCollapsed ? 'rotate(0deg)' : 'rotate(90deg)' }}
         />
 
-        <span className="text-[13.5px] font-bold whitespace-nowrap">{title}</span>
-
+        {sprint && canEditSprint ? (
+          isEditingName ? (
+            <span onClick={stopEventPropagation} onKeyDown={stopEventPropagation}>
+              <Input
+                autoFocus
+                size="small"
+                maxLength={50}
+                value={nameDraft}
+                style={{ width: 180 }}
+                onChange={e => setNameDraft(e.target.value)}
+                onPressEnter={e => {
+                  if (e.nativeEvent.isComposing) return;
+                  skipBlurRef.current = true;
+                  void commitName();
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Escape') {
+                    skipBlurRef.current = true;
+                    setIsEditingName(false);
+                  }
+                }}
+                onBlur={() => {
+                  if (skipBlurRef.current) {
+                    skipBlurRef.current = false;
+                    return;
+                  }
+                  void commitName();
+                }}
+              />
+            </span>
+          ) : (
+            <Tooltip title={t('editSprintName', { defaultValue: 'Click to rename' })}>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={e => {
+                  e.stopPropagation();
+                  startEditName();
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    startEditName();
+                  }
+                }}
+                className="text-[13.5px] font-bold whitespace-nowrap cursor-text hover:underline"
+              >
+                {title}
+              </span>
+            </Tooltip>
+          )
+        ) : (
+          <span className="text-[13.5px] font-bold whitespace-nowrap">{title}</span>
+        )}
         {sprint?.sprint_status && sprint.sprint_status !== 'completed' && (
           <SprintStatusChip status={sprint.sprint_status} />
         )}
@@ -228,10 +346,55 @@ export const SprintSectionHeader = ({
           </span>
         )}
 
-        {sprintDateRange && (
-          <span className="text-[11px] pl-2 whitespace-nowrap" style={metricStyle}>
-            {sprintDateRange}
-          </span>
+        {sprint && canEditSprint ? (
+          isEditingDates ? (
+            <span onClick={stopEventPropagation} onKeyDown={stopEventPropagation} className="pl-2">
+              <DatePicker.RangePicker
+                size="small"
+                open
+                autoFocus
+                allowClear={false}
+                format="MMM D, YYYY"
+                value={
+                  sprint.start_date && sprint.end_date
+                    ? [dayjs(sprint.start_date), dayjs(sprint.end_date)]
+                    : null
+                }
+                onChange={handleDatesChange}
+                onOpenChange={open => {
+                  if (!open) setIsEditingDates(false);
+                }}
+              />
+            </span>
+          ) : (
+            <Tooltip title={t('editSprintDates', { defaultValue: 'Click to change dates' })}>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={e => {
+                  e.stopPropagation();
+                  setIsEditingDates(true);
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsEditingDates(true);
+                  }
+                }}
+                className="text-[11px] pl-2 whitespace-nowrap cursor-pointer hover:underline"
+                style={metricStyle}
+              >
+                {sprintDateRange ?? t('addDates', { defaultValue: 'Add dates' })}
+              </span>
+            </Tooltip>
+          )
+        ) : (
+          sprintDateRange && (
+            <span className="text-[11px] pl-2 whitespace-nowrap" style={metricStyle}>
+              {sprintDateRange}
+            </span>
+          )
         )}
 
         {goal && (

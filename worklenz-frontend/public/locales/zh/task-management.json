@@ -44,6 +44,12 @@
   "inProgress": "进行中",
   "done": "已完成",
   "defaultTaskName": "无标题任务",
+  "editSprintName": "点击重命名",
+  "editSprintDates": "点击更改日期",
+  "addDates": "添加日期",
+  "sprintUpdated": "迭代已更新",
+  "sprintUpdateError": "无法更新迭代",
+  "sprintNameRequired": "必须填写迭代名称",
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} 个子任务",

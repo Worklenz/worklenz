@@ -44,6 +44,12 @@
   "inProgress": "En Progreso",
   "done": "Hecho",
   "defaultTaskName": "Tarea Sin Título",
+  "editSprintName": "Haz clic para cambiar el nombre",
+  "editSprintDates": "Haz clic para cambiar las fechas",
+  "addDates": "Añadir fechas",
+  "sprintUpdated": "Sprint actualizado",
+  "sprintUpdateError": "No se pudo actualizar el sprint",
+  "sprintNameRequired": "El nombre del sprint es obligatorio",
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} subtarea",

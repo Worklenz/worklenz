@@ -44,6 +44,12 @@
   "inProgress": "Robię",
   "done": "Gotowe",
   "defaultTaskName": "Zadanie bez tytułu",
+  "editSprintName": "Kliknij, aby zmienić nazwę",
+  "editSprintDates": "Kliknij, aby zmienić daty",
+  "addDates": "Dodaj daty",
+  "sprintUpdated": "Sprint został zaktualizowany",
+  "sprintUpdateError": "Nie udało się zaktualizować sprintu",
+  "sprintNameRequired": "Nazwa sprintu jest wymagana",
   "indicators": {
     "tooltips": {
       "subtasks": "Podzadanie {{count}}",
