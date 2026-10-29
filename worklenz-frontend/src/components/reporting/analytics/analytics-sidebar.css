@@ -99,6 +99,17 @@
   color: inherit;
 }
 
+.analytics-sider-link.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  user-select: none;
+}
+
+.analytics-sider-link.is-disabled:hover {
+  background: transparent;
+  color: var(--analytics-sider-text);
+}
+
 .analytics-sider-link.is-active {
   background: var(--analytics-sider-active-bg);
   color: var(--analytics-sider-active-color);

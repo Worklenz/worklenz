@@ -45,36 +45,51 @@ const AnalyticsSidebarLink: React.FC<{
   const { token } = theme.useToken();
   const to = analyticsPath(item.path);
   const label = labelOverride ?? t(item.labelKey, { defaultValue: item.defaultLabel });
-  const showComingSoon = !item.enabled && item.key === 'sla';
+  const isComingSoon = item.enabled === false;
+  const comingSoonLabel = t('comingSoonBadge', { defaultValue: 'Coming soon' });
 
-  const link = (
-    <NavLink
-      to={to}
-      end={item.path === ''}
-      className={`analytics-sider-link${active ? ' is-active' : ''}${collapsed ? ' is-collapsed' : ''}`}
-      aria-label={label}
-      style={
-        {
-          '--analytics-sider-active-bg': isDark ? 'rgba(24, 144, 255, 0.18)' : 'rgba(24, 144, 255, 0.1)',
-          '--analytics-sider-active-color': token.colorPrimary,
-          '--analytics-sider-hover-bg': isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-          '--analytics-sider-text': isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.65)',
-        } as React.CSSProperties
-      }
-    >
+  const cssVars = {
+    '--analytics-sider-active-bg': isDark ? 'rgba(24, 144, 255, 0.18)' : 'rgba(24, 144, 255, 0.1)',
+    '--analytics-sider-active-color': token.colorPrimary,
+    '--analytics-sider-hover-bg': isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+    '--analytics-sider-text': isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.65)',
+  } as React.CSSProperties;
+
+  const content = (
+    <>
       <span className="analytics-sider-link-icon" aria-hidden>
         {getAnalyticsNavIcon(item.key.startsWith('custom-') ? 'dashboards' : item.key)}
       </span>
       {!collapsed && (
         <>
           <span className="analytics-sider-link-label">{label}</span>
-          {showComingSoon && (
-            <span className="analytics-sider-coming-soon">
-              {t('comingSoonBadge', { defaultValue: 'Coming soon' })}
-            </span>
+          {isComingSoon && (
+            <span className="analytics-sider-coming-soon">{comingSoonLabel}</span>
           )}
         </>
       )}
+    </>
+  );
+
+  // Coming soon items stay visible but are not navigable.
+  const link = isComingSoon ? (
+    <span
+      className={`analytics-sider-link is-disabled${collapsed ? ' is-collapsed' : ''}`}
+      aria-label={`${label} (${comingSoonLabel})`}
+      aria-disabled="true"
+      style={cssVars}
+    >
+      {content}
+    </span>
+  ) : (
+    <NavLink
+      to={to}
+      end={item.path === ''}
+      className={`analytics-sider-link${active ? ' is-active' : ''}${collapsed ? ' is-collapsed' : ''}`}
+      aria-label={label}
+      style={cssVars}
+    >
+      {content}
     </NavLink>
   );
 
@@ -82,11 +97,7 @@ const AnalyticsSidebarLink: React.FC<{
 
   return (
     <Tooltip
-      title={
-        showComingSoon
-          ? `${label} (${t('comingSoonBadge', { defaultValue: 'Coming soon' })})`
-          : label
-      }
+      title={isComingSoon ? `${label} (${comingSoonLabel})` : label}
       placement="right"
     >
       {link}
