@@ -3,14 +3,7 @@ import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 // @ts-ignore: Heroicons module types
 import { ChevronRightIcon, EllipsisHorizontalIcon, PencilIcon } from '@heroicons/react/24/outline';
-import {
-  Button,
-  Dropdown,
-  MenuProps,
-  PlusOutlined,
-  Tooltip,
-  theme,
-} from '@/shared/antd-imports';
+import { Button, Dropdown, MenuProps, PlusOutlined, Tooltip, theme } from '@/shared/antd-imports';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSprintActions } from '@/hooks/useSprintActions';
@@ -61,9 +54,7 @@ export const SprintSectionHeader = ({
   const [sprintFormMode, setSprintFormMode] = useState<SprintFormMode | null>(null);
   const [isCreatingSprint, setIsCreatingSprint] = useState(false);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
-  const hasActiveSprint = phaseList.some(
-    phase => phase.sprint_status === 'active'
-  );
+  const hasActiveSprint = phaseList.some(phase => phase.sprint_status === 'active');
   const hasNoSprints = phaseList.length === 0;
 
   const isActiveSprint = sprint?.sprint_status === 'active';
@@ -163,8 +154,9 @@ export const SprintSectionHeader = ({
         onKeyDown={handleToggleKeyDown}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`sticky left-0 z-[25] flex items-center gap-2.5 px-3 py-2 min-h-[44px] cursor-pointer transition-colors duration-150 focus:outline-none focus-visible:ring-2 ${isCollapsed ? 'rounded-[10px]' : 'rounded-t-[10px]'
-          }`}
+        className={`sticky left-0 z-[25] flex items-center gap-2.5 px-3 py-2 min-h-[44px] cursor-pointer transition-colors duration-150 focus:outline-none focus-visible:ring-2 ${
+          isCollapsed ? 'rounded-[10px]' : 'rounded-t-[10px]'
+        }`}
         style={{
           width: visibleWidth ?? '100%',
           background: isActiveSprint
@@ -196,15 +188,15 @@ export const SprintSectionHeader = ({
             <span className="text-[11px] pl-2 whitespace-nowrap" style={metricStyle}>
               {sprintStats.totalPoints > 0
                 ? t('sprintCompletedPoints', {
-                  defaultValue: '{{done}}/{{total}} pts completed',
-                  done: formatStoryPoints(sprintStats.donePoints),
-                  total: formatStoryPoints(sprintStats.totalPoints),
-                })
+                    defaultValue: '{{done}}/{{total}} pts completed',
+                    done: formatStoryPoints(sprintStats.donePoints),
+                    total: formatStoryPoints(sprintStats.totalPoints),
+                  })
                 : t('sprintCompletedCount', {
-                  defaultValue: '{{done}}/{{total}} completed',
-                  done: sprintStats.done,
-                  total: taskIds.length,
-                })}
+                    defaultValue: '{{done}}/{{total}} completed',
+                    done: sprintStats.done,
+                    total: taskIds.length,
+                  })}
             </span>
             <Tooltip
               title={t('sprintScopeAddedTooltip', {
