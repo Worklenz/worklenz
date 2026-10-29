@@ -29,6 +29,14 @@ interface ProfileValues {
   job_title: string;
 }
 
+const normalizeProfileValues = (values: {
+  name?: string | null;
+  job_title?: string | null;
+}): ProfileValues => ({
+  name: (values.name ?? '').trim(),
+  job_title: (values.job_title ?? '').trim(),
+});
+
 /** Name and job title. The email is the sign-in address and can't be changed here. */
 const ProfileSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -38,6 +46,8 @@ const ProfileSettings: React.FC = () => {
   const { token } = theme.useToken();
   const [updateMe, { isLoading: saving }] = useUpdateMeMutation();
   const [form] = Form.useForm<ProfileValues>();
+  const currentName = Form.useWatch('name', form);
+  const currentJobTitle = Form.useWatch('job_title', form);
 
   useEffect(() => {
     if (me) form.setFieldsValue({ name: me.name, job_title: me.jobTitle });
@@ -45,12 +55,46 @@ const ProfileSettings: React.FC = () => {
 
   if (isLoading || !me) return <Card><Skeleton active /></Card>;
 
+  const originalValues = normalizeProfileValues({
+    name: me.name,
+    job_title: me.jobTitle,
+  });
+
+  const currentValues = normalizeProfileValues({
+    name: currentName,
+    job_title: currentJobTitle,
+  });
+
+  const hasChanges =
+    currentValues.name !== originalValues.name ||
+    currentValues.job_title !== originalValues.job_title;
+
   const onFinish = async (values: ProfileValues) => {
+    const updatedValues = normalizeProfileValues(values);
+
+    if (
+      updatedValues.name === originalValues.name &&
+      updatedValues.job_title === originalValues.job_title
+    ) {
+      return;
+    }
+
     try {
-      await updateMe({ name: values.name.trim(), job_title: values.job_title.trim() }).unwrap();
-      void message.success(t('settings.profile.saved', { defaultValue: 'Profile saved.' }));
+      await updateMe({
+        name: updatedValues.name,
+        job_title: updatedValues.job_title,
+      }).unwrap();
+
+      void message.success(
+        t('settings.profile.saved', { defaultValue: 'Profile saved.' })
+      );
     } catch (error) {
-      void message.error(errorMessage(error) ?? t('settings.saveFailed', { defaultValue: 'We could not save your changes. Please try again.' }));
+      void message.error(
+        errorMessage(error) ??
+        t('settings.saveFailed', {
+          defaultValue: 'We could not save your changes. Please try again.',
+        })
+      );
     }
   };
 
@@ -58,27 +102,32 @@ const ProfileSettings: React.FC = () => {
     <Row gutter={[16, 16]}>
       <Col xs={24} lg={14}>
         <Card title={t('settings.nav.profile', { defaultValue: 'Profile' })}>
-      <Form form={form} layout="vertical" style={{ maxWidth: 420 }} onFinish={onFinish} requiredMark>
-        <Form.Item
-          name="name"
-          label={t('settings.profile.name', { defaultValue: 'Full name' })}
-          rules={[{ required: true, whitespace: true, message: t('settings.profile.nameRequired', { defaultValue: 'Enter your name' }) }]}
-        >
-          <Input maxLength={100} autoComplete="name" />
-        </Form.Item>
-        <Form.Item label={t('settings.profile.email', { defaultValue: 'Email' })}>
-          <Input value={me.email} disabled aria-label={t('settings.profile.email', { defaultValue: 'Email' })} />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('settings.profile.emailHint', { defaultValue: 'Your sign-in address. Contact your project contact to change it.' })}
-          </Typography.Text>
-        </Form.Item>
-        <Form.Item name="job_title" label={t('settings.profile.jobTitle', { defaultValue: 'Job title' })}>
-          <Input maxLength={100} autoComplete="organization-title" />
-        </Form.Item>
-        <Button type="primary" htmlType="submit" loading={saving}>
-          {t('settings.saveChanges', { defaultValue: 'Save changes' })}
-        </Button>
-      </Form>
+          <Form form={form} layout="vertical" style={{ maxWidth: 420 }} onFinish={onFinish} requiredMark>
+            <Form.Item
+              name="name"
+              label={t('settings.profile.name', { defaultValue: 'Full name' })}
+              rules={[{ required: true, whitespace: true, message: t('settings.profile.nameRequired', { defaultValue: 'Enter your name' }) }]}
+            >
+              <Input maxLength={100} autoComplete="name" />
+            </Form.Item>
+            <Form.Item label={t('settings.profile.email', { defaultValue: 'Email' })}>
+              <Input value={me.email} disabled aria-label={t('settings.profile.email', { defaultValue: 'Email' })} />
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {t('settings.profile.emailHint', { defaultValue: 'Your sign-in address. Contact your project contact to change it.' })}
+              </Typography.Text>
+            </Form.Item>
+            <Form.Item name="job_title" label={t('settings.profile.jobTitle', { defaultValue: 'Job title' })}>
+              <Input maxLength={100} autoComplete="organization-title" />
+            </Form.Item>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={saving}
+              disabled={!hasChanges || saving}
+            >
+              {t('settings.saveChanges', { defaultValue: 'Save changes' })}
+            </Button>
+          </Form>
         </Card>
       </Col>
       {role && (
