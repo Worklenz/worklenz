@@ -29,6 +29,18 @@ export const FILTER_PILL_BUTTON_STYLE: React.CSSProperties = {
   paddingInline: 12,
 };
 
+/** Ant Design Select / Segmented sized to match FILTER_PILL_BUTTON_STYLE. */
+export const FILTER_PILL_CONTROL_STYLE: React.CSSProperties = {
+  height: 30,
+  fontSize: 12,
+  borderRadius: 7,
+};
+
+export const FILTER_PILL_SELECT_STYLE: React.CSSProperties = {
+  ...FILTER_PILL_CONTROL_STYLE,
+  minWidth: 140,
+};
+
 export interface FilterOption {
   value: string;
   label: string;
@@ -219,6 +231,91 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
             />
           )}
         </Space>
+      </Button>
+    </Dropdown>
+  );
+};
+
+export interface SingleSelectFilterPillProps {
+  /** Visible button label (usually the selected option’s label). */
+  label: string;
+  options: FilterOption[];
+  value: string;
+  onChange: (value: string) => void;
+  ariaLabel?: string;
+  /** Highlight the pill when a non-default value is selected. */
+  isActive?: boolean;
+}
+
+/** Single-choice filter pill — same height/radius as MultiSelectFilterPill. */
+export const SingleSelectFilterPill: React.FC<SingleSelectFilterPillProps> = ({
+  label,
+  options,
+  value,
+  onChange,
+  ariaLabel,
+  isActive = false,
+}) => {
+  const { token } = theme.useToken();
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const [open, setOpen] = React.useState(false);
+
+  const dropdownContent = (
+    <Card
+      className="custom-card"
+      style={{ width: 'min(240px, calc(100vw - 32px))' }}
+      styles={{ body: { padding: 0 } }}
+    >
+      <List style={{ padding: 0 }}>
+        {options.map(opt => {
+          const selected = value === opt.value;
+          return (
+            <List.Item
+              className={`custom-list-item ${themeMode === 'dark' ? 'dark' : ''}`}
+              key={opt.value}
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
+              style={{
+                padding: '6px 8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: selected ? 500 : 400,
+                color: selected ? token.colorPrimary : undefined,
+              }}
+            >
+              {opt.label}
+            </List.Item>
+          );
+        })}
+      </List>
+    </Card>
+  );
+
+  return (
+    <Dropdown
+      overlayClassName="custom-dropdown"
+      trigger={['click']}
+      popupRender={() => dropdownContent}
+      open={open}
+      onOpenChange={setOpen}
+    >
+      <Button
+        icon={<CaretDownFilled />}
+        iconPosition="end"
+        aria-label={ariaLabel ?? label}
+        style={
+          open || isActive
+            ? {
+                ...FILTER_PILL_BUTTON_STYLE,
+                borderColor: token.colorPrimary,
+                color: token.colorPrimary,
+              }
+            : FILTER_PILL_BUTTON_STYLE
+        }
+      >
+        {label}
       </Button>
     </Dropdown>
   );

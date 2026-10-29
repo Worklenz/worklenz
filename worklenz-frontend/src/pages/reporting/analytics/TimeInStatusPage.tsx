@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Flex, Select, Space, Switch, Typography, message } from '@/shared/antd-imports';
+import { Flex, Space, Switch, Typography, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
@@ -23,7 +23,10 @@ import {
   type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
-import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
+import {
+  SingleSelectFilterPill,
+  type FilterOption,
+} from '@/components/common/filters/MultiSelectFilterPill';
 import {
   TisAggregateChart,
   type TisAggregateChartHandle,
@@ -400,10 +403,14 @@ const TimeInStatusPage: React.FC = () => {
         loading={filtersLoading}
       />
 
-      <Select
+      <SingleSelectFilterPill
+        label={
+          reportView === 'per_issue'
+            ? t('tisViewPerIssue', { defaultValue: 'Per issue' })
+            : t('tisViewAggregate', { defaultValue: 'Aggregate' })
+        }
         value={reportView}
-        onChange={setReportView}
-        style={{ minWidth: 140 }}
+        onChange={value => setReportView(value as TimeInStatusViewMode)}
         options={[
           {
             value: 'aggregate',
@@ -414,15 +421,19 @@ const TimeInStatusPage: React.FC = () => {
             label: t('tisViewPerIssue', { defaultValue: 'Per issue' }),
           },
         ]}
-        aria-label={t('tisViewMode', { defaultValue: 'View mode' })}
+        ariaLabel={t('tisViewMode', { defaultValue: 'View mode' })}
       />
 
-      <Select
+      <SingleSelectFilterPill
+        label={
+          sortOptions.find(option => option.value === sort)?.label ??
+          sortOptions[0]?.label ??
+          ''
+        }
         value={sort}
-        onChange={setSort}
-        style={{ minWidth: 160 }}
+        onChange={value => setSort(value as TimeInStatusSort)}
         options={sortOptions}
-        aria-label={t('tisSort', { defaultValue: 'Sort' })}
+        ariaLabel={t('tisSort', { defaultValue: 'Sort' })}
       />
 
       <Space size={6} style={{ flexShrink: 0 }}>

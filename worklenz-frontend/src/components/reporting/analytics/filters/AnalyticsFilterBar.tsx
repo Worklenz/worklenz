@@ -6,7 +6,6 @@ import {
   Flex,
   Popover,
   Segmented,
-  Select,
   Typography,
   theme,
 } from '@/shared/antd-imports';
@@ -14,7 +13,9 @@ import { FilterOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import {
   FILTER_PILL_BUTTON_STYLE,
+  FILTER_PILL_CONTROL_STYLE,
   MultiSelectFilterPill,
+  SingleSelectFilterPill,
   type FilterOption,
 } from '@/components/common/filters/MultiSelectFilterPill';
 
@@ -187,18 +188,21 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     setPanelOpen(false);
   };
 
-  const dateOptions = availableDatePresets.map(value => {
-    const labels: Record<AnalyticsDatePreset, string> = {
-      last_7_days: t('dateLast7', { defaultValue: 'Last 7 days' }),
-      last_14_days: t('dateLast14', { defaultValue: 'Last 14 days' }),
-      last_30_days: t('dateLast30', { defaultValue: 'Last 30 days' }),
-      last_60_days: t('dateLast60', { defaultValue: 'Last 60 days' }),
-      last_90_days: t('dateLast90', { defaultValue: 'Last 90 days' }),
-      this_quarter: t('dateThisQuarter', { defaultValue: 'This quarter' }),
-      custom: t('dateCustom', { defaultValue: 'Custom' }),
-    };
-    return { value, label: labels[value] };
-  });
+  const dateLabels: Record<AnalyticsDatePreset, string> = {
+    last_7_days: t('dateLast7', { defaultValue: 'Last 7 days' }),
+    last_14_days: t('dateLast14', { defaultValue: 'Last 14 days' }),
+    last_30_days: t('dateLast30', { defaultValue: 'Last 30 days' }),
+    last_60_days: t('dateLast60', { defaultValue: 'Last 60 days' }),
+    last_90_days: t('dateLast90', { defaultValue: 'Last 90 days' }),
+    this_quarter: t('dateThisQuarter', { defaultValue: 'This quarter' }),
+    custom: t('dateCustom', { defaultValue: 'Custom' }),
+  };
+  const dateOptions = availableDatePresets.map(value => ({
+    value,
+    label: dateLabels[value],
+  }));
+  const selectedDateLabel =
+    dateOptions.find(o => o.value === draftDatePreset)?.label ?? dateOptions[0]?.label;
 
   const panelContent = (
     <div style={{ width: 'min(420px, calc(100vw - 32px))', padding: '4px 0' }}>
@@ -208,12 +212,13 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
 
       <Flex gap={8} wrap="wrap" align="center">
         {showDate && (
-          <Select
-            value={draftDatePreset}
-            onChange={setDraftDatePreset}
+          <SingleSelectFilterPill
+            label={selectedDateLabel}
             options={dateOptions}
-            style={{ minWidth: 160 }}
-            aria-label={t('datePreset', { defaultValue: 'Date range' })}
+            value={draftDatePreset}
+            onChange={value => setDraftDatePreset(value as AnalyticsDatePreset)}
+            ariaLabel={t('datePreset', { defaultValue: 'Date range' })}
+            isActive={draftDatePreset !== defaultDatePreset}
           />
         )}
 
@@ -270,8 +275,10 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
 
         {showIncludeDone && (
           <Segmented
+            size="small"
             value={draftIncludeDone ? 'include' : 'exclude'}
             onChange={val => setDraftIncludeDone(val === 'include')}
+            style={FILTER_PILL_CONTROL_STYLE}
             options={[
               {
                 value: 'exclude',
@@ -290,19 +297,13 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
 
       <Flex justify="space-between" align="center">
         <Button
-          size="small"
           disabled={!hasDraftFilters}
           onClick={handleClearAll}
-          style={{ borderRadius: 7 }}
+          style={FILTER_PILL_BUTTON_STYLE}
         >
           {t('clearFilters', { defaultValue: 'Clear' })}
         </Button>
-        <Button
-          type="primary"
-          size="small"
-          onClick={handleApply}
-          style={{ borderRadius: 7 }}
-        >
+        <Button type="primary" onClick={handleApply} style={FILTER_PILL_BUTTON_STYLE}>
           {t('applyFilters', { defaultValue: 'Apply' })}
         </Button>
       </Flex>
