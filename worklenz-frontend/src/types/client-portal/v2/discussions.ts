@@ -23,6 +23,19 @@ export interface ThreadAttachment {
   size: number;
 }
 
+export interface ThreadReactionUser {
+  id: string;
+  name: string;
+  side: PortalSide;
+}
+
+export interface ThreadReaction {
+  emoji: string;
+  count: number;
+  has_reacted: boolean;
+  users: ThreadReactionUser[];
+}
+
 export interface ThreadMessage {
   id: string;
   author: string;
@@ -33,6 +46,7 @@ export interface ThreadMessage {
   /** Names mentioned: client users on a client-visible message, project members on an internal comment. */
   mentions: string[];
   attachments: ThreadAttachment[];
+  reactions?: ThreadReaction[];
 }
 
 export interface Thread {

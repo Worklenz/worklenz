@@ -37,6 +37,7 @@ import {
   markThreadRead,
   postStaffMessage,
   startThread,
+  toggleStaffMessageReaction,
 } from "../../../services/client-portal-v2/discussions.service";
 import { badRequest } from "../../../services/client-portal-v2/errors";
 import { getPreview, getPreviewProject, listPreviewUsers } from "../../../services/client-portal-v2/preview.service";
@@ -250,6 +251,12 @@ export default class PortalWorkflowController {
   });
 
   /** GET /portal/v2/projects/:projectId/thread-options - what a thread can be about, and who can be mentioned. */
+  static toggleReaction = portalHandler("Failed to update reaction", async (req, res) => {
+    const { teamId, userId, actor } = staffContext(req);
+    const body = bodyOf(req);
+    ok(res, await toggleStaffMessageReaction(teamId, userId, actor.name, uuidParam(req, "messageId"), body.emoji));
+  });
+
   static threadOptions = portalHandler("Failed to load the discussion options", async (req, res) => {
     const { teamId } = staffContext(req);
     const projectId = uuidParam(req, "projectId");

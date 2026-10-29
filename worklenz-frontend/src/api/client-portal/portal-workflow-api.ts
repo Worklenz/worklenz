@@ -162,6 +162,19 @@ export const portalWorkflowApi = clientPortalApi.injectEndpoints({
       invalidatesTags: (_result, _error, { threadId }) => [{ type: 'Threads', id: threadId }, 'Threads', 'PortalCounts'],
     }),
 
+    toggleThreadMessageReaction: builder.mutation<
+      ServerEnvelope<{ added: boolean; emoji: string }>,
+      { messageId: string; emoji: string; threadId?: string }
+    >({
+      query: ({ messageId, emoji }) => ({
+        url: `${PORTAL_V2}/threads/messages/${messageId}/reactions`,
+        method: 'POST',
+        body: { emoji },
+      }),
+      invalidatesTags: (_result, _error, { threadId }) =>
+        threadId ? [{ type: 'Threads', id: threadId }, 'Threads'] : ['Threads'],
+    }),
+
     // ─── Audit log ──────────────────────────────────────────────────────────
 
     getAuditLog: builder.query<ServerEnvelope<AuditList>, AuditParams | void>({
@@ -210,6 +223,7 @@ export const {
   useGetThreadOptionsQuery,
   useStartThreadMutation,
   usePostThreadMessageMutation,
+  useToggleThreadMessageReactionMutation,
   useGetAuditLogQuery,
   useGetPreviewUsersQuery,
   useGetPreviewQuery,

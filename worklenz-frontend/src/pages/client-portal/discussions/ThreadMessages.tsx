@@ -5,11 +5,14 @@ import { Flex, theme } from '@/shared/antd-imports';
 import { PortalAvatar, StatusTag, formatPortalDateTime } from '@/components/client-portal/v2';
 import type { ThreadMessage } from '@/types/client-portal/v2';
 import { MessageAttachments } from './MessageAttachments';
+import { ThreadMessageReactions } from './ThreadMessageReactions';
 import { RichMessageContent } from './RichMessageContent';
 import { isRichTextEmpty } from '../shared/rich-text/richText';
 
 interface ThreadMessagesProps {
   messages: ThreadMessage[];
+  threadId?: string;
+  canReact?: boolean;
 }
 
 /** Highlights @Name for the client users a client-visible message actually mentioned. */
@@ -36,7 +39,7 @@ export const renderMentions = (text: string, mentions: string[], highlight: { ba
  * An internal comment is orange with a lock and says only the team sees it, so it can never be mistaken
  * for something the client will read.
  */
-export const ThreadMessages = ({ messages }: ThreadMessagesProps) => {
+export const ThreadMessages = ({ messages, threadId, canReact = true }: ThreadMessagesProps) => {
   const { t, i18n } = useTranslation('client-portal-v2-discussions');
   const { token } = theme.useToken();
   const endRef = useRef<HTMLDivElement>(null);
@@ -123,6 +126,13 @@ export const ThreadMessages = ({ messages }: ThreadMessagesProps) => {
                 />}
                 <MessageAttachments attachments={message.attachments ?? []} />
               </div>
+              <ThreadMessageReactions
+                messageId={message.id}
+                threadId={threadId}
+                reactions={message.reactions}
+                canReact={canReact}
+                align={isTeam ? 'flex-end' : 'flex-start'}
+              />
               <div
                 style={{
                   fontSize: 11,

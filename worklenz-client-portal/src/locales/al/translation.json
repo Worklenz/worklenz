@@ -278,7 +278,12 @@
       "file": "Skedar",
       "approval": "Miratim",
       "change_request": "Kërkesë ndryshimi"
-    }
+    },
+    "addReaction": "Shto reagim",
+    "reactionsLabel": "Reagimet",
+    "reactedTooltip": "Kliko për të hequr reagimin tënd",
+    "notReactedTooltip": "Kliko për të reaguar me {{emoji}}",
+    "reactFailed": "Përditësimi i reagimit dështoi"
   },
   "locked": {
     "reply": "Shikuesit e klientit mund t'i lexojnë diskutimet, por nuk mund të përgjigjen.",

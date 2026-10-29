@@ -108,7 +108,13 @@
     "messagesLabel": "Messages",
     "notFound": "Diskutimi nuk u gjet",
     "onlyTeamSees": "vetëm ekipi juaj e sheh këtë",
-    "pick": "Zgjidhni një diskutim ose filloni një të ri."
+    "pick": "Zgjidhni një diskutim ose filloni një të ri.",
+    "addReaction": "Shto reagim",
+    "reactionsLabel": "Reagimet",
+    "reactedTooltip": "Kliko për të hequr reagimin tënd",
+    "notReactedTooltip": "Kliko për të reaguar me {{emoji}}",
+    "reactFailed": "Nuk mund të përditësohej reagimi.",
+    "team": "Ekipi"
   },
   "retry": "Provo përsëri",
   "rowsPerPage": "Rreshta për faqe:"

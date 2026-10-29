@@ -153,7 +153,7 @@ export const FILES: MockFile[] = [
   fl({ id: 'f7', projectId: 'p7', name: 'Q3 Editorial Calendar.xlsx', category: 'Deliverable', side: 'team', by: 'Priya R.', date: '2026-05-29', size: '74 KB', version: 2, versions: 2 }),
 ];
 
-export interface MockMessage { id: string; author: string; side: 'client' | 'internal'; text: string; at: string; visibility?: 'client' | 'client_only'; attachments?: Array<{ id: string; name: string; size: number }> }
+export interface MockMessage { id: string; author: string; side: 'client' | 'internal'; text: string; at: string; visibility?: 'client' | 'client_only'; attachments?: Array<{ id: string; name: string; size: number }>; reactions?: Array<{ emoji: string; users: Array<{ id: string; name: string; side: 'client' | 'internal' }> }>; deleted?: boolean }
 export interface MockThread {
   id: string; projectId: string; type: ThreadContextType; refId: string | null; label: string; readBy: string[]; messages: MockMessage[];
 }
