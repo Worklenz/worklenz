@@ -35,6 +35,7 @@ export interface TimeReportProjectSeries {
   project_name: string;
   logged_hours: number;
   estimated_hours: number;
+  updated_at: string | null;
 }
 
 export interface TimeReportKpis {
@@ -242,6 +243,7 @@ export async function getTimeReportSeries(
       pairs.project_id,
       COALESCE(p.name, '') AS project_name,
       p.color_code AS project_color,
+      TO_CHAR(p.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS project_updated_at,
       COALESCE(logged.logged_hours, 0)::FLOAT AS logged_hours,
       COALESCE(logged.billable_hours, 0)::FLOAT AS billable_hours,
       COALESCE(estimated.estimated_hours, 0)::FLOAT AS estimated_hours
@@ -296,7 +298,16 @@ export async function getTimeReportSeries(
         project_name: row.project_name,
         logged_hours: row.logged_hours,
         estimated_hours: row.estimated_hours,
+        updated_at: null,
       });
+    }
+  }
+  // Attach project updated_at from the raw query rows (same project_id order as mapped rows).
+  for (const raw of result.rows as Array<Record<string, unknown>>) {
+    const projectId = String(raw.project_id);
+    const entry = projectMap.get(projectId);
+    if (entry && !entry.updated_at && raw.project_updated_at) {
+      entry.updated_at = String(raw.project_updated_at);
     }
   }
 

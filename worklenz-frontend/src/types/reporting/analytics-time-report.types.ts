@@ -25,6 +25,7 @@ export interface TimeReportProjectSeries {
   project_name: string;
   logged_hours: number;
   estimated_hours: number;
+  updated_at?: string | null;
 }
 
 export interface TimeReportKpis {

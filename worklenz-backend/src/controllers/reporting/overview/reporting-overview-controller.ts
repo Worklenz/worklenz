@@ -265,11 +265,12 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
               p.name,
               p.color_code,
               p.team_id,
-              p.status_id
+              p.status_id,
+              TO_CHAR(p.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS updated_at
         FROM projects p
             LEFT JOIN project_members pm ON pm.project_id = p.id
         WHERE ${teamIdFilter} ${teamMemberFilter} ${archivedClause}
-        GROUP BY p.id, p.name, p.color_code, p.team_id, p.status_id
+        GROUP BY p.id, p.name, p.color_code, p.team_id, p.status_id, p.updated_at
         ORDER BY p.name;`;
 
     const result = await db.query(q, params);
