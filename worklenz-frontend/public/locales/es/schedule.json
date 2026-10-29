@@ -202,7 +202,7 @@
   "sundayShort": "Dom",
   "tabTitle": "Tarea sin Fechas de Inicio y Fin",
   "task": "Tarea",
-  "taskCreationRestricted": "La creación de tareas está restringida a Administradores y Líderes de Equipo. Contacte a su administrador para obtener acceso.",
+  "taskCreationRestricted": "La creación de tareas está restringida a Administradores, Líderes de Equipo y Gerentes de Proyecto. Contacte a su administrador para obtener acceso.",
   "taskCreationRestrictedTitle": "Creación de Tareas Restringida",
   "taskName": "Nombre de Tarea",
   "taskNameRequired": "El nombre de la tarea es obligatorio",

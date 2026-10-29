@@ -324,5 +324,6 @@
   "setDueTime": "Définir l'heure d'échéance",
   "save": "Enregistrer",
   "cancel": "Annuler",
-  "changeStatus": "Changer de statut : {{status}}"
+  "changeStatus": "Changer de statut : {{status}}",
+  "ellipsis": "..."
 }
