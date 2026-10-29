@@ -5,7 +5,7 @@ import { flatAnalyticsNavItems } from '@/lib/reporting/analytics-nav';
 
 const STORAGE_KEY = 'worklenz.analyticsCustomReports';
 
-/** User-saved custom report / template (shown under Custom templates). */
+/** User-saved custom report / template (shown under Custom reports). */
 export interface AnalyticsCustomReport {
   id: string;
   name: string;
@@ -38,7 +38,7 @@ const labelForKind = (kind: string): string => {
 };
 
 /**
- * Merge API report templates into the Custom templates list so saves appear
+ * Merge API report templates into the Custom reports list so saves appear
  * on the All reports hub and sidebar for every report kind.
  */
 export const syncTemplatesToCustomReports = (

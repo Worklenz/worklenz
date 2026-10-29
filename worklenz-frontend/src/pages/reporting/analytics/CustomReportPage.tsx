@@ -43,7 +43,7 @@ const REPORT_PAGE_BY_KIND: Record<
 
 /**
  * Opens a saved custom template at /custom/:id and renders the source report
- * with that template's name + filters (URL stays on Custom templates).
+ * with that template's name + filters (URL stays on Custom reports).
  */
 const CustomReportPage: React.FC = () => {
   const { id = '' } = useParams<{ id: string }>();
@@ -85,7 +85,7 @@ const CustomReportPage: React.FC = () => {
           path: ANALYTICS_BASE_PATH,
         },
         {
-          label: t('tabCustom', { defaultValue: 'Custom templates' }),
+          label: t('tabCustom', { defaultValue: 'Custom reports' }),
           path: ANALYTICS_BASE_PATH,
         },
         { label: title },

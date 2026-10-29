@@ -19,7 +19,7 @@ interface UseAnalyticsReportTemplatesOptions {
 
 /**
  * Shared save / load / apply flow for analytics report templates
- * (Custom templates hub + My Templates on each report page).
+ * (Custom reports hub + My Templates on each report page).
  */
 export const useAnalyticsReportTemplates = ({
   reportKind,
@@ -52,7 +52,7 @@ export const useAnalyticsReportTemplates = ({
 
       setTemplates(res.body);
 
-      // Refresh hub/sidebar Custom templates from all kinds (best-effort).
+      // Refresh hub/sidebar Custom reports from all kinds (best-effort).
       try {
         const all = await analyticsTemplatesApiService.listTemplates('all');
         if (all.done && Array.isArray(all.body)) {
@@ -122,7 +122,7 @@ export const useAnalyticsReportTemplates = ({
         if (res.done) {
           message.success(
             t('templateSavedToCustom', {
-              defaultValue: 'Template saved. Find it under Custom templates.',
+              defaultValue: 'Template saved. Find it under Custom reports.',
             })
           );
           setSaveOpen(false);

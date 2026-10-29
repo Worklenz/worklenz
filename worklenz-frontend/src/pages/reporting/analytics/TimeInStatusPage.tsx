@@ -287,8 +287,8 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
     setLoading(true);
     setError(null);
     try {
-      // Empty project_ids → all accessible projects rolled into To do / Doing / Done.
-      // Selected project_ids → that project's full status list.
+      // Empty project_ids ? all accessible projects rolled into To do / Doing / Done.
+      // Selected project_ids ? that project's full status list.
       const res = await analyticsTimeInStatusApiService.getSeries(filters);
       if (res.done && res.body) {
         const localizedStatuses = res.body.statuses.map(status => ({
@@ -415,26 +415,26 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
   const sortOptions =
     reportView === 'aggregate'
       ? [
-          { value: 'avg_desc', label: t('tisSortAvgDesc', { defaultValue: 'Avg (high → low)' }) },
-          { value: 'avg_asc', label: t('tisSortAvgAsc', { defaultValue: 'Avg (low → high)' }) },
+          { value: 'avg_desc', label: t('tisSortAvgDesc', { defaultValue: 'Avg (high ? low)' }) },
+          { value: 'avg_asc', label: t('tisSortAvgAsc', { defaultValue: 'Avg (low ? high)' }) },
           {
             value: 'median_desc',
-            label: t('tisSortMedianDesc', { defaultValue: 'Median (high → low)' }),
+            label: t('tisSortMedianDesc', { defaultValue: 'Median (high ? low)' }),
           },
           {
             value: 'count_desc',
-            label: t('tisSortCountDesc', { defaultValue: 'Count (high → low)' }),
+            label: t('tisSortCountDesc', { defaultValue: 'Count (high ? low)' }),
           },
           { value: 'name_asc', label: t('tisSortNameAsc', { defaultValue: 'Status name' }) },
         ]
       : [
           {
             value: 'total_desc',
-            label: t('tisSortTotalDesc', { defaultValue: 'Total (high → low)' }),
+            label: t('tisSortTotalDesc', { defaultValue: 'Total (high ? low)' }),
           },
           {
             value: 'total_asc',
-            label: t('tisSortTotalAsc', { defaultValue: 'Total (low → high)' }),
+            label: t('tisSortTotalAsc', { defaultValue: 'Total (low ? high)' }),
           },
           { value: 'key_asc', label: t('tisSortKeyAsc', { defaultValue: 'Task key' }) },
           { value: 'name_asc', label: t('tisSortTaskNameAsc', { defaultValue: 'Task name' }) },
@@ -512,7 +512,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
                 path: ANALYTICS_BASE_PATH,
               },
               {
-                label: t('tabCustom', { defaultValue: 'Custom templates' }),
+                label: t('tabCustom', { defaultValue: 'Custom reports' }),
                 path: ANALYTICS_BASE_PATH,
               },
               { label: title },

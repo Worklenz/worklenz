@@ -495,7 +495,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
                 path: ANALYTICS_BASE_PATH,
               },
               {
-                label: t('tabCustom', { defaultValue: 'Custom templates' }),
+                label: t('tabCustom', { defaultValue: 'Custom reports' }),
                 path: ANALYTICS_BASE_PATH,
               },
               { label: title },

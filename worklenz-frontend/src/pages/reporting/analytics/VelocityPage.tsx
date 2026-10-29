@@ -3,7 +3,6 @@ import {
   Alert,
   Button,
   Flex,
-  Space,
   message,
 } from '@/shared/antd-imports';
 import { SaveOutlined } from '@/shared/antd-imports';
@@ -38,7 +37,6 @@ import { VelocityChart, type VelocityChartHandle } from '@/components/reporting/
 import { VelocityKpiTiles } from '@/components/reporting/analytics/velocity/VelocityKpiTiles';
 import { VelocityTable } from '@/components/reporting/analytics/velocity/VelocityTable';
 import { SaveVelocityTemplateModal } from '@/components/reporting/analytics/velocity/SaveVelocityTemplateModal';
-import { VelocityTemplatesMenu } from '@/components/reporting/analytics/velocity/VelocityTemplatesMenu';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
   getAnalyticsDashboardPermissions,
@@ -106,7 +104,6 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<VelocitySeriesResponse | null>(null);
-  const [templates, setTemplates] = useState<AnalyticsReportTemplate[]>([]);
   const [saveOpen, setSaveOpen] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
 
@@ -116,10 +113,10 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
   const pendingQueryTemplateId = useRef<string | null>(
     customTemplateId ?? searchParams.get('template')
   );
-  /** Velocity chart is project-wise — require an explicit project before loading. */
+  /** Velocity chart is project-wise � require an explicit project before loading. */
   const hasProjectSelection = selectedProjectIds.length > 0;
 
-  // Switching between Custom templates remounts filters for the new template id.
+  // Switching between Custom reports remounts filters for the new template id.
   useEffect(() => {
     if (!customTemplateId) return;
     if (appliedQueryTemplate.current === customTemplateId) return;
@@ -251,9 +248,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     try {
       const res = await analyticsVelocityApiService.listTemplates('velocity');
       if (res.done && Array.isArray(res.body)) {
-        setTemplates(res.body);
-
-        // Keep All reports → Custom templates + sidebar in sync with every
+        // Keep All reports ? Custom reports + sidebar in sync with every
         // report kind's templates (not just velocity), so saves made on
         // other report pages aren't wiped out when this page syncs.
         try {
@@ -436,7 +431,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       if (res.done) {
         message.success(
           t('templateSavedToCustom', {
-            defaultValue: 'Template saved. Find it under Custom templates.',
+            defaultValue: 'Template saved. Find it under Custom reports.',
           })
         );
         setSaveOpen(false);
@@ -477,7 +472,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
                 path: ANALYTICS_BASE_PATH,
               },
               {
-                label: t('tabCustom', { defaultValue: 'Custom templates' }),
+                label: t('tabCustom', { defaultValue: 'Custom reports' }),
                 path: ANALYTICS_BASE_PATH,
               },
               { label: title },
@@ -498,21 +493,13 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       exportLoading={exporting}
       actions={
         isCustomTemplateView ? undefined : (
-          <Space wrap>
-            <VelocityTemplatesMenu
-              templates={templates}
-              canShare={permissions.canShare}
-              onRefresh={() => void loadTemplates()}
-              onApply={applyTemplateFilters}
-            />
-            <Button
-              icon={<SaveOutlined />}
-              onClick={() => setSaveOpen(true)}
-              disabled={!hasProjectSelection}
-            >
-              {t('saveAsTemplate', { defaultValue: 'Save as Template' })}
-            </Button>
-          </Space>
+          <Button
+            icon={<SaveOutlined />}
+            onClick={() => setSaveOpen(true)}
+            disabled={!hasProjectSelection}
+          >
+            {t('saveAsTemplate', { defaultValue: 'Save as Template' })}
+          </Button>
         )
       }
     >

@@ -208,7 +208,7 @@ export const buildAnalyticsNavGroups = (
   const customGroup: AnalyticsNavGroup = {
     key: CUSTOM_REPORTS_GROUP_KEY,
     labelKey: 'navGroupCustomReports',
-    defaultLabel: 'Custom templates',
+    defaultLabel: 'Custom reports',
     items: customReports.map(report => ({
       key: `custom-${report.id}`,
       path: customReportPath(report.id),

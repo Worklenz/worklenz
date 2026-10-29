@@ -1,37 +1,35 @@
 import React from 'react';
-import { Button, Space } from '@/shared/antd-imports';
+import { Button } from '@/shared/antd-imports';
 import { SaveOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-velocity.types';
-import { AnalyticsTemplatesMenu } from './AnalyticsTemplatesMenu';
 import {
   SaveAnalyticsTemplateModal,
   type SaveAnalyticsTemplateValues,
 } from './SaveAnalyticsTemplateModal';
 
 interface AnalyticsTemplateActionsProps {
-  templates: AnalyticsReportTemplate[];
+  /** @deprecated Unused — templates live under Custom reports in the sidebar. */
+  templates?: unknown;
   canShare: boolean;
   saveDisabled?: boolean;
   saveOpen: boolean;
   savingTemplate?: boolean;
   onSaveOpenChange: (open: boolean) => void;
-  onRefresh: () => void;
-  onApply: (template: AnalyticsReportTemplate) => void;
+  /** @deprecated Unused — templates live under Custom reports in the sidebar. */
+  onRefresh?: () => void;
+  /** @deprecated Unused — templates live under Custom reports in the sidebar. */
+  onApply?: (template: never) => void;
   onSave: (values: SaveAnalyticsTemplateValues) => void;
   namePlaceholder?: string;
 }
 
-/** My Templates + Save as Template controls for analytics report pages. */
+/** Save as Template control for analytics report pages (list is in the sidebar). */
 export const AnalyticsTemplateActions: React.FC<AnalyticsTemplateActionsProps> = ({
-  templates,
   canShare,
   saveDisabled,
   saveOpen,
   savingTemplate,
   onSaveOpenChange,
-  onRefresh,
-  onApply,
   onSave,
   namePlaceholder,
 }) => {
@@ -39,21 +37,13 @@ export const AnalyticsTemplateActions: React.FC<AnalyticsTemplateActionsProps> =
 
   return (
     <>
-      <Space wrap>
-        <AnalyticsTemplatesMenu
-          templates={templates}
-          canShare={canShare}
-          onRefresh={onRefresh}
-          onApply={onApply}
-        />
-        <Button
-          icon={<SaveOutlined />}
-          onClick={() => onSaveOpenChange(true)}
-          disabled={saveDisabled}
-        >
-          {t('saveAsTemplate', { defaultValue: 'Save as Template' })}
-        </Button>
-      </Space>
+      <Button
+        icon={<SaveOutlined />}
+        onClick={() => onSaveOpenChange(true)}
+        disabled={saveDisabled}
+      >
+        {t('saveAsTemplate', { defaultValue: 'Save as Template' })}
+      </Button>
       <SaveAnalyticsTemplateModal
         open={saveOpen}
         canShare={canShare}

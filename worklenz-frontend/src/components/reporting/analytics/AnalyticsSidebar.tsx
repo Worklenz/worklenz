@@ -95,7 +95,7 @@ const AnalyticsSidebarLink: React.FC<{
 };
 
 /**
- * Prototype-style reports sidebar â€” horizontal list with group headers.
+ * Prototype-style reports sidebar — horizontal list with group headers.
  * Custom reports group appears only when the user has saved custom reports.
  */
 export const AnalyticsSidebar: React.FC = () => {
@@ -115,7 +115,7 @@ export const AnalyticsSidebar: React.FC = () => {
     }
   }, [collapsed]);
 
-  // Sync API-saved templates (all report kinds) into the Custom templates sidebar group.
+  // Sync API-saved templates (all report kinds) into the Custom reports sidebar group.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
