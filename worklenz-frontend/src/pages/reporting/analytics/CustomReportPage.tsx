@@ -4,18 +4,15 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { ReportPageShell } from '@/components/reporting/analytics';
-import {
-  ANALYTICS_BASE_PATH,
-  analyticsPath,
-  flatAnalyticsNavItems,
-} from '@/lib/reporting/analytics-nav';
+import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import { useAnalyticsCustomReports } from '@/features/reporting/analytics-custom-reports';
+import VelocityPage from '@/pages/reporting/analytics/VelocityPage';
 
 const { Text } = Typography;
 
 /**
- * Opens a saved custom report. When it was created from a builtin report,
- * redirect to that report; otherwise show an empty state (not a coming-soon stub).
+ * Opens a saved custom template at /custom/:id.
+ * Velocity-based templates render the velocity chart here (keep custom URL + title).
  */
 const CustomReportPage: React.FC = () => {
   const { id = '' } = useParams<{ id: string }>();
@@ -35,20 +32,17 @@ const CustomReportPage: React.FC = () => {
   const title = report?.name ?? t('descCustomReport', { defaultValue: 'Saved custom report' });
   useDocumentTitle(title);
 
-  const sourcePath = useMemo(() => {
-    if (!report?.sourceKind) return null;
-    const item = flatAnalyticsNavItems().find(
-      nav => nav.key === report.sourceKind || nav.path === report.sourceKind
-    );
-    return item?.enabled && item.path ? item.path : null;
-  }, [report]);
-
   if (!report) {
     return <Navigate to={ANALYTICS_BASE_PATH} replace />;
   }
 
-  if (sourcePath) {
-    return <Navigate to={analyticsPath(sourcePath)} replace />;
+  if (report.sourceKind === 'velocity') {
+    return (
+      <VelocityPage
+        customTemplateId={report.id}
+        customTemplateName={report.name}
+      />
+    );
   }
 
   return (
@@ -57,6 +51,10 @@ const CustomReportPage: React.FC = () => {
       crumbs={[
         {
           label: t('allReports', { defaultValue: 'All reports' }),
+          path: ANALYTICS_BASE_PATH,
+        },
+        {
+          label: t('tabCustom', { defaultValue: 'Custom templates' }),
           path: ANALYTICS_BASE_PATH,
         },
         { label: title },

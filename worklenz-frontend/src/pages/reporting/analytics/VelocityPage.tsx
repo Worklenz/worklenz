@@ -8,6 +8,7 @@ import {
 } from '@/shared/antd-imports';
 import { SaveOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import { jsPDF } from 'jspdf';
@@ -20,6 +21,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { analyticsVelocityApiService } from '@/api/reporting/analytics-velocity.api.service';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
+import { syncVelocityTemplatesToCustomReports } from '@/features/reporting/analytics-custom-reports';
 import {
   AnalyticsFilterBar,
   ChartTableWrapper,
@@ -66,10 +68,23 @@ const downloadText = (content: string, filename: string, mime: string) => {
   downloadBlob(new Blob([content], { type: mime }), filename);
 };
 
-const VelocityPage: React.FC = () => {
+export interface VelocityPageProps {
+  /** Open as a Custom template under /custom/:id (do not redirect to /velocity). */
+  customTemplateId?: string;
+  customTemplateName?: string;
+}
+
+const VelocityPage: React.FC<VelocityPageProps> = ({
+  customTemplateId,
+  customTemplateName,
+}) => {
   const { t } = useTranslation('reporting-analytics');
   const dispatch = useAppDispatch();
-  const title = t('velocity', { defaultValue: 'Velocity' });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isCustomTemplateView = Boolean(customTemplateId);
+  const title =
+    (isCustomTemplateView && customTemplateName?.trim()) ||
+    t('velocity', { defaultValue: 'Velocity' });
   useDocumentTitle(title);
 
   const authService = useAuthService();
@@ -96,8 +111,23 @@ const VelocityPage: React.FC = () => {
 
   const chartRef = useRef<VelocityChartHandle>(null);
   const appliedDefaultTemplate = useRef(false);
+  const appliedQueryTemplate = useRef<string | null>(null);
+  const pendingQueryTemplateId = useRef<string | null>(
+    customTemplateId ?? searchParams.get('template')
+  );
   /** Velocity chart is project-wise — require an explicit project before loading. */
   const hasProjectSelection = selectedProjectIds.length > 0;
+
+  // Switching between Custom templates remounts filters for the new template id.
+  useEffect(() => {
+    if (!customTemplateId) return;
+    if (appliedQueryTemplate.current === customTemplateId) return;
+    pendingQueryTemplateId.current = customTemplateId;
+    appliedDefaultTemplate.current = false;
+    void loadTemplates();
+    // loadTemplates is stable enough via deps below; intentional on id change only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customTemplateId]);
 
   const memberOptions: FilterOption[] = useMemo(() => {
     const list = (teamMembersState?.data ?? []) as ITeamMemberViewModel[];
@@ -221,7 +251,34 @@ const VelocityPage: React.FC = () => {
       const res = await analyticsVelocityApiService.listTemplates('velocity');
       if (res.done && Array.isArray(res.body)) {
         setTemplates(res.body);
-        if (!appliedDefaultTemplate.current) {
+        // Keep All reports → Custom templates + sidebar in sync with API.
+        syncVelocityTemplatesToCustomReports(res.body);
+
+        const queryTemplateId = pendingQueryTemplateId.current;
+        if (queryTemplateId && appliedQueryTemplate.current !== queryTemplateId) {
+          const fromQuery = res.body.find(tpl => tpl.id === queryTemplateId);
+          if (fromQuery) {
+            applyTemplateFilters(fromQuery);
+            appliedQueryTemplate.current = queryTemplateId;
+            pendingQueryTemplateId.current = null;
+            appliedDefaultTemplate.current = true;
+            // Drop ?template= only on the builtin Velocity route.
+            if (!isCustomTemplateView && searchParams.get('template')) {
+              setSearchParams(
+                prev => {
+                  const next = new URLSearchParams(prev);
+                  next.delete('template');
+                  return next;
+                },
+                { replace: true }
+              );
+            }
+            return;
+          }
+        }
+
+        // Custom template view should not fall back to a different default template.
+        if (!isCustomTemplateView && !appliedDefaultTemplate.current) {
           const defaultTpl = res.body.find(tpl => tpl.is_default);
           if (defaultTpl?.filters_json) {
             applyTemplateFilters(defaultTpl);
@@ -232,7 +289,7 @@ const VelocityPage: React.FC = () => {
     } catch {
       // templates are optional on first load
     }
-  }, [applyTemplateFilters]);
+  }, [applyTemplateFilters, isCustomTemplateView, searchParams, setSearchParams]);
 
   const loadSeries = useCallback(async () => {
     if (!hasProjectSelection) {
@@ -364,7 +421,11 @@ const VelocityPage: React.FC = () => {
         filters: { ...filters },
       });
       if (res.done) {
-        message.success(t('templateSaved', { defaultValue: 'Template saved' }));
+        message.success(
+          t('templateSavedToCustom', {
+            defaultValue: 'Template saved. Find it under Custom templates.',
+          })
+        );
         setSaveOpen(false);
         void loadTemplates();
       } else {
@@ -395,13 +456,27 @@ const VelocityPage: React.FC = () => {
   return (
     <ReportPageShell
       title={title}
-      crumbs={[
-        {
-          label: t('allReports', { defaultValue: 'All reports' }),
-          path: ANALYTICS_BASE_PATH,
-        },
-        { label: title },
-      ]}
+      crumbs={
+        isCustomTemplateView
+          ? [
+              {
+                label: t('allReports', { defaultValue: 'All reports' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              {
+                label: t('tabCustom', { defaultValue: 'Custom templates' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              { label: title },
+            ]
+          : [
+              {
+                label: t('allReports', { defaultValue: 'All reports' }),
+                path: ANALYTICS_BASE_PATH,
+              },
+              { label: title },
+            ]
+      }
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={hasProjectSelection ? velocityFilters : undefined}
       onExport={hasProjectSelection ? handleExport : undefined}
@@ -409,21 +484,23 @@ const VelocityPage: React.FC = () => {
       exportFormats={['excel', 'pdf', 'png', 'svg', 'csv']}
       exportLoading={exporting}
       actions={
-        <Space wrap>
-          <VelocityTemplatesMenu
-            templates={templates}
-            canShare={permissions.canShare}
-            onRefresh={() => void loadTemplates()}
-            onApply={applyTemplateFilters}
-          />
-          <Button
-            icon={<SaveOutlined />}
-            onClick={() => setSaveOpen(true)}
-            disabled={!hasProjectSelection}
-          >
-            {t('saveAsTemplate', { defaultValue: 'Save as Template' })}
-          </Button>
-        </Space>
+        isCustomTemplateView ? undefined : (
+          <Space wrap>
+            <VelocityTemplatesMenu
+              templates={templates}
+              canShare={permissions.canShare}
+              onRefresh={() => void loadTemplates()}
+              onApply={applyTemplateFilters}
+            />
+            <Button
+              icon={<SaveOutlined />}
+              onClick={() => setSaveOpen(true)}
+              disabled={!hasProjectSelection}
+            >
+              {t('saveAsTemplate', { defaultValue: 'Save as Template' })}
+            </Button>
+          </Space>
+        )
       }
     >
       {!hasProjectSelection ? (

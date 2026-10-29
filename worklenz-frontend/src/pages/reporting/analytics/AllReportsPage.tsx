@@ -19,7 +19,10 @@ import { analyticsPlannedVsActualMilestonesApiService } from '@/api/reporting/an
 import { analyticsCfdApiService } from '@/api/reporting/analytics-cfd.api.service';
 import { analyticsTimeInStatusApiService } from '@/api/reporting/analytics-time-in-status.api.service';
 import { ReportCardPreview } from '@/components/reporting/analytics/ReportCardPreview';
-import { useAnalyticsCustomReports } from '@/features/reporting/analytics-custom-reports';
+import {
+  syncVelocityTemplatesToCustomReports,
+  useAnalyticsCustomReports,
+} from '@/features/reporting/analytics-custom-reports';
 import './all-reports-gallery.css';
 
 const { Title, Text } = Typography;
@@ -148,11 +151,30 @@ const AllReportsPage: React.FC = () => {
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
-  const { customReports, hasCustomReports } = useAnalyticsCustomReports();
+  const { customReports, hasCustomReports, refreshCustomReports } = useAnalyticsCustomReports();
   useDocumentTitle(t('reportsTitle', { defaultValue: 'Reports' }));
 
   const [tab, setTab] = useState<HubTab>('reports');
   const [metricsByKey, setMetricsByKey] = useState<Record<string, CardMetrics>>({});
+
+  // Backfill Custom templates from API (templates saved before hub sync).
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await analyticsVelocityApiService.listTemplates('velocity');
+        if (!cancelled && res.done && Array.isArray(res.body)) {
+          syncVelocityTemplatesToCustomReports(res.body);
+          refreshCustomReports();
+        }
+      } catch {
+        // Custom templates remain local-only if API is unavailable.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshCustomReports]);
 
   useEffect(() => {
     if (tab === 'custom' && !hasCustomReports) {
@@ -362,7 +384,7 @@ const AllReportsPage: React.FC = () => {
     { key: 'reports', label: t('hubTabReports', { defaultValue: 'Reports' }) },
     { key: 'scheduled', label: t('hubTabScheduled', { defaultValue: 'Scheduled' }) },
     ...(hasCustomReports
-      ? [{ key: 'custom' as const, label: t('tabCustom', { defaultValue: 'Custom reports' }) }]
+      ? [{ key: 'custom' as const, label: t('tabCustom', { defaultValue: 'Custom templates' }) }]
       : []),
   ];
 

@@ -16,7 +16,11 @@ import {
   getAnalyticsNavIcon,
   type AnalyticsNavItem,
 } from '@/lib/reporting/analytics-nav';
-import { useAnalyticsCustomReports } from '@/features/reporting/analytics-custom-reports';
+import {
+  syncVelocityTemplatesToCustomReports,
+  useAnalyticsCustomReports,
+} from '@/features/reporting/analytics-custom-reports';
+import { analyticsVelocityApiService } from '@/api/reporting/analytics-velocity.api.service';
 import './analytics-sidebar.css';
 
 const COLLAPSED_STORAGE_KEY = 'worklenz.analyticsSidebar.collapsed';
@@ -100,7 +104,7 @@ export const AnalyticsSidebar: React.FC = () => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
   const location = useLocation();
-  const { customReports } = useAnalyticsCustomReports();
+  const { customReports, refreshCustomReports } = useAnalyticsCustomReports();
   const [collapsed, setCollapsed] = useState(readCollapsedPreference);
 
   useEffect(() => {
@@ -110,6 +114,25 @@ export const AnalyticsSidebar: React.FC = () => {
       // Ignore storage failures (private mode, quota, etc.)
     }
   }, [collapsed]);
+
+  // Sync API-saved velocity templates into the Custom templates sidebar group.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await analyticsVelocityApiService.listTemplates('velocity');
+        if (!cancelled && res.done && Array.isArray(res.body)) {
+          syncVelocityTemplatesToCustomReports(res.body);
+          refreshCustomReports();
+        }
+      } catch {
+        // Keep existing local custom templates if sync fails.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshCustomReports]);
 
   const toggleCollapsed = useCallback(() => {
     setCollapsed(prev => !prev);
