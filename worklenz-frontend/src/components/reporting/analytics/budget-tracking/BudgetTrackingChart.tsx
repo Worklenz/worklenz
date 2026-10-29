@@ -53,10 +53,9 @@ export const BudgetTrackingChart = forwardRef<
   const chartTheme = getChartTheme(token);
   const chartRef = useRef<ChartJS<'bar'>>(null);
 
-  const chartProjects = useMemo(
-    () => projects.filter(p => p.has_budget || p.spent > 0),
-    [projects]
-  );
+  // Show every project passed from the page (selected / latest-20 set),
+  // including zero-budget rows so the chart matches the Projects filter.
+  const chartProjects = projects;
 
   useImperativeHandle(ref, () => ({
     toPngDataUrl: () => {

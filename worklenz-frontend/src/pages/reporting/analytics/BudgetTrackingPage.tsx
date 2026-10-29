@@ -28,6 +28,12 @@ import {
 import { BudgetTrackingKpiTiles } from '@/components/reporting/analytics/budget-tracking/BudgetTrackingKpiTiles';
 import { BudgetTrackingTable } from '@/components/reporting/analytics/budget-tracking/BudgetTrackingTable';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
+import {
+  DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
+  latestUpdatedOptionIds,
+  latestUpdatedProjectIds,
+  projectsForAnalyticsChart,
+} from '@/lib/reporting/analytics-chart-projects';
 import type {
   BudgetTrackingFilters,
   BudgetTrackingSeriesResponse,
@@ -78,6 +84,8 @@ const BudgetTrackingPage: React.FC = () => {
   const [data, setData] = useState<BudgetTrackingSeriesResponse | null>(null);
 
   const chartRef = useRef<BudgetTrackingChartHandle>(null);
+  /** Tracks team keys we already seeded with the latest-20 project default. */
+  const seededProjectsForTeamsRef = useRef<string>('');
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
 
   const memberOptions: FilterOption[] = useMemo(() => {
@@ -151,21 +159,41 @@ const BudgetTrackingPage: React.FC = () => {
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
       const projects: FilterOption[] = [];
+      const projectsWithUpdatedAt: Array<{ id: string; updated_at?: string | null }> = [];
       const seen = new Set<string>();
       projectResponses.forEach(res => {
         if (res.done && Array.isArray(res.body)) {
-          (res.body as Array<{ id: string; name: string }>).forEach(project => {
+          (
+            res.body as Array<{ id: string; name: string; updated_at?: string | null }>
+          ).forEach(project => {
             if (!seen.has(project.id)) {
               seen.add(project.id);
               projects.push({ value: project.id, label: project.name });
+              projectsWithUpdatedAt.push({
+                id: project.id,
+                updated_at: project.updated_at ?? null,
+              });
             }
           });
         }
       });
       setProjectOptions(projects);
+
+      const teamKey = [...teamIds].sort().join(',');
       setSelectedProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
-        return prev.filter(id => allowed.has(id));
+        const kept = prev.filter(id => allowed.has(id));
+        if (kept.length > 0) {
+          seededProjectsForTeamsRef.current = teamKey;
+          return kept;
+        }
+        // Default: select the 20 most recently updated projects.
+        if (seededProjectsForTeamsRef.current === teamKey) return kept;
+        const topIds = latestUpdatedOptionIds(projectsWithUpdatedAt).filter(id =>
+          allowed.has(id)
+        );
+        seededProjectsForTeamsRef.current = teamKey;
+        return topIds;
       });
     } catch {
       setProjectOptions([]);
@@ -215,6 +243,22 @@ const BudgetTrackingPage: React.FC = () => {
   useEffect(() => {
     void loadSeries();
   }, [loadSeries]);
+
+  // Fallback seed from series data when overview projects had no updated_at yet.
+  useEffect(() => {
+    const teamKey = [...selectedTeamIds].sort().join(',');
+    if (selectedProjectIds.length > 0) {
+      seededProjectsForTeamsRef.current = teamKey;
+      return;
+    }
+    if (!data?.projects?.length) return;
+    if (seededProjectsForTeamsRef.current === teamKey) return;
+
+    const topIds = latestUpdatedProjectIds(data.projects);
+    if (topIds.length === 0) return;
+    seededProjectsForTeamsRef.current = teamKey;
+    setSelectedProjectIds(topIds);
+  }, [data, selectedProjectIds.length, selectedTeamIds]);
 
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;
@@ -271,12 +315,27 @@ const BudgetTrackingPage: React.FC = () => {
     }
   };
 
+  const hasExplicitProjectFilter = selectedProjectIds.length > 0;
+  const chartProjects = useMemo(() => {
+    if (!data?.projects?.length) return [];
+    return projectsForAnalyticsChart(data.projects, {
+      explicitProjectFilter: hasExplicitProjectFilter,
+      limit: DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
+    });
+  }, [data?.projects, hasExplicitProjectFilter]);
+
+  const chartProjectIds = useMemo(
+    () => chartProjects.map(project => project.project_id),
+    [chartProjects]
+  );
+
   const filterBar = (
     <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
       <AnalyticsFilterBar
         projectOptions={projectOptions}
         selectedProjectIds={selectedProjectIds}
         onProjectsChange={setSelectedProjectIds}
+        indicatedProjectIds={chartProjectIds}
         memberOptions={memberOptions}
         selectedMemberIds={selectedMemberIds}
         onMembersChange={setSelectedMemberIds}
@@ -309,7 +368,24 @@ const BudgetTrackingPage: React.FC = () => {
         <BudgetTrackingKpiTiles kpis={data.kpis} currency={displayCurrency} />
         <ChartTableWrapper
           chartTitle={title}
-          chart={<BudgetTrackingChart ref={chartRef} projects={data.projects} />}
+          chart={
+            <>
+              {!hasExplicitProjectFilter &&
+                data.projects.length > DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT && (
+                  <Text
+                    type="secondary"
+                    style={{ display: 'block', marginBottom: 8, fontSize: 12 }}
+                  >
+                    {t('phBarChartLatestNote', {
+                      defaultValue:
+                        'Showing the latest updated {{count}} projects in this graph. Select all projects to show every project.',
+                      count: DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
+                    })}
+                  </Text>
+                )}
+              <BudgetTrackingChart ref={chartRef} projects={chartProjects} />
+            </>
+          }
           table={<BudgetTrackingTable projects={data.projects} loading={loading} />}
         />
         {data.projects.length === 0 && (

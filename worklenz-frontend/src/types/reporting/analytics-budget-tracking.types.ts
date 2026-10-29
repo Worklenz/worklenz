@@ -18,6 +18,7 @@ export interface BudgetTrackingRow {
   burn_pct: number;
   alert: BudgetAlert;
   has_budget: boolean;
+  updated_at?: string | null;
 }
 
 export interface BudgetTrackingKpis {

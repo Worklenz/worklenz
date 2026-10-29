@@ -29,6 +29,7 @@ export interface BudgetTrackingRow {
   burn_pct: number;
   alert: BudgetAlert;
   has_budget: boolean;
+  updated_at: string | null;
 }
 
 export interface BudgetTrackingKpis {
@@ -184,6 +185,7 @@ export async function getBudgetTrackingSeries(
       c.name AS client_name,
       COALESCE(p.budget, 0)::FLOAT AS budget,
       COALESCE(p.currency, 'USD') AS currency,
+      TO_CHAR(p.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS updated_at,
       COALESCE((
         SELECT SUM(COALESCE(t.fixed_cost, 0))
         FROM tasks t
@@ -235,6 +237,7 @@ export async function getBudgetTrackingSeries(
       burn_pct: burnPct,
       alert: burnAlert(burnPct, hasBudget),
       has_budget: hasBudget,
+      updated_at: row.updated_at ? String(row.updated_at) : null,
     };
   });
 
