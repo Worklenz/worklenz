@@ -132,7 +132,6 @@ export const MessageReactions: React.FC<MessageReactionsProps> = ({
                 background: isReacted ? token.colorPrimaryBg : token.colorFillQuaternary,
                 color: isReacted ? token.colorPrimary : token.colorText,
                 fontWeight: isReacted ? 600 : 400,
-                outline: 'none',
               }}
               onMouseEnter={e => {
                 if (!canReact) return;

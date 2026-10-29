@@ -578,23 +578,24 @@ route('POST', `/v2/threads/messages/${ID}/reactions`, ({ s, params, body }) => {
   if (targetMsg.deleted) return fail(400, 'MESSAGE_DELETED', 'Cannot react to a deleted message');
 
   targetMsg.reactions = targetMsg.reactions ?? [];
-  let existing = targetMsg.reactions.find(r => r.emoji === emoji);
-  if (existing) {
-    const userIdx = existing.users.findIndex(u => u.id === s.user.id);
-    if (userIdx >= 0) {
-      existing.users.splice(userIdx, 1);
-      if (existing.users.length === 0) {
-        targetMsg.reactions = targetMsg.reactions.filter(r => r.emoji !== emoji);
-      }
-    } else {
-      existing.users.push({ id: s.user.id, name: s.user.name, side: 'client' });
-    }
+  const currentReaction = targetMsg.reactions.find(r => r.users.some(u => u.id === s.user.id));
+  if (currentReaction && currentReaction.emoji === emoji) {
+    currentReaction.users = currentReaction.users.filter(u => u.id !== s.user.id);
   } else {
-    targetMsg.reactions.push({
-      emoji,
-      users: [{ id: s.user.id, name: s.user.name, side: 'client' }],
-    });
+    if (currentReaction) {
+      currentReaction.users = currentReaction.users.filter(u => u.id !== s.user.id);
+    }
+    const targetGroup = targetMsg.reactions.find(r => r.emoji === emoji);
+    if (targetGroup) {
+      targetGroup.users.push({ id: s.user.id, name: s.user.name, side: 'client' });
+    } else {
+      targetMsg.reactions.push({
+        emoji,
+        users: [{ id: s.user.id, name: s.user.name, side: 'client' }],
+      });
+    }
   }
+  targetMsg.reactions = targetMsg.reactions.filter(r => r.users.length > 0);
 
   const result = targetMsg.reactions.map(r => ({
     emoji: r.emoji,

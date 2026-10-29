@@ -46,6 +46,7 @@ export interface ThreadMessage {
   /** Names mentioned: client users on a client-visible message, project members on an internal comment. */
   mentions: string[];
   attachments: ThreadAttachment[];
+  deleted?: boolean;
   reactions?: ThreadReaction[];
 }
 

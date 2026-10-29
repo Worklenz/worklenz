@@ -932,6 +932,8 @@ export async function toggleStaffMessageReaction(
   }
 
   return withTransaction(async tx => {
+    await tx.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`reaction:${messageId}:${userId}`]);
+
     const existing = await tx.query(
       `SELECT id, emoji FROM client_portal_thread_message_reactions
         WHERE message_id = $1 AND user_id = $2`,

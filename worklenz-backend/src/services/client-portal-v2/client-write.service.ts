@@ -744,6 +744,10 @@ async function loadOwnClientMessage(tx: Queryable, subject: ClientSubject, messa
             (SELECT COUNT(*) FROM client_portal_thread_message_attachments a WHERE a.message_id = m.id)::int AS attachment_count
        FROM client_portal_thread_messages m
        JOIN client_portal_threads th ON th.id = m.thread_id
+       LEFT JOIN client_portal_task_settings cts ON cts.task_id = th.context_task_id
+       LEFT JOIN project_files pf ON pf.id = th.context_file_id
+       LEFT JOIN client_portal_approvals ap ON ap.id = th.context_approval_id
+       LEFT JOIN client_portal_change_requests cr ON cr.id = th.context_change_request_id
       WHERE m.id = $1 AND th.client_id = $2 AND th.organization_team_id = $3 AND m.visibility IN ('client', 'client_only')`,
     [messageId, subject.clientId, subject.teamId]
   );
@@ -911,6 +915,10 @@ export async function toggleClientMessageReaction(
     `SELECT m.id, m.thread_id, m.deleted_at
        FROM client_portal_thread_messages m
        JOIN client_portal_threads th ON th.id = m.thread_id
+       LEFT JOIN client_portal_task_settings cts ON cts.task_id = th.context_task_id
+       LEFT JOIN project_files pf ON pf.id = th.context_file_id
+       LEFT JOIN client_portal_approvals ap ON ap.id = th.context_approval_id
+       LEFT JOIN client_portal_change_requests cr ON cr.id = th.context_change_request_id
       WHERE m.id = $1
         AND m.visibility IN ('client', 'client_only')
         AND th.project_id = ANY($2::uuid[])
@@ -928,6 +936,8 @@ export async function toggleClientMessageReaction(
   }
 
   return withTransaction(async tx => {
+    await tx.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`reaction:${messageId}:${subject.contactId}`]);
+
     const existing = await tx.query(
       `SELECT id, emoji FROM client_portal_thread_message_reactions
         WHERE message_id = $1 AND contact_id = $2`,

@@ -25,6 +25,7 @@ import type {
   ResubmitApprovalRequest,
   StartThreadRequest,
   Thread,
+  ThreadReaction,
   ThreadOptions,
   ThreadsList,
   ThreadsParams,
@@ -163,7 +164,7 @@ export const portalWorkflowApi = clientPortalApi.injectEndpoints({
     }),
 
     toggleThreadMessageReaction: builder.mutation<
-      ServerEnvelope<{ added: boolean; emoji: string }>,
+      ServerEnvelope<ThreadReaction[]>,
       { messageId: string; emoji: string; threadId?: string }
     >({
       query: ({ messageId, emoji }) => ({

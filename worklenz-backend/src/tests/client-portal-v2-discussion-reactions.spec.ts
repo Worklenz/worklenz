@@ -94,6 +94,8 @@ describe("toggleClientMessageReaction", () => {
     // In transaction:
     // 1. BEGIN
     mockTxQuery.mockResolvedValueOnce(createQueryResult([]));
+    // 1b. Advisory lock
+    mockTxQuery.mockResolvedValueOnce(createQueryResult([]));
     // 2. Existing check (not found)
     mockTxQuery.mockResolvedValueOnce(createQueryResult([]));
     // 3. INSERT
@@ -129,6 +131,7 @@ describe("toggleClientMessageReaction", () => {
 
     // In transaction:
     mockTxQuery.mockResolvedValueOnce(createQueryResult([])); // BEGIN
+    mockTxQuery.mockResolvedValueOnce(createQueryResult([])); // Advisory lock
     // Existing check (found existing reaction with same emoji)
     mockTxQuery.mockResolvedValueOnce(createQueryResult([{ id: "reaction-1", emoji: "👍" }]));
     // DELETE
@@ -155,6 +158,7 @@ describe("toggleClientMessageReaction", () => {
 
     // In transaction:
     mockTxQuery.mockResolvedValueOnce(createQueryResult([])); // BEGIN
+    mockTxQuery.mockResolvedValueOnce(createQueryResult([])); // Advisory lock
     // Existing check (found previous reaction with different emoji 👍)
     mockTxQuery.mockResolvedValueOnce(createQueryResult([{ id: "reaction-1", emoji: "👍" }]));
     // UPDATE to ❤️
@@ -194,6 +198,7 @@ describe("toggleStaffMessageReaction", () => {
 
     // In transaction:
     mockTxQuery.mockResolvedValueOnce(createQueryResult([])); // BEGIN
+    mockTxQuery.mockResolvedValueOnce(createQueryResult([])); // Advisory lock
     mockTxQuery.mockResolvedValueOnce(createQueryResult([])); // Check existing
     mockTxQuery.mockResolvedValueOnce(createQueryResult([])); // INSERT
     const updated = [

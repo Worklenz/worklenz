@@ -130,7 +130,7 @@ export const ThreadMessages = ({ messages, threadId, canReact = true }: ThreadMe
                 messageId={message.id}
                 threadId={threadId}
                 reactions={message.reactions}
-                canReact={canReact}
+                canReact={canReact && !message.deleted}
                 align={isTeam ? 'flex-end' : 'flex-start'}
               />
               <div

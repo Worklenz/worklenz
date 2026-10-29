@@ -80,7 +80,7 @@ const pickMention = async (name: string) => {
 beforeEach(() => {
   vi.clearAllMocks();
   state.post.mockResolvedValue({ body: { notified: ['Alex Rivera'], message: {} } });
-  state.toggleReaction.mockResolvedValue({ body: { added: true, emoji: '👍' } });
+  state.toggleReaction.mockResolvedValue({ body: [{ emoji: '👍', count: 1, has_reacted: true, users: [] }] });
   state.presign.mockResolvedValue({ body: { file_id: 'f-1', upload_url: 'https://upload.test/f-1', expires_in: 900 } });
   state.confirm.mockResolvedValue({ body: { id: 'f-1' } });
   state.upload.mockResolvedValue(undefined);

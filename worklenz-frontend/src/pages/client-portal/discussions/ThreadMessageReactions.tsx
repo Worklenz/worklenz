@@ -25,13 +25,18 @@ export const ThreadMessageReactions: React.FC<ThreadMessageReactionsProps> = ({
   const { t } = useTranslation('client-portal-v2-discussions');
   const { token } = theme.useToken();
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [toggleReaction] = useToggleThreadMessageReactionMutation();
 
   const handleToggle = async (emoji: string) => {
+    if (isPending) return;
+    setIsPending(true);
     try {
       await toggleReaction({ messageId, emoji, threadId }).unwrap();
     } catch {
       message.error(t('thread.reactFailed', { defaultValue: 'Could not update reaction.' }));
+    } finally {
+      setIsPending(false);
     }
   };
 
@@ -126,8 +131,8 @@ export const ThreadMessageReactions: React.FC<ThreadMessageReactionsProps> = ({
           <Tooltip key={reaction.emoji} title={tooltipContent} mouseEnterDelay={0.3}>
             <button
               type="button"
-              onClick={() => canReact && void handleToggle(reaction.emoji)}
-              disabled={!canReact}
+              onClick={() => canReact && !isPending && void handleToggle(reaction.emoji)}
+              disabled={!canReact || isPending}
               aria-pressed={isReacted}
               aria-label={`${reaction.emoji} ${reaction.count}`}
               style={{
@@ -143,7 +148,6 @@ export const ThreadMessageReactions: React.FC<ThreadMessageReactionsProps> = ({
                 background: isReacted ? token.colorPrimaryBg : token.colorFillQuaternary,
                 color: isReacted ? token.colorPrimary : token.colorText,
                 fontWeight: isReacted ? 600 : 400,
-                outline: 'none',
               }}
               onMouseEnter={e => {
                 if (!canReact) return;
@@ -177,6 +181,7 @@ export const ThreadMessageReactions: React.FC<ThreadMessageReactionsProps> = ({
             <Button
               type="text"
               size="small"
+              disabled={isPending}
               icon={<SmileOutlined style={{ fontSize: 13, color: token.colorTextSecondary }} />}
               aria-label={t('thread.addReaction', { defaultValue: 'Add reaction' })}
               style={{
