@@ -31,8 +31,9 @@ import { PvaTasksTable } from '@/components/reporting/analytics/planned-vs-actua
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
   DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
+  latestUpdatedOptionIds,
   latestUpdatedProjectIds,
-  projectsForAnalyticsChart,
+  resolveAnalyticsDisplayProjects,
 } from '@/lib/reporting/analytics-chart-projects';
 import type {
   PlannedVsActualTasksFilters,
@@ -149,21 +150,40 @@ const PlannedVsActualTasksPage: React.FC = () => {
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
       const projects: FilterOption[] = [];
+      const projectsWithUpdatedAt: Array<{ id: string; updated_at?: string | null }> = [];
       const seen = new Set<string>();
       projectResponses.forEach(res => {
         if (res.done && Array.isArray(res.body)) {
-          (res.body as Array<{ id: string; name: string }>).forEach(project => {
+          (
+            res.body as Array<{ id: string; name: string; updated_at?: string | null }>
+          ).forEach(project => {
             if (!seen.has(project.id)) {
               seen.add(project.id);
               projects.push({ value: project.id, label: project.name });
+              projectsWithUpdatedAt.push({
+                id: project.id,
+                updated_at: project.updated_at ?? null,
+              });
             }
           });
         }
       });
       setProjectOptions(projects);
+
+      const teamKey = [...teamIds].sort().join(',');
       setSelectedProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
-        return prev.filter(id => allowed.has(id));
+        const kept = prev.filter(id => allowed.has(id));
+        if (kept.length > 0) {
+          seededProjectsForTeamsRef.current = teamKey;
+          return kept;
+        }
+        if (seededProjectsForTeamsRef.current === teamKey) return kept;
+        const topIds = latestUpdatedOptionIds(projectsWithUpdatedAt).filter(id =>
+          allowed.has(id)
+        );
+        seededProjectsForTeamsRef.current = teamKey;
+        return topIds;
       });
     } catch {
       setProjectOptions([]);
@@ -285,19 +305,21 @@ const PlannedVsActualTasksPage: React.FC = () => {
     }
   };
 
-  // Chart: latest 20 when no project filter; all returned projects after Select all / explicit picks.
-  const hasExplicitProjectFilter = selectedProjectIds.length > 0;
-  const chartProjects = useMemo(() => {
+  const isSelectAllProjects =
+    projectOptions.length > 0 && selectedProjectIds.length >= projectOptions.length;
+
+  const displayProjects = useMemo(() => {
     if (!data?.projects?.length) return [];
-    return projectsForAnalyticsChart(data.projects, {
-      explicitProjectFilter: hasExplicitProjectFilter,
+    return resolveAnalyticsDisplayProjects(data.projects, {
+      selectedProjectIds,
+      projectOptionsCount: projectOptions.length,
       limit: DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
     });
-  }, [data?.projects, hasExplicitProjectFilter]);
+  }, [data?.projects, selectedProjectIds, projectOptions.length]);
 
   const chartProjectIds = useMemo(
-    () => chartProjects.map(p => p.project_id),
-    [chartProjects]
+    () => displayProjects.map(p => p.project_id),
+    [displayProjects]
   );
 
   const filterBar = (
@@ -341,11 +363,11 @@ const PlannedVsActualTasksPage: React.FC = () => {
         <PvaTasksKpiTiles kpis={data.kpis} />
         <ChartTableWrapper
           chartTitle={title}
-          rowCount={data.projects.length}
+          rowCount={displayProjects.length}
           chart={
             <>
-              {!hasExplicitProjectFilter &&
-                data.projects.length > DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT && (
+              {!isSelectAllProjects &&
+                projectOptions.length > DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT && (
                   <Text
                     type="secondary"
                     style={{ display: 'block', marginBottom: 8, fontSize: 12 }}
@@ -353,14 +375,17 @@ const PlannedVsActualTasksPage: React.FC = () => {
                     {t('phBarChartLatestNote', {
                       defaultValue:
                         'Showing the latest updated {{count}} projects in this graph. Select all projects to show every project.',
-                      count: DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
+                      count: Math.min(
+                        DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT,
+                        displayProjects.length
+                      ),
                     })}
                   </Text>
                 )}
-              <PvaTasksChart ref={chartRef} projects={chartProjects} />
+              <PvaTasksChart ref={chartRef} projects={displayProjects} />
             </>
           }
-          table={<PvaTasksTable projects={data.projects} loading={loading} />}
+          table={<PvaTasksTable projects={displayProjects} loading={loading} />}
         />
         {data.projects.length === 0 && (
           <Text type="secondary" style={{ color: token.colorTextSecondary }}>

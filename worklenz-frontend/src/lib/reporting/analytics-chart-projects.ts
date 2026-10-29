@@ -29,6 +29,40 @@ export const projectsForAnalyticsChart = <T extends WithUpdatedAt>(
   return sorted.slice(0, options.limit ?? DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT);
 };
 
+/**
+ * Resolve which projects to show on chart/donut/table:
+ * - no selection → latest N
+ * - select all (selection covers every option) → all returned projects
+ * - otherwise → only the selected ids (never the full API set when default 20 is selected)
+ */
+export const resolveAnalyticsDisplayProjects = <T extends WithProjectId>(
+  projects: T[],
+  options: {
+    selectedProjectIds: string[];
+    projectOptionsCount: number;
+    limit?: number;
+  }
+): T[] => {
+  const limit = options.limit ?? DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT;
+  const sorted = sortProjectsByUpdatedAtDesc(projects);
+
+  if (options.selectedProjectIds.length === 0) {
+    return sorted.slice(0, limit);
+  }
+
+  const isSelectAll =
+    options.projectOptionsCount > 0 &&
+    options.selectedProjectIds.length >= options.projectOptionsCount;
+
+  if (isSelectAll) {
+    return sorted;
+  }
+
+  const selected = new Set(options.selectedProjectIds);
+  const filtered = sorted.filter(project => selected.has(project.project_id));
+  return filtered.length > 0 ? filtered : sorted.slice(0, limit);
+};
+
 /** Ids of the N most recently updated projects — used as the default filter selection. */
 export const latestUpdatedProjectIds = (
   projects: WithProjectId[],
