@@ -276,7 +276,7 @@ export const definitionStateToPayload = (
             : undefined;
 
         return {
-          ...(task.extras || {}),
+          ...task.extras,
           id: task.key,
           original_task_id: task.key,
           name: task.name.trim(),
