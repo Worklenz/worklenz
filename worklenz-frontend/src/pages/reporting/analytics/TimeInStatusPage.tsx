@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Flex, Select, Space, Switch, Typography, message } from '@/shared/antd-imports';
+import { Flex, Select, Space, Switch, Typography, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
@@ -295,14 +295,6 @@ const TimeInStatusPage: React.FC = () => {
     setSort(reportView === 'per_issue' ? 'total_desc' : 'avg_desc');
   }, [reportView]);
 
-  const handleClearFilters = () => {
-    setSelectedProjectIds([]);
-    setSelectedMemberIds([]);
-    setDatePreset('last_30_days');
-    setExcludeWeekends(false);
-    setReportView('aggregate');
-  };
-
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;
     setExporting(true);
@@ -394,76 +386,55 @@ const TimeInStatusPage: React.FC = () => {
         ];
 
   const tisFilters = (
-    <Flex vertical gap={8} style={{ width: '100%' }}>
-      <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
-        <Select
-          value={datePreset}
-          onChange={setDatePreset}
-          style={{ minWidth: 160 }}
-          options={[
-            { value: 'last_7_days', label: t('dateLast7', { defaultValue: 'Last 7 days' }) },
-            { value: 'last_30_days', label: t('dateLast30', { defaultValue: 'Last 30 days' }) },
-            { value: 'last_90_days', label: t('dateLast90', { defaultValue: 'Last 90 days' }) },
-            {
-              value: 'this_quarter',
-              label: t('dateThisQuarter', { defaultValue: 'This quarter' }),
-            },
-          ]}
-          aria-label={t('datePreset', { defaultValue: 'Date range' })}
+    <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
+      <AnalyticsFilterBar
+        projectOptions={projectOptions}
+        selectedProjectIds={selectedProjectIds}
+        onProjectsChange={setSelectedProjectIds}
+        memberOptions={memberOptions}
+        selectedMemberIds={selectedMemberIds}
+        onMembersChange={setSelectedMemberIds}
+        datePreset={datePreset}
+        onDatePresetChange={setDatePreset}
+        availableDatePresets={['last_7_days', 'last_30_days', 'last_90_days', 'this_quarter']}
+        loading={filtersLoading}
+      />
+
+      <Select
+        value={reportView}
+        onChange={setReportView}
+        style={{ minWidth: 140 }}
+        options={[
+          {
+            value: 'aggregate',
+            label: t('tisViewAggregate', { defaultValue: 'Aggregate' }),
+          },
+          {
+            value: 'per_issue',
+            label: t('tisViewPerIssue', { defaultValue: 'Per issue' }),
+          },
+        ]}
+        aria-label={t('tisViewMode', { defaultValue: 'View mode' })}
+      />
+
+      <Select
+        value={sort}
+        onChange={setSort}
+        style={{ minWidth: 160 }}
+        options={sortOptions}
+        aria-label={t('tisSort', { defaultValue: 'Sort' })}
+      />
+
+      <Space size={6} style={{ flexShrink: 0 }}>
+        <Switch
+          checked={excludeWeekends}
+          onChange={setExcludeWeekends}
+          aria-label={t('tisExcludeWeekends', { defaultValue: 'Exclude weekends' })}
         />
-
-        <AnalyticsFilterBar
-          projectOptions={projectOptions}
-          selectedProjectIds={selectedProjectIds}
-          onProjectsChange={setSelectedProjectIds}
-          memberOptions={memberOptions}
-          selectedMemberIds={selectedMemberIds}
-          onMembersChange={setSelectedMemberIds}
-          loading={filtersLoading}
-        />
-
-        <Button onClick={handleClearFilters}>
-          {t('clearFilters', { defaultValue: 'Clear' })}
-        </Button>
-      </Flex>
-
-      <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
-        <Select
-          value={reportView}
-          onChange={setReportView}
-          style={{ minWidth: 140 }}
-          options={[
-            {
-              value: 'aggregate',
-              label: t('tisViewAggregate', { defaultValue: 'Aggregate' }),
-            },
-            {
-              value: 'per_issue',
-              label: t('tisViewPerIssue', { defaultValue: 'Per issue' }),
-            },
-          ]}
-          aria-label={t('tisViewMode', { defaultValue: 'View mode' })}
-        />
-
-        <Select
-          value={sort}
-          onChange={setSort}
-          style={{ minWidth: 160 }}
-          options={sortOptions}
-          aria-label={t('tisSort', { defaultValue: 'Sort' })}
-        />
-
-        <Space size={6} style={{ flexShrink: 0 }}>
-          <Switch
-            checked={excludeWeekends}
-            onChange={setExcludeWeekends}
-            aria-label={t('tisExcludeWeekends', { defaultValue: 'Exclude weekends' })}
-          />
-          <Text style={{ whiteSpace: 'nowrap' }}>
-            {t('tisExcludeWeekends', { defaultValue: 'Exclude weekends' })}
-          </Text>
-        </Space>
-      </Flex>
+        <Text style={{ whiteSpace: 'nowrap' }}>
+          {t('tisExcludeWeekends', { defaultValue: 'Exclude weekends' })}
+        </Text>
+      </Space>
     </Flex>
   );
 

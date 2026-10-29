@@ -3,7 +3,6 @@ import {
   Alert,
   Button,
   Flex,
-  Select,
   Space,
   message,
 } from '@/shared/antd-imports';
@@ -280,12 +279,6 @@ const VelocityPage: React.FC = () => {
     void loadSeries();
   }, [loadSeries]);
 
-  const handleClearFilters = () => {
-    setSelectedProjectIds([]);
-    setSelectedMemberIds([]);
-    setDatePreset('last_30_days');
-  };
-
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;
     setExporting(true);
@@ -383,37 +376,18 @@ const VelocityPage: React.FC = () => {
   };
 
   const velocityFilters = (
-    <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
-      <Select
-        value={datePreset}
-        onChange={setDatePreset}
-        style={{ minWidth: 160 }}
-        options={[
-          { value: 'last_7_days', label: t('dateLast7', { defaultValue: 'Last 7 days' }) },
-          { value: 'last_30_days', label: t('dateLast30', { defaultValue: 'Last 30 days' }) },
-          { value: 'last_90_days', label: t('dateLast90', { defaultValue: 'Last 90 days' }) },
-          {
-            value: 'this_quarter',
-            label: t('dateThisQuarter', { defaultValue: 'This quarter' }),
-          },
-        ]}
-        aria-label={t('datePreset', { defaultValue: 'Date range' })}
-      />
-
-      <AnalyticsFilterBar
-        projectOptions={projectOptions}
-        selectedProjectIds={selectedProjectIds}
-        onProjectsChange={setSelectedProjectIds}
-        memberOptions={memberOptions}
-        selectedMemberIds={selectedMemberIds}
-        onMembersChange={setSelectedMemberIds}
-        loading={filtersLoading}
-      />
-
-      <Button onClick={handleClearFilters}>
-        {t('clearFilters', { defaultValue: 'Clear' })}
-      </Button>
-    </Flex>
+    <AnalyticsFilterBar
+      projectOptions={projectOptions}
+      selectedProjectIds={selectedProjectIds}
+      onProjectsChange={setSelectedProjectIds}
+      memberOptions={memberOptions}
+      selectedMemberIds={selectedMemberIds}
+      onMembersChange={setSelectedMemberIds}
+      datePreset={datePreset}
+      onDatePresetChange={setDatePreset}
+      availableDatePresets={['last_7_days', 'last_30_days', 'last_90_days', 'this_quarter']}
+      loading={filtersLoading}
+    />
   );
 
   return (
