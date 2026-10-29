@@ -254,7 +254,9 @@
     "weekdaySat": "sob",
     "weekdaySun": "niedziela",
     "createdTimeColumn": "Stworzony czas",
-    "minutesPlaceholder": "0"
+    "minutesPlaceholder": "0",
+    "totalDurationBadge": "Łącznie: {{duration}}",
+    "overnightSplitBreakdown": "({{day1Duration}} w dniu {{day1Date}}, {{day2Duration}} w dniu {{day2Date}})"
   },
   "expenses": {
     "emptyTitle": "Nie zarejestrowano jeszcze żadnych wydatków",

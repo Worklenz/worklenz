@@ -34,9 +34,16 @@ interface ProjectCategoryCellProps {
   name: string;
   color_code: string;
   projectId: string;
+  isReadOnly?: boolean;
 }
 
-const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategoryCellProps) => {
+const ProjectCategoryCell = ({
+  id,
+  name,
+  color_code,
+  projectId,
+  isReadOnly = false,
+}: ProjectCategoryCellProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
   const categoryInputRef = useRef<InputRef>(null);
@@ -203,6 +210,19 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
     : colors.transparent;
   const textColor = themeWiseColor(colors.darkGray, colors.white, themeMode);
   const borderStyle = selectedCategory.id ? 'none' : `1px solid ${colors.deepLightGray}`;
+
+  if (isReadOnly) {
+    if (!selectedCategory.id) return <Typography.Text type="secondary">-</Typography.Text>;
+
+    return (
+      <div
+        className="category-pill-wrapper"
+        style={{ backgroundColor: bgColor, color: textColor, border: borderStyle, cursor: 'default' }}
+      >
+        <span className="category-pill-text">{selectedCategory.name}</span>
+      </div>
+    );
+  }
 
   return (
     <Dropdown

@@ -3,6 +3,13 @@ import { ITeamMemberViewModel } from '../teamMembers/teamMembersGetResponse.type
 import { ITask } from '../tasks/task.types';
 import { InlineMember } from '../teamMembers/inlineMember.types';
 
+export interface IProjectRolePermissions {
+  create_tasks?: boolean;
+  edit_tasks: boolean;
+  delete_tasks: boolean;
+  comment: boolean;
+}
+
 export interface IProjectPermissions {
   settings: boolean;
   statuses: boolean;
@@ -116,6 +123,8 @@ export interface IProjectViewModel extends IProject {
   budget?: number;
   calculation_method?: 'hourly' | 'man_days';
   is_guest?: boolean; // Indicates if current user is a guest in this project
+  /** Current user's role permissions from the default permission scheme for this project. */
+  role_permissions?: IProjectRolePermissions;
 
   /** Current user's project-scoped permissions (from GET project). Key UI by project id. */
   permissions?: IProjectPermissions | null;

@@ -163,5 +163,11 @@
   "colorRed": "Rouge",
   "colorMagenta": "Magenta",
   "colorGray": "Gris",
-  "commentInput": "Saisie du commentaire"
+  "commentInput": "Saisie du commentaire",
+  "paginationNavigation": "Pagination",
+  "paginationSummary": "{{range}} sur {{total}}",
+  "firstPage": "Première page",
+  "previousPage": "Page précédente",
+  "nextPage": "Page suivante",
+  "lastPage": "Dernière page"
 }

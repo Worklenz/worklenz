@@ -163,5 +163,11 @@
   "colorRed": "红色",
   "colorMagenta": "洋红",
   "colorGray": "灰色",
-  "commentInput": "评论输入"
+  "commentInput": "评论输入",
+  "paginationNavigation": "分页",
+  "paginationSummary": "{{range}} / 共 {{total}}",
+  "firstPage": "首页",
+  "previousPage": "上一页",
+  "nextPage": "下一页",
+  "lastPage": "末页"
 }

@@ -85,6 +85,8 @@ const InfoTabFooter = () => {
   >([]);
   const [commentValue, setCommentValue] = useState<string>('');
   const [uploading, setUploading] = useState<boolean>(false);
+  // Synchronous guard: state updates are async, so rapid Enter presses could otherwise submit twice.
+  const isSubmittingComment = useRef(false);
 
   const [form] = Form.useForm();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -206,6 +208,7 @@ const InfoTabFooter = () => {
   }, []);
 
   const handleSubmit = useCallback(async () => {
+    if (isSubmittingComment.current) return;
     if (!selectedTaskId || !projectId) return;
 
     if (!isCommentValid()) {
@@ -227,6 +230,7 @@ const InfoTabFooter = () => {
       return;
     }
 
+    isSubmittingComment.current = true;
     try {
       const hasOversizedAttachment = selectedFiles.some(
         file => Number(file.size || 0) > COMMENT_ATTACHMENT_SIZE_LIMIT_BYTES
@@ -288,6 +292,7 @@ const InfoTabFooter = () => {
         })
       );
     } finally {
+      isSubmittingComment.current = false;
       setUploading(false);
     }
   }, [

@@ -163,5 +163,11 @@
   "colorRed": "E kuqe",
   "colorMagenta": "Magenta",
   "colorGray": "Gri",
-  "commentInput": "Fusha e komentit"
+  "commentInput": "Fusha e komentit",
+  "paginationNavigation": "Navigimi i faqeve",
+  "paginationSummary": "{{range}} nga {{total}}",
+  "firstPage": "Faqja e parë",
+  "previousPage": "Faqja e mëparshme",
+  "nextPage": "Faqja tjetër",
+  "lastPage": "Faqja e fundit"
 }

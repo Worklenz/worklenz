@@ -3,12 +3,13 @@ import db from "../config/db";
 import { on_project_start_date_change } from "../socket.io/commands/on-project-start-date-change";
 import { on_project_end_date_change } from "../socket.io/commands/on-project-end-date-change";
 import { on_join_or_leave_reporting_room } from "../socket.io/commands/on-join-or-leave-reporting-room";
-import { verifyProjectAccessSocket } from "../socket.io/authorization";
+import { verifyProjectAccessSocket, verifyProjectSettingsAccessSocket } from "../socket.io/authorization";
 
 jest.mock("../config/db", () => ({ __esModule: true, default: { query: jest.fn() } }));
 jest.mock("../shared/utils", () => ({ log_error: jest.fn(), getColor: jest.fn() }));
 jest.mock("../socket.io/authorization", () => ({
   verifyProjectAccessSocket: jest.fn(),
+  verifyProjectSettingsAccessSocket: jest.fn(),
   logUnauthorizedSocketAccess: jest.fn(),
 }));
 
@@ -34,7 +35,7 @@ describe.each([
   const body = (extra = {}) => JSON.stringify({ project_id: "p1", [col]: "2026-01-01", ...extra });
 
   it("acks failure and does not write when access is denied", async () => {
-    (verifyProjectAccessSocket as jest.Mock).mockResolvedValue(false);
+    (verifyProjectSettingsAccessSocket as jest.Mock).mockResolvedValue(false);
     const cb = jest.fn();
     await handler({} as Server, makeSocket({ id: "u1" }), body(), cb);
     expect(db.query).not.toHaveBeenCalled();
@@ -42,7 +43,7 @@ describe.each([
   });
 
   it("acks failure when the database write fails", async () => {
-    (verifyProjectAccessSocket as jest.Mock).mockResolvedValue(true);
+    (verifyProjectSettingsAccessSocket as jest.Mock).mockResolvedValue(true);
     (db.query as jest.Mock).mockRejectedValue(new Error("db down"));
     const cb = jest.fn();
     await handler({} as Server, makeSocket({ id: "u1" }), body(), cb);
@@ -50,7 +51,7 @@ describe.each([
   });
 
   it("acks success and broadcasts to project and reporting rooms", async () => {
-    (verifyProjectAccessSocket as jest.Mock).mockResolvedValue(true);
+    (verifyProjectSettingsAccessSocket as jest.Mock).mockResolvedValue(true);
     (db.query as jest.Mock).mockResolvedValue({ rows: [{ [col]: "2026-01-01", org_owner_id: "owner1" }] });
     const socket = makeSocket({ id: "u1" });
     const cb = jest.fn();

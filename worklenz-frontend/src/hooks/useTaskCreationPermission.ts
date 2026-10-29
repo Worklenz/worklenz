@@ -6,22 +6,32 @@ import { ILocalSession } from '@/types/auth/local-session.types';
 import { ROLE_NAMES } from '@/types/roles/role.types';
 import { canUseFeature } from '@/utils/subscription-utils';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
+import { IProjectRolePermissions } from '@/types/project/projectViewModel.types';
+import {
+  canCreateProjectTasks,
+  isProjectTaskEditingReadOnly,
+} from '@/lib/project/project-view-guest';
 
 /**
- * Returns whether the current user can create and assign tasks in the current project.
+ * Returns whether the current user can modify and add tasks in the current project.
  *
- * Rules (Business Plan only):
- *  - If the feature is not on a Business plan, everyone can create tasks.
- *  - If project-level `restrict_task_creation` is TRUE on Business Plan → only
- *    Admins/Owners/Team Leads and Project Managers can create.
+ * Rules:
+ *  - Modifying/assigning tasks needs "Edit tasks" from the project's permission scheme.
+ *  - Adding new tasks (and subtasks, duplicates, copies) needs "Create tasks".
+ *
+ * Restriction rules (Business Plan only), applied to both:
+ *  - If the feature is not on a Business plan, no further restriction applies.
+ *  - If project-level `restrict_task_creation` is TRUE on Business Plan → only Admins/Owners/Team Leads can create.
  *  - If org-level restriction is active → same rule.
  *
  * The hook returns:
- *  - `canCreateTask`  — whether the current user may create/assign tasks
+ *  - `canCreateTask`  — whether the current user may modify/assign tasks
+ *  - `canAddTask`     — whether the current user may add new tasks
  *  - `isRestricted`   — whether the restriction toggle is active (regardless of user role)
  */
 export interface ITaskCreationPermission {
   canCreateTask: boolean;
+  canAddTask: boolean;
   isRestricted: boolean;
 }
 
@@ -29,6 +39,7 @@ export interface IProjectTaskCreationContext {
   restrict_task_creation?: boolean;
   is_guest?: boolean;
   is_project_manager?: boolean;
+  role_permissions?: IProjectRolePermissions;
 }
 
 export const getTaskCreationPermission = ({
@@ -38,42 +49,33 @@ export const getTaskCreationPermission = ({
   isProjectManager = false,
 }: {
   session: ILocalSession | null | undefined;
-  project?: {
-    restrict_task_creation?: boolean;
-    is_guest?: boolean;
-    is_project_manager?: boolean;
-  } | null;
+  project?: IProjectTaskCreationContext | null;
   orgConfig?: { restrict_task_creation?: boolean } | null;
   isProjectManager?: boolean;
 }): ITaskCreationPermission => {
-  // Guests can never create tasks, but this is not a "restriction" toggle.
-  if (project?.is_guest) {
-    return { canCreateTask: false, isRestricted: false };
-  }
+  // Scheme grants are the baseline; the project/org restriction can only narrow them
+  const canEditBySchema = !isProjectTaskEditingReadOnly(project);
+  const canAddBySchema = canCreateProjectTasks(project);
 
-  // If not on a Business plan, no restrictions apply
-  if (!canUseFeature(session ?? null, 'restrict_task_creation')) {
-    return { canCreateTask: true, isRestricted: false };
-  }
+  const isRestricted =
+    canUseFeature(session ?? null, 'restrict_task_creation') &&
+    ((project?.restrict_task_creation ?? false) || (orgConfig?.restrict_task_creation ?? false));
 
-  const projectRestricted = project?.restrict_task_creation ?? false;
-  const orgRestricted = orgConfig?.restrict_task_creation ?? false;
-  const isRestricted = projectRestricted || orgRestricted;
-
-  if (!isRestricted) {
-    return { canCreateTask: true, isRestricted: false };
-  }
-
-  // Restriction is active — Admins/Owners/Team Leads and Project Managers may create
-  // regardless of team role (e.g. Member + Project Manager).
   const roleName = getSessionRoleName(session ?? null);
-  const isPrivilegedTeamRole =
+  const isPm = isProjectManager || Boolean(project?.is_project_manager);
+  const isAllowedByRestriction =
+    !isRestricted ||
     roleName === ROLE_NAMES.OWNER ||
     roleName === ROLE_NAMES.ADMIN ||
-    roleName === ROLE_NAMES.TEAM_LEAD;
-  const isPm = isProjectManager || Boolean(project?.is_project_manager);
+    roleName === ROLE_NAMES.TEAM_LEAD ||
+    isPm;
 
-  return { canCreateTask: isPrivilegedTeamRole || isPm, isRestricted: true };
+  return {
+    canCreateTask: canEditBySchema && isAllowedByRestriction,
+    canAddTask: canAddBySchema && isAllowedByRestriction,
+    // Read-only users see no restriction notice, matching the previous behaviour
+    isRestricted: canEditBySchema && isRestricted,
+  };
 };
 
 const useTaskCreationPermission = (

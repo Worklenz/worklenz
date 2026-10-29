@@ -61,6 +61,10 @@
     "@aws-sdk/s3-request-presigner": "^3.378.0",
     "@aws-sdk/util-format-url": "^3.357.0",
     "@azure/storage-blob": "^12.27.0",
+    "@fontsource/noto-sans": "^5.3.0",
+    "@fontsource/noto-sans-sinhala": "^5.3.0",
+    "@fontsource/noto-sans-tamil": "^5.3.0",
+    "@react-pdf/renderer": "3.4.5",
     "@slack/events-api": "^3.0.1",
     "@slack/interactive-messages": "^2.0.2",
     "@slack/web-api": "^7.11.0",
@@ -114,7 +118,7 @@
     "path": "^0.12.7",
     "pg": "^8.16.3",
     "pug": "^3.0.2",
-    "puppeteer": "^24.34.0",
+    "react": "^18.3.1",
     "redis": "^4.6.7",
     "sanitize-html": "^2.18.1",
     "segfault-handler": "^1.3.0",
@@ -130,6 +134,7 @@
   "devDependencies": {
     "@babel/plugin-proposal-decorators": "^7.29.7",
     "@babel/preset-env": "^7.22.9",
+    "@babel/preset-react": "^7.27.1",
     "@babel/preset-typescript": "^7.22.5",
     "@types/archiver": "^6.0.4",
     "@types/bcrypt": "^5.0.0",
@@ -165,6 +170,7 @@
     "@types/passport-local": "^1.0.38",
     "@types/pg": "^8.11.11",
     "@types/pug": "^2.0.6",
+    "@types/react": "^18.3.31",
     "@types/sanitize-html": "^2.9.0",
     "@types/sharp": "^0.31.1",
     "@types/swagger-jsdoc": "^6.0.1",
@@ -209,7 +215,6 @@
     "@scarf/scarf": false,
     "bcrypt": true,
     "esbuild": true,
-    "puppeteer": true,
     "segfault-handler": true
   }
 }

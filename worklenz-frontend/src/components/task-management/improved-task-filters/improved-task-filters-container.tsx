@@ -55,6 +55,7 @@ import { FieldsDropdown } from './fields-dropdown';
 import { FilterDropdown } from './filter-dropdown';
 import { Filters } from './filters-panel';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { isListTabKey } from '@/features/projects/singleProject/saved-views/saved-view-config';
 import { SearchFilter } from './search-filter';
 import { SoftwareQuickFilterChips } from './software-quick-filter-chips';
 import { resetSoftwareQuickFilters } from '@/features/projects/singleProject/quick-filters/software-quick-filters.slice';
@@ -161,7 +162,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
   const kanbanProject = useAppSelector((state: RootState) => state.projectReducer.project);
   const isBoard = position === 'board';
   const tab = searchParams.get('tab');
-  const currentProjectView = tab === 'tasks-list' ? 'list' : 'kanban';
+  const currentProjectView = isListTabKey(tab) ? 'list' : 'kanban';
   const isSoftwareProject = isSoftwareProjectType(kanbanProject?.project_type);
   const phaseLabel = isSoftwareProject
     ? t('sprintText', { defaultValue: 'Sprint' })
@@ -451,6 +452,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   const memoizedFilterSections = useMemo(() => visibleFilterSections, [visibleFilterSections]);
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');
   const isRestoringFilters = useAppSelector((state: RootState) => state.taskReducer.isRestoringFilters);
+  const isSavedViewActive = useAppSelector((state: RootState) => state.taskReducer.isSavedViewActive);
   const { projectId } = useAppSelector(state => state.projectReducer);
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const isProjectManager = useIsProjectManager();
@@ -719,8 +721,8 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         if (!isGroupingType(values[0])) return;
         dispatch(setCurrentGrouping(values[0]));
         dispatch(fetchTasksV3(projectId));
-        // Backlog grouping is temporary and must not overwrite the List tab preference.
-        if (mode !== 'backlog') {
+        // Backlog and saved view grouping must not overwrite the List tab preference.
+        if (mode !== 'backlog' && !isSavedViewActive) {
           debouncedGroupBySaveRef.current?.(projectId, 'list', values[0]);
         }
         return;
@@ -776,7 +778,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(fetchTasksV3(projectId));
       }
     },
-    [dispatch, projectId, position, currentTaskAssignees, currentTaskLabels, kanbanState, allStatuses, isRestoringFilters, mode]
+    [dispatch, projectId, position, currentTaskAssignees, currentTaskLabels, kanbanState, allStatuses, isRestoringFilters, mode, isSavedViewActive]
   );
 
   const handleSearchChange = useCallback(
@@ -991,7 +993,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(setCurrentGrouping(grouping));
         if (projectId) dispatch(fetchTasksV3(projectId));
       }
-      if (projectId && !isBacklogMode) {
+      if (projectId && !isBacklogMode && !(position === 'list' && isSavedViewActive)) {
         debouncedGroupBySaveRef.current?.(projectId, position === 'board' ? 'board' : 'list', grouping);
       }
       return;

@@ -36,6 +36,7 @@ import {
 } from '@/types/reporting/progress-tracking.types';
 import logger from '@/utils/errorLogger';
 import { useAppSelector } from '@/app/store';
+import TablePagination from '@/components/TablePagination';
 
 const FILTER_BUTTON_STYLE: React.CSSProperties = {
   height: 32,
@@ -505,29 +506,27 @@ const ProgressTrackingPage = () => {
     token.colorWarningBg,
   ]);
 
-  const handleTableChange: TableProps<IProgressTrackingProject>['onChange'] = (pagination, _filters, sorter) => {
-    const nextSize = pagination.pageSize ?? pageSize;
-    const nextPage = pagination.current ?? 1;
+  const handleTableChange: TableProps<IProgressTrackingProject>['onChange'] = (
+    _pagination,
+    _filters,
+    sorter
+  ) => {
     const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
 
     if (activeSorter?.order && activeSorter.columnKey) {
       const nextField = activeSorter.columnKey as SortField;
       const nextOrder = activeSorter.order === 'descend' ? 'desc' : 'asc';
-      const sortChanged = nextField !== sortField || nextOrder !== sortOrder;
+
       setSortField(nextField);
       setSortOrder(nextOrder);
-      setPageSize(nextSize);
-      setPage(sortChanged || nextSize !== pageSize ? 1 : nextPage);
+      setPage(1);
       return;
     }
 
-    const sortCleared = sortField !== undefined;
     setSortField(undefined);
     setSortOrder(undefined);
-    setPageSize(nextSize);
-    setPage(sortCleared || nextSize !== pageSize ? 1 : nextPage);
+    setPage(1);
   };
-
   const handleConfidenceChip = (key: DeliveryConfidenceFilter) => {
     const nextKey = confidence === key && key !== 'all' ? 'all' : key;
     setConfidence(nextKey);
@@ -740,13 +739,26 @@ const ProgressTrackingPage = () => {
               />
             ),
           }}
-          pagination={{
-            current: page,
-            pageSize,
-            total,
-            showSizeChanger: true,
-            pageSizeOptions: [10, 20, 50, 100],
+          pagination={false}
+        />
+        <TablePagination
+          navigationLabel={t('common:paginationNavigation')}
+          firstPageLabel={t('common:firstPage')}
+          previousPageLabel={t('common:previousPage')}
+          nextPageLabel={t('common:nextPage')}
+          lastPageLabel={t('common:lastPage')}
+          renderDefaultSummary={(range, total) => t('common:paginationSummary', { range, total })}
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={(nextPage, nextPageSize) => {
+            setPageSize(nextPageSize);
+            setPage(nextPageSize !== pageSize ? 1 : nextPage);
           }}
+          rowsPerPageLabel={t('rowsPerPage', {
+            defaultValue: 'Rows per page',
+          })}
+          variant="dropdown"
         />
 
         {summary.archived_excluded > 0 ? (

@@ -193,6 +193,8 @@ describe("starting a discussion with chosen recipients", () => {
     });
 
   const startStub = (sql: string, params: unknown[]) => {
+    // The contact lookup's SQL also mentions portal_enabled and projects; answer it from baseStub first
+    if (/client_contact_project_access/.test(sql)) return baseStub(sql, params);
     if (/portal_enabled/.test(sql)) return [{ portal_enabled: true }];
     if (/INSERT INTO client_portal_threads/.test(sql)) return [{ id: "thread-1" }];
     if (/FROM projects/.test(sql) && !/client_portal_threads/.test(sql)) return [projectRow];

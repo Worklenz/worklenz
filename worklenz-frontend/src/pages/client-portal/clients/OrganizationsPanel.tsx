@@ -2,16 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
+  ArrowLeftOutlined,
+  CheckCircleOutlined,
+  DeleteOutlined,
   EditOutlined,
   EyeOutlined,
   LinkOutlined,
   MessageOutlined,
   MoreOutlined,
   ProjectOutlined,
+  StopOutlined,
   TeamOutlined,
+  UndoOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType, TableProps } from 'antd/es/table';
-import { Button, Dropdown, Flex, message, theme } from '@/shared/antd-imports';
+import { Alert, Button, Dropdown, Flex, message, theme } from '@/shared/antd-imports';
 import type { MenuProps } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleClientDetailsDrawer } from '@/features/clients-portal/clients/clients-slice';
@@ -24,6 +29,7 @@ import { decodeHtmlEntities } from '@/utils/html-entities';
 import {
   InvitationLinkModal,
   OrganizationAccessTag,
+  PORTAL_TOOLBAR_BUTTON_STYLE,
   PortalAvatar,
   ColumnTitle,
   PortalFieldsButton,
@@ -31,6 +37,8 @@ import {
   PortalListToolbar,
   PortalPagedTable,
   StatusTag,
+  formatPortalDate,
+  useClientOrganizationActions,
   useDebouncedValue,
   usePortalColumnVisibility,
   usePortalPaging,
@@ -55,13 +63,15 @@ interface OrganizationsPanelProps {
 }
 
 export const OrganizationsPanel = ({ toolbarLead }: OrganizationsPanelProps) => {
-  const { t } = useTranslation('client-portal-v2-clients');
+  const { t, i18n } = useTranslation('client-portal-v2-clients');
   const { token } = theme.useToken();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const paging = usePortalPaging();
   const sorting = usePortalSort();
   const [access, setAccess] = useState<OrganizationPortalAccess[]>([]);
+  // The Deleted view lists the clients that can still be restored; it replaces the live list while it is open.
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
@@ -70,17 +80,34 @@ export const OrganizationsPanel = ({ toolbarLead }: OrganizationsPanelProps) => 
   useEffect(() => {
     paging.reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, access, sorting.sort, sorting.order]);
+  }, [debouncedSearch, access, showDeleted, sorting.sort, sorting.order]);
 
   const query = useGetPortalOrganizationsQuery({
     page: paging.page,
     limit: paging.limit,
     search: debouncedSearch.trim() || undefined,
-    access: access.length ? access.join(',') : undefined,
+    access: !showDeleted && access.length ? access.join(',') : undefined,
+    deleted: showDeleted || undefined,
     sort: sorting.sort,
     order: sorting.order,
   });
   const list = query.data?.body;
+  const deletedCount = list?.stats?.deleted_organizations ?? 0;
+
+  // Deleting or restoring the last row of a later page leaves that page empty: step back to the last page that has rows.
+  useEffect(() => {
+    if (list && list.items.length === 0 && list.total > 0 && paging.page > 1) {
+      paging.setPage(Math.max(1, Math.ceil(list.total / paging.limit)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list]);
+
+  // Back on the Clients view once nothing is left to restore.
+  useEffect(() => {
+    if (showDeleted && list && deletedCount === 0 && list.total === 0) setShowDeleted(false);
+  }, [showDeleted, list, deletedCount]);
+
+  const { actions: organizationActions, modals: organizationModals } = useClientOrganizationActions();
 
   const [createInvitationLink] = useResendPortalInvitationMutation();
   const [shareLink, setShareLink] = useState<{ link: string; email: string } | null>(null);
@@ -152,6 +179,90 @@ export const OrganizationsPanel = ({ toolbarLead }: OrganizationsPanelProps) => 
       disabled: !organization.primary_contact_id,
       label: t('organizations.menu.copyInvite', { defaultValue: 'Copy invitation link' }),
       onClick: () => handleCreateLink(organization),
+    },
+    { type: 'divider' as const },
+    organization.status === 'inactive'
+      ? {
+          key: 'reactivate',
+          icon: <CheckCircleOutlined />,
+          label: t('orgActions.menu.reactivate', { defaultValue: 'Reactivate client' }),
+          onClick: () => organizationActions.onReactivate(organization),
+        }
+      : {
+          key: 'deactivate',
+          icon: <StopOutlined />,
+          label: t('orgActions.menu.deactivate', { defaultValue: 'Deactivate client' }),
+          onClick: () => organizationActions.onDeactivate(organization),
+        },
+    {
+      key: 'delete',
+      danger: true,
+      icon: <DeleteOutlined />,
+      label: t('orgActions.menu.delete', { defaultValue: 'Delete client' }),
+      onClick: () => organizationActions.onDelete(organization),
+    },
+  ];
+
+  /** A deleted client can only be restored; until the window ends it is otherwise left exactly as it was. */
+  const deletedMenuFor = (organization: ClientOrganization): MenuProps['items'] => [
+    {
+      key: 'restore',
+      icon: <UndoOutlined />,
+      label: t('orgActions.menu.restore', { defaultValue: 'Restore client' }),
+      onClick: () => organizationActions.onRestore(organization),
+    },
+  ];
+
+  const deletedColumns: ColumnsType<ClientOrganization> = [
+    {
+      key: 'client',
+      title: t('organizations.columns.client', { defaultValue: 'Client' }),
+      render: (_value, organization) => (
+        <Flex align="center" gap={10} style={{ opacity: 0.75 }}>
+          <PortalAvatar name={organization.name} />
+          <span style={{ fontWeight: 600, fontSize: 13 }}>{organization.name}</span>
+        </Flex>
+      ),
+    },
+    {
+      key: 'contact_name',
+      title: t('organizations.columns.contactName', { defaultValue: 'Primary contact' }),
+      render: (_value, organization) => (
+        <span style={{ fontSize: 12.5 }}>{organization.primary_contact_name ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'users',
+      title: t('organizations.columns.users', { defaultValue: 'Users' }),
+      render: (_value, organization) => organization.total_users,
+    },
+    {
+      key: 'deleted_at',
+      title: t('organizations.deleted.columnDeleted', { defaultValue: 'Deleted' }),
+      render: (_value, organization) => formatPortalDate(organization.deleted_at, i18n.language) ?? '—',
+    },
+    {
+      key: 'purge_on',
+      title: t('organizations.deleted.columnRemoval', { defaultValue: 'Removed permanently' }),
+      render: (_value, organization) => formatPortalDate(organization.purge_on, i18n.language) ?? '—',
+    },
+    {
+      key: 'actions',
+      title: t('organizations.columns.actions', { defaultValue: 'Actions' }),
+      align: 'right',
+      render: (_value, organization) => (
+        <Dropdown menu={{ items: deletedMenuFor(organization) }} trigger={['click']}>
+          <Button
+            size="small"
+            type="text"
+            icon={<MoreOutlined />}
+            aria-label={t('organizations.rowActions', {
+              name: organization.name,
+              defaultValue: 'Actions for {{name}}',
+            })}
+          />
+        </Dropdown>
+      ),
     },
   ];
 
@@ -330,10 +441,21 @@ export const OrganizationsPanel = ({ toolbarLead }: OrganizationsPanelProps) => 
       <PortalListToolbar
         lead={toolbarLead}
         controls={
-          <>
-            <PortalFilterButton groups={filterGroups} onClear={() => setAccess([])} />
-            <PortalFieldsButton fields={fields} hidden={columnVisibility.hidden} onToggle={columnVisibility.toggle} />
-          </>
+          showDeleted ? (
+            <Button icon={<ArrowLeftOutlined />} style={PORTAL_TOOLBAR_BUTTON_STYLE} onClick={() => setShowDeleted(false)}>
+              {t('organizations.deleted.hide', { defaultValue: 'Back to clients' })}
+            </Button>
+          ) : (
+            <>
+              {deletedCount > 0 && (
+                <Button icon={<DeleteOutlined />} style={PORTAL_TOOLBAR_BUTTON_STYLE} onClick={() => setShowDeleted(true)}>
+                  {t('organizations.deleted.show', { count: deletedCount, defaultValue: 'Deleted ({{count}})' })}
+                </Button>
+              )}
+              <PortalFilterButton groups={filterGroups} onClear={() => setAccess([])} />
+              <PortalFieldsButton fields={fields} hidden={columnVisibility.hidden} onToggle={columnVisibility.toggle} />
+            </>
+          )
         }
         search={search}
         onSearchChange={setSearch}
@@ -341,9 +463,21 @@ export const OrganizationsPanel = ({ toolbarLead }: OrganizationsPanelProps) => 
         searchLabel={t('organizations.searchLabel', { defaultValue: 'Search client organizations' })}
       />
 
+      {showDeleted && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={t('organizations.deleted.banner', {
+            days: 30,
+            defaultValue: 'A deleted client can be restored for {{days}} days. After that it is removed permanently.',
+          })}
+        />
+      )}
+
       <PortalPagedTable<ClientOrganization>
         ariaLabel={t('organizations.tableLabel', { defaultValue: 'Client organizations' })}
-        columns={columnVisibility.visibleColumns(columns)}
+        columns={showDeleted ? deletedColumns : columnVisibility.visibleColumns(columns)}
         onTableChange={handleTableChange}
         rows={list?.items ?? []}
         rowKey={organization => organization.id}
@@ -352,15 +486,25 @@ export const OrganizationsPanel = ({ toolbarLead }: OrganizationsPanelProps) => 
         loading={query.isLoading}
         isError={query.isError}
         onRetry={() => query.refetch()}
-        onRowClick={organization => navigate(clientWorkspacePath(organization.id))}
+        // A deleted client has no workspace to open: it can only be restored.
+        onRowClick={showDeleted ? undefined : organization => navigate(clientWorkspacePath(organization.id))}
         emptyText={
-          debouncedSearch.trim() || access.length > 0
-            ? t('organizations.emptySearch', { defaultValue: 'No clients match these filters.' })
-            : t('organizations.empty', {
-                defaultValue: 'No client organizations yet. Use Add Client to create the first one.',
+          showDeleted
+            ? t('organizations.deleted.empty', {
+                days: 30,
+                defaultValue:
+                  'No deleted clients. A client you delete stays here for {{days}} days, so you can restore it.',
               })
+            : debouncedSearch.trim() || access.length > 0
+              ? t('organizations.emptySearch', { defaultValue: 'No clients match these filters.' })
+              : t('organizations.empty', {
+                  defaultValue: 'No client organizations yet. Use Add Client to create the first one.',
+                })
         }
       />
+
+      {/* Rendered outside the table: a click inside a dialog would otherwise bubble to the row and open the workspace. */}
+      {organizationModals}
 
       {messageOrganizationId && (
         <MessageClientModal

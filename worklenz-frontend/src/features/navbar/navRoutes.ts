@@ -1,9 +1,14 @@
 import { getAddonSlotItems } from '@/addons/addon-slots';
+import {
+  ORGANIZATION_PERMISSIONS,
+  OrganizationPermission,
+} from '@/types/admin-center/permission-schemes.types';
 
 export type NavRoutesType = {
   name: string;
   path: string;
   adminOnly: boolean;
+  requiredPermission?: OrganizationPermission; // Granted via the default permission scheme
   freePlanFeature?: boolean;
   selfHostedExcluded?: boolean;
   teamLeadOnly?: boolean;
@@ -33,7 +38,8 @@ export const navRoutes: NavRoutesType[] = [
   {
     name: 'planner',
     path: '/worklenz/planner',
-    adminOnly: true,
+    adminOnly: false,
+    requiredPermission: ORGANIZATION_PERMISSIONS.VIEW_PLANNER,
     freePlanFeature: false,
   },
   {
@@ -41,14 +47,16 @@ export const navRoutes: NavRoutesType[] = [
     // Bare surface root — resolves to whichever item is pinned as default
     // (or 'clients' if nothing is pinned) via the client-portal index route.
     path: '/worklenz/client-portal',
-    adminOnly: true,
+    adminOnly: false,
+    requiredPermission: ORGANIZATION_PERMISSIONS.VIEW_CLIENTS,
     freePlanFeature: false,
     selfHostedExcluded: true,
   },
   {
     name: 'finance',
     path: '/worklenz/finance',
-    adminOnly: true,
+    adminOnly: false,
+    requiredPermission: ORGANIZATION_PERMISSIONS.VIEW_FINANCE,
     freePlanFeature: false,
   },
   {
@@ -56,7 +64,8 @@ export const navRoutes: NavRoutesType[] = [
     // Bare surface root — resolves to whichever item is pinned as default
     // (or 'overview' if nothing is pinned) via the reporting index route.
     path: '/worklenz/reporting',
-    adminOnly: true,
+    adminOnly: false,
+    requiredPermission: ORGANIZATION_PERMISSIONS.VIEW_REPORTS,
     freePlanFeature: false,
   },
   {

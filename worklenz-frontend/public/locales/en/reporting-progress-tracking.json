@@ -45,5 +45,6 @@
   "emptyFiltered": "No projects match these filters.",
   "updatedBy": "by {{name}}",
   "editConfidence": "Set delivery confidence for {{project}}",
-  "readOnlyConfidence": "Delivery confidence for {{project}}"
+  "readOnlyConfidence": "Delivery confidence for {{project}}",
+  "rowsPerPage": "Rows per page:"
 }

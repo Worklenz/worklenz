@@ -113,5 +113,6 @@
   "deleteQuoteSuccess": "Quote deleted successfully",
   "deleteQuoteError": "Failed to delete quote",
   "linkedChangeRequest": "Linked Change Request",
-  "openChangeRequest": "Open change request"
+  "openChangeRequest": "Open change request",
+  "downloadFailed": "Failed to download the PDF. Please try again."
 }

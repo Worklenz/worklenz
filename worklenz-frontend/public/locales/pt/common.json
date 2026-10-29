@@ -163,5 +163,11 @@
   "colorRed": "Vermelho",
   "colorMagenta": "Magenta",
   "colorGray": "Cinza",
-  "commentInput": "Campo de comentário"
+  "commentInput": "Campo de comentário",
+  "paginationNavigation": "Paginação",
+  "paginationSummary": "{{range}} de {{total}}",
+  "firstPage": "Primeira página",
+  "previousPage": "Página anterior",
+  "nextPage": "Próxima página",
+  "lastPage": "Última página"
 }

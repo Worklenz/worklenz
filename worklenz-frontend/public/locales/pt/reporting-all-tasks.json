@@ -153,4 +153,6 @@
   "searchLabels": "Buscar etiquetas...",
   "noLabels": "Nenhuma etiqueta encontrada",
   "labelFilter": "Etiquetas"
+,
+  "rowsPerPage": "Linhas por página:"
 }

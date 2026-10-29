@@ -348,7 +348,8 @@ export interface ClientOrgUserV2 {
   email: string;
   jobTitle: string;
   role: ClientRole;
-  status: 'Active' | 'Invited' | 'Deactivated';
+  /** `Deleted`: the person deleted their own account. They cannot sign in; staff keep the profile for 30 days. */
+  status: 'Active' | 'Invited' | 'Deactivated' | 'Deleted';
   isYou: boolean;
 }
 

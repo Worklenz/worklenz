@@ -28,6 +28,7 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { canDeleteProjectTasks } from '@/lib/project/project-view-guest';
 import { selectTasks } from '@/features/projects/bulkActions/bulkActionSlice';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { useTranslation } from 'react-i18next';
@@ -192,6 +193,8 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
 
     // Get data from Redux store
+    const project = useAppSelector(state => state.projectReducer.project);
+    const canDeleteTasks = canCreateTask && canDeleteProjectTasks(project);
     const statusList = useAppSelector(state => state.taskStatusReducer.status);
     const priorityList = useAppSelector(state => state.priorityReducer.priorities);
     const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
@@ -997,14 +1000,14 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             cancelText={t('CANCEL')}
             okType="danger"
             placement="top"
-            disabled={!canCreateTask}
+            disabled={!canDeleteTasks}
           >
             <ActionButton
               icon={<DeleteOutlined />}
               tooltip={t('DELETE')}
               loading={loadingStates.delete}
               danger
-              disabled={!canCreateTask}
+              disabled={!canDeleteTasks}
               isDarkMode={isDarkMode}
             />
           </Popconfirm>

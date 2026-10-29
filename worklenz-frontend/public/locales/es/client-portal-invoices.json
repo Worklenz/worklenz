@@ -200,5 +200,7 @@
   "closeButton": "Cerrar",
   "linkedChangeRequest": "Solicitud de cambio vinculada",
   "openChangeRequest": "Abrir solicitud de cambio",
-  "projectColumn": "Proyecto"
+  "projectColumn": "Proyecto",
+  "downloadFailed": "No se pudo descargar el PDF. Inténtalo de nuevo.",
+  "defaultInvoiceFooter": "Gracias por su confianza. Si tiene alguna pregunta sobre esta factura, contáctenos con los datos indicados arriba."
 }
