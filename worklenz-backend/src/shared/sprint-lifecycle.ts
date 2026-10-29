@@ -111,13 +111,14 @@ export async function startNextSprintNow(
            end_date = CASE
              WHEN start_date IS NOT NULL AND end_date IS NOT NULL
                THEN end_date + $3::INT * INTERVAL '1 day'
-             ELSE CURRENT_TIMESTAMP + $4::INT * INTERVAL '1 day'
+             ELSE CURRENT_TIMESTAMP + ($4::INT - 1) * INTERVAL '1 day'
            END
        WHERE id = $1 AND project_id = $2;`,
       [nextId, projectId, shiftDays, Math.max(1, Math.round(fallbackLengthDays))]
     );
 
-    // 2. Shift all subsequent planned sprints whose start date is at or after this sprint's start date
+    // 2. Shift every other dated planned sprint by the same amount so the schedule keeps its relative
+    //    order and gaps, even when the preferred sprint is not the earliest one
     if (shiftDays !== 0 && nextRow?.start_date) {
       await client.query(
         `UPDATE project_phases
@@ -127,9 +128,8 @@ export async function startNextSprintNow(
            AND sprint_status = 'planned'
            AND id <> $1
            AND start_date IS NOT NULL
-           AND end_date IS NOT NULL
-           AND start_date >= $4;`,
-        [nextId, projectId, shiftDays, nextRow.start_date]
+           AND end_date IS NOT NULL;`,
+        [nextId, projectId, shiftDays]
       );
     }
 

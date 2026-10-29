@@ -154,9 +154,6 @@ describe("startNextSprintNow", () => {
         if (sql.includes("UPDATE project_phases") && sql.includes("CASE")) {
           return { rowCount: 1 };
         }
-        if (sql.includes("UPDATE project_phases") && sql.includes("shiftDays")) {
-          return { rowCount: 2 };
-        }
         if (sql.includes("SELECT id, name FROM project_phases")) {
           return { rows: [] }; // no active sprint
         }
@@ -185,16 +182,34 @@ describe("startNextSprintNow", () => {
       end_date: "2026-11-11T23:59:59.000Z",
     });
 
-    // Verify subsequent planned sprints were shifted with start_date >= $4 condition
+    // Every other dated planned sprint shifts by the same days, including ones that start earlier
     const subsequentShiftQuery = executedQueries.find(q =>
       q.sql.includes("SET start_date = start_date + $3::INT")
     );
     expect(subsequentShiftQuery).toBeDefined();
-    expect(subsequentShiftQuery?.params).toEqual([
-      "sprint-2",
-      "project-1",
-      -2,
-      "2026-10-30T00:00:00.000Z",
-    ]);
+    expect(subsequentShiftQuery?.params).toEqual(["sprint-2", "project-1", -2]);
+    expect(subsequentShiftQuery?.sql).not.toContain("start_date >=");
+  });
+
+  it("keeps the inclusive fallback length (length - 1 days) for undated sprints", async () => {
+    const executedQueries: Array<{ sql: string; params?: any[] }> = [];
+
+    (db.connect as jest.Mock).mockResolvedValueOnce({
+      query: jest.fn().mockImplementation(async (sql: string, params?: any[]) => {
+        executedQueries.push({ sql, params });
+        if (sql === "BEGIN" || sql === "COMMIT") return {};
+        if (sql.includes("SELECT id, start_date")) {
+          return { rows: [{ id: "sprint-2", start_date: null }] };
+        }
+        return { rows: [] };
+      }),
+      release,
+    });
+
+    await startNextSprintNow("project-1", "sprint-2", 14);
+
+    const startQuery = executedQueries.find(q => q.sql.includes("($4::INT - 1) * INTERVAL '1 day'"));
+    expect(startQuery).toBeDefined();
+    expect(startQuery?.params?.[3]).toBe(14);
   });
 });
