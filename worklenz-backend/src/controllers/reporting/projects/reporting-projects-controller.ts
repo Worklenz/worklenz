@@ -17,8 +17,7 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     // teamId is $1, size is $2, offset is $3, so search params start at $4
-    const { searchQuery, searchParams, sortField: requestedSortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 4);
-    const sortField = requestedSortField === "p.days_left" ? "days_left" : requestedSortField;
+    const { searchQuery, searchParams, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 4);
     const archived = req.query.archived === "true";
 
     const teamId = this.getCurrentTeamId(req);
@@ -50,7 +49,7 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       const categoryIds = (req.query.categories as string).split(",").filter(id => id.trim());
       const realIds = categoryIds.filter(id => id !== "__no_category__");
       const includeNoCategory = categoryIds.includes("__no_category__");
-
+      
       if (includeNoCategory && realIds.length > 0) {
         const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
         categoriesClause = `AND (p.category_id IS NULL OR p.category_id IN (${clause}))`;
@@ -357,7 +356,7 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       const categoryIds = (req.query.categories as string).split(",").filter(id => id.trim());
       const realIds = categoryIds.filter(id => id !== "__no_category__");
       const includeNoCategory = categoryIds.includes("__no_category__");
-
+      
       if (includeNoCategory && realIds.length > 0) {
         const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
         categoriesClause = `AND (p.category_id IS NULL OR p.category_id IN (${clause}))`;
@@ -644,7 +643,7 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       done_tasks: int(row.done_tasks),
       doing_tasks: int(row.doing_tasks),
       todo_tasks: int(row.todo_tasks),
-
+    
       projects: row.projects.map((project: any) => {
         // FIX: Format dates consistently like tasks to avoid timezone issues
         if (project.start_date) {

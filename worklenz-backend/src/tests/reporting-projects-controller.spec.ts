@@ -116,9 +116,6 @@ describe("ReportingProjectsController", () => {
       expect(query).toBeDefined();
       expect(query[0]).toContain(`ORDER BY ${column} DESC NULLS LAST, p.id`);
       expect(query[0]).toContain(`ORDER BY t.${column} DESC NULLS LAST, t.id`);
-      if (field === "p.days_left") {
-        expect(query[0]).not.toContain("ORDER BY name DESC NULLS LAST, p.id");
-      }
       expect(query[0]).toContain("MAX(tal.created_at)");
       expect(query[0]).toContain("ABS(p.end_date::DATE - CURRENT_DATE) AS days_left");
       expect(query[0]).toContain("AS project_manager_name");

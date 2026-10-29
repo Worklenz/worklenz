@@ -538,6 +538,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
       'p.name': 'name',
       last_activity: 'last_activity_at',
       days_left: 'days_left',
+      'p.days_left': 'days_left',
       comment: 'comment',
       priority_name: 'priority_name',
       health_name: 'health_name',
