@@ -204,11 +204,17 @@ const LANGUAGE_SOURCE_VALUES = {
     '← Discussions',
     // "Pagination" is also the correct French label for the navigation landmark.
     'Pagination',
+    // Color names spelled the same in French.
+    'Cyan',
+    'Orange',
+    'Magenta',
   ]),
-  de: new Set(['Portal', 'Link']),
-  es: new Set(['Portal']),
-  pt: new Set(['Portal', 'Link']),
-  pl: new Set(['Link']),
+  // Color names that are identical in these languages.
+  alb: new Set(['Magenta']),
+  de: new Set(['Portal', 'Link', 'Cyan', 'Orange', 'Magenta']),
+  es: new Set(['Portal', 'Magenta']),
+  pt: new Set(['Portal', 'Link', 'Magenta']),
+  pl: new Set(['Link', 'Magenta']),
 };
 const namespaceArgument = process.argv.find(argument => argument.startsWith('--namespace='));
 const namespaceFilter = namespaceArgument?.split('=', 2)[1];
