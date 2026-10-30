@@ -190,7 +190,16 @@
       "showInTaskList": "Shfaq në listën e detyrave",
       "createErrorMessage": "Dështoi në krijimin e kolonës së personalizuar",
       "updateErrorMessage": "Dështoi në përditësimin e kolonës së personalizuar",
-      "typeCannotBeChanged": "Lloji i kolonës nuk mund të ndryshohet pas krijimit."
+      "typeCannotBeChanged": "Lloji i kolonës nuk mund të ndryshohet pas krijimit.",
+      "changeTypeConfirmTitle": "Të ndryshohet lloji i kolonës?",
+      "changeTypeConfirmDescription": "Ndryshimi i llojit të kolonës do të fshijë të gjitha të dhënat ekzistuese në këtë kolonë. Këto të dhëna nuk mund të kthehen. Jeni i sigurt që dëshironi të ndryshoni llojin e kolonës?",
+      "changeTypeWarningTitle": "Të dhënat në këtë kolonë do të fshihen",
+      "changeTypeWarningDesc": "Të dhënat në këtë kolonë do të fshihen dhe nuk mund të kthehen pasi të ruhen. Ju lutemi kontrolloni dy herë përpara se të përditësoni.",
+      "changeTypeSaveConfirmTitle": "Konfirmo ndryshimin e llojit të kolonës",
+      "changeTypeSaveConfirmDescription": "Të gjitha të dhënat ekzistuese në këtë kolonë do të fshihen përgjithmonë dhe nuk mund të kthehen. A jeni i sigurt që dëshironi të vazhdoni?",
+      "confirmChangeTypeButton": "Ndrysho llojin",
+      "saveAndChangeTypeButton": "Përditëso dhe fshi",
+      "updateAndDeleteButton": "Përditëso dhe fshi"
     },
     "fieldTypes": {
       "people": "Njerëz",
@@ -273,7 +282,8 @@
       "autoClearedParentEmpty": "{{field}} u pastrua sepse {{parent}} u pastrua.",
       "rejected": "Vlera nuk u ruajt: {{reason}}",
       "parentValueRequired": "Zgjidhni fillimisht vlerën e fushës prind.",
-      "invalidPair": "Ai opsion nuk është i vlefshëm për vlerën aktuale të prindit."
+      "invalidPair": "Ai opsion nuk është i vlefshëm për vlerën aktuale të prindit.",
+      "hasDependentsTypeHint": "{{fields}} varet nga kjo fushë, kështu që lloji i saj nuk mund të ndryshohet."
     },
     "newColumn": "Kolonë e re",
     "projectNotFound": "Projekti nuk u gjet",

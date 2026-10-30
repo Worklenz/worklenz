@@ -60,7 +60,7 @@ const initialState: TaskListCustomColumnsState = {
   customColumnId: null,
   customColumnModalProjectId: null,
   currentColumnData: null,
-  canChangeColumnType: false,
+  canChangeColumnType: true,
 
   customFieldType: 'text',
   customFieldNumberType: 'formatted',
@@ -98,7 +98,7 @@ const taskListCustomColumnsSlice = createSlice({
       state.customColumnModalType = action.payload.modalType;
       state.customColumnId = action.payload.columnId;
       state.currentColumnData = action.payload.columnData || null;
-      state.canChangeColumnType = action.payload.canChangeColumnType ?? false;
+      state.canChangeColumnType = action.payload.canChangeColumnType ?? true;
       if ('projectId' in action.payload) {
         state.customColumnModalProjectId = action.payload.projectId ?? null;
       }

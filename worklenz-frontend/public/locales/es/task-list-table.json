@@ -190,7 +190,16 @@
       "showInTaskList": "Mostrar en la lista de tareas",
       "createErrorMessage": "Error al crear la columna personalizada",
       "updateErrorMessage": "Error al actualizar la columna personalizada",
-      "typeCannotBeChanged": "El tipo de columna no se puede cambiar después de la creación."
+      "typeCannotBeChanged": "El tipo de columna no se puede cambiar después de la creación.",
+      "changeTypeConfirmTitle": "¿Cambiar tipo de columna?",
+      "changeTypeConfirmDescription": "Cambiar el tipo de columna eliminará todos los datos existentes en esta columna. Estos datos no se pueden revertir. ¿Está seguro de que desea cambiar el tipo de columna?",
+      "changeTypeWarningTitle": "Los datos de esta columna se eliminarán",
+      "changeTypeWarningDesc": "Los datos de la columna se eliminarán y no se podrán revertir una vez guardados. Por favor, verifique antes de actualizar.",
+      "changeTypeSaveConfirmTitle": "Confirmar cambio de tipo de columna",
+      "changeTypeSaveConfirmDescription": "Todos los datos existentes en esta columna se eliminarán permanentemente y no se podrán revertir. ¿Está seguro de que desea continuar?",
+      "confirmChangeTypeButton": "Cambiar tipo",
+      "saveAndChangeTypeButton": "Actualizar y eliminar",
+      "updateAndDeleteButton": "Actualizar y eliminar"
     },
     "fieldTypes": {
       "people": "Personas",
@@ -273,7 +282,8 @@
       "autoClearedParentEmpty": "{{field}} se borró porque se borró {{parent}}.",
       "rejected": "Valor no guardado: {{reason}}",
       "parentValueRequired": "Seleccione primero el valor del campo principal.",
-      "invalidPair": "Esa opción no es válida para el valor principal actual."
+      "invalidPair": "Esa opción no es válida para el valor principal actual.",
+      "hasDependentsTypeHint": "{{fields}} depende de este campo, por lo que su tipo no se puede cambiar."
     },
     "newColumn": "Nueva columna",
     "projectNotFound": "Proyecto no encontrado",
