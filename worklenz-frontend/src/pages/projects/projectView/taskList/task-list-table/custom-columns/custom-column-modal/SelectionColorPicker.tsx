@@ -16,24 +16,35 @@ const SelectionColorPicker = ({
 }: SelectionColorPickerProps) => {
   const { t } = useTranslation('task-list-table');
   const { token } = theme.useToken();
-  const [color, setColor] = useState(value);
+  const [draftColor, setDraftColor] = useState(value);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
-    setColor(value);
+    setDraftColor(value);
   }, [value]);
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setDraftColor(value);
+      setPickerOpen(false);
+      return;
+    }
+
+    setDraftColor(value);
+    setPickerOpen(true);
+  };
+
   const handleApply = () => {
-    onChange(color);
+    onChange(draftColor);
     setPickerOpen(false);
   };
 
   return (
     <ColorPicker
-      value={color}
+      value={draftColor}
       open={pickerOpen}
-      onOpenChange={setPickerOpen}
-      onChange={nextColor => setColor(nextColor.toHexString())}
+      onOpenChange={handleOpenChange}
+      onChange={nextColor => setDraftColor(nextColor.toHexString())}
       size="small"
       disabledAlpha
       panelRender={panel => (
@@ -56,7 +67,7 @@ const SelectionColorPicker = ({
           padding: 0,
           borderRadius: 3,
           cursor: 'pointer',
-          backgroundColor: color,
+          backgroundColor: draftColor,
           border: `1px solid ${token.colorBorderSecondary}`,
         }}
       />

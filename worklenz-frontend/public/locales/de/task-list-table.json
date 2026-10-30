@@ -1,4 +1,5 @@
 {
+  "apply": "Anwenden",
   "keyColumn": "Schlüssel",
   "taskColumn": "Aufgabe",
   "issueColumn": "Problem",

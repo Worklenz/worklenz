@@ -1,4 +1,5 @@
 {
+  "apply": "Aplicar",
   "keyColumn": "Chave",
   "taskColumn": "Tarefa",
   "issueColumn": "Problema",

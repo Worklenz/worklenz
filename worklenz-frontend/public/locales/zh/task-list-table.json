@@ -1,4 +1,5 @@
 {
+  "apply": "应用",
   "keyColumn": "ID",
   "taskColumn": "任务",
   "issueColumn": "问题",

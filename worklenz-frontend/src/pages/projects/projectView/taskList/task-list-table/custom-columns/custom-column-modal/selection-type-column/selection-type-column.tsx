@@ -161,7 +161,10 @@ const SelectionTypeColumn = () => {
                 }
                 ariaLabel={`${t('customColumns.fieldTypeForms.selectionNameLabel', {
                   defaultValue: 'Selection name',
-                })}: ${selection.selection_name || ''} color`}
+                })}: ${selection.selection_name || ''} ${t(
+                  'customColumns.dependentSelection.optionColorLabel',
+                  { defaultValue: 'Option color' }
+                )}`}
               />
 
               <CloseCircleOutlined
