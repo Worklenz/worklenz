@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { durationDateFormat } from '@utils/durationDateFormat';
 import { colors } from '@/styles/colors';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, IconsMap } from '@/shared/constants';
+import { IconsMap } from '@/shared/constants';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import type {
   ITeamProjectFileRow,
@@ -29,6 +29,7 @@ import type {
 } from '@/api/files/team-files.api.service';
 import './files-table.css';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import TablePagination from '@/components/TablePagination';
 
 const MB = 1024 * 1024;
 
@@ -424,17 +425,6 @@ export const FilesTable: React.FC<FilesTableProps> = ({
     </div>
   );
 
-  const pagination = {
-    current: page,
-    pageSize,
-    total,
-    showSizeChanger: true,
-    defaultPageSize: DEFAULT_PAGE_SIZE,
-    pageSizeOptions: PAGE_SIZE_OPTIONS,
-    size: 'small' as const,
-    onChange: onPageChange,
-  };
-
   return (
     <div
       className="files-table"
@@ -453,10 +443,11 @@ export const FilesTable: React.FC<FilesTableProps> = ({
           loading={loading}
           sticky
           scroll={{ x: 'max-content', y: 'calc(100vh - 280px)' }}
-          pagination={pagination}
+          pagination={false}
           locale={{ emptyText }}
         />
       )}
+
       {mode === 'task' && (
         <Table<ITeamTaskAttachmentRow>
           dataSource={taskAttachments}
@@ -466,10 +457,11 @@ export const FilesTable: React.FC<FilesTableProps> = ({
           loading={loading}
           sticky
           scroll={{ x: 'max-content', y: 'calc(100vh - 280px)' }}
-          pagination={pagination}
+          pagination={false}
           locale={{ emptyText }}
         />
       )}
+
       {mode === 'links' && (
         <Table<ITeamProjectLinkRow>
           dataSource={links}
@@ -479,8 +471,30 @@ export const FilesTable: React.FC<FilesTableProps> = ({
           loading={loading}
           sticky
           scroll={{ x: 'max-content', y: 'calc(100vh - 280px)' }}
-          pagination={pagination}
+          pagination={false}
           locale={{ emptyText }}
+        />
+      )}
+
+      {total > 0 && (
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={onPageChange}
+          rowsPerPageLabel={t('rowsPerPage', {
+            defaultValue: 'Rows per page',
+          })}
+          navigationLabel={t('common:paginationNavigation')}
+          firstPageLabel={t('common:firstPage')}
+          previousPageLabel={t('common:previousPage')}
+          nextPageLabel={t('common:nextPage')}
+          lastPageLabel={t('common:lastPage')}
+          renderDefaultSummary={(range, total) =>
+            t('common:paginationSummary', { range, total })
+          }
+          pageSizeOptions={[10, 20, 50, 100]}
+          variant="dropdown"
         />
       )}
     </div>

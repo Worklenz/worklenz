@@ -62,5 +62,6 @@
   "linkDescription": "Beschreibung",
   "linkDescriptionPlaceholder": "Optionale Beschreibung",
   "save": "Speichern",
+  "rowsPerPage": "Zeilen pro Seite:",
   "noTaskName": "--"
 }
