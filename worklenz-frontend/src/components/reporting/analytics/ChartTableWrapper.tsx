@@ -2,12 +2,12 @@ import React from 'react';
 import { Flex, Typography, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface ChartTableWrapperProps {
   chart: React.ReactNode;
   table: React.ReactNode;
-  /** Shown as “{title} overview” above the chart (mockup pattern). */
+  /** @deprecated No longer rendered; kept optional for call-site compatibility. */
   chartTitle?: string;
   /** Optional footer under the table card, e.g. row count. */
   rowCount?: number;
@@ -15,12 +15,11 @@ interface ChartTableWrapperProps {
 
 /**
  * Report body layout from the reporting prototype:
- * chart card (title + chart) stacked above a separate table card.
+ * chart card stacked above a separate table card.
  */
 export const ChartTableWrapper: React.FC<ChartTableWrapperProps> = ({
   chart,
   table,
-  chartTitle,
   rowCount,
 }) => {
   const { t } = useTranslation('reporting-analytics');
@@ -35,14 +34,6 @@ export const ChartTableWrapper: React.FC<ChartTableWrapperProps> = ({
   return (
     <Flex vertical gap={16} style={{ width: '100%' }}>
       <div style={{ ...cardStyle, padding: 16 }} role="img" aria-hidden={false}>
-        {chartTitle ? (
-          <Title level={5} style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>
-            {t('chartOverviewTitle', {
-              defaultValue: '{{name}} overview',
-              name: chartTitle,
-            })}
-          </Title>
-        ) : null}
         {chart}
       </div>
 
