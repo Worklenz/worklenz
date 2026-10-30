@@ -1,5 +1,13 @@
 import React, { useMemo } from 'react';
-import { Flex, Table, Tag, Typography, theme } from '@/shared/antd-imports';
+import {
+  Flex,
+  InfoCircleOutlined,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+  theme,
+} from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
@@ -9,6 +17,28 @@ import type {
 } from '@/types/reporting/analytics-project-health.types';
 
 const { Text } = Typography;
+
+const ColumnTitleWithHint: React.FC<{
+  label: string;
+  hint: string;
+  hintColor: string;
+  alignEnd?: boolean;
+}> = ({ label, hint, hintColor, alignEnd = false }) => (
+  <Flex
+    align="center"
+    gap={4}
+    justify={alignEnd ? 'flex-end' : 'flex-start'}
+    style={{ width: '100%' }}
+  >
+    <span>{label}</span>
+    <Tooltip title={hint}>
+      <InfoCircleOutlined
+        aria-label={hint}
+        style={{ color: hintColor, fontSize: 12, cursor: 'help' }}
+      />
+    </Tooltip>
+  </Flex>
+);
 
 interface ProjectHealthTableProps {
   projects: ProjectHealthRow[];
@@ -92,7 +122,16 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         },
       },
       {
-        title: t('phColHealth', { defaultValue: 'Health' }),
+        title: (
+          <ColumnTitleWithHint
+            label={t('phColHealth', { defaultValue: 'Health' })}
+            hint={t('phCalcColHealth', {
+              defaultValue:
+                'Project health from settings: Good → On track, At Risk → At risk, Needs Attention → Off track.',
+            })}
+            hintColor={token.colorTextSecondary}
+          />
+        ),
         key: 'health',
         width: '12%',
         filters: [
@@ -112,7 +151,16 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         },
       },
       {
-        title: t('phColProgress', { defaultValue: 'Progress' }),
+        title: (
+          <ColumnTitleWithHint
+            label={t('phColProgress', { defaultValue: 'Progress' })}
+            hint={t('phCalcColProgress', {
+              defaultValue: 'Completed tasks ÷ total non-archived tasks × 100.',
+            })}
+            hintColor={token.colorTextSecondary}
+            alignEnd
+          />
+        ),
         dataIndex: 'progress_pct',
         key: 'progress_pct',
         width: '10%',
@@ -133,7 +181,16 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
           value ? dayjs(value).format('MMM D, YYYY') : <Text type="secondary">—</Text>,
       },
       {
-        title: t('phColOpenTasks', { defaultValue: 'Open tasks' }),
+        title: (
+          <ColumnTitleWithHint
+            label={t('phColOpenTasks', { defaultValue: 'Open tasks' })}
+            hint={t('phCalcColOpenTasks', {
+              defaultValue: 'Incomplete, non-archived tasks in the project.',
+            })}
+            hintColor={token.colorTextSecondary}
+            alignEnd
+          />
+        ),
         dataIndex: 'open_tasks',
         key: 'open_tasks',
         width: '10%',
@@ -141,7 +198,17 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         sorter: (a, b) => a.open_tasks - b.open_tasks,
       },
       {
-        title: t('phColOverdue', { defaultValue: 'Overdue' }),
+        title: (
+          <ColumnTitleWithHint
+            label={t('phColOverdue', { defaultValue: 'Overdue' })}
+            hint={t('phCalcColOverdue', {
+              defaultValue:
+                'Incomplete, non-archived tasks whose due date is before today.',
+            })}
+            hintColor={token.colorTextSecondary}
+            alignEnd
+          />
+        ),
         dataIndex: 'overdue_tasks',
         key: 'overdue_tasks',
         width: '9%',
@@ -157,7 +224,17 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
           ),
       },
       {
-        title: t('phColBudgetUsed', { defaultValue: 'Budget used' }),
+        title: (
+          <ColumnTitleWithHint
+            label={t('phColBudgetUsed', { defaultValue: 'Budget used' })}
+            hint={t('phCalcColBudgetUsed', {
+              defaultValue:
+                '(Task fixed costs + logged time cost) ÷ project budget × 100. Shown as — when budget is 0.',
+            })}
+            hintColor={token.colorTextSecondary}
+            alignEnd
+          />
+        ),
         dataIndex: 'budget_used_pct',
         key: 'budget_used_pct',
         width: '11%',
@@ -184,7 +261,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
           ),
       },
     ],
-    [t, token.colorText]
+    [t, token.colorText, token.colorTextSecondary]
   );
 
   return (

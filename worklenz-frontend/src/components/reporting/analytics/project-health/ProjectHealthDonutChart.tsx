@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { ArcElement, Chart as ChartJS, Legend, Tooltip, type ChartOptions } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
-import { Badge, Flex, Typography, theme } from '@/shared/antd-imports';
+import { Badge, Flex, InfoCircleOutlined, Tooltip, Typography, theme } from '@/shared/antd-imports';
 import { InChartEmptyState } from '../states/ReportStateViews';
 import type {
   ProjectHealthKpis,
@@ -154,9 +154,25 @@ export const ProjectHealthDonutChart: React.FC<ProjectHealthDonutChartProps> = (
         background: token.colorBgContainer,
       }}
     >
-      <Text strong style={{ display: 'block', marginBottom: 12, fontSize: 14 }}>
-        {t('phDonutTitle', { defaultValue: 'Health status' })}
-      </Text>
+      <Flex align="center" gap={6} style={{ marginBottom: 12 }}>
+        <Text strong style={{ fontSize: 14 }}>
+          {t('phDonutTitle', { defaultValue: 'Health status' })}
+        </Text>
+        <Tooltip
+          title={t('phCalcHealthStatus', {
+            defaultValue:
+              'Distribution of selected projects by health setting: Good (On track), At Risk, Needs Attention (Off track), or Not set.',
+          })}
+        >
+          <InfoCircleOutlined
+            aria-label={t('phCalcHealthStatus', {
+              defaultValue:
+                'Distribution of selected projects by health setting: Good (On track), At Risk, Needs Attention (Off track), or Not set.',
+            })}
+            style={{ color: token.colorTextSecondary, fontSize: 12, cursor: 'help' }}
+          />
+        </Tooltip>
+      </Flex>
       <Flex gap={24} align="center" wrap="wrap">
         <div style={{ width: 180, height: 180, flexShrink: 0, position: 'relative' }}>
           <Doughnut data={chartData} options={options} />

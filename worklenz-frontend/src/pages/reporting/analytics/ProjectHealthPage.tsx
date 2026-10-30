@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
+import {
+  Flex,
+  InfoCircleOutlined,
+  Space,
+  Tooltip,
+  Typography,
+  message,
+  theme,
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { jsPDF } from 'jspdf';
@@ -445,9 +453,25 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
           chart={
             <Flex gap={16} wrap="wrap" align="stretch" style={{ width: '100%' }}>
               <div style={{ flex: '2 1 420px', minWidth: 280 }}>
-                <Text strong style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
-                  {t('phProgressBudgetTitle', { defaultValue: 'Progress & budget' })}
-                </Text>
+                <Flex align="center" gap={6} style={{ marginBottom: 4 }}>
+                  <Text strong style={{ fontSize: 14 }}>
+                    {t('phProgressBudgetTitle', { defaultValue: 'Progress & budget' })}
+                  </Text>
+                  <Tooltip
+                    title={t('phCalcProgressBudget', {
+                      defaultValue:
+                        'Progress % = completed tasks ÷ total tasks. Budget used % = (task fixed costs + logged time cost) ÷ project budget.',
+                    })}
+                  >
+                    <InfoCircleOutlined
+                      aria-label={t('phCalcProgressBudget', {
+                        defaultValue:
+                          'Progress % = completed tasks ÷ total tasks. Budget used % = (task fixed costs + logged time cost) ÷ project budget.',
+                      })}
+                      style={{ color: token.colorTextSecondary, fontSize: 12, cursor: 'help' }}
+                    />
+                  </Tooltip>
+                </Flex>
                 {!isSelectAllProjects &&
                   data.projects.length > DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT && (
                     <Text
