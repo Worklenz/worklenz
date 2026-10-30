@@ -289,7 +289,8 @@
     "enterColumnName": "Ingrese el nombre de la columna",
     "clickToEdit": "Haz clic para editar el nombre de la columna",
     "columnSettings": "Configuración de columna",
-    "textPlaceholder": "Ingresar texto"
+    "textPlaceholder": "Ingresar texto",
+    "apply": "Aplicar"
   },
   "indicators": {
     "tooltips": {

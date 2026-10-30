@@ -289,7 +289,8 @@
     "enterColumnName": "输入列名",
     "clickToEdit": "点击编辑列名",
     "columnSettings": "列设置",
-    "textPlaceholder": "输入文本"
+    "textPlaceholder": "输入文本",
+    "apply": "应用"
   },
   "indicators": {
     "tooltips": {

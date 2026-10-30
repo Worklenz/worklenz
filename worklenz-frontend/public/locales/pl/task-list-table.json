@@ -289,7 +289,8 @@
     "enterColumnName": "Wprowadź nazwę kolumny",
     "clickToEdit": "Kliknij, aby edytować nazwę kolumny",
     "columnSettings": "Ustawienia kolumny",
-    "textPlaceholder": "Wpisz tekst"
+    "textPlaceholder": "Wpisz tekst",
+    "apply": "Zastosuj"
   },
   "indicators": {
     "tooltips": {

@@ -289,7 +289,8 @@
     "enterColumnName": "Digite o nome da coluna",
     "clickToEdit": "Clique para editar o nome da coluna",
     "columnSettings": "Configurações da coluna",
-    "textPlaceholder": "Digite o texto"
+    "textPlaceholder": "Digite o texto",
+    "apply": "Aplicar"
   },
   "indicators": {
     "tooltips": {
