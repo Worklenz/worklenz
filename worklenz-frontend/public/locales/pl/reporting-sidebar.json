@@ -8,5 +8,12 @@
   "logs": "Dzienniki czasu",
   "allTasks": "Zadania",
   "progressTracking": "Śledzenie postępu",
-  "currentOrganizationTooltip": "Obecna organizacja"
+  "currentOrganizationTooltip": "Obecna organizacja",
+  "analyticsGroup": "Reporting & Analytics",
+  "dashboards": "Dashboards",
+  "velocity": "Velocity",
+  "cumulativeFlow": "Cumulative Flow",
+  "sla": "SLA Tracking",
+  "timeInStatus": "Time in Status",
+  "newBadge": "NEW"
 }

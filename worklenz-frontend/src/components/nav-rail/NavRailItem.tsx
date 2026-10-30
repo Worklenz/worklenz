@@ -57,6 +57,8 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
   });
 
   const clickDisabled = item.soon && !item.soonClickable;
+  const showNewBadge =
+    !!item.newUntil && !item.soon && Date.parse(item.newUntil) > Date.now();
 
   const tooltipTitle = isPinned ? `${label} (Pinned)` : label;
   const iconColor = active
@@ -75,11 +77,12 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
       transition,
       opacity: isDragging ? 0.5 : 1,
       zIndex: isDragging ? 1 : undefined,
+      borderLeft: active ? `3px solid ${token.colorPrimary}` : '3px solid transparent',
       // Pass token colors to CSS for pure-CSS hover glow (zero JS re-renders on hover)
       '--nav-rail-color-primary': token.colorPrimary,
       '--nav-rail-glow': token.colorPrimary,
     } as React.CSSProperties),
-    [transform, transition, isDragging, token.colorPrimary],
+    [transform, transition, isDragging, token.colorPrimary, active],
   );
 
   const buttonStyle = useMemo(
@@ -284,7 +287,7 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
             </span>
           )}
 
-          {/* ── Soon tag ───────────────────────────────────────────────────── */}
+          {/* ── Soon / NEW tag ─────────────────────────────────────────────── */}
           {item.soon && (
             <span
               style={{
@@ -302,6 +305,26 @@ const NavRailItem: React.FC<NavRailItemProps> = ({
               }}
             >
               Soon
+            </span>
+          )}
+          {showNewBadge && (
+            <span
+              style={{
+                position: 'absolute',
+                top: 22,
+                right: 4,
+                fontSize: 8,
+                background: 'rgba(24,144,255,.15)',
+                color: token.colorPrimary,
+                borderRadius: token.borderRadiusSM,
+                padding: '1px 4px',
+                fontWeight: 700,
+                letterSpacing: 0.2,
+                zIndex: 2,
+                pointerEvents: 'none',
+              }}
+            >
+              {t('newBadge', { defaultValue: 'NEW', ns: 'reporting-sidebar' })}
             </span>
           )}
 

@@ -288,7 +288,7 @@ const ProjectsReportsTable = () => {
             </Tag>
           ) : (
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              —
+              -
             </Typography.Text>
           ),
         width: 140,

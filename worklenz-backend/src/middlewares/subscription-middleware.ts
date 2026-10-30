@@ -5,9 +5,27 @@ import { ServerResponse } from "../models/server-response";
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { isSelfHostedDeployment } from "../shared/deployment-mode";
 
+const APPSUMO_BUSINESS_UNLOCK_CODE_COUNT = 5;
+
+const isTruthy = (value: unknown): boolean =>
+  value === true || value === 1 || value === "true" || value === "t";
+
+/**
+ * AppSumo Business (5+ codes / eligible / Business Plan / override) — not AppSumo Pro.
+ */
+export function isAppSumoBusiness(user: any): boolean {
+  if (!user || user.subscription_type !== "LIFE_TIME_DEAL") return false;
+  if (isTruthy(user.business_plan_override)) return true;
+  if (isTruthy(user.appsumo_business_eligible)) return true;
+  const redeemed = Number(user.redeemed_codes_count ?? 0);
+  if (Number.isFinite(redeemed) && redeemed >= APPSUMO_BUSINESS_UNLOCK_CODE_COUNT) return true;
+  const planName = (user.plan_name || "").toLowerCase();
+  return planName === "business plan" || planName.includes("business");
+}
+
 /**
  * Checks if user has business plan access based on session data
- * Includes active business plan trials, manual overrides, and AppSumo eligibility
+ * Includes active business plan trials, manual overrides, and AppSumo Business (not AppSumo Pro)
  */
 export function hasBusinessPlanAccess(user: any): boolean {
   // A self-hosted installation is licensed at deployment level. Check this
@@ -21,9 +39,6 @@ export function hasBusinessPlanAccess(user: any): boolean {
     return false;
   }
 
-  const isTruthy = (value: unknown): boolean =>
-    value === true || value === 1 || value === "true" || value === "t";
-
   // PRIORITY 1: Manual override flag (highest priority)
   if (isTruthy(user.business_plan_override)) {
     return true;
@@ -31,6 +46,11 @@ export function hasBusinessPlanAccess(user: any): boolean {
 
   const subscriptionType = user.subscription_type;
   const planName = (user.plan_name || "").toLowerCase();
+
+  // AppSumo Business unlocks Business features; AppSumo Pro stays on Pro.
+  if (subscriptionType === "LIFE_TIME_DEAL") {
+    return isAppSumoBusiness(user);
+  }
 
   // Check for active Business plan trial (BUSINESS_LARGE tier)
   if (user.active_plan_trial === "BUSINESS_LARGE" && user.plan_trial_end_date) {

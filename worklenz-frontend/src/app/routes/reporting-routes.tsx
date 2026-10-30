@@ -1,11 +1,42 @@
-import { RouteObject } from 'react-router-dom';
-import { Suspense } from 'react';
+import { RouteObject, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy, memo, type ReactNode } from 'react';
 import ReportingLayout from '@/layouts/ReportingLayout';
+import AnalyticsReportingLayout from '@/layouts/AnalyticsReportingLayout';
 import { ReportingMenuItems, reportingsItems } from '@/lib/reporting/reporting-constants';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import NavSurfaceIndexRedirect from '@/features/navigation/NavSurfaceIndexRedirect';
+import GuestRedirect from '@/guards/GuestRedirect';
+import { useAuthStatus } from '@/hooks/useAuthStatus';
+import { ANALYTICS_BASE_PATH, flatAnalyticsNavItems } from '@/lib/reporting/analytics-nav';
+import { AnalyticsBusinessGate } from '@/components/reporting/analytics/AnalyticsBusinessGate';
 
-//  function to flatten nested menu items
+const AllReportsPage = lazy(() => import('@/pages/reporting/analytics/AllReportsPage'));
+const DashboardsPage = lazy(() => import('@/pages/reporting/analytics/DashboardsPage'));
+const DashboardDetailPage = lazy(() => import('@/pages/reporting/analytics/DashboardDetailPage'));
+const VelocityPage = lazy(() => import('@/pages/reporting/analytics/VelocityPage'));
+const CumulativeFlowPage = lazy(() => import('@/pages/reporting/analytics/CumulativeFlowPage'));
+const TimeInStatusPage = lazy(() => import('@/pages/reporting/analytics/TimeInStatusPage'));
+const ProjectHealthPage = lazy(() => import('@/pages/reporting/analytics/ProjectHealthPage'));
+const PlannedVsActualTasksPage = lazy(
+  () => import('@/pages/reporting/analytics/PlannedVsActualTasksPage')
+);
+const PlannedVsActualMilestonesPage = lazy(
+  () => import('@/pages/reporting/analytics/PlannedVsActualMilestonesPage')
+);
+const UtilizationPage = lazy(() => import('@/pages/reporting/analytics/UtilizationPage'));
+const TimeReportPage = lazy(() => import('@/pages/reporting/analytics/TimeReportPage'));
+const BudgetTrackingPage = lazy(() => import('@/pages/reporting/analytics/BudgetTrackingPage'));
+const AnalyticsComingSoonPage = lazy(
+  () => import('@/pages/reporting/analytics/AnalyticsComingSoonPage')
+);
+const CustomReportPage = lazy(() => import('@/pages/reporting/analytics/CustomReportPage'));
+
+const withBusinessGate = (titleKey: string, titleDefault: string, element: ReactNode) => (
+  <AnalyticsBusinessGate titleKey={titleKey} titleDefault={titleDefault}>
+    {element}
+  </AnalyticsBusinessGate>
+);
+
 const flattenItems = (items: ReportingMenuItems[]): ReportingMenuItems[] => {
   return items.reduce<ReportingMenuItems[]>((acc, item) => {
     if (item.children) {
@@ -17,16 +48,102 @@ const flattenItems = (items: ReportingMenuItems[]): ReportingMenuItems[] => {
 
 const flattenedItems = flattenItems(reportingsItems);
 
+const withSuspense = (element: ReactNode) => (
+  <Suspense fallback={<SuspenseFallback />}>{element}</Suspense>
+);
+
+/** Classic reporting pages remain Owner/Admin (paid) only. */
+const ExistingReportingAdminGuard = memo(({ children }: { children: ReactNode }) => {
+  const { isAuthenticated, isAdmin, location } = useAuthStatus();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to={ANALYTICS_BASE_PATH} replace />;
+  }
+
+  return <>{children}</>;
+});
+
+ExistingReportingAdminGuard.displayName = 'ExistingReportingAdminGuard';
+
+const enabledAnalyticsElements: Record<string, ReactNode> = {
+  velocity: withBusinessGate('velocity', 'Velocity', <VelocityPage />),
+  'cumulative-flow': withBusinessGate(
+    'cumulativeFlow',
+    'Cumulative Flow',
+    <CumulativeFlowPage />
+  ),
+  'time-in-status': withBusinessGate('timeInStatus', 'Time in Status', <TimeInStatusPage />),
+  'project-health': <ProjectHealthPage />,
+  'planned-vs-actual-tasks': <PlannedVsActualTasksPage />,
+  'planned-vs-actual-milestones': <PlannedVsActualMilestonesPage />,
+  utilization: <UtilizationPage />,
+  'time-report': <TimeReportPage />,
+  'budget-tracking': <BudgetTrackingPage />,
+  dashboards: <DashboardsPage />,
+};
+
+const comingSoonPaths = flatAnalyticsNavItems()
+  .filter(item => item.path && !item.enabled)
+  .map(item => item.path);
+
 const reportingRoutes: RouteObject[] = [
+  // New Reporting & Analytics (prototype sidebar) — listed first for specificity
+  {
+    path: 'worklenz/reporting/analytics',
+    element: (
+      <GuestRedirect blockPathPrefix="/worklenz/reporting">
+        <AnalyticsReportingLayout />
+      </GuestRedirect>
+    ),
+    children: [
+      { index: true, element: withSuspense(<AllReportsPage />) },
+      ...Object.entries(enabledAnalyticsElements).map(([path, element]) => ({
+        path,
+        element: withSuspense(element),
+      })),
+      {
+        path: 'dashboards/:id',
+        element: withSuspense(<DashboardDetailPage />),
+      },
+      {
+        path: 'custom/:id',
+        element: withSuspense(<CustomReportPage />),
+      },
+      ...comingSoonPaths.map(path => ({
+        path,
+        element: withSuspense(
+          path === 'sla' ? (
+            withBusinessGate('sla', 'SLA Tracking', <AnalyticsComingSoonPage />)
+          ) : (
+            <AnalyticsComingSoonPage />
+          )
+        ),
+      })),
+      { path: '*', element: <Navigate to={ANALYTICS_BASE_PATH} replace /> },
+    ],
+  },
+  // Classic reporting (NavRail) — Owner/Admin only
   {
     path: 'worklenz/reporting',
-    element: <ReportingLayout />,
+    element: (
+      <GuestRedirect blockPathPrefix="/worklenz/reporting">
+        <ExistingReportingAdminGuard>
+          <ReportingLayout />
+        </ExistingReportingAdminGuard>
+      </GuestRedirect>
+    ),
     children: [
       { index: true, element: <NavSurfaceIndexRedirect surfaceKey="reporting" /> },
       ...flattenedItems.map(item => ({
         path: item.endpoint,
-        element: <Suspense fallback={<SuspenseFallback />}>{item.element}</Suspense>,
+        element: withSuspense(item.element),
       })),
+      // Non-matching paths (except /analytics, handled by sibling route) bounce home
+      { path: '*', element: <Navigate to="/worklenz/reporting" replace /> },
     ],
   },
 ];

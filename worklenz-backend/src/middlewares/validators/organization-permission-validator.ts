@@ -32,7 +32,24 @@ export const organizationPermissionValidator = (permission: OrganizationPermissi
     }
   };
 
-export const viewReportsValidator = organizationPermissionValidator(ORGANIZATION_PERMISSIONS.VIEW_REPORTS);
+const isFreePlanUser = (user: IWorkLenzRequest["user"]): boolean => {
+  if (!user) return false;
+  const status = String(user.subscription_status || "").toLowerCase();
+  const type = String((user as { subscription_type?: string }).subscription_type || "").toUpperCase();
+  const tier = user.entitlements?.tier;
+  return status === "free" || type === "FREE" || tier === "free";
+};
+
+/** Classic reporting: requires View reports and a paid (non-free) plan. */
+export const viewReportsValidator = async (
+  req: IWorkLenzRequest,
+  res: IWorkLenzResponse,
+  next: NextFunction
+): Promise<IWorkLenzResponse | void> => {
+  if (isFreePlanUser(req.user)) return sendForbidden(res);
+  return organizationPermissionValidator(ORGANIZATION_PERMISSIONS.VIEW_REPORTS)(req, res, next);
+};
+
 export const viewFinanceValidator = organizationPermissionValidator(ORGANIZATION_PERMISSIONS.VIEW_FINANCE);
 
 /** Changes on surfaces opened read-only through "View ..." permissions stay Owner/Admin-only. */
