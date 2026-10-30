@@ -502,23 +502,31 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       }
     >
       {!hasProjectSelection ? (
-        <Flex
-          vertical
-          align="center"
-          justify="center"
-          gap={16}
-          style={{ minHeight: 320, width: '100%' }}
-        >
-          <ReportEmptyState
-            title={t('velocityNoSelectionTitle', {
+        <Flex vertical gap={16} style={{ width: '100%' }}>
+          <Flex
+            vertical
+            align="center"
+            justify="center"
+            gap={16}
+            style={{ minHeight: 240, width: '100%' }}
+          >
+            <ReportEmptyState
+              title={t('velocityNoSelectionTitle', {
+                defaultValue: 'Select a project first',
+              })}
+              description={t('velocityNoSelectionDescription', {
+                defaultValue:
+                  'Choose one or more projects with the Filter button below to view the velocity diagram.',
+              })}
+            />
+            {velocityFilters}
+          </Flex>
+          <VelocityTable
+            series={[]}
+            emptyText={t('velocityNoSelectionTitle', {
               defaultValue: 'Select a project first',
             })}
-            description={t('velocityNoSelectionDescription', {
-              defaultValue:
-                'Choose one or more projects with the Filter button below to view the velocity diagram.',
-            })}
           />
-          {velocityFilters}
         </Flex>
       ) : loading && !data ? (
         <ReportLoadingSkeleton />

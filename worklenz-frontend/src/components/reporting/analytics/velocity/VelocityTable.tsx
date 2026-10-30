@@ -12,6 +12,8 @@ const { Text } = Typography;
 interface VelocityTableProps {
   series: VelocitySeriesPoint[];
   bucket?: VelocityBucket;
+  /** Overrides the default empty-state copy (e.g. select-project prompt). */
+  emptyText?: React.ReactNode;
 }
 
 interface VelocityRow {
@@ -25,6 +27,7 @@ interface VelocityRow {
 export const VelocityTable: React.FC<VelocityTableProps> = ({
   series,
   bucket = 'sprint',
+  emptyText: emptyTextProp,
 }) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
@@ -36,7 +39,7 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
         ? t('colSprintOrPhase', { defaultValue: 'Sprint / Phase' })
         : t('colSprint', { defaultValue: 'Sprint' });
 
-  const emptyText =
+  const defaultEmptyText =
     bucket === 'phase'
       ? t('velocityChartEmptyPhases', {
           defaultValue: 'No phases with tasks match these filters.',
@@ -48,6 +51,10 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
         : t('velocityChartEmpty', {
             defaultValue: 'No completed sprints match these filters.',
           });
+
+  const emptyText = (
+    <Text type="secondary">{emptyTextProp ?? defaultEmptyText}</Text>
+  );
 
   const data: VelocityRow[] = useMemo(
     () =>

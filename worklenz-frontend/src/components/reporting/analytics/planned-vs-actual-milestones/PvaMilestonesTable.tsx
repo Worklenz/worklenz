@@ -10,6 +10,8 @@ const { Text } = Typography;
 interface PvaMilestonesTableProps {
   milestones: PlannedVsActualMilestonesRow[];
   loading?: boolean;
+  /** Overrides the default empty-state copy (e.g. select-project prompt). */
+  emptyText?: React.ReactNode;
 }
 
 const formatVariance = (days: number): string => {
@@ -20,8 +22,16 @@ const formatVariance = (days: number): string => {
 export const PvaMilestonesTable: React.FC<PvaMilestonesTableProps> = ({
   milestones,
   loading,
+  emptyText: emptyTextProp,
 }) => {
   const { t } = useTranslation('reporting-analytics');
+
+  const emptyText = (
+    <Text type="secondary">
+      {emptyTextProp ??
+        t('pvaMsChartEmpty', { defaultValue: 'No milestones match these filters.' })}
+    </Text>
+  );
 
   const columns: ColumnsType<PlannedVsActualMilestonesRow> = useMemo(
     () => [
@@ -95,9 +105,10 @@ export const PvaMilestonesTable: React.FC<PvaMilestonesTableProps> = ({
       columns={columns}
       dataSource={milestones}
       loading={loading}
-      pagination={{ pageSize: 20, showSizeChanger: true }}
+      pagination={milestones.length > 0 ? { pageSize: 20, showSizeChanger: true } : false}
       scroll={{ x: 720 }}
       size="middle"
+      locale={{ emptyText }}
     />
   );
 };
