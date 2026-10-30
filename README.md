@@ -1,7 +1,7 @@
 <div align="center">
 <h1 align="center">
     <a href="https://worklenz.com" target="_blank" rel="noopener noreferrer">
-        <img src="https://s3.dualstack.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png" alt="Worklenz Logo" width="400">
+        <img src="https://seconova-my.sharepoint.com/:i:/g/personal/developer_seconova_ai/IQDBLVvYIVgxQY7u5PZ5wS2BAbtjl8gQehJqWI40QqIuG-Y?e=x4Zkby" alt="Worklenz Logo" width="400">
     </a>
 </h1>
 <h3 align="center">All-in-one open-source project management for efficient teams</h3>
