@@ -63,12 +63,24 @@ vi.mock('@/hooks/useAuth', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useIsAdminSurfaceReadOnly', () => ({
+  useIsAdminSurfaceReadOnly: () => false,
+}));
+
 // The three legacy sections are stand-ins: this spec is about how the page saves, not about their fields.
 vi.mock('./sections/CompanyDetailsSection', () => ({
   CompanyDetailsSection: ({ onChange }: { onChange: (patch: Record<string, unknown>) => void }) => (
-    <button type="button" onClick={() => onChange({ company_name: 'Ceydigital' })}>
-      rename company
-    </button>
+    <div>
+      <button type="button" onClick={() => onChange({ company_name: 'Ceydigital' })}>
+        rename company
+      </button>
+      <button type="button" onClick={() => onChange({ contact_phone: '+94 11 234 5678' })}>
+        valid phone
+      </button>
+      <button type="button" onClick={() => onChange({ contact_phone: '+94 11 234 5678 99999' })}>
+        invalid phone
+      </button>
+    </div>
   ),
 }));
 vi.mock('./sections/BrandingSection', () => ({ BrandingSection: () => <div>branding</div> }));
@@ -200,5 +212,53 @@ describe('ClientPortalSettings', () => {
     await userEvent.click(screen.getByRole('button', { name: /Cancel/ }));
     expect(screen.queryByRole('button', { name: /Save Changes/ })).not.toBeInTheDocument();
     expect(screen.getByRole('switch', { name: 'Show Invoices in the client portal' })).not.toBeChecked();
+  });
+
+  it('keeps Save Changes enabled on invalid phone format, but blocks saving and displays error on click', async () => {
+    render(<ClientPortalSettings />);
+    await screen.findByRole('button', { name: /Company Details/ });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'invalid phone' }));
+    const saveButton = screen.getByRole('button', { name: /Save Changes/ });
+    expect(saveButton).toBeInTheDocument();
+    expect(saveButton).not.toBeDisabled();
+
+    await userEvent.click(saveButton);
+
+    expect(state.updateLegacy).not.toHaveBeenCalled();
+    expect(state.messageSuccess).not.toHaveBeenCalled();
+    expect(state.messageError).toHaveBeenCalledWith(
+      'Invalid phone number format. Use international format (e.g., +1-234-567-8900)'
+    );
+  });
+
+  it('allows saving when a valid phone number is entered', async () => {
+    render(<ClientPortalSettings />);
+    await screen.findByRole('button', { name: /Company Details/ });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'valid phone' }));
+    const saveButton = screen.getByRole('button', { name: /Save Changes/ });
+    await userEvent.click(saveButton);
+
+    await waitFor(() => expect(state.updateLegacy).toHaveBeenCalledTimes(1));
+    const payload = state.updateLegacy.mock.calls[0][0] as Record<string, unknown>;
+    expect(payload.contact_phone).toBe('+94 11 234 5678');
+    expect(state.messageSuccess).toHaveBeenCalledWith('Settings saved successfully');
+  });
+
+  it('allows v2 changes to save when hasLegacyChanges is false even if stored phone is invalid', async () => {
+    state.getLegacy.mockResolvedValue({
+      done: true,
+      body: { ...legacyBody, contact_phone: 'invalid-old-phone' },
+    });
+    render(<ClientPortalSettings />);
+    await openSection('Sharing & Visibility');
+
+    await userEvent.click(await screen.findByRole('switch', { name: 'Show Invoices in the client portal' }));
+    await userEvent.click(screen.getByRole('button', { name: /Save Changes/ }));
+
+    await waitFor(() => expect(state.saveV2).toHaveBeenCalledWith({ ...v2Defaults, show_invoices: true }));
+    expect(state.updateLegacy).not.toHaveBeenCalled();
+    expect(state.messageError).not.toHaveBeenCalled();
   });
 });
