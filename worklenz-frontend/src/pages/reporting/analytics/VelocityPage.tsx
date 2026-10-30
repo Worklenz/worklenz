@@ -283,12 +283,11 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
           }
         }
 
-        // Custom template view should not fall back to a different default template.
+        // Builtin Velocity always starts with no project selected so the
+        // "Select a project first" empty state is shown. Do not hydrate
+        // project_ids (or other filters) from a saved default template.
+        // Custom / ?template= routes still apply full filters above.
         if (!isCustomTemplateView && !appliedDefaultTemplate.current) {
-          const defaultTpl = res.body.find(tpl => tpl.is_default);
-          if (defaultTpl?.filters_json) {
-            applyTemplateFilters(defaultTpl);
-          }
           appliedDefaultTemplate.current = true;
         }
       }
