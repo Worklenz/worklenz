@@ -33,13 +33,6 @@ const AnalyticsComingSoonPage: React.FC = () => {
   return (
     <ReportPageShell
       title={title}
-      crumbs={[
-        {
-          label: t('allReports', { defaultValue: 'All reports' }),
-          path: ANALYTICS_BASE_PATH,
-        },
-        { label: title },
-      ]}
       lastUpdatedAt={null}
     >
       <ReportEmptyState

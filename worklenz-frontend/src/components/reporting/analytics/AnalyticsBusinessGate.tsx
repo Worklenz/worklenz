@@ -40,13 +40,6 @@ export const AnalyticsBusinessGate: React.FC<AnalyticsBusinessGateProps> = ({
   return (
     <ReportPageShell
       title={title}
-      crumbs={[
-        {
-          label: t('allReports', { defaultValue: 'All reports' }),
-          path: ANALYTICS_BASE_PATH,
-        },
-        { label: title },
-      ]}
       lastUpdatedAt={null}
     >
       <Flex align="center" justify="center" style={{ minHeight: 360, width: '100%' }}>

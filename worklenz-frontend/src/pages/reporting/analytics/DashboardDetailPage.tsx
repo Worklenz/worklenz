@@ -14,17 +14,6 @@ const DashboardDetailPage: React.FC = () => {
   return (
     <ReportPageShell
       title={title}
-      crumbs={[
-        {
-          label: t('allReports', { defaultValue: 'All reports' }),
-          path: ANALYTICS_BASE_PATH,
-        },
-        {
-          label: t('dashboards', { defaultValue: 'Dashboards' }),
-          path: analyticsPath('dashboards'),
-        },
-        { label: id ? `${title}` : title },
-      ]}
       lastUpdatedAt={null}
     >
       <ReportEmptyState

@@ -1,7 +1,6 @@
 import React from 'react';
-import { Breadcrumb, Flex, Space, Typography, theme } from '@/shared/antd-imports';
+import { Flex, Space, Typography, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { AnalyticsExportMenu, type AnalyticsExportFormat } from './AnalyticsExportMenu';
@@ -10,14 +9,8 @@ dayjs.extend(relativeTime);
 
 const { Title, Text } = Typography;
 
-export interface ReportPageShellCrumb {
-  label: string;
-  path?: string;
-}
-
 export interface ReportPageShellProps {
   title: string;
-  crumbs?: ReportPageShellCrumb[];
   lastUpdatedAt?: string | Date | null;
   filters?: React.ReactNode;
   onExport?: (format: AnalyticsExportFormat) => void;
@@ -30,7 +23,6 @@ export interface ReportPageShellProps {
 
 export const ReportPageShell: React.FC<ReportPageShellProps> = ({
   title,
-  crumbs,
   lastUpdatedAt,
   filters,
   onExport,
@@ -52,14 +44,6 @@ export const ReportPageShell: React.FC<ReportPageShellProps> = ({
 
   return (
     <Flex vertical gap={16} style={{ minHeight: '100%' }}>
-      {crumbs && crumbs.length > 0 && (
-        <Breadcrumb
-          items={crumbs.map(crumb => ({
-            title: crumb.path ? <Link to={crumb.path}>{crumb.label}</Link> : crumb.label,
-          }))}
-        />
-      )}
-
       <Flex vertical gap={4}>
         <Title level={3} style={{ margin: 0 }}>
           {title}

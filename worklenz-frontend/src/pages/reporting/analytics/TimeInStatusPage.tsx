@@ -504,27 +504,6 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
   return (
     <ReportPageShell
       title={title}
-      crumbs={
-        isCustomTemplateView
-          ? [
-              {
-                label: t('allReports', { defaultValue: 'All reports' }),
-                path: ANALYTICS_BASE_PATH,
-              },
-              {
-                label: t('tabCustom', { defaultValue: 'Custom reports' }),
-                path: ANALYTICS_BASE_PATH,
-              },
-              { label: title },
-            ]
-          : [
-              {
-                label: t('allReports', { defaultValue: 'All reports' }),
-                path: ANALYTICS_BASE_PATH,
-              },
-              { label: title },
-            ]
-      }
       lastUpdatedAt={data?.last_updated_at ?? null}
       filters={tisFilters}
       onExport={handleExport}

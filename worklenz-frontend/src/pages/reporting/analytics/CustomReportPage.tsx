@@ -103,17 +103,6 @@ const CustomReportPage: React.FC = () => {
   return (
     <ReportPageShell
       title={title}
-      crumbs={[
-        {
-          label: t('allReports', { defaultValue: 'All reports' }),
-          path: ANALYTICS_BASE_PATH,
-        },
-        {
-          label: t('tabCustom', { defaultValue: 'Custom reports' }),
-          path: ANALYTICS_BASE_PATH,
-        },
-        { label: title },
-      ]}
       lastUpdatedAt={report.accessedAt || report.createdAt}
     >
       <Empty
