@@ -42,6 +42,7 @@ import {
   updateTaskTimeTracking,
 } from '@/features/tasks/tasks.slice';
 import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
+import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import {
   addTask,
   addTaskToGroup,
@@ -131,6 +132,8 @@ export const useTaskSocketHandlers = () => {
   // Suppresses PROJECT_UPDATES_AVAILABLE refetch while a phase auto-advance is in progress
   // so the task list doesn't flash a loading spinner during the real-time update.
   const suppressProjectUpdateRef = useRef(false);
+  const sprintPhaseRefreshInFlightRef = useRef(false);
+  const queuedSprintPhaseProjectIdRef = useRef<string | null>(null);
 
   // Roadmap (Gantt) uses its own RTK Query cache. Invalidate so an open Roadmap
   // tab (or the next visit) reflects phase / date / status / priority changes.
@@ -1433,6 +1436,31 @@ export const useTaskSocketHandlers = () => {
     [dispatch]
   );
 
+  const handleProjectSprintsUpdated = useCallback(async () => {
+    if (!projectId) return;
+
+    if (sprintPhaseRefreshInFlightRef.current) {
+      queuedSprintPhaseProjectIdRef.current = projectId;
+      return;
+    }
+
+    sprintPhaseRefreshInFlightRef.current = true;
+    let projectIdToRefresh: string | null = projectId;
+    try {
+      while (projectIdToRefresh) {
+        queuedSprintPhaseProjectIdRef.current = null;
+        try {
+          await dispatch(fetchPhasesByProjectId(projectIdToRefresh)).unwrap();
+        } catch (error) {
+          logger.error('Handle Project Sprints Updated Error:', error);
+        }
+        projectIdToRefresh = queuedSprintPhaseProjectIdRef.current;
+      }
+    } finally {
+      sprintPhaseRefreshInFlightRef.current = false;
+    }
+  }, [dispatch, projectId]);
+
   // Register socket event listeners
   useEffect(() => {
     if (!socket) return;
@@ -1489,6 +1517,10 @@ export const useTaskSocketHandlers = () => {
         event: SocketEvents.TASK_ATTACHMENTS_UPDATED.toString(),
         handler: handleTaskAttachmentsUpdated,
       },
+      {
+        event: SocketEvents.PROJECT_SPRINTS_UPDATED.toString(),
+        handler: handleProjectSprintsUpdated,
+      },
     ];
 
     // Register all event listeners
@@ -1529,5 +1561,6 @@ export const useTaskSocketHandlers = () => {
     handleProjectUpdatesAvailable,
     handleTaskCommentsUpdated,
     handleTaskAttachmentsUpdated,
+    handleProjectSprintsUpdated,
   ]);
 };

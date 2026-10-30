@@ -76,7 +76,6 @@ export const PointScaleModal = ({ open, projectId, onClose }: PointScaleModalPro
       <Form form={form} layout="vertical" onFinish={handleSubmit} requiredMark={false}>
         <Form.Item
           name="scale"
-          label={t('pointScaleLabel', { defaultValue: 'Story point scale' })}
           extra={t('pointScaleHelp', {
             defaultValue:
               'Enter comma-separated values. These options appear in Backlog rows and issue details.',
