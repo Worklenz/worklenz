@@ -150,8 +150,8 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
         (group.monthly?.id === billingInfo.plan_id || group.annual?.id === billingInfo.plan_id)
     )?.key ?? null;
   const hasCurrentCard = currentGroupKey !== null || isFreeUser;
-  const cardCount = groups.length + (showFreeCard ? 1 : 0);
-  const cardColumns = cardCount >= 5 ? 8 : cardCount === 4 ? 6 : 8;
+  const cardCount = groups.length;
+  const cardColumns = cardCount >= 4 ? 6 : cardCount === 3 ? 8 : 10;
 
   const trackingProps = (plan?: IPerUserPlan, seatCount?: number) => ({
     pricing_model: 'per_user',
@@ -486,85 +486,47 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
     );
   };
 
-  const renderSimpleCard = (
-    key: 'free',
-    price: React.ReactNode,
-    priceNote: string,
-    action: React.ReactNode,
-    tag?: React.ReactNode
-  ) => {
-    const nameId = `per-user-plan-${key}`;
-    const features = t(`plans.${key}.features`, { returnObjects: true }) as string[];
+  // Free is a downgrade path, not a purchase option, so it sits below the paid cards as a slim
+  // strip instead of competing with them.
+  const renderFreeBanner = () => {
+    const features = t('plans.free.features', { returnObjects: true }) as string[];
     return (
-      <Col xs={24} md={12} xl={cardColumns} key={key}>
-        <Card
-          role="group"
-          aria-labelledby={nameId}
-          style={{ height: '100%' }}
-          styles={{ body: { height: '100%' } }}
-        >
-          <Flex vertical gap={12} style={{ height: '100%' }}>
-            <Flex vertical gap={8}>
-              <Flex justify="space-between" align="center">
-                <Typography.Title level={3} id={nameId} style={{ margin: 0 }}>
-                  {t(`plans.${key}.name`)}
-                </Typography.Title>
-                {tag}
-              </Flex>
-              <Typography.Text type="secondary" style={{ minHeight: 44 }}>
-                {t(`plans.${key}.description`)}
+      <Card role="group" aria-labelledby="per-user-plan-free" size="small" style={{ marginTop: 16 }}>
+        <Flex justify="space-between" align="center" gap={16} wrap>
+          <Flex vertical gap={2}>
+            <Flex align="center" gap={8}>
+              <Typography.Text strong id="per-user-plan-free">
+                {t('plans.free.name')}
               </Typography.Text>
-              <Flex align="baseline" gap={6} wrap>
-                <Typography.Text style={{ fontSize: 36, fontWeight: 600 }}>{price}</Typography.Text>
-                <Typography.Text type="secondary">{priceNote}</Typography.Text>
-              </Flex>
-              {/* Same slot as the paid cards' savings line, so the feature lists line up */}
-              <div style={{ minHeight: 24 }} />
-              <Flex vertical gap={12}>
-                {/* Matches the total line on the paid cards */}
-                <Typography.Text style={{ minHeight: 22 }} />
-                {action}
-              </Flex>
-              <Space direction="vertical" size={6} style={{ marginTop: 4 }}>
-                {Array.isArray(features) &&
-                  features.map(feature => (
-                    <Typography.Text key={feature}>
-                      <CheckCircleFilled style={{ color: '#52c41a', marginRight: 8 }} />
-                      {feature}
-                    </Typography.Text>
-                  ))}
-              </Space>
+              <Typography.Text type="secondary">
+                {formatUsd(0)} {t('freeForever')}
+              </Typography.Text>
+              {isFreeUser && <Tag color="green">{t('currentPlan')}</Tag>}
             </Flex>
+            <Typography.Text type="secondary">
+              {t('plans.free.description')}
+              {Array.isArray(features) && ` ${features.join(' · ')}`}
+            </Typography.Text>
           </Flex>
-        </Card>
-      </Col>
+          <Tooltip
+            title={
+              exceedsFreeLimit && !isFreeUser
+                ? t('freeLimitHint', { count: FREE_USER_LIMIT })
+                : undefined
+            }
+          >
+            <Button
+              disabled={isFreeUser || exceedsFreeLimit}
+              loading={switchingToFree}
+              onClick={confirmSwitchToFree}
+            >
+              {isFreeUser ? t('currentPlan') : t('switchToFree')}
+            </Button>
+          </Tooltip>
+        </Flex>
+      </Card>
     );
   };
-
-  const renderFreeCard = () =>
-    renderSimpleCard(
-      'free',
-      formatUsd(0),
-      t('freeForever'),
-      <Tooltip
-        title={
-          exceedsFreeLimit && !isFreeUser
-            ? t('freeLimitHint', { count: FREE_USER_LIMIT })
-            : undefined
-        }
-      >
-        <Button
-          size="large"
-          block
-          disabled={isFreeUser || exceedsFreeLimit}
-          loading={switchingToFree}
-          onClick={confirmSwitchToFree}
-        >
-          {isFreeUser ? t('currentPlan') : t('switchToFree')}
-        </Button>
-      </Tooltip>,
-      isFreeUser ? <Tag color="green">{t('currentPlan')}</Tag> : undefined
-    );
 
   return (
     <div className="upgrade-plans-responsive">
@@ -616,9 +578,10 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
       </Flex>
 
       <Row gutter={[16, 16]} justify="center">
-        {showFreeCard && renderFreeCard()}
         {groups.map(renderCard)}
       </Row>
+
+      {showFreeCard && renderFreeBanner()}
 
       <Flex vertical align="center" gap={4} style={{ marginTop: 20 }}>
         <Typography.Text style={{ fontSize: 13 }}>
