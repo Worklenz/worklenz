@@ -461,7 +461,6 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
   return (
     <ReportPageShell
       title={title}
-      lastUpdatedAt={data?.last_updated_at ?? null}
       filters={velocityFilters}
       onExport={hasProjectSelection ? handleExport : undefined}
       exportDisabled={!data || !hasProjectSelection}

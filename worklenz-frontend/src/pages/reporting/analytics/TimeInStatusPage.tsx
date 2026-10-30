@@ -504,7 +504,6 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
   return (
     <ReportPageShell
       title={title}
-      lastUpdatedAt={data?.last_updated_at ?? null}
       filters={tisFilters}
       onExport={handleExport}
       exportDisabled={!data}

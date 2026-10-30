@@ -103,7 +103,6 @@ const CustomReportPage: React.FC = () => {
   return (
     <ReportPageShell
       title={title}
-      lastUpdatedAt={report.accessedAt || report.createdAt}
     >
       <Empty
         image={Empty.PRESENTED_IMAGE_SIMPLE}

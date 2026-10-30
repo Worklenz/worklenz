@@ -33,7 +33,6 @@ const AnalyticsComingSoonPage: React.FC = () => {
   return (
     <ReportPageShell
       title={title}
-      lastUpdatedAt={null}
     >
       <ReportEmptyState
         title={t('placeholderEmptyTitle', { defaultValue: 'Report coming soon' })}

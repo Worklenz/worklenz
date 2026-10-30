@@ -452,7 +452,6 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
   return (
     <ReportPageShell
       title={title}
-      lastUpdatedAt={data?.last_updated_at ?? null}
       filters={filterBar}
       onExport={handleExport}
       exportLoading={exporting}

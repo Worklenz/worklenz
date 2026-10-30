@@ -387,7 +387,6 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
   return (
     <ReportPageShell
       title={title}
-      lastUpdatedAt={data?.last_updated_at ?? null}
       filters={cfdFilters}
       onExport={handleExport}
       exportDisabled={!data}

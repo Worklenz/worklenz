@@ -337,7 +337,6 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
   return (
     <ReportPageShell
       title={title}
-      lastUpdatedAt={data?.last_updated_at ?? null}
       filters={milestonesFilters}
       onExport={hasProjectSelection ? handleExport : undefined}
       exportLoading={exporting}

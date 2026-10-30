@@ -14,7 +14,6 @@ const DashboardDetailPage: React.FC = () => {
   return (
     <ReportPageShell
       title={title}
-      lastUpdatedAt={null}
     >
       <ReportEmptyState
         title={t('dashboardCanvasEmptyTitle', { defaultValue: 'Empty dashboard' })}

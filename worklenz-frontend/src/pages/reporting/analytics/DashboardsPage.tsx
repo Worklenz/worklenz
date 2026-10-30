@@ -26,7 +26,6 @@ const DashboardsPage: React.FC = () => {
   return (
     <ReportPageShell
       title={title}
-      lastUpdatedAt={null}
       actions={
         permissions.canCreate ? (
           <Button type="primary" icon={<PlusOutlined />} disabled>

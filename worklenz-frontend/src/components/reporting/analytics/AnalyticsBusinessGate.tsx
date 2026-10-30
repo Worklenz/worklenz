@@ -40,7 +40,6 @@ export const AnalyticsBusinessGate: React.FC<AnalyticsBusinessGateProps> = ({
   return (
     <ReportPageShell
       title={title}
-      lastUpdatedAt={null}
     >
       <Flex align="center" justify="center" style={{ minHeight: 360, width: '100%' }}>
         <Result

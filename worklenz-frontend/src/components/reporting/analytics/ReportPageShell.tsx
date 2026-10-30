@@ -1,17 +1,11 @@
 import React from 'react';
 import { Flex, Space, Typography, theme } from '@/shared/antd-imports';
-import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
 import { AnalyticsExportMenu, type AnalyticsExportFormat } from './AnalyticsExportMenu';
 
-dayjs.extend(relativeTime);
-
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 export interface ReportPageShellProps {
   title: string;
-  lastUpdatedAt?: string | Date | null;
   filters?: React.ReactNode;
   onExport?: (format: AnalyticsExportFormat) => void;
   exportDisabled?: boolean;
@@ -23,7 +17,6 @@ export interface ReportPageShellProps {
 
 export const ReportPageShell: React.FC<ReportPageShellProps> = ({
   title,
-  lastUpdatedAt,
   filters,
   onExport,
   exportDisabled,
@@ -32,26 +25,13 @@ export const ReportPageShell: React.FC<ReportPageShellProps> = ({
   actions,
   children,
 }) => {
-  const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
-
-  const lastUpdatedLabel = lastUpdatedAt
-    ? t('lastUpdatedRelative', {
-        defaultValue: 'Last updated: {{time}}',
-        time: dayjs(lastUpdatedAt).fromNow(),
-      })
-    : t('lastUpdatedUnknown', { defaultValue: 'Last updated: —' });
 
   return (
     <Flex vertical gap={16} style={{ minHeight: '100%' }}>
-      <Flex vertical gap={4}>
-        <Title level={3} style={{ margin: 0 }}>
-          {title}
-        </Title>
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {lastUpdatedLabel}
-        </Text>
-      </Flex>
+      <Title level={3} style={{ margin: 0 }}>
+        {title}
+      </Title>
 
       {(filters || onExport || actions) && (
         <div

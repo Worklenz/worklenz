@@ -39,7 +39,6 @@ export const AnalyticsReportPlaceholder: React.FC<AnalyticsReportPlaceholderProp
   return (
     <ReportPageShell
       title={title}
-      lastUpdatedAt={null}
       onExport={handleExport}
       filters={
         <AnalyticsFilterBar
