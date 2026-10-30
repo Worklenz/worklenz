@@ -132,6 +132,8 @@ export const useTaskSocketHandlers = () => {
   // Suppresses PROJECT_UPDATES_AVAILABLE refetch while a phase auto-advance is in progress
   // so the task list doesn't flash a loading spinner during the real-time update.
   const suppressProjectUpdateRef = useRef(false);
+  const sprintPhaseRefreshInFlightRef = useRef(false);
+  const queuedSprintPhaseProjectIdRef = useRef<string | null>(null);
 
   // Roadmap (Gantt) uses its own RTK Query cache. Invalidate so an open Roadmap
   // tab (or the next visit) reflects phase / date / status / priority changes.
@@ -1434,9 +1436,29 @@ export const useTaskSocketHandlers = () => {
     [dispatch]
   );
 
-  const handleProjectSprintsUpdated = useCallback(() => {
+  const handleProjectSprintsUpdated = useCallback(async () => {
     if (!projectId) return;
-    dispatch(fetchPhasesByProjectId(projectId));
+
+    if (sprintPhaseRefreshInFlightRef.current) {
+      queuedSprintPhaseProjectIdRef.current = projectId;
+      return;
+    }
+
+    sprintPhaseRefreshInFlightRef.current = true;
+    let projectIdToRefresh: string | null = projectId;
+    try {
+      while (projectIdToRefresh) {
+        queuedSprintPhaseProjectIdRef.current = null;
+        try {
+          await dispatch(fetchPhasesByProjectId(projectIdToRefresh)).unwrap();
+        } catch (error) {
+          logger.error('Handle Project Sprints Updated Error:', error);
+        }
+        projectIdToRefresh = queuedSprintPhaseProjectIdRef.current;
+      }
+    } finally {
+      sprintPhaseRefreshInFlightRef.current = false;
+    }
   }, [dispatch, projectId]);
 
   // Register socket event listeners
