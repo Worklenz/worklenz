@@ -58,7 +58,7 @@ const AnalyticsSidebarLink: React.FC<{
   const content = (
     <>
       <span className="analytics-sider-link-icon" aria-hidden>
-        {getAnalyticsNavIcon(item.key.startsWith('custom-') ? 'dashboards' : item.key)}
+        {getAnalyticsNavIcon(item.key.startsWith('custom-') ? 'all-reports' : item.key)}
       </span>
       {!collapsed && (
         <>
@@ -217,10 +217,7 @@ export const AnalyticsSidebar: React.FC = () => {
               <AnalyticsSidebarLink
                 key={item.key}
                 item={item}
-                active={
-                  activeKey === item.key ||
-                  (item.key === 'dashboards' && activeKey === 'dashboards')
-                }
+                active={activeKey === item.key}
                 isDark={isDark}
                 collapsed={collapsed}
                 labelOverride={

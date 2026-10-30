@@ -11,7 +11,6 @@ import {
   FundOutlined,
   FieldTimeOutlined,
   SafetyCertificateOutlined,
-  PartitionOutlined,
 } from '@/shared/antd-imports';
 
 export const ANALYTICS_BASE_PATH = '/worklenz/reporting/analytics';
@@ -150,13 +149,6 @@ export const ANALYTICS_NAV: {
       defaultLabel: 'Share',
       items: [
         {
-          key: 'dashboards',
-          path: 'dashboards',
-          labelKey: 'dashboards',
-          defaultLabel: 'Dashboards',
-          enabled: true,
-        },
-        {
           key: 'client-dashboard',
           path: 'client-dashboard',
           labelKey: 'clientDashboard',
@@ -181,7 +173,6 @@ export const getAnalyticsNavIcon = (key: string): ReactNode => {
     'cumulative-flow': React.createElement(FundOutlined),
     'time-in-status': React.createElement(FieldTimeOutlined),
     sla: React.createElement(SafetyCertificateOutlined),
-    dashboards: React.createElement(PartitionOutlined),
     'client-dashboard': React.createElement(AppstoreOutlined),
   };
   return map[key] ?? React.createElement(AppstoreOutlined);
