@@ -7,6 +7,7 @@ import type {
   ProjectHealthRow,
   ProjectHealthTone,
 } from '@/types/reporting/analytics-project-health.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { MetricCalcHint } from '../MetricCalcHint';
 
 const { Text } = Typography;
@@ -103,7 +104,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
                 }}
               />
               <Text strong ellipsis style={{ color: token.colorText }}>
-                {name}
+                {decodeHtmlEntities(name)}
               </Text>
             </Flex>
           );
@@ -131,9 +132,10 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         onFilter: (value, record) => record.health_tone === value,
         render: (_: unknown, row) => {
           const fallback = TONE_FALLBACK[row.health_tone];
-          const label =
+          const label = decodeHtmlEntities(
             row.health_name ||
-            t(fallback.labelKey, { defaultValue: fallback.defaultLabel });
+              t(fallback.labelKey, { defaultValue: fallback.defaultLabel })
+          );
           // Tone presets (not raw DB hex) — custom light grays render white-on-pale in light mode.
           return <Tag color={fallback.color}>{label}</Tag>;
         },
@@ -166,7 +168,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         align: 'right',
         sorter: (a, b) => (a.due_date || '').localeCompare(b.due_date || ''),
         render: (value: string | null) =>
-          value ? dayjs(value).format('MMM D, YYYY') : <Text type="secondary">—</Text>,
+          value ? dayjs(value).format('MMM D, YYYY') : <Text type="secondary">-</Text>,
       },
       {
         title: (
@@ -232,7 +234,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
           row.budget > 0 ? (
             <Text style={{ color: budgetUsedColor(value) }}>{`${Math.round(value)}%`}</Text>
           ) : (
-            <Text type="secondary">—</Text>
+            <Text type="secondary">-</Text>
           ),
       },
       {
@@ -243,9 +245,9 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         ellipsis: true,
         render: (value: string | null) =>
           value ? (
-            <Text ellipsis>{value}</Text>
+            <Text ellipsis>{decodeHtmlEntities(value)}</Text>
           ) : (
-            <Text type="secondary">—</Text>
+            <Text type="secondary">-</Text>
           ),
       },
     ],

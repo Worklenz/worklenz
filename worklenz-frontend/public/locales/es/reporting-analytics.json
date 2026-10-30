@@ -420,7 +420,7 @@
   "utilColLogged": "Logged",
   "utilColUtilization": "Utilization",
   "utilColStatus": "Status",
-  "utilEmptyValue": "?",
+  "utilEmptyValue": "—",
   "utilStatus": {
     "over": "Overutilized",
     "optimal": "Optimal",
