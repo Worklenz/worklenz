@@ -97,6 +97,7 @@ import importsApiRouter from "./imports-api-router";
 import digestApiRouter from "./digest-api-router";
 import DigestPreferencesController from "../../controllers/digest-preferences-controller";
 import financeOverviewApiRouter from "./finance-overview-api-router";
+import TimeLogCheckMiddleware from "../../middlewares/time-log-check";
 
 const api = express.Router();
 

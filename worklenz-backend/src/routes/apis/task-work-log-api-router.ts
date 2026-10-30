@@ -9,10 +9,11 @@ import timeEntryUpdateValidator from "../../middlewares/validators/time-entry-up
 import safeControllerFunction from "../../shared/safe-controller-function";
 import verifyTaskAccess, {verifyTaskAccessViaWorkLog} from "../../middlewares/verify-task-access";
 import verifyNonGuestTimeEntriesAccess from "../../middlewares/verify-non-guest-time-entries-access";
+import TimeLogCheckMiddleware from "../../middlewares/time-log-check";
 
 const taskWorkLogApiRouter = express.Router();
 
-taskWorkLogApiRouter.post("/", taskTimeLogValidator, verifyTaskAccess('body', 'id'), safeControllerFunction(TaskWorklogController.create));
+taskWorkLogApiRouter.post("/", taskTimeLogValidator, verifyTaskAccess('body', 'id'), TimeLogCheckMiddleware.ProjectBudgetVarianceCheck, safeControllerFunction(TaskWorklogController.create));
 taskWorkLogApiRouter.get("/task/:id", idParamValidator, verifyTaskAccess('params', 'id'), safeControllerFunction(TaskWorklogController.getByTask));
 taskWorkLogApiRouter.get("/export/:id", idParamValidator, verifyTaskAccess('params', 'id'), safeControllerFunction(TaskWorklogController.exportLog));
 // Must stay ABOVE the parametric `PUT /:id` below: Express matches in declaration order,
