@@ -95,7 +95,8 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
   const [data, setData] = useState<PlannedVsActualMilestonesSeriesResponse | null>(null);
 
   const chartRef = useRef<PvaMilestonesChartHandle>(null);
-  const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
+  /** Milestone chart is project-wise — require an explicit project before loading. */
+  const hasProjectSelection = selectedProjectIds.length > 0;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -218,8 +219,10 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
   }, []);
 
   const loadSeries = useCallback(async () => {
-    if (!hasSelection) {
+    if (!hasProjectSelection) {
       setData(null);
+      setError(null);
+      setLoading(false);
       return;
     }
     setLoading(true);
@@ -247,7 +250,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
     } finally {
       setLoading(false);
     }
-  }, [filters, hasSelection, t]);
+  }, [filters, hasProjectSelection, t]);
 
   useEffect(() => {
     void loadTeams();
@@ -316,59 +319,22 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
     }
   };
 
-  const filterBar = (
-    <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
-      <AnalyticsFilterBar
-        projectOptions={projectOptions}
-        selectedProjectIds={selectedProjectIds}
-        onProjectsChange={setSelectedProjectIds}
-        memberOptions={memberOptions}
-        selectedMemberIds={selectedMemberIds}
-        onMembersChange={setSelectedMemberIds}
-        teamOptions={teamOptions}
-        selectedTeamIds={selectedTeamIds}
-        onTeamsChange={setSelectedTeamIds}
-        datePreset={datePreset}
-        onDatePresetChange={setDatePreset}
-        loading={filtersLoading}
-      />
-    </Flex>
+  const milestonesFilters = (
+    <AnalyticsFilterBar
+      projectOptions={projectOptions}
+      selectedProjectIds={selectedProjectIds}
+      onProjectsChange={setSelectedProjectIds}
+      memberOptions={memberOptions}
+      selectedMemberIds={selectedMemberIds}
+      onMembersChange={setSelectedMemberIds}
+      teamOptions={teamOptions}
+      selectedTeamIds={selectedTeamIds}
+      onTeamsChange={setSelectedTeamIds}
+      datePreset={datePreset}
+      onDatePresetChange={setDatePreset}
+      loading={filtersLoading}
+    />
   );
-
-  let body: React.ReactNode;
-  if (!hasSelection) {
-    body = (
-      <ReportEmptyState
-        title={t('pvaMsNoSelectionTitle', { defaultValue: 'Select projects or teams' })}
-        description={t('pvaMsNoSelectionDescription', {
-          defaultValue:
-            'Choose one or more projects (or a team) to compare planned vs actual milestone dates.',
-        })}
-      />
-    );
-  } else if (loading && !data) {
-    body = <ReportLoadingSkeleton />;
-  } else if (error) {
-    body = <ReportErrorState message={error} onRetry={() => void loadSeries()} />;
-  } else if (data) {
-    body = (
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <PvaMilestonesKpiTiles kpis={data.kpis} />
-        <ChartTableWrapper
-          chartTitle={title}
-          chart={<PvaMilestonesChart ref={chartRef} milestones={data.milestones} />}
-          table={<PvaMilestonesTable milestones={data.milestones} loading={loading} />}
-        />
-        {data.milestones.length === 0 && (
-          <Text type="secondary" style={{ color: token.colorTextSecondary }}>
-            {t('pvaMsChartEmpty', { defaultValue: 'No milestones match these filters.' })}
-          </Text>
-        )}
-      </Space>
-    );
-  } else {
-    body = <ReportLoadingSkeleton />;
-  }
 
   return (
     <ReportPageShell
@@ -395,16 +361,16 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
             ]
       }
       lastUpdatedAt={data?.last_updated_at ?? null}
-      filters={filterBar}
-      onExport={handleExport}
+      filters={hasProjectSelection ? milestonesFilters : undefined}
+      onExport={hasProjectSelection ? handleExport : undefined}
       exportLoading={exporting}
-      exportDisabled={!data || data.milestones.length === 0}
+      exportDisabled={!data || !hasProjectSelection || data.milestones.length === 0}
       actions={
         !isCustomTemplateView ? (
           <AnalyticsTemplateActions
             templates={templates}
             canShare={permissions.canShare}
-            saveDisabled={!hasSelection}
+            saveDisabled={!hasProjectSelection}
             saveOpen={saveOpen}
             savingTemplate={savingTemplate}
             onSaveOpenChange={setSaveOpen}
@@ -415,7 +381,46 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
         ) : undefined
       }
     >
-      {body}
+      {!hasProjectSelection ? (
+        <Flex
+          vertical
+          align="center"
+          justify="center"
+          gap={16}
+          style={{ minHeight: 320, width: '100%' }}
+        >
+          <ReportEmptyState
+            title={t('pvaMsNoSelectionTitle', {
+              defaultValue: 'Select a project first',
+            })}
+            description={t('pvaMsNoSelectionDescription', {
+              defaultValue:
+                'Choose one or more projects with the Filter button below to compare planned vs actual milestone dates.',
+            })}
+          />
+          {milestonesFilters}
+        </Flex>
+      ) : loading && !data ? (
+        <ReportLoadingSkeleton />
+      ) : error ? (
+        <ReportErrorState message={error} onRetry={() => void loadSeries()} />
+      ) : data ? (
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <PvaMilestonesKpiTiles kpis={data.kpis} />
+          <ChartTableWrapper
+            chartTitle={title}
+            chart={<PvaMilestonesChart ref={chartRef} milestones={data.milestones} />}
+            table={<PvaMilestonesTable milestones={data.milestones} loading={loading} />}
+          />
+          {data.milestones.length === 0 && (
+            <Text type="secondary" style={{ color: token.colorTextSecondary }}>
+              {t('pvaMsChartEmpty', { defaultValue: 'No milestones match these filters.' })}
+            </Text>
+          )}
+        </Space>
+      ) : (
+        <ReportLoadingSkeleton />
+      )}
     </ReportPageShell>
   );
 };
