@@ -361,7 +361,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
             ]
       }
       lastUpdatedAt={data?.last_updated_at ?? null}
-      filters={hasProjectSelection ? milestonesFilters : undefined}
+      filters={milestonesFilters}
       onExport={hasProjectSelection ? handleExport : undefined}
       exportLoading={exporting}
       exportDisabled={!data || !hasProjectSelection || data.milestones.length === 0}
@@ -383,24 +383,15 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
     >
       {!hasProjectSelection ? (
         <Flex vertical gap={16} style={{ width: '100%' }}>
-          <Flex
-            vertical
-            align="center"
-            justify="center"
-            gap={16}
-            style={{ minHeight: 240, width: '100%' }}
-          >
-            <ReportEmptyState
-              title={t('pvaMsNoSelectionTitle', {
-                defaultValue: 'Select a project first',
-              })}
-              description={t('pvaMsNoSelectionDescription', {
-                defaultValue:
-                  'Choose one or more projects with the Filter button below to compare planned vs actual milestone dates.',
-              })}
-            />
-            {milestonesFilters}
-          </Flex>
+          <ReportEmptyState
+            title={t('pvaMsNoSelectionTitle', {
+              defaultValue: 'Select a project first',
+            })}
+            description={t('pvaMsNoSelectionDescription', {
+              defaultValue:
+                'Choose one or more projects with the Filter button above to compare planned vs actual milestone dates.',
+            })}
+          />
           <PvaMilestonesTable
             milestones={[]}
             emptyText={t('pvaMsNoSelectionTitle', {

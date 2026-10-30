@@ -60,20 +60,16 @@ export const ReportPageShell: React.FC<ReportPageShellProps> = ({
         />
       )}
 
-      <Flex justify="space-between" align="flex-start" gap={16} wrap="wrap">
-        <Flex vertical gap={4}>
-          <Title level={3} style={{ margin: 0 }}>
-            {title}
-          </Title>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {lastUpdatedLabel}
-          </Text>
-        </Flex>
-
-        {actions && <Space wrap>{actions}</Space>}
+      <Flex vertical gap={4}>
+        <Title level={3} style={{ margin: 0 }}>
+          {title}
+        </Title>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          {lastUpdatedLabel}
+        </Text>
       </Flex>
 
-      {(filters || onExport) && (
+      {(filters || onExport || actions) && (
         <div
           style={{
             padding: 12,
@@ -90,13 +86,18 @@ export const ReportPageShell: React.FC<ReportPageShellProps> = ({
             style={{ width: '100%' }}
           >
             <div style={{ flex: '1 1 auto', minWidth: 0 }}>{filters}</div>
-            {onExport && (
-              <AnalyticsExportMenu
-                onExport={onExport}
-                disabled={exportDisabled}
-                formats={exportFormats}
-                loading={exportLoading}
-              />
+            {(actions || onExport) && (
+              <Space wrap size={8}>
+                {actions}
+                {onExport && (
+                  <AnalyticsExportMenu
+                    onExport={onExport}
+                    disabled={exportDisabled}
+                    formats={exportFormats}
+                    loading={exportLoading}
+                  />
+                )}
+              </Space>
             )}
           </Flex>
         </div>

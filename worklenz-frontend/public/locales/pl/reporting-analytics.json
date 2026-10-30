@@ -1,4 +1,4 @@
-{
+﻿{
   "analyticsGroup": "Reporting & Analytics",
   "analyticsNavAria": "Reports navigation",
   "collapseSidebar": "Collapse sidebar",
@@ -204,7 +204,7 @@
   "kpiPhases": "Phases",
   "kpiSprintsOrPhases": "Sprints / Phases",
   "velocityNoSelectionTitle": "Select a project first",
-  "velocityNoSelectionDescription": "Choose one or more projects with the Filter button below to view the velocity diagram.",
+  "velocityNoSelectionDescription": "Choose one or more projects with the Filter button above to view the velocity diagram.",
   "velocityMinSprintsTitle": "Need more completed sprints",
   "velocityMinSprintsDescription": "Velocity trends are most useful with at least 2 completed sprints. Complete more sprints or widen filters.",
   "saveAsTemplate": "Save as Template",

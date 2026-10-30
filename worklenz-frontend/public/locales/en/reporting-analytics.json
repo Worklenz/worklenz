@@ -1,4 +1,4 @@
-{
+﻿{
   "analyticsGroup": "Reporting & Analytics",
   "analyticsNavAria": "Reports navigation",
   "collapseSidebar": "Collapse sidebar",
@@ -200,7 +200,7 @@
   "velocityChartEmptyPhases": "No phases with tasks match these filters.",
   "velocityChartEmptyMixed": "No completed sprints or phases match these filters.",
   "velocityNoSelectionTitle": "Select a project first",
-  "velocityNoSelectionDescription": "Choose one or more projects with the Filter button below to view the velocity diagram.",
+  "velocityNoSelectionDescription": "Choose one or more projects with the Filter button above to view the velocity diagram.",
   "velocityMinSprintsTitle": "Need more completed sprints",
   "velocityMinSprintsDescription": "Velocity trends are most useful with at least 2 completed sprints. Complete more sprints or widen filters.",
   "velocityMinPhasesTitle": "Need more phases",
@@ -397,7 +397,7 @@
   "pvaMsColVariance": "Variance",
   "pvaMsDaysUnit": "days",
   "pvaMsNoSelectionTitle": "Select a project first",
-  "pvaMsNoSelectionDescription": "Choose one or more projects with the Filter button below to compare planned vs actual milestone dates.",
+  "pvaMsNoSelectionDescription": "Choose one or more projects with the Filter button above to compare planned vs actual milestone dates.",
   "utilStatAvg": "Avg. Utilization",
   "utilStatTeamSize": "Team Size",
   "utilStatOverutilized": "Overutilized",

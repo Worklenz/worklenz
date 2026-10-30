@@ -483,7 +483,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
             ]
       }
       lastUpdatedAt={data?.last_updated_at ?? null}
-      filters={hasProjectSelection ? velocityFilters : undefined}
+      filters={velocityFilters}
       onExport={hasProjectSelection ? handleExport : undefined}
       exportDisabled={!data || !hasProjectSelection}
       exportFormats={['excel', 'pdf', 'png', 'svg', 'csv']}
@@ -503,24 +503,15 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     >
       {!hasProjectSelection ? (
         <Flex vertical gap={16} style={{ width: '100%' }}>
-          <Flex
-            vertical
-            align="center"
-            justify="center"
-            gap={16}
-            style={{ minHeight: 240, width: '100%' }}
-          >
-            <ReportEmptyState
-              title={t('velocityNoSelectionTitle', {
-                defaultValue: 'Select a project first',
-              })}
-              description={t('velocityNoSelectionDescription', {
-                defaultValue:
-                  'Choose one or more projects with the Filter button below to view the velocity diagram.',
-              })}
-            />
-            {velocityFilters}
-          </Flex>
+          <ReportEmptyState
+            title={t('velocityNoSelectionTitle', {
+              defaultValue: 'Select a project first',
+            })}
+            description={t('velocityNoSelectionDescription', {
+              defaultValue:
+                'Choose one or more projects with the Filter button above to view the velocity diagram.',
+            })}
+          />
           <VelocityTable
             series={[]}
             emptyText={t('velocityNoSelectionTitle', {
