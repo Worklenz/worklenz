@@ -151,7 +151,7 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
     )?.key ?? null;
   const hasCurrentCard = currentGroupKey !== null || isFreeUser;
   const cardCount = groups.length;
-  const cardColumns = cardCount >= 4 ? 6 : cardCount === 3 ? 8 : 10;
+  const cardColumns = cardCount >= 4 ? 6 : cardCount === 3 ? 8 : 12;
 
   const trackingProps = (plan?: IPerUserPlan, seatCount?: number) => ({
     pricing_model: 'per_user',
@@ -381,7 +381,7 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
                   isPopular && <Tag color="blue">{t('mostPopular')}</Tag>
                 )}
               </Flex>
-              <Typography.Text type="secondary" style={{ minHeight: 44 }}>
+              <Typography.Text type="secondary" style={{ minHeight: 22 }}>
                 {t(`plans.${planCopy}.description`)}
               </Typography.Text>
 
@@ -577,13 +577,15 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
         </Flex>
       </Flex>
 
-      <Row gutter={[16, 16]} justify="center">
-        {groups.map(renderCard)}
-      </Row>
+      <div>
+        <Row gutter={[16, 16]} justify="center">
+          {groups.map(renderCard)}
+        </Row>
 
-      {showFreeCard && renderFreeBanner()}
+        {showFreeCard && renderFreeBanner()}
+      </div>
 
-      <Flex vertical align="center" gap={4} style={{ marginTop: 20 }}>
+      <Flex vertical align="center" gap={4} style={{ marginTop: 16 }}>
         <Typography.Text style={{ fontSize: 13 }}>
           <LockOutlined style={{ marginRight: 6 }} />
           {t('trustLine')}

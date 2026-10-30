@@ -10,7 +10,12 @@ import logger from '@/utils/errorLogger';
  * as soon as any of them is active; until then (or if they cannot be loaded) the legacy modal is
  * shown unchanged, so turning the new pricing on is a data change, not a deployment.
  */
-const UpgradePlansSwitch: React.FC = () => {
+interface UpgradePlansSwitchProps {
+  /** Reports which pricing is shown, so the host modal can size itself to it. */
+  onModeChange?: (perUser: boolean) => void;
+}
+
+const UpgradePlansSwitch: React.FC<UpgradePlansSwitchProps> = ({ onModeChange }) => {
   const [perUser, setPerUser] = useState<IPerUserPlansResponse | null | undefined>(undefined);
 
   useEffect(() => {
@@ -28,6 +33,10 @@ const UpgradePlansSwitch: React.FC = () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (perUser !== undefined) onModeChange?.(!!perUser);
+  }, [perUser, onModeChange]);
 
   if (perUser === undefined) {
     return (
