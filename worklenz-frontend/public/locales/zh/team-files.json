@@ -62,5 +62,6 @@
   "linkDescription": "描述",
   "linkDescriptionPlaceholder": "可选描述",
   "save": "保存",
+  "rowsPerPage": "每页行数：",
   "noTaskName": "--"
 }
