@@ -123,4 +123,7 @@ export enum SocketEvents {
 
   // GitHub activity linked to one or more tasks changed (appended last to keep numeric values).
   GITHUB_TASK_ACTIVITY,
+
+  // Sprint lifecycle changed; project clients should refresh their phase cache.
+  PROJECT_SPRINTS_UPDATED,
 }
