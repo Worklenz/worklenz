@@ -103,7 +103,7 @@ const EMPTY_PROJECTS: IProjectViewModel[] = [];
 const EMPTY_FILTERED_INFO: Record<string, FilterValue | null> = {};
 
 const getRowKey = (record: IProjectViewModel) => record.id || '';
-const noop = () => {};
+const noop = () => { };
 
 const readFilterIndex = () => {
   const stored = Number(localStorage.getItem(FILTER_INDEX_KEY));
@@ -506,7 +506,7 @@ const ProjectList: React.FC = () => {
   const prefetchProjectView = useCallback(() => {
     if (hasPrefetchedProjectView.current) return;
     hasPrefetchedProjectView.current = true;
-    import('@/pages/projects/projectView/project-view').catch(() => {});
+    import('@/pages/projects/projectView/project-view').catch(() => { });
   }, []);
 
   const handleRow = useCallback(
@@ -725,12 +725,21 @@ const ProjectList: React.FC = () => {
               />
             </div>
             <TablePagination
+              navigationLabel={t('common:paginationNavigation')}
+              firstPageLabel={t('common:firstPage')}
+              previousPageLabel={t('common:previousPage')}
+              nextPageLabel={t('common:nextPage')}
+              lastPageLabel={t('common:lastPage')}
+              renderDefaultSummary={(range, total) =>
+                t('common:paginationSummary', { range, total })
+              }
               page={requestParams.index}
               pageSize={requestParams.size}
               total={projectsData?.body?.total || 0}
               onPageChange={handleListPageChange}
               pageSizeOptions={PAGE_SIZE_NUMBER_OPTIONS}
               rowsPerPageLabel={rowsPerPageLabel}
+              variant="dropdown"
             />
           </>
         ) : (
@@ -749,6 +758,14 @@ const ProjectList: React.FC = () => {
             </div>
             {!groupedProjects.loading && hasGroups && (
               <TablePagination
+                navigationLabel={t('common:paginationNavigation')}
+                firstPageLabel={t('common:firstPage')}
+                previousPageLabel={t('common:previousPage')}
+                nextPageLabel={t('common:nextPage')}
+                lastPageLabel={t('common:lastPage')}
+                renderDefaultSummary={(range, total) =>
+                  t('common:paginationSummary', { range, total })
+                }
                 page={groupedRequestParams.index}
                 pageSize={groupedRequestParams.size}
                 total={groupedProjects.data?.total_groups || 0}
@@ -756,6 +773,7 @@ const ProjectList: React.FC = () => {
                 pageSizeOptions={PAGE_SIZE_NUMBER_OPTIONS}
                 rowsPerPageLabel={rowsPerPageLabel}
                 renderSummary={groupedPaginationSummary}
+                variant="dropdown"
               />
             )}
           </div>

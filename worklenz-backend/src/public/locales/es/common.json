@@ -23,5 +23,22 @@
   "business-trial-then-plan": "continuarás en {{plan}} después de eso",
   "licennse-expired-contacting-support": "Contactando con soporte...",
   "loadingData": "Cargando datos...",
-  "refreshingData": "Actualizando datos..."
+  "refreshingData": "Actualizando datos...",
+  "addComment": "Añadir un comentario...",
+  "peopleYouCanMention": "Personas que puedes mencionar",
+  "noMatchingPeople": "No hay personas coincidentes",
+  "formatting": "Formato",
+  "bold": "Negrita",
+  "italic": "Cursiva",
+  "strikethrough": "Tachado",
+  "codeBlock": "Bloque de código",
+  "quoteBlock": "Bloque de cita",
+  "checklist": "Lista de verificación",
+  "numberedList": "Lista numerada",
+  "unorderedList": "Lista con viñetas",
+  "linkAddress": "URL del enlace",
+  "linkPlaceholder": "https://ejemplo.com",
+  "apply": "Aplicar",
+  "link": "Enlace",
+  "textColor": "Color del texto"
 }

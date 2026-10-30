@@ -1,4 +1,6 @@
 import db from "../config/db";
+import { PROJECT_ROLE_PERMISSIONS, ProjectRolePermission } from "./organization-permissions";
+import { checkProjectRolePermission, checkTaskRolePermission } from "./project-role-permissions";
 
 /**
  * Server-side enforcement for the `restrict_task_creation` Business Plan feature.
@@ -12,16 +14,20 @@ import db from "../config/db";
  *
  * These helpers mirror the frontend `useTaskCreationPermission` gating so the
  * UI-disabled controls cannot be bypassed via direct socket/API calls.
+ *
+ * Users whose role lacks the required scheme permission ("Edit tasks" by default,
+ * "Create tasks" for creation paths) are also treated as restricted.
  */
 
 /**
  * Returns TRUE when task creation/modification is restricted for the given user
- * in the given project. Fails open (returns FALSE) on any error so a transient DB
- * issue never blocks legitimate edits.
+ * in the given project. Fails closed (returns TRUE) on any error so a lookup failure
+ * never grants access.
  */
 export async function isTaskCreationRestricted(
   userId?: string | null,
-  projectId?: string | null
+  projectId?: string | null,
+  permission: ProjectRolePermission = PROJECT_ROLE_PERMISSIONS.EDIT_TASKS
 ): Promise<boolean> {
   if (!userId || !projectId) return false;
   try {
@@ -29,9 +35,13 @@ export async function isTaskCreationRestricted(
       "SELECT is_task_creation_restricted($1, $2) AS restricted;",
       [userId, projectId]
     );
-    return result.rows[0]?.restricted === true;
+    if (result.rows[0]?.restricted === true) return true;
+
+    const rolePermission = await checkProjectRolePermission(userId, projectId, permission);
+    return !rolePermission.allowed;
   } catch {
-    return false;
+    // Fail closed: an authorization lookup error must not grant access
+    return true;
   }
 }
 
@@ -41,7 +51,8 @@ export async function isTaskCreationRestricted(
  */
 export async function isTaskCreationRestrictedForTask(
   userId?: string | null,
-  taskId?: string | null
+  taskId?: string | null,
+  permission: ProjectRolePermission = PROJECT_ROLE_PERMISSIONS.EDIT_TASKS
 ): Promise<boolean> {
   if (!userId || !taskId) return false;
   try {
@@ -49,8 +60,12 @@ export async function isTaskCreationRestrictedForTask(
       "SELECT is_task_creation_restricted($1, (SELECT project_id FROM tasks WHERE id = $2)) AS restricted;",
       [userId, taskId]
     );
-    return result.rows[0]?.restricted === true;
+    if (result.rows[0]?.restricted === true) return true;
+
+    const rolePermission = await checkTaskRolePermission(userId, taskId, permission);
+    return !rolePermission.allowed;
   } catch {
-    return false;
+    // Fail closed: an authorization lookup error must not grant access
+    return true;
   }
 }

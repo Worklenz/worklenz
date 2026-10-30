@@ -18,7 +18,7 @@ import { decodeHtmlEntities } from '@/utils/html-entities';
 
 type ProjectReportsTableProps = {
   projectList: any[];
-  loading: Boolean;
+  loading: boolean;
 };
 
 const MembersOverviewProjectsStatsTable = ({ projectList, loading }: ProjectReportsTableProps) => {

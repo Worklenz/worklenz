@@ -4,7 +4,7 @@ import {SocketEvents} from "../events";
 import momentTime from "moment-timezone";
 
 import {log_error} from "../util";
-import {logUnauthorizedSocketAccess, verifyProjectAccessSocket} from "../authorization";
+import {logUnauthorizedSocketAccess, verifyProjectSettingsAccessSocket} from "../authorization";
 import {reportingRoomName} from "../reporting-room";
 
 export async function on_project_end_date_change(
@@ -16,7 +16,7 @@ export async function on_project_end_date_change(
   try {
     const body = JSON.parse(data as string);
 
-    const hasAccess = await verifyProjectAccessSocket(socket, body.project_id);
+    const hasAccess = await verifyProjectSettingsAccessSocket(socket, body.project_id);
     if (!hasAccess) {
       logUnauthorizedSocketAccess(socket, "PROJECT_END_DATE_CHANGE", "project", body.project_id);
       callback?.({success: false, error: "You do not have access to this project."});

@@ -44,6 +44,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useProjectRoomSync, projectIdsFromTasks, hasParentSubtaskOverlap } from '@/hooks/useProjectRoomSync';
 import { useAuthService } from '@/hooks/useAuth';
+import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { getUserSession } from '@/utils/session-helper';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import { setProjectId } from '@/features/project/project.slice';
@@ -198,6 +199,7 @@ const PlannerWorkloadView: React.FC = () => {
   const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
   const { socket } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
+  const isReadOnly = useIsAdminSurfaceReadOnly();
   const timeZone = getUserSession()?.timezone_name || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const weekdayShort = useMemo(() => WEEKDAY_KEYS.map(k => t(k, { defaultValue: k.replace('Short', '') })), [t]);
@@ -354,7 +356,9 @@ const PlannerWorkloadView: React.FC = () => {
   const endDate = visibleDateStrs[visibleDateStrs.length - 1];
 
   // ── Data: members & projects (real, shared with the rest of Planner) ──
-  const { data: membersResp, isLoading: membersLoading } = useFetchScheduleMembersQuery();
+  const { data: membersResp, isLoading: membersLoading } = useFetchScheduleMembersQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
   const wlMembers: WlMember[] = useMemo(
     () =>
       (membersResp?.body || []).map((m: any) => ({
@@ -448,7 +452,7 @@ const PlannerWorkloadView: React.FC = () => {
   // ── Data: scheduled tasks in the visible window ──
   const { data: taskTimelineResp, isLoading: tasksLoading } = useFetchTaskTimelineQuery(
     { startDate, endDate },
-    { skip: !startDate || !endDate }
+    { skip: !startDate || !endDate, refetchOnMountOrArgChange: true }
   );
 
   const { data: capacityResponse } = useFetchDailyCapacityQuery(
@@ -456,7 +460,7 @@ const PlannerWorkloadView: React.FC = () => {
       startDate: startDate || '',
       endDate: endDate || '',
     },
-    { skip: !startDate || !endDate }
+    { skip: !startDate || !endDate, refetchOnMountOrArgChange: true }
   );
 
   const memberCapacityMap = useMemo(() => {
@@ -532,8 +536,17 @@ const PlannerWorkloadView: React.FC = () => {
   // Keeps this view's socket room membership in sync with the projects currently
   // loaded, so PROJECT_UPDATES_AVAILABLE broadcasts — e.g. a new subtask created
   // elsewhere — actually reach it instead of only showing up after a hard refresh.
-  const loadedProjectIds = useMemo(() => projectIdsFromTasks(taskTimelineResp?.body || []), [taskTimelineResp]);
-  useProjectRoomSync(loadedProjectIds);
+  const relevantProjectIds = useMemo(() => {
+    const ids = new Set<string>();
+    orgProjects.forEach((p: any) => {
+      if (p?.id) ids.add(p.id);
+    });
+    (taskTimelineResp?.body || []).forEach((t: any) => {
+      if (t?.project_id) ids.add(t.project_id);
+    });
+    return ids;
+  }, [orgProjects, taskTimelineResp]);
+  useProjectRoomSync(relevantProjectIds);
 
   const refreshAfterMutation = () => {
     dispatch(scheduleApi.util.invalidateTags(['TaskTimeline', 'Workload', 'MemberProjects', 'Capacity', 'TimeOff']));
@@ -650,7 +663,7 @@ const PlannerWorkloadView: React.FC = () => {
   const onDropCell = (axis: Axis, rowKey: string, dateStr: string) => {
     const wl = dragInfo.current;
     dragInfo.current = null;
-    if (!wl) return;
+    if (!wl || isReadOnly) return;
 
     const rowChanged = (axis === 'member' ? wl.memberId : wl.projectId) !== rowKey;
     const dayChanged = wl.day !== dateStr;
@@ -837,9 +850,13 @@ const PlannerWorkloadView: React.FC = () => {
       title={renderTaskChipTooltip(wl)}
     >
       <div
-        draggable
+        draggable={!isReadOnly}
         onDragStart={e => {
           e.stopPropagation();
+          if (isReadOnly) {
+            e.preventDefault();
+            return;
+          }
           dragInfo.current = wl;
         }}
         onClick={e => {
@@ -849,6 +866,7 @@ const PlannerWorkloadView: React.FC = () => {
           dispatch(setShowTaskDrawer(true));
         }}
         onContextMenu={e => {
+          if (isReadOnly) return;
           e.preventDefault();
           e.stopPropagation();
           setCtxMenu({ x: e.clientX, y: e.clientY, task: wl });
@@ -858,7 +876,7 @@ const PlannerWorkloadView: React.FC = () => {
           background: `${wl.color}18`,
           borderLeft: `3px solid ${wl.color}`,
           padding: '4px 7px',
-          cursor: 'grab',
+          cursor: isReadOnly ? 'pointer' : 'grab',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -1185,13 +1203,15 @@ const PlannerWorkloadView: React.FC = () => {
               </button>
             ))}
           </div>
-          <Button
-            size="small"
-            shape="circle"
-            icon={<SettingOutlined />}
-            onClick={() => dispatch(toggleSettingsDrawer())}
-            title={t('workloadSettings', { defaultValue: 'Workload settings' })}
-          />
+          {!isReadOnly && (
+            <Button
+              size="small"
+              shape="circle"
+              icon={<SettingOutlined />}
+              onClick={() => dispatch(toggleSettingsDrawer())}
+              title={t('workloadSettings', { defaultValue: 'Workload settings' })}
+            />
+          )}
         </div>
       </Flex>
       </div>
@@ -1319,8 +1339,11 @@ const PlannerWorkloadView: React.FC = () => {
                       return (
                         <div
                           key={d.offset}
-                          className="planner-day-cell"
-                          onClick={() => setAddPopover({ axis: row.axis, rowKey: row.key, rowLabel: row.label, day: dateStr })}
+                          className={isReadOnly ? undefined : 'planner-day-cell'}
+                          onClick={() => {
+                            if (isReadOnly) return;
+                            setAddPopover({ axis: row.axis, rowKey: row.key, rowLabel: row.label, day: dateStr });
+                          }}
                           onDragOver={e => e.preventDefault()}
                           onDrop={e => {
                             e.preventDefault();

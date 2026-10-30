@@ -277,15 +277,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
       setLoading(false);
       setSettingsLoadFailed(true);
     }
-  }, [
-    modalVisible,
-    projectId,
-    project,
-    projectLoading,
-    form,
-    calculateWorkingDays,
-    defaultFormValues,
-  ]);
+  }, [modalVisible, projectId, project, projectLoading, form, defaultFormValues]);
 
   const handleRetryLoadSettings = useCallback(() => {
     if (!projectId) return;

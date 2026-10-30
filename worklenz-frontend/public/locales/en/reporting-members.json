@@ -38,5 +38,6 @@
   "todoText": "To Do",
   "doingText": "Doing",
   "doneText": "Done",
-  "customDateRangeInvalidError": "End date cannot be before the start date. Please select a valid range."
+  "customDateRangeInvalidError": "End date cannot be before the start date. Please select a valid range.",
+  "rowsPerPage": "Rows per page:"
 }

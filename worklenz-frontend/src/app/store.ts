@@ -29,6 +29,7 @@ import epicsReducer from '@/features/projects/singleProject/epics/epics.slice';
 import releasesReducer from '@/features/projects/singleProject/releases/releases.slice';
 import createIssueModalReducer from '@/features/projects/singleProject/create-issue/create-issue-modal.slice';
 import softwareQuickFiltersReducer from '@/features/projects/singleProject/quick-filters/software-quick-filters.slice';
+import savedViewsReducer from '@/features/projects/singleProject/saved-views/saved-views.slice';
 import updatesReducer from '../features/projects/singleProject/updates/updatesSlice';
 import statusReducer from '@features/projects/status/StatusSlice';
 import deleteStatusReducer from '@features/projects/status/DeleteStatusSlice';
@@ -69,6 +70,7 @@ import labelReducer from '@features/settings/label/labelSlice';
 import adminCenterReducer from '@features/admin-center/admin-center.slice';
 import auditLogReducer from '@features/admin-center/audit-log/audit-log.slice';
 import { auditLogApi } from '@/api/admin-center/audit-log.api.service';
+import { permissionSchemesApi } from '@/api/admin-center/permission-schemes.api.service';
 
 // Features
 import dateReducer from '@features/date/dateSlice';
@@ -252,10 +254,12 @@ const coreReducers = {
 
   // Software projects & audit log
   [auditLogApi.reducerPath]: auditLogApi.reducer,
+  [permissionSchemesApi.reducerPath]: permissionSchemesApi.reducer,
   epicsReducer: epicsReducer,
   releasesReducer: releasesReducer,
   createIssueModalReducer: createIssueModalReducer,
   softwareQuickFiltersReducer: softwareQuickFiltersReducer,
+  savedViewsReducer: savedViewsReducer,
   auditLogReducer: auditLogReducer,
 };
 
@@ -286,6 +290,7 @@ export const store = configureStore({
       projectWorkloadApi.middleware,
       scheduleApi.middleware,
       auditLogApi.middleware,
+      permissionSchemesApi.middleware,
       ...addonMiddlewares
     ),
   reducer: {

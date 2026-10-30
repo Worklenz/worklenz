@@ -81,7 +81,7 @@ const ORDER_VERSIONS: Partial<Record<SurfaceKey, number>> = {
 export const applyOrderResets = (state: NavPreferencesState): { state: NavPreferencesState; changed: boolean } => {
   let changed = false;
   const order = { ...state.order };
-  const orderVersions = { ...(state.orderVersions ?? {}) };
+  const orderVersions = { ...state.orderVersions };
 
   for (const [surfaceKey, version] of Object.entries(ORDER_VERSIONS) as [SurfaceKey, number][]) {
     if ((orderVersions[surfaceKey] ?? 0) >= version) continue;

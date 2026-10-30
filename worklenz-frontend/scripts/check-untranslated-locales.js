@@ -196,11 +196,25 @@ const ENGLISH_MARKERS = /\b(projected|revenue|profit|forecast|this month|next mo
 // Words that are correctly spelled the same in these languages (cognates/loanwords), not missed
 // translations.
 const LANGUAGE_SOURCE_VALUES = {
-  fr: new Set(['Urgent', 'Description', 'Discussions', 'Conversation', '← Discussions']),
-  de: new Set(['Portal', 'Link']),
-  es: new Set(['Portal']),
-  pt: new Set(['Portal']),
-  pl: new Set(['Link']),
+  fr: new Set([
+    'Urgent',
+    'Description',
+    'Discussions',
+    'Conversation',
+    '← Discussions',
+    // "Pagination" is also the correct French label for the navigation landmark.
+    'Pagination',
+    // Color names spelled the same in French.
+    'Cyan',
+    'Orange',
+    'Magenta',
+  ]),
+  // Color names that are identical in these languages.
+  alb: new Set(['Magenta']),
+  de: new Set(['Portal', 'Link', 'Cyan', 'Orange', 'Magenta']),
+  es: new Set(['Portal', 'Magenta']),
+  pt: new Set(['Portal', 'Link', 'Magenta']),
+  pl: new Set(['Link', 'Magenta']),
 };
 const namespaceArgument = process.argv.find(argument => argument.startsWith('--namespace='));
 const namespaceFilter = namespaceArgument?.split('=', 2)[1];

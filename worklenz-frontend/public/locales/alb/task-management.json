@@ -19,6 +19,8 @@
   "viewOnBoard": "Shiko në bord",
   "completeSprint": "Sprint i plotë",
   "startSprint": "Filloni sprintin",
+  "createSprint": "Krijo sprint",
+  "sprintSetupRequiredHint": "Krijo një sprint për të shkyçur backlog-un dhe për të filluar shtimin e çështjeve.",
   "editSprint": "Redakto sprint",
   "noTasksInGroupDescription": "Shto një detyrë për të filluar",
   "addFirstTask": "Shto detyrën e parë",
@@ -42,6 +44,12 @@
   "inProgress": "Në Progres",
   "done": "E Kryer",
   "defaultTaskName": "Detyrë Pa Emër",
+  "editSprintName": "Klikoni për të riemërtuar",
+  "editSprintDates": "Klikoni për të ndryshuar datat",
+  "addDates": "Shtoni datat",
+  "sprintUpdated": "Sprinti u përditësua",
+  "sprintUpdateError": "Sprinti nuk mund të përditësohej",
+  "sprintNameRequired": "Emri i sprintit është i detyrueshëm",
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} nëndetyrë",

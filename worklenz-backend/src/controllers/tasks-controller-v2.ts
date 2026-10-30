@@ -1,4 +1,5 @@
 import { ParsedQs } from "qs";
+import { PoolClient } from "pg";
 
 import db from "../config/db";
 import { buildTaskSearchQuery } from "../shared/task-search-query-builder";
@@ -27,6 +28,13 @@ import TasksControllerBase, {
   ITaskGroup,
   UNASSIGNED_GROUP_ID,
 } from "./tasks-controller-base";
+import {
+  clearInvalidDependentValues,
+  validateDependentSelectionValue,
+} from "../services/cascading-selection-service";
+
+/** Internal map key for the synthetic Backlog group; avoids colliding with a phase named "Unmapped". */
+const SYNTHETIC_UNMAPPED_GROUP_KEY = "__worklenz_unmapped__";
 
 const normalizePeopleCustomColumnValue = (value: unknown): string[] => {
   if (Array.isArray(value)) {
@@ -1125,11 +1133,19 @@ export default class TasksControllerV2 extends TasksControllerBase {
         `;
         break;
       case GroupBy.PHASE:
+        // Active sprint first, then planned, then completed; sort_index breaks ties.
         q = `
-          SELECT id, name, color_code, color_code AS color_code_dark, start_date, end_date, sort_index
+          SELECT id, name, color_code, color_code AS color_code_dark, start_date, end_date, sort_index, sprint_status
           FROM project_phases
           WHERE project_id = $1
-          ORDER BY sort_index DESC;
+          ORDER BY
+            CASE COALESCE(sprint_status, 'planned')
+              WHEN 'active' THEN 0
+              WHEN 'planned' THEN 1
+              WHEN 'completed' THEN 2
+              ELSE 3
+            END,
+            sort_index DESC;
         `;
         params = [projectId];
         break;
@@ -1245,7 +1261,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
       }
     }
 
-    if (unmapped.length) {
+    // Always keep Backlog (Unmapped) when grouping by phase, even if empty.
+    if (groupBy === GroupBy.PHASE || unmapped.length) {
       map[UNMAPPED] = {
         name: UNMAPPED,
         category_id: null,
@@ -1370,11 +1387,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   @HandleExceptions()
   public static async resetParentTaskManualProgress(
-    parentTaskId: string
+    parentTaskId: string,
+    client?: PoolClient
   ): Promise<void> {
+    const query = client ? client.query.bind(client) : db.query.bind(db);
     try {
       // Check if this task has subtasks
-      const subTasksResult = await db.query(
+      const subTasksResult = await query(
         "SELECT COUNT(*) as subtask_count FROM tasks WHERE parent_task_id = $1 AND archived IS FALSE",
         [parentTaskId]
       );
@@ -1385,13 +1404,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
       // If it has subtasks, reset the manual_progress flag to false
       if (subtaskCount > 0) {
-        await db.query(
+        await query(
           "UPDATE tasks SET manual_progress = false WHERE id = $1",
           [parentTaskId]
         );
 
         // Get the project settings to determine which calculation method to use
-        const projectResult = await db.query(
+        const projectResult = await query(
           "SELECT project_id FROM tasks WHERE id = $1",
           [parentTaskId]
         );
@@ -1400,7 +1419,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
         if (projectId) {
           // Recalculate the parent task's progress based on its subtasks
-          const progressResult = await db.query(
+          const progressResult = await query(
             "SELECT get_task_complete_ratio($1) AS ratio",
             [parentTaskId]
           );
@@ -1410,10 +1429,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
           // Emit the updated progress value to all clients
           // Note: We don't have socket context here, so we can't directly emit
           // This will be picked up on the next client refresh
+          void progressRatio;
         }
       }
     } catch (error) {
       log_error(`Error resetting parent task manual progress: ${error}`);
+      // Inside a caller's transaction, let the caller roll back instead of committing a partial move
+      if (client) throw error;
     }
   }
 
@@ -1478,6 +1500,199 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const [data] = result.rows;
     const model = TasksControllerV2.updateTaskViewModel(data.task);
     return res.status(200).send(new ServerResponse(true, model));
+  }
+
+  /**
+   * Move an existing subtask under a different parent task in the same project.
+   * Preserves all subtask details (title, description, assignee, dates, status, logged hours, etc.).
+   *
+   * Cycle validation and the parent UPDATE run in one transaction under a
+   * project-scoped advisory lock, with the moved task row locked FOR UPDATE,
+   * so concurrent opposite moves (A→B and B→A) cannot both pass the descendant
+   * check and form a cycle.
+   */
+  @HandleExceptions()
+  public static async moveSubtask(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const taskId = req.body?.id as string | undefined;
+    const projectId = req.body?.project_id as string | undefined;
+    const newParentTaskId = req.body?.parent_task_id as string | undefined;
+
+    if (!taskId || !projectId || !newParentTaskId) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Missing required parameters"));
+    }
+
+    if (!isValidUuid(taskId) || !isValidUuid(projectId) || !isValidUuid(newParentTaskId)) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Invalid identifiers"));
+    }
+
+    if (taskId === newParentTaskId) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "A task cannot be its own parent"));
+    }
+
+    const client = await db.connect();
+    try {
+      await client.query("BEGIN");
+      // Serialize hierarchy mutations for this project before reading ancestry.
+      await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+        `task-hierarchy:${projectId}`,
+      ]);
+
+      const taskResult = await client.query(
+        `
+        SELECT id, parent_task_id, project_id, archived
+        FROM tasks
+        WHERE id = $1
+        FOR UPDATE
+        `,
+        [taskId]
+      );
+      const [task] = taskResult.rows;
+
+      if (!task) {
+        await client.query("ROLLBACK");
+        return res.status(404).send(new ServerResponse(false, null, "Task not found"));
+      }
+
+      if (task.project_id !== projectId) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .send(new ServerResponse(false, null, "Task does not belong to this project"));
+      }
+
+      if (!task.parent_task_id) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .send(new ServerResponse(false, null, "Only subtasks can be moved to another parent"));
+      }
+
+      if (task.parent_task_id === newParentTaskId) {
+        await client.query("COMMIT");
+        const currentResult = await db.query("SELECT get_single_task($1) AS task;", [taskId]);
+        const [currentData] = currentResult.rows;
+        const currentModel = TasksControllerV2.updateTaskViewModel(currentData.task);
+        return res.status(200).send(new ServerResponse(true, currentModel));
+      }
+
+      const parentResult = await client.query(
+        `
+        SELECT id, parent_task_id, project_id, archived
+        FROM tasks
+        WHERE id = $1
+        `,
+        [newParentTaskId]
+      );
+      const [newParent] = parentResult.rows;
+
+      if (!newParent) {
+        await client.query("ROLLBACK");
+        return res
+          .status(404)
+          .send(new ServerResponse(false, null, "Parent task not found"));
+      }
+
+      if (newParent.project_id !== projectId) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .send(
+            new ServerResponse(
+              false,
+              null,
+              "Parent task must belong to the same project"
+            )
+          );
+      }
+
+      if (newParent.archived) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .send(new ServerResponse(false, null, "Cannot move subtask under an archived parent"));
+      }
+
+      // Prevent cycles: new parent must not be a descendant of the subtask being moved.
+      // Include archived descendants so a soft-archived path cannot hide a cycle.
+      // UNION (not UNION ALL) deduplicates so a corrupt cycle in the data still terminates.
+      const cycleResult = await client.query(
+        `
+        WITH RECURSIVE task_descendants AS (
+          SELECT id
+          FROM tasks
+          WHERE parent_task_id = $1
+
+          UNION
+
+          SELECT child.id
+          FROM tasks child
+          INNER JOIN task_descendants td ON child.parent_task_id = td.id
+        )
+        SELECT EXISTS(
+          SELECT 1 FROM task_descendants WHERE id = $2
+        ) AS is_descendant;
+        `,
+        [taskId, newParentTaskId]
+      );
+
+      if (cycleResult.rows[0]?.is_descendant) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .send(
+            new ServerResponse(
+              false,
+              null,
+              "Cannot move a subtask under one of its own descendants"
+            )
+          );
+      }
+
+      const oldParentTaskId = task.parent_task_id as string;
+
+      // sort_order is unique per (project_id, sort_order), so use project-wide MAX
+      // (same pattern as convertToSubtask / convertToTask), not per-parent siblings.
+      await client.query(
+        `
+        UPDATE tasks
+        SET parent_task_id = $2,
+            sort_order = COALESCE(
+              (SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = $3),
+              0
+            )
+        WHERE id = $1 AND project_id = $3;
+        `,
+        [taskId, newParentTaskId, projectId]
+      );
+
+      await this.resetParentTaskManualProgress(oldParentTaskId, client);
+      await this.resetParentTaskManualProgress(newParentTaskId, client);
+
+      await client.query("COMMIT");
+
+      const result = await db.query("SELECT get_single_task($1) AS task;", [taskId]);
+      const [data] = result.rows;
+      const model = TasksControllerV2.updateTaskViewModel(data.task);
+      return res.status(200).send(new ServerResponse(true, model));
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // ignore rollback errors when BEGIN never succeeded
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   public static async getTaskSubscribers(taskId: string) {
@@ -1752,108 +1967,154 @@ export default class TasksControllerV2 extends TasksControllerBase {
       (Array.isArray(value) && value.length === 0) ||
       (fieldType === "people" && normalizedPeopleValue !== null && normalizedPeopleValue.length === 0);
 
-    if (isEmptyValue) {
-      await db.query(
-        `
-          DELETE FROM cc_column_values
-          WHERE task_id = $1 AND column_id = $2
-        `,
-        [taskId, columnId]
-      );
+    const client = await db.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(`SELECT 1 FROM tasks WHERE id = $1 FOR UPDATE`, [taskId]);
+
+      if (fieldType === "selection" && !isEmptyValue) {
+        const cascadeError = await validateDependentSelectionValue(
+          taskId,
+          columnId,
+          value,
+          client
+        );
+        if (cascadeError) {
+          await client.query("ROLLBACK");
+          return res
+            .status(400)
+            .send(new ServerResponse(false, { error_code: cascadeError.error_code }, cascadeError.message));
+        }
+      }
+
+      if (isEmptyValue) {
+        await client.query(
+          `
+            DELETE FROM cc_column_values
+            WHERE task_id = $1 AND column_id = $2
+          `,
+          [taskId, columnId]
+        );
+
+        const clearedDependents =
+          fieldType === "selection"
+            ? await clearInvalidDependentValues(taskId, columnId, client)
+            : [];
+
+        await client.query("COMMIT");
+
+        return res.status(200).send(
+          new ServerResponse(true, {
+            task_id: taskId,
+            column_key,
+            value: null,
+            cleared_dependents: clearedDependents,
+          })
+        );
+      }
+
+      // Determine which value field to use based on the field_type
+      let textValue = null;
+      let numberValue = null;
+      let dateValue = null;
+      let booleanValue = null;
+      let jsonValue = null;
+
+      switch (fieldType) {
+        case "text":
+          textValue = String(value);
+          break;
+        case "number":
+          numberValue = parseFloat(String(value));
+          break;
+        case "date":
+          dateValue = new Date(String(value));
+          break;
+        case "checkbox":
+          booleanValue = Boolean(value);
+          break;
+        case "people":
+          jsonValue = JSON.stringify(normalizedPeopleValue || []);
+          break;
+        default:
+          textValue = String(value);
+      }
+
+      // Check if a value already exists
+      const existingValueQuery = `
+        SELECT id
+        FROM cc_column_values
+        WHERE task_id = $1 AND column_id = $2
+      `;
+      const existingValueResult = await client.query(existingValueQuery, [
+        taskId,
+        columnId,
+      ]);
+
+      if (existingValueResult.rowCount && existingValueResult.rowCount > 0) {
+        // Update existing value
+        const updateQuery = `
+          UPDATE cc_column_values
+          SET text_value = $1,
+              number_value = $2,
+              date_value = $3,
+              boolean_value = $4,
+              json_value = $5,
+              updated_at = NOW()
+          WHERE task_id = $6 AND column_id = $7
+        `;
+        await client.query(updateQuery, [
+          textValue,
+          numberValue,
+          dateValue,
+          booleanValue,
+          jsonValue,
+          taskId,
+          columnId,
+        ]);
+      } else {
+        // Insert new value
+        const insertQuery = `
+          INSERT INTO cc_column_values
+          (task_id, column_id, text_value, number_value, date_value, boolean_value, json_value, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+        `;
+        await client.query(insertQuery, [
+          taskId,
+          columnId,
+          textValue,
+          numberValue,
+          dateValue,
+          booleanValue,
+          jsonValue,
+        ]);
+      }
+
+      const clearedDependents =
+        fieldType === "selection"
+          ? await clearInvalidDependentValues(taskId, columnId, client)
+          : [];
+
+      await client.query("COMMIT");
 
       return res.status(200).send(
         new ServerResponse(true, {
           task_id: taskId,
           column_key,
-          value: null,
+          value,
+          cleared_dependents: clearedDependents,
         })
       );
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // ignore rollback errors
+      }
+      throw error;
+    } finally {
+      client.release();
     }
-
-    // Determine which value field to use based on the field_type
-    let textValue = null;
-    let numberValue = null;
-    let dateValue = null;
-    let booleanValue = null;
-    let jsonValue = null;
-
-    switch (fieldType) {
-      case "text":
-        textValue = String(value);
-        break;
-      case "number":
-        numberValue = parseFloat(String(value));
-        break;
-      case "date":
-        dateValue = new Date(String(value));
-        break;
-      case "checkbox":
-        booleanValue = Boolean(value);
-        break;
-      case "people":
-        jsonValue = JSON.stringify(normalizedPeopleValue || []);
-        break;
-      default:
-        textValue = String(value);
-    }
-
-    // Check if a value already exists
-    const existingValueQuery = `
-      SELECT id
-      FROM cc_column_values
-      WHERE task_id = $1 AND column_id = $2
-    `;
-    const existingValueResult = await db.query(existingValueQuery, [
-      taskId,
-      columnId,
-    ]);
-
-    if (existingValueResult.rowCount && existingValueResult.rowCount > 0) {
-      // Update existing value
-      const updateQuery = `
-        UPDATE cc_column_values
-        SET text_value = $1,
-            number_value = $2,
-            date_value = $3,
-            boolean_value = $4,
-            json_value = $5,
-            updated_at = NOW()
-        WHERE task_id = $6 AND column_id = $7
-      `;
-      await db.query(updateQuery, [
-        textValue,
-        numberValue,
-        dateValue,
-        booleanValue,
-        jsonValue,
-        taskId,
-        columnId,
-      ]);
-    } else {
-      // Insert new value
-      const insertQuery = `
-        INSERT INTO cc_column_values
-        (task_id, column_id, text_value, number_value, date_value, boolean_value, json_value, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-      `;
-      await db.query(insertQuery, [
-        taskId,
-        columnId,
-        textValue,
-        numberValue,
-        dateValue,
-        booleanValue,
-        jsonValue,
-      ]);
-    }
-
-    return res.status(200).send(
-      new ServerResponse(true, {
-        task_id: taskId,
-        column_key,
-        value,
-      })
-    );
   }
 
   public static async refreshProjectTaskProgressValues(
@@ -2446,8 +2707,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
       });
     }
 
-    // Create unmapped group if there are tasks without proper phase assignment
-    if (unmappedTasks.length > 0 && groupBy === GroupBy.PHASE) {
+    // Always include the Backlog (Unmapped) section when grouping by phase,
+    // even when it has no issues — Create sprint must not remove it.
+    // Stored under a reserved key so a real phase named "Unmapped" is not overwritten.
+    if (groupBy === GroupBy.PHASE) {
       const unmappedGroup = {
         id: UNMAPPED,
         title: UNMAPPED,
@@ -2466,7 +2729,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
         done_progress: 0,
       };
 
-      // Calculate progress stats for unmapped group
       if (unmappedTasks.length > 0) {
         const todoCount = unmappedTasks.filter((task: any) => {
           const originalTask = tasks.find((t) => t.id === task.id);
@@ -2493,7 +2755,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
           total > 0 ? +((doneCount / total) * 100).toFixed(0) : 0;
       }
 
-      groupedResponse[UNMAPPED.toLowerCase()] = unmappedGroup;
+      groupedResponse[SYNTHETIC_UNMAPPED_GROUP_KEY] = unmappedGroup;
     }
 
     // Sort tasks within each group by order
@@ -2535,10 +2797,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
         }
       );
 
-    // Add unmapped group when not filtered out (or when Unmapped is explicitly selected)
-    if (groupedResponse[UNMAPPED.toLowerCase()] && includeUnmappedGroup) {
+    // Add synthetic Backlog group when not filtered out (or when Unmapped is explicitly selected)
+    if (groupedResponse[SYNTHETIC_UNMAPPED_GROUP_KEY] && includeUnmappedGroup) {
       if (groupBy === GroupBy.PHASE) {
-        responseGroups.push(groupedResponse[UNMAPPED.toLowerCase()]);
+        responseGroups.push(groupedResponse[SYNTHETIC_UNMAPPED_GROUP_KEY]);
       }
     }
 

@@ -131,5 +131,8 @@
   "minutesRangeError": "0 – 59",
   "hoursLabel": "Orë",
   "hoursMinError": "Orët duhet të jenë 0 ose më shumë",
-  "minutesLabel": "Minuta"
+  "minutesLabel": "Minuta",
+  "durationGreaterThanZeroError": "Kohëzgjatja duhet të jetë më e madhe se 0 minuta",
+  "totalDurationBadge": "Totali: {{duration}}",
+  "overnightSplitBreakdown": "({{day1Duration}} më {{day1Date}}, {{day2Duration}} më {{day2Date}})"
 }

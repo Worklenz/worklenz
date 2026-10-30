@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Flex, Space, Typography } from '@/shared/antd-imports';
+import { Card, Flex, Space, Spin, Tabs, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -33,8 +33,10 @@ import { AuditLogExportStatus } from '@/components/admin-center/audit-log/AuditL
 import { useAuditLogExport } from '@/components/admin-center/audit-log/useAuditLogExport';
 import { formatRetentionMonths } from '@/components/admin-center/audit-log/audit-log-display';
 
+const RolesAndPermissionsPage = React.lazy(() => import('./roles-and-permissions-page'));
+
 /** Admin Center > Security > Audit Log (Audit log spec). Owner/Admin only — see the route guard. */
-const AuditLogPage: React.FC = () => {
+const AuditLogContent: React.FC = () => {
   const { t } = useTranslation(AUDIT_LOG_I18N_NAMESPACE);
   const { t: tReport } = useTranslation('time-report');
   const dispatch = useAppDispatch();
@@ -115,6 +117,33 @@ const AuditLogPage: React.FC = () => {
         </Space>
       </Card>
     </Flex>
+  );
+};
+
+/** Security page wrapper — adds Roles & Permissions tab alongside Audit Log. */
+const AuditLogPage: React.FC = () => {
+  const { t: tRP } = useTranslation('admin-center/roles-permissions');
+
+  return (
+    <Tabs
+      defaultActiveKey="audit-log"
+      items={[
+        {
+          key: 'audit-log',
+          label: tRP('tabAuditLog', { defaultValue: 'Audit Log' }),
+          children: <AuditLogContent />,
+        },
+        {
+          key: 'roles-permissions',
+          label: tRP('tabRolesPermissions', { defaultValue: 'Roles & Permissions' }),
+          children: (
+            <React.Suspense fallback={<Spin />}>
+              <RolesAndPermissionsPage />
+            </React.Suspense>
+          ),
+        },
+      ]}
+    />
   );
 };
 

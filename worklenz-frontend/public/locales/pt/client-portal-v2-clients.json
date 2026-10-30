@@ -9,7 +9,9 @@
     "removeFailed": "O usuário não pôde ser removido.",
     "removed": "{{name}} foi removido do portal.",
     "resendFailed": "O convite não pôde ser reenviado.",
-    "resent": "Convite reenviado para {{email}}. O link é válido por 7 dias."
+    "resent": "Convite reenviado para {{email}}. O link é válido por 7 dias.",
+    "accountRestored": "A conta de {{name}} foi restaurada. A pessoa pode entrar novamente.",
+    "restoreAccountFailed": "Não foi possível restaurar a conta."
   },
   "assign": {
     "description": "Um usuário só vê os projetos atribuídos aqui, mesmo que pertençam a {{organization}}. O que eles podem fazer dentro de cada projeto depende de sua função:",
@@ -47,6 +49,7 @@
   },
   "lastAdmin": {
     "confirm": "Continuar mesmo assim",
+    "pendingApprovalsTitle": "Isto deixa uma aprovação sem aprovador",
     "title": "Este é o último administrador do cliente"
   },
   "menu": {
@@ -59,7 +62,8 @@
     "remove": "Remover usuário",
     "resend": "Reenviar convite",
     "resendShort": "Reenviar",
-    "view": "Ver perfil"
+    "view": "Ver perfil",
+    "restoreAccount": "Restaurar conta"
   },
   "organizations": {
     "accessFilter": {
@@ -110,6 +114,14 @@
       "contactName": "O primeiro administrador de portal ativo deste cliente.",
       "projects": "Projetos compartilhados com este cliente no portal.",
       "users": "Usuários que fizeram login, dentre todos os usuários deste cliente."
+    },
+    "deleted": {
+      "show": "Excluídos ({{count}})",
+      "hide": "Voltar aos clientes",
+      "banner": "Um cliente excluído pode ser restaurado por {{days}} dias. Depois disso, ele é removido permanentemente.",
+      "columnDeleted": "Excluído",
+      "columnRemoval": "Remoção permanente",
+      "empty": "Nenhum cliente excluído. Um cliente que você exclui permanece aqui por {{days}} dias para que você possa restaurá-lo."
     }
   },
   "overview": {
@@ -333,5 +345,60 @@
       "description": "Pessoas em {{name}} que podem entrar. Cada uma vê apenas os projetos atribuídos a elas.",
       "invite": "Convidar usuário"
     }
+  },
+  "orgActions": {
+    "menu": {
+      "deactivate": "Desativar cliente",
+      "reactivate": "Reativar cliente",
+      "delete": "Excluir cliente",
+      "restore": "Restaurar cliente"
+    },
+    "deactivate": {
+      "title": "Desativar {{name}}?",
+      "body": "Todas as pessoas de {{name}} perdem o acesso ao portal imediatamente, e quem estiver conectado é desconectado na próxima solicitação. Todos os dados são mantidos e você pode reativar o cliente a qualquer momento.",
+      "confirm": "Desativar cliente",
+      "success": "{{name}} foi desativado. Seus usuários não podem mais entrar.",
+      "failed": "Não foi possível desativar o cliente."
+    },
+    "reactivate": {
+      "title": "Reativar {{name}}?",
+      "body": "Os usuários podem entrar novamente, com o mesmo acesso que tinham antes.",
+      "confirm": "Reativar cliente",
+      "success": "{{name}} foi reativado.",
+      "failed": "Não foi possível reativar o cliente."
+    },
+    "delete": {
+      "title": "Excluir {{name}}?",
+      "checking": "Verificando o que a exclusão deste cliente afeta…",
+      "checkFailed": "Não foi possível verificar o que a exclusão deste cliente afeta.",
+      "usersAffected": "Usuários que perdem o acesso imediatamente: {{count}}",
+      "effect": "A próxima solicitação deles falha e eles são desconectados. Nada é removido ainda: o cliente, seus usuários, projetos, aprovações, discussões e faturas são mantidos por {{days}} dias.",
+      "restorable": "Até lá, você pode restaurar o cliente na visualização Excluídos, com todo o histórico. Depois disso, ele é removido permanentemente; as faturas são mantidas como registros.",
+      "blockedTitle": "Faturas em aberto",
+      "blocked": "{{numbers}}. Quite ou cancele essas faturas antes de excluir este cliente.",
+      "approvals": "Aprovações ainda aguardando uma decisão: {{refs}}.",
+      "approvalsAck": "Entendo que não será mais possível decidir sobre essas aprovações.",
+      "changeRequests": "Solicitações de alteração em aberto: {{titles}}.",
+      "changeRequestsAck": "Entendo que não será mais possível trabalhar nessas solicitações de alteração.",
+      "warningsTitle": "Confirme antes de excluir",
+      "confirm": "Excluir cliente",
+      "success": "{{name}} foi excluído. Você pode restaurá-lo até {{date}}.",
+      "failed": "Não foi possível excluir o cliente."
+    },
+    "restore": {
+      "title": "Restaurar {{name}}?",
+      "body": "Os usuários podem entrar novamente, e os projetos, aprovações, discussões, faturas e o histórico voltam exatamente como estavam.",
+      "confirm": "Restaurar cliente",
+      "success": "{{name}} foi restaurado.",
+      "failed": "Não foi possível restaurar o cliente.",
+      "nameTaken": "Outro cliente já se chama “{{name}}”. Dê um novo nome a este cliente para restaurá-lo.",
+      "newName": "Novo nome do cliente",
+      "newNameRequired": "Informe um nome para o cliente."
+    }
+  },
+  "restoreAccount": {
+    "title": "Restaurar esta conta?",
+    "body": "Esta conta foi excluída por {{name}}. Restaure-a somente se a pessoa pediu; ela poderá entrar novamente com a função e os projetos anteriores.",
+    "confirm": "Restaurar conta"
   }
 }

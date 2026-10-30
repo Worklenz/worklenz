@@ -100,7 +100,7 @@
     "noUnassignedTasks": "Aucune tâche non attribuée trouvée",
     "pickUnassignedTaskRequired": "Veuillez sélectionner une tâche non attribuée",
     "taskCreationRestrictedTitle": "Création de tâches restreinte",
-    "taskCreationRestricted": "La création de tâches est réservée aux administrateurs et aux chefs d'équipe uniquement. Veuillez contacter votre administrateur.",
+    "taskCreationRestricted": "La création de tâches est réservée aux administrateurs, aux chefs d'équipe et aux chefs de projet uniquement. Veuillez contacter votre administrateur.",
     "assignees": "Destinataires",
     "searchMembers": "Rechercher par nom ou par email…",
     "noMembersFound": "Aucun membre trouvé",
@@ -254,7 +254,9 @@
     "weekdaySat": "Samedi",
     "weekdaySun": "Soleil",
     "createdTimeColumn": "Temps de création",
-    "minutesPlaceholder": "0"
+    "minutesPlaceholder": "0",
+    "totalDurationBadge": "Total : {{duration}}",
+    "overnightSplitBreakdown": "({{day1Duration}} le {{day1Date}}, {{day2Duration}} le {{day2Date}})"
   },
   "expenses": {
     "emptyTitle": "Aucune dépense enregistrée pour l'instant",

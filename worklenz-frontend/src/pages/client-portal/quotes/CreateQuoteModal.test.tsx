@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+  downloadPortalPdf: vi.fn(),
   createQuote: vi.fn(() => ({ unwrap: () => Promise.resolve({ body: { id: 'new-1' } }) })),
   changeRequests: [] as Array<Record<string, unknown>>,
   clients: [] as Array<Record<string, unknown>>,
@@ -12,6 +13,8 @@ vi.mock('../discussions/RichMessageEditor', async () => {
   const { RichMessageEditorStub } = await import('../discussions/richMessageEditorStub');
   return { RichMessageEditor: RichMessageEditorStub };
 });
+
+vi.mock('@/utils/download-portal-pdf', () => ({ downloadPortalPdf: mocks.downloadPortalPdf }));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -172,8 +175,6 @@ describe('CreateQuoteModal', () => {
 
   it('creates the quote as sent for Create & Download', async () => {
     renderModal('/worklenz/client-portal/quotes/create?clientId=client-1');
-    const open = vi.spyOn(window, 'open').mockReturnValue(null);
-
     fireEvent.change(descriptionInputs()[0], { target: { value: 'Retainer' } });
     fireEvent.change(screen.getByLabelText('Rate'), { target: { value: '100' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create & Download' }));
@@ -182,13 +183,12 @@ describe('CreateQuoteModal', () => {
       expect(mocks.createQuote).toHaveBeenCalledWith(expect.objectContaining({ status: 'sent' }))
     );
     await waitFor(() =>
-      expect(open).toHaveBeenCalledWith(
+      expect(mocks.downloadPortalPdf).toHaveBeenCalledWith(
         expect.stringContaining('/clients/portal/quotes/new-1/download'),
-        '_blank',
-        'noopener,noreferrer'
+        'quote.pdf',
+        expect.any(String)
       )
     );
-    open.mockRestore();
   });
 
   it('updates the live summary as line items and discount change', () => {

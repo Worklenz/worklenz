@@ -218,5 +218,6 @@
     "defaultStatusesLabel": "Default statuses",
     "defaultStatusesHint": "These always exist and can't be removed.",
     "customStatusesLabel": "Custom statuses"
-  }
+  },
+  "defaultInvoiceFooter": "Thank you for your business. If you have any questions about this invoice, please contact us using the details above."
 }

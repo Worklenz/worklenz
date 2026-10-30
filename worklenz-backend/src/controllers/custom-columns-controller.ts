@@ -8,6 +8,10 @@ import HandleExceptions from "../decorators/handle-exceptions";
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { LICENSING_SETTINGS } from "../shared/licensing_settings";
 import { canUseFeature, isEnforceMode } from "../shared/entitlements/gates";
+import {
+  getDependentColumnNames,
+  validateParentColumn,
+} from "../services/cascading-selection-service";
 
 const CUSTOM_FIELD_LIMIT = LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
 
@@ -104,11 +108,29 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
     }
     // --- End limit check ---
 
+    const parentColumnId: string | null =
+      field_type === "selection" && configuration?.parent_column_id
+        ? String(configuration.parent_column_id)
+        : null;
+
     // Start a transaction since we're inserting into multiple tables
     const client = await db.pool.connect();
 
     try {
       await client.query("BEGIN");
+
+      const parentError = await validateParentColumn(client, {
+        projectId: project_id,
+        columnId: null,
+        parentColumnId,
+        fieldType: field_type,
+      });
+      if (parentError) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .send(new ServerResponse(false, { error_code: parentError.error_code }, parentError.message));
+      }
 
       // 1. Insert the main custom column
       const columnQuery = `
@@ -132,8 +154,9 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
         INSERT INTO cc_column_configurations (
           column_id, field_title, field_type, number_type, 
           decimals, label, label_position, preview_value,
-          expression, first_numeric_column_key, second_numeric_column_key
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          expression, first_numeric_column_key, second_numeric_column_key,
+          parent_column_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING id;
       `;
       await client.query(configQuery, [
@@ -148,6 +171,7 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
         configuration.expression || null,
         configuration.first_numeric_column_key || null,
         configuration.second_numeric_column_key || null,
+        parentColumnId,
       ]);
 
       // 3. Insert selection options if present
@@ -157,8 +181,9 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
       ) {
         const selectionQuery = `
           INSERT INTO cc_selection_options (
-            column_id, selection_id, selection_name, selection_color, selection_order
-          ) VALUES ($1, $2, $3, $4, $5);
+            column_id, selection_id, selection_name, selection_color, selection_order,
+            parent_selection_id
+          ) VALUES ($1, $2, $3, $4, $5, $6);
         `;
         for (const [
           index,
@@ -170,6 +195,7 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
             selection.selection_name,
             selection.selection_color,
             index,
+            resolveParentSelectionId(parentColumnId, selection),
           ]);
         }
       }
@@ -207,17 +233,9 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
           cf.expression,
           cf.first_numeric_column_key,
           cf.second_numeric_column_key,
-          (
-            SELECT json_agg(
-              json_build_object(
-                'selection_id', so.selection_id,
-                'selection_name', so.selection_name,
-                'selection_color', so.selection_color
-              )
-            )
-            FROM cc_selection_options so
-            WHERE so.column_id = cc.id
-          ) as selections_list,
+          cf.parent_column_id,
+          ${PARENT_COLUMN_KEY_SQL} as parent_column_key,
+          ${SELECTIONS_LIST_SQL} as selections_list,
           (
             SELECT json_agg(
               json_build_object(
@@ -264,17 +282,9 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
         cf.expression,
         cf.first_numeric_column_key,
         cf.second_numeric_column_key,
-        (
-          SELECT json_agg(
-            json_build_object(
-              'selection_id', so.selection_id,
-              'selection_name', so.selection_name,
-              'selection_color', so.selection_color
-            )
-          )
-          FROM cc_selection_options so
-          WHERE so.column_id = cc.id
-        ) as selections_list,
+        cf.parent_column_id,
+        ${PARENT_COLUMN_KEY_SQL} as parent_column_key,
+        ${SELECTIONS_LIST_SQL} as selections_list,
         (
           SELECT json_agg(
             json_build_object(
@@ -314,17 +324,9 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
         cf.expression,
         cf.first_numeric_column_key,
         cf.second_numeric_column_key,
-        (
-          SELECT json_agg(
-            json_build_object(
-              'selection_id', so.selection_id,
-              'selection_name', so.selection_name,
-              'selection_color', so.selection_color
-            )
-          )
-          FROM cc_selection_options so
-          WHERE so.column_id = cc.id
-        ) as selections_list,
+        cf.parent_column_id,
+        ${PARENT_COLUMN_KEY_SQL} as parent_column_key,
+        ${SELECTIONS_LIST_SQL} as selections_list,
         (
           SELECT json_agg(
             json_build_object(
@@ -384,7 +386,11 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
       await client.query("BEGIN");
 
       const existingColumnResult = await client.query(
-        `SELECT field_type, type_locked FROM cc_custom_columns WHERE id = $1 LIMIT 1`,
+        `SELECT cc.field_type, cc.type_locked, cc.project_id, cf.parent_column_id
+           FROM cc_custom_columns cc
+           LEFT JOIN cc_column_configurations cf ON cf.column_id = cc.id
+          WHERE cc.id = $1
+          LIMIT 1`,
         [columnId]
       );
 
@@ -412,6 +418,44 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
       // A locked type would have been rejected above, so any surviving change is allowed.
       const resolvedFieldType =
         field_type && field_type !== existingFieldType ? field_type : existingFieldType;
+
+      // Callers that only rename the column omit parent_column_id; keep the saved parent then.
+      const existingParentColumnId: string | null =
+        existingColumnResult.rows[0].parent_column_id || null;
+      const requestedParentColumnId: string | null =
+        configuration && Object.prototype.hasOwnProperty.call(configuration, "parent_column_id")
+          ? configuration.parent_column_id
+            ? String(configuration.parent_column_id)
+            : null
+          : existingParentColumnId;
+      const parentColumnId = resolvedFieldType === "selection" ? requestedParentColumnId : null;
+
+      const parentError = await validateParentColumn(client, {
+        projectId: existingColumnResult.rows[0].project_id,
+        columnId,
+        parentColumnId,
+        fieldType: resolvedFieldType,
+      });
+      if (parentError) {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .send(new ServerResponse(false, { error_code: parentError.error_code }, parentError.message));
+      }
+
+      if (resolvedFieldType !== "selection") {
+        const dependentNames = await getDependentColumnNames(client, columnId);
+        if (dependentNames.length) {
+          await client.query("ROLLBACK");
+          return res.status(400).send(
+            new ServerResponse(
+              false,
+              { error_code: "CASCADE_PARENT_HAS_DEPENDENTS", dependent_fields: dependentNames },
+              `${dependentNames.join(", ")} depends on this field, so it must stay a Selection field.`
+            )
+          );
+        }
+      }
 
       // 1. Update the main custom column
       const columnQuery = `
@@ -453,6 +497,7 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
         configuration.expression || null,
         configuration.first_numeric_column_key || null,
         configuration.second_numeric_column_key || null,
+        parentColumnId,
       ];
       const configUpdateResult = await client.query(
         `
@@ -467,6 +512,7 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
               expression = $9,
               first_numeric_column_key = $10,
               second_numeric_column_key = $11,
+              parent_column_id = $12,
               updated_at = CURRENT_TIMESTAMP
           WHERE column_id = $1;
         `,
@@ -479,8 +525,9 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
             INSERT INTO cc_column_configurations (
               column_id, field_title, field_type, number_type,
               decimals, label, label_position, preview_value,
-              expression, first_numeric_column_key, second_numeric_column_key
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+              expression, first_numeric_column_key, second_numeric_column_key,
+              parent_column_id
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
           `,
           configValues
         );
@@ -488,6 +535,20 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
 
       // 3. Update selections if present
       if (configuration.selections_list) {
+        // Preserve parent_selection_id when the incoming payload omits it.
+        const existingParentsResult = await client.query(
+          `SELECT selection_id, parent_selection_id
+             FROM cc_selection_options
+            WHERE column_id = $1`,
+          [columnId]
+        );
+        const existingParentBySelectionId = new Map<string, string | null>(
+          existingParentsResult.rows.map((row: { selection_id: string; parent_selection_id: string | null }) => [
+            row.selection_id,
+            row.parent_selection_id,
+          ])
+        );
+
         // Delete existing selections
         await client.query(
           "DELETE FROM cc_selection_options WHERE column_id = $1",
@@ -498,8 +559,9 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
         if (configuration.selections_list.length > 0) {
           const selectionQuery = `
             INSERT INTO cc_selection_options (
-              column_id, selection_id, selection_name, selection_color, selection_order
-            ) VALUES ($1, $2, $3, $4, $5);
+              column_id, selection_id, selection_name, selection_color, selection_order,
+              parent_selection_id
+            ) VALUES ($1, $2, $3, $4, $5, $6);
           `;
           for (const [
             index,
@@ -511,6 +573,7 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
               selection.selection_name,
               selection.selection_color,
               index,
+              resolveParentSelectionId(parentColumnId, selection, existingParentBySelectionId),
             ]);
           }
         }
@@ -557,17 +620,9 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
           cf.expression,
           cf.first_numeric_column_key,
           cf.second_numeric_column_key,
-          (
-            SELECT json_agg(
-              json_build_object(
-                'selection_id', so.selection_id,
-                'selection_name', so.selection_name,
-                'selection_color', so.selection_color
-              )
-            )
-            FROM cc_selection_options so
-            WHERE so.column_id = cc.id
-          ) as selections_list,
+          cf.parent_column_id,
+          ${PARENT_COLUMN_KEY_SQL} as parent_column_key,
+          ${SELECTIONS_LIST_SQL} as selections_list,
           (
             SELECT json_agg(
               json_build_object(
@@ -602,6 +657,17 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
 
+    const dependentNames = await getDependentColumnNames(db, id);
+    if (dependentNames.length) {
+      return res.status(400).send(
+        new ServerResponse(
+          false,
+          { error_code: "CASCADE_PARENT_HAS_DEPENDENTS", dependent_fields: dependentNames },
+          `Cannot delete this field because ${dependentNames.join(", ")} depends on it. Remove that dependency first.`
+        )
+      );
+    }
+
     const q = `
       DELETE FROM cc_custom_columns
       WHERE id = $1
@@ -633,17 +699,9 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
           cf.expression,
           cf.first_numeric_column_key,
           cf.second_numeric_column_key,
-          (
-            SELECT json_agg(
-              json_build_object(
-                'selection_id', so.selection_id,
-                'selection_name', so.selection_name,
-                'selection_color', so.selection_color
-              )
-            )
-            FROM cc_selection_options so
-            WHERE so.column_id = cc.id
-          ) as selections_list,
+          cf.parent_column_id,
+          ${PARENT_COLUMN_KEY_SQL} as parent_column_key,
+          ${SELECTIONS_LIST_SQL} as selections_list,
           (
             SELECT json_agg(
               json_build_object(
@@ -679,6 +737,8 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
               'expression', cd.expression,
               'firstNumericColumnKey', cd.first_numeric_column_key,
               'secondNumericColumnKey', cd.second_numeric_column_key,
+              'parentColumnId', cd.parent_column_id,
+              'parentColumnKey', cd.parent_column_key,
               'selectionsList', COALESCE(cd.selections_list, '[]'::json),
               'labelsList', COALESCE(cd.labels_list, '[]'::json)
             )

@@ -237,6 +237,21 @@ const ProjectViewMembers = () => {
     dispatch(toggleUpdateMemberDrawer());
   };
 
+  const handleJobTitleUpdate = useCallback((memberId: string, newJobTitle: string) => {
+    setMembers(prev =>
+      prev
+        ? {
+            ...prev,
+            data: prev.data?.map(m =>
+              m.team_member_id === memberId || m.id === memberId
+                ? { ...m, job_title: newJobTitle }
+                : m
+            ),
+          }
+        : prev
+    );
+  }, []);
+
   const handleManageTimeOff = (record: IProjectMemberViewModel) => {
     if (!record.team_member_id) {
       message.error(
@@ -488,6 +503,20 @@ const ProjectViewMembers = () => {
           : pagination.order === 'descend' && pagination.field === 'job_title'
             ? 'descend'
             : null,
+      onCell: (record: IProjectMemberViewModel) => {
+        const isCurrentUser = user?.team_member_id === record.team_member_id;
+        const isTargetOwner =
+          (record.access_level || record.access || '').toLowerCase() === 'owner';
+        const canManage = canManageUser(record.access_level || record.access);
+        const canEdit =
+          isCurrentUser ||
+          effectiveRole === ROLE_NAMES.OWNER ||
+          (canManage && !isTargetOwner);
+        return {
+          onClick: () => canEdit && handleEditMember(record),
+          style: { cursor: canEdit ? 'pointer' : 'default' },
+        };
+      },
       render: (_, record: IProjectMemberViewModel) => (
         <Typography.Text style={{ marginInlineStart: 12 }}>
           {record?.job_title || '-'}
@@ -557,22 +586,22 @@ const ProjectViewMembers = () => {
       width: 80,
       render: (record: IProjectMemberViewModel) => {
         const canRemove = canRemoveMember(record);
-
-        if (!canRemove) return null;
-
-        const canManage = canManageUser(
-          record.access_level || record.access
-        );
+        const canManage = canManageUser(record.access_level || record.access);
 
         const isCurrentUser = user?.team_member_id === record.team_member_id;
         const isTargetOwner =
           (record.access_level || record.access || '').toLowerCase() === 'owner';
 
         const canEdit =
-          (effectiveRole === ROLE_NAMES.OWNER && isCurrentUser) ||
+          isCurrentUser ||
+          effectiveRole === ROLE_NAMES.OWNER ||
           (canManage && !isTargetOwner);
 
-        const canChangeStatus = canManage && !isTargetOwner;
+        const canChangeStatus = canManage && !isTargetOwner && !isCurrentUser;
+        const canManageMemberTimeOff = canManage && !isTargetOwner;
+
+        const hasAnyAction = canEdit || canManageMemberTimeOff || canChangeStatus || canRemove;
+        if (!hasAnyAction) return null;
 
         const handleRemove = () => {
           Modal.confirm({
@@ -598,66 +627,68 @@ const ProjectViewMembers = () => {
             },
           },
 
-          {
-            key: 'time-off',
-            label: t('manageTimeOff', {
-              defaultValue: 'Manage Time Off',
-            }),
-            disabled: !canManage,
-            onClick: () => {
-              if (canManage) {
-                handleManageTimeOff(record);
-              }
-            },
-          },
+          ...(canManageMemberTimeOff
+            ? [
+                {
+                  key: 'time-off',
+                  label: t('manageTimeOff', {
+                    defaultValue: 'Manage Time Off',
+                  }),
+                  onClick: () => {
+                    handleManageTimeOff(record);
+                  },
+                },
+              ]
+            : []),
 
-          // ADD STATUS HERE
-          {
-            key: 'status',
-            label: (
-              <Popconfirm
-                title={t('changeMemberStatusConfirmation', {
-                  defaultValue: "Are you sure you want to change this member's status?",
-                })}
-                okText={t('yesProceed', {
-                  defaultValue: 'Yes, Proceed',
-                })}
-                cancelText={t('cancel', {
-                  defaultValue: 'Cancel',
-                })}
-                onConfirm={() => {
-                  if (canChangeStatus) {
-                    handleStatusChange(record);
-                  }
-                }}
-              >
-                <span onClick={e => e.stopPropagation()}>
-                  {record.active
-                    ? t('deactivateTooltip', {
-                      defaultValue: 'Deactivate member',
-                    })
-                    : t('activateTooltip', {
-                      defaultValue: 'Activate member',
-                    })}
-                </span>
-              </Popconfirm>
-            ),
-            disabled: !canChangeStatus,
-          },
+          ...(canChangeStatus
+            ? [
+                {
+                  key: 'status',
+                  label: (
+                    <Popconfirm
+                      title={t('changeMemberStatusConfirmation', {
+                        defaultValue: "Are you sure you want to change this member's status?",
+                      })}
+                      okText={t('yesProceed', {
+                        defaultValue: 'Yes, Proceed',
+                      })}
+                      cancelText={t('cancel', {
+                        defaultValue: 'Cancel',
+                      })}
+                      onConfirm={() => {
+                        handleStatusChange(record);
+                      }}
+                    >
+                      <span onClick={e => e.stopPropagation()}>
+                        {record.active
+                          ? t('deactivateTooltip', {
+                              defaultValue: 'Deactivate member',
+                            })
+                          : t('activateTooltip', {
+                              defaultValue: 'Activate member',
+                            })}
+                      </span>
+                    </Popconfirm>
+                  ),
+                },
+              ]
+            : []),
 
-          {
-            key: 'remove',
-            label: t('removeFromProject', {
-              defaultValue: 'Remove from Project',
-            }),
-            disabled: !canRemove,
-            onClick: () => {
-              if (canRemove) {
-                handleRemove();
-              }
-            },
-            danger: true,
-          },
+          ...(canRemove
+            ? [
+                {
+                  key: 'remove',
+                  label: t('removeFromProject', {
+                    defaultValue: 'Remove from Project',
+                  }),
+                  onClick: () => {
+                    handleRemove();
+                  },
+                  danger: true,
+                },
+              ]
+            : []),
         ];
         return (
           <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
@@ -854,6 +885,14 @@ const ProjectViewMembers = () => {
                 })}
               />
               <TablePagination
+                navigationLabel={t('common:paginationNavigation', { defaultValue: 'Pagination' })}
+                firstPageLabel={t('common:firstPage', { defaultValue: 'First page' })}
+                previousPageLabel={t('common:previousPage', { defaultValue: 'Previous page' })}
+                nextPageLabel={t('common:nextPage', { defaultValue: 'Next page' })}
+                lastPageLabel={t('common:lastPage', { defaultValue: 'Last page' })}
+                renderDefaultSummary={(range, count) =>
+                  t('common:paginationSummary', { range, total: count, defaultValue: `${range} of ${count}` })
+                }
                 page={pagination.current}
                 pageSize={pagination.pageSize}
                 total={pagination.total}
@@ -908,6 +947,7 @@ const ProjectViewMembers = () => {
           selectedMemberId={selectedMemberId}
           selectedMemberName={selectedMemberName}
           initialRoleName={selectedMemberRole || undefined}
+          onJobTitleUpdate={handleJobTitleUpdate}
         />,
         document.body
       )}

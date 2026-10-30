@@ -524,11 +524,21 @@ export default abstract class ReportingControllerBase extends WorklenzController
     // and `status` are accepted as aliases so every caller gets this order;
     // sorting on the raw UUID leaves the status groups in a random order.
     const isStatusSort = ["status_name", "status_id", "status"].includes(sortField);
+
+    const getPriorityRank = (priorityName: string) => `CASE LOWER(${priorityName})
+           WHEN 'critical' THEN 1
+           WHEN 'high' THEN 2
+           WHEN 'medium' THEN 3
+           WHEN 'low' THEN 4
+           ELSE NULL
+         END`;
+    const isPrioritySort = ["priority_name", "priority", "priority_id"].includes(sortField);
     const sortColumns: Record<string, string> = {
       name: 'name',
       'p.name': 'name',
       last_activity: 'last_activity_at',
       days_left: 'days_left',
+      'p.days_left': 'days_left',
       comment: 'comment',
       priority_name: 'priority_name',
       health_name: 'health_name',
@@ -550,9 +560,13 @@ export default abstract class ReportingControllerBase extends WorklenzController
     // aggregate, with a stable tie-breaker so equal values do not drift between pages.
     const orderBy = isStatusSort
       ? `${getStatusRank("ps.name")} ${direction}, LOWER(p.name) ${direction}, p.id`
+      : isPrioritySort
+      ? `${getPriorityRank("pr.name")} ${direction} NULLS LAST, LOWER(p.name) ${direction}, p.id`
       : `${sortColumn} ${direction} NULLS LAST, p.id`;
     const aggregateOrderBy = isStatusSort
       ? `ORDER BY ${getStatusRank("t.status_name")} ${direction}, LOWER(t.name) ${direction}, t.id`
+      : isPrioritySort
+      ? `ORDER BY ${getPriorityRank("t.priority_name")} ${direction} NULLS LAST, LOWER(t.name) ${direction}, t.id`
       : `ORDER BY t.${sortColumn} ${direction} NULLS LAST, t.id`;
 
     const q = `SELECT COUNT(*) AS total,
@@ -584,8 +598,8 @@ export default abstract class ReportingControllerBase extends WorklenzController
                            ps.icon AS status_icon,
 
                            p.priority_id,
-                           (SELECT name FROM sys_project_priorities WHERE id = p.priority_id) AS priority_name,
-                           (SELECT color_code FROM sys_project_priorities WHERE id = p.priority_id) AS priority_color,
+                           pr.name AS priority_name,
+                           pr.color_code AS priority_color,
 
                            ABS(p.end_date::DATE - CURRENT_DATE) AS days_left,
                            (SELECT MAX(tal.created_at)
@@ -708,6 +722,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                     FROM projects p
                              LEFT JOIN project_categories pc ON pc.id = p.category_id
                              LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
+                             LEFT JOIN sys_project_priorities pr ON p.priority_id = pr.id
                     WHERE ${teamFilterClause} ${searchQuery} ${healthClause} ${statusClause} ${categoryClause} ${projectManagersClause} ${archivedClause}
                     ORDER BY ${orderBy}
                     LIMIT $2 OFFSET $3) t) AS projects

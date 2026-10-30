@@ -19,6 +19,8 @@
   "viewOnBoard": "机上查看",
   "completeSprint": "完成冲刺",
   "startSprint": "开始冲刺",
+  "createSprint": "创建冲刺",
+  "sprintSetupRequiredHint": "创建冲刺以解锁待办事项并开始添加工作项。",
   "editSprint": "编辑冲刺",
   "noTasksInGroupDescription": "添加任务开始使用",
   "addFirstTask": "添加你的第一个任务",
@@ -42,6 +44,12 @@
   "inProgress": "进行中",
   "done": "已完成",
   "defaultTaskName": "无标题任务",
+  "editSprintName": "点击重命名",
+  "editSprintDates": "点击更改日期",
+  "addDates": "添加日期",
+  "sprintUpdated": "迭代已更新",
+  "sprintUpdateError": "无法更新迭代",
+  "sprintNameRequired": "必须填写迭代名称",
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} 个子任务",

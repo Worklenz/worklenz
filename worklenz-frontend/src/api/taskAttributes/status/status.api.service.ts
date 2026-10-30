@@ -92,8 +92,18 @@ export const statusApiService = {
     body: ITaskStatusCreateRequest,
     currentProjectId: string
   ): Promise<IServerResponse<ITaskStatus>> => {
-    const q = toQueryString({ current_project_id: currentProjectId });
-    const response = await apiClient.put<IServerResponse<ITaskStatus>>(`${rootUrl}/order`, body);
+    const q = toQueryString({
+      current_project_id: currentProjectId,
+      project_id: currentProjectId,
+    });
+    const payload: ITaskStatusCreateRequest = {
+      ...body,
+      project_id: currentProjectId,
+    };
+    const response = await apiClient.put<IServerResponse<ITaskStatus>>(
+      `${rootUrl}/order${q}`,
+      payload
+    );
     return response.data;
   },
 

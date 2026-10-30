@@ -145,7 +145,14 @@ export default class TaskPhasesController extends WorklenzControllerBase {
           AND pp.sprint_status = 'active'
       ) sprint_metrics ON TRUE
       WHERE pp.project_id = $1
-      ORDER BY pp.sort_index DESC;
+      ORDER BY
+        CASE COALESCE(pp.sprint_status, 'planned')
+          WHEN 'active' THEN 0
+          WHEN 'planned' THEN 1
+          WHEN 'completed' THEN 2
+          ELSE 3
+        END,
+        pp.sort_index DESC;
     `;
     const result = await db.query(q, [req.query.id]);
 
@@ -454,10 +461,10 @@ export default class TaskPhasesController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, result.error));
     }
 
-    const {phase, archivedCount, movedCount} = result.data;
+    const {phase, archivedCount, movedCount, plannedLengthDays} = result.data;
 
     const startedSprint = await tryStartNextSprintAfterCompletion(
-      projectId, destinationPhaseId, getSprintLengthDays(phase)
+      projectId, destinationPhaseId, plannedLengthDays ?? getSprintLengthDays(phase)
     );
     if (startedSprint) startedSprint.color_code = startedSprint.color_code + TASK_STATUS_COLOR_ALPHA;
 

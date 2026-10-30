@@ -19,6 +19,8 @@
   "viewOnBoard": "An Bord ansehen",
   "completeSprint": "Kompletter Sprint",
   "startSprint": "Sprint starten",
+  "createSprint": "Sprint erstellen",
+  "sprintSetupRequiredHint": "Erstellen Sie einen Sprint, um das Backlog freizuschalten und Issues hinzuzufügen.",
   "editSprint": "Sprint bearbeiten",
   "noTasksInGroupDescription": "Fügen Sie eine Aufgabe hinzu, um zu beginnen",
   "addFirstTask": "Fügen Sie Ihre erste Aufgabe hinzu",
@@ -42,6 +44,12 @@
   "inProgress": "In Bearbeitung",
   "done": "Erledigt",
   "defaultTaskName": "Unbenannte Aufgabe",
+  "editSprintName": "Zum Umbenennen klicken",
+  "editSprintDates": "Klicken, um die Daten zu ändern",
+  "addDates": "Daten hinzufügen",
+  "sprintUpdated": "Sprint aktualisiert",
+  "sprintUpdateError": "Sprint konnte nicht aktualisiert werden",
+  "sprintNameRequired": "Der Sprintname ist erforderlich",
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} Unteraufgabe",

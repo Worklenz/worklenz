@@ -33,6 +33,7 @@ const state = vi.hoisted(() => ({
   cancel: vi.fn(),
   resubmit: vi.fn(),
   create: vi.fn(),
+  update: vi.fn(),
   messageSuccess: vi.fn(),
   messageError: vi.fn(),
 }));
@@ -56,6 +57,7 @@ vi.mock('@/api/client-portal/portal-workflow-api', () => ({
   useCancelApprovalMutation: () => [trigger(state.cancel), { isLoading: false }],
   useResubmitApprovalMutation: () => [trigger(state.resubmit), { isLoading: false }],
   useCreateApprovalMutation: () => [trigger(state.create), { isLoading: false }],
+  useUpdateApprovalMutation: () => [trigger(state.update), { isLoading: false }],
   useGetApprovalOptionsQuery: () => state.options,
 }));
 
@@ -78,6 +80,7 @@ vi.mock('@/shared/antd-imports', async importOriginal => {
 import type { Approval } from '@/types/client-portal/v2';
 import { ApprovalDetailModal } from './ApprovalDetailModal';
 import { CreateApprovalModal } from './CreateApprovalModal';
+import { EditApprovalModal } from './EditApprovalModal';
 
 const makeApproval = (overrides: Partial<Approval> = {}): Approval => ({
   id: 'ap-1',
@@ -131,6 +134,7 @@ beforeEach(() => {
   state.cancel.mockResolvedValue({ body: {} });
   state.resubmit.mockResolvedValue({ body: {} });
   state.create.mockResolvedValue({ body: { ref_no: 'AP-000124' } });
+  state.update.mockResolvedValue({ body: {} });
 });
 
 describe('ApprovalDetailModal', () => {
@@ -290,6 +294,78 @@ describe('CreateApprovalModal', () => {
 
     await waitFor(() =>
       expect(state.create).toHaveBeenCalledWith(expect.objectContaining({ approver_ids: ['u-1', 'u-2'], send: true }))
+    );
+  });
+  it('renders Ant Design DatePicker with accessible placeholder and handles date input', async () => {
+    state.create.mockResolvedValue({ body: { ref_no: 'AP-000125' } });
+    (state.options as { data: { body: { approvers: unknown[] } } }).data.body.approvers = [
+      { id: 'u-1', name: 'Alex Rivera', email: 'alex@brandbase.com', role: 'admin' },
+    ];
+    renderCreate();
+
+    const datePicker = screen.getByLabelText('Due date (optional)');
+    expect(datePicker).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Select due date')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('combobox', { name: 'Project' }));
+    await userEvent.click(await screen.findByText('Website redesign · Brandbase'));
+    await userEvent.type(screen.getByLabelText('What is being approved'), 'Approve with due date');
+    await userEvent.click(screen.getByText('Free-form item'));
+    await userEvent.type(screen.getByLabelText('Item name, e.g. Launch rollout approach'), 'Item');
+
+    const approvers = screen.getByRole('combobox', { name: 'Approvers' });
+    await userEvent.click(approvers);
+    await userEvent.click(await screen.findByText('Alex Rivera · alex@brandbase.com · Client Admin'));
+
+    fireEvent.change(datePicker, { target: { value: '2026-11-15' } });
+    fireEvent.keyDown(datePicker, { key: 'Enter', code: 'Enter' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+
+    await waitFor(() =>
+      expect(state.create).toHaveBeenCalledWith(
+        expect.objectContaining({ due_date: '2026-11-15', send: false })
+      )
+    );
+  });
+});
+
+describe('EditApprovalModal', () => {
+  it('renders DatePicker initialized with existing due date and allows editing', async () => {
+    const approval = makeApproval({
+      due_date: '2026-12-01',
+      linked_item: { type: 'freeform', name: 'Existing item', description: 'Desc', id: null, file_version: null, task_key: null },
+    });
+    (state.options as unknown as Record<string, unknown>) = {
+      data: {
+        body: {
+          linkable: { files: [], milestones: [], tasks: [], internal_counts: { files: 0, milestones: 0, tasks: 0 } },
+          approvers: [{ id: 'u-1', name: 'Alex Rivera', email: 'alex@brandbase.com', role: 'admin' }],
+        },
+      },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    };
+
+    render(<EditApprovalModal approval={approval} onClose={vi.fn()} />);
+
+    const datePicker = screen.getByLabelText('Due date (optional)');
+    expect(datePicker).toBeInTheDocument();
+    expect(datePicker).toHaveValue('2026-12-01');
+
+    fireEvent.change(datePicker, { target: { value: '2026-12-15' } });
+    fireEvent.keyDown(datePicker, { key: 'Enter', code: 'Enter' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() =>
+      expect(state.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          approvalId: 'ap-1',
+          body: expect.objectContaining({ due_date: '2026-12-15' }),
+        })
+      )
     );
   });
 });

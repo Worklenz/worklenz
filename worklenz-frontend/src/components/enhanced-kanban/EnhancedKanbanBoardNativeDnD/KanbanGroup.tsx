@@ -156,7 +156,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
     const [isEditable, setIsEditable] = useState(false);
     const isProjectManager = useIsProjectManager();
-    const { canCreateTask } = useTaskCreationPermission();
+    const { canCreateTask, canAddTask } = useTaskCreationPermission();
     const [name, setName] = useState(group.name);
     const inputRef = useRef<InputRef>(null);
     const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -435,6 +435,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     };
 
     const handleOpenCreateCard = (position: 'top' | 'bottom') => {
+      if (!canCreateTask) return;
       if (isSoftwareProject) {
         dispatch(openCreateIssueModal(getCreateIssueTarget()));
         return;
@@ -668,8 +669,9 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
               </div>
 
               {/* Only show action buttons when expanded */}
-              {!isCollapsed && canCreateTask && (
+              {!isCollapsed && (canAddTask || canCreateTask) && (
                 <div className="flex items-center gap-1">
+                  {canAddTask && (
                   <button
                     type="button"
                     className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
@@ -695,8 +697,9 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                       />
                     </svg>
                   </button>
+                  )}
 
-                  {(isOwnerOrAdmin || isProjectManager) && menuItems.length > 0 && (
+                  {canCreateTask && (isOwnerOrAdmin || isProjectManager) && menuItems.length > 0 && (
                     <Dropdown
                       menu={{ items: menuItems }}
                       trigger={['click']}
@@ -729,7 +732,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
           {!isCollapsed && (
             <div className="enhanced-kanban-group-tasks">
               {/* Create card at top */}
-              {(showNewCardTop && canCreateTask) && (
+              {(showNewCardTop && canAddTask) && (
                 <EnhancedKanbanCreateTaskCard
                   sectionId={group.id}
                   setShowNewCard={setShowNewCardTop}
@@ -811,7 +814,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
             )}
 
             {/* Create card at bottom */}
-            {(showNewCardBottom && canCreateTask) && (
+            {(showNewCardBottom && canAddTask) && (
               <EnhancedKanbanCreateTaskCard
                 sectionId={group.id}
                 setShowNewCard={setShowNewCardBottom}
@@ -820,7 +823,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
             )}
 
             {/* Footer Add Task Button */}
-            {!showNewCardTop && !showNewCardBottom && group.tasks.length > 0 && canCreateTask && (
+            {!showNewCardTop && !showNewCardBottom && group.tasks.length > 0 && canAddTask && (
               <button
                 type="button"
                 className="h-10 w-full rounded-md border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 mt-2"

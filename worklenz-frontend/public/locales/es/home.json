@@ -100,7 +100,7 @@
     "noUnassignedTasks": "No se encontraron tareas sin asignar",
     "pickUnassignedTaskRequired": "Selecciona una tarea sin asignar",
     "taskCreationRestrictedTitle": "Creación de tareas restringida",
-    "taskCreationRestricted": "La creación de tareas está restringida solo a administradores y líderes de equipo. Contacta a tu administrador.",
+    "taskCreationRestricted": "La creación de tareas está restringida solo a administradores, líderes de equipo y gerentes de proyecto. Contacta a tu administrador.",
     "assignees": "Asignados",
     "searchMembers": "Buscar por nombre o correo…",
     "noMembersFound": "No se encontraron miembros",
@@ -254,7 +254,9 @@
     "weekdaySat": "Sáb",
     "weekdaySun": "Dom",
     "createdTimeColumn": "Hora de creación",
-    "minutesPlaceholder": "0"
+    "minutesPlaceholder": "0",
+    "totalDurationBadge": "Total: {{duration}}",
+    "overnightSplitBreakdown": "({{day1Duration}} el {{day1Date}}, {{day2Duration}} el {{day2Date}})"
   },
   "expenses": {
     "emptyTitle": "Aún no hay gastos registrados",

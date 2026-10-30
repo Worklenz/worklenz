@@ -208,5 +208,6 @@
     "defaultStatusesLabel": "Statuset e paracaktuara",
     "defaultStatusesHint": "Këto ekzistojnë gjithmonë dhe nuk mund të hiqen.",
     "customStatusesLabel": "Statuset e personalizuara"
-  }
+  },
+  "defaultInvoiceFooter": "Faleminderit për bashkëpunimin. Nëse keni pyetje rreth kësaj fature, ju lutemi na kontaktoni duke përdorur të dhënat e mësipërme."
 }

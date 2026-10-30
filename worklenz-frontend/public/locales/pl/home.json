@@ -100,7 +100,7 @@
     "noUnassignedTasks": "Nie znaleziono nieprzydzielonych zadań",
     "pickUnassignedTaskRequired": "Wybierz nieprzypisane zadanie",
     "taskCreationRestrictedTitle": "Tworzenie zadań ograniczone",
-    "taskCreationRestricted": "Tworzenie zadań jest ograniczone wyłącznie do administratorów i liderów zespołów. Skontaktuj się ze swoim administratorem.",
+    "taskCreationRestricted": "Tworzenie zadań jest ograniczone wyłącznie do administratorów, liderów zespołów i kierowników projektów. Skontaktuj się ze swoim administratorem.",
     "assignees": "Osoby przypisane",
     "searchMembers": "Szukaj według nazwy lub adresu e-mail…",
     "noMembersFound": "Nie znaleziono żadnych członków",
@@ -254,7 +254,9 @@
     "weekdaySat": "sob",
     "weekdaySun": "niedziela",
     "createdTimeColumn": "Stworzony czas",
-    "minutesPlaceholder": "0"
+    "minutesPlaceholder": "0",
+    "totalDurationBadge": "Łącznie: {{duration}}",
+    "overnightSplitBreakdown": "({{day1Duration}} w dniu {{day1Date}}, {{day2Duration}} w dniu {{day2Date}})"
   },
   "expenses": {
     "emptyTitle": "Nie zarejestrowano jeszcze żadnych wydatków",

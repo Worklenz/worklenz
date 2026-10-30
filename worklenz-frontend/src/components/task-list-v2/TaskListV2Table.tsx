@@ -284,6 +284,8 @@ const ExampleTaskRows: React.FC<{
   groupColor: string;
   projectId: string;
   canCreateTask?: boolean;
+  /** When false, examples are visual only (used before the first sprint exists). */
+  interactive?: boolean;
   onTaskCreated: (
     task: any,
     options?: { openDrawer: boolean; insertAfterTaskId?: string | null }
@@ -298,6 +300,7 @@ const ExampleTaskRows: React.FC<{
   groupColor,
   projectId,
   canCreateTask = true,
+  interactive = true,
   onTaskCreated,
 }) => {
   const { t } = useTranslation('task-list-table');
@@ -476,13 +479,22 @@ const ExampleTaskRows: React.FC<{
           updated_at: '',
         };
 
+        const canActivateRow = interactive && canCreateTask && activeRowIndex === null;
+
         return (
           <div
             key={rowIndex}
-            className="flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/30"
-            style={{ height: '40px', cursor: canCreateTask ? 'text' : 'default' }}
+            className={`flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 ${
+              interactive ? 'hover:bg-gray-50 dark:hover:bg-gray-800/30' : ''
+            }`}
+            style={{
+              height: '40px',
+              cursor: canActivateRow ? 'text' : 'default',
+              pointerEvents: interactive ? undefined : 'none',
+              userSelect: interactive ? undefined : 'none',
+            }}
             onClick={() => {
-              if (canCreateTask && activeRowIndex === null) setActiveRowIndex(rowIndex);
+              if (canActivateRow) setActiveRowIndex(rowIndex);
             }}
           >
             {visibleColumns.map((column, colIndex) => {
@@ -838,7 +850,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const { token: themeToken } = theme.useToken();
 
   // Task creation/assignment restriction (Business Plan feature)
-  const { canCreateTask } = useTaskCreationPermission();
+  const { canCreateTask, canAddTask } = useTaskCreationPermission();
 
   // Redux state selectors
   const allTasks = useAppSelector(selectAllTasksArray);
@@ -862,6 +874,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
   const isSoftwareProject = isSoftwareProjectType(projectType);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
+  const isWorkReadOnly = isGuest;
   const activeSprintGroupIds = useMemo(
     () =>
       new Set(
@@ -876,10 +889,10 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const loadingColumns = useAppSelector(selectLoadingColumns);
 
   useEffect(() => {
-    if (isGuest && selectedTaskIds.length > 0) {
+    if (isWorkReadOnly && selectedTaskIds.length > 0) {
       dispatch(clearSelection());
     }
-  }, [dispatch, isGuest, selectedTaskIds.length]);
+  }, [dispatch, isWorkReadOnly, selectedTaskIds.length]);
 
   // Refs for scroll synchronization
   const headerScrollRef = useRef<HTMLDivElement>(null);
@@ -952,23 +965,23 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     handleDragStart: originalHandleDragStart,
     handleDragOver: originalHandleDragOver,
     handleDragEnd,
-  } = useDragAndDrop(allTasks, groups);
+  } = useDragAndDrop(allTasks, groups, t);
 
-  // Wrap drag handlers to prevent dragging for guests
+  // Wrap drag handlers to prevent dragging when work items are locked
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    if (isGuest) return;
+    if (isWorkReadOnly) return;
     originalHandleDragStart(event);
-  }, [isGuest, originalHandleDragStart]);
+  }, [isWorkReadOnly, originalHandleDragStart]);
 
   const handleDragOver = useCallback((event: any) => {
-    if (isGuest) return;
+    if (isWorkReadOnly) return;
     originalHandleDragOver(event);
-  }, [isGuest, originalHandleDragOver]);
+  }, [isWorkReadOnly, originalHandleDragOver]);
 
   const handleDragEndWrapper = useCallback((event: DragEndEvent) => {
-    if (isGuest) return;
+    if (isWorkReadOnly) return;
     handleDragEnd(event);
-  }, [isGuest, handleDragEnd]);
+  }, [isWorkReadOnly, handleDragEnd]);
 
   const bulkActions = useBulkActions();
 
@@ -1662,7 +1675,37 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   const virtuosoGroups = useMemo(() => {
     let currentTaskIndex = 0;
 
-    return groups.map(group => {
+    // Software backlog: always keep Backlog (Unmapped), even when empty; active sprint first.
+    const orderedGroups =
+      isBacklogMode && isSoftwareProject
+        ? (() => {
+            const hasBacklog = groups.some(group => group.id === UNMAPPED_PHASE_ID);
+            const withBacklog = hasBacklog
+              ? groups
+              : [
+                  ...groups,
+                  {
+                    id: UNMAPPED_PHASE_ID,
+                    title: UNMAPPED_PHASE_ID,
+                    taskIds: [] as string[],
+                    type: 'phase' as const,
+                    color: '#fbc84c69',
+                    groupValue: UNMAPPED_PHASE_ID.toLowerCase(),
+                  },
+                ];
+            return [...withBacklog].sort((a, b) => {
+              if (a.id === UNMAPPED_PHASE_ID) return 1;
+              if (b.id === UNMAPPED_PHASE_ID) return -1;
+              const aStatus = phaseList.find(phase => phase.id === a.id)?.sprint_status;
+              const bStatus = phaseList.find(phase => phase.id === b.id)?.sprint_status;
+              const rank = (status?: string | null) =>
+                status === 'active' ? 0 : status === 'planned' ? 1 : 2;
+              return rank(aStatus) - rank(bStatus);
+            });
+          })()
+        : groups;
+
+    return orderedGroups.map(group => {
       const isCurrentGroupCollapsed = collapsedGroups.has(group.id);
 
       const visibleTasksInGroup = isCurrentGroupCollapsed
@@ -1721,7 +1764,17 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       currentTaskIndex += itemsWithAddTask.length;
       return groupData;
     });
-  }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId, insertAnchor]);
+  }, [
+    groups,
+    allTasks,
+    collapsedGroups,
+    currentGrouping,
+    urlProjectId,
+    insertAnchor,
+    isBacklogMode,
+    isSoftwareProject,
+    phaseList,
+  ]);
 
   const virtuosoGroupCounts = useMemo(() => {
     return virtuosoGroups.map(group => group.count);
@@ -1732,13 +1785,30 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
   }, [virtuosoGroups]);
 
   // Assignee grouping can repeat an issue across groups; sortable ids must stay unique.
+  // Also include expanded subtasks so they can be dragged to a new parent in the outer DndContext.
   const sortableTaskIds = useMemo(() => {
-    const ids = virtuosoItems
-      .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
-      .map(item => item.id)
-      .filter((id): id is string => id !== undefined);
+    const taskById = new Map(allTasks.map(task => [task.id, task]));
+
+    const collectExpandedSubtaskIds = (taskId: string, acc: string[]) => {
+      const task = taskById.get(taskId);
+      if (!task?.show_sub_tasks || !task.sub_tasks?.length) return;
+      for (const subtask of task.sub_tasks) {
+        if (!subtask.id) continue;
+        acc.push(subtask.id);
+        collectExpandedSubtaskIds(subtask.id, acc);
+      }
+    };
+
+    const ids: string[] = [];
+    for (const item of virtuosoItems) {
+      if ('isAddTaskRow' in item || !item.id) continue;
+      if (!item.parent_task_id) {
+        ids.push(item.id);
+        collectExpandedSubtaskIds(item.id, ids);
+      }
+    }
     return Array.from(new Set(ids));
-  }, [virtuosoItems]);
+  }, [allTasks, virtuosoItems]);
 
   // Render functions
   const renderGroup = useCallback(
@@ -1772,7 +1842,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 isActiveSprint={activeSprintGroupIds.has(group.id)}
               />
             )}
-            {isGroupEmpty && !isGroupCollapsed && hasNoTasks && !isGuest && (
+            {isGroupEmpty && !isGroupCollapsed && hasNoTasks && (!isGuest || canAddTask) && (
               <ExampleTaskRows
                 visibleColumns={visibleColumns}
                 isDarkMode={isDarkMode}
@@ -1782,7 +1852,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 groupName={group.title || ''}
                 groupColor={(isDarkMode ? group.color_code_dark || group.color : group.color) || ''}
                 projectId={urlProjectId || ''}
-                canCreateTask={canCreateTask}
+                canCreateTask={canAddTask}
                 onTaskCreated={(task, options) =>
                   handleTaskCreated(task, group.id, !!options?.openDrawer, null)
                 }
@@ -1804,7 +1874,8 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       hasNoTasks,
       activeId,
       overGroupId,
-      canCreateTask,
+      canAddTask,
+      isGuest,
       isBacklogMode,
       activeSprintGroupIds,
     ]
@@ -1817,8 +1888,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       if (!item || !urlProjectId) return null;
 
       if ('isAddTaskRow' in item && item.isAddTaskRow) {
-        // Hide the add-task row entirely when task creation is restricted or user is guest
-        if (!canCreateTask || isGuest) return null;
+        if (!canAddTask) return null;
         return (
           <AddTaskRow
             groupId={item.groupId}
@@ -1853,6 +1923,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           isFirstInGroup={isFirstInGroup}
           updateTaskCustomColumnValue={updateTaskCustomColumnValue}
           canCreateTask={canCreateTask}
+          canAddTask={canAddTask}
           isGuest={isGuest}
         />
       );
@@ -1867,6 +1938,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
       handleDeactivateAddRow,
       handleTaskCreated,
       canCreateTask,
+      canAddTask,
       isGuest,
     ]
   );
@@ -2415,7 +2487,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                         onToggle={() => {}}
                         projectId={urlProjectId || ''}
                       />
-                      {hasNoTasks && !isGuest && (
+                      {hasNoTasks && !isGuest && !isWorkReadOnly && (
                         <ExampleTaskRows
                           visibleColumns={visibleColumns}
                           isDarkMode={isDarkMode}
@@ -2426,13 +2498,14 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                           groupColor="#fbc84c69"
                           projectId={urlProjectId || ''}
                           canCreateTask={canCreateTask}
+                          interactive
                           onTaskCreated={(task, options) =>
                             handleTaskCreated(task, unmappedGroupId, !!options?.openDrawer, null)
                           }
                         />
                       )}
                       {/* Single add task row - reused for all tasks */}
-                      {canCreateTask && !isGuest && (
+                      {canAddTask && (
                         <AddTaskRow
                           groupId={unmappedGroupId}
                           groupType="phase"
@@ -2635,6 +2708,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                         activeId && overId === item.id && !('isAddTaskRow' in item);
                       const showBefore = isOverThisTask && dropPosition === 'before';
                       const showAfter = isOverThisTask && dropPosition === 'after';
+                      const showIntoParent = isOverThisTask && dropPosition === 'into';
                       const isLastItemOfGroup = indexInGroup === (group?.tasks.length ?? 0) - 1;
                       const backlogCardStyle: React.CSSProperties = isBacklogMode
                         ? {
@@ -2655,7 +2729,11 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                       return (
                         <div
                           style={{ minWidth: 'max-content', ...backlogCardStyle }}
-                          className="relative"
+                          className={`relative ${
+                            showIntoParent
+                              ? 'ring-2 ring-inset ring-blue-400 dark:ring-blue-500 bg-blue-50/50 dark:bg-blue-900/20 rounded'
+                              : ''
+                          }`}
                           onMouseMove={e => {
                             // Find the InsertTaskDivider button inside this row and update
                             // its left position to follow the cursor — direct DOM update,
@@ -2678,7 +2756,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                               isDarkMode={isDarkMode}
                             />
                           )}
-                           {showInsertDivider && previousItem && canCreateTask && !isGuest && (
+                           {showInsertDivider && previousItem && canAddTask && (
                              <InsertTaskDivider
                                key="insert-divider"
                                isVisible={true}
@@ -2696,7 +2774,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                           <React.Fragment key={item.id ?? `virtuoso-item-${index}`}>
                             {renderTask(index, isFirstInGroup)}
                           </React.Fragment>
-                          {isLastInGroup && canCreateTask && !isGuest && (
+                          {isLastInGroup && canAddTask && (
                             <InsertTaskDivider
                               key="insert-divider-bottom"
                               isVisible={true}
@@ -2753,7 +2831,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           </DragOverlay>
 
           {/* Bulk Action Bar */}
-          {selectedTaskIds.length > 0 && urlProjectId && !isGuest && (
+          {selectedTaskIds.length > 0 && urlProjectId && !isWorkReadOnly && (
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
               <OptimizedBulkActionBar
                 selectedTaskIds={selectedTaskIds}

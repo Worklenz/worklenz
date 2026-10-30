@@ -8,6 +8,12 @@ export interface TablePaginationProps {
   onPageChange: (page: number, pageSize: number) => void;
   pageSizeOptions?: number[];
   rowsPerPageLabel: string;
+  navigationLabel: string;
+  firstPageLabel: string;
+  previousPageLabel: string;
+  nextPageLabel: string;
+  lastPageLabel: string;
+  renderDefaultSummary: (range: string, total: number) => React.ReactNode;
   /** Given the "start-end" range text and the total count, render the summary label. */
   renderSummary?: (range: string, total: number) => React.ReactNode;
   /**
@@ -40,6 +46,12 @@ const TablePagination: React.FC<TablePaginationProps> = ({
   onPageChange,
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
   rowsPerPageLabel,
+  navigationLabel,
+  firstPageLabel,
+  previousPageLabel,
+  nextPageLabel,
+  lastPageLabel,
+  renderDefaultSummary,
   renderSummary,
   insetStart = DEFAULT_INSET,
   insetEnd = DEFAULT_INSET,
@@ -159,12 +171,16 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           </select>
         )}
         <span style={{ fontSize: 12, color: token.colorTextSecondary, marginLeft: 4 }}>
-          {renderSummary ? renderSummary(range, total) : `${range} of ${total}`}
+          {renderSummary ? renderSummary(range, total) : renderDefaultSummary(range, total)}
         </span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap', rowGap: 4 }}>
+      <nav
+        aria-label={navigationLabel}
+        style={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap', rowGap: 4 }}
+      >
         <button
+          aria-label={firstPageLabel}
           style={navBtnStyle(safePage > 1)}
           disabled={safePage === 1}
           onClick={() => onPageChange(1, pageSize)}
@@ -172,6 +188,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           «
         </button>
         <button
+          aria-label={previousPageLabel}
           style={navBtnStyle(safePage > 1)}
           disabled={safePage === 1}
           onClick={() => onPageChange(Math.max(1, safePage - 1), pageSize)}
@@ -182,18 +199,24 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           typeof p === 'number' ? (
             <button
               key={i}
+              aria-current={p === safePage ? 'page' : undefined}
               style={pageBtnStyle(p === safePage)}
               onClick={() => onPageChange(p, pageSize)}
             >
               {p}
             </button>
           ) : (
-            <span key={i} style={{ fontSize: 12, padding: '0 4px', opacity: 0.5 }}>
+            <span
+              key={i}
+              aria-hidden="true"
+              style={{ fontSize: 12, padding: '0 4px', opacity: 0.5 }}
+            >
               …
             </span>
           )
         )}
         <button
+          aria-label={nextPageLabel}
           style={navBtnStyle(safePage < totalPages)}
           disabled={safePage === totalPages}
           onClick={() => onPageChange(Math.min(totalPages, safePage + 1), pageSize)}
@@ -201,13 +224,14 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           ›
         </button>
         <button
+          aria-label={lastPageLabel}
           style={navBtnStyle(safePage < totalPages)}
           disabled={safePage === totalPages}
           onClick={() => onPageChange(totalPages, pageSize)}
         >
           »
         </button>
-      </div>
+      </nav>
     </div>
   );
 };

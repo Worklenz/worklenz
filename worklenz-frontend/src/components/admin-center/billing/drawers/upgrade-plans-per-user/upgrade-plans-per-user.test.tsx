@@ -90,17 +90,17 @@ beforeEach(() => {
   upgradeToPaidPlan.mockResolvedValue({ done: true, body: checkoutPayload });
 });
 
-describe('PerUserUpgradePlans Free and Enterprise cards', () => {
-  it('shows Free and Enterprise next to the paid plans', () => {
+describe('PerUserUpgradePlans Free option', () => {
+  it('shows Free below the paid plans', () => {
     render(<PerUserUpgradePlans data={data()} />);
     expect(screen.getByText('plans.free.name')).toBeTruthy();
-    expect(screen.getByText('plans.enterprise.name')).toBeTruthy();
+    expect(screen.queryByText('plans.enterprise.name')).toBeNull();
   });
 
   it('hides the Free card for AppSumo customers', () => {
     render(<PerUserUpgradePlans data={data({ has_ltd_codes: true })} />);
     expect(screen.queryByText('plans.free.name')).toBeNull();
-    expect(screen.getByText('plans.enterprise.name')).toBeTruthy();
+    expect(screen.queryByText('plans.enterprise.name')).toBeNull();
   });
 
   it('disables the Free button for a team already on Free', () => {
@@ -122,12 +122,6 @@ describe('PerUserUpgradePlans Free and Enterprise cards', () => {
 
     await user.click(screen.getByText('freeConfirm.ok'));
     await waitFor(() => expect(switchToFreePlan).toHaveBeenCalledWith('team-1'));
-  });
-
-  it('links Enterprise to sales', () => {
-    render(<PerUserUpgradePlans data={data()} />);
-    const link = screen.getByText('contactSales').closest('a');
-    expect(link?.getAttribute('href')).toContain('mailto:');
   });
 });
 
@@ -237,9 +231,13 @@ describe('PerUserUpgradePlans', () => {
     billingInfo = { total_used: 5, plan_id: 'pro-m' };
     render(<PerUserUpgradePlans data={data({ has_billing_subscription: true })} />);
 
-    expect(screen.getByText('currentPlan')).toBeTruthy();
-    expect((screen.getAllByText('switch')[0].closest('button') as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getAllByText('switch')[1].closest('button') as HTMLButtonElement).disabled).toBe(false);
+    // The current card carries a tag and a disabled button, both labelled "currentPlan".
+    expect(screen.getAllByText('currentPlan').length).toBe(2);
+    const currentButton = screen.getAllByText('currentPlan').map(node => node.closest('button')).find(Boolean);
+    expect((currentButton as HTMLButtonElement).disabled).toBe(true);
+    // Only the other paid plan is left to switch to.
+    expect(screen.getAllByText('switch').length).toBe(1);
+    expect((screen.getByText('switch').closest('button') as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('shows the AppSumo Expansion plan with its own seat count', async () => {

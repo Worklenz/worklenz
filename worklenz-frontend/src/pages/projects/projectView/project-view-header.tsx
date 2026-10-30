@@ -86,7 +86,7 @@ const ProjectViewHeader = memo(() => {
   const { t } = useTranslation('project-view/project-view-header');
   const dispatch = useAppDispatch();
   const { tab } = useTabSearchParam();
-  const { canCreateTask } = useTaskCreationPermission();
+  const { canAddTask } = useTaskCreationPermission();
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
@@ -279,7 +279,16 @@ const ProjectViewHeader = memo(() => {
       logger.error('Error creating task', error);
       setCreatingTask(false);
     }
-  }, [isSoftwareProject, selectedProject?.id, currentSession, socket, dispatch, groupBy, tab, t]);
+  }, [
+    isSoftwareProject,
+    selectedProject?.id,
+    currentSession,
+    socket,
+    dispatch,
+    groupBy,
+    tab,
+    t,
+  ]);
 
   const handleImportTaskTemplate = useCallback(() => {
     if (isFreeUser(currentSession)) {
@@ -632,7 +641,7 @@ const ProjectViewHeader = memo(() => {
       </Tooltip>
     );
 
-    if (permissions.members.add && !isGuest) {
+    if (permissions.members.add) {
       actions.push(
         <Tooltip
           key="invite-tooltip"
@@ -671,7 +680,7 @@ const ProjectViewHeader = memo(() => {
           </Dropdown.Button>
         </Tooltip>
       );
-    } else if (canCreateTask && !isGuest) {
+    } else if (canAddTask) {
       actions.push(
         <Tooltip
           key="create-task-tooltip"
@@ -715,7 +724,7 @@ const ProjectViewHeader = memo(() => {
     creatingTask,
     dropdownItems,
     handleCreateTask,
-    canCreateTask,
+    canAddTask,
     isGuest,
     createTaskLabel,
     createTaskTooltip,
