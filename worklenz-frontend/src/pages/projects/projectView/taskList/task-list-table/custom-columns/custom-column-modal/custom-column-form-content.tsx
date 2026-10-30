@@ -386,8 +386,9 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   const createNewParentLabel = t('customColumns.dependentSelection.createNewParent', {
     defaultValue: '+ Create new parent field',
   });
-  if (!hasDependentColumns) {
-    dependsOnTypeOptions.unshift({
+
+  if (eligibleParentColumns.length > 0) {
+    dependsOnTypeOptions.push({
       key: toDependsOnTypeValue(NEW_PARENT_COLUMN_ID),
       value: toDependsOnTypeValue(NEW_PARENT_COLUMN_ID),
       title: createNewParentLabel,
@@ -398,7 +399,6 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       ),
     });
   }
-
   const typeSelectOptions = [
     ...fieldTypesOptions,
     ...(dependsOnTypeOptions.length > 0
@@ -753,7 +753,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         {customFieldType === 'number' && <NumberTypeColumn />}
         {customFieldType === 'formula' && <FormulaTypeColumn />}
         {customFieldType === 'labels' && <LabelTypeColumn />}
-        {isCreatingNewParent && (
+        {customFieldType === 'selection' && isCreatingNewParent && (
           <Flex vertical gap={8}>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               {t('customColumns.dependentSelection.newParentOnlyHint', {

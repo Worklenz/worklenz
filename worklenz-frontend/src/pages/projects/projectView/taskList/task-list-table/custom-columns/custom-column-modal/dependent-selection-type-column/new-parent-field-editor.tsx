@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { useTranslation } from 'react-i18next';
-import { Button, Flex, Input, Select, Tag, Tooltip, Typography, theme } from '@/shared/antd-imports';
+import { Button, Flex, Input, Tooltip, Typography, theme } from '@/shared/antd-imports';
 import { CloseCircleOutlined } from '@/shared/antd-imports';
 import type { InputRef } from '@/shared/antd-imports';
 import { PhaseColorCodes } from '@/shared/constants';
@@ -12,6 +12,7 @@ import {
   setNewParentField,
 } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import { SelectionType } from '../selection-type-column/selection-type-column';
+import SelectionColorPicker from '../SelectionColorPicker';
 
 /**
  * Inline editor for "+ Create new parent field": name + flat options for a standalone parent
@@ -20,7 +21,6 @@ import { SelectionType } from '../selection-type-column/selection-type-column';
 export const NewParentFieldEditor = () => {
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
-  const { token } = theme.useToken();
   const draft = useAppSelector(state => state.taskListCustomColumnsReducer.newParentField);
   const inputRefs = useRef<Record<string, InputRef | null>>({});
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
@@ -30,20 +30,6 @@ export const NewParentFieldEditor = () => {
     inputRefs.current[pendingFocusId]?.focus();
     setPendingFocusId(null);
   }, [pendingFocusId, draft]);
-
-  const colorOptions = useMemo(
-    () =>
-      PhaseColorCodes.map(color => ({
-        value: color,
-        label: (
-          <Tag
-            color={color}
-            style={{ display: 'flex', alignItems: 'center', width: 15, height: 15, borderRadius: '50%' }}
-          />
-        ),
-      })),
-    []
-  );
 
   if (!draft) return null;
 
@@ -87,14 +73,8 @@ export const NewParentFieldEditor = () => {
   };
 
   return (
-    <div
-      style={{
-        padding: 12,
-        borderRadius: token.borderRadiusLG,
-        border: `1px solid ${token.colorPrimaryBorder}`,
-        background: token.colorPrimaryBg,
-      }}
-    >
+    <div>
+    
       <Flex vertical gap={8}>
         <Typography.Text strong>
           {t('customColumns.dependentSelection.newParentTitle', {
@@ -141,14 +121,12 @@ export const NewParentFieldEditor = () => {
                 defaultValue: 'Selection name',
               })}
             />
-            <Select
-              options={colorOptions}
+            <SelectionColorPicker
               value={selection.selection_color}
-              onChange={value => updateSelection(selection.selection_id, { selection_color: value })}
-              size="small"
-              style={{ width: 48 }}
-              suffixIcon={null}
-              aria-label={t('customColumns.dependentSelection.optionColorLabel', {
+              onChange={color =>
+                updateSelection(selection.selection_id, { selection_color: color })
+              }
+              ariaLabel={t('customColumns.dependentSelection.optionColorLabel', {
                 defaultValue: 'Option color',
               })}
             />
