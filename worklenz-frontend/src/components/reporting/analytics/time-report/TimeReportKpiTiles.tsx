@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { theme } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import type { TimeReportKpis } from '@/types/reporting/analytics-time-report.types';
+import { MetricCalcHint } from '../MetricCalcHint';
 import './time-report-kpi-tiles.css';
 
 interface TimeReportKpiTilesProps {
@@ -34,6 +35,9 @@ export const TimeReportKpiTiles: React.FC<TimeReportKpiTilesProps> = ({ kpis }) 
       value: fmtHours(kpis.logged_hours),
       sub: t('trStatLoggedSub', { defaultValue: 'total logged time' }),
       tone: TONES.neutral,
+      tooltip: t('trCalcLogged', {
+        defaultValue: 'Sum of time-log entries (hours) for selected projects in the date range.',
+      }),
     },
     {
       key: 'estimated',
@@ -41,6 +45,9 @@ export const TimeReportKpiTiles: React.FC<TimeReportKpiTilesProps> = ({ kpis }) 
       value: fmtHours(kpis.estimated_hours),
       sub: t('trStatEstimatedSub', { defaultValue: 'planned task effort' }),
       tone: TONES.estimated,
+      tooltip: t('trCalcEstimated', {
+        defaultValue: 'Sum of planned/estimated hours on tasks in the selected projects.',
+      }),
     },
     {
       key: 'billable',
@@ -51,6 +58,10 @@ export const TimeReportKpiTiles: React.FC<TimeReportKpiTilesProps> = ({ kpis }) 
         pct: kpis.billable_pct,
       }),
       tone: TONES.ok,
+      tooltip: t('trCalcBillable', {
+        defaultValue:
+          'Logged hours marked billable. Percentage = billable hours ÷ logged hours × 100.',
+      }),
     },
     {
       key: 'over',
@@ -61,6 +72,9 @@ export const TimeReportKpiTiles: React.FC<TimeReportKpiTilesProps> = ({ kpis }) 
           ? t('trStatOverEstimateSub', { defaultValue: 'logged above estimate' })
           : t('trStatWithinEstimateSub', { defaultValue: 'within estimate' }),
       tone: kpis.over_estimate_hours > 0 ? TONES.bad : TONES.ok,
+      tooltip: t('trCalcOverEstimate', {
+        defaultValue: 'Max(0, logged hours − estimated hours) across the selection.',
+      }),
     },
   ];
 
@@ -78,7 +92,8 @@ export const TimeReportKpiTiles: React.FC<TimeReportKpiTilesProps> = ({ kpis }) 
         >
           <div className="tr-kpi-tile__label" style={{ color: muted }}>
             <span className="tr-kpi-tile__dot" style={{ background: tile.tone }} />
-            {tile.label}
+            <span>{tile.label}</span>
+            <MetricCalcHint title={tile.tooltip} color={muted} />
           </div>
           <div className="tr-kpi-tile__value" style={{ color: tile.tone }}>
             {tile.value}

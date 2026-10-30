@@ -6,6 +6,7 @@ import type {
   VelocityBucket,
   VelocitySeriesResponse,
 } from '@/types/reporting/analytics-velocity.types';
+import { MetricCalcHint } from '../MetricCalcHint';
 import './velocity-kpi-tiles.css';
 
 interface VelocityKpiTilesProps {
@@ -73,6 +74,10 @@ export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({
           : '—',
       sub: perBucketSub,
       tone: TONES.primary,
+      tooltip: t('velCalcAvg', {
+        defaultValue:
+          'Average completed work per sprint/phase: sum of completed points (or tasks) ÷ number of completed buckets.',
+      }),
     },
     {
       key: 'last',
@@ -83,6 +88,9 @@ export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({
           : String(Math.round(kpis.last_sprint_velocity * 10) / 10),
       sub: '\u00a0',
       tone: TONES.success,
+      tooltip: t('velCalcLast', {
+        defaultValue: 'Completed work in the most recent completed sprint or phase.',
+      }),
     },
     {
       key: 'commitment',
@@ -93,6 +101,10 @@ export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({
           : `${Math.round(kpis.commitment_accuracy_pct)}%`,
       sub: '\u00a0',
       tone: TONES.warn,
+      tooltip: t('velCalcCommitment', {
+        defaultValue:
+          'Average of (completed ÷ committed) × 100 across completed sprints/phases with a commitment.',
+      }),
     },
     {
       key: 'sprints',
@@ -100,6 +112,9 @@ export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({
       value: String(kpis.completed_sprint_count),
       sub: '\u00a0',
       tone: TONES.muted,
+      tooltip: t('velCalcCount', {
+        defaultValue: 'Number of completed sprints or phases included in this report.',
+      }),
     },
   ];
 
@@ -117,7 +132,8 @@ export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({
         >
           <div className="velocity-kpi-tile__label" style={{ color: muted }}>
             <span className="velocity-kpi-tile__dot" style={{ background: tile.tone }} />
-            {tile.label}
+            <span>{tile.label}</span>
+            <MetricCalcHint title={tile.tooltip} color={muted} />
           </div>
           <div className="velocity-kpi-tile__value">{tile.value}</div>
           <div className="velocity-kpi-tile__sub" style={{ color: muted }}>

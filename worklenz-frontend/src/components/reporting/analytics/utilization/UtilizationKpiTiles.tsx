@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { theme } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import type { UtilizationKpis } from '@/types/reporting/analytics-utilization.types';
+import { MetricCalcHint } from '../MetricCalcHint';
 import './utilization-kpi-tiles.css';
 
 interface UtilizationKpiTilesProps {
@@ -42,6 +43,10 @@ export const UtilizationKpiTiles: React.FC<UtilizationKpiTilesProps> = ({ kpis }
         capacity: kpis.total_capacity_hours,
       }),
       tone: avgTone,
+      tooltip: t('utilCalcAvg', {
+        defaultValue:
+          'Total logged hours ÷ total capacity hours × 100 across selected members/projects.',
+      }),
     },
     {
       key: 'team',
@@ -49,6 +54,9 @@ export const UtilizationKpiTiles: React.FC<UtilizationKpiTilesProps> = ({ kpis }
       value: String(kpis.team_size),
       sub: t('statAcrossSelection', { defaultValue: 'across selection' }),
       tone: TONES.neutral,
+      tooltip: t('utilCalcTeamSize', {
+        defaultValue: 'Number of distinct team members included in the utilization selection.',
+      }),
     },
     {
       key: 'over',
@@ -56,6 +64,9 @@ export const UtilizationKpiTiles: React.FC<UtilizationKpiTilesProps> = ({ kpis }
       value: String(kpis.overutilized_count),
       sub: t('utilStatOverSub', { defaultValue: 'above 100% capacity' }),
       tone: TONES.bad,
+      tooltip: t('utilCalcOver', {
+        defaultValue: 'Members whose logged hours exceed 100% of their capacity.',
+      }),
     },
     {
       key: 'under',
@@ -63,6 +74,9 @@ export const UtilizationKpiTiles: React.FC<UtilizationKpiTilesProps> = ({ kpis }
       value: String(kpis.underutilized_count),
       sub: t('utilStatUnderSub', { defaultValue: 'at or below 80% capacity' }),
       tone: TONES.warn,
+      tooltip: t('utilCalcUnder', {
+        defaultValue: 'Members whose utilization is at or below 80% of capacity.',
+      }),
     },
   ];
 
@@ -80,7 +94,8 @@ export const UtilizationKpiTiles: React.FC<UtilizationKpiTilesProps> = ({ kpis }
         >
           <div className="util-kpi-tile__label" style={{ color: muted }}>
             <span className="util-kpi-tile__dot" style={{ background: tile.tone }} />
-            {tile.label}
+            <span>{tile.label}</span>
+            <MetricCalcHint title={tile.tooltip} color={muted} />
           </div>
           <div className="util-kpi-tile__value" style={{ color: tile.tone }}>
             {tile.value}

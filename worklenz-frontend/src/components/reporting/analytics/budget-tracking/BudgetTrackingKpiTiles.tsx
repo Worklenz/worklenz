@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { theme } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import type { BudgetTrackingKpis } from '@/types/reporting/analytics-budget-tracking.types';
+import { MetricCalcHint } from '../MetricCalcHint';
 import './budget-tracking-kpi-tiles.css';
 
 interface BudgetTrackingKpiTilesProps {
@@ -42,6 +43,9 @@ export const BudgetTrackingKpiTiles: React.FC<BudgetTrackingKpiTilesProps> = ({
       value: fmtMoney(kpis.total_budget, currency),
       sub: t('btStatTotalBudgetSub', { defaultValue: 'across projects with a budget' }),
       tone: TONES.budget,
+      tooltip: t('btCalcTotalBudget', {
+        defaultValue: 'Sum of project budgets for all selected projects that have a budget set.',
+      }),
     },
     {
       key: 'spent',
@@ -52,6 +56,10 @@ export const BudgetTrackingKpiTiles: React.FC<BudgetTrackingKpiTilesProps> = ({
         pct: kpis.utilization_pct,
       }),
       tone: TONES.spent,
+      tooltip: t('btCalcSpent', {
+        defaultValue:
+          'Sum of task fixed costs plus logged time cost (hours × rate) across selected projects.',
+      }),
     },
     {
       key: 'remaining',
@@ -62,6 +70,9 @@ export const BudgetTrackingKpiTiles: React.FC<BudgetTrackingKpiTilesProps> = ({
           ? t('btStatRemainingOverSub', { defaultValue: 'over budget overall' })
           : t('btStatRemainingSub', { defaultValue: 'budget left' }),
       tone: kpis.remaining < 0 ? TONES.over : TONES.remaining,
+      tooltip: t('btCalcRemaining', {
+        defaultValue: 'Total budget − spent. Negative means overall spend exceeds budget.',
+      }),
     },
     {
       key: 'over',
@@ -72,6 +83,9 @@ export const BudgetTrackingKpiTiles: React.FC<BudgetTrackingKpiTilesProps> = ({
           ? t('btStatOverBudgetSub', { defaultValue: 'projects over budget' })
           : t('btStatWithinBudgetSub', { defaultValue: 'all within budget' }),
       tone: kpis.over_budget_count > 0 ? TONES.over : TONES.ok,
+      tooltip: t('btCalcOverBudget', {
+        defaultValue: 'Number of selected projects where spent is greater than the project budget.',
+      }),
     },
   ];
 
@@ -89,7 +103,8 @@ export const BudgetTrackingKpiTiles: React.FC<BudgetTrackingKpiTilesProps> = ({
         >
           <div className="bt-kpi-tile__label" style={{ color: muted }}>
             <span className="bt-kpi-tile__dot" style={{ background: tile.tone }} />
-            {tile.label}
+            <span>{tile.label}</span>
+            <MetricCalcHint title={tile.tooltip} color={muted} />
           </div>
           <div className="bt-kpi-tile__value" style={{ color: tile.tone }}>
             {tile.value}

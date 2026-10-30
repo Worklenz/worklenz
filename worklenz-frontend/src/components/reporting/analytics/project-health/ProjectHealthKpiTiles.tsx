@@ -1,8 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { InfoCircleOutlined, Tooltip, theme } from '@/shared/antd-imports';
+import { theme } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import type { ProjectHealthKpis } from '@/types/reporting/analytics-project-health.types';
+import { MetricCalcHint } from '../MetricCalcHint';
 import './project-health-kpi-tiles.css';
 
 interface ProjectHealthKpiTilesProps {
@@ -85,12 +86,7 @@ export const ProjectHealthKpiTiles: React.FC<ProjectHealthKpiTilesProps> = ({ kp
           <div className="ph-kpi-tile__label" style={{ color: muted }}>
             <span className="ph-kpi-tile__dot" style={{ background: tile.tone }} />
             <span>{tile.label}</span>
-            <Tooltip title={tile.tooltip}>
-              <InfoCircleOutlined
-                aria-label={tile.tooltip}
-                style={{ color: muted, fontSize: 12, cursor: 'help' }}
-              />
-            </Tooltip>
+            <MetricCalcHint title={tile.tooltip} color={muted} />
           </div>
           <div className="ph-kpi-tile__value">{tile.value}</div>
           <div className="ph-kpi-tile__sub" style={{ color: muted }}>

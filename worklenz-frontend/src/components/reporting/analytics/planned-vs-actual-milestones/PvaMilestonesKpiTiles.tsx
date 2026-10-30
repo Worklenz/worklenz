@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { theme } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import type { PlannedVsActualMilestonesKpis } from '@/types/reporting/analytics-planned-vs-actual-milestones.types';
+import { MetricCalcHint } from '../MetricCalcHint';
 import './pva-milestones-kpi-tiles.css';
 
 interface PvaMilestonesKpiTilesProps {
@@ -31,6 +32,9 @@ export const PvaMilestonesKpiTiles: React.FC<PvaMilestonesKpiTilesProps> = ({ kp
       value: String(kpis.milestones),
       sub: t('statAcrossSelection', { defaultValue: 'across selection' }),
       tone: TONES.neutral,
+      tooltip: t('pvaMsCalcMilestones', {
+        defaultValue: 'Count of milestones (phases) in the selected project(s).',
+      }),
     },
     {
       key: 'late',
@@ -38,6 +42,10 @@ export const PvaMilestonesKpiTiles: React.FC<PvaMilestonesKpiTilesProps> = ({ kp
       value: String(kpis.late),
       sub: t('pvaMsStatLateSub', { defaultValue: 'past planned date' }),
       tone: TONES.warn,
+      tooltip: t('pvaMsCalcLate', {
+        defaultValue:
+          'Milestones whose actual end (or today if still open) is after the planned date.',
+      }),
     },
     {
       key: 'on_time',
@@ -45,6 +53,10 @@ export const PvaMilestonesKpiTiles: React.FC<PvaMilestonesKpiTilesProps> = ({ kp
       value: String(kpis.on_time),
       sub: t('pvaMsStatOnTimeSub', { defaultValue: 'on or ahead of plan' }),
       tone: TONES.ok,
+      tooltip: t('pvaMsCalcOnTime', {
+        defaultValue:
+          'Milestones completed on or before the planned date (or still on track if not due).',
+      }),
     },
     {
       key: 'avg_slip',
@@ -55,6 +67,10 @@ export const PvaMilestonesKpiTiles: React.FC<PvaMilestonesKpiTilesProps> = ({ kp
       }),
       sub: t('pvaMsVsPlannedDates', { defaultValue: 'vs planned dates' }),
       tone: TONES.slip,
+      tooltip: t('pvaMsCalcAvgSlip', {
+        defaultValue:
+          'Average days late vs planned dates across milestones (positive = behind plan).',
+      }),
     },
   ];
 
@@ -72,7 +88,8 @@ export const PvaMilestonesKpiTiles: React.FC<PvaMilestonesKpiTilesProps> = ({ kp
         >
           <div className="pva-ms-kpi-tile__label" style={{ color: muted }}>
             <span className="pva-ms-kpi-tile__dot" style={{ background: tile.tone }} />
-            {tile.label}
+            <span>{tile.label}</span>
+            <MetricCalcHint title={tile.tooltip} color={muted} />
           </div>
           <div className="pva-ms-kpi-tile__value">{tile.value}</div>
           <div className="pva-ms-kpi-tile__sub" style={{ color: muted }}>

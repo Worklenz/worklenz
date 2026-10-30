@@ -1,13 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Flex,
-  InfoCircleOutlined,
-  Space,
-  Tooltip,
-  Typography,
-  message,
-  theme,
-} from '@/shared/antd-imports';
+import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
+import { MetricCalcHint } from '@/components/reporting/analytics/MetricCalcHint';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { jsPDF } from 'jspdf';
@@ -457,20 +450,13 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
                   <Text strong style={{ fontSize: 14 }}>
                     {t('phProgressBudgetTitle', { defaultValue: 'Progress & budget' })}
                   </Text>
-                  <Tooltip
+                  <MetricCalcHint
                     title={t('phCalcProgressBudget', {
                       defaultValue:
                         'Progress % = completed tasks ÷ total tasks. Budget used % = (task fixed costs + logged time cost) ÷ project budget.',
                     })}
-                  >
-                    <InfoCircleOutlined
-                      aria-label={t('phCalcProgressBudget', {
-                        defaultValue:
-                          'Progress % = completed tasks ÷ total tasks. Budget used % = (task fixed costs + logged time cost) ÷ project budget.',
-                      })}
-                      style={{ color: token.colorTextSecondary, fontSize: 12, cursor: 'help' }}
-                    />
-                  </Tooltip>
+                    color={token.colorTextSecondary}
+                  />
                 </Flex>
                 {!isSelectAllProjects &&
                   data.projects.length > DEFAULT_ANALYTICS_CHART_PROJECT_LIMIT && (

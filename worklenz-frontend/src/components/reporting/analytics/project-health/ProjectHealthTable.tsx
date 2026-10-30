@@ -1,13 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  Flex,
-  InfoCircleOutlined,
-  Table,
-  Tag,
-  Tooltip,
-  Typography,
-  theme,
-} from '@/shared/antd-imports';
+import { Flex, Table, Tag, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
@@ -15,6 +7,7 @@ import type {
   ProjectHealthRow,
   ProjectHealthTone,
 } from '@/types/reporting/analytics-project-health.types';
+import { MetricCalcHint } from '../MetricCalcHint';
 
 const { Text } = Typography;
 
@@ -31,12 +24,7 @@ const ColumnTitleWithHint: React.FC<{
     style={{ width: '100%' }}
   >
     <span>{label}</span>
-    <Tooltip title={hint}>
-      <InfoCircleOutlined
-        aria-label={hint}
-        style={{ color: hintColor, fontSize: 12, cursor: 'help' }}
-      />
-    </Tooltip>
+    <MetricCalcHint title={hint} color={hintColor} />
   </Flex>
 );
 

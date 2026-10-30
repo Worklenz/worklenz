@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { theme } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import type { CfdSeriesResponse } from '@/types/reporting/analytics-cfd.types';
+import { MetricCalcHint } from '../MetricCalcHint';
 import './cfd-kpi-tiles.css';
 
 interface CfdKpiTilesProps {
@@ -36,6 +37,10 @@ export const CfdKpiTiles: React.FC<CfdKpiTilesProps> = ({ indicators }) => {
       value: String(indicators.current_wip),
       sub: t('cfdKpiWipSub', { defaultValue: 'in progress statuses' }),
       tone: TONES.primary,
+      tooltip: t('cfdCalcWip', {
+        defaultValue:
+          'Count of tasks currently in In Progress (doing) statuses at the end of the selected period.',
+      }),
     },
     {
       key: 'throughput',
@@ -43,6 +48,10 @@ export const CfdKpiTiles: React.FC<CfdKpiTilesProps> = ({ indicators }) => {
       value: String(Math.round(indicators.avg_throughput_per_day * 100) / 100),
       sub: t('cfdKpiThroughputSub', { defaultValue: 'issues / day' }),
       tone: TONES.success,
+      tooltip: t('cfdCalcThroughput', {
+        defaultValue:
+          'Average tasks completed per day in the selected date range (done-status entries ÷ days).',
+      }),
     },
     {
       key: 'cycle',
@@ -50,6 +59,10 @@ export const CfdKpiTiles: React.FC<CfdKpiTilesProps> = ({ indicators }) => {
       value: formatDays(indicators.avg_cycle_days),
       sub: t('cfdKpiDaysSub', { defaultValue: 'days' }),
       tone: TONES.warn,
+      tooltip: t('cfdCalcCycle', {
+        defaultValue:
+          'Average days from when work started (entered doing) to when the task was completed.',
+      }),
     },
     {
       key: 'lead',
@@ -57,6 +70,10 @@ export const CfdKpiTiles: React.FC<CfdKpiTilesProps> = ({ indicators }) => {
       value: formatDays(indicators.avg_lead_days),
       sub: t('cfdKpiDaysSub', { defaultValue: 'days' }),
       tone: TONES.purple,
+      tooltip: t('cfdCalcLead', {
+        defaultValue:
+          'Average days from task creation to completion (includes waiting time).',
+      }),
     },
   ];
 
@@ -74,7 +91,8 @@ export const CfdKpiTiles: React.FC<CfdKpiTilesProps> = ({ indicators }) => {
         >
           <div className="cfd-kpi-tile__label" style={{ color: muted }}>
             <span className="cfd-kpi-tile__dot" style={{ background: tile.tone }} />
-            {tile.label}
+            <span>{tile.label}</span>
+            <MetricCalcHint title={tile.tooltip} color={muted} />
           </div>
           <div className="cfd-kpi-tile__value">{tile.value}</div>
           <div className="cfd-kpi-tile__sub" style={{ color: muted }}>
