@@ -3,9 +3,15 @@
  * Handles analytics loading and privacy notices
  */
 
+// Worklenz's own deployments: the cloud service and its test servers (as isTestServer() in the backend)
+const PRODUCTION_HOST = 'app.worklenz.com';
+const TEST_HOSTS = ['dev.worklenz.com', 'uat.app.worklenz.com'];
+
 class AnalyticsManager {
   constructor() {
-    this.isProduction = window.location.hostname === 'app.worklenz.com';
+    const hostname = window.location.hostname;
+    this.isProduction = hostname === PRODUCTION_HOST;
+    this.isWorklenzHosted = this.isProduction || TEST_HOSTS.includes(hostname);
     this.trackingId = this.isProduction ? 'G-7KSRKQ1397' : 'G-3LM2HGWEXG';
   }
 
@@ -13,6 +19,9 @@ class AnalyticsManager {
    * Initialize Google Analytics asynchronously
    */
   init() {
+    // Self-hosted instances never contact Google Analytics, like clarity.js and hubspot.js
+    if (!this.isWorklenzHosted) return;
+
     const loadAnalytics = () => {
       // Load the Google Analytics script
       const script = document.createElement('script');
