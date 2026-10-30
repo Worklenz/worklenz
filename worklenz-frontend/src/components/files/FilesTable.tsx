@@ -481,6 +481,7 @@ export const FilesTable: React.FC<FilesTableProps> = ({
           page={page}
           pageSize={pageSize}
           total={total}
+          disabled={loading}
           onPageChange={onPageChange}
           rowsPerPageLabel={t('rowsPerPage', {
             defaultValue: 'Rows per page',

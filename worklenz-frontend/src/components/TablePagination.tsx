@@ -22,6 +22,7 @@ export interface TablePaginationProps {
    */
   insetStart?: number;
   insetEnd?: number;
+  disabled?: boolean;
   /**
    * How the rows-per-page choice is rendered. `select` (default) is a native <select>;
    * `dropdown` is the button + menu used by Home > My Tasks, with its "start – end of total"
@@ -55,6 +56,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
   renderSummary,
   insetStart = DEFAULT_INSET,
   insetEnd = DEFAULT_INSET,
+  disabled = false,
   variant = 'select',
 }) => {
   const { token } = theme.useToken();
@@ -92,14 +94,14 @@ const TablePagination: React.FC<TablePaginationProps> = ({
     height: 28,
     border: `1px solid ${token.colorBorder}`,
     borderRadius: 5,
-    cursor: active ? 'pointer' : 'default',
+    cursor: disabled ? 'not-allowed' : active ? 'pointer' : 'default',
     fontSize: 12,
     fontWeight: active ? 600 : 400,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     background: active ? '#1677ff' : 'transparent',
-    color: active ? '#fff' : token.colorText,
+    color: active ? '#fff' : disabled ? token.colorTextDisabled : token.colorText,
     transition: 'all .1s',
     padding: '0 4px',
   });
@@ -109,13 +111,13 @@ const TablePagination: React.FC<TablePaginationProps> = ({
     height: 28,
     border: `1px solid ${token.colorBorder}`,
     borderRadius: 5,
-    cursor: enabled ? 'pointer' : 'not-allowed',
+    cursor: enabled && !disabled ? 'pointer' : 'not-allowed',
     fontSize: 13,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     background: 'transparent',
-    color: enabled ? token.colorText : token.colorTextDisabled,
+    color: enabled && !disabled ? token.colorText : token.colorTextDisabled,
     transition: 'all .1s',
     padding: '0 4px',
   });
@@ -152,7 +154,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
               onClick: info => onPageChange(1, Number(info.key)),
             }}
           >
-            <Button size="small" aria-label={`${rowsPerPageLabel} ${pageSize}`}>
+            <Button size="small" aria-label={`${rowsPerPageLabel} ${pageSize}`} disabled={disabled}>
               {pageSize} <CaretDownFilled />
             </Button>
           </Dropdown>
@@ -160,6 +162,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           <select
             aria-label={rowsPerPageLabel}
             style={selectStyle}
+            disabled={disabled}
             value={pageSize}
             onChange={e => onPageChange(1, Number(e.target.value))}
           >
@@ -182,7 +185,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
         <button
           aria-label={firstPageLabel}
           style={navBtnStyle(safePage > 1)}
-          disabled={safePage === 1}
+          disabled={disabled || safePage === 1}
           onClick={() => onPageChange(1, pageSize)}
         >
           «
@@ -190,7 +193,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
         <button
           aria-label={previousPageLabel}
           style={navBtnStyle(safePage > 1)}
-          disabled={safePage === 1}
+          disabled={disabled || safePage === 1}
           onClick={() => onPageChange(Math.max(1, safePage - 1), pageSize)}
         >
           ‹
@@ -201,6 +204,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
               key={i}
               aria-current={p === safePage ? 'page' : undefined}
               style={pageBtnStyle(p === safePage)}
+              disabled={disabled}
               onClick={() => onPageChange(p, pageSize)}
             >
               {p}
@@ -218,7 +222,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
         <button
           aria-label={nextPageLabel}
           style={navBtnStyle(safePage < totalPages)}
-          disabled={safePage === totalPages}
+          disabled={disabled || safePage === totalPages}
           onClick={() => onPageChange(Math.min(totalPages, safePage + 1), pageSize)}
         >
           ›
@@ -226,7 +230,7 @@ const TablePagination: React.FC<TablePaginationProps> = ({
         <button
           aria-label={lastPageLabel}
           style={navBtnStyle(safePage < totalPages)}
-          disabled={safePage === totalPages}
+          disabled={disabled || safePage === totalPages}
           onClick={() => onPageChange(totalPages, pageSize)}
         >
           »

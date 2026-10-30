@@ -625,7 +625,7 @@ export const QuotesTable = () => {
             onPageChange={handlePaginationChange}
             rowsPerPageLabel={t('rowsPerPageLabel', { defaultValue: 'Rows per page:' })}
             renderSummary={(range, total) => {
-              const [from, to] = range.split('-');
+              const [from, to] = range.split(/\s*[-–]\s*/);
               return t('paginationSummary', {
                 from,
                 to,
