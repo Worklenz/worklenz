@@ -64,7 +64,7 @@
     "@fontsource/noto-sans": "^5.3.0",
     "@fontsource/noto-sans-sinhala": "^5.3.0",
     "@fontsource/noto-sans-tamil": "^5.3.0",
-    "@react-pdf/renderer": "3.4.5",
+    "@react-pdf/renderer": "^3.4.5",
     "@slack/events-api": "^3.0.1",
     "@slack/interactive-messages": "^2.0.2",
     "@slack/web-api": "^7.11.0",

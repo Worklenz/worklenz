@@ -32,30 +32,15 @@ export default class TaskTimelineController extends WorklenzControllerBase {
     public static async getTasksForTimeline(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
         const { startDate, endDate, memberId, projectId, statusId, priorityId, clientName } = req.query as ITaskTimelineFilters;
 
-        const params: any[] = [req.user?.team_id, req.user?.id];
-        let paramIndex = 3;
+        // Team-scoped planner data. Route access is gated by verifyNonGuestPlannerAccess
+        // (Guests need "View planner") and the frontend VIEW_PLANNER guard — Members, Team
+        // Leads, and Guests with that permission must see the same schedule as Admins.
+        // Do not filter by project_members here: Team Lead no longer has admin_role, and
+        // "View planner" is a team-wide read surface. Cross-team isolation stays via team_id.
+        const params: any[] = [req.user?.team_id];
+        let paramIndex = 2;
 
-        // Build dynamic WHERE clause. The access predicate mirrors verifyProjectAccess's
-        // role model (owner/admin/team-lead see every project in the team; everyone else
-        // only projects they're an explicit project_members row on) — team_id alone isn't
-        // enough, since a regular member could otherwise pass any other team project's id
-        // via the projectId filter below and read its full task/assignee detail.
-        let whereClause = `
-            WHERE p.team_id = $1
-              AND t.archived = false
-              AND (
-                EXISTS (
-                    SELECT 1 FROM team_members tm
-                    INNER JOIN roles r ON r.id = tm.role_id
-                    WHERE tm.user_id = $2 AND tm.team_id = $1 AND tm.active = TRUE
-                      AND (r.owner = TRUE OR r.admin_role = TRUE)
-                )
-                OR EXISTS (
-                    SELECT 1 FROM project_members pm
-                    INNER JOIN team_members tm2 ON pm.team_member_id = tm2.id
-                    WHERE pm.project_id = p.id AND tm2.user_id = $2 AND tm2.team_id = $1 AND tm2.active = TRUE
-                )
-              )`;
+        let whereClause = `WHERE p.team_id = $1 AND t.archived = false`;
 
         if (startDate) {
             whereClause += ` AND (t.end_date >= $${paramIndex} OR t.end_date IS NULL)`;
