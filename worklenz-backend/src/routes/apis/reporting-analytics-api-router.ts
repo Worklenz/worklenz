@@ -64,10 +64,11 @@ router.get(
   })
 );
 
-// —— Velocity (Phase 2) ——
+// —— Velocity (Business / advanced_reporting) ——
 router.get(
   "/velocity/series",
   requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
   analyticsProjectAccessMiddleware,
   safeControllerFunction(VelocityController.getSeries)
 );
@@ -75,14 +76,16 @@ router.get(
 router.post(
   "/velocity/export/excel",
   requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
   analyticsProjectAccessMiddleware,
   safeControllerFunction(VelocityController.exportExcel)
 );
 
-// —— Cumulative Flow (Phase 3) ——
+// —— Cumulative Flow (Business / advanced_reporting) ——
 router.get(
   "/cfd/series",
   requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
   analyticsProjectAccessMiddleware,
   safeControllerFunction(CfdController.getSeries)
 );
@@ -90,14 +93,16 @@ router.get(
 router.post(
   "/cfd/export/csv",
   requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
   analyticsProjectAccessMiddleware,
   safeControllerFunction(CfdController.exportCsv)
 );
 
-// —— Time in Status (Phase 4) ——
+// —— Time in Status (Business / advanced_reporting) ——
 router.get(
   "/time-in-status/series",
   requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
   analyticsProjectAccessMiddleware,
   safeControllerFunction(TimeInStatusController.getSeries)
 );
@@ -105,6 +110,7 @@ router.get(
 router.get(
   "/time-in-status/filter-options",
   requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
   analyticsProjectAccessMiddleware,
   safeControllerFunction(TimeInStatusController.getFilterOptions)
 );
@@ -112,6 +118,7 @@ router.get(
 router.post(
   "/time-in-status/export/csv",
   requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
   analyticsProjectAccessMiddleware,
   safeControllerFunction(TimeInStatusController.exportCsv)
 );

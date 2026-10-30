@@ -1,4 +1,4 @@
-﻿{
+{
   "analyticsGroup": "Reporting & Analytics",
   "analyticsNavAria": "Reports navigation",
   "collapseSidebar": "Collapse sidebar",
@@ -55,6 +55,11 @@
   "timeInStatus": "Time in Status",
   "newBadge": "NEW",
   "comingSoonBadge": "Coming soon",
+  "businessPlanBadge": "Business",
+  "businessReportLockedTitle": "Business plan required",
+  "businessReportLockedDescription": "Velocity, Cumulative Flow, Time in Status, and SLA Tracking are available on the Business plan.",
+  "upgradeToBusiness": "Upgrade to Business",
+  "hubBusinessLockedAria": "{{name}} — Business plan required",
   "lastUpdatedRelative": "Last updated: {{time}}",
   "lastUpdatedUnknown": "Last updated: ?",
   "chartOverviewTitle": "{{name}} overview",

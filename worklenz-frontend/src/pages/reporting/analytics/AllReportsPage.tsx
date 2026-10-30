@@ -1,13 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Empty, Typography, theme } from '@/shared/antd-imports';
+import { CrownOutlined, Empty, Typography, theme } from '@/shared/antd-imports';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAuthService } from '@/hooks/useAuth';
+import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { canUseFeature } from '@/utils/subscription-utils';
 import {
   ANALYTICS_NAV,
   analyticsPath,
   customReportPath,
+  isBusinessAnalyticsReport,
 } from '@/lib/reporting/analytics-nav';
 import { analyticsProjectHealthApiService } from '@/api/reporting/analytics-project-health.api.service';
 import { analyticsTimeReportApiService } from '@/api/reporting/analytics-time-report.api.service';
@@ -149,6 +154,12 @@ const toSpark = (values: number[], fallback: number[]): number[] => {
 const AllReportsPage: React.FC = () => {
   const { t } = useTranslation('reporting-analytics');
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const authService = useAuthService();
+  const canAdvancedReporting = canUseFeature(
+    authService.getCurrentSession(),
+    'advanced_reporting'
+  );
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
@@ -235,11 +246,17 @@ const AllReportsPage: React.FC = () => {
         settle(analyticsTimeReportApiService.getSeries({})),
         settle(analyticsBudgetTrackingApiService.getSeries({})),
         settle(analyticsUtilizationApiService.getSeries({})),
-        settle(analyticsVelocityApiService.getSeries({ view_by: 'project' })),
+        canAdvancedReporting
+          ? settle(analyticsVelocityApiService.getSeries({ view_by: 'project' }))
+          : Promise.resolve(null),
         settle(analyticsPlannedVsActualTasksApiService.getSeries({})),
         settle(analyticsPlannedVsActualMilestonesApiService.getSeries({})),
-        settle(analyticsCfdApiService.getSeries({})),
-        settle(analyticsTimeInStatusApiService.getSeries({ view_mode: 'aggregate' })),
+        canAdvancedReporting
+          ? settle(analyticsCfdApiService.getSeries({}))
+          : Promise.resolve(null),
+        canAdvancedReporting
+          ? settle(analyticsTimeInStatusApiService.getSeries({ view_mode: 'aggregate' }))
+          : Promise.resolve(null),
       ]);
 
       if (cancelled) return;
@@ -367,7 +384,7 @@ const AllReportsPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [t, canAdvancedReporting]);
 
   const borderColor = isDark ? '#303030' : '#f0f0f0';
   const cardBg = token.colorBgContainer;
@@ -491,25 +508,46 @@ const AllReportsPage: React.FC = () => {
         <div className="all-reports-hub__cards">
           {cards.map(card => {
             const metrics = getMetrics(card);
+            const isBusinessLocked =
+              isBusinessAnalyticsReport(card.key) && !canAdvancedReporting;
+            const reportName = t(card.titleKey, { defaultValue: card.defaultTitle });
             return (
               <button
                 key={card.key}
                 type="button"
                 className="all-reports-hub__card"
                 style={{ borderColor, background: cardBg, color: token.colorText }}
-                onClick={() => navigate(analyticsPath(card.path))}
-                aria-label={t('hubOpenReportAria', {
-                  defaultValue: 'Open {{name}}',
-                  name: t(card.titleKey, { defaultValue: card.defaultTitle }),
-                })}
+                onClick={() => {
+                  if (isBusinessLocked) {
+                    dispatch(openUpgradeModal('default'));
+                    return;
+                  }
+                  navigate(analyticsPath(card.path));
+                }}
+                aria-label={
+                  isBusinessLocked
+                    ? t('hubBusinessLockedAria', {
+                        defaultValue: '{{name}} ? Business plan required',
+                        name: reportName,
+                      })
+                    : t('hubOpenReportAria', {
+                        defaultValue: 'Open {{name}}',
+                        name: reportName,
+                      })
+                }
               >
                 <div className="all-reports-hub__card-top">
-                  <span className="all-reports-hub__card-title">
-                    {t(card.titleKey, { defaultValue: card.defaultTitle })}
-                  </span>
-                  <span className="all-reports-hub__badge all-reports-hub__badge--included">
-                    {t('hubBadgeIncluded', { defaultValue: 'Included' })}
-                  </span>
+                  <span className="all-reports-hub__card-title">{reportName}</span>
+                  {isBusinessLocked ? (
+                    <span className="all-reports-hub__badge all-reports-hub__badge--business">
+                      <CrownOutlined style={{ marginRight: 4 }} />
+                      {t('businessPlanBadge', { defaultValue: 'Business' })}
+                    </span>
+                  ) : (
+                    <span className="all-reports-hub__badge all-reports-hub__badge--included">
+                      {t('hubBadgeIncluded', { defaultValue: 'Included' })}
+                    </span>
+                  )}
                 </div>
 
                 <Text type="secondary" className="all-reports-hub__card-desc">
@@ -518,16 +556,20 @@ const AllReportsPage: React.FC = () => {
 
                 <div className="all-reports-hub__card-body">
                   <div>
-                    <div className="all-reports-hub__metric">{metrics.primary}</div>
+                    <div className="all-reports-hub__metric">
+                      {isBusinessLocked ? '?' : metrics.primary}
+                    </div>
                     <div className="all-reports-hub__metric-sub" style={{ color: muted }}>
                       {t(card.metricSubKey, { defaultValue: card.defaultMetricSub })}
                     </div>
                   </div>
-                  <ReportCardPreview kind={card.key} series={metrics.spark} />
+                  <ReportCardPreview kind={card.key} series={metrics.spark} muted={isBusinessLocked} />
                 </div>
 
-                <div className="all-reports-hub__card-footer is-open">
-                  {t('hubOpenReport', { defaultValue: 'Open report ?' })}
+                <div className={`all-reports-hub__card-footer${isBusinessLocked ? '' : ' is-open'}`}>
+                  {isBusinessLocked
+                    ? t('upgradeToBusiness', { defaultValue: 'Upgrade to Business' })
+                    : t('hubOpenReport', { defaultValue: 'Open report ?' })}
                 </div>
               </button>
             );

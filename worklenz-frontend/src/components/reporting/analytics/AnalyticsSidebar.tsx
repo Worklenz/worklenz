@@ -3,12 +3,17 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
+  CrownOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   Tooltip,
   theme,
 } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAuthService } from '@/hooks/useAuth';
+import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { canUseFeature } from '@/utils/subscription-utils';
 import {
   ANALYTICS_NAV,
   analyticsPath,
@@ -40,13 +45,24 @@ const AnalyticsSidebarLink: React.FC<{
   collapsed: boolean;
   /** When set, render this label instead of i18n (user-named custom reports). */
   labelOverride?: string;
-}> = ({ item, active, isDark, collapsed, labelOverride }) => {
+  businessLocked?: boolean;
+  onBusinessLockedClick?: () => void;
+}> = ({
+  item,
+  active,
+  isDark,
+  collapsed,
+  labelOverride,
+  businessLocked = false,
+  onBusinessLockedClick,
+}) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
   const to = analyticsPath(item.path);
   const label = labelOverride ?? t(item.labelKey, { defaultValue: item.defaultLabel });
-  const isComingSoon = item.enabled === false;
+  const isComingSoon = item.enabled === false && !businessLocked;
   const comingSoonLabel = t('comingSoonBadge', { defaultValue: 'Coming soon' });
+  const businessLabel = t('businessPlanBadge', { defaultValue: 'Business' });
 
   const cssVars = {
     '--analytics-sider-active-bg': isDark ? 'rgba(24, 144, 255, 0.18)' : 'rgba(24, 144, 255, 0.1)',
@@ -63,13 +79,51 @@ const AnalyticsSidebarLink: React.FC<{
       {!collapsed && (
         <>
           <span className="analytics-sider-link-label">{label}</span>
-          {isComingSoon && (
+          {businessLocked ? (
+            <CrownOutlined
+              className="analytics-sider-crown"
+              style={{ color: '#faad14', fontSize: 13, marginLeft: 'auto', flexShrink: 0 }}
+              aria-hidden
+            />
+          ) : isComingSoon ? (
             <span className="analytics-sider-coming-soon">{comingSoonLabel}</span>
-          )}
+          ) : null}
         </>
+      )}
+      {collapsed && businessLocked && (
+        <CrownOutlined
+          style={{
+            color: '#faad14',
+            fontSize: 11,
+            position: 'absolute',
+            right: 4,
+            top: 4,
+          }}
+          aria-hidden
+        />
       )}
     </>
   );
+
+  if (businessLocked) {
+    const locked = (
+      <button
+        type="button"
+        className={`analytics-sider-link is-locked${collapsed ? ' is-collapsed' : ''}`}
+        aria-label={`${label} (${businessLabel})`}
+        style={{ ...cssVars, position: 'relative' }}
+        onClick={onBusinessLockedClick}
+      >
+        {content}
+      </button>
+    );
+    if (!collapsed) return locked;
+    return (
+      <Tooltip title={`${label} (${businessLabel})`} placement="right">
+        {locked}
+      </Tooltip>
+    );
+  }
 
   // Coming soon items stay visible but are not navigable.
   const link = isComingSoon ? (
@@ -106,12 +160,16 @@ const AnalyticsSidebarLink: React.FC<{
 };
 
 /**
- * Prototype-style reports sidebar — horizontal list with group headers.
+ * Prototype-style reports sidebar ? horizontal list with group headers.
  * Custom reports group appears only when the user has saved custom reports.
  */
 export const AnalyticsSidebar: React.FC = () => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
+  const dispatch = useAppDispatch();
+  const authService = useAuthService();
+  const session = authService.getCurrentSession();
+  const canAdvancedReporting = canUseFeature(session, 'advanced_reporting');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
   const location = useLocation();
@@ -148,6 +206,10 @@ export const AnalyticsSidebar: React.FC = () => {
   const toggleCollapsed = useCallback(() => {
     setCollapsed(prev => !prev);
   }, []);
+
+  const openUpgrade = useCallback(() => {
+    dispatch(openUpgradeModal('default'));
+  }, [dispatch]);
 
   const groups = useMemo(
     () => buildAnalyticsNavGroups(customReports),
@@ -223,6 +285,8 @@ export const AnalyticsSidebar: React.FC = () => {
                 labelOverride={
                   item.key.startsWith('custom-') ? item.defaultLabel : undefined
                 }
+                businessLocked={Boolean(item.requiresBusinessPlan && !canAdvancedReporting)}
+                onBusinessLockedClick={openUpgrade}
               />
             ))}
           </div>

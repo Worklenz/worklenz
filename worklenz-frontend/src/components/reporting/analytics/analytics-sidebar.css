@@ -110,6 +110,20 @@
   color: var(--analytics-sider-text);
 }
 
+button.analytics-sider-link {
+  width: 100%;
+  background: none;
+  border: 0;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.analytics-sider-link.is-locked {
+  opacity: 0.85;
+}
+
 .analytics-sider-link.is-active {
   background: var(--analytics-sider-active-bg);
   color: var(--analytics-sider-active-color);

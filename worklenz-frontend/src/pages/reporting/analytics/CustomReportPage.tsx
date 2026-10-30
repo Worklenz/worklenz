@@ -4,8 +4,12 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { ReportPageShell } from '@/components/reporting/analytics';
+import { AnalyticsBusinessGate } from '@/components/reporting/analytics/AnalyticsBusinessGate';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
-import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
+import {
+  ANALYTICS_BASE_PATH,
+  isBusinessAnalyticsReport,
+} from '@/lib/reporting/analytics-nav';
 import { useAnalyticsCustomReports } from '@/features/reporting/analytics-custom-reports';
 
 const VelocityPage = lazy(() => import('@/pages/reporting/analytics/VelocityPage'));
@@ -69,11 +73,19 @@ const CustomReportPage: React.FC = () => {
 
   const Page = report.sourceKind ? REPORT_PAGE_BY_KIND[report.sourceKind] : undefined;
   if (Page) {
-    return (
+    const page = (
       <Suspense fallback={<SuspenseFallback />}>
         <Page customTemplateId={report.id} customTemplateName={report.name} />
       </Suspense>
     );
+    if (report.sourceKind && isBusinessAnalyticsReport(report.sourceKind)) {
+      return (
+        <AnalyticsBusinessGate titleKey="descCustomReport" titleDefault={title}>
+          {page}
+        </AnalyticsBusinessGate>
+      );
+    }
+    return page;
   }
 
   return (

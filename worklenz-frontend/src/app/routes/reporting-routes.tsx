@@ -1,5 +1,5 @@
 import { RouteObject, Navigate } from 'react-router-dom';
-import { Suspense, lazy, memo } from 'react';
+import React, { Suspense, lazy, memo, type ReactNode } from 'react';
 import ReportingLayout from '@/layouts/ReportingLayout';
 import AnalyticsReportingLayout from '@/layouts/AnalyticsReportingLayout';
 import { ReportingMenuItems, reportingsItems } from '@/lib/reporting/reporting-constants';
@@ -7,8 +7,8 @@ import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallba
 import NavSurfaceIndexRedirect from '@/features/navigation/NavSurfaceIndexRedirect';
 import GuestRedirect from '@/guards/GuestRedirect';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
-import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
-import { flatAnalyticsNavItems } from '@/lib/reporting/analytics-nav';
+import { ANALYTICS_BASE_PATH, flatAnalyticsNavItems } from '@/lib/reporting/analytics-nav';
+import { AnalyticsBusinessGate } from '@/components/reporting/analytics/AnalyticsBusinessGate';
 
 const AllReportsPage = lazy(() => import('@/pages/reporting/analytics/AllReportsPage'));
 const DashboardsPage = lazy(() => import('@/pages/reporting/analytics/DashboardsPage'));
@@ -31,6 +31,12 @@ const AnalyticsComingSoonPage = lazy(
 );
 const CustomReportPage = lazy(() => import('@/pages/reporting/analytics/CustomReportPage'));
 
+const withBusinessGate = (titleKey: string, titleDefault: string, element: ReactNode) => (
+  <AnalyticsBusinessGate titleKey={titleKey} titleDefault={titleDefault}>
+    {element}
+  </AnalyticsBusinessGate>
+);
+
 const flattenItems = (items: ReportingMenuItems[]): ReportingMenuItems[] => {
   return items.reduce<ReportingMenuItems[]>((acc, item) => {
     if (item.children) {
@@ -42,12 +48,12 @@ const flattenItems = (items: ReportingMenuItems[]): ReportingMenuItems[] => {
 
 const flattenedItems = flattenItems(reportingsItems);
 
-const withSuspense = (element: React.ReactNode) => (
+const withSuspense = (element: ReactNode) => (
   <Suspense fallback={<SuspenseFallback />}>{element}</Suspense>
 );
 
 /** Classic reporting pages remain Owner/Admin (paid) only. */
-const ExistingReportingAdminGuard = memo(({ children }: { children: React.ReactNode }) => {
+const ExistingReportingAdminGuard = memo(({ children }: { children: ReactNode }) => {
   const { isAuthenticated, isAdmin, location } = useAuthStatus();
 
   if (!isAuthenticated) {
@@ -63,10 +69,14 @@ const ExistingReportingAdminGuard = memo(({ children }: { children: React.ReactN
 
 ExistingReportingAdminGuard.displayName = 'ExistingReportingAdminGuard';
 
-const enabledAnalyticsElements: Record<string, React.ReactNode> = {
-  velocity: <VelocityPage />,
-  'cumulative-flow': <CumulativeFlowPage />,
-  'time-in-status': <TimeInStatusPage />,
+const enabledAnalyticsElements: Record<string, ReactNode> = {
+  velocity: withBusinessGate('velocity', 'Velocity', <VelocityPage />),
+  'cumulative-flow': withBusinessGate(
+    'cumulativeFlow',
+    'Cumulative Flow',
+    <CumulativeFlowPage />
+  ),
+  'time-in-status': withBusinessGate('timeInStatus', 'Time in Status', <TimeInStatusPage />),
   'project-health': <ProjectHealthPage />,
   'planned-vs-actual-tasks': <PlannedVsActualTasksPage />,
   'planned-vs-actual-milestones': <PlannedVsActualMilestonesPage />,
@@ -105,7 +115,13 @@ const reportingRoutes: RouteObject[] = [
       },
       ...comingSoonPaths.map(path => ({
         path,
-        element: withSuspense(<AnalyticsComingSoonPage />),
+        element: withSuspense(
+          path === 'sla' ? (
+            withBusinessGate('sla', 'SLA Tracking', <AnalyticsComingSoonPage />)
+          ) : (
+            <AnalyticsComingSoonPage />
+          )
+        ),
       })),
       { path: '*', element: <Navigate to={ANALYTICS_BASE_PATH} replace /> },
     ],

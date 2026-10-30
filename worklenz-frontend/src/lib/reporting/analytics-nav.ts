@@ -23,7 +23,20 @@ export interface AnalyticsNavItem {
   defaultLabel: string;
   /** When true, route is a Phase 1 shell; otherwise Coming Soon placeholder */
   enabled?: boolean;
+  /** Business plan (`advanced_reporting`) required to open this report. */
+  requiresBusinessPlan?: boolean;
 }
+
+/** Flow analytics reports gated behind Business / advanced_reporting. */
+export const BUSINESS_ANALYTICS_REPORT_KEYS = new Set([
+  'velocity',
+  'cumulative-flow',
+  'time-in-status',
+  'sla',
+]);
+
+export const isBusinessAnalyticsReport = (key: string): boolean =>
+  BUSINESS_ANALYTICS_REPORT_KEYS.has(key);
 
 export interface AnalyticsNavGroup {
   key: string;
@@ -119,6 +132,7 @@ export const ANALYTICS_NAV: {
           labelKey: 'velocity',
           defaultLabel: 'Velocity',
           enabled: true,
+          requiresBusinessPlan: true,
         },
         {
           key: 'cumulative-flow',
@@ -126,6 +140,7 @@ export const ANALYTICS_NAV: {
           labelKey: 'cumulativeFlow',
           defaultLabel: 'Cumulative Flow',
           enabled: true,
+          requiresBusinessPlan: true,
         },
         {
           key: 'time-in-status',
@@ -133,6 +148,7 @@ export const ANALYTICS_NAV: {
           labelKey: 'timeInStatus',
           defaultLabel: 'Time in Status',
           enabled: true,
+          requiresBusinessPlan: true,
         },
         {
           key: 'sla',
@@ -140,6 +156,7 @@ export const ANALYTICS_NAV: {
           labelKey: 'sla',
           defaultLabel: 'SLA Tracking',
           enabled: false,
+          requiresBusinessPlan: true,
         },
       ],
     },
