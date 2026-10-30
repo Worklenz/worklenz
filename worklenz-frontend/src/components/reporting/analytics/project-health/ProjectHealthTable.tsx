@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Flex, Table, Tag, Typography } from '@/shared/antd-imports';
+import { Flex, Table, Tag, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
@@ -15,14 +15,35 @@ interface ProjectHealthTableProps {
   loading?: boolean;
 }
 
+/** Ant Design presets keep tag text readable in light and dark themes. */
 const TONE_FALLBACK: Record<
   ProjectHealthTone,
-  { color: string; labelKey: string; defaultLabel: string }
+  { color: string; labelKey: string; defaultLabel: string; swatch: string }
 > = {
-  on_track: { color: 'success', labelKey: 'statOnTrack', defaultLabel: 'On track' },
-  at_risk: { color: 'warning', labelKey: 'statAtRisk', defaultLabel: 'At risk' },
-  off_track: { color: 'error', labelKey: 'statOffTrack', defaultLabel: 'Off track' },
-  not_set: { color: 'default', labelKey: 'phHealthNotSet', defaultLabel: 'Not set' },
+  on_track: {
+    color: 'success',
+    labelKey: 'statOnTrack',
+    defaultLabel: 'On track',
+    swatch: '#52c41a',
+  },
+  at_risk: {
+    color: 'warning',
+    labelKey: 'statAtRisk',
+    defaultLabel: 'At risk',
+    swatch: '#faad14',
+  },
+  off_track: {
+    color: 'error',
+    labelKey: 'statOffTrack',
+    defaultLabel: 'Off track',
+    swatch: '#ff4d4f',
+  },
+  not_set: {
+    color: 'default',
+    labelKey: 'phHealthNotSet',
+    defaultLabel: 'Not set',
+    swatch: '#8c8c8c',
+  },
 };
 
 const budgetUsedColor = (pct: number): string | undefined => {
@@ -36,6 +57,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
   loading,
 }) => {
   const { t } = useTranslation('reporting-analytics');
+  const { token } = theme.useToken();
 
   const columns: ColumnsType<ProjectHealthRow> = useMemo(
     () => [
@@ -46,22 +68,28 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         width: '22%',
         ellipsis: true,
         sorter: (a, b) => a.project_name.localeCompare(b.project_name),
-        render: (name: string, record) => (
-          <Flex align="center" gap={8}>
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: 2,
-                background: record.health_color || '#1890ff',
-                flexShrink: 0,
-              }}
-            />
-            <Text strong ellipsis>
-              {name}
-            </Text>
-          </Flex>
-        ),
+        render: (name: string, record) => {
+          const fallback = TONE_FALLBACK[record.health_tone];
+          return (
+            <Flex align="center" gap={8}>
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 2,
+                  background:
+                    record.health_tone === 'not_set'
+                      ? fallback.swatch
+                      : record.health_color || fallback.swatch,
+                  flexShrink: 0,
+                }}
+              />
+              <Text strong ellipsis style={{ color: token.colorText }}>
+                {name}
+              </Text>
+            </Flex>
+          );
+        },
       },
       {
         title: t('phColHealth', { defaultValue: 'Health' }),
@@ -79,7 +107,8 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
           const label =
             row.health_name ||
             t(fallback.labelKey, { defaultValue: fallback.defaultLabel });
-          return <Tag color={row.health_color || fallback.color}>{label}</Tag>;
+          // Tone presets (not raw DB hex) — custom light grays render white-on-pale in light mode.
+          return <Tag color={fallback.color}>{label}</Tag>;
         },
       },
       {
@@ -155,7 +184,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
           ),
       },
     ],
-    [t]
+    [t, token.colorText]
   );
 
   return (

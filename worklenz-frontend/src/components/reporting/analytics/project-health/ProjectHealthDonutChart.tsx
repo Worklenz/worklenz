@@ -3,7 +3,6 @@ import { ArcElement, Chart as ChartJS, Legend, Tooltip, type ChartOptions } from
 import { Doughnut } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { Badge, Flex, Typography, theme } from '@/shared/antd-imports';
-import { ALPHA_CHANNEL } from '@/shared/constants';
 import { InChartEmptyState } from '../states/ReportStateViews';
 import type {
   ProjectHealthKpis,
@@ -28,11 +27,12 @@ interface HealthSlice {
   count: number;
 }
 
+/** Opaque fills — alpha washes out pale health colors (esp. Not set) in light mode. */
 const DEFAULT_COLORS: Record<ProjectHealthTone, string> = {
-  on_track: '#75c997',
-  at_risk: '#f37070',
-  off_track: '#fbc84c',
-  not_set: '#a9a9a9',
+  on_track: '#52c41a',
+  at_risk: '#faad14',
+  off_track: '#ff4d4f',
+  not_set: '#8c8c8c',
 };
 
 const TONE_META: Record<
@@ -48,6 +48,10 @@ const TONE_META: Record<
 const TONE_ORDER: ProjectHealthTone[] = ['on_track', 'at_risk', 'off_track', 'not_set'];
 
 const resolveColor = (row: ProjectHealthRow): string => {
+  // Prefer tone defaults so pale DB colors (e.g. Not Set #a9a9a9) stay readable.
+  if (row.health_tone === 'not_set') {
+    return DEFAULT_COLORS.not_set;
+  }
   const raw = (row.health_color || '').trim();
   if (raw) {
     return raw.startsWith('#') ? raw : `#${raw}`;
@@ -96,7 +100,7 @@ export const ProjectHealthDonutChart: React.FC<ProjectHealthDonutChartProps> = (
       datasets: [
         {
           data: visibleSlices.map(slice => slice.count),
-          backgroundColor: visibleSlices.map(slice => `${slice.color}${ALPHA_CHANNEL}`),
+          backgroundColor: visibleSlices.map(slice => slice.color),
           borderColor: token.colorBgContainer,
           borderWidth: 2,
           hoverOffset: 4,
@@ -181,10 +185,14 @@ export const ProjectHealthDonutChart: React.FC<ProjectHealthDonutChartProps> = (
             return (
               <Flex key={slice.tone} gap={8} align="center" className="min-w-0">
                 <Badge color={slice.color} className="shrink-0" />
-                <Text ellipsis={{ tooltip: `${label} (${slice.count})` }} className="min-w-0 flex-1">
+                <Text
+                  ellipsis={{ tooltip: `${label} (${slice.count})` }}
+                  className="min-w-0 flex-1"
+                  style={{ color: token.colorText }}
+                >
                   {label}
                 </Text>
-                <Text type="secondary" style={{ flexShrink: 0 }}>
+                <Text style={{ flexShrink: 0, color: token.colorTextSecondary }}>
                   {slice.count}
                 </Text>
               </Flex>
