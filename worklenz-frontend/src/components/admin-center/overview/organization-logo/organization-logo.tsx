@@ -23,6 +23,7 @@ import { IOrganization } from '@/types/admin-center/admin-center.types';
 import { canUseFeature } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { openUpgradeModal, setOrganizationLogo } from '@/features/admin-center/admin-center.slice';
+import { fetchTeams } from '@/features/teams/teamSlice';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
@@ -164,6 +165,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
         const newLogoUrl = res.body?.logo_url || null;
         setPreviewUrl(newLogoUrl);
         dispatch(setOrganizationLogo(newLogoUrl));
+        dispatch(fetchTeams());
         refetch();
       } else {
         logger.error('Error uploading logo', res.message);
@@ -195,6 +197,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
       if (res.done) {
         setPreviewUrl(null);
         dispatch(setOrganizationLogo(null));
+        dispatch(fetchTeams());
         refetch();
       } else {
         logger.error('Error deleting logo', res.message);
