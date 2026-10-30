@@ -22,6 +22,7 @@ import { InputRef } from 'antd/es/input';
 // Redux Hooks
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { RootState } from '@/app/store';
 
 // Redux Actions
 import { fetchTeams, setActiveTeam } from '@/features/teams/teamSlice';
@@ -67,6 +68,9 @@ const SwitchTeamButton = () => {
   // Selectors
   const teamsList = useAppSelector(state => state.teamReducer.teamsList);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const organizationLogo = useAppSelector(
+    (state: RootState) => state.adminCenterReducer.organization?.logo_url
+  );
 
   const filteredTeams = useMemo(() => {
     const list = teamsList ?? [];
@@ -78,7 +82,7 @@ const SwitchTeamButton = () => {
 
   useEffect(() => {
     dispatch(fetchTeams());
-  }, [dispatch]);
+  }, [dispatch, organizationLogo]);
 
   // Focus the search field once the dropdown overlay has mounted. An effect
   // (rather than a setTimeout in the open handler) runs after commit, so the
