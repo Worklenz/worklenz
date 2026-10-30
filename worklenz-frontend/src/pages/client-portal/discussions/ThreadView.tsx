@@ -122,7 +122,7 @@ export const ThreadView = ({ threadId, onBack }: ThreadViewProps) => {
         )}
       </Flex>
 
-      <ThreadMessages messages={thread.messages} />
+      <ThreadMessages messages={thread.messages} threadId={thread.id} />
 
       {optionsQuery.isError && (
         <Alert

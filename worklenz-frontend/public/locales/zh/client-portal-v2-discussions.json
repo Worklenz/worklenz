@@ -108,7 +108,13 @@
     "messagesLabel": "Messages",
     "notFound": "未找到讨论",
     "onlyTeamSees": "只有您的团队才能看到此内容",
-    "pick": "选择一个讨论，或开始一个新的讨论。"
+    "pick": "选择一个讨论，或开始一个新的讨论。",
+    "addReaction": "添加回应",
+    "reactionsLabel": "回应",
+    "reactedTooltip": "点击移除您的回应",
+    "notReactedTooltip": "点击使用 {{emoji}} 进行回应",
+    "reactFailed": "无法更新回应。",
+    "team": "团队"
   },
   "retry": "重试",
   "rowsPerPage": "每页行数："

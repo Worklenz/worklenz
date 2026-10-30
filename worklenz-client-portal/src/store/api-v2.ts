@@ -19,6 +19,7 @@ import type {
   ClientProjectsPageV2,
   ClientProjectsQuery,
   ClientTaskV2,
+  ClientThreadMessageReactionV2,
   ClientThreadV2,
   MentionOptionV2,
   ClientTimezoneV2,
@@ -266,6 +267,16 @@ export const clientPortalV2Api = clientPortalApi
         invalidatesTags: ['V2Threads'],
       }),
 
+      toggleMessageReaction: builder.mutation<ClientThreadMessageReactionV2[], { messageId: string; emoji: string }>({
+        query: ({ messageId, emoji }) => ({
+          url: `/v2/threads/messages/${messageId}/reactions`,
+          method: 'POST',
+          body: { emoji },
+        }),
+        transformResponse: unwrap<ClientThreadMessageReactionV2[]>,
+        invalidatesTags: ['V2Threads'],
+      }),
+
       getMentionOptions: builder.query<MentionOptionV2[], string>({
         query: projectId => `/v2/projects/${projectId}/mention-options`,
         transformResponse: unwrap<MentionOptionV2[]>,
@@ -384,6 +395,7 @@ export const {
   usePostCommentMutation,
   useEditMessageMutation,
   useDeleteMessageMutation,
+  useToggleMessageReactionMutation,
   useGetNotificationsV2Query,
   useSetNotificationReadMutation,
   useMarkAllNotificationsReadV2Mutation,

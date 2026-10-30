@@ -73,6 +73,7 @@ router.get("/threads", handle(ClientPortalV2Controller.threads));
 router.post("/threads/comments", requireClientCapability("comment"), handle(ClientPortalV2Controller.comment));
 router.patch("/threads/messages/:messageId", requireClientCapability("comment"), handle(ClientPortalV2Controller.editMessage));
 router.delete("/threads/messages/:messageId", requireClientCapability("comment"), handle(ClientPortalV2Controller.deleteMessage));
+router.post("/threads/messages/:messageId/reactions", requireClientCapability("comment"), handle(ClientPortalV2Controller.toggleReaction));
 router.get("/threads/:threadId", handle(ClientPortalV2Controller.thread));
 router.post("/threads/:threadId/read", handle(ClientPortalV2Controller.markThreadRead));
 

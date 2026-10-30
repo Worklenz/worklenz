@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Button, DeleteOutlined, EditOutlined, Flex, LockOutlined, Popconfirm, RollbackOutlined, Tag, theme } from '@/shared/antd-imports';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useMessage } from '@/hooks/useMessage';
-import { useDeleteMessageMutation } from '@/store/api-v2';
+import { useDeleteMessageMutation, useToggleMessageReactionMutation } from '@/store/api-v2';
+import { MessageReactions } from './MessageReactions';
 import { errorMessage } from '@/components/v2';
 import { RichTextView, isRichTextEmpty } from '@/components/v2';
 import type { ClientThreadMessageV2 } from '@/types/v2';
@@ -43,6 +44,16 @@ export const ThreadMessages = ({ messages, canComment = false, canModify = false
       void toast.error(errorMessage(error) ?? t('discussions.deleteFailed', { defaultValue: 'We could not delete your message. Please try again.' }));
     }
   };
+  const [toggleReaction] = useToggleMessageReactionMutation();
+
+  const handleToggleReaction = async (messageId: string, emoji: string) => {
+    try {
+      await toggleReaction({ messageId, emoji }).unwrap();
+    } catch (error) {
+      void toast.error(errorMessage(error) ?? t('discussions.reactFailed', { defaultValue: 'Failed to update reaction' }));
+    }
+  };
+
   const { dateTime } = useFormatters();
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -137,6 +148,16 @@ export const ThreadMessages = ({ messages, canComment = false, canModify = false
                 )}
                 {!isDeleted && <MessageAttachments attachments={attachments} />}
               </div>
+              {!isDeleted && (
+                <MessageReactions
+                  messageId={message.id}
+                  reactions={message.reactions}
+                  canReact={canComment}
+                  onToggleReaction={handleToggleReaction}
+                  align={isMine ? 'flex-end' : 'flex-start'}
+                />
+              )}
+
               <div
                 style={{
                   fontSize: 11,
