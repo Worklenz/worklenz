@@ -12,6 +12,8 @@ import {
   Typography,
   Popconfirm,
   theme,
+  DeleteOutlined,
+  EyeInvisibleOutlined,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import SelectionTypeColumn from './selection-type-column/selection-type-column';
@@ -146,11 +148,11 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     () =>
       editingColumnUuid
         ? (projectCustomColumns || [])
-            .filter(
-              column =>
-                findParentColumn(column, projectCustomColumns || [])?.id === editingColumnUuid
-            )
-            .map(getTaskCustomFieldDisplayName)
+          .filter(
+            column =>
+              findParentColumn(column, projectCustomColumns || [])?.id === editingColumnUuid
+          )
+          .map(getTaskCustomFieldDisplayName)
         : [],
     [projectCustomColumns, editingColumnUuid]
   );
@@ -384,8 +386,9 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
   const createNewParentLabel = t('customColumns.dependentSelection.createNewParent', {
     defaultValue: '+ Create new parent field',
   });
-  if (!hasDependentColumns) {
-    dependsOnTypeOptions.unshift({
+
+  if (eligibleParentColumns.length > 0) {
+    dependsOnTypeOptions.push({
       key: toDependsOnTypeValue(NEW_PARENT_COLUMN_ID),
       value: toDependsOnTypeValue(NEW_PARENT_COLUMN_ID),
       title: createNewParentLabel,
@@ -396,21 +399,20 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
       ),
     });
   }
-
   const typeSelectOptions = [
     ...fieldTypesOptions,
     ...(dependsOnTypeOptions.length > 0
       ? [
-          {
-            label: t('customColumns.dependentSelection.typeGroup', {
-              defaultValue: 'Depends on selection',
-            }),
-            title: t('customColumns.dependentSelection.typeGroup', {
-              defaultValue: 'Depends on selection',
-            }),
-            options: dependsOnTypeOptions,
-          },
-        ]
+        {
+          label: t('customColumns.dependentSelection.typeGroup', {
+            defaultValue: 'Depends on selection',
+          }),
+          title: t('customColumns.dependentSelection.typeGroup', {
+            defaultValue: 'Depends on selection',
+          }),
+          options: dependsOnTypeOptions,
+        },
+      ]
       : []),
   ];
 
@@ -511,11 +513,11 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
           labels_list:
             value.fieldType === 'labels'
               ? labelsList.map((label, index) => ({
-                  label_id: label.label_id,
-                  label_name: label.label_name,
-                  label_color: label.label_color,
-                  label_order: index,
-                }))
+                label_id: label.label_id,
+                label_name: label.label_name,
+                label_color: label.label_color,
+                label_order: index,
+              }))
               : [],
         };
 
@@ -578,11 +580,11 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
               labels_list:
                 resolvedFieldType === 'labels'
                   ? labelsList.map((label, index) => ({
-                      label_id: label.label_id,
-                      label_name: label.label_name,
-                      label_color: label.label_color,
-                      label_order: index,
-                    }))
+                    label_id: label.label_id,
+                    label_name: label.label_name,
+                    label_color: label.label_color,
+                    label_order: index,
+                  }))
                   : [],
             };
 
@@ -631,28 +633,28 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         initialValues={
           customColumnModalType === 'create'
             ? {
-                fieldType,
-                numberType,
-                decimals,
-                label,
-                labelPosition,
-                previewValue,
-                expression,
-                firstNumericColumn,
-                secondNumericColumn,
-              }
+              fieldType,
+              numberType,
+              decimals,
+              label,
+              labelPosition,
+              previewValue,
+              expression,
+              firstNumericColumn,
+              secondNumericColumn,
+            }
             : {
-                fieldTitle: openedColumn?.custom_column_obj.fieldTitle,
-                fieldType: openedColumn?.custom_column_obj.fieldType,
-                numberType: openedColumn?.custom_column_obj.numberType,
-                decimals: openedColumn?.custom_column_obj.decimals,
-                label: openedColumn?.custom_column_obj.label,
-                labelPosition: openedColumn?.custom_column_obj.labelPosition,
-                previewValue: openedColumn?.custom_column_obj.previewValue,
-                expression: openedColumn?.custom_column_obj.expression,
-                firstNumericColumn: openedColumn?.custom_column_obj.firstNumericColumn,
-                secondNumericColumn: openedColumn?.custom_column_obj.secondNumericColumn,
-              }
+              fieldTitle: openedColumn?.custom_column_obj.fieldTitle,
+              fieldType: openedColumn?.custom_column_obj.fieldType,
+              numberType: openedColumn?.custom_column_obj.numberType,
+              decimals: openedColumn?.custom_column_obj.decimals,
+              label: openedColumn?.custom_column_obj.label,
+              labelPosition: openedColumn?.custom_column_obj.labelPosition,
+              previewValue: openedColumn?.custom_column_obj.previewValue,
+              expression: openedColumn?.custom_column_obj.expression,
+              firstNumericColumn: openedColumn?.custom_column_obj.firstNumericColumn,
+              secondNumericColumn: openedColumn?.custom_column_obj.secondNumericColumn,
+            }
         }
       >
         <Flex gap={16}>
@@ -751,7 +753,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
         {customFieldType === 'number' && <NumberTypeColumn />}
         {customFieldType === 'formula' && <FormulaTypeColumn />}
         {customFieldType === 'labels' && <LabelTypeColumn />}
-        {isCreatingNewParent && (
+        {customFieldType === 'selection' && isCreatingNewParent && (
           <Flex vertical gap={8}>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               {t('customColumns.dependentSelection.newParentOnlyHint', {
@@ -773,11 +775,21 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
           <div>
             {customColumnModalType === 'edit' && customColumnId && (
               <Flex gap={8}>
-                <Button size="small" onClick={handleHideColumn}>
-                  {t('customColumns.modal.hideFromTaskList', {
+                <Tooltip
+                  title={t('customColumns.modal.hideFromTaskList', {
                     defaultValue: 'Hide from task list',
                   })}
-                </Button>
+                >
+                  <Button
+                    size="small"
+                    type="text"
+                    aria-label={t('customColumns.modal.hideFromTaskList', {
+                      defaultValue: 'Hide from task list',
+                    })}
+                    icon={<EyeInvisibleOutlined />}
+                    onClick={handleHideColumn}
+                  />
+                </Tooltip>
 
                 {hasDependentColumns ? (
                   <Tooltip
@@ -787,9 +799,14 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                       fields: dependentColumnNames.join(', '),
                     })}
                   >
-                    <Button size="small" danger disabled>
-                      {t('customColumns.modal.deleteButton')}
-                    </Button>
+                    <Button
+                      size="small"
+                      type="text"
+                      danger
+                      disabled
+                      aria-label={t('customColumns.modal.deleteButton')}
+                      icon={<DeleteOutlined />}
+                    />
                   </Tooltip>
                 ) : (
                   <Popconfirm
@@ -801,9 +818,15 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                     cancelText={t('customColumns.modal.cancelButton')}
                     okButtonProps={{ danger: true }}
                   >
-                    <Button size="small" danger>
-                      {t('customColumns.modal.deleteButton')}
-                    </Button>
+                    <Tooltip title={t('customColumns.modal.deleteButton')}>
+                      <Button
+                        size="small"
+                        type="text"
+                        danger
+                        aria-label={t('customColumns.modal.deleteButton')}
+                        icon={<DeleteOutlined />}
+                      />
+                    </Tooltip>
                   </Popconfirm>
                 )}
               </Flex>

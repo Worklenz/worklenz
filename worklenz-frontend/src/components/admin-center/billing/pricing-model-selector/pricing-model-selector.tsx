@@ -130,7 +130,7 @@ const PricingModelSelector: React.FC<PricingModelSelectorProps> = ({
                 {isPerUser ? t('perUser', 'Per User') : t('flatRate', 'Flat Rate')}
               </Typography.Title>
               {isRecommended && (
-                <Tag color="green" size="small">
+                <Tag color="green">
                   {t('recommended', 'Recommended')}
                 </Tag>
               )}

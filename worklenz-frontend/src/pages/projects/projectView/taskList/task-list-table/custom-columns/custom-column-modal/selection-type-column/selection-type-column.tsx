@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import { useTranslation } from 'react-i18next';
 import { PhaseColorCodes } from '../../../../../../../../shared/constants';
-import { Button, Flex, Input, Select, Tag, Typography } from '@/shared/antd-imports';
+import { Button, Flex, Input, Typography } from '@/shared/antd-imports';
 import type { InputRef } from '@/shared/antd-imports';
 import { CloseCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '../../../../../../../../hooks/useAppDispatch';
 import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';
 import { setSelectionsList } from '../../../../../../../../features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
+import SelectionColorPicker from '../SelectionColorPicker';
 
 export type SelectionType = {
   selection_color: string;
@@ -34,12 +35,12 @@ const SelectionTypeColumn = () => {
     storeSelectionsList.length > 0
       ? storeSelectionsList.map(selection => ({ ...selection, parent_selection_id: null }))
       : [
-          {
-            selection_id: nanoid(),
-            selection_name: '',
-            selection_color: PhaseColorCodes[0],
-          },
-        ]
+        {
+          selection_id: nanoid(),
+          selection_name: '',
+          selection_color: PhaseColorCodes[0],
+        },
+      ]
   );
 
   // Use the current column data passed from TaskListV2
@@ -61,21 +62,6 @@ const SelectionTypeColumn = () => {
   }, [customColumnModalType, openedColumn, customColumnId, dispatch, storeSelectionsList.length]);
 
   // phase color options
-  const phaseOptionColorList = PhaseColorCodes.map(color => ({
-    value: color,
-    label: (
-      <Tag
-        color={color}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          width: 15,
-          height: 15,
-          borderRadius: '50%',
-        }}
-      />
-    ),
-  }));
 
   const inputRefs = useRef<Record<string, InputRef | null>>({});
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
@@ -168,13 +154,17 @@ const SelectionTypeColumn = () => {
                 size="small"
                 style={{ maxWidth: 300 }}
               />
-              <Select
-                options={phaseOptionColorList}
+              <SelectionColorPicker
                 value={selection.selection_color}
-                onChange={value => handleUpdateSelectionColor(selection.selection_id, value)}
-                size="small"
-                style={{ width: 48 }}
-                suffixIcon={null}
+                onChange={color =>
+                  handleUpdateSelectionColor(selection.selection_id, color)
+                }
+                ariaLabel={`${t('customColumns.fieldTypeForms.selectionNameLabel', {
+                  defaultValue: 'Selection name',
+                })}: ${selection.selection_name || ''} ${t(
+                  'customColumns.dependentSelection.optionColorLabel',
+                  { defaultValue: 'Option color' }
+                )}`}
               />
 
               <CloseCircleOutlined

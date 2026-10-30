@@ -1,4 +1,5 @@
 {
+  "apply": "Apliko",
   "keyColumn": "Çelësi",
   "taskColumn": "Detyra",
   "issueColumn": "Çështja",
@@ -288,7 +289,8 @@
     "enterColumnName": "Vendosni emrin e kolonës",
     "clickToEdit": "Klikoni për të modifikuar emrin e kolonës",
     "columnSettings": "Cilësimet e kolonës",
-    "textPlaceholder": "Shkruani tekst"
+    "textPlaceholder": "Shkruani tekst",
+    "apply": "Apliko"
   },
   "indicators": {
     "tooltips": {

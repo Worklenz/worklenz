@@ -229,7 +229,7 @@ const MobilePricingDrawer: React.FC<MobilePricingDrawerProps> = ({
             </Space>
 
             {isCurrent && (
-              <Tag color="blue" size="small" style={{ marginLeft: 8 }}>
+              <Tag color="blue" style={{ marginLeft: 8 }}>
                 Current
               </Tag>
             )}

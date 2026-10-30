@@ -1,4 +1,5 @@
 {
+  "apply": "Apply",
   "keyColumn": "Key",
   "taskColumn": "Task",
   "issueColumn": "Issue",
@@ -203,6 +204,7 @@
       "key": "Key",
       "formula": "Formula"
     },
+    "apply": "Apply",
     "fieldTypeForms": {
       "numberType": "Number Type",
       "numberTypeOptions": {
