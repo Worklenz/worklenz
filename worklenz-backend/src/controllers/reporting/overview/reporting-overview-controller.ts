@@ -11,6 +11,7 @@ import { TASK_PRIORITY_COLOR_ALPHA } from "../../../shared/constants";
 import { ReportingExportModel } from "../../../models/reporting-export";
 import moment from "moment";
 import ReportingControllerBase from "../reporting-controller-base";
+import { getAccessibleReportingTeamIds } from "../../../shared/analytics-expand-projects";
 
 export default class ReportingOverviewController extends ReportingOverviewBase {
   @HandleExceptions()
@@ -116,15 +117,21 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
   @HandleExceptions()
   public static async getTeams(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = this.getCurrentTeamId(req);
+    const userId = req.user?.id;
     const includeArchived = req.query.archived === "true";
+
+    if (!teamId || !userId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
 
     const archivedClause = includeArchived
       ? ""
       : `AND id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND archived_projects.user_id = '${req.user?.id}')`;
 
-    // Organization for reporting = all teams owned by the current team's owner
-    // (same rule as getStatistics org_teams). Prefer user_id over in_organization()
-    // so teams with null/mismatched organization_id still appear after a team switch.
+    const accessibleTeamIds = await getAccessibleReportingTeamIds(userId, teamId);
+
+    // Organization for reporting = teams the caller may access (Owner/Admin: all
+    // teams under the same owner; Team Lead: session team + teams with project membership).
     const q = `
       SELECT id,
              name,
@@ -142,10 +149,10 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
                        AND (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id) IS NOT NULL
                    ) rec) AS members
       FROM teams
-      WHERE user_id = (SELECT user_id FROM teams WHERE id = $1)
+      WHERE id = ANY($1::UUID[])
       ORDER BY name;
     `;
-    const result = await db.query(q, [teamId]);
+    const result = await db.query(q, [accessibleTeamIds]);
 
     for (const team of result.rows) {
       // Don't apply createTagList here - let the frontend Avatars component handle display logic
@@ -165,6 +172,17 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
     const archived = req.query.archived === "true";
 
     const teamId = req.query.team as string;
+    const sessionTeamId = this.getCurrentTeamId(req);
+    const userId = req.user?.id;
+
+    if (!sessionTeamId || !userId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    const accessibleTeamIds = await getAccessibleReportingTeamIds(userId, sessionTeamId);
+    if (!teamId || !accessibleTeamIds.includes(teamId)) {
+      return res.status(403).send(new ServerResponse(false, null, "Team is not accessible"));
+    }
 
     const archivedClause = archived
       ? ""

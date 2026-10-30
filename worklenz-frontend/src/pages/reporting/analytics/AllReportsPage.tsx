@@ -129,7 +129,7 @@ const REPORT_CARD_META: Record<
   },
 };
 
-/** Share views (dashboards) excluded � enabled chart reports only. */
+/** Share views (dashboards) excluded — enabled chart reports only. */
 const CHART_REPORT_KEYS = new Set(Object.keys(REPORT_CARD_META));
 
 const DEFAULT_SPARK = [40, 52, 44, 60, 50, 68, 56, 72, 58, 66];
@@ -369,7 +369,7 @@ const AllReportsPage: React.FC = () => {
         next['time-in-status'] = {
           primary:
             cycleDays == null || !Number.isFinite(cycleDays)
-              ? '�'
+              ? '—'
               : `${Math.round(cycleDays * 10) / 10}`,
           spark: toSpark(
             (tisRes.body.aggregate ?? []).map(row => row.avg_days ?? 0),
@@ -394,7 +394,7 @@ const AllReportsPage: React.FC = () => {
 
   const getMetrics = (card: HubCardDef): CardMetrics =>
     metricsByKey[card.key] ?? {
-      primary: '�',
+      primary: '—',
       spark: card.sparkHeights.length ? card.sparkHeights : DEFAULT_SPARK,
     };
 
@@ -499,7 +499,7 @@ const AllReportsPage: React.FC = () => {
                   t('descCustomReport', { defaultValue: 'Saved custom report' })}
               </Text>
               <div className="all-reports-hub__card-footer is-open">
-                {t('hubOpenReport', { defaultValue: 'Open report ?' })}
+                {t('hubOpenReport', { defaultValue: 'Open report →' })}
               </div>
             </button>
           ))}
@@ -527,7 +527,7 @@ const AllReportsPage: React.FC = () => {
                 aria-label={
                   isBusinessLocked
                     ? t('hubBusinessLockedAria', {
-                        defaultValue: '{{name}} ? Business plan required',
+                        defaultValue: '{{name}} — Business plan required',
                         name: reportName,
                       })
                     : t('hubOpenReportAria', {
@@ -557,7 +557,7 @@ const AllReportsPage: React.FC = () => {
                 <div className="all-reports-hub__card-body">
                   <div>
                     <div className="all-reports-hub__metric">
-                      {isBusinessLocked ? '?' : metrics.primary}
+                      {isBusinessLocked ? '—' : metrics.primary}
                     </div>
                     <div className="all-reports-hub__metric-sub" style={{ color: muted }}>
                       {t(card.metricSubKey, { defaultValue: card.defaultMetricSub })}
@@ -569,7 +569,7 @@ const AllReportsPage: React.FC = () => {
                 <div className={`all-reports-hub__card-footer${isBusinessLocked ? '' : ' is-open'}`}>
                   {isBusinessLocked
                     ? t('upgradeToBusiness', { defaultValue: 'Upgrade to Business' })
-                    : t('hubOpenReport', { defaultValue: 'Open report ?' })}
+                    : t('hubOpenReport', { defaultValue: 'Open report →' })}
                 </div>
               </button>
             );

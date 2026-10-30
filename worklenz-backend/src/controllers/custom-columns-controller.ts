@@ -15,6 +15,51 @@ import {
 
 const CUSTOM_FIELD_LIMIT = LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
 
+// Shared by every query that returns a column with its options. Expects aliases cc / cf.
+const SELECTIONS_LIST_SQL = `
+  (
+    SELECT json_agg(
+      json_build_object(
+        'selection_id', so.selection_id,
+        'selection_name', so.selection_name,
+        'selection_color', so.selection_color,
+        'parent_selection_id', so.parent_selection_id
+      ) ORDER BY so.selection_order
+    )
+    FROM cc_selection_options so
+    WHERE so.column_id = cc.id
+  )`;
+
+const PARENT_COLUMN_KEY_SQL = `
+  (SELECT pc.key FROM cc_custom_columns pc WHERE pc.id = cf.parent_column_id)`;
+
+const resolveParentSelectionId = (
+  parentColumnId: string | null,
+  selection: { selection_id?: unknown; parent_selection_id?: unknown },
+  existingParentBySelectionId?: Map<string, string | null>
+): string | null => {
+  if (!parentColumnId) return null;
+
+  // Explicit null means intentional unassignment.
+  if (selection.parent_selection_id === null) return null;
+
+  if (typeof selection.parent_selection_id === "string" && selection.parent_selection_id) {
+    return selection.parent_selection_id;
+  }
+
+  // Omitted parent_selection_id: preserve the stored value when updating.
+  if (
+    selection.parent_selection_id === undefined &&
+    existingParentBySelectionId &&
+    typeof selection.selection_id === "string" &&
+    selection.selection_id
+  ) {
+    return existingParentBySelectionId.get(selection.selection_id) ?? null;
+  }
+
+  return null;
+};
+
 const APPSUMO_BUSINESS_UNLOCK_CODE_COUNT = 5;
 
 /**

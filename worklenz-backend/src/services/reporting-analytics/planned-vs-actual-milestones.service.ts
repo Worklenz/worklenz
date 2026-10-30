@@ -5,6 +5,7 @@ import {
   setAnalyticsCache,
   withLastUpdated,
 } from "../../redis/analytics-cache";
+import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
 
 export interface PlannedVsActualMilestonesFilters {
   projectIds: string[];
@@ -225,8 +226,9 @@ export function buildPlannedVsActualMilestonesCsv(
 }
 
 function csvEscape(value: string): string {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  const text = sanitizeCsvFormulaValue(value);
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
   }
-  return value;
+  return text;
 }

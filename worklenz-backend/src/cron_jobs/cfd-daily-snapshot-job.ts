@@ -5,7 +5,7 @@ import db from "../config/db";
 import { log_error } from "../shared/utils";
 import { runCfdDailySnapshotJob } from "../services/reporting-analytics/cfd-snapshot.service";
 
-/** 00:15 UTC daily — after midnight so "today" rows settle. */
+/** 00:15 UTC daily — captures the previous UTC day's final counts. */
 const TIME = process.env.CFD_SNAPSHOT_CRON || "15 0 * * *";
 const LOCK_KEY = "worklenz-cfd-daily-snapshot";
 
@@ -54,7 +54,13 @@ export async function runCfdSnapshotTick(): Promise<void> {
 }
 
 export function startCfdDailySnapshotJob() {
-  log("(cron) CFD daily snapshot job ready.");
-  const job = new CronJob(TIME, () => void runCfdSnapshotTick(), null, true);
+  log("(cron) CFD daily snapshot job ready (UTC).");
+  const job = new CronJob(
+    TIME,
+    () => void runCfdSnapshotTick(),
+    null,
+    true,
+    "UTC"
+  );
   job.start();
 }

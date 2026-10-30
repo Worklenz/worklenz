@@ -330,8 +330,6 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
       teamOptions={teamOptions}
       selectedTeamIds={selectedTeamIds}
       onTeamsChange={setSelectedTeamIds}
-      datePreset={datePreset}
-      onDatePresetChange={setDatePreset}
       loading={filtersLoading}
     />
   );

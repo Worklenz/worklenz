@@ -5,6 +5,7 @@ import {
   setAnalyticsCache,
   withLastUpdated,
 } from "../../redis/analytics-cache";
+import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
 
 export interface PlannedVsActualTasksFilters {
   projectIds: string[];
@@ -40,7 +41,7 @@ export interface PlannedVsActualTasksResult {
   last_updated_at: string;
 }
 
-/** Safety cap only â€” high enough for org portfolios (chart still shows latest 20). */
+/** Safety cap only — high enough for org portfolios (chart still shows latest 20). */
 const MAX_PROJECTS = 5000;
 
 function parseCsvIds(value: unknown): string[] {
@@ -254,8 +255,9 @@ export function buildPlannedVsActualTasksCsv(result: PlannedVsActualTasksResult)
 }
 
 function csvEscape(value: string): string {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  const text = sanitizeCsvFormulaValue(value);
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
   }
-  return value;
+  return text;
 }

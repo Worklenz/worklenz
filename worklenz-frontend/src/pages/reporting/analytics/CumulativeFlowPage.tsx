@@ -8,11 +8,8 @@ import { jsPDF } from 'jspdf';
 dayjs.extend(quarterOfYear);
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { analyticsCfdApiService } from '@/api/reporting/analytics-cfd.api.service';
-import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import { useAuthService } from '@/hooks/useAuth';
 import {
   AnalyticsFilterBar,
@@ -42,7 +39,6 @@ import type {
   CfdStatusMeta,
 } from '@/types/reporting/analytics-cfd.types';
 import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-velocity.types';
-import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 const DEFAULT_GROUP_BY = 'all' as const;
 const DEFAULT_SMOOTHING = 'raw' as const;
@@ -70,7 +66,6 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
   customTemplateName,
 }) => {
   const { t } = useTranslation('reporting-analytics');
-  const dispatch = useAppDispatch();
   const baseTitle = t('cumulativeFlow', { defaultValue: 'Cumulative Flow' });
 
   const authService = useAuthService();
@@ -79,11 +74,9 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     role: resolveAnalyticsActorRole(session),
     userId: session?.id,
   });
-  const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
   const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
@@ -103,7 +96,6 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
       setSelectedProjectIds,
-      setSelectedMemberIds,
       setSelectedTeamIds,
       setDatePreset,
     });
@@ -124,7 +116,6 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     onApply: applyTemplateFilters,
     getFilters: () => ({
       project_ids: selectedProjectIds,
-      member_ids: selectedMemberIds,
       team_ids: selectedTeamIds,
       date_preset: datePreset,
     }),
@@ -132,16 +123,6 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
 
   const title = (isCustomTemplateView && customTemplateName?.trim()) || baseTitle;
   useDocumentTitle(title);
-
-  const memberOptions: FilterOption[] = useMemo(() => {
-    const list = (teamMembersState?.data ?? []) as ITeamMemberViewModel[];
-    return list
-      .filter(m => m.id)
-      .map(m => ({
-        value: String(m.id),
-        label: m.name || m.email || String(m.id),
-      }));
-  }, [teamMembersState]);
 
   const dateBounds = useMemo(() => {
     const end = dayjs();
@@ -173,19 +154,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
   const loadTeamsAndMembers = useCallback(async () => {
     setFiltersLoading(true);
     try {
-      const [teamsRes] = await Promise.all([
-        reportingApiService.getOverviewTeams(true),
-        dispatch(
-          getTeamMembers({
-            index: 0,
-            size: 100,
-            field: null,
-            order: null,
-            search: null,
-            all: true,
-          })
-        ),
-      ]);
+      const teamsRes = await reportingApiService.getOverviewTeams(true);
 
       const teams =
         teamsRes.done && Array.isArray(teamsRes.body)
@@ -206,7 +175,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     } finally {
       setFiltersLoading(false);
     }
-  }, [dispatch, session?.team_id, t]);
+  }, [session?.team_id, t]);
 
   const loadProjectsForTeams = useCallback(async (teamIds: string[]) => {
     if (teamIds.length === 0) {
@@ -408,9 +377,6 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
       projectOptions={projectOptions}
       selectedProjectIds={selectedProjectIds}
       onProjectsChange={setSelectedProjectIds}
-      memberOptions={memberOptions}
-      selectedMemberIds={selectedMemberIds}
-      onMembersChange={setSelectedMemberIds}
       datePreset={datePreset}
       onDatePresetChange={setDatePreset}
       availableDatePresets={['last_7_days', 'last_30_days', 'last_90_days', 'this_quarter']}

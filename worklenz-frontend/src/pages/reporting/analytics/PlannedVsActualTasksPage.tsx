@@ -390,8 +390,6 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
         teamOptions={teamOptions}
         selectedTeamIds={selectedTeamIds}
         onTeamsChange={setSelectedTeamIds}
-        datePreset={datePreset}
-        onDatePresetChange={setDatePreset}
         loading={filtersLoading}
       />
     </Flex>

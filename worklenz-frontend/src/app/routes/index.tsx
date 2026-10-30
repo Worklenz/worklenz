@@ -226,7 +226,7 @@ const protectedMainRoutes = wrapRoutes(mainRoutes, AuthAndSetupGuard);
 // Reporting is authenticated for all non-guests; existing report pages keep
 // Owner/Admin guards on their child routes. Analytics is open to Members/Managers.
 const adminRoutes = wrapRoutes(reportingRoutes, AuthAndSetupGuard);
-const adminclientPortalRoutes = wrapRoutes(clientPortalRoutes, AdminGuard);
+const adminclientPortalRoutes = wrapRoutes(clientPortalRoutes, ClientPortalGuard);
 const setupRoutes = wrapRoutes([accountSetupRoute], AuthGuard);
 
 // License expiry check function - only wrap top-level routes, not children

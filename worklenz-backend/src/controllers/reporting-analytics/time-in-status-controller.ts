@@ -2,7 +2,7 @@ import moment from "moment";
 
 import {
   expandAccessibleProjects,
-  parseTeamIdsFromInput,
+  parseAccessibleTeamIdsFromInput,
 } from "../../shared/analytics-expand-projects";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
@@ -39,7 +39,7 @@ export default class TimeInStatusController extends WorklenzControllerBase {
       userId,
       teamId,
       base,
-      parseTeamIdsFromInput(query)
+      await parseAccessibleTeamIdsFromInput(userId, teamId, query)
     );
     const filters = parseTimeInStatusFilters(query, accessible, teamId);
     const data = await getTimeInStatusSeries(filters);
@@ -64,7 +64,7 @@ export default class TimeInStatusController extends WorklenzControllerBase {
       userId,
       teamId,
       base,
-      parseTeamIdsFromInput(query)
+      await parseAccessibleTeamIdsFromInput(userId, teamId, query)
     );
     const filters = parseTimeInStatusFilters(query, accessible, teamId);
     const options = await getTimeInStatusFilterOptions(filters.projectIds);
@@ -94,7 +94,7 @@ export default class TimeInStatusController extends WorklenzControllerBase {
       userId,
       teamId,
       base,
-      parseTeamIdsFromInput(merged)
+      await parseAccessibleTeamIdsFromInput(userId, teamId, merged)
     );
     const filters = parseTimeInStatusFilters(merged, accessible, teamId);
     const data = await getTimeInStatusSeries(filters);

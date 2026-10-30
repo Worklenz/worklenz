@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getJSONFromLocalStorage, saveJSONToLocalStorage } from '@/utils/localStorageFunctions';
 import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-velocity.types';
 import { flatAnalyticsNavItems } from '@/lib/reporting/analytics-nav';
+import { useAuthService } from '@/hooks/useAuth';
+import { getUserSession } from '@/utils/session-helper';
 
-const STORAGE_KEY = 'worklenz.analyticsCustomReports';
+const STORAGE_KEY_PREFIX = 'worklenz.analyticsCustomReports';
 
 /** User-saved custom report / template (shown under Custom reports). */
 export interface AnalyticsCustomReport {
@@ -19,13 +21,22 @@ export interface AnalyticsCustomReport {
   filters?: Record<string, unknown>;
 }
 
-const readStore = (): AnalyticsCustomReport[] => {
-  const raw = getJSONFromLocalStorage(STORAGE_KEY);
+export const getAnalyticsCustomReportsStorageKey = (
+  teamId?: string | null,
+  userId?: string | null
+): string => {
+  const team = teamId?.trim() || 'unknown-team';
+  const user = userId?.trim() || 'unknown-user';
+  return `${STORAGE_KEY_PREFIX}:${team}:${user}`;
+};
+
+const readStore = (storageKey: string): AnalyticsCustomReport[] => {
+  const raw = getJSONFromLocalStorage(storageKey);
   return Array.isArray(raw) ? (raw as AnalyticsCustomReport[]) : [];
 };
 
-const writeStore = (reports: AnalyticsCustomReport[]) => {
-  saveJSONToLocalStorage(STORAGE_KEY, reports);
+const writeStore = (storageKey: string, reports: AnalyticsCustomReport[]) => {
+  saveJSONToLocalStorage(storageKey, reports);
 };
 
 const notifyLocalUpdate = () => {
@@ -42,8 +53,14 @@ const labelForKind = (kind: string): string => {
  * on the All reports hub and sidebar for every report kind.
  */
 export const syncTemplatesToCustomReports = (
-  templates: AnalyticsReportTemplate[]
+  templates: AnalyticsReportTemplate[],
+  storageKey?: string
 ): AnalyticsCustomReport[] => {
+  const session = getUserSession();
+  const key =
+    storageKey ||
+    getAnalyticsCustomReportsStorageKey(session?.team_id, session?.id);
+
   const fromApi: AnalyticsCustomReport[] = templates.map(tpl => ({
     id: tpl.id,
     name: tpl.name,
@@ -54,7 +71,7 @@ export const syncTemplatesToCustomReports = (
     creatorName: tpl.owner_name,
     filters: tpl.filters_json ?? {},
   }));
-  writeStore(fromApi);
+  writeStore(key, fromApi);
   notifyLocalUpdate();
   return fromApi;
 };
@@ -67,12 +84,25 @@ export const syncVelocityTemplatesToCustomReports = syncTemplatesToCustomReports
  * Hub/sidebar list syncs from API templates via syncTemplatesToCustomReports.
  */
 export const useAnalyticsCustomReports = () => {
-  const [reports, setReports] = useState<AnalyticsCustomReport[]>(() => readStore());
+  const auth = useAuthService();
+  const session = auth.getCurrentSession();
+  const storageKey = useMemo(
+    () => getAnalyticsCustomReportsStorageKey(session?.team_id, session?.id),
+    [session?.team_id, session?.id]
+  );
+
+  const [reports, setReports] = useState<AnalyticsCustomReport[]>(() =>
+    readStore(storageKey)
+  );
 
   useEffect(() => {
-    const refresh = () => setReports(readStore());
+    setReports(readStore(storageKey));
+  }, [storageKey]);
+
+  useEffect(() => {
+    const refresh = () => setReports(readStore(storageKey));
     const onStorage = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEY) refresh();
+      if (event.key === storageKey) refresh();
     };
     window.addEventListener('storage', onStorage);
     window.addEventListener('worklenz-analytics-custom-reports', refresh);
@@ -80,30 +110,42 @@ export const useAnalyticsCustomReports = () => {
       window.removeEventListener('storage', onStorage);
       window.removeEventListener('worklenz-analytics-custom-reports', refresh);
     };
-  }, []);
+  }, [storageKey]);
 
   const refresh = useCallback(() => {
-    setReports(readStore());
-  }, []);
+    setReports(readStore(storageKey));
+  }, [storageKey]);
 
-  const upsert = useCallback((report: AnalyticsCustomReport) => {
-    setReports(prev => {
-      const without = prev.filter(r => r.id !== report.id);
-      const next = [report, ...without];
-      writeStore(next);
-      notifyLocalUpdate();
-      return next;
-    });
-  }, []);
+  const upsert = useCallback(
+    (report: AnalyticsCustomReport) => {
+      setReports(prev => {
+        const without = prev.filter(r => r.id !== report.id);
+        const next = [report, ...without];
+        writeStore(storageKey, next);
+        notifyLocalUpdate();
+        return next;
+      });
+    },
+    [storageKey]
+  );
 
-  const remove = useCallback((id: string) => {
-    setReports(prev => {
-      const next = prev.filter(r => r.id !== id);
-      writeStore(next);
-      notifyLocalUpdate();
-      return next;
-    });
-  }, []);
+  const remove = useCallback(
+    (id: string) => {
+      setReports(prev => {
+        const next = prev.filter(r => r.id !== id);
+        writeStore(storageKey, next);
+        notifyLocalUpdate();
+        return next;
+      });
+    },
+    [storageKey]
+  );
+
+  const syncTemplates = useCallback(
+    (templates: AnalyticsReportTemplate[]) =>
+      syncTemplatesToCustomReports(templates, storageKey),
+    [storageKey]
+  );
 
   return {
     customReports: reports,
@@ -111,5 +153,7 @@ export const useAnalyticsCustomReports = () => {
     upsertCustomReport: upsert,
     removeCustomReport: remove,
     refreshCustomReports: refresh,
+    storageKey,
+    syncTemplatesToCustomReports: syncTemplates,
   };
 };

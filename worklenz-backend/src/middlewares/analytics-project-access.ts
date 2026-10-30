@@ -4,11 +4,18 @@ import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { ServerResponse } from "../models/server-response";
 import db from "../config/db";
 import { canViewAnalyticsReports } from "../shared/reporting-analytics-permissions";
+import {
+  expandAccessibleProjects,
+  parseAccessibleTeamIdsFromInput,
+} from "../shared/analytics-expand-projects";
 
 /**
  * Ensures analytics requests only see projects the user can access.
  * Accepts project ids from body.project_ids, query.project_ids, or params.project_id.
  * Attaches req.analyticsAccessibleProjectIds for controllers.
+ *
+ * Project comparison runs after expanding access across requested team_ids so
+ * cross-team org projects are not falsely denied.
  */
 export default async function analyticsProjectAccessMiddleware(
   req: IWorkLenzRequest,
@@ -29,6 +36,11 @@ export default async function analyticsProjectAccessMiddleware(
     }
 
     const requested = collectRequestedProjectIds(req);
+    const input = {
+      ...(req.query as Record<string, unknown>),
+      ...((req.body as Record<string, unknown> | undefined) ?? {}),
+    };
+    const requestedTeamIds = await parseAccessibleTeamIdsFromInput(userId, teamId, input);
 
     const q = `
       SELECT p.id
@@ -55,7 +67,14 @@ export default async function analyticsProjectAccessMiddleware(
     `;
 
     const result = await db.query(q, [teamId, userId]);
-    const accessible = new Set<string>(result.rows.map((row: { id: string }) => row.id));
+    const sessionAccessible = result.rows.map((row: { id: string }) => row.id);
+    const accessibleList = await expandAccessibleProjects(
+      userId,
+      teamId,
+      sessionAccessible,
+      requestedTeamIds
+    );
+    const accessible = new Set<string>(accessibleList);
 
     if (requested.length > 0) {
       const denied = requested.filter(id => !accessible.has(id));

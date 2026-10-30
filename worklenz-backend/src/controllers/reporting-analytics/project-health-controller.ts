@@ -5,7 +5,7 @@ import WorklenzControllerBase from "../worklenz-controller-base";
 import HandleExceptions from "../../decorators/handle-exceptions";
 import {
   expandAccessibleProjects,
-  parseTeamIdsFromInput,
+  parseAccessibleTeamIdsFromInput,
 } from "../../shared/analytics-expand-projects";
 import {
   buildProjectHealthCsv,
@@ -31,7 +31,7 @@ export default class ProjectHealthController extends WorklenzControllerBase {
 
     const analyticsReq = req as AnalyticsRequest;
     const baseIds = analyticsReq.analyticsAccessibleProjectIds ?? [];
-    const teamIds = parseTeamIdsFromInput(req.query as Record<string, unknown>);
+    const teamIds = await parseAccessibleTeamIdsFromInput(userId, teamId, req.query as Record<string, unknown>);
     const accessible = await expandAccessibleProjects(userId, teamId, baseIds, teamIds);
     const filters = parseProjectHealthFilters(
       req.query as Record<string, unknown>,
@@ -57,7 +57,7 @@ export default class ProjectHealthController extends WorklenzControllerBase {
     const body = (req.body || {}) as Record<string, unknown>;
     const analyticsReq = req as AnalyticsRequest;
     const baseIds = analyticsReq.analyticsAccessibleProjectIds ?? [];
-    const teamIds = parseTeamIdsFromInput(body);
+    const teamIds = await parseAccessibleTeamIdsFromInput(userId, teamId, body);
     const accessible = await expandAccessibleProjects(userId, teamId, baseIds, teamIds);
     const filters = parseProjectHealthFilters(body, accessible, teamId);
 

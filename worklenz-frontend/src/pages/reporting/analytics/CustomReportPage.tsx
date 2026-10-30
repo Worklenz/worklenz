@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { Button, Empty, Typography } from '@/shared/antd-imports';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -54,10 +54,18 @@ const CustomReportPage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('reporting-analytics');
   const { customReports, refreshCustomReports } = useAnalyticsCustomReports();
+  const [isSyncing, setIsSyncing] = useState(true);
 
   useEffect(() => {
-    refreshCustomReports();
-  }, [refreshCustomReports]);
+    let cancelled = false;
+    setIsSyncing(true);
+    Promise.resolve(refreshCustomReports()).finally(() => {
+      if (!cancelled) setIsSyncing(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshCustomReports, id]);
 
   const report = useMemo(
     () => customReports.find(item => item.id === id),
@@ -66,6 +74,10 @@ const CustomReportPage: React.FC = () => {
 
   const title = report?.name ?? t('descCustomReport', { defaultValue: 'Saved custom report' });
   useDocumentTitle(title);
+
+  if (isSyncing && !report) {
+    return <SuspenseFallback />;
+  }
 
   if (!report) {
     return <Navigate to={ANALYTICS_BASE_PATH} replace />;

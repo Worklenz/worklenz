@@ -7,6 +7,7 @@ import {
 } from "../../redis/analytics-cache";
 import { getOrgFinanceSettings } from "../../controllers/finance-overview-controller";
 import { buildRateSql } from "../../shared/finance-rate";
+import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
 
 export type BudgetAlert = "high" | "watch" | "ok" | "none";
 
@@ -301,8 +302,9 @@ export function buildBudgetTrackingCsv(result: BudgetTrackingResult): string {
 }
 
 function csvEscape(value: string): string {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  const text = sanitizeCsvFormulaValue(value);
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
   }
-  return value;
+  return text;
 }

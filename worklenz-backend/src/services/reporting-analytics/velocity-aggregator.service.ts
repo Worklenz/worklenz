@@ -1,7 +1,7 @@
 import db from "../../config/db";
 import { buildSprintScopeTasksFrom } from "../../shared/sprint-report-scope";
 import { log_error } from "../../shared/utils";
-import { invalidateAnalyticsCache } from "../../redis/analytics-cache";
+import { invalidateAnalyticsCachePrefix } from "../../redis/analytics-cache";
 
 export type VelocityBucketKind = "sprint" | "phase" | "mixed";
 
@@ -222,7 +222,8 @@ export async function upsertVelocityForSprint(
     ]
   );
 
-  await invalidateAnalyticsCache("velocity", phase.team_id);
+  // Series keys are analytics:velocity:{teamId}:{filterHash} — wipe the prefix.
+  await invalidateAnalyticsCachePrefix("velocity", phase.team_id);
 }
 
 /** Fire-and-forget wrapper for sprint-complete hook. */

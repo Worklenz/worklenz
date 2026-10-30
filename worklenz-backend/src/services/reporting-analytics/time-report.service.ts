@@ -5,6 +5,7 @@ import {
   setAnalyticsCache,
   withLastUpdated,
 } from "../../redis/analytics-cache";
+import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
 import { getColor } from "../../shared/utils";
 
 export interface TimeReportFilters {
@@ -194,7 +195,7 @@ export async function getTimeReportSeries(
       : `AND FALSE`;
 
   /**
-   * Member Ã— project rows:
+   * Member × project rows:
    * - logged / billable from task_work_log in the selected date range
    * - estimated from assigned tasks' total_minutes (planned effort)
    */
@@ -373,8 +374,9 @@ export function buildTimeReportCsv(result: TimeReportResult): string {
 }
 
 function csvEscape(value: string): string {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  const text = sanitizeCsvFormulaValue(value);
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
   }
-  return value;
+  return text;
 }

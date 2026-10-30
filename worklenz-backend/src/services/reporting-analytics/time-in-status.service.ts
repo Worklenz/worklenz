@@ -5,6 +5,7 @@ import {
   setAnalyticsCache,
   withLastUpdated,
 } from "../../redis/analytics-cache";
+import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
 
 export type TimeInStatusViewMode = "aggregate" | "per_issue";
 export type TimeInStatusDateMode = "entered" | "exited" | "overlapping";
@@ -37,7 +38,7 @@ export interface TimeInStatusFilters {
   /** Cap for per-issue rows returned in JSON (CSV can request higher via limit). */
   limit: number;
   offset: number;
-  /** No explicit projects → roll durations into To do / Doing / Done. */
+  /** No explicit projects ? roll durations into To do / Doing / Done. */
   rollupByCategory: boolean;
 }
 
@@ -140,7 +141,7 @@ const CATEGORY_STATUS_META: TimeInStatusStatusMeta[] = [
   },
 ];
 
-/** Hard cap when user picks projects — detail statuses freeze with too many. */
+/** Hard cap when user picks projects � detail statuses freeze with too many. */
 const MAX_TIS_PROJECTS = 20;
 /** Soft cap for all-projects category rollup. */
 const MAX_TIS_CATEGORY_PROJECTS = 200;
@@ -229,7 +230,7 @@ export function parseTimeInStatusFilters(
   const defaults = defaultDateRange();
   const allowed = new Set(accessibleProjectIds);
   const requested = parseCsvIds(query.project_ids).filter(id => allowed.has(id));
-  // No explicit projects → all accessible, rolled into To do / In progress / Done.
+  // No explicit projects ? all accessible, rolled into To do / In progress / Done.
   const rollupByCategory = requested.length === 0;
   let projectIds = rollupByCategory ? [...accessibleProjectIds] : requested;
 
@@ -290,7 +291,7 @@ export function parseTimeInStatusFilters(
 /**
  * Duration in days between start/end.
  * OQ-9: calendar 24/7 by default; when excludeWeekends, drop Sat/Sun portions
- * (full weekday hours still count — not a 9–5 business-hours clip).
+ * (full weekday hours still count � not a 9�5 business-hours clip).
  */
 export function durationDays(
   enteredAt: Date,
@@ -320,7 +321,7 @@ export function durationDays(
     );
     const nextDay = new Date(dayStart.getTime() + MS_PER_DAY);
     const segmentEnd = new Date(Math.min(nextDay.getTime(), exitedAt.getTime()));
-    const day = cursor.getUTCDay(); // 0 Sun … 6 Sat
+    const day = cursor.getUTCDay(); // 0 Sun � 6 Sat
     if (day !== 0 && day !== 6) {
       totalMs += segmentEnd.getTime() - cursor.getTime();
     }
@@ -943,11 +944,11 @@ export async function getTimeInStatusSeries(
 
   let statuses: TimeInStatusStatusMeta[];
   if (filters.rollupByCategory) {
-    // No project selected → counts from all accessible projects, rolled into 3 categories.
+    // No project selected ? counts from all accessible projects, rolled into 3 categories.
     visits = remapVisitsToCategories(visits);
     statuses = CATEGORY_STATUS_META.map(s => ({ ...s }));
   } else {
-    // Project(s) selected → full status list for those projects (zeros included).
+    // Project(s) selected ? full status list for those projects (zeros included).
     const loaded = await loadProjectStatuses(filters.projectIds, filters.statusIds);
     if (filters.projectIds.length > 1) {
       const collapsed = collapseStatusesByName(
@@ -962,7 +963,7 @@ export async function getTimeInStatusSeries(
 
   const aggregateSort =
     filters.viewMode === "aggregate" ? filters.sort : "avg_desc";
-  // Category mode keeps To do → Doing → Done order instead of avg sort.
+  // Category mode keeps To do ? Doing ? Done order instead of avg sort.
   const aggregate = buildAggregate(
     visits,
     statuses,
@@ -1021,7 +1022,7 @@ export async function getTimeInStatusSeries(
 
 function csvEscape(value: string | number | boolean | null | undefined): string {
   if (value === null || value === undefined) return "";
-  const s = String(value);
+  const s = sanitizeCsvFormulaValue(String(value));
   if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }

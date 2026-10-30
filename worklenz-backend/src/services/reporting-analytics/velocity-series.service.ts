@@ -245,7 +245,7 @@ export async function getVelocitySeries(
 ): Promise<VelocitySeriesResult> {
   const bucket = await resolveVelocityBucket(filters.projectIds);
 
-  if (filters.projectIds.length === 0 && filters.viewBy !== "team") {
+  if (filters.projectIds.length === 0) {
     return withLastUpdated({
       series: [],
       average_line: [],
@@ -293,14 +293,40 @@ export async function getVelocitySeries(
     return `$${params.length}`;
   };
 
-  const teamScopeIds =
+  const projectTeamsResult = await db.query(
+    `SELECT DISTINCT team_id::TEXT AS team_id FROM projects WHERE id = ANY($1::UUID[])`,
+    [filters.projectIds]
+  );
+  const accessibleTeamIds = new Set<string>([
+    filters.sessionTeamId,
+    ...projectTeamsResult.rows.map((row: { team_id: string }) => row.team_id),
+  ]);
+  const requestedTeams =
     filters.teamIds.length > 0 ? filters.teamIds : [filters.sessionTeamId];
+  const teamScopeIds = requestedTeams.filter(id => accessibleTeamIds.has(id));
+  if (teamScopeIds.length === 0) {
+    return withLastUpdated({
+      series: [],
+      average_line: [],
+      trend_line: null,
+      kpis: {
+        avg_velocity: 0,
+        last_sprint_velocity: null,
+        commitment_accuracy_pct: null,
+        completed_sprint_count: 0,
+      },
+      meta: {
+        min_sprints_met: false,
+        view_by: filters.viewBy,
+        metric: filters.metric,
+        avg_window: filters.avgWindow,
+        bucket,
+      },
+    });
+  }
 
   let where = `vsc.team_id = ANY(${push(teamScopeIds)}::UUID[])`;
-
-  if (filters.projectIds.length > 0) {
-    where += ` AND vsc.project_id = ANY(${push(filters.projectIds)}::UUID[])`;
-  }
+  where += ` AND vsc.project_id = ANY(${push(filters.projectIds)}::UUID[])`;
 
   // Date range applies to completed software sprints only. General-project phases
   // are structural buckets (like sprints), so include all phases with task activity.

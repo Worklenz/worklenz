@@ -55,6 +55,29 @@ export async function invalidateAnalyticsCache(
   }
 }
 
+/**
+ * Delete all analytics cache entries under a prefix (e.g. velocity series hashes
+ * for a team). Uses SCAN so it stays safe on large Redis instances.
+ */
+export async function invalidateAnalyticsCachePrefix(
+  ...parts: Array<string | number | undefined | null>
+): Promise<void> {
+  try {
+    if (!redisClient?.isOpen) return;
+    const prefix = `${keyFor(parts)}:`;
+    let cursor = 0;
+    do {
+      const reply = await redisClient.scan(cursor, { MATCH: `${prefix}*`, COUNT: 100 });
+      cursor = reply.cursor;
+      if (reply.keys.length > 0) {
+        await redisClient.del(reply.keys);
+      }
+    } while (cursor !== 0);
+  } catch {
+    // ignore
+  }
+}
+
 /** Standard last-updated envelope for analytics API responses. */
 export function withLastUpdated<T extends object>(
   body: T,

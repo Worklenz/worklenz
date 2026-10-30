@@ -3,7 +3,7 @@ import moment from "moment";
 
 import {
   expandAccessibleProjects,
-  parseTeamIdsFromInput,
+  parseAccessibleTeamIdsFromInput,
 } from "../../shared/analytics-expand-projects";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
@@ -40,7 +40,7 @@ export default class VelocityController extends WorklenzControllerBase {
       userId,
       teamId,
       base,
-      parseTeamIdsFromInput(query)
+      await parseAccessibleTeamIdsFromInput(userId, teamId, query)
     );
     const filters = parseVelocityFilters(query, accessible, teamId);
 
@@ -68,7 +68,7 @@ export default class VelocityController extends WorklenzControllerBase {
       userId,
       teamId,
       base,
-      parseTeamIdsFromInput(merged)
+      await parseAccessibleTeamIdsFromInput(userId, teamId, merged)
     );
     const filters = parseVelocityFilters(merged, accessible, teamId);
 

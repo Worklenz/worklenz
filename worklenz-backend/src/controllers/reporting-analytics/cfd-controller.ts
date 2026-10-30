@@ -2,7 +2,7 @@ import moment from "moment";
 
 import {
   expandAccessibleProjects,
-  parseTeamIdsFromInput,
+  parseAccessibleTeamIdsFromInput,
 } from "../../shared/analytics-expand-projects";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
@@ -38,7 +38,7 @@ export default class CfdController extends WorklenzControllerBase {
       userId,
       teamId,
       base,
-      parseTeamIdsFromInput(query)
+      await parseAccessibleTeamIdsFromInput(userId, teamId, query)
     );
     const filters = parseCfdFilters(query, accessible, teamId);
     const data = await getCfdSeries(filters);
@@ -65,7 +65,7 @@ export default class CfdController extends WorklenzControllerBase {
       userId,
       teamId,
       base,
-      parseTeamIdsFromInput(merged)
+      await parseAccessibleTeamIdsFromInput(userId, teamId, merged)
     );
     const filters = parseCfdFilters(merged, accessible, teamId);
     const data = await getCfdSeries(filters);

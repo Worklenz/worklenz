@@ -5,6 +5,7 @@ import {
   setAnalyticsCache,
   withLastUpdated,
 } from "../../redis/analytics-cache";
+import { STATUS_HISTORY_RETENTION_MONTHS } from "../../shared/reporting-analytics.constants";
 import { backfillRange, captureTodaySnapshots } from "./cfd-snapshot.service";
 
 export type CfdGroupBy = "all" | "epic" | "label" | "assignee";
@@ -175,12 +176,23 @@ function defaultDateRange(): { from: string; to: string } {
   };
 }
 
-function toDateOnly(value: string | null | undefined, fallback: string): string {
+function toDateOnly(value: string | null | undefined, fallback: string): string | null {
   if (!value) return fallback;
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) {
-    return value.slice(0, 10) || fallback;
+  // Accept YYYY-MM-DD or ISO timestamps; reject anything else before DB casts.
+  const dateOnly = value.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(value)
+    ? value.slice(0, 10)
+    : null;
+  if (!dateOnly) return null;
+  const d = new Date(`${dateOnly}T00:00:00.000Z`);
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== dateOnly) {
+    return null;
   }
+  return dateOnly;
+}
+
+function retentionFloorDate(): string {
+  const d = new Date();
+  d.setUTCMonth(d.getUTCMonth() - STATUS_HISTORY_RETENTION_MONTHS);
   return d.toISOString().slice(0, 10);
 }
 
@@ -231,17 +243,31 @@ export function parseCfdFilters(
   const smoothRaw = String(query.smoothing ?? "raw");
   const smoothing: CfdSmoothing = smoothRaw === "rolling_7" ? "rolling_7" : "raw";
 
+  const hasFrom = typeof query.date_from === "string" && !!query.date_from.trim();
+  const hasTo = typeof query.date_to === "string" && !!query.date_to.trim();
+  const parsedFrom = hasFrom
+    ? toDateOnly(query.date_from as string, defaults.from)
+    : defaults.from;
+  const parsedTo = hasTo
+    ? toDateOnly(query.date_to as string, defaults.to)
+    : defaults.to;
+
+  if (parsedFrom === null || parsedTo === null) {
+    throw new Error("Invalid date_from or date_to");
+  }
+  if (parsedFrom > parsedTo) {
+    throw new Error("date_from must be on or before date_to");
+  }
+
+  const floor = retentionFloorDate();
+  const dateFrom = parsedFrom < floor ? floor : parsedFrom;
+  const dateTo = parsedTo;
+
   return {
     projectIds,
     statusIds: parseCsvIds(query.status_ids),
-    dateFrom: toDateOnly(
-      typeof query.date_from === "string" ? query.date_from : null,
-      defaults.from
-    ),
-    dateTo: toDateOnly(
-      typeof query.date_to === "string" ? query.date_to : null,
-      defaults.to
-    ),
+    dateFrom,
+    dateTo,
     groupBy,
     smoothing,
     wipThresholds: parseWipThresholds(query.wip_thresholds),

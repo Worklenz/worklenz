@@ -111,7 +111,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
   const pendingQueryTemplateId = useRef<string | null>(
     customTemplateId ?? searchParams.get('template')
   );
-  /** Velocity chart is project-wise — require an explicit project before loading. */
+  /** Velocity chart is project-wise â€” require an explicit project before loading. */
   const hasProjectSelection = selectedProjectIds.length > 0;
 
   // Switching between Custom reports remounts filters for the new template id.
@@ -383,7 +383,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
           t('kpiAvgVelocity', { defaultValue: 'Avg velocity' }) +
             `: ${data.kpis.avg_velocity}  |  ` +
             t('kpiCommitment', { defaultValue: 'Commitment accuracy' }) +
-            `: ${data.kpis.commitment_accuracy_pct ?? '?'}%`,
+            `: ${data.kpis.commitment_accuracy_pct ?? '\u2014'}%`,
           40,
           60
         );

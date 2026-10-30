@@ -1,6 +1,6 @@
 import {
   expandAccessibleProjects,
-  parseTeamIdsFromInput,
+  parseAccessibleTeamIdsFromInput,
 } from "../../shared/analytics-expand-projects";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
@@ -31,7 +31,7 @@ export default class PlannedVsActualMilestonesController extends WorklenzControl
 
     const analyticsReq = req as AnalyticsRequest;
     const baseIds = analyticsReq.analyticsAccessibleProjectIds ?? [];
-    const teamIds = parseTeamIdsFromInput(req.query as Record<string, unknown>);
+    const teamIds = await parseAccessibleTeamIdsFromInput(userId, teamId, req.query as Record<string, unknown>);
     const accessible = await expandAccessibleProjects(userId, teamId, baseIds, teamIds);
     const filters = parsePlannedVsActualMilestonesFilters(
       req.query as Record<string, unknown>,
@@ -57,7 +57,7 @@ export default class PlannedVsActualMilestonesController extends WorklenzControl
     const body = (req.body || {}) as Record<string, unknown>;
     const analyticsReq = req as AnalyticsRequest;
     const baseIds = analyticsReq.analyticsAccessibleProjectIds ?? [];
-    const teamIds = parseTeamIdsFromInput(body);
+    const teamIds = await parseAccessibleTeamIdsFromInput(userId, teamId, body);
     const accessible = await expandAccessibleProjects(userId, teamId, baseIds, teamIds);
     const filters = parsePlannedVsActualMilestonesFilters(body, accessible, teamId);
 

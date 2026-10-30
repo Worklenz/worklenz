@@ -45,6 +45,11 @@ export const useAnalyticsReportTemplates = ({
   onApplyRef.current = onApply;
   getFiltersRef.current = getFilters;
 
+  const searchParamsRef = useRef(searchParams);
+  searchParamsRef.current = searchParams;
+  const setSearchParamsRef = useRef(setSearchParams);
+  setSearchParamsRef.current = setSearchParams;
+
   const loadTemplates = useCallback(async () => {
     try {
       const res = await analyticsTemplatesApiService.listTemplates(reportKind);
@@ -52,16 +57,15 @@ export const useAnalyticsReportTemplates = ({
 
       setTemplates(res.body);
 
-      // Refresh hub/sidebar Custom reports from all kinds (best-effort).
+      // Refresh hub/sidebar Custom reports from all kinds only when that list succeeds.
+      // Do not overwrite the cache with a single-kind list on failure.
       try {
         const all = await analyticsTemplatesApiService.listTemplates('all');
         if (all.done && Array.isArray(all.body)) {
           syncTemplatesToCustomReports(all.body);
-        } else {
-          syncTemplatesToCustomReports(res.body);
         }
       } catch {
-        syncTemplatesToCustomReports(res.body);
+        // preserve cached reports from other kinds
       }
 
       const targetId = pendingTemplateId.current;
@@ -72,8 +76,8 @@ export const useAnalyticsReportTemplates = ({
           appliedQueryTemplate.current = targetId;
           pendingTemplateId.current = null;
           appliedDefaultTemplate.current = true;
-          if (!isCustomTemplateView && searchParams.get('template')) {
-            setSearchParams(
+          if (!isCustomTemplateView && searchParamsRef.current.get('template')) {
+            setSearchParamsRef.current(
               prev => {
                 const next = new URLSearchParams(prev);
                 next.delete('template');
@@ -94,7 +98,7 @@ export const useAnalyticsReportTemplates = ({
     } catch {
       // templates optional
     }
-  }, [reportKind, isCustomTemplateView, searchParams, setSearchParams]);
+  }, [reportKind, isCustomTemplateView]);
 
   useEffect(() => {
     void loadTemplates();

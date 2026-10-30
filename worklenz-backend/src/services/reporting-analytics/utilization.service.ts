@@ -5,6 +5,7 @@ import {
   setAnalyticsCache,
   withLastUpdated,
 } from "../../redis/analytics-cache";
+import { sanitizeCsvFormulaValue } from "../../shared/csv-utils";
 import { getColor } from "../../shared/utils";
 
 export type UtilizationStatus = "over" | "optimal" | "under";
@@ -24,7 +25,7 @@ export interface UtilizationMemberRow {
   avatar_url: string | null;
   color_code: string;
   role_name: string | null;
-  /** Working hours for the selected period (org schedule Ã— hours/day). */
+  /** Working hours for the selected period (org schedule × hours/day). */
   capacity_hours: number;
   /** Time logged against selected projects in the period. */
   logged_hours: number;
@@ -166,7 +167,8 @@ export async function getUtilizationSeries(
     date_to: filters.dateTo,
   };
 
-  if (filters.projectIds.length === 0 && filters.teamIds.length === 0) {
+  // Empty accessible projects must not be bypassed by a non-empty teamIds filter alone.
+  if (filters.projectIds.length === 0) {
     return withLastUpdated({
       members: [],
       kpis: EMPTY_KPIS,
@@ -180,8 +182,24 @@ export async function getUtilizationSeries(
     return withLastUpdated(cached.data, cached.lastUpdatedAt);
   }
 
-  const teamIds =
+  const projectTeamsResult = await db.query(
+    `SELECT DISTINCT team_id::TEXT AS team_id FROM projects WHERE id = ANY($1::UUID[])`,
+    [filters.projectIds]
+  );
+  const projectTeamIds = new Set<string>([
+    filters.sessionTeamId,
+    ...projectTeamsResult.rows.map((row: { team_id: string }) => row.team_id),
+  ]);
+  const requestedTeams =
     filters.teamIds.length > 0 ? filters.teamIds : [filters.sessionTeamId];
+  const teamIds = requestedTeams.filter(id => projectTeamIds.has(id));
+  if (teamIds.length === 0) {
+    return withLastUpdated({
+      members: [],
+      kpis: EMPTY_KPIS,
+      meta: emptyMeta,
+    });
+  }
 
   const orgResult = await db.query(
     `
@@ -244,7 +262,7 @@ export async function getUtilizationSeries(
 
   const workingDays = Number(workingDaysResult.rows[0]?.working_days) || 0;
   const hoursPerDay = Number(org.hours_per_day) || 8;
-  // Capacity = working hours for the period (org working days Ã— hours/day).
+  // Capacity = working hours for the period (org working days × hours/day).
   const capacityHours = workingDays * hoursPerDay;
 
   const params: unknown[] = [
@@ -379,8 +397,9 @@ export function buildUtilizationCsv(result: UtilizationResult): string {
 }
 
 function csvEscape(value: string): string {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  const text = sanitizeCsvFormulaValue(value);
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
   }
-  return value;
+  return text;
 }
