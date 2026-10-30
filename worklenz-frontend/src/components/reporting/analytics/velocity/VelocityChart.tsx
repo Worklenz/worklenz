@@ -21,6 +21,10 @@ import {
   getBaseChartOptions,
   getChartTheme,
 } from '@/components/projects/reports/report-utils';
+import {
+  chartToPngDataUrl,
+  chartToSvgMarkup,
+} from '@/lib/reporting/chart-export';
 import { InChartEmptyState } from '../states/ReportStateViews';
 import type {
   VelocityBucket,
@@ -73,23 +77,13 @@ export const VelocityChart = forwardRef<VelocityChartHandle, VelocityChartProps>
     const chartRef = useRef<ChartJS<'bar'>>(null);
 
     useImperativeHandle(ref, () => ({
-      toPngDataUrl: () => {
-        const chart = chartRef.current;
-        if (!chart) return null;
-        return chart.toBase64Image('image/png', 1);
-      },
-      toSvgMarkup: () => {
-        const chart = chartRef.current;
-        if (!chart) return null;
-        const png = chart.toBase64Image('image/png', 1);
-        const width = chart.width || 800;
-        const height = chart.height || 400;
-        return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-  <title>${t('velocity', { defaultValue: 'Velocity' })}</title>
-  <image href="${png}" width="${width}" height="${height}" />
-</svg>`;
-      },
+          toPngDataUrl: () => chartToPngDataUrl(chartRef.current, token.colorBgContainer),
+    toSvgMarkup: () =>
+      chartToSvgMarkup(
+        chartRef.current,
+        t('velocity', { defaultValue: 'Velocity' }),
+        token.colorBgContainer
+      ),
     }));
 
     const chartData = useMemo((): ChartData<'bar'> => {
