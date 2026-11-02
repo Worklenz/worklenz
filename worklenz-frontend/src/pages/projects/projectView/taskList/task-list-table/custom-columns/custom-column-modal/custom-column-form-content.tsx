@@ -48,11 +48,11 @@ import { PhaseColorCodes } from '@/shared/constants';
 import { selectCustomColumns } from '@/features/task-management/task-management.selectors';
 import { ITaskCustomColumn } from '@/types/tasks/task.types';
 import {
-  findParentColumn,
   getEligibleParentColumns,
   parseDependsOnTypeValue,
   toDependsOnTypeValue,
 } from '@/utils/cascading-selection';
+import { getCustomColumnTypeDependentNames } from '@/utils/custom-column-type-dependencies';
 import { getTaskCustomFieldDisplayName } from '@/utils/task-custom-columns';
 import CustomColumnHeader from '../custom-column-header/custom-column-header';
 import { nanoid } from '@reduxjs/toolkit';
@@ -130,16 +130,10 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     ? customColumnId || openedColumn?.uuid || null
     : null;
   const dependentColumnNames = useMemo(
-    () =>
-      editingColumnUuid
-        ? (projectCustomColumns || [])
-            .filter(
-              column =>
-                findParentColumn(column, projectCustomColumns || [])?.id === editingColumnUuid
-            )
-            .map(getTaskCustomFieldDisplayName)
-        : [],
-    [projectCustomColumns, editingColumnUuid]
+    () => getCustomColumnTypeDependentNames(
+      projectCustomColumns || [], editingColumnUuid, openedColumn?.key
+    ),
+    [projectCustomColumns, editingColumnUuid, openedColumn?.key]
   );
   const hasDependentColumns = dependentColumnNames.length > 0;
   const isTypeChangeApplicable = !hasDependentColumns;

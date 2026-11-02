@@ -14,6 +14,9 @@ import {
 } from "../services/cascading-selection-service";
 
 const CUSTOM_FIELD_LIMIT = LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
+const CUSTOM_FIELD_TYPES = new Set([
+  "people", "text", "number", "date", "selection", "checkbox", "labels", "key", "formula",
+]);
 
 // Shared by every query that returns a column with its options. Expects aliases cc / cf.
 const SELECTIONS_LIST_SQL = `
@@ -389,6 +392,12 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const { name, field_type, width, is_visible, configuration, lock_field_type } = req.body;
+    if (field_type !== undefined && field_type !== null &&
+        (typeof field_type !== "string" || !CUSTOM_FIELD_TYPES.has(field_type))) {
+      return res.status(400).send(new ServerResponse(
+        false, { error_code: "INVALID_CUSTOM_COLUMN_TYPE" }, "Choose a supported custom column type."
+      ));
+    }
     const parsedWidth = Number.parseInt(String(width), 10);
     const columnWidth = Number.isFinite(parsedWidth) ? parsedWidth : 120;
 
@@ -421,7 +430,7 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
       await client.query("BEGIN");
 
       const existingColumnResult = await client.query(
-        `SELECT cc.field_type, cc.type_locked, cc.project_id, cf.parent_column_id
+        `SELECT cc.field_type, cc.type_locked, cc.project_id, cc.key, cf.parent_column_id
            FROM cc_custom_columns cc
            LEFT JOIN cc_column_configurations cf ON cf.column_id = cc.id
           WHERE cc.id = $1
@@ -440,6 +449,29 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
 
       const resolvedFieldType =
         field_type && field_type !== existingFieldType ? field_type : existingFieldType;
+
+      // Formula operands must remain numeric. This becomes reachable now that existing
+      // column types are editable; clearing their values would otherwise break dependent formulas.
+      if (existingFieldType === "number" && resolvedFieldType !== "number") {
+        const formulas = await client.query(
+          `SELECT DISTINCT cc.name
+             FROM cc_custom_columns cc
+             JOIN cc_column_configurations cf ON cf.column_id = cc.id
+            WHERE cc.project_id = $1 AND cc.field_type = 'formula'
+              AND (cf.first_numeric_column_key = $2 OR cf.second_numeric_column_key = $2)
+            ORDER BY cc.name`,
+          [existingColumnResult.rows[0].project_id, existingColumnResult.rows[0].key]
+        );
+        if (formulas.rows.length > 0) {
+          await client.query("ROLLBACK");
+          const dependentNames = formulas.rows.map((row: { name: string }) => row.name);
+          return res.status(400).send(new ServerResponse(
+            false,
+            { error_code: "CUSTOM_COLUMN_HAS_FORMULA_DEPENDENTS", dependent_fields: dependentNames },
+            `${dependentNames.join(", ")} depends on this field, so it must stay a Number field.`
+          ));
+        }
+      }
 
       // Callers that only rename the column omit parent_column_id; keep the saved parent then.
       const existingParentColumnId: string | null =
