@@ -31,6 +31,12 @@ describe('resolveReachedEvent', () => {
     expect(resolveReachedEvent(state({ activeBranches: 1, mergedPullRequests: 1, openPullRequests: 0 }))).toBe('pr_merged');
   });
 
+  it('does not reach pr_merged while a draft PR remains open', () => {
+    expect(
+      resolveReachedEvent(state({ mergedPullRequests: 1, draftPullRequests: 1, openPullRequests: 0 }))
+    ).toBe('branch_created');
+  });
+
   it('reaches pr_opened if open PRs remain even if another PR was merged', () => {
     expect(resolveReachedEvent(state({ activeBranches: 1, mergedPullRequests: 1, openPullRequests: 1 }))).toBe('pr_opened');
   });

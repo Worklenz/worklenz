@@ -36,8 +36,9 @@ export function resolveReachedEvent(state: ITaskGitState): GithubTransitionEvent
       : 0);
 
   if (state.openPullRequests > 0) return "pr_opened";
+  if (state.draftPullRequests > 0) return "branch_created";
   if (mergedCount > 0) return "pr_merged";
-  if (state.activeBranches > 0 || state.draftPullRequests > 0) return "branch_created";
+  if (state.activeBranches > 0) return "branch_created";
   return null;
 }
 
