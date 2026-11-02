@@ -65,12 +65,20 @@ const SwitchTeamButton = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<InputRef>(null);
 
-  // Selectors
-  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
-  const themeMode = useAppSelector(state => state.themeReducer.mode);
   const organizationLogo = useAppSelector(
     (state: RootState) => state.adminCenterReducer.organization?.logo_url
   );
+
+  useEffect(() => {
+    // Guard: only dispatch fetchTeams if not already pending, to avoid
+    // duplicate dispatches when mutation handlers (e.g. OrganizationLogo
+    // upload/delete) already trigger fetchTeams. Preserve refreshes for
+    // logo changes that do not already trigger one.
+    const { loading } = useAppSelector(state => state.teamReducer);
+    if (organizationLogo && !loading) {
+      dispatch(fetchTeams());
+    }
+  }, [organizationLogo]);
 
   const filteredTeams = useMemo(() => {
     const list = teamsList ?? [];
@@ -79,10 +87,6 @@ const SwitchTeamButton = () => {
 
     return list.filter(team => team.name?.toLowerCase().includes(query));
   }, [teamsList, searchQuery]);
-
-  useEffect(() => {
-    dispatch(fetchTeams());
-  }, [dispatch, organizationLogo]);
 
   // Focus the search field once the dropdown overlay has mounted. An effect
   // (rather than a setTimeout in the open handler) runs after commit, so the

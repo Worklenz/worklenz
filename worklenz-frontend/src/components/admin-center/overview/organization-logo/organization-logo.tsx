@@ -49,6 +49,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   const { trackAppSumoEvent } = useAppSumoTracking();
   const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [logoVersion, setLogoVersion] = useState(0);
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(
     null
   );
@@ -60,8 +61,10 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   useEffect(() => {
     if (organization?.logo_url) {
       setPreviewUrl(organization.logo_url);
+      setLogoVersion(Date.now());
     } else {
       setPreviewUrl(null);
+      setLogoVersion(0);
     }
   }, [organization?.logo_url]);
 
@@ -163,7 +166,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
 
       if (res.done) {
         const newLogoUrl = res.body?.logo_url || null;
-        setPreviewUrl(newLogoUrl);
+        setPreviewUrl(newLogoUrl || null);
         dispatch(setOrganizationLogo(newLogoUrl));
         dispatch(fetchTeams());
         refetch();
@@ -324,7 +327,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
 
       {previewUrl ? (
         <img
-          src={previewUrl}
+          src={`${previewUrl}?t=${logoVersion}`}
           alt={t('logoAltText')}
           style={{
             maxWidth: '100%',
