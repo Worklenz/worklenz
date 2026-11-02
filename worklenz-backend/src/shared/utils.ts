@@ -256,35 +256,18 @@ export function escapeHtmlEntities(value: string): string {
 
 /**
  * Sanitizes plain text fields (like user/project/task names) to prevent XSS attacks.
- * Strips all HTML tags but does NOT leave HTML entities in the stored value.
- * Escaping must happen only when the value is rendered into HTML.
+ * Strips all HTML tags and preserves sanitize-html's escaping of text content.
  *
  * @param value - The plain text to sanitize
- * @returns Sanitized plain text with HTML removed (entities decoded)
+ * @returns Sanitized plain text with HTML removed and HTML-sensitive characters escaped
  */
 export function sanitizePlainText(value: string): string {
   if (!value) return "";
 
-  // Strip tags only
-  const stripped = sanitizeHtml(value, {
+  return sanitizeHtml(value, {
     allowedTags: [],
     allowedAttributes: {},
-  });
-
-  // Decode any entities that sanitize-html may have introduced
-  return decodeHtmlEntities(stripped).trim();
-}
-
-/** Decode common HTML entities that sanitize-html introduces when stripping tags */
-function decodeHtmlEntities(text: string): string {
-  if (!text) return text;
-  return text
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#x27;/g, "'")
-    .replace(/&#39;/g, "'");
+  }).trim();
 }
 
 /**
@@ -560,4 +543,3 @@ export function calculateNextEndDates(schedule: IRecurringSchedule, lastEndDate:
 export function megabytesToBytes(megabytes: number): number {
   return megabytes * 1024 * 1024; // 1 MB = 1024 KB = 1024 * 1024 bytes
 }
-
