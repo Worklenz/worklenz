@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const open = vi.fn();
-let capturedOptions: { eventCallback?: (event: unknown) => void; token?: string; environment?: string } | undefined;
+const close = vi.fn();
+let capturedOptions:
+  { eventCallback?: (event: unknown) => void; token?: string; environment?: string } | undefined;
 const initializePaddle = vi.fn(async (options: typeof capturedOptions) => {
   capturedOptions = options;
-  return { Checkout: { open } };
+  return { Checkout: { open, close } };
 });
 
-vi.mock('@paddle/paddle-js', () => ({ initializePaddle: (options: typeof capturedOptions) => initializePaddle(options) }));
+vi.mock('@paddle/paddle-js', () => ({
+  initializePaddle: (options: typeof capturedOptions) => initializePaddle(options),
+}));
 
 import {
   adaptPaddleBillingEvent,
@@ -28,8 +32,12 @@ const payload: IPaddleBillingCheckoutResponse = {
 
 describe('adaptPaddleBillingEvent', () => {
   it('maps the events the checkout flow uses', () => {
-    expect(adaptPaddleBillingEvent({ name: 'checkout.loaded' })).toEqual({ event: 'Checkout.Loaded' });
-    expect(adaptPaddleBillingEvent({ name: 'checkout.closed' })).toEqual({ event: 'Checkout.Close' });
+    expect(adaptPaddleBillingEvent({ name: 'checkout.loaded' })).toEqual({
+      event: 'Checkout.Loaded',
+    });
+    expect(adaptPaddleBillingEvent({ name: 'checkout.closed' })).toEqual({
+      event: 'Checkout.Close',
+    });
   });
 
   it('carries the price and total of a completed checkout', () => {
@@ -53,7 +61,10 @@ describe('adaptPaddleBillingEvent', () => {
 
   it('maps errors with their detail', () => {
     expect(
-      adaptPaddleBillingEvent({ name: 'checkout.error', data: { error: { detail: 'Card declined', code: 'declined' } } })
+      adaptPaddleBillingEvent({
+        name: 'checkout.error',
+        data: { error: { detail: 'Card declined', code: 'declined' } },
+      })
     ).toEqual({ event: 'Checkout.Error', error: { message: 'Card declined', code: 'declined' } });
   });
 
@@ -74,6 +85,7 @@ describe('isPaddleBillingCheckout', () => {
 describe('openPaddleBillingCheckout', () => {
   beforeEach(() => {
     open.mockClear();
+    close.mockClear();
     initializePaddle.mockClear();
   });
 
@@ -108,5 +120,17 @@ describe('openPaddleBillingCheckout', () => {
     capturedOptions?.eventCallback?.({ name: 'checkout.closed' });
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes on success exactly once and ignores the resulting closed event', async () => {
+    const onEvent = vi.fn();
+    close.mockImplementation(() => capturedOptions?.eventCallback?.({ name: 'checkout.closed' }));
+    await openPaddleBillingCheckout(payload, onEvent);
+    capturedOptions?.eventCallback?.({ name: 'checkout.completed' });
+    capturedOptions?.eventCallback?.({ name: 'checkout.completed' });
+    await Promise.resolve();
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(onEvent).toHaveBeenCalledTimes(1);
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ event: 'Checkout.Complete' }));
   });
 });
