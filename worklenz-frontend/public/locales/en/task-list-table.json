@@ -190,7 +190,16 @@
       "showInTaskList": "Show in task list",
       "createErrorMessage": "Failed to create custom column",
       "updateErrorMessage": "Failed to update custom column",
-      "typeCannotBeChanged": "Column type cannot be changed after creation."
+      "typeCannotBeChanged": "Column type cannot be changed after creation.",
+      "changeTypeConfirmTitle": "Change column type?",
+      "changeTypeConfirmDescription": "Changing the column type will delete all existing data in this column. This data cannot be reverted. Are you sure you want to change the column type?",
+      "changeTypeWarningTitle": "Data in this column will be deleted",
+      "changeTypeWarningDesc": "The data in the column will be deleted and cannot be reverted once saved. Please double check before updating.",
+      "changeTypeSaveConfirmTitle": "Confirm column type change",
+      "changeTypeSaveConfirmDescription": "All existing data in this column will be permanently deleted and cannot be reverted. Are you sure you want to proceed?",
+      "confirmChangeTypeButton": "Change type",
+      "saveAndChangeTypeButton": "Update and delete",
+      "updateAndDeleteButton": "Update and delete"
     },
     "fieldTypes": {
       "people": "People",
@@ -273,7 +282,8 @@
       "autoClearedParentEmpty": "{{field}} was cleared because {{parent}} was cleared.",
       "rejected": "Value not saved: {{reason}}",
       "parentValueRequired": "Select the parent field value first.",
-      "invalidPair": "That option is not valid for the current parent value."
+      "invalidPair": "That option is not valid for the current parent value.",
+      "hasDependentsTypeHint": "{{fields}} depends on this field, so its type cannot be changed."
     },
     "newColumn": "New Column",
     "projectNotFound": "Project not found",

@@ -190,7 +190,16 @@
       "showInTaskList": "Mostrar na lista de tarefas",
       "createErrorMessage": "Falha ao criar a coluna personalizada",
       "updateErrorMessage": "Falha ao atualizar a coluna personalizada",
-      "typeCannotBeChanged": "O tipo de coluna não pode ser alterado após a criação."
+      "typeCannotBeChanged": "O tipo de coluna não pode ser alterado após a criação.",
+      "changeTypeConfirmTitle": "Alterar tipo de coluna?",
+      "changeTypeConfirmDescription": "Alterar o tipo de coluna excluirá todos os dados existentes nesta coluna. Esses dados não podem ser revertidos. Tem certeza de que deseja alterar o tipo de coluna?",
+      "changeTypeWarningTitle": "Os dados nesta coluna serão excluídos",
+      "changeTypeWarningDesc": "Os dados da coluna serão excluídos e não poderão ser revertidos após salvar. Verifique novamente antes de atualizar.",
+      "changeTypeSaveConfirmTitle": "Confirmar alteração do tipo de coluna",
+      "changeTypeSaveConfirmDescription": "Todos os dados existentes nesta coluna serão excluídos permanentemente e não poderão ser revertidos. Tem certeza de que deseja continuar?",
+      "confirmChangeTypeButton": "Alterar tipo",
+      "saveAndChangeTypeButton": "Atualizar e excluir",
+      "updateAndDeleteButton": "Atualizar e excluir"
     },
     "fieldTypes": {
       "people": "Pessoas",
@@ -273,7 +282,8 @@
       "autoClearedParentEmpty": "{{field}} foi limpo porque {{parent}} foi limpo.",
       "rejected": "Valor não salvo: {{reason}}",
       "parentValueRequired": "Selecione primeiro o valor do campo pai.",
-      "invalidPair": "Essa opção não é válida para o valor pai atual."
+      "invalidPair": "Essa opção não é válida para o valor pai atual.",
+      "hasDependentsTypeHint": "{{fields}} depende deste campo, portanto seu tipo não pode ser alterado."
     },
     "newColumn": "Nova coluna",
     "projectNotFound": "Projeto não encontrado",

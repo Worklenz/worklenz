@@ -190,7 +190,16 @@
       "showInTaskList": "在任务列表中显示",
       "createErrorMessage": "创建自定义列失败",
       "updateErrorMessage": "更新自定义列失败",
-      "typeCannotBeChanged": "创建后无法更改列类型。"
+      "typeCannotBeChanged": "创建后无法更改列类型。",
+      "changeTypeConfirmTitle": "更改列类型？",
+      "changeTypeConfirmDescription": "更改列类型将删除该列中的所有现有数据。该数据无法恢复。您确定要更改列类型吗？",
+      "changeTypeWarningTitle": "此列中的数据将被删除",
+      "changeTypeWarningDesc": "该列中的数据将被删除，保存后将无法恢复。更新前请仔细核对。",
+      "changeTypeSaveConfirmTitle": "确认更改列类型",
+      "changeTypeSaveConfirmDescription": "此列中的所有现有数据将被永久删除且无法恢复。您确定要继续吗？",
+      "confirmChangeTypeButton": "更改类型",
+      "saveAndChangeTypeButton": "更新并删除",
+      "updateAndDeleteButton": "更新并删除"
     },
     "fieldTypes": {
       "people": "人员",
@@ -273,7 +282,8 @@
       "autoClearedParentEmpty": "{{field}} 已清除，因为 {{parent}} 被清除。",
       "rejected": "值未保存：{{reason}}",
       "parentValueRequired": "请先选择父字段的值。",
-      "invalidPair": "该选项对当前父值无效。"
+      "invalidPair": "该选项对当前父值无效。",
+      "hasDependentsTypeHint": "{{fields}} 依赖于此字段，因此无法更改其类型。"
     },
     "newColumn": "新列",
     "projectNotFound": "未找到项目",

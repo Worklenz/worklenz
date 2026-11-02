@@ -190,7 +190,16 @@
       "showInTaskList": "In der Aufgabenliste anzeigen",
       "createErrorMessage": "Fehler beim Erstellen der benutzerdefinierten Spalte",
       "updateErrorMessage": "Fehler beim Aktualisieren der benutzerdefinierten Spalte",
-      "typeCannotBeChanged": "Der Spaltentyp kann nach der Erstellung nicht geändert werden."
+      "typeCannotBeChanged": "Der Spaltentyp kann nach der Erstellung nicht geändert werden.",
+      "changeTypeConfirmTitle": "Spaltentyp ändern?",
+      "changeTypeConfirmDescription": "Durch das Ändern des Spaltentyps werden alle vorhandenen Daten in dieser Spalte gelöscht. Diese Daten können nicht rückgängig gemacht werden. Sind Sie sicher, dass Sie den Spaltentyp ändern möchten?",
+      "changeTypeWarningTitle": "Daten in dieser Spalte werden gelöscht",
+      "changeTypeWarningDesc": "Die Daten in dieser Spalte werden gelöscht und können nach dem Speichern nicht mehr wiederhergestellt werden. Bitte überprüfen Sie dies vor der Aktualisierung noch einmal.",
+      "changeTypeSaveConfirmTitle": "Änderung des Spaltentyps bestätigen",
+      "changeTypeSaveConfirmDescription": "Alle vorhandenen Daten in dieser Spalte werden dauerhaft gelöscht und können nicht wiederhergestellt werden. Möchten Sie wirklich fortfahren?",
+      "confirmChangeTypeButton": "Typ ändern",
+      "saveAndChangeTypeButton": "Aktualisieren und löschen",
+      "updateAndDeleteButton": "Aktualisieren und löschen"
     },
     "fieldTypes": {
       "people": "Personen",
@@ -273,7 +282,8 @@
       "autoClearedParentEmpty": "{{field}} wurde gelöscht, weil {{parent}} gelöscht wurde.",
       "rejected": "Wert nicht gespeichert: {{reason}}",
       "parentValueRequired": "Wählen Sie zuerst den Wert des übergeordneten Felds.",
-      "invalidPair": "Diese Option ist für den aktuellen übergeordneten Wert ungültig."
+      "invalidPair": "Diese Option ist für den aktuellen übergeordneten Wert ungültig.",
+      "hasDependentsTypeHint": "{{fields}} hängt von diesem Feld ab, daher kann sein Typ nicht geändert werden."
     },
     "newColumn": "Neue Spalte",
     "projectNotFound": "Projekt nicht gefunden",

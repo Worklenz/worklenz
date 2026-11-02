@@ -190,7 +190,16 @@
       "showInTaskList": "Afficher dans la liste des tâches",
       "createErrorMessage": "Échec de la création d'une colonne personnalisée",
       "updateErrorMessage": "Échec de la mise à jour de la colonne personnalisée",
-      "typeCannotBeChanged": "Le type de colonne ne peut pas être modifié après la création."
+      "typeCannotBeChanged": "Le type de colonne ne peut pas être modifié après la création.",
+      "changeTypeConfirmTitle": "Changer le type de colonne ?",
+      "changeTypeConfirmDescription": "Changer le type de colonne supprimera toutes les données existantes dans cette colonne. Ces données ne peuvent pas être récupérées. Êtes-vous sûr de vouloir modifier le type de colonne ?",
+      "changeTypeWarningTitle": "Les données de cette colonne seront supprimées",
+      "changeTypeWarningDesc": "Les données de la colonne seront supprimées et ne pourront pas être récupérées une fois enregistrées. Veuillez vérifier avant de mettre à jour.",
+      "changeTypeSaveConfirmTitle": "Confirmer le changement de type de colonne",
+      "changeTypeSaveConfirmDescription": "Toutes les données existantes dans cette colonne seront définitivement supprimées et ne pourront pas être récupérées. Êtes-vous sûr de vouloir continuer ?",
+      "confirmChangeTypeButton": "Changer le type",
+      "saveAndChangeTypeButton": "Mettre à jour et supprimer",
+      "updateAndDeleteButton": "Mettre à jour et supprimer"
     },
     "fieldTypes": {
       "people": "Les gens",
@@ -273,7 +282,8 @@
       "autoClearedParentEmpty": "{{field}} a été effacé parce que {{parent}} a été effacé.",
       "rejected": "Valeur non enregistrée : {{reason}}",
       "parentValueRequired": "Sélectionnez d'abord la valeur du champ parent.",
-      "invalidPair": "Cette option n'est pas valide pour la valeur parente actuelle."
+      "invalidPair": "Cette option n'est pas valide pour la valeur parente actuelle.",
+      "hasDependentsTypeHint": "{{fields}} dépend de ce champ, son type ne peut donc pas être modifié."
     },
     "newColumn": "Nouvelle colonne",
     "projectNotFound": "Projet non trouvé",
