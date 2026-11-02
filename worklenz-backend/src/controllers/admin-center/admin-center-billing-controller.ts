@@ -102,14 +102,16 @@ export default class AdminCenterBillingController extends WorklenzControllerBase
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const q = `SELECT subscription_payment_id,
-                      event_time::date,
-                      (next_bill_date::DATE - INTERVAL '1 day')::DATE AS next_bill_date,
+                      COALESCE(((to_jsonb(lpd)->>'billing_period_start')::TIMESTAMPTZ AT TIME ZONE 'UTC')::DATE,
+                               event_time::date) AS event_time,
+                      (COALESCE(((to_jsonb(lpd)->>'billing_period_end')::TIMESTAMPTZ AT TIME ZONE 'UTC')::DATE,
+                                next_bill_date::DATE) - INTERVAL '1 day')::DATE AS next_bill_date,
                       currency,
                       receipt_url,
                       payment_method,
                       status,
                       payment_status
-               FROM licensing_payment_details
+               FROM licensing_payment_details lpd
                WHERE user_id = $1
                ORDER BY created_at DESC;`;
     const result = await db.query(q, [req.user?.owner_id]);
@@ -122,8 +124,8 @@ export default class AdminCenterBillingController extends WorklenzControllerBase
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    // Billing does not populate Classic payment details. Infer its regular cycle from renewal
-    // and plan frequency until the Billing webhook persists current_billing_period explicitly.
+    // Prefer Paddle's exact period. JSON access keeps older deployments compatible until the
+    // license-manager migration adds period columns to these shared tables.
     const q = `SELECT (SELECT name FROM licensing_pricing_plans lpp WHERE id = lus.plan_id),
                       unit_price::numeric,
                       currency,
@@ -131,17 +133,19 @@ export default class AdminCenterBillingController extends WorklenzControllerBase
                       quantity,
                       unit_price::numeric * quantity                  AS amount,
                       CASE WHEN lus.billing_provider = 'paddle_billing' THEN
+                        COALESCE(((to_jsonb(lus)->>'billing_period_start')::TIMESTAMPTZ AT TIME ZONE 'UTC')::DATE,
                         (NULLIF(lus.next_bill_date, '')::DATE -
                           CASE (SELECT billing_type FROM licensing_pricing_plans WHERE id = lus.plan_id)
                             WHEN 'month' THEN INTERVAL '1 month'
                             WHEN 'year' THEN INTERVAL '1 year'
-                          END)::DATE
+                          END)::DATE)
                       ELSE (SELECT event_time
                        FROM licensing_payment_details lpd
                        WHERE lpd.user_id = lus.user_id
                        ORDER BY created_at DESC
                        LIMIT 1)::DATE END                             AS start_date,
-                      (NULLIF(next_bill_date, '')::DATE - INTERVAL '1 day')::DATE AS end_date
+                      (COALESCE(((to_jsonb(lus)->>'billing_period_end')::TIMESTAMPTZ AT TIME ZONE 'UTC')::DATE,
+                                NULLIF(next_bill_date, '')::DATE) - INTERVAL '1 day')::DATE AS end_date
                FROM licensing_user_subscriptions lus
                WHERE user_id = $1;`;
     const result = await db.query(q, [req.user?.owner_id]);
