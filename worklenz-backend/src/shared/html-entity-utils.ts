@@ -9,13 +9,15 @@ export function escapeHtmlEntities(value: string): string {
 
 export function decodeHtmlEntities(text: string): string {
   if (!text) return text;
-  return text
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#x27;/g, "'")
-    .replace(/&#39;/g, "'");
+  const entities: Record<string, string> = {
+    "&amp;": "&",
+    "&lt;": "<",
+    "&gt;": ">",
+    "&quot;": '"',
+    "&#x27;": "'",
+    "&#39;": "'",
+  };
+  return text.replace(/&(?:amp|lt|gt|quot|#x27|#39);/g, entity => entities[entity]);
 }
 
 export function getHtmlTextSearchVariants(value: string): string[] {

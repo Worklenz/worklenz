@@ -39,4 +39,17 @@ describe("shared pagination search", () => {
 
     expect(options.searchParams).toEqual(["%R&D%", "%R&amp;D%"]);
   });
+
+  it("decodes encoded entities only once", () => {
+    const options = PaginationTestController.getOptions(
+      { search: "&amp;lt;tag&amp;gt;", field: "null" },
+      "t.name",
+      1
+    );
+
+    expect(options.searchParams).toEqual([
+      "%&lt;tag&gt;%",
+      "%&amp;lt;tag&amp;gt;%",
+    ]);
+  });
 });
