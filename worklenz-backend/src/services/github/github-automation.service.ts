@@ -34,8 +34,7 @@ interface ITaskContext {
 async function loadGitState(taskId: string): Promise<ITaskGitState> {
   const result = await db.query(
     `SELECT
-       COALESCE(JSON_AGG(JSON_BUILD_OBJECT('merged', p.merged))
-         FILTER (WHERE l.link_type = 'pull_request' AND l.closes), '[]'::JSON) AS closing,
+       COUNT(*) FILTER (WHERE l.link_type = 'pull_request' AND p.merged)::INT AS merged_prs,
        COUNT(*) FILTER (WHERE l.link_type = 'pull_request' AND p.state = 'open' AND NOT p.is_draft)::INT AS open_prs,
        COUNT(*) FILTER (WHERE l.link_type = 'pull_request' AND p.state = 'open' AND p.is_draft)::INT AS draft_prs,
        COUNT(*) FILTER (WHERE l.link_type = 'branch' AND NOT b.is_deleted)::INT AS branches
@@ -47,10 +46,10 @@ async function loadGitState(taskId: string): Promise<ITaskGitState> {
   );
   const row = result.rows[0];
   return {
-    closingPullRequests: row.closing,
-    openPullRequests: row.open_prs,
-    draftPullRequests: row.draft_prs,
-    activeBranches: row.branches,
+    mergedPullRequests: row?.merged_prs ?? 0,
+    openPullRequests: row?.open_prs ?? 0,
+    draftPullRequests: row?.draft_prs ?? 0,
+    activeBranches: row?.branches ?? 0,
   };
 }
 
