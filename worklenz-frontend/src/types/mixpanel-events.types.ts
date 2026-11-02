@@ -102,6 +102,7 @@ export interface AppSumoEventProps extends BaseBillingEventProps {
 // Modal events
 export interface PricingModalEventProps extends BaseBillingEventProps {
   trigger_source: string;
+  source_page?: string;
   initial_plan_shown?: PlanType;
   initial_billing_frequency?: BillingFrequency;
   initial_team_size?: number;
@@ -198,20 +199,15 @@ export enum MixpanelBillingEvents {
   CHECKOUT_ABANDONED = 'checkout_abandoned',
 
   // Free plan events
-  FREE_PLAN_SELECTED = 'free_plan_selected',
   FREE_PLAN_SWITCH_COMPLETED = 'free_plan_switch_completed',
 
   // Billing page events
   BILLING_PAGE_VIEWED = 'billing_page_viewed',
   CURRENT_PLAN_VIEWED = 'current_plan_viewed',
-  STORAGE_USAGE_VIEWED = 'storage_usage_viewed',
-  INVOICES_VIEWED = 'invoices_viewed',
-  CHARGES_VIEWED = 'charges_viewed',
 
   // AppSumo events
   APPSUMO_DISCOUNT_VIEWED = 'appsumo_discount_viewed',
   APPSUMO_UPGRADE_INITIATED = 'appsumo_upgrade_initiated',
-  APPSUMO_PLAN_SELECTED = 'appsumo_plan_selected',
 
   // AppSumo promo popup/banner events
   APPSUMO_PROMO_POPUP_VIEWED = 'appsumo_promo_popup_viewed',
@@ -222,12 +218,9 @@ export enum MixpanelBillingEvents {
   // Business Plan Trial events
   BUSINESS_TRIAL_ELIGIBLE = 'business_trial_eligible',
   BUSINESS_TRIAL_OFFER_VIEWED = 'business_trial_offer_viewed',
-  BUSINESS_TRIAL_BANNER_CLICKED = 'business_trial_banner_clicked',
   BUSINESS_TRIAL_STARTED = 'business_trial_started',
   BUSINESS_TRIAL_STATUS_CHECKED = 'business_trial_status_checked',
   BUSINESS_TRIAL_UPGRADE_INITIATED = 'business_trial_upgrade_initiated',
-  BUSINESS_TRIAL_CONVERTED = 'business_trial_converted',
-  BUSINESS_TRIAL_EXPIRED = 'business_trial_expired',
   BUSINESS_TRIAL_DISMISSED = 'business_trial_dismissed',
 
   // Error events

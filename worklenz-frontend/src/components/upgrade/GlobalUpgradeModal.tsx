@@ -1,4 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
+import { MixpanelBillingEvents, PricingModalEventProps } from '@/types/mixpanel-events.types';
 import { Modal } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -18,7 +21,10 @@ import UpgradePlansLKR from '@/components/admin-center/billing/drawers/upgrade-p
 // plain UpgradePlans + zIndex 1000).
 const GlobalUpgradeModal: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isUpgradeModalOpen, billingInfo } = useAppSelector(state => state.adminCenterReducer);
+  const { isUpgradeModalOpen, upgradeModalVariant, billingInfo } = useAppSelector(
+    state => state.adminCenterReducer
+  );
+  const { trackMixpanelEvent } = useMixpanelTracking();
   const currentSession = useAuthService().getCurrentSession();
   const { isLkrUser, regionCheckComplete } = useRegionCheck();
 
@@ -29,10 +35,41 @@ const GlobalUpgradeModal: React.FC = () => {
 
   const modalWidth = isLkrUser ? 'fit-content' : isAppSumoUser ? 700 : 1400;
 
+  // Every entry point (navbar, billing page, invite dialogs, banners) opens this modal, so this is
+  // the one place that sees them all.
+  useEffect(() => {
+    if (!isUpgradeModalOpen) return;
+    const subscriptionType = currentSession?.subscription_type;
+    const props: PricingModalEventProps = {
+      user_type: isAppSumoUser
+        ? 'appsumo'
+        : subscriptionType === ISUBSCRIPTION_TYPE.TRIAL
+          ? 'trial'
+          : subscriptionType === ISUBSCRIPTION_TYPE.FREE
+            ? 'free'
+            : 'paid',
+      trigger_source: upgradeModalVariant,
+      current_plan: billingInfo?.plan_name,
+      is_appsumo_user: isAppSumoUser,
+      team_size: billingInfo?.total_used,
+      subscription_status: billingInfo?.status,
+      source_page: window.location.pathname,
+    };
+    trackMixpanelEvent(MixpanelBillingEvents.PRICING_MODAL_OPENED, props);
+    // Only when the modal opens, not on every billingInfo refresh while it is open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isUpgradeModalOpen]);
+
   return (
     <Modal
       open={isUpgradeModalOpen}
-      onCancel={() => dispatch(toggleUpgradeModal())}
+      onCancel={() => {
+        trackMixpanelEvent(MixpanelBillingEvents.PRICING_MODAL_CLOSED, {
+          trigger_source: upgradeModalVariant,
+          source_page: window.location.pathname,
+        });
+        dispatch(toggleUpgradeModal());
+      }}
       width={modalWidth}
       centered
       okButtonProps={{ hidden: true }}

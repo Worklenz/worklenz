@@ -20,7 +20,6 @@ import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import {
   MixpanelBillingEvents,
   UpgradeButtonEventProps,
-  PricingModalEventProps,
   UserType,
 } from '@/types/mixpanel-events.types';
 
@@ -241,18 +240,8 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
 
         if (showModal) {
           // Open global UpgradePlans modal
+          // pricing_modal_opened is sent by GlobalUpgradeModal when it opens.
           dispatch(toggleUpgradeModal());
-          const modalProps: PricingModalEventProps = {
-            user_type: getUserType(),
-            current_plan: billingInfo?.plan_name,
-            trial_days_remaining: daysRemaining || undefined,
-            is_appsumo_user: isAppSumoUser,
-            team_size: billingInfo?.total_used,
-            subscription_status: billingInfo?.status,
-            trigger_source: 'upgrade_button',
-            initial_team_size: billingInfo?.total_used,
-          };
-          trackMixpanelEvent(MixpanelBillingEvents.PRICING_MODAL_OPENED, modalProps);
         } else if (redirectToBilling) {
           navigate('/worklenz/admin-center/billing');
         }

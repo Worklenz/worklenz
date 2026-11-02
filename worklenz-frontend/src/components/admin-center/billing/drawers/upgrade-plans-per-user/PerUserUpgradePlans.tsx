@@ -162,12 +162,6 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
     ...(plan ? { plan_key: plan.plan_key, plan_id: plan.id, seats: seatCount } : {}),
   });
 
-  useEffect(() => {
-    trackMixpanelEvent(MixpanelBillingEvents.PRICING_MODAL_OPENED, { pricing_model: 'per_user' });
-    // Once per time the modal content is shown.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const finishCheckout = (plan: IPerUserPlan, seatCount: number) => {
     trackMixpanelEvent(MixpanelBillingEvents.CHECKOUT_COMPLETED, trackingProps(plan, seatCount));
     message.success(t('messages.success'));
