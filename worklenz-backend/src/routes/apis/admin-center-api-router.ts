@@ -11,32 +11,39 @@ import AuditLogRetentionController from "../../controllers/audit-log-retention-c
 import safeControllerFunction from "../../shared/safe-controller-function";
 import organizationSettingsValidator from "../../middlewares/validators/organization-settings-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
+import {
+  adminCenterAccessValidator,
+  manageBillingValidator,
+  manageOrganizationSettingsValidator,
+  manageTeamsValidator,
+  manageUsersValidator,
+} from "../../middlewares/validators/organization-permission-validator";
 import auditLogAccessValidator, { auditLogOwnerValidator } from "../../middlewares/validators/audit-log-access-validator";
 import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
 import { requireFeature } from "../../shared/entitlements/gates";
 
 const adminCenterApiRouter = express.Router();
 
-// overview
-adminCenterApiRouter.get("/settings", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterOrganizationController.getAdminCenterSettings));
-adminCenterApiRouter.get("/organization", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterOrganizationController.getOrganizationDetails));
-adminCenterApiRouter.get("/organization/admins", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterOrganizationController.getOrganizationAdmins));
-adminCenterApiRouter.put("/organization", teamOwnerOrAdminValidator, organizationSettingsValidator, safeControllerFunction(AdminCenterOrganizationController.updateOrganizationName));
-adminCenterApiRouter.put("/organization/calculation-method", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterOrganizationController.updateOrganizationCalculationMethod));
-adminCenterApiRouter.put("/organization/owner/contact-number", teamOwnerOrAdminValidator, phoneNumberValidator, safeControllerFunction(AdminCenterOrganizationController.updateOwnerContactNumber));
-adminCenterApiRouter.post("/organization/logo", teamOwnerOrAdminValidator, requireFeature("client_portal_branding"), safeControllerFunction(AdminCenterOrganizationController.uploadOrganizationLogo));
-adminCenterApiRouter.delete("/organization/logo", teamOwnerOrAdminValidator, requireFeature("client_portal_branding"), safeControllerFunction(AdminCenterOrganizationController.deleteOrganizationLogo));
+// overview reads — any Admin Center Manage permission; writes stay Manage organization settings
+adminCenterApiRouter.get("/settings", adminCenterAccessValidator, safeControllerFunction(AdminCenterOrganizationController.getAdminCenterSettings));
+adminCenterApiRouter.get("/organization", adminCenterAccessValidator, safeControllerFunction(AdminCenterOrganizationController.getOrganizationDetails));
+adminCenterApiRouter.get("/organization/admins", adminCenterAccessValidator, safeControllerFunction(AdminCenterOrganizationController.getOrganizationAdmins));
+adminCenterApiRouter.put("/organization", manageOrganizationSettingsValidator, organizationSettingsValidator, safeControllerFunction(AdminCenterOrganizationController.updateOrganizationName));
+adminCenterApiRouter.put("/organization/calculation-method", manageOrganizationSettingsValidator, safeControllerFunction(AdminCenterOrganizationController.updateOrganizationCalculationMethod));
+adminCenterApiRouter.put("/organization/owner/contact-number", manageOrganizationSettingsValidator, phoneNumberValidator, safeControllerFunction(AdminCenterOrganizationController.updateOwnerContactNumber));
+adminCenterApiRouter.post("/organization/logo", manageOrganizationSettingsValidator, requireFeature("client_portal_branding"), safeControllerFunction(AdminCenterOrganizationController.uploadOrganizationLogo));
+adminCenterApiRouter.delete("/organization/logo", manageOrganizationSettingsValidator, requireFeature("client_portal_branding"), safeControllerFunction(AdminCenterOrganizationController.deleteOrganizationLogo));
 
 // holiday settings
-adminCenterApiRouter.get("/organization/holiday-settings", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterHolidaysController.getOrganizationHolidaySettings));
-adminCenterApiRouter.put("/organization/holiday-settings", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterHolidaysController.updateOrganizationHolidaySettings));
-adminCenterApiRouter.get("/countries-with-states", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterHolidaysController.getCountriesWithStates));
+adminCenterApiRouter.get("/organization/holiday-settings", manageOrganizationSettingsValidator, safeControllerFunction(AdminCenterHolidaysController.getOrganizationHolidaySettings));
+adminCenterApiRouter.put("/organization/holiday-settings", manageOrganizationSettingsValidator, safeControllerFunction(AdminCenterHolidaysController.updateOrganizationHolidaySettings));
+adminCenterApiRouter.get("/countries-with-states", manageOrganizationSettingsValidator, safeControllerFunction(AdminCenterHolidaysController.getCountriesWithStates));
 
 // users
 // Also reused as the Audit Log's actor picker (searchable, paginated,
 // organization-scoped workspace users: ?search=&index=&size=). No dedicated picker endpoint
 // was added since this one already fits the requirement.
-adminCenterApiRouter.get("/organization/users", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterOrganizationController.getOrganizationUsers));
+adminCenterApiRouter.get("/organization/users", manageUsersValidator, safeControllerFunction(AdminCenterOrganizationController.getOrganizationUsers));
 
 // audit log — note the dedicated 403 access guard instead of
 // teamOwnerOrAdminValidator's 401, per that task's explicit requirement.
@@ -54,45 +61,45 @@ adminCenterApiRouter.get("/organization/audit-log/export/:jobId/download", audit
 adminCenterApiRouter.get("/organization/audit-log/retention", auditLogAccessValidator, safeControllerFunction(AuditLogRetentionController.get));
 adminCenterApiRouter.put("/organization/audit-log/retention", auditLogOwnerValidator, safeControllerFunction(AuditLogRetentionController.update));
 
-adminCenterApiRouter.get("/organization/teams", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterTeamsController.getOrganizationTeams));
+adminCenterApiRouter.get("/organization/teams", manageTeamsValidator, safeControllerFunction(AdminCenterTeamsController.getOrganizationTeams));
 adminCenterApiRouter.get("/organization/projects", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterOrganizationController.getOrganizationProjects));
-adminCenterApiRouter.put("/organization/team/:id", teamOwnerOrAdminValidator, organizationSettingsValidator, safeControllerFunction(AdminCenterTeamsController.updateTeam));
-adminCenterApiRouter.get("/organization/team/:id", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterTeamsController.getTeamDetails));
-adminCenterApiRouter.delete("/organization/team/:id", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterTeamsController.deleteTeam));
-adminCenterApiRouter.put("/organization/team-member/:id", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterTeamsController.deleteById));
+adminCenterApiRouter.put("/organization/team/:id", manageTeamsValidator, organizationSettingsValidator, safeControllerFunction(AdminCenterTeamsController.updateTeam));
+adminCenterApiRouter.get("/organization/team/:id", manageTeamsValidator, safeControllerFunction(AdminCenterTeamsController.getTeamDetails));
+adminCenterApiRouter.delete("/organization/team/:id", manageTeamsValidator, safeControllerFunction(AdminCenterTeamsController.deleteTeam));
+adminCenterApiRouter.put("/organization/team-member/:id", manageTeamsValidator, safeControllerFunction(AdminCenterTeamsController.deleteById));
 
-adminCenterApiRouter.get("/", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterTeamsController.getOrganizationTeams));
+adminCenterApiRouter.get("/", manageTeamsValidator, safeControllerFunction(AdminCenterTeamsController.getOrganizationTeams));
 
 // billing
-adminCenterApiRouter.get("/billing/info", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.getBillingInfo));
-adminCenterApiRouter.get("/billing/account-storage", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.getAccountStorage));
-adminCenterApiRouter.get("/billing/storage", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.getBillingStorageInfo));
-adminCenterApiRouter.get("/billing/transactions", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.getBillingTransactions));
-adminCenterApiRouter.get("/billing/charges", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.getBillingCharges));
-adminCenterApiRouter.get("/billing/modifiers", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.getBillingCharges));
-adminCenterApiRouter.get("/billing/countries", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.getCountries));
+adminCenterApiRouter.get("/billing/info", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.getBillingInfo));
+adminCenterApiRouter.get("/billing/account-storage", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.getAccountStorage));
+adminCenterApiRouter.get("/billing/storage", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.getBillingStorageInfo));
+adminCenterApiRouter.get("/billing/transactions", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.getBillingTransactions));
+adminCenterApiRouter.get("/billing/charges", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.getBillingCharges));
+adminCenterApiRouter.get("/billing/modifiers", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.getBillingCharges));
+adminCenterApiRouter.get("/billing/countries", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.getCountries));
 
-adminCenterApiRouter.get("/billing/purchase-storage", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.purchaseStorage));
+adminCenterApiRouter.get("/billing/purchase-storage", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.purchaseStorage));
 
-adminCenterApiRouter.get("/billing/configuration", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.getBillingConfiguration));
-adminCenterApiRouter.put("/billing/configuration", teamOwnerOrAdminValidator, phoneNumberValidator, safeControllerFunction(AdminCenterBillingController.updateBillingConfiguration));
+adminCenterApiRouter.get("/billing/configuration", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.getBillingConfiguration));
+adminCenterApiRouter.put("/billing/configuration", manageBillingValidator, phoneNumberValidator, safeControllerFunction(AdminCenterBillingController.updateBillingConfiguration));
 
-adminCenterApiRouter.get("/billing/upgrade-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.upgradePlan));
-adminCenterApiRouter.get("/billing/change-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.changePlan));
-adminCenterApiRouter.get("/billing/cancel-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.cancelPlan));
-adminCenterApiRouter.get("/billing/pause-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.pauseSubscription));
-adminCenterApiRouter.get("/billing/resume-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.resumeSubscription));
+adminCenterApiRouter.get("/billing/upgrade-plan", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.upgradePlan));
+adminCenterApiRouter.get("/billing/change-plan", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.changePlan));
+adminCenterApiRouter.get("/billing/cancel-plan", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.cancelPlan));
+adminCenterApiRouter.get("/billing/pause-plan", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.pauseSubscription));
+adminCenterApiRouter.get("/billing/resume-plan", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.resumeSubscription));
 
-adminCenterApiRouter.get("/billing/plans", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.getPlans));
-adminCenterApiRouter.get("/billing/switch-to-free-plan/:id", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.switchToFreePlan));
-adminCenterApiRouter.get("/billing/free-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.getFreePlanLimits));
+adminCenterApiRouter.get("/billing/plans", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.getPlans));
+adminCenterApiRouter.get("/billing/switch-to-free-plan/:id", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.switchToFreePlan));
+adminCenterApiRouter.get("/billing/free-plan", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.getFreePlanLimits));
 
-adminCenterApiRouter.post("/billing/redeem", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.redeem));
+adminCenterApiRouter.post("/billing/redeem", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.redeem));
 
 // AppSumo endpoints
-adminCenterApiRouter.get("/appsumo/countdown-widget", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterBillingController.getAppSumoCountdownWidget));
+adminCenterApiRouter.get("/appsumo/countdown-widget", manageBillingValidator, safeControllerFunction(AdminCenterBillingController.getAppSumoCountdownWidget));
 
-// permission schemes
+// permission schemes — stay Owner/Admin-only
 adminCenterApiRouter.get("/my-organization-permissions", safeControllerFunction(PermissionSchemesController.getMyOrganizationPermissions));
 adminCenterApiRouter.get("/permission-schemes", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.getSchemes));
 adminCenterApiRouter.post("/permission-schemes", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.createScheme));

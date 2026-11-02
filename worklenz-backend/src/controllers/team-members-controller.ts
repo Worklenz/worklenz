@@ -33,12 +33,15 @@ import {
   canAssignRole,
   canManageTargetRole,
   canManageTeamMembers,
+  getManageUsersAssignableRoles,
   getTeamMemberRoleName,
   hasTeamAdminPrivileges,
   isSelfTeamMember,
   normalizeTeamRoleName,
   TEAM_ROLE_NAMES,
+  TeamRoleName,
 } from "../shared/team-permissions";
+import { hasTeamMemberManagementAccess } from "../shared/organization-permissions";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import {
   clearPmAccessForTeamMember,
@@ -115,7 +118,14 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
     }
 
-    if (!canAssignRole(req.user, roleName)) {
+    const normalizedRole = normalizeTeamRoleName(roleName);
+    const canAssignViaRole = canAssignRole(req.user, roleName);
+    const canAssignViaPermission =
+      !canAssignViaRole &&
+      (await hasTeamMemberManagementAccess(req.user)) &&
+      getManageUsersAssignableRoles().includes(normalizedRole as TeamRoleName);
+
+    if (!canAssignViaRole && !canAssignViaPermission) {
       return new ServerResponse(
         false,
         null,
@@ -159,7 +169,13 @@ export default class TeamMembersController extends WorklenzControllerBase {
       return null;
     }
 
-    if (!canManageTargetRole(req.user, targetRoleName)) {
+    const canManageViaRole = canManageTargetRole(req.user, targetRoleName);
+    const canManageViaPermission =
+      !canManageViaRole &&
+      (await hasTeamMemberManagementAccess(req.user)) &&
+      getManageUsersAssignableRoles().includes(normalizeTeamRoleName(targetRoleName));
+
+    if (!canManageViaRole && !canManageViaPermission) {
       return new ServerResponse(
         false,
         null,
@@ -943,9 +959,11 @@ export default class TeamMembersController extends WorklenzControllerBase {
       isSelfTeamMember(req.user, req.params.id) ||
       (await this.isSelfMemberInTeam(req.user?.id, req.user?.team_id, req.params.id));
 
+    const canManageMembers = await hasTeamMemberManagementAccess(req.user);
+
     // If caller cannot manage team members or is editing their own record,
     // protect role/admin fields from unauthorized modification or escalation.
-    if (!canManageTeamMembers(req.user) || isSelf) {
+    if (!canManageMembers || isSelf) {
       req.body.role_name = previousRoleName;
       req.body.is_admin = previousRoleName === TEAM_ROLE_NAMES.ADMIN;
     }
@@ -964,9 +982,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
       return res.status(200).send(roleAssignmentError);
     }
 
-    // Only Owners/Admins may create job titles; everyone else (including
-    // self-edits) can only pick one that already exists in the team.
-    if (!canManageTeamMembers(req.user)) {
+    // Only Owners/Admins (or Manage users holders) may create job titles;
+    // everyone else (including self-edits) can only pick one that already exists.
+    if (!canManageMembers) {
       const requestedJobTitle = typeof req.body.job_title === "string"
         ? req.body.job_title.trim()
         : "";
@@ -986,7 +1004,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     req.body.id = req.params.id;
     req.body.team_id = req.user?.team_id || null;
-    req.body.is_admin = !canManageTeamMembers(req.user) || isSelf
+    req.body.is_admin = !canManageMembers || isSelf
       ? previousRoleName === TEAM_ROLE_NAMES.ADMIN
       : !!req.body.is_admin;
 

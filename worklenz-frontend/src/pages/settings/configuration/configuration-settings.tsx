@@ -17,6 +17,8 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchOrgConfig, updateOrgConfig } from '@/features/org-config/org-config.slice';
 import { useAuthService } from '@/hooks/useAuth';
+import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
+import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 import { canUseFeature, hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
@@ -27,6 +29,10 @@ const ConfigurationSettings = () => {
   const auth = useAuthService();
   const session = auth.getCurrentSession();
   const isOwnerOrAdmin = auth.isOwnerOrAdmin();
+  const { hasPermission: hasManageOrgSettings } = useOrganizationPermission(
+    ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS
+  );
+  const canEditConfiguration = isOwnerOrAdmin || hasManageOrgSettings;
   // Time-log backdating has no registry feature yet, so it keeps the Business check.
   const hasBusinessAccess = hasBusinessFeatureAccess(session);
   const canRestrictTaskCreation = canUseFeature(session, 'restrict_task_creation');
@@ -148,7 +154,7 @@ const ConfigurationSettings = () => {
             }
           >
             <Switch
-              disabled={!isOwnerOrAdmin || !canRestrictTaskCreation}
+              disabled={!canEditConfiguration || !canRestrictTaskCreation}
               loading={orgConfig.isLoading}
               onChange={handleRestrictTaskCreationChange}
               aria-label={t('restrictTaskCreation', {
@@ -206,7 +212,7 @@ const ConfigurationSettings = () => {
           >
             <Switch
               checked={backdateLimitEnabled}
-              disabled={!isOwnerOrAdmin || !hasBusinessAccess}
+              disabled={!canEditConfiguration || !hasBusinessAccess}
               loading={orgConfig.isLoading}
               onChange={handleBackdateLimitToggle}
               aria-label={t('limitTimelogBackdating', {
@@ -232,7 +238,7 @@ const ConfigurationSettings = () => {
                 max={365}
                 precision={0}
                 style={{ width: 160 }}
-                disabled={!isOwnerOrAdmin || !hasBusinessAccess}
+                disabled={!canEditConfiguration || !hasBusinessAccess}
                 onBlur={event => handleBackdateLimitDaysChange(Number(event.target.value))}
                 onPressEnter={event =>
                   handleBackdateLimitDaysChange(Number((event.target as HTMLInputElement).value))

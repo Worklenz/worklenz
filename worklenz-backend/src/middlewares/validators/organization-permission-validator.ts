@@ -34,6 +34,45 @@ export const organizationPermissionValidator = (permission: OrganizationPermissi
 
 export const viewReportsValidator = organizationPermissionValidator(ORGANIZATION_PERMISSIONS.VIEW_REPORTS);
 export const viewFinanceValidator = organizationPermissionValidator(ORGANIZATION_PERMISSIONS.VIEW_FINANCE);
+export const manageOrganizationSettingsValidator = organizationPermissionValidator(
+  ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS
+);
+export const manageBillingValidator = organizationPermissionValidator(
+  ORGANIZATION_PERMISSIONS.MANAGE_BILLING
+);
+export const manageUsersValidator = organizationPermissionValidator(
+  ORGANIZATION_PERMISSIONS.MANAGE_USERS
+);
+export const manageTeamsValidator = organizationPermissionValidator(
+  ORGANIZATION_PERMISSIONS.MANAGE_TEAMS
+);
+export const manageClientsValidator = organizationPermissionValidator(
+  ORGANIZATION_PERMISSIONS.MANAGE_CLIENTS
+);
+
+const ADMIN_CENTER_ENTRY_PERMISSIONS: OrganizationPermission[] = [
+  ORGANIZATION_PERMISSIONS.MANAGE_USERS,
+  ORGANIZATION_PERMISSIONS.MANAGE_TEAMS,
+  ORGANIZATION_PERMISSIONS.MANAGE_BILLING,
+  ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS,
+];
+
+/** Owner/Admin, or any Manage permission that unlocks Admin Center. */
+export const adminCenterAccessValidator = async (
+  req: IWorkLenzRequest,
+  res: IWorkLenzResponse,
+  next: NextFunction
+): Promise<IWorkLenzResponse | void> => {
+  try {
+    if (isOwnerOrAdmin(req)) return next();
+    for (const permission of ADMIN_CENTER_ENTRY_PERMISSIONS) {
+      if (await hasOrganizationPermission(req.user, permission)) return next();
+    }
+    return sendForbidden(res);
+  } catch (error) {
+    return next(error);
+  }
+};
 
 /** Changes on surfaces opened read-only through "View ..." permissions stay Owner/Admin-only. */
 export const ownerOrAdminWriteValidator = (
@@ -45,12 +84,14 @@ export const ownerOrAdminWriteValidator = (
   return sendForbidden(res);
 };
 
-/** Client Portal management: reads need "View clients", writes are Owner/Admin-only. */
+/** Client Portal management: reads need "View clients", writes need "Manage clients". */
 export const clientsReadOnlyValidator = async (
   req: IWorkLenzRequest,
   res: IWorkLenzResponse,
   next: NextFunction
 ): Promise<IWorkLenzResponse | void> => {
-  if (!READ_METHODS.includes(req.method)) return ownerOrAdminWriteValidator(req, res, next);
+  if (!READ_METHODS.includes(req.method)) {
+    return manageClientsValidator(req, res, next);
+  }
   return organizationPermissionValidator(ORGANIZATION_PERMISSIONS.VIEW_CLIENTS)(req, res, next);
 };

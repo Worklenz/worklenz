@@ -178,6 +178,11 @@ export function canManageTeamMembers(user: IPassportSession | undefined): boolea
   return hasTeamAdminPrivileges(user);
 }
 
+/** Role set used when "Manage users" is granted to a non-admin role. */
+export function getManageUsersAssignableRoles(): TeamRoleName[] {
+  return MANAGEABLE_ROLE_MAP[TEAM_ROLE_NAMES.ADMIN];
+}
+
 /**
  * Check if user can manage projects within team (Owner or Admin)
  */
