@@ -69,12 +69,15 @@ const SwitchTeamButton = () => {
     (state: RootState) => state.adminCenterReducer.organization?.logo_url
   );
 
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const { loading } = useAppSelector(state => state.teamReducer);
+
   useEffect(() => {
     // Guard: only dispatch fetchTeams if not already pending, to avoid
     // duplicate dispatches when mutation handlers (e.g. OrganizationLogo
     // upload/delete) already trigger fetchTeams. Preserve refreshes for
     // logo changes that do not already trigger one.
-    const { loading } = useAppSelector(state => state.teamReducer);
     if (organizationLogo && !loading) {
       dispatch(fetchTeams());
     }
