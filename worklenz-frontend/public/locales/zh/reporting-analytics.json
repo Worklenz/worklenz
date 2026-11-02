@@ -57,6 +57,7 @@
   "comingSoonBadge": "即将推出",
   "businessPlanBadge": "商业",
   "businessReportLockedTitle": "需要 Business 套餐",
+  "financeReportLockedDescription": "项目健康状况和预算跟踪功能适用于 Business 套餐。",
   "businessReportLockedDescription": "Velocity、Cumulative Flow、Time in Status 和 SLA Tracking 仅在 Business 套餐中可用。",
   "upgradeToBusiness": "升级到 Business",
   "hubBusinessLockedAria": "{{name}} — 需要 Business 套餐",

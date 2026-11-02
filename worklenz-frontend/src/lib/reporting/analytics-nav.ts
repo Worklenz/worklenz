@@ -23,8 +23,8 @@ export interface AnalyticsNavItem {
   defaultLabel: string;
   /** When true, route is a Phase 1 shell; otherwise Coming Soon placeholder */
   enabled?: boolean;
-  /** Business plan (`advanced_reporting`) required to open this report. */
-  requiresBusinessPlan?: boolean;
+  /** Entitlement required to open this Business report. */
+  requiredFeature?: 'advanced_reporting' | 'finance_module';
 }
 
 /** Flow analytics reports gated behind Business / advanced_reporting. */
@@ -37,6 +37,9 @@ export const BUSINESS_ANALYTICS_REPORT_KEYS = new Set([
 
 export const isBusinessAnalyticsReport = (key: string): boolean =>
   BUSINESS_ANALYTICS_REPORT_KEYS.has(key);
+
+export const isFinanceAnalyticsReport = (key: string): boolean =>
+  key === 'project-health' || key === 'budget-tracking';
 
 export interface AnalyticsNavGroup {
   key: string;
@@ -64,6 +67,7 @@ export const ANALYTICS_NAV: {
       defaultLabel: 'Projects',
       items: [
         {
+          requiredFeature: 'finance_module',
           key: 'project-health',
           path: 'project-health',
           labelKey: 'projectHealth',
@@ -113,6 +117,7 @@ export const ANALYTICS_NAV: {
           enabled: true,
         },
         {
+          requiredFeature: 'finance_module',
           key: 'budget-tracking',
           path: 'budget-tracking',
           labelKey: 'budgetTracking',
@@ -132,7 +137,7 @@ export const ANALYTICS_NAV: {
           labelKey: 'velocity',
           defaultLabel: 'Velocity',
           enabled: true,
-          requiresBusinessPlan: true,
+          requiredFeature: 'advanced_reporting',
         },
         {
           key: 'cumulative-flow',
@@ -140,7 +145,7 @@ export const ANALYTICS_NAV: {
           labelKey: 'cumulativeFlow',
           defaultLabel: 'Cumulative Flow',
           enabled: true,
-          requiresBusinessPlan: true,
+          requiredFeature: 'advanced_reporting',
         },
         {
           key: 'time-in-status',
@@ -148,7 +153,7 @@ export const ANALYTICS_NAV: {
           labelKey: 'timeInStatus',
           defaultLabel: 'Time in Status',
           enabled: true,
-          requiresBusinessPlan: true,
+          requiredFeature: 'advanced_reporting',
         },
         {
           key: 'sla',
@@ -156,7 +161,7 @@ export const ANALYTICS_NAV: {
           labelKey: 'sla',
           defaultLabel: 'SLA Tracking',
           enabled: false,
-          requiresBusinessPlan: true,
+          requiredFeature: 'advanced_reporting',
         },
       ],
     },

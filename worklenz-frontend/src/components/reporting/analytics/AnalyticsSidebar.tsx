@@ -169,7 +169,6 @@ export const AnalyticsSidebar: React.FC = () => {
   const dispatch = useAppDispatch();
   const authService = useAuthService();
   const session = authService.getCurrentSession();
-  const canAdvancedReporting = canUseFeature(session, 'advanced_reporting');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
   const location = useLocation();
@@ -287,7 +286,7 @@ export const AnalyticsSidebar: React.FC = () => {
                 labelOverride={
                   item.key.startsWith('custom-') ? item.defaultLabel : undefined
                 }
-                businessLocked={Boolean(item.requiresBusinessPlan && !canAdvancedReporting)}
+                businessLocked={Boolean(item.requiredFeature && !canUseFeature(session, item.requiredFeature))}
                 onBusinessLockedClick={openUpgrade}
               />
             ))}

@@ -8,7 +8,7 @@ import NavSurfaceIndexRedirect from '@/features/navigation/NavSurfaceIndexRedire
 import GuestRedirect from '@/guards/GuestRedirect';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { ANALYTICS_BASE_PATH, flatAnalyticsNavItems } from '@/lib/reporting/analytics-nav';
-import { AnalyticsBusinessGate } from '@/components/reporting/analytics/AnalyticsBusinessGate';
+import { AnalyticsBusinessGate, AnalyticsFinanceGate } from '@/components/reporting/analytics/AnalyticsBusinessGate';
 
 const AllReportsPage = lazy(() => import('@/pages/reporting/analytics/AllReportsPage'));
 const DashboardsPage = lazy(() => import('@/pages/reporting/analytics/DashboardsPage'));
@@ -77,12 +77,20 @@ const enabledAnalyticsElements: Record<string, ReactNode> = {
     <CumulativeFlowPage />
   ),
   'time-in-status': withBusinessGate('timeInStatus', 'Time in Status', <TimeInStatusPage />),
-  'project-health': <ProjectHealthPage />,
+  'project-health': (
+    <AnalyticsFinanceGate titleKey="projectHealth" titleDefault="Project Health">
+      <ProjectHealthPage />
+    </AnalyticsFinanceGate>
+  ),
   'planned-vs-actual-tasks': <PlannedVsActualTasksPage />,
   'planned-vs-actual-milestones': <PlannedVsActualMilestonesPage />,
   utilization: <UtilizationPage />,
   'time-report': <TimeReportPage />,
-  'budget-tracking': <BudgetTrackingPage />,
+  'budget-tracking': (
+    <AnalyticsFinanceGate titleKey="budgetTracking" titleDefault="Budget Tracking">
+      <BudgetTrackingPage />
+    </AnalyticsFinanceGate>
+  ),
   dashboards: <DashboardsPage />,
 };
 

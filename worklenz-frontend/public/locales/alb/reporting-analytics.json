@@ -57,6 +57,7 @@
   "comingSoonBadge": "Së shpejti",
   "businessPlanBadge": "Biznes",
   "businessReportLockedTitle": "Kërkohet plani Business",
+  "financeReportLockedDescription": "Gjendja e projektit dhe ndjekja e buxhetit janë të disponueshme në planin Business.",
   "businessReportLockedDescription": "Velocity, Cumulative Flow, Time in Status dhe SLA Tracking janë të disponueshme në planin Business.",
   "upgradeToBusiness": "Përmirëso në Business",
   "hubBusinessLockedAria": "{{name}} — Kërkohet plani Business",

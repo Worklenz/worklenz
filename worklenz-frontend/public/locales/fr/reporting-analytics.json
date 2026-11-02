@@ -57,6 +57,7 @@
   "comingSoonBadge": "Bientôt",
   "businessPlanBadge": "Affaires",
   "businessReportLockedTitle": "Offre Business requise",
+  "financeReportLockedDescription": "La santé du projet et le suivi du budget sont disponibles avec le forfait Business.",
   "businessReportLockedDescription": "Velocity, Cumulative Flow, Time in Status et SLA Tracking sont disponibles avec l'offre Business.",
   "upgradeToBusiness": "Passer à Business",
   "hubBusinessLockedAria": "{{name}} — Offre Business requise",

@@ -57,6 +57,7 @@
   "comingSoonBadge": "Coming soon",
   "businessPlanBadge": "Business",
   "businessReportLockedTitle": "Business plan required",
+  "financeReportLockedDescription": "Project Health and Budget Tracking are available on the Business plan.",
   "businessReportLockedDescription": "Velocity, Cumulative Flow, Time in Status, and SLA Tracking are available on the Business plan.",
   "upgradeToBusiness": "Upgrade to Business",
   "hubBusinessLockedAria": "{{name}} — Business plan required",

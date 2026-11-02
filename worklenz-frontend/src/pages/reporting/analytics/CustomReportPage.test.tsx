@@ -9,9 +9,9 @@ vi.mock('@/utils/session-helper', () => ({ getUserSession: () => ({ team_id: 'te
 vi.mock('@/hooks/useAuth', () => ({ useAuthService: () => ({ getCurrentSession: () => ({ team_id: 'team', id: 'user' }) }) }));
 vi.mock('@/hooks/useDoumentTItle', () => ({ useDocumentTitle: vi.fn() }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (_key: string, options: { defaultValue: string }) => options.defaultValue }) }));
-vi.mock('@/lib/reporting/analytics-nav', () => ({ ANALYTICS_BASE_PATH: '/reports', isBusinessAnalyticsReport: () => false, flatAnalyticsNavItems: () => [] }));
+vi.mock('@/lib/reporting/analytics-nav', () => ({ ANALYTICS_BASE_PATH: '/reports', isBusinessAnalyticsReport: () => false, isFinanceAnalyticsReport: (key: string) => ['project-health', 'budget-tracking'].includes(key), flatAnalyticsNavItems: () => [] }));
 vi.mock('@/components/reporting/analytics', () => ({ ReportPageShell: () => null }));
-vi.mock('@/components/reporting/analytics/AnalyticsBusinessGate', () => ({ AnalyticsBusinessGate: () => null }));
+vi.mock('@/components/reporting/analytics/AnalyticsBusinessGate', () => ({ AnalyticsBusinessGate: () => null, AnalyticsFinanceGate: () => <div>Finance upgrade required</div> }));
 vi.mock('@/components/reporting/analytics/states/ReportStateViews', () => ({ ReportErrorState: () => <div>Load failed</div> }));
 vi.mock('@/components/suspense-fallback/suspense-fallback', () => ({ SuspenseFallback: () => <div>Loading</div> }));
 vi.mock('@/pages/reporting/analytics/VelocityPage', () => ({ default: ({ customTemplateName }: { customTemplateName: string }) => <div>{customTemplateName}</div> }));
@@ -52,4 +52,12 @@ describe('custom report deep links', () => {
     expect(await screen.findByText('Load failed')).toBeInTheDocument();
     expect(screen.queryByText('Reports hub')).not.toBeInTheDocument();
   });
+});
+
+it.each(['project-health', 'budget-tracking'])('gates saved %s reports', async report_kind => {
+  vi.mocked(analyticsTemplatesApiService.listTemplates).mockResolvedValue({ done: true, body: [
+    { id: 'template', name: 'Saved finance report', report_kind },
+  ] } as TemplateResponse);
+  openReport();
+  expect(await screen.findByText('Finance upgrade required')).toBeInTheDocument();
 });

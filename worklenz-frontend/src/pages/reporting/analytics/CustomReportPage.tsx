@@ -4,11 +4,12 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { ReportPageShell } from '@/components/reporting/analytics';
-import { AnalyticsBusinessGate } from '@/components/reporting/analytics/AnalyticsBusinessGate';
+import { AnalyticsBusinessGate, AnalyticsFinanceGate } from '@/components/reporting/analytics/AnalyticsBusinessGate';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import {
   ANALYTICS_BASE_PATH,
   isBusinessAnalyticsReport,
+  isFinanceAnalyticsReport,
 } from '@/lib/reporting/analytics-nav';
 import { useAnalyticsCustomReports, isAnalyticsCustomReportsSessionActive } from '@/features/reporting/analytics-custom-reports';
 import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
@@ -113,6 +114,13 @@ const CustomReportPage: React.FC = () => {
         <AnalyticsBusinessGate titleKey="descCustomReport" titleDefault={title}>
           {page}
         </AnalyticsBusinessGate>
+      );
+    }
+    if (report.sourceKind && isFinanceAnalyticsReport(report.sourceKind)) {
+      return (
+        <AnalyticsFinanceGate titleKey="descCustomReport" titleDefault={title}>
+          {page}
+        </AnalyticsFinanceGate>
       );
     }
     return page;
