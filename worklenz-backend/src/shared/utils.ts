@@ -255,23 +255,36 @@ export function escapeHtmlEntities(value: string): string {
 }
 
 /**
- * Sanitizes plain text fields (like user names) to prevent XSS attacks
- * Strips all HTML tags while preserving the text content, then escapes special characters
- * Use this for fields that should never contain HTML markup
+ * Sanitizes plain text fields (like user/project/task names) to prevent XSS attacks.
+ * Strips all HTML tags but does NOT leave HTML entities in the stored value.
+ * Escaping must happen only when the value is rendered into HTML.
  *
  * @param value - The plain text to sanitize
- * @returns Sanitized plain text with HTML removed and entities escaped
+ * @returns Sanitized plain text with HTML removed (entities decoded)
  */
 export function sanitizePlainText(value: string): string {
   if (!value) return "";
 
-  // sanitize-html strips all tags and already HTML-escapes the remaining
-  // text when serializing it, so no separate escaping pass is needed here
-  // (calling escapeHtmlEntities afterwards would double-encode entities).
-  return sanitizeHtml(value, {
-    allowedTags: [],        // No HTML tags allowed
-    allowedAttributes: {},  // No attributes allowed
-  }).trim();
+  // Strip tags only
+  const stripped = sanitizeHtml(value, {
+    allowedTags: [],
+    allowedAttributes: {},
+  });
+
+  // Decode any entities that sanitize-html may have introduced
+  return decodeHtmlEntities(stripped).trim();
+}
+
+/** Decode common HTML entities that sanitize-html introduces when stripping tags */
+function decodeHtmlEntities(text: string): string {
+  if (!text) return text;
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'");
 }
 
 /**
