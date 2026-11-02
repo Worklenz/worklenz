@@ -60,9 +60,11 @@ const resolveParentSelectionId = (
   return null;
 };
 
+const APPSUMO_BUSINESS_UNLOCK_CODE_COUNT = 5;
+
 /**
  * Determines whether the user has business-level access based on subscription data.
- * Mirrors the frontend hasBusinessFeatureAccess() logic.
+ * Mirrors the frontend hasBusinessFeatureAccess() logic (AppSumo Business yes, AppSumo Pro no).
  */
 function hasBusinessAccess(subscriptionData: any): boolean {
   if (!subscriptionData) return false;
@@ -73,6 +75,14 @@ function hasBusinessAccess(subscriptionData: any): boolean {
   if (isTruthy(subscriptionData.business_plan_override)) return true;
 
   const subType: string = (subscriptionData.subscription_type || "").toUpperCase();
+
+  if (subType === "LIFE_TIME_DEAL") {
+    if (isTruthy(subscriptionData.appsumo_business_eligible)) return true;
+    const redeemed = Number(subscriptionData.redeemed_codes_count ?? 0);
+    if (Number.isFinite(redeemed) && redeemed >= APPSUMO_BUSINESS_UNLOCK_CODE_COUNT) return true;
+    const ltdPlan = (subscriptionData.plan_name || "").toLowerCase();
+    return ltdPlan === "business plan" || ltdPlan.includes("business");
+  }
 
   if (subType === "BUSINESS_TRIAL" || subType === "ENTERPRISE_TRIAL") return true;
   if (subType === "ANNUAL_BUSINESS" || subType === "SELF_HOSTED") return true;

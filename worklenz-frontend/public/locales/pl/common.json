@@ -169,5 +169,7 @@
   "firstPage": "Pierwsza strona",
   "previousPage": "Poprzednia strona",
   "nextPage": "Następna strona",
-  "lastPage": "Ostatnia strona"
+  "lastPage": "Ostatnia strona",
+  "selectAll": "Zaznacz wszystko",
+  "clearAll": "Wyczyść wszystko"
 }

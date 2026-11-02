@@ -8,5 +8,12 @@
   "logs": "Regjistrat",
   "allTasks": "Detyrat",
   "progressTracking": "Ndjekja e progresit",
-  "currentOrganizationTooltip": "Organizata aktuale"
+  "currentOrganizationTooltip": "Organizata aktuale",
+  "analyticsGroup": "Raportimi dhe analiza",
+  "dashboards": "Paneli",
+  "velocity": "Shpejtësia",
+  "cumulativeFlow": "Rrjedha Kumulative",
+  "sla": "Ndjekja SLA",
+  "timeInStatus": "Koha në status",
+  "newBadge": "E RE"
 }

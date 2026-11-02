@@ -1,6 +1,7 @@
 import {PoolClient} from "pg";
 
 import db from "../config/db";
+import { scheduleVelocityUpsert } from "../services/reporting-analytics/velocity-aggregator.service";
 import { log_error } from "./utils";
 
 export const SPRINT_RETURNING_COLUMNS =
@@ -402,6 +403,10 @@ export async function completeSprintRecord(
     }
 
     await client.query("COMMIT");
+
+    // Phase 2: refresh velocity cache after sprint outcome is committed.
+    scheduleVelocityUpsert(projectId, phaseId);
+
     return {
       ok: true,
       data: {

@@ -11,6 +11,7 @@ import { TASK_PRIORITY_COLOR_ALPHA } from "../../../shared/constants";
 import { ReportingExportModel } from "../../../models/reporting-export";
 import moment from "moment";
 import ReportingControllerBase from "../reporting-controller-base";
+import { getAccessibleReportingTeamIds } from "../../../shared/analytics-expand-projects";
 
 export default class ReportingOverviewController extends ReportingOverviewBase {
   @HandleExceptions()
@@ -116,12 +117,21 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
   @HandleExceptions()
   public static async getTeams(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = this.getCurrentTeamId(req);
+    const userId = req.user?.id;
     const includeArchived = req.query.archived === "true";
+
+    if (!teamId || !userId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
 
     const archivedClause = includeArchived
       ? ""
       : `AND id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND archived_projects.user_id = '${req.user?.id}')`;
 
+    const accessibleTeamIds = await getAccessibleReportingTeamIds(userId, teamId);
+
+    // Organization for reporting = teams the caller may access (Owner/Admin: all
+    // teams under the same owner; Team Lead: session team + teams with project membership).
     const q = `
       SELECT id,
              name,
@@ -139,10 +149,10 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
                        AND (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id) IS NOT NULL
                    ) rec) AS members
       FROM teams
-      WHERE in_organization(id, $1)
+      WHERE id = ANY($1::UUID[])
       ORDER BY name;
     `;
-    const result = await db.query(q, [teamId]);
+    const result = await db.query(q, [accessibleTeamIds]);
 
     for (const team of result.rows) {
       // Don't apply createTagList here - let the frontend Avatars component handle display logic
@@ -162,6 +172,17 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
     const archived = req.query.archived === "true";
 
     const teamId = req.query.team as string;
+    const sessionTeamId = this.getCurrentTeamId(req);
+    const userId = req.user?.id;
+
+    if (!sessionTeamId || !userId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    const accessibleTeamIds = await getAccessibleReportingTeamIds(userId, sessionTeamId);
+    if (!teamId || !accessibleTeamIds.includes(teamId)) {
+      return res.status(403).send(new ServerResponse(false, null, "Team is not accessible"));
+    }
 
     const archivedClause = archived
       ? ""
@@ -265,11 +286,12 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
               p.name,
               p.color_code,
               p.team_id,
-              p.status_id
+              p.status_id,
+              TO_CHAR(p.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS updated_at
         FROM projects p
             LEFT JOIN project_members pm ON pm.project_id = p.id
         WHERE ${teamIdFilter} ${teamMemberFilter} ${archivedClause}
-        GROUP BY p.id, p.name, p.color_code, p.team_id, p.status_id
+        GROUP BY p.id, p.name, p.color_code, p.team_id, p.status_id, p.updated_at
         ORDER BY p.name;`;
 
     const result = await db.query(q, params);

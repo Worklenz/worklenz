@@ -19,6 +19,23 @@ describe('canUseFeature', () => {
     expect(canUseFeature(pro, 'project_phases')).toBe(true);
   });
 
+  it('AppSumo Business can use advanced_reporting; AppSumo Pro cannot', () => {
+    const appsumoBusiness = session({
+      subscription_type: 'LIFE_TIME_DEAL',
+      redeemed_codes_count: 5,
+      appsumo_business_eligible: true,
+      plan_name: 'Business Plan',
+    });
+    const appsumoPro = session({
+      subscription_type: 'LIFE_TIME_DEAL',
+      redeemed_codes_count: 2,
+      appsumo_business_eligible: false,
+    });
+
+    expect(canUseFeature(appsumoBusiness, 'advanced_reporting')).toBe(true);
+    expect(canUseFeature(appsumoPro, 'advanced_reporting')).toBe(false);
+  });
+
   it('enforced mode: follows the resolved feature list', () => {
     const ltd = session({
       subscription_type: 'LIFE_TIME_DEAL',
