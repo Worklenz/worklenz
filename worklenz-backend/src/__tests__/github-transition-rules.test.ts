@@ -27,17 +27,27 @@ describe('resolveReachedEvent', () => {
     expect(resolveReachedEvent(state({ activeBranches: 1, openPullRequests: 1 }))).toBe('pr_opened');
   });
 
-  it('reaches pr_merged only when all closing PRs are merged', () => {
+  it('reaches pr_merged when pull request is merged even if branch still exists', () => {
+    expect(resolveReachedEvent(state({ activeBranches: 1, mergedPullRequests: 1, openPullRequests: 0 }))).toBe('pr_merged');
+  });
+
+  it('does not reach pr_merged while a draft PR remains open', () => {
+    expect(
+      resolveReachedEvent(state({ mergedPullRequests: 1, draftPullRequests: 1, openPullRequests: 0 }))
+    ).toBe('branch_created');
+  });
+
+  it('reaches pr_opened if open PRs remain even if another PR was merged', () => {
+    expect(resolveReachedEvent(state({ activeBranches: 1, mergedPullRequests: 1, openPullRequests: 1 }))).toBe('pr_opened');
+  });
+
+  it('supports legacy closingPullRequests state', () => {
     expect(
       resolveReachedEvent(state({ closingPullRequests: [{ merged: true }, { merged: false }], openPullRequests: 1 }))
     ).toBe('pr_opened');
     expect(
-      resolveReachedEvent(state({ closingPullRequests: [{ merged: true }, { merged: true }] }))
+      resolveReachedEvent(state({ closingPullRequests: [{ merged: true }, { merged: true }], openPullRequests: 0 }))
     ).toBe('pr_merged');
-  });
-
-  it('does not treat a merged non-closing PR as done', () => {
-    expect(resolveReachedEvent(state({ activeBranches: 1 }))).toBe('branch_created');
   });
 });
 
