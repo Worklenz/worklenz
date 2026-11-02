@@ -385,7 +385,11 @@ const SchemesSection: React.FC<SchemesSectionProps> = ({ schemes, loading }) => 
     render: (_: unknown, record: { permission: string }) => {
       const key = grantKey(role, record.permission);
       const checked = grantsState[key] ?? false;
-      const disabled = activeScheme?.is_locked ?? true;
+      // Default scheme grants must stay editable (lock only blocks delete/rename).
+      // Custom schemes stay read-only while locked.
+      const disabled = activeScheme
+        ? !activeScheme.is_default && activeScheme.is_locked
+        : true;
       return (
         <Checkbox
           checked={checked}

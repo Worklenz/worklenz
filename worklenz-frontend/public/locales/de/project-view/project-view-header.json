@@ -35,5 +35,6 @@
   "defaultTaskName": "Unbenannte Aufgabe",
   "softwareProjectTooltip": "Softwareprojekt – Probleme, Rückstand und Sprints",
   "softwareProjectTag": "Software",
-  "settingsDisabledForGuest": "Die Projekteinstellungen sind für Gastbenutzer nicht zugänglich"
+  "settingsDisabledForGuest": "Die Projekteinstellungen sind für Gastbenutzer nicht zugänglich",
+  "noPermission": "Sie haben keine Berechtigung"
 }

@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import SettingsLayout from '@/layouts/SettingsLayout';
 import { getAccessibleSettings, settingsItems } from '@/lib/settings/settings-constants';
 import { useAuthService } from '@/hooks/useAuth';
+import { useOrganizationPermissions } from '@/hooks/useOrganizationPermission';
 import { isExpiredTrialSession } from '@/utils/subscription-utils';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 
@@ -17,7 +18,18 @@ const SettingsGuard = ({
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
   const isOwnerOrAdmin = authService.isOwnerOrAdmin();
-  const accessibleSettings = getAccessibleSettings(isOwnerOrAdmin, currentSession);
+  const { permissions: organizationPermissions, isLoading } = useOrganizationPermissions();
+
+  // Non-admins need scheme grants before access can be decided; admins keep the existing path.
+  if (!isOwnerOrAdmin && isLoading) {
+    return <SuspenseFallback />;
+  }
+
+  const accessibleSettings = getAccessibleSettings(
+    isOwnerOrAdmin,
+    currentSession,
+    organizationPermissions
+  );
   const hasAccess = accessibleSettings.some(item => item.key === itemKey);
 
   if (!hasAccess) {

@@ -1,12 +1,12 @@
 import express from "express";
 
 import BillingController from "../../controllers/billing-controller";
-import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
+import { manageBillingValidator } from "../../middlewares/validators/organization-permission-validator";
 
 const billingApiRouter = express.Router();
 
 billingApiRouter.get("/upgrade-to-paid-plan", BillingController.upgradeToPaidPlan);
-billingApiRouter.post("/purchase-more-seats", teamOwnerOrAdminValidator, BillingController.addMoreSeats);
+billingApiRouter.post("/purchase-more-seats", manageBillingValidator, BillingController.addMoreSeats);
 
 billingApiRouter.get("/contact-us", BillingController.contactUs);
 billingApiRouter.get("/pricing-plans", BillingController.getPricingPlans);
@@ -18,7 +18,7 @@ billingApiRouter.get("/lkr-pricing", BillingController.getLkrPricing);
 billingApiRouter.post("/directpay/create-card-session", BillingController.createCardAddSession);
 billingApiRouter.post("/directpay/create-token-payment-session", BillingController.createCardTokenPaymentSession);
 billingApiRouter.get("/directpay/list-cards", BillingController.listCards);
-billingApiRouter.post("/directpay/delete-card", teamOwnerOrAdminValidator, BillingController.deleteCard);
+billingApiRouter.post("/directpay/delete-card", manageBillingValidator, BillingController.deleteCard);
 billingApiRouter.post("/directpay/pay-with-card", BillingController.payWithCard);
 billingApiRouter.post("/directpay/save-card-response", BillingController.saveDirectPayCardResponse);
 billingApiRouter.get("/lkr-payment-history", BillingController.getLkrPaymentHistory);

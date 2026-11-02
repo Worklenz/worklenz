@@ -13,6 +13,7 @@ import {
   ISchemeWithRolesAndGrants,
   ITeamProjectScheme,
   OrganizationPermission,
+  ProjectRolePermission,
 } from '@/types/admin-center/permission-schemes.types';
 import { IOrganizationProjectsGetResponse } from '@/types/admin-center/admin-center.types';
 
@@ -30,7 +31,13 @@ export const permissionSchemesApi = createApi({
     },
     credentials: 'include',
   }),
-  tagTypes: ['PermissionSchemes', 'PermissionGroups', 'ProjectScheme', 'MyOrganizationPermissions'],
+  tagTypes: [
+    'PermissionSchemes',
+    'PermissionGroups',
+    'ProjectScheme',
+    'MyOrganizationPermissions',
+    'MyDefaultProjectPermissions',
+  ],
   endpoints: builder => ({
     // teamId is only a cache key so permissions refetch after switching teams
     getMyOrganizationPermissions: builder.query<OrganizationPermission[], string>({
@@ -38,6 +45,14 @@ export const permissionSchemesApi = createApi({
       transformResponse: (response: IServerResponse<OrganizationPermission[]>) =>
         response.body ?? [],
       providesTags: ['MyOrganizationPermissions'],
+    }),
+
+    // Default-scheme project permissions for the current user's role (list UI gates).
+    getMyDefaultProjectPermissions: builder.query<ProjectRolePermission[], string>({
+      query: () => ({ url: `${rootUrl}/my-default-project-permissions` }),
+      transformResponse: (response: IServerResponse<ProjectRolePermission[]>) =>
+        response.body ?? [],
+      providesTags: ['MyDefaultProjectPermissions'],
     }),
 
     // -------------------------------------------------------------------------
@@ -92,7 +107,11 @@ export const permissionSchemesApi = createApi({
         body: { grants },
       }),
       transformResponse: (response: IServerResponse<IPermissionGrant[]>) => response.body,
-      invalidatesTags: ['PermissionSchemes', 'MyOrganizationPermissions'],
+      invalidatesTags: [
+        'PermissionSchemes',
+        'MyOrganizationPermissions',
+        'MyDefaultProjectPermissions',
+      ],
     }),
 
     addSchemePermissions: builder.mutation<
@@ -105,7 +124,7 @@ export const permissionSchemesApi = createApi({
         body: { permissions },
       }),
       transformResponse: (response: IServerResponse<IPermissionGrant[]>) => response.body,
-      invalidatesTags: ['PermissionSchemes'],
+      invalidatesTags: ['PermissionSchemes', 'MyDefaultProjectPermissions'],
     }),
 
     removeSchemePermissions: builder.mutation<
@@ -118,7 +137,7 @@ export const permissionSchemesApi = createApi({
         body: { permissions },
       }),
       transformResponse: (response: IServerResponse<IPermissionGrant[]>) => response.body,
-      invalidatesTags: ['PermissionSchemes'],
+      invalidatesTags: ['PermissionSchemes', 'MyDefaultProjectPermissions'],
     }),
 
     // -------------------------------------------------------------------------
@@ -233,6 +252,7 @@ export const permissionSchemesApi = createApi({
 
 export const {
   useGetMyOrganizationPermissionsQuery,
+  useGetMyDefaultProjectPermissionsQuery,
   useListSchemesQuery,
   useGetSchemeQuery,
   useCreateSchemeMutation,

@@ -49,6 +49,11 @@ export interface IProjectMembershipContext {
   canCreateProjectsFromTemplates: boolean;
   isProjectMember: boolean;
   /**
+   * Org "View all projects" — when true, non-members still receive scheme
+   * project permissions (view-only unless Create/Edit/Delete/etc. are granted).
+   */
+  canViewAllProjects?: boolean;
+  /**
    * Grants from the project's permission scheme for the user's role.
    * Omitted keys keep the role baseline unchanged.
    */

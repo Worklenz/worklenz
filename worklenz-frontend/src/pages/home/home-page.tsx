@@ -13,6 +13,8 @@ import RecentAndFavouriteProjectList from '@/pages/home/recent-and-favourite-pro
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
+import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
+import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
@@ -33,7 +35,11 @@ const HomePage = memo(() => {
   const isDesktop = useMediaQuery({ query: `(min-width: ${DESKTOP_MIN_WIDTH}px)` });
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const canCreateFromTemplates = useAuthService().canCreateProjectsFromTemplates();
-  const canOpenCreateProject = isOwnerOrAdmin || canCreateFromTemplates;
+  const { hasPermission: canCreateProjects } = useOrganizationPermission(
+    ORGANIZATION_PERMISSIONS.CREATE_PROJECTS
+  );
+  const canOpenCreateProject =
+    isOwnerOrAdmin || canCreateFromTemplates || canCreateProjects;
 
   useDocumentTitle('Home');
 

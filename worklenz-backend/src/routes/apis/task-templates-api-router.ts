@@ -4,7 +4,7 @@ import TasktemplatesController from "../../controllers/task-templates-controller
 import idParamValidator from "../../middlewares/validators/id-param-validator";
 import importTaskTemplatesValidator from "../../middlewares/validators/import-task-templates-validator";
 import bodyNameValidator from "../../middlewares/validators/body-name-validator";
-import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
+import { manageOrganizationSettingsValidator } from "../../middlewares/validators/organization-permission-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 
 const taskTemplatesApiRouter = express.Router();
@@ -22,7 +22,7 @@ taskTemplatesApiRouter.put("/:id", idParamValidator, safeControllerFunction(Task
 taskTemplatesApiRouter.patch(
   "/:id/scope",
   idParamValidator,
-  teamOwnerOrAdminValidator,
+  manageOrganizationSettingsValidator,
   safeControllerFunction(TasktemplatesController.updateScope)
 );
 taskTemplatesApiRouter.delete("/:id", idParamValidator, safeControllerFunction(TasktemplatesController.deleteById));

@@ -586,13 +586,16 @@ const ProjectViewHeader = memo(() => {
       );
     }
 
+    const canOpenSettings = permissions.settings;
     actions.push(
       <Tooltip
         key="settings"
         title={
-          isGuest
-            ? t('settingsDisabledForGuest', { defaultValue: 'Project settings are not accessible for guest users' })
-            : t('settingsTooltip', { defaultValue: 'Open project settings' })
+          canOpenSettings
+            ? t('settingsTooltip', { defaultValue: 'Open project settings' })
+            : isGuest
+              ? t('settingsDisabledForGuest', { defaultValue: 'Project settings are not accessible for guest users' })
+              : t('noPermission', { defaultValue: 'You do not have permission' })
         }
       >
         <Button
@@ -600,7 +603,7 @@ const ProjectViewHeader = memo(() => {
           shape="circle"
           icon={<SettingOutlined />}
           onClick={handleSettingsClick}
-          disabled={isGuest}
+          disabled={!canOpenSettings}
         />
       </Tooltip>
     );
@@ -719,6 +722,7 @@ const ProjectViewHeader = memo(() => {
     handleSubscribe,
     isProjectManager,
     permissions.saveAsTemplate,
+    permissions.settings,
     permissions.members.add,
     handleInvite,
     creatingTask,
