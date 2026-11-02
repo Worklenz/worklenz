@@ -15,6 +15,7 @@ vi.mock('react-i18next', () => ({
 
 const state = vi.hoisted(() => ({
   post: vi.fn(),
+  toggleReaction: vi.fn(),
   messageSuccess: vi.fn(),
   messageError: vi.fn(),
   messageWarning: vi.fn(),
@@ -33,6 +34,7 @@ const trigger =
 
 vi.mock('@/api/client-portal/portal-workflow-api', () => ({
   usePostThreadMessageMutation: () => [trigger(state.post), { isLoading: false }],
+  useToggleThreadMessageReactionMutation: () => [trigger(state.toggleReaction), { isLoading: false }],
 }));
 
 vi.mock('@/api/client-portal/portal-projects-api', () => ({
@@ -78,6 +80,7 @@ const pickMention = async (name: string) => {
 beforeEach(() => {
   vi.clearAllMocks();
   state.post.mockResolvedValue({ body: { notified: ['Alex Rivera'], message: {} } });
+  state.toggleReaction.mockResolvedValue({ body: [{ emoji: '👍', count: 1, has_reacted: true, users: [] }] });
   state.presign.mockResolvedValue({ body: { file_id: 'f-1', upload_url: 'https://upload.test/f-1', expires_in: 900 } });
   state.confirm.mockResolvedValue({ body: { id: 'f-1' } });
   state.upload.mockResolvedValue(undefined);
@@ -338,5 +341,81 @@ describe('ThreadMessages', () => {
     const out = screen.getByTestId('out');
     expect(out.querySelectorAll('span')).toHaveLength(1);
     expect(out.querySelector('span')).toHaveTextContent('@Alex Rivera');
+  });
+  it('renders reaction badges with count and toggles when clicked', async () => {
+    render(
+      <ThreadMessages
+        threadId="th-1"
+        messages={[
+          message({
+            id: 'm-1',
+            reactions: [
+              {
+                emoji: '👍',
+                count: 2,
+                has_reacted: true,
+                users: [
+                  { id: 'u-1', name: 'Alex Rivera', side: 'client' },
+                  { id: 'm-1', name: 'Sam Patel', side: 'internal' },
+                ],
+              },
+            ],
+          }),
+        ]}
+      />
+    );
+
+    const badge = screen.getByRole('button', { name: '👍 2' });
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveAttribute('aria-pressed', 'true');
+
+    await userEvent.click(badge);
+    expect(state.toggleReaction).toHaveBeenCalledWith({
+      messageId: 'm-1',
+      emoji: '👍',
+      threadId: 'th-1',
+    });
+  });
+
+  it('allows picking a new emoji reaction from the picker', async () => {
+    render(
+      <ThreadMessages
+        threadId="th-1"
+        messages={[message({ id: 'm-1', reactions: [] })]}
+      />
+    );
+
+    const addBtn = screen.getByRole('button', { name: 'Add reaction' });
+    await userEvent.click(addBtn);
+
+    const heartBtn = await screen.findByRole('button', { name: '❤️' });
+    await userEvent.click(heartBtn);
+
+    expect(state.toggleReaction).toHaveBeenCalledWith({
+      messageId: 'm-1',
+      emoji: '❤️',
+      threadId: 'th-1',
+    });
+  });
+
+  it('shows error message if toggle reaction fails', async () => {
+    state.toggleReaction.mockRejectedValueOnce(new Error('Network error'));
+
+    render(
+      <ThreadMessages
+        threadId="th-1"
+        messages={[
+          message({
+            id: 'm-1',
+            reactions: [{ emoji: '🎉', count: 1, has_reacted: false, users: [{ id: 'u-1', name: 'Alex', side: 'client' }] }],
+          }),
+        ]}
+      />
+    );
+
+    const badge = screen.getByRole('button', { name: '🎉 1' });
+    await userEvent.click(badge);
+
+    expect(state.messageError).toHaveBeenCalledWith('Could not update reaction.');
   });
 });

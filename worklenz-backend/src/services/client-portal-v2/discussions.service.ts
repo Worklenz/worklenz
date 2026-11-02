@@ -40,6 +40,19 @@ export interface ThreadAttachmentView {
 export const THREAD_MAX_ATTACHMENTS = 5;
 export const THREAD_MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024;
 
+export interface ThreadReactionUserView {
+  id: string;
+  name: string;
+  side: PortalSide;
+}
+
+export interface ThreadMessageReactionView {
+  emoji: string;
+  count: number;
+  has_reacted: boolean;
+  users: ThreadReactionUserView[];
+}
+
 export interface ThreadMessageView {
   id: string;
   author: string;
@@ -55,6 +68,7 @@ export interface ThreadMessageView {
   /** A deleted message stays as a tombstone: no text, no attachments, so replies keep their quote. */
   deleted: boolean;
   reply_to: { id: string; author: string; snippet: string; deleted: boolean } | null;
+  reactions: ThreadMessageReactionView[];
 }
 
 export interface ThreadView {
@@ -230,7 +244,29 @@ export async function getThread(q: Queryable, teamId: string, userId: string, th
                                       ORDER BY a.created_at, a.id)
                         FROM client_portal_thread_message_attachments a
                         LEFT JOIN project_files pf ON pf.id = a.file_id AND pf.status = 'active'
-                       WHERE a.message_id = m.id), '[]'::json) AS attachments
+                       WHERE a.message_id = m.id), '[]'::json) AS attachments,
+            COALESCE((
+              SELECT json_agg(json_build_object(
+                       'emoji', r_grp.emoji,
+                       'count', r_grp.cnt,
+                       'has_reacted', r_grp.has_reacted,
+                       'users', r_grp.users
+                     ) ORDER BY r_grp.cnt DESC, r_grp.first_at)
+                FROM (
+                  SELECT r.emoji,
+                         COUNT(*)::int AS cnt,
+                         BOOL_OR(r.user_id IS NOT DISTINCT FROM $2::uuid) AS has_reacted,
+                         MIN(r.created_at) AS first_at,
+                         json_agg(json_build_object(
+                           'id', COALESCE(r.user_id, r.contact_id),
+                           'name', r.reactor_name,
+                           'side', r.reactor_side
+                         ) ORDER BY r.created_at) AS users
+                    FROM client_portal_thread_message_reactions r
+                   WHERE r.message_id = m.id
+                   GROUP BY r.emoji
+                ) r_grp
+            ), '[]'::json) AS reactions
        FROM client_portal_thread_messages m
        LEFT JOIN client_portal_thread_messages pm
               ON pm.id = m.parent_message_id AND pm.thread_id = m.thread_id AND pm.visibility <> 'client_only'
@@ -258,6 +294,7 @@ export async function getThread(q: Queryable, teamId: string, userId: string, th
           deleted: row.parent_deleted === true,
         }
       : null,
+    reactions: row.deleted ? [] : (row.reactions ?? []),
   }));
   return view;
 }
@@ -783,6 +820,7 @@ export async function postStaffMessage(input: {
       edited: false,
       deleted: false,
       reply_to: null,
+      reactions: [],
     },
     // Names of the client users who will be notified. Empty for an internal comment.
     notified: result.audience.map(person => person.name),
@@ -852,4 +890,107 @@ export async function startThread(input: {
   });
 
   return getThread(db, teamId, input.userId, threadId);
+}
+
+
+/**
+ * Toggles an emoji reaction on a thread message by an internal staff user.
+ * The message must belong to a thread in the staff user's organization team and must not be deleted.
+ */
+export async function toggleStaffMessageReaction(
+  teamId: string,
+  userId: string,
+  actorName: string,
+  messageId: string,
+  rawEmoji: unknown
+): Promise<ThreadMessageReactionView[]> {
+  if (!messageId || typeof messageId !== "string" || !UUID_PATTERN.test(messageId)) {
+    throw badRequest("Invalid message id", "INVALID_MESSAGE");
+  }
+
+  const emoji = typeof rawEmoji === "string" ? rawEmoji.trim() : "";
+  if (!emoji || emoji.length > 32) {
+    throw badRequest("Please choose a valid emoji", "INVALID_EMOJI");
+  }
+
+  const messageResult = await db.query(
+    `SELECT m.id, m.thread_id, m.deleted_at
+       FROM client_portal_thread_messages m
+       JOIN client_portal_threads th ON th.id = m.thread_id
+      WHERE m.id = $1
+        AND m.visibility <> 'client_only'
+        AND th.organization_team_id = $2`,
+    [messageId, teamId]
+  );
+
+  if (messageResult.rows.length === 0) {
+    throw notFound("Message");
+  }
+
+  if (messageResult.rows[0].deleted_at) {
+    throw badRequest("Cannot react to a deleted message", "MESSAGE_DELETED");
+  }
+
+  return withTransaction(async tx => {
+    await tx.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`reaction:${messageId}:${userId}`]);
+
+    const existing = await tx.query(
+      `SELECT id, emoji FROM client_portal_thread_message_reactions
+        WHERE message_id = $1 AND user_id = $2`,
+      [messageId, userId]
+    );
+
+    if (existing.rows.length > 0) {
+      const currentReaction = existing.rows[0];
+      if (currentReaction.emoji === emoji) {
+        // Same emoji: toggle off (remove reaction)
+        await tx.query(
+          `DELETE FROM client_portal_thread_message_reactions WHERE id = $1`,
+          [currentReaction.id]
+        );
+      } else {
+        // Different emoji: switch reaction (replace previous emoji)
+        await tx.query(
+          `UPDATE client_portal_thread_message_reactions
+              SET emoji = $1, created_at = CURRENT_TIMESTAMP
+            WHERE id = $2`,
+          [emoji, currentReaction.id]
+        );
+      }
+    } else {
+      await tx.query(
+        `INSERT INTO client_portal_thread_message_reactions
+           (message_id, reactor_side, user_id, reactor_name, emoji)
+         VALUES ($1, 'internal', $2, $3, $4)
+         ON CONFLICT DO NOTHING`,
+        [messageId, userId, actorName, emoji]
+      );
+    }
+
+    const updated = await tx.query(
+      `SELECT COALESCE(json_agg(json_build_object(
+                'emoji', r_grp.emoji,
+                'count', r_grp.cnt,
+                'has_reacted', r_grp.has_reacted,
+                'users', r_grp.users
+              ) ORDER BY r_grp.cnt DESC, r_grp.first_at), '[]'::json) AS reactions
+         FROM (
+           SELECT r.emoji,
+                  COUNT(*)::int AS cnt,
+                  BOOL_OR(r.user_id IS NOT DISTINCT FROM $2::uuid) AS has_reacted,
+                  MIN(r.created_at) AS first_at,
+                  json_agg(json_build_object(
+                    'id', COALESCE(r.user_id, r.contact_id),
+                    'name', r.reactor_name,
+                    'side', r.reactor_side
+                  ) ORDER BY r.created_at) AS users
+             FROM client_portal_thread_message_reactions r
+            WHERE r.message_id = $1
+            GROUP BY r.emoji
+         ) r_grp`,
+      [messageId, userId]
+    );
+
+    return updated.rows[0]?.reactions ?? [];
+  });
 }

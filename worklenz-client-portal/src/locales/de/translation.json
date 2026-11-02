@@ -392,7 +392,12 @@
       "file": "Datei",
       "approval": "Freigabe",
       "change_request": "Änderungsanfrage"
-    }
+    },
+    "addReaction": "Reaktion hinzufügen",
+    "reactionsLabel": "Reaktionen",
+    "reactedTooltip": "Klicken, um deine Reaktion zu entfernen",
+    "notReactedTooltip": "Klicken, um mit {{emoji}} zu reagieren",
+    "reactFailed": "Reaktion konnte nicht aktualisiert werden"
   },
   "locked": {
     "reply": "Kunden-Betrachter können Diskussionen lesen, aber nicht antworten.",

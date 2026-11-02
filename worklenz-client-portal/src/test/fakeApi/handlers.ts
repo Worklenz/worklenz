@@ -180,6 +180,12 @@ const threadDto = (s: Subject, t: MockThread): ClientThreadV2 => ({
     id: m.id, author: m.author, side: m.side, mine: m.side === 'client' && m.author === s.user.name, visibility: m.visibility ?? 'client', text: m.text, at: m.at,
     mentions: [...m.text.matchAll(/@([A-Z][a-z]+ [A-Z][a-z]+)/g)].map(x => x[1]),
     attachments: (m.attachments ?? []).map(a => ({ id: a.id, file_id: a.id, name: a.name, type: a.name.split('.').pop()?.toLowerCase() ?? '', size: a.size })),
+    reactions: (m.reactions ?? []).map(r => ({
+      emoji: r.emoji,
+      count: r.users.length,
+      has_reacted: r.users.some(u => u.id === s.user.id),
+      users: r.users,
+    })),
   })),
   unread: !t.readBy.includes(s.user.id),
 });
@@ -555,6 +561,49 @@ route('POST', '/v2/threads/comments', ({ s, body }) => {
   thread.messages.push(message);
   thread.readBy = [s.user.id];
   return ok({ thread_id: thread.id }, 'Comment sent', 201);
+});
+
+route('POST', `/v2/threads/messages/${ID}/reactions`, ({ s, params, body }) => {
+  if (!can(s.user.role).comment) return forbid();
+  const messageId = params[0];
+  const emoji = String(body.emoji ?? '').trim();
+  if (!emoji) return fail(400, 'INVALID_EMOJI', 'Please choose a valid emoji');
+
+  let targetMsg: MockMessage | undefined;
+  for (const t of myThreads(s)) {
+    targetMsg = t.messages.find(m => m.id === messageId);
+    if (targetMsg) break;
+  }
+  if (!targetMsg) return notFound('Message');
+  if (targetMsg.deleted) return fail(400, 'MESSAGE_DELETED', 'Cannot react to a deleted message');
+
+  targetMsg.reactions = targetMsg.reactions ?? [];
+  const currentReaction = targetMsg.reactions.find(r => r.users.some(u => u.id === s.user.id));
+  if (currentReaction && currentReaction.emoji === emoji) {
+    currentReaction.users = currentReaction.users.filter(u => u.id !== s.user.id);
+  } else {
+    if (currentReaction) {
+      currentReaction.users = currentReaction.users.filter(u => u.id !== s.user.id);
+    }
+    const targetGroup = targetMsg.reactions.find(r => r.emoji === emoji);
+    if (targetGroup) {
+      targetGroup.users.push({ id: s.user.id, name: s.user.name, side: 'client' });
+    } else {
+      targetMsg.reactions.push({
+        emoji,
+        users: [{ id: s.user.id, name: s.user.name, side: 'client' }],
+      });
+    }
+  }
+  targetMsg.reactions = targetMsg.reactions.filter(r => r.users.length > 0);
+
+  const result = targetMsg.reactions.map(r => ({
+    emoji: r.emoji,
+    count: r.users.length,
+    has_reacted: r.users.some(u => u.id === s.user.id),
+    users: r.users,
+  }));
+  return ok(result);
 });
 
 route('GET', `/v2/projects/${ID}/mention-options`, ({ s, params }) => {
