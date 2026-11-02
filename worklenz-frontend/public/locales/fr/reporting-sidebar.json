@@ -9,11 +9,11 @@
   "allTasks": "Tâches",
   "progressTracking": "Suivi des progrès",
   "currentOrganizationTooltip": "Organisation actuelle",
-  "analyticsGroup": "Reporting & Analytics",
-  "dashboards": "Dashboards",
-  "velocity": "Velocity",
-  "cumulativeFlow": "Cumulative Flow",
-  "sla": "SLA Tracking",
-  "timeInStatus": "Time in Status",
-  "newBadge": "NEW"
+  "analyticsGroup": "Rapports et analyses",
+  "dashboards": "Tableaux de bord",
+  "velocity": "Vitesse",
+  "cumulativeFlow": "Flux cumulatif",
+  "sla": "Suivi des SLA",
+  "timeInStatus": "Temps en statut",
+  "newBadge": "NOUVEAU"
 }

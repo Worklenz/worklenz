@@ -1,3 +1,4 @@
+import { cfdDatesInclusive } from "./cfd-date-range";
 import db from "../../config/db";
 import { STATUS_HISTORY_RETENTION_MONTHS } from "../../shared/reporting-analytics.constants";
 
@@ -14,17 +15,6 @@ function utcYesterday(): string {
   const d = new Date();
   d.setUTCDate(d.getUTCDate() - 1);
   return d.toISOString().slice(0, 10);
-}
-
-function eachDateInclusive(from: string, to: string): string[] {
-  const dates: string[] = [];
-  const cursor = new Date(`${from}T00:00:00.000Z`);
-  const end = new Date(`${to}T00:00:00.000Z`);
-  while (cursor.getTime() <= end.getTime()) {
-    dates.push(cursor.toISOString().slice(0, 10));
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
-  return dates;
 }
 
 /**
@@ -118,6 +108,8 @@ export async function backfillRange(
   const toDate = toDateString(to);
   if (fromDate > toDate) return 0;
 
+  const allDates = cfdDatesInclusive(fromDate, toDate);
+
   const existing = await db.query(
     `
     SELECT project_id::TEXT AS project_id, snapshot_date::TEXT AS snapshot_date
@@ -135,7 +127,6 @@ export async function backfillRange(
     )
   );
 
-  const allDates = eachDateInclusive(fromDate, toDate);
   const missingPairs: Array<{ project_id: string; day: string }> = [];
   for (const projectId of projectIds) {
     for (const day of allDates) {
@@ -147,7 +138,6 @@ export async function backfillRange(
   if (missingPairs.length === 0) return 0;
 
   const missingProjectIds = [...new Set(missingPairs.map(p => p.project_id))];
-  const missingDates = [...new Set(missingPairs.map(p => p.day))];
 
   // Fast path: if nothing in history for these projects, skip heavy reconstruct.
   const historyCheck = await db.query(
@@ -165,16 +155,8 @@ export async function backfillRange(
 
   const result = await db.query(
     `
-    WITH days AS (
-      SELECT unnest($2::DATE[]) AS day
-    ),
-    projects AS (
-      SELECT unnest($1::UUID[]) AS project_id
-    ),
-    needed AS (
-      SELECT p.project_id, d.day
-      FROM projects p
-      CROSS JOIN days d
+    WITH needed AS (
+      SELECT * FROM unnest($1::UUID[], $2::DATE[]) AS pairs(project_id, day)
     )
     INSERT INTO cfd_daily_snapshots (project_id, snapshot_date, status_id, issue_count)
     SELECT h.project_id,
@@ -184,8 +166,8 @@ export async function backfillRange(
     FROM needed n
     INNER JOIN task_status_history h
       ON h.project_id = n.project_id
-     AND h.entered_at <= (n.day + INTERVAL '1 day' - INTERVAL '1 millisecond')
-     AND (h.exited_at IS NULL OR h.exited_at > (n.day + INTERVAL '1 day' - INTERVAL '1 millisecond'))
+     AND h.entered_at < ((n.day + 1)::TIMESTAMP AT TIME ZONE 'UTC')
+     AND (h.exited_at IS NULL OR h.exited_at >= ((n.day + 1)::TIMESTAMP AT TIME ZONE 'UTC'))
     INNER JOIN tasks t ON t.id = h.task_id
     WHERE t.archived IS FALSE
       AND t.parent_task_id IS NULL
@@ -196,7 +178,7 @@ export async function backfillRange(
       created_at = CURRENT_TIMESTAMP
     RETURNING id
     `,
-    [missingProjectIds, missingDates]
+    [missingPairs.map(p => p.project_id), missingPairs.map(p => p.day)]
   );
 
   return result.rowCount ?? 0;

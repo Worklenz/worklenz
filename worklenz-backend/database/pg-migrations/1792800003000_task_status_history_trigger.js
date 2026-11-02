@@ -10,6 +10,20 @@ exports.shorthands = undefined;
  */
 exports.up = async (pgm) => {
   pgm.sql(`
+-- Status before history tracking is unknown; use the current status as the baseline.
+INSERT INTO task_status_history (
+  task_id, project_id, status_id, previous_status_id, entered_at, changed_by
+)
+SELECT t.id, t.project_id, t.status_id, NULL, t.created_at, NULL
+FROM tasks t
+WHERE t.archived IS FALSE
+  AND t.status_id IS NOT NULL
+  AND t.project_id IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM task_status_history h
+    WHERE h.task_id = t.id AND h.exited_at IS NULL
+  );
+
 -- Close duplicate open history rows before enforcing uniqueness (keep latest per task).
 WITH ranked AS (
   SELECT id,

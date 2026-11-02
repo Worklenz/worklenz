@@ -169,5 +169,7 @@
   "firstPage": "Faqja e parë",
   "previousPage": "Faqja e mëparshme",
   "nextPage": "Faqja tjetër",
-  "lastPage": "Faqja e fundit"
+  "lastPage": "Faqja e fundit",
+  "selectAll": "Zgjidh të gjitha",
+  "clearAll": "Pastro të gjitha"
 }

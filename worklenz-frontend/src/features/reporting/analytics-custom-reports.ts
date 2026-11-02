@@ -30,6 +30,12 @@ export const getAnalyticsCustomReportsStorageKey = (
   return `${STORAGE_KEY_PREFIX}:${team}:${user}`;
 };
 
+/** Check the session again after each asynchronous template request. */
+export const isAnalyticsCustomReportsSessionActive = (storageKey: string): boolean => {
+  const session = getUserSession();
+  return storageKey === getAnalyticsCustomReportsStorageKey(session?.team_id, session?.id);
+};
+
 const readStore = (storageKey: string): AnalyticsCustomReport[] => {
   const raw = getJSONFromLocalStorage(storageKey);
   return Array.isArray(raw) ? (raw as AnalyticsCustomReport[]) : [];

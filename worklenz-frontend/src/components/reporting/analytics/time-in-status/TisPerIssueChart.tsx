@@ -91,7 +91,7 @@ export const TisPerIssueChart = forwardRef<TisPerIssueChartHandle, TisPerIssueCh
       return { labels, datasets };
     }, [issues, statuses]);
 
-    const options: ChartOptions<'bar'> = useMemo(() => {
+    const options = useMemo((): ChartOptions<'bar'> => {
       const base = getBaseChartOptions(chartTheme);
       return {
         ...base,
@@ -106,7 +106,6 @@ export const TisPerIssueChart = forwardRef<TisPerIssueChartHandle, TisPerIssueCh
             labels: { color: chartTheme.textColor, boxWidth: 12 },
           },
           tooltip: {
-            ...base.plugins?.tooltip,
             callbacks: {
               afterBody: items => {
                 const idx = items[0]?.dataIndex;

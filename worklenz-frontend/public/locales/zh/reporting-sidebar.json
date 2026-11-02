@@ -9,11 +9,11 @@
   "allTasks": "任务",
   "progressTracking": "进度跟踪",
   "currentOrganizationTooltip": "当前的组织",
-  "analyticsGroup": "Reporting & Analytics",
-  "dashboards": "Dashboards",
-  "velocity": "Velocity",
-  "cumulativeFlow": "Cumulative Flow",
-  "sla": "SLA Tracking",
-  "timeInStatus": "Time in Status",
-  "newBadge": "NEW"
+  "analyticsGroup": "报告与分析",
+  "dashboards": "仪表板",
+  "velocity": "速度",
+  "cumulativeFlow": "累计流量",
+  "sla": "SLA 跟踪",
+  "timeInStatus": "状态时间",
+  "newBadge": "新"
 }

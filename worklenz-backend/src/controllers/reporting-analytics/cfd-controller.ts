@@ -1,4 +1,5 @@
 import moment from "moment";
+import { InvalidCfdDateRangeError } from "../../services/reporting-analytics/cfd-date-range";
 
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
@@ -7,6 +8,7 @@ import WorklenzControllerBase from "../worklenz-controller-base";
 import HandleExceptions from "../../decorators/handle-exceptions";
 import {
   buildCfdCsvMatrix,
+  CfdSeriesFilters,
   getCfdSeries,
   parseCfdFilters,
 } from "../../services/reporting-analytics/cfd-series.service";
@@ -34,7 +36,15 @@ export default class CfdController extends WorklenzControllerBase {
 
     const query = req.query as Record<string, unknown>;
     const accessible = accessibleProjectIds(req);
-    const filters = parseCfdFilters(query, accessible, teamId);
+    let filters: CfdSeriesFilters;
+    try {
+      filters = parseCfdFilters(query, accessible, teamId);
+    } catch (error) {
+      if (error instanceof InvalidCfdDateRangeError) {
+        return res.status(400).send(new ServerResponse(false, null, error.message));
+      }
+      throw error;
+    }
     const data = await getCfdSeries(filters);
     return res.status(200).send(new ServerResponse(true, data));
   }
@@ -54,7 +64,16 @@ export default class CfdController extends WorklenzControllerBase {
     const body = (req.body ?? {}) as Record<string, unknown>;
     const merged = { ...body, ...((body.filters as object) ?? {}) };
     const accessible = accessibleProjectIds(req);
-    const filters = parseCfdFilters(merged, accessible, teamId);
+    let filters: CfdSeriesFilters;
+    try {
+      filters = parseCfdFilters(merged, accessible, teamId);
+    } catch (error) {
+      if (error instanceof InvalidCfdDateRangeError) {
+        res.status(400).send(new ServerResponse(false, null, error.message));
+        return;
+      }
+      throw error;
+    }
     const data = await getCfdSeries(filters);
     const csv = buildCfdCsvMatrix(data);
 

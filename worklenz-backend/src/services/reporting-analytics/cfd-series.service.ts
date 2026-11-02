@@ -1,5 +1,7 @@
+import { cfdDatesInclusive, InvalidCfdDateRangeError } from "./cfd-date-range";
 import { createHash } from "crypto";
 import db from "../../config/db";
+import { formatCsvCell } from "../../shared/csv-utils";
 import {
   getAnalyticsCache,
   setAnalyticsCache,
@@ -176,10 +178,11 @@ function defaultDateRange(): { from: string; to: string } {
   };
 }
 
-function toDateOnly(value: string | null | undefined, fallback: string): string | null {
+function toDateOnly(value: unknown, fallback: string): string | null {
+  if (value !== undefined && value !== null && typeof value !== "string") return null;
   if (!value) return fallback;
   // Accept YYYY-MM-DD or ISO timestamps; reject anything else before DB casts.
-  const dateOnly = value.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(value)
+  const dateOnly = typeof value === "string" && value.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(value)
     ? value.slice(0, 10)
     : null;
   if (!dateOnly) return null;
@@ -194,17 +197,6 @@ function retentionFloorDate(): string {
   const d = new Date();
   d.setUTCMonth(d.getUTCMonth() - STATUS_HISTORY_RETENTION_MONTHS);
   return d.toISOString().slice(0, 10);
-}
-
-function eachDateInclusive(from: string, to: string): string[] {
-  const dates: string[] = [];
-  const cursor = new Date(`${from}T00:00:00.000Z`);
-  const end = new Date(`${to}T00:00:00.000Z`);
-  while (cursor.getTime() <= end.getTime()) {
-    dates.push(cursor.toISOString().slice(0, 10));
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
-  return dates;
 }
 
 /** Hard cap when user picks projects — detail statuses freeze with too many. */
@@ -243,25 +235,23 @@ export function parseCfdFilters(
   const smoothRaw = String(query.smoothing ?? "raw");
   const smoothing: CfdSmoothing = smoothRaw === "rolling_7" ? "rolling_7" : "raw";
 
-  const hasFrom = typeof query.date_from === "string" && !!query.date_from.trim();
-  const hasTo = typeof query.date_to === "string" && !!query.date_to.trim();
-  const parsedFrom = hasFrom
-    ? toDateOnly(query.date_from as string, defaults.from)
-    : defaults.from;
-  const parsedTo = hasTo
-    ? toDateOnly(query.date_to as string, defaults.to)
-    : defaults.to;
+  const parsedFrom = toDateOnly(query.date_from, defaults.from);
+  const parsedTo = toDateOnly(query.date_to, defaults.to);
 
   if (parsedFrom === null || parsedTo === null) {
-    throw new Error("Invalid date_from or date_to");
+    throw new InvalidCfdDateRangeError("Invalid date_from or date_to");
   }
   if (parsedFrom > parsedTo) {
-    throw new Error("date_from must be on or before date_to");
+    throw new InvalidCfdDateRangeError("date_from must be on or before date_to");
   }
 
   const floor = retentionFloorDate();
   const dateFrom = parsedFrom < floor ? floor : parsedFrom;
-  const dateTo = parsedTo;
+  // Future days have no historical data; cap month-end presets at today.
+  const dateTo = parsedTo > defaults.to ? defaults.to : parsedTo;
+  if (dateFrom > dateTo) {
+    throw new InvalidCfdDateRangeError("Date range must overlap the retained history through today");
+  }
 
   return {
     projectIds,
@@ -447,80 +437,48 @@ async function loadGroupedSeries(
     return row;
   };
 
-  for (let i = 0; i < dates.length; i++) {
-    const day = dates[i];
-    const dayEnd = `${day}T23:59:59.999Z`;
+  const grouping = filters.groupBy === "epic"
+    ? { id: "pe.id", name: "pe.name", fallback: "No epic",
+        joins: "LEFT JOIN project_epics pe ON pe.id = t.epic_id" }
+    : filters.groupBy === "label"
+      ? { id: "tl.label_id", name: "lab.name", fallback: "No label",
+          joins: "LEFT JOIN task_labels tl ON tl.task_id = t.id LEFT JOIN team_labels lab ON lab.id = tl.label_id" }
+      : { id: "ta.team_member_id", name: "tmiv.name", fallback: "Unassigned",
+          joins: "LEFT JOIN tasks_assignees ta ON ta.task_id = t.id LEFT JOIN team_member_info_view tmiv ON tmiv.team_member_id = ta.team_member_id" };
 
-    let q = "";
-    const params: unknown[] = [filters.projectIds, dayEnd];
-
-    if (filters.groupBy === "epic") {
-      q = `
-        SELECT h.status_id,
-               COALESCE(pe.id::TEXT, 'none') AS group_id,
-               COALESCE(pe.name, 'No epic') AS group_name,
-               COUNT(DISTINCT h.task_id)::INT AS issue_count
-        FROM task_status_history h
-        INNER JOIN tasks t ON t.id = h.task_id
-        LEFT JOIN project_epics pe ON pe.id = t.epic_id
-        WHERE h.project_id = ANY($1::UUID[])
-          AND t.archived IS FALSE
-          AND t.parent_task_id IS NULL
-          AND h.entered_at <= $2::TIMESTAMPTZ
-          AND (h.exited_at IS NULL OR h.exited_at > $2::TIMESTAMPTZ)
-        GROUP BY h.status_id, pe.id, pe.name
-      `;
-    } else if (filters.groupBy === "label") {
-      q = `
-        SELECT h.status_id,
-               COALESCE(tl.label_id::TEXT, 'none') AS group_id,
-               COALESCE(lab.name, 'No label') AS group_name,
-               COUNT(DISTINCT h.task_id)::INT AS issue_count
-        FROM task_status_history h
-        INNER JOIN tasks t ON t.id = h.task_id
-        LEFT JOIN task_labels tl ON tl.task_id = t.id
-        LEFT JOIN team_labels lab ON lab.id = tl.label_id
-        WHERE h.project_id = ANY($1::UUID[])
-          AND t.archived IS FALSE
-          AND t.parent_task_id IS NULL
-          AND h.entered_at <= $2::TIMESTAMPTZ
-          AND (h.exited_at IS NULL OR h.exited_at > $2::TIMESTAMPTZ)
-        GROUP BY h.status_id, tl.label_id, lab.name
-      `;
-    } else {
-      q = `
-        SELECT h.status_id,
-               COALESCE(ta.team_member_id::TEXT, 'none') AS group_id,
-               COALESCE(tmiv.name, 'Unassigned') AS group_name,
-               COUNT(DISTINCT h.task_id)::INT AS issue_count
-        FROM task_status_history h
-        INNER JOIN tasks t ON t.id = h.task_id
-        LEFT JOIN tasks_assignees ta ON ta.task_id = t.id
-        LEFT JOIN team_member_info_view tmiv ON tmiv.team_member_id = ta.team_member_id
-        WHERE h.project_id = ANY($1::UUID[])
-          AND t.archived IS FALSE
-          AND t.parent_task_id IS NULL
-          AND h.entered_at <= $2::TIMESTAMPTZ
-          AND (h.exited_at IS NULL OR h.exited_at > $2::TIMESTAMPTZ)
-        GROUP BY h.status_id, ta.team_member_id, tmiv.name
-      `;
-    }
-
-    const result = await db.query(q, params);
-    for (const row of result.rows as Array<{
-      status_id: string;
-      group_id: string;
-      group_name: string;
-      issue_count: number;
-    }>) {
-      if (!statusIdSet.has(row.status_id)) continue;
-      const seriesRow = ensure(
-        row.status_id,
-        row.group_id === "none" ? null : row.group_id,
-        row.group_name
-      );
-      seriesRow.values[i] = Number(row.issue_count ?? 0);
-    }
+  // All interpolated expressions are fixed SQL fragments above; inputs remain bound.
+  const result = await db.query(`
+    WITH days AS (SELECT unnest($2::DATE[]) AS day)
+    SELECT d.day::TEXT AS day, h.status_id,
+           COALESCE(${grouping.id}::TEXT, 'none') AS group_id,
+           COALESCE(${grouping.name}, '${grouping.fallback}') AS group_name,
+           COUNT(DISTINCT h.task_id)::INT AS issue_count
+    FROM days d
+    INNER JOIN task_status_history h
+      ON h.project_id = ANY($1::UUID[])
+     AND h.entered_at < ((d.day + 1)::TIMESTAMP AT TIME ZONE 'UTC')
+     AND (h.exited_at IS NULL OR h.exited_at >= ((d.day + 1)::TIMESTAMP AT TIME ZONE 'UTC'))
+    INNER JOIN tasks t ON t.id = h.task_id
+    ${grouping.joins}
+    WHERE t.archived IS FALSE AND t.parent_task_id IS NULL
+    GROUP BY d.day, h.status_id, ${grouping.id}, ${grouping.name}
+  `, [filters.projectIds, dates]);
+  const dateIndexes = new Map(dates.map((date, i) => [date, i]));
+  for (const row of result.rows as Array<{
+    day: string;
+    status_id: string;
+    group_id: string;
+    group_name: string;
+    issue_count: number;
+  }>) {
+    const i = dateIndexes.get(row.day);
+    if (i === undefined || !statusIdSet.has(row.status_id)) continue;
+    const seriesRow = ensure(
+      row.status_id,
+      row.group_id === "none" ? null : row.group_id,
+      row.group_name
+    );
+    seriesRow.values[i] = Number(row.issue_count ?? 0);
   }
 
   // Ensure every status appears at least once when group_by=all would have shown it
@@ -919,6 +877,7 @@ export async function getCfdSeries(
 
   if (filters.projectIds.length === 0) return empty();
 
+  const dailyDates = cfdDatesInclusive(filters.dateFrom, filters.dateTo);
   const hash = cacheKeyHash(filters);
   // Namespace bumped when chart grain changed from day → week.
   const cacheNs = "cfd_week";
@@ -937,7 +896,6 @@ export async function getCfdSeries(
   }
   await backfillRange(filters.projectIds, filters.dateFrom, filters.dateTo);
 
-  const dailyDates = eachDateInclusive(filters.dateFrom, filters.dateTo);
   let statuses = await loadStatuses(filters.projectIds, filters.statusIds);
 
   let series =
@@ -1000,7 +958,7 @@ export function buildCfdCsvMatrix(data: CfdSeriesResult): string {
     return statusName;
   });
 
-  const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
+  const escape = formatCsvCell;
   const periodHeader = data.meta.granularity === "week" ? "Week" : "Date";
   const header = [periodHeader, ...columns].map(escape).join(",");
   const lines = [header];

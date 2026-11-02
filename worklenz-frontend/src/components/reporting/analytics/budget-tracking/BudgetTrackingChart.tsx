@@ -111,7 +111,6 @@ export const BudgetTrackingChart = forwardRef<
           },
         },
         tooltip: {
-          ...base.plugins?.tooltip,
           callbacks: {
             title: items => {
               const index = items[0]?.dataIndex ?? 0;

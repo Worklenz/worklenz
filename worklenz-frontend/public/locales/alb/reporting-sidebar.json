@@ -9,11 +9,11 @@
   "allTasks": "Detyrat",
   "progressTracking": "Ndjekja e progresit",
   "currentOrganizationTooltip": "Organizata aktuale",
-  "analyticsGroup": "Reporting & Analytics",
-  "dashboards": "Dashboards",
-  "velocity": "Velocity",
-  "cumulativeFlow": "Cumulative Flow",
-  "sla": "SLA Tracking",
-  "timeInStatus": "Time in Status",
-  "newBadge": "NEW"
+  "analyticsGroup": "Raportimi dhe analiza",
+  "dashboards": "Paneli",
+  "velocity": "Shpejtësia",
+  "cumulativeFlow": "Rrjedha Kumulative",
+  "sla": "Ndjekja SLA",
+  "timeInStatus": "Koha në status",
+  "newBadge": "E RE"
 }

@@ -10,7 +10,9 @@ import {
   ANALYTICS_BASE_PATH,
   isBusinessAnalyticsReport,
 } from '@/lib/reporting/analytics-nav';
-import { useAnalyticsCustomReports } from '@/features/reporting/analytics-custom-reports';
+import { useAnalyticsCustomReports, isAnalyticsCustomReportsSessionActive } from '@/features/reporting/analytics-custom-reports';
+import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
+import { ReportErrorState } from '@/components/reporting/analytics/states/ReportStateViews';
 
 const VelocityPage = lazy(() => import('@/pages/reporting/analytics/VelocityPage'));
 const ProjectHealthPage = lazy(() => import('@/pages/reporting/analytics/ProjectHealthPage'));
@@ -53,19 +55,31 @@ const CustomReportPage: React.FC = () => {
   const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation('reporting-analytics');
-  const { customReports, refreshCustomReports } = useAnalyticsCustomReports();
+  const { customReports, storageKey, syncTemplatesToCustomReports } = useAnalyticsCustomReports();
   const [isSyncing, setIsSyncing] = useState(true);
+  const [hasSyncError, setHasSyncError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setIsSyncing(true);
-    Promise.resolve(refreshCustomReports()).finally(() => {
+    setHasSyncError(false);
+    void analyticsTemplatesApiService.listTemplates('all').then(res => {
+      if (cancelled || !isAnalyticsCustomReportsSessionActive(storageKey)) return;
+      if (!res.done || !Array.isArray(res.body)) {
+        setHasSyncError(true);
+        return;
+      }
+      syncTemplatesToCustomReports(res.body);
+    }).catch(() => {
+      if (!cancelled) setHasSyncError(true);
+    }).finally(() => {
       if (!cancelled) setIsSyncing(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [refreshCustomReports, id]);
+  }, [storageKey, syncTemplatesToCustomReports, id, retryCount]);
 
   const report = useMemo(
     () => customReports.find(item => item.id === id),
@@ -77,6 +91,10 @@ const CustomReportPage: React.FC = () => {
 
   if (isSyncing && !report) {
     return <SuspenseFallback />;
+  }
+
+  if (!report && hasSyncError) {
+    return <ReportErrorState onRetry={() => setRetryCount(count => count + 1)} />;
   }
 
   if (!report) {

@@ -1,3 +1,4 @@
+import { formatCsvText } from '@/lib/reporting/csv-export';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -21,6 +22,7 @@ import { analyticsTemplatesApiService } from '@/api/reporting/analytics-template
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import {
   getAnalyticsCustomReportsStorageKey,
+  isAnalyticsCustomReportsSessionActive,
   syncVelocityTemplatesToCustomReports,
 } from '@/features/reporting/analytics-custom-reports';
 import { getUserSession } from '@/utils/session-helper';
@@ -256,6 +258,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
 
     try {
       const res = await analyticsVelocityApiService.listTemplates('velocity');
+      if (!isAnalyticsCustomReportsSessionActive(storageKeyAtFetch)) return;
       if (res.done && Array.isArray(res.body)) {
         // Keep All reports → Custom reports + sidebar in sync with every
         // report kind's templates (not just velocity), so saves made on
@@ -264,13 +267,12 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
           const all = await analyticsTemplatesApiService.listTemplates('all');
           if (all.done && Array.isArray(all.body)) {
             syncVelocityTemplatesToCustomReports(all.body, storageKeyAtFetch);
-          } else {
-            syncVelocityTemplatesToCustomReports(res.body, storageKeyAtFetch);
           }
         } catch {
-          syncVelocityTemplatesToCustomReports(res.body, storageKeyAtFetch);
+          // Preserve other report kinds when the all-templates request fails.
         }
 
+        if (!isAnalyticsCustomReportsSessionActive(storageKeyAtFetch)) return;
         const queryTemplateId = pendingQueryTemplateId.current;
         if (queryTemplateId && appliedQueryTemplate.current !== queryTemplateId) {
           const fromQuery = res.body.find(tpl => tpl.id === queryTemplateId);
@@ -409,7 +411,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
         const rows = data.series
           .map(
             p =>
-              `"${p.sprint_name.replace(/"/g, '""')}",${p.committed},${p.completed},${
+              `${formatCsvText(p.sprint_name)},${p.committed},${p.completed},${
                 p.commitment_accuracy ?? ''
               }`
           )

@@ -75,7 +75,7 @@ export const TisAggregateChart = forwardRef<TisAggregateChartHandle, TisAggregat
       };
     }, [rows, t]);
 
-    const options: ChartOptions<'bar'> = useMemo(() => {
+    const options = useMemo((): ChartOptions<'bar'> => {
       const base = getBaseChartOptions(chartTheme);
       return {
         ...base,
@@ -86,7 +86,6 @@ export const TisAggregateChart = forwardRef<TisAggregateChartHandle, TisAggregat
           ...base.plugins,
           legend: { display: false },
           tooltip: {
-            ...base.plugins?.tooltip,
             callbacks: {
               label: ctx => {
                 const row = rows[ctx.dataIndex];

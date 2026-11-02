@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
 import {
   getAnalyticsCustomReportsStorageKey,
+  isAnalyticsCustomReportsSessionActive,
   syncTemplatesToCustomReports,
 } from '@/features/reporting/analytics-custom-reports';
 import { getUserSession } from '@/utils/session-helper';
@@ -66,6 +67,7 @@ export const useAnalyticsReportTemplates = ({
       const res = await analyticsTemplatesApiService.listTemplates(reportKind);
       if (!res.done || !Array.isArray(res.body)) return;
 
+      if (!isAnalyticsCustomReportsSessionActive(storageKeyAtFetch)) return;
       setTemplates(res.body);
 
       // Refresh hub/sidebar Custom reports from all kinds only when that list succeeds.
@@ -79,6 +81,7 @@ export const useAnalyticsReportTemplates = ({
         // preserve cached reports from other kinds
       }
 
+      if (!isAnalyticsCustomReportsSessionActive(storageKeyAtFetch)) return;
       const targetId = pendingTemplateId.current;
       if (targetId && appliedQueryTemplate.current !== targetId) {
         const fromTarget = res.body.find(tpl => tpl.id === targetId);

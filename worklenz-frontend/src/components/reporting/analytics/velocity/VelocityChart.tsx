@@ -239,7 +239,6 @@ export const VelocityChart = forwardRef<VelocityChartHandle, VelocityChartProps>
         plugins: {
           ...base.plugins,
           tooltip: {
-            ...base.plugins?.tooltip,
             callbacks: {
               afterBody: items => {
                 const index = items[0]?.dataIndex;

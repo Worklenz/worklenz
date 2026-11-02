@@ -68,6 +68,7 @@ export async function expandAccessibleProjects(
   baseProjectIds: string[],
   requestedTeamIds: string[]
 ): Promise<string[]> {
+  if (requestedTeamIds.length === 0) return baseProjectIds;
   const accessibleTeams = new Set(
     await getAccessibleReportingTeamIds(userId, sessionTeamId)
   );
@@ -147,9 +148,9 @@ export async function parseAccessibleTeamIdsFromInput(
   input: Record<string, unknown>
 ): Promise<string[]> {
   const requested = parseTeamIdsFromInput(input);
+  if (requested.length === 0) return [];
   const accessible = new Set(
     await getAccessibleReportingTeamIds(userId, sessionTeamId)
   );
-  if (requested.length === 0) return [];
   return requested.filter(id => accessible.has(id));
 }
