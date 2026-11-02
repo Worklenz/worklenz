@@ -9,6 +9,7 @@ import {
   TeamRoleName,
 } from "./team-permissions";
 import {
+  canViewAllProjects,
   getProjectSchemeRoleGrants,
   GUEST_ROLE_NAME,
   PROJECT_ROLE_PERMISSIONS,
@@ -190,6 +191,22 @@ const guestPermissions = (): IProjectPermissions => ({
   workload: true,
 });
 
+/**
+ * Non-member with "View all projects": can open the project and see work.
+ * Mutating project-mgmt actions come only from scheme grants; task create/edit/
+ * delete/comment are enforced separately via project-role-permissions.
+ */
+const viewAllProjectsBaseline = (): IProjectPermissions => ({
+  ...DENIED_PERMISSIONS,
+  tasks: true,
+  insights: true,
+  files: true,
+  updates: true,
+  docs: true,
+  roadmap: true,
+  workload: true,
+});
+
 const isProjectManagerAccessLevel = (accessLevel: string | null): boolean =>
   (accessLevel || "").toUpperCase() === "PROJECT_MANAGER";
 
@@ -230,11 +247,13 @@ const applySchemeGrants = (
 /**
  * Pure builder — unit-tested. Does not hit the database.
  *
- * Rules (Phase 0):
+ * Rules:
  * - Owner/Admin → full admin permissions (PM flag ignored for elevation)
  * - Guest (team or project) never receives PM elevation even if access level is PM
  * - Member/Team Lead + PROJECT_MANAGER → union of role baseline + PM preset
  * - finance only when PM elevation applies and finance_access is true (Admins always)
+ * - Member/Guest with "View all projects" but not invited → view baseline + scheme grants
+ *   (view-only unless Create/Edit/Delete/Manage actions are granted in the scheme)
  */
 export const buildProjectAccess = (
   ctx: IProjectMembershipContext
@@ -286,6 +305,15 @@ export const buildProjectAccess = (
         isProjectMember: true,
         financeAccess: hasSchemeFinance,
         permissions: applySchemeGrants(teamLeadPermissions(), ctx.schemeGrants),
+      };
+    }
+
+    // Member/Guest: "View all projects" unlocks the project; scheme grants decide actions.
+    if (ctx.canViewAllProjects) {
+      return {
+        ...base,
+        financeAccess: hasSchemeFinance,
+        permissions: applySchemeGrants(viewAllProjectsBaseline(), ctx.schemeGrants),
       };
     }
 
@@ -415,6 +443,14 @@ export const getProjectAccess = async (
     ? normalizeTeamRoleName(row.team_role)
     : getEffectiveTeamRole(user);
   const isGuest = !!row.is_guest || !!user.is_guest;
+  const isProjectMember = !!row.is_project_member;
+  const viewAll =
+    isProjectMember ||
+    teamRole === TEAM_ROLE_NAMES.OWNER ||
+    teamRole === TEAM_ROLE_NAMES.ADMIN ||
+    teamRole === TEAM_ROLE_NAMES.TEAM_LEAD
+      ? false
+      : await canViewAllProjects(user);
 
   return buildProjectAccess({
     teamRole,
@@ -423,7 +459,8 @@ export const getProjectAccess = async (
     accessLevel: row.access_level,
     financeAccess: !!row.finance_access,
     canCreateProjectsFromTemplates: !!row.can_create_projects_from_templates,
-    isProjectMember: !!row.is_project_member,
+    isProjectMember,
+    canViewAllProjects: viewAll,
     schemeGrants: await getSchemeGrants(
       row.project_team_id,
       projectId,

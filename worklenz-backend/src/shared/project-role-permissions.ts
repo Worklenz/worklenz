@@ -2,8 +2,10 @@ import db from "../config/db";
 import { log_error } from "./utils";
 import { normalizeTeamRoleName, TEAM_ROLE_NAMES } from "./team-permissions";
 import {
+  getDefaultSchemeRoleGrants,
   getProjectSchemeRoleGrants,
   GUEST_ROLE_NAME,
+  ORGANIZATION_PERMISSIONS,
   PROJECT_ROLE_PERMISSIONS,
   ProjectRolePermission,
 } from "./organization-permissions";
@@ -12,8 +14,9 @@ import {
  * Project-level role permissions (Create/Edit/Delete tasks, Comment) come from
  * the project's assigned permission scheme, falling back to the default scheme:
  * - Owner / Admin always hold them.
- * - Members and Guests only hold them on projects they are assigned to; projects
- *   visible only through "View all projects" are view-only.
+ * - Members and Guests hold them on projects they are assigned to.
+ * - With org "View all projects", the same scheme grants also apply on projects
+ *   they are not invited to (view-only when Create/Edit/Delete/Comment are off).
  * - Project settings such as restrict_task_creation are enforced separately and
  *   take priority over these grants.
  */
@@ -23,6 +26,8 @@ export interface IProjectRoleContext {
   projectId: string;
   roleName: string;
   isProjectMember: boolean;
+  /** Org "View all projects" for Member/Guest non-members. */
+  canViewAllProjects?: boolean;
 }
 
 export interface IProjectRolePermissionResult {
@@ -71,12 +76,30 @@ const toRoleContext = (row: IRoleContextRow): IProjectRoleContext => {
   };
 };
 
+const withViewAllFlag = async (
+  context: IProjectRoleContext
+): Promise<IProjectRoleContext> => {
+  const isMemberOrGuest =
+    context.roleName === TEAM_ROLE_NAMES.MEMBER || context.roleName === GUEST_ROLE_NAME;
+  if (!isMemberOrGuest || context.isProjectMember) {
+    return context;
+  }
+
+  const grants = await getDefaultSchemeRoleGrants(context.teamId, context.roleName, [
+    ORGANIZATION_PERMISSIONS.VIEW_ALL_PROJECTS,
+  ]);
+  return {
+    ...context,
+    canViewAllProjects: grants.includes(ORGANIZATION_PERMISSIONS.VIEW_ALL_PROJECTS),
+  };
+};
+
 export async function getProjectRoleContext(
   userId: string,
   projectId: string
 ): Promise<IProjectRoleContext | null> {
   const result = await db.query(`${ROLE_CONTEXT_SELECT} WHERE p.id = $2 LIMIT 1`, [userId, projectId]);
-  return result.rows[0] ? toRoleContext(result.rows[0]) : null;
+  return result.rows[0] ? withViewAllFlag(toRoleContext(result.rows[0])) : null;
 }
 
 export async function getProjectRoleContextForTask(
@@ -87,7 +110,7 @@ export async function getProjectRoleContextForTask(
     `${ROLE_CONTEXT_SELECT} WHERE p.id = (SELECT project_id FROM tasks WHERE id = $2) LIMIT 1`,
     [userId, taskId]
   );
-  return result.rows[0] ? toRoleContext(result.rows[0]) : null;
+  return result.rows[0] ? withViewAllFlag(toRoleContext(result.rows[0])) : null;
 }
 
 const getGrantedPermissions = async (
@@ -100,7 +123,10 @@ const getGrantedPermissions = async (
 
   const isMemberOrGuest =
     context.roleName === TEAM_ROLE_NAMES.MEMBER || context.roleName === GUEST_ROLE_NAME;
-  if (isMemberOrGuest && !context.isProjectMember) return [];
+  // Non-members need "View all projects" before scheme Create/Edit/Delete/Comment apply.
+  if (isMemberOrGuest && !context.isProjectMember && !context.canViewAllProjects) {
+    return [];
+  }
 
   return (await getProjectSchemeRoleGrants(
     context.teamId,

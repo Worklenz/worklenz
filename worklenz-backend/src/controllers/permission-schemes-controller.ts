@@ -418,7 +418,9 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     const row = schemeRes.rows[0];
     if (row.team_id !== teamId)
       return res.status(403).send(new ServerResponse(false, null, 'Forbidden'));
-    if (row.is_locked)
+    // Default scheme grants stay editable even if the row is marked locked;
+    // lock still blocks rename/delete/permission-list changes elsewhere.
+    if (row.is_locked && !row.is_default)
       return res.status(200).send(new ServerResponse(false, null, 'Scheme is locked and cannot be edited'));
 
     const allowedPermissions = row.is_default ? DEFAULT_PERMISSIONS : PROJECT_PERMISSIONS;
