@@ -26,6 +26,7 @@ import {
   syncVelocityTemplatesToCustomReports,
 } from '@/features/reporting/analytics-custom-reports';
 import { getUserSession } from '@/utils/session-helper';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import {
   AnalyticsFilterBar,
   AnalyticsTemplateActions,
@@ -210,7 +211,10 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       const seen = new Set<string>();
       projectResponses.forEach(res => {
         if (res.done && Array.isArray(res.body)) {
-          (res.body as Array<{ id: string; name: string }>).forEach(project => {
+          (
+            res.body as Array<{ id: string; name: string; project_type?: string }>
+          ).forEach(project => {
+            if (!isSoftwareProjectType(project.project_type)) return;
             if (!seen.has(project.id)) {
               seen.add(project.id);
               projects.push({ value: project.id, label: project.name });
