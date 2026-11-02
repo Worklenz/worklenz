@@ -160,6 +160,14 @@ router.post(
 );
 
 // —— Planned vs Actual: Milestones ——
+// POST preferred: Select All can include hundreds of project UUIDs (GET URL/header limits).
+router.post(
+  "/planned-vs-actual-milestones/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(PlannedVsActualMilestonesController.getSeries)
+);
+
 router.get(
   "/planned-vs-actual-milestones/series",
   requireAnalyticsAccess,

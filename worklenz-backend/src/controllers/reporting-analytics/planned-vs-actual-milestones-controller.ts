@@ -31,11 +31,12 @@ export default class PlannedVsActualMilestonesController extends WorklenzControl
     }
 
     const accessible = accessibleProjectIds(req);
-    const filters = parsePlannedVsActualMilestonesFilters(
-      req.query as Record<string, unknown>,
-      accessible,
-      teamId
-    );
+    // Prefer body (POST) so Select All with large portfolios does not blow the URL/header limit.
+    const input = {
+      ...(req.query as Record<string, unknown>),
+      ...((req.body as Record<string, unknown> | undefined) ?? {}),
+    };
+    const filters = parsePlannedVsActualMilestonesFilters(input, accessible, teamId);
 
     const data = await getPlannedVsActualMilestonesSeries(filters);
     return res.status(200).send(new ServerResponse(true, data));
