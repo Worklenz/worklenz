@@ -1,5 +1,7 @@
 import { createHash } from "crypto";
 import db from "../../config/db";
+import i18next from "../../config/i18n";
+import { STATUS_HISTORY_RETENTION_MONTHS } from "../../shared/reporting-analytics.constants";
 import {
   getAnalyticsCache,
   setAnalyticsCache,
@@ -149,6 +151,12 @@ const OUTLIER_MULTIPLIER = 1.5;
 const MS_PER_DAY = 86_400_000;
 const DEFAULT_PER_ISSUE_LIMIT = 100;
 const MAX_PER_ISSUE_LIMIT = 2000;
+/** Fail rather than silently truncate statistics when the work budget is exceeded. */
+export const MAX_TIS_HISTORY_ROWS = 10_000;
+
+export class TimeInStatusServiceError extends Error {
+  readonly statusCode = 400;
+}
 
 function parseCsvIds(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -178,13 +186,38 @@ function defaultDateRange(): { from: string; to: string } {
   };
 }
 
-function toDateOnly(value: string | null | undefined, fallback: string): string {
-  if (!value) return fallback;
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) {
-    return value.slice(0, 10) || fallback;
+function toDateOnly(value: unknown, fallback: string): string | null {
+  if (value === undefined || value === null || value === "") return fallback;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:$|T)/.test(value)) return null;
+  const calendarDate = value.slice(0, 10);
+  const day = new Date(`${calendarDate}T00:00:00.000Z`);
+  const parsed = new Date(value);
+  if (!Number.isFinite(day.getTime()) || day.toISOString().slice(0, 10) !== calendarDate ||
+      !Number.isFinite(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10);
+}
+
+/** Bound intersecting presets to retained history; reject wholly unavailable ranges. */
+function boundedDateRange(from: unknown, to: unknown): { dateFrom: string; dateTo: string } {
+  const defaults = defaultDateRange();
+  const parsedFrom = toDateOnly(from, defaults.from);
+  const parsedTo = toDateOnly(to, defaults.to);
+  if (!parsedFrom || !parsedTo || parsedFrom > parsedTo) {
+    throw new TimeInStatusServiceError(i18next.t("analytics.timeInStatus.invalidDateRange", {
+      defaultValue: "Invalid date_from or date_to range",
+    }));
   }
-  return d.toISOString().slice(0, 10);
+  const floor = new Date();
+  floor.setUTCMonth(floor.getUTCMonth() - STATUS_HISTORY_RETENTION_MONTHS);
+  const floorDate = floor.toISOString().slice(0, 10);
+  const dateFrom = parsedFrom < floorDate ? floorDate : parsedFrom;
+  const dateTo = parsedTo > defaults.to ? defaults.to : parsedTo;
+  if (dateFrom > dateTo) {
+    throw new TimeInStatusServiceError(i18next.t("analytics.timeInStatus.unavailableDateRange", {
+      defaultValue: "Date range must overlap the retained history through today",
+    }));
+  }
+  return { dateFrom, dateTo };
 }
 
 function parseBool(value: unknown, fallback = false): boolean {
@@ -227,7 +260,6 @@ export function parseTimeInStatusFilters(
   accessibleProjectIds: string[],
   sessionTeamId: string
 ): TimeInStatusFilters {
-  const defaults = defaultDateRange();
   const allowed = new Set(accessibleProjectIds);
   const requested = parseCsvIds(query.project_ids).filter(id => allowed.has(id));
   // No explicit projects ? all accessible, rolled into To do / In progress / Done.
@@ -268,14 +300,7 @@ export function parseTimeInStatusFilters(
     labelIds: parseCsvIds(query.label_ids),
     epicIds: parseCsvIds(query.epic_ids),
     sprintIds: parseCsvIds(query.sprint_ids),
-    dateFrom: toDateOnly(
-      typeof query.date_from === "string" ? query.date_from : null,
-      defaults.from
-    ),
-    dateTo: toDateOnly(
-      typeof query.date_to === "string" ? query.date_to : null,
-      defaults.to
-    ),
+    ...boundedDateRange(query.date_from, query.date_to),
     dateMode,
     excludeWeekends: parseBool(query.exclude_weekends, false),
     viewMode,
@@ -304,30 +329,25 @@ export function durationDays(
     return (exitedAt.getTime() - enteredAt.getTime()) / MS_PER_DAY;
   }
 
-  let totalMs = 0;
-  const cursor = new Date(enteredAt.getTime());
+  // Complete weeks plus at most six residual days, preserving partial UTC days.
+  const start = enteredAt.getTime();
+  const end = exitedAt.getTime();
+  const nextMidnight = (Math.floor(start / MS_PER_DAY) + 1) * MS_PER_DAY;
+  const firstDay = enteredAt.getUTCDay();
+  let totalMs = firstDay !== 0 && firstDay !== 6 ? Math.min(end, nextMidnight) - start : 0;
+  if (end <= nextMidnight) return totalMs / MS_PER_DAY;
 
-  while (cursor.getTime() < exitedAt.getTime()) {
-    const dayStart = new Date(
-      Date.UTC(
-        cursor.getUTCFullYear(),
-        cursor.getUTCMonth(),
-        cursor.getUTCDate(),
-        0,
-        0,
-        0,
-        0
-      )
-    );
-    const nextDay = new Date(dayStart.getTime() + MS_PER_DAY);
-    const segmentEnd = new Date(Math.min(nextDay.getTime(), exitedAt.getTime()));
-    const day = cursor.getUTCDay(); // 0 Sun … 6 Sat
-    if (day !== 0 && day !== 6) {
-      totalMs += segmentEnd.getTime() - cursor.getTime();
-    }
-    cursor.setTime(segmentEnd.getTime());
+  const fullDays = Math.floor((end - nextMidnight) / MS_PER_DAY);
+  totalMs += Math.floor(fullDays / 7) * 5 * MS_PER_DAY;
+  const nextDay = (firstDay + 1) % 7;
+  for (let i = 0; i < fullDays % 7; i += 1) {
+    const day = (nextDay + i) % 7;
+    if (day !== 0 && day !== 6) totalMs += MS_PER_DAY;
   }
-
+  const lastDay = (nextDay + fullDays) % 7;
+  if (lastDay !== 0 && lastDay !== 6) {
+    totalMs += end - nextMidnight - fullDays * MS_PER_DAY;
+  }
   return totalMs / MS_PER_DAY;
 }
 
@@ -356,7 +376,12 @@ function categoryOf(row: {
 }
 
 function cacheKeyHash(filters: TimeInStatusFilters): string {
-  return createHash("sha1").update(JSON.stringify(filters)).digest("hex").slice(0, 16);
+  // Presentation options do not change visits; share their expensive source computation.
+  const { sort, limit, offset, viewMode, ...source } = filters;
+  const normalized = Object.fromEntries(Object.entries(source).map(([key, value]) => [
+    key, Array.isArray(value) ? [...new Set(value)].sort() : value,
+  ]));
+  return createHash("sha1").update(JSON.stringify(normalized)).digest("hex").slice(0, 16);
 }
 
 interface HistoryRow {
@@ -458,6 +483,13 @@ async function loadHistoryRows(filters: TimeInStatusFilters): Promise<HistoryRow
 
   const result = await db.query(
     `
+    WITH bounded_history AS (
+      SELECT h.*
+      FROM task_status_history h
+      INNER JOIN tasks t ON t.id = h.task_id
+      WHERE ${clauses.join("\n        AND ")}
+      LIMIT $${param}
+    )
     SELECT
       h.id AS history_id,
       h.task_id,
@@ -483,17 +515,21 @@ async function loadHistoryRows(filters: TimeInStatusFilters): Promise<HistoryRow
       COALESCE(cat.is_todo, FALSE) AS is_todo,
       COALESCE(cat.is_doing, FALSE) AS is_doing,
       COALESCE(cat.is_done, FALSE) AS is_done
-    FROM task_status_history h
+    FROM bounded_history h
     INNER JOIN tasks t ON t.id = h.task_id
     INNER JOIN projects p ON p.id = t.project_id
     INNER JOIN task_statuses ts ON ts.id = h.status_id
     LEFT JOIN sys_task_status_categories cat ON cat.id = ts.category_id
-    WHERE ${clauses.join("\n      AND ")}
     ORDER BY h.task_id, h.entered_at ASC
     `,
-    params
+    [...params, MAX_TIS_HISTORY_ROWS + 1]
   );
 
+  if (result.rows.length > MAX_TIS_HISTORY_ROWS) {
+    throw new TimeInStatusServiceError(i18next.t("analytics.timeInStatus.historyBudgetExceeded", {
+      defaultValue: "Too many status visits. Select fewer projects or a shorter date range.",
+    }));
+  }
   return (result.rows as Array<Record<string, unknown>>).map(row => ({
     history_id: String(row.history_id),
     task_id: String(row.task_id),
@@ -516,7 +552,7 @@ async function loadHistoryRows(filters: TimeInStatusFilters): Promise<HistoryRow
 }
 
 interface ComputedVisit {
-  row: HistoryRow;
+  row: Omit<HistoryRow, "entered_at" | "exited_at">;
   days: number;
   is_live: boolean;
 }
@@ -527,11 +563,13 @@ function computeVisits(
   now: Date
 ): ComputedVisit[] {
   return rows.map(row => {
-    const exited = row.exited_at ?? now;
-    const is_live = row.exited_at === null;
+    // Cached visits need the computed duration, not Date instances that Redis serializes.
+    const { entered_at, exited_at, ...metadata } = row;
+    const exited = exited_at ?? now;
+    const is_live = exited_at === null;
     return {
-      row,
-      days: durationDays(row.entered_at, exited, excludeWeekends),
+      row: metadata,
+      days: durationDays(entered_at, exited, excludeWeekends),
       is_live,
     };
   });
@@ -798,7 +836,7 @@ function buildIssues(
   const byTask = new Map<
     string,
     {
-      meta: HistoryRow;
+      meta: ComputedVisit["row"];
       segments: Map<
         string,
         {
@@ -884,6 +922,8 @@ function buildIssues(
 export async function getTimeInStatusSeries(
   filters: TimeInStatusFilters
 ): Promise<TimeInStatusResult> {
+  // Protect direct service callers before cache or database access as well.
+  filters = { ...filters, ...boundedDateRange(filters.dateFrom, filters.dateTo) };
   const empty = (): TimeInStatusResult =>
     withLastUpdated({
       view_mode: filters.viewMode,
@@ -927,39 +967,42 @@ export async function getTimeInStatusSeries(
   if (filters.projectIds.length === 0) return empty();
 
   const hash = cacheKeyHash(filters);
-  // Namespace bumped when category rollup (empty project selection) was added.
-  const cacheNs = "tis_cat";
-  const cached = await getAnalyticsCache<Omit<TimeInStatusResult, "last_updated_at">>(
-    cacheNs,
-    filters.sessionTeamId,
-    hash
-  );
-  if (cached) {
-    return withLastUpdated(cached.data, cached.lastUpdatedAt);
-  }
-
-  const now = new Date();
-  const history = await loadHistoryRows(filters);
-  let visits = computeVisits(history, filters.excludeWeekends, now);
-
-  let statuses: TimeInStatusStatusMeta[];
-  if (filters.rollupByCategory) {
-    // No project selected ? counts from all accessible projects, rolled into 3 categories.
-    visits = remapVisitsToCategories(visits);
-    statuses = CATEGORY_STATUS_META.map(s => ({ ...s }));
-  } else {
-    // Project(s) selected ? full status list for those projects (zeros included).
-    const loaded = await loadProjectStatuses(filters.projectIds, filters.statusIds);
-    if (filters.projectIds.length > 1) {
-      const collapsed = collapseStatusesByName(
-        loaded.length > 0 ? loaded : buildStatuses(visits)
-      );
-      statuses = collapsed.statuses;
-      visits = remapVisitsByStatusId(visits, collapsed.idMap, statuses);
+  // Cache computed visits independently of presentation, not individual response pages.
+  const cacheNs = "tis_visits_v1";
+  const cached = await getAnalyticsCache<{
+    visits: ComputedVisit[];
+    statuses: TimeInStatusStatusMeta[];
+  }>(cacheNs, filters.sessionTeamId, hash);
+  let source = cached?.data;
+  let lastUpdatedAt = cached?.lastUpdatedAt;
+  if (!source) {
+    const now = new Date();
+    const history = await loadHistoryRows(filters);
+    let visits = computeVisits(history, filters.excludeWeekends, now);
+    let statuses: TimeInStatusStatusMeta[];
+    if (filters.rollupByCategory) {
+      // No project selected ? counts from all accessible projects, rolled into 3 categories.
+      visits = remapVisitsToCategories(visits);
+      statuses = CATEGORY_STATUS_META.map(s => ({ ...s }));
     } else {
-      statuses = loaded.length > 0 ? loaded : buildStatuses(visits);
+      // Project(s) selected ? full status list for those projects (zeros included).
+      const loaded = await loadProjectStatuses(filters.projectIds, filters.statusIds);
+      if (filters.projectIds.length > 1) {
+        const collapsed = collapseStatusesByName(
+          loaded.length > 0 ? loaded : buildStatuses(visits)
+        );
+        statuses = collapsed.statuses;
+        visits = remapVisitsByStatusId(visits, collapsed.idMap, statuses);
+      } else {
+        statuses = loaded.length > 0 ? loaded : buildStatuses(visits);
+      }
     }
+
+    source = { visits, statuses };
+    const saved = await setAnalyticsCache(source, [cacheNs, filters.sessionTeamId, hash]);
+    lastUpdatedAt = saved.lastUpdatedAt;
   }
+  const { visits, statuses } = source;
 
   const aggregateSort =
     filters.viewMode === "aggregate" ? filters.sort : "avg_desc";
@@ -1011,13 +1054,7 @@ export async function getTimeInStatusSeries(
     },
   };
 
-  const cachedPayload = await setAnalyticsCache(payload, [
-    cacheNs,
-    filters.sessionTeamId,
-    hash,
-  ]);
-
-  return withLastUpdated(payload, cachedPayload.lastUpdatedAt);
+  return withLastUpdated(payload, lastUpdatedAt);
 }
 
 function csvEscape(value: string | number | boolean | null | undefined): string {

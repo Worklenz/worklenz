@@ -6,6 +6,7 @@ import { ServerResponse } from "../../models/server-response";
 import WorklenzControllerBase from "../worklenz-controller-base";
 import HandleExceptions from "../../decorators/handle-exceptions";
 import {
+  TimeInStatusServiceError,
   buildTimeInStatusCsv,
   getTimeInStatusFilterOptions,
   getTimeInStatusSeries,
@@ -33,11 +34,18 @@ export default class TimeInStatusController extends WorklenzControllerBase {
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
     }
 
-    const query = req.query as Record<string, unknown>;
-    const accessible = accessibleProjectIds(req);
-    const filters = parseTimeInStatusFilters(query, accessible, teamId);
-    const data = await getTimeInStatusSeries(filters);
-    return res.status(200).send(new ServerResponse(true, data));
+    try {
+      const query = req.query as Record<string, unknown>;
+      const accessible = accessibleProjectIds(req);
+      const filters = parseTimeInStatusFilters(query, accessible, teamId);
+      const data = await getTimeInStatusSeries(filters);
+      return res.status(200).send(new ServerResponse(true, data));
+    } catch (error) {
+      if (error instanceof TimeInStatusServiceError) {
+        return res.status(error.statusCode).send(new ServerResponse(false, null, error.message));
+      }
+      throw error;
+    }
   }
 
   @HandleExceptions()
@@ -51,11 +59,18 @@ export default class TimeInStatusController extends WorklenzControllerBase {
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
     }
 
-    const query = req.query as Record<string, unknown>;
-    const accessible = accessibleProjectIds(req);
-    const filters = parseTimeInStatusFilters(query, accessible, teamId);
-    const options = await getTimeInStatusFilterOptions(filters.projectIds);
-    return res.status(200).send(new ServerResponse(true, options));
+    try {
+      const query = req.query as Record<string, unknown>;
+      const accessible = accessibleProjectIds(req);
+      const filters = parseTimeInStatusFilters(query, accessible, teamId);
+      const options = await getTimeInStatusFilterOptions(filters.projectIds);
+      return res.status(200).send(new ServerResponse(true, options));
+    } catch (error) {
+      if (error instanceof TimeInStatusServiceError) {
+        return res.status(error.statusCode).send(new ServerResponse(false, null, error.message));
+      }
+      throw error;
+    }
   }
 
   @HandleExceptions()
@@ -70,23 +85,31 @@ export default class TimeInStatusController extends WorklenzControllerBase {
       return;
     }
 
-    const body = (req.body ?? {}) as Record<string, unknown>;
-    const merged = { ...body, ...((body.filters as object) ?? {}) };
-    // CSV exports need the full per-issue width — raise limit.
-    if (!merged.limit) merged.limit = 2000;
+    try {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const merged = { ...body, ...((body.filters as object) ?? {}) };
+      // CSV exports need the full per-issue width — raise limit.
+      if (!merged.limit) merged.limit = 2000;
 
-    const accessible = accessibleProjectIds(req);
-    const filters = parseTimeInStatusFilters(merged, accessible, teamId);
-    const data = await getTimeInStatusSeries(filters);
-    const csv = buildTimeInStatusCsv(data);
+      const accessible = accessibleProjectIds(req);
+      const filters = parseTimeInStatusFilters(merged, accessible, teamId);
+      const data = await getTimeInStatusSeries(filters);
+      const csv = buildTimeInStatusCsv(data);
 
-    const exportDate = moment().format("YYYY-MM-DD");
-    const suffix = filters.viewMode === "per_issue" ? "issues" : "aggregate";
-    res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=time-in-status-${suffix}-${exportDate}.csv`
-    );
-    res.status(200).send(csv);
+      const exportDate = moment().format("YYYY-MM-DD");
+      const suffix = filters.viewMode === "per_issue" ? "issues" : "aggregate";
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=time-in-status-${suffix}-${exportDate}.csv`
+      );
+      res.status(200).send(csv);
+    } catch (error) {
+      if (error instanceof TimeInStatusServiceError) {
+        res.status(error.statusCode).send(new ServerResponse(false, null, error.message));
+        return;
+      }
+      throw error;
+    }
   }
 }
