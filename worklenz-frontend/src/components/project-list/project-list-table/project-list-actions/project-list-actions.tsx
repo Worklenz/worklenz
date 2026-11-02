@@ -66,30 +66,34 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
 
   const [toggleArchiveForAll] = useToggleArchiveProjectForAllMutation();
 
+  const isGuest = record.is_guest === true;
+  const canOpenSettings = isProjectAccessReady
+    ? projectPermissions.settings
+    : record.permissions?.settings === true || !isGuest;
+
   const handleSettingsClick = () => {
-    if (record.id && !record.is_guest) {
-      trackMixpanelEvent(evt_projects_settings_click);
-      dispatch(setProjectId(record.id));
-      dispatch(fetchProjectData(record.id))
-        .unwrap()
-        .then(projectData => {
-          dispatch(
-            setProjectData({
-              ...projectData,
-              priority_id: projectData.priority_id || record.priority_id,
-              priority_name: projectData.priority_name || record.priority_name,
-              priority_color: projectData.priority_color || record.priority_color,
-              priority_color_dark: projectData.priority_color_dark || record.priority_color_dark,
-            })
-          );
-          dispatch(openProjectSettingsModal());
-        })
-        .catch(error => {
-          console.error('Failed to fetch project data:', error);
-          dispatch(setProjectData(record));
-          dispatch(openProjectSettingsModal());
-        });
-    }
+    if (!record.id || !canOpenSettings) return;
+    trackMixpanelEvent(evt_projects_settings_click);
+    dispatch(setProjectId(record.id));
+    dispatch(fetchProjectData(record.id))
+      .unwrap()
+      .then(projectData => {
+        dispatch(
+          setProjectData({
+            ...projectData,
+            priority_id: projectData.priority_id || record.priority_id,
+            priority_name: projectData.priority_name || record.priority_name,
+            priority_color: projectData.priority_color || record.priority_color,
+            priority_color_dark: projectData.priority_color_dark || record.priority_color_dark,
+          })
+        );
+        dispatch(openProjectSettingsModal());
+      })
+      .catch(error => {
+        console.error('Failed to fetch project data:', error);
+        dispatch(setProjectData(record));
+        dispatch(openProjectSettingsModal());
+      });
   };
 
   const handleArchiveClick = async () => {
@@ -103,15 +107,15 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     }
   };
 
-  const isGuest = record.is_guest === true;
-
   return (
     <Space size={4} onClick={e => e.stopPropagation()}>
       <Tooltip
         title={
-          isGuest
-            ? t('settingsDisabledForGuest', { defaultValue: 'Settings Disabled For Guest' })
-            : t('setting', { defaultValue: 'Settings' })
+          canOpenSettings
+            ? t('setting', { defaultValue: 'Settings' })
+            : isGuest
+              ? t('settingsDisabledForGuest', { defaultValue: 'Settings Disabled For Guest' })
+              : t('noPermission', { defaultValue: 'You do not have permission' })
         }
         styles={{
           root: { maxWidth: '280px' },
@@ -130,7 +134,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
           onClick={handleSettingsClick}
           style={{ width: 28, minWidth: 28, paddingInline: 0 }}
           icon={<SettingOutlined />}
-          disabled={isGuest}
+          disabled={!canOpenSettings}
         />
       </Tooltip>
       <Tooltip

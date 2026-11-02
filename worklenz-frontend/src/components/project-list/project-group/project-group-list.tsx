@@ -233,9 +233,9 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
     }
   }, []);
 
-  const handleSettingsClick = (e: React.MouseEvent, project: any) => {
+  const handleSettingsClick = (e: React.MouseEvent, project: IProjectViewModel) => {
     e.stopPropagation();
-    if (!project?.id || project?.is_guest) return;  // ✅ Prevent opening settings for guests
+    if (!project?.id) return;
     trackMixpanelEvent(evt_projects_settings_click);
     dispatch(setProjectId(project.id));
     dispatch(fetchProjectData(project.id))
@@ -479,23 +479,31 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         render: (_: any, record: IProjectViewModel) => {
           const isGuest = record.is_guest === true;
           const canArchive = canArchiveRecord(record);
+          const cached = record.id ? permissionsByProjectId[record.id] : undefined;
+          const canOpenSettings = record.permissions
+            ? record.permissions.settings
+            : cached
+              ? cached.permissions.settings
+              : !isGuest;
 
           return (
             <Space size={4} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
               <Tooltip 
                 title={
-                  isGuest
-                    ? t('settingsDisabledForGuest', { defaultValue: 'Project settings are not accessible for guest users' })
-                    : t('setting', { defaultValue: 'Settings' })
+                  canOpenSettings
+                    ? t('setting', { defaultValue: 'Settings' })
+                    : isGuest
+                      ? t('settingsDisabledForGuest', { defaultValue: 'Project settings are not accessible for guest users' })
+                      : t('noPermission', { defaultValue: 'You do not have permission' })
                 }
               >
                 <button
                   style={{ 
                     background: 'none', 
                     border: 'none', 
-                    cursor: isGuest ? 'not-allowed' : 'pointer', 
+                    cursor: canOpenSettings ? 'pointer' : 'not-allowed', 
                     padding: '2px 6px',
-                    opacity: isGuest ? 0.5 : 1,
+                    opacity: canOpenSettings ? 1 : 0.5,
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -505,9 +513,9 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    !isGuest && handleSettingsClick(e, record);
+                    canOpenSettings && handleSettingsClick(e, record);
                   }}
-                  disabled={isGuest}
+                  disabled={!canOpenSettings}
                   type="button"
                 >
                   <SettingOutlined />
