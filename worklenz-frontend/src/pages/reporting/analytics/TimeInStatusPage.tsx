@@ -400,34 +400,6 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
     }
   };
 
-  const sortOptions =
-    reportView === 'aggregate'
-      ? [
-          { value: 'avg_desc', label: t('tisSortAvgDesc', { defaultValue: 'Avg (high ? low)' }) },
-          { value: 'avg_asc', label: t('tisSortAvgAsc', { defaultValue: 'Avg (low ? high)' }) },
-          {
-            value: 'median_desc',
-            label: t('tisSortMedianDesc', { defaultValue: 'Median (high ? low)' }),
-          },
-          {
-            value: 'count_desc',
-            label: t('tisSortCountDesc', { defaultValue: 'Count (high ? low)' }),
-          },
-          { value: 'name_asc', label: t('tisSortNameAsc', { defaultValue: 'Status name' }) },
-        ]
-      : [
-          {
-            value: 'total_desc',
-            label: t('tisSortTotalDesc', { defaultValue: 'Total (high ? low)' }),
-          },
-          {
-            value: 'total_asc',
-            label: t('tisSortTotalAsc', { defaultValue: 'Total (low ? high)' }),
-          },
-          { value: 'key_asc', label: t('tisSortKeyAsc', { defaultValue: 'Task key' }) },
-          { value: 'name_asc', label: t('tisSortTaskNameAsc', { defaultValue: 'Task name' }) },
-        ];
-
   const tisFilters = (
     <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>
       <AnalyticsFilterBar
@@ -462,18 +434,6 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
           },
         ]}
         ariaLabel={t('tisViewMode', { defaultValue: 'View mode' })}
-      />
-
-      <SingleSelectFilterPill
-        label={
-          sortOptions.find(option => option.value === sort)?.label ??
-          sortOptions[0]?.label ??
-          ''
-        }
-        value={sort}
-        onChange={value => setSort(value as TimeInStatusSort)}
-        options={sortOptions}
-        ariaLabel={t('tisSort', { defaultValue: 'Sort' })}
       />
 
       <Space size={6} style={{ flexShrink: 0 }}>
