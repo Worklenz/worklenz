@@ -25,7 +25,7 @@ export interface UtilizationMemberRow {
   avatar_url: string | null;
   color_code: string;
   role_name: string | null;
-  /** Working hours for the selected period (org schedule × hours/day). */
+  /** Working hours for the selected period (org schedule ï¿½ hours/day). */
   capacity_hours: number;
   /** Time logged against selected projects in the period. */
   logged_hours: number;
@@ -56,7 +56,8 @@ export interface UtilizationResult {
   last_updated_at: string;
 }
 
-const MAX_PROJECTS = 50;
+/** Safety cap only ? high enough for org portfolios / Select All. */
+const MAX_PROJECTS = 500;
 const OVER_THRESHOLD = 100;
 const UNDER_THRESHOLD = 80;
 
@@ -262,7 +263,7 @@ export async function getUtilizationSeries(
 
   const workingDays = Number(workingDaysResult.rows[0]?.working_days) || 0;
   const hoursPerDay = Number(org.hours_per_day) || 8;
-  // Capacity = working hours for the period (org working days × hours/day).
+  // Capacity = working hours for the period (org working days ï¿½ hours/day).
   const capacityHours = workingDays * hoursPerDay;
 
   const params: unknown[] = [

@@ -31,11 +31,11 @@ export default class PlannedVsActualTasksController extends WorklenzControllerBa
     }
 
     const accessible = accessibleProjectIds(req);
-    const filters = parsePlannedVsActualTasksFilters(
-      req.query as Record<string, unknown>,
-      accessible,
-      teamId
-    );
+    const input = {
+      ...(req.query as Record<string, unknown>),
+      ...((req.body as Record<string, unknown> | undefined) ?? {}),
+    };
+    const filters = parsePlannedVsActualTasksFilters(input, accessible, teamId);
 
     const data = await getPlannedVsActualTasksSeries(filters);
     return res.status(200).send(new ServerResponse(true, data));
