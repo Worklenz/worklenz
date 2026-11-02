@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Table, Tag, Typography } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
+import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
 import { TisMiniBar } from './TisMiniBar';
 import type { TimeInStatusIssueRow } from '@/types/reporting/analytics-time-in-status.types';
 
@@ -105,7 +106,7 @@ export const TisPerIssueTable: React.FC<TisPerIssueTableProps> = ({ issues }) =>
   return (
     <Table
       size="small"
-      pagination={{ pageSize: 25, showSizeChanger: true }}
+      pagination={getClientTablePagination(25)}
       columns={columns}
       dataSource={data}
       scroll={{ x: 900 }}

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Avatar, Flex, Table, Typography } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
+import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
 import type { TimeReportRow } from '@/types/reporting/analytics-time-report.types';
 
 const { Text } = Typography;
@@ -104,7 +105,7 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
       columns={columns}
       dataSource={rows}
       loading={loading}
-      pagination={{ pageSize: 20, showSizeChanger: true }}
+      pagination={getClientTablePagination(20)}
       scroll={{ x: 860 }}
       size="middle"
     />

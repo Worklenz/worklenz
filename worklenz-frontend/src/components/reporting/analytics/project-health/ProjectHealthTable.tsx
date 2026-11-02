@@ -3,6 +3,7 @@ import { Flex, Table, Tag, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
+import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
 import type {
   ProjectHealthRow,
   ProjectHealthTone,
@@ -260,7 +261,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
       columns={columns}
       dataSource={projects}
       loading={loading}
-      pagination={{ pageSize: 20, showSizeChanger: true }}
+      pagination={getClientTablePagination(20)}
       size="middle"
       tableLayout="fixed"
       style={{ width: '100%' }}
