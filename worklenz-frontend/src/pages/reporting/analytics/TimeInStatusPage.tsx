@@ -52,25 +52,13 @@ import type {
   TimeInStatusSort,
   TimeInStatusViewMode,
 } from '@/types/reporting/analytics-time-in-status.types';
+import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-velocity.types';
 import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 const { Text } = Typography;
 
 const DEFAULT_DATE_MODE = 'overlapping' as const;
-
-const downloadBlob = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-};
-
-const downloadText = (content: string, filename: string, mime: string) => {
-  downloadBlob(new Blob([content], { type: mime }), filename);
-};
 
 export interface TimeInStatusPageProps {
   customTemplateId?: string;

@@ -46,6 +46,7 @@ import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
+import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   AnalyticsReportTemplate,
   VelocitySeriesFilters,
@@ -57,19 +58,6 @@ const DEFAULT_VIEW_BY = 'project' as const;
 const DEFAULT_METRIC = 'story_points' as const;
 const DEFAULT_SPRINT_COUNT = 6;
 const DEFAULT_AVG_WINDOW = 3;
-
-const downloadBlob = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-};
-
-const downloadText = (content: string, filename: string, mime: string) => {
-  downloadBlob(new Blob([content], { type: mime }), filename);
-};
 
 export interface VelocityPageProps {
   /** Open as a Custom template under /custom/:id (do not redirect to /velocity). */

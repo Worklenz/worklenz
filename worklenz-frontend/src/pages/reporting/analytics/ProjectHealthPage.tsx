@@ -45,6 +45,7 @@ import {
   latestUpdatedProjectIds,
   resolveAnalyticsDisplayProjects,
 } from '@/lib/reporting/analytics-chart-projects';
+import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   ProjectHealthFilters,
   ProjectHealthSeriesResponse,
@@ -53,19 +54,6 @@ import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-veloci
 import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 const { Text } = Typography;
-
-const downloadBlob = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-};
-
-const downloadText = (content: string, filename: string, mime: string) => {
-  downloadBlob(new Blob([content], { type: mime }), filename);
-};
 
 export interface ProjectHealthPageProps {
   customTemplateId?: string;
