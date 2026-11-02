@@ -36,3 +36,24 @@ export type AnalyticsGadgetType = (typeof GADGET_CATALOGUE_V1)[number];
 
 export const ANALYTICS_CACHE_TTL_SECONDS = 15 * 60;
 export const ANALYTICS_ROUTE_PREFIX = "/analytics";
+
+/** Built-in reports that can own saved filters; keep aligned with analytics navigation. */
+export const ANALYTICS_REPORT_KINDS = [
+  "project-health",
+  "planned-vs-actual-tasks",
+  "planned-vs-actual-milestones",
+  "utilization",
+  "time-report",
+  "budget-tracking",
+  "velocity",
+  "cumulative-flow",
+  "time-in-status",
+  "sla",
+] as const;
+
+// Preserve each report's allowance while bounding totals, including legacy report kinds.
+export const MAX_ANALYTICS_TEMPLATES_PER_USER =
+  MAX_VELOCITY_TEMPLATES_PER_USER * ANALYTICS_REPORT_KINDS.length;
+export const MAX_WORKSPACE_ANALYTICS_TEMPLATES =
+  MAX_WORKSPACE_VELOCITY_TEMPLATES * ANALYTICS_REPORT_KINDS.length;
+export const TEMPLATE_FILTERS_MAX_BYTES = 16 * 1024;

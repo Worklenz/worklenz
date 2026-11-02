@@ -1,5 +1,11 @@
+import i18next from "../../config/i18n";
+import { PoolClient } from "pg";
 import db from "../../config/db";
 import {
+  ANALYTICS_REPORT_KINDS,
+  MAX_ANALYTICS_TEMPLATES_PER_USER,
+  MAX_WORKSPACE_ANALYTICS_TEMPLATES,
+  TEMPLATE_FILTERS_MAX_BYTES,
   MAX_VELOCITY_TEMPLATES_PER_USER,
   MAX_WORKSPACE_VELOCITY_TEMPLATES,
   TEMPLATE_NAME_MAX_LENGTH,
@@ -103,10 +109,29 @@ export async function createTemplate(
   if (!teamId || !userId) throw new TemplateServiceError("Unauthorized", 401);
 
   const reportKind = input.reportKind ?? VELOCITY_REPORT_KIND;
+  if (!ANALYTICS_REPORT_KINDS.some(kind => kind === reportKind)) {
+    throw new TemplateServiceError(i18next.t("analyticsTemplates.unsupportedReportKind", {
+      defaultValue: "Unsupported report kind",
+    }));
+  }
   const name = normalizeName(input.name);
   const filters = input.filters ?? {};
+  if (typeof filters !== "object" || Array.isArray(filters)) {
+    throw new TemplateServiceError(i18next.t("analyticsTemplates.invalidFilters", {
+      defaultValue: "Template filters must be an object",
+    }));
+  }
+  const filtersJson = JSON.stringify(filters);
+  if (Buffer.byteLength(filtersJson, "utf8") > TEMPLATE_FILTERS_MAX_BYTES) {
+    throw new TemplateServiceError(
+      i18next.t("analyticsTemplates.filtersTooLarge", {
+        defaultValue: "Template filters must be at most {{limit}} bytes",
+        limit: TEMPLATE_FILTERS_MAX_BYTES,
+      })
+    );
+  }
 
-  let isShared = !!input.isWorkspaceShared;
+  const isShared = !!input.isWorkspaceShared;
   if (isShared) {
     const perms = getAnalyticsDashboardPermissions(user, {
       ownerId: userId,
@@ -115,27 +140,29 @@ export async function createTemplate(
     if (!perms.canShare) {
       throw new TemplateServiceError("Not allowed to share templates", 403);
     }
-    await assertWorkspaceShareCap(teamId, reportKind);
   }
 
-  await assertUserCap(teamId, userId, reportKind);
+  return withTemplateQuotaLock(teamId, async client => {
+    if (isShared) await assertWorkspaceShareCap(teamId, reportKind, client);
+    await assertUserCap(teamId, userId, reportKind, client);
 
-  if (input.isDefault) {
-    await clearDefault(userId, reportKind);
-  }
+    if (input.isDefault) {
+      await clearDefault(userId, reportKind, client);
+    }
 
-  const result = await db.query(
-    `INSERT INTO analytics_report_templates (
-       team_id, owner_id, report_kind, name,
-       is_workspace_shared, is_default, filters_json
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
-     RETURNING id, team_id, owner_id, report_kind, name,
-               is_workspace_shared, is_default, filters_json,
-               created_at, updated_at`,
-    [teamId, userId, reportKind, name, isShared, !!input.isDefault, JSON.stringify(filters)]
-  );
+    const result = await client.query(
+      `INSERT INTO analytics_report_templates (
+         team_id, owner_id, report_kind, name,
+         is_workspace_shared, is_default, filters_json
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+       RETURNING id, team_id, owner_id, report_kind, name,
+                 is_workspace_shared, is_default, filters_json,
+                 created_at, updated_at`,
+      [teamId, userId, reportKind, name, isShared, !!input.isDefault, filtersJson]
+    );
 
-  return mapRow({ ...result.rows[0], owner_name: user.name });
+    return mapRow({ ...result.rows[0], owner_name: user.name });
+  });
 }
 
 export async function renameTemplate(
@@ -197,7 +224,7 @@ export async function setTemplateShare(
   templateId: string,
   isWorkspaceShared: boolean
 ): Promise<AnalyticsTemplateRow> {
-  const template = await getOwnedOrAdminTemplate(user, templateId);
+  if (!user.team_id || !user.id) throw new TemplateServiceError("Unauthorized", 401);
   const role = resolveAnalyticsActorRole(user);
   const canShare =
     role === "owner" || role === "admin" || role === "manager";
@@ -205,33 +232,69 @@ export async function setTemplateShare(
     throw new TemplateServiceError("Not allowed to share templates", 403);
   }
 
-  if (isWorkspaceShared && !template.is_workspace_shared) {
-    await assertWorkspaceShareCap(template.team_id, template.report_kind);
-  }
+  return withTemplateQuotaLock(user.team_id, async client => {
+    const template = await getOwnedOrAdminTemplate(user, templateId, client);
+    if (isWorkspaceShared && !template.is_workspace_shared) {
+      await assertWorkspaceShareCap(template.team_id, template.report_kind, client);
+    }
 
-  const result = await db.query(
-    `UPDATE analytics_report_templates
-     SET is_workspace_shared = $2, updated_at = CURRENT_TIMESTAMP
-     WHERE id = $1::UUID
-     RETURNING id, team_id, owner_id, report_kind, name,
-               is_workspace_shared, is_default, filters_json,
-               created_at, updated_at`,
-    [templateId, isWorkspaceShared]
-  );
-  return mapRow(result.rows[0]);
+    const result = await client.query(
+      `UPDATE analytics_report_templates
+       SET is_workspace_shared = $2, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1::UUID
+       RETURNING id, team_id, owner_id, report_kind, name,
+                 is_workspace_shared, is_default, filters_json,
+                 created_at, updated_at`,
+      [templateId, isWorkspaceShared]
+    );
+    return mapRow(result.rows[0]);
+  });
+}
+
+/** Serialize quota-changing writes per team so concurrent requests cannot exceed caps. */
+async function withTemplateQuotaLock<T>(
+  teamId: string,
+  action: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+      [`analytics-template-quota:${teamId}`]
+    );
+    const result = await action(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function assertUserCap(
   teamId: string,
   userId: string,
-  reportKind: string
+  reportKind: string,
+  client: PoolClient
 ): Promise<void> {
-  const result = await db.query(
-    `SELECT COUNT(*)::INT AS count
+  const result = await client.query(
+    `SELECT COUNT(*)::INT AS total_count,
+            COUNT(*) FILTER (WHERE report_kind = $3)::INT AS count
      FROM analytics_report_templates
-     WHERE team_id = $1::UUID AND owner_id = $2::UUID AND report_kind = $3`,
+     WHERE team_id = $1::UUID AND owner_id = $2::UUID`,
     [teamId, userId, reportKind]
   );
+  if (Number(result.rows[0]?.total_count ?? 0) >= MAX_ANALYTICS_TEMPLATES_PER_USER) {
+    throw new TemplateServiceError(
+      i18next.t("analyticsTemplates.userLimit", {
+        defaultValue: "You can save at most {{limit}} templates across all reports",
+        limit: MAX_ANALYTICS_TEMPLATES_PER_USER,
+      })
+    );
+  }
   if (Number(result.rows[0]?.count ?? 0) >= MAX_VELOCITY_TEMPLATES_PER_USER) {
     throw new TemplateServiceError(
       `You can save at most ${MAX_VELOCITY_TEMPLATES_PER_USER} templates`,
@@ -242,16 +305,25 @@ async function assertUserCap(
 
 async function assertWorkspaceShareCap(
   teamId: string,
-  reportKind: string
+  reportKind: string,
+  client: PoolClient
 ): Promise<void> {
-  const result = await db.query(
-    `SELECT COUNT(*)::INT AS count
+  const result = await client.query(
+    `SELECT COUNT(*)::INT AS total_count,
+            COUNT(*) FILTER (WHERE report_kind = $2)::INT AS count
      FROM analytics_report_templates
      WHERE team_id = $1::UUID
-       AND report_kind = $2
        AND is_workspace_shared IS TRUE`,
     [teamId, reportKind]
   );
+  if (Number(result.rows[0]?.total_count ?? 0) >= MAX_WORKSPACE_ANALYTICS_TEMPLATES) {
+    throw new TemplateServiceError(
+      i18next.t("analyticsTemplates.workspaceLimit", {
+        defaultValue: "Workspace can share at most {{limit}} templates across all reports",
+        limit: MAX_WORKSPACE_ANALYTICS_TEMPLATES,
+      })
+    );
+  }
   if (Number(result.rows[0]?.count ?? 0) >= MAX_WORKSPACE_VELOCITY_TEMPLATES) {
     throw new TemplateServiceError(
       `Workspace can share at most ${MAX_WORKSPACE_VELOCITY_TEMPLATES} templates`,
@@ -260,8 +332,12 @@ async function assertWorkspaceShareCap(
   }
 }
 
-async function clearDefault(userId: string, reportKind: string): Promise<void> {
-  await db.query(
+async function clearDefault(
+  userId: string,
+  reportKind: string,
+  client: Pick<typeof db, "query"> = db
+): Promise<void> {
+  await client.query(
     `UPDATE analytics_report_templates
      SET is_default = FALSE, updated_at = CURRENT_TIMESTAMP
      WHERE owner_id = $1::UUID AND report_kind = $2 AND is_default IS TRUE`,
@@ -271,13 +347,14 @@ async function clearDefault(userId: string, reportKind: string): Promise<void> {
 
 async function getVisibleTemplate(
   user: IPassportSession,
-  templateId: string
+  templateId: string,
+  client: Pick<typeof db, "query"> = db
 ): Promise<AnalyticsTemplateRow> {
   const teamId = user.team_id;
   const userId = user.id;
   if (!teamId || !userId) throw new TemplateServiceError("Unauthorized", 401);
 
-  const result = await db.query(
+  const result = await client.query(
     `SELECT id, team_id, owner_id, report_kind, name,
             is_workspace_shared, is_default, filters_json,
             created_at, updated_at
@@ -293,9 +370,10 @@ async function getVisibleTemplate(
 
 async function getOwnedOrAdminTemplate(
   user: IPassportSession,
-  templateId: string
+  templateId: string,
+  client: Pick<typeof db, "query"> = db
 ): Promise<AnalyticsTemplateRow> {
-  const template = await getVisibleTemplate(user, templateId);
+  const template = await getVisibleTemplate(user, templateId, client);
   const role = resolveAnalyticsActorRole(user);
   const isAdmin = role === "owner" || role === "admin";
   if (template.owner_id !== user.id && !isAdmin) {
