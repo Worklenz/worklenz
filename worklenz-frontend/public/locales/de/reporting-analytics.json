@@ -494,7 +494,7 @@
   "utilCalcTeamSize": "Anzahl unterschiedlicher Teammitglieder in der Auslastungsauswahl.",
   "utilCalcOver": "Mitglieder, deren erfasste Stunden 100 % ihrer Kapazität überschreiten.",
   "utilCalcUnder": "Mitglieder, deren Auslastung bei oder unter 80 % der Kapazität liegt.",
-  "pvaMsCalcMilestones": "Anzahl der Meilensteine (Phasen) in den ausgewählten Projekt(en).",
+  "pvaMsCalcMilestones": "Anzahl der Meilensteine in den ausgewählten Projekt(en).",
   "pvaMsCalcLate": "Meilensteine, deren tatsächliches Ende (oder heute, wenn noch offen) nach dem geplanten Datum liegt.",
   "pvaMsCalcOnTime": "Meilensteine, die am oder vor dem geplanten Datum abgeschlossen wurden (oder noch im Plan, wenn nicht fällig).",
   "pvaMsCalcAvgSlip": "Durchschnittliche Verspätung in Tagen gegenüber den geplanten Terminen (positiv = hinter dem Plan).",

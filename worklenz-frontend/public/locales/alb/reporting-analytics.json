@@ -494,7 +494,7 @@
   "utilCalcTeamSize": "Numri i anëtarëve të ndryshëm të ekipit të përfshirë në përzgjedhjen e shfrytëzimit.",
   "utilCalcOver": "Anëtarët orët e të cilëve të regjistruara tejkalojnë 100% të kapacitetit.",
   "utilCalcUnder": "Anëtarët shfrytëzimi i të cilëve është në ose nën 80% të kapacitetit.",
-  "pvaMsCalcMilestones": "Numri i milestone-eve (fazave) në projektin/projektet e zgjedhura.",
+  "pvaMsCalcMilestones": "Numri i milestone-eve në projektin/projektet e zgjedhura.",
   "pvaMsCalcLate": "Milestone-et fundi aktual i të cilave (ose sot nëse janë ende hapur) është pas datës së planifikuar.",
   "pvaMsCalcOnTime": "Milestone-et e përfunduara në ose para datës së planifikuar (ose ende në rrugë nëse nuk kanë afat).",
   "pvaMsCalcAvgSlip": "Mesatarja e ditëve të vonesës ndaj datave të planifikuara (pozitive = prapa planit).",

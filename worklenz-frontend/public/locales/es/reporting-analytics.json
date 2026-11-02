@@ -494,7 +494,7 @@
   "utilCalcTeamSize": "Número de miembros distintos del equipo incluidos en la selección de utilización.",
   "utilCalcOver": "Miembros cuyas horas registradas superan el 100 % de su capacidad.",
   "utilCalcUnder": "Miembros cuya utilización es igual o inferior al 80 % de la capacidad.",
-  "pvaMsCalcMilestones": "Cantidad de hitos (fases) en el/los proyecto(s) seleccionado(s).",
+  "pvaMsCalcMilestones": "Cantidad de hitos en el/los proyecto(s) seleccionado(s).",
   "pvaMsCalcLate": "Hitos cuyo fin real (o hoy si siguen abiertos) es posterior a la fecha planificada.",
   "pvaMsCalcOnTime": "Hitos completados en o antes de la fecha planificada (o aún a tiempo si no vencen).",
   "pvaMsCalcAvgSlip": "Promedio de días de retraso frente a las fechas planificadas (positivo = retrasado).",

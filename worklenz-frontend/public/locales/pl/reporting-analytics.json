@@ -494,7 +494,7 @@
   "utilCalcTeamSize": "Liczba różnych członków zespołu uwzględnionych w wyborze wykorzystania.",
   "utilCalcOver": "Członkowie, których zalogowane godziny przekraczają 100% ich pojemności.",
   "utilCalcUnder": "Członkowie, których wykorzystanie jest równe lub poniżej 80% pojemności.",
-  "pvaMsCalcMilestones": "Liczba kamieni milowych (faz) w wybranych projektach.",
+  "pvaMsCalcMilestones": "Liczba kamieni milowych w wybranych projektach.",
   "pvaMsCalcLate": "Kamienie milowe, których rzeczywisty koniec (lub dziś, jeśli nadal otwarte) jest po dacie planowanej.",
   "pvaMsCalcOnTime": "Kamienie milowe ukończone w dniu planowanym lub wcześniej (lub nadal na torze, jeśli nie są wymagane).",
   "pvaMsCalcAvgSlip": "Średnia liczba dni opóźnienia względem dat planowanych (dodatnia = za planem).",

@@ -33,7 +33,7 @@ export const PvaMilestonesKpiTiles: React.FC<PvaMilestonesKpiTilesProps> = ({ kp
       sub: t('statAcrossSelection', { defaultValue: 'across selection' }),
       tone: TONES.neutral,
       tooltip: t('pvaMsCalcMilestones', {
-        defaultValue: 'Count of milestones (phases) in the selected project(s).',
+        defaultValue: 'Count of milestones in the selected project(s).',
       }),
     },
     {

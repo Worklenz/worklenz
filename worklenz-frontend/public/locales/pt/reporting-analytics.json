@@ -494,7 +494,7 @@
   "utilCalcTeamSize": "Número de membros distintos da equipa incluídos na seleção de utilização.",
   "utilCalcOver": "Membros cujas horas registadas ultrapassam 100 % da sua capacidade.",
   "utilCalcUnder": "Membros cuja utilização é igual ou inferior a 80 % da capacidade.",
-  "pvaMsCalcMilestones": "Contagem de marcos (fases) no(s) projeto(s) selecionado(s).",
+  "pvaMsCalcMilestones": "Contagem de marcos no(s) projeto(s) selecionado(s).",
   "pvaMsCalcLate": "Marcos cujo fim real (ou hoje se ainda abertos) é posterior à data planeada.",
   "pvaMsCalcOnTime": "Marcos concluídos na data planeada ou antes (ou ainda no prazo se não vencidos).",
   "pvaMsCalcAvgSlip": "Média de dias de atraso face às datas planeadas (positivo = atrasado).",

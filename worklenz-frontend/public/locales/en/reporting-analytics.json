@@ -494,7 +494,7 @@
   "utilCalcTeamSize": "Number of distinct team members included in the utilization selection.",
   "utilCalcOver": "Members whose logged hours exceed 100% of their capacity.",
   "utilCalcUnder": "Members whose utilization is at or below 80% of capacity.",
-  "pvaMsCalcMilestones": "Count of milestones (phases) in the selected project(s).",
+  "pvaMsCalcMilestones": "Count of milestones in the selected project(s).",
   "pvaMsCalcLate": "Milestones whose actual end (or today if still open) is after the planned date.",
   "pvaMsCalcOnTime": "Milestones completed on or before the planned date (or still on track if not due).",
   "pvaMsCalcAvgSlip": "Average days late vs planned dates across milestones (positive = behind plan).",

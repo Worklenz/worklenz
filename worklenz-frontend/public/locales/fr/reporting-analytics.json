@@ -494,7 +494,7 @@
   "utilCalcTeamSize": "Nombre de membres d'équipe distincts inclus dans la sélection d'utilisation.",
   "utilCalcOver": "Membres dont les heures saisies dépassent 100 % de leur capacité.",
   "utilCalcUnder": "Membres dont l'utilisation est inférieure ou égale à 80 % de la capacité.",
-  "pvaMsCalcMilestones": "Nombre de jalons (phases) dans le(s) projet(s) sélectionné(s).",
+  "pvaMsCalcMilestones": "Nombre de jalons dans le(s) projet(s) sélectionné(s).",
   "pvaMsCalcLate": "Jalons dont la fin réelle (ou aujourd'hui s'ils sont encore ouverts) est postérieure à la date planifiée.",
   "pvaMsCalcOnTime": "Jalons terminés à la date planifiée ou avant (ou encore dans les temps s’ils ne sont pas dus).",
   "pvaMsCalcAvgSlip": "Moyenne des jours de retard par rapport aux dates planifiées (positif = en retard).",

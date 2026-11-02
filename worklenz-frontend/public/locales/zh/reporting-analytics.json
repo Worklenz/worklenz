@@ -494,7 +494,7 @@
   "utilCalcTeamSize": "利用率选择中包含的不同团队成员数量。",
   "utilCalcOver": "已记录小时超过其容量 100% 的成员。",
   "utilCalcUnder": "利用率等于或低于容量 80% 的成员。",
-  "pvaMsCalcMilestones": "所选项目中的里程碑（阶段）数量。",
+  "pvaMsCalcMilestones": "所选项目中的里程碑数量。",
   "pvaMsCalcLate": "实际结束日期（若仍开放则为今天）晚于计划日期的里程碑。",
   "pvaMsCalcOnTime": "在计划日期当天或之前完成的里程碑（若未到期且仍按计划则计入）。",
   "pvaMsCalcAvgSlip": "相对计划日期的平均延迟天数（正值 = 落后于计划）。",
