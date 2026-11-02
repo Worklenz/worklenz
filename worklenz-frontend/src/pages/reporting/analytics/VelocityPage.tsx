@@ -19,7 +19,11 @@ import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { analyticsVelocityApiService } from '@/api/reporting/analytics-velocity.api.service';
 import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
-import { syncVelocityTemplatesToCustomReports } from '@/features/reporting/analytics-custom-reports';
+import {
+  getAnalyticsCustomReportsStorageKey,
+  syncVelocityTemplatesToCustomReports,
+} from '@/features/reporting/analytics-custom-reports';
+import { getUserSession } from '@/utils/session-helper';
 import {
   AnalyticsFilterBar,
   AnalyticsTemplateActions,
@@ -243,21 +247,28 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
   }, []);
 
   const loadTemplates = useCallback(async () => {
+    // Capture before awaits so a workspace switch mid-flight cannot leak templates.
+    const sessionAtFetch = getUserSession();
+    const storageKeyAtFetch = getAnalyticsCustomReportsStorageKey(
+      sessionAtFetch?.team_id,
+      sessionAtFetch?.id
+    );
+
     try {
       const res = await analyticsVelocityApiService.listTemplates('velocity');
       if (res.done && Array.isArray(res.body)) {
-        // Keep All reports ? Custom reports + sidebar in sync with every
+        // Keep All reports → Custom reports + sidebar in sync with every
         // report kind's templates (not just velocity), so saves made on
         // other report pages aren't wiped out when this page syncs.
         try {
           const all = await analyticsTemplatesApiService.listTemplates('all');
           if (all.done && Array.isArray(all.body)) {
-            syncVelocityTemplatesToCustomReports(all.body);
+            syncVelocityTemplatesToCustomReports(all.body, storageKeyAtFetch);
           } else {
-            syncVelocityTemplatesToCustomReports(res.body);
+            syncVelocityTemplatesToCustomReports(res.body, storageKeyAtFetch);
           }
         } catch {
-          syncVelocityTemplatesToCustomReports(res.body);
+          syncVelocityTemplatesToCustomReports(res.body, storageKeyAtFetch);
         }
 
         const queryTemplateId = pendingQueryTemplateId.current;

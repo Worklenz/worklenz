@@ -39,9 +39,13 @@ export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean
     return true;
   }
 
-  // AppSumo Business unlocks Business features; AppSumo Pro stays on Pro.
-  if (session.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL) {
-    return isAppSumoBusiness(session);
+  // AppSumo Business unlocks Business features; AppSumo Pro does not —
+  // but AppSumo Pro may still be on an official Business plan trial below.
+  if (
+    session.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL &&
+    isAppSumoBusiness(session)
+  ) {
+    return true;
   }
 
   // Check for active Business plan trial

@@ -4,10 +4,6 @@ import { ServerResponse } from "../../models/server-response";
 import WorklenzControllerBase from "../worklenz-controller-base";
 import HandleExceptions from "../../decorators/handle-exceptions";
 import {
-  expandAccessibleProjects,
-  parseAccessibleTeamIdsFromInput,
-} from "../../shared/analytics-expand-projects";
-import {
   buildProjectHealthCsv,
   getProjectHealthSeries,
   parseProjectHealthFilters,
@@ -16,6 +12,11 @@ import {
 type AnalyticsRequest = IWorkLenzRequest & {
   analyticsAccessibleProjectIds?: string[];
 };
+
+/** Trust middleware-resolved project scope; do not re-expand (overwrites project filters). */
+function accessibleProjectIds(req: IWorkLenzRequest): string[] {
+  return (req as AnalyticsRequest).analyticsAccessibleProjectIds ?? [];
+}
 
 export default class ProjectHealthController extends WorklenzControllerBase {
   @HandleExceptions()
@@ -29,10 +30,7 @@ export default class ProjectHealthController extends WorklenzControllerBase {
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
     }
 
-    const analyticsReq = req as AnalyticsRequest;
-    const baseIds = analyticsReq.analyticsAccessibleProjectIds ?? [];
-    const teamIds = await parseAccessibleTeamIdsFromInput(userId, teamId, req.query as Record<string, unknown>);
-    const accessible = await expandAccessibleProjects(userId, teamId, baseIds, teamIds);
+    const accessible = accessibleProjectIds(req);
     const filters = parseProjectHealthFilters(
       req.query as Record<string, unknown>,
       accessible,
@@ -55,10 +53,7 @@ export default class ProjectHealthController extends WorklenzControllerBase {
     }
 
     const body = (req.body || {}) as Record<string, unknown>;
-    const analyticsReq = req as AnalyticsRequest;
-    const baseIds = analyticsReq.analyticsAccessibleProjectIds ?? [];
-    const teamIds = await parseAccessibleTeamIdsFromInput(userId, teamId, body);
-    const accessible = await expandAccessibleProjects(userId, teamId, baseIds, teamIds);
+    const accessible = accessibleProjectIds(req);
     const filters = parseProjectHealthFilters(body, accessible, teamId);
 
     const data = await getProjectHealthSeries(filters);

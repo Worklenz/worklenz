@@ -1,9 +1,5 @@
 import moment from "moment";
 
-import {
-  expandAccessibleProjects,
-  parseAccessibleTeamIdsFromInput,
-} from "../../shared/analytics-expand-projects";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
@@ -19,6 +15,11 @@ type AnalyticsRequest = IWorkLenzRequest & {
   analyticsAccessibleProjectIds?: string[];
 };
 
+/** Trust middleware-resolved project scope; do not re-expand (overwrites project filters). */
+function accessibleProjectIds(req: IWorkLenzRequest): string[] {
+  return (req as AnalyticsRequest).analyticsAccessibleProjectIds ?? [];
+}
+
 export default class CfdController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getSeries(
@@ -32,14 +33,7 @@ export default class CfdController extends WorklenzControllerBase {
     }
 
     const query = req.query as Record<string, unknown>;
-    const base =
-      (req as AnalyticsRequest).analyticsAccessibleProjectIds ?? [];
-    const accessible = await expandAccessibleProjects(
-      userId,
-      teamId,
-      base,
-      await parseAccessibleTeamIdsFromInput(userId, teamId, query)
-    );
+    const accessible = accessibleProjectIds(req);
     const filters = parseCfdFilters(query, accessible, teamId);
     const data = await getCfdSeries(filters);
     return res.status(200).send(new ServerResponse(true, data));
@@ -59,14 +53,7 @@ export default class CfdController extends WorklenzControllerBase {
 
     const body = (req.body ?? {}) as Record<string, unknown>;
     const merged = { ...body, ...((body.filters as object) ?? {}) };
-    const base =
-      (req as AnalyticsRequest).analyticsAccessibleProjectIds ?? [];
-    const accessible = await expandAccessibleProjects(
-      userId,
-      teamId,
-      base,
-      await parseAccessibleTeamIdsFromInput(userId, teamId, merged)
-    );
+    const accessible = accessibleProjectIds(req);
     const filters = parseCfdFilters(merged, accessible, teamId);
     const data = await getCfdSeries(filters);
     const csv = buildCfdCsvMatrix(data);

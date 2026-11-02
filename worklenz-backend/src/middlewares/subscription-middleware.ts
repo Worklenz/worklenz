@@ -47,9 +47,10 @@ export function hasBusinessPlanAccess(user: any): boolean {
   const subscriptionType = user.subscription_type;
   const planName = (user.plan_name || "").toLowerCase();
 
-  // AppSumo Business unlocks Business features; AppSumo Pro stays on Pro.
-  if (subscriptionType === "LIFE_TIME_DEAL") {
-    return isAppSumoBusiness(user);
+  // AppSumo Business unlocks Business features; AppSumo Pro does not —
+  // but AppSumo Pro may still be on an official Business plan trial below.
+  if (subscriptionType === "LIFE_TIME_DEAL" && isAppSumoBusiness(user)) {
+    return true;
   }
 
   // Check for active Business plan trial (BUSINESS_LARGE tier)

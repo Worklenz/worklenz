@@ -51,15 +51,24 @@ const labelForKind = (kind: string): string => {
 /**
  * Merge API report templates into the Custom reports list so saves appear
  * on the All reports hub and sidebar for every report kind.
+ *
+ * Pass `storageKey` captured *before* the async fetch so a mid-flight workspace
+ * switch cannot write the old team's templates into the new team's slot.
+ * When `storageKey` is provided and no longer matches the active session, the
+ * write is skipped (stale response discarded).
  */
 export const syncTemplatesToCustomReports = (
   templates: AnalyticsReportTemplate[],
   storageKey?: string
 ): AnalyticsCustomReport[] => {
   const session = getUserSession();
-  const key =
-    storageKey ||
-    getAnalyticsCustomReportsStorageKey(session?.team_id, session?.id);
+  const activeKey = getAnalyticsCustomReportsStorageKey(session?.team_id, session?.id);
+  const key = storageKey || activeKey;
+
+  // Discard stale responses after a team/user switch.
+  if (storageKey && storageKey !== activeKey) {
+    return readStore(activeKey);
+  }
 
   const fromApi: AnalyticsCustomReport[] = templates.map(tpl => ({
     id: tpl.id,

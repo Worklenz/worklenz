@@ -1,9 +1,5 @@
 import moment from "moment";
 
-import {
-  expandAccessibleProjects,
-  parseAccessibleTeamIdsFromInput,
-} from "../../shared/analytics-expand-projects";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
@@ -20,6 +16,11 @@ type AnalyticsRequest = IWorkLenzRequest & {
   analyticsAccessibleProjectIds?: string[];
 };
 
+/** Trust middleware-resolved project scope; do not re-expand (overwrites project filters). */
+function accessibleProjectIds(req: IWorkLenzRequest): string[] {
+  return (req as AnalyticsRequest).analyticsAccessibleProjectIds ?? [];
+}
+
 export default class TimeInStatusController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getSeries(
@@ -33,14 +34,7 @@ export default class TimeInStatusController extends WorklenzControllerBase {
     }
 
     const query = req.query as Record<string, unknown>;
-    const base =
-      (req as AnalyticsRequest).analyticsAccessibleProjectIds ?? [];
-    const accessible = await expandAccessibleProjects(
-      userId,
-      teamId,
-      base,
-      await parseAccessibleTeamIdsFromInput(userId, teamId, query)
-    );
+    const accessible = accessibleProjectIds(req);
     const filters = parseTimeInStatusFilters(query, accessible, teamId);
     const data = await getTimeInStatusSeries(filters);
     return res.status(200).send(new ServerResponse(true, data));
@@ -58,14 +52,7 @@ export default class TimeInStatusController extends WorklenzControllerBase {
     }
 
     const query = req.query as Record<string, unknown>;
-    const base =
-      (req as AnalyticsRequest).analyticsAccessibleProjectIds ?? [];
-    const accessible = await expandAccessibleProjects(
-      userId,
-      teamId,
-      base,
-      await parseAccessibleTeamIdsFromInput(userId, teamId, query)
-    );
+    const accessible = accessibleProjectIds(req);
     const filters = parseTimeInStatusFilters(query, accessible, teamId);
     const options = await getTimeInStatusFilterOptions(filters.projectIds);
     return res.status(200).send(new ServerResponse(true, options));
@@ -88,14 +75,7 @@ export default class TimeInStatusController extends WorklenzControllerBase {
     // CSV exports need the full per-issue width — raise limit.
     if (!merged.limit) merged.limit = 2000;
 
-    const base =
-      (req as AnalyticsRequest).analyticsAccessibleProjectIds ?? [];
-    const accessible = await expandAccessibleProjects(
-      userId,
-      teamId,
-      base,
-      await parseAccessibleTeamIdsFromInput(userId, teamId, merged)
-    );
+    const accessible = accessibleProjectIds(req);
     const filters = parseTimeInStatusFilters(merged, accessible, teamId);
     const data = await getTimeInStatusSeries(filters);
     const csv = buildTimeInStatusCsv(data);

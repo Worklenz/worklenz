@@ -3,7 +3,11 @@ import { message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
-import { syncTemplatesToCustomReports } from '@/features/reporting/analytics-custom-reports';
+import {
+  getAnalyticsCustomReportsStorageKey,
+  syncTemplatesToCustomReports,
+} from '@/features/reporting/analytics-custom-reports';
+import { getUserSession } from '@/utils/session-helper';
 import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-velocity.types';
 import type { SaveAnalyticsTemplateValues } from '@/components/reporting/analytics/templates/SaveAnalyticsTemplateModal';
 
@@ -51,6 +55,13 @@ export const useAnalyticsReportTemplates = ({
   setSearchParamsRef.current = setSearchParams;
 
   const loadTemplates = useCallback(async () => {
+    // Capture before awaits so a workspace switch mid-flight cannot leak templates.
+    const sessionAtFetch = getUserSession();
+    const storageKeyAtFetch = getAnalyticsCustomReportsStorageKey(
+      sessionAtFetch?.team_id,
+      sessionAtFetch?.id
+    );
+
     try {
       const res = await analyticsTemplatesApiService.listTemplates(reportKind);
       if (!res.done || !Array.isArray(res.body)) return;
@@ -62,7 +73,7 @@ export const useAnalyticsReportTemplates = ({
       try {
         const all = await analyticsTemplatesApiService.listTemplates('all');
         if (all.done && Array.isArray(all.body)) {
-          syncTemplatesToCustomReports(all.body);
+          syncTemplatesToCustomReports(all.body, storageKeyAtFetch);
         }
       } catch {
         // preserve cached reports from other kinds

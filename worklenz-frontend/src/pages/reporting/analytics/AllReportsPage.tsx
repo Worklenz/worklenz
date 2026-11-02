@@ -163,7 +163,8 @@ const AllReportsPage: React.FC = () => {
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
-  const { customReports, hasCustomReports, refreshCustomReports } = useAnalyticsCustomReports();
+  const { customReports, hasCustomReports, refreshCustomReports, storageKey } =
+    useAnalyticsCustomReports();
   useDocumentTitle(t('reportsTitle', { defaultValue: 'Reports' }));
 
   const [tab, setTab] = useState<HubTab>('reports');
@@ -172,11 +173,13 @@ const AllReportsPage: React.FC = () => {
   // Backfill Custom reports from API (all report kinds).
   useEffect(() => {
     let cancelled = false;
+    // Capture before await so a workspace switch mid-flight cannot leak templates.
+    const storageKeyAtFetch = storageKey;
     void (async () => {
       try {
         const res = await analyticsTemplatesApiService.listTemplates('all');
         if (!cancelled && res.done && Array.isArray(res.body)) {
-          syncTemplatesToCustomReports(res.body);
+          syncTemplatesToCustomReports(res.body, storageKeyAtFetch);
           refreshCustomReports();
         }
       } catch {
@@ -186,7 +189,7 @@ const AllReportsPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [refreshCustomReports]);
+  }, [refreshCustomReports, storageKey]);
 
   useEffect(() => {
     if (tab === 'custom' && !hasCustomReports) {

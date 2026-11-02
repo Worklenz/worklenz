@@ -173,7 +173,7 @@ export const AnalyticsSidebar: React.FC = () => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
   const location = useLocation();
-  const { customReports, refreshCustomReports } = useAnalyticsCustomReports();
+  const { customReports, refreshCustomReports, storageKey } = useAnalyticsCustomReports();
   const [collapsed, setCollapsed] = useState(readCollapsedPreference);
 
   useEffect(() => {
@@ -187,11 +187,13 @@ export const AnalyticsSidebar: React.FC = () => {
   // Sync API-saved templates (all report kinds) into the Custom reports sidebar group.
   useEffect(() => {
     let cancelled = false;
+    // Capture before await so a workspace switch mid-flight cannot leak templates.
+    const storageKeyAtFetch = storageKey;
     void (async () => {
       try {
         const res = await analyticsTemplatesApiService.listTemplates('all');
         if (!cancelled && res.done && Array.isArray(res.body)) {
-          syncTemplatesToCustomReports(res.body);
+          syncTemplatesToCustomReports(res.body, storageKeyAtFetch);
           refreshCustomReports();
         }
       } catch {
@@ -201,7 +203,7 @@ export const AnalyticsSidebar: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [refreshCustomReports]);
+  }, [refreshCustomReports, storageKey]);
 
   const toggleCollapsed = useCallback(() => {
     setCollapsed(prev => !prev);

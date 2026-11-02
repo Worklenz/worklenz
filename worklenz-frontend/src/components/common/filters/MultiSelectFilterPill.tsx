@@ -89,14 +89,24 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
+  // After the user clears/deselects to empty, do not fall back to indicatedValues
+  // (otherwise Clear all / unchecking the last item snaps checkboxes back on).
+  const [suppressIndicated, setSuppressIndicated] = React.useState(false);
+
+  React.useEffect(() => {
+    if (value.length > 0) setSuppressIndicated(false);
+  }, [value]);
 
   const filtered =
     search.trim() && !onSearchChange
       ? options.filter(o => o.label.toLowerCase().includes(search.trim().toLowerCase()))
       : options;
 
-  // When nothing is explicitly selected, show indicated values as checked.
-  const checkedValues = value.length > 0 ? value : indicatedValues;
+  // When nothing is explicitly selected, show indicated values as checked —
+  // unless the user has explicitly cleared the selection this session.
+  const showingIndicated =
+    value.length === 0 && indicatedValues.length > 0 && !suppressIndicated;
+  const checkedValues = showingIndicated ? indicatedValues : value;
 
   const handleSearchChange = (next: string) => {
     setSearch(next);
@@ -104,17 +114,23 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
   };
 
   const toggle = (val: string) => {
-    const current = value.length > 0 ? value : indicatedValues;
-    onChange(current.includes(val) ? current.filter(v => v !== val) : [...current, val]);
+    const current = showingIndicated ? indicatedValues : value;
+    const next = current.includes(val)
+      ? current.filter(v => v !== val)
+      : [...current, val];
+    setSuppressIndicated(next.length === 0);
+    onChange(next);
   };
 
   const selectAllVisible = () => {
     const visibleIds = filtered.map(o => o.value);
-    const current = value.length > 0 ? value : indicatedValues;
+    const current = showingIndicated ? indicatedValues : value;
+    setSuppressIndicated(false);
     onChange([...new Set([...current, ...visibleIds])]);
   };
 
   const clearAll = () => {
+    setSuppressIndicated(true);
     onChange([]);
   };
 
@@ -155,7 +171,7 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
               type="link"
               size="small"
               onClick={clearAll}
-              disabled={value.length === 0}
+              disabled={checkedValues.length === 0}
               style={{ paddingInline: 0, height: 'auto', fontSize: 12 }}
             >
               {t('clearAll', { defaultValue: 'Clear all' })}
@@ -198,7 +214,7 @@ export const MultiSelectFilterPill: React.FC<MultiSelectFilterPillProps> = ({
     </Card>
   );
 
-  const badgeCount = value.length > 0 ? value.length : indicatedValues.length;
+  const badgeCount = value.length > 0 ? value.length : showingIndicated ? indicatedValues.length : 0;
 
   return (
     <Dropdown
