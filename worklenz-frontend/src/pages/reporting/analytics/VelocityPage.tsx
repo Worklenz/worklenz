@@ -26,7 +26,7 @@ import {
   syncVelocityTemplatesToCustomReports,
 } from '@/features/reporting/analytics-custom-reports';
 import { getUserSession } from '@/utils/session-helper';
-import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { mapOverviewProjectsToVelocityOptions } from '@/lib/reporting/velocity-project-options';
 import {
   AnalyticsFilterBar,
   AnalyticsTemplateActions,
@@ -207,21 +207,22 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
-      const projects: FilterOption[] = [];
+      const overviewProjects: Array<{ id: string; name: string; project_type?: string }> =
+        [];
       const seen = new Set<string>();
       projectResponses.forEach(res => {
         if (res.done && Array.isArray(res.body)) {
           (
             res.body as Array<{ id: string; name: string; project_type?: string }>
           ).forEach(project => {
-            if (!isSoftwareProjectType(project.project_type)) return;
-            if (!seen.has(project.id)) {
-              seen.add(project.id);
-              projects.push({ value: project.id, label: project.name });
-            }
+            if (seen.has(project.id)) return;
+            seen.add(project.id);
+            overviewProjects.push(project);
           });
         }
       });
+      // Keep general + software projects — phase velocity needs general projects.
+      const projects = mapOverviewProjectsToVelocityOptions(overviewProjects);
       setProjectOptions(projects);
       // Keep prior picks that are still valid; never auto-select projects.
       setSelectedProjectIds(prev => {
