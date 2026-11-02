@@ -146,7 +146,6 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
     if (datePreset === 'last_60_days') start = end.subtract(60, 'day');
     if (datePreset === 'last_90_days') start = end.subtract(90, 'day');
     if (datePreset === 'this_quarter') start = end.startOf('quarter');
-    if (datePreset === 'custom') start = end.subtract(30, 'day');
     return {
       date_from: start.startOf('day').toISOString(),
       date_to: end.endOf('day').toISOString(),
@@ -396,6 +395,14 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
         onTeamsChange={setSelectedTeamIds}
         datePreset={datePreset}
         onDatePresetChange={setDatePreset}
+        availableDatePresets={[
+          'last_7_days',
+          'last_14_days',
+          'last_30_days',
+          'last_60_days',
+          'last_90_days',
+          'this_quarter',
+        ]}
         loading={filtersLoading}
       />
     </Flex>
