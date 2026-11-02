@@ -96,6 +96,159 @@ describe("getManageUsersAssignableRoles", () => {
   });
 });
 
+describe("addTeamMember authorization", () => {
+  const teamId = "00000000-0000-0000-0000-000000000010";
+
+  beforeEach(() => {
+    mockedQuery.mockReset();
+  });
+
+  it("rejects a Manage users Member assigning Owner", async () => {
+    mockedQuery.mockResolvedValueOnce({
+      rows: [{ permission: ORGANIZATION_PERMISSIONS.MANAGE_USERS, granted: true }],
+    });
+    const req = createMockRequest({
+      user: { ...memberSession, id: "u-1", team_id: teamId, role_name: "Member" },
+      params: { id: teamId },
+      body: { emails: ["u-1@test.com"], role_name: "Owner", is_admin: true },
+    });
+    const res = createMockResponse();
+
+    await TeamMembersController.addTeamMember(req, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body.done).toBe(false);
+    expect(res.body.message).toMatch(/not authorized to assign/i);
+    expect(mockedQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a Manage users Member assigning Admin", async () => {
+    mockedQuery.mockResolvedValueOnce({
+      rows: [{ permission: ORGANIZATION_PERMISSIONS.MANAGE_USERS, granted: true }],
+    });
+    const req = createMockRequest({
+      user: { ...memberSession, id: "u-1", team_id: teamId, role_name: "Member" },
+      params: { id: teamId },
+      body: { emails: ["u-2@test.com"], role_name: "Admin" },
+    });
+    const res = createMockResponse();
+
+    await TeamMembersController.addTeamMember(req, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body.done).toBe(false);
+    expect(res.body.message).toMatch(/not authorized to assign/i);
+    expect(mockedQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a Manage users Member assigning Admin via is_admin: true without role_name", async () => {
+    mockedQuery.mockResolvedValueOnce({
+      rows: [{ permission: ORGANIZATION_PERMISSIONS.MANAGE_USERS, granted: true }],
+    });
+    const req = createMockRequest({
+      user: { ...memberSession, id: "u-1", team_id: teamId, role_name: "Member" },
+      params: { id: teamId },
+      body: { emails: ["u-2@test.com"], is_admin: true },
+    });
+    const res = createMockResponse();
+
+    await TeamMembersController.addTeamMember(req, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body.done).toBe(false);
+    expect(res.body.message).toMatch(/not authorized to assign/i);
+    expect(mockedQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a target team different from the caller's active team", async () => {
+    const req = createMockRequest({
+      user: { ...memberSession, id: "u-1", team_id: teamId, role_name: "Member" },
+      params: { id: "00000000-0000-0000-0000-000000000011" },
+      body: { emails: ["u-1@test.com"], role_name: "Member" },
+    });
+    const res = createMockResponse();
+
+    await TeamMembersController.addTeamMember(req, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body.done).toBe(false);
+    expect(mockedQuery).not.toHaveBeenCalled();
+  });
+});
+
+describe("generateTeamInvitationLink authorization", () => {
+  const teamId = "00000000-0000-0000-0000-000000000010";
+
+  beforeEach(() => {
+    mockedQuery.mockReset();
+  });
+
+  it("rejects a Manage users Member generating a link for Owner", async () => {
+    mockedQuery.mockResolvedValueOnce({
+      rows: [{ permission: ORGANIZATION_PERMISSIONS.MANAGE_USERS, granted: true }],
+    });
+    const req = createMockRequest({
+      user: { ...memberSession, id: "u-1", team_id: teamId, role_name: "Member" },
+      body: { role_name: "Owner" },
+    });
+    const res = createMockResponse();
+
+    await TeamMembersController.generateTeamInvitationLink(req, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body.done).toBe(false);
+    expect(res.body.message).toMatch(/not authorized to assign/i);
+  });
+
+  it("rejects a Manage users Member generating a link for Admin", async () => {
+    mockedQuery.mockResolvedValueOnce({
+      rows: [{ permission: ORGANIZATION_PERMISSIONS.MANAGE_USERS, granted: true }],
+    });
+    const req = createMockRequest({
+      user: { ...memberSession, id: "u-1", team_id: teamId, role_name: "Member" },
+      body: { role_name: "Admin" },
+    });
+    const res = createMockResponse();
+
+    await TeamMembersController.generateTeamInvitationLink(req, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body.done).toBe(false);
+    expect(res.body.message).toMatch(/not authorized to assign/i);
+  });
+
+  it("rejects a Manage users Member generating a link with is_admin: true", async () => {
+    mockedQuery.mockResolvedValueOnce({
+      rows: [{ permission: ORGANIZATION_PERMISSIONS.MANAGE_USERS, granted: true }],
+    });
+    const req = createMockRequest({
+      user: { ...memberSession, id: "u-1", team_id: teamId, role_name: "Member" },
+      body: { is_admin: true },
+    });
+    const res = createMockResponse();
+
+    await TeamMembersController.generateTeamInvitationLink(req, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body.done).toBe(false);
+    expect(res.body.message).toMatch(/not authorized to assign/i);
+  });
+
+  it("rejects an Admin generating a link for Owner", async () => {
+    const req = createMockRequest({
+      user: { id: "admin-1", team_id: teamId, is_admin: true, role_name: "Admin" },
+      body: { role_name: "Owner" },
+    });
+    const res = createMockResponse();
+
+    await TeamMembersController.generateTeamInvitationLink(req, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body.done).toBe(false);
+    expect(res.body.message).toMatch(/not authorized to assign/i);
+  });
+});
+
 describe("ensureManageableTarget — Manage users cannot edit Admins", () => {
   const memberId = "00000000-0000-0000-0000-000000000001";
   const adminMemberId = "00000000-0000-0000-0000-000000000002";

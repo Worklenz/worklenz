@@ -2442,10 +2442,33 @@ export default class TeamMembersController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     req.body.team_id = req.params?.id || null;
 
-    if (!req.body.team_id || !req.user?.id)
+    if (!req.body.team_id || !req.user?.id || !req.user.team_id)
       return res
         .status(200)
         .send(new ServerResponse(false, "Required fields are missing."));
+
+    // Invitations are scoped to the caller's active team. The URL must not let a
+    // Manage users grant (or even a team admin) target another team's membership.
+    if (req.body.team_id !== req.user.team_id) {
+      return res.status(403).send(new ServerResponse(false, null, "You are not authorized to add members to this team."));
+    }
+
+    const requestedRoleName =
+      req.body.role_name ||
+      (req.body.is_admin ? TEAM_ROLE_NAMES.ADMIN : TEAM_ROLE_NAMES.MEMBER);
+    const roleAssignmentError = await this.ensureAssignableRole(
+      req,
+      requestedRoleName,
+    );
+    if (roleAssignmentError) {
+      return res.status(403).send(roleAssignmentError);
+    }
+
+    // is_admin is a legacy SQL fallback; don't let it override a permitted
+    // Member/Team Lead role for users authorized through Manage users.
+    if (!hasTeamAdminPrivileges(req.user)) {
+      req.body.is_admin = false;
+    }
 
     // check the subscription status
     const subscriptionData = await checkTeamSubscriptionStatus(
@@ -2579,19 +2602,19 @@ export default class TeamMembersController extends WorklenzControllerBase {
         .send(new ServerResponse(false, null, "Required fields are missing."));
     }
 
-    if (!hasTeamAdminPrivileges(req.user)) {
-      if (is_admin || normalizeTeamRoleName(role_name) === TEAM_ROLE_NAMES.ADMIN) {
-        return res
-          .status(403)
-          .send(
-            new ServerResponse(
-              false,
-              null,
-              "You are not authorized to invite Admin users."
-            )
-          );
-      }
+    const requestedRoleName =
+      (is_admin ? TEAM_ROLE_NAMES.ADMIN : req.body.role_name) ||
+      role_name;
+    const roleAssignmentError = await this.ensureAssignableRole(
+      req,
+      requestedRoleName,
+    );
+    if (roleAssignmentError) {
+      return res.status(403).send(roleAssignmentError);
     }
+
+    const effectiveIsAdmin = hasTeamAdminPrivileges(req.user) ? !!is_admin : false;
+    const effectiveRoleName = normalizeTeamRoleName(requestedRoleName);
 
     // Check subscription status
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
@@ -2793,8 +2816,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
             userId,
             expiresAt,
             job_title_id,
-            role_name,
-            is_admin,
+            effectiveRoleName,
+            effectiveIsAdmin,
             max_usage,
           ]);
 
@@ -2817,8 +2840,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
             userId,
             expiresAt,
             job_title_id,
-            role_name,
-            is_admin,
+            effectiveRoleName,
+            effectiveIsAdmin,
             max_usage,
           ]);
 
