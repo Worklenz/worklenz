@@ -6,11 +6,11 @@ import { ServerResponse } from "../../models/server-response";
 import { hasTeamAdminPrivileges } from "../../shared/team-permissions";
 import {
   enrichSessionWithTemplateCreateAccess,
-  userCanCreateProjectsFromTemplates,
+  userCanCreateProjectsFromTemplatesAsync,
 } from "../../shared/template-create-access";
 
 /**
- * Gate create-from-template routes to Owner/Admin users.
+ * Gate create-from-template routes to Owner/Admin or "Create projects" holders.
  */
 const requireCreateFromTemplates = async (
   req: IWorkLenzRequest,
@@ -22,12 +22,11 @@ const requireCreateFromTemplates = async (
     return;
   }
 
-  // Keep the legacy session flag in sync without granting member access.
   if (!hasTeamAdminPrivileges(req.user)) {
     await enrichSessionWithTemplateCreateAccess(req.user);
   }
 
-  if (!userCanCreateProjectsFromTemplates(req.user)) {
+  if (!(await userCanCreateProjectsFromTemplatesAsync(req.user))) {
     res
       .status(403)
       .send(

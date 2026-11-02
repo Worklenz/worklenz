@@ -5,6 +5,7 @@ jest.unmock("../middlewares/validators/organization-permission-validator");
 import { NextFunction } from "express";
 import {
   adminCenterAccessValidator,
+  createProjectsValidator,
   manageBillingValidator,
   manageClientsValidator,
 } from "../middlewares/validators/organization-permission-validator";
@@ -102,6 +103,28 @@ describe("organization permission validators", () => {
 
     const res = makeRes();
     await adminCenterAccessValidator(makeReq(memberUser), res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(403);
+  });
+
+  it("createProjectsValidator allows a Member with Create projects", async () => {
+    (mockedDb.query as jest.Mock).mockResolvedValueOnce({
+      rows: [{ permission: ORGANIZATION_PERMISSIONS.CREATE_PROJECTS, granted: true }],
+    });
+
+    const res = makeRes();
+    await createProjectsValidator(makeReq(memberUser, "POST"), res, next);
+
+    expect(next).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it("createProjectsValidator rejects a Member without Create projects", async () => {
+    (mockedDb.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
+
+    const res = makeRes();
+    await createProjectsValidator(makeReq(memberUser, "POST"), res, next);
 
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);

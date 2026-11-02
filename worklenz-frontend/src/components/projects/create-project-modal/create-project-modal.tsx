@@ -25,6 +25,8 @@ import type { InputRef } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
+import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
+import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 import { projectColors } from '@/lib/project/project-constants';
 import {
   projectsApi,
@@ -215,8 +217,12 @@ export const CreateProjectModal = ({
   const navigate = useNavigate();
   const authService = useAuthService();
   const isOwnerOrAdmin = authService.isOwnerOrAdmin();
-  // Phase 5: Members with the flag may only create from templates (D5).
-  const canCreateBlankOrCsv = isOwnerOrAdmin;
+  const { hasPermission: canCreateProjects } = useOrganizationPermission(
+    ORGANIZATION_PERMISSIONS.CREATE_PROJECTS
+  );
+  // Blank/CSV create: Owner/Admin, or anyone granted "Create projects".
+  // Members with only the template-create flag stay template-only (D5).
+  const canCreateBlankOrCsv = isOwnerOrAdmin || canCreateProjects;
   const { trackMixpanelEvent } = useMixpanelTracking();
   const [form] = Form.useForm();
 

@@ -49,6 +49,9 @@ export const manageTeamsValidator = organizationPermissionValidator(
 export const manageClientsValidator = organizationPermissionValidator(
   ORGANIZATION_PERMISSIONS.MANAGE_CLIENTS
 );
+export const createProjectsValidator = organizationPermissionValidator(
+  ORGANIZATION_PERMISSIONS.CREATE_PROJECTS
+);
 
 const ADMIN_CENTER_ENTRY_PERMISSIONS: OrganizationPermission[] = [
   ORGANIZATION_PERMISSIONS.MANAGE_USERS,
