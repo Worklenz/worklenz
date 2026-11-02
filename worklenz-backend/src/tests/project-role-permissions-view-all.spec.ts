@@ -55,44 +55,20 @@ describe("getProjectRolePermissionFlags — View all projects", () => {
     });
   });
 
-  it("applies scheme task actions for View-all non-member", async () => {
+  it("keeps View-all non-member view-only even if scheme grants task actions to role", async () => {
     (mockedDb.query as jest.Mock)
       .mockResolvedValueOnce({ rows: [memberRow] })
       .mockResolvedValueOnce({
         rows: [{ permission: ORGANIZATION_PERMISSIONS.VIEW_ALL_PROJECTS, granted: true }],
-      })
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            permission: PROJECT_ROLE_PERMISSIONS.CREATE_TASKS,
-            granted: true,
-            is_default: true,
-          },
-          {
-            permission: PROJECT_ROLE_PERMISSIONS.EDIT_TASKS,
-            granted: true,
-            is_default: true,
-          },
-          {
-            permission: PROJECT_ROLE_PERMISSIONS.DELETE_TASKS,
-            granted: false,
-            is_default: true,
-          },
-          {
-            permission: PROJECT_ROLE_PERMISSIONS.COMMENT,
-            granted: true,
-            is_default: true,
-          },
-        ],
       });
 
     const flags = await getProjectRolePermissionFlags("user-1", "project-1");
 
     expect(flags).toEqual({
-      create_tasks: true,
-      edit_tasks: true,
+      create_tasks: false,
+      edit_tasks: false,
       delete_tasks: false,
-      comment: true,
+      comment: false,
     });
   });
 

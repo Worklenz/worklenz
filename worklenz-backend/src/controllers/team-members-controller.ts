@@ -172,8 +172,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
     const canManageViaRole = canManageTargetRole(req.user, targetRoleName);
     const canManageViaPermission =
       !canManageViaRole &&
-      (await hasTeamMemberManagementAccess(req.user)) &&
-      getManageUsersAssignableRoles().includes(normalizeTeamRoleName(targetRoleName));
+      getManageUsersAssignableRoles().includes(normalizeTeamRoleName(targetRoleName)) &&
+      (await hasTeamMemberManagementAccess(req.user));
 
     if (!canManageViaRole && !canManageViaPermission) {
       return new ServerResponse(
@@ -959,7 +959,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
       isSelfTeamMember(req.user, req.params.id) ||
       (await this.isSelfMemberInTeam(req.user?.id, req.user?.team_id, req.params.id));
 
-    const canManageMembers = await hasTeamMemberManagementAccess(req.user);
+    const canManageMembers =
+      canManageTeamMembers(req.user) ||
+      (!isSelf && (await hasTeamMemberManagementAccess(req.user)));
 
     // If caller cannot manage team members or is editing their own record,
     // protect role/admin fields from unauthorized modification or escalation.
@@ -1002,9 +1004,10 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
     }
 
+    const canSetAdminFlag = hasTeamAdminPrivileges(req.user);
     req.body.id = req.params.id;
     req.body.team_id = req.user?.team_id || null;
-    req.body.is_admin = !canManageMembers || isSelf
+    req.body.is_admin = !canSetAdminFlag || isSelf
       ? previousRoleName === TEAM_ROLE_NAMES.ADMIN
       : !!req.body.is_admin;
 
@@ -2574,6 +2577,20 @@ export default class TeamMembersController extends WorklenzControllerBase {
       return res
         .status(200)
         .send(new ServerResponse(false, null, "Required fields are missing."));
+    }
+
+    if (!hasTeamAdminPrivileges(req.user)) {
+      if (is_admin || normalizeTeamRoleName(role_name) === TEAM_ROLE_NAMES.ADMIN) {
+        return res
+          .status(403)
+          .send(
+            new ServerResponse(
+              false,
+              null,
+              "You are not authorized to invite Admin users."
+            )
+          );
+      }
     }
 
     // Check subscription status
