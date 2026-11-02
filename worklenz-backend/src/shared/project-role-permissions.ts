@@ -123,8 +123,9 @@ const getGrantedPermissions = async (
 
   const isMemberOrGuest =
     context.roleName === TEAM_ROLE_NAMES.MEMBER || context.roleName === GUEST_ROLE_NAME;
-  // Non-members need "View all projects" before scheme Create/Edit/Delete/Comment apply.
-  if (isMemberOrGuest && !context.isProjectMember && !context.canViewAllProjects) {
+  // Non-members (including those viewing via "View all projects") are strictly view-only;
+  // task mutation (create/edit/delete/comment) requires project membership.
+  if (isMemberOrGuest && !context.isProjectMember) {
     return [];
   }
 
