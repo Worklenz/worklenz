@@ -36,17 +36,17 @@ import {
 import { openProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
 
 import {
-  toggleArchiveProject,
   toggleArchiveProjectForAll,
   fetchGroupedProjects,
 } from '@/features/projects/projectsSlice';
 
 import { useAuthService } from '@/hooks/useAuth';
+import { useDefaultProjectPermission } from '@/hooks/useDefaultProjectPermission';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { PROJECT_ROLE_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
 import {
   evt_projects_settings_click,
-  evt_projects_archive,
   evt_projects_archive_all,
 } from '@/shared/worklenz-analytics-events';
 
@@ -122,6 +122,10 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
+  const { hasPermission: hasArchivePermission } = useDefaultProjectPermission(
+    PROJECT_ROLE_PERMISSIONS.ARCHIVE_PROJECT
+  );
+  const canArchive = isOwnerOrAdmin || hasArchivePermission;
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Track which groups are collapsed. Default: only the first group expanded.
@@ -242,14 +246,10 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   };
 
   const handleArchiveClick = async (projectId: string) => {
+    if (!canArchive) return;
     try {
-      if (isOwnerOrAdmin) {
-        trackMixpanelEvent(evt_projects_archive_all);
-        await dispatch(toggleArchiveProjectForAll(projectId)).unwrap();
-      } else {
-        trackMixpanelEvent(evt_projects_archive);
-        await dispatch(toggleArchiveProject(projectId)).unwrap();
-      }
+      trackMixpanelEvent(evt_projects_archive_all);
+      await dispatch(toggleArchiveProjectForAll(projectId)).unwrap();
       await dispatch(fetchGroupedProjects(groupedRequestParams)).unwrap();
     } catch (error) {
       logger.error('Failed to archive project:', error);
@@ -500,14 +500,14 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 </button>
               </Tooltip>
               <Tooltip
-                title={isOwnerOrAdmin ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}
+                title={canArchive ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}
               >
                 <button
                   style={{
                     background: 'none',
                     border: 'none',
-                    cursor: isOwnerOrAdmin ? 'pointer' : 'not-allowed',
-                    opacity: isOwnerOrAdmin ? 1 : 0.5,
+                    cursor: canArchive ? 'pointer' : 'not-allowed',
+                    opacity: canArchive ? 1 : 0.5,
                     padding: '2px 6px',
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -518,11 +518,11 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (isOwnerOrAdmin) {
-                      handleArchiveClick(record.id);
+                    if (canArchive && record.id) {
+                      void handleArchiveClick(record.id);
                     }
                   }}
-                  disabled={!isOwnerOrAdmin}
+                  disabled={!canArchive}
                   type="button"
                 >
                   <InboxOutlined />
@@ -533,7 +533,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         },
       },
     ],
-    [token, t, themeMode, isOwnerOrAdmin]
+    [token, t, themeMode, canArchive]
   );
 
   // Filter columns based on field visibility

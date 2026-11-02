@@ -9,6 +9,7 @@ import {
   DEFAULT_GRANTS,
   DEFAULT_PERMISSIONS,
   DEFAULT_ROLES,
+  getDefaultProjectPermissions,
   getOrganizationPermissions,
   INHERITED_PERMISSION_SOURCES,
   PROJECT_PERMISSIONS,
@@ -190,6 +191,15 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const permissions = await getOrganizationPermissions(req.user);
+    return res.status(200).send(new ServerResponse(true, permissions));
+  }
+
+  @HandleExceptions()
+  public static async getMyDefaultProjectPermissions(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const permissions = await getDefaultProjectPermissions(req.user);
     return res.status(200).send(new ServerResponse(true, permissions));
   }
 

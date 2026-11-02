@@ -7,24 +7,21 @@ import {
 import { openProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
 import { fetchProjects } from '@/features/projects/projectsSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import useIsProjectManager from '@/hooks/useIsProjectManager';
+import { useDefaultProjectPermission } from '@/hooks/useDefaultProjectPermission';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { PROJECT_ROLE_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 import logger from '@/utils/errorLogger';
 import { SettingOutlined, InboxOutlined } from '@/shared/antd-imports';
 import { Tooltip, Button, Popconfirm, Space } from '@/shared/antd-imports';
 import {
-  evt_projects_archive,
   evt_projects_archive_all,
   evt_projects_settings_click,
 } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import {
-  useToggleArchiveProjectMutation,
-  useToggleArchiveProjectForAllMutation,
-} from '@/api/projects/projects.v1.api.service';
+import { useToggleArchiveProjectForAllMutation } from '@/api/projects/projects.v1.api.service';
 
 interface ActionButtonsProps {
-  t: (key: string) => string;
+  t: (key: string, options?: { defaultValue?: string }) => string;
   record: IProjectViewModel;
   dispatch: AppDispatch;
   isOwnerOrAdmin: boolean;
@@ -36,14 +33,14 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   dispatch,
   isOwnerOrAdmin,
 }) => {
-  const isProjectManager = useIsProjectManager();
-  const isEditable = isOwnerOrAdmin;
+  const { hasPermission: hasArchivePermission } = useDefaultProjectPermission(
+    PROJECT_ROLE_PERMISSIONS.ARCHIVE_PROJECT
+  );
+  const canArchive = isOwnerOrAdmin || hasArchivePermission;
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   const { requestParams } = useAppSelector(state => state.projectsReducer);
 
-  // ✅ RTK Query mutations — correctly wired to the API
-  const [toggleArchive] = useToggleArchiveProjectMutation();
   const [toggleArchiveForAll] = useToggleArchiveProjectForAllMutation();
 
   const handleSettingsClick = () => {
@@ -73,19 +70,10 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   };
 
   const handleArchiveClick = async () => {
-    if (!record.id) return;
+    if (!record.id || !canArchive) return;
     try {
-      if (isOwnerOrAdmin) {
-        trackMixpanelEvent(evt_projects_archive_all);
-        // ✅ Use RTK Query mutation instead of thunk
-        await toggleArchiveForAll(record.id).unwrap();
-      } else {
-        trackMixpanelEvent(evt_projects_archive);
-        // ✅ Use RTK Query mutation instead of thunk
-        await toggleArchive(record.id).unwrap();
-      }
-      // ✅ Re-fetch via thunk to update state.projectsReducer.projects
-      // which is what the project list actually reads from
+      trackMixpanelEvent(evt_projects_archive_all);
+      await toggleArchiveForAll(record.id).unwrap();
       dispatch(fetchProjects(requestParams));
     } catch (error) {
       logger.error('Failed to archive/unarchive project:', error);
@@ -96,7 +84,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
 
   return (
     <Space size={4} onClick={e => e.stopPropagation()}>
-      <Tooltip 
+      <Tooltip
         title={
           isGuest
             ? t('settingsDisabledForGuest', { defaultValue: 'Settings Disabled For Guest' })
@@ -123,7 +111,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         />
       </Tooltip>
       <Tooltip
-        title={isEditable ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}
+        title={canArchive ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}
       >
         <Popconfirm
           title={record.archived ? t('unarchive') : t('archive')}
@@ -131,7 +119,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
           onConfirm={handleArchiveClick}
           okText={t('yes')}
           cancelText={t('no')}
-          disabled={!isEditable}
+          disabled={!canArchive}
         >
           <Button
             className="action-button"
@@ -139,7 +127,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
             size="small"
             style={{ width: 28, minWidth: 28, paddingInline: 0 }}
             icon={<InboxOutlined />}
-            disabled={!isEditable}
+            disabled={!canArchive}
           />
         </Popconfirm>
       </Tooltip>

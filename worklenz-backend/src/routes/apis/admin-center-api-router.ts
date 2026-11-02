@@ -101,6 +101,7 @@ adminCenterApiRouter.get("/appsumo/countdown-widget", manageBillingValidator, sa
 
 // permission schemes — stay Owner/Admin-only
 adminCenterApiRouter.get("/my-organization-permissions", safeControllerFunction(PermissionSchemesController.getMyOrganizationPermissions));
+adminCenterApiRouter.get("/my-default-project-permissions", safeControllerFunction(PermissionSchemesController.getMyDefaultProjectPermissions));
 adminCenterApiRouter.get("/permission-schemes", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.getSchemes));
 adminCenterApiRouter.post("/permission-schemes", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.createScheme));
 adminCenterApiRouter.get("/permission-schemes/:id", teamOwnerOrAdminValidator, safeControllerFunction(PermissionSchemesController.getScheme));
