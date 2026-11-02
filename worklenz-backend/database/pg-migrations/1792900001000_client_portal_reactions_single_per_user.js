@@ -5,14 +5,14 @@
 /** @param pgm {import('node-pg-migrate').MigrationBuilder} */
 exports.up = (pgm) => {
   pgm.sql(`
-    -- Deduplicate any existing multi-reactions keeping the latest created_at
+    -- Keep one deterministic winner even when reactions have identical timestamps.
     DELETE FROM client_portal_thread_message_reactions r1
      USING client_portal_thread_message_reactions r2
      WHERE r1.id <> r2.id
        AND r1.message_id = r2.message_id
        AND r1.user_id IS NOT NULL
        AND r1.user_id = r2.user_id
-       AND r1.created_at < r2.created_at;
+       AND (r1.created_at, r1.id) < (r2.created_at, r2.id);
 
     DELETE FROM client_portal_thread_message_reactions r1
      USING client_portal_thread_message_reactions r2
@@ -20,7 +20,7 @@ exports.up = (pgm) => {
        AND r1.message_id = r2.message_id
        AND r1.contact_id IS NOT NULL
        AND r1.contact_id = r2.contact_id
-       AND r1.created_at < r2.created_at;
+       AND (r1.created_at, r1.id) < (r2.created_at, r2.id);
 
     DROP INDEX IF EXISTS idx_client_portal_reactions_contact_emoji;
     DROP INDEX IF EXISTS idx_client_portal_reactions_user_emoji;
