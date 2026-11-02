@@ -76,7 +76,7 @@ export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({
       tone: TONES.primary,
       tooltip: t('velCalcAvg', {
         defaultValue:
-          'Average completed work per sprint/phase: sum of completed points (or tasks) ÷ number of completed buckets.',
+          'Average completed work per sprint: sum of completed points (or tasks) ÷ number of completed sprints.',
       }),
     },
     {
@@ -89,7 +89,7 @@ export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({
       sub: '\u00a0',
       tone: TONES.success,
       tooltip: t('velCalcLast', {
-        defaultValue: 'Completed work in the most recent completed sprint or phase.',
+        defaultValue: 'Completed work in the most recent completed sprint.',
       }),
     },
     {
@@ -103,7 +103,7 @@ export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({
       tone: TONES.warn,
       tooltip: t('velCalcCommitment', {
         defaultValue:
-          'Average of (completed ÷ committed) × 100 across completed sprints/phases with a commitment.',
+          'Average of (completed ÷ committed) × 100 across completed sprints with a commitment.',
       }),
     },
     {
@@ -113,7 +113,7 @@ export const VelocityKpiTiles: React.FC<VelocityKpiTilesProps> = ({
       sub: '\u00a0',
       tone: TONES.muted,
       tooltip: t('velCalcCount', {
-        defaultValue: 'Number of completed sprints or phases included in this report.',
+        defaultValue: 'Number of completed sprints included in this report.',
       }),
     },
   ];
