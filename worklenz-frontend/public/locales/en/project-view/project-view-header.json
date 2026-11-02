@@ -35,5 +35,6 @@
   "defaultTaskName": "Untitled Task",
   "softwareProjectTooltip": "Software project — issues, backlog, and sprints",
   "softwareProjectTag": "Software",
-  "settingsDisabledForGuest": "Project settings are not accessible for guest users"
+  "settingsDisabledForGuest": "Project settings are not accessible for guest users",
+  "noPermission": "You do not have permission"
 }

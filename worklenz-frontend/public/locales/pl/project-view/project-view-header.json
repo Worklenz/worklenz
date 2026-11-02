@@ -35,5 +35,6 @@
   "defaultTaskName": "Zadanie bez tytułu",
   "softwareProjectTooltip": "Projekt oprogramowania — problemy, zaległości i sprinty",
   "softwareProjectTag": "Oprogramowanie",
-  "settingsDisabledForGuest": "Ustawienia projektu nie są dostępne dla gości"
+  "settingsDisabledForGuest": "Ustawienia projektu nie są dostępne dla gości",
+  "noPermission": "Nie masz uprawnień"
 }
