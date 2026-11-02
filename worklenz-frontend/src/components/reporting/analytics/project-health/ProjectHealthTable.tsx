@@ -10,6 +10,7 @@ import type {
 } from '@/types/reporting/analytics-project-health.types';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 import { MetricCalcHint } from '../MetricCalcHint';
+import { PROJECT_HEALTH_TONE_COLORS } from './project-health-colors';
 
 const { Text } = Typography;
 
@@ -44,25 +45,25 @@ const TONE_FALLBACK: Record<
     color: 'success',
     labelKey: 'statOnTrack',
     defaultLabel: 'On track',
-    swatch: '#52c41a',
+    swatch: PROJECT_HEALTH_TONE_COLORS.on_track,
   },
   at_risk: {
     color: 'warning',
     labelKey: 'statAtRisk',
     defaultLabel: 'At risk',
-    swatch: '#faad14',
+    swatch: PROJECT_HEALTH_TONE_COLORS.at_risk,
   },
   off_track: {
     color: 'error',
     labelKey: 'statOffTrack',
     defaultLabel: 'Off track',
-    swatch: '#ff4d4f',
+    swatch: PROJECT_HEALTH_TONE_COLORS.off_track,
   },
   not_set: {
     color: 'default',
     labelKey: 'phHealthNotSet',
     defaultLabel: 'Not set',
-    swatch: '#8c8c8c',
+    swatch: PROJECT_HEALTH_TONE_COLORS.not_set,
   },
 };
 
@@ -97,10 +98,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
                   width: 8,
                   height: 8,
                   borderRadius: 2,
-                  background:
-                    record.health_tone === 'not_set'
-                      ? fallback.swatch
-                      : record.health_color || fallback.swatch,
+                  background: fallback.swatch,
                   flexShrink: 0,
                 }}
               />

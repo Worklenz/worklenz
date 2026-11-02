@@ -463,7 +463,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
                 <ProjectHealthChart ref={chartRef} projects={barChartProjects} />
               </div>
               <div style={{ flex: '1 1 280px', minWidth: 260, maxWidth: 420 }}>
-                <ProjectHealthDonutChart projects={data.projects} kpis={data.kpis} />
+                <ProjectHealthDonutChart kpis={data.kpis} />
               </div>
             </Flex>
           }
