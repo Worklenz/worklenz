@@ -8,6 +8,7 @@ import {
   toArray,
   toUuidArray,
   escapeLikePattern,
+  escapeLikePatterns,
   buildTaskFilterClauses,
   buildTaskOrderClause,
   buildTabClause,
@@ -50,8 +51,20 @@ describe("escapeLikePattern", () => {
     expect(escapeLikePattern("R&D")).toBe("R&amp;D");
   });
 
+  it("supports decoded and HTML-escaped task-name search forms", () => {
+    expect(escapeLikePatterns("R&D")).toEqual(["R&D", "R&amp;D"]);
+    expect(escapeLikePatterns("R&amp;D")).toEqual(["R&D", "R&amp;D"]);
+  });
+
   it("escapes ILIKE wildcard metacharacters % and _", () => {
     expect(escapeLikePattern("50%_done")).toBe("50\\%\\_done");
+  });
+
+  it("escapes ILIKE wildcards for both task-name search forms", () => {
+    expect(escapeLikePatterns("50%_done &")).toEqual([
+      "50\\%\\_done &",
+      "50\\%\\_done &amp;",
+    ]);
   });
 
   it("escapes a literal backslash", () => {
@@ -118,13 +131,13 @@ describe("buildTaskFilterClauses", () => {
     expect(values).toEqual([]);
   });
 
-  it("escapes the search term and reuses one $N for both ILIKE sides", () => {
+  it("searches task names in decoded and HTML-escaped forms", () => {
     const values: unknown[] = [];
-    const clause = buildTaskFilterClauses({ search: "50%" }, values, 3, 3);
+    const clause = buildTaskFilterClauses({ search: "R&D" }, values, 3, 3);
     expect(clause).toBe(
-      "AND (t.name ILIKE $4 ESCAPE '\\' OR (p.key || '-' || t.task_no::TEXT) ILIKE $4 ESCAPE '\\')"
+      "AND (t.name ILIKE $4 ESCAPE '\\' OR t.name ILIKE $5 ESCAPE '\\' OR (p.key || '-' || t.task_no::TEXT) ILIKE $4 ESCAPE '\\')"
     );
-    expect(values).toEqual(["%50\\%%"]);
+    expect(values).toEqual(["%R&D%", "%R&amp;D%"]);
   });
 
   it("builds a tz-aware overdue_only clause bound to tzParamIndex, with the completion guard", () => {

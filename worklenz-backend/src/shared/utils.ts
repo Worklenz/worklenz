@@ -9,6 +9,8 @@ import { send_to_slack } from "../shared/slack";
 import { IActivityLogChangeType } from "../services/activity-logs/interfaces";
 import { IRecurringSchedule } from "../interfaces/recurring-tasks";
 
+export { decodeHtmlEntities, escapeHtmlEntities, getHtmlTextSearchVariants } from "./html-entity-utils";
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const error_codes = require("./postgresql-error-codes");
 
@@ -232,26 +234,6 @@ export function htmlToPlainText(value: string | null, preserveWhitespace = false
     .replace(/&quot;/g, '"')
     .replace(/&amp;/g, "&");
   return (preserveWhitespace ? text : text.replace(/\s+/g, " ")).trim();
-}
-
-/**
- * Escapes HTML special characters using the exact entity mapping applied by
- * sanitizePlainText() (i.e. sanitize-html's text-node escaping: &, <, > only —
- * it does not escape quotes/apostrophes in plain text). Kept separate so any
- * code that needs to match against already-sanitized text (e.g. building a
- * search pattern) encodes characters identically to how they were encoded at
- * save time.
- *
- * @param value - Raw text to escape
- * @returns Text with HTML special characters replaced by their entities
- */
-export function escapeHtmlEntities(value: string): string {
-  if (!value) return "";
-
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
 
 /**
