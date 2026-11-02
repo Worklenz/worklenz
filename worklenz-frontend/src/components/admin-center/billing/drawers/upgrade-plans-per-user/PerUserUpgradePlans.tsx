@@ -18,7 +18,12 @@ import {
 import { CheckCircleFilled, LockOutlined, MinusOutlined, PlusOutlined } from '@ant-design/icons';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import {
+  closeUpgradeModal,
+  fetchBillingInfo,
+  fetchStorageInfo,
+  toggleUpgradeModal,
+} from '@/features/admin-center/admin-center.slice';
 import { setUser } from '@/features/user/userSlice';
 import { setSession } from '@/utils/session-helper';
 import { useAuthService } from '@/hooks/useAuth';
@@ -37,6 +42,7 @@ import {
   openPaddleBillingCheckout,
 } from '@/utils/paddle-billing-checkout';
 import logger from '@/utils/errorLogger';
+import { refreshCheckoutAccount } from '@/utils/refresh-checkout-account';
 import './per-user-upgrade-plans.css';
 import {
   IPlanGroup,
@@ -49,10 +55,7 @@ import {
   pickPlan,
 } from './per-user-pricing';
 
-// Same grace period as the legacy checkout: the subscription is created by a webhook, so wait a
-// moment before reloading billing info.
-const POST_CHECKOUT_REFRESH_DELAY_MS = 10000;
-// Extra refreshes before the modal closes, to pick up the webhook-written subscription sooner.
+// Seat changes also arrive through a webhook.
 const POST_CHECKOUT_REFRESH_STEPS_MS = [3000, 6000];
 const MAX_SEATS = 10000;
 const FREE_USER_LIMIT = 5;
@@ -169,30 +172,32 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
 
   const finishCheckout = (plan: IPerUserPlan, seatCount: number) => {
     trackMixpanelEvent(MixpanelBillingEvents.CHECKOUT_COMPLETED, trackingProps(plan, seatCount));
-    message.success(t('messages.success'));
-    authApiService
-      .verify()
-      .then(response => {
+    message.success(t('messages.success', { defaultValue: 'Payment successful' }));
+    setBusyPlanId(null);
+    dispatch(closeUpgradeModal());
+
+    // Continue after the modal unmounts; use server data rather than granting access locally.
+    void refreshCheckoutAccount(async () => {
+      try {
+        const billing = await dispatch(fetchBillingInfo()).unwrap();
+        const response = await authApiService.verify();
         if (response.authenticated) {
           setSession(response.user);
           dispatch(setUser(response.user));
           authService.setCurrentSession(response.user);
         }
-      })
-      .catch(error => logger.error('Error refreshing session after checkout', error));
-
-    // The webhook creates the subscription; give it a moment before reloading billing info.
-    // Not cancelled on unmount: the store dispatches are safe, and a user who closes the modal
-    // early still needs the refreshed billing info.
-    // Refresh a few times on the way: the new seat count only lands once the webhook is processed.
-    POST_CHECKOUT_REFRESH_STEPS_MS.forEach(delay =>
-      setTimeout(() => dispatch(fetchBillingInfo()), delay)
-    );
-    setTimeout(() => {
-      dispatch(fetchBillingInfo());
-      dispatch(toggleUpgradeModal());
-      setBusyPlanId(null);
-    }, POST_CHECKOUT_REFRESH_DELAY_MS);
+        dispatch(fetchStorageInfo());
+        return (
+          response.authenticated &&
+          billing?.billing_provider === 'paddle_billing' &&
+          billing.plan_id === plan.id &&
+          billing.total_seats === seatCount
+        );
+      } catch (error) {
+        logger.error('Error refreshing account after checkout', error);
+        return false;
+      }
+    });
   };
 
   const handleCheckoutEvent =
@@ -491,7 +496,12 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
   const renderFreeBanner = () => {
     const features = t('plans.free.features', { returnObjects: true }) as string[];
     return (
-      <Card role="group" aria-labelledby="per-user-plan-free" size="small" style={{ marginTop: 16 }}>
+      <Card
+        role="group"
+        aria-labelledby="per-user-plan-free"
+        size="small"
+        style={{ marginTop: 16 }}
+      >
         <Flex justify="space-between" align="center" gap={16} wrap>
           <Flex vertical gap={2}>
             <Flex align="center" gap={8}>

@@ -27,8 +27,9 @@ interface IPaddleV2Event {
   } | null;
 }
 
-export const isPaddleBillingCheckout = (data: { provider?: string }): data is IPaddleBillingCheckoutResponse =>
-  data.provider === 'paddle_billing';
+export const isPaddleBillingCheckout = (data: {
+  provider?: string;
+}): data is IPaddleBillingCheckoutResponse => data.provider === 'paddle_billing';
 
 /** Map a Paddle.js v2 event to the Classic event shape; null for events the flow does not use. */
 export function adaptPaddleBillingEvent(event: IPaddleV2Event): ILegacyCheckoutEvent | null {
@@ -39,7 +40,9 @@ export function adaptPaddleBillingEvent(event: IPaddleV2Event): ILegacyCheckoutE
       return {
         event: 'Checkout.Complete',
         checkout: {
-          recurring_prices: event.data?.items?.[0]?.price_id ? [{ id: event.data.items[0].price_id }] : [],
+          recurring_prices: event.data?.items?.[0]?.price_id
+            ? [{ id: event.data.items[0].price_id }]
+            : [],
           recurring_totals: { total: Number(event.data?.totals?.total) || 0 },
         },
       };
@@ -72,7 +75,16 @@ export async function openPaddleBillingCheckout(
     token: payload.client_token,
     eventCallback: event => {
       const adapted = adaptPaddleBillingEvent(event as IPaddleV2Event);
-      if (adapted) activeHandler?.(adapted);
+      if (!adapted) return;
+      const handler = activeHandler;
+      if (!handler) return;
+      if (adapted.event === 'Checkout.Complete') {
+        // Closing emits checkout.closed. Detach first so success is never reported as abandonment,
+        // and duplicate completion events cannot run the success workflow twice.
+        activeHandler = null;
+        void paddleInstance?.then(instance => instance?.Checkout.close());
+      }
+      handler?.(adapted);
     },
   }).catch(error => {
     paddleInstance = null; // allow a retry after a script load failure
