@@ -122,11 +122,24 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
-  const { hasPermission: hasArchivePermission } = useDefaultProjectPermission(
+  const { hasPermission: hasDefaultArchivePermission } = useDefaultProjectPermission(
     PROJECT_ROLE_PERMISSIONS.ARCHIVE_PROJECT
   );
-  const canArchive = isOwnerOrAdmin || hasArchivePermission;
+  const permissionsByProjectId = useAppSelector(
+    state => state.projectReducer.permissionsByProjectId
+  );
   const { trackMixpanelEvent } = useMixpanelTracking();
+
+  const canArchiveRecord = useCallback(
+    (record: IProjectViewModel): boolean => {
+      if (isOwnerOrAdmin) return true;
+      if (record.permissions) return record.permissions.archive;
+      const cached = record.id ? permissionsByProjectId[record.id] : undefined;
+      if (cached) return cached.permissions.archive;
+      return hasDefaultArchivePermission;
+    },
+    [isOwnerOrAdmin, permissionsByProjectId, hasDefaultArchivePermission]
+  );
 
   // Track which groups are collapsed. Default: only the first group expanded.
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -245,8 +258,8 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
       });
   };
 
-  const handleArchiveClick = async (projectId: string) => {
-    if (!canArchive) return;
+  const handleArchiveClick = async (projectId: string, allowed: boolean) => {
+    if (!allowed) return;
     try {
       trackMixpanelEvent(evt_projects_archive_all);
       await dispatch(toggleArchiveProjectForAll(projectId)).unwrap();
@@ -465,7 +478,8 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         align: 'center' as const,
         render: (_: any, record: IProjectViewModel) => {
           const isGuest = record.is_guest === true;
-          
+          const canArchive = canArchiveRecord(record);
+
           return (
             <Space size={4} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
               <Tooltip 
@@ -502,38 +516,46 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
               <Tooltip
                 title={canArchive ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}
               >
-                <button
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: canArchive ? 'pointer' : 'not-allowed',
-                    opacity: canArchive ? 1 : 0.5,
-                    padding: '2px 6px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minWidth: '28px',
-                    height: '28px',
-                    fontSize: '14px'
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (canArchive && record.id) {
-                      void handleArchiveClick(record.id);
+                <Popconfirm
+                  title={record.archived ? t('unarchive') : t('archive')}
+                  description={record.archived ? t('unarchiveConfirm') : t('archiveConfirm')}
+                  onConfirm={() => {
+                    if (record.id) {
+                      void handleArchiveClick(record.id, canArchive);
                     }
                   }}
+                  okText={t('yes')}
+                  cancelText={t('no')}
                   disabled={!canArchive}
-                  type="button"
                 >
-                  <InboxOutlined />
-                </button>
+                  <button
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: canArchive ? 'pointer' : 'not-allowed',
+                      opacity: canArchive ? 1 : 0.5,
+                      padding: '2px 6px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minWidth: '28px',
+                      height: '28px',
+                      fontSize: '14px'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    disabled={!canArchive}
+                    type="button"
+                  >
+                    <InboxOutlined />
+                  </button>
+                </Popconfirm>
               </Tooltip>
             </Space>
           );
         },
       },
     ],
-    [token, t, themeMode, canArchive]
+    [token, t, themeMode, canArchiveRecord]
   );
 
   // Filter columns based on field visibility

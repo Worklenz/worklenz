@@ -8,6 +8,7 @@ import { openProjectSettingsModal } from '@/features/project/project-settings-mo
 import { fetchProjects } from '@/features/projects/projectsSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useDefaultProjectPermission } from '@/hooks/useDefaultProjectPermission';
+import useProjectPermissions from '@/hooks/useProjectPermissions';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { PROJECT_ROLE_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 import logger from '@/utils/errorLogger';
@@ -27,16 +28,38 @@ interface ActionButtonsProps {
   isOwnerOrAdmin: boolean;
 }
 
+const hasEffectiveArchivePermission = (
+  record: IProjectViewModel,
+  isOwnerOrAdmin: boolean,
+  projectArchive: boolean | undefined,
+  isProjectAccessReady: boolean,
+  defaultArchivePermission: boolean
+): boolean => {
+  if (isOwnerOrAdmin) return true;
+  if (record.permissions) return record.permissions.archive;
+  if (isProjectAccessReady) return Boolean(projectArchive);
+  return defaultArchivePermission;
+};
+
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
   t,
   record,
   dispatch,
   isOwnerOrAdmin,
 }) => {
-  const { hasPermission: hasArchivePermission } = useDefaultProjectPermission(
+  const { hasPermission: hasDefaultArchivePermission } = useDefaultProjectPermission(
     PROJECT_ROLE_PERMISSIONS.ARCHIVE_PROJECT
   );
-  const canArchive = isOwnerOrAdmin || hasArchivePermission;
+  const { permissions: projectPermissions, isReady: isProjectAccessReady } = useProjectPermissions(
+    record.id
+  );
+  const canArchive = hasEffectiveArchivePermission(
+    record,
+    isOwnerOrAdmin,
+    projectPermissions.archive,
+    isProjectAccessReady,
+    hasDefaultArchivePermission
+  );
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   const { requestParams } = useAppSelector(state => state.projectsReducer);

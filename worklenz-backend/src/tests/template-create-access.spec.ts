@@ -38,10 +38,10 @@ describe("template-create-access", () => {
     ).toBe(true);
   });
 
-  it("allows Admin (sync)", () => {
+  it("does not allow Admin via sync shortcut (must check CREATE_PROJECTS grant)", () => {
     expect(
       userCanCreateProjectsFromTemplates(session({ is_admin: true }))
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("denies Member even when the legacy flag is set (sync)", () => {
@@ -82,6 +82,53 @@ describe("template-create-access", () => {
         })
       )
     ).resolves.toBe(false);
+  });
+
+  it("allows Admin when Create projects is granted (async)", async () => {
+    (mockedDb.query as jest.Mock).mockResolvedValueOnce({
+      rows: [{ permission: ORGANIZATION_PERMISSIONS.CREATE_PROJECTS, granted: true }],
+    });
+
+    await expect(
+      userCanCreateProjectsFromTemplatesAsync(
+        session({
+          team_id: "team-1",
+          role_name: "Admin",
+          owner: false,
+          is_admin: true,
+        })
+      )
+    ).resolves.toBe(true);
+  });
+
+  it("denies Admin when Create projects grant is revoked (async)", async () => {
+    (mockedDb.query as jest.Mock).mockResolvedValueOnce({
+      rows: [{ permission: ORGANIZATION_PERMISSIONS.CREATE_PROJECTS, granted: false }],
+    });
+
+    await expect(
+      userCanCreateProjectsFromTemplatesAsync(
+        session({
+          team_id: "team-1",
+          role_name: "Admin",
+          owner: false,
+          is_admin: true,
+        })
+      )
+    ).resolves.toBe(false);
+  });
+
+  it("allows Owner without a grant lookup (async)", async () => {
+    await expect(
+      userCanCreateProjectsFromTemplatesAsync(
+        session({
+          team_id: "team-1",
+          owner: true,
+          is_admin: false,
+        })
+      )
+    ).resolves.toBe(true);
+    expect(mockedDb.query).not.toHaveBeenCalled();
   });
 
   it("denies missing user", async () => {

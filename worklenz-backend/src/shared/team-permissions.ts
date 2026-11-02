@@ -178,9 +178,12 @@ export function canManageTeamMembers(user: IPassportSession | undefined): boolea
   return hasTeamAdminPrivileges(user);
 }
 
-/** Role set used when "Manage users" is granted to a non-admin role. */
+/**
+ * Roles a non-admin "Manage users" holder may assign or manage.
+ * Admins (and above) stay Owner/Admin-only — never editable via Manage users alone.
+ */
 export function getManageUsersAssignableRoles(): TeamRoleName[] {
-  return MANAGEABLE_ROLE_MAP[TEAM_ROLE_NAMES.ADMIN];
+  return [TEAM_ROLE_NAMES.TEAM_LEAD, TEAM_ROLE_NAMES.MEMBER];
 }
 
 /**

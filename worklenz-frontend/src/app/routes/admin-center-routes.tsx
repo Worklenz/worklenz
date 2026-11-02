@@ -16,7 +16,11 @@ import { OrganizationPermission } from '@/types/admin-center/permission-schemes.
 
 const AdminCenterGuard = ({ children }: { children: React.ReactNode }) => {
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
-  const { permissions } = useOrganizationPermissions();
+  const { permissions, isLoading } = useOrganizationPermissions();
+
+  if (isLoading) {
+    return <SuspenseFallback />;
+  }
 
   if (!canAccessAdminCenter(isOwnerOrAdmin, permissions)) {
     return <Navigate to="/worklenz/unauthorized" replace />;
@@ -47,7 +51,11 @@ const AdminCenterItemGuard = ({
   children: React.ReactNode;
 }) => {
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
-  const { permissions } = useOrganizationPermissions();
+  const { permissions, isLoading } = useOrganizationPermissions();
+
+  if (isLoading) {
+    return <SuspenseFallback />;
+  }
 
   if (!canAccessAdminCenterItem(item, isOwnerOrAdmin, permissions as OrganizationPermission[])) {
     return <Navigate to="/worklenz/unauthorized" replace />;

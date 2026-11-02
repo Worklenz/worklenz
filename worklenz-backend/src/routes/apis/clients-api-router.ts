@@ -63,16 +63,17 @@ clientsApiRouter.delete("/:id", manageClientsValidator, idParamValidator, safeCo
 clientsApiRouter.use("/portal", requireFeature("client_portal"));
 clientsApiRouter.use("/:clientId/invoices", requireFeature("client_portal_invoices"));
 
-// Read-only Client's team list for the project Members tab. Registered before the Owner/Admin
-// portal guard so eligible project members can load assigned client users when allowed.
+// Read-only Client's team list for the project Members tab. Registered before the portal
+// role checks so eligible project members can load assigned client users when allowed.
 clientsApiRouter.get(
   "/portal/v2/projects/:projectId/access",
   canViewClientTeamValidator,
   safeControllerFunction(PortalProjectsController.access)
 );
 
-// Role checks for /portal/* are applied above (reads need "View clients", writes are Owner/Admin-only),
-// so no further blanket Owner/Admin guard here: it would defeat "View clients" and the chats exception.
+// Role checks for /portal/* are applied above (reads need "View clients", writes need
+// "Manage clients" via manageClientsValidator), so no further blanket Owner/Admin guard
+// here: it would defeat "View clients" and the chats exception.
 
 // Client Portal v2 admin API (roles, settings, projects, approvals, change requests, discussions,
 // audit log, preview). Namespaced under /v2 so it never collides with the v1 routes below.
@@ -163,7 +164,7 @@ clientsApiRouter.post("/portal/clients/:id/team/:memberId/resend-invitation", id
 
 // Organization-side Client Portal Company Users (the people at each client company).
 // Wired straight to the controller: it already reads req.user and returns real HTTP statuses.
-// Mutating routes are admin-only, matching the frontend AdminGuard for the client portal.
+// Mutating routes require "Manage clients" via manageClientsValidator.
 // NOTE: "stats" must be declared before /:userId so it is not read as a user id.
 clientsApiRouter.get("/portal/company-users", safeControllerFunction(ClientPortalCompanyUsersController.list));
 clientsApiRouter.get("/portal/company-users/stats", safeControllerFunction(ClientPortalCompanyUsersController.stats));
@@ -177,7 +178,7 @@ clientsApiRouter.put("/portal/company-users/:userId/projects", manageClientsVali
 clientsApiRouter.post("/portal/company-users/:userId/invite", manageClientsValidator, userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.invite));
 clientsApiRouter.delete("/portal/company-users/:userId", manageClientsValidator, userIdParamValidator, movedInV2);
 
-// Organization-side Add Client wizard writes. Admin-only, like the other company-user writes.
+// Organization-side Add Client wizard writes. Require "Manage clients", like other company-user writes.
 // NOTE: These POST paths do not clash with the /portal/clients/:id routes (different verbs and
 // depth), but keep them next to each other so the static "onboard" / "import" segments stay clear.
 clientsApiRouter.post("/portal/clients/onboard", manageClientsValidator, safeControllerFunction(ClientPortalOnboardingController.onboard));

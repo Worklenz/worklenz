@@ -18,7 +18,13 @@ const SettingsGuard = ({
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
   const isOwnerOrAdmin = authService.isOwnerOrAdmin();
-  const { permissions: organizationPermissions } = useOrganizationPermissions();
+  const { permissions: organizationPermissions, isLoading } = useOrganizationPermissions();
+
+  // Non-admins need scheme grants before access can be decided; admins keep the existing path.
+  if (!isOwnerOrAdmin && isLoading) {
+    return <SuspenseFallback />;
+  }
+
   const accessibleSettings = getAccessibleSettings(
     isOwnerOrAdmin,
     currentSession,
