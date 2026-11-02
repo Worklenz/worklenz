@@ -37,7 +37,11 @@ describe("shared pagination search", () => {
       1
     );
 
-    expect(options.searchParams).toEqual(["%R&D%", "%R&amp;D%"]);
+    expect(options.searchParams).toEqual([
+      "%R&D%",
+      "%R&amp;D%",
+      "%R&amp;amp;D%",
+    ]);
   });
 
   it("decodes encoded entities only once", () => {
@@ -50,6 +54,21 @@ describe("shared pagination search", () => {
     expect(options.searchParams).toEqual([
       "%&lt;tag&gt;%",
       "%&amp;lt;tag&amp;gt;%",
+      "%&amp;amp;lt;tag&amp;amp;gt;%",
+    ]);
+  });
+
+  it("preserves searches for literal entity text", () => {
+    const options = PaginationTestController.getOptions(
+      { search: "X&lt;Y", field: "null" },
+      "t.name",
+      1
+    );
+
+    expect(options.searchParams).toEqual([
+      "%X<Y%",
+      "%X&lt;Y%",
+      "%X&amp;lt;Y%",
     ]);
   });
 });

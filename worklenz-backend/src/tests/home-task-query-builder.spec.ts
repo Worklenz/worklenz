@@ -53,7 +53,16 @@ describe("escapeLikePattern", () => {
 
   it("supports decoded and HTML-escaped task-name search forms", () => {
     expect(escapeLikePatterns("R&D")).toEqual(["R&D", "R&amp;D"]);
-    expect(escapeLikePatterns("R&amp;D")).toEqual(["R&D", "R&amp;D"]);
+    expect(escapeLikePatterns("R&amp;D")).toEqual([
+      "R&D",
+      "R&amp;D",
+      "R&amp;amp;D",
+    ]);
+    expect(escapeLikePatterns("X&lt;Y")).toEqual([
+      "X<Y",
+      "X&lt;Y",
+      "X&amp;lt;Y",
+    ]);
   });
 
   it("escapes ILIKE wildcard metacharacters % and _", () => {
