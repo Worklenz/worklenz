@@ -2602,19 +2602,19 @@ export default class TeamMembersController extends WorklenzControllerBase {
         .send(new ServerResponse(false, null, "Required fields are missing."));
     }
 
-    if (!hasTeamAdminPrivileges(req.user)) {
-      if (is_admin || normalizeTeamRoleName(role_name) === TEAM_ROLE_NAMES.ADMIN) {
-        return res
-          .status(403)
-          .send(
-            new ServerResponse(
-              false,
-              null,
-              "You are not authorized to invite Admin users."
-            )
-          );
-      }
+    const requestedRoleName =
+      (is_admin ? TEAM_ROLE_NAMES.ADMIN : req.body.role_name) ||
+      role_name;
+    const roleAssignmentError = await this.ensureAssignableRole(
+      req,
+      requestedRoleName,
+    );
+    if (roleAssignmentError) {
+      return res.status(403).send(roleAssignmentError);
     }
+
+    const effectiveIsAdmin = hasTeamAdminPrivileges(req.user) ? !!is_admin : false;
+    const effectiveRoleName = normalizeTeamRoleName(requestedRoleName);
 
     // Check subscription status
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
@@ -2816,8 +2816,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
             userId,
             expiresAt,
             job_title_id,
-            role_name,
-            is_admin,
+            effectiveRoleName,
+            effectiveIsAdmin,
             max_usage,
           ]);
 
@@ -2840,8 +2840,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
             userId,
             expiresAt,
             job_title_id,
-            role_name,
-            is_admin,
+            effectiveRoleName,
+            effectiveIsAdmin,
             max_usage,
           ]);
 
