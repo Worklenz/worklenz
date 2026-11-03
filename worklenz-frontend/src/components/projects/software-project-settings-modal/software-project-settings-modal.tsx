@@ -303,7 +303,7 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
             />
             <ManageStatusContent
               projectId={projectId}
-              disabled={!permissions.statuses}
+              disabled={!canEditSettings && !permissions.statuses}
             />
           </Flex>
         ),
@@ -316,7 +316,7 @@ export const SoftwareProjectSettingsModal = ({ onClose }: SoftwareProjectSetting
         content: (
           <SoftwareSprintsSection
             projectId={projectId}
-            disabled={!permissions.phases}
+            disabled={!canEditSettings && !permissions.phases}
           />
         ),
       },

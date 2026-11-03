@@ -4,8 +4,7 @@ import db from "../../config/db";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
-import { hasTeamMemberManagementAccess } from "../../shared/organization-permissions";
-import { isSelfTeamMember } from "../../shared/team-permissions";
+import { canManageTeamMembers, isSelfTeamMember } from "../../shared/team-permissions";
 import { isValidUuid } from "../../shared/validation-helpers";
 
 export default async function teamMemberSelfOrManagementValidator(
@@ -25,13 +24,9 @@ export default async function teamMemberSelfOrManagementValidator(
       );
   }
 
-  // Owner/Admin or users with "Manage users" can manage team members
-  try {
-    if (await hasTeamMemberManagementAccess(req.user)) {
-      return next();
-    }
-  } catch (error) {
-    return next(error);
+  // Owner or Admin can manage all team members
+  if (canManageTeamMembers(req.user)) {
+    return next();
   }
 
   const targetMemberId = req.params.id;

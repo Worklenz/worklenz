@@ -4,7 +4,6 @@ import ImprovedTaskFilters from '../task-management/improved-task-filters';
 import TaskListV2Section from './TaskListV2Table';
 import type { TaskListMode } from '@/features/task-management/task-list-mode-context';
 import { TaskListModeContext } from '@/features/task-management/task-list-mode-context';
-import { isProjectTaskEditingReadOnly } from '@/lib/project/project-view-guest';
 import { SavedViewControls } from '@/components/projects/saved-views/saved-view-controls';
 
 interface TaskListV2Props {
@@ -17,7 +16,7 @@ interface TaskListV2Props {
 
 const TaskListV2: React.FC<TaskListV2Props> = ({ mode = 'default', toolbarActions, belowToolbar }) => {
   const { project } = useAppSelector(state => state.projectReducer);
-  const isGuest = isProjectTaskEditingReadOnly(project);
+  const isGuest = project?.is_guest === true;
 
   return (
     <TaskListModeContext.Provider value={mode}>

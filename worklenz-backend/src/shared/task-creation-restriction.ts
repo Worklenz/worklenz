@@ -1,34 +1,37 @@
-import { PROJECT_ROLE_PERMISSIONS, ProjectRolePermission } from "./organization-permissions";
-import { checkProjectRolePermission, checkTaskRolePermission } from "./project-role-permissions";
+import db from "../config/db";
 
 /**
- * Task create/edit gating from the permission scheme.
+ * Server-side enforcement for the `restrict_task_creation` Business Plan feature.
  *
- * "Create tasks" / "Edit tasks" (and related) grants in the default or project
- * scheme are the source of truth — including for users who reach a project only
- * through org "View all projects".
+ * When the restriction is active for a project (project-level or org-level), only
+ * privileged users (Owner/Admin/Team Lead) and Project Managers may create or
+ * modify tasks. The `is_task_creation_restricted(user_id, project_id)` DB function
+ * encapsulates the plan check, the restriction flags, the team-role check, and the
+ * project-manager check, returning TRUE when the given user is NOT allowed to
+ * create/modify tasks in the given project.
  *
- * The legacy Business Plan `restrict_task_creation` toggle used to further
- * limit Members even when Create tasks was granted. That conflicted with the
- * permission matrix; scheme grants now win. Use Roles & Permissions to revoke
- * Create/Edit tasks for a role instead of the blunt toggle.
+ * These helpers mirror the frontend `useTaskCreationPermission` gating so the
+ * UI-disabled controls cannot be bypassed via direct socket/API calls.
  */
 
 /**
- * Returns TRUE when the user may not perform the given project permission.
- * Fails closed (returns TRUE) on any error so a lookup failure never grants access.
+ * Returns TRUE when task creation/modification is restricted for the given user
+ * in the given project. Fails open (returns FALSE) on any error so a transient DB
+ * issue never blocks legitimate edits.
  */
 export async function isTaskCreationRestricted(
   userId?: string | null,
-  projectId?: string | null,
-  permission: ProjectRolePermission = PROJECT_ROLE_PERMISSIONS.EDIT_TASKS
+  projectId?: string | null
 ): Promise<boolean> {
   if (!userId || !projectId) return false;
   try {
-    const rolePermission = await checkProjectRolePermission(userId, projectId, permission);
-    return !rolePermission.allowed;
+    const result = await db.query(
+      "SELECT is_task_creation_restricted($1, $2) AS restricted;",
+      [userId, projectId]
+    );
+    return result.rows[0]?.restricted === true;
   } catch {
-    return true;
+    return false;
   }
 }
 
@@ -38,14 +41,16 @@ export async function isTaskCreationRestricted(
  */
 export async function isTaskCreationRestrictedForTask(
   userId?: string | null,
-  taskId?: string | null,
-  permission: ProjectRolePermission = PROJECT_ROLE_PERMISSIONS.EDIT_TASKS
+  taskId?: string | null
 ): Promise<boolean> {
   if (!userId || !taskId) return false;
   try {
-    const rolePermission = await checkTaskRolePermission(userId, taskId, permission);
-    return !rolePermission.allowed;
+    const result = await db.query(
+      "SELECT is_task_creation_restricted($1, (SELECT project_id FROM tasks WHERE id = $2)) AS restricted;",
+      [userId, taskId]
+    );
+    return result.rows[0]?.restricted === true;
   } catch {
-    return true;
+    return false;
   }
 }

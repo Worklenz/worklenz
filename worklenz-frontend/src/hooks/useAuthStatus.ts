@@ -75,13 +75,7 @@ export const useAuthStatus = () => {
         return false;
       };
 
-      return {
-        isAuthenticated,
-        isLicenseExpired: isLicenseExpired(),
-        isAdmin,
-        isSetupComplete,
-        isFreePlan,
-      };
+      return { isAuthenticated, isLicenseExpired: isLicenseExpired(), isAdmin, isSetupComplete };
     } catch (error) {
       console.error('Error in useAuthStatus:', error);
       return {

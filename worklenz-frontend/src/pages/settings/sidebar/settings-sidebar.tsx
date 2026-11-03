@@ -13,7 +13,6 @@ import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { settingsItems, getAccessibleSettings } from '@/lib/settings/settings-constants';
 import { useAuthService } from '@/hooks/useAuth';
-import { useOrganizationPermissions } from '@/hooks/useOrganizationPermission';
 import { useEffect, useMemo, useState } from 'react';
 
 const normalizeSearchText = (value: string) =>
@@ -28,7 +27,6 @@ const SettingSidebar: React.FC = () => {
   const { t } = useTranslation('settings/sidebar');
   const currentSession = useAuthService().getCurrentSession();
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
-  const { permissions: organizationPermissions } = useOrganizationPermissions();
   const [searchValue, setSearchValue] = useState('');
   const { token } = theme.useToken();
 
@@ -46,7 +44,7 @@ const SettingSidebar: React.FC = () => {
 
   const groupedSettings = useMemo(
     () =>
-      getAccessibleSettings(isOwnerOrAdmin, currentSession, organizationPermissions)
+      getAccessibleSettings(isOwnerOrAdmin, currentSession)
         .filter(item => item.showInSidebar !== false)
         .reduce<
     Array<{
@@ -96,7 +94,7 @@ const SettingSidebar: React.FC = () => {
 
           return groups;
         }, []),
-    [currentSession, isOwnerOrAdmin, organizationPermissions, searchValue, t]
+    [currentSession, isOwnerOrAdmin, searchValue, t]
   );
 
   useEffect(() => {

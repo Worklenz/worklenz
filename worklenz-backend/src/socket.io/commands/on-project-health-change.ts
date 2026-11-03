@@ -4,7 +4,7 @@ import { SocketEvents } from "../events";
 
 import { log_error } from "../util";
 import {
-  verifyProjectSettingsAccessSocket,
+  verifyProjectAccessSocket,
   logUnauthorizedSocketAccess,
 } from "../authorization";
 
@@ -16,7 +16,7 @@ export async function on_project_health_change(
   try {
     const body = JSON.parse(data as string);
 
-    const hasAccess = await verifyProjectSettingsAccessSocket(socket, body.project_id);
+    const hasAccess = await verifyProjectAccessSocket(socket, body.project_id);
     if (!hasAccess) {
       logUnauthorizedSocketAccess(
         socket,

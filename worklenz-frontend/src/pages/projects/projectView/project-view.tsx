@@ -90,7 +90,6 @@ import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
-import useProjectPermissions from '@/hooks/useProjectPermissions';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 import { setUser } from '@/features/user/userSlice';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
@@ -155,7 +154,6 @@ const ProjectView = React.memo(() => {
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { canCreateTask } = useTaskCreationPermission();
-  const { permissions } = useProjectPermissions(projectId);
   const { socket } = useSocket();
 
   // Memoize URL params to prevent unnecessary state updates
@@ -905,6 +903,7 @@ const ProjectView = React.memo(() => {
     const overflowTabs = getFilteredTabItems(currentSession, selectedProject, canCreateTask).filter(
       item => !SOFTWARE_PRIMARY_TABS.includes(item.key)
     );
+    const isGuest = selectedProject?.is_guest === true;
     const items: MenuProps['items'] = overflowTabs.map(item => {
       const isPinnedToHeader = headerPinnedTabs.includes(item.key);
       return {
@@ -933,7 +932,7 @@ const ProjectView = React.memo(() => {
         ),
       };
     });
-    if (permissions.settings) {
+    if (!isGuest) {
       if (items.length) items.push({ type: 'divider' });
       items.push({
         key: PROJECT_SETTINGS_MENU_KEY,
@@ -962,7 +961,6 @@ const ProjectView = React.memo(() => {
     handleTabChange,
     headerPinnedTabs,
     isSoftwareProject,
-    permissions.settings,
     selectedProject,
     t,
     toggleHeaderPinnedTab,

@@ -33,9 +33,6 @@ import { getRole } from '@/utils/session-helper';
 import { RoleName } from '@/types/roles/role.types';
 import { useAuthService } from '@/hooks/useAuth';
 import { isSessionGuest } from '@/utils/guest-session';
-import { useOrganizationPermissions } from '@/hooks/useOrganizationPermission';
-import { canAccessAdminCenter } from '@/lib/admin-center-constants';
-import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
 import './profile-dropdown.css';
 import './profile-button.css';
@@ -57,15 +54,10 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
   const currentProject = useAppSelector(selectCurrentProject);
   const authService = useAuthService();
   const authSession = authService.getCurrentSession();
-  const { permissions: organizationPermissions } = useOrganizationPermissions();
   const { isLicenseExpired } = useAuthStatus();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const dispatch = useAppDispatch();
   const { token } = useToken();
-
-  const showAdminCenter = canAccessAdminCenter(isOwnerOrAdmin, organizationPermissions);
-  const showBilling =
-    isOwnerOrAdmin || organizationPermissions.includes(ORGANIZATION_PERMISSIONS.MANAGE_BILLING);
 
   const role = getRole();
 
@@ -165,7 +157,7 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
           variant="borderless"
           style={{ width: 230 }}
         >
-          {showAdminCenter && (
+          {isOwnerOrAdmin && (
             <Link
               to="/worklenz/admin-center/overview"
               style={itemStyle}
@@ -178,7 +170,7 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
               {t('adminCenter', { defaultValue: 'Admin Center' })}
             </Link>
           )}
-          {showBilling && (
+          {isOwnerOrAdmin && (
             <Link
               to="/worklenz/admin-center/billing"
               style={itemStyle}
@@ -187,7 +179,7 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
               onClick={() => {
                 trackMixpanelEvent('billing_profile_dropdown_click', {
                   user_type: currentSession?.subscription_type?.toLowerCase(),
-                  is_owner_or_admin: isOwnerOrAdmin,
+                  is_owner_or_admin: true,
                 });
               }}
             >

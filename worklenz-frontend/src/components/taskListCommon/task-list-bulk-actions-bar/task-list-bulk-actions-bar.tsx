@@ -21,7 +21,6 @@ import {
 } from '@/shared/antd-imports';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { canDeleteProjectTasks } from '@/lib/project/project-view-guest';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { colors } from '@/styles/colors';
@@ -96,8 +95,6 @@ const TaskListBulkActionsBar = () => {
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
   const labelsList = useAppSelector(state => state.taskLabelsReducer.labels);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
-  const project = useAppSelector(state => state.projectReducer.project);
-  const canDeleteTasks = canDeleteProjectTasks(project);
   const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
   const archived = useAppSelector(state => state.taskReducer.archived);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -562,20 +559,17 @@ const TaskListBulkActionsBar = () => {
             </div>
           </Tooltip>
 
-          {canDeleteTasks && (
-            <Tooltip title={t('delete')} getPopupContainer={() => deleteRef.current!}>
-              <div ref={deleteRef}>
-                <Button
-                  icon={<DeleteOutlined />}
-                  className="borderless-icon-btn"
-                  style={buttonStyle}
-                  onClick={handleDelete}
-                  loading={updatingDelete}
-                  aria-label={t('delete')}
-                />
-              </div>
-            </Tooltip>
-          )}
+          <Tooltip title={t('delete')} getPopupContainer={() => deleteRef.current!}>
+            <div ref={deleteRef}>
+              <Button
+                icon={<DeleteOutlined />}
+                className="borderless-icon-btn"
+                style={buttonStyle}
+                onClick={handleDelete}
+                loading={updatingDelete}
+              />
+            </div>
+          </Tooltip>
         </Flex>
 
         {isOwnerOrAdmin && (

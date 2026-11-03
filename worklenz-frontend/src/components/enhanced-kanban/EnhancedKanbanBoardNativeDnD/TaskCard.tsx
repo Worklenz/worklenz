@@ -60,7 +60,6 @@ import { formatStoryPoints } from '@/lib/project/story-points';
 import { IssueTypeBadge } from '@/components/projects/software/issue-type-badge';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
-import { canDeleteProjectTasks } from '@/lib/project/project-view-guest';
 
 // Simple Portal component
 const Portal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -163,14 +162,12 @@ const TaskCard: React.FC<TaskCardProps> = memo(
   }) => {
     const { socket } = useSocket();
     const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
-    const { projectId, project } = useSelector((state: RootState) => state.projectReducer);
+    const { projectId } = useSelector((state: RootState) => state.projectReducer);
     const isSoftwareProject = useSelector((state: RootState) =>
       isSoftwareProjectType(state.projectReducer.project?.project_type)
     );
     const { token } = theme.useToken();
     const archived = useSelector((state: RootState) => state.enhancedKanbanReducer.archived);
-    // Delete is controlled by "Delete tasks" alone — not Edit/Create.
-    const canDeleteTask = canDeleteProjectTasks(project);
     const background = themeWiseColor('#fff', '#1e1e1e', themeMode);
     const color = themeWiseColor('#181818', '#fff', themeMode);
     const dispatch = useAppDispatch();
@@ -614,9 +611,9 @@ const TaskCard: React.FC<TaskCardProps> = memo(
               </Button>
               <Button
                 type="text"
-                icon={<DeleteOutlined style={{ color: !canDeleteTask ? '#fca5a5' : '#ef4444', fontSize: 16 }} />}
+                icon={<DeleteOutlined style={{ color: !canCreateTask ? '#fca5a5' : '#ef4444', fontSize: 16 }} />}
                 style={{
-                  color: !canDeleteTask ? '#fca5a5' : '#ef4444',
+                  color: !canCreateTask ? '#fca5a5' : '#ef4444',
                   width: '100%',
                   textAlign: 'left',
                   padding: '8px 16px',
@@ -625,11 +622,11 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                   alignItems: 'center',
                   gap: '8px',
                   whiteSpace: 'nowrap',
-                  opacity: !canDeleteTask ? 0.4 : 1,
-                  cursor: !canDeleteTask ? 'not-allowed' : 'pointer',
+                  opacity: !canCreateTask ? 0.4 : 1,
+                  cursor: !canCreateTask ? 'not-allowed' : 'pointer',
                 }}
-                disabled={!canDeleteTask}
-                onClick={canDeleteTask ? () => handleDeleteTask(selectedTask || null) : undefined}
+                disabled={!canCreateTask}
+                onClick={canCreateTask ? () => handleDeleteTask(selectedTask || null) : undefined}
               >
                 {t('delete')}
               </Button>

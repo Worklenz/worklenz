@@ -44,7 +44,6 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useProjectRoomSync, projectIdsFromTasks, hasParentSubtaskOverlap } from '@/hooks/useProjectRoomSync';
 import { useAuthService } from '@/hooks/useAuth';
-import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { getUserSession } from '@/utils/session-helper';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import { setProjectId } from '@/features/project/project.slice';
@@ -199,7 +198,6 @@ const PlannerWorkloadView: React.FC = () => {
   const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
   const { socket } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
-  const isReadOnly = useIsAdminSurfaceReadOnly();
   const timeZone = getUserSession()?.timezone_name || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const weekdayShort = useMemo(() => WEEKDAY_KEYS.map(k => t(k, { defaultValue: k.replace('Short', '') })), [t]);
@@ -663,7 +661,7 @@ const PlannerWorkloadView: React.FC = () => {
   const onDropCell = (axis: Axis, rowKey: string, dateStr: string) => {
     const wl = dragInfo.current;
     dragInfo.current = null;
-    if (!wl || isReadOnly) return;
+    if (!wl) return;
 
     const rowChanged = (axis === 'member' ? wl.memberId : wl.projectId) !== rowKey;
     const dayChanged = wl.day !== dateStr;
@@ -850,13 +848,9 @@ const PlannerWorkloadView: React.FC = () => {
       title={renderTaskChipTooltip(wl)}
     >
       <div
-        draggable={!isReadOnly}
+        draggable
         onDragStart={e => {
           e.stopPropagation();
-          if (isReadOnly) {
-            e.preventDefault();
-            return;
-          }
           dragInfo.current = wl;
         }}
         onClick={e => {
@@ -866,7 +860,6 @@ const PlannerWorkloadView: React.FC = () => {
           dispatch(setShowTaskDrawer(true));
         }}
         onContextMenu={e => {
-          if (isReadOnly) return;
           e.preventDefault();
           e.stopPropagation();
           setCtxMenu({ x: e.clientX, y: e.clientY, task: wl });
@@ -876,7 +869,7 @@ const PlannerWorkloadView: React.FC = () => {
           background: `${wl.color}18`,
           borderLeft: `3px solid ${wl.color}`,
           padding: '4px 7px',
-          cursor: isReadOnly ? 'pointer' : 'grab',
+          cursor: 'grab',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -1203,15 +1196,13 @@ const PlannerWorkloadView: React.FC = () => {
               </button>
             ))}
           </div>
-          {!isReadOnly && (
-            <Button
-              size="small"
-              shape="circle"
-              icon={<SettingOutlined />}
-              onClick={() => dispatch(toggleSettingsDrawer())}
-              title={t('workloadSettings', { defaultValue: 'Workload settings' })}
-            />
-          )}
+          <Button
+            size="small"
+            shape="circle"
+            icon={<SettingOutlined />}
+            onClick={() => dispatch(toggleSettingsDrawer())}
+            title={t('workloadSettings', { defaultValue: 'Workload settings' })}
+          />
         </div>
       </Flex>
       </div>
@@ -1339,11 +1330,8 @@ const PlannerWorkloadView: React.FC = () => {
                       return (
                         <div
                           key={d.offset}
-                          className={isReadOnly ? undefined : 'planner-day-cell'}
-                          onClick={() => {
-                            if (isReadOnly) return;
-                            setAddPopover({ axis: row.axis, rowKey: row.key, rowLabel: row.label, day: dateStr });
-                          }}
+                          className="planner-day-cell"
+                          onClick={() => setAddPopover({ axis: row.axis, rowKey: row.key, rowLabel: row.label, day: dateStr })}
                           onDragOver={e => e.preventDefault()}
                           onDrop={e => {
                             e.preventDefault();

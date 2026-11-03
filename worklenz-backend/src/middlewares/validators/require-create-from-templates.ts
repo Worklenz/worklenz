@@ -3,11 +3,14 @@ import { NextFunction } from "express";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
-import { userCanCreateProjectsFromTemplatesAsync } from "../../shared/template-create-access";
+import { hasTeamAdminPrivileges } from "../../shared/team-permissions";
+import {
+  enrichSessionWithTemplateCreateAccess,
+  userCanCreateProjectsFromTemplates,
+} from "../../shared/template-create-access";
 
 /**
- * Gate create-from-template routes to users with "Create projects"
- * (Owners always hold it via the organization permission helper).
+ * Gate create-from-template routes to Owner/Admin users.
  */
 const requireCreateFromTemplates = async (
   req: IWorkLenzRequest,
@@ -19,27 +22,25 @@ const requireCreateFromTemplates = async (
     return;
   }
 
-  try {
-    const canCreate = await userCanCreateProjectsFromTemplatesAsync(req.user);
-    req.user.can_create_projects_from_templates = canCreate;
-
-    if (!canCreate) {
-      res
-        .status(403)
-        .send(
-          new ServerResponse(
-            false,
-            null,
-            "You do not have permission to create projects from templates."
-          )
-        );
-      return;
-    }
-
-    next();
-  } catch (error) {
-    next(error);
+  // Keep the legacy session flag in sync without granting member access.
+  if (!hasTeamAdminPrivileges(req.user)) {
+    await enrichSessionWithTemplateCreateAccess(req.user);
   }
+
+  if (!userCanCreateProjectsFromTemplates(req.user)) {
+    res
+      .status(403)
+      .send(
+        new ServerResponse(
+          false,
+          null,
+          "You do not have permission to create projects from templates."
+        )
+      );
+    return;
+  }
+
+  next();
 };
 
 export default requireCreateFromTemplates;

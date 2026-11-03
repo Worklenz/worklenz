@@ -4,11 +4,9 @@ import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { ServerResponse } from "../models/server-response";
 import { log_error } from "../shared/utils";
 import { isGuestForActiveTeam } from "../shared/team-permissions";
-import { hasOrganizationPermission, ORGANIZATION_PERMISSIONS } from "../shared/organization-permissions";
 
 /**
- * Middleware to block guest team members from the Planner area, unless the
- * default permission scheme grants Guests "View planner"
+ * Middleware to block guest team members from the Planner area entirely
  * (Schedule, Timeline, and Workload tabs all share the schedule-gannt /
  * schedule-gannt-v2 routers this is mounted on).
  *
@@ -34,7 +32,7 @@ export default async function verifyNonGuestPlannerAccess(
   try {
     const isGuest = await isGuestForActiveTeam(userId, teamId);
 
-    if (isGuest && !(await hasOrganizationPermission(req.user, ORGANIZATION_PERMISSIONS.VIEW_PLANNER))) {
+    if (isGuest) {
       return res.status(403).send(
         new ServerResponse(false, null, "Guests do not have access to the Planner.")
       );

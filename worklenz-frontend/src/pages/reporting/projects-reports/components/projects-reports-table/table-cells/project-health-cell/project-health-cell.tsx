@@ -14,16 +14,9 @@ interface HealthStatusDataType {
   label: string;
   color: string;
   projectId: string;
-  isReadOnly?: boolean;
 }
 
-const ProjectHealthCell = ({
-  value,
-  label,
-  color,
-  projectId,
-  isReadOnly = false,
-}: HealthStatusDataType) => {
+const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataType) => {
   const { t } = useTranslation('reporting-projects');
   const { socket } = useSocket();
   const { projectHealths, loading } = useAppSelector(state => state.projectHealthReducer);
@@ -68,7 +61,7 @@ const ProjectHealthCell = ({
       ),
     },
   ];
-  if (isReadOnly || loading || projectHealths.length === 0) {
+  if (loading || projectHealths.length === 0) {
     return (
       <Flex
         gap={6}
@@ -92,7 +85,7 @@ const ProjectHealthCell = ({
         >
           {projectHealth?.name}
         </Typography.Text>
-        {!isReadOnly && <DownOutlined />}
+        <DownOutlined />
       </Flex>
     );
   }

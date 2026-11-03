@@ -17,8 +17,6 @@ import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-u
 import { ActivityLoggingService } from "../services/activity-logging.service";
 import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
 import { getProjectAccessForRequest } from "../shared/project-access";
-import { canViewAllProjects } from "../shared/organization-permissions";
-import { getProjectRolePermissionFlags } from "../shared/project-role-permissions";
 import { stripProjectFinanceFields } from "../shared/strip-finance-fields";
 import { actorFromSessionUser, logAuditEvent } from "../services/audit-log.service";
 import { captureProjectSettings, logProjectSettingChanges } from "../services/project-settings-audit.service";
@@ -551,7 +549,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     let isFavorites = "";
     let isArchived = "";
 
-    if (!(await canViewAllProjects(req.user))) {
+    if (!req.user?.owner && !req.user?.is_admin) {
       filterByMember = ` AND is_member_of_project(projects.id, $2, $1) `;
     }
 
@@ -944,8 +942,6 @@ export default class ProjectsController extends WorklenzControllerBase {
         // If query fails, default to false
         data.is_guest = false;
       }
-
-      data.role_permissions = await getProjectRolePermissionFlags(req.user?.id, req.params.id);
 
       // Phase 1: current-user permissions for this project (UI must key by project id).
       try {
@@ -1727,7 +1723,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     const offsetParam = paramOffset;
     paramOffset++;
     
-    const filterByMember = !(await canViewAllProjects(req.user)) ?
+    const filterByMember = !req.user?.owner && !req.user?.is_admin ?
       ` AND is_member_of_project(projects.id, $${userIdParam}, $${teamIdParam}) ` : "";
 
     const isFavorites = req.query.filter === "1" ? ` AND EXISTS(SELECT user_id FROM favorite_projects WHERE user_id = $${userIdParam} AND project_id = projects.id)` : "";

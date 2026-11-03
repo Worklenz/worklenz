@@ -57,7 +57,6 @@ import CopyTaskToProjectModal from '@/components/task-list-v2/components/CopyTas
 import { duplicateTask } from '@/features/task-management/task-management.slice';
 import taskDuplicateApiService from '@/api/tasks/task-duplicate.api.service';
 import { StickyTaskName } from './sticky-task-name';
-import { canDeleteProjectTasks } from '@/lib/project/project-view-guest';
 
 type TaskDrawerHeaderProps = {
   t: TFunction;
@@ -90,9 +89,6 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
   );
 
   const currentSession = useAuthService().getCurrentSession();
-  const project = useAppSelector(state => state.projectReducer.project);
-  // Delete is controlled by "Delete tasks" alone — not Edit/Create or guest flag.
-  const canDeleteTask = canDeleteProjectTasks(project);
 
   const isSubTask =
     taskFormViewModel?.task?.is_sub_task ||
@@ -233,7 +229,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
         )}
 
         {/* Delete Task item */}
-        {canDeleteTask && (
+        {canCreateTask && !isGuest && (
           <div
             className="task-drawer-dropdown-item task-drawer-dropdown-item--danger"
             onClick={() => setShowDeleteConfirm(true)}
@@ -244,7 +240,7 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
         )}
 
         {/* Confirmation */}
-        {canDeleteTask && showDeleteConfirm && (
+        {canCreateTask && !isGuest && showDeleteConfirm && (
           <div
             style={{
               padding: '8px 12px',
