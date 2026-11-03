@@ -139,16 +139,22 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         onFilter: (value, record) => confidenceTone(record.delivery_confidence) === value,
         render: (_: unknown, row) => {
           const confidence = CONFIDENCE_FALLBACK[confidenceTone(row.delivery_confidence)];
+          const note = row.delivery_confidence_note?.trim();
           return (
             <Flex vertical gap={4}>
               <Tag color={confidence.color} style={{ alignSelf: 'flex-start', marginInlineEnd: 0 }}>
                 {t(confidence.labelKey, { defaultValue: confidence.defaultLabel })}
               </Tag>
-              {row.delivery_confidence_note && (
-                <Text type="secondary">
-                  {decodeHtmlEntities(row.delivery_confidence_note)}
+              {note ? (
+                <Text
+                  type="secondary"
+                  ellipsis
+                  style={{ fontSize: 12, maxWidth: '100%' }}
+                  title={decodeHtmlEntities(note)}
+                >
+                  {decodeHtmlEntities(note)}
                 </Text>
-              )}
+              ) : null}
             </Flex>
           );
         },
