@@ -35,5 +35,6 @@
   "defaultTaskName": "Tarefa Sem Título",
   "softwareProjectTooltip": "Projeto de software – problemas, backlog e sprints",
   "softwareProjectTag": "Programas",
-  "settingsDisabledForGuest": "As configurações do projeto não estão acessíveis para usuários convidados"
+  "settingsDisabledForGuest": "As configurações do projeto não estão acessíveis para usuários convidados",
+  "noPermission": "Você não tem permissão"
 }

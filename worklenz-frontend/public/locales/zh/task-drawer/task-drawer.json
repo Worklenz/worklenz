@@ -169,7 +169,8 @@
       "updatedTime": "更新于 {{time}}",
       "copyLink": "复制链接",
       "linkCopied": "评论链接已复制",
-      "linkCopyFailed": "复制链接失败"
+      "linkCopyFailed": "复制链接失败",
+      "pressCmdEnterToSubmit": "按 Ctrl+Enter（或 Cmd+Enter）提交"
     },
     "searchInputPlaceholder": "按名称搜索",
     "pendingInvitation": "待处理邀请"

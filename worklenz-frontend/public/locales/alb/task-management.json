@@ -44,6 +44,12 @@
   "inProgress": "Në Progres",
   "done": "E Kryer",
   "defaultTaskName": "Detyrë Pa Emër",
+  "editSprintName": "Klikoni për të riemërtuar",
+  "editSprintDates": "Klikoni për të ndryshuar datat",
+  "addDates": "Shtoni datat",
+  "sprintUpdated": "Sprinti u përditësua",
+  "sprintUpdateError": "Sprinti nuk mund të përditësohej",
+  "sprintNameRequired": "Emri i sprintit është i detyrueshëm",
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} nëndetyrë",

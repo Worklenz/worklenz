@@ -26,6 +26,8 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useLatestRef } from '@/hooks/useLatestRef';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
+import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
 import {
   DEFAULT_PAGE_SIZE,
@@ -120,6 +122,9 @@ const ProjectList: React.FC = () => {
   const navigate = useNavigate();
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const canCreateFromTemplates = useAuthService().canCreateProjectsFromTemplates();
+  const { hasPermission: canCreateProjects } = useOrganizationPermission(
+    ORGANIZATION_PERMISSIONS.CREATE_PROJECTS
+  );
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { token } = theme.useToken();
 
@@ -692,6 +697,7 @@ const ProjectList: React.FC = () => {
             isRefreshing={isRefreshing}
             isOwnerOrAdmin={isOwnerOrAdmin}
             canCreateFromTemplates={canCreateFromTemplates}
+            canCreateProjects={canCreateProjects}
             activeFilterCount={activeFilterCount}
             onRefresh={handleRefresh}
             onFilterSegmentChange={handleFilterSegmentChange}

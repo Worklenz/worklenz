@@ -2,7 +2,7 @@ export type TeamsType = {
   teamId: string;
   teamName: string;
   owner: string;
-  membersCount: Number;
+  membersCount: number;
   members: string[];
   created: Date;
   isActive: boolean;

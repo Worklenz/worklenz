@@ -100,7 +100,7 @@
     "noUnassignedTasks": "未找到未分配的任务",
     "pickUnassignedTaskRequired": "请选择一个未分配的任务",
     "taskCreationRestrictedTitle": "任务创建受限",
-    "taskCreationRestricted": "任务创建仅限于管理员和团队负责人。请联系您的管理员。",
+    "taskCreationRestricted": "任务创建仅限于管理员、团队负责人和项目经理。请联系您的管理员。",
     "assignees": "负责人",
     "searchMembers": "按姓名或邮箱搜索…",
     "noMembersFound": "未找到成员",

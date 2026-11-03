@@ -2,7 +2,9 @@ import { CronJob } from "cron";
 import { PoolClient } from "pg";
 
 import db from "../config/db";
+import { IO } from "../shared/io";
 import { log_error } from "../shared/utils";
+import { SocketEvents } from "../socket.io/events";
 import { completeSprintRecord, startSprintRecord } from "../shared/sprint-lifecycle";
 
 // Every 5 minutes by default. Overridable for testing.
@@ -39,8 +41,10 @@ async function completeEndedSprints(client: PoolClient): Promise<number> {
   for (const sprint of due.rows) {
     try {
       const result = await completeSprintRecord(sprint.project_id, sprint.id, sprint.next_sprint_id ?? null);
-      if (result.ok) completed += 1;
-      else log(`Skipped completing sprint ${sprint.id}: ${result.error}`);
+      if (result.ok) {
+        completed += 1;
+        IO.emitToProjectRoom(sprint.project_id, SocketEvents.PROJECT_SPRINTS_UPDATED);
+      } else log(`Skipped completing sprint ${sprint.id}: ${result.error}`);
     } catch (error) {
       log_error(error);
     }
@@ -74,8 +78,10 @@ async function startDueSprints(client: PoolClient): Promise<number> {
   for (const sprint of due.rows) {
     try {
       const result = await startSprintRecord(sprint.project_id, sprint.id);
-      if (result.ok) started += 1;
-      else log(`Skipped starting sprint ${sprint.id}: ${result.error}`);
+      if (result.ok) {
+        started += 1;
+        IO.emitToProjectRoom(sprint.project_id, SocketEvents.PROJECT_SPRINTS_UPDATED);
+      } else log(`Skipped starting sprint ${sprint.id}: ${result.error}`);
     } catch (error) {
       log_error(error);
     }

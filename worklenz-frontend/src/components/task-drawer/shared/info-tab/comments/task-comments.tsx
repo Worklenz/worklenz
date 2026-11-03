@@ -7,6 +7,7 @@ import {
   Space,
   Popover,
   message,
+  Typography,
 } from '@/shared/antd-imports';
 import { EditOutlined, DeleteOutlined, LinkOutlined } from '@ant-design/icons';
 import { Comment } from '@ant-design/compatible';
@@ -35,7 +36,7 @@ import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMember } from '@/types/teamMembers/teamMember.types';
-import CustomMentionsInput, { MentionOption } from './custom-mentions-input';
+import { RichCommentEditor, RichCommentChange, MentionMemberOption } from '@/components/common/rich-comment-editor';
 import '../info-tab-footer.css';
 import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
@@ -56,19 +57,34 @@ const formatDateForSeparator = (date: string, t?: TFunction) => {
   }
 };
 
-// Helper function to check if two dates are from different days
+/**
+ * Checks whether two ISO date strings fall on different calendar days.
+ *
+ * @param date1 - First ISO date string
+ * @param date2 - Second ISO date string
+ * @returns True if the dates are on different days, false otherwise
+ */
 const isDifferentDay = (date1: string, date2: string) => {
   return !dayjs(date1).isSame(dayjs(date2), 'day');
 };
 
-// Helper function to check if content already has processed mentions
+/**
+ * Checks whether HTML content already includes processed mention spans.
+ *
+ * @param content - HTML comment string to check
+ * @returns True if mention spans are detected, false otherwise
+ */
 const hasProcessedMentions = (content: string): boolean => {
   return content.includes('<span class="mentions">');
 };
 
-// Enhanced mention processing function — only highlights known mention names.
-// Without knownNames we cannot safely identify mentions, so we skip highlighting
-// to avoid false positives on arbitrary @-prefixed text.
+/**
+ * Highlights known member mention names as formatted mention spans within comment HTML.
+ *
+ * @param content - Raw or sanitized comment text
+ * @param knownNames - List of member names known to be mentioned
+ * @returns Comment HTML with mention names wrapped in mention spans
+ */
 const processMentions = (content: string, knownNames?: string[]) => {
   if (!content) return '';
   if (hasProcessedMentions(content)) return content;
@@ -114,8 +130,13 @@ const linkifyUrls = (content: string): string => {
   });
 };
 
-// Helper function to process content
-// knownNames: list of mention names from the comment's mentions array
+/**
+ * Sanitizes and formats comment content for display, resolving mentions and links.
+ *
+ * @param content - Stored comment content string
+ * @param knownNames - Optional list of mentioned member names
+ * @returns Sanitized, linkified, and mention-highlighted HTML string
+ */
 const processContent = (content: string, knownNames?: string[]) => {
   if (!content) return '';
 
@@ -157,6 +178,13 @@ const prepareContentForEditing = (content: string): string => {
   return stripHtmlTags(withRawUrls);
 };
 
+/**
+ * Renders the task comments thread in the task drawer, displaying existing comments,
+ * attachments, reactions, live updates, and inline editing via the rich comment editor.
+ *
+ * @param props - Task ID, translation function, and guest flag
+ * @returns The rendered task comments component
+ */
 const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFunction; isGuest?: boolean }) => {
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<ITaskCommentViewModel[]>([]);
@@ -185,8 +213,8 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
   const [members, setMembers] = useState<ITeamMember[]>([]);
   const { projectId } = useAppSelector(state => state.projectReducer);
 
-  const mentionOptions: MentionOption[] = useMemo(
-    () => members.map(m => ({ key: m.id!, value: m.name!, label: m.name! })),
+  const mentionMemberOptions: MentionMemberOption[] = useMemo(
+    () => members.map(m => ({ id: m.id!, name: m.name!, avatar_url: (m as { avatar_url?: string }).avatar_url })),
     [members]
   );
 
@@ -236,6 +264,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
           // Process content for display but preserve task_id from response
           sortedComments.forEach(comment => {
             if (comment.content) {
+              comment.raw_content = comment.content;
               // Primary: use the mentions array from backend
               let knownNames: string[] | undefined = (comment as any).mentions
                 ?.map((m: any) => m.user_name || m.name)
@@ -473,9 +502,10 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
 
   // ─── Edit ─────────────────────────────────────────────────────────────────
 
+  /** Opens the inline editor with the comment's HTML and clears selected mentions. */
   const startEdit = (item: ITaskCommentViewModel) => {
     setEditingCommentId(item.id || null);
-    setEditContent(prepareContentForEditing(item.content || ''));
+    setEditContent(item.raw_content ?? item.content ?? '');
     setEditSelectedMembers([]);
   };
 
@@ -485,12 +515,18 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
     setEditSelectedMembers([]);
   };
 
+  /**
+   * Saves changed comment HTML with mentions deduplicated by team member ID.
+   * Missing IDs or blank content are ignored; unchanged content closes the editor.
+   * Success refreshes comments and dispatches task-comment-update. Request errors
+   * are caught and shown as messages, leaving the editor open for retry.
+   */
   const saveEdit = async (item: ITaskCommentViewModel) => {
     const resolvedTaskId = item.task_id || taskId;
 
     if (!item.id || !resolvedTaskId || !editContent.trim()) return;
 
-    const originalContent = prepareContentForEditing(item.content || '');
+    const originalContent = item.raw_content ?? item.content ?? '';
     if (editContent.trim() === originalContent.trim()) {
       cancelEdit();
       return;
@@ -831,48 +867,49 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
                           ) : isEditing ? (
                             <div className="comment-edit-container">
                               <div className="comment-edit-input">
-                                <CustomMentionsInput
+                                <RichCommentEditor
                                   value={editContent}
-                                  onChange={(val: string) => setEditContent(val)}
-                                  onSelect={(option: MentionOption) => {
-                                    const member = members.find(m => m.id === option.key);
-                                    if (!member) return;
-
-                                    setEditSelectedMembers(prev =>
-                                      prev.some(p => p.team_member_id === member.id)
-                                        ? prev
-                                        : [
-                                          ...prev,
-                                          {
-                                            team_member_id: member.id!,
-                                            name: member.name!,
-                                          },
-                                        ]
+                                  controlled
+                                  onChange={({ html, mentions }: RichCommentChange) => {
+                                    setEditContent(html);
+                                    setEditSelectedMembers(
+                                      mentions.map(m => ({
+                                        team_member_id: m.id,
+                                        name: m.name,
+                                      }))
                                     );
                                   }}
-                                  options={mentionOptions}
+                                  onSubmit={() => saveEdit(item)}
+                                  mentionOptions={mentionMemberOptions}
                                   themeMode={themeMode}
                                   autoFocus
                                   placeholder={t('taskInfoTab.comments.addCommentPlaceholder', {
                                     defaultValue: 'Add a comment...',
                                   })}
-                                  filterOption={(input: string, option: MentionOption) => {
-                                    if (!input) return true;
-
-                                    return option.label
-                                      .toLowerCase()
-                                      .includes(input.toLowerCase());
-                                  }}
-                                  style={{
-                                    width: '100%',
-                                    minHeight: 60,
-                                    maxHeight: 200,
-                                    borderRadius: 6,
-                                  }}
+                                  minHeight={90}
+                                  maxHeight={200}
                                 />
                               </div>
 
                               <div className="comment-edit-actions">
+                                <Typography.Text
+                                  type="secondary"
+                                  style={{ fontSize: 11, marginRight: 'auto' }}
+                                >
+                                  {t('taskInfoTab.comments.pressCmdEnterToSubmit', {
+                                    defaultValue: 'Press Ctrl+Enter (or Cmd+Enter) to submit',
+                                  })}
+                                </Typography.Text>
+
+                                <Button
+                                  size="small"
+                                  onClick={cancelEdit}
+                                >
+                                  {t('taskInfoTab.comments.cancel', {
+                                    defaultValue: 'Cancel',
+                                  })}
+                                </Button>
+
                                 <Button
                                   size="small"
                                   type="primary"
@@ -883,20 +920,11 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
                                     defaultValue: 'Save',
                                   })}
                                 </Button>
-
-                                <Button
-                                  size="small"
-                                  onClick={cancelEdit}
-                                >
-                                  {t('taskInfoTab.comments.cancel', {
-                                    defaultValue: 'Cancel',
-                                  })}
-                                </Button>
                               </div>
                             </div>
                           ) : (
                             <>
-                              <p dangerouslySetInnerHTML={{ __html: item.content || '' }} />
+                              <div className="rich-comment-rendered" dangerouslySetInnerHTML={{ __html: sanitizeCommentContent(item.content || '') }} />
                               {item.attachments && item.attachments.length > 0 && (
                                 <div className="ant-upload-list ant-upload-list-picture-card">
                                   <AttachmentsGrid
@@ -942,7 +970,7 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
                         </div>
                       </div>
                     }
-                    className={isUserComment ? 'current-user-comment' : ''}
+                    className={`${isUserComment ? 'current-user-comment' : ''} ${isEditing ? 'is-editing-comment' : ''} theme-${themeMode}`}
                   />
                 </div>
               );

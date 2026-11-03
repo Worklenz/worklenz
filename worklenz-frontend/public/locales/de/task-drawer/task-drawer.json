@@ -169,7 +169,8 @@
       "updatedTime": "Aktualisiert {{time}}",
       "copyLink": "Link kopieren",
       "linkCopied": "Kommentarlink kopiert",
-      "linkCopyFailed": "Link konnte nicht kopiert werden"
+      "linkCopyFailed": "Link konnte nicht kopiert werden",
+      "pressCmdEnterToSubmit": "Drücken Sie Strg+Eingabe (oder Cmd+Eingabe) zum Absenden"
     },
     "searchInputPlaceholder": "Nach Name suchen",
     "pendingInvitation": "Ausstehende Einladung"

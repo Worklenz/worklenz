@@ -17,6 +17,12 @@ import { SocketEvents } from "../../socket.io/events";
 import { IO } from "../../shared/io";
 import { actorFromSessionUser, logAuditEvent } from "../../services/audit-log.service";
 import { AUDIT_EVENT_TYPE } from "../../shared/audit-log-constants";
+import {
+  getTeamMemberRoleName,
+  hasTeamAdminPrivileges,
+  normalizeTeamRoleName,
+  TEAM_ROLE_NAMES,
+} from "../../shared/team-permissions";
 
 export default class AdminCenterTeamsController extends WorklenzControllerBase {
   private static readonly TEAM_DELETE_BLOCKERS = {
@@ -262,8 +268,15 @@ export default class AdminCenterTeamsController extends WorklenzControllerBase {
             // eslint-disable-next-line prefer-destructuring
             const { user_id } = resolveResult.rows[0];
  
-            // 2a. Update role (skip Owner — their role must never change here)
-            if (member.role_name && member.role_name !== "Owner") {
+            // 2a. Update role (only Owner and Admin can change roles in team update;
+            // callers holding Manage teams alone must not alter roles or promote members to Admin).
+            // Skip Owner — their role must never change here.
+            const canManageRoles = hasTeamAdminPrivileges(req.user);
+            if (
+              canManageRoles &&
+              member.role_name &&
+              normalizeTeamRoleName(member.role_name) !== TEAM_ROLE_NAMES.OWNER
+            ) {
               await db.query(
                 `UPDATE team_members
                  SET role_id = (
@@ -407,6 +420,33 @@ export default class AdminCenterTeamsController extends WorklenzControllerBase {
             false,
             null,
             "You cannot remove yourself from the team.",
+          ),
+        );
+    }
+
+    // Prevent deletion of team owners
+    const targetRoleName = await getTeamMemberRoleName(id, teamId);
+    if (targetRoleName === TEAM_ROLE_NAMES.OWNER) {
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "You are not authorized to delete the team owner.",
+          ),
+        );
+    }
+
+    // Non-admin callers (such as members holding Manage teams) cannot remove Admins
+    if (!hasTeamAdminPrivileges(req.user) && targetRoleName === TEAM_ROLE_NAMES.ADMIN) {
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "You are not authorized to remove an admin.",
           ),
         );
     }

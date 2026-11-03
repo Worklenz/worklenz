@@ -169,7 +169,8 @@
       "updatedTime": "Updated {{time}}",
       "copyLink": "Copy Link",
       "linkCopied": "Comment link copied",
-      "linkCopyFailed": "Failed to copy link"
+      "linkCopyFailed": "Failed to copy link",
+      "pressCmdEnterToSubmit": "Press Ctrl+Enter (or Cmd+Enter) to submit"
     },
     "searchInputPlaceholder": "Search by name",
     "pendingInvitation": "Pending Invitation"

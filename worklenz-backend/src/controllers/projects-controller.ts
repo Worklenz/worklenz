@@ -105,6 +105,20 @@ export default class ProjectsController extends WorklenzControllerBase {
     req.body.priority_id = req.body.priority_id || null;
     req.body.project_type = req.body.project_type === "software" ? "software" : "general";
 
+    if (Object.prototype.hasOwnProperty.call(req.body, "members_can_view_client_team")) {
+      if (typeof req.body.members_can_view_client_team !== "boolean") {
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(
+              false,
+              null,
+              "members_can_view_client_team must be a boolean."
+            )
+          );
+      }
+    }
+
     // FIX: Format dates consistently like tasks - parse as date-only strings to avoid timezone issues
     if (req.body.start_date) {
       req.body.start_date = req.body.start_date.toString().split('T')[0]; // Ensure YYYY-MM-DD format

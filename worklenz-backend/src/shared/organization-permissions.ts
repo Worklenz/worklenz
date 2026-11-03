@@ -1,6 +1,10 @@
 import db from "../config/db";
 import { IPassportSession } from "../interfaces/passport-session";
-import { getEffectiveTeamRole, TEAM_ROLE_NAMES } from "./team-permissions";
+import {
+  canManageTeamMembers,
+  getEffectiveTeamRole,
+  TEAM_ROLE_NAMES,
+} from "./team-permissions";
 
 export const DEFAULT_ROLES = [
   { name: "Owner",     sort: 0 },
@@ -207,6 +211,38 @@ export async function hasOrganizationPermission(
 ): Promise<boolean> {
   const permissions = await getOrganizationPermissions(user);
   return permissions.includes(permission);
+}
+
+/**
+ * Owner/Admin, or anyone granted "Manage users" in the default permission scheme.
+ */
+export async function hasTeamMemberManagementAccess(
+  user: IPassportSession | undefined
+): Promise<boolean> {
+  if (canManageTeamMembers(user)) return true;
+  return hasOrganizationPermission(user, ORGANIZATION_PERMISSIONS.MANAGE_USERS);
+}
+
+/**
+ * Project permissions granted to the user's role by the team's default scheme.
+ * Owners always hold every project permission. Used by list UIs that cannot load
+ * per-project access for every row; individual APIs still enforce project access.
+ */
+export async function getDefaultProjectPermissions(
+  user: IPassportSession | undefined
+): Promise<ProjectRolePermission[]> {
+  if (!user?.team_id) return [];
+
+  const roleName = getSchemeRoleName(user);
+  if (roleName === TEAM_ROLE_NAMES.OWNER) {
+    return [...PROJECT_PERMISSIONS] as ProjectRolePermission[];
+  }
+
+  return (await getDefaultSchemeRoleGrants(
+    user.team_id,
+    roleName,
+    PROJECT_PERMISSIONS
+  )) as ProjectRolePermission[];
 }
 
 /** Owners and Admins always see every team project; other roles need "View all projects". */

@@ -10,7 +10,6 @@ import clientPortalV2AdminRouter from "./client-portal-v2-admin-router";
 import clientsBodyValidator from "../../middlewares/validators/clients-body-validator";
 import idParamValidator from "../../middlewares/validators/id-param-validator";
 import userIdParamValidator from "../../middlewares/validators/user-id-param-validator";
-import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import canViewClientTeamValidator from "../../middlewares/validators/can-view-client-team-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import projectManagerValidator from "../../middlewares/validators/project-manager-validator";
@@ -19,11 +18,14 @@ import phoneNumberValidator from "../../middlewares/validators/phone-number-vali
 import { requireFeature } from "../../shared/entitlements/gates";
 import { ServerResponse } from "../../models/server-response";
 import PortalProjectsController from "../../controllers/client-portal/v2/portal-projects-controller";
-import { clientsReadOnlyValidator } from "../../middlewares/validators/organization-permission-validator";
+import {
+  clientsReadOnlyValidator,
+  manageClientsValidator,
+} from "../../middlewares/validators/organization-permission-validator";
 
 const clientsApiRouter = express.Router();
 
-// Client Portal management: reads need "View clients", writes stay Owner/Admin-only.
+// Client Portal management: reads need "View clients", writes need "Manage clients".
 // Chats are excluded because Home > Inbox lets every member message clients.
 clientsApiRouter.use("/portal", (req, res, next) => {
   if (req.path.startsWith("/chats")) return next();
@@ -49,28 +51,29 @@ const movedInV2: express.RequestHandler = (_req, res) =>
 
 clientsApiRouter.post("/", projectManagerValidator, clientsBodyValidator, safeControllerFunction(ClientsController.create));
 clientsApiRouter.get("/", safeControllerFunction(ClientsController.get));
-// Lightweight lookup for filter dropdowns â€” must be declared before /:id so Express
+// Lightweight lookup for filter dropdowns — must be declared before /:id so Express
 // does not treat the literal string "lookup" as an id parameter value.
 clientsApiRouter.get("/lookup", safeControllerFunction(ClientsController.getLookup));
-clientsApiRouter.get("/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(ClientsController.getById));
-clientsApiRouter.put("/:id", teamOwnerOrAdminValidator, clientsBodyValidator, idParamValidator, safeControllerFunction(ClientsController.update));
-clientsApiRouter.delete("/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(ClientsController.deleteById));
+clientsApiRouter.get("/:id", manageClientsValidator, idParamValidator, safeControllerFunction(ClientsController.getById));
+clientsApiRouter.put("/:id", manageClientsValidator, clientsBodyValidator, idParamValidator, safeControllerFunction(ClientsController.update));
+clientsApiRouter.delete("/:id", manageClientsValidator, idParamValidator, safeControllerFunction(ClientsController.deleteById));
 
-// Client Portal is a Business Edition feature â€” every /portal/* route below requires
+// Client Portal is a Business Edition feature — every /portal/* route below requires
 // the requesting team to hold a Business plan. The plain client CRUD routes above stay free.
 clientsApiRouter.use("/portal", requireFeature("client_portal"));
 clientsApiRouter.use("/:clientId/invoices", requireFeature("client_portal_invoices"));
 
-// Read-only Client's team list for the project Members tab. Registered before the Owner/Admin
-// portal guard so eligible project members can load assigned client users when allowed.
+// Read-only Client's team list for the project Members tab. Registered before the portal
+// role checks so eligible project members can load assigned client users when allowed.
 clientsApiRouter.get(
   "/portal/v2/projects/:projectId/access",
   canViewClientTeamValidator,
   safeControllerFunction(PortalProjectsController.access)
 );
 
-// Role checks for /portal/* are applied above (reads need "View clients", writes are Owner/Admin-only),
-// so no further blanket Owner/Admin guard here: it would defeat "View clients" and the chats exception.
+// Role checks for /portal/* are applied above (reads need "View clients", writes need
+// "Manage clients" via manageClientsValidator), so no further blanket Owner/Admin guard
+// here: it would defeat "View clients" and the chats exception.
 
 // Client Portal v2 admin API (roles, settings, projects, approvals, change requests, discussions,
 // audit log, preview). Namespaced under /v2 so it never collides with the v1 routes below.
@@ -92,7 +95,7 @@ clientsApiRouter.get("/portal/request-custom-statuses", safeControllerFunction(C
 clientsApiRouter.post("/portal/request-custom-statuses", safeControllerFunction(ClientsController.createRequestCustomStatus));
 clientsApiRouter.delete("/portal/request-custom-statuses/:id", idParamValidator, safeControllerFunction(ClientsController.deleteRequestCustomStatus));
 
-// Organization-side Client Portal Ticket Management (admin queue only â€” see clients-controller.ts)
+// Organization-side Client Portal Ticket Management (admin queue only — see clients-controller.ts)
 clientsApiRouter.get("/portal/tickets", safeControllerFunction(ClientsController.getClientTickets));
 // NOTE: Must be defined before /portal/tickets/:id so "stats" is not read as a ticket id.
 clientsApiRouter.get("/portal/tickets/stats", safeControllerFunction(ClientsController.getClientTicketsStats));
@@ -126,7 +129,7 @@ clientsApiRouter.delete("/portal/service-option-values/:id", idParamValidator, s
 
 // Organization-side Client Portal Management (moved from client-portal-api-router.ts)
 clientsApiRouter.get("/portal/clients", safeControllerFunction(ClientsController.getPortalClients));
-clientsApiRouter.post("/portal/clients", teamOwnerOrAdminValidator, phoneNumberValidator, safeControllerFunction(ClientsController.createPortalClient));
+clientsApiRouter.post("/portal/clients", manageClientsValidator, phoneNumberValidator, safeControllerFunction(ClientsController.createPortalClient));
 // NOTE: Must be defined before the /portal/clients/:id routes so "stats" is not read as an :id.
 clientsApiRouter.get("/portal/clients/stats", safeControllerFunction(ClientsController.getPortalClientsStats));
 
@@ -161,27 +164,27 @@ clientsApiRouter.post("/portal/clients/:id/team/:memberId/resend-invitation", id
 
 // Organization-side Client Portal Company Users (the people at each client company).
 // Wired straight to the controller: it already reads req.user and returns real HTTP statuses.
-// Mutating routes are admin-only, matching the frontend AdminGuard for the client portal.
+// Mutating routes require "Manage clients" via manageClientsValidator.
 // NOTE: "stats" must be declared before /:userId so it is not read as a user id.
 clientsApiRouter.get("/portal/company-users", safeControllerFunction(ClientPortalCompanyUsersController.list));
 clientsApiRouter.get("/portal/company-users/stats", safeControllerFunction(ClientPortalCompanyUsersController.stats));
 clientsApiRouter.get("/portal/company-users/:userId", userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.getById));
-clientsApiRouter.put("/portal/company-users/:userId", teamOwnerOrAdminValidator, userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.update));
+clientsApiRouter.put("/portal/company-users/:userId", manageClientsValidator, userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.update));
 // Role, status and removal are retired: v1 had no last-admin or sole-approver check and no audit entry, and
 // `remove` deleted the shared login. Use PUT/POST/DELETE /portal/v2/client-users/:userId.
-clientsApiRouter.put("/portal/company-users/:userId/role", teamOwnerOrAdminValidator, userIdParamValidator, movedInV2);
-clientsApiRouter.put("/portal/company-users/:userId/status", teamOwnerOrAdminValidator, userIdParamValidator, movedInV2);
-clientsApiRouter.put("/portal/company-users/:userId/projects", teamOwnerOrAdminValidator, userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.setProjects));
-clientsApiRouter.post("/portal/company-users/:userId/invite", teamOwnerOrAdminValidator, userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.invite));
-clientsApiRouter.delete("/portal/company-users/:userId", teamOwnerOrAdminValidator, userIdParamValidator, movedInV2);
+clientsApiRouter.put("/portal/company-users/:userId/role", manageClientsValidator, userIdParamValidator, movedInV2);
+clientsApiRouter.put("/portal/company-users/:userId/status", manageClientsValidator, userIdParamValidator, movedInV2);
+clientsApiRouter.put("/portal/company-users/:userId/projects", manageClientsValidator, userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.setProjects));
+clientsApiRouter.post("/portal/company-users/:userId/invite", manageClientsValidator, userIdParamValidator, safeControllerFunction(ClientPortalCompanyUsersController.invite));
+clientsApiRouter.delete("/portal/company-users/:userId", manageClientsValidator, userIdParamValidator, movedInV2);
 
-// Organization-side Add Client wizard writes. Admin-only, like the other company-user writes.
+// Organization-side Add Client wizard writes. Require "Manage clients", like other company-user writes.
 // NOTE: These POST paths do not clash with the /portal/clients/:id routes (different verbs and
 // depth), but keep them next to each other so the static "onboard" / "import" segments stay clear.
-clientsApiRouter.post("/portal/clients/onboard", teamOwnerOrAdminValidator, safeControllerFunction(ClientPortalOnboardingController.onboard));
-clientsApiRouter.post("/portal/clients/import/validate", teamOwnerOrAdminValidator, safeControllerFunction(ClientPortalOnboardingController.importValidate));
-clientsApiRouter.post("/portal/clients/import", teamOwnerOrAdminValidator, safeControllerFunction(ClientPortalOnboardingController.importCommit));
-clientsApiRouter.post("/portal/clients/:id/company-users", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(ClientPortalOnboardingController.addCompanyUser));
+clientsApiRouter.post("/portal/clients/onboard", manageClientsValidator, safeControllerFunction(ClientPortalOnboardingController.onboard));
+clientsApiRouter.post("/portal/clients/import/validate", manageClientsValidator, safeControllerFunction(ClientPortalOnboardingController.importValidate));
+clientsApiRouter.post("/portal/clients/import", manageClientsValidator, safeControllerFunction(ClientPortalOnboardingController.importCommit));
+clientsApiRouter.post("/portal/clients/:id/company-users", manageClientsValidator, idParamValidator, safeControllerFunction(ClientPortalOnboardingController.addCompanyUser));
 
 // Organization-side Client Portal Invitation Management
 clientsApiRouter.post("/portal/generate-invitation-link", safeControllerFunction(ClientsController.generateClientInvitationLink));

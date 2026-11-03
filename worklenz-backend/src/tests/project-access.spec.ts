@@ -259,6 +259,59 @@ describe("buildProjectAccess scheme grants", () => {
     expect(access.permissions.members.add).toBe(false);
     expect(access.permissions.settings).toBe(false);
   });
+
+  it("View-all Member not on the project stays view-only when scheme grants no actions", () => {
+    const access = buildProjectAccess(
+      memberCtx({
+        isProjectMember: false,
+        canViewAllProjects: true,
+        schemeGrants: {
+          members: false,
+          settings: false,
+          archive: false,
+          delete: false,
+        },
+      })
+    );
+
+    expect(access.permissions.tasks).toBe(true);
+    expect(access.permissions.insights).toBe(true);
+    expect(access.permissions.members.add).toBe(false);
+    expect(access.permissions.settings).toBe(false);
+    expect(access.permissions.archive).toBe(false);
+    expect(access.permissions.delete).toBe(false);
+  });
+
+  it("View-all Member not on the project gets scheme actions on all projects", () => {
+    const access = buildProjectAccess(
+      memberCtx({
+        isProjectMember: false,
+        canViewAllProjects: true,
+        schemeGrants: { members: true, settings: true, archive: true },
+      })
+    );
+
+    expect(access.permissions.members.add).toBe(true);
+    expect(access.permissions.settings).toBe(true);
+    expect(access.permissions.archive).toBe(true);
+    expect(access.permissions.delete).toBe(false);
+  });
+
+  it("View-all Guest not on the project gets scheme actions when granted", () => {
+    const access = buildProjectAccess(
+      memberCtx({
+        isGuest: true,
+        isProjectMember: false,
+        canViewAllProjects: true,
+        schemeGrants: { customColumns: true, finance: true },
+      })
+    );
+
+    expect(access.permissions.customColumns).toBe(true);
+    expect(access.permissions.finance).toBe(true);
+    expect(access.financeAccess).toBe(true);
+    expect(access.permissions.settings).toBe(false);
+  });
 });
 
 describe("getProjectAccessForRequest cache", () => {

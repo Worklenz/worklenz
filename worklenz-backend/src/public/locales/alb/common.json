@@ -23,5 +23,22 @@
   "business-trial-then-plan": "do të vazhdosh në {{plan}} pas kësaj",
   "licennse-expired-contacting-support": "Po kontakton me mbështetjen...",
   "loadingData": "Duke ngarkuar të dhënat...",
-  "refreshingData": "Të dhënat po rifreskohen..."
+  "refreshingData": "Të dhënat po rifreskohen...",
+  "addComment": "Shto një koment...",
+  "peopleYouCanMention": "Njerëz që mund t'i përmendni",
+  "noMatchingPeople": "Nuk u gjet asnjë person përputhës",
+  "formatting": "Formatimi",
+  "bold": "E theksuar",
+  "italic": "Kursiv",
+  "strikethrough": "E vizuar në mes",
+  "codeBlock": "Bllok kodi",
+  "quoteBlock": "Bllok citimi",
+  "checklist": "Listë kontrolli",
+  "numberedList": "Listë e numëruar",
+  "unorderedList": "Listë me pika",
+  "linkAddress": "URL e lidhjes",
+  "linkPlaceholder": "https://shembull.com",
+  "apply": "Apliko",
+  "link": "Lidhje",
+  "textColor": "Ngjyra e tekstit"
 }

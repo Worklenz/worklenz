@@ -194,7 +194,8 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
 
     // Get data from Redux store
     const project = useAppSelector(state => state.projectReducer.project);
-    const canDeleteTasks = canCreateTask && canDeleteProjectTasks(project);
+    // Delete is controlled by "Delete tasks" alone — not Edit/Create.
+    const canDeleteTasks = canDeleteProjectTasks(project);
     const statusList = useAppSelector(state => state.taskStatusReducer.status);
     const priorityList = useAppSelector(state => state.priorityReducer.priorities);
     const phaseList = useAppSelector(state => state.phaseReducer.phaseList);

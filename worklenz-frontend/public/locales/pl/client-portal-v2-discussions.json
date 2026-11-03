@@ -108,7 +108,13 @@
     "messagesLabel": "Messages",
     "notFound": "Nie znaleziono dyskusji",
     "onlyTeamSees": "tylko Twój zespół to widzi",
-    "pick": "Wybierz dyskusję lub rozpocznij nową."
+    "pick": "Wybierz dyskusję lub rozpocznij nową.",
+    "addReaction": "Dodaj reakcję",
+    "reactionsLabel": "Reakcje",
+    "reactedTooltip": "Kliknij, aby usunąć swoją reakcję",
+    "notReactedTooltip": "Kliknij, aby zareagować: {{emoji}}",
+    "reactFailed": "Nie udało się zaktualizować reakcji.",
+    "team": "Zespół"
   },
   "retry": "Spróbuj ponownie",
   "rowsPerPage": "Wierszy na stronę:"

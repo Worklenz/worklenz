@@ -53,6 +53,8 @@ import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer
 import { getRole } from '@/utils/session-helper';
 import { isAdminRole } from '@/types/roles/role.types';
 import { useAuthService } from '@/hooks/useAuth';
+import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
+import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
 type TemplatesTab = 'builtin' | 'project' | 'task';
 
@@ -583,7 +585,13 @@ const TemplatesPage: React.FC = () => {
   const [showTaskDrawer, setShowTaskDrawer] = useState(false);
   const authService = useAuthService();
   const canChangeScope = isAdminRole(getRole());
-  const canCreateProject = authService.canCreateProjectsFromTemplates();
+  const { hasPermission: canCreateProjects } = useOrganizationPermission(
+    ORGANIZATION_PERMISSIONS.CREATE_PROJECTS
+  );
+  const canCreateProject =
+    authService.isOwnerOrAdmin() ||
+    authService.canCreateProjectsFromTemplates() ||
+    canCreateProjects;
 
   const fetchBuiltInTemplates = useCallback(async () => {
     try {
@@ -635,12 +643,14 @@ const TemplatesPage: React.FC = () => {
     try {
       const res = await projectTemplatesApiService.deleteCustomTemplate(id);
       if (res.done) {
-        message.success(t('deleteProjectTemplateSuccess'));
+        message.success(t('deleteProjectTemplateSuccess', { defaultValue: 'Project template deleted successfully.' }));
         fetchProjectTemplates();
+      } else {
+        message.error(res.message || t('deleteProjectTemplateError', { defaultValue: 'Failed to delete project template.' }));
       }
     } catch (error) {
       logger.error('Failed to delete project template:', error);
-      message.error(t('deleteProjectTemplateError'));
+      message.error(t('deleteProjectTemplateError', { defaultValue: 'Failed to delete project template.' }));
     }
   };
 

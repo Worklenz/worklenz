@@ -23,5 +23,22 @@
   "business-trial-then-plan": "之后您将继续使用 {{plan}}",
   "licennse-expired-contacting-support": "联系支持...",
   "loadingData": "正在加载数据...",
-  "refreshingData": "正在刷新数据..."
+  "refreshingData": "正在刷新数据...",
+  "addComment": "添加评论...",
+  "peopleYouCanMention": "你可以提及的人",
+  "noMatchingPeople": "无匹配人员",
+  "formatting": "格式化",
+  "bold": "粗体",
+  "italic": "斜体",
+  "strikethrough": "删除线",
+  "codeBlock": "代码块",
+  "quoteBlock": "引用块",
+  "checklist": "检查清单",
+  "numberedList": "编号列表",
+  "unorderedList": "项目符号列表",
+  "linkAddress": "链接地址",
+  "linkPlaceholder": "https://example.com",
+  "apply": "应用",
+  "link": "链接",
+  "textColor": "文字颜色"
 }

@@ -35,5 +35,6 @@
   "defaultTaskName": "Detyrë Pa Emër",
   "softwareProjectTooltip": "Projekt softuerësh - probleme, prapambetje dhe sprinte",
   "softwareProjectTag": "Softuer",
-  "settingsDisabledForGuest": "Cilësimet e projektit nuk janë të aksesueshme për përdoruesit e ftuar"
+  "settingsDisabledForGuest": "Cilësimet e projektit nuk janë të aksesueshme për përdoruesit e ftuar",
+  "noPermission": "Nuk keni leje"
 }

@@ -1626,7 +1626,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           modalType: 'edit',
           columnId: columnId,
           columnData: columnData,
-          canChangeColumnType: false,
+          canChangeColumnType: true,
         })
       );
       dispatch(toggleCustomColumnModalOpen(true));

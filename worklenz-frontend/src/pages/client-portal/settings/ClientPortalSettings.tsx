@@ -31,6 +31,7 @@ import {
   IClientPortalSettings,
 } from '@/types/settings/client-portal-settings.types';
 import type { PortalSettingsV2 } from '@/types/client-portal/v2';
+import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
 import { CompanyDetailsSection } from './sections/CompanyDetailsSection';
 import { BrandingSection } from './sections/BrandingSection';
 import { LogoCropModal } from './sections/LogoCropModal';
@@ -382,6 +383,17 @@ const ClientPortalSettings = () => {
   };
 
   const handleSaveChanges = async () => {
+    if (hasLegacyChanges && settings.contact_phone && !validatePhoneNumber(settings.contact_phone)) {
+      setSection('company');
+      message.error(
+        t('invalidPhoneNumberFormat', {
+          defaultValue:
+            'Invalid phone number format. Use international format (e.g., +1-234-567-8900)',
+        })
+      );
+      return;
+    }
+
     try {
       setSaving(true);
       if (hasLegacyChanges && !(await saveLegacySettings())) return;

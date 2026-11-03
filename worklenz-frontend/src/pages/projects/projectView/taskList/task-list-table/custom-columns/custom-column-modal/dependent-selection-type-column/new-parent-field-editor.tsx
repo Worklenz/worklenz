@@ -74,7 +74,7 @@ export const NewParentFieldEditor = () => {
 
   return (
     <div>
-    
+
       <Flex vertical gap={8}>
         <Typography.Text strong>
           {t('customColumns.dependentSelection.newParentTitle', {

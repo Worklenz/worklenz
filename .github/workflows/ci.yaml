@@ -62,6 +62,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint Frontend
+        run: npm run lint
+
       - name: Build Frontend
         run: npm run build
 

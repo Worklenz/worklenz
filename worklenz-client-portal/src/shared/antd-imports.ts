@@ -145,6 +145,7 @@ export {
   QuestionCircleOutlined,
   HolderOutlined,
   EyeInvisibleOutlined,
+  SmileOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
   UndoOutlined,

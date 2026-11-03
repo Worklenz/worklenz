@@ -73,13 +73,15 @@ const ORDER_VERSIONS: Partial<Record<SurfaceKey, number>> = {
   // v2: Clients, Projects, Approvals, Change Req., Discussions, Quotes, Invoices, Audit Log, Portal Settings, Client Portal
   // v3: Overview, Clients, Projects, ... (Overview added as the landing page)
   'client-portal': 3,
+  // v1: Adds Reporting & Analytics group under Time Reports
+  reporting: 1,
 };
 
 /** Drops the saved order of any surface whose default order was changed since it was saved. */
 export const applyOrderResets = (state: NavPreferencesState): { state: NavPreferencesState; changed: boolean } => {
   let changed = false;
   const order = { ...state.order };
-  const orderVersions = { ...(state.orderVersions ?? {}) };
+  const orderVersions = { ...state.orderVersions };
 
   for (const [surfaceKey, version] of Object.entries(ORDER_VERSIONS) as [SurfaceKey, number][]) {
     if ((orderVersions[surfaceKey] ?? 0) >= version) continue;

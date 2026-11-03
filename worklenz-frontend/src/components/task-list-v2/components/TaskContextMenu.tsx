@@ -85,8 +85,10 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   const isSoftwareProject = isSoftwareProjectType(projectType);
   const currentGrouping = useAppSelector(state => state.grouping.currentGrouping);
   const archived = useAppSelector(state => state.taskManagement.archived);
+  const selectedTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
   const project = useAppSelector(state => state.projectReducer.project);
-  const canDeleteTask = canCreateTask && canDeleteProjectTasks(project);
+  // Delete is controlled by "Delete tasks" alone — not Edit/Create.
+  const canDeleteTask = canDeleteProjectTasks(project);
   const { canAddTask } = useTaskCreationPermission();
 
   const [updatingAssignToMe, setUpdatingAssignToMe] = useState(false);

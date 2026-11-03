@@ -136,12 +136,17 @@ describe("resolveEntitlements", () => {
     expect(hasFeature(e, "client_portal_branding")).toBe(false);
   });
 
-  it("AppSumo LTD: 5 seats per code capped at 50; any code count has unlimited guests", () => {
+  it("AppSumo Business (5+ codes): Business features including advanced reporting; seats still scale by code", () => {
     const five = resolveEntitlements({ subscription_type: "LIFE_TIME_DEAL", is_ltd: true, redeemed_codes_count: 5 }, NOW);
+    expect(five.tier).toBe("business");
     expect(five.seatLimit).toBe(25);
     expect(five.guestLimit).toBe(-1);
+    expect(hasFeature(five, "advanced_reporting")).toBe(true);
+    expect(hasFeature(five, "finance_module")).toBe(true);
+    expect(hasFeature(five, "client_portal_branding")).toBe(true);
 
     const many = resolveEntitlements({ subscription_type: "LIFE_TIME_DEAL", is_ltd: true, redeemed_codes_count: 14 }, NOW);
+    expect(many.tier).toBe("business");
     expect(many.seatLimit).toBe(50);
   });
 

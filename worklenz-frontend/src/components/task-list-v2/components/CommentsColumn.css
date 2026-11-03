@@ -1,0 +1,103 @@
+/* CommentsColumn styles */
+@import '@/components/common/rich-comment-editor/rich-comment-editor.css';
+
+.comments-column-preview {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+/* Ensure first line preview stays inline without wrapping or multi-line expansion */
+.comments-column-preview p,
+.comments-column-preview div,
+.comments-column-preview pre,
+.comments-column-preview blockquote {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  white-space: nowrap !important;
+}
+
+.comments-column-preview ul,
+.comments-column-preview ol {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 4px;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  white-space: nowrap !important;
+}
+
+.comments-column-preview li {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  white-space: nowrap !important;
+}
+
+.comments-column-preview pre code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #eb2f96;
+}
+
+.dark .comments-column-preview pre code {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ff7875;
+}
+
+.comments-column-preview blockquote {
+  border-left: none !important;
+  font-style: italic !important;
+  opacity: 0.85;
+}
+
+.comments-column-preview input[type="checkbox"] {
+  width: 12px;
+  height: 12px;
+  margin-right: 3px;
+  vertical-align: middle;
+  pointer-events: none;
+}
+
+.comments-column-ellipsis {
+  display: inline !important;
+  margin-left: 1px;
+  opacity: 0.65;
+  user-select: none;
+}
+
+/* Tooltip full comment content */
+.latest-comment-tooltip .ant-tooltip-inner {
+  max-width: 440px !important;
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.latest-comment-tooltip-body {
+  max-height: 360px;
+  overflow-y: auto;
+  word-break: break-word;
+}
+
+.latest-comment-tooltip-body .rich-comment-rendered {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.latest-comment-tooltip-meta {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 11px;
+  opacity: 0.75;
+}

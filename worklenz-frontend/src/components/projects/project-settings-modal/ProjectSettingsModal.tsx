@@ -277,15 +277,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
       setLoading(false);
       setSettingsLoadFailed(true);
     }
-  }, [
-    modalVisible,
-    projectId,
-    project,
-    projectLoading,
-    form,
-    calculateWorkingDays,
-    defaultFormValues,
-  ]);
+  }, [modalVisible, projectId, project, projectLoading, form, defaultFormValues]);
 
   const handleRetryLoadSettings = useCallback(() => {
     if (!projectId) return;
@@ -364,6 +356,10 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
   };
 
   const disabledForNonManagers = projectId ? !permissions.settings : !isOwnerorAdmin;
+  // Statuses / phases / custom columns are separate scheme grants from "Manage project settings".
+  const statusesDisabled = projectId ? !permissions.statuses : !isOwnerorAdmin;
+  const phasesDisabled = projectId ? !permissions.phases : !isOwnerorAdmin;
+  const customColumnsDisabled = projectId ? !permissions.customColumns : !isOwnerorAdmin;
 
   // ─── Sidebar sections ───────────────────────────────────────────────────
   const sectionItems = useMemo(() => {
@@ -457,7 +453,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         icon: <TagsOutlined />,
         label: t('statusesTab', { defaultValue: 'Statuses' }),
         children: guardedSection(
-          <StatusesSettingsSection projectId={projectId} disabled={disabledForNonManagers} />
+          <StatusesSettingsSection projectId={projectId} disabled={statusesDisabled} />
         ),
       },
       {
@@ -465,7 +461,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         icon: <FlagOutlined />,
         label: t('phasesTab', { defaultValue: 'Phases' }),
         children: guardedSection(
-          <PhasesSettingsSection projectId={projectId} disabled={disabledForNonManagers} />
+          <PhasesSettingsSection projectId={projectId} disabled={phasesDisabled} />
         ),
       },
       {
@@ -473,7 +469,7 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         icon: <TableOutlined />,
         label: t('customColumnsTab', { defaultValue: 'Custom Columns' }),
         children: guardedSection(
-          <CustomColumnsSettingsSection projectId={projectId} disabled={disabledForNonManagers} />
+          <CustomColumnsSettingsSection projectId={projectId} disabled={customColumnsDisabled} />
         ),
       },
       {
@@ -536,6 +532,9 @@ const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     project,
     form,
     disabledForNonManagers,
+    statusesDisabled,
+    phasesDisabled,
+    customColumnsDisabled,
     isFree,
     selectedProjectManager,
     handleUpgradeClick,

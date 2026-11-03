@@ -56,5 +56,7 @@
   "deleteSuccess": "Comment deleted successfully",
   "deleteError": "Failed to delete comment",
   "editSuccess": "Comment updated successfully",
-  "editError": "Failed to edit comment"
+  "editError": "Failed to edit comment",
+  "writeComment": "Write a comment...",
+  "pressCmdEnterToSubmit": "Press Ctrl+Enter (or Cmd+Enter) to submit"
 }

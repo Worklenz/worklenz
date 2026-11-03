@@ -48,6 +48,8 @@ import {
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
 import { isRestrictedFromProPlanFeatures } from "../middlewares/subscription-middleware";
 import { isEnforceMode, teamCanUseFeature } from "../shared/entitlements/gates";
+import { isTaskCreationRestricted } from "../shared/task-creation-restriction";
+import { PROJECT_ROLE_PERMISSIONS } from "../shared/organization-permissions";
 
 export default class TasksController extends TasksControllerBase {
   private static async getTaskDrawerCustomColumns(projectId: string | null) {
@@ -232,14 +234,10 @@ export default class TasksController extends TasksControllerBase {
     const userId = req.user?.id as string;
     const teamId = req.user?.team_id as string;
 
-    // Check restrict_task_creation (Business Plan feature)
+    // Permission scheme "Create tasks" (incl. View-all non-members with that grant)
     const projectId = req.body.project_id;
     if (userId && projectId) {
-      const restrictResult = await db.query(
-        "SELECT is_task_creation_restricted($1, $2) AS restricted;",
-        [userId, projectId]
-      );
-      if (restrictResult.rows[0]?.restricted === true) {
+      if (await isTaskCreationRestricted(userId, projectId, PROJECT_ROLE_PERMISSIONS.CREATE_TASKS)) {
         return res.status(403).send(
           new ServerResponse(false, null, "Task creation is restricted. Please contact admin for access.")
         );

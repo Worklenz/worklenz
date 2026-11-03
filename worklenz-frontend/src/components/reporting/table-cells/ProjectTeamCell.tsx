@@ -1,6 +1,7 @@
 import { Tag } from '@/shared/antd-imports';
 import React from 'react';
 import { colors } from '@/styles/colors';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const ProjectTeamCell = ({ team }: { team: string }) => {
   return (
@@ -12,7 +13,7 @@ const ProjectTeamCell = ({ team }: { team: string }) => {
         fontSize: 12,
       }}
     >
-      {team}
+      {decodeHtmlEntities(team)}
     </Tag>
   );
 };

@@ -36,6 +36,7 @@ import { createAuthService } from '@/services/auth/auth.service';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_common_switch_team } from '@/shared/worklenz-analytics-events';
 import { navigateAfterTeamSwitch } from '@/utils/team-switch-navigation';
+import worklenzLogo from '@/assets/images/worklenz-light-mode.png';
 
 // Components
 import CustomAvatar from '@/components/CustomAvatar';
@@ -144,6 +145,7 @@ const SwitchTeamButton = () => {
             <CustomAvatar
               avatarName={team.name || ''}
               avatarUrl={team.logo_url || undefined}
+              fallbackUrl={worklenzLogo}
             />
             <Flex vertical>
               <Typography.Text style={{ fontSize: 11, fontWeight: 300 }}>

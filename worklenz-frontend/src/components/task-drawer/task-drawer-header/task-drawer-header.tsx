@@ -91,7 +91,8 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
 
   const currentSession = useAuthService().getCurrentSession();
   const project = useAppSelector(state => state.projectReducer.project);
-  const canDeleteTask = canCreateTask && !isGuest && canDeleteProjectTasks(project);
+  // Delete is controlled by "Delete tasks" alone — not Edit/Create or guest flag.
+  const canDeleteTask = canDeleteProjectTasks(project);
 
   const isSubTask =
     taskFormViewModel?.task?.is_sub_task ||

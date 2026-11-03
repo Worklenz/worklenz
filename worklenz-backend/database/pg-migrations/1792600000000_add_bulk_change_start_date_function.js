@@ -9,6 +9,10 @@ exports.up = async (pgm) => {
 -- Migration: Add bulk_change_tasks_start_date function
 -- Description: Allows bulk updating of task start dates with activity logging
 
+-- Some databases already have this function with different parameter names (body, user_id), which
+-- CREATE OR REPLACE cannot rename.
+DROP FUNCTION IF EXISTS bulk_change_tasks_start_date(json, uuid);
+
 CREATE OR REPLACE FUNCTION bulk_change_tasks_start_date(_body json, _userid uuid) 
 RETURNS json
 LANGUAGE plpgsql

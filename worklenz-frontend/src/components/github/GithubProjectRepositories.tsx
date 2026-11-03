@@ -158,7 +158,7 @@ export const GithubProjectRepositories = ({
   ) => {
     const link = data?.linked.find(item => item.id === linkId);
     if (!link) return;
-    const nextMap = { ...(link.settings?.status_map || {}), [event]: statusId };
+    const nextMap = { ...link.settings?.status_map, [event]: statusId };
 
     // Optimistic update; roll back if the server rejects it.
     const previous = data;
@@ -168,7 +168,7 @@ export const GithubProjectRepositories = ({
             ...current,
             linked: current.linked.map(item =>
               item.id === linkId
-                ? { ...item, settings: { ...(item.settings || {}), status_map: nextMap } }
+                ? { ...item, settings: { ...item.settings, status_map: nextMap } }
                 : item
             ),
           }
@@ -193,7 +193,7 @@ export const GithubProjectRepositories = ({
             ...current,
             linked: current.linked.map(item =>
               item.id === linkId
-                ? { ...item, settings: { ...(item.settings || {}), import: next } }
+                ? { ...item, settings: { ...item.settings, import: next } }
                 : item
             ),
           }

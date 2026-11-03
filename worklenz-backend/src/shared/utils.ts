@@ -9,6 +9,8 @@ import { send_to_slack } from "../shared/slack";
 import { IActivityLogChangeType } from "../services/activity-logs/interfaces";
 import { IRecurringSchedule } from "../interfaces/recurring-tasks";
 
+export { decodeHtmlEntities, escapeHtmlEntities, getHtmlTextSearchVariants } from "./html-entity-utils";
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const error_codes = require("./postgresql-error-codes");
 
@@ -235,42 +237,18 @@ export function htmlToPlainText(value: string | null, preserveWhitespace = false
 }
 
 /**
- * Escapes HTML special characters using the exact entity mapping applied by
- * sanitizePlainText() (i.e. sanitize-html's text-node escaping: &, <, > only —
- * it does not escape quotes/apostrophes in plain text). Kept separate so any
- * code that needs to match against already-sanitized text (e.g. building a
- * search pattern) encodes characters identically to how they were encoded at
- * save time.
- *
- * @param value - Raw text to escape
- * @returns Text with HTML special characters replaced by their entities
- */
-export function escapeHtmlEntities(value: string): string {
-  if (!value) return "";
-
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-/**
- * Sanitizes plain text fields (like user names) to prevent XSS attacks
- * Strips all HTML tags while preserving the text content, then escapes special characters
- * Use this for fields that should never contain HTML markup
+ * Sanitizes plain text fields (like user/project/task names) to prevent XSS attacks.
+ * Strips all HTML tags and preserves sanitize-html's escaping of text content.
  *
  * @param value - The plain text to sanitize
- * @returns Sanitized plain text with HTML removed and entities escaped
+ * @returns Sanitized plain text with HTML removed and HTML-sensitive characters escaped
  */
 export function sanitizePlainText(value: string): string {
   if (!value) return "";
 
-  // sanitize-html strips all tags and already HTML-escapes the remaining
-  // text when serializing it, so no separate escaping pass is needed here
-  // (calling escapeHtmlEntities afterwards would double-encode entities).
   return sanitizeHtml(value, {
-    allowedTags: [],        // No HTML tags allowed
-    allowedAttributes: {},  // No attributes allowed
+    allowedTags: [],
+    allowedAttributes: {},
   }).trim();
 }
 
@@ -337,37 +315,83 @@ export function sanitizeSVG(svgContent: string): string {
 }
 
 /**
- * Sanitizes task comment content to prevent XSS attacks and open redirects
- * Allows safe HTML tags for mentions and basic formatting while blocking dangerous content
- * External links are completely removed to prevent open redirect attacks
- * 
+ * Sanitizes comment HTML while retaining rich formatting, mentions, and checklists.
+ * Permits HTTP(S), mailto, and same-origin relative links, but rejects
+ * protocol-relative URLs (href="//evil.example") to prevent open redirects.
+ * Anchors are set to target="_blank" with rel="noopener noreferrer nofollow".
+ * Inline styles are limited to color declarations, checklist labels are forced
+ * to contenteditable="false", and input types to checkbox.
+ *
  * @param content - The comment content to sanitize
- * @returns Sanitized content safe for storage and display
+ * @returns Sanitized HTML, or an empty string for empty input
  */
 export function sanitizeCommentContent(content: string): string {
   if (!content) return "";
 
-  // Use sanitize-html with strict configuration
-  // This allows mentions (<span class="mentions">) and basic formatting but NO external links
+  // Use sanitize-html with safe rich-text configuration supporting:
+  // bold, italic, strikethrough, code/pre, blockquote, lists, checklist, links, and text colors.
   return sanitizeHtml(content, {
-    // Only allow safe formatting tags - NO links to prevent open redirect attacks
-    allowedTags: ['b', 'i', 'em', 'strong', 'p', 'br', 'span'],
+    allowedTags: [
+      'b', 'i', 'em', 'strong', 'p', 'br', 'span', 's', 'del', 'strike', 'u',
+      'code', 'pre', 'blockquote', 'ul', 'ol', 'li', 'a', 'label', 'input', 'div'
+    ],
     allowedAttributes: {
-      // Only allow class attribute on span for mentions
-      'span': ['class']
+      'span': ['class', 'style', 'data-type', 'data-id', 'data-label', 'data-color'],
+      'a': ['href', 'target', 'rel', 'class'],
+      'blockquote': ['class'],
+      'ul': ['class', 'data-type'],
+      'ol': ['start'],
+      'li': ['class', 'data-type', 'data-checked'],
+      'input': [
+        {
+          name: 'type',
+          values: ['checkbox']
+        },
+        'checked',
+        'disabled',
+        'aria-label'
+      ],
+      'label': [
+        {
+          name: 'contenteditable',
+          values: ['false']
+        }
+      ],
+      'code': ['class'],
+      'pre': ['class'],
+      'div': ['class']
     },
-    // No URL schemes allowed since we're not allowing links
-    allowedSchemes: [],
-    // Remove dangerous protocols and event handlers
-    allowedScriptHostnames: [],
-    allowedScriptDomains: [],
-    // Remove any script tags, event handlers, and dangerous attributes
-    disallowedTagsMode: 'discard',
-    enforceHtmlBoundary: true,
-    // Additional security: remove all attributes except explicitly allowed ones
     allowedClasses: {
-      'span': ['mentions']
-    }
+      'span': ['mention', 'mentions'],
+      'a': ['comment-link'],
+      'blockquote': ['rich-blockquote'],
+      'ul': ['rich-task-list'],
+      'li': ['rich-task-item', 'is-checked'],
+      'div': ['rich-task-item-content'],
+      'pre': ['rich-code-block'],
+      'code': ['rich-code-block']
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+    allowProtocolRelative: false,
+    allowedStyles: {
+      '*': {
+        'color': [
+          /^#(0x)?[0-9a-f]{3,8}$/i,
+          /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i,
+          /^rgba\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*([\d.]+)\s*\)$/i,
+          /^hsl\(\s*(\d{1,3})\s*,\s*(\d{1,3}%)\s*,\s*(\d{1,3}%)\s*\)$/i,
+          /^[a-z]+$/i
+        ]
+      }
+    },
+    transformTags: {
+      'a': sanitizeHtml.simpleTransform('a', {
+        target: '_blank',
+        rel: 'noopener noreferrer nofollow'
+      })
+    },
+    disallowedTagsMode: 'discard',
+    enforceHtmlBoundary: true
   });
 }
 
@@ -501,4 +525,3 @@ export function calculateNextEndDates(schedule: IRecurringSchedule, lastEndDate:
 export function megabytesToBytes(megabytes: number): number {
   return megabytes * 1024 * 1024; // 1 MB = 1024 KB = 1024 * 1024 bytes
 }
-

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Modal } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -27,7 +27,11 @@ const GlobalUpgradeModal: React.FC = () => {
     [billingInfo, currentSession]
   );
 
-  const modalWidth = isLkrUser ? 'fit-content' : isAppSumoUser ? 700 : 1400;
+  // The per-user cards are only two or three columns wide, so they get a narrower modal than the
+  // legacy four-card layout.
+  const [perUserPricing, setPerUserPricing] = useState(false);
+
+  const modalWidth = isLkrUser ? 'fit-content' : isAppSumoUser ? 700 : perUserPricing ? 1000 : 1400;
 
   return (
     <Modal
@@ -48,7 +52,7 @@ const GlobalUpgradeModal: React.FC = () => {
     >
       <div style={{ padding: '20px' }}>
         {regionCheckComplete ? (
-          isLkrUser ? <UpgradePlansLKR /> : <UpgradePlansSwitch />
+          isLkrUser ? <UpgradePlansLKR /> : <UpgradePlansSwitch onModeChange={setPerUserPricing} />
         ) : (
           <div style={{ textAlign: 'center', padding: '40px' }}>Loading...</div>
         )}

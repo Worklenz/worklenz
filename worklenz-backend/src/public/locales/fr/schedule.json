@@ -166,7 +166,7 @@
   "sunday": "dimanche",
   "tabTitle": "Tâche sans dates de début et de fin",
   "task": "Tâche",
-  "taskCreationRestricted": "La création de tâches est réservée aux administrateurs et aux chefs d'équipe uniquement. Veuillez contacter votre administrateur pour y accéder.",
+  "taskCreationRestricted": "La création de tâches est réservée aux administrateurs, aux chefs d'équipe et aux chefs de projet uniquement. Veuillez contacter votre administrateur pour y accéder.",
   "taskCreationRestrictedTitle": "Création de tâches restreinte",
   "taskName": "Nom de la tâche",
   "taskNameRequired": "Le nom de la tâche est obligatoire",

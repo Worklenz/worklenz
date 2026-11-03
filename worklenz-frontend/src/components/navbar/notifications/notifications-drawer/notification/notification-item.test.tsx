@@ -35,6 +35,16 @@ const buildNotification = (
 });
 
 describe('NotificationItem team name', () => {
+  it('displays encoded project and team names as text without interpreting markup', () => {
+    const { container } = render(<NotificationItem notification={buildNotification({
+      team: 'R&amp;D', project: '&lt;b&gt;Design&lt;/b&gt; &amp; QA',
+    })} />);
+    expect(screen.getByText('R&D')).toBeInTheDocument();
+    const project = screen.getByText('<b>Design</b> & QA');
+    expect(project.querySelector('b')).toBeNull();
+    expect(container.querySelector('script')).toBeNull();
+  });
+
   it('shows the team name for a regular notification', () => {
     render(<NotificationItem notification={buildNotification()} />);
 

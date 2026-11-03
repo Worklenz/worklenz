@@ -202,7 +202,7 @@
   "sundayShort": "周日",
   "tabTitle": "没有开始和结束日期的任务",
   "task": "任务",
-  "taskCreationRestricted": "任务创建仅限管理员和团队负责人。请联系管理员获取权限。",
+  "taskCreationRestricted": "任务创建仅限管理员、团队负责人和项目经理。请联系管理员获取权限。",
   "taskCreationRestrictedTitle": "任务创建受限",
   "taskName": "任务名称",
   "taskNameRequired": "请输入任务名称",

@@ -34,7 +34,7 @@ export const useProjectDateSync = (form: FormInstance, projectId: string | null)
         logger.error('Error handling start date change response:', error);
       }
     },
-    [projectId, form, calculateWorkingDays]
+    [projectId, form]
   );
 
   const handleEndDateChangeResponse = useCallback(
@@ -56,7 +56,7 @@ export const useProjectDateSync = (form: FormInstance, projectId: string | null)
         logger.error('Error handling end date change response:', error);
       }
     },
-    [projectId, form, calculateWorkingDays]
+    [projectId, form]
   );
 
   useEffect(() => {
@@ -104,7 +104,7 @@ export const useProjectDateSync = (form: FormInstance, projectId: string | null)
         logger.error('Error handling start date change', error);
       }
     },
-    [form, calculateWorkingDays, socket, projectId]
+    [form, socket, projectId]
   );
 
   const handleEndDateChange = useCallback(
@@ -134,7 +134,7 @@ export const useProjectDateSync = (form: FormInstance, projectId: string | null)
         logger.error('Error handling end date change', error);
       }
     },
-    [form, calculateWorkingDays, socket, projectId]
+    [form, socket, projectId]
   );
 
   // ─── Date disabling helpers ─────────────────────────────────────────────

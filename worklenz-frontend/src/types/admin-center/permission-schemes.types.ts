@@ -18,6 +18,28 @@ export const ORGANIZATION_PERMISSIONS = {
 export type OrganizationPermission =
   (typeof ORGANIZATION_PERMISSIONS)[keyof typeof ORGANIZATION_PERMISSIONS];
 
+/** Must match PROJECT_ROLE_PERMISSIONS in worklenz-backend/src/shared/organization-permissions.ts */
+export const PROJECT_ROLE_PERMISSIONS = {
+  VIEW_PROJECT: 'View project',
+  CREATE_TASKS: 'Create tasks',
+  EDIT_TASKS: 'Edit tasks',
+  DELETE_TASKS: 'Delete tasks',
+  COMMENT: 'Comment',
+  MANAGE_MEMBERS: 'Manage members',
+  MANAGE_SCHEME: 'Manage scheme',
+  MANAGE_PROJECT_SETTINGS: 'Manage project settings',
+  MANAGE_STATUSES: 'Manage statuses',
+  MANAGE_PHASES: 'Manage phases',
+  MANAGE_CUSTOM_COLUMNS: 'Manage custom columns',
+  VIEW_PROJECT_FINANCE: 'View project finance',
+  SAVE_AS_TEMPLATE: 'Save as template',
+  ARCHIVE_PROJECT: 'Archive project',
+  DELETE_PROJECT: 'Delete project',
+} as const;
+
+export type ProjectRolePermission =
+  (typeof PROJECT_ROLE_PERMISSIONS)[keyof typeof PROJECT_ROLE_PERMISSIONS];
+
 export interface IPermissionScheme {
   id: string;
   name: string;

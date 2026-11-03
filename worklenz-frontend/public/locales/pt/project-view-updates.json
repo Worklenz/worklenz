@@ -56,5 +56,7 @@
   "deleteSuccess": "Comentário excluído com sucesso",
   "deleteError": "Falha ao excluir o comentário",
   "editSuccess": "Comentário atualizado com sucesso",
-  "editError": "Falha ao editar o comentário"
+  "editError": "Falha ao editar o comentário",
+  "writeComment": "Escreva um comentário...",
+  "pressCmdEnterToSubmit": "Pressione Ctrl+Enter (ou Cmd+Enter) para enviar"
 }

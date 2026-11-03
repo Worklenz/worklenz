@@ -10,6 +10,8 @@ import HandleExceptions from "../decorators/handle-exceptions";
 import {isValidUuid} from "../shared/validation-helpers";
 import {advanceBacklogIssuesToTodo} from "../shared/software-sprint-utils";
 import {NotificationsService} from "../services/notifications/notifications.service";
+import {isTaskCreationRestricted} from "../shared/task-creation-restriction";
+import {PROJECT_ROLE_PERMISSIONS} from "../shared/organization-permissions";
 
 type IssueType = "task" | "story" | "bug" | "subtask";
 
@@ -44,11 +46,7 @@ export default class SoftwareIssuesController extends WorklenzControllerBase {
     const userId = req.user?.id as string;
     const teamId = req.user?.team_id as string;
 
-    const restricted = await db.query(
-      "SELECT is_task_creation_restricted($1, $2) AS restricted;",
-      [userId, input.projectId]
-    );
-    if (restricted.rows[0]?.restricted === true) {
+    if (await isTaskCreationRestricted(userId, input.projectId, PROJECT_ROLE_PERMISSIONS.CREATE_TASKS)) {
       return res.status(403).send(
         new ServerResponse(false, null, "Task creation is restricted. Please contact admin for access.")
       );

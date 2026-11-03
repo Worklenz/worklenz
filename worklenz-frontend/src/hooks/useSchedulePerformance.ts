@@ -141,7 +141,7 @@ export const useGanttOptimization = ({
       }
       
       return cells;
-    }, [visibleRange, visibleMembers, renderCell]);
+    }, [visibleRange, renderCell]);
   }, [visibleRange, visibleMembers]);
   
   return {
