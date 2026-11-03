@@ -134,6 +134,11 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
       }));
   }, [teamMembersState]);
 
+  const defaultTeamIds = useMemo(() => {
+    const id = session?.team_id ? String(session.team_id) : teamOptions[0]?.value;
+    return id ? [id] : [];
+  }, [session?.team_id, teamOptions]);
+
   // Load the full team set for KPIs / table.
   // Projects selection only scopes the bar chart (latest 20 by default).
   const filters: PlannedVsActualTasksFilters = useMemo(
@@ -378,6 +383,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
         teamOptions={teamOptions}
         selectedTeamIds={selectedTeamIds}
         onTeamsChange={setSelectedTeamIds}
+        defaultTeamIds={defaultTeamIds}
         loading={filtersLoading}
       />
     </Flex>
