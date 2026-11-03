@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Card, Space, Typography, Row, Col, Divider } from '@/shared/antd-imports';
 import WorklenzPageHeader from '@/components/common/WorklenzPageHeader';
 import OrganizationAdminsTable from '@/components/admin-center/overview/organization-admins-table/organization-admins-table';
@@ -15,16 +15,20 @@ import {
   fetchBillingInfo,
 } from '@/features/admin-center/admin-center.slice';
 import logger from '@/utils/errorLogger';
-import { tr } from 'date-fns/locale/tr';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_admin_center_overview_visit } from '@/shared/worklenz-analytics-events';
 import { AuditLogRetentionControl } from '@/components/admin-center/audit-log/AuditLogRetentionControl';
 import { useAuditLogPermissions } from '@/hooks/useAuditLogPermissions';
-
-const { Text } = Typography;
+import { useAuthService } from '@/hooks/useAuth';
+import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
+import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
 const Overview: React.FC = () => {
   const dispatch = useAppDispatch();
+  const authService = useAuthService();
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
+  const { hasPermission: canManageBilling, isLoading: isPermissionsLoading } =
+    useOrganizationPermission(ORGANIZATION_PERMISSIONS.MANAGE_BILLING);
 
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { organization, organizationAdmins, loadingOrganizationAdmins } = useAppSelector(
@@ -63,8 +67,15 @@ const Overview: React.FC = () => {
     trackMixpanelEvent(evt_admin_center_overview_visit);
     getOrganizationDetails();
     getOrganizationAdmins();
-    getBillingInfo();
   }, [trackMixpanelEvent]);
+
+  // Billing requires Manage billing — skip for users who only have Manage organization settings
+  useEffect(() => {
+    if (isPermissionsLoading) return;
+    if (isOwnerOrAdmin || canManageBilling) {
+      getBillingInfo();
+    }
+  }, [isPermissionsLoading, isOwnerOrAdmin, canManageBilling]);
 
   return (
     <div style={{ width: '100%' }}>

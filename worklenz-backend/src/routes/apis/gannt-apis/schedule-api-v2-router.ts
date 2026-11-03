@@ -14,20 +14,26 @@ import verifyTaskAccess, { verifyNonGuestTaskAccess } from "../../../middlewares
 import verifyNonGuestPlannerAccess from "../../../middlewares/verify-non-guest-planner-access";
 import { requireAnyFeature } from "../../../shared/entitlements/gates";
 import { PLANNER_FEATURES } from "../../../shared/entitlements/feature-registry";
-import { ownerOrAdminWriteValidator } from "../../../middlewares/validators/organization-permission-validator";
+import { manageOrganizationSettingsValidator } from "../../../middlewares/validators/organization-permission-validator";
 import { requireProjectPermission } from "../../../middlewares/validators/require-project-permission";
 
 const scheduleApiRouter = express.Router();
 
+// Working days/hours — used by Admin Center Utilization Settings (outside Planner).
+// Registered before the guest Planner gate so "Manage organization settings" works for Guests too.
+scheduleApiRouter.get("/settings", safeControllerFunction(ScheduleControllerV2.getSettings));
+scheduleApiRouter.put(
+  "/settings",
+  manageOrganizationSettingsValidator,
+  safeControllerFunction(ScheduleControllerV2.updateSettings)
+);
+
 // Guests only reach the Planner (Schedule/Timeline/Workload) when granted "View planner".
 scheduleApiRouter.use(verifyNonGuestPlannerAccess);
 
-// Shared endpoints, available on every plan because screens outside the Planner use them:
-//  - working days/hours settings (admin-center settings, utilization calculations)
+// Shared endpoints outside the paid Planner feature gate:
 //  - time-off, a personal calendar feature (Home calendar, quick actions)
 // Everything registered after the requireAnyFeature gate below is Planner-only.
-scheduleApiRouter.get("/settings", safeControllerFunction(ScheduleControllerV2.getSettings));
-scheduleApiRouter.put("/settings", ownerOrAdminWriteValidator, safeControllerFunction(ScheduleControllerV2.updateSettings));
 
 // ============================================
 // Time-Off Management Endpoints
