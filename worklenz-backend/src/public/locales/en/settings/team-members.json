@@ -192,7 +192,7 @@
   "teamHierarchyNoResultsDescription": "Try a different search term.",
   "seatLimitReached": "Seat Limit Reached",
   "seatLimitMessage": "Your plan includes {{planLimit}} members. Upgrade to Business for {{businessLimit}} members, or deactivate an inactive member to invite someone new.",
-  "seatLimitAppSumoMessage": "Your AppSumo plan includes {{planLimit}} members. Upgrade to Business for {{businessLimit}} members, or deactivate an inactive member to invite someone new.",
+  "seatLimitLifetimeDealMessage": "Your lifetime deal includes {{planLimit}} members. Deactivate a member to invite someone new, or upgrade to Business for {{businessLimit}} members.",
   "currentMembers": "Current Members",
   "planLimit": "Plan Limit",
   "afterUpgrade": "After Upgrade",

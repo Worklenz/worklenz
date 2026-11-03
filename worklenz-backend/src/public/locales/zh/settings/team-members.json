@@ -193,7 +193,7 @@
   "teamHierarchyNoResultsDescription": "请尝试其他搜索词。",
   "seatLimitReached": "席位上限已达",
   "seatLimitMessage": "您的方案包含 {{planLimit}} 个成员席位。升级到企业版可获得 {{businessLimit}} 个席位，或停用不活跃的成员以邀请新成员。",
-  "seatLimitAppSumoMessage": "您的 AppSumo 方案包含 {{planLimit}} 个成员席位。升级到企业版可获得 {{businessLimit}} 个席位，或停用不活跃的成员以邀请新成员。",
+  "seatLimitLifetimeDealMessage": "您的终身优惠方案包含 {{planLimit}} 个成员席位。升级到企业版可获得 {{businessLimit}} 个席位，或停用不活跃的成员以邀请新成员。",
   "currentMembers": "当前成员",
   "planLimit": "方案上限",
   "afterUpgrade": "升级后",

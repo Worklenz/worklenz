@@ -31,6 +31,7 @@ import { RolePermissionsPopover } from '@/components/settings/role-permissions-p
 import { SeatLimitModal } from '@/components/common/seat-limit-modal';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 interface FormValues {
   emails: string[];
@@ -257,21 +258,20 @@ const InviteTeamMembers = () => {
       return;
     }
 
+    const normalizedEmails = (values.emails || []).map(email => String(email).trim()).filter(Boolean);
+    const body: ITeamMemberCreateRequest = {
+      job_title: selectedJobTitle,
+      emails: normalizedEmails,
+      is_admin: values.access === 'admin',
+      role_name:
+        values.access === 'team-lead'
+          ? ROLE_NAMES.TEAM_LEAD
+          : values.access === 'admin'
+            ? ROLE_NAMES.ADMIN
+            : ROLE_NAMES.MEMBER,
+    };
     try {
       setLoading(true);
-      const normalizedEmails = (values.emails || []).map(email => String(email).trim()).filter(Boolean);
-
-      const body: ITeamMemberCreateRequest = {
-        job_title: selectedJobTitle,
-        emails: normalizedEmails,
-        is_admin: values.access === 'admin',
-        role_name:
-          values.access === 'team-lead'
-            ? ROLE_NAMES.TEAM_LEAD
-            : values.access === 'admin'
-              ? ROLE_NAMES.ADMIN
-              : ROLE_NAMES.MEMBER,
-      };
       const res = await teamMembersApiService.createTeamMember(body);
       
       // Check for seat limit exceeded error
@@ -298,6 +298,12 @@ const InviteTeamMembers = () => {
         dispatch(toggleInviteMemberDrawer());
       }
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.data?.body?.error_code === 'SEAT_LIMIT_EXCEEDED') {
+        setSeatLimitData(error.response.data.body);
+        setPendingInvite(body);
+        setSeatLimitModalOpen(true);
+        return;
+      }
       message.error(t('createMemberErrorMessage', { defaultValue: 'Failed to create team member' }));
     } finally {
       setLoading(false);
@@ -321,7 +327,7 @@ const InviteTeamMembers = () => {
   const handleSeatLimitDeactivate = () => {
     setSeatLimitModalOpen(false);
     // Store pending invite in localStorage for auto-send after deactivation
-    if (pendingInvite) {
+    if (pendingInvite?.emails?.length) {
       localStorage.setItem('pendingTeamInvite', JSON.stringify(pendingInvite));
     }
     // Navigate to Settings > Members
