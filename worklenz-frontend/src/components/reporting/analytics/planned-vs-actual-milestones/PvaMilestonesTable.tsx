@@ -120,7 +120,7 @@ export const PvaMilestonesTable: React.FC<PvaMilestonesTableProps> = ({
   return (
     <Table<PlannedVsActualMilestonesRow>
       bordered
-      rowKey="project_id"
+      rowKey="milestone_id"
       columns={borderedColumns}
       dataSource={milestones}
       loading={loading}

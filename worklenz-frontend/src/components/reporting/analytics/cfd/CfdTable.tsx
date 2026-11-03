@@ -95,7 +95,7 @@ export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, stat
     <Table
       bordered
       size="small"
-      pagination={{ pageSize: 15, showSizeChanger: true }}
+      pagination={getClientTablePagination(15)}
       columns={borderedColumns}
       dataSource={rows}
       scroll={{ x: Math.max(400, orderedVisible.length * 100 + 140) }}

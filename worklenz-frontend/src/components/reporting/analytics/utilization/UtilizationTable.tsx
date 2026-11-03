@@ -131,7 +131,7 @@ export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loa
   return (
     <Table<UtilizationMemberRow>
       bordered
-      rowKey="project_id"
+      rowKey="team_member_id"
       columns={borderedColumns}
       dataSource={members}
       loading={loading}
