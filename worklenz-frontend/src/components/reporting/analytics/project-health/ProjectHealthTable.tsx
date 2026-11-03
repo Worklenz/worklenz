@@ -204,7 +204,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         ),
         dataIndex: 'open_tasks',
         key: 'open_tasks',
-        width: '120%',
+        width: 120,
         align: 'right',
         sorter: (a, b) => a.open_tasks - b.open_tasks,
       },
@@ -222,7 +222,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         ),
         dataIndex: 'overdue_tasks',
         key: 'overdue_tasks',
-        width: '110%',
+        width: 110,
         align: 'right',
         sorter: (a, b) => a.overdue_tasks - b.overdue_tasks,
         render: (value: number) =>
@@ -248,7 +248,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         ),
         dataIndex: 'budget_used_pct',
         key: 'budget_used_pct',
-        width: '130%',
+        width: 130,
         align: 'right',
         sorter: (a, b) => a.budget_used_pct - b.budget_used_pct,
         render: (value: number, row) =>
@@ -262,7 +262,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         title: t('phColLead', { defaultValue: 'Project lead' }),
         dataIndex: 'lead_name',
         key: 'lead_name',
-        width: '140%',
+        width: 140,
         ellipsis: true,
         render: (value: string | null) =>
           value ? (
