@@ -2,14 +2,14 @@ import express from "express";
 
 import PracticesController from "../../controllers/practices-controller";
 import idParamValidator from "../../middlewares/validators/id-param-validator";
-import { manageOrganizationSettingsValidator } from "../../middlewares/validators/organization-permission-validator";
+import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 
 const practicesApiRouter = express.Router();
 
 practicesApiRouter.post(
   "/",
-  manageOrganizationSettingsValidator,
+  teamOwnerOrAdminValidator,
   safeControllerFunction(PracticesController.create),
 );
 practicesApiRouter.get("/", safeControllerFunction(PracticesController.get));
@@ -20,13 +20,13 @@ practicesApiRouter.get(
 );
 practicesApiRouter.put(
   "/:id",
-  manageOrganizationSettingsValidator,
+  teamOwnerOrAdminValidator,
   idParamValidator,
   safeControllerFunction(PracticesController.update),
 );
 practicesApiRouter.delete(
   "/:id",
-  manageOrganizationSettingsValidator,
+  teamOwnerOrAdminValidator,
   idParamValidator,
   safeControllerFunction(PracticesController.deleteById),
 );

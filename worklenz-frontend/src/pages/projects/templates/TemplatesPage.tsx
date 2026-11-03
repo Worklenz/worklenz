@@ -53,8 +53,6 @@ import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer
 import { getRole } from '@/utils/session-helper';
 import { isAdminRole } from '@/types/roles/role.types';
 import { useAuthService } from '@/hooks/useAuth';
-import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
-import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
 type TemplatesTab = 'builtin' | 'project' | 'task';
 
@@ -585,13 +583,7 @@ const TemplatesPage: React.FC = () => {
   const [showTaskDrawer, setShowTaskDrawer] = useState(false);
   const authService = useAuthService();
   const canChangeScope = isAdminRole(getRole());
-  const { hasPermission: canCreateProjects } = useOrganizationPermission(
-    ORGANIZATION_PERMISSIONS.CREATE_PROJECTS
-  );
-  const canCreateProject =
-    authService.isOwnerOrAdmin() ||
-    authService.canCreateProjectsFromTemplates() ||
-    canCreateProjects;
+  const canCreateProject = authService.canCreateProjectsFromTemplates();
 
   const fetchBuiltInTemplates = useCallback(async () => {
     try {

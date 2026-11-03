@@ -48,26 +48,4 @@ export interface IProjectMembershipContext {
   financeAccess: boolean;
   canCreateProjectsFromTemplates: boolean;
   isProjectMember: boolean;
-  /**
-   * Org "View all projects" — when true, non-members still receive scheme
-   * project permissions (view-only unless Create/Edit/Delete/etc. are granted).
-   */
-  canViewAllProjects?: boolean;
-  /**
-   * Grants from the project's permission scheme for the user's role.
-   * Omitted keys keep the role baseline unchanged.
-   */
-  schemeGrants?: Partial<Record<SchemeControlledPermission, boolean>>;
 }
-
-/** Project permissions that a permission scheme can grant or revoke per role. */
-export type SchemeControlledPermission =
-  | "settings"
-  | "statuses"
-  | "phases"
-  | "customColumns"
-  | "members"
-  | "saveAsTemplate"
-  | "finance"
-  | "archive"
-  | "delete";

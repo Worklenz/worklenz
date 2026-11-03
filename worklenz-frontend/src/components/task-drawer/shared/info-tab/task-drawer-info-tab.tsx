@@ -49,11 +49,10 @@ import TaskDrawerDevelopment from './TaskDrawerDevelopment';
 interface TaskDrawerInfoTabProps {
   t: TFunction;
   canCreateTask?: boolean;
-  canAddSubtask?: boolean;
   isGuest?: boolean;
 }
 
-const TaskDrawerInfoTab = ({ t, canCreateTask, canAddSubtask, isGuest }: TaskDrawerInfoTabProps) => {
+const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps) => {
   const FREE_ATTACHMENT_SIZE_LIMIT_MB = 25;
   const BUSINESS_ATTACHMENT_SIZE_LIMIT_MB = 250;
   const dispatch = useAppDispatch();
@@ -530,7 +529,6 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, canAddSubtask, isGuest }: TaskDra
           loadingSubTasks={loadingSubTasks}
           refreshSubTasks={fetchSubTasks}
           canCreateTask={canCreateTask}
-          canAddSubtask={canAddSubtask}
           isGuest={isGuest}
           t={t}
         />

@@ -8,10 +8,6 @@ import {
   SafetyCertificateOutlined,
 } from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
-import {
-  ORGANIZATION_PERMISSIONS,
-  OrganizationPermission,
-} from '@/types/admin-center/permission-schemes.types';
 
 const Overview = lazy(() => import('../pages/admin-center/overview/overview'));
 const Users = lazy(() => import('../pages/admin-center/users/users'));
@@ -21,23 +17,8 @@ const Projects = lazy(() => import('../pages/admin-center/projects/projects'));
 const Settings = lazy(() => import('../pages/admin-center/settings/settings'));
 const AuditLog = lazy(() => import('../pages/admin-center/security/audit-log-page'));
 
-/** Permissions that unlock any Admin Center page (besides Owner/Admin). */
-export const ADMIN_CENTER_ENTRY_PERMISSIONS: OrganizationPermission[] = [
-  ORGANIZATION_PERMISSIONS.MANAGE_USERS,
-  ORGANIZATION_PERMISSIONS.MANAGE_TEAMS,
-  ORGANIZATION_PERMISSIONS.MANAGE_BILLING,
-  ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS,
-];
-
-export const canAccessAdminCenter = (
-  isOwnerOrAdmin: boolean,
-  permissions: OrganizationPermission[] = []
-): boolean =>
-  isOwnerOrAdmin ||
-  ADMIN_CENTER_ENTRY_PERMISSIONS.some(permission => permissions.includes(permission));
-
 // type of a menu item in admin center sidebar
-export type AdminCenterMenuItems = {
+type AdminCenterMenuItems = {
   key: string;
   name: string;
   defaultValue: string;
@@ -47,10 +28,7 @@ export type AdminCenterMenuItems = {
   selfHostedExcluded?: boolean;
   /** Hidden from the sidebar and route-guarded unless the user is an Owner or Admin. */
   ownerOrAdminOnly?: boolean;
-  /** Granted via the default permission scheme; Owners/Admins always see the item. */
-  requiredPermission?: OrganizationPermission;
 };
-
 // settings all element items use for sidebar and routes
 export const adminCenterItems: AdminCenterMenuItems[] = [
   {
@@ -68,7 +46,6 @@ export const adminCenterItems: AdminCenterMenuItems[] = [
     endpoint: 'users',
     icon: React.createElement(UserOutlined),
     element: React.createElement(Users),
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_USERS,
   },
   {
     key: 'teams',
@@ -77,7 +54,6 @@ export const adminCenterItems: AdminCenterMenuItems[] = [
     endpoint: 'teams',
     icon: React.createElement(TeamOutlined),
     element: React.createElement(Teams),
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_TEAMS,
   },
   {
     key: 'projects',
@@ -86,7 +62,6 @@ export const adminCenterItems: AdminCenterMenuItems[] = [
     endpoint: 'projects',
     icon: React.createElement(ProfileOutlined),
     element: React.createElement(Projects),
-    ownerOrAdminOnly: true,
   },
   {
     key: 'billing',
@@ -96,7 +71,6 @@ export const adminCenterItems: AdminCenterMenuItems[] = [
     icon: React.createElement(CreditCardOutlined),
     element: React.createElement(Billing),
     selfHostedExcluded: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_BILLING,
   },
   {
     key: 'settings',
@@ -105,7 +79,6 @@ export const adminCenterItems: AdminCenterMenuItems[] = [
     endpoint: 'settings',
     icon: React.createElement(SettingOutlined),
     element: React.createElement(Settings),
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS,
   },
   {
     key: 'security',
@@ -117,23 +90,3 @@ export const adminCenterItems: AdminCenterMenuItems[] = [
     ownerOrAdminOnly: true,
   },
 ];
-
-export const canAccessAdminCenterItem = (
-  item: AdminCenterMenuItems,
-  isOwnerOrAdmin: boolean,
-  permissions: OrganizationPermission[] = []
-): boolean => {
-  if (item.ownerOrAdminOnly && !isOwnerOrAdmin) {
-    return false;
-  }
-
-  if (
-    item.requiredPermission &&
-    !isOwnerOrAdmin &&
-    !permissions.includes(item.requiredPermission)
-  ) {
-    return false;
-  }
-
-  return true;
-};

@@ -9,7 +9,6 @@ import { setCurrentOrganization } from '@/features/reporting/reporting.slice';
 import { fetchOrganizationDetails } from '@/features/admin-center/admin-center.slice';
 import GlobalUpgradeModal from '@/components/upgrade/GlobalUpgradeModal';
 import logger from '@/utils/errorLogger';
-import { useAuthService } from '@/hooks/useAuth';
 import { useNavPreferences } from '@/features/navigation/useNavPreferences';
 import {
   NAV_RAIL_BG_DARK,
@@ -23,7 +22,6 @@ import '@/components/nav-rail/nav-rail.css';
 
 const ReportingLayout = () => {
   const dispatch = useAppDispatch();
-  const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const { resolved } = useNavPreferences('reporting');
   const isCollapsed = resolved.collapsed;
   const { token } = theme.useToken();
@@ -44,9 +42,9 @@ const ReportingLayout = () => {
 
   useEffect(() => {
     fetchCurrentOrganization();
-    // Organization details are Owner/Admin-only; a 401 here would log out report viewers
-    if (isOwnerOrAdmin) dispatch(fetchOrganizationDetails());
-  }, [dispatch, isOwnerOrAdmin]);
+    // Fetch organization details for upgrade modal
+    dispatch(fetchOrganizationDetails());
+  }, [dispatch]);
 
   const sidebarWidth = isCollapsed ? NAV_RAIL_COLLAPSED_WIDTH : NAV_RAIL_EXPANDED_WIDTH;
 

@@ -44,7 +44,6 @@ import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
-import { useCanEditReports } from '@/hooks/useCanEditReports';
 
 interface ReportingOverviewProjectsTableProps {
   searchQuery: string;
@@ -58,7 +57,6 @@ const ReportingOverviewProjectsTable = ({
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
   const { socket } = useSocket();
-  const isReadOnly = !useCanEditReports();
 
   const { includeArchivedProjects } = useAppSelector(state => state.reportingReducer);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -273,11 +271,7 @@ const ReportingOverviewProjectsTable = ({
         sortOrder: getColumnSortOrder('status_name'),
         title: <CustomTableTitle title={t('statusColumn')} />,
         render: (_, record: IRPTProject) => (
-          <ProjectStatusCell
-            currentStatus={record.status_id}
-            projectId={record.id}
-            isReadOnly={isReadOnly}
-          />
+          <ProjectStatusCell currentStatus={record.status_id} projectId={record.id} />
         ),
         width: 200,
         sorter: true,
@@ -291,7 +285,6 @@ const ReportingOverviewProjectsTable = ({
             projectId={record.id}
             startDate={record.start_date}
             endDate={record.end_date}
-            isReadOnly={isReadOnly}
           />
         ),
         width: 275,
@@ -321,7 +314,6 @@ const ReportingOverviewProjectsTable = ({
             label={record.health_name}
             color={record.health_color}
             projectId={record.id}
-            isReadOnly={isReadOnly}
           />
         ),
         width: 200,
@@ -338,7 +330,6 @@ const ReportingOverviewProjectsTable = ({
             id={record.category_id || ''}
             name={record.category_name || ''}
             color_code={record.category_color || ''}
-            isReadOnly={isReadOnly}
           />
         ),
         width: 200,
@@ -378,7 +369,7 @@ const ReportingOverviewProjectsTable = ({
         width: 200,
       },
     ],
-    [t, order, isReadOnly]
+    [t, order, field]
   );
 
   // ✅ FIX 1: Renamed parameter from `pagination` to `newPagination` to avoid

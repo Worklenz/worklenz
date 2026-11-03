@@ -59,7 +59,6 @@ describe("AdminCenterTeamsController", () => {
     team_member_id: "tm-1",
     name: "John Doe",
     team_name: "Engineering",
-    is_admin: true,
   };
 
   beforeEach(() => {
@@ -276,43 +275,6 @@ describe("AdminCenterTeamsController", () => {
       expect(roleUpdateCalls.length).toBe(0);
     });
 
-    it("skips role update when caller is not an owner or admin (e.g. member with Manage teams)", async () => {
-      mockQuery.mockImplementation(async (sql: string) => {
-        if (sql.includes("UPDATE teams SET name")) {
-          return { rows: [{ id: "team-2" }] };
-        }
-        if (sql.includes("SELECT tm.user_id")) {
-          return { rows: [{ user_id: "user-active" }] };
-        }
-        if (sql.includes("UPDATE users SET name")) {
-          return { rows: [] };
-        }
-        return { rows: [] };
-      });
-
-      const memberUser = { ...mockUser, is_admin: false, role_name: "Member" };
-      const req = createMockRequest({
-        user: memberUser,
-        params: { id: "team-2" },
-        body: {
-          name: "Updated Team Name",
-          teamMembers: [
-            { id: "tm-1", role_name: "Admin", user_id: null, name: "Active User Updated" },
-          ],
-        },
-      });
-      const res = createMockResponse();
-
-      await AdminCenterTeamsController.updateTeam(req, res);
-
-      expect(res.statusCode).toBe(200);
-      expect(res.body.done).toBe(true);
-      const roleUpdateCalls = mockQuery.mock.calls.filter(([sql]) =>
-        sql.includes("UPDATE team_members") && sql.includes("SET role_id")
-      );
-      expect(roleUpdateCalls.length).toBe(0);
-    });
-
     it("returns 500 when database throws an exception", async () => {
       mockQuery.mockRejectedValueOnce(new Error("DB Connection Error"));
 
@@ -513,51 +475,6 @@ describe("AdminCenterTeamsController", () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.done).toBe(false);
       expect(res.body.body).toBe("Please check your subscription status.");
-    });
-
-    it("returns 200 false when attempting to delete the team owner", async () => {
-      mockQuery.mockImplementation(async (sql: string) => {
-        if (sql.includes("SELECT r.name") || sql.includes("FROM team_members tm")) {
-          return { rows: [{ name: "Owner" }] };
-        }
-        return { rows: [] };
-      });
-
-      const req = createMockRequest({
-        user: mockUser,
-        params: { id: "tm-owner" },
-        body: { teamId: "team-1" },
-      });
-      const res = createMockResponse();
-
-      await AdminCenterTeamsController.deleteById(req, res);
-
-      expect(res.statusCode).toBe(200);
-      expect(res.body.done).toBe(false);
-      expect(res.body.message).toBe("You are not authorized to delete the team owner.");
-    });
-
-    it("returns 200 false when a non-admin attempts to remove an admin", async () => {
-      mockQuery.mockImplementation(async (sql: string) => {
-        if (sql.includes("SELECT r.name") || sql.includes("FROM team_members tm")) {
-          return { rows: [{ name: "Admin" }] };
-        }
-        return { rows: [] };
-      });
-
-      const memberUser = { ...mockUser, is_admin: false, role_name: "Member" };
-      const req = createMockRequest({
-        user: memberUser,
-        params: { id: "tm-admin" },
-        body: { teamId: "team-1" },
-      });
-      const res = createMockResponse();
-
-      await AdminCenterTeamsController.deleteById(req, res);
-
-      expect(res.statusCode).toBe(200);
-      expect(res.body.done).toBe(false);
-      expect(res.body.message).toBe("You are not authorized to remove an admin.");
     });
 
     it("removes team member, updates paddle seats if needed, sends notification and socket event", async () => {

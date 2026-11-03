@@ -36,17 +36,17 @@ import {
 import { openProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
 
 import {
+  toggleArchiveProject,
   toggleArchiveProjectForAll,
   fetchGroupedProjects,
 } from '@/features/projects/projectsSlice';
 
 import { useAuthService } from '@/hooks/useAuth';
-import { useDefaultProjectPermission } from '@/hooks/useDefaultProjectPermission';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { PROJECT_ROLE_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
 import {
   evt_projects_settings_click,
+  evt_projects_archive,
   evt_projects_archive_all,
 } from '@/shared/worklenz-analytics-events';
 
@@ -122,24 +122,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
-  const { hasPermission: hasDefaultArchivePermission } = useDefaultProjectPermission(
-    PROJECT_ROLE_PERMISSIONS.ARCHIVE_PROJECT
-  );
-  const permissionsByProjectId = useAppSelector(
-    state => state.projectReducer.permissionsByProjectId
-  );
   const { trackMixpanelEvent } = useMixpanelTracking();
-
-  const canArchiveRecord = useCallback(
-    (record: IProjectViewModel): boolean => {
-      if (isOwnerOrAdmin) return true;
-      if (record.permissions) return record.permissions.archive;
-      const cached = record.id ? permissionsByProjectId[record.id] : undefined;
-      if (cached) return cached.permissions.archive;
-      return hasDefaultArchivePermission;
-    },
-    [isOwnerOrAdmin, permissionsByProjectId, hasDefaultArchivePermission]
-  );
 
   // Track which groups are collapsed. Default: only the first group expanded.
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -233,9 +216,9 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
     }
   }, []);
 
-  const handleSettingsClick = (e: React.MouseEvent, project: IProjectViewModel) => {
+  const handleSettingsClick = (e: React.MouseEvent, project: any) => {
     e.stopPropagation();
-    if (!project?.id) return;
+    if (!project?.id || project?.is_guest) return;  // ✅ Prevent opening settings for guests
     trackMixpanelEvent(evt_projects_settings_click);
     dispatch(setProjectId(project.id));
     dispatch(fetchProjectData(project.id))
@@ -258,11 +241,15 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
       });
   };
 
-  const handleArchiveClick = async (projectId: string, allowed: boolean) => {
-    if (!allowed) return;
+  const handleArchiveClick = async (projectId: string) => {
     try {
-      trackMixpanelEvent(evt_projects_archive_all);
-      await dispatch(toggleArchiveProjectForAll(projectId)).unwrap();
+      if (isOwnerOrAdmin) {
+        trackMixpanelEvent(evt_projects_archive_all);
+        await dispatch(toggleArchiveProjectForAll(projectId)).unwrap();
+      } else {
+        trackMixpanelEvent(evt_projects_archive);
+        await dispatch(toggleArchiveProject(projectId)).unwrap();
+      }
       await dispatch(fetchGroupedProjects(groupedRequestParams)).unwrap();
     } catch (error) {
       logger.error('Failed to archive project:', error);
@@ -478,32 +465,23 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         align: 'center' as const,
         render: (_: any, record: IProjectViewModel) => {
           const isGuest = record.is_guest === true;
-          const canArchive = canArchiveRecord(record);
-          const cached = record.id ? permissionsByProjectId[record.id] : undefined;
-          const canOpenSettings = record.permissions
-            ? record.permissions.settings
-            : cached
-              ? cached.permissions.settings
-              : !isGuest;
 
           return (
             <Space size={4} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-              <Tooltip 
+              <Tooltip
                 title={
-                  canOpenSettings
-                    ? t('setting', { defaultValue: 'Settings' })
-                    : isGuest
-                      ? t('settingsDisabledForGuest', { defaultValue: 'Project settings are not accessible for guest users' })
-                      : t('noPermission', { defaultValue: 'You do not have permission' })
+                  isGuest
+                    ? t('settingsDisabledForGuest', { defaultValue: 'Project settings are not accessible for guest users' })
+                    : t('setting', { defaultValue: 'Settings' })
                 }
               >
                 <button
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    cursor: canOpenSettings ? 'pointer' : 'not-allowed', 
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: isGuest ? 'not-allowed' : 'pointer',
                     padding: '2px 6px',
-                    opacity: canOpenSettings ? 1 : 0.5,
+                    opacity: isGuest ? 0.5 : 1,
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -513,57 +491,49 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    canOpenSettings && handleSettingsClick(e, record);
+                    !isGuest && handleSettingsClick(e, record);
                   }}
-                  disabled={!canOpenSettings}
+                  disabled={isGuest}
                   type="button"
                 >
                   <SettingOutlined />
                 </button>
               </Tooltip>
               <Tooltip
-                title={canArchive ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}
+                title={isOwnerOrAdmin ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}
               >
-                <Popconfirm
-                  title={record.archived ? t('unarchive') : t('archive')}
-                  description={record.archived ? t('unarchiveConfirm') : t('archiveConfirm')}
-                  onConfirm={() => {
-                    if (record.id) {
-                      void handleArchiveClick(record.id, canArchive);
+                <button
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: isOwnerOrAdmin ? 'pointer' : 'not-allowed',
+                    opacity: isOwnerOrAdmin ? 1 : 0.5,
+                    padding: '2px 6px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '28px',
+                    height: '28px',
+                    fontSize: '14px'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isOwnerOrAdmin && record.id) {
+                      handleArchiveClick(record.id);
                     }
                   }}
-                  okText={t('yes')}
-                  cancelText={t('no')}
-                  disabled={!canArchive}
+                  disabled={!isOwnerOrAdmin}
+                  type="button"
                 >
-                  <button
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: canArchive ? 'pointer' : 'not-allowed',
-                      opacity: canArchive ? 1 : 0.5,
-                      padding: '2px 6px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      minWidth: '28px',
-                      height: '28px',
-                      fontSize: '14px'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    disabled={!canArchive}
-                    type="button"
-                  >
-                    <InboxOutlined />
-                  </button>
-                </Popconfirm>
+                  <InboxOutlined />
+                </button>
               </Tooltip>
             </Space>
           );
         },
       },
     ],
-    [token, t, themeMode, canArchiveRecord]
+    [token, t, themeMode, isOwnerOrAdmin]
   );
 
   // Filter columns based on field visibility

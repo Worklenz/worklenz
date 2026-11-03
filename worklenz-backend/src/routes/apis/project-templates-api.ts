@@ -2,7 +2,7 @@ import express from "express";
 import ProjectTemplatesController from "../../controllers/project-templates/pt-templates-controller";
 import OnboardingController from "../../controllers/onboarding-controller";
 import idParamValidator from "../../middlewares/validators/id-param-validator";
-import { manageOrganizationSettingsValidator } from "../../middlewares/validators/organization-permission-validator";
+import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import requireCreateFromTemplates from "../../middlewares/validators/require-create-from-templates";
 import { requireProjectPermission } from "../../middlewares/validators/require-project-permission";
 import safeControllerFunction from "../../shared/safe-controller-function";
@@ -87,7 +87,7 @@ projectTemplatesApiRouter.put(
 projectTemplatesApiRouter.patch(
   "/custom-template/:id/scope",
   idParamValidator,
-  manageOrganizationSettingsValidator,
+  teamOwnerOrAdminValidator,
   safeControllerFunction(ProjectTemplatesController.updateCustomTemplateScope)
 );
 

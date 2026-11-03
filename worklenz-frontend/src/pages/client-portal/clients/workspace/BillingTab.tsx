@@ -6,7 +6,6 @@ import { Alert, Button, Flex, Typography } from '@/shared/antd-imports';
 import type { OrganizationPortalAccess } from '@/types/client-portal/v2';
 import { InvoicesTable } from '../../invoices/Invoices-table/invoices-table';
 import type { WorkspaceTab } from './workspace-helpers';
-import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 
 interface BillingTabProps {
   organizationId: string;
@@ -19,8 +18,7 @@ interface BillingTabProps {
 export const BillingTab = ({ organizationId, organizationName, portalAccess, onOpenTab }: BillingTabProps) => {
   const { t } = useTranslation('client-portal-v2-clients');
   const navigate = useNavigate();
-  const isReadOnly = useIsAdminSurfaceReadOnly();
-  const nobodyCanSignIn = !isReadOnly && portalAccess !== 'active';
+  const nobodyCanSignIn = portalAccess !== 'active';
 
   return (
     <Flex vertical gap={16}>
@@ -49,15 +47,13 @@ export const BillingTab = ({ organizationId, organizationName, portalAccess, onO
         <Typography.Title level={5} style={{ margin: 0 }}>
           {t('workspace.billing.title', { defaultValue: 'Invoices' })}
         </Typography.Title>
-        {!isReadOnly && (
-          <Button
-            type="primary"
-            icon={<FileTextOutlined />}
-            onClick={() => navigate(`/worklenz/client-portal/invoices/create?clientId=${organizationId}`)}
-          >
-            {t('workspace.billing.createInvoice', { defaultValue: 'Create invoice' })}
-          </Button>
-        )}
+        <Button
+          type="primary"
+          icon={<FileTextOutlined />}
+          onClick={() => navigate(`/worklenz/client-portal/invoices/create?clientId=${organizationId}`)}
+        >
+          {t('workspace.billing.createInvoice', { defaultValue: 'Create invoice' })}
+        </Button>
       </Flex>
 
       <InvoicesTable clientId={organizationId} embedded />

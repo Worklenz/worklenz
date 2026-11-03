@@ -86,7 +86,7 @@ const ProjectViewHeader = memo(() => {
   const { t } = useTranslation('project-view/project-view-header');
   const dispatch = useAppDispatch();
   const { tab } = useTabSearchParam();
-  const { canAddTask } = useTaskCreationPermission();
+  const { canCreateTask } = useTaskCreationPermission();
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
@@ -586,16 +586,13 @@ const ProjectViewHeader = memo(() => {
       );
     }
 
-    const canOpenSettings = permissions.settings;
     actions.push(
       <Tooltip
         key="settings"
         title={
-          canOpenSettings
-            ? t('settingsTooltip', { defaultValue: 'Open project settings' })
-            : isGuest
-              ? t('settingsDisabledForGuest', { defaultValue: 'Project settings are not accessible for guest users' })
-              : t('noPermission', { defaultValue: 'You do not have permission' })
+          isGuest
+            ? t('settingsDisabledForGuest', { defaultValue: 'Project settings are not accessible for guest users' })
+            : t('settingsTooltip', { defaultValue: 'Open project settings' })
         }
       >
         <Button
@@ -603,7 +600,7 @@ const ProjectViewHeader = memo(() => {
           shape="circle"
           icon={<SettingOutlined />}
           onClick={handleSettingsClick}
-          disabled={!canOpenSettings}
+          disabled={isGuest}
         />
       </Tooltip>
     );
@@ -644,7 +641,7 @@ const ProjectViewHeader = memo(() => {
       </Tooltip>
     );
 
-    if (permissions.members.add) {
+    if (permissions.members.add && !isGuest) {
       actions.push(
         <Tooltip
           key="invite-tooltip"
@@ -683,7 +680,7 @@ const ProjectViewHeader = memo(() => {
           </Dropdown.Button>
         </Tooltip>
       );
-    } else if (canAddTask) {
+    } else if (canCreateTask && !isGuest) {
       actions.push(
         <Tooltip
           key="create-task-tooltip"
@@ -722,13 +719,12 @@ const ProjectViewHeader = memo(() => {
     handleSubscribe,
     isProjectManager,
     permissions.saveAsTemplate,
-    permissions.settings,
     permissions.members.add,
     handleInvite,
     creatingTask,
     dropdownItems,
     handleCreateTask,
-    canAddTask,
+    canCreateTask,
     isGuest,
     createTaskLabel,
     createTaskTooltip,

@@ -195,10 +195,6 @@ describe("TeamMembersController self-service operations", () => {
   it("getById rejects Member attempting to read another member", async () => {
     // 1. getTeamMemberRoleName for target
     mockedQuery.mockResolvedValueOnce(createQueryResult([{ name: "Member" }]));
-    // 2. isSelfMemberInTeam -> not self
-    mockedQuery.mockResolvedValueOnce(createQueryResult([]));
-    // 3. hasTeamMemberManagementAccess check: Manage users not granted
-    mockedQuery.mockResolvedValueOnce(createQueryResult([]));
 
     const req = createMockRequest({
       user: { id: "u-1", team_id: teamId, team_member_id: memberId, role_name: "Member" },
@@ -239,9 +235,7 @@ describe("TeamMembersController self-service operations", () => {
     mockedQuery.mockResolvedValueOnce(createQueryResult([{ name: "Member" }]));
     // 2. getTeamMemberRoleName in update
     mockedQuery.mockResolvedValueOnce(createQueryResult([{ name: "Member" }]));
-    // 3. existing job title check
-    mockedQuery.mockResolvedValueOnce(createQueryResult([{ name: "Software Engineer" }]));
-    // 4. update_team_member query
+    // 3. update_team_member query
     mockedQuery.mockResolvedValueOnce(createQueryResult([{ team_member: memberId }]));
 
     const req = createMockRequest({

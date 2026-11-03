@@ -6,9 +6,6 @@ import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/gue
 import { canUserAccessTaskDetail, canUserEditTask } from "../shared/assignee-task-scope";
 import { ISocketSession } from "../interfaces/socket-session";
 import { IPassportSession } from "../interfaces/passport-session";
-import { GUEST_ROLE_NAME, PROJECT_ROLE_PERMISSIONS } from "../shared/organization-permissions";
-import { checkProjectRolePermission, checkTaskRolePermission } from "../shared/project-role-permissions";
-import { getProjectAccess } from "../shared/project-access";
 
 /**
  * Verify user has access to a task via their team
@@ -59,24 +56,18 @@ export async function verifyNonGuestTaskAccessSocket(
   if (!userId || !taskId) return false;
 
   try {
-    const rolePermission = await checkTaskRolePermission(userId, taskId, PROJECT_ROLE_PERMISSIONS.EDIT_TASKS);
-    if (!rolePermission.allowed) return false;
-
-    // Guests are only allowed through when the default scheme grants them "Edit tasks"
-    if (rolePermission.roleName !== GUEST_ROLE_NAME) {
-      const q = `
-        SELECT 1
-        FROM tasks t
-        INNER JOIN projects p ON t.project_id = p.id
-        ${NON_GUEST_ACCESS_JOIN('$2')}
-        WHERE t.id = $1
-          AND ${NON_GUEST_ACCESS_PREDICATE}
-        LIMIT 1;
-      `;
-      const result = await db.query(q, [taskId, userId]);
-      if (!result.rowCount || result.rowCount <= 0) {
-        return false;
-      }
+    const q = `
+      SELECT 1
+      FROM tasks t
+      INNER JOIN projects p ON t.project_id = p.id
+      ${NON_GUEST_ACCESS_JOIN('$2')}
+      WHERE t.id = $1
+        AND ${NON_GUEST_ACCESS_PREDICATE}
+      LIMIT 1;
+    `;
+    const result = await db.query(q, [taskId, userId]);
+    if (!result.rowCount || result.rowCount <= 0) {
+      return false;
     }
 
     const { session } = socket.request as ISocketSession;
@@ -103,10 +94,6 @@ export async function verifyNonGuestProjectAccessSocket(
   if (!userId || !projectId) return false;
 
   try {
-    const rolePermission = await checkProjectRolePermission(userId, projectId, PROJECT_ROLE_PERMISSIONS.EDIT_TASKS);
-    if (!rolePermission.allowed) return false;
-    if (rolePermission.roleName === GUEST_ROLE_NAME) return true;
-
     const q = `
       SELECT 1
       FROM projects p
@@ -152,28 +139,6 @@ export async function verifyProjectAccessSocket(
     return result.rowCount ? result.rowCount > 0 : false;
   } catch (error) {
     log_error(`Error verifying project access: ${error}`);
-    return false;
-  }
-}
-
-/**
- * Verify user may change project-level fields (status, health, category, dates).
- * Mirrors the REST `requireProjectPermission("settings")` rule, so Members and
- * Guests with report access stay read-only unless they manage the project.
- */
-export async function verifyProjectSettingsAccessSocket(
-  socket: Socket,
-  projectId: string
-): Promise<boolean> {
-  if (!projectId) return false;
-
-  try {
-    const { session } = socket.request as ISocketSession;
-    const sessionUser = session?.passport?.user as IPassportSession | undefined;
-    const access = await getProjectAccess(sessionUser, projectId);
-    return access.permissions.settings;
-  } catch (error) {
-    log_error(`Error verifying project settings access: ${error}`);
     return false;
   }
 }

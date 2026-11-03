@@ -22,8 +22,6 @@ import PlannerTimelineView from '@/features/schedule/PlannerTimelineView';
 import PlannerWorkloadView from '@/features/schedule/PlannerWorkloadView';
 import { ControlOutlined, CalendarOutlined, InboxOutlined, FileOutlined } from '@ant-design/icons';
 import GuestRedirect from '@/guards/GuestRedirect';
-import { OrganizationPermissionGuard } from '@/guards/OrganizationPermissionGuard';
-import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 import { isSessionGuest } from '@/utils/guest-session';
 
 // Lazy load page components for better code splitting with chunk error handling
@@ -523,9 +521,9 @@ const mainRoutes: RouteObject[] = [
         path: 'planner',
         element: (
           <Suspense fallback={<SuspenseFallback />}>
-            <OrganizationPermissionGuard permission={ORGANIZATION_PERMISSIONS.VIEW_PLANNER}>
+            <AdminGuard>
               <PlannerLayout />
-            </OrganizationPermissionGuard>
+            </AdminGuard>
           </Suspense>
         ),
         children: [
@@ -590,9 +588,9 @@ const mainRoutes: RouteObject[] = [
       {
         path: 'finance',
         element: (
-          <OrganizationPermissionGuard permission={ORGANIZATION_PERMISSIONS.VIEW_FINANCE}>
+          <AdminGuard>
             <FinanceRailLayout />
-          </OrganizationPermissionGuard>
+          </AdminGuard>
         ),
         children: [
           { index: true, element: <NavSurfaceIndexRedirect surfaceKey="finance" /> },
