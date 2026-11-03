@@ -217,8 +217,19 @@ const ProjectView = React.memo(() => {
     const handlePermissionChanged = (payload?: {
       project_id?: string;
       reason?: string;
+      affected_user_ids?: string[];
     }) => {
       if (payload?.project_id && payload.project_id !== projectId) return;
+
+      const affectedIds = payload?.affected_user_ids;
+      const currentUserId = currentSession?.id;
+      // When the server names affected users, only toast/reload for those users.
+      // Missing/empty lists keep the previous behavior (treat as affecting the listener).
+      const isCurrentUserAffected =
+        !affectedIds?.length ||
+        (!!currentUserId && affectedIds.includes(currentUserId));
+
+      if (!isCurrentUserAffected) return;
 
       dispatch(clearProjectAccessForId(projectId));
       void dispatch(getProject(projectId));
@@ -245,7 +256,7 @@ const ProjectView = React.memo(() => {
     return () => {
       Object.entries(handlers).forEach(([event, handler]) => socket.off(event, handler));
     };
-  }, [socket, projectId, t, dispatch]);
+  }, [socket, projectId, t, dispatch, currentSession?.id]);
 
   // Update local state when URL params change
   useEffect(() => {
