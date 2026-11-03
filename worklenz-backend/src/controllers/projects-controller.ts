@@ -13,6 +13,7 @@ import { NotificationsService } from "../services/notifications/notifications.se
 import { IPassportSession } from "../interfaces/passport-session";
 import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
+import { notifyProjectDateChanges } from "../shared/project-date-notifications";
 import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-utils";
 import { ActivityLoggingService } from "../services/activity-logging.service";
 import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
@@ -1122,6 +1123,21 @@ export default class ProjectsController extends WorklenzControllerBase {
     const [data] = result.rows;
 
     if (data.project?.id) {
+      const datesResult = await db.query(
+        `SELECT to_char(p.start_date AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS start_date,
+                to_char(p.end_date AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS end_date,
+                t.user_id AS owner_id
+         FROM projects p JOIN teams t ON t.id = p.team_id WHERE p.id = $1`,
+        [req.params.id]
+      );
+      const dates = datesResult.rows[0];
+      if (dates) {
+        const previousDates = settingsBefore ? {
+          start_date: typeof settingsBefore.start_date === "string" ? settingsBefore.start_date.slice(0, 10) : null,
+          end_date: typeof settingsBefore.end_date === "string" ? settingsBefore.end_date.slice(0, 10) : null,
+        } : null;
+        notifyProjectDateChanges(req.params.id, dates.owner_id, previousDates, dates);
+      }
       if (Object.prototype.hasOwnProperty.call(req.body, 'phase_assignees_enabled')) {
         await db.query(
           `
