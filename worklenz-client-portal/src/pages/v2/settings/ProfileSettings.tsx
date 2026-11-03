@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Card, Col, Form, Input, Row, Skeleton, Typography, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useMessage } from '@/hooks/useMessage';
@@ -46,19 +46,21 @@ const ProfileSettings: React.FC = () => {
   const { token } = theme.useToken();
   const [updateMe, { isLoading: saving }] = useUpdateMeMutation();
   const [form] = Form.useForm<ProfileValues>();
+  const [originalValues, setOriginalValues] = useState<ProfileValues>(() =>
+    normalizeProfileValues({ name: me?.name, job_title: me?.jobTitle })
+  );
   const currentName = Form.useWatch('name', form);
   const currentJobTitle = Form.useWatch('job_title', form);
 
   useEffect(() => {
-    if (me) form.setFieldsValue({ name: me.name, job_title: me.jobTitle });
+    if (me) {
+      const values = normalizeProfileValues({ name: me.name, job_title: me.jobTitle });
+      form.setFieldsValue(values);
+      setOriginalValues(values);
+    }
   }, [me, form]);
 
   if (isLoading || !me) return <Card><Skeleton active /></Card>;
-
-  const originalValues = normalizeProfileValues({
-    name: me.name,
-    job_title: me.jobTitle,
-  });
 
   const currentValues = normalizeProfileValues({
     name: currentName,
@@ -80,10 +82,14 @@ const ProfileSettings: React.FC = () => {
     }
 
     try {
-      await updateMe({
+      const savedProfile = await updateMe({
         name: updatedValues.name,
         job_title: updatedValues.job_title,
       }).unwrap();
+      setOriginalValues(normalizeProfileValues({
+        name: savedProfile.name,
+        job_title: savedProfile.jobTitle,
+      }));
 
       void message.success(
         t('settings.profile.saved', { defaultValue: 'Profile saved.' })
