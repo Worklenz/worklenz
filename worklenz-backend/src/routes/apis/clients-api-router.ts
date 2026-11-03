@@ -27,8 +27,16 @@ const clientsApiRouter = express.Router();
 
 // Client Portal management: reads need "View clients", writes need "Manage clients".
 // Chats are excluded because Home > Inbox lets every member message clients.
+// GET .../projects/:projectId/access is excluded so project Members > Client's team can
+// authorize via canViewClientTeamValidator (members often lack "View clients").
 clientsApiRouter.use("/portal", (req, res, next) => {
   if (req.path.startsWith("/chats")) return next();
+  if (
+    req.method === "GET" &&
+    /^\/v2\/projects\/[^/]+\/access\/?$/.test(req.path)
+  ) {
+    return next();
+  }
   return clientsReadOnlyValidator(req, res, next);
 });
 
@@ -63,8 +71,10 @@ clientsApiRouter.delete("/:id", manageClientsValidator, idParamValidator, safeCo
 clientsApiRouter.use("/portal", requireFeature("client_portal"));
 clientsApiRouter.use("/:clientId/invoices", requireFeature("client_portal_invoices"));
 
-// Read-only Client's team list for the project Members tab. Registered before the portal
-// role checks so eligible project members can load assigned client users when allowed.
+// Read-only Client's team list for the project Members tab. The /portal "View clients"
+// gate skips this GET (see above); canViewClientTeamValidator enforces project membership
+// plus members_can_view_client_team (or Owner/Admin/Team Lead/PM). Registered before the
+// v2 admin router so this handler wins over the Owner/Admin-oriented duplicate.
 clientsApiRouter.get(
   "/portal/v2/projects/:projectId/access",
   canViewClientTeamValidator,
