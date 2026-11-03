@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Table, Tag, Typography } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
+import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
 import { TisMiniBar } from './TisMiniBar';
 import type { TimeInStatusIssueRow } from '@/types/reporting/analytics-time-in-status.types';
 
@@ -25,13 +26,14 @@ export const TisPerIssueTable: React.FC<TisPerIssueTableProps> = ({ issues }) =>
     [issues]
   );
 
+  // The report sort control orders the full result before server pagination.
+  // Preserve that order instead of independently sorting the returned window.
   const columns: ColumnsType<(typeof data)[number]> = [
     {
       title: t('tisColTaskKey', { defaultValue: 'Key' }),
       dataIndex: 'task_key',
       key: 'task_key',
       width: 120,
-      sorter: (a, b) => a.task_key.localeCompare(b.task_key),
       render: (key: string, row) => (
         <Text strong={row.is_outlier} style={{ color: row.is_outlier ? '#ff4d4f' : undefined }}>
           {key}
@@ -43,7 +45,6 @@ export const TisPerIssueTable: React.FC<TisPerIssueTableProps> = ({ issues }) =>
       dataIndex: 'task_name',
       key: 'task_name',
       ellipsis: true,
-      sorter: (a, b) => a.task_name.localeCompare(b.task_name),
     },
     {
       title: t('tisColType', { defaultValue: 'Type' }),
@@ -65,8 +66,6 @@ export const TisPerIssueTable: React.FC<TisPerIssueTableProps> = ({ issues }) =>
       key: 'total_days',
       align: 'right',
       width: 110,
-      sorter: (a, b) => a.total_days - b.total_days,
-      defaultSortOrder: 'descend',
       render: (days: number, row) => (
         <Text style={{ color: row.is_outlier ? '#ff4d4f' : undefined }}>{days}</Text>
       ),
@@ -105,7 +104,7 @@ export const TisPerIssueTable: React.FC<TisPerIssueTableProps> = ({ issues }) =>
   return (
     <Table
       size="small"
-      pagination={{ pageSize: 25, showSizeChanger: true }}
+      pagination={getClientTablePagination(25)}
       columns={columns}
       dataSource={data}
       scroll={{ x: 900 }}

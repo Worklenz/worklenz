@@ -41,7 +41,8 @@ export interface PlannedVsActualMilestonesResult {
   last_updated_at: string;
 }
 
-const MAX_PROJECTS = 50;
+/** Safety cap only — high enough for org portfolios / Select All (table/chart still page/limit rows). */
+const MAX_PROJECTS = 500;
 const MAX_MILESTONES = 200;
 
 function parseCsvIds(value: unknown): string[] {

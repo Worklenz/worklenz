@@ -1,6 +1,7 @@
 /**
  * Reporting & Analytics permission matrix (backend).
- * Manager maps to Team Lead. Guests have no analytics access.
+ * Manager maps to Team Lead. Analytics is Owner/Admin only
+ * (Members, Guests, and Team Leads are denied).
  */
 
 import { IPassportSession } from "../interfaces/passport-session";
@@ -125,8 +126,8 @@ export function getAnalyticsDashboardPermissions(
   };
 }
 
-export function canViewAnalyticsReports(user?: IPassportSession): boolean {
-  return resolveAnalyticsActorRole(user) !== "guest";
+export async function canViewAnalyticsReports(user?: IPassportSession): Promise<boolean> {
+  return isWorkspaceAdmin(resolveAnalyticsActorRole(user));
 }
 
 export function canConfigureSlaPolicies(user?: IPassportSession): boolean {

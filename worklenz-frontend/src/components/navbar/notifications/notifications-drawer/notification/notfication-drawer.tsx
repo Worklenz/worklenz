@@ -36,6 +36,7 @@ import { profileSettingsApiService } from '@/api/settings/profile/profile-settin
 import { INotificationSettings } from '@/types/settings/notifications.types';
 import { toQueryString } from '@/utils/toQueryString';
 import { showNotification } from './push-notification-template';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { teamsApiService } from '@/api/teams/teams.api.service';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 import { getUserSession } from '@/utils/session-helper';
@@ -123,7 +124,7 @@ const NotificationDrawer = () => {
     dispatch(fetchUnreadCount()); // Fetch updated unread count
 
     if (isPushEnabled()) {
-      const title = notification.team ? `${notification.team} | Worklenz` : 'Worklenz';
+      const title = notification.team ? `${decodeHtmlEntities(notification.team)} | Worklenz` : 'Worklenz';
       let url = notification.url;
       if (url && notification.params && Object.keys(notification.params).length) {
         const q = toQueryString(notification.params);

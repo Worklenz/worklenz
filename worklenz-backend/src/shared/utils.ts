@@ -9,6 +9,8 @@ import { send_to_slack } from "../shared/slack";
 import { IActivityLogChangeType } from "../services/activity-logs/interfaces";
 import { IRecurringSchedule } from "../interfaces/recurring-tasks";
 
+export { decodeHtmlEntities, escapeHtmlEntities, getHtmlTextSearchVariants } from "./html-entity-utils";
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const error_codes = require("./postgresql-error-codes");
 
@@ -235,42 +237,18 @@ export function htmlToPlainText(value: string | null, preserveWhitespace = false
 }
 
 /**
- * Escapes HTML special characters using the exact entity mapping applied by
- * sanitizePlainText() (i.e. sanitize-html's text-node escaping: &, <, > only —
- * it does not escape quotes/apostrophes in plain text). Kept separate so any
- * code that needs to match against already-sanitized text (e.g. building a
- * search pattern) encodes characters identically to how they were encoded at
- * save time.
- *
- * @param value - Raw text to escape
- * @returns Text with HTML special characters replaced by their entities
- */
-export function escapeHtmlEntities(value: string): string {
-  if (!value) return "";
-
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-/**
- * Sanitizes plain text fields (like user names) to prevent XSS attacks
- * Strips all HTML tags while preserving the text content, then escapes special characters
- * Use this for fields that should never contain HTML markup
+ * Sanitizes plain text fields (like user/project/task names) to prevent XSS attacks.
+ * Strips all HTML tags and preserves sanitize-html's escaping of text content.
  *
  * @param value - The plain text to sanitize
- * @returns Sanitized plain text with HTML removed and entities escaped
+ * @returns Sanitized plain text with HTML removed and HTML-sensitive characters escaped
  */
 export function sanitizePlainText(value: string): string {
   if (!value) return "";
 
-  // sanitize-html strips all tags and already HTML-escapes the remaining
-  // text when serializing it, so no separate escaping pass is needed here
-  // (calling escapeHtmlEntities afterwards would double-encode entities).
   return sanitizeHtml(value, {
-    allowedTags: [],        // No HTML tags allowed
-    allowedAttributes: {},  // No attributes allowed
+    allowedTags: [],
+    allowedAttributes: {},
   }).trim();
 }
 
@@ -547,4 +525,3 @@ export function calculateNextEndDates(schedule: IRecurringSchedule, lastEndDate:
 export function megabytesToBytes(megabytes: number): number {
   return megabytes * 1024 * 1024; // 1 MB = 1024 KB = 1024 * 1024 bytes
 }
-

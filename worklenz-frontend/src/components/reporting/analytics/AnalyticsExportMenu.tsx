@@ -6,11 +6,19 @@ import { FILTER_PILL_BUTTON_STYLE } from '@/components/common/filters/MultiSelec
 
 export type AnalyticsExportFormat = 'csv' | 'pdf' | 'png' | 'svg' | 'excel';
 
+/** Formats most analytics reports support (Excel is Velocity-only). */
+export const DEFAULT_ANALYTICS_EXPORT_FORMATS: AnalyticsExportFormat[] = [
+  'csv',
+  'pdf',
+  'png',
+  'svg',
+];
+
 interface AnalyticsExportMenuProps {
   onExport: (format: AnalyticsExportFormat) => void;
   disabled?: boolean;
   loading?: boolean;
-  /** When set, only these formats are shown (defaults to all). */
+  /** When set, only these formats are shown (defaults to CSV/PDF/PNG/SVG). */
   formats?: AnalyticsExportFormat[];
 }
 
@@ -18,7 +26,7 @@ export const AnalyticsExportMenu: React.FC<AnalyticsExportMenuProps> = ({
   onExport,
   disabled,
   loading,
-  formats,
+  formats = DEFAULT_ANALYTICS_EXPORT_FORMATS,
 }) => {
   const { t } = useTranslation('reporting-analytics');
 
@@ -30,16 +38,18 @@ export const AnalyticsExportMenu: React.FC<AnalyticsExportMenuProps> = ({
     { key: 'svg', label: t('exportSvg', { defaultValue: 'SVG' }) },
   ];
 
-  const items = formats
-    ? allItems.filter(item => formats.includes(item.key))
-    : allItems;
+  const items = allItems.filter(item => formats.includes(item.key));
 
   return (
     <Dropdown
-      disabled={disabled}
+      disabled={disabled || loading}
       menu={{
         items,
-        onClick: ({ key }) => onExport(key as AnalyticsExportFormat),
+        onClick: ({ key }) => {
+          // Defer so the dropdown can close before the async export starts;
+          // keeps the click gesture available for the file download.
+          window.setTimeout(() => onExport(key as AnalyticsExportFormat), 0);
+        },
       }}
       trigger={['click']}
     >

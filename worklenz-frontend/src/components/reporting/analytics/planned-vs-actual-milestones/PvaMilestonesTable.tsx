@@ -3,6 +3,7 @@ import { Table, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
+import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
 import type { PlannedVsActualMilestonesRow } from '@/types/reporting/analytics-planned-vs-actual-milestones.types';
 
 const { Text } = Typography;
@@ -123,7 +124,7 @@ export const PvaMilestonesTable: React.FC<PvaMilestonesTableProps> = ({
       columns={borderedColumns}
       dataSource={milestones}
       loading={loading}
-      pagination={milestones.length > 0 ? { pageSize: 20, showSizeChanger: true } : false}
+      pagination={milestones.length > 0 ? getClientTablePagination(20) : false}
       scroll={{ x: 720 }}
       size="middle"
       locale={{ emptyText }}

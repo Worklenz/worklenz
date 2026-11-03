@@ -62,5 +62,6 @@
   "linkDescription": "Opis",
   "linkDescriptionPlaceholder": "Opcjonalny opis",
   "save": "Zapisz",
+  "rowsPerPage": "Wiersze na stronę:",
   "noTaskName": "--"
 }

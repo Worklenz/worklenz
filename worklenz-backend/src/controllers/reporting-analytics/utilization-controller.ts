@@ -31,11 +31,11 @@ export default class UtilizationController extends WorklenzControllerBase {
     }
 
     const accessible = accessibleProjectIds(req);
-    const filters = parseUtilizationFilters(
-      req.query as Record<string, unknown>,
-      accessible,
-      teamId
-    );
+    const input = {
+      ...(req.query as Record<string, unknown>),
+      ...((req.body as Record<string, unknown> | undefined) ?? {}),
+    };
+    const filters = parseUtilizationFilters(input, accessible, teamId);
 
     const data = await getUtilizationSeries(filters);
     return res.status(200).send(new ServerResponse(true, data));

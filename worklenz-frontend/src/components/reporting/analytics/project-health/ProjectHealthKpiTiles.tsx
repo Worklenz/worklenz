@@ -4,17 +4,12 @@ import { theme } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import type { ProjectHealthKpis } from '@/types/reporting/analytics-project-health.types';
 import { MetricCalcHint } from '../MetricCalcHint';
+import { PROJECT_HEALTH_TONE_COLORS } from './project-health-colors';
 import './project-health-kpi-tiles.css';
 
 interface ProjectHealthKpiTilesProps {
   kpis: ProjectHealthKpis;
 }
-
-const TONES = {
-  ok: '#52c41a',
-  warn: '#faad14',
-  bad: '#ff4d4f',
-} as const;
 
 export const ProjectHealthKpiTiles: React.FC<ProjectHealthKpiTilesProps> = ({ kpis }) => {
   const { t } = useTranslation('reporting-analytics');
@@ -30,7 +25,7 @@ export const ProjectHealthKpiTiles: React.FC<ProjectHealthKpiTilesProps> = ({ kp
       label: t('statOnTrack', { defaultValue: 'On track' }),
       value: String(kpis.on_track),
       sub: t('statProjects', { defaultValue: 'projects' }),
-      tone: TONES.ok,
+      tone: PROJECT_HEALTH_TONE_COLORS.on_track,
       tooltip: t('phCalcOnTrack', {
         defaultValue:
           'Count of selected projects whose health is set to Good in project settings.',
@@ -41,7 +36,7 @@ export const ProjectHealthKpiTiles: React.FC<ProjectHealthKpiTilesProps> = ({ kp
       label: t('statAtRisk', { defaultValue: 'At risk' }),
       value: String(kpis.at_risk),
       sub: t('statProjects', { defaultValue: 'projects' }),
-      tone: TONES.warn,
+      tone: PROJECT_HEALTH_TONE_COLORS.at_risk,
       tooltip: t('phCalcAtRisk', {
         defaultValue:
           'Count of selected projects whose health is set to At Risk in project settings.',
@@ -52,7 +47,7 @@ export const ProjectHealthKpiTiles: React.FC<ProjectHealthKpiTilesProps> = ({ kp
       label: t('statOffTrack', { defaultValue: 'Off track' }),
       value: String(kpis.off_track),
       sub: t('statProjects', { defaultValue: 'projects' }),
-      tone: TONES.bad,
+      tone: PROJECT_HEALTH_TONE_COLORS.off_track,
       tooltip: t('phCalcOffTrack', {
         defaultValue:
           'Count of selected projects whose health is set to Needs Attention in project settings.',
@@ -63,7 +58,7 @@ export const ProjectHealthKpiTiles: React.FC<ProjectHealthKpiTilesProps> = ({ kp
       label: t('statOverdueTasks', { defaultValue: 'Overdue tasks' }),
       value: String(kpis.overdue_tasks),
       sub: t('statAcrossSelection', { defaultValue: 'across selection' }),
-      tone: TONES.bad,
+      tone: PROJECT_HEALTH_TONE_COLORS.off_track,
       tooltip: t('phCalcOverdueTasks', {
         defaultValue:
           'Sum of incomplete, non-archived tasks past their due date across all selected projects.',

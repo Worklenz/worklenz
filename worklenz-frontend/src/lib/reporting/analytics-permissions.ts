@@ -2,7 +2,7 @@
  * Reporting & Analytics permission matrix.
  *
  * Manager maps to Worklenz Team Lead.
- * Guests have no analytics access (redirected at the route layer).
+ * Owner/Admin only for reports. Guests are also redirected at the route layer.
  */
 
 export type AnalyticsActorRole = 'owner' | 'admin' | 'manager' | 'member' | 'guest';
@@ -39,14 +39,15 @@ const isWorkspaceAdmin = (role: AnalyticsActorRole) => role === 'owner' || role 
 export const getAnalyticsReportPermissions = (
   actor: AnalyticsActor
 ): AnalyticsReportPermissions => {
-  if (actor.role === 'guest') {
+  // Owner/Admin only — Members, Guests, and Team Leads (managers) are denied.
+  if (!isWorkspaceAdmin(actor.role)) {
     return { canViewReports: false, canExportReports: false, canConfigureSla: false };
   }
 
   return {
     canViewReports: true,
     canExportReports: true,
-    canConfigureSla: isWorkspaceAdmin(actor.role),
+    canConfigureSla: true,
   };
 };
 

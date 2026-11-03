@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { Badge, Flex, Typography, theme } from '@/shared/antd-imports';
 import { MetricCalcHint } from '../MetricCalcHint';
 import { InChartEmptyState } from '../states/ReportStateViews';
+import { PROJECT_HEALTH_TONE_COLORS } from './project-health-colors';
 import type {
   ProjectHealthKpis,
-  ProjectHealthRow,
   ProjectHealthTone,
 } from '@/types/reporting/analytics-project-health.types';
 
@@ -16,7 +16,6 @@ ChartJS.register(ArcElement, Legend, Tooltip);
 const { Text } = Typography;
 
 interface ProjectHealthDonutChartProps {
-  projects: ProjectHealthRow[];
   kpis: ProjectHealthKpis;
 }
 
@@ -27,14 +26,6 @@ interface HealthSlice {
   color: string;
   count: number;
 }
-
-/** Opaque fills — alpha washes out pale health colors (esp. Not set) in light mode. */
-const DEFAULT_COLORS: Record<ProjectHealthTone, string> = {
-  on_track: '#52c41a',
-  at_risk: '#faad14',
-  off_track: '#ff4d4f',
-  not_set: '#8c8c8c',
-};
 
 const TONE_META: Record<
   ProjectHealthTone,
@@ -48,33 +39,13 @@ const TONE_META: Record<
 
 const TONE_ORDER: ProjectHealthTone[] = ['on_track', 'at_risk', 'off_track', 'not_set'];
 
-const resolveColor = (row: ProjectHealthRow): string => {
-  // Prefer tone defaults so pale DB colors (e.g. Not Set #a9a9a9) stay readable.
-  if (row.health_tone === 'not_set') {
-    return DEFAULT_COLORS.not_set;
-  }
-  const raw = (row.health_color || '').trim();
-  if (raw) {
-    return raw.startsWith('#') ? raw : `#${raw}`;
-  }
-  return DEFAULT_COLORS[row.health_tone];
-};
-
 export const ProjectHealthDonutChart: React.FC<ProjectHealthDonutChartProps> = ({
-  projects,
   kpis,
 }) => {
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
 
   const slices = useMemo((): HealthSlice[] => {
-    const colorByTone = new Map<ProjectHealthTone, string>();
-    for (const project of projects) {
-      if (!colorByTone.has(project.health_tone)) {
-        colorByTone.set(project.health_tone, resolveColor(project));
-      }
-    }
-
     const counts: Record<ProjectHealthTone, number> = {
       on_track: kpis.on_track,
       at_risk: kpis.at_risk,
@@ -85,10 +56,10 @@ export const ProjectHealthDonutChart: React.FC<ProjectHealthDonutChartProps> = (
     return TONE_ORDER.map(tone => ({
       tone,
       ...TONE_META[tone],
-      color: colorByTone.get(tone) || DEFAULT_COLORS[tone],
+      color: PROJECT_HEALTH_TONE_COLORS[tone],
       count: counts[tone],
     }));
-  }, [projects, kpis]);
+  }, [kpis]);
 
   const total = slices.reduce((sum, slice) => sum + slice.count, 0);
   const visibleSlices = slices.filter(slice => slice.count > 0);

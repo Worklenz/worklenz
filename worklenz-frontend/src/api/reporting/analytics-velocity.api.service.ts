@@ -10,11 +10,11 @@ import type {
 
 const rootUrl = `${API_BASE_URL}/reporting/analytics`;
 
-const filtersToQuery = (filters: VelocitySeriesFilters): Record<string, unknown> => ({
+const filtersToBody = (filters: VelocitySeriesFilters): Record<string, unknown> => ({
   view_by: filters.view_by,
-  project_ids: filters.project_ids?.join(','),
-  member_ids: filters.member_ids?.join(','),
-  team_ids: filters.team_ids?.join(','),
+  project_ids: filters.project_ids,
+  member_ids: filters.member_ids,
+  team_ids: filters.team_ids,
   sprint_count: filters.sprint_count,
   date_from: filters.date_from || undefined,
   date_to: filters.date_to || undefined,
@@ -27,9 +27,9 @@ export const analyticsVelocityApiService = {
   getSeries: async (
     filters: VelocitySeriesFilters
   ): Promise<IServerResponse<VelocitySeriesResponse>> => {
-    const q = toQueryString(filtersToQuery(filters));
-    const response = await apiClient.get<IServerResponse<VelocitySeriesResponse>>(
-      `${rootUrl}/velocity/series${q}`
+    const response = await apiClient.post<IServerResponse<VelocitySeriesResponse>>(
+      `${rootUrl}/velocity/series`,
+      filtersToBody(filters)
     );
     return response.data;
   },
@@ -41,10 +41,7 @@ export const analyticsVelocityApiService = {
     const response = await apiClient.post(
       `${rootUrl}/velocity/export/excel`,
       {
-        ...filtersToQuery(filters),
-        project_ids: filters.project_ids,
-        member_ids: filters.member_ids,
-        team_ids: filters.team_ids,
+        ...filtersToBody(filters),
         chart_image: chartImage || undefined,
       },
       { responseType: 'blob' }

@@ -80,7 +80,7 @@ const HolidayDebugInfo: React.FC<HolidayDebugInfoProps> = ({ show = false }) => 
             <div style={{ marginLeft: 8, maxHeight: 100, overflow: 'auto' }}>
               {holidays.slice(0, 5).map((holiday, index) => (
                 <div key={`${holiday.id}-${index}`} style={{ fontSize: '11px' }}>
-                  <Tag size="small" color={holiday.source === 'official' ? 'blue' : 'orange'}>
+                  <Tag color={holiday.source === 'official' ? 'blue' : 'orange'}>
                     {holiday.source}
                   </Tag>
                   {dayjs(holiday.date).format('MMM DD')}: {holiday.name}

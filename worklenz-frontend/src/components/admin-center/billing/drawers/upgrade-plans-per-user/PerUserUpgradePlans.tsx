@@ -118,7 +118,16 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
   const currentSession = authService.getCurrentSession();
   const billingInfo = useAppSelector(state => state.adminCenterReducer.billingInfo);
 
-  const groups = useMemo(() => groupPlans(data.plans), [data.plans]);
+  const groups = useMemo(() => {
+    const availableGroups = groupPlans(data.plans);
+
+    // AppSumo code holders can purchase additional seats through Expansion only.
+    // Keep this restriction here even though the API also gates the Expansion plan,
+    // since the regular Pro and Business plans are returned for other customers.
+    return data.has_ltd_codes
+      ? availableGroups.filter(group => group.key === 'business_appsumo_expansion')
+      : availableGroups;
+  }, [data.has_ltd_codes, data.plans]);
   const activeUsers = Math.max(1, billingInfo?.total_used ?? 1);
 
   const maxAnnualSavings = Math.max(0, ...groups.map(group => annualSavingsPercent(group) ?? 0));

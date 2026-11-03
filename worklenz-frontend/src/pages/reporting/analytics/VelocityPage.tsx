@@ -26,6 +26,7 @@ import {
   syncVelocityTemplatesToCustomReports,
 } from '@/features/reporting/analytics-custom-reports';
 import { getUserSession } from '@/utils/session-helper';
+import { mapOverviewProjectsToVelocityOptions } from '@/lib/reporting/velocity-project-options';
 import {
   AnalyticsFilterBar,
   AnalyticsTemplateActions,
@@ -46,6 +47,7 @@ import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
+import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   AnalyticsReportTemplate,
   VelocitySeriesFilters,
@@ -57,19 +59,6 @@ const DEFAULT_VIEW_BY = 'project' as const;
 const DEFAULT_METRIC = 'story_points' as const;
 const DEFAULT_SPRINT_COUNT = 6;
 const DEFAULT_AVG_WINDOW = 3;
-
-const downloadBlob = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-};
-
-const downloadText = (content: string, filename: string, mime: string) => {
-  downloadBlob(new Blob([content], { type: mime }), filename);
-};
 
 export interface VelocityPageProps {
   /** Open as a Custom template under /custom/:id (do not redirect to /velocity). */
@@ -218,18 +207,22 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
-      const projects: FilterOption[] = [];
+      const overviewProjects: Array<{ id: string; name: string; project_type?: string }> =
+        [];
       const seen = new Set<string>();
       projectResponses.forEach(res => {
         if (res.done && Array.isArray(res.body)) {
-          (res.body as Array<{ id: string; name: string }>).forEach(project => {
-            if (!seen.has(project.id)) {
-              seen.add(project.id);
-              projects.push({ value: project.id, label: project.name });
-            }
+          (
+            res.body as Array<{ id: string; name: string; project_type?: string }>
+          ).forEach(project => {
+            if (seen.has(project.id)) return;
+            seen.add(project.id);
+            overviewProjects.push(project);
           });
         }
       });
+      // Keep general + software projects — phase velocity needs general projects.
+      const projects = mapOverviewProjectsToVelocityOptions(overviewProjects);
       setProjectOptions(projects);
       // Keep prior picks that are still valid; never auto-select projects.
       setSelectedProjectIds(prev => {

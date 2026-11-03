@@ -125,4 +125,26 @@ describe('projectTemplatesApiService.createCustomTemplate', () => {
     expect(mockAlertService.success).not.toHaveBeenCalled();
     expect(mockAlertService.error).not.toHaveBeenCalled();
   });
+
+  it.each(['duplicate', 'update', 'copy', 'delete'] as const)(
+    'leaves %s success and failure notifications to the calling screen',
+    async operation => {
+      const { apiClient, projectTemplatesApiService: service } = await loadService();
+      for (const done of [true, false]) {
+        const body = { done, body: null, title: 'Result', message: 'Template result' };
+        const adapter = vi.fn<AxiosAdapter>().mockImplementation(config => ok(config, body));
+        apiClient.defaults.adapter = adapter;
+        const result = await (
+          operation === 'duplicate' ? service.duplicateCustomTemplate('template-1') :
+          operation === 'update' ? service.updateCustomTemplateDefinition('template-1', { name: 'Updated' }) :
+          operation === 'copy' ? service.createCustomFromWorklenzTemplate({ worklenz_template_id: 'source-1' }) :
+          service.deleteCustomTemplate('template-1')
+        );
+        expect(result).toEqual(body);
+        expect(adapter.mock.calls[0][0].headers['X-Silent-Request']).toBe('1');
+        expect(mockAlertService.success).not.toHaveBeenCalled();
+        expect(mockAlertService.error).not.toHaveBeenCalled();
+      }
+    }
+  );
 });

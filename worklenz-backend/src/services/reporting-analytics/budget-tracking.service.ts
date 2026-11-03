@@ -50,7 +50,8 @@ export interface BudgetTrackingResult {
   last_updated_at: string;
 }
 
-const MAX_PROJECTS = 50;
+/** Safety cap only — high enough for org portfolios / Select All. */
+const MAX_PROJECTS = 500;
 
 function parseCsvIds(value: unknown): string[] {
   if (Array.isArray(value)) {

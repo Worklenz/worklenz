@@ -723,7 +723,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
                     <Typography.Text delete style={{ fontSize: '16px', color: '#8c8c8c' }}>
                       ${(totalCost + discountApplied.amount).toFixed(2)}
                     </Typography.Text>
-                    <Tag color="red" size="small" style={{ marginLeft: 4 }}>
+                    <Tag color="red" style={{ marginLeft: 4 }}>
                       -{discountApplied.percentage}%
                     </Tag>
                   </div>
@@ -754,7 +754,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
                 )}
 
                 {annualSavings && annualSavings > 0 && (
-                  <Tag color="green" size="small" style={{ marginTop: 4 }}>
+                  <Tag color="green" style={{ marginTop: 4 }}>
                     {t('pricing.savePerYear', { amount: annualSavings.toFixed(2) })}
                   </Tag>
                 )}
@@ -999,7 +999,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
                         label: (
                           <Space>
                             <span>{t('billingCycle.yearly')}</span>
-                            <Tag color="green" size="small">
+                            <Tag color="green">
                               {t('billingCycle.savePercent')}
                             </Tag>
                           </Space>
@@ -1037,7 +1037,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
                             <DollarOutlined />
                             <span>{t('pricingModel.basePlan')}</span>
                             {pricingModel !== 'BASE_PLAN' && (
-                              <Tag color="blue" size="small">
+                              <Tag color="blue">
                                 {t('pricingModel.default')}
                               </Tag>
                             )}

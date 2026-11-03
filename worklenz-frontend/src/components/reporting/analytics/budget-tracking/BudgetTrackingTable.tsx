@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Flex, Table, Tag, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
+import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
 import type {
   BudgetAlert,
   BudgetTrackingRow,
@@ -181,7 +182,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
       columns={borderedColumns}
       dataSource={projects}
       loading={loading}
-      pagination={{ pageSize: 20, showSizeChanger: true }}
+      pagination={getClientTablePagination(20)}
       scroll={{ x: 960 }}
       size="middle"
     />

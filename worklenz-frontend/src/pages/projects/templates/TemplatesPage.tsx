@@ -643,12 +643,14 @@ const TemplatesPage: React.FC = () => {
     try {
       const res = await projectTemplatesApiService.deleteCustomTemplate(id);
       if (res.done) {
-        message.success(t('deleteProjectTemplateSuccess'));
+        message.success(t('deleteProjectTemplateSuccess', { defaultValue: 'Project template deleted successfully.' }));
         fetchProjectTemplates();
+      } else {
+        message.error(res.message || t('deleteProjectTemplateError', { defaultValue: 'Failed to delete project template.' }));
       }
     } catch (error) {
       logger.error('Failed to delete project template:', error);
-      message.error(t('deleteProjectTemplateError'));
+      message.error(t('deleteProjectTemplateError', { defaultValue: 'Failed to delete project template.' }));
     }
   };
 

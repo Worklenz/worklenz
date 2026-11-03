@@ -2,21 +2,9 @@
 // tasks" paginated list — kept out of home-page-controller.ts (which imports
 // `db` and therefore `pg` at module scope) so these can be unit tested
 // without pulling in a live Postgres client. For the same reason this
-// doesn't import shared/utils.ts's escapeHtmlEntities — that module also
-// pulls in shared/slack.ts's HTTP client, which trips this repo's
-// automock:true Jest config the same way `db` does.
+// imports only pure helpers from shared code, avoiding module-scope side effects.
 import { isValidUuid } from "./validation-helpers";
-
-// Same entity mapping as shared/utils.ts's escapeHtmlEntities, duplicated
-// here (see import comment above) — names are stored HTML-escaped via
-// sanitizePlainText, so the search term needs the same escaping to match.
-function escapeHtmlEntities(value: string): string {
-  if (!value) return "";
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
+import { escapeHtmlEntities, getHtmlTextSearchVariants } from "./html-entity-utils";
 
 export const TASK_SORT_FIELDS: Record<string, string> = {
   name: "t.name",
@@ -48,6 +36,10 @@ export function toUuidArray(v: unknown): string[] {
 // wildcard.
 export function escapeLikePattern(value: string): string {
   return escapeHtmlEntities(value).replace(/[\\%_]/g, ch => `\\${ch}`);
+}
+
+export function escapeLikePatterns(value: string): string[] {
+  return getHtmlTextSearchVariants(value).map(pattern => pattern.replace(/[\\%_]/g, ch => `\\${ch}`));
 }
 
 export interface TaskFilterQuery {
@@ -104,9 +96,11 @@ export function buildTaskFilterClauses(
 
   const search = ((query.search as string) || "").trim();
   if (search) {
-    values.push(`%${escapeLikePattern(search)}%`);
-    const idx = nextParam();
-    clauses.push(`(t.name ILIKE $${idx} ESCAPE '\\' OR (p.key || '-' || t.task_no::TEXT) ILIKE $${idx} ESCAPE '\\')`);
+    const patterns = escapeLikePatterns(search).map(pattern => `%${pattern}%`);
+    values.push(...patterns);
+    const firstIdx = nextParam() - patterns.length + 1;
+    const taskNameMatches = patterns.map((_, index) => `t.name ILIKE $${firstIdx + index} ESCAPE '\\'`);
+    clauses.push(`(${taskNameMatches.join(" OR ")} OR (p.key || '-' || t.task_no::TEXT) ILIKE $${firstIdx} ESCAPE '\\')`);
   }
 
   if (query.overdue_only === "true") {
