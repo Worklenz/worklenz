@@ -52,25 +52,14 @@ import type {
   TimeInStatusSort,
   TimeInStatusViewMode,
 } from '@/types/reporting/analytics-time-in-status.types';
+import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
+import { getTimeInStatusSortOptions } from '@/lib/reporting/time-in-status-sort-options';
 import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-velocity.types';
 import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 const { Text } = Typography;
 
 const DEFAULT_DATE_MODE = 'overlapping' as const;
-
-const downloadBlob = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-};
-
-const downloadText = (content: string, filename: string, mime: string) => {
-  downloadBlob(new Blob([content], { type: mime }), filename);
-};
 
 export interface TimeInStatusPageProps {
   customTemplateId?: string;
@@ -412,33 +401,17 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
     }
   };
 
-  const sortOptions =
-    reportView === 'aggregate'
-      ? [
-          { value: 'avg_desc', label: t('tisSortAvgDesc', { defaultValue: 'Avg (high ? low)' }) },
-          { value: 'avg_asc', label: t('tisSortAvgAsc', { defaultValue: 'Avg (low ? high)' }) },
-          {
-            value: 'median_desc',
-            label: t('tisSortMedianDesc', { defaultValue: 'Median (high ? low)' }),
-          },
-          {
-            value: 'count_desc',
-            label: t('tisSortCountDesc', { defaultValue: 'Count (high ? low)' }),
-          },
-          { value: 'name_asc', label: t('tisSortNameAsc', { defaultValue: 'Status name' }) },
-        ]
-      : [
-          {
-            value: 'total_desc',
-            label: t('tisSortTotalDesc', { defaultValue: 'Total (high ? low)' }),
-          },
-          {
-            value: 'total_asc',
-            label: t('tisSortTotalAsc', { defaultValue: 'Total (low ? high)' }),
-          },
-          { value: 'key_asc', label: t('tisSortKeyAsc', { defaultValue: 'Task key' }) },
-          { value: 'name_asc', label: t('tisSortTaskNameAsc', { defaultValue: 'Task name' }) },
-        ];
+  const sortOptions = getTimeInStatusSortOptions(reportView, {
+    avgDesc: t('tisSortAvgDesc', { defaultValue: 'Avg (high → low)' }),
+    avgAsc: t('tisSortAvgAsc', { defaultValue: 'Avg (low → high)' }),
+    medianDesc: t('tisSortMedianDesc', { defaultValue: 'Median (high → low)' }),
+    countDesc: t('tisSortCountDesc', { defaultValue: 'Count (high → low)' }),
+    statusName: t('tisSortNameAsc', { defaultValue: 'Status name' }),
+    totalDesc: t('tisSortTotalDesc', { defaultValue: 'Total (high → low)' }),
+    totalAsc: t('tisSortTotalAsc', { defaultValue: 'Total (low → high)' }),
+    taskKey: t('tisSortKeyAsc', { defaultValue: 'Task key' }),
+    taskName: t('tisSortTaskNameAsc', { defaultValue: 'Task name' }),
+  });
 
   const tisFilters = (
     <Flex gap={8} wrap="wrap" align="center" style={{ width: '100%' }}>

@@ -77,7 +77,7 @@ export const DEFAULT_GRANTS: Record<string, Record<string, boolean>> = {
   "Manage teams":                 { Owner: true, Admin: true,  "Team Lead": false, Member: false, Guest: false },
   "Create projects":              { Owner: true, Admin: true,  "Team Lead": true,  Member: false, Guest: false },
   "View all projects":            { Owner: true, Admin: true,  "Team Lead": false, Member: false, Guest: false },
-  "View reports":                 { Owner: true, Admin: true,  "Team Lead": true,  Member: false, Guest: false },
+  "View reports":                 { Owner: true, Admin: true,  "Team Lead": false, Member: false, Guest: false },
   "View planner":                 { Owner: true, Admin: true,  "Team Lead": false, Member: false, Guest: false },
   "View clients":                 { Owner: true, Admin: true,  "Team Lead": false, Member: false, Guest: false },
   "View finance":                 { Owner: true, Admin: true,  "Team Lead": false, Member: false, Guest: false },

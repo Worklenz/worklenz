@@ -23,8 +23,10 @@ export default async function analyticsProjectAccessMiddleware(
   next: NextFunction
 ): Promise<void> {
   try {
-    if (!canViewAnalyticsReports(req.user)) {
-      res.status(403).send(new ServerResponse(false, null, "Guests cannot access analytics"));
+    if (!(await canViewAnalyticsReports(req.user))) {
+      res
+        .status(403)
+        .send(new ServerResponse(false, null, "You are not authorized to access analytics"));
       return;
     }
 
@@ -77,15 +79,17 @@ export default async function analyticsProjectAccessMiddleware(
     const accessible = new Set<string>(accessibleList);
 
     if (requested.length > 0) {
-      const denied = requested.filter(id => !accessible.has(id));
-      if (denied.length > 0) {
+      // Intersect with accessible set. Select All can include stale/out-of-scope
+      // IDs from the filter dropdown — reject only when none remain usable.
+      const allowedRequested = requested.filter(id => accessible.has(id));
+      if (allowedRequested.length === 0) {
         res
           .status(403)
           .send(new ServerResponse(false, null, "One or more projects are not accessible"));
         return;
       }
       (req as IWorkLenzRequest & { analyticsAccessibleProjectIds?: string[] }).analyticsAccessibleProjectIds =
-        requested;
+        allowedRequested;
     } else {
       (req as IWorkLenzRequest & { analyticsAccessibleProjectIds?: string[] }).analyticsAccessibleProjectIds =
         [...accessible];

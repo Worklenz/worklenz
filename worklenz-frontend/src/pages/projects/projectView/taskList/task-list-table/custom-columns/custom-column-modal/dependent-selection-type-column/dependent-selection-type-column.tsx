@@ -6,6 +6,7 @@ import {
   Badge,
   Button,
   Collapse,
+  ColorPicker,
   Flex,
   Input,
   Select,
@@ -163,13 +164,15 @@ export const DependentSelectionTypeColumn = ({ parentColumn }: DependentSelectio
           defaultValue: 'Option name',
         })}
       />
-      <Select
-        options={colorOptions}
+      <ColorPicker
         value={selection.selection_color}
-        onChange={value => updateSelection(selection.selection_id, { selection_color: value })}
+        onChange={value =>
+          updateSelection(selection.selection_id, {
+            selection_color: value.toHexString(),
+          })
+        }
         size="small"
-        style={{ width: 48 }}
-        suffixIcon={null}
+        disabledAlpha
         aria-label={t('customColumns.dependentSelection.optionColorLabel', {
           defaultValue: 'Option color',
         })}

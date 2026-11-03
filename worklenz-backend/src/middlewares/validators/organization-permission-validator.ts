@@ -47,6 +47,7 @@ export const viewReportsValidator = async (
   next: NextFunction
 ): Promise<IWorkLenzResponse | void> => {
   if (isFreePlanUser(req.user)) return sendForbidden(res);
+  if (!isOwnerOrAdmin(req)) return sendForbidden(res);
   return organizationPermissionValidator(ORGANIZATION_PERMISSIONS.VIEW_REPORTS)(req, res, next);
 };
 

@@ -39,6 +39,7 @@ import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
+import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   UtilizationFilters,
   UtilizationSeriesResponse,
@@ -47,19 +48,6 @@ import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-veloci
 import type { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 const { Text } = Typography;
-
-const downloadBlob = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-};
-
-const downloadText = (content: string, filename: string, mime: string) => {
-  downloadBlob(new Blob([content], { type: mime }), filename);
-};
 
 export interface UtilizationPageProps {
   customTemplateId?: string;
@@ -150,8 +138,6 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     if (datePreset === 'last_60_days') start = end.subtract(60, 'day');
     if (datePreset === 'last_90_days') start = end.subtract(90, 'day');
     if (datePreset === 'this_quarter') start = end.startOf('quarter');
-    // Custom range picker not wired yet ? fall back to last 30 days.
-    if (datePreset === 'custom') start = end.subtract(30, 'day');
     return {
       date_from: start.startOf('day').toISOString(),
       date_to: end.endOf('day').toISOString(),
@@ -350,6 +336,14 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
         onTeamsChange={setSelectedTeamIds}
         datePreset={datePreset}
         onDatePresetChange={setDatePreset}
+        availableDatePresets={[
+          'last_7_days',
+          'last_14_days',
+          'last_30_days',
+          'last_60_days',
+          'last_90_days',
+          'this_quarter',
+        ]}
         loading={filtersLoading}
       />
     </Flex>

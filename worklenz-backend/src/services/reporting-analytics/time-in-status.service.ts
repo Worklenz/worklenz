@@ -860,7 +860,25 @@ function buildIssues(
     };
   });
 
-  issues.sort((a, b) => {
+  const total = issues.length;
+  const outlier_count = issues.filter(i => i.is_outlier).length;
+  issues = sortAndPaginateTimeInStatusIssues(issues, sort, limit, offset);
+
+  return { issues, total, outlier_count };
+}
+
+/**
+ * Server-side sort + window for per-issue rows.
+ * JSON responses default to the first 100 after this sort ? changing `sort`
+ * is required to retrieve rows outside that fixed default window.
+ */
+export function sortAndPaginateTimeInStatusIssues(
+  issues: TimeInStatusIssueRow[],
+  sort: TimeInStatusSort,
+  limit: number,
+  offset = 0
+): TimeInStatusIssueRow[] {
+  const sorted = [...issues].sort((a, b) => {
     switch (sort) {
       case "total_asc":
         return a.total_days - b.total_days;
@@ -873,12 +891,7 @@ function buildIssues(
         return b.total_days - a.total_days;
     }
   });
-
-  const total = issues.length;
-  const outlier_count = issues.filter(i => i.is_outlier).length;
-  issues = issues.slice(offset, offset + limit);
-
-  return { issues, total, outlier_count };
+  return sorted.slice(offset, offset + limit);
 }
 
 export async function getTimeInStatusSeries(

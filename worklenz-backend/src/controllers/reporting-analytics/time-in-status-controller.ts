@@ -33,9 +33,12 @@ export default class TimeInStatusController extends WorklenzControllerBase {
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
     }
 
-    const query = req.query as Record<string, unknown>;
     const accessible = accessibleProjectIds(req);
-    const filters = parseTimeInStatusFilters(query, accessible, teamId);
+    const input = {
+      ...(req.query as Record<string, unknown>),
+      ...((req.body as Record<string, unknown> | undefined) ?? {}),
+    };
+    const filters = parseTimeInStatusFilters(input, accessible, teamId);
     const data = await getTimeInStatusSeries(filters);
     return res.status(200).send(new ServerResponse(true, data));
   }

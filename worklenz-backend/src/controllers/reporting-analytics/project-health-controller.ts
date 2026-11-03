@@ -31,11 +31,11 @@ export default class ProjectHealthController extends WorklenzControllerBase {
     }
 
     const accessible = accessibleProjectIds(req);
-    const filters = parseProjectHealthFilters(
-      req.query as Record<string, unknown>,
-      accessible,
-      teamId
-    );
+    const input = {
+      ...(req.query as Record<string, unknown>),
+      ...((req.body as Record<string, unknown> | undefined) ?? {}),
+    };
+    const filters = parseProjectHealthFilters(input, accessible, teamId);
 
     const data = await getProjectHealthSeries(filters);
     return res.status(200).send(new ServerResponse(true, data));

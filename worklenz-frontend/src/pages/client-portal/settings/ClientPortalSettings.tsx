@@ -86,6 +86,8 @@ const ClientPortalSettings = () => {
   const isReadOnly = useIsAdminSurfaceReadOnly();
   const { token } = theme.useToken();
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const currentSession = useAuthService().getCurrentSession();
+  const canBrand = canUseFeature(currentSession, 'client_portal_branding');
 
   const [section, setSection] = useState<SectionKey>('company');
   const [loading, setLoading] = useState(true);

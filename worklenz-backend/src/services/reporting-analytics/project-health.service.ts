@@ -20,6 +20,8 @@ export interface ProjectHealthFilters {
   sessionTeamId: string;
 }
 
+export type DeliveryConfidenceStatus = "green" | "amber" | "red";
+
 export interface ProjectHealthRow {
   project_id: string;
   project_name: string;
@@ -27,6 +29,8 @@ export interface ProjectHealthRow {
   health_name: string;
   health_color: string;
   health_tone: ProjectHealthTone;
+  delivery_confidence: DeliveryConfidenceStatus | null;
+  delivery_confidence_note: string | null;
   progress_pct: number;
   budget_used_pct: number;
   due_date: string | null;
@@ -118,7 +122,14 @@ function cacheParts(
     cm: calcMethod,
     hpd: hoursPerDay,
   });
-  return ["project-health", createHash("sha1").update(payload).digest("hex")];
+  return ["project-health-v2", createHash("sha1").update(payload).digest("hex")];
+}
+
+function parseDeliveryConfidence(
+  value: unknown
+): DeliveryConfidenceStatus | null {
+  if (value === "green" || value === "amber" || value === "red") return value;
+  return null;
 }
 
 function round1(n: number): number {
@@ -187,6 +198,8 @@ export async function getProjectHealthSeries(
       p.health_id,
       COALESCE(sph.name, 'Not Set') AS health_name,
       COALESCE(sph.color_code, '#a9a9a9') AS health_color,
+      pdc.status AS delivery_confidence,
+      pdc.note AS delivery_confidence_note,
       TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS due_date,
       TO_CHAR(p.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS updated_at,
       COALESCE(p.budget, 0)::FLOAT AS budget,
@@ -248,6 +261,7 @@ export async function getProjectHealthSeries(
       ), 0)::FLOAT AS time_based_cost
     FROM projects p
     LEFT JOIN sys_project_healths sph ON sph.id = p.health_id
+    LEFT JOIN project_delivery_confidence pdc ON pdc.project_id = p.id
     WHERE p.id = ANY($1::UUID[])
       ${healthClause}
       ${memberClause}
@@ -274,6 +288,10 @@ export async function getProjectHealthSeries(
       health_name: healthName,
       health_color: String(row.health_color || "#a9a9a9"),
       health_tone: mapHealthTone(healthName),
+      delivery_confidence: parseDeliveryConfidence(row.delivery_confidence),
+      delivery_confidence_note: row.delivery_confidence_note
+        ? String(row.delivery_confidence_note)
+        : null,
       progress_pct: progressPct,
       budget_used_pct: budgetUsedPct,
       due_date: row.due_date ? String(row.due_date) : null,
@@ -303,10 +321,20 @@ export async function getProjectHealthSeries(
   return withLastUpdated(payload, stored.lastUpdatedAt);
 }
 
+function deliveryConfidenceLabel(
+  status: DeliveryConfidenceStatus | null
+): string {
+  if (status === "green") return "On track";
+  if (status === "amber") return "At risk";
+  if (status === "red") return "Off track";
+  return "Not set";
+}
+
 export function buildProjectHealthCsv(result: ProjectHealthResult): string {
   const header = [
     "Project",
-    "Health",
+    "Delivery confidence",
+    "Delivery confidence note",
     "Progress %",
     "Due",
     "Open tasks",
@@ -318,7 +346,8 @@ export function buildProjectHealthCsv(result: ProjectHealthResult): string {
   for (const row of result.projects) {
     const cells = [
       csvEscape(row.project_name),
-      csvEscape(row.health_name),
+      csvEscape(deliveryConfidenceLabel(row.delivery_confidence)),
+      csvEscape(row.delivery_confidence_note || ""),
       String(row.progress_pct),
       csvEscape(row.due_date || ""),
       String(row.open_tasks),
