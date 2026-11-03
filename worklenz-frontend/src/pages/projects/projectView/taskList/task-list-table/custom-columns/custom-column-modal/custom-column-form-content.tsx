@@ -387,7 +387,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
     defaultValue: '+ Create new parent field',
   });
 
-  if (eligibleParentColumns.length > 0) {
+  if (!hasDependentColumns) {
     dependsOnTypeOptions.push({
       key: toDependsOnTypeValue(NEW_PARENT_COLUMN_ID),
       value: toDependsOnTypeValue(NEW_PARENT_COLUMN_ID),
@@ -804,7 +804,7 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                       type="text"
                       danger
                       disabled
-                      aria-label={t('customColumns.modal.deleteButton')}
+                      aria-label={t('customColumns.modal.deleteButton', { defaultValue: 'Delete' })}
                       icon={<DeleteOutlined />}
                     />
                   </Tooltip>
@@ -814,16 +814,16 @@ const CustomColumnFormContent = ({ projectId, onDone }: CustomColumnFormContentP
                     description={t('customColumns.modal.deleteConfirmDescription')}
                     icon={<ExclamationCircleFilled style={{ color: token.colorError }} />}
                     onConfirm={handleDeleteColumn}
-                    okText={t('customColumns.modal.deleteButton')}
+                    okText={t('customColumns.modal.deleteButton', { defaultValue: 'Delete' })}
                     cancelText={t('customColumns.modal.cancelButton')}
                     okButtonProps={{ danger: true }}
                   >
-                    <Tooltip title={t('customColumns.modal.deleteButton')}>
+                    <Tooltip title={t('customColumns.modal.deleteButton', { defaultValue: 'Delete' })}>
                       <Button
                         size="small"
                         type="text"
                         danger
-                        aria-label={t('customColumns.modal.deleteButton')}
+                        aria-label={t('customColumns.modal.deleteButton', { defaultValue: 'Delete' })}
                         icon={<DeleteOutlined />}
                       />
                     </Tooltip>
