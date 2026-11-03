@@ -23,8 +23,10 @@ export default async function analyticsProjectAccessMiddleware(
   next: NextFunction
 ): Promise<void> {
   try {
-    if (!canViewAnalyticsReports(req.user)) {
-      res.status(403).send(new ServerResponse(false, null, "Guests cannot access analytics"));
+    if (!(await canViewAnalyticsReports(req.user))) {
+      res
+        .status(403)
+        .send(new ServerResponse(false, null, "You are not authorized to access analytics"));
       return;
     }
 
