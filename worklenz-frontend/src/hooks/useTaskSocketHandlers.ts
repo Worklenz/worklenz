@@ -42,6 +42,7 @@ import {
   updateTaskTimeTracking,
 } from '@/features/tasks/tasks.slice';
 import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
+import { useSprintPhaseRefresh } from './useSprintPhaseRefresh';
 import {
   addTask,
   addTaskToGroup,
@@ -1433,6 +1434,8 @@ export const useTaskSocketHandlers = () => {
     [dispatch]
   );
 
+  const handleProjectSprintsUpdated = useSprintPhaseRefresh(projectId);
+
   // Register socket event listeners
   useEffect(() => {
     if (!socket) return;
@@ -1489,6 +1492,10 @@ export const useTaskSocketHandlers = () => {
         event: SocketEvents.TASK_ATTACHMENTS_UPDATED.toString(),
         handler: handleTaskAttachmentsUpdated,
       },
+      {
+        event: SocketEvents.PROJECT_SPRINTS_UPDATED.toString(),
+        handler: handleProjectSprintsUpdated,
+      },
     ];
 
     // Register all event listeners
@@ -1529,5 +1536,6 @@ export const useTaskSocketHandlers = () => {
     handleProjectUpdatesAvailable,
     handleTaskCommentsUpdated,
     handleTaskAttachmentsUpdated,
+    handleProjectSprintsUpdated,
   ]);
 };
