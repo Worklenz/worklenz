@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Avatar, Flex, Table, Tag, Typography } from '@/shared/antd-imports';
+import { Avatar, Flex, Table, Tag, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import type {
@@ -30,6 +30,7 @@ const fmtHours = (value: number): string => `${Number(value.toFixed(1))}h`;
 
 export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loading }) => {
   const { t } = useTranslation('reporting-analytics');
+  const { token } = theme.useToken();
 
   const columns: ColumnsType<UtilizationMemberRow> = useMemo(
     () => [
@@ -110,10 +111,27 @@ export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loa
     [t]
   );
 
+  const borderedColumns = columns.map((column) => ({
+  ...column,
+  onCell: () => ({
+    style: {
+      borderInlineEnd: `1px solid ${token.colorBorder}`,
+      borderBottom: `1px solid ${token.colorBorder}`,
+    },
+  }),
+  onHeaderCell: () => ({
+    style: {
+      borderInlineEnd: `1px solid ${token.colorBorder}`,
+      borderBottom: `1px solid ${token.colorBorder}`,
+    },
+  }),
+}));
+
   return (
     <Table<UtilizationMemberRow>
-      rowKey="team_member_id"
-      columns={columns}
+      bordered
+      rowKey="project_id"
+      columns={borderedColumns}
       dataSource={members}
       loading={loading}
       pagination={{ pageSize: 20, showSizeChanger: true }}

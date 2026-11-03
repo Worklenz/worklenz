@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Table } from '@/shared/antd-imports';
+import { Table, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import type { ColumnsType } from 'antd/es/table';
 import type { CfdSeriesResponse, CfdStatusMeta } from '@/types/reporting/analytics-cfd.types';
@@ -18,6 +18,7 @@ interface RowRecord {
 
 export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, statusOrder }) => {
   const { t } = useTranslation('reporting-analytics');
+  const { token } = theme.useToken();
 
   const statusById = useMemo(() => {
     const map = new Map<string, CfdStatusMeta>();
@@ -73,11 +74,28 @@ export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, stat
     });
   }, [data.dates, data.series, orderedVisible]);
 
+  const borderedColumns = columns.map((column) => ({
+    ...column,
+    onCell: () => ({
+      style: {
+        borderInlineEnd: `1px solid ${token.colorBorder}`,
+        borderBottom: `1px solid ${token.colorBorder}`,
+      },
+    }),
+    onHeaderCell: () => ({
+      style: {
+        borderInlineEnd: `1px solid ${token.colorBorder}`,
+        borderBottom: `1px solid ${token.colorBorder}`,
+      },
+    }),
+  }));
+
   return (
     <Table
+      bordered
       size="small"
       pagination={{ pageSize: 15, showSizeChanger: true }}
-      columns={columns}
+      columns={borderedColumns}
       dataSource={rows}
       scroll={{ x: Math.max(400, orderedVisible.length * 100 + 140) }}
       locale={{

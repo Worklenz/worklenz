@@ -134,7 +134,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
           const fallback = TONE_FALLBACK[row.health_tone];
           const label = decodeHtmlEntities(
             row.health_name ||
-              t(fallback.labelKey, { defaultValue: fallback.defaultLabel })
+            t(fallback.labelKey, { defaultValue: fallback.defaultLabel })
           );
           // Tone presets (not raw DB hex) — custom light grays render white-on-pale in light mode.
           return <Tag color={fallback.color}>{label}</Tag>;
@@ -253,11 +253,31 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
     ],
     [t, token.colorText, token.colorTextSecondary]
   );
+  const borderedColumns: ColumnsType<ProjectHealthRow> = useMemo(
+    () =>
+      columns.map((column) => ({
+        ...column,
+        onCell: () => ({
+          style: {
+            borderInlineEnd: `1px solid ${token.colorBorder}`,
+            borderBottom: `1px solid ${token.colorBorder}`,
+          },
+        }),
+        onHeaderCell: () => ({
+          style: {
+            borderInlineEnd: `1px solid ${token.colorBorder}`,
+            borderBottom: `1px solid ${token.colorBorder}`,
+          },
+        }),
+      })),
+    [columns, token.colorBorder]
+  );
 
   return (
     <Table<ProjectHealthRow>
+      bordered
       rowKey="project_id"
-      columns={columns}
+      columns={borderedColumns}
       dataSource={projects}
       loading={loading}
       pagination={{ pageSize: 20, showSizeChanger: true }}

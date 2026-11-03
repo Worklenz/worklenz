@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Table, Typography } from '@/shared/antd-imports';
+import { Table, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import type { PlannedVsActualTasksRow } from '@/types/reporting/analytics-planned-vs-actual-tasks.types';
@@ -18,6 +18,7 @@ const formatVariance = (days: number): string => {
 
 export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading }) => {
   const { t } = useTranslation('reporting-analytics');
+  const { token } = theme.useToken();
 
   const columns: ColumnsType<PlannedVsActualTasksRow> = useMemo(
     () => [
@@ -89,10 +90,31 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
     [t]
   );
 
+    const borderedColumns: ColumnsType<PlannedVsActualTasksRow> = useMemo(
+    () =>
+      columns.map((column) => ({
+        ...column,
+        onCell: () => ({
+          style: {
+            borderInlineEnd: `1px solid ${token.colorBorder}`,
+            borderBottom: `1px solid ${token.colorBorder}`,
+          },
+        }),
+        onHeaderCell: () => ({
+          style: {
+            borderInlineEnd: `1px solid ${token.colorBorder}`,
+            borderBottom: `1px solid ${token.colorBorder}`,
+          },
+        }),
+      })),
+    [columns, token.colorBorder]
+  );
+
   return (
     <Table<PlannedVsActualTasksRow>
+      bordered
       rowKey="project_id"
-      columns={columns}
+      columns={borderedColumns}
       dataSource={projects}
       loading={loading}
       pagination={{ pageSize: 20, showSizeChanger: true }}

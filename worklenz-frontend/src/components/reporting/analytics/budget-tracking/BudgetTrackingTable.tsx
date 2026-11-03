@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Flex, Table, Tag, Typography } from '@/shared/antd-imports';
+import { Flex, Table, Tag, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import type {
@@ -38,6 +38,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
   loading,
 }) => {
   const { t } = useTranslation('reporting-analytics');
+  const { token } = theme.useToken();
 
   const columns: ColumnsType<BudgetTrackingRow> = useMemo(
     () => [
@@ -157,10 +158,27 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
     [t]
   );
 
+  const borderedColumns = columns.map((column) => ({
+    ...column,
+    onCell: () => ({
+      style: {
+        borderInlineEnd: `1px solid ${token.colorBorder}`,
+        borderBottom: `1px solid ${token.colorBorder}`,
+      },
+    }),
+    onHeaderCell: () => ({
+      style: {
+        borderInlineEnd: `1px solid ${token.colorBorder}`,
+        borderBottom: `1px solid ${token.colorBorder}`,
+      },
+    }),
+  }));
+
   return (
     <Table<BudgetTrackingRow>
+      bordered
       rowKey={row => row.project_id}
-      columns={columns}
+      columns={borderedColumns}
       dataSource={projects}
       loading={loading}
       pagination={{ pageSize: 20, showSizeChanger: true }}
