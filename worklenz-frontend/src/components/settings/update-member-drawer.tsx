@@ -46,6 +46,8 @@ import {
   getSessionRoleName,
 } from '@/utils/role-permissions.utils';
 import { RolePermissionsPopover } from './role-permissions-popover';
+import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
+import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
 type UpdateMemberDrawerProps = {
   selectedMemberId: string | null;
@@ -62,6 +64,10 @@ type UpdateMemberDrawerProps = {
   ) => void;
   onManageTimeOff?: (member: { id: string; name: string; email?: string }) => void;
   initialRoleName?: string;
+  /** When editing from a project Members tab, scopes Manage members checks. */
+  projectId?: string | null;
+  /** Project "Manage members" — edit job title/details, not team role. */
+  allowProjectMemberManage?: boolean;
 };
 
 const UpdateMemberDrawer = ({
@@ -73,6 +79,8 @@ const UpdateMemberDrawer = ({
   onTeamLeadUpdate,
   onManageTimeOff,
   initialRoleName,
+  projectId,
+  allowProjectMemberManage = false,
 }: UpdateMemberDrawerProps) => {
   const { t } = useTranslation('settings/team-members');
   const dispatch = useAppDispatch();
@@ -104,6 +112,11 @@ const UpdateMemberDrawer = ({
 
   const currentUser = auth.getCurrentSession();
   const currentUserRole = getSessionRoleName(currentUser);
+  const { hasPermission: hasManageUsers } = useOrganizationPermission(
+    ORGANIZATION_PERMISSIONS.MANAGE_USERS
+  );
+  const isOwnerOrAdmin =
+    currentUserRole === ROLE_NAMES.OWNER || currentUserRole === ROLE_NAMES.ADMIN;
 
   const isOwnAccount = useMemo(() => {
     return (
@@ -126,22 +139,39 @@ const UpdateMemberDrawer = ({
       return Boolean(canManageTarget);
     }
     if (isOwnAccount) return true;
+    if (hasManageUsers) return teamMember?.role_name?.toLowerCase() !== 'owner';
+    if (allowProjectMemberManage) {
+      const role = teamMember?.role_name?.toLowerCase() || '';
+      return role !== 'owner' && role !== 'admin';
+    }
     return false;
-  }, [currentUserRole, isOwnAccount, canManageTarget]);
+  }, [
+    currentUserRole,
+    isOwnAccount,
+    canManageTarget,
+    hasManageUsers,
+    allowProjectMemberManage,
+    teamMember?.role_name,
+  ]);
 
   const canCreateJobTitle = useMemo(() => {
-    return currentUserRole === ROLE_NAMES.OWNER || currentUserRole === ROLE_NAMES.ADMIN;
-  }, [currentUserRole]);
+    return isOwnerOrAdmin || hasManageUsers;
+  }, [isOwnerOrAdmin, hasManageUsers]);
 
+  // Team role / manager changes require org Manage users (or Owner/Admin hierarchy)
   const canEditRole = useMemo(() => {
     if (isOwnAccount) return false;
-    return Boolean(canManageTarget);
-  }, [isOwnAccount, canManageTarget]);
+    if (canManageTarget) return true;
+    if (hasManageUsers) return teamMember?.role_name?.toLowerCase() !== 'owner';
+    return false;
+  }, [isOwnAccount, canManageTarget, hasManageUsers, teamMember?.role_name]);
 
   const canEditManager = useMemo(() => {
     if (isOwnAccount) return false;
-    return Boolean(canManageTarget);
-  }, [isOwnAccount, canManageTarget]);
+    if (canManageTarget) return true;
+    if (hasManageUsers) return teamMember?.role_name?.toLowerCase() !== 'owner';
+    return false;
+  }, [isOwnAccount, canManageTarget, hasManageUsers, teamMember?.role_name]);
 
   const canEditOwnAccount = useMemo(() => {
     return isOwnAccount;
@@ -245,7 +275,7 @@ const UpdateMemberDrawer = ({
 
     try {
       setLoading(true);
-      const res = await teamMembersApiService.getById(selectedMemberId);
+      const res = await teamMembersApiService.getById(selectedMemberId, projectId);
       if (!isMountedRef.current) return;
       if (res.done) {
         setTeamMember(res.body);
@@ -255,7 +285,7 @@ const UpdateMemberDrawer = ({
     } finally {
       if (isMountedRef.current) setLoading(false);
     }
-  }, [selectedMemberId]);
+  }, [selectedMemberId, projectId]);
 
   const handleFormSubmit = async (values: any) => {
     if (!selectedMemberId || !teamMember?.email) return;
@@ -266,7 +296,8 @@ const UpdateMemberDrawer = ({
       if (trimmedName && trimmedName !== teamMember.name) {
         const nameResponse = await teamMembersApiService.updateMemberName(
           selectedMemberId,
-          trimmedName
+          trimmedName,
+          projectId
         );
 
         if (!nameResponse.done) {
@@ -276,7 +307,8 @@ const UpdateMemberDrawer = ({
 
       // For any user editing their own details, protect role/admin fields
       // and only update basic details (job title, department, practice).
-      if (isOwnAccount) {
+      // Project Manage members also cannot elevate team roles.
+      if (isOwnAccount || (allowProjectMemberManage && !canEditRole)) {
         const currentJobTitle = teamMember?.job_title;
         const newJobTitle = form.getFieldValue('jobTitle');
         const newDepartmentId = form.getFieldValue('departmentId');
@@ -294,7 +326,7 @@ const UpdateMemberDrawer = ({
             is_admin: Boolean(teamMember.is_admin || teamMember.role_name === ROLE_NAMES.ADMIN),
             role_name: teamMember.role_name || ROLE_NAMES.MEMBER,
           };
-          const res = await teamMembersApiService.update(selectedMemberId, body);
+          const res = await teamMembersApiService.update(selectedMemberId, body, projectId);
           if (!res.done) {
             throw new Error(res.message || t('updateError'));
           }
@@ -316,7 +348,7 @@ const UpdateMemberDrawer = ({
                   : ROLE_NAMES.MEMBER,
         };
 
-        const res = await teamMembersApiService.update(selectedMemberId, body);
+        const res = await teamMembersApiService.update(selectedMemberId, body, projectId);
         if (!res.done) {
           throw new Error(res.message || t('updateError'));
         }

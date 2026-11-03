@@ -134,7 +134,10 @@ describe("teamMemberSelfOrManagementValidator", () => {
   });
 
   it("rejects Member attempting to access another member's record", async () => {
-    mockedQuery.mockResolvedValueOnce(createQueryResult([]));
+    // Manage users grant lookup + self fallback lookup
+    mockedQuery
+      .mockResolvedValueOnce(createQueryResult([]))
+      .mockResolvedValueOnce(createQueryResult([]));
     const req = createMockRequest({
       user: { id: "u-member", team_id: "t-1", team_member_id: memberId, role_name: "Member" },
       params: { id: otherMemberId },
@@ -149,7 +152,9 @@ describe("teamMemberSelfOrManagementValidator", () => {
   });
 
   it("rejects Team Lead attempting to access another member's record", async () => {
-    mockedQuery.mockResolvedValueOnce(createQueryResult([]));
+    mockedQuery
+      .mockResolvedValueOnce(createQueryResult([]))
+      .mockResolvedValueOnce(createQueryResult([]));
     const req = createMockRequest({
       user: { id: "u-lead", team_id: "t-1", team_member_id: memberId, role_name: "Team Lead" },
       params: { id: otherMemberId },
@@ -161,6 +166,46 @@ describe("teamMemberSelfOrManagementValidator", () => {
 
     expect(res.statusCode).toBe(401);
     expect(next).not.toHaveBeenCalled();
+  });
+
+  it("allows Member with project Manage members to access another project member", async () => {
+    const projectId = "00000000-0000-4000-8000-000000000099";
+    // 1) Manage users grant — not granted
+    mockedQuery.mockResolvedValueOnce(createQueryResult([]));
+    // 2) getProjectAccess membership row
+    mockedQuery.mockResolvedValueOnce(
+      createQueryResult([
+        {
+          team_role: "Member",
+          is_guest: false,
+          active: true,
+          access_level: "MEMBER",
+          finance_access: false,
+          can_create_projects_from_templates: false,
+          is_project_member: true,
+          project_team_id: "t-1",
+        },
+      ])
+    );
+    // 3) scheme grants for Member role (Manage members)
+    mockedQuery.mockResolvedValueOnce(
+      createQueryResult([{ permission: "Manage members", granted: true }])
+    );
+    // 4) target is on the project
+    mockedQuery.mockResolvedValueOnce(createQueryResult([{ "?column?": 1 }]));
+
+    const req = createMockRequest({
+      user: { id: "u-member", team_id: "t-1", team_member_id: memberId, role_name: "Member" },
+      params: { id: otherMemberId },
+      query: { project_id: projectId },
+    });
+    const res = createMockResponse();
+    const next = jest.fn();
+
+    await teamMemberSelfOrManagementValidator(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.statusCode).not.toBe(401);
   });
 });
 

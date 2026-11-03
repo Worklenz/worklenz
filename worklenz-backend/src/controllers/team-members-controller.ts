@@ -42,6 +42,8 @@ import {
   TeamRoleName,
 } from "../shared/team-permissions";
 import { hasTeamMemberManagementAccess } from "../shared/organization-permissions";
+import { canManageTeamMemberViaProjectPermission } from "../shared/project-access";
+import { isValidUuid } from "../shared/validation-helpers";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import {
   clearPmAccessForTeamMember,
@@ -107,8 +109,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
       return null; // Allow owner to keep their own role
     }
 
-    // Allow any user maintaining their current role on self-edit
-    if (isSelf && teamMemberId && req.user?.team_id) {
+    // Allow keeping the target's existing role (self-edit or Manage members profile edit)
+    if (teamMemberId && req.user?.team_id) {
       const existingRole = currentRoleName || (await getTeamMemberRoleName(teamMemberId, req.user.team_id));
       if (
         existingRole &&
@@ -170,12 +172,27 @@ export default class TeamMembersController extends WorklenzControllerBase {
     }
 
     const canManageViaRole = canManageTargetRole(req.user, targetRoleName);
+    const assignableTarget = getManageUsersAssignableRoles().includes(
+      normalizeTeamRoleName(targetRoleName)
+    );
     const canManageViaPermission =
       !canManageViaRole &&
-      getManageUsersAssignableRoles().includes(normalizeTeamRoleName(targetRoleName)) &&
+      assignableTarget &&
       (await hasTeamMemberManagementAccess(req.user));
 
-    if (!canManageViaRole && !canManageViaPermission) {
+    const projectIdCandidate =
+      (req.query?.project_id as string | undefined) ||
+      (req.query?.current_project_id as string | undefined) ||
+      (req.body?.project_id as string | undefined);
+    const projectId =
+      projectIdCandidate && isValidUuid(projectIdCandidate) ? projectIdCandidate : undefined;
+    const canManageViaProject =
+      !canManageViaRole &&
+      !canManageViaPermission &&
+      assignableTarget &&
+      (await canManageTeamMemberViaProjectPermission(req.user, projectId, teamMemberId));
+
+    if (!canManageViaRole && !canManageViaPermission && !canManageViaProject) {
       return new ServerResponse(
         false,
         null,

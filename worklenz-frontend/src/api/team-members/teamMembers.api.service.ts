@@ -38,8 +38,16 @@ export const teamMembersApiService = {
     return response.data;
   },
 
-  getById: async (id: string): Promise<IServerResponse<ITeamMemberViewModel>> => {
-    const response = await apiClient.get<IServerResponse<ITeamMemberViewModel>>(`${rootUrl}/${id}`);
+  getById: async (
+    id: string,
+    projectId?: string | null
+  ): Promise<IServerResponse<ITeamMemberViewModel>> => {
+    const params = new URLSearchParams();
+    if (projectId) params.set('project_id', projectId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const response = await apiClient.get<IServerResponse<ITeamMemberViewModel>>(
+      `${rootUrl}/${id}${query}`
+    );
     return response.data;
   },
 
@@ -53,13 +61,29 @@ export const teamMembersApiService = {
     return response.data;
   },
 
-  update: async (id: string, body: ITeamMemberCreateRequest): Promise<IServerResponse<any>> => {
-    const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/${id}`, body);
+  update: async (
+    id: string,
+    body: ITeamMemberCreateRequest,
+    projectId?: string | null
+  ): Promise<IServerResponse<any>> => {
+    const params = new URLSearchParams();
+    if (projectId) params.set('project_id', projectId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/${id}${query}`, body);
     return response.data;
   },
 
-  updateMemberName: async (id: string, name: string): Promise<IServerResponse<any>> => {
-    const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/${id}/name`, { name });
+  updateMemberName: async (
+    id: string,
+    name: string,
+    projectId?: string | null
+  ): Promise<IServerResponse<any>> => {
+    const params = new URLSearchParams();
+    if (projectId) params.set('project_id', projectId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/${id}/name${query}`, {
+      name,
+    });
     return response.data;
   },
 

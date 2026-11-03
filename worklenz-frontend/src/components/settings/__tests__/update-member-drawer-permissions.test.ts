@@ -7,6 +7,8 @@ describe('update-member-drawer permission and self-edit gating rules', () => {
     currentUser,
     selectedMemberId,
     teamMember,
+    hasManageUsers = false,
+    allowProjectMemberManage = false,
   }: {
     currentUser: {
       email?: string;
@@ -20,6 +22,8 @@ describe('update-member-drawer permission and self-edit gating rules', () => {
       email?: string;
       role_name?: string;
     } | null;
+    hasManageUsers?: boolean;
+    allowProjectMemberManage?: boolean;
   }) => {
     const currentUserRole = getSessionRoleName(currentUser as any);
 
@@ -36,13 +40,22 @@ describe('update-member-drawer permission and self-edit gating rules', () => {
     const canEditMemberDetails =
       currentUserRole === ROLE_NAMES.OWNER ||
       (currentUserRole === ROLE_NAMES.ADMIN && (isOwnAccount || Boolean(canManageTarget))) ||
-      isOwnAccount;
+      isOwnAccount ||
+      (hasManageUsers && teamMember?.role_name?.toLowerCase() !== 'owner') ||
+      (allowProjectMemberManage &&
+        teamMember?.role_name?.toLowerCase() !== 'owner' &&
+        teamMember?.role_name?.toLowerCase() !== 'admin');
 
     const canCreateJobTitle =
-      currentUserRole === ROLE_NAMES.OWNER || currentUserRole === ROLE_NAMES.ADMIN;
+      currentUserRole === ROLE_NAMES.OWNER ||
+      currentUserRole === ROLE_NAMES.ADMIN ||
+      hasManageUsers;
 
-    const canEditRole = !isOwnAccount && Boolean(canManageTarget);
-    const canEditManager = !isOwnAccount && Boolean(canManageTarget);
+    const canEditRole =
+      !isOwnAccount &&
+      (Boolean(canManageTarget) ||
+        (hasManageUsers && teamMember?.role_name?.toLowerCase() !== 'owner'));
+    const canEditManager = canEditRole;
 
     return {
       currentUserRole,
@@ -113,6 +126,47 @@ describe('update-member-drawer permission and self-edit gating rules', () => {
 
     expect(perms.isOwnAccount).toBe(false);
     expect(perms.canEditMemberDetails).toBe(false);
+    expect(perms.canCreateJobTitle).toBe(false);
+    expect(perms.canEditRole).toBe(false);
+    expect(perms.canEditManager).toBe(false);
+  });
+
+  it('allows Member with Manage users to edit another member', () => {
+    const perms = evaluatePermissions({
+      currentUser: {
+        email: 'member@test.com',
+        team_member_id: 'tm-member',
+        role_name: 'Member',
+      },
+      selectedMemberId: 'tm-other',
+      teamMember: {
+        email: 'other@test.com',
+        role_name: 'Member',
+      },
+      hasManageUsers: true,
+    });
+
+    expect(perms.canEditMemberDetails).toBe(true);
+    expect(perms.canCreateJobTitle).toBe(true);
+    expect(perms.canEditRole).toBe(true);
+  });
+
+  it('allows Member with project Manage members to edit details but not team role', () => {
+    const perms = evaluatePermissions({
+      currentUser: {
+        email: 'member@test.com',
+        team_member_id: 'tm-member',
+        role_name: 'Member',
+      },
+      selectedMemberId: 'tm-other',
+      teamMember: {
+        email: 'other@test.com',
+        role_name: 'Member',
+      },
+      allowProjectMemberManage: true,
+    });
+
+    expect(perms.canEditMemberDetails).toBe(true);
     expect(perms.canCreateJobTitle).toBe(false);
     expect(perms.canEditRole).toBe(false);
     expect(perms.canEditManager).toBe(false);
