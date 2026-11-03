@@ -27,6 +27,7 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
         title: t('pvaTasksColProject', { defaultValue: 'Project' }),
         dataIndex: 'project_name',
         key: 'project_name',
+        width: 200,
         ellipsis: true,
         sorter: (a, b) => a.project_name.localeCompare(b.project_name),
       },
@@ -91,7 +92,7 @@ export const PvaTasksTable: React.FC<PvaTasksTableProps> = ({ projects, loading 
     [t]
   );
 
-    const borderedColumns: ColumnsType<PlannedVsActualTasksRow> = useMemo(
+  const borderedColumns: ColumnsType<PlannedVsActualTasksRow> = useMemo(
     () =>
       columns.map((column) => ({
         ...column,

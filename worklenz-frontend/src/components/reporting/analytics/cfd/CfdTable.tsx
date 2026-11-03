@@ -39,7 +39,7 @@ export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, stat
         dataIndex: 'date',
         key: 'date',
         fixed: 'left',
-        width: 100,
+        width: 50,
       },
     ];
     orderedVisible.forEach(statusId => {
@@ -49,7 +49,7 @@ export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, stat
         dataIndex: statusId,
         key: statusId,
         align: 'right',
-        width: 100,
+        width: 80,
       });
     });
     return cols;
@@ -95,10 +95,11 @@ export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, stat
     <Table
       bordered
       size="small"
+      tableLayout="fixed"
       pagination={getClientTablePagination(15)}
       columns={borderedColumns}
       dataSource={rows}
-      scroll={{ x: Math.max(400, orderedVisible.length * 100 + 140) }}
+      scroll={{ x: Math.max(400, orderedVisible.length * 80 + 50) }}
       locale={{
         emptyText: t('cfdChartEmpty', {
           defaultValue: 'No cumulative flow data for these filters.',

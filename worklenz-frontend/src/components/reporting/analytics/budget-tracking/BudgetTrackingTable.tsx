@@ -47,6 +47,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         title: t('btColProject', { defaultValue: 'Project' }),
         dataIndex: 'project_name',
         key: 'project_name',
+        width: 200,
         ellipsis: true,
         sorter: (a, b) => a.project_name.localeCompare(b.project_name),
         render: (name: string, record) => (
@@ -68,6 +69,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         title: t('btColClient', { defaultValue: 'Client' }),
         dataIndex: 'client_name',
         key: 'client_name',
+        width: 150,
         ellipsis: true,
         sorter: (a, b) => (a.client_name || '').localeCompare(b.client_name || ''),
         render: (value: string | null) =>

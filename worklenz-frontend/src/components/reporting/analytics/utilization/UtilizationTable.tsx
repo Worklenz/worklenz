@@ -39,6 +39,7 @@ export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loa
         title: t('utilColMember', { defaultValue: 'Team Member' }),
         dataIndex: 'member_name',
         key: 'member_name',
+        width: 100,
         ellipsis: true,
         sorter: (a, b) => a.member_name.localeCompare(b.member_name),
         render: (name: string, record) => (
@@ -58,7 +59,7 @@ export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loa
         title: t('utilColRole', { defaultValue: 'Role' }),
         dataIndex: 'role_name',
         key: 'role_name',
-        width: 140,
+        width: 130,
         render: (value: string | null) => (
           <Text type="secondary" style={{ fontSize: 12 }}>
             {value || t('utilEmptyValue', { defaultValue: '—' })}

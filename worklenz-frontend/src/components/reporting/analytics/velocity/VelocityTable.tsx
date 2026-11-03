@@ -79,6 +79,7 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
       title: bucketColumnTitle,
       dataIndex: 'sprint_name',
       key: 'sprint_name',
+      width: 150,
       sorter: (a, b) => a.sprint_name.localeCompare(b.sprint_name),
       onCell: () => ({
         style: cellBorderStyle,
@@ -90,6 +91,7 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
     {
       title: t('legendCommitted', { defaultValue: 'Committed' }),
       dataIndex: 'committed',
+      width: 150,
       key: 'committed',
       align: 'right',
       sorter: (a, b) => a.committed - b.committed,
@@ -104,6 +106,7 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
       title: t('legendCompleted', { defaultValue: 'Completed' }),
       dataIndex: 'completed',
       key: 'completed',
+      width: 130,
       align: 'right',
       sorter: (a, b) => a.completed - b.completed,
       onCell: () => ({
@@ -117,6 +120,7 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
       title: t('colCommitmentPct', { defaultValue: 'Commitment %' }),
       dataIndex: 'commitment_accuracy',
       key: 'commitment_accuracy',
+      width: 80,
       align: 'right',
       sorter: (a, b) =>
         (a.commitment_accuracy ?? -1) -

@@ -24,6 +24,7 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
         title: t('trColMember', { defaultValue: 'Member' }),
         dataIndex: 'member_name',
         key: 'member_name',
+        width: 100,
         ellipsis: true,
         sorter: (a, b) => a.member_name.localeCompare(b.member_name),
         render: (name: string, record) => (
@@ -43,6 +44,7 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
         title: t('trColProject', { defaultValue: 'Project' }),
         dataIndex: 'project_name',
         key: 'project_name',
+        width: 220,
         ellipsis: true,
         sorter: (a, b) => a.project_name.localeCompare(b.project_name),
         render: (name: string, record) => (
