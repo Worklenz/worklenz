@@ -36,6 +36,7 @@ async function handleMobileGoogleAuth(req: Request, done: any) {
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_ANDROID_CLIENT_ID,
       process.env.GOOGLE_IOS_CLIENT_ID,
+      process.env.GOOGLE_DESKTOP_CLIENT_ID
     ].filter(Boolean);
 
     if (!allowedClientIds.includes(profile.aud)) {
