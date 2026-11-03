@@ -486,13 +486,13 @@ export const FilesTable: React.FC<FilesTableProps> = ({
           rowsPerPageLabel={t('rowsPerPage', {
             defaultValue: 'Rows per page',
           })}
-          navigationLabel={t('common:paginationNavigation')}
-          firstPageLabel={t('common:firstPage')}
-          previousPageLabel={t('common:previousPage')}
-          nextPageLabel={t('common:nextPage')}
-          lastPageLabel={t('common:lastPage')}
+          navigationLabel={t('common:paginationNavigation', { defaultValue: 'Pagination' })}
+          firstPageLabel={t('common:firstPage', { defaultValue: 'First page' })}
+          previousPageLabel={t('common:previousPage', { defaultValue: 'Previous page' })}
+          nextPageLabel={t('common:nextPage', { defaultValue: 'Next page' })}
+          lastPageLabel={t('common:lastPage', { defaultValue: 'Last page' })}
           renderDefaultSummary={(range, total) =>
-            t('common:paginationSummary', { range, total })
+            t('common:paginationSummary', { defaultValue: '{{range}} of {{total}}', range, total })
           }
           pageSizeOptions={[10, 20, 50, 100]}
           variant="dropdown"

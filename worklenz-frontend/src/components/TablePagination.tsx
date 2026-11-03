@@ -147,11 +147,14 @@ const TablePagination: React.FC<TablePaginationProps> = ({
         <span style={{ fontSize: 12, color: token.colorTextSecondary }}>{rowsPerPageLabel}</span>
         {variant === 'dropdown' ? (
           <Dropdown
+            disabled={disabled}
             trigger={['click']}
             menu={{
-              items: pageSizeOptions.map(n => ({ key: String(n), label: String(n) })),
+              items: pageSizeOptions.map(n => ({ key: String(n), label: String(n), disabled })),
               selectedKeys: [String(pageSize)],
-              onClick: info => onPageChange(1, Number(info.key)),
+              onClick: info => {
+                if (!disabled) onPageChange(1, Number(info.key));
+              },
             }}
           >
             <Button size="small" aria-label={`${rowsPerPageLabel} ${pageSize}`} disabled={disabled}>
