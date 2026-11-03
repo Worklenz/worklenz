@@ -52,8 +52,8 @@ const withSuspense = (element: ReactNode) => (
   <Suspense fallback={<SuspenseFallback />}>{element}</Suspense>
 );
 
-/** Classic reporting pages remain Owner/Admin (paid) only. */
-const ExistingReportingAdminGuard = memo(({ children }: { children: ReactNode }) => {
+/** Reporting & Analytics remain Owner/Admin (paid) only. */
+const ReportingAdminGuard = memo(({ children }: { children: ReactNode }) => {
   const { isAuthenticated, isAdmin, location } = useAuthStatus();
 
   if (!isAuthenticated) {
@@ -61,13 +61,13 @@ const ExistingReportingAdminGuard = memo(({ children }: { children: ReactNode })
   }
 
   if (!isAdmin) {
-    return <Navigate to={ANALYTICS_BASE_PATH} replace />;
+    return <Navigate to="/worklenz/home" replace />;
   }
 
   return <>{children}</>;
 });
 
-ExistingReportingAdminGuard.displayName = 'ExistingReportingAdminGuard';
+ReportingAdminGuard.displayName = 'ReportingAdminGuard';
 
 const enabledAnalyticsElements: Record<string, ReactNode> = {
   velocity: withBusinessGate('velocity', 'Velocity', <VelocityPage />),
@@ -104,7 +104,9 @@ const reportingRoutes: RouteObject[] = [
     path: 'worklenz/reporting/analytics',
     element: (
       <GuestRedirect blockPathPrefix="/worklenz/reporting">
-        <AnalyticsReportingLayout />
+        <ReportingAdminGuard>
+          <AnalyticsReportingLayout />
+        </ReportingAdminGuard>
       </GuestRedirect>
     ),
     children: [
@@ -139,9 +141,9 @@ const reportingRoutes: RouteObject[] = [
     path: 'worklenz/reporting',
     element: (
       <GuestRedirect blockPathPrefix="/worklenz/reporting">
-        <ExistingReportingAdminGuard>
+        <ReportingAdminGuard>
           <ReportingLayout />
-        </ExistingReportingAdminGuard>
+        </ReportingAdminGuard>
       </GuestRedirect>
     ),
     children: [

@@ -10,6 +10,18 @@ describe('analytics-permissions', () => {
     expect(getAnalyticsReportPermissions({ role: 'guest' }).canViewReports).toBe(false);
   });
 
+  it('blocks members from reports', () => {
+    expect(getAnalyticsReportPermissions({ role: 'member' }).canViewReports).toBe(false);
+  });
+
+  it('blocks managers (team leads) from reports', () => {
+    expect(getAnalyticsReportPermissions({ role: 'manager' }).canViewReports).toBe(false);
+  });
+
+  it('allows admins to view reports', () => {
+    expect(getAnalyticsReportPermissions({ role: 'admin' }).canViewReports).toBe(true);
+  });
+
   it('allows members to create and fully manage own dashboards without share', () => {
     const perms = getAnalyticsDashboardPermissions(
       { role: 'member', userId: 'u1' },
