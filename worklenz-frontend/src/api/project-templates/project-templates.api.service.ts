@@ -66,7 +66,9 @@ export const projectTemplatesApiService = {
   },
 
   deleteCustomTemplate: async (id: string): Promise<IServerResponse<void>> => {
-    const response = await apiClient.delete(`${rootUrl}/custom-template/${id}`);
+    const response = await apiClient.delete(`${rootUrl}/custom-template/${id}`, {
+      headers: { 'X-Silent-Request': '1' },
+    });
     return response.data;
   },
 
