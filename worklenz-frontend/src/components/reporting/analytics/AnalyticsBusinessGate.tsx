@@ -1,12 +1,17 @@
 import React from 'react';
 import { Button, CrownOutlined, Flex, Result, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
+import { Navigate } from 'react-router-dom';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
 import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { canUseFeature } from '@/utils/subscription-utils';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
+import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import { ReportPageShell } from './ReportPageShell';
+import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 
 interface AnalyticsBusinessGateProps {
   feature?: 'advanced_reporting' | 'finance_module';
@@ -17,6 +22,7 @@ interface AnalyticsBusinessGateProps {
 
 /**
  * Renders reports only when their feature is available; otherwise shows an upgrade state.
+ * Finance reports also require the "View finance" organization permission.
  */
 export const AnalyticsBusinessGate: React.FC<AnalyticsBusinessGateProps> = ({
   feature = 'advanced_reporting',
@@ -30,9 +36,18 @@ export const AnalyticsBusinessGate: React.FC<AnalyticsBusinessGateProps> = ({
   const authService = useAuthService();
   const session = authService.getCurrentSession();
   const canAccess = canUseFeature(session, feature);
+  const { hasPermission: canViewFinance, isLoading: isFinancePermissionLoading } =
+    useOrganizationPermission(ORGANIZATION_PERMISSIONS.VIEW_FINANCE);
   const title = t(titleKey, { defaultValue: titleDefault });
 
   useDocumentTitle(title);
+
+  if (feature === 'finance_module') {
+    if (isFinancePermissionLoading) return <SuspenseFallback />;
+    if (!canViewFinance) {
+      return <Navigate to={ANALYTICS_BASE_PATH} replace />;
+    }
+  }
 
   if (canAccess) {
     return <>{children}</>;

@@ -40,14 +40,13 @@ const isFreePlanUser = (user: IWorkLenzRequest["user"]): boolean => {
   return status === "free" || type === "FREE" || tier === "free";
 };
 
-/** Classic reporting: requires View reports and a paid (non-free) plan. */
+/** Classic + analytics reporting: requires View reports and a paid (non-free) plan. */
 export const viewReportsValidator = async (
   req: IWorkLenzRequest,
   res: IWorkLenzResponse,
   next: NextFunction
 ): Promise<IWorkLenzResponse | void> => {
   if (isFreePlanUser(req.user)) return sendForbidden(res);
-  if (!isOwnerOrAdmin(req)) return sendForbidden(res);
   return organizationPermissionValidator(ORGANIZATION_PERMISSIONS.VIEW_REPORTS)(req, res, next);
 };
 

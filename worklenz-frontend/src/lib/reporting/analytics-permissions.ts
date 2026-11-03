@@ -2,7 +2,7 @@
  * Reporting & Analytics permission matrix.
  *
  * Manager maps to Worklenz Team Lead.
- * Owner/Admin only for reports. Guests are also redirected at the route layer.
+ * Report viewing follows the "View reports" scheme grant (Owners/Admins always have it).
  */
 
 export type AnalyticsActorRole = 'owner' | 'admin' | 'manager' | 'member' | 'guest';
@@ -10,6 +10,8 @@ export type AnalyticsActorRole = 'owner' | 'admin' | 'manager' | 'member' | 'gue
 export interface AnalyticsActor {
   role: AnalyticsActorRole;
   userId?: string | null;
+  /** When set, overrides the Owner/Admin-only default for report viewing. */
+  hasViewReportsPermission?: boolean;
 }
 
 export interface AnalyticsDashboardSubject {
@@ -39,15 +41,18 @@ const isWorkspaceAdmin = (role: AnalyticsActorRole) => role === 'owner' || role 
 export const getAnalyticsReportPermissions = (
   actor: AnalyticsActor
 ): AnalyticsReportPermissions => {
-  // Owner/Admin only — Members, Guests, and Team Leads (managers) are denied.
-  if (!isWorkspaceAdmin(actor.role)) {
+  const canView =
+    isWorkspaceAdmin(actor.role) || actor.hasViewReportsPermission === true;
+
+  if (!canView) {
     return { canViewReports: false, canExportReports: false, canConfigureSla: false };
   }
 
   return {
     canViewReports: true,
     canExportReports: true,
-    canConfigureSla: true,
+    // SLA configuration stays Owner/Admin-only
+    canConfigureSla: isWorkspaceAdmin(actor.role),
   };
 };
 

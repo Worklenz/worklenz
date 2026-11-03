@@ -1,7 +1,6 @@
 import express from "express";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import analyticsProjectAccessMiddleware from "../../middlewares/analytics-project-access";
-import { canViewAnalyticsReports } from "../../shared/reporting-analytics-permissions";
 import { withLastUpdated } from "../../redis/analytics-cache";
 import { ServerResponse } from "../../models/server-response";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
@@ -18,22 +17,15 @@ import BudgetTrackingController from "../../controllers/reporting-analytics/budg
 import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
 import { requireFeature } from "../../shared/entitlements/gates";
 
-import { viewFinanceValidator } from "../../middlewares/validators/organization-permission-validator";
+import {
+  viewFinanceValidator,
+  viewReportsValidator,
+} from "../../middlewares/validators/organization-permission-validator";
 
 const router = express.Router();
 
-async function requireAnalyticsAccess(
-  req: IWorkLenzRequest,
-  res: IWorkLenzResponse,
-  next: express.NextFunction
-) {
-  if (!(await canViewAnalyticsReports(req.user))) {
-    return res
-      .status(403)
-      .send(new ServerResponse(false, null, "You are not authorized to access analytics"));
-  }
-  return next();
-}
+/** View reports + paid plan — same gate as classic reporting. */
+const requireAnalyticsAccess = viewReportsValidator
 
 router.get(
   "/meta",

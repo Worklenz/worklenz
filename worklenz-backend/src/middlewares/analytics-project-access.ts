@@ -4,6 +4,11 @@ import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { ServerResponse } from "../models/server-response";
 import db from "../config/db";
 import { canViewAnalyticsReports } from "../shared/reporting-analytics-permissions";
+import { canViewAllProjects } from "../shared/organization-permissions";
+import {
+  getEffectiveTeamRole,
+  TEAM_ROLE_NAMES,
+} from "../shared/team-permissions";
 import {
   expandAccessibleProjects,
   parseAccessibleTeamIdsFromInput,
@@ -44,31 +49,36 @@ export default async function analyticsProjectAccessMiddleware(
     };
     const requestedTeamIds = await parseAccessibleTeamIdsFromInput(userId, teamId, input);
 
-    const q = `
+    // Owner/Admin, Team Lead, or "View all projects" — every team project.
+    // Everyone else — only projects they are a member of.
+    const role = getEffectiveTeamRole(req.user);
+    const seesAllTeamProjects =
+      role === TEAM_ROLE_NAMES.OWNER ||
+      role === TEAM_ROLE_NAMES.ADMIN ||
+      role === TEAM_ROLE_NAMES.TEAM_LEAD ||
+      (await canViewAllProjects(req.user));
+
+    const q = seesAllTeamProjects
+      ? `
       SELECT p.id
       FROM projects p
       WHERE p.team_id = $1::UUID
-        AND (
-          EXISTS (
-            SELECT 1 FROM team_members tm
-            JOIN roles r ON r.id = tm.role_id
-            WHERE tm.user_id = $2::UUID
-              AND tm.team_id = $1::UUID
-              AND tm.active = TRUE
-              AND (r.owner = TRUE OR r.admin_role = TRUE)
-          )
-          OR EXISTS (
-            SELECT 1 FROM project_members pm
-            JOIN team_members tm ON tm.id = pm.team_member_id
-            WHERE pm.project_id = p.id
-              AND tm.user_id = $2::UUID
-              AND tm.team_id = $1::UUID
-              AND tm.active = TRUE
-          )
+    `
+      : `
+      SELECT p.id
+      FROM projects p
+      WHERE p.team_id = $1::UUID
+        AND EXISTS (
+          SELECT 1 FROM project_members pm
+          JOIN team_members tm ON tm.id = pm.team_member_id
+          WHERE pm.project_id = p.id
+            AND tm.user_id = $2::UUID
+            AND tm.team_id = $1::UUID
+            AND tm.active = TRUE
         )
     `;
 
-    const result = await db.query(q, [teamId, userId]);
+    const result = await db.query(q, seesAllTeamProjects ? [teamId] : [teamId, userId]);
     const sessionAccessible = result.rows.map((row: { id: string }) => row.id);
     const accessibleList = await expandAccessibleProjects(
       userId,

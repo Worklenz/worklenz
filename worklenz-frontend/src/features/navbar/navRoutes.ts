@@ -61,14 +61,12 @@ export const navRoutes: NavRoutesType[] = [
   },
   {
     name: 'reporting',
-    // Opens the new Reporting & Analytics experience (prototype sidebar).
-    // Classic Owner/Admin reports remain at /worklenz/reporting/overview etc.
-    // Owner/Admin only — Members, Guests, and Team Leads do not see this section
-    // (Team Leads use my-team-reports instead).
+    // Reporting & Analytics — unlocked by "View reports" in the default permission scheme.
+    // Classic reports remain at /worklenz/reporting/overview etc. under the same guard.
     path: '/worklenz/reporting/analytics',
-    adminOnly: true,
+    adminOnly: false,
+    requiredPermission: ORGANIZATION_PERMISSIONS.VIEW_REPORTS,
     freePlanFeature: false,
-    guestExcluded: true,
   },
   {
     name: 'my-team-reports',

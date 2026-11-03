@@ -6,13 +6,16 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
+import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
 import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { canUseFeature } from '@/utils/subscription-utils';
+import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 import {
   ANALYTICS_NAV,
   analyticsPath,
   customReportPath,
   isBusinessAnalyticsReport,
+  isFinanceAnalyticsReport,
 } from '@/lib/reporting/analytics-nav';
 import { analyticsProjectHealthApiService } from '@/api/reporting/analytics-project-health.api.service';
 import { analyticsTimeReportApiService } from '@/api/reporting/analytics-time-report.api.service';
@@ -160,6 +163,8 @@ const AllReportsPage: React.FC = () => {
     authService.getCurrentSession(),
     'advanced_reporting'
   );
+  const { hasPermission: canViewFinance, isLoading: isFinancePermissionLoading } =
+    useOrganizationPermission(ORGANIZATION_PERMISSIONS.VIEW_FINANCE);
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
@@ -222,6 +227,10 @@ const AllReportsPage: React.FC = () => {
   );
 
   useEffect(() => {
+    // Wait for View finance before preview fetches — Project Health / Budget Tracking
+    // require it; calling them without it triggers Access Denied toasts.
+    if (isFinancePermissionLoading) return;
+
     let cancelled = false;
     void (async () => {
       const next: Record<string, CardMetrics> = {};
@@ -245,9 +254,13 @@ const AllReportsPage: React.FC = () => {
         cfdRes,
         tisRes,
       ] = await Promise.all([
-        settle(analyticsProjectHealthApiService.getSeries({})),
+        canViewFinance
+          ? settle(analyticsProjectHealthApiService.getSeries({}))
+          : Promise.resolve(null),
         settle(analyticsTimeReportApiService.getSeries({})),
-        settle(analyticsBudgetTrackingApiService.getSeries({})),
+        canViewFinance
+          ? settle(analyticsBudgetTrackingApiService.getSeries({}))
+          : Promise.resolve(null),
         settle(analyticsUtilizationApiService.getSeries({})),
         canAdvancedReporting
           ? settle(analyticsVelocityApiService.getSeries({ view_by: 'project' }))
@@ -387,7 +400,7 @@ const AllReportsPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [t, canAdvancedReporting]);
+  }, [t, canAdvancedReporting, canViewFinance, isFinancePermissionLoading]);
 
   const borderColor = isDark ? '#303030' : '#f0f0f0';
   const cardBg = token.colorBgContainer;
@@ -513,6 +526,9 @@ const AllReportsPage: React.FC = () => {
             const metrics = getMetrics(card);
             const isBusinessLocked =
               isBusinessAnalyticsReport(card.key) && !canAdvancedReporting;
+            const isFinanceLocked =
+              isFinanceAnalyticsReport(card.key) && !canViewFinance;
+            const isLocked = isBusinessLocked || isFinanceLocked;
             const reportName = t(card.titleKey, { defaultValue: card.defaultTitle });
             return (
               <button
@@ -525,6 +541,9 @@ const AllReportsPage: React.FC = () => {
                     dispatch(openUpgradeModal('default'));
                     return;
                   }
+                  if (isFinanceLocked) {
+                    return;
+                  }
                   navigate(analyticsPath(card.path));
                 }}
                 aria-label={
@@ -533,10 +552,15 @@ const AllReportsPage: React.FC = () => {
                         defaultValue: '{{name}} — Business plan required',
                         name: reportName,
                       })
-                    : t('hubOpenReportAria', {
-                        defaultValue: 'Open {{name}}',
-                        name: reportName,
-                      })
+                    : isFinanceLocked
+                      ? t('hubFinanceLockedAria', {
+                          defaultValue: '{{name}} — View finance permission required',
+                          name: reportName,
+                        })
+                      : t('hubOpenReportAria', {
+                          defaultValue: 'Open {{name}}',
+                          name: reportName,
+                        })
                 }
               >
                 <div className="all-reports-hub__card-top">
@@ -545,6 +569,12 @@ const AllReportsPage: React.FC = () => {
                     <span className="all-reports-hub__badge all-reports-hub__badge--business">
                       <CrownOutlined style={{ marginRight: 4 }} />
                       {t('businessPlanBadge', { defaultValue: 'Business' })}
+                    </span>
+                  ) : isFinanceLocked ? (
+                    <span className="all-reports-hub__badge all-reports-hub__badge--business">
+                      {t('hubBadgeFinanceRequired', {
+                        defaultValue: 'View finance required',
+                      })}
                     </span>
                   ) : (
                     <span className="all-reports-hub__badge all-reports-hub__badge--included">
@@ -560,19 +590,23 @@ const AllReportsPage: React.FC = () => {
                 <div className="all-reports-hub__card-body">
                   <div>
                     <div className="all-reports-hub__metric">
-                      {isBusinessLocked ? '—' : metrics.primary}
+                      {isLocked ? '—' : metrics.primary}
                     </div>
                     <div className="all-reports-hub__metric-sub" style={{ color: muted }}>
                       {t(card.metricSubKey, { defaultValue: card.defaultMetricSub })}
                     </div>
                   </div>
-                  <ReportCardPreview kind={card.key} series={metrics.spark} muted={isBusinessLocked} />
+                  <ReportCardPreview kind={card.key} series={metrics.spark} muted={isLocked} />
                 </div>
 
-                <div className={`all-reports-hub__card-footer${isBusinessLocked ? '' : ' is-open'}`}>
+                <div className={`all-reports-hub__card-footer${isLocked ? '' : ' is-open'}`}>
                   {isBusinessLocked
                     ? t('upgradeToBusiness', { defaultValue: 'Upgrade to Business' })
-                    : t('hubOpenReport', { defaultValue: 'Open report →' })}
+                    : isFinanceLocked
+                      ? t('hubFinancePermissionHint', {
+                          defaultValue: 'Requires View finance permission',
+                        })
+                      : t('hubOpenReport', { defaultValue: 'Open report →' })}
                 </div>
               </button>
             );
