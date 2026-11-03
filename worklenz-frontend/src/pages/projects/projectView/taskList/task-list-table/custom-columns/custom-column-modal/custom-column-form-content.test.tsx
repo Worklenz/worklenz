@@ -65,7 +65,7 @@ for (const [mode, algorithm] of [['light', theme.defaultAlgorithm], ['dark', the
     }));
   });
 
-  it(`prevents a field with dependents from creating a new parent in ${mode} theme`, () => {
+  it(`disables the parent-field selector for a field with dependents in ${mode} theme`, () => {
     const parent: ITaskCustomColumn = { id: 'parent', key: 'parent', name: 'Parent', custom_column_obj: { fieldType: 'selection' } };
     state.taskManagement.customColumns = [parent,
       { id: 'child', key: 'child', name: 'Child', custom_column_obj: { fieldType: 'selection', parentColumnId: 'parent' } },
@@ -75,7 +75,7 @@ for (const [mode, algorithm] of [['light', theme.defaultAlgorithm], ['dark', the
       customColumnModalType: 'edit', customColumnId: 'parent', currentColumnData: parent,
     });
     render(<ConfigProvider theme={{ algorithm }}><CustomColumnFormContent projectId="project" onDone={vi.fn()} /></ConfigProvider>);
-    expect(screen.queryByText('+ Create new parent field')).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toBeDisabled();
   });
 
   it(`requires both confirmations before changing a column type in ${mode} theme`, async () => {
