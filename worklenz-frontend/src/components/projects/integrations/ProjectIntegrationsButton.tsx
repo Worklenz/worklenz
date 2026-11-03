@@ -89,7 +89,7 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
         github: {
           connected: !!githubRepositories?.connected,
           accountConnected: !!githubRepositories?.connected,
-          repositoryCount: githubRepositories?.linked?.length || 0,
+          repositoryCount: githubRepositories?.connected ? githubRepositories.linked.length : 0,
         },
       });
     } catch (error) {
@@ -144,7 +144,10 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
   return (
     <Dropdown
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={nextOpen => {
+        setOpen(nextOpen);
+        if (nextOpen) void fetchIntegrationStatus();
+      }}
       popupRender={() => (
         <IntegrationsDropdown
           projectId={projectId}

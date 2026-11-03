@@ -192,9 +192,7 @@ export const GithubProjectRepositories = ({
         ? {
             ...current,
             linked: current.linked.map(item =>
-              item.id === linkId
-                ? { ...item, settings: { ...item.settings, import: next } }
-                : item
+              item.id === linkId ? { ...item, settings: { ...item.settings, import: next } } : item
             ),
           }
         : current
@@ -258,44 +256,53 @@ export const GithubProjectRepositories = ({
       );
     }
 
-    if (!data.connected) {
-      return (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={
-            data.can_connect
-              ? t('project.connectPrompt', {
+    const connectPrompt = !data.connected ? (
+      <Empty
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+        description={
+          data.can_connect
+            ? t('project.connectPrompt', {
+                defaultValue:
+                  'Connect your GitHub account once for the whole team, then link repositories to this project.',
+              })
+            : data.owner_name
+              ? t('project.askOwnerNamed', {
                   defaultValue:
-                    'Connect your GitHub account once for the whole team, then link repositories to this project.',
+                    'GitHub isn’t connected yet. Ask {{name}} or another team admin to connect it.',
+                  name: data.owner_name,
                 })
-              : data.owner_name
-                ? t('project.askOwnerNamed', {
-                    defaultValue:
-                      'GitHub isn’t connected yet. Ask {{name}} or another team admin to connect it.',
-                    name: data.owner_name,
-                  })
-                : t('project.askOwner', {
-                    defaultValue:
-                      'GitHub isn’t connected yet. Ask a team owner or admin to connect it.',
-                  })
-          }
+              : t('project.askOwner', {
+                  defaultValue:
+                    'GitHub isn’t connected yet. Ask a team owner or admin to connect it.',
+                })
+        }
+      >
+        <Button
+          type="primary"
+          icon={<GithubOutlined />}
+          loading={isConnecting}
+          disabled={!data.can_connect}
+          onClick={() => void handleConnect()}
         >
-          <Button
-            type="primary"
-            icon={<GithubOutlined />}
-            loading={isConnecting}
-            disabled={!data.can_connect}
-            onClick={() => void handleConnect()}
-          >
-            {t('connect.button', { defaultValue: 'Connect GitHub' })}
-          </Button>
-        </Empty>
-      );
-    }
+          {t('connect.button', { defaultValue: 'Connect GitHub' })}
+        </Button>
+      </Empty>
+    ) : null;
 
     return (
       <Flex vertical gap={16}>
-        {canManage && (
+        {connectPrompt}
+        {!data.connected && data.linked.length > 0 && (
+          <Alert
+            type="warning"
+            showIcon
+            message={t('project.disconnectedLinks', {
+              defaultValue:
+                'The repositories below are saved, but GitHub is disconnected. Reconnect GitHub to resume tracking.',
+            })}
+          />
+        )}
+        {canManage && data.connected && (
           <Flex gap={8} wrap>
             <Select
               showSearch
@@ -327,7 +334,7 @@ export const GithubProjectRepositories = ({
           </Flex>
         )}
 
-        {data.linked.length === 0 ? (
+        {data.linked.length === 0 && data.connected ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
@@ -338,7 +345,7 @@ export const GithubProjectRepositories = ({
                 : t('project.empty', { defaultValue: 'No repositories linked to this project.' })
             }
           />
-        ) : (
+        ) : data.linked.length > 0 ? (
           <Flex vertical gap={8}>
             {data.linked.map(link => (
               <div
@@ -369,7 +376,7 @@ export const GithubProjectRepositories = ({
                     </Flex>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       {t('project.baseBranch', { defaultValue: 'Base branch' })}:{' '}
-                      {canManage ? (
+                      {canManage && data.connected ? (
                         <Typography.Text
                           style={{ fontSize: 12 }}
                           code
@@ -418,7 +425,7 @@ export const GithubProjectRepositories = ({
                 <GithubStatusAutomation
                   statuses={data.statuses}
                   value={link.settings?.status_map || {}}
-                  disabled={!canManage}
+                  disabled={!canManage || !data.connected}
                   onChange={(event, statusId) =>
                     void handleStatusMapChange(link.id, event, statusId)
                   }
@@ -426,18 +433,20 @@ export const GithubProjectRepositories = ({
               </div>
             ))}
           </Flex>
-        )}
+        ) : null}
 
-        <Alert
-          type="info"
-          showIcon={false}
-          message={t('project.howItWorks', {
-            defaultValue:
-              'Include an issue key such as {{example}} in a branch name, commit message or pull request title to link it to that issue.',
-            example: `${projectKey || 'KEY'}-12`,
-          })}
-          style={{ fontSize: 13 }}
-        />
+        {data.connected && (
+          <Alert
+            type="info"
+            showIcon={false}
+            message={t('project.howItWorks', {
+              defaultValue:
+                'Include an issue key such as {{example}} in a branch name, commit message or pull request title to link it to that issue.',
+              example: `${projectKey || 'KEY'}-12`,
+            })}
+            style={{ fontSize: 13 }}
+          />
+        )}
       </Flex>
     );
   };
