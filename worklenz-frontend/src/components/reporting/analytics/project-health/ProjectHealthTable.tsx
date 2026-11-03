@@ -141,7 +141,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
           const confidence = CONFIDENCE_FALLBACK[confidenceTone(row.delivery_confidence)];
           return (
             <Flex vertical gap={4}>
-              <Tag color={confidence.color}>
+              <Tag color={confidence.color} style={{ alignSelf: 'flex-start', marginInlineEnd: 0 }}>
                 {t(confidence.labelKey, { defaultValue: confidence.defaultLabel })}
               </Tag>
               {row.delivery_confidence_note && (
