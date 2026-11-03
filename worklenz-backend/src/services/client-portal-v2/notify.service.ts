@@ -1,7 +1,14 @@
 import db from "../../config/db";
 import { getClientPortalBaseUrl } from "../../cron_jobs/helpers";
 import { sendEmail } from "../../shared/email";
+import { IO } from "../../shared/io";
 import { htmlToPlainText, log_error, sanitizePlainText } from "../../shared/utils";
+import {
+  CLIENT_PORTAL_SOCKET,
+  ClientPortalDataUpdatedPayload,
+  clientPortalClientRoomName,
+  clientPortalTeamRoomName,
+} from "../../socket.io/client-portal-room";
 import { NotificationsService } from "../notifications/notifications.service";
 import {
   ClientNotificationEvent,
@@ -22,6 +29,9 @@ import { Queryable } from "./types";
  * Client side: a client_portal_notifications row (in-app, always on) and, per event, an email to
  * the active client users on the project. Client notifications never contain internal-only text:
  * callers pass only client-visible titles and bodies.
+ *
+ * Both paths also emit `client_portal:data_updated` to socket rooms so open Admin / Client Portal
+ * UIs can invalidate their caches without a hard refresh.
  */
 
 export type StaffNotificationKind =
@@ -32,6 +42,41 @@ export type StaffNotificationKind =
   | "Access"
   | "Project";
 
+const STAFF_KIND_TO_TYPE: Record<StaffNotificationKind, string> = {
+  Comment: "discussion",
+  Approval: "approval",
+  "Change Request": "change_request",
+  File: "file",
+  Access: "access",
+  Project: "project_update",
+};
+
+/** Fan-out for open Admin / Client Portal UIs (no DB write). Safe to call after commit. */
+export function emitPortalDataUpdated(
+  payload: ClientPortalDataUpdatedPayload,
+  options?: { staffSocketIds?: Array<string | null | undefined> }
+): void {
+  try {
+    IO.emitToRoom(clientPortalTeamRoomName(payload.teamId), CLIENT_PORTAL_SOCKET.DATA_UPDATED, payload);
+    if (payload.clientId) {
+      IO.emitToRoom(
+        clientPortalClientRoomName(payload.teamId, payload.clientId),
+        CLIENT_PORTAL_SOCKET.DATA_UPDATED,
+        payload
+      );
+    }
+    // Direct emit to staff sockets (same path as the notification toast). Room join is best-effort;
+    // without this, an admin who never joined the portal room sees the bell but not the list refresh.
+    for (const socketId of options?.staffSocketIds ?? []) {
+      if (socketId) {
+        IO.emit(CLIENT_PORTAL_SOCKET.DATA_UPDATED, socketId, payload);
+      }
+    }
+  } catch (error) {
+    log_error(error);
+  }
+}
+
 export interface StaffNotificationInput {
   teamId: string;
   kind: StaffNotificationKind;
@@ -40,6 +85,9 @@ export interface StaffNotificationInput {
   /** In-app deep link, e.g. /worklenz/client-portal/approvals/<id>. */
   url: string;
   projectId?: string | null;
+  /** When set, also fans out to the client socket room for live portal sync. */
+  clientId?: string | null;
+  referenceId?: string | null;
   /** When set, the team's email toggle for this event decides whether an email also goes out. */
   emailEvent?: TeamNotificationEvent;
   /** A published project update is created already read so it does not raise the badge. */
@@ -141,6 +189,19 @@ export async function notifyStaff(input: StaffNotificationInput): Promise<void> 
         );
       }
     }
+
+    // Live sync for open Admin Client Portal pages (and client room when clientId is known).
+    emitPortalDataUpdated(
+      {
+        teamId: input.teamId,
+        clientId: input.clientId ?? null,
+        projectId: input.projectId ?? null,
+        type: STAFF_KIND_TO_TYPE[input.kind],
+        referenceId: input.referenceId ?? null,
+        source: "client",
+      },
+      { staffSocketIds: recipients.map(recipient => recipient.socket_id) }
+    );
   } catch (error) {
     log_error(error);
   }
@@ -230,33 +291,48 @@ export async function notifyClientUsers(input: ClientNotificationInput): Promise
       ]
     );
 
-    if (!input.emailEvent) return;
-    const settings = await getPortalSettingsV2(db, input.teamId);
-    if (!settings.client_email_events[input.emailEvent]) return;
+    if (input.emailEvent) {
+      const settings = await getPortalSettingsV2(db, input.teamId);
+      if (settings.client_email_events[input.emailEvent]) {
+        const recipients = await db.query(
+          `SELECT DISTINCT cc.email
+             FROM client_contacts cc
+             JOIN client_users cu ON cu.id = cc.client_user_id AND cu.status = 'active'
+            WHERE cc.client_id = $1
+              AND cc.team_id = $2
+              AND cc.disabled_at IS NULL
+              AND cc.activated_at IS NOT NULL
+              AND ($3::uuid IS NULL OR ${CONTACT_CAN_OPEN_PROJECT_SQL("cc.id", "$3")})
+              AND ($4::uuid[] IS NULL OR cc.id = ANY($4::uuid[]))
+              -- Email is disabled by default for clients; a client must explicitly enable it in Settings > Notifications.
+              AND EXISTS (
+                    SELECT 1 FROM client_contact_notification_prefs np
+                     WHERE np.contact_id = cc.id AND np.event_type = $5 AND np.email IS TRUE)`,
+          [input.clientId, input.teamId, input.projectId ?? null, input.onlyContactIds ?? null, input.emailEvent]
+        );
 
-    const recipients = await db.query(
-      `SELECT DISTINCT cc.email
-         FROM client_contacts cc
-         JOIN client_users cu ON cu.id = cc.client_user_id AND cu.status = 'active'
-        WHERE cc.client_id = $1
-          AND cc.team_id = $2
-          AND cc.disabled_at IS NULL
-          AND cc.activated_at IS NOT NULL
-          AND ($3::uuid IS NULL OR ${CONTACT_CAN_OPEN_PROJECT_SQL("cc.id", "$3")})
-          AND ($4::uuid[] IS NULL OR cc.id = ANY($4::uuid[]))
-          -- Email is disabled by default for clients; a client must explicitly enable it in Settings > Notifications.
-          AND EXISTS (
-                SELECT 1 FROM client_contact_notification_prefs np
-                 WHERE np.contact_id = cc.id AND np.event_type = $5 AND np.email IS TRUE)`,
-      [input.clientId, input.teamId, input.projectId ?? null, input.onlyContactIds ?? null, input.emailEvent]
-    );
+        const link = `${getClientPortalBaseUrl()}${input.portalPath ?? ""}`;
+        const html = buildEmailHtml(input.title, plainMessage, link);
+        await Promise.all(
+          recipients.rows.map(row =>
+            sendEmail({ to: [row.email as string], subject: input.title, html }).catch(log_error)
+          )
+        );
+      }
+    }
 
-    const link = `${getClientPortalBaseUrl()}${input.portalPath ?? ""}`;
-    const html = buildEmailHtml(input.title, plainMessage, link);
-    await Promise.all(
-      recipients.rows.map(row =>
-        sendEmail({ to: [row.email as string], subject: input.title, html }).catch(log_error)
-      )
+    // Live sync for open client-portal + admin portal pages (direct staff sockets + rooms).
+    const staff = await getStaffRecipients(db, input.teamId);
+    emitPortalDataUpdated(
+      {
+        teamId: input.teamId,
+        clientId: input.clientId,
+        projectId: input.projectId ?? null,
+        type: input.type,
+        referenceId: input.referenceId ?? null,
+        source: "staff",
+      },
+      { staffSocketIds: staff.map(recipient => recipient.socket_id) }
     );
   } catch (error) {
     log_error(error);
