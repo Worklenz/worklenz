@@ -19,7 +19,6 @@ import {
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
-  type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
@@ -30,6 +29,10 @@ import {
 import { PvaTasksKpiTiles } from '@/components/reporting/analytics/planned-vs-actual-tasks/PvaTasksKpiTiles';
 import { PvaTasksTable } from '@/components/reporting/analytics/planned-vs-actual-tasks/PvaTasksTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import {
+  hasMeaningfulAnalyticsFilters,
+  usePersistedAnalyticsFilters,
+} from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
@@ -74,10 +77,20 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
-  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const {
+    datePreset,
+    setDatePreset,
+    selectedProjectIds,
+    setSelectedProjectIds,
+    selectedTeamIds,
+    setSelectedTeamIds,
+    selectedMemberIds,
+    setSelectedMemberIds,
+    wasRestored,
+  } = usePersistedAnalyticsFilters({
+    reportKind: 'planned-vs-actual-tasks',
+    customTemplateId,
+  });
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
@@ -90,6 +103,14 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const seededProjectsForTeamsRef = useRef<string>('');
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
+  const skipDefaultTemplate =
+    wasRestored &&
+    hasMeaningfulAnalyticsFilters({
+      datePreset,
+      selectedProjectIds,
+      selectedMemberIds,
+      selectedTeamIds,
+    });
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -98,7 +119,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
       setSelectedTeamIds,
       setDatePreset,
     });
-  }, []);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDatePreset]);
 
   const {
     templates,
@@ -113,6 +134,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
     reportKind: 'planned-vs-actual-tasks',
     customTemplateId,
     onApply: applyTemplateFilters,
+    skipDefaultTemplate,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,

@@ -18,7 +18,6 @@ import {
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
-  type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
@@ -27,6 +26,10 @@ import { CfdKpiTiles } from '@/components/reporting/analytics/cfd/CfdKpiTiles';
 import { CfdStatusLegend } from '@/components/reporting/analytics/cfd/CfdStatusLegend';
 import { CfdTable } from '@/components/reporting/analytics/cfd/CfdTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import {
+  hasMeaningfulAnalyticsFilters,
+  usePersistedAnalyticsFilters,
+} from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
@@ -63,9 +66,18 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     userId: session?.id,
   });
 
-  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+  const {
+    datePreset,
+    setDatePreset,
+    selectedProjectIds,
+    setSelectedProjectIds,
+    selectedTeamIds,
+    setSelectedTeamIds,
+    wasRestored,
+  } = usePersistedAnalyticsFilters({
+    reportKind: 'cumulative-flow',
+    customTemplateId,
+  });
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
 
@@ -80,6 +92,13 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
   const chartRef = useRef<CfdChartHandle>(null);
   /** Tracks last rollup mode so switching category ? detail resets visible bands. */
   const lastRollupMode = useRef<boolean | null>(null);
+  const skipDefaultTemplate =
+    wasRestored &&
+    hasMeaningfulAnalyticsFilters({
+      datePreset,
+      selectedProjectIds,
+      selectedTeamIds,
+    });
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -87,7 +106,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
       setSelectedTeamIds,
       setDatePreset,
     });
-  }, []);
+  }, [setSelectedProjectIds, setSelectedTeamIds, setDatePreset]);
 
   const {
     templates,
@@ -102,6 +121,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     reportKind: 'cumulative-flow',
     customTemplateId,
     onApply: applyTemplateFilters,
+    skipDefaultTemplate,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       team_ids: selectedTeamIds,

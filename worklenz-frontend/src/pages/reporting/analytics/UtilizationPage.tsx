@@ -22,7 +22,6 @@ import {
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
-  type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
@@ -33,6 +32,10 @@ import {
 import { UtilizationKpiTiles } from '@/components/reporting/analytics/utilization/UtilizationKpiTiles';
 import { UtilizationTable } from '@/components/reporting/analytics/utilization/UtilizationTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import {
+  hasMeaningfulAnalyticsFilters,
+  usePersistedAnalyticsFilters,
+} from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
@@ -71,10 +74,20 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
-  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const {
+    datePreset,
+    setDatePreset,
+    selectedProjectIds,
+    setSelectedProjectIds,
+    selectedTeamIds,
+    setSelectedTeamIds,
+    selectedMemberIds,
+    setSelectedMemberIds,
+    wasRestored,
+  } = usePersistedAnalyticsFilters({
+    reportKind: 'utilization',
+    customTemplateId,
+  });
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
@@ -85,6 +98,14 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
 
   const chartRef = useRef<UtilizationChartHandle>(null);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
+  const skipDefaultTemplate =
+    wasRestored &&
+    hasMeaningfulAnalyticsFilters({
+      datePreset,
+      selectedProjectIds,
+      selectedMemberIds,
+      selectedTeamIds,
+    });
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -93,7 +114,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
       setSelectedTeamIds,
       setDatePreset,
     });
-  }, []);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDatePreset]);
 
   const {
     templates,
@@ -108,6 +129,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     reportKind: 'utilization',
     customTemplateId,
     onApply: applyTemplateFilters,
+    skipDefaultTemplate,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,

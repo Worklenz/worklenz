@@ -20,6 +20,11 @@ interface UseAnalyticsReportTemplatesOptions {
   onApply: (template: AnalyticsReportTemplate) => void;
   /** Current filters to persist when saving */
   getFilters: () => Record<string, unknown>;
+  /**
+   * When true, skip auto-applying the workspace default template on load.
+   * Used so session-persisted filters are not overwritten after navigation.
+   */
+  skipDefaultTemplate?: boolean;
 }
 
 /**
@@ -31,6 +36,7 @@ export const useAnalyticsReportTemplates = ({
   customTemplateId,
   onApply,
   getFilters,
+  skipDefaultTemplate = false,
 }: UseAnalyticsReportTemplatesOptions) => {
   const { t } = useTranslation('reporting-analytics');
   const [searchParams, setSearchParams] = useSearchParams();
@@ -105,14 +111,16 @@ export const useAnalyticsReportTemplates = ({
       }
 
       if (!isCustomTemplateView && !appliedDefaultTemplate.current) {
-        const defaultTpl = res.body.find(tpl => tpl.is_default);
-        if (defaultTpl) onApplyRef.current(defaultTpl);
+        if (!skipDefaultTemplate) {
+          const defaultTpl = res.body.find(tpl => tpl.is_default);
+          if (defaultTpl) onApplyRef.current(defaultTpl);
+        }
         appliedDefaultTemplate.current = true;
       }
     } catch {
       // templates optional
     }
-  }, [reportKind, isCustomTemplateView]);
+  }, [reportKind, isCustomTemplateView, skipDefaultTemplate]);
 
   useEffect(() => {
     void loadTemplates();

@@ -19,7 +19,6 @@ import {
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
-  type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
@@ -30,6 +29,10 @@ import {
 import { PvaMilestonesKpiTiles } from '@/components/reporting/analytics/planned-vs-actual-milestones/PvaMilestonesKpiTiles';
 import { PvaMilestonesTable } from '@/components/reporting/analytics/planned-vs-actual-milestones/PvaMilestonesTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import {
+  hasMeaningfulAnalyticsFilters,
+  usePersistedAnalyticsFilters,
+} from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
@@ -70,10 +73,20 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
-  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const {
+    datePreset,
+    setDatePreset,
+    selectedProjectIds,
+    setSelectedProjectIds,
+    selectedTeamIds,
+    setSelectedTeamIds,
+    selectedMemberIds,
+    setSelectedMemberIds,
+    wasRestored,
+  } = usePersistedAnalyticsFilters({
+    reportKind: 'planned-vs-actual-milestones',
+    customTemplateId,
+  });
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
@@ -83,8 +96,16 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
   const [data, setData] = useState<PlannedVsActualMilestonesSeriesResponse | null>(null);
 
   const chartRef = useRef<PvaMilestonesChartHandle>(null);
-  /** Milestone chart is project-wise â€” require an explicit project before loading. */
+  /** Milestone chart is project-wise — require an explicit project before loading. */
   const hasProjectSelection = selectedProjectIds.length > 0;
+  const skipDefaultTemplate =
+    wasRestored &&
+    hasMeaningfulAnalyticsFilters({
+      datePreset,
+      selectedProjectIds,
+      selectedMemberIds,
+      selectedTeamIds,
+    });
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -93,7 +114,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
       setSelectedTeamIds,
       setDatePreset,
     });
-  }, []);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDatePreset]);
 
   const {
     templates,
@@ -108,6 +129,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
     reportKind: 'planned-vs-actual-milestones',
     customTemplateId,
     onApply: applyTemplateFilters,
+    skipDefaultTemplate,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,

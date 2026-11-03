@@ -21,7 +21,6 @@ import {
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
-  type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
@@ -33,6 +32,10 @@ import { ProjectHealthDonutChart } from '@/components/reporting/analytics/projec
 import { ProjectHealthKpiTiles } from '@/components/reporting/analytics/project-health/ProjectHealthKpiTiles';
 import { ProjectHealthTable } from '@/components/reporting/analytics/project-health/ProjectHealthTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import {
+  hasMeaningfulAnalyticsFilters,
+  usePersistedAnalyticsFilters,
+} from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
@@ -78,11 +81,22 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
 
-  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-  const [selectedHealthIds, setSelectedHealthIds] = useState<string[]>([]);
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const {
+    datePreset,
+    setDatePreset,
+    selectedProjectIds,
+    setSelectedProjectIds,
+    selectedTeamIds,
+    setSelectedTeamIds,
+    selectedHealthIds,
+    setSelectedHealthIds,
+    selectedMemberIds,
+    setSelectedMemberIds,
+    wasRestored,
+  } = usePersistedAnalyticsFilters({
+    reportKind: 'project-health',
+    customTemplateId,
+  });
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
@@ -95,6 +109,15 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const seededProjectsForTeamsRef = useRef<string>('');
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
+  const skipDefaultTemplate =
+    wasRestored &&
+    hasMeaningfulAnalyticsFilters({
+      datePreset,
+      selectedProjectIds,
+      selectedMemberIds,
+      selectedTeamIds,
+      selectedHealthIds,
+    });
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -104,7 +127,13 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       setSelectedHealthIds,
       setDatePreset,
     });
-  }, []);
+  }, [
+    setSelectedProjectIds,
+    setSelectedMemberIds,
+    setSelectedTeamIds,
+    setSelectedHealthIds,
+    setDatePreset,
+  ]);
 
   const {
     templates,
@@ -119,6 +148,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     reportKind: 'project-health',
     customTemplateId,
     onApply: applyTemplateFilters,
+    skipDefaultTemplate,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,
@@ -439,7 +469,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
                   <MetricCalcHint
                     title={t('phCalcProgressBudget', {
                       defaultValue:
-                        'Progress % = completed tasks Ã· total tasks. Budget used % = (task fixed costs + logged time cost) Ã· project budget.',
+                        'Progress % = completed tasks ÷ total tasks. Budget used % = (task fixed costs + logged time cost) ÷ project budget.',
                     })}
                     color={token.colorTextSecondary}
                   />

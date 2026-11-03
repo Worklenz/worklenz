@@ -21,7 +21,6 @@ import {
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
-  type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
 import {
@@ -40,6 +39,10 @@ import {
 import { TisPerIssueTable } from '@/components/reporting/analytics/time-in-status/TisPerIssueTable';
 import { TisKpiTiles } from '@/components/reporting/analytics/time-in-status/TisKpiTiles';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import {
+  hasMeaningfulAnalyticsFilters,
+  usePersistedAnalyticsFilters,
+} from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
@@ -82,10 +85,20 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
-  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+  const {
+    datePreset,
+    setDatePreset,
+    selectedProjectIds,
+    setSelectedProjectIds,
+    selectedMemberIds,
+    setSelectedMemberIds,
+    selectedTeamIds,
+    setSelectedTeamIds,
+    wasRestored,
+  } = usePersistedAnalyticsFilters({
+    reportKind: 'time-in-status',
+    customTemplateId,
+  });
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
 
@@ -100,6 +113,14 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
 
   const aggregateChartRef = useRef<TisAggregateChartHandle>(null);
   const perIssueChartRef = useRef<TisPerIssueChartHandle>(null);
+  const skipDefaultTemplate =
+    wasRestored &&
+    hasMeaningfulAnalyticsFilters({
+      datePreset,
+      selectedProjectIds,
+      selectedMemberIds,
+      selectedTeamIds,
+    });
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -108,7 +129,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
       setSelectedTeamIds,
       setDatePreset,
     });
-  }, []);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds, setDatePreset]);
 
   const {
     templates,
@@ -123,6 +144,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
     reportKind: 'time-in-status',
     customTemplateId,
     onApply: applyTemplateFilters,
+    skipDefaultTemplate,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,
@@ -402,13 +424,13 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
   };
 
   const sortOptions = getTimeInStatusSortOptions(reportView, {
-    avgDesc: t('tisSortAvgDesc', { defaultValue: 'Avg (high → low)' }),
-    avgAsc: t('tisSortAvgAsc', { defaultValue: 'Avg (low → high)' }),
-    medianDesc: t('tisSortMedianDesc', { defaultValue: 'Median (high → low)' }),
-    countDesc: t('tisSortCountDesc', { defaultValue: 'Count (high → low)' }),
+    avgDesc: t('tisSortAvgDesc', { defaultValue: 'Avg (high ? low)' }),
+    avgAsc: t('tisSortAvgAsc', { defaultValue: 'Avg (low ? high)' }),
+    medianDesc: t('tisSortMedianDesc', { defaultValue: 'Median (high ? low)' }),
+    countDesc: t('tisSortCountDesc', { defaultValue: 'Count (high ? low)' }),
     statusName: t('tisSortNameAsc', { defaultValue: 'Status name' }),
-    totalDesc: t('tisSortTotalDesc', { defaultValue: 'Total (high → low)' }),
-    totalAsc: t('tisSortTotalAsc', { defaultValue: 'Total (low → high)' }),
+    totalDesc: t('tisSortTotalDesc', { defaultValue: 'Total (high ? low)' }),
+    totalAsc: t('tisSortTotalAsc', { defaultValue: 'Total (low ? high)' }),
     taskKey: t('tisSortKeyAsc', { defaultValue: 'Task key' }),
     taskName: t('tisSortTaskNameAsc', { defaultValue: 'Task name' }),
   });

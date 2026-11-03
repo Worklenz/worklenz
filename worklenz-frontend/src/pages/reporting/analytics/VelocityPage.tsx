@@ -16,6 +16,7 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
+import { usePersistedAnalyticsFilters } from '@/hooks/usePersistedAnalyticsFilters';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { analyticsVelocityApiService } from '@/api/reporting/analytics-velocity.api.service';
 import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
@@ -35,7 +36,6 @@ import {
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
-  type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
@@ -87,10 +87,19 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
   });
   const teamMembersState = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
-  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+  const {
+    datePreset,
+    setDatePreset,
+    selectedProjectIds,
+    setSelectedProjectIds,
+    selectedMemberIds,
+    setSelectedMemberIds,
+    selectedTeamIds,
+    setSelectedTeamIds,
+  } = usePersistedAnalyticsFilters({
+    reportKind: 'velocity',
+    customTemplateId,
+  });
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
   const [loading, setLoading] = useState(false);
