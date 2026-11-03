@@ -1,5 +1,7 @@
 export type ProjectHealthTone = 'on_track' | 'at_risk' | 'off_track' | 'not_set';
 
+export type DeliveryConfidenceStatus = 'green' | 'amber' | 'red';
+
 export interface ProjectHealthFilters {
   project_ids?: string[];
   health_ids?: string[];
@@ -14,6 +16,8 @@ export interface ProjectHealthRow {
   health_name: string;
   health_color: string;
   health_tone: ProjectHealthTone;
+  delivery_confidence: DeliveryConfidenceStatus | null;
+  delivery_confidence_note: string | null;
   progress_pct: number;
   budget_used_pct: number;
   due_date: string | null;

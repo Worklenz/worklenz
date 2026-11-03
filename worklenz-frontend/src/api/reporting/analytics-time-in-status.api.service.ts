@@ -10,15 +10,15 @@ import type {
 
 const rootUrl = `${API_BASE_URL}/reporting/analytics`;
 
-const filtersToQuery = (filters: TimeInStatusFilters): Record<string, unknown> => ({
-  project_ids: filters.project_ids?.join(','),
-  team_ids: filters.team_ids?.join(','),
-  status_ids: filters.status_ids?.join(','),
-  assignee_ids: filters.assignee_ids?.join(','),
-  issue_types: filters.issue_types?.join(','),
-  label_ids: filters.label_ids?.join(','),
-  epic_ids: filters.epic_ids?.join(','),
-  sprint_ids: filters.sprint_ids?.join(','),
+const filtersToBody = (filters: TimeInStatusFilters): Record<string, unknown> => ({
+  project_ids: filters.project_ids,
+  team_ids: filters.team_ids,
+  status_ids: filters.status_ids,
+  assignee_ids: filters.assignee_ids,
+  issue_types: filters.issue_types,
+  label_ids: filters.label_ids,
+  epic_ids: filters.epic_ids,
+  sprint_ids: filters.sprint_ids,
   date_from: filters.date_from || undefined,
   date_to: filters.date_to || undefined,
   date_mode: filters.date_mode,
@@ -29,25 +29,13 @@ const filtersToQuery = (filters: TimeInStatusFilters): Record<string, unknown> =
   offset: filters.offset,
 });
 
-const filtersToBody = (filters: TimeInStatusFilters): Record<string, unknown> => ({
-  ...filtersToQuery(filters),
-  project_ids: filters.project_ids,
-  team_ids: filters.team_ids,
-  status_ids: filters.status_ids,
-  assignee_ids: filters.assignee_ids,
-  issue_types: filters.issue_types,
-  label_ids: filters.label_ids,
-  epic_ids: filters.epic_ids,
-  sprint_ids: filters.sprint_ids,
-});
-
 export const analyticsTimeInStatusApiService = {
   getSeries: async (
     filters: TimeInStatusFilters
   ): Promise<IServerResponse<TimeInStatusSeriesResponse>> => {
-    const q = toQueryString(filtersToQuery(filters));
-    const response = await apiClient.get<IServerResponse<TimeInStatusSeriesResponse>>(
-      `${rootUrl}/time-in-status/series${q}`
+    const response = await apiClient.post<IServerResponse<TimeInStatusSeriesResponse>>(
+      `${rootUrl}/time-in-status/series`,
+      filtersToBody(filters)
     );
     return response.data;
   },
@@ -55,8 +43,12 @@ export const analyticsTimeInStatusApiService = {
   getFilterOptions: async (
     filters: Pick<TimeInStatusFilters, 'project_ids' | 'team_ids'>
   ): Promise<IServerResponse<TimeInStatusFilterOptions>> => {
+    // Keep GET for filter-options when few IDs; fall back to short query for teams only.
     const q = toQueryString({
-      project_ids: filters.project_ids?.join(','),
+      project_ids:
+        filters.project_ids && filters.project_ids.length <= 20
+          ? filters.project_ids.join(',')
+          : undefined,
       team_ids: filters.team_ids?.join(','),
     });
     const response = await apiClient.get<IServerResponse<TimeInStatusFilterOptions>>(

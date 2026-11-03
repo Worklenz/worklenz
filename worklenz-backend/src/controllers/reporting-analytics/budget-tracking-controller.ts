@@ -31,11 +31,11 @@ export default class BudgetTrackingController extends WorklenzControllerBase {
     }
 
     const accessible = accessibleProjectIds(req);
-    const filters = parseBudgetTrackingFilters(
-      req.query as Record<string, unknown>,
-      accessible,
-      teamId
-    );
+    const input = {
+      ...(req.query as Record<string, unknown>),
+      ...((req.body as Record<string, unknown> | undefined) ?? {}),
+    };
+    const filters = parseBudgetTrackingFilters(input, accessible, teamId);
 
     const data = await getBudgetTrackingSeries(filters);
     return res.status(200).send(new ServerResponse(true, data));

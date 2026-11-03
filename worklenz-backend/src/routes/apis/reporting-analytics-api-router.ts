@@ -67,6 +67,14 @@ router.get(
 );
 
 // —— Velocity (Business / advanced_reporting) ——
+// POST preferred: Select All can include hundreds of project UUIDs (GET URL/header limits).
+router.post(
+  "/velocity/series",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(VelocityController.getSeries)
+);
 router.get(
   "/velocity/series",
   requireAnalyticsAccess,
@@ -84,6 +92,13 @@ router.post(
 );
 
 // —— Cumulative Flow (Business / advanced_reporting) ——
+router.post(
+  "/cfd/series",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(CfdController.getSeries)
+);
 router.get(
   "/cfd/series",
   requireAnalyticsAccess,
@@ -101,6 +116,13 @@ router.post(
 );
 
 // —— Time in Status (Business / advanced_reporting) ——
+router.post(
+  "/time-in-status/series",
+  requireAnalyticsAccess,
+  requireFeature("advanced_reporting"),
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(TimeInStatusController.getSeries)
+);
 router.get(
   "/time-in-status/series",
   requireAnalyticsAccess,
@@ -126,6 +148,14 @@ router.post(
 );
 
 // —— Project Health ——
+router.post(
+  "/project-health/series",
+  requireAnalyticsAccess,
+  requireFeature("finance_module"),
+  viewFinanceValidator,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(ProjectHealthController.getSeries)
+);
 router.get(
   "/project-health/series",
   requireAnalyticsAccess,
@@ -145,6 +175,12 @@ router.post(
 );
 
 // —— Planned vs Actual: Tasks ——
+router.post(
+  "/planned-vs-actual-tasks/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(PlannedVsActualTasksController.getSeries)
+);
 router.get(
   "/planned-vs-actual-tasks/series",
   requireAnalyticsAccess,
@@ -160,6 +196,14 @@ router.post(
 );
 
 // —— Planned vs Actual: Milestones ——
+// POST preferred: Select All can include hundreds of project UUIDs (GET URL/header limits).
+router.post(
+  "/planned-vs-actual-milestones/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(PlannedVsActualMilestonesController.getSeries)
+);
+
 router.get(
   "/planned-vs-actual-milestones/series",
   requireAnalyticsAccess,
@@ -175,6 +219,12 @@ router.post(
 );
 
 // —— Utilization (capacity = working hours, logged = logged time) ——
+router.post(
+  "/utilization/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(UtilizationController.getSeries)
+);
 router.get(
   "/utilization/series",
   requireAnalyticsAccess,
@@ -190,6 +240,12 @@ router.post(
 );
 
 // —— Time Report (logged vs estimated + billable split) ——
+router.post(
+  "/time-report/series",
+  requireAnalyticsAccess,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(TimeReportController.getSeries)
+);
 router.get(
   "/time-report/series",
   requireAnalyticsAccess,
@@ -205,6 +261,14 @@ router.post(
 );
 
 // —— Budget Tracking (budget vs spent by project) ——
+router.post(
+  "/budget-tracking/series",
+  requireAnalyticsAccess,
+  requireFeature("finance_module"),
+  viewFinanceValidator,
+  analyticsProjectAccessMiddleware,
+  safeControllerFunction(BudgetTrackingController.getSeries)
+);
 router.get(
   "/budget-tracking/series",
   requireAnalyticsAccess,

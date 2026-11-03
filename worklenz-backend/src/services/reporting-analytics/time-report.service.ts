@@ -59,7 +59,8 @@ export interface TimeReportResult {
   last_updated_at: string;
 }
 
-const MAX_PROJECTS = 50;
+/** Safety cap only ? high enough for org portfolios / Select All. */
+const MAX_PROJECTS = 500;
 
 function parseCsvIds(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -195,7 +196,7 @@ export async function getTimeReportSeries(
       : `AND FALSE`;
 
   /**
-   * Member × project rows:
+   * Member ï¿½ project rows:
    * - logged / billable from task_work_log in the selected date range
    * - estimated from assigned tasks' total_minutes (planned effort)
    */

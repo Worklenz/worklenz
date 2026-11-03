@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Table } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import type { ColumnsType } from 'antd/es/table';
+import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
 import type { CfdSeriesResponse, CfdStatusMeta } from '@/types/reporting/analytics-cfd.types';
 
 interface CfdTableProps {
@@ -76,7 +77,7 @@ export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, stat
   return (
     <Table
       size="small"
-      pagination={{ pageSize: 15, showSizeChanger: true }}
+      pagination={getClientTablePagination(15)}
       columns={columns}
       dataSource={rows}
       scroll={{ x: Math.max(400, orderedVisible.length * 100 + 140) }}

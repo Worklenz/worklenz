@@ -3,12 +3,14 @@ import { Flex, Table, Tag, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
+import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
 import type {
+  DeliveryConfidenceStatus,
   ProjectHealthRow,
-  ProjectHealthTone,
 } from '@/types/reporting/analytics-project-health.types';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 import { MetricCalcHint } from '../MetricCalcHint';
+import { PROJECT_HEALTH_TONE_COLORS } from './project-health-colors';
 
 const { Text } = Typography;
 
@@ -34,36 +36,42 @@ interface ProjectHealthTableProps {
   loading?: boolean;
 }
 
+type ConfidenceTone = DeliveryConfidenceStatus | 'not_set';
+
 /** Ant Design presets keep tag text readable in light and dark themes. */
-const TONE_FALLBACK: Record<
-  ProjectHealthTone,
+const CONFIDENCE_FALLBACK: Record<
+  ConfidenceTone,
   { color: string; labelKey: string; defaultLabel: string; swatch: string }
 > = {
-  on_track: {
+  green: {
     color: 'success',
     labelKey: 'statOnTrack',
     defaultLabel: 'On track',
-    swatch: '#52c41a',
+    swatch: PROJECT_HEALTH_TONE_COLORS.on_track,
   },
-  at_risk: {
+  amber: {
     color: 'warning',
     labelKey: 'statAtRisk',
     defaultLabel: 'At risk',
-    swatch: '#faad14',
+    swatch: PROJECT_HEALTH_TONE_COLORS.at_risk,
   },
-  off_track: {
+  red: {
     color: 'error',
     labelKey: 'statOffTrack',
     defaultLabel: 'Off track',
-    swatch: '#ff4d4f',
+    swatch: PROJECT_HEALTH_TONE_COLORS.off_track,
   },
   not_set: {
     color: 'default',
     labelKey: 'phHealthNotSet',
     defaultLabel: 'Not set',
-    swatch: '#8c8c8c',
+    swatch: PROJECT_HEALTH_TONE_COLORS.not_set,
   },
 };
+
+const confidenceTone = (
+  status: DeliveryConfidenceStatus | null | undefined
+): ConfidenceTone => status ?? 'not_set';
 
 const budgetUsedColor = (pct: number): string | undefined => {
   if (pct > 100) return '#ff4d4f';
@@ -88,7 +96,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         ellipsis: true,
         sorter: (a, b) => a.project_name.localeCompare(b.project_name),
         render: (name: string, record) => {
-          const fallback = TONE_FALLBACK[record.health_tone];
+          const fallback = CONFIDENCE_FALLBACK[confidenceTone(record.delivery_confidence)];
           return (
             <Flex align="center" gap={8}>
               <span
@@ -96,10 +104,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
                   width: 8,
                   height: 8,
                   borderRadius: 2,
-                  background:
-                    record.health_tone === 'not_set'
-                      ? fallback.swatch
-                      : record.health_color || fallback.swatch,
+                  background: fallback.swatch,
                   flexShrink: 0,
                 }}
               />
@@ -113,31 +118,47 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
       {
         title: (
           <ColumnTitleWithHint
-            label={t('phColHealth', { defaultValue: 'Health' })}
-            hint={t('phCalcColHealth', {
+            label={t('phColDeliveryConfidence', {
+              defaultValue: 'Delivery confidence',
+            })}
+            hint={t('phCalcColDeliveryConfidence', {
               defaultValue:
-                'Project health from settings: Good → On track, At Risk → At risk, Needs Attention → Off track.',
+                'Delivery confidence set on the project (or Progress Tracking): On track, At risk, Off track, or Not set.',
             })}
             hintColor={token.colorTextSecondary}
           />
         ),
-        key: 'health',
-        width: '12%',
+        key: 'delivery_confidence',
+        width: '14%',
         filters: [
-          { text: t('statOnTrack', { defaultValue: 'On track' }), value: 'on_track' },
-          { text: t('statAtRisk', { defaultValue: 'At risk' }), value: 'at_risk' },
-          { text: t('statOffTrack', { defaultValue: 'Off track' }), value: 'off_track' },
+          { text: t('statOnTrack', { defaultValue: 'On track' }), value: 'green' },
+          { text: t('statAtRisk', { defaultValue: 'At risk' }), value: 'amber' },
+          { text: t('statOffTrack', { defaultValue: 'Off track' }), value: 'red' },
           { text: t('phHealthNotSet', { defaultValue: 'Not set' }), value: 'not_set' },
         ],
-        onFilter: (value, record) => record.health_tone === value,
+        onFilter: (value, record) => confidenceTone(record.delivery_confidence) === value,
         render: (_: unknown, row) => {
-          const fallback = TONE_FALLBACK[row.health_tone];
-          const label = decodeHtmlEntities(
-            row.health_name ||
-              t(fallback.labelKey, { defaultValue: fallback.defaultLabel })
+          const tone = confidenceTone(row.delivery_confidence);
+          const fallback = CONFIDENCE_FALLBACK[tone];
+          const label = t(fallback.labelKey, { defaultValue: fallback.defaultLabel });
+          const note = row.delivery_confidence_note?.trim();
+          return (
+            <Flex vertical gap={2} style={{ minWidth: 0 }}>
+              <Tag color={fallback.color} style={{ width: 'fit-content', marginInlineEnd: 0 }}>
+                {label}
+              </Tag>
+              {note ? (
+                <Text
+                  type="secondary"
+                  ellipsis
+                  style={{ fontSize: 12, maxWidth: '100%' }}
+                  title={decodeHtmlEntities(note)}
+                >
+                  {decodeHtmlEntities(note)}
+                </Text>
+              ) : null}
+            </Flex>
           );
-          // Tone presets (not raw DB hex) — custom light grays render white-on-pale in light mode.
-          return <Tag color={fallback.color}>{label}</Tag>;
         },
       },
       {
@@ -241,7 +262,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         title: t('phColLead', { defaultValue: 'Project lead' }),
         dataIndex: 'lead_name',
         key: 'lead_name',
-        width: '14%',
+        width: '12%',
         ellipsis: true,
         render: (value: string | null) =>
           value ? (
@@ -260,7 +281,7 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
       columns={columns}
       dataSource={projects}
       loading={loading}
-      pagination={{ pageSize: 20, showSizeChanger: true }}
+      pagination={getClientTablePagination(20)}
       size="middle"
       tableLayout="fixed"
       style={{ width: '100%' }}

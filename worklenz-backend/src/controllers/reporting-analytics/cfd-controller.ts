@@ -34,11 +34,14 @@ export default class CfdController extends WorklenzControllerBase {
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
     }
 
-    const query = req.query as Record<string, unknown>;
     const accessible = accessibleProjectIds(req);
+    const input = {
+      ...(req.query as Record<string, unknown>),
+      ...((req.body as Record<string, unknown> | undefined) ?? {}),
+    };
     let filters: CfdSeriesFilters;
     try {
-      filters = parseCfdFilters(query, accessible, teamId);
+      filters = parseCfdFilters(input, accessible, teamId);
     } catch (error) {
       if (error instanceof InvalidCfdDateRangeError) {
         return res.status(400).send(new ServerResponse(false, null, error.message));

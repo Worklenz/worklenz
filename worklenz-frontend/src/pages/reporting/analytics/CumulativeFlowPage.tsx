@@ -33,6 +33,7 @@ import {
   getAnalyticsDashboardPermissions,
   resolveAnalyticsActorRole,
 } from '@/lib/reporting/analytics-permissions';
+import { downloadBlob, downloadText } from '@/lib/reporting/download-file';
 import type {
   CfdSeriesFilters,
   CfdSeriesResponse,
@@ -42,19 +43,6 @@ import type { AnalyticsReportTemplate } from '@/types/reporting/analytics-veloci
 
 const DEFAULT_GROUP_BY = 'all' as const;
 const DEFAULT_SMOOTHING = 'raw' as const;
-
-const downloadBlob = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-};
-
-const downloadText = (content: string, filename: string, mime: string) => {
-  downloadBlob(new Blob([content], { type: mime }), filename);
-};
 
 export interface CumulativeFlowPageProps {
   customTemplateId?: string;

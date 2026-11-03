@@ -34,9 +34,12 @@ export default class VelocityController extends WorklenzControllerBase {
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
     }
 
-    const query = req.query as Record<string, unknown>;
     const accessible = accessibleProjectIds(req);
-    const filters = parseVelocityFilters(query, accessible, teamId);
+    const input = {
+      ...(req.query as Record<string, unknown>),
+      ...((req.body as Record<string, unknown> | undefined) ?? {}),
+    };
+    const filters = parseVelocityFilters(input, accessible, teamId);
 
     const data = await getVelocitySeries(filters);
     return res.status(200).send(new ServerResponse(true, data));
