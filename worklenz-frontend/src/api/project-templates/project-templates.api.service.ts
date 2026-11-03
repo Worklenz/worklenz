@@ -44,9 +44,9 @@ export const projectTemplatesApiService = {
   },
 
   getCustomTemplateById: async (templateId: string): Promise<IServerResponse<IProjectTemplate>> => {
-  const response = await apiClient.get(`${rootUrl}/custom-template/${templateId}`);
-  return response.data;
-},
+    const response = await apiClient.get(`${rootUrl}/custom-template/${templateId}`);
+    return response.data;
+  },
 
 
   setupAccount: async (
@@ -66,7 +66,9 @@ export const projectTemplatesApiService = {
   },
 
   deleteCustomTemplate: async (id: string): Promise<IServerResponse<void>> => {
-    const response = await apiClient.delete(`${rootUrl}/custom-template/${id}`);
+    const response = await apiClient.delete(`${rootUrl}/custom-template/${id}`, {
+      headers: { 'X-Silent-Request': '1' },
+    });
     return response.data;
   },
 
@@ -94,7 +96,13 @@ export const projectTemplatesApiService = {
   duplicateCustomTemplate: async (
     id: string
   ): Promise<IServerResponse<{ id: string; name: string }>> => {
-    const response = await apiClient.post(`${rootUrl}/custom-template/${id}/duplicate`);
+    const response = await apiClient.post(
+      `${rootUrl}/custom-template/${id}/duplicate`,
+      {},
+      {
+        headers: { 'X-Silent-Request': '1' },
+      }
+    );
     return response.data;
   },
 
@@ -103,7 +111,13 @@ export const projectTemplatesApiService = {
     id: string,
     body: ICustomProjectTemplateDefinitionPayload
   ): Promise<IServerResponse<{ id: string; name: string }>> => {
-    const response = await apiClient.put(`${rootUrl}/custom-template/${id}`, body);
+    const response = await apiClient.put(
+      `${rootUrl}/custom-template/${id}`,
+      body,
+      {
+        headers: { 'X-Silent-Request': '1' },
+      }
+    );
     return response.data;
   },
 
@@ -114,7 +128,13 @@ export const projectTemplatesApiService = {
   createCustomFromWorklenzTemplate: async (
     body: ICustomFromWorklenzTemplateRequest
   ): Promise<IServerResponse<{ id: string; name: string }>> => {
-    const response = await apiClient.post(`${rootUrl}/custom-template/from-worklenz`, body);
+    const response = await apiClient.post(
+      `${rootUrl}/custom-template/from-worklenz`,
+      body,
+      {
+        headers: { 'X-Silent-Request': '1' },
+      }
+    );
     return response.data;
   },
 };
