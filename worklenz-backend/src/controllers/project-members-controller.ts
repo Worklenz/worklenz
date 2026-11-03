@@ -21,6 +21,7 @@ import { hasTeamAdminPrivileges, normalizeTeamRoleName, TEAM_ROLE_NAMES } from "
 import { getProjectAccessForRequest } from "../shared/project-access";
 import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
+import { emitProjectPermissionChanged } from "../shared/pm-lifecycle";
 import { AUDIT_EVENT_TYPE } from "../shared/audit-log-constants";
 import { logAuditEvent, resolveOrganizationIdForUserId } from "../services/audit-log.service";
 import {
@@ -643,6 +644,13 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     }
 
     if (response?.project_id) {
+      if (response.member_user_id) {
+        emitProjectPermissionChanged({
+          project_id: response.project_id,
+          reason: "member_removed",
+          affected_user_ids: [response.member_user_id],
+        });
+      }
       const event = SocketEvents.PROJECT_UPDATES_AVAILABLE.toString();
       const senderSocketId = req.user?.socket_id as string | undefined;
       if (senderSocketId) {
