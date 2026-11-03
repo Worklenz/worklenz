@@ -34,7 +34,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 interface FormValues {
-  emails: string[];
+  emails: string[] | string;
   jobTitle: string;
   access: 'member' | 'team-lead' | 'admin';
 }
@@ -258,7 +258,8 @@ const InviteTeamMembers = () => {
       return;
     }
 
-    const normalizedEmails = (values.emails || []).map(email => String(email).trim()).filter(Boolean);
+    const emailValues = Array.isArray(values.emails) ? values.emails : [values.emails];
+    const normalizedEmails = emailValues.map(email => (email || '').trim()).filter(Boolean);
     const body: ITeamMemberCreateRequest = {
       job_title: selectedJobTitle,
       emails: normalizedEmails,
@@ -340,12 +341,6 @@ const InviteTeamMembers = () => {
     setSeatLimitData(null);
   };
 
-  const handleEmailChange = (value: string[]) => {
-    const normalizedEmails = (value || []).map(email => String(email).trim()).filter(Boolean);
-    form.setFieldValue('emails', normalizedEmails);
-    void form.validateFields(['emails']).catch(() => undefined);
-  };
-
   const formatExpiryDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -379,41 +374,37 @@ const InviteTeamMembers = () => {
               {inviteRestrictedMessage}
             </Typography.Text>
           )}
-          <Form.Item
-            name="emails"
-             label={t('memberEmailLabel', { defaultValue: 'Email Address' })}
-            rules={[
-              {
-                validator: (_, value) => {
-                  const normalizedEmails = Array.isArray(value)
-                    ? value
-                    : typeof value === 'string' && value
-                      ? [value]
-                      : [];
-                  if (!normalizedEmails.length) {
-                    return Promise.reject(t('memberEmailRequiredError', { defaultValue: 'Please enter at least one valid email address' }));
-                  }
-                  const hasInvalidEmail = normalizedEmails.some(
-                    (email: string) => !EMAIL_REGEX.test(String(email).trim())
-                  );
-                    if (hasInvalidEmail) return Promise.reject(t('memberEmailRequiredError', { defaultValue: 'Please enter at least one valid email address' }));
-                  return Promise.resolve();
-                },
-              },
-            ]}
-          >
+          <Form.Item label={t('memberEmailLabel', { defaultValue: 'Email Address' })} htmlFor="invite-emails">
             <Flex vertical gap={4}>
-              <Select
-                mode="tags"
-                style={{ width: '100%' }}
-                placeholder={t('memberEmailPlaceholder', { defaultValue: 'Enter email addresses' })}
-                onChange={handleEmailChange}
-                disabled={isInviteRestricted}
-                notFoundContent={
-                  <Typography.Text type="secondary">{t('noResultFound', { defaultValue: 'No results found' })}</Typography.Text>
-                }
-                tokenSeparators={[',', ' ', ';']}
-              />
+              <Form.Item name="emails" noStyle rules={[
+                {
+                  validator: (_, value) => {
+                    const normalizedEmails = Array.isArray(value)
+                      ? value
+                      : typeof value === 'string' && value
+                        ? [value]
+                        : [];
+                    if (!normalizedEmails.length || normalizedEmails.some(
+                      (email: string) => !EMAIL_REGEX.test(String(email).trim())
+                    )) {
+                      return Promise.reject(t('memberEmailRequiredError', { defaultValue: 'Please enter at least one valid email address' }));
+                    }
+                    return Promise.resolve();
+                  },
+                },
+              ]}>
+                <Select
+                  id="invite-emails"
+                  mode="tags"
+                  style={{ width: '100%' }}
+                  placeholder={t('memberEmailPlaceholder', { defaultValue: 'Enter email addresses' })}
+                  disabled={isInviteRestricted}
+                  notFoundContent={
+                    <Typography.Text type="secondary">{t('noResultFound', { defaultValue: 'No results found' })}</Typography.Text>
+                  }
+                  tokenSeparators={[',', ' ', ';']}
+                />
+              </Form.Item>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 {t('addMemberEmailHint', { defaultValue: 'Enter email addresses separated by commas or spaces' })}
               </Typography.Text>
