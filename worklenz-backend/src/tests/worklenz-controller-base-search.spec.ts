@@ -11,6 +11,15 @@ class PaginationTestController extends WorklenzControllerBase {
 }
 
 describe("shared pagination search", () => {
+  it("retains literal quote entities alongside decoded search values", () => {
+    const options = PaginationTestController.getOptions(
+      { search: "Project &quot;Alpha&quot;", field: "null" }, "t.name", 1
+    );
+    expect(options.searchParams).toContain('%Project "Alpha"%');
+    expect(options.searchParams).toContain("%Project &quot;Alpha&quot;%");
+    expect(new Set(options.searchParams).size).toBe(options.searchParams.length);
+  });
+
   it("matches decoded and HTML-escaped values with sequential parameters", () => {
     const options = PaginationTestController.getOptions(
       { search: "R&D", field: "null" },

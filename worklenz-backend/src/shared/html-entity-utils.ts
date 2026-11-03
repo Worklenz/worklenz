@@ -22,5 +22,5 @@ export function decodeHtmlEntities(text: string): string {
 
 export function getHtmlTextSearchVariants(value: string): string[] {
   const decoded = decodeHtmlEntities(value);
-  return [...new Set([decoded, escapeHtmlEntities(decoded), escapeHtmlEntities(value)])];
+  return [...new Set([decoded, escapeHtmlEntities(decoded), escapeHtmlEntities(value), value])];
 }
