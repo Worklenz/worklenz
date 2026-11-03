@@ -1,6 +1,7 @@
 import { forEach } from "lodash";
 import {DEFAULT_PAGE_SIZE} from "../shared/constants";
-import {toTsQuery, escapeHtmlEntities} from "../shared/utils";
+import {toTsQuery} from "../shared/utils";
+import {getHtmlTextSearchVariants} from "../shared/html-entity-utils";
 
 export default abstract class WorklenzControllerBase {
 
@@ -40,23 +41,25 @@ export default abstract class WorklenzControllerBase {
     let searchParams: string[] = [];
 
     if (search) {
-      // HTML-encode the search term to match how names are stored in the DB
-      // (sanitizePlainText encodes & to &amp;, < to &lt;, > to &gt; before saving —
-      // use the same entity mapping here so the pattern matches stored values)
-      const encodedSearch = escapeHtmlEntities(search);
-      const searchPattern = `%${encodedSearch}%`;
+      const searchPatterns = getHtmlTextSearchVariants(search).map(term => `%${term}%`);
       let s = "";
       let currentParam = paramOffset;
       
       if (typeof searchField === "string") {
-        s = ` ${searchField} ILIKE $${currentParam}`;
-        searchParams.push(searchPattern);
+        const conditions = searchPatterns.map(pattern => {
+          const param = `$${currentParam++}`;
+          searchParams.push(pattern);
+          return ` ${searchField} ILIKE ${param}`;
+        });
+        s = conditions.join(" OR ");
       } else if (Array.isArray(searchField)) {
         const conditions = searchField.map(field => {
-          const param = `$${currentParam}`;
-          currentParam++;
-          searchParams.push(searchPattern);
-          return ` ${field} ILIKE ${param}`;
+          const fieldConditions = searchPatterns.map(pattern => {
+            const param = `$${currentParam++}`;
+            searchParams.push(pattern);
+            return ` ${field} ILIKE ${param}`;
+          });
+          return `(${fieldConditions.join(" OR ")})`;
         });
         s = conditions.join(" OR ");
       }

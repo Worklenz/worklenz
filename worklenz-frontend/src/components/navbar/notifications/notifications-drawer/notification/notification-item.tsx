@@ -5,6 +5,7 @@ import DOMPurify from 'dompurify';
 import React, { useState } from 'react';
 import { fromNow } from '@/utils/dateUtils';
 import { renderNotificationMessage } from '@/utils/notification-message-renderer';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useTranslation } from 'react-i18next';
 import './notification-item.css';
 
@@ -97,7 +98,7 @@ const NotificationItem = ({
           {showTeamName && (
             <div className="mb-1">
               <Text type="secondary">
-                <BankOutlined /> {notification.team}
+                <BankOutlined /> {decodeHtmlEntities(notification.team)}
               </Text>
             </div>
           )}
@@ -108,7 +109,7 @@ const NotificationItem = ({
           {/* Project tag */}
           {notification.project && (
             <div>
-              <Tag style={getTagBackground(notification.color)}>{notification.project}</Tag>
+              <Tag style={getTagBackground(notification.color)}>{decodeHtmlEntities(notification.project)}</Tag>
             </div>
           )}
         </div>
