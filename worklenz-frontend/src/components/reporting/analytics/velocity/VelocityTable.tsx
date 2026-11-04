@@ -32,9 +32,12 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
 
-  const bucketColumnTitle = t('colSprint', {
-    defaultValue: 'Sprint',
-  });
+  const bucketColumnTitle =
+    bucket === 'phase'
+      ? t('colPhase', { defaultValue: 'Phase' })
+      : bucket === 'mixed'
+        ? t('colSprintOrPhase', { defaultValue: 'Sprint / Phase' })
+        : t('colSprint', { defaultValue: 'Sprint' });
   const defaultEmptyText =
     bucket === 'phase'
       ? t('velocityChartEmptyPhases', {
