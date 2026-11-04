@@ -747,9 +747,15 @@ const ProjectViewHeader = memo(() => {
             onClick={handleNavigateToProjects}
           />
         </Tooltip>
-        <Typography.Title level={4} className={styles.projectTitle} style={{ marginBlockEnd: 0, marginInlineStart: 8 }}>
-          {decodeHtmlEntities(selectedProject?.name)}
-        </Typography.Title>
+        <Tooltip title={decodeHtmlEntities(selectedProject?.name)}>
+          <Typography.Title
+            level={4}
+            className={styles.projectTitle}
+            style={{ marginBlockEnd: 0, marginInlineStart: 8 }}
+          >
+            {decodeHtmlEntities(selectedProject?.name)}
+          </Typography.Title>
+        </Tooltip>
         <div className={styles.projectAttributes}>{projectAttributes}</div>
       </Flex>
     ),
@@ -791,7 +797,7 @@ const ProjectViewHeader = memo(() => {
         </div>
       </div>
       {createPortal(
-        <ProjectSettingsModal onClose={() => {}} />,
+        <ProjectSettingsModal onClose={() => { }} />,
         document.body,
         'project-settings-modal'
       )}
