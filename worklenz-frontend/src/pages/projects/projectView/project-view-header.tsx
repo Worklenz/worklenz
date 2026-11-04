@@ -732,7 +732,7 @@ const ProjectViewHeader = memo(() => {
 
   const pageHeaderTitle = useMemo(
     () => (
-      <Flex gap={4} align="center" wrap className={styles.titleContainer}>
+      <Flex gap={4} align="center" wrap="nowrap" className={styles.titleContainer}>
         <Tooltip title={t('navigateBackTooltip', { defaultValue: 'Go back to projects list' })}>
           <ArrowLeftOutlined
             className={styles.backButton}
