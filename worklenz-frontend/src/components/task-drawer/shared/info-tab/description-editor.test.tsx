@@ -58,16 +58,18 @@ vi.mock('react-quill-new', async () => {
   }
 
   interface MockProps {
-    value: string;
+    value?: string;
+    defaultValue?: string;
     onChange: (value: string) => void;
     onKeyDown?: React.KeyboardEventHandler<HTMLTextAreaElement>;
   }
 
   const MockQuill = React.forwardRef<{ getEditor: () => MockEditor }, MockProps>(
-    ({ value, onChange, onKeyDown }, ref) => {
-      const [editorValue, setEditorValue] = React.useState(value);
-      const valueRef = React.useRef(value);
-      const cursorRef = React.useRef(value.length);
+    ({ value, defaultValue, onChange, onKeyDown }, ref) => {
+      const initialValue = value ?? defaultValue ?? '';
+      const [editorValue, setEditorValue] = React.useState(initialValue);
+      const valueRef = React.useRef(initialValue);
+      const cursorRef = React.useRef(initialValue.length);
       const editorRoot = React.useMemo(() => document.createElement('div'), []);
       const onChangeRef = React.useRef(onChange);
       valueRef.current = editorValue;
@@ -342,5 +344,23 @@ describe('DescriptionEditor', () => {
     await waitFor(() =>
       expect(screen.queryByTestId('description-mention-suggestions')).not.toBeInTheDocument()
     );
+  });
+
+  it('keeps typed spaces in the draft while the editor is open', async () => {
+    render(
+      <DescriptionEditor
+        description={null}
+        taskId="task-123"
+        parentTaskId={null}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Click to add description'));
+    const textarea = await screen.findByTestId('mock-quill-textarea');
+
+    fireEvent.change(textarea, { target: { value: 'hello world test' } });
+
+    expect(textarea).toHaveValue('hello world test');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
   });
 });

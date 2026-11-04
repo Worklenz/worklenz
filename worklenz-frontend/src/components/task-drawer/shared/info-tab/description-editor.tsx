@@ -713,6 +713,9 @@ const DescriptionEditor = ({
   const handleEditorChange = (nextHtml: string) => {
     const editor = quillRef.current?.getEditor();
     if (editor) applyMentionFormatting(editor, mentionMembers);
+    // Prefer live HTML after silent mention formatting so mention spans are
+    // included in the draft we persist. Safe because the editor is uncontrolled
+    // while open — this string is never pushed back through Quill's `value` prop.
     const currentHtml = editor?.root.innerHTML || nextHtml;
     const sanitizedContent = DOMPurify.sanitize(currentHtml, SANITIZE_CONFIG);
     setContent(sanitizedContent);
@@ -754,7 +757,12 @@ const DescriptionEditor = ({
             <LazyQuillEditor
               ref={quillRef}
               theme="snow"
-              value={content}
+              // Uncontrolled while open: feeding sanitized/innerHTML back through
+              // `value` made react-quill-new call setEditorContents on every
+              // keystroke (it tracks getSemanticHTML() internally), which drops
+              // typed spaces. defaultValue seeds the editor on mount/reopen.
+              defaultValue={content}
+              preserveWhitespace
               onChange={handleEditorChange}
               onChangeSelection={handleEditorSelectionChange}
               onKeyDown={handleEditorKeyDown}
