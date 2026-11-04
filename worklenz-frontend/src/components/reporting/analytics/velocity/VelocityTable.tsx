@@ -32,25 +32,21 @@ export const VelocityTable: React.FC<VelocityTableProps> = ({
   const { t } = useTranslation('reporting-analytics');
   const { token } = theme.useToken();
 
-  const bucketColumnTitle =
-    bucket === 'phase'
-      ? t('colPhase', { defaultValue: 'Phase' })
-      : bucket === 'mixed'
-        ? t('colSprintOrPhase', { defaultValue: 'Sprint / Phase' })
-        : t('colSprint', { defaultValue: 'Sprint' });
-
+  const bucketColumnTitle = t('colSprint', {
+    defaultValue: 'Sprint',
+  });
   const defaultEmptyText =
     bucket === 'phase'
       ? t('velocityChartEmptyPhases', {
-          defaultValue: 'No phases with tasks match these filters.',
-        })
+        defaultValue: 'No phases with tasks match these filters.',
+      })
       : bucket === 'mixed'
         ? t('velocityChartEmptyMixed', {
-            defaultValue: 'No completed sprints or phases match these filters.',
-          })
+          defaultValue: 'No completed sprints or phases match these filters.',
+        })
         : t('velocityChartEmpty', {
-            defaultValue: 'No completed sprints match these filters.',
-          });
+          defaultValue: 'No completed sprints match these filters.',
+        });
 
   const emptyText = (
     <Text type="secondary">{emptyTextProp ?? defaultEmptyText}</Text>
