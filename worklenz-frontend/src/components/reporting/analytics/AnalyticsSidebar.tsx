@@ -26,6 +26,7 @@ import {
   useAnalyticsCustomReports,
 } from '@/features/reporting/analytics-custom-reports';
 import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
+import { ReportingModePaddle } from '@/components/reporting/ReportingModePaddle';
 import './analytics-sidebar.css';
 
 const COLLAPSED_STORAGE_KEY = 'worklenz.analyticsSidebar.collapsed';
@@ -256,6 +257,8 @@ export const AnalyticsSidebar: React.FC = () => {
           />
         </Tooltip>
       </div>
+
+      <ReportingModePaddle mode="custom" collapsed={collapsed} className="analytics-sider-mode-paddle" />
 
       <div className="analytics-sider-scroll">
         <AnalyticsSidebarLink

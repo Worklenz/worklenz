@@ -15,5 +15,9 @@
   "cumulativeFlow": "累计流量",
   "sla": "SLA 跟踪",
   "timeInStatus": "状态时间",
-  "newBadge": "新"
+  "newBadge": "新",
+  "modePaddleAria": "Switch reporting version",
+  "modeSwitchTo": "Switch to {{mode}}",
+  "modeCustom": "Custom",
+  "modeClassic": "Classic"
 }

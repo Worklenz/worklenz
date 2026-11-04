@@ -15,5 +15,9 @@
   "cumulativeFlow": "Rrjedha Kumulative",
   "sla": "Ndjekja SLA",
   "timeInStatus": "Koha në status",
-  "newBadge": "E RE"
+  "newBadge": "E RE",
+  "modePaddleAria": "Switch reporting version",
+  "modeSwitchTo": "Switch to {{mode}}",
+  "modeCustom": "Custom",
+  "modeClassic": "Classic"
 }

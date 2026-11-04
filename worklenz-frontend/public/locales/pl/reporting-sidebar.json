@@ -15,5 +15,9 @@
   "cumulativeFlow": "Przepływ skumulowany",
   "sla": "Śledzenie SLA",
   "timeInStatus": "Czas w statusie",
-  "newBadge": "NOWOŚĆ"
+  "newBadge": "NOWOŚĆ",
+  "modePaddleAria": "Switch reporting version",
+  "modeSwitchTo": "Switch to {{mode}}",
+  "modeCustom": "Custom",
+  "modeClassic": "Classic"
 }

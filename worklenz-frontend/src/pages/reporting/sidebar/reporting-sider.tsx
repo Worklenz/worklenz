@@ -5,6 +5,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import NavRail from '@/components/nav-rail/NavRail';
 import { useNavPreferences } from '@/features/navigation/useNavPreferences';
 import type { NavItem } from '@/features/navigation/nav-registry.types';
+import { ReportingModePaddle } from '@/components/reporting/ReportingModePaddle';
 
 const ReportingSider = () => {
   const location = useLocation();
@@ -42,19 +43,26 @@ const ReportingSider = () => {
   );
 
   return (
-    <NavRail
-      resolved={resolved}
-      activeKey={activeKey || ''}
-      isDark={isDark}
-      onSelect={handleSelect}
-      isPinned={isPinned}
-      onPin={pin}
-      onUnpin={unpin}
-      onReorder={reorder}
-      onToggleCollapse={toggleCollapsed}
-      renderLabel={renderLabel}
-      renderGroupLabel={renderGroupLabel}
-    />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ paddingTop: 12 }}>
+        <ReportingModePaddle mode="classic" density="narrow" />
+      </div>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <NavRail
+          resolved={resolved}
+          activeKey={activeKey || ''}
+          isDark={isDark}
+          onSelect={handleSelect}
+          isPinned={isPinned}
+          onPin={pin}
+          onUnpin={unpin}
+          onReorder={reorder}
+          onToggleCollapse={toggleCollapsed}
+          renderLabel={renderLabel}
+          renderGroupLabel={renderGroupLabel}
+        />
+      </div>
+    </div>
   );
 };
 

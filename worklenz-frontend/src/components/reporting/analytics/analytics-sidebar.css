@@ -43,6 +43,15 @@
   flex-shrink: 0;
 }
 
+.analytics-sider-mode-paddle {
+  flex-shrink: 0;
+}
+
+.analytics-sider.is-collapsed .analytics-sider-mode-paddle {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .analytics-sider-scroll {
   flex: 1;
   overflow: auto;
