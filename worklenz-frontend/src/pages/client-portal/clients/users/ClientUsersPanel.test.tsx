@@ -106,6 +106,7 @@ const listOf = (items: ClientUser[]) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.removeItem('worklenz.portal.clientUsers.groupByClient');
   state.usersResult = listOf([
     makeUser(),
     makeUser({
@@ -157,15 +158,32 @@ describe('ClientUsersPanel', () => {
     localStorage.removeItem('worklenz.portal.clientUsers.groupByClient');
     state.usersResult = listOf([
       makeUser(),
+      makeUser({
+        id: 'u2b',
+        organization_id: 'org-1',
+        organization_name: 'Brandbase',
+        name: 'Casey Ng',
+        email: 'casey@brandbase.example',
+      }),
       makeUser({ id: 'u3', organization_id: 'org-2', organization_name: 'Acme', name: 'Sam Lee', email: 'sam@acme.example' }),
     ]);
     const { rerender } = render(<ClientUsersPanel />);
     // One header per client, each counting its own rows.
-    expect(screen.getAllByText('1 users')).toHaveLength(2);
+    expect(screen.getByText('2 users')).toBeInTheDocument();
+    expect(screen.getByText('1 users')).toBeInTheDocument();
+    // Client name lives on the group header only; every user row leaves the Client cell blank.
+    expect(screen.getByText('Brandbase')).toBeInTheDocument();
+    expect(screen.getByText('Acme')).toBeInTheDocument();
+    expect(within(screen.getByText('Alex Rivera').closest('tr') as HTMLElement).queryByText('Brandbase')).not.toBeInTheDocument();
+    expect(within(screen.getByText('Casey Ng').closest('tr') as HTMLElement).queryByText('Brandbase')).not.toBeInTheDocument();
+    expect(within(screen.getByText('Sam Lee').closest('tr') as HTMLElement).queryByText('Acme')).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Group client users' }));
-    expect(screen.queryByText('1 users')).not.toBeInTheDocument();
+    expect(screen.queryByText('2 users')).not.toBeInTheDocument();
     expect(localStorage.getItem('worklenz.portal.clientUsers.groupByClient')).toBe('off');
+    // Ungrouped list puts the client name back on every row.
+    expect(within(screen.getByText('Alex Rivera').closest('tr') as HTMLElement).getByText('Brandbase')).toBeInTheDocument();
+    expect(within(screen.getByText('Casey Ng').closest('tr') as HTMLElement).getByText('Brandbase')).toBeInTheDocument();
 
     localStorage.removeItem('worklenz.portal.clientUsers.groupByClient');
     rerender(<ClientUsersPanel organizationId="org-1" />);

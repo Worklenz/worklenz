@@ -266,15 +266,20 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
                 help={t('users.columnHelp.organization', { defaultValue: 'The client this user belongs to.' })}
               />
             ),
-            // Same avatar + bold name as the Clients table, so a client looks the same in both lists.
-            render: (_value: unknown, user: ClientUser) => (
-              <Flex align="center" gap={10}>
-                <PortalAvatar name={decodeHtmlEntities(user.organization_name)} />
-                <ClickableName onClick={onOpenOrganization ? () => onOpenOrganization(user.organization_id) : undefined}>
-                  {decodeHtmlEntities(user.organization_name)}
-                </ClickableName>
-              </Flex>
-            ),
+            // Group header already names the client; leave every user row’s Client cell blank while grouped.
+            render: (_value: unknown, user: ClientUser) => {
+              if (isGrouped) {
+                return null;
+              }
+              return (
+                <Flex align="center" gap={10}>
+                  <PortalAvatar name={decodeHtmlEntities(user.organization_name)} />
+                  <ClickableName onClick={onOpenOrganization ? () => onOpenOrganization(user.organization_id) : undefined}>
+                    {decodeHtmlEntities(user.organization_name)}
+                  </ClickableName>
+                </Flex>
+              );
+            },
           },
         ]),
     {
