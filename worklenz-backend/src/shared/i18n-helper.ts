@@ -41,6 +41,7 @@ export class I18nHelper {
         zh_cn: "zh",
         pl: "pl",
         fr: "fr",
+        it: "it",
         ko: "en", // Korean not yet supported with full locale, fallback to English
       };
 
