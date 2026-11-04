@@ -335,9 +335,31 @@ describe('PerUserUpgradePlans', () => {
     expect(screen.getByText('plans.expansion.name')).toBeTruthy();
     expect(screen.getByText('$6')).toBeTruthy();
 
-    await user.click(screen.getAllByText('select')[2]);
+    await user.click(screen.getByText('select'));
     await waitFor(() =>
       expect(upgradeToPaidPlan).toHaveBeenCalledWith('exp-m', 'per_user', 1, false)
+    );
+  });
+
+  it('shows only the expansion seat selector for AppSumo customers and uses it at checkout', async () => {
+    const user = userEvent.setup();
+    const expansion = {
+      id: 'exp-m',
+      name: 'Expansion',
+      plan_key: 'business_appsumo_expansion' as const,
+      billing_type: 'month' as const,
+      price: 6,
+    };
+    render(
+      <PerUserUpgradePlans data={data({ plans: [...plans, expansion], has_ltd_codes: true })} />
+    );
+
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(1);
+    expect(screen.queryByText(/seatsHelp/)).toBeNull();
+    await user.click(screen.getByRole('button', { name: /increaseUsers/ }));
+    await user.click(screen.getByText('select'));
+    await waitFor(() =>
+      expect(upgradeToPaidPlan).toHaveBeenCalledWith('exp-m', 'per_user', 2, false)
     );
   });
 
