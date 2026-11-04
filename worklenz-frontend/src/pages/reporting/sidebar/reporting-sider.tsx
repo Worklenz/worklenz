@@ -15,12 +15,24 @@ import '@/components/reporting/analytics/analytics-sidebar.css';
 
 const CLASSIC_BASE_PATH = '/worklenz/reporting';
 const COLLAPSED_STORAGE_KEY = 'worklenz.classicReportingSidebar.collapsed';
+/** Matches useResponsive desktop breakpoint — collapse by default below this. */
+const NARROW_VIEWPORT_QUERY = '(max-width: 1023px)';
+
+const isNarrowViewport = (): boolean => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return false;
+  }
+  return window.matchMedia(NARROW_VIEWPORT_QUERY).matches;
+};
 
 const readCollapsedPreference = (): boolean => {
   try {
-    return localStorage.getItem(COLLAPSED_STORAGE_KEY) === '1';
+    const stored = localStorage.getItem(COLLAPSED_STORAGE_KEY);
+    if (stored === '1') return true;
+    if (stored === '0') return false;
+    return isNarrowViewport();
   } catch {
-    return false;
+    return isNarrowViewport();
   }
 };
 
