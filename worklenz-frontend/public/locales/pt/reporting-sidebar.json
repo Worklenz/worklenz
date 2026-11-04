@@ -19,5 +19,9 @@
   "modePaddleAria": "Switch reporting version",
   "modeSwitchTo": "Switch to {{mode}}",
   "modeCustom": "Custom",
-  "modeClassic": "Classic"
+  "modeClassic": "Classic",
+  "reportsTitle": "Reports",
+  "expandSidebar": "Expand sidebar",
+  "collapseSidebar": "Collapse sidebar",
+  "classicNavAria": "Classic reports navigation"
 }
