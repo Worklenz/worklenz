@@ -105,7 +105,12 @@
 
 .analytics-sider-link:hover {
   background: var(--analytics-sider-hover-bg);
-  color: inherit;
+  color: var(--analytics-sider-hover-color, #1890ff);
+}
+
+.analytics-sider-link.is-active:hover {
+  background: var(--analytics-sider-active-bg);
+  color: var(--analytics-sider-active-color);
 }
 
 .analytics-sider-link.is-disabled {
