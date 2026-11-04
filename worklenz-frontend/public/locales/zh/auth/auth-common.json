@@ -1,4 +1,5 @@
 {
+  "googleOneTapFailed": "无法完成 Google 登录。请使用其他登录方式。",
   "loggingOut": "正在登出...",
   "authenticating": "正在认证...",
   "gettingThingsReady": "正在为您准备..."

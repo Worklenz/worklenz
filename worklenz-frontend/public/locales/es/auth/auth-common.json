@@ -1,4 +1,5 @@
 {
+  "googleOneTapFailed": "No se pudo completar el inicio de sesión con Google. Utiliza otro método de acceso.",
   "loggingOut": "Cerrando sesión...",
   "authenticating": "Autenticando...",
   "gettingThingsReady": "Preparando todo para ti..."

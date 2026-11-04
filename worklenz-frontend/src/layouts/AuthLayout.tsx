@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 
 import { Layout } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useGoogleOneTap } from '@/hooks/useGoogleOneTap';
 import { LOGO_LIGHT, LOGO_DARK, XMAS_LOGO_LIGHT, XMAS_LOGO_DARK } from '@/shared/constants';
 
 // These pages already show their own centered WorklenzLogoLoader while they
@@ -11,6 +12,7 @@ const ROUTES_WITHOUT_FIXED_LOGO = ['/auth/authenticating', '/auth/logging-out'];
 const AuthLayout = () => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const location = useLocation();
+  useGoogleOneTap(location.pathname === '/auth/login' || location.pathname === '/auth/signup');
   // AuthLayout stays mounted across /auth/* route changes, so this must be
   // recomputed per render rather than memoized once per mount — otherwise the
   // Christmas logo can go stale for a session that started before Dec 1.

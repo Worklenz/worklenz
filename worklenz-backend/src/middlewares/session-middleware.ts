@@ -1,6 +1,5 @@
 import session from "express-session";
 import db from "../config/db";
-import { isProduction } from "../shared/utils";
 import * as cookieSignature from "cookie-signature";
 import { randomBytes } from "crypto";
 
@@ -10,7 +9,6 @@ const pgSession = require("connect-pg-simple")(session);
 const sessionConfig = {
   name: process.env.SESSION_NAME,
   secret: process.env.SESSION_SECRET || "development-secret-key",
-  proxy: false,
   resave: false,
   saveUninitialized: true,
   rolling: true,
@@ -23,8 +21,8 @@ const sessionConfig = {
     httpOnly: true,
     // For mobile app support in production, use "none", for local development use "lax"
     sameSite: "lax" as const,
-    // Secure only in production (HTTPS required for sameSite: "none")
-    secure: false,
+    // When enabled, Express uses the configured trust proxy setting for HTTPS.
+    secure: process.env.SESSION_COOKIE_SECURE === "true",
     domain: undefined,
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   },

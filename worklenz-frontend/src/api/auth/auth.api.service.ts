@@ -10,6 +10,27 @@ import { AUTH_API_BASE_URL } from '@/shared/constants';
 const rootUrl = `${AUTH_API_BASE_URL}`;
 
 export const authApiService = {
+  async googleOneTapConfig(): Promise<{ enabled: boolean; clientId?: string }> {
+    const response = await apiClient.get<IServerResponse<{ enabled: boolean; clientId?: string }>>(
+      `${rootUrl}/google/one-tap/config`, { headers: { 'X-Silent-Request': '1' } }
+    );
+    return response.data.body;
+  },
+
+  async googleOneTapChallenge(): Promise<string> {
+    const response = await apiClient.post<IServerResponse<{ nonce: string }>>(
+      `${rootUrl}/google/one-tap/challenge`, {}, { headers: { 'X-Silent-Request': '1' } }
+    );
+    return response.data.body.nonce;
+  },
+
+  async googleOneTapLogin(credential: string): Promise<void> {
+    await apiClient.post(`${rootUrl}/google/one-tap/login`, { credential }, {
+      headers: { 'X-Silent-Request': '1' },
+    });
+    clearCsrfToken();
+  },
+
   async login(credentials: IUserLoginRequest): Promise<IAuthorizeResponse> {
     const response = await apiClient.post<IAuthorizeResponse>(`${rootUrl}/login`, credentials);
     // Login replaces the server session, which invalidates the cached CSRF token

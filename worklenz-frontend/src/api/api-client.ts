@@ -353,6 +353,9 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // Let One Tap show its own localized error without redirecting or logging request data.
+    if (error.config?.url?.includes('/google/one-tap/')) return Promise.reject(error);
+
     // Add 401 unauthorized handling
     if (error.response?.status === 401) {
       // Check if we're on an invite page and preserve the context
