@@ -1,8 +1,51 @@
 {
   "popup": {
-    "imageAlt": "Ofertë ekskluzive AppSumo",
-    "title": "Ofertë ekskluzive AppSumo",
-    "message": "Si mbajtës i një marrëveshjeje jetëgjatë AppSumo, ju përfitoni një zbritje speciale në përmirësimin tuaj. Mos e humbisni!",
-    "cta": "Shiko ofertën time"
+    "regionLabel": "Oferta e planit Business",
+    "tag": "Ofertë për anëtarët AppSumo",
+    "titleLine1": "Mos u ndal te kufijtë.",
+    "titleHighlight": "Drejto të gjithë ekipin me Business.",
+    "subtitle": "Shiko ku ngrihet puna, mbaji klientët të informuar dhe ndiq buxhetin e çdo projekti.",
+    "features": {
+      "advancedReporting": {
+        "title": "Raportim i avancuar: Velocity dhe Cumulative Flow",
+        "description": "Zbulo pengesat herët dhe planifiko sprintet me të dhëna reale"
+      },
+      "clientPortal": {
+        "title": "Portali i klientit",
+        "description": "Mbaji klientët të përditësuar në një vend"
+      },
+      "finance": {
+        "title": "Qasje në Finance",
+        "description": "Shiko kostot dhe buxhetet e projektit"
+      },
+      "customColumns": {
+        "title": "Kolona të personalizuara të pakufizuara",
+        "description": "Ndiq të dhënat sipas mënyrës sate"
+      },
+      "largeFiles": {
+        "title": "Trajtim i skedarëve të mëdhenj",
+        "description": "Ndaj skedarë të mëdhenj pa zgjidhje alternative"
+      },
+      "chatHistory": {
+        "title": "Histori e gjatë e bisedës",
+        "description": "Gjej shpejt vendimet e kaluara"
+      }
+    },
+    "badgePercent": "50%",
+    "badgeOff": "ULJE",
+    "badgeForLife": "PËR JETË",
+    "urgency": "Ofertë me kohë të kufizuar",
+    "monthly": "Mujore",
+    "annual": "Vjetore",
+    "billingAria": "Periudha e faturimit",
+    "perUserMonth": "për përdorues aktiv / muaj",
+    "regularPrice": "Çmimi i rregullt",
+    "perUserMonthShort": "për përdorues / muaj",
+    "youSavePrefix": "Kursen",
+    "saveAmount": "${{amount}} për përdorues çdo muaj",
+    "forLifeSuffix": ", për jetë.",
+    "cta": "Përmirëso në Business",
+    "fineMonthly": "Siguro 50% ulje për jetë. Abonim mujor, pa angazhim afatgjatë.",
+    "fineAnnual": "Siguro 50% ulje për jetë në planin Vjetor."
   }
 }

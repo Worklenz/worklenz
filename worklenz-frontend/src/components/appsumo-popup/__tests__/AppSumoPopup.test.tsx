@@ -28,20 +28,13 @@ vi.mock('@/features/admin-center/admin-center.slice', () => ({
 }));
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string, options?: { defaultValue?: string }) => options?.defaultValue ?? key,
+  }),
 }));
 
 const STORAGE_KEY = 'appsumo-popup-last-shown';
-const IMAGE_ALT = 'popup.imageAlt';
-
-// jsdom never loads images, so simulate a successful preload right after `src` is assigned.
-class MockImage {
-  onload: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  set src(_value: string) {
-    queueMicrotask(() => this.onload?.());
-  }
-}
+const CTA_LABEL = 'Upgrade to Business';
 
 const deferred = <T,>() => {
   let resolve!: (value: T) => void;
@@ -64,7 +57,6 @@ describe('AppSumoPopup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(window, 'getComputedStyle').mockImplementation(elt => realGetComputedStyle(elt));
-    vi.stubGlobal('Image', MockImage);
     vi.mocked(localStorage.getItem).mockReturnValue(null);
     mockClaim.mockResolvedValue(allowed);
   });
@@ -72,11 +64,12 @@ describe('AppSumoPopup', () => {
   it('opens when the server allows it, stamps the local gate and tracks a view', async () => {
     render(<AppSumoPopup isAppSumoUser frequencyDays={1} />);
 
-    expect(await screen.findByAltText(IMAGE_ALT)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: CTA_LABEL })).toBeInTheDocument();
     expect(mockClaim).toHaveBeenCalledTimes(1);
     expect(localStorage.setItem).toHaveBeenCalledWith(STORAGE_KEY, expect.any(String));
     expect(mockTrack).toHaveBeenCalledWith(MixpanelBillingEvents.APPSUMO_PROMO_POPUP_VIEWED, {
       source_component: 'AppSumoPopup',
+      billing: 'annual',
     });
   });
 
@@ -87,7 +80,7 @@ describe('AppSumoPopup', () => {
     await waitFor(() => expect(mockClaim).toHaveBeenCalledTimes(1));
     await flush();
 
-    expect(screen.queryByAltText(IMAGE_ALT)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: CTA_LABEL })).not.toBeInTheDocument();
     expect(mockTrack).not.toHaveBeenCalled();
     expect(localStorage.setItem).not.toHaveBeenCalled();
   });
@@ -97,7 +90,7 @@ describe('AppSumoPopup', () => {
 
     render(<AppSumoPopup isAppSumoUser frequencyDays={1} />);
 
-    expect(await screen.findByAltText(IMAGE_ALT)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: CTA_LABEL })).toBeInTheDocument();
     expect(mockTrack).toHaveBeenCalledTimes(1);
   });
 
@@ -106,7 +99,7 @@ describe('AppSumoPopup', () => {
 
     render(<AppSumoPopup isAppSumoUser frequencyDays={1} />);
 
-    expect(await screen.findByAltText(IMAGE_ALT)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: CTA_LABEL })).toBeInTheDocument();
     expect(mockTrack).toHaveBeenCalledTimes(1);
   });
 
@@ -117,7 +110,7 @@ describe('AppSumoPopup', () => {
     await flush();
 
     expect(mockClaim).not.toHaveBeenCalled();
-    expect(screen.queryByAltText(IMAGE_ALT)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: CTA_LABEL })).not.toBeInTheDocument();
   });
 
   it('honours a legacy toDateString() stamp written before the epoch-ms format', async () => {
@@ -134,7 +127,7 @@ describe('AppSumoPopup', () => {
     await flush();
 
     expect(mockClaim).not.toHaveBeenCalled();
-    expect(screen.queryByAltText(IMAGE_ALT)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: CTA_LABEL })).not.toBeInTheDocument();
   });
 
   it('issues a single claim even when the effect re-runs while it is in flight', async () => {
@@ -149,7 +142,7 @@ describe('AppSumoPopup', () => {
     await act(async () => pending.resolve(allowed));
 
     expect(mockClaim).toHaveBeenCalledTimes(1);
-    expect(await screen.findByAltText(IMAGE_ALT)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: CTA_LABEL })).toBeInTheDocument();
     expect(mockTrack).toHaveBeenCalledTimes(1);
   });
 
@@ -160,7 +153,7 @@ describe('AppSumoPopup', () => {
       </React.StrictMode>
     );
 
-    expect(await screen.findByAltText(IMAGE_ALT)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: CTA_LABEL })).toBeInTheDocument();
     expect(mockClaim).toHaveBeenCalledTimes(1);
     expect(mockTrack).toHaveBeenCalledTimes(1);
   });
@@ -172,11 +165,10 @@ describe('AppSumoPopup', () => {
     const { rerender } = render(<AppSumoPopup isAppSumoUser frequencyDays={1} />);
     await waitFor(() => expect(mockClaim).toHaveBeenCalledTimes(1));
 
-    // e.g. billing info finished loading and shows the account is already on Business Plan
     rerender(<AppSumoPopup isAppSumoUser={false} frequencyDays={1} />);
     await act(async () => pending.resolve(allowed));
 
-    expect(screen.queryByAltText(IMAGE_ALT)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: CTA_LABEL })).not.toBeInTheDocument();
     expect(mockTrack).not.toHaveBeenCalled();
   });
 
@@ -187,36 +179,61 @@ describe('AppSumoPopup', () => {
     const { unmount } = render(<AppSumoPopup isAppSumoUser frequencyDays={1} />);
     await waitFor(() => expect(mockClaim).toHaveBeenCalledTimes(1));
 
-    // e.g. the user logs out while the claim request is still in flight
     unmount();
     await act(async () => pending.resolve(allowed));
 
-    expect(screen.queryByAltText(IMAGE_ALT)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: CTA_LABEL })).not.toBeInTheDocument();
     expect(localStorage.setItem).not.toHaveBeenCalled();
     expect(mockTrack).not.toHaveBeenCalled();
   });
 
   it('stamps only when it opens: closing tracks the event but does not write again', async () => {
     render(<AppSumoPopup isAppSumoUser frequencyDays={1} />);
-    await screen.findByAltText(IMAGE_ALT);
+    await screen.findByRole('button', { name: CTA_LABEL });
     expect(localStorage.setItem).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole('button', { name: /close/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss offer' }));
 
     expect(mockTrack).toHaveBeenCalledWith(MixpanelBillingEvents.APPSUMO_PROMO_POPUP_CLOSED, {
       source_component: 'AppSumoPopup',
+      billing: 'annual',
+      action: 'cancel',
     });
     expect(localStorage.setItem).toHaveBeenCalledTimes(1);
   });
 
-  it('clicking the image opens the upgrade modal and tracks the click', async () => {
+  it('clicking Upgrade opens the upgrade modal and tracks the click', async () => {
     render(<AppSumoPopup isAppSumoUser frequencyDays={1} />);
 
-    fireEvent.click(await screen.findByAltText(IMAGE_ALT));
+    fireEvent.click(await screen.findByRole('button', { name: CTA_LABEL }));
 
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'adminCenter/openUpgradeModal' });
-    expect(mockTrack).toHaveBeenCalledWith(MixpanelBillingEvents.APPSUMO_PROMO_POPUP_CLICKED, {
+    expect(mockTrack).toHaveBeenCalledWith(MixpanelBillingEvents.APPSUMO_PROMO_POPUP_UPGRADE_CLICKED, {
       source_component: 'AppSumoPopup',
+      billing: 'annual',
+      price: 5,
+      regular_price: 10,
+    });
+  });
+
+  it('toggles billing period, reflects price, and tracks the toggle', async () => {
+    render(<AppSumoPopup isAppSumoUser frequencyDays={1} />);
+    await screen.findByRole('button', { name: CTA_LABEL });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Monthly' }));
+    expect(screen.getByText('6')).toBeInTheDocument();
+    expect(mockTrack).toHaveBeenCalledWith(MixpanelBillingEvents.APPSUMO_PROMO_POPUP_BILLING_TOGGLED, {
+      source_component: 'AppSumoPopup',
+      billing: 'monthly',
+      previous_billing: 'annual',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Annual' }));
+    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(mockTrack).toHaveBeenCalledWith(MixpanelBillingEvents.APPSUMO_PROMO_POPUP_BILLING_TOGGLED, {
+      source_component: 'AppSumoPopup',
+      billing: 'annual',
+      previous_billing: 'monthly',
     });
   });
 });

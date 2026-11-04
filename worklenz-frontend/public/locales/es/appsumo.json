@@ -1,8 +1,51 @@
 {
   "popup": {
-    "imageAlt": "Oferta exclusiva de AppSumo",
-    "title": "Oferta exclusiva de AppSumo",
-    "message": "Como titular de un acuerdo de por vida de AppSumo, obtienes un descuento especial en tu actualización. ¡No te lo pierdas!",
-    "cta": "Ver mi oferta"
+    "regionLabel": "Oferta del plan Business",
+    "tag": "Oferta para miembros AppSumo",
+    "titleLine1": "Deja de chocar con los límites.",
+    "titleHighlight": "Gestiona todo tu equipo con Business.",
+    "subtitle": "Detecta dónde se atasca el trabajo, mantén a los clientes al día y controla el presupuesto de cada proyecto.",
+    "features": {
+      "advancedReporting": {
+        "title": "Informes avanzados: Velocity y Cumulative Flow",
+        "description": "Detecta cuellos de botella a tiempo y planifica sprints con datos reales"
+      },
+      "clientPortal": {
+        "title": "Portal de clientes",
+        "description": "Mantén a los clientes actualizados en un solo lugar"
+      },
+      "finance": {
+        "title": "Acceso a Finanzas",
+        "description": "Consulta costes y presupuestos del proyecto"
+      },
+      "customColumns": {
+        "title": "Columnas personalizadas ilimitadas",
+        "description": "Haz seguimiento a tu manera"
+      },
+      "largeFiles": {
+        "title": "Gestión de archivos grandes",
+        "description": "Comparte archivos grandes sin complicaciones"
+      },
+      "chatHistory": {
+        "title": "Historial de chat largo",
+        "description": "Encuentra decisiones pasadas rápidamente"
+      }
+    },
+    "badgePercent": "50%",
+    "badgeOff": "DTO.",
+    "badgeForLife": "DE POR VIDA",
+    "urgency": "Oferta por tiempo limitado",
+    "monthly": "Mensual",
+    "annual": "Anual",
+    "billingAria": "Periodo de facturación",
+    "perUserMonth": "por usuario activo / mes",
+    "regularPrice": "Precio habitual",
+    "perUserMonthShort": "por usuario / mes",
+    "youSavePrefix": "Ahorras",
+    "saveAmount": "${{amount}} por usuario cada mes",
+    "forLifeSuffix": ", de por vida.",
+    "cta": "Actualizar a Business",
+    "fineMonthly": "Asegura un 50% de descuento de por vida. Suscripción mensual, sin compromiso a largo plazo.",
+    "fineAnnual": "Asegura un 50% de descuento de por vida en el plan Anual."
   }
 }
