@@ -16,7 +16,7 @@ interface ReportingModePaddleProps {
   mode: ReportingMode;
   /**
    * `wide` — Segmented paddle (analytics sidebar ~248px).
-   * `narrow` — stacked Custom/Classic buttons (classic NavRail ~64px).
+   * `narrow` — stacked Advanced/Classic buttons (classic NavRail ~64px).
    */
   density?: 'wide' | 'narrow';
   /** When true with wide density, show a compact switch instead of Segmented. */
@@ -61,16 +61,16 @@ export const ReportingModePaddle: React.FC<ReportingModePaddleProps> = ({
   const navigate = useNavigate();
   const { token } = theme.useToken();
 
-  const customLabel = t('modeCustom', { defaultValue: 'Custom' });
+  const advancedLabel = t('modeAdvanced', { defaultValue: 'Advanced' });
   const classicLabel = t('modeClassic', { defaultValue: 'Classic' });
   const ariaLabel = t('modePaddleAria', { defaultValue: 'Switch reporting version' });
 
   const options = useMemo(
     () => [
-      { label: customLabel, value: 'custom' as const },
+      { label: advancedLabel, value: 'custom' as const },
       { label: classicLabel, value: 'classic' as const },
     ],
-    [customLabel, classicLabel]
+    [advancedLabel, classicLabel]
   );
 
   const goToMode = useCallback(
@@ -114,7 +114,7 @@ export const ReportingModePaddle: React.FC<ReportingModePaddleProps> = ({
 
   if (collapsed) {
     const otherMode: ReportingMode = mode === 'custom' ? 'classic' : 'custom';
-    const otherLabel = otherMode === 'custom' ? customLabel : classicLabel;
+    const otherLabel = otherMode === 'custom' ? advancedLabel : classicLabel;
     const switchLabel = t('modeSwitchTo', {
       defaultValue: 'Switch to {{mode}}',
       mode: otherLabel,
