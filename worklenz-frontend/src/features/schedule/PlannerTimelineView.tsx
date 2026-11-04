@@ -1964,7 +1964,7 @@ const PlannerTimelineView: React.FC = () => {
                     height: timelineContentHeight,
                     left: todayLeft,
                     borderLeft: `1px dashed ${token.colorPrimary}`,
-                    zIndex: 0,
+                    zIndex: 3,
                     pointerEvents: 'none',
                   }}
                 />
