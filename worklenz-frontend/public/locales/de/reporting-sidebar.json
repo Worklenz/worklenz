@@ -15,5 +15,13 @@
   "cumulativeFlow": "Kumulativer Fluss",
   "sla": "SLA-Verfolgung",
   "timeInStatus": "Zeit im Status",
-  "newBadge": "NEU"
+  "newBadge": "NEU",
+  "modePaddleAria": "Berichtsversion wechseln",
+  "modeSwitchTo": "Zu {{mode}} wechseln",
+  "modeCustom": "Benutzerdefiniert",
+  "modeClassic": "Klassisch",
+  "reportsTitle": "Berichte",
+  "expandSidebar": "Seitenleiste erweitern",
+  "collapseSidebar": "Seitenleiste einklappen",
+  "classicNavAria": "Klassische Berichte-Navigation"
 }

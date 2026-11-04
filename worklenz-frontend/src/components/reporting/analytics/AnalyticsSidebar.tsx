@@ -26,6 +26,7 @@ import {
   useAnalyticsCustomReports,
 } from '@/features/reporting/analytics-custom-reports';
 import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
+import { ReportingModePaddle } from '@/components/reporting/ReportingModePaddle';
 import './analytics-sidebar.css';
 
 const COLLAPSED_STORAGE_KEY = 'worklenz.analyticsSidebar.collapsed';
@@ -67,7 +68,8 @@ const AnalyticsSidebarLink: React.FC<{
   const cssVars = {
     '--analytics-sider-active-bg': isDark ? 'rgba(24, 144, 255, 0.18)' : 'rgba(24, 144, 255, 0.1)',
     '--analytics-sider-active-color': token.colorPrimary,
-    '--analytics-sider-hover-bg': isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+    '--analytics-sider-hover-bg': isDark ? 'rgba(24, 144, 255, 0.12)' : 'rgba(24, 144, 255, 0.08)',
+    '--analytics-sider-hover-color': token.colorPrimary,
     '--analytics-sider-text': isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.65)',
   } as React.CSSProperties;
 
@@ -256,6 +258,8 @@ export const AnalyticsSidebar: React.FC = () => {
           />
         </Tooltip>
       </div>
+
+      <ReportingModePaddle mode="custom" collapsed={collapsed} className="analytics-sider-mode-paddle" />
 
       <div className="analytics-sider-scroll">
         <AnalyticsSidebarLink

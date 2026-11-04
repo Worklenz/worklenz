@@ -15,5 +15,13 @@
   "cumulativeFlow": "Flux cumulatif",
   "sla": "Suivi des SLA",
   "timeInStatus": "Temps en statut",
-  "newBadge": "NOUVEAU"
+  "newBadge": "NOUVEAU",
+  "modePaddleAria": "Changer de version des rapports",
+  "modeSwitchTo": "Passer à {{mode}}",
+  "modeCustom": "Personnalisé",
+  "modeClassic": "Classique",
+  "reportsTitle": "Rapports",
+  "expandSidebar": "Développer la barre latérale",
+  "collapseSidebar": "Réduire la barre latérale",
+  "classicNavAria": "Navigation des rapports classiques"
 }
