@@ -16,12 +16,12 @@
   "sla": "Seguimiento de SLA",
   "timeInStatus": "Tiempo en estado",
   "newBadge": "NUEVO",
-  "modePaddleAria": "Switch reporting version",
-  "modeSwitchTo": "Switch to {{mode}}",
-  "modeCustom": "Custom",
-  "modeClassic": "Classic",
+  "modePaddleAria": "Cambiar versión de informes",
+  "modeSwitchTo": "Cambiar a {{mode}}",
+  "modeCustom": "Personalizado",
+  "modeClassic": "Clásico",
   "reportsTitle": "Reports",
-  "expandSidebar": "Expand sidebar",
-  "collapseSidebar": "Collapse sidebar",
-  "classicNavAria": "Classic reports navigation"
+  "expandSidebar": "Expandir barra lateral",
+  "collapseSidebar": "Contraer barra lateral",
+  "classicNavAria": "Navegación de informes clásicos"
 }

@@ -16,12 +16,12 @@
   "sla": "Ndjekja SLA",
   "timeInStatus": "Koha në status",
   "newBadge": "E RE",
-  "modePaddleAria": "Switch reporting version",
-  "modeSwitchTo": "Switch to {{mode}}",
-  "modeCustom": "Custom",
-  "modeClassic": "Classic",
+  "modePaddleAria": "Ndërro versionin e raporteve",
+  "modeSwitchTo": "Kalo te {{mode}}",
+  "modeCustom": "I personalizuar",
+  "modeClassic": "Klasik",
   "reportsTitle": "Reports",
-  "expandSidebar": "Expand sidebar",
-  "collapseSidebar": "Collapse sidebar",
-  "classicNavAria": "Classic reports navigation"
+  "expandSidebar": "Zgjero shiritin anësor",
+  "collapseSidebar": "Palos shiritin anësor",
+  "classicNavAria": "Navigimi i raporteve klasike"
 }

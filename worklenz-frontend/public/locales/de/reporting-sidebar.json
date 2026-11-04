@@ -16,12 +16,12 @@
   "sla": "SLA-Verfolgung",
   "timeInStatus": "Zeit im Status",
   "newBadge": "NEU",
-  "modePaddleAria": "Switch reporting version",
-  "modeSwitchTo": "Switch to {{mode}}",
-  "modeCustom": "Custom",
-  "modeClassic": "Classic",
+  "modePaddleAria": "Berichtsversion wechseln",
+  "modeSwitchTo": "Zu {{mode}} wechseln",
+  "modeCustom": "Benutzerdefiniert",
+  "modeClassic": "Klassisch",
   "reportsTitle": "Reports",
-  "expandSidebar": "Expand sidebar",
-  "collapseSidebar": "Collapse sidebar",
-  "classicNavAria": "Classic reports navigation"
+  "expandSidebar": "Seitenleiste erweitern",
+  "collapseSidebar": "Seitenleiste einklappen",
+  "classicNavAria": "Klassische Berichte-Navigation"
 }

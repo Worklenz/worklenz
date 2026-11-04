@@ -16,12 +16,12 @@
   "sla": "SLA 跟踪",
   "timeInStatus": "状态时间",
   "newBadge": "新",
-  "modePaddleAria": "Switch reporting version",
-  "modeSwitchTo": "Switch to {{mode}}",
-  "modeCustom": "Custom",
-  "modeClassic": "Classic",
+  "modePaddleAria": "切换报告版本",
+  "modeSwitchTo": "切换到{{mode}}",
+  "modeCustom": "自定义",
+  "modeClassic": "经典",
   "reportsTitle": "Reports",
-  "expandSidebar": "Expand sidebar",
-  "collapseSidebar": "Collapse sidebar",
-  "classicNavAria": "Classic reports navigation"
+  "expandSidebar": "展开侧边栏",
+  "collapseSidebar": "折叠侧边栏",
+  "classicNavAria": "经典报告导航"
 }
