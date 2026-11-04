@@ -10,6 +10,7 @@ import passwordValidator from "../../middlewares/validators/password-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import FileConstants from "../../shared/file-constants";
 import { log_error } from "../../shared/utils";
+import { appleDesktopCallback } from "../../shared/apple-desktop-relay";
 import { resetPasswordLimiter, updatePasswordLimiter } from "../../middlewares/reset-password-rate-limiter";
 import { logAuditEvent, resolveOrganizationIdForUserId } from "../../services/audit-log.service";
 import { AUDIT_EVENT_TYPE } from "../../shared/audit-log-constants";
@@ -166,6 +167,11 @@ authRouter.post("/apple/verify", (req, res, next) => {
     });
   })(req, res, next);
 });
+
+// Return page for Sign in with Apple in the Windows desktop app: Apple posts here and the
+// browser is sent on to the app waiting on 127.0.0.1. The ID token is then checked by
+// /apple/mobile above, so nothing else about Apple sign-in changes.
+authRouter.post("/apple/desktop/callback", appleDesktopCallback);
 
 // Passport logout
 authRouter.get("/logout", AuthController.logout);
