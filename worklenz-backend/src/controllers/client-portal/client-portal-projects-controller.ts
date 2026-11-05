@@ -17,7 +17,7 @@ import { handlePortalError } from "./v2/portal-http";
  * internal notes. They now run the Client Portal v2 gating chain on every request:
  *
  *   the user is Active  AND  assigned to the project  AND  the project's portal is on
- *   AND  the item is Client Visible
+ *   AND  an Owner or Admin has not archived the project  AND  the item is Client Visible
  *
  * Response shapes are kept so the existing client app keeps working, but the data is the v2 client
  * allow-list: client-facing wording, simplified status, and no time, cost, assignee or internal notes.

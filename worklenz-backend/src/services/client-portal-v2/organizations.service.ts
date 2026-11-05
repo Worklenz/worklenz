@@ -5,6 +5,7 @@ import { listUnreadThreadsForClient } from "./discussions.service";
 import { badRequest, notFound } from "./errors";
 import { CLIENT_DELETION_RETENTION_DAYS } from "./organization-lock";
 import { Queryable } from "./types";
+import { projectOpenForPortalSql } from "./scope";
 import { USER_VIEW_SQL } from "./users.service";
 
 /**
@@ -108,6 +109,7 @@ const organizationsSql = (deleted: boolean): string => `
         FROM project_client_settings pcs
         JOIN projects p ON p.id = pcs.project_id
        WHERE p.client_id = c.id AND pcs.portal_enabled IS TRUE
+         AND ${projectOpenForPortalSql("p")}
     ) pp ON TRUE
     LEFT JOIN LATERAL (
       SELECT COUNT(*) AS awaiting

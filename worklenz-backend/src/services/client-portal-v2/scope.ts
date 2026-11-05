@@ -10,12 +10,37 @@ import { Queryable } from "./types";
  *   2. the user is a Client Admin (every project of their client) or is assigned to the project
  *                                                          (SUBJECT_PROJECTS_SQL)
  *   3. the project's Client Portal switch is on            (SUBJECT_PROJECTS_SQL)
- *   4. the item itself is Client Visible                   (the *_CLIENT_VISIBLE_SQL fragments)
+ *   4. the project is not archived by an Owner or Admin    (projectOpenForPortalSql)
+ *   5. the item itself is Client Visible                   (the *_CLIENT_VISIBLE_SQL fragments)
  *
  * Controllers and services must build client payloads from these, never hand-write the checks, so
  * the admin Preview (which calls the same functions with the previewed user as subject) cannot
  * drift from what a real client sees.
  */
+
+/**
+ * True when an active Owner or Admin has this project in their archive.
+ *
+ * Those roles archive for the whole team, which is how a workspace closes a project out.
+ * A member's personal archive does not match, so it does not hide the project from clients
+ * or from the Portal Projects list.
+ */
+export const projectArchivedForTeamSql = (projectAlias = "p") => `
+  EXISTS (
+    SELECT 1
+      FROM archived_projects ap
+      JOIN team_members tm
+        ON tm.user_id = ap.user_id
+       AND tm.team_id = ${projectAlias}.team_id
+       AND tm.active IS TRUE
+      JOIN roles r ON r.id = tm.role_id
+     WHERE ap.project_id = ${projectAlias}.id
+       AND (r.owner IS TRUE OR r.admin_role IS TRUE)
+  )
+`;
+
+/** The project is still an open portal project: no active Owner or Admin has archived it. */
+export const projectOpenForPortalSql = (projectAlias = "p") => `NOT (${projectArchivedForTeamSql(projectAlias)})`;
 
 /**
  * A Client Admin opens every project of their client automatically; a Member or Viewer only the
@@ -36,6 +61,7 @@ export const SUBJECT_PROJECTS_SQL = `
    WHERE p.client_id = $2
      AND p.team_id = $3
      AND ${CONTACT_CAN_OPEN_PROJECT_SQL("$1", "p.id")}
+     AND ${projectOpenForPortalSql("p")}
 `;
 
 /** A task is shared only when its settings row says so. No row means Internal Only. */

@@ -41,6 +41,8 @@ describe("client user project list SQL", () => {
     expect(adminBranch).not.toContain("client_contact_project_access");
     expect(memberBranch).toContain("client_contact_project_access");
     expect(memberBranch).not.toContain("project_client_settings");
+    expect(adminBranch).toContain("archived_projects");
+    expect(memberBranch).toContain("archived_projects");
   });
 
   it("maps admin and member project lists from query rows without swapping them", () => {
