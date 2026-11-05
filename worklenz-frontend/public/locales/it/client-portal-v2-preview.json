@@ -192,8 +192,8 @@
   "addClient": "Aggiungi cliente",
   "addClientUser": "Aggiungi utente cliente",
   "noClientUsers": "Nessun utente cliente presente. Aggiungi un cliente e un utente cliente, poi assegna un progetto per visualizzare l'anteprima del portale.",
-  "noUsers": "Nessun utente cliente con un progetto presente. Invita un utente e assegna un progetto per visualizzare l'anteprima del portale.",
-  "noUsersWithProject": "Nessun utente cliente con un progetto presente. Invita un utente e assegna un progetto per visualizzare l'anteprima del portale.",
+  "noUsers": "Nessun utente cliente ha ancora un progetto assegnato. Invita un utente e assegna un progetto per visualizzare l'anteprima del portale.",
+  "noUsersWithProject": "Nessun utente cliente ha ancora un progetto assegnato. Invita un utente e assegna un progetto per visualizzare l'anteprima del portale.",
   "pendingInvite": "Invito in attesa",
   "previewAs": "Anteprima come",
   "project": {
