@@ -53,7 +53,7 @@ const DATE_PRESETS: AnalyticsDatePreset[] = [
 export const readAnalyticsFilterSession = <T extends AnalyticsPersistedFilterState>(
   reportKey: string,
   defaults: T
-): { state: T; wasRestored: boolean; hasExplicitFilters: boolean } => {
+): { state: T; wasRestored: boolean; hasExplicitFilters: boolean; explicitProjects?: boolean; explicitTeams?: boolean } => {
   if (typeof sessionStorage === 'undefined') {
     return { state: defaults, wasRestored: false, hasExplicitFilters: false };
   }
@@ -100,7 +100,9 @@ export const readAnalyticsFilterSession = <T extends AnalyticsPersistedFilterSta
       next.includeDone = parsed.includeDone;
     }
 
-    return { state: next as T, wasRestored: true, hasExplicitFilters: parsed.hasExplicitFilters === true };
+    return { state: next as T, wasRestored: true, hasExplicitFilters: parsed.hasExplicitFilters === true,
+      explicitProjects: typeof parsed.explicitProjects === 'boolean' ? parsed.explicitProjects : undefined,
+      explicitTeams: typeof parsed.explicitTeams === 'boolean' ? parsed.explicitTeams : undefined };
   } catch {
     return { state: defaults, wasRestored: false, hasExplicitFilters: false };
   }
@@ -110,7 +112,9 @@ export const readAnalyticsFilterSession = <T extends AnalyticsPersistedFilterSta
 export const writeAnalyticsFilterSession = (
   reportKey: string,
   state: AnalyticsPersistedFilterState,
-  hasExplicitFilters = true
+  hasExplicitFilters = true,
+  explicitProjects?: boolean,
+  explicitTeams?: boolean
 ): void => {
   if (typeof sessionStorage === 'undefined') return;
 
@@ -122,7 +126,7 @@ export const writeAnalyticsFilterSession = (
   );
 
   try {
-    sessionStorage.setItem(storageKey, JSON.stringify({ ...state, hasExplicitFilters }));
+    sessionStorage.setItem(storageKey, JSON.stringify({ ...state, hasExplicitFilters, explicitProjects, explicitTeams }));
   } catch {
     // Quota / private mode — ignore; in-memory React state still works for the visit.
   }

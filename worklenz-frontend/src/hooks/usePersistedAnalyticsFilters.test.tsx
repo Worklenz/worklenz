@@ -189,3 +189,32 @@ it('does not persist automatically seeded projects from an empty legacy entry', 
   expect(reopened.result.current.hasRestoredFilters).toBe(false);
   expect(reopened.result.current.selectedProjectIds).toEqual([]);
 });
+
+it('preserves field-level selection intent across reopening after a date change', () => {
+  sessionStorage.clear();
+  const first = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  act(() => first.result.current.setDatePreset('last_7_days'));
+  first.unmount();
+  const reopened = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  act(() => {
+    reopened.result.current.setAutomaticTeamIds(['team-1']);
+    reopened.result.current.setAutomaticProjectIds(['project-1']);
+  });
+  expect(reopened.result.current.datePreset).toBe('last_7_days');
+  expect(reopened.result.current.selectedTeamIds).toEqual(['team-1']);
+  expect(reopened.result.current.selectedProjectIds).toEqual(['project-1']);
+});
+
+it('preserves only the explicitly cleared field across reopening', () => {
+  sessionStorage.clear();
+  const first = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  act(() => first.result.current.setSelectedTeamIds([]));
+  first.unmount();
+  const reopened = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  act(() => {
+    reopened.result.current.setAutomaticTeamIds(['team-1']);
+    reopened.result.current.setAutomaticProjectIds(['project-1']);
+  });
+  expect(reopened.result.current.selectedTeamIds).toEqual([]);
+  expect(reopened.result.current.selectedProjectIds).toEqual(['project-1']);
+});

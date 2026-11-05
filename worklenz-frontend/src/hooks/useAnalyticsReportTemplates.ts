@@ -53,8 +53,8 @@ export const useAnalyticsReportTemplates = ({
   const pendingTemplateId = useRef<string | null>(
     customTemplateId ?? searchParams.get('template')
   );
-  const templateContextRef = useRef({ reportKind, customTemplateId, wasRestored });
-  templateContextRef.current = { reportKind, customTemplateId, wasRestored };
+  const templateContextRef = useRef({ reportKind, customTemplateId, wasRestored, skipDefaultTemplate });
+  templateContextRef.current = { reportKind, customTemplateId, wasRestored, skipDefaultTemplate };
   const onApplyRef = useRef(onApply);
   const getFiltersRef = useRef(getFilters);
   onApplyRef.current = onApply;
@@ -116,7 +116,7 @@ export const useAnalyticsReportTemplates = ({
       }
 
       if (!isCustomTemplateView && !appliedDefaultTemplate.current) {
-        if (!skipDefaultTemplate) {
+        if (!templateContextRef.current.skipDefaultTemplate) {
           const defaultTpl = res.body.find(tpl => tpl.is_default);
           if (defaultTpl) onApplyRef.current(defaultTpl);
         }

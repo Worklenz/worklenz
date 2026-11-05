@@ -76,15 +76,15 @@ export const usePersistedAnalyticsFilters = (
     const hasSavedFilters = restored.wasRestored &&
       (restored.hasExplicitFilters || hasMeaningfulAnalyticsFilters(restored.state, defaults));
     return { scope: storageScope, ...restored, restoredState: restored.state,
-      shouldPersist: hasSavedFilters, explicitProjects: hasSavedFilters, explicitTeams: hasSavedFilters };
+      shouldPersist: hasSavedFilters, explicitProjects: restored.explicitProjects ?? hasSavedFilters, explicitTeams: restored.explicitTeams ?? hasSavedFilters };
   };
   const scopeRef = useRef({ storageScope, reportKey, defaults });
   scopeRef.current = { storageScope, reportKey, defaults };
   const [stored, setStored] = useState(readScope);
   const current = stored.scope === storageScope ? stored : readScope();
   const { state, wasRestored } = current;
-  const hasRestoredFilters = wasRestored &&
-    (current.hasExplicitFilters || hasMeaningfulAnalyticsFilters(current.restoredState, defaults));
+  const hasRestoredFilters = current.hasExplicitFilters ||
+    (wasRestored && hasMeaningfulAnalyticsFilters(current.restoredState, defaults));
 
   useEffect(() => {
     if (stored.scope !== storageScope) setStored(current);
@@ -92,7 +92,7 @@ export const usePersistedAnalyticsFilters = (
 
   useEffect(() => {
     if (stored.scope === storageScope && stored.shouldPersist) {
-      writeAnalyticsFilterSession(reportKey, stored.state, stored.hasExplicitFilters);
+      writeAnalyticsFilterSession(reportKey, stored.state, stored.hasExplicitFilters, stored.explicitProjects, stored.explicitTeams);
     }
   }, [storageScope, reportKey, stored]);
 
@@ -103,7 +103,7 @@ export const usePersistedAnalyticsFilters = (
       const hasSavedFilters = restored && restored.wasRestored &&
         (restored.hasExplicitFilters || hasMeaningfulAnalyticsFilters(restored.state, scopeDefaults));
       const base = restored ? { scope, ...restored, restoredState: restored.state,
-        shouldPersist: Boolean(hasSavedFilters), explicitProjects: Boolean(hasSavedFilters), explicitTeams: Boolean(hasSavedFilters) } : prev;
+        shouldPersist: Boolean(hasSavedFilters), explicitProjects: restored.explicitProjects ?? Boolean(hasSavedFilters), explicitTeams: restored.explicitTeams ?? Boolean(hasSavedFilters) } : prev;
       // Automatic defaults must not replace an explicitly cleared selection. Apply the
       // updater first so it can still reconcile non-empty selections with available options.
       let next = toSetStateAction(action, base.state);

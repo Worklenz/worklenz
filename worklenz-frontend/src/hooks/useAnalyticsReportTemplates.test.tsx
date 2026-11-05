@@ -121,4 +121,25 @@ describe('custom report template restoration', () => {
     expect(hook.result.current.selectedProjectIds).toEqual(['edited']);
   });
 
+  it.each([true, false])('preserves edits made before a delayed template response (custom: %s)', async isCustom => {
+    const listTemplates = vi.mocked(analyticsTemplatesApiService.listTemplates);
+    const pending: Array<(value: Awaited<ReturnType<typeof listTemplates>>) => void> = [];
+    listTemplates.mockImplementation(kind => kind === 'all'
+      ? Promise.resolve({ done: true, body: [] } as Awaited<ReturnType<typeof listTemplates>>)
+      : new Promise(resolve => pending.push(resolve)));
+    const wrapper = ({ children }: { children: React.ReactNode }) => <MemoryRouter>{children}</MemoryRouter>;
+    const { result } = renderHook(() => {
+      const filters = usePersistedAnalyticsFilters({ reportKind: 'test', customTemplateId: isCustom ? 'tpl-1' : undefined });
+      useAnalyticsReportTemplates({ reportKind: 'test', customTemplateId: isCustom ? 'tpl-1' : undefined,
+        wasRestored: filters.hasRestoredFilters, skipDefaultTemplate: filters.hasRestoredFilters,
+        onApply: template => filters.setSelectedProjectIds(template.filters_json?.project_ids as string[]),
+        getFilters: () => ({}) });
+      return filters;
+    }, { wrapper });
+    act(() => result.current.setSelectedProjectIds(['user-edit']));
+    const response = { done: true, body: [{ id: 'tpl-1', is_default: true, filters_json: { project_ids: ['template'] } }] } as Awaited<ReturnType<typeof listTemplates>>;
+    await act(async () => { pending.forEach(resolve => resolve(response)); });
+    expect(result.current.selectedProjectIds).toEqual(['user-edit']);
+  });
+
 });
