@@ -1,0 +1,82 @@
+{
+  "overviewTab": "Panoramica",
+  "membersTab": "Membri",
+  "tasksTab": "Attività",
+  "overview": {
+    "title": "Panoramica",
+    "statusOverview": "Panoramica degli stati",
+    "priorityOverview": "Panoramica delle priorità",
+    "lastUpdatedTasks": "Attività aggiornate di recente"
+  },
+  "members": {
+    "title": "Membri",
+    "tooltip": "Membri",
+    "tasksByMembers": "Attività per membro",
+    "tasksByMembersTooltip": "Attività per membro",
+    "name": "Nome",
+    "taskCount": "Numero di attività",
+    "contribution": "Contributo",
+    "completed": "Completate",
+    "incomplete": "Incompleti",
+    "overdue": "In ritardo",
+    "progress": "Avanzamento"
+  },
+  "tasks": {
+    "overdueTasks": "Attività in ritardo",
+    "overLoggedTasks": "Attività con tempo in eccesso",
+    "tasksCompletedEarly": "Attività completate in anticipo",
+    "tasksCompletedLate": "Attività completate in ritardo",
+    "overLoggedTasksTooltip": "Attività con tempo registrato superiore alla stima",
+    "overdueTasksTooltip": "Attività oltre la scadenza"
+  },
+  "projectDeadline": {
+    "title": "Scadenza del progetto",
+    "overdueTasksHours": "Attività in ritardo (ore)",
+    "overdueTasksHoursTooltip": "Attività con tempo registrato oltre la data di fine del progetto",
+    "overdueTasks": "Attività in ritardo",
+    "overdueTasksTooltip": "Attività oltre la data di fine del progetto"
+  },
+  "priorityChart": {
+    "priorityAxis": "Priorità",
+    "taskCountAxis": "Numero di attività",
+    "tasks": "Attività",
+    "taskCount": "attività",
+    "noPriority": "Nessuna priorità",
+    "low": "Bassa",
+    "medium": "Media",
+    "high": "Alta",
+    "critical": "Critica"
+  },
+  "memberStats": {
+    "projectMembers": "Membri del progetto",
+    "assigneesWithOverdueTasks": "Assegnatari con attività in ritardo",
+    "unassignedMembers": "Membri non assegnati"
+  },
+  "common": {
+    "seeAll": "Vedi tutto",
+    "paginationRange": "{{from}}–{{to}} di {{total}}",
+    "totalLoggedHours": "Ore totali registrate",
+    "totalEstimation": "Stima totale",
+    "completedTasks": "Attività completate",
+    "incompleteTasks": "Attività incomplete",
+    "overdueTasks": "Attività in ritardo",
+    "overdueTasksTooltip": "Attività oltre la scadenza",
+    "totalLoggedHoursTooltip": "Stima e tempo registrato per le attività.",
+    "includeArchivedTasks": "Includi attività archiviate",
+    "export": "Esporta",
+    "name": "Nome",
+    "status": "Stato",
+    "dueDate": "Scadenza",
+    "lastUpdated": "Ultimo aggiornamento",
+    "na": "N/D"
+  },
+  "justNow": "Proprio ora",
+  "tasksTable": {
+    "daysOverdue": "Giorni di ritardo",
+    "completedAt": "Completata il",
+    "members": "Membri",
+    "overLoggedTime": "Tempo registrato in eccesso",
+    "completedDate": "Data di completamento",
+    "totalAllocation": "Assegnazione totale"
+  }
+}

@@ -19,7 +19,7 @@ export class I18nHelper {
   /**
    * Fetch user's language preference from database and map to i18n locale code.
    * Handles all PostgreSQL LANGUAGE_TYPE enum values:
-   * 'en', 'es', 'pt', 'alb', 'de', 'zh_cn', 'ko', 'pl', 'fr'
+   * 'en', 'es', 'pt', 'alb', 'de', 'zh_cn', 'ko', 'pl', 'fr', 'it'
    */
   static async getUserLanguage(userId?: string | null): Promise<string> {
     if (!userId) return "en";
