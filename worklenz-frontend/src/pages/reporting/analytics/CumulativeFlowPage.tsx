@@ -1,3 +1,4 @@
+import { useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Flex, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -181,7 +182,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     }
   }, [session?.team_id, t]);
 
-  const loadProjectsForTeams = useCallback(async (teamIds: string[]) => {
+  const loadProjectsForTeams = useCallback(async (teamIds: string[], isCurrent: () => boolean) => {
     if (teamIds.length === 0) {
       setProjectOptions([]);
       return;
@@ -190,6 +191,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
+      if (!isCurrent()) return;
       const projects: FilterOption[] = [];
       const seen = new Set<string>();
       projectResponses.forEach(res => {
@@ -209,7 +211,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
         return prev.filter(id => allowed.has(id));
       });
     } catch {
-      setProjectOptions([]);
+      if (isCurrent()) setProjectOptions([]);
     }
   }, []);
 
@@ -303,9 +305,11 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     void loadTeamsAndMembers();
   }, [loadTeamsAndMembers]);
 
-  useEffect(() => {
-    void loadProjectsForTeams(selectedTeamIds);
-  }, [selectedTeamIds, loadProjectsForTeams]);
+  useAnalyticsProjectOptionsLoader(
+    selectedTeamIds,
+    JSON.stringify([session?.team_id, session?.id, customTemplateId]),
+    loadProjectsForTeams
+  );
 
   useEffect(() => {
     if (filtersLoading) return;

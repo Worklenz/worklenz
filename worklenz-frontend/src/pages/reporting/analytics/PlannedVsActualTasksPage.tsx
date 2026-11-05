@@ -1,3 +1,4 @@
+import { useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -199,7 +200,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
     }
   }, [dispatch, session?.team_id, t]);
 
-  const loadProjectsForTeams = useCallback(async (teamIds: string[]) => {
+  const loadProjectsForTeams = useCallback(async (teamIds: string[], isCurrent: () => boolean) => {
     if (teamIds.length === 0) {
       setProjectOptions([]);
       return;
@@ -208,6 +209,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
+      if (!isCurrent()) return;
       const projects: FilterOption[] = [];
       const projectsWithUpdatedAt: Array<{ id: string; updated_at?: string | null }> = [];
       const seen = new Set<string>();
@@ -245,7 +247,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
         return topIds;
       });
     } catch {
-      setProjectOptions([]);
+      if (isCurrent()) setProjectOptions([]);
     }
   }, []);
 
@@ -285,9 +287,11 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
     void loadTeams();
   }, [loadTeams]);
 
-  useEffect(() => {
-    void loadProjectsForTeams(selectedTeamIds);
-  }, [selectedTeamIds, loadProjectsForTeams]);
+  useAnalyticsProjectOptionsLoader(
+    selectedTeamIds,
+    JSON.stringify([session?.team_id, session?.id, customTemplateId]),
+    loadProjectsForTeams
+  );
 
   useEffect(() => {
     void loadSeries();

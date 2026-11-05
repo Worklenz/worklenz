@@ -1,3 +1,4 @@
+import { useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import { formatCsvText } from '@/lib/reporting/csv-export';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -210,7 +211,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     }
   }, [dispatch, session?.team_id, t]);
 
-  const loadProjectsForTeams = useCallback(async (teamIds: string[]) => {
+  const loadProjectsForTeams = useCallback(async (teamIds: string[], isCurrent: () => boolean) => {
     if (teamIds.length === 0) {
       setProjectOptions([]);
       return;
@@ -219,6 +220,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
+      if (!isCurrent()) return;
       const overviewProjects: Array<{ id: string; name: string; project_type?: string }> =
         [];
       const seen = new Set<string>();
@@ -242,7 +244,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
         return prev.filter(id => allowed.has(id));
       });
     } catch {
-      setProjectOptions([]);
+      if (isCurrent()) setProjectOptions([]);
     }
   }, []);
 
@@ -357,9 +359,11 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     void loadTemplates();
   }, [loadTeamsAndMembers, loadTemplates]);
 
-  useEffect(() => {
-    void loadProjectsForTeams(selectedTeamIds);
-  }, [selectedTeamIds, loadProjectsForTeams]);
+  useAnalyticsProjectOptionsLoader(
+    selectedTeamIds,
+    JSON.stringify([session?.team_id, session?.id, customTemplateId]),
+    loadProjectsForTeams
+  );
 
   useEffect(() => {
     void loadSeries();
