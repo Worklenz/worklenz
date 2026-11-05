@@ -269,10 +269,10 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
                 help={t('users.columnHelp.organization', { defaultValue: 'The client this user belongs to.' })}
               />
             ),
-            // Group header already names the client; leave every user row’s Client cell blank while grouped.
+            // Keep the client available to screen readers while the group header supplies the visible name.
             render: (_value: unknown, user: ClientUser) => {
               if (isGrouped) {
-                return null;
+                return <span className="sr-only">{decodeHtmlEntities(user.organization_name)}</span>;
               }
               return (
                 <Flex align="center" gap={10}>

@@ -171,12 +171,11 @@ describe('ClientUsersPanel', () => {
     // One header per client, each counting its own rows.
     expect(screen.getByText('2 users')).toBeInTheDocument();
     expect(screen.getByText('1 users')).toBeInTheDocument();
-    // Client name lives on the group header only; every user row leaves the Client cell blank.
-    expect(screen.getByText('Brandbase')).toBeInTheDocument();
-    expect(screen.getByText('Acme')).toBeInTheDocument();
-    expect(within(screen.getByText('Alex Rivera').closest('tr') as HTMLElement).queryByText('Brandbase')).not.toBeInTheDocument();
-    expect(within(screen.getByText('Casey Ng').closest('tr') as HTMLElement).queryByText('Brandbase')).not.toBeInTheDocument();
-    expect(within(screen.getByText('Sam Lee').closest('tr') as HTMLElement).queryByText('Acme')).not.toBeInTheDocument();
+    // Grouped rows retain the client name for screen readers without repeating it visually.
+    for (const [userName, clientName] of [['Alex Rivera', 'Brandbase'], ['Casey Ng', 'Brandbase'], ['Sam Lee', 'Acme']]) {
+      const row = screen.getByText(userName).closest('tr') as HTMLElement;
+      expect(within(row).getByText(clientName)).toHaveClass('sr-only');
+    }
 
     await userEvent.click(screen.getByRole('button', { name: 'Group client users' }));
     expect(screen.queryByText('2 users')).not.toBeInTheDocument();
