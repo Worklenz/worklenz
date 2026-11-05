@@ -77,6 +77,7 @@
       "saveFailed": "Nie udało się zaktualizować automatyzacji."
     },
     "connectPrompt": "Połącz konto GitHub raz dla całego zespołu, a potem łącz repozytoria z tym projektem.",
+    "disconnectedLinks": "Poniższe repozytoria są zapisane, ale GitHub jest rozłączony. Połącz GitHub ponownie, aby wznowić śledzenie.",
     "askOwnerNamed": "GitHub nie jest jeszcze połączony. Poproś {{name}} lub innego administratora zespołu o jego połączenie.",
     "askOwner": "GitHub nie jest jeszcze połączony. Poproś właściciela lub administratora zespołu o jego połączenie."
   },

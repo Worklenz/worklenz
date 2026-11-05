@@ -1,5 +1,7 @@
 .project-name {
   width: 200px;
+  min-width: 200px;
+  flex-shrink: 0;
   position: sticky;
   left: 0;
   padding: 16px 8px 16px 12px;
@@ -7,6 +9,16 @@
   background-color: var(--background-color, #fff);
   border-right: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
   border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  overflow: hidden;
+}
+
+.member-project-table .timesheet-project-name-text {
+  display: inline-block;
+  max-width: calc(100% - 24px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 .member-time,

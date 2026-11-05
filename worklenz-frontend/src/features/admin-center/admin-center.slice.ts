@@ -208,6 +208,10 @@ const adminCenterSlice = createSlice({
       state.isUpgradeModalOpen = true;
       state.upgradeModalVariant = action.payload || 'default';
     },
+    closeUpgradeModal: state => {
+      state.isUpgradeModalOpen = false;
+      state.upgradeModalVariant = 'default';
+    },
     // A lightweight "short description + Upgrade Now" prompt shown for gated
     // actions that don't have a full page to show a blurred preview on
     // (quick actions, project integrations, etc.) — its Upgrade button opens
@@ -349,6 +353,7 @@ export const {
   toggleRedeemCodeDrawer,
   toggleUpgradeModal,
   openUpgradeModal,
+  closeUpgradeModal,
   showUpgradePrompt,
   hideUpgradePrompt,
   clearHolidaysCache,

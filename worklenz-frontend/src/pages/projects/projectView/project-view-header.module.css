@@ -18,8 +18,9 @@
 }
 
 .titleSection {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -38,7 +39,9 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .backButton {
@@ -46,6 +49,9 @@
 }
 
 .projectTitle {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -58,6 +64,7 @@
   gap: 4px;
   align-items: center;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 /* Button Styles */

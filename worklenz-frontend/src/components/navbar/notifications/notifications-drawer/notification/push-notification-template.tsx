@@ -4,6 +4,7 @@ import { teamsApiService } from '@/api/teams/teams.api.service';
 import { toQueryString } from '@/utils/toQueryString';
 import { BankOutlined } from '@/shared/antd-imports';
 import DOMPurify from 'dompurify';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import './push-notification-template.css';
 
 const PushNotificationTemplate = ({
@@ -61,7 +62,7 @@ const PushNotificationTemplate = ({
         {notificationData.team && (
           <>
             <BankOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-            {notificationData.team}
+            {decodeHtmlEntities(notificationData.team)}
           </>
         )}
         {!notificationData.team && 'Worklenz'}

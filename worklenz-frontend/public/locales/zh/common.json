@@ -169,5 +169,14 @@
   "firstPage": "首页",
   "previousPage": "上一页",
   "nextPage": "下一页",
-  "lastPage": "末页"
+  "lastPage": "末页",
+  "selectAll": "全选",
+  "clearAll": "全部清除",
+  "sidebarTrialDays_one": "{{count}} 天",
+  "sidebarTrialDays_other": "{{count}} 天",
+  "sidebarTrialLabel": "试用",
+  "sidebarUpgradeLabel": "升级",
+  "sidebarUpgradeTooltip": "升级方案",
+  "sidebarTrialTooltip_one": "试用期还剩 {{count}} 天",
+  "sidebarTrialTooltip_other": "试用期还剩 {{count}} 天"
 }

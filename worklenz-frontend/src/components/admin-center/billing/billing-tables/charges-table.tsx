@@ -5,11 +5,16 @@ import { formatDate } from '@/utils/timeUtils';
 import { Table, TableProps, Tag } from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAppSelector } from '@/hooks/useAppSelector';
+
+export const formatBillingDate = (value?: string | null): string =>
+  value && !Number.isNaN(Date.parse(value)) ? formatDate(value) : '—';
 
 const ChargesTable: React.FC = () => {
   const { t } = useTranslation('admin-center/current-bill');
   const [charges, setCharges] = useState<IBillingChargesResponse>({});
   const [loadingCharges, setLoadingCharges] = useState(false);
+  const billingInfo = useAppSelector(state => state.adminCenterReducer.billingInfo);
 
   const fetchCharges = async () => {
     try {
@@ -27,19 +32,19 @@ const ChargesTable: React.FC = () => {
 
   const columns: TableProps<IBillingCharge>['columns'] = [
     {
-      title: t('description') as string,
+      title: t('description', { defaultValue: 'Description' }) as string,
       key: 'name',
       dataIndex: 'name',
     },
     {
-      title: t('billingPeriod') as string,
+      title: t('billingPeriod', { defaultValue: 'Billing Period' }) as string,
       key: 'billingPeriod',
       render: record => {
-        return `${formatDate(new Date(record.start_date))} - ${formatDate(new Date(record.end_date))}`;
+        return `${formatBillingDate(record.start_date)} - ${formatBillingDate(record.end_date)}`;
       },
     },
     {
-      title: t('billStatus') as string,
+      title: t('billStatus', { defaultValue: 'Bill Status' }) as string,
       key: 'status',
       dataIndex: 'status',
       render: (_, record) => {
@@ -55,7 +60,7 @@ const ChargesTable: React.FC = () => {
       },
     },
     {
-      title: t('perUserValue') as string,
+      title: t('perUserValue', { defaultValue: 'Per User Value' }) as string,
       key: 'perUserValue',
       dataIndex: 'perUserValue',
       render: (_, record) => (
@@ -65,12 +70,12 @@ const ChargesTable: React.FC = () => {
       ),
     },
     {
-      title: t('users') as string,
+      title: t('users', { defaultValue: 'Users' }) as string,
       key: 'quantity',
       dataIndex: 'quantity',
     },
     {
-      title: t('amount') as string,
+      title: t('amount', { defaultValue: 'Amount' }) as string,
       key: 'amount',
       dataIndex: 'amount',
       render: (_, record) => (
@@ -83,7 +88,7 @@ const ChargesTable: React.FC = () => {
 
   useEffect(() => {
     fetchCharges();
-  }, []);
+  }, [billingInfo]);
 
   return (
     <Table<IBillingCharge>

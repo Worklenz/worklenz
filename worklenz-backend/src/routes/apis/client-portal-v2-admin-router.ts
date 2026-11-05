@@ -101,6 +101,7 @@ router.get("/threads", safeControllerFunction(PortalWorkflowController.threads))
 router.post("/threads", safeControllerFunction(PortalWorkflowController.startThread));
 router.get("/threads/:threadId", safeControllerFunction(PortalWorkflowController.thread));
 router.post("/threads/:threadId/messages", safeControllerFunction(PortalWorkflowController.postMessage));
+router.post("/threads/messages/:messageId/reactions", safeControllerFunction(PortalWorkflowController.toggleReaction));
 router.get("/projects/:projectId/thread-options", safeControllerFunction(PortalWorkflowController.threadOptions));
 
 // ── Audit log ── (export before any :param)

@@ -47,10 +47,13 @@ export function resolveNavState(
   // Hidden items are dropped last, so they keep their place in the saved order. A saved list that
   // would hide everything is ignored rather than leaving an empty rail.
   const hiddenKeys = new Set(includeHidden ? [] : (prefs.hidden?.[surface.key] ?? []));
-  const visibleGroups = groups.map(group => ({
-    ...group,
-    items: group.items.filter(item => !hiddenKeys.has(item.key)),
-  }));
+  const visibleGroups = groups
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => !hiddenKeys.has(item.key)),
+    }))
+    // Drop groups emptied by role filters (e.g. admin-only Time Reports for Members).
+    .filter(group => group.items.length > 0);
   const shownGroups = visibleGroups.some(group => group.items.length > 0) ? visibleGroups : groups;
   const shownKeys = shownGroups.flatMap(group => group.items.map(item => item.key));
 

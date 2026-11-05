@@ -169,5 +169,14 @@
   "firstPage": "First page",
   "previousPage": "Previous page",
   "nextPage": "Next page",
-  "lastPage": "Last page"
+  "lastPage": "Last page",
+  "selectAll": "Select all",
+  "clearAll": "Clear all",
+  "sidebarTrialDays_one": "{{count}} day",
+  "sidebarTrialDays_other": "{{count}} days",
+  "sidebarTrialLabel": "Trial",
+  "sidebarUpgradeLabel": "UPGRADE",
+  "sidebarUpgradeTooltip": "Upgrade your plan",
+  "sidebarTrialTooltip_one": "{{count}} day left in your trial",
+  "sidebarTrialTooltip_other": "{{count}} days left in your trial"
 }

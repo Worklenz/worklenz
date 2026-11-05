@@ -8,5 +8,20 @@
   "logs": "Regjistrat",
   "allTasks": "Detyrat",
   "progressTracking": "Ndjekja e progresit",
-  "currentOrganizationTooltip": "Organizata aktuale"
+  "currentOrganizationTooltip": "Organizata aktuale",
+  "analyticsGroup": "Raportimi dhe analiza",
+  "dashboards": "Paneli",
+  "velocity": "Shpejtësia",
+  "cumulativeFlow": "Rrjedha Kumulative",
+  "sla": "Ndjekja SLA",
+  "timeInStatus": "Koha në status",
+  "newBadge": "E RE",
+  "modePaddleAria": "Ndërro versionin e raporteve",
+  "modeSwitchTo": "Kalo te {{mode}}",
+  "modeAdvanced": "I avancuar",
+  "modeClassic": "Klasik",
+  "reportsTitle": "Raportet",
+  "expandSidebar": "Zgjero shiritin anësor",
+  "collapseSidebar": "Palos shiritin anësor",
+  "classicNavAria": "Navigimi i raporteve klasike"
 }

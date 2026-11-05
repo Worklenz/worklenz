@@ -230,6 +230,19 @@ export interface ClientThreadAttachmentV2 {
   size: number;
 }
 
+export interface ClientThreadMessageReactionUserV2 {
+  id: string;
+  name: string;
+  side: 'client' | 'internal';
+}
+
+export interface ClientThreadMessageReactionV2 {
+  emoji: string;
+  count: number;
+  has_reacted?: boolean;
+  users: ClientThreadMessageReactionUserV2[];
+}
+
 export interface ClientThreadMessageV2 {
   id: string;
   author: string;
@@ -249,6 +262,7 @@ export interface ClientThreadMessageV2 {
   deleted?: boolean;
   /** The message this one replies to. */
   reply_to?: ClientThreadReplyToV2 | null;
+  reactions?: ClientThreadMessageReactionV2[];
 }
 
 export interface ClientThreadReplyToV2 {

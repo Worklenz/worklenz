@@ -6,12 +6,14 @@ type PhaseState = {
   isPhaseDrawerOpen: boolean;
   phaseList: ITaskPhase[];
   loadingPhases: boolean;
+  currentFetchRequestId: string | null;
 };
 
 const initialState: PhaseState = {
   isPhaseDrawerOpen: false,
   phaseList: [],
   loadingPhases: false,
+  currentFetchRequestId: null,
 };
 
 export const addPhaseOption = createAsyncThunk(
@@ -283,6 +285,7 @@ const phaseSlice = createSlice({
   },
   extraReducers: builder => {
     builder.addCase(fetchPhasesByProjectId.fulfilled, (state, action) => {
+      if (state.currentFetchRequestId !== action.meta.requestId) return;
       state.phaseList = (action.payload.body || []).map((phase: ITaskPhase) => ({
         ...phase,
         color_code: phase.color_code?.length === 9
@@ -290,12 +293,16 @@ const phaseSlice = createSlice({
           : phase.color_code,
       }));
       state.loadingPhases = false;
+      state.currentFetchRequestId = null;
     });
-    builder.addCase(fetchPhasesByProjectId.pending, state => {
+    builder.addCase(fetchPhasesByProjectId.pending, (state, action) => {
       state.loadingPhases = true;
+      state.currentFetchRequestId = action.meta.requestId;
     });
-    builder.addCase(fetchPhasesByProjectId.rejected, state => {
+    builder.addCase(fetchPhasesByProjectId.rejected, (state, action) => {
+      if (state.currentFetchRequestId !== action.meta.requestId) return;
       state.loadingPhases = false;
+      state.currentFetchRequestId = null;
     });
     builder.addCase(updatePhaseDefaultAssignee.fulfilled, (state, action) => {
       if (action.payload?.body) {

@@ -30,10 +30,9 @@ type ProjectDatesCellProps = {
   projectId: string;
   startDate: string | Date | null;
   endDate: string | Date | null;
-  isReadOnly?: boolean;
 };
 
-const ProjectDatesCell = memo(({ projectId, startDate, endDate, isReadOnly = false }: ProjectDatesCellProps) => {
+const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCellProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
   const { socket, connected } = useSocket();
@@ -249,20 +248,6 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate, isReadOnly = fal
       };
     }
   }, [connected, socket, handleStartDateChangeResponse, handleEndDateChangeResponse]);
-
-  if (isReadOnly) {
-    return (
-      <Flex gap={4} align="center" className="px-2 py-1">
-        <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-          {localStartDate ? localStartDate.format('MMM DD, YYYY') : '-'}
-        </span>
-        <Typography.Text>-</Typography.Text>
-        <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-          {localEndDate ? localEndDate.format('MMM DD, YYYY') : '-'}
-        </span>
-      </Flex>
-    );
-  }
 
   return (
     <Flex gap={4} align="center">

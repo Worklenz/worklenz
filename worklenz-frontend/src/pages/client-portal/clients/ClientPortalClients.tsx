@@ -14,7 +14,6 @@ import {
 } from '@/api/client-portal/portal-access-api';
 import ClientDetailsDrawer from '@/components/client-portal/ClientDetailsDrawer';
 import { StatCard } from '@/components/client-portal/v2';
-import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 import {
   MixpanelEvents,
   ClientPortalEventProps,
@@ -35,7 +34,6 @@ const ClientPortalClients = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { trackMixpanelEvent } = useMixpanelTracking();
-  const isReadOnly = useIsAdminSurfaceReadOnly();
 
   // The view lives in the URL so coming back from a client keeps the tab that was open.
   const [searchParams, setSearchParams] = useSearchParams();
@@ -143,11 +141,9 @@ const ClientPortalClients = () => {
       </div>
 
       <Flex align="center" wrap="wrap" gap={16} style={{ marginBottom: 16, flexShrink: 0 }}>
-        {!isReadOnly && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddClient} style={{ fontSize: 12, fontWeight: 500 }}>
-            {t('page.addClient', { defaultValue: 'Add New' })}
-          </Button>
-        )}
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddClient} style={{ fontSize: 12, fontWeight: 500 }}>
+          {t('page.addClient', { defaultValue: 'Add New' })}
+        </Button>
 
       </Flex>
 

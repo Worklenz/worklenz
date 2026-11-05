@@ -23,7 +23,6 @@ import {
 } from '@ant-design/icons';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useIsAdminSurfaceReadOnly, withoutRowActionColumns } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { Link, useNavigate } from 'react-router-dom';
 import TablePagination from '@/components/TablePagination';
@@ -68,7 +67,6 @@ const SORT_FIELDS: Record<string, string> = {
 
 export const QuotesTable = () => {
   const { t } = useTranslation('client-portal-quotes');
-  const isReadOnly = useIsAdminSurfaceReadOnly();
   const navigate = useNavigate();
   const { token } = theme.useToken();
 
@@ -453,9 +451,9 @@ export const QuotesTable = () => {
             {hasActiveFilters
               ? t('noQuotesMatchingFilters', { defaultValue: 'No quotes match the current filters.' })
               : t('noQuotesDescription', {
-                  defaultValue:
-                    "You haven't created any quotes yet. Create your first quote to send a client an estimate.",
-                })}
+                defaultValue:
+                  "You haven't created any quotes yet. Create your first quote to send a client an estimate.",
+              })}
           </Text>
         </Flex>
       }
@@ -588,20 +586,20 @@ export const QuotesTable = () => {
       >
         {showsTable ? (
           <PortalLoadingOverlay loading={isFetching}>
-          <Table
-            columns={isReadOnly ? withoutRowActionColumns(columns) : columns}
-            dataSource={quotes}
-            rowKey="id"
-            size="middle"
-            sticky
-            pagination={false}
-            onChange={handleTableChange}
-            scroll={{ x: 'max-content', y: tableScrollY }}
-            onRow={record => ({
-              onClick: () => navigate(`${QUOTES_PATH}/${record.id}`),
-              style: { cursor: 'pointer' },
-            })}
-          />
+            <Table
+              columns={columns}
+              dataSource={quotes}
+              rowKey="id"
+              size="middle"
+              sticky
+              pagination={false}
+              onChange={handleTableChange}
+              scroll={{ x: 'max-content', y: tableScrollY }}
+              onRow={record => ({
+                onClick: () => navigate(`${QUOTES_PATH}/${record.id}`),
+                style: { cursor: 'pointer' },
+              })}
+            />
           </PortalLoadingOverlay>
         ) : (
           renderEmptyState()
@@ -621,10 +619,11 @@ export const QuotesTable = () => {
             pageSize={limit}
             total={totalQuotes}
             pageSizeOptions={PAGE_SIZE_OPTIONS}
+            variant="dropdown"
             onPageChange={handlePaginationChange}
             rowsPerPageLabel={t('rowsPerPageLabel', { defaultValue: 'Rows per page:' })}
             renderSummary={(range, total) => {
-              const [from, to] = range.split('-');
+              const [from, to] = range.split(/\s*[-–]\s*/);
               return t('paginationSummary', {
                 from,
                 to,

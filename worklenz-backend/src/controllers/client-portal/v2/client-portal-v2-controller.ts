@@ -11,6 +11,7 @@ import {
   postClientComment,
   editClientMessage,
   deleteClientMessage,
+  toggleClientMessageReaction,
   presignClientUpload,
   replyToChangeRequest,
   submitChangeRequest,
@@ -348,5 +349,10 @@ export default class ClientPortalV2Controller {
 
   static deleteMessage = clientHandler("Failed to delete your message", async (req, subject, res) => {
     send(res, await deleteClientMessage(subject, uuid(req, "messageId")), "Message deleted");
+  });
+
+  static toggleReaction = clientHandler("Failed to update reaction", async (req, subject, res) => {
+    const body = bodyOf(req);
+    send(res, await toggleClientMessageReaction(subject, uuid(req, "messageId"), body.emoji));
   });
 }

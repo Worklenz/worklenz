@@ -392,7 +392,12 @@
       "file": "Ficheiro",
       "approval": "Aprovação",
       "change_request": "Pedido de alteração"
-    }
+    },
+    "addReaction": "Adicionar reação",
+    "reactionsLabel": "Reações",
+    "reactedTooltip": "Clique para remover a sua reação",
+    "notReactedTooltip": "Clique para reagir com {{emoji}}",
+    "reactFailed": "Falha ao atualizar a reação"
   },
   "locked": {
     "reply": "Os Leitores do cliente podem ler as discussões, mas não responder.",

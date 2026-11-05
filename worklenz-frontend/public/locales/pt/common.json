@@ -169,5 +169,14 @@
   "firstPage": "Primeira página",
   "previousPage": "Página anterior",
   "nextPage": "Próxima página",
-  "lastPage": "Última página"
+  "lastPage": "Última página",
+  "selectAll": "Selecionar tudo",
+  "clearAll": "Limpar tudo",
+  "sidebarTrialDays_one": "{{count}} dia",
+  "sidebarTrialDays_other": "{{count}} dias",
+  "sidebarTrialLabel": "Teste",
+  "sidebarUpgradeLabel": "MELHORAR",
+  "sidebarUpgradeTooltip": "Melhorar seu plano",
+  "sidebarTrialTooltip_one": "Resta {{count}} dia de teste",
+  "sidebarTrialTooltip_other": "Restam {{count}} dias de teste"
 }

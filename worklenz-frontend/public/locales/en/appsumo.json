@@ -1,8 +1,52 @@
 {
   "popup": {
-    "imageAlt": "AppSumo exclusive offer",
-    "title": "Exclusive AppSumo Offer",
-    "message": "As an AppSumo lifetime deal holder, you get a special discount on your upgrade. Don't miss out!",
-    "cta": "See My Offer"
+    "regionLabel": "Business plan offer",
+    "tag": "AppSumo member offer",
+    "titleLine1": "Stop hitting limits.",
+    "titleHighlight": "Run your whole team on Business.",
+    "subtitle": "See where work gets stuck, keep clients in the loop, and track the budget on every project.",
+    "features": {
+      "advancedReporting": {
+        "title": "Advanced reporting: Velocity and Cumulative Flow",
+        "description": "Spot bottlenecks early and plan sprints with real delivery data"
+      },
+      "clientPortal": {
+        "title": "Client portal",
+        "description": "Keep clients updated in one place"
+      },
+      "finance": {
+        "title": "Finance access",
+        "description": "See project costs and budgets"
+      },
+      "customColumns": {
+        "title": "Unlimited custom columns",
+        "description": "Track the data your way"
+      },
+      "largeFiles": {
+        "title": "Large file handling",
+        "description": "Share big files without workarounds"
+      },
+      "chatHistory": {
+        "title": "Long chat history",
+        "description": "Find past decisions fast"
+      }
+    },
+    "badgePercent": "50%",
+    "badgeOff": "OFF",
+    "badgeForLife": "FOR LIFE",
+    "urgency": "Limited time offer",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "billingAria": "Billing period",
+    "perUserMonth": "per active user / month",
+    "regularPrice": "Regular price",
+    "perUserMonthShort": "per user / month",
+    "youSavePrefix": "You save",
+    "saveAmount": "${{amount}} per user every month",
+    "forLifeSuffix": ", for life.",
+    "cta": "Upgrade to Business",
+    "fineMonthly": "Lock in 50% off for life. Monthly subscription, no long-term commitment.",
+    "fineAnnual": "Lock in 50% off for life on the Annual plan.",
+    "closeAria": "Dismiss offer"
   }
 }

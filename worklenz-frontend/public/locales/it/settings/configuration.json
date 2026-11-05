@@ -1,0 +1,17 @@
+{
+  "configurationTitle": "Configurazione",
+  "configurationDescription": "Gestisci le impostazioni dell’organizzazione applicate a tutti i progetti.",
+  "businessPlanRequired": "È richiesto il piano Business",
+  "businessPlanRequiredDescription": "Le restrizioni sulle attività a livello di organizzazione sono disponibili nei piani Business ed Enterprise.",
+  "upgradePlan": "Passa a un piano superiore",
+  "taskManagementSection": "Gestione delle attività",
+  "restrictTaskCreation": "Limita l’assegnazione delle attività ad amministratori, responsabili team e responsabili di progetto",
+  "restrictTaskCreationTooltip": "Se attivata, solo amministratori, responsabili team e responsabili di progetto possono creare e assegnare attività in tutti i progetti. I membri del team possono solo visualizzare le attività loro assegnate. Le impostazioni del progetto prevalgono su quelle dell’organizzazione.",
+  "restrictTaskCreationNote": "Nota: le impostazioni del progetto prevalgono su quelle dell’organizzazione. Le modifiche hanno effetto immediato.",
+  "timeTrackingSection": "Monitoraggio del tempo",
+  "limitTimelogBackdating": "Limita la registrazione retroattiva del tempo",
+  "limitTimelogBackdatingTooltip": "Se attivata, i membri non possono creare registrazioni del tempo antecedenti al numero di giorni consentito. Si applica a tutti, inclusi proprietari e amministratori. I timer attivi e le registrazioni importate non sono interessati.",
+  "timelogBackdateLimitDays": "Numero massimo di giorni per la registrazione retroattiva",
+  "timelogBackdateLimitNote": "Nota: le registrazioni esistenti non vengono mai modificate. È possibile modificare una registrazione precedente purché la data non cambi.",
+  "days": "giorni"
+}

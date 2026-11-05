@@ -17,7 +17,7 @@ export async function initializeI18n(): Promise<typeof i18next> {
       .init(
         {
           fallbackLng: "en",
-          preload: ["en", "de", "es", "pt", "alb", "zh", "pl", "fr"],
+          preload: ["en", "de", "es", "pt", "alb", "zh", "pl", "fr", "it"],
           ns: ["notifications", "external"],
           defaultNS: "notifications",
           backend: {

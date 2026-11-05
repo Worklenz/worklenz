@@ -77,6 +77,7 @@
       "saveFailed": "Could not update automation."
     },
     "connectPrompt": "Connect your GitHub account once for the whole team, then link repositories to this project.",
+    "disconnectedLinks": "The repositories below are saved, but GitHub is disconnected. Reconnect GitHub to resume tracking.",
     "askOwnerNamed": "GitHub isn’t connected yet. Ask {{name}} or another team admin to connect it.",
     "askOwner": "GitHub isn’t connected yet. Ask a team owner or admin to connect it."
   },

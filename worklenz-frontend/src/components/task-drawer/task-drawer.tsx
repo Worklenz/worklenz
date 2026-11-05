@@ -35,10 +35,6 @@ import { useAuthService } from '@/hooks/useAuth';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
-import {
-  canCommentOnProjectTasks,
-  isProjectTaskEditingReadOnly,
-} from '@/lib/project/project-view-guest';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
@@ -52,7 +48,7 @@ const TaskDrawer = () => {
   const { t: tCommon } = useTranslation('common');
   const [activeTab, setActiveTab] = useState<string>('info');
   const [refreshTimeLogTrigger, setRefreshTimeLogTrigger] = useState(0);
-  const { canCreateTask, canAddTask } = useTaskCreationPermission();
+  const { canCreateTask } = useTaskCreationPermission();
   const {
     showTaskDrawer,
     timeLogEditing,
@@ -75,8 +71,8 @@ const TaskDrawer = () => {
   const isClosingManually = useRef(false);
   const hydratedProjectIdRef = useRef<string | null>(null);
 
-  // Guests, and roles without "Edit tasks" in the default permission scheme, are read-only
-  const isGuest = isProjectTaskEditingReadOnly(project);
+  // Check if user is a guest in this project
+  const isGuest = project?.is_guest === true;
   // TVR-13: parent of assigned-only subtask is view-only
   const isAssigneeScopeReadonly = !!taskFormViewModel?.task?.assignee_scope_readonly;
   const isTaskReadOnly = isGuest || isAssigneeScopeReadonly;
@@ -247,14 +243,7 @@ const TaskDrawer = () => {
     {
       key: 'info',
       label: t('taskInfoTab.title', { defaultValue: 'Info' }),
-      children: (
-        <TaskDrawerInfoTab
-          t={t}
-          canCreateTask={canCreateTask}
-          canAddSubtask={canAddTask && !isAssigneeScopeReadonly}
-          isGuest={isTaskReadOnly}
-        />
-      ),
+      children: <TaskDrawerInfoTab t={t} canCreateTask={canCreateTask} isGuest={isTaskReadOnly} />,
     },
     {
       key: 'timeLog',
@@ -298,8 +287,7 @@ const TaskDrawer = () => {
 
   const renderFooter = () => {
     if (taskAccessDenied) return null;
-    if (activeTab === 'info' || isSoftwareProject)
-      return canCommentOnProjectTasks(project) ? <InfoTabFooter /> : null;
+    if (activeTab === 'info' || isSoftwareProject) return <InfoTabFooter />;
     if (activeTab === 'timeLog') {
       if (isTaskReadOnly) return null;
       if (timeLogEditing.isEditing) {

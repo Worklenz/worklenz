@@ -7,7 +7,8 @@ import { isSessionGuest } from '@/utils/guest-session';
 
 /**
  * Whether the current user may change project fields from the reports pages.
- * "View reports" alone grants Members and Guests a read-only view.
+ * Owner/Admin and Team Lead can edit; Members and Guests are read-only if they
+ * reach a report surface (main Reports is Owner/Admin only).
  */
 export const useCanEditReports = (): boolean => {
   const authService = useAuthService();

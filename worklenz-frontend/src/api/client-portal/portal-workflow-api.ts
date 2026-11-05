@@ -21,10 +21,11 @@ import type {
   PostMessageResult,
   PreviewProjectResponse,
   PreviewResponse,
-  PreviewUser,
+  PreviewUsersResponse,
   ResubmitApprovalRequest,
   StartThreadRequest,
   Thread,
+  ThreadReaction,
   ThreadOptions,
   ThreadsList,
   ThreadsParams,
@@ -162,6 +163,19 @@ export const portalWorkflowApi = clientPortalApi.injectEndpoints({
       invalidatesTags: (_result, _error, { threadId }) => [{ type: 'Threads', id: threadId }, 'Threads', 'PortalCounts'],
     }),
 
+    toggleThreadMessageReaction: builder.mutation<
+      ServerEnvelope<ThreadReaction[]>,
+      { messageId: string; emoji: string; threadId?: string }
+    >({
+      query: ({ messageId, emoji }) => ({
+        url: `${PORTAL_V2}/threads/messages/${messageId}/reactions`,
+        method: 'POST',
+        body: { emoji },
+      }),
+      invalidatesTags: (_result, _error, { threadId }) =>
+        threadId ? [{ type: 'Threads', id: threadId }, 'Threads'] : ['Threads'],
+    }),
+
     // ─── Audit log ──────────────────────────────────────────────────────────
 
     getAuditLog: builder.query<ServerEnvelope<AuditList>, AuditParams | void>({
@@ -171,7 +185,7 @@ export const portalWorkflowApi = clientPortalApi.injectEndpoints({
 
     // ─── Preview as client ──────────────────────────────────────────────────
 
-    getPreviewUsers: builder.query<ServerEnvelope<PreviewUser[]>, void>({
+    getPreviewUsers: builder.query<ServerEnvelope<PreviewUsersResponse>, void>({
       query: () => `${PORTAL_V2}/preview/users`,
       providesTags: ['PortalPreview', 'PortalClientUsers'],
     }),
@@ -210,6 +224,7 @@ export const {
   useGetThreadOptionsQuery,
   useStartThreadMutation,
   usePostThreadMessageMutation,
+  useToggleThreadMessageReactionMutation,
   useGetAuditLogQuery,
   useGetPreviewUsersQuery,
   useGetPreviewQuery,

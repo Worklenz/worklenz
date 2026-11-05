@@ -9,6 +9,7 @@ import al from './locales/al/translation.json';
 import zh from './locales/zh/translation.json';
 import pl from './locales/pl/translation.json';
 import fr from './locales/fr/translation.json';
+import it from './locales/it/translation.json';
 
 const resources = {
   en: { translation: en },
@@ -19,6 +20,7 @@ const resources = {
   zh: { translation: zh },
   pl: { translation: pl },
   fr: { translation: fr },
+  it: { translation: it },
 };
 
 // Get saved language from localStorage or default to 'en'

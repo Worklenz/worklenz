@@ -192,7 +192,7 @@
   "teamHierarchyNoResultsDescription": "Provoni një term tjetër kërkimi.",
   "seatLimitReached": "U arrit kufiri i vendeve",
   "seatLimitMessage": "Plani juaj përfshin {{planLimit}} anëtarë. Përmirësoni në Business për {{businessLimit}} anëtarë, ose çaktivizoni një anëtar joaktiv për të ftuar dikë të ri.",
-  "seatLimitAppSumoMessage": "Plani juaj AppSumo përfshin {{planLimit}} anëtarë. Përmirësoni në Business për {{businessLimit}} anëtarë, ose çaktivizoni një anëtar joaktiv për të ftuar dikë të ri.",
+  "seatLimitLifetimeDealMessage": "Oferta juaj e përjetshme përfshin {{planLimit}} anëtarë. Përmirësoni në Business për {{businessLimit}} anëtarë, ose çaktivizoni një anëtar joaktiv për të ftuar dikë të ri.",
   "currentMembers": "Anëtarë të tanishëm",
   "planLimit": "Kufiri i planit",
   "afterUpgrade": "Pas përmirësimit",

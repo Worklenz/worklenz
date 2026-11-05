@@ -77,6 +77,7 @@
       "saveFailed": "Não foi possível atualizar a automação."
     },
     "connectPrompt": "Conecte sua conta do GitHub uma vez para toda a equipe e depois vincule repositórios a este projeto.",
+    "disconnectedLinks": "Os repositórios abaixo estão guardados, mas o GitHub está desligado. Volte a ligar o GitHub para retomar o acompanhamento.",
     "askOwnerNamed": "O GitHub ainda não está conectado. Peça a {{name}} ou a outro administrador da equipe para conectá-lo.",
     "askOwner": "O GitHub ainda não está conectado. Peça a um proprietário ou administrador da equipe para conectá-lo."
   },
