@@ -1,0 +1,52 @@
+{
+  "popup": {
+    "regionLabel": "Offerta piano Business",
+    "tag": "Offerta per i membri AppSumo",
+    "titleLine1": "Basta limiti.",
+    "titleHighlight": "Gestisci tutto il team con Business.",
+    "subtitle": "Scopri dove il lavoro si blocca, tieni aggiornati i clienti e monitora il budget di ogni progetto.",
+    "features": {
+      "advancedReporting": {
+        "title": "Report avanzati: velocità e flusso cumulativo",
+        "description": "Individua subito i blocchi e pianifica gli sprint con dati reali sulle consegne"
+      },
+      "clientPortal": {
+        "title": "Portale clienti",
+        "description": "Tieni aggiornati i clienti in un unico posto"
+      },
+      "finance": {
+        "title": "Accesso alla gestione finanziaria",
+        "description": "Visualizza costi e budget dei progetti"
+      },
+      "customColumns": {
+        "title": "Colonne personalizzate illimitate",
+        "description": "Monitora i dati come preferisci"
+      },
+      "largeFiles": {
+        "title": "Gestione di file di grandi dimensioni",
+        "description": "Condividi file grandi senza soluzioni alternative"
+      },
+      "chatHistory": {
+        "title": "Cronologia estesa delle chat",
+        "description": "Trova rapidamente le decisioni precedenti"
+      }
+    },
+    "badgePercent": "50%",
+    "badgeOff": "DI SCONTO",
+    "badgeForLife": "PER SEMPRE",
+    "urgency": "Offerta a tempo limitato",
+    "monthly": "Mensile",
+    "annual": "Annuale",
+    "billingAria": "Periodo di fatturazione",
+    "perUserMonth": "per utente attivo / mese",
+    "regularPrice": "Prezzo normale",
+    "perUserMonthShort": "per utente / mese",
+    "youSavePrefix": "Risparmi",
+    "saveAmount": "${{amount}} per utente ogni mese",
+    "forLifeSuffix": ", per sempre.",
+    "cta": "Passa a Business",
+    "fineMonthly": "Assicurati il 50% di sconto per sempre. Abbonamento mensile, senza impegno a lungo termine.",
+    "fineAnnual": "Assicurati il 50% di sconto per sempre sul piano annuale.",
+    "closeAria": "Chiudi offerta"
+  }
+}

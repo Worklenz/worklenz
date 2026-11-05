@@ -421,7 +421,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
 
           <ChartTableWrapper
             chartTitle={title}
-            rowCount={data?.series.length}
+            rowCount={data?.dates.length}
             chart={
               <Flex gap={16} wrap="wrap" align="flex-start">
                 <div style={{ flex: '1 1 480px', minWidth: 0 }}>

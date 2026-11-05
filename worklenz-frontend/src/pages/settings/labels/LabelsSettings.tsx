@@ -33,7 +33,7 @@ import { alertService } from '@/services/alerts/alertService';
 import { useAppSelector } from '@/app/store';
 
 const LabelsSettings = () => {
-  const { t } = useTranslation('settings/labels');
+  const { t, i18n } = useTranslation('settings/labels');
   const { trackMixpanelEvent } = useMixpanelTracking();
   useDocumentTitle(t('pageTitle', 'Manage Labels'));
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -185,7 +185,7 @@ const LabelsSettings = () => {
     const textColor = isDark ? '#d9d9d9' : '#262626';
     const secondaryTextColor = isDark ? '#8c8c8c' : '#595959';
 
-    const plural = usageCount > 1 ? 's' : '';
+    const plural = !i18n.resolvedLanguage?.startsWith('it') && usageCount > 1 ? 's' : '';
 
     Modal.confirm({
       title: t('deleteConfirmTitle', 'Delete Label'),

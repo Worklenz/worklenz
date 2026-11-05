@@ -1,0 +1,148 @@
+{
+  "title": "Integrazione lenta",
+  "connectWorkspace": "Connetti l'area di lavoro Slack",
+  "addChannelConfig": "Aggiungi la configurazione del canale",
+  "manageConfigurations": "Gestisci",
+  "manageTitle": "Gestisci configurazioni Slack",
+  "defaultWorkspaceName": "Spazio di lavoro lento",
+  "connectedDescription": "L'area di lavoro Slack del tuo team è connessa. Configura quali canali ricevono notifiche per ciascun progetto.",
+  "status": {
+    "connected": "Connesso"
+  },
+  "stats": {
+    "total": "Totale",
+    "active": "Attivo",
+    "available": "Disponibile"
+  },
+  "setup": {
+    "title": "Istruzioni per l'installazione",
+    "step1": {
+      "title": "1. Connetti il tuo spazio di lavoro",
+      "description": "Fai clic sul pulsante \"Connetti area di lavoro Slack\" di seguito per autorizzare Worklenz ad accedere al tuo spazio di lavoro Slack."
+    },
+    "step2": {
+      "title": "2. Invita Bot sui canali",
+      "description": "In ogni canale Slack in cui desideri ricevere notifiche, digita:",
+      "command": "/invita @Worklenz",
+      "note": "Devi farlo solo una volta per canale."
+    },
+    "step3": {
+      "title": "3. Configura le notifiche",
+      "description": "Dopo la connessione, fai clic su \"Gestisci\" per configurare quali progetti inviano notifiche a quali canali."
+    }
+  },
+  "instructions": {
+    "inviteBot": {
+      "title": "Non dimenticare di invitare il bot!",
+      "description": "Prima di poter ricevere notifiche in un canale Slack, devi invitare il bot Worklenz su quel canale.",
+      "step": "Nel tuo canale Slack, digita: <code>/invite @Worklenz</code>",
+      "note": "Questa operazione deve essere eseguita solo una volta per canale."
+    },
+    "getStarted": "Inizia aggiungendo una configurazione di canale per ricevere notifiche dai tuoi progetti."
+  },
+  "disconnect": {
+    "title": "Disconnetti il gioco?",
+    "content": "Ciò rimuoverà tutte le configurazioni Slack e interromperà le notifiche per il tuo team.",
+    "okText": "Disconnetti"
+  },
+  "deleteConfig": {
+    "title": "Eliminare la configurazione?",
+    "content": "Sei sicuro di voler rimuovere questa configurazione del canale?",
+    "okText": "Elimina"
+  },
+  "notConnected": {
+    "title": "Connetti il tuo spazio di lavoro Slack",
+    "description": "Integra Slack con il tuo team Worklenz per ricevere notifiche in tempo reale, creare attività da Slack e mantenere il tuo team sincronizzato su entrambe le piattaforme."
+  },
+  "upgradeRequired": "Passa al piano aziendale",
+  "features": {
+    "notifications": {
+      "title": "Notifiche in tempo reale",
+      "description": "Ricevi notifiche sugli aggiornamenti delle attività, sui commenti e sulle scadenze"
+    },
+    "createTasks": {
+      "title": "Crea attività da Slack",
+      "description": "Utilizza i comandi barra per creare rapidamente attività senza uscire da Slack"
+    },
+    "collaboration": {
+      "title": "Collaborazione di squadra",
+      "description": "Mantieni sincronizzato tutto il tuo team su Worklenz e Slack"
+    }
+  },
+  "table": {
+    "project": "Progetto",
+    "slackChannel": "Canale lento",
+    "notifications": "Notifiche",
+    "status": "Stato",
+    "statusActive": "Attivo",
+    "statusInactive": "Inattivo",
+    "active": "Attivo",
+    "actions": "Azioni",
+    "channelConfigs": "Configurazioni dei canali lenti",
+    "toggleStatus": "Cambia stato per {{channel}}",
+    "editConfig": "Modifica configurazione per {{channel}}",
+    "deleteConfig": "Elimina configurazione per {{channel}}",
+    "reactivate": "Riattivare",
+    "reactivateConfig": "Riattiva {{channel}}"
+  },
+  "modal": {
+    "configureChannel": "Configura il canale Slack",
+    "editChannel": "Modifica canale Slack",
+    "project": "Progetto",
+    "selectProject": "Seleziona un progetto",
+    "slackChannel": "Canale lento",
+    "selectSlackChannel": "Seleziona un canale Slack",
+    "notificationTypes": "Tipi di notifica",
+    "selectNotificationTypes": "Seleziona i tipi di notifica",
+    "refreshChannels": "Aggiorna",
+    "scrollForMore": "Scorri per saperne di più...",
+    "notificationOptions": {
+      "taskCreated": "Attività creata",
+      "taskUpdated": "Attività aggiornata",
+      "taskCompleted": "Attività completata",
+      "taskAssigned": "Compito assegnato",
+      "commentAdded": "Commento aggiunto",
+      "statusChanged": "Stato modificato",
+      "dueDateChanged": "Data di scadenza modificata",
+      "dueDateReminder": "Promemoria della data di scadenza",
+      "assigneeChanged": "Assegnatario cambiato",
+      "priorityChanged": "Priorità modificata"
+    },
+    "addConfiguration": "Aggiungi configurazione",
+    "updateConfiguration": "Aggiorna configurazione"
+  },
+  "validation": {
+    "selectProject": "Seleziona un progetto",
+    "selectChannel": "Seleziona un canale Slack",
+    "selectNotifications": "Seleziona almeno un tipo di notifica"
+  },
+  "messages": {
+    "connectedSuccess": "L'area di lavoro Slack è stata collegata correttamente!",
+    "installationCancelled": "Installazione lenta annullata",
+    "disconnectedSuccess": "Area di lavoro Slack disconnessa correttamente",
+    "configAdded": "Configurazione del canale aggiunta correttamente",
+    "configUpdated": "Configurazione del canale aggiornata correttamente",
+    "statusUpdated": "Lo stato del canale è stato aggiornato correttamente",
+    "configRemoved": "Configurazione del canale rimossa correttamente",
+    "channelsRefreshed": "Canali aggiornati correttamente"
+  },
+  "errors": {
+    "connectionCheckFailed": "Impossibile controllare la connessione Slack",
+    "loadConfigsFailed": "Impossibile caricare le configurazioni dei canali",
+    "loadChannelsFailed": "Impossibile caricare i canali disponibili",
+    "loadProjectsFailed": "Impossibile caricare i progetti",
+    "initiateConnectionFailed": "Impossibile avviare la connessione Slack",
+    "connectionFailed": "Impossibile connettere l'area di lavoro Slack",
+    "disconnectFailed": "Impossibile disconnettere l'area di lavoro Slack",
+    "addConfigFailed": "Impossibile aggiungere la configurazione del canale",
+    "updateConfigFailed": "Impossibile aggiornare la configurazione del canale",
+    "updateStatusFailed": "Impossibile aggiornare lo stato del canale",
+    "removeConfigFailed": "Impossibile rimuovere la configurazione del canale",
+    "refreshChannelsFailed": "Impossibile aggiornare i canali"
+  },
+  "connection": {
+    "success": "L'area di lavoro Slack è stata collegata correttamente!",
+    "error": "Impossibile connettere l'area di lavoro Slack",
+    "cancelled": "Installazione lenta annullata"
+  }
+}

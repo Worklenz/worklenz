@@ -47,6 +47,11 @@ describe('dateUtils', () => {
       const result = fromNow(recent, 'es');
       expect(result).toContain('segundos');
     });
+
+    it('formats relative time in Italian', () => {
+      const recent = dayjs().subtract(10, 'second').toISOString();
+      expect(fromNow(recent, 'it')).toBe('qualche secondo fa');
+    });
   });
 
   describe('formatDate', () => {
@@ -70,6 +75,10 @@ describe('dateUtils', () => {
       const formatted = formatDate(FIXED_DATE, 'LLL', 'en');
       expect(formatted).toContain('September');
       expect(formatted).toContain('2026');
+    });
+
+    it('formats dates using Italian month names', () => {
+      expect(formatDate(FIXED_DATE, 'LL', 'it')).toContain('settembre');
     });
   });
 });

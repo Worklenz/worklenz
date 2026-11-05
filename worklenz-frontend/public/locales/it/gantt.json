@@ -1,0 +1,98 @@
+{
+  "backlogGroupName": "Backlog",
+  "task": {
+    "open": "Apri",
+    "clickViewPhaseDetails": "Fai clic per visualizzare i dettagli della fase",
+    "clickNavigateTimeline": "Fai clic per raggiungere l’attività nella cronologia",
+    "clickTimelineSetDates": "Fai clic sulla cronologia per impostare le date di questa attività",
+    "clickTimelineAddDates": "Fai clic sulla cronologia per aggiungere le date",
+    "setTaskDate": "Imposta date dell’attività",
+    "setTaskDateHint": "Fai clic sulla cronologia per impostare un intervallo di {{duration}} per questa attività",
+    "addTask": "Aggiungi attività",
+    "resizeStartDate": "Modifica data di inizio",
+    "resizeEndDate": "Modifica data di fine",
+    "dragToMove": "Trascina per spostare l’attività",
+    "addTaskFor": "Aggiungi attività per {{date}}",
+    "enterTaskName": "Inserisci il nome dell’attività...",
+    "pressEnterToCreate": "Premi Invio per creare • Esc per annullare",
+    "phaseTitle": "Fase: {{name}} - da {{startDate}} a {{endDate}}",
+    "taskTitle": "{{name}} - da {{startDate}} a {{endDate}}",
+    "datesUpdatedSuccessfully": "Date dell’attività aggiornate",
+    "failedToUpdateDates": "Impossibile aggiornare le date dell’attività",
+    "addSubtask": "Aggiungi sottoattività",
+    "addTaskInputPlaceholder": "Scrivi il nome dell’attività e premi Invio per salvare",
+    "writeTaskName": "Scrivi il nome dell’attività",
+    "writeSubtaskName": "Scrivi il nome della sottoattività",
+    "expandSubtasks": "Espandi sottoattività",
+    "collapseSubtasks": "Comprimi sottoattività",
+    "finishToStartDependency": "Dipendenza fine-inizio",
+    "startToFinishDependency": "Dipendenza inizio-fine",
+    "dependencyType": "Tipo di dipendenza",
+    "removeDependency": "Rimuovi",
+    "removeDependencyTooltip": "Rimuovi dipendenza",
+    "circularDependencyError": "Questo creerebbe una dipendenza circolare.",
+    "dependencyCreatedSuccessfully": "Dipendenza creata.",
+    "dependencyRemovedSuccessfully": "Dipendenza rimossa.",
+    "failedToCreateDependency": "Impossibile creare la dipendenza.",
+    "failedToRemoveDependency": "Impossibile rimuovere la dipendenza.",
+    "taskAddedToRoadmap": "Attività aggiunta alla roadmap per i prossimi 5 giorni.",
+    "failedToAddTaskToRoadmap": "Impossibile aggiungere l’attività alla roadmap.",
+    "unscheduledTaskNotFound": "Impossibile trovare l’attività selezionata.",
+    "undatedTaskReadOnly": "Attività senza date (sola lettura per gli ospiti)"
+  },
+  "common": {
+    "noStart": "Nessun inizio",
+    "noEnd": "Nessuna fine"
+  },
+  "sections": {
+    "unmapped": "Non associato"
+  },
+  "grouping": {
+    "phase": "Fase",
+    "status": "Stato",
+    "priority": "Priorità"
+  },
+  "toolbar": {
+    "zoomIn": "Ingrandisci",
+    "zoomOut": "Riduci",
+    "expandAll": "Espandi tutto",
+    "collapseAll": "Comprimi tutto",
+    "today": "Oggi",
+    "fullscreen": "Schermo intero",
+    "noDate": "Nessuna data",
+    "viewBy": "Visualizza per",
+    "sortBy": "Ordina per",
+    "sortManual": "Manuale",
+    "sortChronological": "Cronologico"
+  },
+  "viewMode": {
+    "day": "Giorno",
+    "week": "Settimana",
+    "month": "Mese",
+    "quarter": "Trimestre",
+    "year": "Anno"
+  },
+  "businessPlan": {
+    "phaseCreationRestricted": "La creazione di fasi è disponibile solo con il piano Business",
+    "taskCreationRestricted": "La creazione di attività è disponibile solo con il piano Business",
+    "phaseEditingRestricted": "La modifica delle fasi è disponibile solo con il piano Business",
+    "taskEditingRestricted": "La modifica delle attività è disponibile solo con il piano Business",
+    "phaseReorderingRestricted": "Il riordinamento delle fasi è disponibile solo con il piano Business"
+  },
+  "list": {
+    "taskNameColumn": "Nome dell’attività",
+    "addNewPhase": "Aggiungi nuova fase",
+    "addNewStatus": "Aggiungi nuovo stato",
+    "noTasksAvailable": "Nessuna attività disponibile",
+    "setDates": "Imposta date",
+    "clickToEditDates": "Fai clic per modificare le date"
+  },
+  "roadmap": {
+    "phasesAndTasks": "Fasi e attività",
+    "tasksCount": "attività",
+    "complete": "completate",
+    "dragDisabledInChronological": "Passa all’ordine manuale per riordinare le fasi trascinandole"
+  },
+  "unscheduledTasksTitle": "Attività non pianificate",
+  "noUnscheduledTasks": "Nessuna attività non pianificata disponibile."
+}

@@ -45,12 +45,13 @@ import { useNavigate } from 'react-router-dom';
 import { createAuthService } from '@/services/auth/auth.service';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { shouldShowAppSumoPromo } from '@/utils/subscription-utils';
-import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { APPSUMO_DRAWER_IMAGE_URL } from '@/config/appsumo-promo.config';
+import { APPSUMO_PROMO_PRICING } from '@/config/appsumo-promo.config';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { MixpanelBillingEvents } from '@/types/mixpanel-events.types';
 import { stripHtmlTags } from '@/utils/sanitizeInput';
 import { renderNotificationMessage } from '@/utils/notification-message-renderer';
+import { AppSumoUpgradeModal } from '@/components/appsumo-popup/AppSumoUpgradeModal';
+
 
 const HTML_TAG_REGEXP = /<[^>]*>/g;
 
@@ -63,11 +64,13 @@ const NotificationDrawer = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('navbar');
   const { t: tNotifications } = useTranslation('notifications');
+  const { t: tAppSumo } = useTranslation('appsumo');
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { socket, connected } = useSocket();
   const [notificationsSettings, setNotificationsSettings] = useState<INotificationSettings>({});
   const [showBrowserPush, setShowBrowserPush] = useState(false);
   const [isMarkAllHovered, setIsMarkAllHovered] = useState(false);
+  const [isAppSumoModalOpen, setIsAppSumoModalOpen] = useState(false);
 
   const isDarkMode =
     token.colorBgContainer === '#141414' ||
@@ -81,7 +84,6 @@ const NotificationDrawer = () => {
     : notifications;
   const notificationCount = visibleNotifications?.length || 0;
   const [isLoading, setIsLoading] = useState(false);
-  const [appSumoBannerImageLoaded, setAppSumoBannerImageLoaded] = useState(false);
 
   const isPushEnabled = () => {
     return notificationsSettings.popup_notifications_enabled && showBrowserPush;
@@ -348,35 +350,20 @@ const NotificationDrawer = () => {
   };
 
   const showAppSumoBanner =
-    Boolean(APPSUMO_DRAWER_IMAGE_URL) &&
-    shouldShowAppSumoPromo(getUserSession(), billingInfo) &&
-    authService.isOwnerOrAdmin();
+    shouldShowAppSumoPromo(getUserSession(), billingInfo) && authService.isOwnerOrAdmin();
 
-  // Preload the banner image in the background so it's already cached by the
-  // time the user opens the drawer, instead of loading on first render.
-  useEffect(() => {
-    if (!showAppSumoBanner || !APPSUMO_DRAWER_IMAGE_URL) return;
-
-    const preloadImage = new Image();
-    preloadImage.onload = () => setAppSumoBannerImageLoaded(true);
-    preloadImage.onerror = () => setAppSumoBannerImageLoaded(true);
-    preloadImage.src = APPSUMO_DRAWER_IMAGE_URL;
-
-    return () => {
-      preloadImage.onload = null;
-      preloadImage.onerror = null;
-    };
-  }, [showAppSumoBanner]);
+  const annualPrice = APPSUMO_PROMO_PRICING.annual.price;
 
   const handleAppSumoBannerClick = () => {
     trackMixpanelEvent(MixpanelBillingEvents.APPSUMO_PROMO_DRAWER_BANNER_CLICKED, {
       source_component: 'NotificationDrawer',
     });
     dispatch(toggleDrawer());
-    dispatch(openUpgradeModal());
+    setIsAppSumoModalOpen(true);
   };
 
   return (
+    <>
     <Drawer
       title={
         <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
@@ -404,17 +391,25 @@ const NotificationDrawer = () => {
               }
             }}
           >
-            {!appSumoBannerImageLoaded && (
-              <Flex align="center" justify="center" style={{ minHeight: 60 }}>
-                <Spin size="small" />
-              </Flex>
-            )}
-            <img
-              src={APPSUMO_DRAWER_IMAGE_URL}
-              alt="AppSumo"
-              style={{ display: appSumoBannerImageLoaded ? 'block' : 'none' }}
-              onLoad={() => setAppSumoBannerImageLoaded(true)}
-            />
+            <div className="appsumo-drawer-banner__tag">
+              {tAppSumo('popup.tag', { defaultValue: 'AppSumo member offer' })}
+            </div>
+            <div className="appsumo-drawer-banner__title">
+              {tAppSumo('popup.titleHighlight', {
+                defaultValue: 'Run your whole team on Business.',
+              })}
+            </div>
+            <div className="appsumo-drawer-banner__price">
+              {tAppSumo('popup.badgePercent', { defaultValue: '50%' })}{' '}
+              {tAppSumo('popup.badgeOff', { defaultValue: 'OFF' })} — ${annualPrice}
+              <span>
+                {' '}
+                {tAppSumo('popup.perUserMonth', { defaultValue: 'per active user / month' })}
+              </span>
+            </div>
+            <div className="appsumo-drawer-banner__cta">
+              {tAppSumo('popup.cta', { defaultValue: 'Upgrade to Business' })} →
+            </div>
           </div>
         ) : undefined
       }
@@ -499,6 +494,13 @@ const NotificationDrawer = () => {
         />
       )}
     </Drawer>
+
+    <AppSumoUpgradeModal
+      open={isAppSumoModalOpen}
+      onClose={() => setIsAppSumoModalOpen(false)}
+      sourceComponent="NotificationDrawer"
+    />
+    </>
   );
 };
 

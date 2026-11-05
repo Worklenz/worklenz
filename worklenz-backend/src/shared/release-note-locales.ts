@@ -4,7 +4,7 @@
  * required source locale and the fallback for every other one. */
 export const DEFAULT_RELEASE_NOTE_LOCALE = "en";
 
-export const RELEASE_NOTE_LOCALES = ["en", "es", "pt", "alb", "de", "zh_cn", "pl", "fr"] as const;
+export const RELEASE_NOTE_LOCALES = ["en", "es", "pt", "alb", "de", "zh_cn", "pl", "fr", "it"] as const;
 
 export type ReleaseNoteLocale = (typeof RELEASE_NOTE_LOCALES)[number];
 
