@@ -34,6 +34,11 @@ scheduleApiRouter.use(verifyNonGuestPlannerAccess);
 // Shared endpoints outside the paid Planner feature gate:
 //  - time-off, a personal calendar feature (Home calendar, quick actions)
 // Everything registered after the requireAnyFeature gate below is Planner-only.
+<<<<<<< HEAD
+=======
+scheduleApiRouter.get("/settings", safeControllerFunction(ScheduleControllerV2.getSettings));
+scheduleApiRouter.put("/settings", safeControllerFunction(ScheduleControllerV2.updateSettings));
+>>>>>>> fc4473fc5d6b51489727bdbb9427b7dff2ecb4e0
 
 // ============================================
 // Time-Off Management Endpoints
@@ -107,7 +112,7 @@ scheduleApiRouter.get(
 scheduleApiRouter.get("/timeline/projects", safeControllerFunction(ProjectTimelineController.getProjectsTimeline));
 
 // Update a project's start/end date (drag-resize on the Timeline bar)
-scheduleApiRouter.put("/timeline/projects/:id/dates", requireProjectPermission("settings", { sources: ["params.id"] }), idParamValidator, safeControllerFunction(ProjectTimelineController.updateProjectDates));
+scheduleApiRouter.put("/timeline/projects/:id/dates", idParamValidator, safeControllerFunction(ProjectTimelineController.updateProjectDates));
 
 // ============================================
 // Workload Management Endpoints (NEW)

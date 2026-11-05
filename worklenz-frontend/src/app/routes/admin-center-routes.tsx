@@ -1,28 +1,16 @@
 import { RouteObject } from 'react-router-dom';
 import { Suspense } from 'react';
-import {
-  adminCenterItems,
-  canAccessAdminCenter,
-  canAccessAdminCenterItem,
-  type AdminCenterMenuItems,
-} from '@/lib/admin-center-constants';
+import { adminCenterItems } from '@/lib/admin-center-constants';
 import { Navigate } from 'react-router-dom';
 import { useAuthService } from '@/hooks/useAuth';
-import { useOrganizationPermissions } from '@/hooks/useOrganizationPermission';
 import { useAuditLogPermissions } from '@/hooks/useAuditLogPermissions';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import AdminCenterLayout from '@/layouts/AdminCenterLayout';
-import { OrganizationPermission } from '@/types/admin-center/permission-schemes.types';
 
 const AdminCenterGuard = ({ children }: { children: React.ReactNode }) => {
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
-  const { permissions, isLoading } = useOrganizationPermissions();
 
-  if (isLoading) {
-    return <SuspenseFallback />;
-  }
-
-  if (!canAccessAdminCenter(isOwnerOrAdmin, permissions)) {
+  if (!isOwnerOrAdmin) {
     return <Navigate to="/worklenz/unauthorized" replace />;
   }
 
@@ -43,27 +31,6 @@ const OwnerOrAdminRouteGuard = ({ children }: { children: React.ReactNode }) => 
   return <>{children}</>;
 };
 
-const AdminCenterItemGuard = ({
-  item,
-  children,
-}: {
-  item: AdminCenterMenuItems;
-  children: React.ReactNode;
-}) => {
-  const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
-  const { permissions, isLoading } = useOrganizationPermissions();
-
-  if (isLoading) {
-    return <SuspenseFallback />;
-  }
-
-  if (!canAccessAdminCenterItem(item, isOwnerOrAdmin, permissions as OrganizationPermission[])) {
-    return <Navigate to="/worklenz/unauthorized" replace />;
-  }
-
-  return <>{children}</>;
-};
-
 const adminCenterRoutes: RouteObject[] = [
   {
     path: 'admin-center',
@@ -74,14 +41,9 @@ const adminCenterRoutes: RouteObject[] = [
     ),
     children: adminCenterItems.map(item => {
       const page = <Suspense fallback={<SuspenseFallback />}>{item.element}</Suspense>;
-      const guarded = item.ownerOrAdminOnly ? (
-        <OwnerOrAdminRouteGuard>{page}</OwnerOrAdminRouteGuard>
-      ) : (
-        <AdminCenterItemGuard item={item}>{page}</AdminCenterItemGuard>
-      );
       return {
         path: item.endpoint,
-        element: guarded,
+        element: item.ownerOrAdminOnly ? <OwnerOrAdminRouteGuard>{page}</OwnerOrAdminRouteGuard> : page,
       };
     }),
   },

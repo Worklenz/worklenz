@@ -1,5 +1,21 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import { unstableSetRender } from 'antd/es';
+import { createRoot } from 'react-dom/client';
+
+// Temporary: antd 5 static methods (Modal.confirm, message.*) need a React 19 render hook.
+// Mirrors @ant-design/v5-patch-for-react-19, but on the 'antd/es' instance the app imports
+// (the patch's bare 'antd' import resolves to the CJS build under vitest). Drop with antd 6.
+unstableSetRender((node, container) => {
+  const target = container as HTMLElement & { _reactRoot?: ReturnType<typeof createRoot> };
+  target._reactRoot ||= createRoot(target);
+  const root = target._reactRoot;
+  root.render(node);
+  return async () => {
+    await new Promise(resolve => setTimeout(resolve, 0));
+    root.unmount();
+  };
+});
 
 // Mock environment variables
 Object.defineProperty(process, 'env', {

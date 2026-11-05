@@ -15,8 +15,6 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchOrgConfig, updateOrgConfig } from '@/features/org-config/org-config.slice';
 import { useAuthService } from '@/hooks/useAuth';
-import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
-import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 import { CURRENCY_OPTIONS } from '@/shared/currencies';
 import { currencyRatesApiService, ICurrencyRatesResponse } from '@/api/settings/currency-rates/currency-rates.api.service';
 
@@ -27,10 +25,6 @@ const OrganizationCurrencySettings = () => {
   const auth = useAuthService();
   const { t } = useTranslation('settings/organization-currency-settings');
   const isOwnerOrAdmin = auth.isOwnerOrAdmin();
-  const { hasPermission: hasManageBilling } = useOrganizationPermission(
-    ORGANIZATION_PERMISSIONS.MANAGE_BILLING
-  );
-  const canEditCurrency = isOwnerOrAdmin || hasManageBilling;
 
   const orgConfig = useAppSelector(state => state.orgConfigReducer);
 
@@ -128,7 +122,7 @@ const OrganizationCurrencySettings = () => {
               style={{ width: 300 }}
               value={selectedCurrency}
               onChange={val => setSelectedCurrency(val)}
-              disabled={!canEditCurrency || orgConfig.isLoading}
+              disabled={!isOwnerOrAdmin || orgConfig.isLoading}
               optionFilterProp="label"
               options={currencySelectOptions}
               aria-label={t('selectAriaLabel')}
@@ -136,14 +130,14 @@ const OrganizationCurrencySettings = () => {
             <Button
               type="primary"
               loading={saving}
-              disabled={!canEditCurrency || orgConfig.isLoading}
+              disabled={!isOwnerOrAdmin || orgConfig.isLoading}
               onClick={handleSave}
             >
               {hasUnsavedChanges ? t('saveChanges') : t('save')}
             </Button>
           </Flex>
 
-          {!canEditCurrency && (
+          {!isOwnerOrAdmin && (
             <Text type="secondary" style={{ fontSize: 12 }}>
               {t('adminOnly')}
             </Text>

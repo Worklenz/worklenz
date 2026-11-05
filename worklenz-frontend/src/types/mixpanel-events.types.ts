@@ -215,8 +215,11 @@ export enum MixpanelBillingEvents {
 
   // AppSumo promo popup/banner events
   APPSUMO_PROMO_POPUP_VIEWED = 'appsumo_promo_popup_viewed',
-  APPSUMO_PROMO_POPUP_CLICKED = 'appsumo_promo_popup_clicked',
   APPSUMO_PROMO_POPUP_CLOSED = 'appsumo_promo_popup_closed',
+  APPSUMO_PROMO_POPUP_BILLING_TOGGLED = 'appsumo_promo_popup_billing_toggled',
+  APPSUMO_PROMO_POPUP_UPGRADE_CLICKED = 'appsumo_promo_popup_upgrade_clicked',
+  /** @deprecated Prefer APPSUMO_PROMO_POPUP_UPGRADE_CLICKED */
+  APPSUMO_PROMO_POPUP_CLICKED = 'appsumo_promo_popup_clicked',
   APPSUMO_PROMO_DRAWER_BANNER_CLICKED = 'appsumo_promo_drawer_banner_clicked',
 
   // Business Plan Trial events

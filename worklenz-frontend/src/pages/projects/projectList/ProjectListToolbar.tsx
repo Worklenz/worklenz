@@ -17,8 +17,6 @@ import {
   UnorderedListOutlined,
 } from '@/shared/antd-imports';
 import CreateProjectButton from '@/components/projects/project-create-button/project-create-button';
-import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
-import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 import { ProjectListFieldsDropdown } from '@/components/project-list/project-list-fields-dropdown/project-list-fields-dropdown';
 import PillToggle from '@/pages/home/PillToggle';
 import { IProjectFilter, ProjectGroupBy, ProjectViewType } from '@/types/project/project.types';
@@ -55,8 +53,6 @@ interface ProjectListToolbarProps {
   isOwnerOrAdmin: boolean;
   /** Phase 5 — show create for Members with template-create flag. */
   canCreateFromTemplates?: boolean;
-  /** Show create when "Create projects" is granted in the default scheme. */
-  canCreateProjects?: boolean;
   /** Count of active Status/Category/Priority/Client column filters. */
   activeFilterCount: number;
   onRefresh: () => void;
@@ -75,7 +71,6 @@ const ProjectListToolbarComponent: React.FC<ProjectListToolbarProps> = ({
   isRefreshing,
   isOwnerOrAdmin,
   canCreateFromTemplates = false,
-  canCreateProjects: canCreateProjectsProp = false,
   activeFilterCount,
   onRefresh,
   onFilterSegmentChange,
@@ -86,10 +81,6 @@ const ProjectListToolbarComponent: React.FC<ProjectListToolbarProps> = ({
 }) => {
   const { t } = useTranslation('all-project-list');
   const { token } = theme.useToken();
-  const { hasPermission: hasCreateProjectsPermission } = useOrganizationPermission(
-    ORGANIZATION_PERMISSIONS.CREATE_PROJECTS
-  );
-  const canCreateProjects = canCreateProjectsProp || hasCreateProjectsPermission;
 
   const segmentOptions = useMemo(
     () =>
@@ -225,7 +216,7 @@ const ProjectListToolbarComponent: React.FC<ProjectListToolbarProps> = ({
         onClear={() => onSearchChange('')}
       />
 
-      {(isOwnerOrAdmin || canCreateFromTemplates || canCreateProjects) && (
+      {(isOwnerOrAdmin || canCreateFromTemplates) && (
         <CreateProjectButton style={CREATE_BUTTON_STYLE} />
       )}
     </Flex>

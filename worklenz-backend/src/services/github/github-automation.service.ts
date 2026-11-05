@@ -41,7 +41,11 @@ async function loadGitState(taskId: string): Promise<ITaskGitState> {
      FROM github_task_links l
      LEFT JOIN github_pull_requests p ON p.id = l.pull_request_id
      LEFT JOIN github_branches b ON b.id = l.branch_id
-     WHERE l.task_id = $1`,
+     JOIN tasks t ON t.id = l.task_id
+     JOIN github_repositories r ON r.id = COALESCE(p.repository_id, b.repository_id)
+     JOIN github_integrations i ON i.id = r.integration_id AND i.status = 'active'
+     JOIN github_project_repositories pr ON pr.project_id = t.project_id AND pr.repository_id = r.id
+     WHERE l.task_id = $1 AND r.is_available = TRUE`,
     [taskId],
   );
   const row = result.rows[0];
@@ -184,6 +188,7 @@ export async function reconcileTasks(
   repositoryId: string,
   authorLogin?: string | null,
 ): Promise<void> {
+  const failures: string[] = [];
   for (const taskId of new Set(taskIds)) {
     try {
       const contextResult = await db.query(
@@ -230,14 +235,16 @@ export async function reconcileTasks(
       }
 
       const actorId = await resolveActorId(context, repositoryId, authorLogin);
-      if (!actorId) continue;
+      if (!actorId) throw new Error(`No actor available for GitHub status transition on task ${taskId}`);
 
       const event = resolveReachedEvent(gitState);
       await applyStatusTransition(context, target, actorId, await describeTransitionSource(taskId, event));
     } catch (error) {
       log_error(error);
+      failures.push(taskId);
     }
   }
+  if (failures.length) throw new Error(`GitHub status reconciliation failed for ${failures.length} task(s)`);
 }
 
 /** Tell clients with the project open that GitHub activity changed for these tasks. */

@@ -5,8 +5,8 @@ import ProgressTrackingController from "../../controllers/reporting/progress-tra
 
 import idParamValidator from "../../middlewares/validators/id-param-validator";
 import projectsBodyValidator from "../../middlewares/validators/projects-body-validator";
+import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
-import { createProjectsValidator } from "../../middlewares/validators/organization-permission-validator";
 import { requireProjectPermission } from "../../middlewares/validators/require-project-permission";
 import projectMemberValidator from "../../middlewares/validators/project-member-validator";
 import verifyProjectAccess from "../../middlewares/verify-project-access";
@@ -29,7 +29,7 @@ projectsApiRouter.get(
 
 projectsApiRouter.post(
   "/",
-  createProjectsValidator,
+  teamOwnerOrAdminValidator,
   projectsBodyValidator,
   safeControllerFunction(ProjectsController.create),
 );

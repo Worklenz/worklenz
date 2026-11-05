@@ -1,0 +1,30 @@
+.reporting-mode-paddle-narrow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 6px 8px;
+  box-sizing: border-box;
+}
+
+.reporting-mode-paddle-narrow-btn {
+  width: 100%;
+  margin: 0;
+  padding: 4px 2px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.reporting-mode-paddle-narrow-btn:hover {
+  filter: brightness(0.97);
+}
+
+.reporting-mode-paddle-narrow-btn:focus-visible {
+  outline: 2px solid var(--ant-color-primary, #1890ff);
+  outline-offset: 1px;
+}

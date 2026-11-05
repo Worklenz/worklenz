@@ -33,13 +33,11 @@ import {
   canAssignRole,
   canManageTargetRole,
   canManageTeamMembers,
-  getManageUsersAssignableRoles,
   getTeamMemberRoleName,
   hasTeamAdminPrivileges,
   isSelfTeamMember,
   normalizeTeamRoleName,
   TEAM_ROLE_NAMES,
-  TeamRoleName,
 } from "../shared/team-permissions";
 import { hasTeamMemberManagementAccess } from "../shared/organization-permissions";
 import { canManageTeamMemberViaProjectPermission } from "../shared/project-access";
@@ -120,14 +118,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
     }
 
-    const normalizedRole = normalizeTeamRoleName(roleName);
-    const canAssignViaRole = canAssignRole(req.user, roleName);
-    const canAssignViaPermission =
-      !canAssignViaRole &&
-      (await hasTeamMemberManagementAccess(req.user)) &&
-      getManageUsersAssignableRoles().includes(normalizedRole as TeamRoleName);
-
-    if (!canAssignViaRole && !canAssignViaPermission) {
+    if (!canAssignRole(req.user, roleName)) {
       return new ServerResponse(
         false,
         null,
@@ -976,13 +967,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
       isSelfTeamMember(req.user, req.params.id) ||
       (await this.isSelfMemberInTeam(req.user?.id, req.user?.team_id, req.params.id));
 
-    const canManageMembers =
-      canManageTeamMembers(req.user) ||
-      (!isSelf && (await hasTeamMemberManagementAccess(req.user)));
-
     // If caller cannot manage team members or is editing their own record,
     // protect role/admin fields from unauthorized modification or escalation.
-    if (!canManageMembers || isSelf) {
+    if (!canManageTeamMembers(req.user) || isSelf) {
       req.body.role_name = previousRoleName;
       req.body.is_admin = previousRoleName === TEAM_ROLE_NAMES.ADMIN;
     }
@@ -1001,9 +988,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
       return res.status(200).send(roleAssignmentError);
     }
 
-    // Only Owners/Admins (or Manage users holders) may create job titles;
-    // everyone else (including self-edits) can only pick one that already exists.
-    if (!canManageMembers) {
+    // Only Owners/Admins may create job titles; everyone else (including
+    // self-edits) can only pick one that already exists in the team.
+    if (!canManageTeamMembers(req.user)) {
       const requestedJobTitle = typeof req.body.job_title === "string"
         ? req.body.job_title.trim()
         : "";
@@ -1021,10 +1008,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
     }
 
-    const canSetAdminFlag = hasTeamAdminPrivileges(req.user);
     req.body.id = req.params.id;
     req.body.team_id = req.user?.team_id || null;
-    req.body.is_admin = !canSetAdminFlag || isSelf
+    req.body.is_admin = !canManageTeamMembers(req.user) || isSelf
       ? previousRoleName === TEAM_ROLE_NAMES.ADMIN
       : !!req.body.is_admin;
 
@@ -2459,33 +2445,10 @@ export default class TeamMembersController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     req.body.team_id = req.params?.id || null;
 
-    if (!req.body.team_id || !req.user?.id || !req.user.team_id)
+    if (!req.body.team_id || !req.user?.id)
       return res
         .status(200)
         .send(new ServerResponse(false, "Required fields are missing."));
-
-    // Invitations are scoped to the caller's active team. The URL must not let a
-    // Manage users grant (or even a team admin) target another team's membership.
-    if (req.body.team_id !== req.user.team_id) {
-      return res.status(403).send(new ServerResponse(false, null, "You are not authorized to add members to this team."));
-    }
-
-    const requestedRoleName =
-      req.body.role_name ||
-      (req.body.is_admin ? TEAM_ROLE_NAMES.ADMIN : TEAM_ROLE_NAMES.MEMBER);
-    const roleAssignmentError = await this.ensureAssignableRole(
-      req,
-      requestedRoleName,
-    );
-    if (roleAssignmentError) {
-      return res.status(403).send(roleAssignmentError);
-    }
-
-    // is_admin is a legacy SQL fallback; don't let it override a permitted
-    // Member/Team Lead role for users authorized through Manage users.
-    if (!hasTeamAdminPrivileges(req.user)) {
-      req.body.is_admin = false;
-    }
 
     // check the subscription status
     const subscriptionData = await checkTeamSubscriptionStatus(
@@ -2618,20 +2581,6 @@ export default class TeamMembersController extends WorklenzControllerBase {
         .status(200)
         .send(new ServerResponse(false, null, "Required fields are missing."));
     }
-
-    const requestedRoleName =
-      (is_admin ? TEAM_ROLE_NAMES.ADMIN : req.body.role_name) ||
-      role_name;
-    const roleAssignmentError = await this.ensureAssignableRole(
-      req,
-      requestedRoleName,
-    );
-    if (roleAssignmentError) {
-      return res.status(403).send(roleAssignmentError);
-    }
-
-    const effectiveIsAdmin = hasTeamAdminPrivileges(req.user) ? !!is_admin : false;
-    const effectiveRoleName = normalizeTeamRoleName(requestedRoleName);
 
     // Check subscription status
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
@@ -2833,8 +2782,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
             userId,
             expiresAt,
             job_title_id,
-            effectiveRoleName,
-            effectiveIsAdmin,
+            role_name,
+            is_admin,
             max_usage,
           ]);
 
@@ -2857,8 +2806,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
             userId,
             expiresAt,
             job_title_id,
-            effectiveRoleName,
-            effectiveIsAdmin,
+            role_name,
+            is_admin,
             max_usage,
           ]);
 

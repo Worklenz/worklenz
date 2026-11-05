@@ -12,7 +12,6 @@ import {
 import { Badge, Button, Col, Dropdown, Flex, Modal, Result, Row, Tabs } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { ClientPortalEventProps, MixpanelEvents } from '@/types/mixpanel-events.types';
 import {
   openAddCompanyUserDrawer,
@@ -49,7 +48,6 @@ const ClientWorkspacePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const [isMessaging, setIsMessaging] = useState(false);
-  const isReadOnly = useIsAdminSurfaceReadOnly();
 
   const activeTab = parseWorkspaceTab(searchParams.get('tab'));
 
@@ -227,7 +225,6 @@ const ClientWorkspacePage = () => {
                   >
                     {t('workspace.header.message', { defaultValue: 'Message' })}
                   </Button>
-                  {!isReadOnly && (
                   <Dropdown
                     menu={{
                       items: [
@@ -268,7 +265,6 @@ const ClientWorkspacePage = () => {
                       aria-label={t('workspace.header.actionsLabel', { defaultValue: 'Client actions' })}
                     />
                   </Dropdown>
-                  )}
                 </Flex>
               }
             />

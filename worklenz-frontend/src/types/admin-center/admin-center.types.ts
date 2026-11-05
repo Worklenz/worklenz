@@ -94,6 +94,9 @@ export interface IBillingAccountInfo {
   total_seats?: number;
   /** 'paddle_billing' for per-user plans, 'paddle_classic' for grandfathered ones. */
   billing_provider?: string | null;
+  /** Paddle plan and seat count shown alongside an AppSumo entitlement. */
+  paid_plan_name?: string | null;
+  paid_subscription_seats?: number | null;
   total_used?: number;
   is_lkr_billing?: boolean;
   subscription_type?: ISUBSCRIPTION_TYPE;

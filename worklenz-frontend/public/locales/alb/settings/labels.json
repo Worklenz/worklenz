@@ -42,5 +42,7 @@
   "updateLabelErrorMessage": "Dështoi përditësimi i etiketës",
   "nameLabel": "Emri",
   "namePlaceholder": "Shkruani emrin e etiketës",
-  "nameRequiredMessage": "Ju lutemi shkruani emrin e etiketës"
+  "nameRequiredMessage": "Ju lutemi shkruani emrin e etiketës",
+  "rowsPerPage": "Rreshta për faqe:",
+  "paginationSummary": "{{range}} nga {{total}}"
 }

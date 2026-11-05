@@ -2,7 +2,6 @@ import { Button, Flex, Typography } from '@/shared/antd-imports';
 import { PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { InvoicesTable } from './Invoices-table/invoices-table';
 import './invoices.css';
 
@@ -12,7 +11,6 @@ const ClientPortalInvoices = () => {
   // localization
   const { t } = useTranslation('client-portal-invoices');
   const navigate = useNavigate();
-  const isReadOnly = useIsAdminSurfaceReadOnly();
 
   return (
     <div
@@ -41,16 +39,14 @@ const ClientPortalInvoices = () => {
           </Typography.Text>
         </div>
 
-        {!isReadOnly && (
-          <Button
-            type="primary"
-            size="small"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/worklenz/client-portal/invoices/create')}
-          >
-            {t('createInvoiceButton', { defaultValue: 'Create Invoice' })}
-          </Button>
-        )}
+        <Button
+          type="primary"
+          size="small"
+          icon={<PlusOutlined />}
+          onClick={() => navigate('/worklenz/client-portal/invoices/create')}
+        >
+          {t('createInvoiceButton', { defaultValue: 'Create Invoice' })}
+        </Button>
       </Flex>
 
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>

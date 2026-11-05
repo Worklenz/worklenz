@@ -92,6 +92,10 @@ export default class AdminCenterBillingController extends WorklenzControllerBase
     data.billing_info.appsumo_business_eligible = subscriptionData?.appsumo_business_eligible === true;
     data.billing_info.billing_provider = subscriptionData?.billing_provider ?? null;
     data.billing_info.subscription_ref = subscriptionData?.subscription_ref ?? null;
+    if (isLtdUser && subscriptionData?.billing_provider === "paddle_billing") {
+      data.billing_info.paid_plan_name = subscriptionData.plan_name ?? null;
+      data.billing_info.paid_subscription_seats = subscriptionData.quantity ?? null;
+    }
 
     return res.status(200).send(new ServerResponse(true, data.billing_info));
   }

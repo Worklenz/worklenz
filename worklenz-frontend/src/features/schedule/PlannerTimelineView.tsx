@@ -21,7 +21,6 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
-import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 import PlannerMultiFilterDropdown from '@/features/schedule/PlannerMultiFilterDropdown';
@@ -232,7 +231,6 @@ interface TimelineBarRowProps {
   cardBg: string;
   onDatesChange: (projectId: string, startDate: string, endDate: string) => void;
   highlighted?: boolean;
-  isReadOnly?: boolean;
 }
 
 // Same tooltip surface treatment as PlannerScheduleView's renderTaskTooltipTitle: a
@@ -257,7 +255,6 @@ const TimelineProjectBarRow: React.FC<TimelineBarRowProps> = ({
   cardBg,
   onDatesChange,
   highlighted,
-  isReadOnly = false,
 }) => {
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -346,7 +343,6 @@ const TimelineProjectBarRow: React.FC<TimelineBarRowProps> = ({
   // click-and-hold pan (which still fires normally for clicks on empty grid background,
   // since that's a separate mousedown handler on the scroll container, not this bar).
   const startBarMove = (e: React.MouseEvent) => {
-    if (isReadOnly) return;
     e.stopPropagation();
     e.preventDefault();
     liveRef.current = { start: dayjs(project.start_date), end: dayjs(project.end_date), startX: e.clientX };
@@ -434,92 +430,88 @@ const TimelineProjectBarRow: React.FC<TimelineBarRowProps> = ({
         transition: 'background .3s',
       }}
     >
-        <Tooltip
-          title={projectTooltip}
-          open={dragMode ? false : highlighted ? true : undefined}
-          {...tooltipProps(themeMode, token)}
+      <Tooltip
+        title={projectTooltip}
+        open={dragMode ? false : highlighted ? true : undefined}
+        {...tooltipProps(themeMode, token)}
+      >
+        <div
+          onMouseDown={startBarMove}
+          style={{
+            position: 'absolute',
+            left: barLeft,
+            width: barWidth,
+            height: BAR_HEIGHT,
+            display: 'flex',
+            alignItems: 'center',
+            cursor: dragMode === 'move' ? 'grabbing' : 'grab',
+          }}
         >
           <div
-            onMouseDown={startBarMove}
             style={{
-              position: 'absolute',
-              left: barLeft,
-              width: barWidth,
-              height: BAR_HEIGHT,
+              flex: 1,
+              height: '100%',
+              borderRadius: 2,
+              overflow: 'hidden',
               display: 'flex',
-              alignItems: 'center',
-              cursor: isReadOnly ? 'default' : dragMode === 'move' ? 'grabbing' : 'grab',
+              boxShadow: `0 0 0 1px ${token.colorBorderSecondary}`,
             }}
           >
-            <div
-              style={{
-                flex: 1,
-                height: '100%',
-                borderRadius: 2,
-                overflow: 'hidden',
-                display: 'flex',
-                boxShadow: `0 0 0 1px ${token.colorBorderSecondary}`,
-              }}
-            >
-              {project.total_tasks > 0 ? (
-                <>
-                  <div style={{ width: `${project.done_progress}%`, background: baseColor, opacity: opacity.done }} />
-                  <div style={{ width: `${project.doing_progress}%`, background: baseColor, opacity: opacity.doing }} />
-                  <div style={{ width: `${project.todo_progress}%`, background: baseColor, opacity: opacity.todo }} />
-                </>
-              ) : (
-                // No tasks yet -> nothing to fill by status, so the bar would otherwise
-                // render empty. Fill it fully in the "todo" tone instead, same as a project
-                // that's 100% not-started.
-                <div style={{ width: '100%', background: baseColor, opacity: opacity.todo }} />
-              )}
-            </div>
-            {/* Invisible drag handles at each edge, layered on top of the bar-move handler
-                above — resizing either one only moves that edge's date; the other date and
-                the segmented fill stay put. */}
-            {!isReadOnly && (
+            {project.total_tasks > 0 ? (
               <>
-                <div
-                  onMouseDown={startEdgeDrag('start')}
-                  style={{ position: 'absolute', left: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
-                />
-                <div
-                  onMouseDown={startEdgeDrag('end')}
-                  style={{ position: 'absolute', right: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
-                />
+                <div style={{ width: `${project.done_progress}%`, background: baseColor, opacity: opacity.done }} />
+                <div style={{ width: `${project.doing_progress}%`, background: baseColor, opacity: opacity.doing }} />
+                <div style={{ width: `${project.todo_progress}%`, background: baseColor, opacity: opacity.todo }} />
               </>
+            ) : (
+              // No tasks yet -> nothing to fill by status, so the bar would otherwise
+              // render empty. Fill it fully in the "todo" tone instead, same as a project
+              // that's 100% not-started.
+              <div style={{ width: '100%', background: baseColor, opacity: opacity.todo }} />
             )}
           </div>
-        </Tooltip>
+          {/* Invisible drag handles at each edge, layered on top of the bar-move handler
+                above — resizing either one only moves that edge's date; the other date and
+                the segmented fill stay put. */}
+          <div
+            onMouseDown={startEdgeDrag('start')}
+            style={{ position: 'absolute', left: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
+          />
+          <div
+            onMouseDown={startEdgeDrag('end')}
+            style={{ position: 'absolute', right: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
+          />
+        </div>
+      </Tooltip>
 
-        {/* Live date readout while dragging an edge handle or the bar itself — sits
+      {/* Live date readout while dragging an edge handle or the bar itself — sits
             outside the Tooltip (which only supports a single child) but still tracks the
             bar's position. Same light/dark surface treatment as the project/task
             tooltips: solid white + shadow in light mode, antd's own dark tooltip
             background in dark mode. Moving the whole bar shows both dates (since both
             shift together); resizing an edge shows just that edge's date. */}
-        {dragMode && (
-          <div
-            style={{
-              position: 'absolute',
-              left: dragMode === 'start' ? barLeft : dragMode === 'end' ? barLeft + barWidth : barLeft + barWidth / 2,
-              top: -24,
-              transform: 'translateX(-50%)',
-              background: themeMode === 'dark' ? token.colorBgSpotlight : '#fff',
-              color: themeMode === 'dark' ? (token.colorTextLightSolid ?? '#fff') : token.colorText,
-              boxShadow: themeMode === 'dark' ? undefined : '0 2px 8px rgba(0,0,0,.15)',
-              fontSize: 12,
-              fontWeight: 700,
-              padding: '2px 7px',
-              borderRadius: 4,
-              whiteSpace: 'nowrap',
-              zIndex: 2,
-              pointerEvents: 'none',
-            }}
-          >
-            {dragMode === 'move'
-              ? `${effectiveStart.format('MMM D')} – ${effectiveEnd.format('MMM D, YYYY')}`
-              : (dragMode === 'start' ? effectiveStart : effectiveEnd).format('MMM D, YYYY')}
+      {dragMode && (
+        <div
+          style={{
+            position: 'absolute',
+            left: dragMode === 'start' ? barLeft : dragMode === 'end' ? barLeft + barWidth : barLeft + barWidth / 2,
+            top: -24,
+            transform: 'translateX(-50%)',
+            background: themeMode === 'dark' ? token.colorBgSpotlight : '#fff',
+            color: themeMode === 'dark' ? (token.colorTextLightSolid ?? '#fff') : token.colorText,
+            boxShadow: themeMode === 'dark' ? undefined : '0 2px 8px rgba(0,0,0,.15)',
+            fontSize: 12,
+            fontWeight: 700,
+            padding: '2px 7px',
+            borderRadius: 4,
+            whiteSpace: 'nowrap',
+            zIndex: 2,
+            pointerEvents: 'none',
+          }}
+        >
+          {dragMode === 'move'
+            ? `${effectiveStart.format('MMM D')} – ${effectiveEnd.format('MMM D, YYYY')}`
+            : (dragMode === 'start' ? effectiveStart : effectiveEnd).format('MMM D, YYYY')}
         </div>
       )}
     </div>
@@ -535,7 +527,6 @@ interface TimelinePlaceholderRowProps {
   cardBg: string;
   onDatesChange: (projectId: string, startDate: string, endDate: string) => void;
   onHoverRangeChange: (range: { start: Dayjs; end: Dayjs } | null) => void;
-  isReadOnly?: boolean;
 }
 
 // Undated projects have no bar to show, so their row instead previews a default
@@ -552,7 +543,6 @@ const TimelineProjectPlaceholderRow: React.FC<TimelinePlaceholderRowProps> = ({
   cardBg,
   onDatesChange,
   onHoverRangeChange,
-  isReadOnly = false,
 }) => {
   const { token } = theme.useToken();
   const [hoverStart, setHoverStart] = useState<Dayjs | null>(null);
@@ -560,7 +550,6 @@ const TimelineProjectPlaceholderRow: React.FC<TimelinePlaceholderRowProps> = ({
   const xForDate = (date: Dayjs) => date.diff(rangeStart, 'day') * pxPerDay;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isReadOnly) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const start = rangeStart.add(Math.round((e.clientX - rect.left) / pxPerDay), 'day');
     setHoverStart(start);
@@ -593,7 +582,7 @@ const TimelineProjectPlaceholderRow: React.FC<TimelinePlaceholderRowProps> = ({
         width: totalWidth,
         position: 'relative',
         borderBottom: `1px solid ${borderColor}`,
-        cursor: isReadOnly ? 'default' : 'pointer',
+        cursor: 'pointer',
         // Opaque background for the same reason as TimelineProjectBarRow above — this
         // row can now be inside a position:sticky wrapper.
         background: hoverStart ? token.colorFillQuaternary : cardBg,
@@ -825,7 +814,6 @@ interface TimelineTaskBarRowProps {
   totalWidth: number;
   borderColor: string;
   onDatesChange: (taskId: string, startDate: string, endDate: string) => void;
-  isReadOnly?: boolean;
 }
 
 const TASK_BAR_HEIGHT = 18;
@@ -841,7 +829,6 @@ const TimelineTaskBarRow: React.FC<TimelineTaskBarRowProps> = ({
   totalWidth,
   borderColor,
   onDatesChange,
-  isReadOnly = false,
 }) => {
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -918,7 +905,7 @@ const TimelineTaskBarRow: React.FC<TimelineTaskBarRowProps> = ({
   };
 
   const startBarMove = (e: React.MouseEvent) => {
-    if (!hasDates || isReadOnly) return;
+    if (!hasDates) return;
     e.stopPropagation();
     e.preventDefault();
     liveRef.current = { start: dayjs(task.start_date as string), end: dayjs(task.end_date as string), startX: e.clientX };
@@ -968,21 +955,17 @@ const TimelineTaskBarRow: React.FC<TimelineTaskBarRowProps> = ({
               background: task.status_color || token.colorPrimary,
               opacity: task.is_done_status ? 0.55 : 1,
               boxShadow: `0 0 0 1px ${token.colorBorderSecondary}`,
-              cursor: isReadOnly ? 'default' : dragMode === 'move' ? 'grabbing' : 'grab',
+              cursor: dragMode === 'move' ? 'grabbing' : 'grab',
             }}
           >
-            {!isReadOnly && (
-              <>
-                <div
-                  onMouseDown={startEdgeDrag('start')}
-                  style={{ position: 'absolute', left: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
-                />
-                <div
-                  onMouseDown={startEdgeDrag('end')}
-                  style={{ position: 'absolute', right: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
-                />
-              </>
-            )}
+            <div
+              onMouseDown={startEdgeDrag('start')}
+              style={{ position: 'absolute', left: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
+            />
+            <div
+              onMouseDown={startEdgeDrag('end')}
+              style={{ position: 'absolute', right: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
+            />
           </div>
         </Tooltip>
       ) : (
@@ -999,7 +982,6 @@ const PlannerTimelineView: React.FC = () => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { token } = theme.useToken();
   const dispatch = useAppDispatch();
-  const isReadOnly = useIsAdminSurfaceReadOnly();
 
   // Live sync: date/status changes made here (or in any other project view) refresh
   // this view's data via RTK Query cache invalidation — see useScheduleSocketHandlers
@@ -1423,6 +1405,12 @@ const PlannerTimelineView: React.FC = () => {
   const rangeLabel = `${rangeStart.format('MMM YYYY')} - ${rangeEnd.format('MMM YYYY')}`;
   const todayLeft = today.diff(rangeStart, 'day') * pxPerDay;
 
+  const timelineContentHeight = renderRows.reduce(
+    (height, group) =>
+      height + (1 + group.taskRows.length) * MAIN_ROW_HEIGHT,
+    0
+  );
+
   const handleZoomIn = () => {
     const idx = ZOOM_ORDER.indexOf(zoom);
     if (idx > 0) setZoom(ZOOM_ORDER[idx - 1]);
@@ -1474,9 +1462,9 @@ const PlannerTimelineView: React.FC = () => {
 
   const handleFullscreen = () => {
     if (!document.fullscreenElement) {
-      rootRef.current?.requestFullscreen().catch(() => {});
+      rootRef.current?.requestFullscreen().catch(() => { });
     } else {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(() => { });
     }
   };
 
@@ -1520,8 +1508,8 @@ const PlannerTimelineView: React.FC = () => {
         <div style={{ fontSize: 12, opacity: 0.55, maxWidth: 340 }}>
           {anyFilterActive
             ? t('timelineEmptyFilteredDesc', {
-                defaultValue: 'No projects match the current filters. Try widening Projects, Status, Priority, Category, or Clients.',
-              })
+              defaultValue: 'No projects match the current filters. Try widening Projects, Status, Priority, Category, or Clients.',
+            })
             : t('timelineEmptyProjectsDesc', { defaultValue: 'No projects to show yet.' })}
         </div>
         {anyFilterActive && (
@@ -1583,106 +1571,106 @@ const PlannerTimelineView: React.FC = () => {
           flexShrink: 0,
         }}
       >
-      {/* Filters row */}
-      <Flex align="center" gap={8} wrap="wrap" style={{ padding: '10px 12px' }}>
-        <PlannerMultiFilterDropdown
-          label={t('allProjects', { defaultValue: 'Projects' })}
-          options={allProjects.map(p => ({ value: p.id, label: decodeHtmlEntities(p.name) || '' }))}
-          selected={filterProjects}
-          onChange={setFilterProjects}
-        />
-        <PlannerMultiFilterDropdown
-          label={t('allStatuses', { defaultValue: 'Status' })}
-          options={statusOptions}
-          selected={filterStatuses}
-          onChange={setFilterStatuses}
-        />
-        <PlannerMultiFilterDropdown
-          label={t('allPriorities', { defaultValue: 'Priority' })}
-          options={priorityOptions}
-          selected={filterPriorities}
-          onChange={setFilterPriorities}
-        />
-        <PlannerMultiFilterDropdown
-          label={t('allCategories', { defaultValue: 'Category' })}
-          options={categoryOptions}
-          selected={filterCategories}
-          onChange={setFilterCategories}
-        />
-        <PlannerMultiFilterDropdown
-          label={t('allClients', { defaultValue: 'Clients' })}
-          options={clientOptions}
-          selected={filterClients}
-          onChange={setFilterClients}
-        />
-        <Tooltip
-          title={dateRangeError}
-          open={!!dateRangeError}
-          placement="topLeft"
-          color="red"
-        >
-          <DatePicker.RangePicker
-            size="small"
-            status={dateRangeError ? 'error' : undefined}
-            order={false}
-            value={dateFilter}
-            onChange={handleDateRangeChange}
-            onFocus={handleRangePickerFocus}
-            onCalendarChange={onCalendarChange}
-            onOpenChange={handleRangePickerOpenChange}
-            disabledDate={disabledDate}
-            placeholder={[
-              t('startDate', { defaultValue: 'Start date' }),
-              t('endDate', { defaultValue: 'End date' }),
-            ]}
-            style={{ fontSize: 12 }}
+        {/* Filters row */}
+        <Flex align="center" gap={8} wrap="wrap" style={{ padding: '10px 12px' }}>
+          <PlannerMultiFilterDropdown
+            label={t('allProjects', { defaultValue: 'Projects' })}
+            options={allProjects.map(p => ({ value: p.id, label: decodeHtmlEntities(p.name) || '' }))}
+            selected={filterProjects}
+            onChange={setFilterProjects}
           />
-        </Tooltip>
-      </Flex>
-
-      {/* Range label + zoom row */}
-      <Flex
-        align="center"
-        gap={8}
-        wrap="wrap"
-        style={{ padding: '8px 12px', borderTop: `1px solid ${borderColor}` }}
-      >
-        <span style={{ fontSize: 14, fontWeight: 600, marginRight: 8 }}>{rangeLabel}</span>
-
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Space size={4}>
-            <Button
+          <PlannerMultiFilterDropdown
+            label={t('allStatuses', { defaultValue: 'Status' })}
+            options={statusOptions}
+            selected={filterStatuses}
+            onChange={setFilterStatuses}
+          />
+          <PlannerMultiFilterDropdown
+            label={t('allPriorities', { defaultValue: 'Priority' })}
+            options={priorityOptions}
+            selected={filterPriorities}
+            onChange={setFilterPriorities}
+          />
+          <PlannerMultiFilterDropdown
+            label={t('allCategories', { defaultValue: 'Category' })}
+            options={categoryOptions}
+            selected={filterCategories}
+            onChange={setFilterCategories}
+          />
+          <PlannerMultiFilterDropdown
+            label={t('allClients', { defaultValue: 'Clients' })}
+            options={clientOptions}
+            selected={filterClients}
+            onChange={setFilterClients}
+          />
+          <Tooltip
+            title={dateRangeError}
+            open={!!dateRangeError}
+            placement="topLeft"
+            color="red"
+          >
+            <DatePicker.RangePicker
               size="small"
-              shape="circle"
-              icon={<ZoomInOutlined />}
-              onClick={handleZoomIn}
-              disabled={zoom === 'days'}
-              title={t('zoomIn', { defaultValue: 'Zoom In' })}
+              status={dateRangeError ? 'error' : undefined}
+              order={false}
+              value={dateFilter}
+              onChange={handleDateRangeChange}
+              onFocus={handleRangePickerFocus}
+              onCalendarChange={onCalendarChange}
+              onOpenChange={handleRangePickerOpenChange}
+              disabledDate={disabledDate}
+              placeholder={[
+                t('startDate', { defaultValue: 'Start date' }),
+                t('endDate', { defaultValue: 'End date' }),
+              ]}
+              style={{ fontSize: 12 }}
             />
-            <Button
-              size="small"
-              shape="circle"
-              icon={<ZoomOutOutlined />}
-              onClick={handleZoomOut}
-              disabled={zoom === 'years'}
-              title={t('zoomOut', { defaultValue: 'Zoom Out' })}
-            />
-            <Button
-              size="small"
-              shape="circle"
-              icon={<ExpandOutlined />}
-              onClick={handleFullscreen}
-              title={t('fullscreen', { defaultValue: 'Fullscreen' })}
-            />
-          </Space>
+          </Tooltip>
+        </Flex>
 
-          <div style={{ display: 'inline-flex', border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 7, overflow: 'hidden' }}>
-            <button onClick={handleToday} style={zoomBtnStyle(false, true)}>
-              {t('today', { defaultValue: 'Today' })}
-            </button>
+        {/* Range label + zoom row */}
+        <Flex
+          align="center"
+          gap={8}
+          wrap="wrap"
+          style={{ padding: '8px 12px', borderTop: `1px solid ${borderColor}` }}
+        >
+          <span style={{ fontSize: 14, fontWeight: 600, marginRight: 8 }}>{rangeLabel}</span>
+
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Space size={4}>
+              <Button
+                size="small"
+                shape="circle"
+                icon={<ZoomInOutlined />}
+                onClick={handleZoomIn}
+                disabled={zoom === 'days'}
+                title={t('zoomIn', { defaultValue: 'Zoom In' })}
+              />
+              <Button
+                size="small"
+                shape="circle"
+                icon={<ZoomOutOutlined />}
+                onClick={handleZoomOut}
+                disabled={zoom === 'years'}
+                title={t('zoomOut', { defaultValue: 'Zoom Out' })}
+              />
+              <Button
+                size="small"
+                shape="circle"
+                icon={<ExpandOutlined />}
+                onClick={handleFullscreen}
+                title={t('fullscreen', { defaultValue: 'Fullscreen' })}
+              />
+            </Space>
+
+            <div style={{ display: 'inline-flex', border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 7, overflow: 'hidden' }}>
+              <button onClick={handleToday} style={zoomBtnStyle(false, true)}>
+                {t('today', { defaultValue: 'Today' })}
+              </button>
+            </div>
           </div>
-        </div>
-      </Flex>
+        </Flex>
       </div>
 
       {/* Grid — the project column (left) and the date grid (right) are two separate
@@ -1968,15 +1956,15 @@ const PlannerTimelineView: React.FC = () => {
                 })()}
 
               {/* "Today" vertical indicator, spans the full height of the row content below */}
-              {todayLeft >= 0 && todayLeft <= totalWidth && (
+              {!isLoading && todayLeft >= 0 && todayLeft <= totalWidth && timelineContentHeight > 0 && (
                 <div
                   style={{
                     position: 'absolute',
                     top: 0,
-                    bottom: 0,
+                    height: timelineContentHeight,
                     left: todayLeft,
                     borderLeft: `1px dashed ${token.colorPrimary}`,
-                    zIndex: 0,
+                    zIndex: 3,
                     pointerEvents: 'none',
                   }}
                 />
@@ -2000,7 +1988,6 @@ const PlannerTimelineView: React.FC = () => {
                           cardBg={cardBg}
                           onDatesChange={handleProjectDatesChange}
                           highlighted={group.project.id === focusProjectId}
-                          isReadOnly={isReadOnly}
                         />
                       ) : (
                         <TimelineProjectPlaceholderRow
@@ -2012,7 +1999,6 @@ const PlannerTimelineView: React.FC = () => {
                           cardBg={cardBg}
                           onDatesChange={handlePlaceholderDatesCommit}
                           onHoverRangeChange={setHoverPreviewRange}
-                          isReadOnly={isReadOnly}
                         />
                       )}
                     </div>
@@ -2032,7 +2018,6 @@ const PlannerTimelineView: React.FC = () => {
                           totalWidth={totalWidth}
                           borderColor={borderColor}
                           onDatesChange={handleTaskDatesChange}
-                          isReadOnly={isReadOnly}
                         />
                       )
                     )}

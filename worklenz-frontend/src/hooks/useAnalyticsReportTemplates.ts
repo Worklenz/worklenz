@@ -20,6 +20,12 @@ interface UseAnalyticsReportTemplatesOptions {
   onApply: (template: AnalyticsReportTemplate) => void;
   /** Current filters to persist when saving */
   getFilters: () => Record<string, unknown>;
+  /**
+   * When true, skip auto-applying the workspace default template on load.
+   * Used so session-persisted filters are not overwritten after navigation.
+   */
+  skipDefaultTemplate?: boolean;
+  wasRestored?: boolean;
 }
 
 /**
@@ -31,6 +37,8 @@ export const useAnalyticsReportTemplates = ({
   customTemplateId,
   onApply,
   getFilters,
+  skipDefaultTemplate = false,
+  wasRestored = false,
 }: UseAnalyticsReportTemplatesOptions) => {
   const { t } = useTranslation('reporting-analytics');
   const [searchParams, setSearchParams] = useSearchParams();
@@ -45,6 +53,8 @@ export const useAnalyticsReportTemplates = ({
   const pendingTemplateId = useRef<string | null>(
     customTemplateId ?? searchParams.get('template')
   );
+  const templateContextRef = useRef({ reportKind, customTemplateId, wasRestored, skipDefaultTemplate });
+  templateContextRef.current = { reportKind, customTemplateId, wasRestored, skipDefaultTemplate };
   const onApplyRef = useRef(onApply);
   const getFiltersRef = useRef(getFilters);
   onApplyRef.current = onApply;
@@ -82,11 +92,12 @@ export const useAnalyticsReportTemplates = ({
       }
 
       if (!isAnalyticsCustomReportsSessionActive(storageKeyAtFetch)) return;
+      if (templateContextRef.current.reportKind !== reportKind || templateContextRef.current.customTemplateId !== customTemplateId) return;
       const targetId = pendingTemplateId.current;
       if (targetId && appliedQueryTemplate.current !== targetId) {
         const fromTarget = res.body.find(tpl => tpl.id === targetId);
         if (fromTarget) {
-          onApplyRef.current(fromTarget);
+          if (!isCustomTemplateView || !templateContextRef.current.wasRestored) onApplyRef.current(fromTarget);
           appliedQueryTemplate.current = targetId;
           pendingTemplateId.current = null;
           appliedDefaultTemplate.current = true;
@@ -105,14 +116,16 @@ export const useAnalyticsReportTemplates = ({
       }
 
       if (!isCustomTemplateView && !appliedDefaultTemplate.current) {
-        const defaultTpl = res.body.find(tpl => tpl.is_default);
-        if (defaultTpl) onApplyRef.current(defaultTpl);
+        if (!templateContextRef.current.skipDefaultTemplate) {
+          const defaultTpl = res.body.find(tpl => tpl.is_default);
+          if (defaultTpl) onApplyRef.current(defaultTpl);
+        }
         appliedDefaultTemplate.current = true;
       }
     } catch {
       // templates optional
     }
-  }, [reportKind, isCustomTemplateView]);
+  }, [reportKind, customTemplateId, isCustomTemplateView, skipDefaultTemplate, wasRestored]);
 
   useEffect(() => {
     void loadTemplates();

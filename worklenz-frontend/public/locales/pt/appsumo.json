@@ -1,8 +1,52 @@
 {
   "popup": {
-    "imageAlt": "Oferta exclusiva AppSumo",
-    "title": "Oferta exclusiva AppSumo",
-    "message": "Como titular de um acordo vitalício AppSumo, você recebe um desconto especial na sua atualização. Não perca!",
-    "cta": "Ver minha oferta"
+    "regionLabel": "Oferta do plano Business",
+    "tag": "Oferta para membros AppSumo",
+    "titleLine1": "Pare de bater nos limites.",
+    "titleHighlight": "Gerencie toda a sua equipe no Business.",
+    "subtitle": "Veja onde o trabalho trava, mantenha os clientes informados e acompanhe o orçamento de cada projeto.",
+    "features": {
+      "advancedReporting": {
+        "title": "Relatórios avançados: Velocity e Cumulative Flow",
+        "description": "Identifique gargalos cedo e planeje sprints com dados reais de entrega"
+      },
+      "clientPortal": {
+        "title": "Portal do cliente",
+        "description": "Mantenha os clientes atualizados em um só lugar"
+      },
+      "finance": {
+        "title": "Acesso a Finanças",
+        "description": "Veja custos e orçamentos do projeto"
+      },
+      "customColumns": {
+        "title": "Colunas personalizadas ilimitadas",
+        "description": "Acompanhe os dados do seu jeito"
+      },
+      "largeFiles": {
+        "title": "Manipulação de arquivos grandes",
+        "description": "Compartilhe arquivos grandes sem soluções improvisadas"
+      },
+      "chatHistory": {
+        "title": "Histórico longo de chat",
+        "description": "Encontre decisões passadas rapidamente"
+      }
+    },
+    "badgePercent": "50%",
+    "badgeOff": "DE DESCONTO",
+    "badgeForLife": "PARA SEMPRE",
+    "urgency": "Oferta por tempo limitado",
+    "monthly": "Mensal",
+    "annual": "Anual",
+    "billingAria": "Período de cobrança",
+    "perUserMonth": "por usuário ativo / mês",
+    "regularPrice": "Preço normal",
+    "perUserMonthShort": "por usuário / mês",
+    "youSavePrefix": "Você economiza",
+    "saveAmount": "${{amount}} por usuário todos os meses",
+    "forLifeSuffix": ", para sempre.",
+    "cta": "Atualizar para Business",
+    "fineMonthly": "Garanta 50% de desconto para sempre. Assinatura mensal, sem compromisso de longo prazo.",
+    "fineAnnual": "Garanta 50% de desconto para sempre no plano Anual.",
+    "closeAria": "Dispensar oferta"
   }
 }

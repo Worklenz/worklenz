@@ -88,7 +88,7 @@
   "labelInputPlaceholder": "搜索或创建",
   "searchLabelsPlaceholder": "搜索标签...",
   "createLabelButton": "创建 \"{{name}}\"",
-  "manageLabelsPath": "设置 → 标签",
+  "manageLabelsPath": "设置 → 项目与工作流 → 标签",
   "pendingInvitation": "待处理邀请",
   "contextMenu": {
     "duplicateTask": "重复任务",

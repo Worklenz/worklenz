@@ -79,7 +79,7 @@ const SeatStepper: React.FC<SeatStepperProps> = ({ value, min, labelId, onChange
   return (
     <Space.Compact>
       <Button
-        aria-label={t('decreaseUsers')}
+        aria-label={t('decreaseUsers', { defaultValue: 'Decrease users' })}
         icon={<MinusOutlined />}
         disabled={value <= min}
         onClick={() => onChange(clamp(value - 1))}
@@ -97,7 +97,7 @@ const SeatStepper: React.FC<SeatStepperProps> = ({ value, min, labelId, onChange
         onBlur={() => onChange(clamp(value))}
       />
       <Button
-        aria-label={t('increaseUsers')}
+        aria-label={t('increaseUsers', { defaultValue: 'Increase users' })}
         icon={<PlusOutlined />}
         disabled={value >= MAX_SEATS}
         onClick={() => onChange(clamp(value + 1))}
@@ -372,7 +372,13 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
     const nameId = `per-user-plan-${group.key}`;
 
     return (
-      <Col xs={24} md={12} xl={cardColumns} key={group.key}>
+      <Col
+        xs={24}
+        md={cardCount === 1 ? 24 : 12}
+        xl={cardCount === 1 ? 24 : cardColumns}
+        key={group.key}
+        style={cardCount === 1 ? { maxWidth: 520 } : undefined}
+      >
         <Card
           role="group"
           aria-labelledby={nameId}
@@ -579,21 +585,23 @@ const PerUserUpgradePlans: React.FC<PerUserUpgradePlansProps> = ({ data }) => {
             </Tag>
           )}
         </Flex>
-        <Flex align="center" gap={8} wrap>
-          <Typography.Text id="per-user-seats-label">{t('seats')}</Typography.Text>
-          <SeatStepper
-            value={seats}
-            min={activeUsers}
-            labelId="per-user-seats-label"
-            onChange={next => {
-              setSeatsEdited(true);
-              setSeats(next);
-            }}
-          />
-          <Typography.Text type="secondary">
-            {t('seatsHelp', { count: activeUsers })}
-          </Typography.Text>
-        </Flex>
+        {!data.has_ltd_codes && (
+          <Flex align="center" gap={8} wrap>
+            <Typography.Text id="per-user-seats-label">{t('seats')}</Typography.Text>
+            <SeatStepper
+              value={seats}
+              min={activeUsers}
+              labelId="per-user-seats-label"
+              onChange={next => {
+                setSeatsEdited(true);
+                setSeats(next);
+              }}
+            />
+            <Typography.Text type="secondary">
+              {t('seatsHelp', { count: activeUsers })}
+            </Typography.Text>
+          </Flex>
+        )}
       </Flex>
 
       <div>

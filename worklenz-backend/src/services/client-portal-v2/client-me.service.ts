@@ -34,7 +34,7 @@ export const NOTIFICATION_EVENT_BY_TYPE: Record<ClientNotificationType, ClientNo
 export const NOTIFICATION_TYPES = Object.keys(NOTIFICATION_EVENT_BY_TYPE) as ClientNotificationType[];
 
 /** The portal's shipped locales (the client app's `src/locales` folders). Mirrors the DB CHECK. */
-export const CLIENT_LANGUAGES = ["en", "es", "pt", "al", "de", "zh", "pl", "fr"] as const;
+export const CLIENT_LANGUAGES = ["en", "es", "pt", "al", "de", "zh", "pl", "fr", "it"] as const;
 
 export interface ClientMeDto {
   id: string;

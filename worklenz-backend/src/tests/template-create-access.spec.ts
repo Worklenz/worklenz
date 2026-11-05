@@ -3,48 +3,27 @@
  */
 
 jest.unmock("../shared/template-create-access");
-jest.unmock("../shared/organization-permissions");
-jest.unmock("../shared/team-permissions");
 
-import {
-  userCanCreateProjectsFromTemplates,
-  userCanCreateProjectsFromTemplatesAsync,
-} from "../shared/template-create-access";
-import { ORGANIZATION_PERMISSIONS } from "../shared/organization-permissions";
+import { userCanCreateProjectsFromTemplates } from "../shared/template-create-access";
 import { IPassportSession } from "../interfaces/passport-session";
-
-jest.mock("../config/db", () => ({
-  __esModule: true,
-  default: {
-    query: jest.fn(),
-  },
-}));
-
-import db from "../config/db";
-
-const mockedDb = db as jest.Mocked<typeof db>;
 
 const session = (partial: Partial<IPassportSession>): IPassportSession =>
   partial as IPassportSession;
 
 describe("template-create-access", () => {
-  beforeEach(() => {
-    (mockedDb.query as jest.Mock).mockReset();
-  });
-
-  it("allows Owner (sync)", () => {
+  it("allows Owner", () => {
     expect(
       userCanCreateProjectsFromTemplates(session({ owner: true }))
     ).toBe(true);
   });
 
-  it("does not allow Admin via sync shortcut (must check CREATE_PROJECTS grant)", () => {
+  it("allows Admin", () => {
     expect(
       userCanCreateProjectsFromTemplates(session({ is_admin: true }))
-    ).toBe(false);
+    ).toBe(true);
   });
 
-  it("denies Member even when the legacy flag is set (sync)", () => {
+  it("denies Member even when the legacy flag is set", () => {
     expect(
       userCanCreateProjectsFromTemplates(
         session({ can_create_projects_from_templates: true })
@@ -52,89 +31,16 @@ describe("template-create-access", () => {
     ).toBe(false);
   });
 
-  it("allows Member with Create projects (async)", async () => {
-    (mockedDb.query as jest.Mock).mockResolvedValueOnce({
-      rows: [{ permission: ORGANIZATION_PERMISSIONS.CREATE_PROJECTS, granted: true }],
-    });
-
-    await expect(
-      userCanCreateProjectsFromTemplatesAsync(
-        session({
-          team_id: "team-1",
-          role_name: "Member",
-          owner: false,
-          is_admin: false,
-        })
+  it("denies Member without flag", () => {
+    expect(
+      userCanCreateProjectsFromTemplates(
+        session({ can_create_projects_from_templates: false })
       )
-    ).resolves.toBe(true);
+    ).toBe(false);
   });
 
-  it("denies Member without Create projects (async)", async () => {
-    (mockedDb.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
-
-    await expect(
-      userCanCreateProjectsFromTemplatesAsync(
-        session({
-          team_id: "team-1",
-          role_name: "Member",
-          owner: false,
-          is_admin: false,
-        })
-      )
-    ).resolves.toBe(false);
-  });
-
-  it("allows Admin when Create projects is granted (async)", async () => {
-    (mockedDb.query as jest.Mock).mockResolvedValueOnce({
-      rows: [{ permission: ORGANIZATION_PERMISSIONS.CREATE_PROJECTS, granted: true }],
-    });
-
-    await expect(
-      userCanCreateProjectsFromTemplatesAsync(
-        session({
-          team_id: "team-1",
-          role_name: "Admin",
-          owner: false,
-          is_admin: true,
-        })
-      )
-    ).resolves.toBe(true);
-  });
-
-  it("denies Admin when Create projects grant is revoked (async)", async () => {
-    (mockedDb.query as jest.Mock).mockResolvedValueOnce({
-      rows: [{ permission: ORGANIZATION_PERMISSIONS.CREATE_PROJECTS, granted: false }],
-    });
-
-    await expect(
-      userCanCreateProjectsFromTemplatesAsync(
-        session({
-          team_id: "team-1",
-          role_name: "Admin",
-          owner: false,
-          is_admin: true,
-        })
-      )
-    ).resolves.toBe(false);
-  });
-
-  it("allows Owner without a grant lookup (async)", async () => {
-    await expect(
-      userCanCreateProjectsFromTemplatesAsync(
-        session({
-          team_id: "team-1",
-          owner: true,
-          is_admin: false,
-        })
-      )
-    ).resolves.toBe(true);
-    expect(mockedDb.query).not.toHaveBeenCalled();
-  });
-
-  it("denies missing user", async () => {
+  it("denies missing user", () => {
     expect(userCanCreateProjectsFromTemplates(null)).toBe(false);
     expect(userCanCreateProjectsFromTemplates(undefined)).toBe(false);
-    await expect(userCanCreateProjectsFromTemplatesAsync(null)).resolves.toBe(false);
-    await expect(userCanCreateProjectsFromTemplatesAsync(undefined)).resolves.toBe(false);
   });
 });

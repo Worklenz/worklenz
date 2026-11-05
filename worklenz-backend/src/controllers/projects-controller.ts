@@ -13,12 +13,11 @@ import { NotificationsService } from "../services/notifications/notifications.se
 import { IPassportSession } from "../interfaces/passport-session";
 import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
+import { notifyProjectDateChanges } from "../shared/project-date-notifications";
 import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-utils";
 import { ActivityLoggingService } from "../services/activity-logging.service";
 import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
 import { getProjectAccessForRequest } from "../shared/project-access";
-import { canViewAllProjects } from "../shared/organization-permissions";
-import { getProjectRolePermissionFlags } from "../shared/project-role-permissions";
 import { stripProjectFinanceFields } from "../shared/strip-finance-fields";
 import { actorFromSessionUser, logAuditEvent } from "../services/audit-log.service";
 import { captureProjectSettings, logProjectSettingChanges } from "../services/project-settings-audit.service";
@@ -551,7 +550,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     let isFavorites = "";
     let isArchived = "";
 
-    if (!(await canViewAllProjects(req.user))) {
+    if (!req.user?.owner && !req.user?.is_admin) {
       filterByMember = ` AND is_member_of_project(projects.id, $2, $1) `;
     }
 
@@ -945,8 +944,6 @@ export default class ProjectsController extends WorklenzControllerBase {
         data.is_guest = false;
       }
 
-      data.role_permissions = await getProjectRolePermissionFlags(req.user?.id, req.params.id);
-
       // Phase 1: current-user permissions for this project (UI must key by project id).
       try {
         const access = await getProjectAccessForRequest(req, req.params.id);
@@ -1122,6 +1119,21 @@ export default class ProjectsController extends WorklenzControllerBase {
     const [data] = result.rows;
 
     if (data.project?.id) {
+      const datesResult = await db.query(
+        `SELECT to_char(p.start_date AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS start_date,
+                to_char(p.end_date AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS end_date,
+                t.user_id AS owner_id
+         FROM projects p JOIN teams t ON t.id = p.team_id WHERE p.id = $1`,
+        [req.params.id]
+      );
+      const dates = datesResult.rows[0];
+      if (dates) {
+        const previousDates = settingsBefore ? {
+          start_date: typeof settingsBefore.start_date === "string" ? settingsBefore.start_date.slice(0, 10) : null,
+          end_date: typeof settingsBefore.end_date === "string" ? settingsBefore.end_date.slice(0, 10) : null,
+        } : null;
+        notifyProjectDateChanges(req.params.id, dates.owner_id, previousDates, dates);
+      }
       if (Object.prototype.hasOwnProperty.call(req.body, 'phase_assignees_enabled')) {
         await db.query(
           `
@@ -1727,7 +1739,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     const offsetParam = paramOffset;
     paramOffset++;
     
-    const filterByMember = !(await canViewAllProjects(req.user)) ?
+    const filterByMember = !req.user?.owner && !req.user?.is_admin ?
       ` AND is_member_of_project(projects.id, $${userIdParam}, $${teamIdParam}) ` : "";
 
     const isFavorites = req.query.filter === "1" ? ` AND EXISTS(SELECT user_id FROM favorite_projects WHERE user_id = $${userIdParam} AND project_id = projects.id)` : "";

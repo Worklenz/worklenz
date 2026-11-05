@@ -15,5 +15,13 @@
   "cumulativeFlow": "累计流量",
   "sla": "SLA 跟踪",
   "timeInStatus": "状态时间",
-  "newBadge": "新"
+  "newBadge": "新",
+  "modePaddleAria": "切换报告版本",
+  "modeSwitchTo": "切换到{{mode}}",
+  "modeAdvanced": "高级",
+  "modeClassic": "经典",
+  "reportsTitle": "报告",
+  "expandSidebar": "展开侧边栏",
+  "collapseSidebar": "折叠侧边栏",
+  "classicNavAria": "经典报告导航"
 }

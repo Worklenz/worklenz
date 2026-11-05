@@ -1,8 +1,52 @@
 {
   "popup": {
-    "imageAlt": "AppSumo 专属优惠",
-    "title": "AppSumo 专属优惠",
-    "message": "作为 AppSumo 终身交易持有者，您可以在升级时享受特别折扣。不要错过！",
-    "cta": "查看我的优惠"
+    "regionLabel": "Business 套餐优惠",
+    "tag": "AppSumo 会员专属优惠",
+    "titleLine1": "不再受限于功能上限。",
+    "titleHighlight": "用 Business 管理整个团队。",
+    "subtitle": "发现工作卡点、让客户随时知情，并跟踪每个项目的预算。",
+    "features": {
+      "advancedReporting": {
+        "title": "高级报表：速率与累积流图",
+        "description": "尽早发现瓶颈，用真实交付数据规划冲刺"
+      },
+      "clientPortal": {
+        "title": "客户门户",
+        "description": "在一处保持客户信息同步"
+      },
+      "finance": {
+        "title": "财务访问",
+        "description": "查看项目成本与预算"
+      },
+      "customColumns": {
+        "title": "无限自定义列",
+        "description": "按你的方式跟踪数据"
+      },
+      "largeFiles": {
+        "title": "大文件处理",
+        "description": "无需变通即可共享大文件"
+      },
+      "chatHistory": {
+        "title": "更长聊天记录",
+        "description": "快速找回过往决策"
+      }
+    },
+    "badgePercent": "50%",
+    "badgeOff": "优惠",
+    "badgeForLife": "终身",
+    "urgency": "限时优惠",
+    "monthly": "按月",
+    "annual": "按年",
+    "billingAria": "计费周期",
+    "perUserMonth": "每位活跃用户 / 月",
+    "regularPrice": "原价",
+    "perUserMonthShort": "每用户 / 月",
+    "youSavePrefix": "你可节省",
+    "saveAmount": "每月每用户 ${{amount}}",
+    "forLifeSuffix": "，终身有效。",
+    "cta": "升级到 Business",
+    "fineMonthly": "锁定终身 50% 优惠。按月订阅，无长期承诺。",
+    "fineAnnual": "在年付套餐上锁定终身 50% 优惠。",
+    "closeAria": "关闭优惠"
   }
 }

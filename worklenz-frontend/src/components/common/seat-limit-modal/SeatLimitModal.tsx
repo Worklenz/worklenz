@@ -42,7 +42,7 @@ export const SeatLimitModal: React.FC<SeatLimitModalProps> = ({
       onCancel={onClose}
       closable={true}
       maskClosable={false} // Cannot dismiss by clicking outside
-      keyboard={false} // Cannot dismiss with Escape
+      keyboard
       footer={null}
       width={540}
       centered
@@ -72,8 +72,8 @@ export const SeatLimitModal: React.FC<SeatLimitModalProps> = ({
         <Flex vertical gap={16} style={{ textAlign: 'center' }}>
           <Typography.Paragraph style={{ fontSize: 15, margin: 0, lineHeight: 1.6 }}>
             {isAppSumoUser
-              ? t('seatLimitAppSumoMessage', {
-                  defaultValue: `Your AppSumo plan includes ${planLimit} members. Upgrade to Business for ${businessLimit} members, or deactivate an inactive member to invite someone new.`,
+              ? t('seatLimitLifetimeDealMessage', {
+                  defaultValue: 'Your lifetime deal includes {{planLimit}} members. Deactivate a member to invite someone new, or upgrade to Business for {{businessLimit}} members.',
                   planLimit,
                   businessLimit,
                 })
@@ -126,6 +126,9 @@ export const SeatLimitModal: React.FC<SeatLimitModalProps> = ({
 
         {/* Action Buttons */}
         <Flex vertical gap={16}>
+          <Button size="large" block icon={<UserDeleteOutlined />} onClick={onDeactivate}>
+            {t('deactivateTooltip', { defaultValue: 'Deactivate member' })}
+          </Button>
           <Button type="primary" size="large" block onClick={onUpgrade}>
             {t('upgradeToBusiness', { defaultValue: 'Upgrade to Business' })}
           </Button>

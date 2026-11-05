@@ -146,7 +146,6 @@ router.post(
   "/project-health/series",
   requireAnalyticsAccess,
   requireFeature("finance_module"),
-  viewFinanceValidator,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(ProjectHealthController.getSeries)
 );
@@ -154,7 +153,6 @@ router.get(
   "/project-health/series",
   requireAnalyticsAccess,
   requireFeature("finance_module"),
-  viewFinanceValidator,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(ProjectHealthController.getSeries)
 );
@@ -163,7 +161,6 @@ router.post(
   "/project-health/export/csv",
   requireAnalyticsAccess,
   requireFeature("finance_module"),
-  viewFinanceValidator,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(ProjectHealthController.exportCsv)
 );
@@ -259,7 +256,6 @@ router.post(
   "/budget-tracking/series",
   requireAnalyticsAccess,
   requireFeature("finance_module"),
-  viewFinanceValidator,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(BudgetTrackingController.getSeries)
 );
@@ -267,7 +263,6 @@ router.get(
   "/budget-tracking/series",
   requireAnalyticsAccess,
   requireFeature("finance_module"),
-  viewFinanceValidator,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(BudgetTrackingController.getSeries)
 );
@@ -276,7 +271,6 @@ router.post(
   "/budget-tracking/export/csv",
   requireAnalyticsAccess,
   requireFeature("finance_module"),
-  viewFinanceValidator,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(BudgetTrackingController.exportCsv)
 );

@@ -33,13 +33,9 @@ export default async function teamMemberSelfOrManagementValidator(
       );
   }
 
-  // Owner/Admin or users with "Manage users" can manage team members
-  try {
-    if (await hasTeamMemberManagementAccess(req.user)) {
-      return next();
-    }
-  } catch (error) {
-    return next(error);
+  // Owner or Admin can manage all team members
+  if (canManageTeamMembers(req.user)) {
+    return next();
   }
 
   const targetMemberId = req.params.id;
