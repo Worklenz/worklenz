@@ -7,6 +7,7 @@ import WorklenzControllerBase from "../worklenz-controller-base";
 import { getColor } from "../../shared/utils";
 import { SocketEvents } from "../../socket.io/events";
 import { IO } from "../../shared/io";
+import { buildPrivilegedWorkspaceRoleExemptSql } from "../../shared/assignee-task-scope";
 
 // Subtasks (no longer excluded — see getTasksForTimeline) roughly double the row
 // count a given filter window returns compared to top-level tasks alone, so this is
@@ -32,15 +33,24 @@ export default class TaskTimelineController extends WorklenzControllerBase {
     public static async getTasksForTimeline(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
         const { startDate, endDate, memberId, projectId, statusId, priorityId, clientName } = req.query as ITaskTimelineFilters;
 
-        // Team-scoped planner data. Route access is gated by verifyNonGuestPlannerAccess
-        // (Guests need "View planner") and the frontend VIEW_PLANNER guard — Members, Team
-        // Leads, and Guests with that permission must see the same schedule as Admins.
-        // Do not filter by project_members here: Team Lead no longer has admin_role, and
-        // "View planner" is a team-wide read surface. Cross-team isolation stays via team_id.
-        const params: any[] = [req.user?.team_id];
-        let paramIndex = 2;
+        // verifyNonGuestPlannerAccess only rejects guests. A direct GET must not
+        // return every team task on that basis. Owner, Admin, and Team Lead (by
+        // role name — Team Lead no longer has admin_role) may see the team.
+        // Every other role stays inside projects they belong to.
+        const userId = req.user?.id;
+        const teamId = req.user?.team_id;
+        if (!userId || !teamId) {
+            return res.status(401).send(new ServerResponse(false, null, "Authentication required"));
+        }
 
-        let whereClause = `WHERE p.team_id = $1 AND t.archived = false`;
+        const params: any[] = [teamId, userId];
+        let paramIndex = 3;
+
+        let whereClause = `WHERE p.team_id = $1 AND t.archived = false
+            AND (
+                ${buildPrivilegedWorkspaceRoleExemptSql("$2::UUID")}
+                OR is_member_of_project(p.id, $2::UUID, $1::UUID)
+            )`;
 
         if (startDate) {
             whereClause += ` AND (t.end_date >= $${paramIndex} OR t.end_date IS NULL)`;
