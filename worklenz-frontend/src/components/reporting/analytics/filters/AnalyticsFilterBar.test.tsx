@@ -72,4 +72,21 @@ describe('AnalyticsFilterBar', () => {
     expect(screen.getByRole('button', { name: 'Filter' })).toBeInTheDocument();
     expect(screen.queryByText('1')).not.toBeInTheDocument();
   });
+
+  it('enables Clear when every team is removed and the default set is nonempty', async () => {
+    const { onProjectsChange, onTeamsChange } = renderBar({
+      selectedProjectIds: [],
+      selectedTeamIds: [],
+      defaultTeamIds: ['t-default'],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }));
+    const clearButton = await screen.findByRole('button', { name: 'Clear' });
+    expect(clearButton).toBeEnabled();
+
+    fireEvent.click(clearButton);
+
+    expect(onProjectsChange).toHaveBeenCalledWith([]);
+    expect(onTeamsChange).toHaveBeenCalledWith(['t-default']);
+  });
 });

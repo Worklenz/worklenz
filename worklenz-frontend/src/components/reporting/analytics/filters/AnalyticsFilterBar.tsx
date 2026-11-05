@@ -123,8 +123,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     typeof includeDone === 'boolean' && Boolean(onIncludeDoneChange);
 
   const isDefaultTeamSelection = React.useCallback(
-    (ids: string[]) =>
-      defaultTeamIds.length > 0 && areSameIdSets(ids, defaultTeamIds),
+    (ids: string[]) => areSameIdSets(ids, defaultTeamIds),
     [defaultTeamIds]
   );
 
@@ -153,7 +152,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
     let count = 0;
     if (selectedProjectIds.length > 0) count++;
     if (showMembers && selectedMemberIds.length > 0) count++;
-    if (showTeams && selectedTeamIds.length > 0 && !isDefaultTeamSelection(selectedTeamIds)) {
+    if (showTeams && !isDefaultTeamSelection(selectedTeamIds)) {
       count++;
     }
     if (showDate && datePreset && datePreset !== defaultDatePreset) count++;
@@ -179,7 +178,7 @@ export const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
   const hasDraftFilters =
     draftProjectIds.length > 0 ||
     (showMembers && draftMemberIds.length > 0) ||
-    (showTeams && draftTeamIds.length > 0 && !isDefaultTeamSelection(draftTeamIds)) ||
+    (showTeams && !isDefaultTeamSelection(draftTeamIds)) ||
     (showDate && draftDatePreset !== defaultDatePreset) ||
     (showStatuses && draftStatusIds.length > 0) ||
     (showIncludeDone && draftIncludeDone);
