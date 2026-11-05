@@ -1,3 +1,6 @@
+import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
+import { useScopedAnalyticsSeriesData } from '@/hooks/useScopedAnalyticsSeriesData';
+import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Flex, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +21,6 @@ import {
   ReportErrorState,
   ReportLoadingSkeleton,
   ReportPageShell,
-  type AnalyticsDatePreset,
   type AnalyticsExportFormat,
 } from '@/components/reporting/analytics';
 import type { FilterOption } from '@/components/common/filters/MultiSelectFilterPill';
@@ -27,6 +29,9 @@ import { CfdKpiTiles } from '@/components/reporting/analytics/cfd/CfdKpiTiles';
 import { CfdStatusLegend } from '@/components/reporting/analytics/cfd/CfdStatusLegend';
 import { CfdTable } from '@/components/reporting/analytics/cfd/CfdTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
+import {
+  usePersistedAnalyticsFilters,
+} from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
 import { ANALYTICS_BASE_PATH } from '@/lib/reporting/analytics-nav';
 import {
@@ -63,9 +68,20 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     userId: session?.id,
   });
 
-  const [datePreset, setDatePreset] = useState<AnalyticsDatePreset>('last_30_days');
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+  const {
+    datePreset,
+    setDatePreset,
+    selectedProjectIds,
+    setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
+    selectedTeamIds,
+    setSelectedTeamIds,
+    hasRestoredFilters,
+  } = usePersistedAnalyticsFilters({
+    reportKind: 'cumulative-flow',
+    customTemplateId,
+  });
   const [projectOptions, setProjectOptions] = useState<FilterOption[]>([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
 
@@ -75,11 +91,11 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<CfdSeriesResponse | null>(null);
 
   const chartRef = useRef<CfdChartHandle>(null);
   /** Tracks last rollup mode so switching category ? detail resets visible bands. */
   const lastRollupMode = useRef<boolean | null>(null);
+  const skipDefaultTemplate = hasRestoredFilters;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -87,7 +103,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
       setSelectedTeamIds,
       setDatePreset,
     });
-  }, []);
+  }, [setSelectedProjectIds, setSelectedTeamIds, setDatePreset]);
 
   const {
     templates,
@@ -102,6 +118,8 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     reportKind: 'cumulative-flow',
     customTemplateId,
     onApply: applyTemplateFilters,
+    skipDefaultTemplate,
+    wasRestored: hasRestoredFilters,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       team_ids: selectedTeamIds,
@@ -153,7 +171,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
           : [];
 
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
-      setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
+      setAutomaticTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
       message.error(
         t('errorDescription', {
@@ -165,7 +183,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     }
   }, [session?.team_id, t]);
 
-  const loadProjectsForTeams = useCallback(async (teamIds: string[]) => {
+  const loadProjectsForTeams = useCallback(async (teamIds: string[], isCurrent: () => boolean) => {
     if (teamIds.length === 0) {
       setProjectOptions([]);
       return;
@@ -174,6 +192,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
+      if (!isCurrent() || !areAnalyticsProjectResponsesComplete(projectResponses)) return;
       const projects: FilterOption[] = [];
       const seen = new Set<string>();
       projectResponses.forEach(res => {
@@ -187,21 +206,28 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
         }
       });
       setProjectOptions(projects);
-      setSelectedProjectIds(prev => {
+      setAutomaticProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
         // Keep prior picks that are still valid; never auto-select every project.
         return prev.filter(id => allowed.has(id));
       });
     } catch {
-      setProjectOptions([]);
+      // Preserve existing selections and options when a team request fails.
     }
   }, []);
 
+  const seriesScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
+  const seriesRequestKey = JSON.stringify([seriesScope, filters]);
+  const { data, setData } = useScopedAnalyticsSeriesData<CfdSeriesResponse>(seriesScope, seriesRequestKey);
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(seriesRequestKey);
+
   const loadSeries = useCallback(async () => {
+    const isCurrent = beginSeriesRequest();
     setLoading(true);
     setError(null);
     try {
       const res = await analyticsCfdApiService.getSeries(filters);
+      if (!isCurrent()) return;
       if (res.done && res.body) {
         const localizedStatuses = res.body.statuses.map(status => {
           if (status.id === '__cfd_todo__') {
@@ -272,6 +298,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
         setData(null);
       }
     } catch {
+      if (!isCurrent()) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -279,17 +306,19 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
       );
       setData(null);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [filters, t]);
+  }, [filters, t, beginSeriesRequest, setData]);
 
   useEffect(() => {
     void loadTeamsAndMembers();
   }, [loadTeamsAndMembers]);
 
-  useEffect(() => {
-    void loadProjectsForTeams(selectedTeamIds);
-  }, [selectedTeamIds, loadProjectsForTeams]);
+  useAnalyticsProjectOptionsLoader(
+    selectedTeamIds,
+    JSON.stringify([session?.team_id, session?.id, customTemplateId]),
+    loadProjectsForTeams
+  );
 
   useEffect(() => {
     if (filtersLoading) return;
