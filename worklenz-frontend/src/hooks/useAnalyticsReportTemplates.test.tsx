@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAnalyticsReportTemplates } from './useAnalyticsReportTemplates';
 import { usePersistedAnalyticsFilters } from './usePersistedAnalyticsFilters';
+import { analyticsTemplatesApiService } from '@/api/reporting/analytics-templates.api.service';
 
 vi.mock('@/utils/session-helper', () => ({ getUserSession: () => ({ id: 'user-1', team_id: 'team-1' }) }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
@@ -39,4 +40,28 @@ describe('custom report template restoration', () => {
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
     expect(second.result.current.selectedProjectIds).toEqual(['edited']);
   });
+  it('loads a custom template after leaving before the first response', async () => {
+    const listTemplates = vi.mocked(analyticsTemplatesApiService.listTemplates);
+    const releases: Array<() => void> = [];
+    const pending = () => new Promise<Awaited<ReturnType<typeof listTemplates>>>(resolve => {
+      releases.push(() => resolve({ done: true, body: [] } as Awaited<ReturnType<typeof listTemplates>>));
+    });
+    listTemplates.mockImplementationOnce(pending).mockImplementationOnce(pending);
+    const wrapper = ({ children }: { children: React.ReactNode }) => <MemoryRouter>{children}</MemoryRouter>;
+    const useReport = () => {
+      const filters = usePersistedAnalyticsFilters({ reportKind: 'test', customTemplateId: 'tpl-1' });
+      useAnalyticsReportTemplates({
+        reportKind: 'test', customTemplateId: 'tpl-1', wasRestored: filters.wasRestored,
+        onApply: template => filters.setSelectedProjectIds(template.filters_json?.project_ids as string[]),
+        getFilters: () => ({}),
+      });
+      return filters;
+    };
+    const first = renderHook(useReport, { wrapper });
+    first.unmount();
+    const second = renderHook(useReport, { wrapper });
+    await waitFor(() => expect(second.result.current.selectedProjectIds).toEqual(['saved']));
+    await act(async () => releases.forEach(release => release()));
+  });
+
 });

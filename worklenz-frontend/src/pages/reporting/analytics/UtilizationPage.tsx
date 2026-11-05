@@ -33,7 +33,6 @@ import { UtilizationKpiTiles } from '@/components/reporting/analytics/utilizatio
 import { UtilizationTable } from '@/components/reporting/analytics/utilization/UtilizationTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
 import {
-  hasMeaningfulAnalyticsFilters,
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
@@ -79,6 +78,8 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     setDatePreset,
     selectedProjectIds,
     setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
     selectedTeamIds,
     setSelectedTeamIds,
     selectedMemberIds,
@@ -98,14 +99,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
 
   const chartRef = useRef<UtilizationChartHandle>(null);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
-  const skipDefaultTemplate =
-    wasRestored &&
-    hasMeaningfulAnalyticsFilters({
-      datePreset,
-      selectedProjectIds,
-      selectedMemberIds,
-      selectedTeamIds,
-    });
+  const skipDefaultTemplate = wasRestored;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -203,7 +197,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
           : [];
       setTeamOptions(teams);
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
-      setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
+      setAutomaticTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
       message.error(
         t('errorDescription', {
@@ -237,7 +231,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
         }
       });
       setProjectOptions(projects);
-      setSelectedProjectIds(prev => {
+      setAutomaticProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
         return prev.filter(id => allowed.has(id));
       });

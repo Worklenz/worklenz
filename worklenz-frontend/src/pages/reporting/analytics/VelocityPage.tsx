@@ -92,6 +92,8 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     setDatePreset,
     selectedProjectIds,
     setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
     selectedMemberIds,
     setSelectedMemberIds,
     selectedTeamIds,
@@ -196,7 +198,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
           : [];
 
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
-      setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
+      setAutomaticTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
       message.error(
         t('errorDescription', {
@@ -235,7 +237,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       const projects = mapOverviewProjectsToVelocityOptions(overviewProjects);
       setProjectOptions(projects);
       // Keep prior picks that are still valid; never auto-select projects.
-      setSelectedProjectIds(prev => {
+      setAutomaticProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
         return prev.filter(id => allowed.has(id));
       });
@@ -249,7 +251,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     if (Array.isArray(f.project_ids)) setSelectedProjectIds(f.project_ids.map(String));
     if (Array.isArray(f.member_ids)) setSelectedMemberIds(f.member_ids.map(String));
     if (Array.isArray(f.team_ids)) setSelectedTeamIds(f.team_ids.map(String));
-  }, []);
+  }, [setSelectedProjectIds, setSelectedMemberIds, setSelectedTeamIds]);
 
   const loadTemplates = useCallback(async () => {
     // Capture before awaits so a workspace switch mid-flight cannot leak templates.

@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -70,13 +71,14 @@ export const usePersistedAnalyticsFilters = (
   );
   const storageScope = `${session?.team_id ?? ''}:${session?.id ?? ''}:${reportKey}`;
 
-  const [stored, setStored] = useState(() => ({
-    scope: storageScope,
-    ...readAnalyticsFilterSession(reportKey, defaults),
-  }));
-  const current = stored.scope === storageScope
-    ? stored
-    : { scope: storageScope, ...readAnalyticsFilterSession(reportKey, defaults) };
+  const readScope = () => {
+    const restored = readAnalyticsFilterSession(reportKey, defaults);
+    return { scope: storageScope, ...restored, shouldPersist: restored.wasRestored };
+  };
+  const scopeRef = useRef({ storageScope, reportKey, defaults });
+  scopeRef.current = { storageScope, reportKey, defaults };
+  const [stored, setStored] = useState(readScope);
+  const current = stored.scope === storageScope ? stored : readScope();
   const { state, wasRestored } = current;
 
   useEffect(() => {
@@ -84,17 +86,38 @@ export const usePersistedAnalyticsFilters = (
   }, [storageScope, stored.scope, current]);
 
   useEffect(() => {
-    if (stored.scope === storageScope) writeAnalyticsFilterSession(reportKey, stored.state);
+    if (stored.scope === storageScope && stored.shouldPersist) {
+      writeAnalyticsFilterSession(reportKey, stored.state);
+    }
   }, [storageScope, reportKey, stored]);
 
-  const setState = useCallback<Dispatch<SetStateAction<AnalyticsFilterFields>>>(action => {
+  const updateState = useCallback((action: SetStateAction<AnalyticsFilterFields>, isAutomatic: boolean) => {
     setStored(prev => {
-      const base = prev.scope === storageScope
-        ? prev
-        : { scope: storageScope, ...readAnalyticsFilterSession(reportKey, defaults) };
-      return { ...base, state: toSetStateAction(action, base.state) };
+      const { storageScope: scope, reportKey: key, defaults: scopeDefaults } = scopeRef.current;
+      const restored = prev.scope === scope ? null : readAnalyticsFilterSession(key, scopeDefaults);
+      const base = restored ? { scope, ...restored, shouldPersist: restored.wasRestored } : prev;
+      const next = toSetStateAction(action, base.state);
+      const shouldPersist = base.shouldPersist || !isAutomatic;
+      return next === base.state && shouldPersist === base.shouldPersist
+        ? base
+        : { ...base, state: next, shouldPersist };
     });
-  }, [storageScope, reportKey, defaults]);
+  }, []);
+  const setState = useCallback<Dispatch<SetStateAction<AnalyticsFilterFields>>>(
+    action => updateState(action, false), [updateState]
+  );
+  const setAutomaticProjectIds = useCallback<Dispatch<SetStateAction<string[]>>>(action => {
+    updateState(prev => {
+      const next = toSetStateAction(action, prev.selectedProjectIds);
+      return next === prev.selectedProjectIds ? prev : { ...prev, selectedProjectIds: next };
+    }, true);
+  }, [updateState]);
+  const setAutomaticTeamIds = useCallback<Dispatch<SetStateAction<string[]>>>(action => {
+    updateState(prev => {
+      const next = toSetStateAction(action, prev.selectedTeamIds);
+      return next === prev.selectedTeamIds ? prev : { ...prev, selectedTeamIds: next };
+    }, true);
+  }, [updateState]);
 
   const setDatePreset = useCallback<Dispatch<SetStateAction<AnalyticsDatePreset>>>(
     action => {
@@ -184,6 +207,8 @@ export const usePersistedAnalyticsFilters = (
     includeDone: state.includeDone,
     setDatePreset,
     setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
     setSelectedMemberIds,
     setSelectedTeamIds,
     setSelectedStatusIds,

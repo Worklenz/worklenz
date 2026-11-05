@@ -40,7 +40,6 @@ import { TisPerIssueTable } from '@/components/reporting/analytics/time-in-statu
 import { TisKpiTiles } from '@/components/reporting/analytics/time-in-status/TisKpiTiles';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
 import {
-  hasMeaningfulAnalyticsFilters,
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
@@ -90,6 +89,8 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
     setDatePreset,
     selectedProjectIds,
     setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
     selectedMemberIds,
     setSelectedMemberIds,
     selectedTeamIds,
@@ -113,14 +114,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
 
   const aggregateChartRef = useRef<TisAggregateChartHandle>(null);
   const perIssueChartRef = useRef<TisPerIssueChartHandle>(null);
-  const skipDefaultTemplate =
-    wasRestored &&
-    hasMeaningfulAnalyticsFilters({
-      datePreset,
-      selectedProjectIds,
-      selectedMemberIds,
-      selectedTeamIds,
-    });
+  const skipDefaultTemplate = wasRestored;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -235,7 +229,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
           : [];
 
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
-      setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
+      setAutomaticTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
       message.error(
         t('errorDescription', {
@@ -269,7 +263,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
         }
       });
       setProjectOptions(projects);
-      setSelectedProjectIds(prev => {
+      setAutomaticProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
         // Keep prior picks that are still valid; never auto-select every project.
         return prev.filter(id => allowed.has(id));

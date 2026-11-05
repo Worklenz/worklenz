@@ -30,7 +30,6 @@ import { PvaMilestonesKpiTiles } from '@/components/reporting/analytics/planned-
 import { PvaMilestonesTable } from '@/components/reporting/analytics/planned-vs-actual-milestones/PvaMilestonesTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
 import {
-  hasMeaningfulAnalyticsFilters,
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
@@ -78,6 +77,8 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
     setDatePreset,
     selectedProjectIds,
     setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
     selectedTeamIds,
     setSelectedTeamIds,
     selectedMemberIds,
@@ -98,14 +99,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
   const chartRef = useRef<PvaMilestonesChartHandle>(null);
   /** Milestone chart is project-wise — require an explicit project before loading. */
   const hasProjectSelection = selectedProjectIds.length > 0;
-  const skipDefaultTemplate =
-    wasRestored &&
-    hasMeaningfulAnalyticsFilters({
-      datePreset,
-      selectedProjectIds,
-      selectedMemberIds,
-      selectedTeamIds,
-    });
+  const skipDefaultTemplate = wasRestored;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -186,7 +180,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
           : [];
       setTeamOptions(teams);
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
-      setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
+      setAutomaticTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
       message.error(
         t('errorDescription', {
@@ -220,7 +214,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
         }
       });
       setProjectOptions(projects);
-      setSelectedProjectIds(prev => {
+      setAutomaticProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
         return prev.filter(id => allowed.has(id));
       });

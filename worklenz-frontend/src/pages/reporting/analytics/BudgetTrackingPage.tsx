@@ -30,7 +30,6 @@ import { BudgetTrackingKpiTiles } from '@/components/reporting/analytics/budget-
 import { BudgetTrackingTable } from '@/components/reporting/analytics/budget-tracking/BudgetTrackingTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
 import {
-  hasMeaningfulAnalyticsFilters,
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
@@ -86,6 +85,8 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
   const {
     selectedProjectIds,
     setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
     selectedTeamIds,
     setSelectedTeamIds,
     selectedMemberIds,
@@ -107,13 +108,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const seededProjectsForTeamsRef = useRef<string>('');
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
-  const skipDefaultTemplate =
-    wasRestored &&
-    hasMeaningfulAnalyticsFilters({
-      selectedProjectIds,
-      selectedMemberIds,
-      selectedTeamIds,
-    });
+  const skipDefaultTemplate = wasRestored;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -197,7 +192,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
           : [];
       setTeamOptions(teams);
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
-      setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
+      setAutomaticTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
       message.error(
         t('errorDescription', {
@@ -240,7 +235,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
       setProjectOptions(projects);
 
       const teamKey = [...teamIds].sort().join(',');
-      setSelectedProjectIds(prev => {
+      setAutomaticProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
         const kept = prev.filter(id => allowed.has(id));
         if (kept.length > 0) {
@@ -317,7 +312,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     const topIds = latestUpdatedProjectIds(data.projects);
     if (topIds.length === 0) return;
     seededProjectsForTeamsRef.current = teamKey;
-    setSelectedProjectIds(topIds);
+    setAutomaticProjectIds(topIds);
   }, [data, selectedProjectIds.length, selectedTeamIds]);
 
   const handleExport = async (format: AnalyticsExportFormat) => {

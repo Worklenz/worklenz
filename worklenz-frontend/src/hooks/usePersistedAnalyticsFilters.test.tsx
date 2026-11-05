@@ -80,3 +80,32 @@ it('does not treat the seeded session team as a user selection', () => {
   expect(hasMeaningfulAnalyticsFilters({ selectedTeamIds: ['team-1'] })).toBe(false);
   expect(hasMeaningfulAnalyticsFilters({ selectedTeamIds: ['team-2'] })).toBe(true);
 });
+
+it('does not persist automatic team and project defaults until a filter is explicitly applied', () => {
+  sessionStorage.clear();
+  const first = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  act(() => {
+    first.result.current.setAutomaticTeamIds(['team-1']);
+    first.result.current.setAutomaticProjectIds(['seeded-project']);
+  });
+  first.unmount();
+  const second = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  expect(second.result.current.wasRestored).toBe(false);
+  act(() => second.result.current.setSelectedProjectIds(['user-project']));
+  second.unmount();
+  const third = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  expect(third.result.current.selectedProjectIds).toEqual(['user-project']);
+});
+
+it('keeps setters bound to the active custom report after its identity changes', () => {
+  sessionStorage.clear();
+  const hook = renderHook(({ id }) => usePersistedAnalyticsFilters({ reportKind: 'velocity', customTemplateId: id }), { initialProps: { id: 'one' } });
+  const originalSetter = hook.result.current.setSelectedProjectIds;
+  hook.rerender({ id: 'two' });
+  act(() => originalSetter(['two-project']));
+  expect(hook.result.current.selectedProjectIds).toEqual(['two-project']);
+  hook.rerender({ id: 'one' });
+  expect(hook.result.current.selectedProjectIds).toEqual([]);
+  hook.rerender({ id: 'two' });
+  expect(hook.result.current.selectedProjectIds).toEqual(['two-project']);
+});

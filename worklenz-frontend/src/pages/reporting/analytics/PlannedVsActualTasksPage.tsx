@@ -30,7 +30,6 @@ import { PvaTasksKpiTiles } from '@/components/reporting/analytics/planned-vs-ac
 import { PvaTasksTable } from '@/components/reporting/analytics/planned-vs-actual-tasks/PvaTasksTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
 import {
-  hasMeaningfulAnalyticsFilters,
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
@@ -82,6 +81,8 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
     setDatePreset,
     selectedProjectIds,
     setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
     selectedTeamIds,
     setSelectedTeamIds,
     selectedMemberIds,
@@ -103,14 +104,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const seededProjectsForTeamsRef = useRef<string>('');
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
-  const skipDefaultTemplate =
-    wasRestored &&
-    hasMeaningfulAnalyticsFilters({
-      datePreset,
-      selectedProjectIds,
-      selectedMemberIds,
-      selectedTeamIds,
-    });
+  const skipDefaultTemplate = wasRestored;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -193,7 +187,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
           : [];
       setTeamOptions(teams);
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
-      setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
+      setAutomaticTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
       message.error(
         t('errorDescription', {
@@ -236,7 +230,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
       setProjectOptions(projects);
 
       const teamKey = [...teamIds].sort().join(',');
-      setSelectedProjectIds(prev => {
+      setAutomaticProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
         const kept = prev.filter(id => allowed.has(id));
         if (kept.length > 0) {
@@ -312,7 +306,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
     const topIds = latestUpdatedProjectIds(data.projects);
     if (topIds.length === 0) return;
     seededProjectsForTeamsRef.current = teamKey;
-    setSelectedProjectIds(topIds);
+    setAutomaticProjectIds(topIds);
   }, [data, selectedProjectIds.length, selectedTeamIds]);
 
   const handleExport = async (format: AnalyticsExportFormat) => {

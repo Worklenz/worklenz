@@ -27,7 +27,6 @@ import { CfdStatusLegend } from '@/components/reporting/analytics/cfd/CfdStatusL
 import { CfdTable } from '@/components/reporting/analytics/cfd/CfdTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
 import {
-  hasMeaningfulAnalyticsFilters,
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
@@ -71,6 +70,8 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     setDatePreset,
     selectedProjectIds,
     setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
     selectedTeamIds,
     setSelectedTeamIds,
     wasRestored,
@@ -92,13 +93,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
   const chartRef = useRef<CfdChartHandle>(null);
   /** Tracks last rollup mode so switching category ? detail resets visible bands. */
   const lastRollupMode = useRef<boolean | null>(null);
-  const skipDefaultTemplate =
-    wasRestored &&
-    hasMeaningfulAnalyticsFilters({
-      datePreset,
-      selectedProjectIds,
-      selectedTeamIds,
-    });
+  const skipDefaultTemplate = wasRestored;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -174,7 +169,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
           : [];
 
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
-      setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
+      setAutomaticTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
       message.error(
         t('errorDescription', {
@@ -208,7 +203,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
         }
       });
       setProjectOptions(projects);
-      setSelectedProjectIds(prev => {
+      setAutomaticProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
         // Keep prior picks that are still valid; never auto-select every project.
         return prev.filter(id => allowed.has(id));

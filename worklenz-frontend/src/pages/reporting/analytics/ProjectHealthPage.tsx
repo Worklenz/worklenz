@@ -33,7 +33,6 @@ import { ProjectHealthKpiTiles } from '@/components/reporting/analytics/project-
 import { ProjectHealthTable } from '@/components/reporting/analytics/project-health/ProjectHealthTable';
 import { useAnalyticsReportTemplates } from '@/hooks/useAnalyticsReportTemplates';
 import {
-  hasMeaningfulAnalyticsFilters,
   usePersistedAnalyticsFilters,
 } from '@/hooks/usePersistedAnalyticsFilters';
 import { applyCommonAnalyticsTemplateFilters } from '@/lib/reporting/analytics-template-filters';
@@ -86,6 +85,8 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     setDatePreset,
     selectedProjectIds,
     setSelectedProjectIds,
+    setAutomaticProjectIds,
+    setAutomaticTeamIds,
     selectedTeamIds,
     setSelectedTeamIds,
     selectedHealthIds,
@@ -109,15 +110,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const seededProjectsForTeamsRef = useRef<string>('');
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
-  const skipDefaultTemplate =
-    wasRestored &&
-    hasMeaningfulAnalyticsFilters({
-      datePreset,
-      selectedProjectIds,
-      selectedMemberIds,
-      selectedTeamIds,
-      selectedHealthIds,
-    });
+  const skipDefaultTemplate = wasRestored;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {
@@ -222,7 +215,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
           : [];
       setTeamOptions(teams);
       const sessionTeamId = session?.team_id ? String(session.team_id) : teams[0]?.value;
-      setSelectedTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
+      setAutomaticTeamIds(prev => (prev.length > 0 ? prev : sessionTeamId ? [sessionTeamId] : []));
     } catch {
       message.error(
         t('errorDescription', {
@@ -265,7 +258,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       setProjectOptions(projects);
 
       const teamKey = [...teamIds].sort().join(',');
-      setSelectedProjectIds(prev => {
+      setAutomaticProjectIds(prev => {
         const allowed = new Set(projects.map(p => p.value));
         const kept = prev.filter(id => allowed.has(id));
         if (kept.length > 0) {
@@ -341,7 +334,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     const topIds = latestUpdatedProjectIds(data.projects);
     if (topIds.length === 0) return;
     seededProjectsForTeamsRef.current = teamKey;
-    setSelectedProjectIds(topIds);
+    setAutomaticProjectIds(topIds);
   }, [data, selectedProjectIds.length, selectedTeamIds]);
 
   const handleExport = async (format: AnalyticsExportFormat) => {
