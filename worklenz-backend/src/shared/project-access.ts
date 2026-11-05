@@ -9,16 +9,9 @@ import {
   TeamRoleName,
 } from "./team-permissions";
 import {
-  canViewAllProjects,
-  getProjectSchemeRoleGrants,
-  GUEST_ROLE_NAME,
-  PROJECT_ROLE_PERMISSIONS,
-} from "./organization-permissions";
-import {
   IProjectAccess,
   IProjectMembershipContext,
   IProjectPermissions,
-  SchemeControlledPermission,
 } from "./project-access.types";
 
 export type {
@@ -191,69 +184,17 @@ const guestPermissions = (): IProjectPermissions => ({
   workload: true,
 });
 
-/**
- * Non-member with "View all projects": can open the project and see work.
- * Mutating project-mgmt actions come only from scheme grants; task create/edit/
- * delete/comment are enforced separately via project-role-permissions.
- */
-const viewAllProjectsBaseline = (): IProjectPermissions => ({
-  ...DENIED_PERMISSIONS,
-  tasks: true,
-  insights: true,
-  files: true,
-  updates: true,
-  docs: true,
-  roadmap: true,
-  workload: true,
-});
-
 const isProjectManagerAccessLevel = (accessLevel: string | null): boolean =>
   (accessLevel || "").toUpperCase() === "PROJECT_MANAGER";
-
-const isGuestAccessLevel = (accessLevel: string | null): boolean =>
-  (accessLevel || "").toUpperCase() === "GUEST";
-
-const SCHEME_PERMISSION_NAMES: Record<SchemeControlledPermission, string> = {
-  settings: PROJECT_ROLE_PERMISSIONS.MANAGE_PROJECT_SETTINGS,
-  statuses: PROJECT_ROLE_PERMISSIONS.MANAGE_STATUSES,
-  phases: PROJECT_ROLE_PERMISSIONS.MANAGE_PHASES,
-  customColumns: PROJECT_ROLE_PERMISSIONS.MANAGE_CUSTOM_COLUMNS,
-  members: PROJECT_ROLE_PERMISSIONS.MANAGE_MEMBERS,
-  saveAsTemplate: PROJECT_ROLE_PERMISSIONS.SAVE_AS_TEMPLATE,
-  finance: PROJECT_ROLE_PERMISSIONS.VIEW_PROJECT_FINANCE,
-  archive: PROJECT_ROLE_PERMISSIONS.ARCHIVE_PROJECT,
-  delete: PROJECT_ROLE_PERMISSIONS.DELETE_PROJECT,
-};
-
-/** Overrides the role baseline with the project's scheme grants (Team Lead / Member / Guest). */
-const applySchemeGrants = (
-  permissions: IProjectPermissions,
-  grants: IProjectMembershipContext["schemeGrants"]
-): IProjectPermissions => {
-  if (!grants) return permissions;
-
-  const next: IProjectPermissions = { ...permissions, members: { ...permissions.members } };
-  for (const [key, granted] of Object.entries(grants) as [SchemeControlledPermission, boolean | undefined][]) {
-    if (granted === undefined) continue;
-    if (key === "members") {
-      next.members = { add: granted, removeMember: granted, changeMemberRole: granted };
-    } else {
-      next[key] = granted;
-    }
-  }
-  return next;
-};
 
 /**
  * Pure builder — unit-tested. Does not hit the database.
  *
- * Rules:
+ * Rules (Phase 0):
  * - Owner/Admin → full admin permissions (PM flag ignored for elevation)
  * - Guest (team or project) never receives PM elevation even if access level is PM
  * - Member/Team Lead + PROJECT_MANAGER → union of role baseline + PM preset
  * - finance only when PM elevation applies and finance_access is true (Admins always)
- * - Member/Guest with "View all projects" but not invited → view baseline + scheme grants
- *   (view-only unless Create/Edit/Delete/Manage actions are granted in the scheme)
  */
 export const buildProjectAccess = (
   ctx: IProjectMembershipContext
@@ -264,9 +205,8 @@ export const buildProjectAccess = (
   const rawIsPm = isProjectManagerAccessLevel(ctx.accessLevel);
   // Guests never elevate from a PROJECT_MANAGER row (Phase 0 / acceptance).
   const isProjectManager = rawIsPm && !isGuest && isProjectMember;
-  const hasSchemeFinance = ctx.schemeGrants?.finance === true;
   const financeAccess =
-    (isProjectManager && ctx.financeAccess === true) || hasSchemeFinance;
+    isProjectManager && ctx.financeAccess === true;
 
   const base: IProjectAccess = {
     teamRole,
@@ -303,17 +243,7 @@ export const buildProjectAccess = (
       return {
         ...base,
         isProjectMember: true,
-        financeAccess: hasSchemeFinance,
-        permissions: applySchemeGrants(teamLeadPermissions(), ctx.schemeGrants),
-      };
-    }
-
-    // Member/Guest: "View all projects" unlocks the project; scheme grants decide actions.
-    if (ctx.canViewAllProjects) {
-      return {
-        ...base,
-        financeAccess: hasSchemeFinance,
-        permissions: applySchemeGrants(viewAllProjectsBaseline(), ctx.schemeGrants),
+        permissions: teamLeadPermissions(),
       };
     }
 
@@ -336,19 +266,16 @@ export const buildProjectAccess = (
     return {
       ...base,
       isProjectManager: false,
-      financeAccess: hasSchemeFinance,
+      financeAccess: false,
       canCreateProjectsFromTemplates: false,
-      permissions: applySchemeGrants(guestPermissions(), ctx.schemeGrants),
+      permissions: guestPermissions(),
     };
   }
 
-  // Scheme grants apply to the role baseline; PM elevation is added on top
-  let permissions = applySchemeGrants(
+  let permissions =
     teamRole === TEAM_ROLE_NAMES.TEAM_LEAD
       ? teamLeadPermissions()
-      : memberPermissions(),
-    ctx.schemeGrants
-  );
+      : memberPermissions();
 
   if (isProjectManager) {
     permissions = orPermissions(
@@ -442,59 +369,16 @@ export const getProjectAccess = async (
   const teamRole: TeamRoleName = row.team_role
     ? normalizeTeamRoleName(row.team_role)
     : getEffectiveTeamRole(user);
-  const isGuest = !!row.is_guest || !!user.is_guest;
-  const isProjectMember = !!row.is_project_member;
-  const viewAll =
-    isProjectMember ||
-    teamRole === TEAM_ROLE_NAMES.OWNER ||
-    teamRole === TEAM_ROLE_NAMES.ADMIN ||
-    teamRole === TEAM_ROLE_NAMES.TEAM_LEAD
-      ? false
-      : await canViewAllProjects(user);
 
   return buildProjectAccess({
     teamRole,
-    isGuest,
+    isGuest: !!row.is_guest || !!user.is_guest,
     isActive: !!row.active,
     accessLevel: row.access_level,
     financeAccess: !!row.finance_access,
     canCreateProjectsFromTemplates: !!row.can_create_projects_from_templates,
-    isProjectMember,
-    canViewAllProjects: viewAll,
-    schemeGrants: await getSchemeGrants(
-      row.project_team_id,
-      projectId,
-      teamRole,
-      isGuest || isGuestAccessLevel(row.access_level)
-    ),
+    isProjectMember: !!row.is_project_member,
   });
-};
-
-/** Owner / Admin always hold every project permission, so their grants are not looked up. */
-const getSchemeGrants = async (
-  teamId: string,
-  projectId: string,
-  teamRole: TeamRoleName,
-  isGuest: boolean
-): Promise<IProjectMembershipContext["schemeGrants"]> => {
-  if (teamRole === TEAM_ROLE_NAMES.OWNER || teamRole === TEAM_ROLE_NAMES.ADMIN) return undefined;
-
-  const schemeRoleName =
-    teamRole === TEAM_ROLE_NAMES.MEMBER && isGuest ? GUEST_ROLE_NAME : teamRole;
-  const granted = new Set(
-    await getProjectSchemeRoleGrants(
-      teamId,
-      projectId,
-      schemeRoleName,
-      Object.values(SCHEME_PERMISSION_NAMES)
-    )
-  );
-
-  return Object.fromEntries(
-    (Object.entries(SCHEME_PERMISSION_NAMES) as [SchemeControlledPermission, string][]).map(
-      ([key, permissionName]) => [key, granted.has(permissionName)]
-    )
-  );
 };
 
 /**

@@ -7,15 +7,8 @@ jest.mock("../redis/analytics-cache", () => ({ withLastUpdated: jest.fn() }));
 jest.mock("../middlewares/analytics-project-access", () => ({
   __esModule: true, default: jest.fn((_req, _res, next) => next()),
 }));
-jest.mock("../shared/organization-permissions", () => ({
-  ...jest.requireActual("../shared/organization-permissions"),
-  hasOrganizationPermission: jest.fn(),
-}));
-
 import { RequestHandler } from "express";
 import router from "../routes/apis/reporting-analytics-api-router";
-import { hasOrganizationPermission } from "../shared/organization-permissions";
-import { viewFinanceValidator } from "../middlewares/validators/organization-permission-validator";
 import projectAccess from "../middlewares/analytics-project-access";
 import { createMockRequest, createMockResponse } from "./utils/express-mock";
 
@@ -30,8 +23,7 @@ describe.each([
   const layers = (router as unknown as { stack: RouteLayer[] }).stack;
   const handlers = layers.find(layer => layer.route?.path === path)!.route!.stack;
 
-  async function authorize(plan: string, hasPermission: boolean, role = "Member") {
-    (hasOrganizationPermission as jest.Mock).mockResolvedValue(hasPermission);
+  async function authorize(plan: string, role = "Member") {
     const req = createMockRequest({ user: {
       id: "user", team_id: "team", role_name: role,
       subscription_type: "PADDLE", plan_name: plan,
@@ -47,21 +39,20 @@ describe.each([
     return res;
   }
 
-  it.each(["Member", "Team Lead"])("denies %s without View finance before project lookup", async role => {
-    const res = await authorize("Business Plan", false, role);
+  it.each(["Member", "Team Lead"])("denies %s before project lookup", async role => {
+    const res = await authorize("Business Plan", role);
     expect(res.statusCode).toBe(403);
     expect(projectAccess).not.toHaveBeenCalled();
   });
 
-  it("denies Pro even with View finance", async () => {
-    const res = await authorize("Pro", true);
+  it("denies Pro for an admin", async () => {
+    const res = await authorize("Pro", "Admin");
     expect(res.statusCode).toBe(403);
     expect(projectAccess).not.toHaveBeenCalled();
   });
 
-  it("allows Business with View finance through both gates", async () => {
-    expect(handlers.map(layer => layer.handle)).toContain(viewFinanceValidator);
-    const res = await authorize("Business Plan", true);
+  it("allows a Business admin through both gates", async () => {
+    const res = await authorize("Business Plan", "Admin");
     expect(res.statusCode).toBe(200);
     expect(projectAccess).toHaveBeenCalled();
   });

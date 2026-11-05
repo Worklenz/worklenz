@@ -77,6 +77,7 @@
       "saveFailed": "Automatizimi nuk mund të përditësohej."
     },
     "connectPrompt": "Lidhni llogarinë tuaj GitHub një herë për gjithë ekipin, pastaj lidhni depo me këtë projekt.",
+    "disconnectedLinks": "Depot e mëposhtme janë ruajtur, por GitHub është i shkëputur. Rilidhni GitHub për të rifilluar gjurmimin.",
     "askOwnerNamed": "GitHub nuk është lidhur ende. Kërkojini {{name}} ose një administratori tjetër të ekipit ta lidhë.",
     "askOwner": "GitHub nuk është lidhur ende. Kërkojini një pronari ose administratori të ekipit ta lidhë."
   },

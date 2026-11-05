@@ -690,6 +690,12 @@ export async function convertChangeRequestToWork(input: {
       );
       const priority = await tx.query(`SELECT id FROM task_priorities WHERE LOWER(name) = LOWER($1)`, [request.priority]);
 
+      // create_task inserts total_minutes explicitly; omit/null violates the NOT NULL column.
+      const totalMinutes =
+        request.estimate_hours != null
+          ? Math.round(Number(request.estimate_hours) * 60)
+          : 0;
+
       const taskBody: Record<string, unknown> = {
         name: (body.title ?? "").trim() || `${request.cr_no}: ${request.title}`,
         project_id: request.project_id,
@@ -698,15 +704,15 @@ export async function convertChangeRequestToWork(input: {
         description: request.description,
         status_id: status.rows[0]?.id ?? null,
         priority_id: priority.rows[0]?.id ?? null,
+        total_minutes: totalMinutes,
         assignees: body.assignee_id ? [body.assignee_id] : [],
         attachments: [],
         labels: [],
       };
-      // Left out when the request has no hours so the task estimate stays blank, never 0.
-      if (request.estimate_hours != null) taskBody.total_minutes = Math.round(Number(request.estimate_hours) * 60);
 
       const created = await tx.query("SELECT create_task($1) AS task;", [JSON.stringify(taskBody)]);
-      taskId = created.rows[0]?.task?.id;
+      // create_task returns get_task_form_view_model: { task: { id, ... }, ... }
+      taskId = created.rows[0]?.task?.task?.id;
       if (!taskId) throw new Error("Failed to create the task");
 
       const key = await tx.query(

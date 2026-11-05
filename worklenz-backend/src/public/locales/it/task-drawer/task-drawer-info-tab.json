@@ -1,0 +1,32 @@
+{
+  "details": {
+    "task-key": "Codice attività",
+    "phase": "Fase",
+    "assignees": "Assegnatari",
+    "due-date": "Scadenza",
+    "time-estimation": "Tempo stimato",
+    "priority": "Priorità",
+    "labels": "Etichette",
+    "billable": "Fatturabile",
+    "notify": "Notifica",
+    "when-done-notify": "Al completamento, notifica",
+    "start-date": "Data di inizio",
+    "end-date": "Data di fine",
+    "hide-start-date": "Nascondi data di inizio",
+    "show-start-date": "Mostra data di inizio",
+    "hours": "Ore",
+    "minutes": "Minuti",
+    "recurring": "Ricorrente"
+  },
+  "description": {
+    "title": "Descrizione",
+    "placeholder": "Aggiungi una descrizione più dettagliata...",
+    "clickToAdd": "Fai clic per aggiungere una descrizione...",
+    "loadingEditor": "Caricamento dell’editor..."
+  },
+  "subTasks": {
+    "title": "Sottoattività",
+    "add-sub-task": "Aggiungi sottoattività",
+    "refresh-sub-tasks": "Aggiorna sottoattività"
+  }
+}

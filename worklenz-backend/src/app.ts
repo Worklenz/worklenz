@@ -424,6 +424,8 @@ app.use((req, res, next) => {
     "/secure/apple",
     "/apple/verify",
     "/secure/apple/verify",
+    "/apple/desktop/callback",
+    "/secure/apple/desktop/callback",
   ];
 
   if (authPaths.includes(req.path)) {

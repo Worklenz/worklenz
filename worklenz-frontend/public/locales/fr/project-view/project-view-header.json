@@ -35,6 +35,5 @@
   "defaultTaskName": "Tâche sans titre",
   "softwareProjectTooltip": "Projet logiciel – problèmes, backlog et sprints",
   "softwareProjectTag": "Logiciel",
-  "settingsDisabledForGuest": "Les paramètres du projet ne sont pas accessibles aux utilisateurs invités",
-  "noPermission": "Vous n'avez pas la permission"
+  "settingsDisabledForGuest": "Les paramètres du projet ne sont pas accessibles aux utilisateurs invités"
 }

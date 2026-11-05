@@ -14,7 +14,6 @@ import { theme } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
 import { useTranslation } from 'react-i18next';
 import { toggleInviteMemberDrawer } from '../../settings/member/memberSlice';
 import { toggleAddClientDrawer } from '@/features/clients-portal/clients/clients-slice';
@@ -33,7 +32,6 @@ import {
 } from '@/features/task-drawer/task-drawer.slice';
 import { setProjectId } from '@/features/project/project.slice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
-import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
 interface QuickActionItem {
   key: string;
@@ -61,9 +59,6 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   const { trackMixpanelEvent } = useMixpanelTracking();
   const isOwnerOrAdmin = authService.isOwnerOrAdmin();
   const isProjectManager = useIsProjectManager();
-  const { hasPermission: canCreateProjects } = useOrganizationPermission(
-    ORGANIZATION_PERMISSIONS.CREATE_PROJECTS
-  );
   const { token } = useToken();
 
   const [open, setOpen] = useState(false);
@@ -96,21 +91,11 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
     { key: 'add-guest',     label: t('quickActions.addGuest', { defaultValue: 'Add Guest' }), icon: <UsergroupAddOutlined /> },
   ], [t]);
 
-  const MEMBER_ITEMS = useMemo<QuickActionItem[]>(() => {
-    const items: QuickActionItem[] = [
-      { key: 'new-task',      label: t('quickActions.task', { defaultValue: 'New Task' }),    icon: <CheckSquareOutlined /> },
-      { key: 'log-time',      label: t('quickActions.logTime', { defaultValue: 'Log Time' }), icon: <ClockCircleOutlined /> },
-      { key: 'mark-time-off', label: t('quickActions.markTimeOff', { defaultValue: 'Mark Time Off' }), icon: <CalendarOutlined /> },
-    ];
-    if (canCreateProjects) {
-      items.splice(3, 0, {
-        key: 'new-project',
-        label: t('quickActions.project', { defaultValue: 'New Project' }),
-        icon: <ProjectOutlined />,
-      });
-    }
-    return items;
-  }, [canCreateProjects, t]);
+  const MEMBER_ITEMS = useMemo<QuickActionItem[]>(() => [
+    { key: 'new-task',      label: t('quickActions.task', { defaultValue: 'New Task' }),    icon: <CheckSquareOutlined /> },
+    { key: 'log-time',      label: t('quickActions.logTime', { defaultValue: 'Log Time' }), icon: <ClockCircleOutlined /> },
+    { key: 'mark-time-off', label: t('quickActions.markTimeOff', { defaultValue: 'Mark Time Off' }), icon: <CalendarOutlined /> },
+  ], [t]);
 
   const PM_ITEMS = useMemo<QuickActionItem[]>(
     () => [
@@ -124,22 +109,8 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
     [MEMBER_ITEMS, t]
   );
 
-  const GUEST_CREATE_ITEMS = useMemo<QuickActionItem[]>(
-    () =>
-      canCreateProjects
-        ? [
-            {
-              key: 'new-project',
-              label: t('quickActions.project', { defaultValue: 'New Project' }),
-              icon: <ProjectOutlined />,
-            },
-          ]
-        : [],
-    [canCreateProjects, t]
-  );
-
-  // Guests without "Create projects" keep no New menu; with the grant they get New Project only.
-  if (isGuest && GUEST_CREATE_ITEMS.length === 0) {
+  // Hide the New button for guest users after all hooks have run.
+  if (isGuest) {
     return null;
   }
 
@@ -184,25 +155,18 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
     dispatch(setShowTaskDrawer(true));
   };
 
-  const items = isGuest
-    ? GUEST_CREATE_ITEMS
-    : isOwnerOrAdmin
-      ? ALL_ITEMS
-      : isProjectManager
-        ? PM_ITEMS
-        : MEMBER_ITEMS;
-  const allItems =
-    !isGuest && canInviteMembers
-      ? [
-          ...items,
-          {
-            key: 'invite-member',
-            label: t('quickActions.inviteMember', { defaultValue: 'Invite Member' }),
-            icon: <UserAddOutlined />,
-            disabled: isInviteRestricted,
-          },
-        ]
-      : items;
+  const items = isOwnerOrAdmin ? ALL_ITEMS : isProjectManager ? PM_ITEMS : MEMBER_ITEMS;
+  const allItems = canInviteMembers
+    ? [
+        ...items,
+        {
+          key: 'invite-member',
+          label: t('quickActions.inviteMember', { defaultValue: 'Invite Member' }),
+          icon: <UserAddOutlined />,
+          disabled: isInviteRestricted,
+        },
+      ]
+    : items;
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>

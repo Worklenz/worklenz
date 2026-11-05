@@ -1,16 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Spin } from '@/shared/antd-imports';
-import { useTranslation } from 'react-i18next';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { MixpanelBillingEvents } from '@/types/mixpanel-events.types';
 import {
-  APPSUMO_POPUP_IMAGE_URL,
+  APPSUMO_PROMO_DEFAULT_BILLING,
   hasAppSumoPopupBeenShownRecently,
   markAppSumoPopupShown,
 } from '@/config/appsumo-promo.config';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { MixpanelBillingEvents } from '@/types/mixpanel-events.types';
+import { AppSumoUpgradeModal } from './AppSumoUpgradeModal';
 
 interface AppSumoPopupProps {
   isAppSumoUser: boolean;
@@ -19,11 +16,8 @@ interface AppSumoPopupProps {
 }
 
 export const AppSumoPopup = ({ isAppSumoUser, frequencyDays }: AppSumoPopupProps) => {
-  const { t } = useTranslation('appsumo');
-  const dispatch = useAppDispatch();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const [open, setOpen] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Claiming consumes the server-side "shown" slot, so it is issued at most once per mount and its
   // continuation must survive effect cleanup (React 18 StrictMode double-invokes effects in dev).
@@ -34,6 +28,8 @@ export const AppSumoPopup = ({ isAppSumoUser, frequencyDays }: AppSumoPopupProps
   // cleanup below, which also runs on an in-place frequencyDays/isAppSumoUser change while the
   // component is still alive and an in-flight claim should still be allowed to complete.
   const isMountedRef = useRef(true);
+  // View is tracked once here so AppSumoUpgradeModal does not double-fire on auto-open.
+  const hasTrackedViewRef = useRef(false);
 
   useEffect(() => {
     isEligibleRef.current = isAppSumoUser;
@@ -47,17 +43,11 @@ export const AppSumoPopup = ({ isAppSumoUser, frequencyDays }: AppSumoPopupProps
   }, []);
 
   useEffect(() => {
-    if (
-      !isAppSumoUser ||
-      !APPSUMO_POPUP_IMAGE_URL ||
-      hasStartedClaimRef.current ||
-      hasAppSumoPopupBeenShownRecently(frequencyDays)
-    ) {
+    if (!isAppSumoUser || hasStartedClaimRef.current || hasAppSumoPopupBeenShownRecently(frequencyDays)) {
       return;
     }
 
     let cancelled = false;
-    const preloadImage = new Image();
 
     // The server is the source of truth for cadence (APPSUMO_POPUP_FREQUENCY_DAYS) because
     // localStorage is wiped on logout. The local gate above only avoids a needless request.
@@ -84,81 +74,34 @@ export const AppSumoPopup = ({ isAppSumoUser, frequencyDays }: AppSumoPopupProps
       if (!serverAllowsPopup || !isEligibleRef.current) return;
 
       markAppSumoPopupShown();
-      setImageLoaded(true);
       setOpen(true);
-      trackMixpanelEvent(MixpanelBillingEvents.APPSUMO_PROMO_POPUP_VIEWED, {
-        source_component: 'AppSumoPopup',
-      });
+      if (!hasTrackedViewRef.current) {
+        hasTrackedViewRef.current = true;
+        trackMixpanelEvent(MixpanelBillingEvents.APPSUMO_PROMO_POPUP_VIEWED, {
+          source_component: 'AppSumoPopup',
+          billing: APPSUMO_PROMO_DEFAULT_BILLING,
+        });
+      }
     };
 
-    const startClaim = () => {
-      if (cancelled) return;
-      void claimAndShow();
-    };
-
-    preloadImage.onload = startClaim;
-    preloadImage.onerror = startClaim;
-    preloadImage.src = APPSUMO_POPUP_IMAGE_URL;
+    // Defer so React StrictMode's effect cleanup can cancel before we consume the server slot.
+    const timer = window.setTimeout(() => {
+      if (!cancelled) void claimAndShow();
+    }, 0);
 
     return () => {
       cancelled = true;
-      preloadImage.onload = null;
-      preloadImage.onerror = null;
+      window.clearTimeout(timer);
     };
-  }, [isAppSumoUser, frequencyDays]);
-
-  if (!APPSUMO_POPUP_IMAGE_URL) return null;
-
-  const handleClose = () => {
-    setOpen(false);
-    trackMixpanelEvent(MixpanelBillingEvents.APPSUMO_PROMO_POPUP_CLOSED, {
-      source_component: 'AppSumoPopup',
-    });
-  };
-
-  const handleUpgradeClick = () => {
-    setOpen(false);
-    trackMixpanelEvent(MixpanelBillingEvents.APPSUMO_PROMO_POPUP_CLICKED, {
-      source_component: 'AppSumoPopup',
-    });
-    dispatch(openUpgradeModal());
-  };
+  }, [isAppSumoUser, frequencyDays, trackMixpanelEvent]);
 
   return (
-    <Modal
+    <AppSumoUpgradeModal
       open={open}
-      onCancel={handleClose}
-      footer={null}
-      centered
-      destroyOnHidden
-      width={720}
-      styles={{ content: { padding: 8 }, body: { padding: 0 } }}
-    >
-      {!imageLoaded && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: 280,
-          }}
-        >
-          <Spin size="large" />
-        </div>
-      )}
-      <img
-        src={APPSUMO_POPUP_IMAGE_URL}
-        alt={t('popup.imageAlt')}
-        style={{
-          width: '100%',
-          display: imageLoaded ? 'block' : 'none',
-          borderRadius: 8,
-          cursor: 'pointer',
-        }}
-        onLoad={() => setImageLoaded(true)}
-        onClick={handleUpgradeClick}
-      />
-    </Modal>
+      onClose={() => setOpen(false)}
+      sourceComponent="AppSumoPopup"
+      trackViewOnOpen={false}
+    />
   );
 };
 

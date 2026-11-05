@@ -1,8 +1,52 @@
 {
   "popup": {
-    "imageAlt": "Offre exclusive AppSumo",
-    "title": "Offre exclusive AppSumo",
-    "message": "En tant que titulaire d'une offre à vie AppSumo, vous bénéficiez d'une réduction spéciale sur votre mise à niveau. Ne manquez rien !",
-    "cta": "Voir mon offre"
+    "regionLabel": "Offre du plan Business",
+    "tag": "Offre membre AppSumo",
+    "titleLine1": "Arrêtez de buter contre les limites.",
+    "titleHighlight": "Gérez toute votre équipe avec Business.",
+    "subtitle": "Repérez où le travail bloque, tenez les clients informés et suivez le budget de chaque projet.",
+    "features": {
+      "advancedReporting": {
+        "title": "Rapports avancés : Velocity et Cumulative Flow",
+        "description": "Repérez les goulots d'étranglement tôt et planifiez les sprints avec de vraies données"
+      },
+      "clientPortal": {
+        "title": "Portail client",
+        "description": "Gardez les clients informés en un seul endroit"
+      },
+      "finance": {
+        "title": "Accès Finance",
+        "description": "Consultez les coûts et budgets des projets"
+      },
+      "customColumns": {
+        "title": "Colonnes personnalisées illimitées",
+        "description": "Suivez les données à votre façon"
+      },
+      "largeFiles": {
+        "title": "Gestion des gros fichiers",
+        "description": "Partagez de gros fichiers sans contournement"
+      },
+      "chatHistory": {
+        "title": "Historique de chat long",
+        "description": "Retrouvez rapidement les décisions passées"
+      }
+    },
+    "badgePercent": "50%",
+    "badgeOff": "DE RÉDUCTION",
+    "badgeForLife": "À VIE",
+    "urgency": "Offre à durée limitée",
+    "monthly": "Mensuel",
+    "annual": "Annuel",
+    "billingAria": "Période de facturation",
+    "perUserMonth": "par utilisateur actif / mois",
+    "regularPrice": "Prix habituel",
+    "perUserMonthShort": "par utilisateur / mois",
+    "youSavePrefix": "Vous économisez",
+    "saveAmount": "${{amount}} par utilisateur chaque mois",
+    "forLifeSuffix": ", à vie.",
+    "cta": "Passer à Business",
+    "fineMonthly": "Verrouillez 50 % de réduction à vie. Abonnement mensuel, sans engagement long terme.",
+    "fineAnnual": "Verrouillez 50 % de réduction à vie sur le plan Annuel.",
+    "closeAria": "Fermer l'offre"
   }
 }

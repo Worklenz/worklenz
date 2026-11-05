@@ -192,7 +192,7 @@
   "teamHierarchyNoResultsDescription": "Wypróbuj inne wyszukiwane hasło.",
   "seatLimitReached": "Osiągnięto limit miejsc",
   "seatLimitMessage": "Twój plan obejmuje {{planLimit}} członków. Przejdź na wersję Business dla członków {{businessLimit}} lub dezaktywuj nieaktywnego członka, aby zaprosić kogoś nowego.",
-  "seatLimitAppSumoMessage": "Twój plan AppSumo obejmuje {{planLimit}} członków. Przejdź na wersję Business dla członków {{businessLimit}} lub dezaktywuj nieaktywnego członka, aby zaprosić kogoś nowego.",
+  "seatLimitLifetimeDealMessage": "Twoja oferta dożywotnia obejmuje {{planLimit}} członków. Przejdź na wersję Business dla członków {{businessLimit}} lub dezaktywuj nieaktywnego członka, aby zaprosić kogoś nowego.",
   "currentMembers": "Obecni członkowie",
   "planLimit": "Limit planu",
   "afterUpgrade": "Po aktualizacji",

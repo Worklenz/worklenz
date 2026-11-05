@@ -1,0 +1,10 @@
+{
+  "modal": {
+    "title": "Richiedi un servizio",
+    "submitButton": "Invia richiesta"
+  },
+  "uploadLogoText": "Fai clic o trascina un file per caricarlo",
+  "uploadLogoAltText": "Carica file",
+  "title": "Servizi",
+  "requestButton": "Invia una richiesta"
+}

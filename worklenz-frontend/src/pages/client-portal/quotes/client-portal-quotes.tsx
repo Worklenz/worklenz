@@ -2,7 +2,6 @@ import { Button, Flex, Typography } from '@/shared/antd-imports';
 import { PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { QuotesTable } from './QuotesTable';
 import '../invoices/invoices.css';
 
@@ -11,7 +10,6 @@ const { Title } = Typography;
 const ClientPortalQuotes = () => {
   const { t } = useTranslation('client-portal-quotes');
   const navigate = useNavigate();
-  const isReadOnly = useIsAdminSurfaceReadOnly();
 
   return (
     <div
@@ -40,16 +38,14 @@ const ClientPortalQuotes = () => {
           </Typography.Text>
         </div>
 
-        {!isReadOnly && (
-          <Button
-            type="primary"
-            size="small"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/worklenz/client-portal/quotes/create')}
-          >
-            {t('createQuoteButton', { defaultValue: 'Create Quote' })}
-          </Button>
-        )}
+        <Button
+          type="primary"
+          size="small"
+          icon={<PlusOutlined />}
+          onClick={() => navigate('/worklenz/client-portal/quotes/create')}
+        >
+          {t('createQuoteButton', { defaultValue: 'Create Quote' })}
+        </Button>
       </Flex>
 
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>

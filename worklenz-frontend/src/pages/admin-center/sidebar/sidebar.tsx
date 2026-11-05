@@ -1,16 +1,12 @@
 import { RightOutlined } from '@/shared/antd-imports';
 import { ConfigProvider, Flex, Menu, MenuProps } from '@/shared/antd-imports';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { colors } from '../../../styles/colors';
 import { useTranslation } from 'react-i18next';
-import {
-  adminCenterItems,
-  canAccessAdminCenterItem,
-} from '../../../lib/admin-center-constants';
+import { adminCenterItems } from '../../../lib/admin-center-constants';
 import './sidebar.css';
 import { useAuthService } from '@/hooks/useAuth';
-import { useOrganizationPermissions } from '@/hooks/useOrganizationPermission';
 import { isBusinessPlan } from '@/utils/subscription-utils';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 
@@ -19,25 +15,23 @@ const AdminCenterSidebar: React.FC = () => {
   const location = useLocation();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
-  const { permissions: organizationPermissions } = useOrganizationPermissions();
 
   type MenuItem = Required<MenuProps>['items'][number];
   const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
   const isOwnerOrAdmin = authService.isOwnerOrAdmin();
 
-  const menuItems = useMemo(
-    () =>
-      adminCenterItems.filter(item => {
-        if (item.key === 'settings' && !isBusinessPlan(currentSession)) {
-          return false;
-        }
-        if (item.selfHostedExcluded && isSelfHosted) {
-          return false;
-        }
-        return canAccessAdminCenterItem(item, isOwnerOrAdmin, organizationPermissions);
-      }),
-    [currentSession, isOwnerOrAdmin, isSelfHosted, organizationPermissions]
-  );
+  const menuItems = adminCenterItems.filter(item => {
+    if (item.key === 'settings') {
+      return isBusinessPlan(currentSession);
+    }
+    if (item.selfHostedExcluded && isSelfHosted) {
+      return false;
+    }
+    if (item.ownerOrAdminOnly && !isOwnerOrAdmin) {
+      return false;
+    }
+    return true;
+  });
 
   const items: MenuItem[] = menuItems.map(item => ({
       key: item.key,

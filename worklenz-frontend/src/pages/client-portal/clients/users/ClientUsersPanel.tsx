@@ -57,16 +57,19 @@ interface ClickableNameProps {
   children: React.ReactNode;
   /** Without a handler the name is plain text. */
   onClick?: () => void;
+  fontSize?: number;
+  fontWeight?: number;
 }
 
 /** A bold name that opens something on click: pointer cursor only, no link colour or underline on hover. */
-const ClickableName = ({ children, onClick }: ClickableNameProps) => {
-  if (!onClick) return <span style={{ fontWeight: 600, fontSize: 13, minWidth: 0 }}>{children}</span>;
+const ClickableName = ({ children, onClick, fontSize = 13, fontWeight = 600 }: ClickableNameProps) => {
+  const nameStyle = { fontWeight, fontSize, minWidth: 0 };
+  if (!onClick) return <span style={nameStyle}>{children}</span>;
   return (
     <span
       role="button"
       tabIndex={0}
-      style={{ fontWeight: 600, fontSize: 13, minWidth: 0, cursor: 'pointer' }}
+      style={{ ...nameStyle, cursor: 'pointer' }}
       onClick={event => {
         event.stopPropagation();
         onClick();
@@ -266,15 +269,20 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
                 help={t('users.columnHelp.organization', { defaultValue: 'The client this user belongs to.' })}
               />
             ),
-            // Same avatar + bold name as the Clients table, so a client looks the same in both lists.
-            render: (_value: unknown, user: ClientUser) => (
-              <Flex align="center" gap={10}>
-                <PortalAvatar name={decodeHtmlEntities(user.organization_name)} />
-                <ClickableName onClick={onOpenOrganization ? () => onOpenOrganization(user.organization_id) : undefined}>
-                  {decodeHtmlEntities(user.organization_name)}
-                </ClickableName>
-              </Flex>
-            ),
+            // Keep the client available to screen readers while the group header supplies the visible name.
+            render: (_value: unknown, user: ClientUser) => {
+              if (isGrouped) {
+                return <span className="sr-only">{decodeHtmlEntities(user.organization_name)}</span>;
+              }
+              return (
+                <Flex align="center" gap={10}>
+                  <PortalAvatar name={decodeHtmlEntities(user.organization_name)} />
+                  <ClickableName onClick={onOpenOrganization ? () => onOpenOrganization(user.organization_id) : undefined}>
+                    {decodeHtmlEntities(user.organization_name)}
+                  </ClickableName>
+                </Flex>
+              );
+            },
           },
         ]),
     {
@@ -558,6 +566,8 @@ export const ClientUsersPanel = ({ organizationId, onOpenOrganization, onTotalCh
                   <Flex align="center" gap={10}>
                     <PortalAvatar name={decodeHtmlEntities(users[0].organization_name)} />
                     <ClickableName
+                      fontSize={15}
+                      fontWeight={700}
                       onClick={onOpenOrganization ? () => onOpenOrganization(users[0].organization_id) : undefined}
                     >
                       {decodeHtmlEntities(users[0].organization_name)}

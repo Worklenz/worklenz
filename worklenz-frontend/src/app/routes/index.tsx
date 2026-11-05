@@ -34,8 +34,6 @@ const withCodeSplitting = (Component: React.LazyExoticComponent<React.ComponentT
 
 // Memoized guard components with defensive programming
 import { useAuthStatus } from '@/hooks/useAuthStatus';
-import { OrganizationPermissionGuard } from '@/guards/OrganizationPermissionGuard';
-import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
 export const AuthGuard = memo(({ children }: GuardProps) => {
   const { isAuthenticated, location } = useAuthStatus();
@@ -64,22 +62,6 @@ export const AdminGuard = memo(({ children }: GuardProps) => {
 });
 
 AdminGuard.displayName = 'AdminGuard';
-
-export const ReportsGuard = memo(({ children }: GuardProps) => (
-  <OrganizationPermissionGuard permission={ORGANIZATION_PERMISSIONS.VIEW_REPORTS} blockFreePlan>
-    {children}
-  </OrganizationPermissionGuard>
-));
-
-ReportsGuard.displayName = 'ReportsGuard';
-
-export const ClientPortalGuard = memo(({ children }: GuardProps) => (
-  <OrganizationPermissionGuard permission={ORGANIZATION_PERMISSIONS.VIEW_CLIENTS} blockFreePlan>
-    {children}
-  </OrganizationPermissionGuard>
-));
-
-ClientPortalGuard.displayName = 'ClientPortalGuard';
 
 export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
   const { isLicenseExpired, location } = useAuthStatus();
@@ -226,7 +208,7 @@ const protectedMainRoutes = wrapRoutes(mainRoutes, AuthAndSetupGuard);
 // Reporting requires auth + setup. All reporting surfaces are Owner/Admin only
 // (Members, Guests, and Team Leads are excluded; Team Leads use my-team-reports).
 const adminRoutes = wrapRoutes(reportingRoutes, AuthAndSetupGuard);
-const adminclientPortalRoutes = wrapRoutes(clientPortalRoutes, ClientPortalGuard);
+const adminclientPortalRoutes = wrapRoutes(clientPortalRoutes, AdminGuard);
 const setupRoutes = wrapRoutes([accountSetupRoute], AuthGuard);
 
 // License expiry check function - only wrap top-level routes, not children

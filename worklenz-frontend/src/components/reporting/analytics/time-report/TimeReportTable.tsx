@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Avatar, Flex, Table, Typography } from '@/shared/antd-imports';
+import { Avatar, Flex, Table, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
@@ -16,6 +16,7 @@ const fmtHours = (value: number): string => `${Number(value.toFixed(1))}h`;
 
 export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading }) => {
   const { t } = useTranslation('reporting-analytics');
+  const { token } = theme.useToken();
 
   const columns: ColumnsType<TimeReportRow> = useMemo(
     () => [
@@ -23,6 +24,7 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
         title: t('trColMember', { defaultValue: 'Member' }),
         dataIndex: 'member_name',
         key: 'member_name',
+        width: 100,
         ellipsis: true,
         sorter: (a, b) => a.member_name.localeCompare(b.member_name),
         render: (name: string, record) => (
@@ -42,6 +44,7 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
         title: t('trColProject', { defaultValue: 'Project' }),
         dataIndex: 'project_name',
         key: 'project_name',
+        width: 220,
         ellipsis: true,
         sorter: (a, b) => a.project_name.localeCompare(b.project_name),
         render: (name: string, record) => (
@@ -99,10 +102,27 @@ export const TimeReportTable: React.FC<TimeReportTableProps> = ({ rows, loading 
     [t]
   );
 
+  const borderedColumns = columns.map((column) => ({
+  ...column,
+  onCell: () => ({
+    style: {
+      borderInlineEnd: `1px solid ${token.colorBorder}`,
+      borderBottom: `1px solid ${token.colorBorder}`,
+    },
+  }),
+  onHeaderCell: () => ({
+    style: {
+      borderInlineEnd: `1px solid ${token.colorBorder}`,
+      borderBottom: `1px solid ${token.colorBorder}`,
+    },
+  }),
+}));
+
   return (
     <Table<TimeReportRow>
+      bordered
       rowKey={row => `${row.team_member_id}-${row.project_id}`}
-      columns={columns}
+      columns={borderedColumns}
       dataSource={rows}
       loading={loading}
       pagination={getClientTablePagination(20)}

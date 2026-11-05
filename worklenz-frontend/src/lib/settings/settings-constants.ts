@@ -25,10 +25,6 @@ import { MobileOutlined, SwapOutlined } from '@ant-design/icons';
 import React, { ReactNode, lazy } from 'react';
 import { ILocalSession } from '@/types/auth/local-session.types';
 import { canUseFeature } from '@/utils/subscription-utils';
-import {
-  ORGANIZATION_PERMISSIONS,
-  OrganizationPermission,
-} from '@/types/admin-center/permission-schemes.types';
 const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-settings'));
 const NotificationsSettings = lazy(
   () => import('../../pages/settings/notifications/notifications-settings')
@@ -89,8 +85,6 @@ type SettingMenuItem = {
   icon: ReactNode;
   element: ReactNode;
   adminOnly?: boolean;
-  /** Granted via the default permission scheme; Owners/Admins always see adminOnly items. */
-  requiredPermission?: OrganizationPermission;
   isDangerous?: boolean;
   /** Registry feature the plan must grant for the item to be listed. */
   requiredFeature?: string;
@@ -170,7 +164,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(UserSwitchOutlined),
     element: React.createElement(ClientsSettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_CLIENTS,
   },
   {
     key: 'departments',
@@ -182,7 +175,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(GroupOutlined),
     element: React.createElement(DepartmentsSettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS,
   },
   {
     key: 'practices',
@@ -194,7 +186,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(AppstoreOutlined),
     element: React.createElement(PracticesSettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS,
   },
   {
     key: 'job-titles',
@@ -206,7 +197,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(IdcardOutlined),
     element: React.createElement(JobTitlesSettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS,
   },
   {
     key: 'labels',
@@ -218,7 +208,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(TagsOutlined),
     element: React.createElement(LabelsSettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS,
   },
   {
     key: 'categories',
@@ -230,7 +219,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(GroupOutlined),
     element: React.createElement(CategoriesSettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS,
   },
   {
     key: 'project-templates',
@@ -242,7 +230,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(FileZipOutlined),
     element: React.createElement(ProjectTemplatesSettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS,
   },
   {
     key: 'task-templates',
@@ -254,7 +241,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(ProfileOutlined),
     element: React.createElement(TaskTemplatesSettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS,
   },
   {
     key: 'team-members',
@@ -266,7 +252,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(TeamOutlined),
     element: React.createElement(TeamMembersSettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_USERS,
   },
   {
     key: 'guest-members',
@@ -278,7 +263,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(UsergroupAddOutlined),
     element: React.createElement(GuestMembersSettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_USERS,
   },
   {
     key: 'team-hierarchy',
@@ -290,7 +274,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(TeamOutlined),
     element: React.createElement(TeamHierarchy),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_TEAMS,
   },
   {
     key: 'ratecard',
@@ -303,7 +286,6 @@ export const settingsItems: SettingMenuItem[] = [
     element: React.createElement(RateCardSettings),
     requiredFeature: 'finance_module',
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_BILLING,
   },
   {
     key: 'organization-currency',
@@ -315,7 +297,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(SwapOutlined),
     element: React.createElement(OrganizationCurrencySettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_BILLING,
   },
   {
     key: 'teams',
@@ -327,7 +308,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(BankOutlined),
     element: React.createElement(TeamsSettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_TEAMS,
   },
   {
     key: 'integrations',
@@ -339,7 +319,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(ApiOutlined),
     element: React.createElement(IntegrationsSettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS,
   },
   {
     key: 'configuration',
@@ -351,7 +330,6 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(SettingOutlined),
     element: React.createElement(ConfigurationSettings),
     adminOnly: true,
-    requiredPermission: ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS,
   },
   {
     key: 'help',
@@ -377,18 +355,10 @@ export const settingsItems: SettingMenuItem[] = [
   },
 ];
 
-export const getAccessibleSettings = (
-  isAdmin: boolean,
-  session: ILocalSession | null,
-  permissions: OrganizationPermission[] = []
-) => {
+export const getAccessibleSettings = (isAdmin: boolean, session: ILocalSession | null) => {
   return settingsItems.filter(item => {
-    // Owner/Admin always see adminOnly items; others need the matching permission.
-    if (
-      item.adminOnly &&
-      !isAdmin &&
-      !(item.requiredPermission && permissions.includes(item.requiredPermission))
-    ) {
+    // Check admin requirement
+    if (item.adminOnly && !isAdmin) {
       return false;
     }
 

@@ -215,6 +215,13 @@ const LANGUAGE_SOURCE_VALUES = {
   es: new Set(['Portal', 'Magenta']),
   pt: new Set(['Portal', 'Link', 'Magenta']),
   pl: new Set(['Link', 'Magenta']),
+  // Product names, technical terms and example names also used in Italian.
+  it: new Set([
+    'Password', 'Jane', 'Jane Doe', 'Dashboard', 'Zoom', 'Rev {{revision}}',
+    'File', 'File: {{label}}', 'File: {{name}}', 'Link', 'Magenta', 'Backlog',
+    '{{count}} story point', 'Home', 'Account', 'AppSumo Expansion', 'KPI',
+    '{{metric}} per sprint', 'WIP', 'Budget',
+  ]),
 };
 const namespaceArgument = process.argv.find(argument => argument.startsWith('--namespace='));
 const namespaceFilter = namespaceArgument?.split('=', 2)[1];

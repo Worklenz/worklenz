@@ -88,7 +88,7 @@
   "labelInputPlaceholder": "Suchen oder erstellen",
   "searchLabelsPlaceholder": "Labels suchen...",
   "createLabelButton": "\"{{name}}\" erstellen",
-  "manageLabelsPath": "Einstellungen → Labels",
+  "manageLabelsPath": "Einstellungen → Projekt und Arbeitsablauf → Labels",
   "pendingInvitation": "Einladung ausstehend",
   "contextMenu": {
     "duplicateTask": "Doppelte Aufgabe",

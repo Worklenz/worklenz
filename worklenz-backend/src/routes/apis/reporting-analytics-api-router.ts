@@ -18,8 +18,6 @@ import BudgetTrackingController from "../../controllers/reporting-analytics/budg
 import AnalyticsTemplatesController from "../../controllers/reporting-analytics/analytics-templates-controller";
 import { requireFeature } from "../../shared/entitlements/gates";
 
-import { viewFinanceValidator } from "../../middlewares/validators/organization-permission-validator";
-
 const router = express.Router();
 
 async function requireAnalyticsAccess(
@@ -154,7 +152,6 @@ router.post(
   "/project-health/series",
   requireAnalyticsAccess,
   requireFeature("finance_module"),
-  viewFinanceValidator,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(ProjectHealthController.getSeries)
 );
@@ -162,7 +159,6 @@ router.get(
   "/project-health/series",
   requireAnalyticsAccess,
   requireFeature("finance_module"),
-  viewFinanceValidator,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(ProjectHealthController.getSeries)
 );
@@ -171,7 +167,6 @@ router.post(
   "/project-health/export/csv",
   requireAnalyticsAccess,
   requireFeature("finance_module"),
-  viewFinanceValidator,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(ProjectHealthController.exportCsv)
 );
@@ -267,7 +262,6 @@ router.post(
   "/budget-tracking/series",
   requireAnalyticsAccess,
   requireFeature("finance_module"),
-  viewFinanceValidator,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(BudgetTrackingController.getSeries)
 );
@@ -275,7 +269,6 @@ router.get(
   "/budget-tracking/series",
   requireAnalyticsAccess,
   requireFeature("finance_module"),
-  viewFinanceValidator,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(BudgetTrackingController.getSeries)
 );
@@ -284,7 +277,6 @@ router.post(
   "/budget-tracking/export/csv",
   requireAnalyticsAccess,
   requireFeature("finance_module"),
-  viewFinanceValidator,
   analyticsProjectAccessMiddleware,
   safeControllerFunction(BudgetTrackingController.exportCsv)
 );

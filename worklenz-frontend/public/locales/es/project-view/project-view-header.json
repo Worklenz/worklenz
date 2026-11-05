@@ -35,6 +35,5 @@
   "defaultTaskName": "Tarea Sin Título",
   "softwareProjectTooltip": "Proyecto de software: problemas, trabajos pendientes y sprints",
   "softwareProjectTag": "programas",
-  "settingsDisabledForGuest": "La configuración del proyecto no es accesible para los usuarios invitados",
-  "noPermission": "No tienes permiso"
+  "settingsDisabledForGuest": "La configuración del proyecto no es accesible para los usuarios invitados"
 }

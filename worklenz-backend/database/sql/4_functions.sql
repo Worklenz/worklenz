@@ -1202,7 +1202,7 @@ BEGIN
             _reporter_id,
             (_body ->> 'start')::TIMESTAMPTZ,
             (_body ->> 'end')::TIMESTAMPTZ,
-            (_body ->> 'total_minutes')::NUMERIC,
+            COALESCE((_body ->> 'total_minutes')::NUMERIC, 0),
             (_body ->> 'description')::TEXT,
             (_body ->> 'parent_task_id')::UUID,
             (_body ->> 'status_id')::UUID,

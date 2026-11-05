@@ -1,0 +1,16 @@
+{
+  "createTaskTemplate": "Crea modello di attività",
+  "editTaskTemplate": "Modifica modello di attività",
+  "cancelText": "Annulla",
+  "saveText": "Salva",
+  "templateNameText": "Nome del modello",
+  "templateNameRequired": "Il nome del modello è obbligatorio",
+  "selectedTasks": "Attività selezionate",
+  "removeTask": "Rimuovi",
+  "cancelButton": "Annulla",
+  "saveButton": "Salva",
+  "includeSubtasks": "Includi la gerarchia delle sottoattività",
+  "subtasksLabel": "sottoattività",
+  "subtaskCount": "{{count}} sottoattività",
+  "subtaskHierarchyInfo": "Se selezionato, le sottoattività vengono salvate sotto l’attività principale. Altrimenti vengono salvate come attività principali separate."
+}

@@ -15,12 +15,6 @@ jest.mock('../config/db', () => ({
   },
 }));
 
-jest.mock('../shared/project-role-permissions', () => ({
-  __esModule: true,
-  checkProjectRolePermission: jest.fn().mockResolvedValue({ allowed: true, roleName: 'Member' }),
-  checkTaskRolePermission: jest.fn().mockResolvedValue({ allowed: true, roleName: 'Member' }),
-}));
-
 import db from '../config/db';
 import verifyGuestViewAccess from '../middlewares/verify-guest-view-access';
 import { verifyNonGuestProjectAccess } from '../middlewares/verify-project-access';
