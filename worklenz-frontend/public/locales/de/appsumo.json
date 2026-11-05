@@ -1,8 +1,52 @@
 {
   "popup": {
-    "imageAlt": "Exklusives AppSumo-Angebot",
-    "title": "Exklusives AppSumo-Angebot",
-    "message": "Als Inhaber eines AppSumo-Lifetime-Deals erhalten Sie einen speziellen Rabatt auf Ihr Upgrade. Verpassen Sie es nicht!",
-    "cta": "Mein Angebot ansehen"
+    "regionLabel": "Business-Plan-Angebot",
+    "tag": "AppSumo-Mitgliederangebot",
+    "titleLine1": "Schluss mit Limits.",
+    "titleHighlight": "Führe dein ganzes Team mit Business.",
+    "subtitle": "Erkenne, wo Arbeit stecken bleibt, halte Kunden auf dem Laufenden und verfolge das Budget jedes Projekts.",
+    "features": {
+      "advancedReporting": {
+        "title": "Erweiterte Berichte: Velocity und Cumulative Flow",
+        "description": "Engpässe früh erkennen und Sprints mit echten Lieferdaten planen"
+      },
+      "clientPortal": {
+        "title": "Kundenportal",
+        "description": "Halte Kunden an einem Ort auf dem Laufenden"
+      },
+      "finance": {
+        "title": "Finanzzugang",
+        "description": "Projektkosten und Budgets einsehen"
+      },
+      "customColumns": {
+        "title": "Unbegrenzte benutzerdefinierte Spalten",
+        "description": "Verfolge Daten auf deine Weise"
+      },
+      "largeFiles": {
+        "title": "Große Dateien handhaben",
+        "description": "Große Dateien ohne Umwege teilen"
+      },
+      "chatHistory": {
+        "title": "Langer Chatverlauf",
+        "description": "Frühere Entscheidungen schnell finden"
+      }
+    },
+    "badgePercent": "50%",
+    "badgeOff": "RABATT",
+    "badgeForLife": "AUF LEBENSZEIT",
+    "urgency": "Zeitlich begrenztes Angebot",
+    "monthly": "Monatlich",
+    "annual": "Jährlich",
+    "billingAria": "Abrechnungszeitraum",
+    "perUserMonth": "pro aktivem Nutzer / Monat",
+    "regularPrice": "Regulärer Preis",
+    "perUserMonthShort": "pro Nutzer / Monat",
+    "youSavePrefix": "Du sparst",
+    "saveAmount": "${{amount}} pro Nutzer jeden Monat",
+    "forLifeSuffix": ", auf Lebenszeit.",
+    "cta": "Auf Business upgraden",
+    "fineMonthly": "Sichere dir 50% Rabatt auf Lebenszeit. Monatliches Abo, keine langfristige Bindung.",
+    "fineAnnual": "Sichere dir 50% Rabatt auf Lebenszeit beim Jahresplan.",
+    "closeAria": "Angebot schließen"
   }
 }

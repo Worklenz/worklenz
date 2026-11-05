@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Flex, Table, Tag, Typography } from '@/shared/antd-imports';
+import { Flex, Table, Tag, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
@@ -39,6 +39,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
   loading,
 }) => {
   const { t } = useTranslation('reporting-analytics');
+  const { token } = theme.useToken();
 
   const columns: ColumnsType<BudgetTrackingRow> = useMemo(
     () => [
@@ -46,6 +47,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         title: t('btColProject', { defaultValue: 'Project' }),
         dataIndex: 'project_name',
         key: 'project_name',
+        width: 200,
         ellipsis: true,
         sorter: (a, b) => a.project_name.localeCompare(b.project_name),
         render: (name: string, record) => (
@@ -67,6 +69,7 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
         title: t('btColClient', { defaultValue: 'Client' }),
         dataIndex: 'client_name',
         key: 'client_name',
+        width: 150,
         ellipsis: true,
         sorter: (a, b) => (a.client_name || '').localeCompare(b.client_name || ''),
         render: (value: string | null) =>
@@ -158,10 +161,27 @@ export const BudgetTrackingTable: React.FC<BudgetTrackingTableProps> = ({
     [t]
   );
 
+  const borderedColumns = columns.map((column) => ({
+    ...column,
+    onCell: () => ({
+      style: {
+        borderInlineEnd: `1px solid ${token.colorBorder}`,
+        borderBottom: `1px solid ${token.colorBorder}`,
+      },
+    }),
+    onHeaderCell: () => ({
+      style: {
+        borderInlineEnd: `1px solid ${token.colorBorder}`,
+        borderBottom: `1px solid ${token.colorBorder}`,
+      },
+    }),
+  }));
+
   return (
     <Table<BudgetTrackingRow>
+      bordered
       rowKey={row => row.project_id}
-      columns={columns}
+      columns={borderedColumns}
       dataSource={projects}
       loading={loading}
       pagination={getClientTablePagination(20)}

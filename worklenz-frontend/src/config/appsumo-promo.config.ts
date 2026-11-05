@@ -2,9 +2,25 @@ const APPSUMO_POPUP_LAST_SHOWN_KEY = 'appsumo-popup-last-shown';
 const DEFAULT_APPSUMO_POPUP_FREQUENCY_DAYS = 1;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-export const APPSUMO_POPUP_IMAGE_URL =
+/** Compact image still used in the notifications drawer footer. */
+export const APPSUMO_DRAWER_IMAGE_URL =
   'https://s3.dualstack.us-west-2.amazonaws.com/worklenz.com/appsumo-promo/worklenz-appusumo-70-discount-promo.webp';
-export const APPSUMO_DRAWER_IMAGE_URL = APPSUMO_POPUP_IMAGE_URL;
+
+/** @deprecated Popup is now an interactive banner; kept for any legacy imports. */
+export const APPSUMO_POPUP_IMAGE_URL = APPSUMO_DRAWER_IMAGE_URL;
+
+export type AppSumoBillingPeriod = 'monthly' | 'annual';
+
+/** AppSumo Expansion pricing (USD per active user / month). */
+export const APPSUMO_PROMO_PRICING: Record<
+  AppSumoBillingPeriod,
+  { price: number; regular: number }
+> = {
+  monthly: { price: 6, regular: 12 },
+  annual: { price: 5, regular: 10 },
+};
+
+export const APPSUMO_PROMO_DEFAULT_BILLING: AppSumoBillingPeriod = 'annual';
 
 /**
  * Local pre-check: true if the AppSumo popup was shown more recently than

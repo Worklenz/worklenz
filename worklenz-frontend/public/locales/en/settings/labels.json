@@ -41,5 +41,7 @@
   "updateLabelErrorMessage": "Failed to update label",
   "nameLabel": "Name",
   "namePlaceholder": "Enter label name",
-  "nameRequiredMessage": "Please enter a label name"
+  "nameRequiredMessage": "Please enter a label name",
+  "rowsPerPage": "Rows per page:",
+  "paginationSummary": "{{range}} of {{total}}"
 }

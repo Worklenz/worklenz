@@ -15,5 +15,13 @@
   "cumulativeFlow": "Przepływ skumulowany",
   "sla": "Śledzenie SLA",
   "timeInStatus": "Czas w statusie",
-  "newBadge": "NOWOŚĆ"
+  "newBadge": "NOWOŚĆ",
+  "modePaddleAria": "Przełącz wersję raportów",
+  "modeSwitchTo": "Przełącz na {{mode}}",
+  "modeAdvanced": "Zaawansowane",
+  "modeClassic": "Klasyczne",
+  "reportsTitle": "Raporty",
+  "expandSidebar": "Rozwiń pasek boczny",
+  "collapseSidebar": "Zwiń pasek boczny",
+  "classicNavAria": "Nawigacja klasycznych raportów"
 }

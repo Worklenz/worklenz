@@ -43,6 +43,15 @@
   flex-shrink: 0;
 }
 
+.analytics-sider-mode-paddle {
+  flex-shrink: 0;
+}
+
+.analytics-sider.is-collapsed .analytics-sider-mode-paddle {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .analytics-sider-scroll {
   flex: 1;
   overflow: auto;
@@ -96,7 +105,12 @@
 
 .analytics-sider-link:hover {
   background: var(--analytics-sider-hover-bg);
-  color: inherit;
+  color: var(--analytics-sider-hover-color, #1890ff);
+}
+
+.analytics-sider-link.is-active:hover {
+  background: var(--analytics-sider-active-bg);
+  color: var(--analytics-sider-active-color);
 }
 
 .analytics-sider-link.is-disabled {

@@ -13,6 +13,7 @@ import {
   analyticsPath,
   customReportPath,
   isBusinessAnalyticsReport,
+  isFinanceAnalyticsReport,
 } from '@/lib/reporting/analytics-nav';
 import { analyticsProjectHealthApiService } from '@/api/reporting/analytics-project-health.api.service';
 import { analyticsTimeReportApiService } from '@/api/reporting/analytics-time-report.api.service';
@@ -160,6 +161,7 @@ const AllReportsPage: React.FC = () => {
     authService.getCurrentSession(),
     'advanced_reporting'
   );
+  const canUseFinance = canUseFeature(authService.getCurrentSession(), 'finance_module');
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
@@ -245,9 +247,13 @@ const AllReportsPage: React.FC = () => {
         cfdRes,
         tisRes,
       ] = await Promise.all([
-        settle(analyticsProjectHealthApiService.getSeries({})),
+        canUseFinance
+          ? settle(analyticsProjectHealthApiService.getSeries({}))
+          : Promise.resolve(null),
         settle(analyticsTimeReportApiService.getSeries({})),
-        settle(analyticsBudgetTrackingApiService.getSeries({})),
+        canUseFinance
+          ? settle(analyticsBudgetTrackingApiService.getSeries({}))
+          : Promise.resolve(null),
         settle(analyticsUtilizationApiService.getSeries({})),
         canAdvancedReporting
           ? settle(analyticsVelocityApiService.getSeries({ view_by: 'project' }))
@@ -387,7 +393,7 @@ const AllReportsPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [t, canAdvancedReporting]);
+  }, [t, canAdvancedReporting, canUseFinance]);
 
   const borderColor = isDark ? '#303030' : '#f0f0f0';
   const cardBg = token.colorBgContainer;
@@ -512,7 +518,8 @@ const AllReportsPage: React.FC = () => {
           {cards.map(card => {
             const metrics = getMetrics(card);
             const isBusinessLocked =
-              isBusinessAnalyticsReport(card.key) && !canAdvancedReporting;
+              (isBusinessAnalyticsReport(card.key) && !canAdvancedReporting) ||
+              (isFinanceAnalyticsReport(card.key) && !canUseFinance);
             const reportName = t(card.titleKey, { defaultValue: card.defaultTitle });
             return (
               <button

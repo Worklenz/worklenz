@@ -27,16 +27,19 @@ export const CONTACT_CAN_OPEN_PROJECT_SQL = (contactId: string, projectId: strin
   OR EXISTS (SELECT 1 FROM client_contact_project_access acc
               WHERE acc.client_contact_id = ${contactId} AND acc.project_id = ${projectId}))`;
 
-/** Projects a subject can open. Parameters: $1 contact id, $2 client id, $3 team id. */
-export const SUBJECT_PROJECTS_SQL = `
+/** Projects a subject can open. Arguments are trusted SQL expressions. */
+export const subjectProjectsSql = (contactId: string, clientId: string, teamId: string) => `
   SELECT p.id
     FROM projects p
     JOIN project_client_settings pcs
       ON pcs.project_id = p.id AND pcs.portal_enabled IS TRUE
-   WHERE p.client_id = $2
-     AND p.team_id = $3
-     AND ${CONTACT_CAN_OPEN_PROJECT_SQL("$1", "p.id")}
+   WHERE p.client_id = ${clientId}
+     AND p.team_id = ${teamId}
+     AND ${CONTACT_CAN_OPEN_PROJECT_SQL(contactId, "p.id")}
 `;
+
+/** Projects a subject can open. Parameters: $1 contact id, $2 client id, $3 team id. */
+export const SUBJECT_PROJECTS_SQL = subjectProjectsSql("$1", "$2", "$3");
 
 /** A task is shared only when its settings row says so. No row means Internal Only. */
 export const taskClientVisibleSql = (alias = "t") => `

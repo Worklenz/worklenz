@@ -128,25 +128,3 @@ export async function explainAccessLoss(
   }
 }
 
-/**
- * The subject for a given client user, for the staff-side "Preview as client". Only an Active user
- * can be previewed: an Invited or Deactivated user has nothing to preview.
- */
-export async function loadSubjectByContactId(
-  q: Queryable,
-  teamId: string,
-  contactId: string
-): Promise<ClientSubject | null> {
-  const result = await q.query(
-    `SELECT ${SUBJECT_COLUMNS}
-       FROM client_contacts cc
-       JOIN client_users cu ON cu.id = cc.client_user_id
-       JOIN clients c ON c.id = cc.client_id
-      WHERE cc.id = $1
-        AND cc.team_id = $2
-        AND ${ACTIVE_SUBJECT_SQL}
-      LIMIT 1`,
-    [contactId, teamId]
-  );
-  return result.rows[0] ? toSubject(result.rows[0]) : null;
-}

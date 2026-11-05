@@ -54,6 +54,8 @@ export type WizardAction =
   | { type: 'setSendInvitation'; value: boolean }
   /** Opened from an organization's workspace: skip the choice of method and organization. */
   | { type: 'startForOrganization'; organization: { id: string; name: string } }
+  /** Opened from the portal preview: skip the method choice and start on the matching details step. */
+  | { type: 'startWithMethod'; method: WizardMethod }
   | { type: 'next' }
   | { type: 'back' }
   | { type: 'reset' };
@@ -110,6 +112,12 @@ export const wizardReducer = (state: WizardState, action: WizardAction): WizardS
         ...INITIAL_WIZARD_STATE,
         method: 'existing_organization',
         organization: action.organization,
+        step: 2,
+      };
+    case 'startWithMethod':
+      return {
+        ...INITIAL_WIZARD_STATE,
+        method: action.method,
         step: 2,
       };
     case 'next':

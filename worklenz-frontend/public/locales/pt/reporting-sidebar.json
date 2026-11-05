@@ -15,5 +15,13 @@
   "cumulativeFlow": "Fluxo Cumulativo",
   "sla": "Rastreamento de SLA",
   "timeInStatus": "Tempo em status",
-  "newBadge": "NOVO"
+  "newBadge": "NOVO",
+  "modePaddleAria": "Alternar versão de relatórios",
+  "modeSwitchTo": "Mudar para {{mode}}",
+  "modeAdvanced": "Avançado",
+  "modeClassic": "Clássico",
+  "reportsTitle": "Relatórios",
+  "expandSidebar": "Expandir barra lateral",
+  "collapseSidebar": "Recolher barra lateral",
+  "classicNavAria": "Navegação de relatórios clássicos"
 }

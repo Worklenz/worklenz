@@ -1,0 +1,22 @@
+{
+  "overviewTitle": "Panoramica",
+  "includeArchivedButton": "Includi progetti archiviati",
+  "teamCount": "Team",
+  "teamCountPlural": "Team",
+  "projectCount": "Progetto",
+  "projectCountPlural": "Progetti",
+  "memberCount": "Membro",
+  "memberCountPlural": "Membri",
+  "activeProjectCount": "Progetto attivo",
+  "activeProjectCountPlural": "Progetti attivi",
+  "overdueProjectCount": "Progetto in ritardo",
+  "overdueProjectCountPlural": "Progetti in ritardo",
+  "unassignedMemberCount": "Membro non assegnato",
+  "unassignedMemberCountPlural": "Membri non assegnati",
+  "memberWithOverdueTaskCount": "Membro con attività in ritardo",
+  "memberWithOverdueTaskCountPlural": "Membri con attività in ritardo",
+  "teamsText": "Team",
+  "nameColumn": "Nome",
+  "projectsColumn": "Progetti",
+  "membersColumn": "Membri"
+}

@@ -15,5 +15,13 @@
   "cumulativeFlow": "Cumulative Flow",
   "sla": "SLA Tracking",
   "timeInStatus": "Time in Status",
-  "newBadge": "NEW"
+  "newBadge": "NEW",
+  "modePaddleAria": "Switch reporting version",
+  "modeSwitchTo": "Switch to {{mode}}",
+  "modeAdvanced": "Advanced",
+  "modeClassic": "Classic",
+  "reportsTitle": "Reports",
+  "expandSidebar": "Expand sidebar",
+  "collapseSidebar": "Collapse sidebar",
+  "classicNavAria": "Classic reports navigation"
 }

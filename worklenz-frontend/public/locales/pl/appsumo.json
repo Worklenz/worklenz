@@ -1,8 +1,52 @@
 {
   "popup": {
-    "imageAlt": "Ekskluzywna oferta AppSumo",
-    "title": "Ekskluzywna oferta AppSumo",
-    "message": "Jako posiadacz dożywotniej umowy AppSumo otrzymasz specjalną zniżkę na aktualizację. Nie przegap tej okazji!",
-    "cta": "Zobacz moją ofertę"
+    "regionLabel": "Oferta planu Business",
+    "tag": "Oferta dla członków AppSumo",
+    "titleLine1": "Koniec z limitami.",
+    "titleHighlight": "Prowadź cały zespół na Business.",
+    "subtitle": "Zobacz, gdzie praca się blokuje, informuj klientów i śledź budżet każdego projektu.",
+    "features": {
+      "advancedReporting": {
+        "title": "Zaawansowane raporty: Velocity i Cumulative Flow",
+        "description": "Wcześnie wykrywaj wąskie gardła i planuj sprinty na realnych danych"
+      },
+      "clientPortal": {
+        "title": "Portal klienta",
+        "description": "Informuj klientów w jednym miejscu"
+      },
+      "finance": {
+        "title": "Dostęp do Finansów",
+        "description": "Zobacz koszty i budżety projektu"
+      },
+      "customColumns": {
+        "title": "Nieograniczone kolumny niestandardowe",
+        "description": "Śledź dane po swojemu"
+      },
+      "largeFiles": {
+        "title": "Obsługa dużych plików",
+        "description": "Udostępniaj duże pliki bez obejść"
+      },
+      "chatHistory": {
+        "title": "Długa historia czatu",
+        "description": "Szybko znajduj wcześniejsze decyzje"
+      }
+    },
+    "badgePercent": "50%",
+    "badgeOff": "ZNIŻKI",
+    "badgeForLife": "NA ZAWSZE",
+    "urgency": "Oferta ograniczona czasowo",
+    "monthly": "Miesięcznie",
+    "annual": "Rocznie",
+    "billingAria": "Okres rozliczeniowy",
+    "perUserMonth": "za aktywnego użytkownika / miesiąc",
+    "regularPrice": "Cena regularna",
+    "perUserMonthShort": "za użytkownika / miesiąc",
+    "youSavePrefix": "Oszczędzasz",
+    "saveAmount": "${{amount}} za użytkownika co miesiąc",
+    "forLifeSuffix": ", na zawsze.",
+    "cta": "Ulepsz do Business",
+    "fineMonthly": "Zablokuj 50% zniżki na zawsze. Subskrypcja miesięczna, bez długoterminowego zobowiązania.",
+    "fineAnnual": "Zablokuj 50% zniżki na zawsze w planie Rocznym.",
+    "closeAria": "Odrzuć ofertę"
   }
 }
