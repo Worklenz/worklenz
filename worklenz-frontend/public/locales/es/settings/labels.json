@@ -42,5 +42,7 @@
   "updateLabelErrorMessage": "Error al actualizar la etiqueta",
   "nameLabel": "Nombre",
   "namePlaceholder": "Ingresar nombre de etiqueta",
-  "nameRequiredMessage": "Por favor ingresa un nombre de etiqueta"
+  "nameRequiredMessage": "Por favor ingresa un nombre de etiqueta",
+  "rowsPerPage": "Filas por página:",
+  "paginationSummary": "{{range}} de {{total}}"
 }

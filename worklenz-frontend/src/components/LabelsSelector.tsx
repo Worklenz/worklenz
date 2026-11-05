@@ -11,6 +11,7 @@ import { SocketEvents } from '@/shared/socket-events';
 import { safeTextDisplay } from '@/utils/html-entities';
 import { useAuthService } from '@/hooks/useAuth';
 import { Button, Checkbox, Tag } from '@/components';
+import { useNavigate } from 'react-router-dom';
 
 interface LabelsSelectorProps {
   task: IProjectTask;
@@ -18,6 +19,7 @@ interface LabelsSelectorProps {
 }
 
 const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = false }) => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
@@ -116,6 +118,10 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
     }
   }, [isOpen, updateDropdownPosition]);
 
+  const handleManageLabelsClick = () => {
+    setIsOpen(false);
+    navigate('/worklenz/settings/labels');
+  };
   const handleDropdownToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -179,14 +185,13 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
         className={`
           w-5 h-5 rounded border border-dashed flex items-center justify-center
           transition-colors duration-200
-          ${
-            isOpen
-              ? isDarkMode
-                ? 'border-blue-500 bg-blue-900/20 text-blue-400'
-                : 'border-blue-500 bg-blue-50 text-blue-600'
-              : isDarkMode
-                ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400'
-                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
+          ${isOpen
+            ? isDarkMode
+              ? 'border-blue-500 bg-blue-900/20 text-blue-400'
+              : 'border-blue-500 bg-blue-50 text-blue-600'
+            : isDarkMode
+              ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400'
+              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
           }
         `}
       >
@@ -217,11 +222,10 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                 placeholder={t('searchLabelsPlaceholder')}
                 className={`
                 w-full px-2 py-1 text-xs rounded border
-                ${
-                  isDarkMode
+                ${isDarkMode
                     ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:border-blue-500'
                     : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
-                }
+                  }
                 focus:outline-none focus:ring-1 focus:ring-blue-500
               `}
               />
@@ -245,7 +249,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                     <div style={{ pointerEvents: 'none' }}>
                       <Checkbox
                         checked={checkLabelSelected(label.id || '')}
-                        onChange={() => {}} // Empty handler since we handle click on the div
+                        onChange={() => { }} // Empty handler since we handle click on the div
                         isDarkMode={isDarkMode}
                       />
                     </div>
@@ -275,11 +279,10 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                         onClick={handleCreateLabel}
                         className={`
                         mt-2 px-3 py-1 text-xs rounded border transition-colors
-                        ${
-                          isDarkMode
+                        ${isDarkMode
                             ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
                             : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-                        }
+                          }
                       `}
                       >
                         {t('createLabelButton', { name: searchQuery.trim() })}
@@ -297,12 +300,17 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
 
             {/* Footer */}
             <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-              <div
-                className={`flex items-center justify-center gap-1 px-2 py-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+              <button
+                type="button"
+                onClick={handleManageLabelsClick}
+                className={`flex w-full items-center justify-center gap-1 rounded px-2 py-1 text-xs transition-colors ${isDarkMode
+                    ? 'text-gray-400 hover:bg-gray-700 hover:text-blue-400'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-blue-600'
+                  }`}
               >
                 <TagOutlined />
                 {t('manageLabelsPath')}
-              </div>
+              </button>
             </div>
           </div>,
           document.body
