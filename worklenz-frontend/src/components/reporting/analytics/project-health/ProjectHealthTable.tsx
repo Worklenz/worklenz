@@ -138,14 +138,12 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
         ],
         onFilter: (value, record) => confidenceTone(record.delivery_confidence) === value,
         render: (_: unknown, row) => {
-          const tone = confidenceTone(row.delivery_confidence);
-          const fallback = CONFIDENCE_FALLBACK[tone];
-          const label = t(fallback.labelKey, { defaultValue: fallback.defaultLabel });
+          const confidence = CONFIDENCE_FALLBACK[confidenceTone(row.delivery_confidence)];
           const note = row.delivery_confidence_note?.trim();
           return (
-            <Flex vertical gap={2} style={{ minWidth: 0 }}>
-              <Tag color={fallback.color} style={{ width: 'fit-content', marginInlineEnd: 0 }}>
-                {label}
+            <Flex vertical gap={4}>
+              <Tag color={confidence.color} style={{ alignSelf: 'flex-start', marginInlineEnd: 0 }}>
+                {t(confidence.labelKey, { defaultValue: confidence.defaultLabel })}
               </Tag>
               {note ? (
                 <Text
@@ -274,11 +272,31 @@ export const ProjectHealthTable: React.FC<ProjectHealthTableProps> = ({
     ],
     [t, token.colorText, token.colorTextSecondary]
   );
+  const borderedColumns: ColumnsType<ProjectHealthRow> = useMemo(
+    () =>
+      columns.map((column) => ({
+        ...column,
+        onCell: () => ({
+          style: {
+            borderInlineEnd: `1px solid ${token.colorBorder}`,
+            borderBottom: `1px solid ${token.colorBorder}`,
+          },
+        }),
+        onHeaderCell: () => ({
+          style: {
+            borderInlineEnd: `1px solid ${token.colorBorder}`,
+            borderBottom: `1px solid ${token.colorBorder}`,
+          },
+        }),
+      })),
+    [columns, token.colorBorder]
+  );
 
   return (
     <Table<ProjectHealthRow>
+      bordered
       rowKey="project_id"
-      columns={columns}
+      columns={borderedColumns}
       dataSource={projects}
       loading={loading}
       pagination={getClientTablePagination(20)}

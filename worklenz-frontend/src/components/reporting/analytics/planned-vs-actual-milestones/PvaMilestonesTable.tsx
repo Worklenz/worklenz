@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Table, Typography } from '@/shared/antd-imports';
+import { Table, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
@@ -26,6 +26,7 @@ export const PvaMilestonesTable: React.FC<PvaMilestonesTableProps> = ({
   emptyText: emptyTextProp,
 }) => {
   const { t } = useTranslation('reporting-analytics');
+  const { token } = theme.useToken();
 
   const emptyText = (
     <Text type="secondary">
@@ -40,6 +41,7 @@ export const PvaMilestonesTable: React.FC<PvaMilestonesTableProps> = ({
         title: t('pvaMsColMilestone', { defaultValue: 'Milestone' }),
         dataIndex: 'milestone_name',
         key: 'milestone_name',
+        width: 250,
         ellipsis: true,
         sorter: (a, b) => a.milestone_name.localeCompare(b.milestone_name),
       },
@@ -47,6 +49,7 @@ export const PvaMilestonesTable: React.FC<PvaMilestonesTableProps> = ({
         title: t('pvaMsColProject', { defaultValue: 'Project' }),
         dataIndex: 'project_name',
         key: 'project_name',
+        width: 250,
         ellipsis: true,
         sorter: (a, b) => a.project_name.localeCompare(b.project_name),
       },
@@ -100,10 +103,27 @@ export const PvaMilestonesTable: React.FC<PvaMilestonesTableProps> = ({
     [t]
   );
 
+  const borderedColumns = columns.map((column) => ({
+  ...column,
+  onCell: () => ({
+    style: {
+      borderInlineEnd: `1px solid ${token.colorBorder}`,
+      borderBottom: `1px solid ${token.colorBorder}`,
+    },
+  }),
+  onHeaderCell: () => ({
+    style: {
+      borderInlineEnd: `1px solid ${token.colorBorder}`,
+      borderBottom: `1px solid ${token.colorBorder}`,
+    },
+  }),
+}));
+
   return (
     <Table<PlannedVsActualMilestonesRow>
+      bordered
       rowKey="milestone_id"
-      columns={columns}
+      columns={borderedColumns}
       dataSource={milestones}
       loading={loading}
       pagination={milestones.length > 0 ? getClientTablePagination(20) : false}
