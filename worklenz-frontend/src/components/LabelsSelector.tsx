@@ -11,7 +11,7 @@ import { SocketEvents } from '@/shared/socket-events';
 import { safeTextDisplay } from '@/utils/html-entities';
 import { useAuthService } from '@/hooks/useAuth';
 import { Button, Checkbox, Tag } from '@/components';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 interface LabelsSelectorProps {
   task: IProjectTask;
@@ -19,7 +19,6 @@ interface LabelsSelectorProps {
 }
 
 const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = false }) => {
-  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
@@ -120,10 +119,6 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
     }
   }, [isOpen, updateDropdownPosition]);
 
-  const handleManageLabelsClick = () => {
-    setIsOpen(false);
-    navigate('/worklenz/settings/labels');
-  };
   const handleDropdownToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -303,9 +298,9 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
             {/* Footer */}
             {isOwnerOrAdmin && (
               <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-                <button
-                  type="button"
-                  onClick={handleManageLabelsClick}
+                <Link
+                  to="/worklenz/settings/labels"
+                  onClick={() => setIsOpen(false)}
                   className={`flex w-full items-center justify-center gap-1 rounded px-2 py-1 text-xs transition-colors ${isDarkMode
                       ? 'text-gray-400 hover:bg-gray-700 hover:text-blue-400'
                       : 'text-gray-500 hover:bg-gray-50 hover:text-blue-600'
@@ -313,7 +308,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                 >
                   <TagOutlined />
                   {t('manageLabelsPath')}
-                </button>
+                </Link>
               </div>
             )}
           </div>,
