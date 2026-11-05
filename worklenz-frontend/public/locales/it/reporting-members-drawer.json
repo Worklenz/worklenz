@@ -31,6 +31,7 @@
   "billableText": "Fatturabile",
   "nonBillableText": "Non fatturabile",
   "billableAndNonBillableText": "Tutte",
+  "noneSelected": "Nessuna selezione",
   "timeLogsEmptyPlaceholder": "Nessuna registrazione del tempo da mostrare",
   "loggedText": "Registrato",
   "forText": "per",

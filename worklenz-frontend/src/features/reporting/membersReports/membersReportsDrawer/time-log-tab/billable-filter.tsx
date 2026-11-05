@@ -16,19 +16,19 @@ const BillableFilter = ({ billable, onBillableChange }: BillableFilterProps) => 
   const { t } = useTranslation('reporting-members-drawer');
 
   const getButtonLabel = () => {
-  const { billable: isBillable, nonBillable } = billable;
+    const { billable: isBillable, nonBillable } = billable;
 
-  if (isBillable && nonBillable) {
-    return t('billableAndNonBillableText') || 'All';
-  }
-  if (isBillable) {
-    return t('billableText') || 'Billable';
-  }
-  if (nonBillable) {
-    return t('nonBillableText') || 'Non Billable';
-  }
-  return t('billableButton') || 'Billable';
-};
+    if (isBillable && nonBillable) {
+      return `${t('billableText')} (${t('billableAndNonBillableText')})`;
+    }
+    if (isBillable) {
+      return t('billableText') || 'Billable';
+    }
+    if (nonBillable) {
+      return t('nonBillableText') || 'Non Billable';
+    }
+    return t('noneSelected');
+  };
 
   // billable dropdown items
   type BillableFieldsType = {
@@ -81,6 +81,7 @@ const BillableFilter = ({ billable, onBillableChange }: BillableFilterProps) => 
       overlayClassName="custom-dropdown"
       trigger={['click']}
       popupRender={() => billableDropdownContent}
+      open={isDropdownOpen}
       onOpenChange={open => setIsDropdownOpen(open)}
     >
       <Button

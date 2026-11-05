@@ -31,6 +31,7 @@
   "billableText": "Abrechenbar",
   "nonBillableText": "Nicht abrechenbar",
   "billableAndNonBillableText": "Alle",
+  "noneSelected": "Nichts ausgewählt",
   "timeLogsEmptyPlaceholder": "Keine Zeiterfassungen vorhanden",
   "loggedText": "Erfasst",
   "forText": "für",
