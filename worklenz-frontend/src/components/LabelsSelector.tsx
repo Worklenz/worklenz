@@ -300,7 +300,10 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
               <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
                 <Link
                   to="/worklenz/settings/labels"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => {
+                    setIsOpen(false);
+                    buttonRef.current?.focus();
+                  }}
                   className={`flex w-full items-center justify-center gap-1 rounded px-2 py-1 text-xs transition-colors ${isDarkMode
                       ? 'text-gray-400 hover:bg-gray-700 hover:text-blue-400'
                       : 'text-gray-500 hover:bg-gray-50 hover:text-blue-600'
