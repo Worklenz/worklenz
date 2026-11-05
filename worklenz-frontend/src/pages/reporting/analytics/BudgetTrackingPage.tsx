@@ -1,3 +1,4 @@
+import { useScopedAnalyticsProjectSeed } from '@/hooks/useScopedAnalyticsProjectSeed';
 import { useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
@@ -107,7 +108,11 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
 
   const chartRef = useRef<BudgetTrackingChartHandle>(null);
   /** Tracks team keys we already seeded with the latest-20 project default. */
-  const seededProjectsForTeamsRef = useRef<string>('');
+  const projectOptionsScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
+  const seededProjectsForTeamsRef = useScopedAnalyticsProjectSeed(projectOptionsScope);
+  const currentProjectScopeRef = useRef(projectOptionsScope);
+  currentProjectScopeRef.current = projectOptionsScope;
+  const dataScopeRef = useRef<string | null>(null);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
   const skipDefaultTemplate = hasRestoredFilters;
 
@@ -255,7 +260,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     } catch {
       if (isCurrent()) setProjectOptions([]);
     }
-  }, []);
+  }, [seededProjectsForTeamsRef]);
 
   const loadSeries = useCallback(async () => {
     if (!hasSelection) {
@@ -266,7 +271,9 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     setError(null);
     try {
       const res = await analyticsBudgetTrackingApiService.getSeries(filters);
+      if (currentProjectScopeRef.current !== projectOptionsScope) return;
       if (res.done && res.body) {
+        dataScopeRef.current = projectOptionsScope;
         setData(res.body);
       } else {
         setError(
@@ -278,6 +285,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
         setData(null);
       }
     } catch {
+      if (currentProjectScopeRef.current !== projectOptionsScope) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -285,9 +293,9 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
       );
       setData(null);
     } finally {
-      setLoading(false);
+      if (currentProjectScopeRef.current === projectOptionsScope) setLoading(false);
     }
-  }, [filters, hasSelection, t]);
+  }, [filters, hasSelection, t, projectOptionsScope]);
 
   useEffect(() => {
     void loadTeams();
@@ -295,7 +303,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
 
   useAnalyticsProjectOptionsLoader(
     selectedTeamIds,
-    JSON.stringify([session?.team_id, session?.id, customTemplateId]),
+    projectOptionsScope,
     loadProjectsForTeams
   );
 
@@ -310,14 +318,14 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
       seededProjectsForTeamsRef.current = teamKey;
       return;
     }
-    if (!data?.projects?.length) return;
+    if (dataScopeRef.current !== projectOptionsScope || !data?.projects?.length) return;
     if (seededProjectsForTeamsRef.current === teamKey) return;
 
     const topIds = latestUpdatedProjectIds(data.projects);
     if (topIds.length === 0) return;
     seededProjectsForTeamsRef.current = teamKey;
     setAutomaticProjectIds(topIds);
-  }, [data, selectedProjectIds.length, selectedTeamIds]);
+  }, [data, selectedProjectIds.length, selectedTeamIds, projectOptionsScope, seededProjectsForTeamsRef, setAutomaticProjectIds]);
 
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;

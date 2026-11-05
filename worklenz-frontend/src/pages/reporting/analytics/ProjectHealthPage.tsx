@@ -1,3 +1,4 @@
+import { useScopedAnalyticsProjectSeed } from '@/hooks/useScopedAnalyticsProjectSeed';
 import { useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
@@ -109,7 +110,11 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
 
   const chartRef = useRef<ProjectHealthChartHandle>(null);
   /** Tracks team keys we already seeded with the latest-20 project default. */
-  const seededProjectsForTeamsRef = useRef<string>('');
+  const projectOptionsScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
+  const seededProjectsForTeamsRef = useScopedAnalyticsProjectSeed(projectOptionsScope);
+  const currentProjectScopeRef = useRef(projectOptionsScope);
+  currentProjectScopeRef.current = projectOptionsScope;
+  const dataScopeRef = useRef<string | null>(null);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
   const skipDefaultTemplate = hasRestoredFilters;
 
@@ -277,7 +282,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     } catch {
       if (isCurrent()) setProjectOptions([]);
     }
-  }, []);
+  }, [seededProjectsForTeamsRef]);
 
   const loadSeries = useCallback(async () => {
     if (!hasSelection) {
@@ -288,7 +293,9 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     setError(null);
     try {
       const res = await analyticsProjectHealthApiService.getSeries(filters);
+      if (currentProjectScopeRef.current !== projectOptionsScope) return;
       if (res.done && res.body) {
+        dataScopeRef.current = projectOptionsScope;
         setData(res.body);
       } else {
         setError(
@@ -300,6 +307,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
         setData(null);
       }
     } catch {
+      if (currentProjectScopeRef.current !== projectOptionsScope) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -307,9 +315,9 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       );
       setData(null);
     } finally {
-      setLoading(false);
+      if (currentProjectScopeRef.current === projectOptionsScope) setLoading(false);
     }
-  }, [filters, hasSelection, t]);
+  }, [filters, hasSelection, t, projectOptionsScope]);
 
   useEffect(() => {
     void loadTeams();
@@ -317,7 +325,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
 
   useAnalyticsProjectOptionsLoader(
     selectedTeamIds,
-    JSON.stringify([session?.team_id, session?.id, customTemplateId]),
+    projectOptionsScope,
     loadProjectsForTeams
   );
 
@@ -332,14 +340,14 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       seededProjectsForTeamsRef.current = teamKey;
       return;
     }
-    if (!data?.projects?.length) return;
+    if (dataScopeRef.current !== projectOptionsScope || !data?.projects?.length) return;
     if (seededProjectsForTeamsRef.current === teamKey) return;
 
     const topIds = latestUpdatedProjectIds(data.projects);
     if (topIds.length === 0) return;
     seededProjectsForTeamsRef.current = teamKey;
     setAutomaticProjectIds(topIds);
-  }, [data, selectedProjectIds.length, selectedTeamIds]);
+  }, [data, selectedProjectIds.length, selectedTeamIds, projectOptionsScope, seededProjectsForTeamsRef, setAutomaticProjectIds]);
 
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;
