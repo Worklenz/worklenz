@@ -171,5 +171,12 @@
   "nextPage": "Pagina successiva",
   "lastPage": "Ultima pagina",
   "selectAll": "Seleziona tutto",
-  "clearAll": "Deseleziona tutto"
+  "clearAll": "Deseleziona tutto",
+  "sidebarTrialDays_one": "{{count}} giorno",
+  "sidebarTrialDays_other": "{{count}} giorni",
+  "sidebarTrialLabel": "Prova",
+  "sidebarUpgradeLabel": "PASSA A PRO",
+  "sidebarUpgradeTooltip": "Passa a un piano superiore",
+  "sidebarTrialTooltip_one": "Resta {{count}} giorno di prova",
+  "sidebarTrialTooltip_other": "Restano {{count}} giorni di prova"
 }

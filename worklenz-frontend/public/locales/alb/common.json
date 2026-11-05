@@ -171,5 +171,12 @@
   "nextPage": "Faqja tjetër",
   "lastPage": "Faqja e fundit",
   "selectAll": "Zgjidh të gjitha",
-  "clearAll": "Pastro të gjitha"
+  "clearAll": "Pastro të gjitha",
+  "sidebarTrialDays_one": "{{count}} ditë",
+  "sidebarTrialDays_other": "{{count}} ditë",
+  "sidebarTrialLabel": "Provë",
+  "sidebarUpgradeLabel": "PËRMIRËSO",
+  "sidebarUpgradeTooltip": "Përmirëso planin",
+  "sidebarTrialTooltip_one": "Ka mbetur {{count}} ditë provë",
+  "sidebarTrialTooltip_other": "Kanë mbetur {{count}} ditë provë"
 }
