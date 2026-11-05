@@ -24,7 +24,6 @@ import {
 } from '@ant-design/icons';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useIsAdminSurfaceReadOnly, withoutRowActionColumns } from '@/hooks/useIsAdminSurfaceReadOnly';
 import { downloadPortalPdf } from '@/utils/download-portal-pdf';
 import { Link, useNavigate } from 'react-router-dom';
 import TablePagination from '@/components/TablePagination';
@@ -127,7 +126,6 @@ const PaidAmountInput = ({
 export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps = {}) => {
   // localization
   const { t } = useTranslation('client-portal-invoices');
-  const isReadOnly = useIsAdminSurfaceReadOnly();
   const navigate = useNavigate();
   const { token } = theme.useToken();
 
@@ -649,12 +647,12 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
           <Text type="secondary">
             {hasActiveFilters
               ? t('noInvoicesMatchingFilters', {
-                  defaultValue: 'No invoices match the current filters.',
-                })
+                defaultValue: 'No invoices match the current filters.',
+              })
               : t('noInvoicesDescription', {
-                  defaultValue:
-                    "You haven't created any invoices yet. Create your first invoice to start billing clients.",
-                })}
+                defaultValue:
+                  "You haven't created any invoices yet. Create your first invoice to start billing clients.",
+              })}
           </Text>
         </Flex>
       }
@@ -811,20 +809,20 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
       >
         {showsTable ? (
           <PortalLoadingOverlay loading={isFetching}>
-          <Table
-            columns={isReadOnly ? withoutRowActionColumns(columns) : columns}
-            dataSource={invoices}
-            rowKey="id"
-            size="middle"
-            sticky
-            pagination={false}
-            onChange={handleTableChange}
-            scroll={embedded ? { x: 'max-content' } : { x: 'max-content', y: tableScrollY }}
-            onRow={record => ({
-              onClick: () => navigate(`/worklenz/client-portal/invoices/${record.id}`),
-              style: { cursor: 'pointer' },
-            })}
-          />
+            <Table
+              columns={columns}
+              dataSource={invoices}
+              rowKey="id"
+              size="middle"
+              sticky
+              pagination={false}
+              onChange={handleTableChange}
+              scroll={embedded ? { x: 'max-content' } : { x: 'max-content', y: tableScrollY }}
+              onRow={record => ({
+                onClick: () => navigate(`/worklenz/client-portal/invoices/${record.id}`),
+                style: { cursor: 'pointer' },
+              })}
+            />
           </PortalLoadingOverlay>
         ) : (
           renderEmptyState()
@@ -844,10 +842,11 @@ export const InvoicesTable = ({ clientId, embedded = false }: InvoicesTableProps
             pageSize={limit}
             total={totalInvoices}
             pageSizeOptions={PAGE_SIZE_OPTIONS}
+            variant="dropdown"
             onPageChange={handlePaginationChange}
             rowsPerPageLabel={t('rowsPerPageLabel', { defaultValue: 'Rows per page:' })}
             renderSummary={(range, total) => {
-              const [from, to] = range.split('-');
+              const [from, to] = range.split(/\s*[-–]\s*/);
               return t('paginationSummary', {
                 from,
                 to,

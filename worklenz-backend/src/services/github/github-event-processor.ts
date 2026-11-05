@@ -7,7 +7,7 @@ import {
 } from "./github-automation.service";
 import { matchesLabelFilter } from "./github-issue-mapping";
 import { importGithubIssue, issueLabelNames } from "./github-issue-import.service";
-import { IGithubIssue } from "./github-app.service";
+import { GithubAppService, IGithubIssue } from "./github-app.service";
 
 type Json = Record<string, any>;
 
@@ -274,12 +274,38 @@ async function handlePullRequest(payload: Json): Promise<void> {
     ],
   );
 
-  const prId = result.rows[0]?.id ?? existing.rows[0]?.id;
-  if (prId && tasks.length) await linkTasks(tasks, { type: "pull_request", id: prId });
+  // An older event must not change links derived from the current PR contents.
+  const prId = result.rows[0]?.id;
+  if (!prId) return;
+  const previouslyLinked = await tasksLinkedToPullRequest(repository.id, pr.number);
+  await db.query(
+    `DELETE FROM github_task_links WHERE pull_request_id = $1 AND NOT (task_id = ANY($2::UUID[]))`,
+    [prId, tasks.map(task => task.taskId)],
+  );
+  if (tasks.length) await linkTasks(tasks, { type: "pull_request", id: prId });
 
   // Reconcile every issue tied to this PR, including links made by earlier events.
   const linked = await tasksLinkedToPullRequest(repository.id, pr.number);
-  await applyAutomation(linked, repository.id, pr.merged ? pr.merged_by?.login || pr.user?.login : pr.user?.login);
+  await applyAutomation([...linked, ...previouslyLinked], repository.id, pr.merged ? pr.merged_by?.login || pr.user?.login : pr.user?.login);
+}
+
+/** Refresh tracked PRs after an interruption, using the same processing path as webhooks. */
+export async function refreshTrackedPullRequests(integrationId: string, installationId: number): Promise<void> {
+  const result = await db.query(
+    `SELECT r.github_repo_id, r.full_name, r.default_branch, r.is_private, p.number
+     FROM github_repositories r JOIN github_pull_requests p ON p.repository_id = r.id
+     WHERE r.integration_id = $1 AND r.is_available = TRUE
+       AND EXISTS (SELECT 1 FROM github_project_repositories pr WHERE pr.repository_id = r.id)`,
+    [integrationId],
+  );
+  for (const row of result.rows) {
+    const pullRequest = await GithubAppService.getPullRequest(installationId, row.full_name, row.number);
+    await handlePullRequest({
+      installation: { id: installationId },
+      repository: { id: row.github_repo_id, full_name: row.full_name, default_branch: row.default_branch, private: row.is_private },
+      pull_request: pullRequest,
+    });
+  }
 }
 
 async function handlePullRequestReview(payload: Json): Promise<void> {
@@ -372,11 +398,14 @@ async function handleInstallation(payload: Json): Promise<void> {
   const status =
     payload.action === "deleted" ? "disconnected" : payload.action === "suspend" ? "suspended" : payload.action === "unsuspend" ? "active" : null;
   if (!status) return;
-  await db.query(
+  const result = await db.query(
     `UPDATE github_integrations SET status = $2, updated_at = NOW()
-     WHERE installation_id = $1 AND status <> 'disconnected'`,
+     WHERE installation_id = $1 AND status <> 'disconnected' RETURNING id`,
     [installationId, status],
   );
+  if (status === "active" && result.rows[0]) {
+    await refreshTrackedPullRequests(result.rows[0].id, installationId);
+  }
 }
 
 async function handleInstallationRepositories(payload: Json): Promise<void> {

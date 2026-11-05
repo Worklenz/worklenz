@@ -19,15 +19,21 @@ import phoneNumberValidator from "../../middlewares/validators/phone-number-vali
 import { requireFeature } from "../../shared/entitlements/gates";
 import { ServerResponse } from "../../models/server-response";
 import PortalProjectsController from "../../controllers/client-portal/v2/portal-projects-controller";
-import { clientsReadOnlyValidator } from "../../middlewares/validators/organization-permission-validator";
 
 const clientsApiRouter = express.Router();
 
-// Client Portal management: reads need "View clients", writes stay Owner/Admin-only.
+// Client Portal management requires an owner or admin.
 // Chats are excluded because Home > Inbox lets every member message clients.
+// Project client-team access uses its own authorization check.
 clientsApiRouter.use("/portal", (req, res, next) => {
   if (req.path.startsWith("/chats")) return next();
-  return clientsReadOnlyValidator(req, res, next);
+  if (
+    req.method === "GET" &&
+    /^\/v2\/projects\/[^/]+\/access\/?$/.test(req.path)
+  ) {
+    return next();
+  }
+  return teamOwnerOrAdminValidator(req, res, next);
 });
 
 /**
@@ -61,16 +67,16 @@ clientsApiRouter.delete("/:id", teamOwnerOrAdminValidator, idParamValidator, saf
 clientsApiRouter.use("/portal", requireFeature("client_portal"));
 clientsApiRouter.use("/:clientId/invoices", requireFeature("client_portal_invoices"));
 
-// Read-only Client's team list for the project Members tab. Registered before the Owner/Admin
-// portal guard so eligible project members can load assigned client users when allowed.
+// Read-only Client's team list for the project Members tab. The /portal "View clients"
+// gate skips this GET (see above); canViewClientTeamValidator enforces project membership
+// plus members_can_view_client_team (or Owner/Admin/Team Lead/PM). Registered before the
+// v2 admin router so this handler wins over the Owner/Admin-oriented duplicate.
 clientsApiRouter.get(
   "/portal/v2/projects/:projectId/access",
   canViewClientTeamValidator,
   safeControllerFunction(PortalProjectsController.access)
 );
 
-// Role checks for /portal/* are applied above (reads need "View clients", writes are Owner/Admin-only),
-// so no further blanket Owner/Admin guard here: it would defeat "View clients" and the chats exception.
 
 // Client Portal v2 admin API (roles, settings, projects, approvals, change requests, discussions,
 // audit log, preview). Namespaced under /v2 so it never collides with the v1 routes below.

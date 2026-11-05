@@ -435,6 +435,56 @@ const CurrentPlanDetails = () => {
     );
   }, [billingInfo, t]);
 
+  const renderLtdWithPaidExpansion = useCallback(() => {
+    if (!billingInfo) return null;
+
+    const billingPeriodLabel =
+      billingInfo.billing_type === 'year'
+        ? t('perSeatYear', { defaultValue: 'per seat/year' })
+        : t('perSeatMonth', { defaultValue: 'per seat/month' });
+
+    return (
+      <Flex vertical gap={16}>
+        <Flex vertical gap={4}>
+          <Typography.Text type="secondary">
+            {t('includedPlan', { defaultValue: 'Included plan' })}
+          </Typography.Text>
+          <Typography.Text strong>
+            {t('appsumoLifetimeDeal', { defaultValue: 'AppSumo Lifetime Deal' })}
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            {t('includedThroughCodes', {
+              defaultValue: 'Included through your redeemed AppSumo codes',
+            })}
+          </Typography.Text>
+        </Flex>
+
+        <Flex vertical gap={4}>
+          <Typography.Text type="secondary">
+            {t('paidAddOn', { defaultValue: 'Paid add-on' })}
+          </Typography.Text>
+          <Typography.Text strong>
+            {billingInfo.paid_plan_name ||
+              t('appsumoExpansion', { defaultValue: 'Business AppSumo Expansion' })}
+          </Typography.Text>
+          {billingInfo.unit_price != null && (
+            <Typography.Text>
+              {billingInfo.default_currency || 'USD'} {billingInfo.unit_price} {billingPeriodLabel}
+            </Typography.Text>
+          )}
+          {billingInfo.paid_subscription_seats != null && (
+            <Typography.Text type="secondary">
+              {t('paidSeats', {
+                count: billingInfo.paid_subscription_seats,
+                defaultValue: 'Paid seats: {{count}}',
+              })}
+            </Typography.Text>
+          )}
+        </Flex>
+      </Flex>
+    );
+  }, [billingInfo, t]);
+
   const checkIfTrialExpired = useCallback(() => {
     if (!billingInfo?.trial_expire_date) return false;
     const today = new Date();
@@ -733,6 +783,13 @@ const CurrentPlanDetails = () => {
   const renderSubscriptionContent = useCallback(() => {
     if (!billingInfo) return null;
 
+    // AppSumo codes remain the account's base entitlement after a Paddle Billing
+    // Expansion purchase. Show both parts explicitly instead of combining the LTD
+    // name with the paid subscription's per-seat price.
+    if (billingInfo.is_ltd_user && billingInfo.billing_provider === 'paddle_billing') {
+      return renderLtdWithPaidExpansion();
+    }
+
     // Handle trial users even when subscription_type is null
     if (billingInfo.trial_in_progress) {
       return renderTrialDetails();
@@ -759,6 +816,7 @@ const CurrentPlanDetails = () => {
   }, [
     billingInfo,
     renderLtdDetails,
+    renderLtdWithPaidExpansion,
     renderTrialDetails,
     renderFreePlan,
     renderPaddleSubscriptionInfo,

@@ -108,7 +108,13 @@
     "messagesLabel": "Messages",
     "notFound": "Discussion not found",
     "onlyTeamSees": "only your team sees this",
-    "pick": "Select a discussion, or start a new one."
+    "pick": "Select a discussion, or start a new one.",
+    "addReaction": "Add reaction",
+    "reactionsLabel": "Reactions",
+    "reactedTooltip": "Click to remove your reaction",
+    "notReactedTooltip": "Click to react with {{emoji}}",
+    "reactFailed": "Could not update reaction.",
+    "team": "Team"
   },
   "retry": "Retry",
   "rowsPerPage": "Rows per page:"

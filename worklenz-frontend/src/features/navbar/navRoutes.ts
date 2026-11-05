@@ -1,14 +1,9 @@
 import { getAddonSlotItems } from '@/addons/addon-slots';
-import {
-  ORGANIZATION_PERMISSIONS,
-  OrganizationPermission,
-} from '@/types/admin-center/permission-schemes.types';
 
 export type NavRoutesType = {
   name: string;
   path: string;
   adminOnly: boolean;
-  requiredPermission?: OrganizationPermission; // Granted via the default permission scheme
   freePlanFeature?: boolean;
   selfHostedExcluded?: boolean;
   teamLeadOnly?: boolean;
@@ -38,8 +33,7 @@ export const navRoutes: NavRoutesType[] = [
   {
     name: 'planner',
     path: '/worklenz/planner',
-    adminOnly: false,
-    requiredPermission: ORGANIZATION_PERMISSIONS.VIEW_PLANNER,
+    adminOnly: true,
     freePlanFeature: false,
   },
   {
@@ -47,26 +41,26 @@ export const navRoutes: NavRoutesType[] = [
     // Bare surface root — resolves to whichever item is pinned as default
     // (or 'clients' if nothing is pinned) via the client-portal index route.
     path: '/worklenz/client-portal',
-    adminOnly: false,
-    requiredPermission: ORGANIZATION_PERMISSIONS.VIEW_CLIENTS,
+    adminOnly: true,
     freePlanFeature: false,
     selfHostedExcluded: true,
   },
   {
     name: 'finance',
     path: '/worklenz/finance',
-    adminOnly: false,
-    requiredPermission: ORGANIZATION_PERMISSIONS.VIEW_FINANCE,
+    adminOnly: true,
     freePlanFeature: false,
   },
   {
     name: 'reporting',
-    // Bare surface root — resolves to whichever item is pinned as default
-    // (or 'overview' if nothing is pinned) via the reporting index route.
-    path: '/worklenz/reporting',
-    adminOnly: false,
-    requiredPermission: ORGANIZATION_PERMISSIONS.VIEW_REPORTS,
+    // Opens the new Reporting & Analytics experience (prototype sidebar).
+    // Classic Owner/Admin reports remain at /worklenz/reporting/overview etc.
+    // Owner/Admin only — Members, Guests, and Team Leads do not see this section
+    // (Team Leads use my-team-reports instead).
+    path: '/worklenz/reporting/analytics',
+    adminOnly: true,
     freePlanFeature: false,
+    guestExcluded: true,
   },
   {
     name: 'my-team-reports',

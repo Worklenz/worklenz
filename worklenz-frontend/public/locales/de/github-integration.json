@@ -77,6 +77,7 @@
       "saveFailed": "Automatisierung konnte nicht aktualisiert werden."
     },
     "connectPrompt": "Verbinden Sie Ihr GitHub-Konto einmal für das ganze Team und verknüpfen Sie dann Repositories mit diesem Projekt.",
+    "disconnectedLinks": "Die unten aufgeführten Repository-Verknüpfungen sind gespeichert, aber GitHub ist nicht verbunden. Verbinden Sie GitHub erneut, um die Nachverfolgung fortzusetzen.",
     "askOwnerNamed": "GitHub ist noch nicht verbunden. Bitten Sie {{name}} oder einen anderen Team-Admin, es zu verbinden.",
     "askOwner": "GitHub ist noch nicht verbunden. Bitten Sie einen Team-Inhaber oder Admin, es zu verbinden."
   },

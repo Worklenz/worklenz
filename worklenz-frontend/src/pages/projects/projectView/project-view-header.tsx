@@ -86,7 +86,7 @@ const ProjectViewHeader = memo(() => {
   const { t } = useTranslation('project-view/project-view-header');
   const dispatch = useAppDispatch();
   const { tab } = useTabSearchParam();
-  const { canAddTask } = useTaskCreationPermission();
+  const { canCreateTask } = useTaskCreationPermission();
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
@@ -641,7 +641,7 @@ const ProjectViewHeader = memo(() => {
       </Tooltip>
     );
 
-    if (permissions.members.add) {
+    if (permissions.members.add && !isGuest) {
       actions.push(
         <Tooltip
           key="invite-tooltip"
@@ -680,7 +680,7 @@ const ProjectViewHeader = memo(() => {
           </Dropdown.Button>
         </Tooltip>
       );
-    } else if (canAddTask) {
+    } else if (canCreateTask && !isGuest) {
       actions.push(
         <Tooltip
           key="create-task-tooltip"
@@ -724,7 +724,7 @@ const ProjectViewHeader = memo(() => {
     creatingTask,
     dropdownItems,
     handleCreateTask,
-    canAddTask,
+    canCreateTask,
     isGuest,
     createTaskLabel,
     createTaskTooltip,
@@ -732,7 +732,7 @@ const ProjectViewHeader = memo(() => {
 
   const pageHeaderTitle = useMemo(
     () => (
-      <Flex gap={4} align="center" wrap className={styles.titleContainer}>
+      <Flex gap={4} align="center" wrap="nowrap" className={styles.titleContainer}>
         <Tooltip title={t('navigateBackTooltip', { defaultValue: 'Go back to projects list' })}>
           <ArrowLeftOutlined
             className={styles.backButton}
@@ -747,9 +747,15 @@ const ProjectViewHeader = memo(() => {
             onClick={handleNavigateToProjects}
           />
         </Tooltip>
-        <Typography.Title level={4} className={styles.projectTitle} style={{ marginBlockEnd: 0, marginInlineStart: 8 }}>
-          {decodeHtmlEntities(selectedProject?.name)}
-        </Typography.Title>
+        <Tooltip title={decodeHtmlEntities(selectedProject?.name)}>
+          <Typography.Title
+            level={4}
+            className={styles.projectTitle}
+            style={{ marginBlockEnd: 0, marginInlineStart: 8 }}
+          >
+            {decodeHtmlEntities(selectedProject?.name)}
+          </Typography.Title>
+        </Tooltip>
         <div className={styles.projectAttributes}>{projectAttributes}</div>
       </Flex>
     ),
@@ -791,7 +797,7 @@ const ProjectViewHeader = memo(() => {
         </div>
       </div>
       {createPortal(
-        <ProjectSettingsModal onClose={() => {}} />,
+        <ProjectSettingsModal onClose={() => { }} />,
         document.body,
         'project-settings-modal'
       )}

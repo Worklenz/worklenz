@@ -92,6 +92,10 @@ export default class AdminCenterBillingController extends WorklenzControllerBase
     data.billing_info.appsumo_business_eligible = subscriptionData?.appsumo_business_eligible === true;
     data.billing_info.billing_provider = subscriptionData?.billing_provider ?? null;
     data.billing_info.subscription_ref = subscriptionData?.subscription_ref ?? null;
+    if (isLtdUser && subscriptionData?.billing_provider === "paddle_billing") {
+      data.billing_info.paid_plan_name = subscriptionData.plan_name ?? null;
+      data.billing_info.paid_subscription_seats = subscriptionData.quantity ?? null;
+    }
 
     return res.status(200).send(new ServerResponse(true, data.billing_info));
   }
@@ -122,18 +126,26 @@ export default class AdminCenterBillingController extends WorklenzControllerBase
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
+    // Billing does not populate Classic payment details. Infer its regular cycle from renewal
+    // and plan frequency until the Billing webhook persists current_billing_period explicitly.
     const q = `SELECT (SELECT name FROM licensing_pricing_plans lpp WHERE id = lus.plan_id),
                       unit_price::numeric,
                       currency,
                       status,
                       quantity,
                       unit_price::numeric * quantity                  AS amount,
-                      (SELECT event_time
+                      CASE WHEN lus.billing_provider = 'paddle_billing' THEN
+                        (NULLIF(lus.next_bill_date, '')::DATE -
+                          CASE (SELECT billing_type FROM licensing_pricing_plans WHERE id = lus.plan_id)
+                            WHEN 'month' THEN INTERVAL '1 month'
+                            WHEN 'year' THEN INTERVAL '1 year'
+                          END)::DATE
+                      ELSE (SELECT event_time
                        FROM licensing_payment_details lpd
                        WHERE lpd.user_id = lus.user_id
                        ORDER BY created_at DESC
-                       LIMIT 1)::DATE                                 AS start_date,
-                      (next_bill_date::DATE - INTERVAL '1 day')::DATE AS end_date
+                       LIMIT 1)::DATE END                             AS start_date,
+                      (NULLIF(next_bill_date, '')::DATE - INTERVAL '1 day')::DATE AS end_date
                FROM licensing_user_subscriptions lus
                WHERE user_id = $1;`;
     const result = await db.query(q, [req.user?.owner_id]);

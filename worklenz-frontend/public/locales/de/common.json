@@ -169,5 +169,14 @@
   "firstPage": "Erste Seite",
   "previousPage": "Vorherige Seite",
   "nextPage": "Nächste Seite",
-  "lastPage": "Letzte Seite"
+  "lastPage": "Letzte Seite",
+  "selectAll": "Alle auswählen",
+  "clearAll": "Alle löschen",
+  "sidebarTrialDays_one": "{{count}} Tag",
+  "sidebarTrialDays_other": "{{count}} Tage",
+  "sidebarTrialLabel": "Testphase",
+  "sidebarUpgradeLabel": "TARIFWECHSEL",
+  "sidebarUpgradeTooltip": "Tarif upgraden",
+  "sidebarTrialTooltip_one": "Noch {{count}} Tag in der Testphase",
+  "sidebarTrialTooltip_other": "Noch {{count}} Tage in der Testphase"
 }

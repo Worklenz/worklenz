@@ -8,5 +8,20 @@
   "logs": "日志",
   "allTasks": "任务",
   "progressTracking": "进度跟踪",
-  "currentOrganizationTooltip": "当前的组织"
+  "currentOrganizationTooltip": "当前的组织",
+  "analyticsGroup": "报告与分析",
+  "dashboards": "仪表板",
+  "velocity": "速度",
+  "cumulativeFlow": "累计流量",
+  "sla": "SLA 跟踪",
+  "timeInStatus": "状态时间",
+  "newBadge": "新",
+  "modePaddleAria": "切换报告版本",
+  "modeSwitchTo": "切换到{{mode}}",
+  "modeAdvanced": "高级",
+  "modeClassic": "经典",
+  "reportsTitle": "报告",
+  "expandSidebar": "展开侧边栏",
+  "collapseSidebar": "折叠侧边栏",
+  "classicNavAria": "经典报告导航"
 }

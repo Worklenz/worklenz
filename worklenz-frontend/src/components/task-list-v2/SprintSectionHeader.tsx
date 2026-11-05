@@ -67,6 +67,7 @@ export const SprintSectionHeader = ({
   const [sprintFormMode, setSprintFormMode] = useState<SprintFormMode | null>(null);
   const [isCreatingSprint, setIsCreatingSprint] = useState(false);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
+  const hasActiveSprint = phaseList.some(phase => phase.sprint_status === 'active');
   const hasNoSprints = phaseList.length === 0;
 
   const dispatch = useAppDispatch();
@@ -84,7 +85,9 @@ export const SprintSectionHeader = ({
     if (!sprint) return Promise.resolve();
     const run = async () => {
       try {
-        await dispatch(updateSprintDetails({ phase: sprint, projectId, details: changes })).unwrap();
+        await dispatch(
+          updateSprintDetails({ phase: sprint, projectId, details: changes })
+        ).unwrap();
         message.success(t('sprintUpdated', { defaultValue: 'Sprint updated' }));
       } catch (error: unknown) {
         if (isAnnouncedApiError(error)) return;
@@ -437,7 +440,7 @@ export const SprintSectionHeader = ({
                   </Button>
                 </>
               )}
-              {isPlannedSprint && (
+              {isPlannedSprint && !hasActiveSprint && (
                 <Button size="small" type="primary" onClick={() => setSprintFormMode('start')}>
                   {t('startSprint', { defaultValue: 'Start sprint' })}
                 </Button>

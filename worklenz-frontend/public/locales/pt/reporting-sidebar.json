@@ -8,5 +8,20 @@
   "logs": "Registros",
   "allTasks": "Tarefas",
   "progressTracking": "Acompanhamento do progresso",
-  "currentOrganizationTooltip": "Organização Atual"
+  "currentOrganizationTooltip": "Organização Atual",
+  "analyticsGroup": "Relatórios e análises",
+  "dashboards": "Painéis",
+  "velocity": "Velocidade",
+  "cumulativeFlow": "Fluxo Cumulativo",
+  "sla": "Rastreamento de SLA",
+  "timeInStatus": "Tempo em status",
+  "newBadge": "NOVO",
+  "modePaddleAria": "Alternar versão de relatórios",
+  "modeSwitchTo": "Mudar para {{mode}}",
+  "modeAdvanced": "Avançado",
+  "modeClassic": "Clássico",
+  "reportsTitle": "Relatórios",
+  "expandSidebar": "Expandir barra lateral",
+  "collapseSidebar": "Recolher barra lateral",
+  "classicNavAria": "Navegação de relatórios clássicos"
 }

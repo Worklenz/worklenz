@@ -1,0 +1,18 @@
+.report-card-preview {
+  width: 100%;
+  height: 72px;
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+}
+
+.report-card-preview.is-muted {
+  opacity: 0.85;
+}
+
+.report-card-preview__svg {
+  width: 100%;
+  height: 72px;
+  display: block;
+  overflow: visible;
+}

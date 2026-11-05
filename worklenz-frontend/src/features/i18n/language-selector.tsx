@@ -20,6 +20,7 @@ const LanguageSelector = () => {
     { key: 'zh_cn', label: '简体中文' },
     { key: 'pl', label: 'Polski' },
     { key: 'fr', label: 'Français' },
+    { key: 'it', label: 'Italiano' },
   ];
 
   const languageLabels = {
@@ -31,6 +32,7 @@ const LanguageSelector = () => {
     zh_cn: 'zh_cn',
     pl: 'Pl',
     fr: 'Fr',
+    it: 'It',
   };
 
   return (

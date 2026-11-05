@@ -20,7 +20,6 @@ import {
 } from '@/api/client-portal/portal-access-api';
 import { getPortalErrorMessage } from '@/api/client-portal/portal-api-utils';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { useIsAdminSurfaceReadOnly } from '@/hooks/useIsAdminSurfaceReadOnly';
 import {
   MixpanelEvents,
   ClientPortalEventProps,
@@ -31,6 +30,7 @@ import {
   IClientPortalSettings,
 } from '@/types/settings/client-portal-settings.types';
 import type { PortalSettingsV2 } from '@/types/client-portal/v2';
+import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
 import { CompanyDetailsSection } from './sections/CompanyDetailsSection';
 import { BrandingSection } from './sections/BrandingSection';
 import { LogoCropModal } from './sections/LogoCropModal';
@@ -82,9 +82,10 @@ const PERMISSION_SWITCHES: ((settings: PortalSettingsV2) => boolean)[] = [
 const ClientPortalSettings = () => {
   const { t } = useTranslation('client-portal-settings');
   const { t: tV2 } = useTranslation('client-portal-v2-settings');
-  const isReadOnly = useIsAdminSurfaceReadOnly();
   const { token } = theme.useToken();
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const currentSession = useAuthService().getCurrentSession();
+  const canBrand = canUseFeature(currentSession, 'client_portal_branding');
 
   const [section, setSection] = useState<SectionKey>('company');
   const [loading, setLoading] = useState(true);
@@ -382,6 +383,17 @@ const ClientPortalSettings = () => {
   };
 
   const handleSaveChanges = async () => {
+    if (hasLegacyChanges && settings.contact_phone && !validatePhoneNumber(settings.contact_phone)) {
+      setSection('company');
+      message.error(
+        t('invalidPhoneNumberFormat', {
+          defaultValue:
+            'Invalid phone number format. Use international format (e.g., +1-234-567-8900)',
+        })
+      );
+      return;
+    }
+
     try {
       setSaving(true);
       if (hasLegacyChanges && !(await saveLegacySettings())) return;
@@ -548,7 +560,7 @@ const ClientPortalSettings = () => {
           {section === 'notifications' &&
             renderV2Section(current => <NotificationsSection settings={current} onChange={handleV2Change} />)}
 
-          {hasUnsavedChanges && !isReadOnly && (
+          {hasUnsavedChanges && (
             <Flex
               justify="flex-start"
               gap={8}

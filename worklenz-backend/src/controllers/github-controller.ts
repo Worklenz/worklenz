@@ -1,3 +1,4 @@
+import { refreshTrackedPullRequests } from "../services/github/github-event-processor";
 import jwt from "jsonwebtoken";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
@@ -52,7 +53,12 @@ async function getActiveIntegration(teamId: string) {
 }
 
 async function syncRepositories(integrationId: string, installationId: number): Promise<number> {
-  const repos = await GithubAppService.listInstallationRepositories(installationId);
+  const [repos, installation] = await Promise.all([
+    GithubAppService.listInstallationRepositories(installationId),
+    GithubAppService.getInstallation(installationId),
+  ]);
+  await db.query(`UPDATE github_integrations SET github_account_id = $2 WHERE id = $1`,
+    [integrationId, installation.account.id]);
   const ids = repos.map(r => r.id);
 
   for (const repo of repos) {
@@ -70,6 +76,7 @@ async function syncRepositories(integrationId: string, installationId: number): 
      WHERE integration_id = $1 AND NOT (github_repo_id = ANY($2::BIGINT[]))`,
     [integrationId, ids],
   );
+  await refreshTrackedPullRequests(integrationId, installationId);
   return repos.length;
 }
 
@@ -316,32 +323,39 @@ export default class GithubController extends WorklenzControllerBase {
 
       const current = await getActiveIntegration(req.user!.team_id!);
       if (current && Number(current.installation_id) !== installationId) {
-        return back("error", "team_already_connected");
+        const previous = await db.query(`SELECT github_account_id FROM github_integrations WHERE id = $1`, [current.id]);
+        if (String(previous.rows[0]?.github_account_id || "") !== String(installation.account.id)) {
+          return back("error", "team_already_connected");
+        }
+        try {
+          await GithubAppService.getInstallation(Number(current.installation_id));
+          return back("error", "team_already_connected");
+        } catch (error) {
+          if (!(error instanceof GithubApiError) || error.status !== 404) throw error;
+        }
       }
 
-      // Reactivate a previous connection for the same installation to keep project links.
+      // Match the stable GitHub account ID to retain project links after reinstalling.
       const result = await db.query(
-        `WITH reactivated AS (
-           UPDATE github_integrations
-           SET status = 'active', account_login = $3, account_type = $4, account_avatar_url = $5,
-               connected_by = $6, connected_at = NOW(), updated_at = NOW()
-           WHERE team_id = $1 AND installation_id = $2
-           RETURNING id
+        `WITH candidate AS (
+           SELECT id FROM github_integrations
+           WHERE team_id = $1 AND (installation_id = $2 OR github_account_id = $7)
+           ORDER BY (status <> 'disconnected') DESC, (installation_id = $2) DESC, updated_at DESC
+           LIMIT 1
+         ), reactivated AS (
+           UPDATE github_integrations SET installation_id = $2, status = 'active',
+             account_login = $3, account_type = $4, account_avatar_url = $5,
+             connected_by = $6, github_account_id = $7, connected_at = NOW(), updated_at = NOW()
+           WHERE id = (SELECT id FROM candidate) RETURNING id
          ), inserted AS (
            INSERT INTO github_integrations
-             (team_id, installation_id, account_login, account_type, account_avatar_url, connected_by)
-           SELECT $1, $2, $3, $4, $5, $6 WHERE NOT EXISTS (SELECT 1 FROM reactivated)
+             (team_id, installation_id, account_login, account_type, account_avatar_url, connected_by, github_account_id)
+           SELECT $1, $2, $3, $4, $5, $6, $7 WHERE NOT EXISTS (SELECT 1 FROM reactivated)
            RETURNING id
          )
          SELECT id FROM reactivated UNION ALL SELECT id FROM inserted`,
-        [
-          req.user?.team_id,
-          installationId,
-          installation.account.login,
-          installation.account.type,
-          installation.account.avatar_url || null,
-          req.user?.id,
-        ],
+        [req.user?.team_id, installationId, installation.account.login, installation.account.type,
+         installation.account.avatar_url || null, req.user?.id, installation.account.id],
       );
 
       await syncRepositories(result.rows[0].id, installationId);

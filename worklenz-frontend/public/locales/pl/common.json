@@ -169,5 +169,18 @@
   "firstPage": "Pierwsza strona",
   "previousPage": "Poprzednia strona",
   "nextPage": "Następna strona",
-  "lastPage": "Ostatnia strona"
+  "lastPage": "Ostatnia strona",
+  "selectAll": "Zaznacz wszystko",
+  "clearAll": "Wyczyść wszystko",
+  "sidebarTrialDays_one": "{{count}} dzień",
+  "sidebarTrialDays_other": "{{count}} dni",
+  "sidebarTrialLabel": "Okres próbny",
+  "sidebarUpgradeLabel": "ULEPSZ",
+  "sidebarUpgradeTooltip": "Ulepsz plan",
+  "sidebarTrialTooltip_one": "Pozostał {{count}} dzień okresu próbnego",
+  "sidebarTrialTooltip_other": "Pozostało {{count}} dni okresu próbnego",
+  "sidebarTrialDays_few": "{{count}} dni",
+  "sidebarTrialDays_many": "{{count}} dni",
+  "sidebarTrialTooltip_few": "Pozostały {{count}} dni okresu próbnego",
+  "sidebarTrialTooltip_many": "Pozostało {{count}} dni okresu próbnego"
 }

@@ -21,6 +21,7 @@ export interface ILegacyPlanSnapshot {
   plan_trial_end_date?: string | Date | null;
   is_ltd?: boolean | null;
   redeemed_codes_count?: number | string | null;
+  appsumo_business_eligible?: unknown;
   quantity?: number | string | null;
   team_member_limit_override?: unknown;
   /** Paddle Billing / provider marker once providers write plan sources (Phase 3). */
@@ -128,12 +129,14 @@ export function legacySnapshotToPlanSources(
   }
 
   // AppSumo lifetime deal: independent of subscription_type, because an LTD holder may also be
-  // on a trial or a paid subscription.
+  // on a trial or a paid subscription. AppSumo Business (5+ codes) is Business tier; AppSumo Pro is Pro.
   const redeemedCodes = toInt(snapshot.redeemed_codes_count);
   if (type === "LIFE_TIME_DEAL" || (snapshot.is_ltd === true && redeemedCodes > 0)) {
+    const isAppSumoBusiness =
+      redeemedCodes >= APPSUMO_UNLIMITED_GUEST_CODE_COUNT || isTruthy(snapshot.appsumo_business_eligible);
     sources.push({
       kind: "appsumo_ltd",
-      tier: "pro", // strict LTD: Pro-level features, no Business features via codes
+      tier: isAppSumoBusiness ? "business" : "pro",
       seats: redeemedCodes ? Math.min(redeemedCodes * APPSUMO_SEATS_PER_CODE, APPSUMO_MAX_SEATS) : undefined,
       guests: redeemedCodes >= APPSUMO_UNLIMITED_GUEST_CODE_COUNT ? UNLIMITED : APPSUMO_LTD_GUEST_LIMIT,
       redeemedCodes,

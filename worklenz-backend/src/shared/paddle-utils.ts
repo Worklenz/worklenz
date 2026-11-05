@@ -180,9 +180,14 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
       }
     }
 
-    // Enforce strict LTD behavior: no business-plan eligibility via redeemed AppSumo codes
+    // AppSumo Business = 5+ redeemed codes; AppSumo Pro = fewer (mirrors deserialize_user).
     if (data && data.is_ltd) {
-      data.appsumo_business_eligible = false;
+      const redeemed = Number(data.redeemed_codes_count ?? 0);
+      data.appsumo_business_eligible =
+        Number.isFinite(redeemed) && redeemed >= APPSUMO_BUSINESS_UNLOCK_CODE_COUNT;
+      if (data.appsumo_business_eligible && !data.plan_name) {
+        data.plan_name = "Business Plan";
+      }
     }
 
     // If this is a business plan, check if AppSumo user gets special limit

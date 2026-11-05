@@ -193,7 +193,7 @@
   "teamHierarchyNoResultsDescription": "Prueba con un término de búsqueda diferente.",
   "seatLimitReached": "Límite de asientos alcanzado",
   "seatLimitMessage": "Su plan incluye {{planLimit}} miembros. Actualice a Business para {{businessLimit}} miembros, o desactive un miembro inactivo para invitar a alguien nuevo.",
-  "seatLimitAppSumoMessage": "Su plan AppSumo incluye {{planLimit}} miembros. Actualice a Business para {{businessLimit}} miembros, o desactive un miembro inactivo para invitar a alguien nuevo.",
+  "seatLimitLifetimeDealMessage": "Su oferta de por vida incluye {{planLimit}} miembros. Actualice a Business para {{businessLimit}} miembros, o desactive un miembro inactivo para invitar a alguien nuevo.",
   "currentMembers": "Miembros actuales",
   "planLimit": "Límite del plan",
   "afterUpgrade": "Después de la actualización",

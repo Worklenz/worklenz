@@ -126,7 +126,7 @@ const CustomColumnHeader = ({ columnKey, columnName, columnId, isEditingHeader =
       modalType: 'edit', 
       columnId: column?.id || columnId || columnKey,
       columnData: column,
-      canChangeColumnType: false,
+      canChangeColumnType: true,
     }));
     dispatch(toggleCustomColumnModalOpen(true));
   };

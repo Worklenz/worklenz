@@ -11,11 +11,13 @@ import { de } from 'date-fns/locale/de';
 import { enUS } from 'date-fns/locale/en-US';
 import { es } from 'date-fns/locale/es';
 import { fr } from 'date-fns/locale/fr';
+import { it } from 'date-fns/locale/it';
 import { pl } from 'date-fns/locale/pl';
 import { pt } from 'date-fns/locale/pt';
 import { zhCN } from 'date-fns/locale/zh-CN';
 import { tagBackground } from '@/utils/colorUtils';
 import { renderNotificationMessage } from '@/utils/notification-message-renderer';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface NotificationTemplateProps {
   item: IWorklenzNotification;
@@ -80,11 +82,11 @@ const NotificationTemplate: React.FC<NotificationTemplateProps> = ({
       <div className="ant-notification-notice-content">
         <div className="ant-notification-notice-description">
           <Typography.Text type="secondary" className="mb-1">
-            <BankOutlined /> {item.team}
+            <BankOutlined /> {decodeHtmlEntities(item.team)}
           </Typography.Text>
           <div className="mb-1" dangerouslySetInnerHTML={{ __html: sanitizedMessageHtml }} />
           {item.project && item.color && (
-            <Tag style={{ backgroundColor: tagBackground(item.color) }}>{item.project}</Tag>
+            <Tag style={{ backgroundColor: tagBackground(item.color) }}>{decodeHtmlEntities(item.project)}</Tag>
           )}
         </div>
 
@@ -116,6 +118,7 @@ const DATE_LOCALES = {
   en: enUS,
   es,
   fr,
+  it,
   pl,
   pt,
   zh: zhCN,

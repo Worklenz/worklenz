@@ -465,10 +465,10 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         align: 'center' as const,
         render: (_: any, record: IProjectViewModel) => {
           const isGuest = record.is_guest === true;
-          
+
           return (
             <Space size={4} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-              <Tooltip 
+              <Tooltip
                 title={
                   isGuest
                     ? t('settingsDisabledForGuest', { defaultValue: 'Project settings are not accessible for guest users' })
@@ -476,10 +476,10 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 }
               >
                 <button
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    cursor: isGuest ? 'not-allowed' : 'pointer', 
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: isGuest ? 'not-allowed' : 'pointer',
                     padding: '2px 6px',
                     opacity: isGuest ? 0.5 : 1,
                     display: 'inline-flex',
@@ -518,7 +518,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (isOwnerOrAdmin) {
+                    if (isOwnerOrAdmin && record.id) {
                       handleArchiveClick(record.id);
                     }
                   }}

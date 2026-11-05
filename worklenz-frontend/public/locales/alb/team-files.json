@@ -62,5 +62,6 @@
   "linkDescription": "Përshkrimi",
   "linkDescriptionPlaceholder": "Përshkrim opsional",
   "save": "Ruaj",
+  "rowsPerPage": "Rreshta për faqe:",
   "noTaskName": "--"
 }

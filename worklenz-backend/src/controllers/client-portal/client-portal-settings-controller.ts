@@ -5,7 +5,7 @@ import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { ServerResponse } from "../../models/server-response";
 import db from "../../config/db";
 import { uploadBase64, getClientPortalLogoKey, deleteObject } from "../../shared/storage";
-import { log_error } from "../../shared/utils";
+import { log_error, isValidPhoneNumber } from "../../shared/utils";
 import { getClientPortalBaseUrl } from "../../cron_jobs/helpers";
 import { teamCanUseFeature } from "../../shared/entitlements/gates";
 
@@ -145,6 +145,17 @@ export default class ClientPortalSettingsController extends ClientPortalControll
         invoice_footer_message,
         portal_title,
       } = req.body;
+
+      if (contact_phone !== undefined && contact_phone !== null) {
+        if (
+          typeof contact_phone !== "string" ||
+          (contact_phone.trim() !== "" && !isValidPhoneNumber(contact_phone))
+        ) {
+          return res
+            .status(400)
+            .json(new ServerResponse(false, null, "Invalid contact phone number format"));
+        }
+      }
 
       let logo_url = req.body.logo_url;
       let primary_color = req.body.primary_color;
