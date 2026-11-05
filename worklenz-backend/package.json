@@ -102,7 +102,7 @@
     "moment": "^2.31.0",
     "moment-timezone": "^0.5.43",
     "morgan": "^1.12.1",
-    "multer": "^2.4.0",
+    "multer": "^2.5.0",
     "nanoid": "^3.3.6",
     "nodemailer": "^10.0.16",
     "passport": "^0.7.0",
