@@ -2,15 +2,29 @@ import { Server, Socket } from "socket.io";
 import db from "../../../config/db";
 import { IPassportSession } from "../../../interfaces/passport-session";
 import { ISocketSession } from "../../../interfaces/socket-session";
+import { loadClientSubject } from "../../../services/client-portal-v2/subject";
 import TokenService from "../../../services/token-service";
 import { normalizeTeamRoleName, TEAM_ROLE_NAMES } from "../../../shared/team-permissions";
 import { logUnauthorizedSocketAccess } from "../../authorization";
 import {
   CLIENT_PORTAL_SOCKET,
   clientPortalClientRoomName,
+  clientPortalContactRoomName,
   clientPortalTeamRoomName,
 } from "../../client-portal-room";
 import { log_error } from "../../util";
+
+interface ClientSocketUser {
+  id: string;
+  type: "client";
+  clientId: string;
+  teamId: string;
+  email?: string;
+  contactId: string;
+  clientUserId: string;
+}
+
+type ClientSocket = Socket & { user?: ClientSocketUser };
 
 type JoinPayload = {
   type?: "join" | "leave";
@@ -21,7 +35,8 @@ type JoinPayload = {
 /**
  * Joins/leaves Client Portal realtime rooms.
  * - Staff (passport session): team room for Owners/Admins of the active team.
- * - Client (handshake/auth token): client room for their current team + client org.
+ * - Client (handshake/auth token): client room and their own contact room, after the same
+ *   access checks HTTP authentication makes (identified contact, organization access, active subject).
  */
 export async function on_join_client_portal_room(
   _io: Server,
@@ -111,40 +126,67 @@ async function handleClientRoom(socket: Socket, token: string, action: "join" | 
 
   const teamId = payload.organizationId;
   const clientId = payload.clientId;
-  const room = clientPortalClientRoomName(teamId, clientId);
 
   if (action === "leave") {
-    await socket.leave(room);
+    await leaveClientPortalRooms(socket, teamId, clientId);
     return;
   }
 
-  // Confirm the client org still belongs to this team and the contact is active.
-  const result = await db.query(
-    `SELECT 1
-       FROM clients c
-       JOIN client_contacts cc ON cc.client_id = c.id AND cc.team_id = c.team_id
-       JOIN client_users cu ON cu.id = cc.client_user_id AND cu.status = 'active'
-      WHERE c.id = $1
-        AND c.team_id = $2
-        AND cc.disabled_at IS NULL
-        AND ($3::uuid IS NULL OR cu.id = $3)
-      LIMIT 1`,
-    [clientId, teamId, payload.clientUserId ?? null]
-  );
-
-  if (result.rows.length === 0) {
-    await socket.leave(room);
-    logUnauthorizedSocketAccess(socket, CLIENT_PORTAL_SOCKET.JOIN_ROOM, "client_portal", clientId);
+  // The token is identity only. The same checks HTTP auth makes on every request decide whether this
+  // socket may sit in a room: an identified contact, current organization access, and an active subject
+  // (organization status/deleted_at, login deleted_at, contact activated_at).
+  const clientUserId = payload.clientUserId;
+  if (!clientUserId) {
+    await rejectClientJoin(socket, teamId, clientId);
     return;
   }
 
-  (socket as Socket & { user?: Record<string, unknown> }).user = {
-    id: payload.clientUserId ?? clientId,
+  const hasOrganizationAccess = await TokenService.hasOrganizationAccess(clientUserId, teamId);
+  if (!hasOrganizationAccess) {
+    await rejectClientJoin(socket, teamId, clientId);
+    return;
+  }
+
+  const subject = await loadClientSubject(db, { clientUserId, clientId, teamId });
+  if (!subject?.contactId) {
+    await rejectClientJoin(socket, teamId, clientId);
+    return;
+  }
+
+  (socket as ClientSocket).user = {
+    id: clientUserId,
     type: "client",
     clientId,
     teamId,
     email: payload.email,
+    contactId: subject.contactId,
+    clientUserId,
   };
 
-  await socket.join(room);
+  await socket.join(clientPortalClientRoomName(teamId, clientId));
+  await socket.join(clientPortalContactRoomName(teamId, clientId, subject.contactId));
+}
+
+async function rejectClientJoin(socket: Socket, teamId: string, clientId: string) {
+  await leaveClientPortalRooms(socket, teamId, clientId);
+  logUnauthorizedSocketAccess(socket, CLIENT_PORTAL_SOCKET.JOIN_ROOM, "client_portal", clientId);
+}
+
+/** Drops the shared client room and any per-contact room this socket joined for that org. */
+async function leaveClientPortalRooms(socket: Socket, teamId: string, clientId: string) {
+  await socket.leave(clientPortalClientRoomName(teamId, clientId));
+
+  const contactId = (socket as ClientSocket).user?.contactId;
+  if (contactId) {
+    await socket.leave(clientPortalContactRoomName(teamId, clientId, contactId));
+  }
+
+  const rooms = socket.rooms;
+  if (!rooms) return;
+  const prefix = `client_portal_contact:${teamId}:${clientId}:`;
+  for (const name of [...rooms]) {
+    if (name.startsWith(prefix)) {
+      await socket.leave(name);
+    }
+  }
 }

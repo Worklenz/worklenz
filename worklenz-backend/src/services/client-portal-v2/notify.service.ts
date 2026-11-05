@@ -7,6 +7,7 @@ import {
   CLIENT_PORTAL_SOCKET,
   ClientPortalDataUpdatedPayload,
   clientPortalClientRoomName,
+  clientPortalContactRoomName,
   clientPortalTeamRoomName,
 } from "../../socket.io/client-portal-room";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -30,8 +31,9 @@ import { Queryable } from "./types";
  * the active client users on the project. Client notifications never contain internal-only text:
  * callers pass only client-visible titles and bodies.
  *
- * Both paths also emit `client_portal:data_updated` to socket rooms so open Admin / Client Portal
- * UIs can invalidate their caches without a hard refresh.
+ * Both paths also emit `client_portal:data_updated` so open Admin / Client Portal UIs can invalidate
+ * their caches. The shared client room receives an identifier-free event. projectId and referenceId
+ * go only to the contact rooms of people allowed to see that item.
  */
 
 export type StaffNotificationKind =
@@ -51,26 +53,134 @@ const STAFF_KIND_TO_TYPE: Record<StaffNotificationKind, string> = {
   Project: "project_update",
 };
 
-/** Fan-out for open Admin / Client Portal UIs (no DB write). Safe to call after commit. */
-export function emitPortalDataUpdated(
+export interface PortalDataUpdatedOptions {
+  staffSocketIds?: Array<string | null | undefined>;
+  /**
+   * Contacts who may receive projectId and referenceId. When set (including an empty list), those
+   * identifiers are delivered only to this set, still limited to contacts who can open the project.
+   * When omitted, a change request goes to its viewers (requester and client admins); any other
+   * event with a project goes to contacts who can open that project. The shared client room never
+   * receives the identifiers.
+   */
+  onlyContactIds?: string[];
+}
+
+/** Shared client room hears that something changed, without learning which project or item. */
+const identifierFreePayload = (payload: ClientPortalDataUpdatedPayload): ClientPortalDataUpdatedPayload => ({
+  teamId: payload.teamId,
+  clientId: payload.clientId ?? null,
+  type: payload.type,
+  source: payload.source,
+  projectId: null,
+  referenceId: null,
+});
+
+const ACTIVE_CONTACT_SQL = `
+  cc.client_id = $1
+  AND cc.team_id = $2
+  AND cc.disabled_at IS NULL
+  AND cc.activated_at IS NOT NULL
+  AND cu.status = 'active'
+  AND cu.deleted_at IS NULL
+  AND c.deleted_at IS NULL
+  AND c.status <> 'inactive'
+  AND ($3::uuid IS NULL OR ${CONTACT_CAN_OPEN_PROJECT_SQL("cc.id", "$3")})
+`;
+
+/**
+ * Active contacts allowed to learn a portal item's identifiers. `onlyContactIds` null means every
+ * contact who passes the project check; an array (including empty) restricts to that set.
+ */
+async function listIdentifierAudience(input: {
+  clientId: string;
+  teamId: string;
+  projectId: string | null;
+  onlyContactIds: string[] | null;
+  changeRequestId?: string | null;
+}): Promise<string[]> {
+  const changeRequestOnly = Boolean(input.changeRequestId);
+  const result = await db.query(
+    `SELECT DISTINCT cc.id
+       FROM client_contacts cc
+       JOIN client_users cu ON cu.id = cc.client_user_id
+       JOIN clients c ON c.id = cc.client_id
+      WHERE ${ACTIVE_CONTACT_SQL}
+        AND ($4::uuid[] IS NULL OR cc.id = ANY($4::uuid[]))
+        AND (
+          $5::uuid IS NULL
+          OR cc.role = 'admin'
+          OR cc.id = (
+            SELECT r.requester_contact_id
+              FROM client_portal_change_requests r
+             WHERE r.id = $5
+               AND r.client_id = $1
+               AND r.organization_team_id = $2
+             LIMIT 1
+          )
+        )`,
+    [
+      input.clientId,
+      input.teamId,
+      input.projectId,
+      input.onlyContactIds,
+      changeRequestOnly ? input.changeRequestId : null,
+    ]
+  );
+  return result.rows.map(row => row.id as string).filter((id): id is string => Boolean(id));
+}
+
+async function deliverIdentifiersToContacts(
   payload: ClientPortalDataUpdatedPayload,
-  options?: { staffSocketIds?: Array<string | null | undefined> }
-): void {
+  onlyContactIds: string[] | undefined
+): Promise<void> {
+  const clientId = payload.clientId;
+  if (!clientId) return;
+
+  const explicitAudience = onlyContactIds !== undefined;
+  const privateChangeRequest = !explicitAudience && payload.type === "change_request" && Boolean(payload.referenceId);
+  if (!explicitAudience && !privateChangeRequest && !payload.projectId) return;
+
+  const contactIds = await listIdentifierAudience({
+    clientId,
+    teamId: payload.teamId,
+    projectId: payload.projectId ?? null,
+    onlyContactIds: explicitAudience ? onlyContactIds : null,
+    changeRequestId: privateChangeRequest ? payload.referenceId : null,
+  });
+
+  for (const contactId of contactIds) {
+    IO.emitToRoom(
+      clientPortalContactRoomName(payload.teamId, clientId, contactId),
+      CLIENT_PORTAL_SOCKET.DATA_UPDATED,
+      payload
+    );
+  }
+}
+
+/** Fan-out for open Admin / Client Portal UIs (no DB write). Safe to call after commit. */
+export async function emitPortalDataUpdated(
+  payload: ClientPortalDataUpdatedPayload,
+  options?: PortalDataUpdatedOptions
+): Promise<void> {
   try {
     IO.emitToRoom(clientPortalTeamRoomName(payload.teamId), CLIENT_PORTAL_SOCKET.DATA_UPDATED, payload);
-    if (payload.clientId) {
-      IO.emitToRoom(
-        clientPortalClientRoomName(payload.teamId, payload.clientId),
-        CLIENT_PORTAL_SOCKET.DATA_UPDATED,
-        payload
-      );
-    }
     // Direct emit to staff sockets (same path as the notification toast). Room join is best-effort;
     // without this, an admin who never joined the portal room sees the bell but not the list refresh.
+    // Staff are workspace owners/admins, so they still receive item identifiers.
     for (const socketId of options?.staffSocketIds ?? []) {
       if (socketId) {
         IO.emit(CLIENT_PORTAL_SOCKET.DATA_UPDATED, socketId, payload);
       }
+    }
+    if (payload.clientId) {
+      // Everyone in the org may refresh lists they are allowed to see. Item identifiers stay on
+      // the contact rooms of people who can open that project (and, when set, onlyContactIds).
+      IO.emitToRoom(
+        clientPortalClientRoomName(payload.teamId, payload.clientId),
+        CLIENT_PORTAL_SOCKET.DATA_UPDATED,
+        identifierFreePayload(payload)
+      );
+      await deliverIdentifiersToContacts(payload, options?.onlyContactIds);
     }
   } catch (error) {
     log_error(error);
@@ -190,8 +300,9 @@ export async function notifyStaff(input: StaffNotificationInput): Promise<void> 
       }
     }
 
-    // Live sync for open Admin Client Portal pages (and client room when clientId is known).
-    emitPortalDataUpdated(
+    // Live sync for open Admin Client Portal pages. Clients in the shared room get an
+    // identifier-free refresh; item ids go only to authorized contact rooms.
+    await emitPortalDataUpdated(
       {
         teamId: input.teamId,
         clientId: input.clientId ?? null,
@@ -322,8 +433,10 @@ export async function notifyClientUsers(input: ClientNotificationInput): Promise
     }
 
     // Live sync for open client-portal + admin portal pages (direct staff sockets + rooms).
+    // Identifiers follow the same audience as the notification: project access, and onlyContactIds
+    // when the item is private to named contacts.
     const staff = await getStaffRecipients(db, input.teamId);
-    emitPortalDataUpdated(
+    await emitPortalDataUpdated(
       {
         teamId: input.teamId,
         clientId: input.clientId,
@@ -332,7 +445,10 @@ export async function notifyClientUsers(input: ClientNotificationInput): Promise
         referenceId: input.referenceId ?? null,
         source: "staff",
       },
-      { staffSocketIds: staff.map(recipient => recipient.socket_id) }
+      {
+        staffSocketIds: staff.map(recipient => recipient.socket_id),
+        onlyContactIds: input.onlyContactIds,
+      }
     );
   } catch (error) {
     log_error(error);
