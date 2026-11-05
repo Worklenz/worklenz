@@ -91,7 +91,7 @@
       "status": "Stato rivolto al cliente",
       "users": "Utenti clienti"
     },
-    "description": "Scegli quali progetti sono visibili nel Portale Clienti e cosa è condiviso all'interno di ognuno di essi. Tutto inizia come solo interno.",
+    "description": "Scegli quali progetti sono visibili nel Portale Clienti e cosa è condiviso all'interno di ognuno di essi. Tutto inizia come solo interno. I progetti archiviati da un proprietario o da un amministratore restano esclusi.",
     "empty": "Nessun progetto ancora Crea un progetto nel tuo spazio di lavoro, quindi collegalo a un client.",
     "fieldSaveFailed": "Impossibile aggiornare il progetto.",
     "fieldSaved": "{{name}} aggiornato.",

@@ -71,12 +71,10 @@ describe("project scope", () => {
     expect(sql).toContain(projectOpenForPortalSql("p").trim());
   });
 
-  it("keeps a project out of the portal once an Owner or Admin has archived it", () => {
+  it("keeps a team-archived project out of the portal without reading current staff roles", () => {
     const sql = projectOpenForPortalSql("p");
-    expect(sql).toMatch(/archived_projects/);
-    expect(sql).toMatch(/r\.owner IS TRUE OR r\.admin_role IS TRUE/);
-    expect(sql).toMatch(/tm\.active IS TRUE/);
-    expect(sql.trim().startsWith("NOT (")).toBe(true);
+    expect(sql).toContain("p.archived_for_team IS TRUE");
+    expect(sql).not.toMatch(/archived_projects|team_members|roles/);
   });
 
   it("leaves archived projects out of the admin portal project list and its counts", async () => {

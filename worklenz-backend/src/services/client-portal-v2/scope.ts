@@ -10,7 +10,7 @@ import { Queryable } from "./types";
  *   2. the user is a Client Admin (every project of their client) or is assigned to the project
  *                                                          (SUBJECT_PROJECTS_SQL)
  *   3. the project's Client Portal switch is on            (SUBJECT_PROJECTS_SQL)
- *   4. the project is not archived by an Owner or Admin    (projectOpenForPortalSql)
+ *   4. the project is not archived for the team            (projectOpenForPortalSql)
  *   5. the item itself is Client Visible                   (the *_CLIENT_VISIBLE_SQL fragments)
  *
  * Controllers and services must build client payloads from these, never hand-write the checks, so
@@ -19,27 +19,14 @@ import { Queryable } from "./types";
  */
 
 /**
- * True when an active Owner or Admin has this project in their archive.
+ * True when the project was archived for the team.
  *
- * Those roles archive for the whole team, which is how a workspace closes a project out.
- * A member's personal archive does not match, so it does not hide the project from clients
- * or from the Portal Projects list.
+ * `projects.archived_for_team` changes only in archive-for-team and restore-for-team.
+ * A later role change, deactivation, or a member's personal archive does not.
  */
-export const projectArchivedForTeamSql = (projectAlias = "p") => `
-  EXISTS (
-    SELECT 1
-      FROM archived_projects ap
-      JOIN team_members tm
-        ON tm.user_id = ap.user_id
-       AND tm.team_id = ${projectAlias}.team_id
-       AND tm.active IS TRUE
-      JOIN roles r ON r.id = tm.role_id
-     WHERE ap.project_id = ${projectAlias}.id
-       AND (r.owner IS TRUE OR r.admin_role IS TRUE)
-  )
-`;
+export const projectArchivedForTeamSql = (projectAlias = "p") => `${projectAlias}.archived_for_team IS TRUE`;
 
-/** The project is still an open portal project: no active Owner or Admin has archived it. */
+/** The project is still an open portal project: it has not been archived for the team. */
 export const projectOpenForPortalSql = (projectAlias = "p") => `NOT (${projectArchivedForTeamSql(projectAlias)})`;
 
 /**
@@ -52,15 +39,15 @@ export const CONTACT_CAN_OPEN_PROJECT_SQL = (contactId: string, projectId: strin
   OR EXISTS (SELECT 1 FROM client_contact_project_access acc
               WHERE acc.client_contact_id = ${contactId} AND acc.project_id = ${projectId}))`;
 
-/** Projects a subject can open. Arguments are trusted SQL expressions. */
+/** Projects a subject can open. Arguments are trusted SQL expressions, not bound parameters. */
 export const subjectProjectsSql = (contactId: string, clientId: string, teamId: string) => `
   SELECT p.id
     FROM projects p
     JOIN project_client_settings pcs
       ON pcs.project_id = p.id AND pcs.portal_enabled IS TRUE
-   WHERE p.client_id = $2
-     AND p.team_id = $3
-     AND ${CONTACT_CAN_OPEN_PROJECT_SQL("$1", "p.id")}
+   WHERE p.client_id = ${clientId}
+     AND p.team_id = ${teamId}
+     AND ${CONTACT_CAN_OPEN_PROJECT_SQL(contactId, "p.id")}
      AND ${projectOpenForPortalSql("p")}
 `;
 

@@ -21,7 +21,12 @@ describe("preview users", () => {
     expect(result.users.map(user => [user.id, user.status])).toEqual([["active", "active"], ["invited", "invited"]]);
     expect(result.has_client_users).toBe(true);
     const selection = query.mock.calls.find(([sql]) => sql.includes("ORDER BY u.organization_name"));
-    expect(selection?.[0]).toContain(`EXISTS (${subjectProjectsSql("u.id", "u.client_id", "$1")})`);
+    const gate = subjectProjectsSql("u.id", "u.client_id", "$1");
+    expect(gate).toContain("p.client_id = u.client_id");
+    expect(gate).toContain("p.team_id = $1");
+    expect(gate).toContain("adm.id = u.id");
+    expect(gate).not.toMatch(/\$2|\$3/);
+    expect(selection?.[0]).toContain(`EXISTS (${gate})`);
     expect(selection?.[1]).toEqual(["team"]);
   });
 });
