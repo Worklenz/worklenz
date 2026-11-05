@@ -96,6 +96,7 @@ const TimeSheetTable: React.FC = () => {
   return (
     <Spin spinning={loading} tip={t('loadingText')}>
       <div
+        className="member-project-table"
         style={{
           overflow: 'auto',
           width: 'max-content',
