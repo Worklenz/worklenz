@@ -189,7 +189,12 @@
     "poweredBy": "Mundësuar nga Worklenz",
     "projects": "Projektet"
   },
-  "noUsers": "Ende nuk ka përdorues aktiv të klientit me një projekt. Ftoni një përdorues dhe caktoni një projekt për të parë paraprakisht portalin.",
+  "addClient": "Shto klient",
+  "addClientUser": "Shto përdorues klienti",
+  "noClientUsers": "Ende nuk ka përdorues klienti. Shtoni një klient dhe një përdorues klienti, pastaj caktoni një projekt për të parë paraprakisht portalin.",
+  "noUsers": "Ende nuk ka përdorues klienti me një projekt. Ftoni një përdorues dhe caktoni një projekt për të parë paraprakisht portalin.",
+  "noUsersWithProject": "Ende nuk ka përdorues klienti me një projekt. Ftoni një përdorues dhe caktoni një projekt për të parë paraprakisht portalin.",
+  "pendingInvite": "Ftesë në pritje",
   "previewAs": "Shiko paraprakisht si",
   "project": {
     "back": "← Projektet",
@@ -267,6 +272,7 @@
     "filter": "Filter"
   },
   "userOption": "{{name}} · {{role}}",
+  "userOptionPending": "{{name}} · {{role}} · Ftesë në pritje",
   "usersFailed": "Përdoruesit e klientit nuk mund të ngarkoheshin.",
   "openPortal": "Open the client portal"
 }
