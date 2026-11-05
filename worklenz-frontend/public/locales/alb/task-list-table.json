@@ -88,7 +88,7 @@
   "labelInputPlaceholder": "Kërko ose krijo",
   "searchLabelsPlaceholder": "Kërko etiketa...",
   "createLabelButton": "Krijo \"{{name}}\"",
-  "manageLabelsPath": "Cilësimet → Etiketat",
+  "manageLabelsPath": "Cilësimet → Projekti dhe rrjedha e punës → Etiketat",
   "pendingInvitation": "Ftesë në Pritje",
   "contextMenu": {
     "duplicateTask": "Detyrë dublikatë",

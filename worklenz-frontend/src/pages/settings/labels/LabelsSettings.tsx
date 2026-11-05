@@ -63,6 +63,10 @@ const LabelsSettings = () => {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const safePage = Math.min(page, totalPages);
 
+  useEffect(() => {
+    setPage(currentPage => Math.min(currentPage, totalPages));
+  }, [totalPages]);
+
   const paginatedData = useMemo(
     () =>
       filteredData.slice(
