@@ -1,3 +1,4 @@
+import { useScopedAnalyticsSeriesData } from '@/hooks/useScopedAnalyticsSeriesData';
 import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
 import { useScopedAnalyticsProjectSeed } from '@/hooks/useScopedAnalyticsProjectSeed';
 import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
@@ -105,13 +106,11 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<BudgetTrackingSeriesResponse | null>(null);
 
   const chartRef = useRef<BudgetTrackingChartHandle>(null);
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const projectOptionsScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
   const seededProjectsForTeamsRef = useScopedAnalyticsProjectSeed(projectOptionsScope);
-  const dataScopeRef = useRef<string | null>(null);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
   const skipDefaultTemplate = hasRestoredFilters;
 
@@ -166,6 +165,10 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     }),
     [selectedProjectIds, selectedTeamIds, selectedMemberIds]
   );
+
+  const seriesRequestKey = JSON.stringify([projectOptionsScope, filters]);
+  const { data, matchingData, setData } = useScopedAnalyticsSeriesData<BudgetTrackingSeriesResponse>(projectOptionsScope, seriesRequestKey);
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(seriesRequestKey);
 
   const displayCurrency = useMemo(() => {
     const withBudget = data?.projects.find(p => p.has_budget);
@@ -261,7 +264,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     }
   }, [seededProjectsForTeamsRef]);
 
-  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(JSON.stringify([projectOptionsScope, filters]));
+
 
   const loadSeries = useCallback(async () => {
     const isCurrent = beginSeriesRequest();
@@ -276,7 +279,6 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
       const res = await analyticsBudgetTrackingApiService.getSeries(filters);
       if (!isCurrent()) return;
       if (res.done && res.body) {
-        dataScopeRef.current = projectOptionsScope;
         setData(res.body);
       } else {
         setError(
@@ -298,7 +300,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     } finally {
       if (isCurrent()) setLoading(false);
     }
-  }, [filters, hasSelection, t, projectOptionsScope, beginSeriesRequest]);
+  }, [filters, hasSelection, t, beginSeriesRequest, setData]);
 
   useEffect(() => {
     void loadTeams();
@@ -321,14 +323,14 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
       seededProjectsForTeamsRef.current = teamKey;
       return;
     }
-    if (dataScopeRef.current !== projectOptionsScope || !data?.projects?.length) return;
+    if (!matchingData?.projects?.length) return;
     if (seededProjectsForTeamsRef.current === teamKey) return;
 
-    const topIds = latestUpdatedProjectIds(data.projects);
+    const topIds = latestUpdatedProjectIds(matchingData.projects);
     if (topIds.length === 0) return;
     seededProjectsForTeamsRef.current = teamKey;
     setAutomaticProjectIds(topIds);
-  }, [data, selectedProjectIds.length, selectedTeamIds, projectOptionsScope, seededProjectsForTeamsRef, setAutomaticProjectIds]);
+  }, [matchingData, selectedProjectIds.length, selectedTeamIds, seededProjectsForTeamsRef, setAutomaticProjectIds]);
 
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;

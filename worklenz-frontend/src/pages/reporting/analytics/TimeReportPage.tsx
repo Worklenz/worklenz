@@ -1,3 +1,4 @@
+import { useScopedAnalyticsSeriesData } from '@/hooks/useScopedAnalyticsSeriesData';
 import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
 import { useScopedAnalyticsProjectSeed } from '@/hooks/useScopedAnalyticsProjectSeed';
 import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
@@ -104,13 +105,11 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<TimeReportSeriesResponse | null>(null);
 
   const chartRef = useRef<TimeReportChartHandle>(null);
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const projectOptionsScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
   const seededProjectsForTeamsRef = useScopedAnalyticsProjectSeed(projectOptionsScope);
-  const dataScopeRef = useRef<string | null>(null);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
   const skipDefaultTemplate = hasRestoredFilters;
 
@@ -274,7 +273,9 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
     }
   }, [seededProjectsForTeamsRef]);
 
-  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(JSON.stringify([projectOptionsScope, filters]));
+  const seriesRequestKey = JSON.stringify([projectOptionsScope, filters]);
+  const { data, matchingData, setData } = useScopedAnalyticsSeriesData<TimeReportSeriesResponse>(projectOptionsScope, seriesRequestKey);
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(seriesRequestKey);
 
   const loadSeries = useCallback(async () => {
     const isCurrent = beginSeriesRequest();
@@ -289,7 +290,6 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
       const res = await analyticsTimeReportApiService.getSeries(filters);
       if (!isCurrent()) return;
       if (res.done && res.body) {
-        dataScopeRef.current = projectOptionsScope;
         setData(res.body);
       } else {
         setError(
@@ -311,7 +311,7 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
     } finally {
       if (isCurrent()) setLoading(false);
     }
-  }, [filters, hasSelection, t, projectOptionsScope, beginSeriesRequest]);
+  }, [filters, hasSelection, t, beginSeriesRequest, setData]);
 
   useEffect(() => {
     void loadTeams();
@@ -334,14 +334,14 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
       seededProjectsForTeamsRef.current = teamKey;
       return;
     }
-    if (dataScopeRef.current !== projectOptionsScope || !data?.projects?.length) return;
+    if (!matchingData?.projects?.length) return;
     if (seededProjectsForTeamsRef.current === teamKey) return;
 
-    const topIds = latestUpdatedProjectIds(data.projects);
+    const topIds = latestUpdatedProjectIds(matchingData.projects);
     if (topIds.length === 0) return;
     seededProjectsForTeamsRef.current = teamKey;
     setAutomaticProjectIds(topIds);
-  }, [data, selectedProjectIds.length, selectedTeamIds, projectOptionsScope, seededProjectsForTeamsRef, setAutomaticProjectIds]);
+  }, [matchingData, selectedProjectIds.length, selectedTeamIds, seededProjectsForTeamsRef, setAutomaticProjectIds]);
 
   const handleExport = async (format: AnalyticsExportFormat) => {
     if (!data) return;
