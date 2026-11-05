@@ -31,5 +31,7 @@
   "createLabelSuccessMessage": "Etikett erfolgreich erstellt",
   "createLabelErrorMessage": "Etikett konnte nicht erstellt werden",
   "updateLabelSuccessMessage": "Etikett erfolgreich aktualisiert",
-  "updateLabelErrorMessage": "Etikett konnte nicht aktualisiert werden"
+  "updateLabelErrorMessage": "Etikett konnte nicht aktualisiert werden",
+  "rowsPerPage": "Zeilen pro Seite:",
+  "paginationSummary": "{{range}} von {{total}}"
 }

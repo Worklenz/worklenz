@@ -42,5 +42,7 @@
   "updateLabelErrorMessage": "标签更新失败",
   "nameLabel": "名称",
   "namePlaceholder": "输入标签名称",
-  "nameRequiredMessage": "请输入标签名称"
+  "nameRequiredMessage": "请输入标签名称",
+  "rowsPerPage": "每页行数：",
+  "paginationSummary": "{{range}} / {{total}}"
 }

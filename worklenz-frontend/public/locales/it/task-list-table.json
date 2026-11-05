@@ -88,7 +88,7 @@
   "labelInputPlaceholder": "Cerca o crea",
   "searchLabelsPlaceholder": "Cerca etichette...",
   "createLabelButton": "Crea \"{{name}}\"",
-  "manageLabelsPath": "Impostazioni → Etichette",
+  "manageLabelsPath": "Impostazioni → Progetti e flusso di lavoro → Etichette",
   "pendingInvitation": "Invito in sospeso",
   "contextMenu": {
     "duplicateTask": "Compito duplicato",
