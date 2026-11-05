@@ -95,7 +95,6 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
     setSelectedMemberIds,
     selectedTeamIds,
     setSelectedTeamIds,
-    wasRestored,
     hasRestoredFilters,
   } = usePersistedAnalyticsFilters({
     reportKind: 'time-in-status',
@@ -115,7 +114,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
 
   const aggregateChartRef = useRef<TisAggregateChartHandle>(null);
   const perIssueChartRef = useRef<TisPerIssueChartHandle>(null);
-  const skipDefaultTemplate = wasRestored;
+  const skipDefaultTemplate = hasRestoredFilters;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {

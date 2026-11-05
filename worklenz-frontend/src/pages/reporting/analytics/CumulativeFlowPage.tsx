@@ -74,7 +74,6 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     setAutomaticTeamIds,
     selectedTeamIds,
     setSelectedTeamIds,
-    wasRestored,
     hasRestoredFilters,
   } = usePersistedAnalyticsFilters({
     reportKind: 'cumulative-flow',
@@ -94,7 +93,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
   const chartRef = useRef<CfdChartHandle>(null);
   /** Tracks last rollup mode so switching category ? detail resets visible bands. */
   const lastRollupMode = useRef<boolean | null>(null);
-  const skipDefaultTemplate = wasRestored;
+  const skipDefaultTemplate = hasRestoredFilters;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {

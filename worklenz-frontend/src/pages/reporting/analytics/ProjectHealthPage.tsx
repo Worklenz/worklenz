@@ -93,7 +93,6 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     setSelectedHealthIds,
     selectedMemberIds,
     setSelectedMemberIds,
-    wasRestored,
     hasRestoredFilters,
   } = usePersistedAnalyticsFilters({
     reportKind: 'project-health',
@@ -111,7 +110,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const seededProjectsForTeamsRef = useRef<string>('');
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
-  const skipDefaultTemplate = wasRestored;
+  const skipDefaultTemplate = hasRestoredFilters;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {

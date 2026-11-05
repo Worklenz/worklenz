@@ -84,7 +84,6 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     setSelectedTeamIds,
     selectedMemberIds,
     setSelectedMemberIds,
-    wasRestored,
     hasRestoredFilters,
   } = usePersistedAnalyticsFilters({
     reportKind: 'utilization',
@@ -100,7 +99,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
 
   const chartRef = useRef<UtilizationChartHandle>(null);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
-  const skipDefaultTemplate = wasRestored;
+  const skipDefaultTemplate = hasRestoredFilters;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {

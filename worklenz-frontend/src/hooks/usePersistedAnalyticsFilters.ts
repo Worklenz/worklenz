@@ -93,12 +93,19 @@ export const usePersistedAnalyticsFilters = (
     }
   }, [storageScope, reportKey, stored]);
 
-  const updateState = useCallback((action: SetStateAction<AnalyticsFilterFields>, isAutomatic: boolean) => {
+  const updateState = useCallback((action: SetStateAction<AnalyticsFilterFields>, isAutomatic: boolean, preserveEmpty?: 'selectedProjectIds' | 'selectedTeamIds') => {
     setStored(prev => {
       const { storageScope: scope, reportKey: key, defaults: scopeDefaults } = scopeRef.current;
       const restored = prev.scope === scope ? null : readAnalyticsFilterSession(key, scopeDefaults);
       const base = restored ? { scope, ...restored, restoredState: restored.state, shouldPersist: restored.wasRestored } : prev;
-      const next = toSetStateAction(action, base.state);
+      // Automatic defaults must not replace an explicitly cleared selection. Apply the
+      // updater first so it can still reconcile non-empty selections with available options.
+      let next = toSetStateAction(action, base.state);
+      const hasSavedSelection = base.hasExplicitFilters ||
+        (base.wasRestored && hasMeaningfulAnalyticsFilters(base.restoredState, scopeDefaults));
+      if (preserveEmpty && hasSavedSelection && base.state[preserveEmpty].length === 0 && next[preserveEmpty].length > 0) {
+        next = { ...next, [preserveEmpty]: base.state[preserveEmpty] };
+      }
       const shouldPersist = base.shouldPersist || !isAutomatic;
       const hasExplicitFilters = base.hasExplicitFilters || !isAutomatic;
       return next === base.state && shouldPersist === base.shouldPersist && hasExplicitFilters === base.hasExplicitFilters
@@ -113,13 +120,13 @@ export const usePersistedAnalyticsFilters = (
     updateState(prev => {
       const next = toSetStateAction(action, prev.selectedProjectIds);
       return next === prev.selectedProjectIds ? prev : { ...prev, selectedProjectIds: next };
-    }, true);
+    }, true, 'selectedProjectIds');
   }, [updateState]);
   const setAutomaticTeamIds = useCallback<Dispatch<SetStateAction<string[]>>>(action => {
     updateState(prev => {
       const next = toSetStateAction(action, prev.selectedTeamIds);
       return next === prev.selectedTeamIds ? prev : { ...prev, selectedTeamIds: next };
-    }, true);
+    }, true, 'selectedTeamIds');
   }, [updateState]);
 
   const setDatePreset = useCallback<Dispatch<SetStateAction<AnalyticsDatePreset>>>(

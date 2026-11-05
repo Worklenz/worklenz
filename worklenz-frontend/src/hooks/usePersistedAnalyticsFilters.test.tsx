@@ -123,3 +123,45 @@ it('recognizes legacy meaningful filters and explicit empty selections', () => {
   expect(reopened.result.current.hasRestoredFilters).toBe(true);
   expect(reopened.result.current.selectedProjectIds).toEqual([]);
 });
+
+it('preserves explicitly cleared projects and teams during automatic initialization after reopening', () => {
+  sessionStorage.clear();
+  const first = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  act(() => {
+    first.result.current.setSelectedTeamIds([]);
+    first.result.current.setSelectedProjectIds([]);
+  });
+  first.unmount();
+  const reopened = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  act(() => {
+    reopened.result.current.setAutomaticTeamIds(prev => prev.length ? prev : ['team-1']);
+    reopened.result.current.setAutomaticProjectIds(prev => prev.length ? prev : ['recent-project']);
+  });
+  expect(reopened.result.current.selectedTeamIds).toEqual([]);
+  expect(reopened.result.current.selectedProjectIds).toEqual([]);
+  reopened.unmount();
+  const again = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  expect(again.result.current.selectedTeamIds).toEqual([]);
+  expect(again.result.current.selectedProjectIds).toEqual([]);
+});
+
+it('seeds defaults for fresh and empty legacy scopes', () => {
+  sessionStorage.clear();
+  sessionStorage.setItem('worklenz.analyticsReportFilters:team-1:user-1:budget', '{}');
+  const hook = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  expect(hook.result.current.hasRestoredFilters).toBe(false);
+  act(() => {
+    hook.result.current.setAutomaticTeamIds(['team-1']);
+    hook.result.current.setAutomaticProjectIds(['recent-project']);
+  });
+  expect(hook.result.current.selectedTeamIds).toEqual(['team-1']);
+  expect(hook.result.current.selectedProjectIds).toEqual(['recent-project']);
+});
+
+it('still reconciles previously selected projects when available options change', () => {
+  sessionStorage.clear();
+  const hook = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  act(() => hook.result.current.setSelectedProjectIds(['keep', 'removed']));
+  act(() => hook.result.current.setAutomaticProjectIds(ids => ids.filter(id => id !== 'removed')));
+  expect(hook.result.current.selectedProjectIds).toEqual(['keep']);
+});

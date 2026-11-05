@@ -83,7 +83,6 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
     setSelectedTeamIds,
     selectedMemberIds,
     setSelectedMemberIds,
-    wasRestored,
     hasRestoredFilters,
   } = usePersistedAnalyticsFilters({
     reportKind: 'planned-vs-actual-milestones',
@@ -100,7 +99,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
   const chartRef = useRef<PvaMilestonesChartHandle>(null);
   /** Milestone chart is project-wise — require an explicit project before loading. */
   const hasProjectSelection = selectedProjectIds.length > 0;
-  const skipDefaultTemplate = wasRestored;
+  const skipDefaultTemplate = hasRestoredFilters;
 
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     applyCommonAnalyticsTemplateFilters(template.filters_json, {

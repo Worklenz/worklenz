@@ -79,4 +79,21 @@ describe('custom report template restoration', () => {
     await waitFor(() => expect(result.current.selectedProjectIds).toEqual(['saved']));
   });
 
+  it('applies the workspace default for an empty legacy entry', async () => {
+    sessionStorage.setItem('worklenz.analyticsReportFilters:team-1:user-1:test', '{}');
+    const listTemplates = vi.mocked(analyticsTemplatesApiService.listTemplates);
+    listTemplates.mockImplementation(async () => ({ done: true, body: [{ id: 'default', is_default: true, filters_json: { project_ids: ['default-project'] } }] }) as Awaited<ReturnType<typeof listTemplates>>);
+    const wrapper = ({ children }: { children: React.ReactNode }) => <MemoryRouter>{children}</MemoryRouter>;
+    const { result } = renderHook(() => {
+      const filters = usePersistedAnalyticsFilters({ reportKind: 'test' });
+      useAnalyticsReportTemplates({
+        reportKind: 'test', skipDefaultTemplate: filters.hasRestoredFilters,
+        onApply: template => filters.setSelectedProjectIds(template.filters_json?.project_ids as string[]),
+        getFilters: () => ({}),
+      });
+      return filters;
+    }, { wrapper });
+    await waitFor(() => expect(result.current.selectedProjectIds).toEqual(['default-project']));
+  });
+
 });
