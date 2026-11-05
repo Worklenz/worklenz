@@ -1,0 +1,198 @@
+{
+  "title": "GitHub",
+  "description": "Collega i repository GitHub ai progetti software per visualizzare rami, richieste pull e commit sui tuoi problemi.",
+  "viewOnly": "Visualizza solo",
+  "connectedHint": "Apri un progetto software, quindi vai su Impostazioni > Integrazioni per collegare i repository.",
+  "repositoryCount_one": "{{count}} archivio disponibile",
+  "repositoryCount_other": "Repository {{count}} disponibili",
+  "connect": {
+    "button": "Connetti GitHub",
+    "adminOnly": "Solo i proprietari e gli amministratori del team possono connettere GitHub."
+  },
+  "status": {
+    "connected": "Connesso",
+    "suspended": "Sospeso"
+  },
+  "notConfigured": {
+    "title": "Non configurato",
+    "description": "L'app GitHub non è stata configurata per questa installazione di Worklenz. Chiedi al tuo amministratore di configurarlo."
+  },
+  "actions": {
+    "retry": "Riprova",
+    "refresh": "Aggiorna i repository",
+    "cancel": "Annulla"
+  },
+  "disconnect": {
+    "title": "Disconnettere GitHub?",
+    "description": "La sincronizzazione verrà messa in pausa. I collegamenti e la cronologia esistenti vengono mantenuti e riprendono se ti ricolleghi.",
+    "confirm": "Disconnetti",
+    "button": "Disconnetti"
+  },
+  "messages": {
+    "connected": "GitHub si è connesso correttamente.",
+    "requested": "È stata richiesta l'installazione. Il proprietario di un'organizzazione deve approvarlo.",
+    "refreshed": "Elenco dei repository aggiornato.",
+    "disconnected": "GitHub disconnesso."
+  },
+  "errors": {
+    "invalidState": "La richiesta di connessione è scaduta. Prova a connetterti di nuovo.",
+    "forbidden": "Devi accedere a questa installazione GitHub e devi essere il proprietario o l'amministratore del team.",
+    "alreadyConnected": "Questo account GitHub è già connesso a un altro team Worklenz.",
+    "teamAlreadyConnected": "Questo team è già connesso a un altro account GitHub. Disconnettilo prima.",
+    "connectFailed": "Impossibile connettere GitHub. Per favore riprova.",
+    "loadFailed": "Impossibile caricare lo stato di GitHub.",
+    "refreshFailed": "Impossibile aggiornare i repository.",
+    "disconnectFailed": "Impossibile disconnettere GitHub."
+  },
+  "project": {
+    "subtitle": "Visualizza rami, richieste pull e impegni sui problemi di questo progetto.",
+    "linked": "Repository collegato.",
+    "linkFailed": "Impossibile collegare il repository.",
+    "unlinked": "Repository scollegato.",
+    "unlinkFailed": "Impossibile scollegare il repository.",
+    "updateFailed": "Impossibile aggiornare il ramo di base.",
+    "notConnected": "Connetti il tuo account GitHub nelle impostazioni del team prima di collegare i repository.",
+    "openIntegrations": "Vai a Integrazioni",
+    "selectPlaceholder": "Seleziona un repository da collegare",
+    "noRepositories": "Nessun altro repository disponibile",
+    "link": "Collegamento",
+    "emptyManage": "Nessun repository ancora collegato. Scegline uno sopra per iniziare.",
+    "empty": "Nessun repository collegato a questo progetto.",
+    "private": "Privato",
+    "unavailable": "Non più accessibile",
+    "baseBranch": "Ramo di base",
+    "editBaseBranch": "Modifica ramo base",
+    "unlinkTitle": "Scollegare questo repository?",
+    "unlinkDescription": "I collegamenti esistenti sui problemi rimangono, ma la nuova attività non verrà più monitorata.",
+    "unlink": "Scollega",
+    "unlinkAria": "Scollega {{name}}",
+    "howItWorks": "Includere una chiave di problema come {{example}} nel nome di un ramo, messaggio di commit o titolo di richiesta pull per collegarlo a quel problema.",
+    "automation": {
+      "title": "Automazione dello stato",
+      "description": "Sposta i problemi automaticamente man mano che si verifica l'attività di GitHub. I problemi non tornano mai indietro o escono dallo stato di completamento.",
+      "branchCreated": "Filiale creata",
+      "prOpened": "Richiesta pull aperta",
+      "prMerged": "Richiesta pull unita",
+      "noChange": "Non modificare lo stato",
+      "saveFailed": "Impossibile aggiornare l'automazione."
+    },
+    "connectPrompt": "Collega il tuo account GitHub una volta per l'intero team, quindi collega i repository a questo progetto.",
+    "disconnectedLinks": "I repository seguenti vengono salvati, ma GitHub è disconnesso. Ricollega GitHub per riprendere il monitoraggio.",
+    "askOwnerNamed": "GitHub non è ancora connesso. Chiedi a {{name}} o a un altro amministratore del team di collegarlo.",
+    "askOwner": "GitHub non è ancora connesso. Chiedi al proprietario o all'amministratore del team di collegarlo."
+  },
+  "development": {
+    "pr": {
+      "merged": "Uniti",
+      "closed": "Chiuso",
+      "draft": "Bozza",
+      "approved": "Approvato",
+      "changesRequested": "Modifiche richieste",
+      "open": "Aperto"
+    },
+    "loadFailed": "Impossibile caricare l'attività GitHub.",
+    "empty": "Nessuna attività GitHub ancora. Includi {{key}} nel nome di un ramo, nel titolo della richiesta di commit o pull per collegarlo qui.",
+    "noRepositories": "Nessun repository è collegato a questo progetto. Collegane uno in Impostazioni progetto > Integrazioni.",
+    "pullRequests": "Tirare le richieste",
+    "branches": "Rami",
+    "commits": "Si impegna",
+    "branchDeleted": "Eliminato",
+    "showFewer": "Mostra meno",
+    "showAll": "Mostra tutti i commit {{count}}",
+    "remove": {
+      "button": "Rimuovi collegamento",
+      "confirm": "Rimuovi",
+      "cancel": "Annulla",
+      "success": "Collegamento rimosso.",
+      "failed": "Impossibile rimuovere il collegamento.",
+      "branch": {
+        "title": "Rimuovere il ramo da questa attività?",
+        "description": "{{name}} non verrà più mostrato in questa attività. Il ramo non viene eliminato su GitHub."
+      },
+      "pullRequest": {
+        "title": "Rimuovere la richiesta pull da questa attività?",
+        "description": "{{name}} non verrà più mostrato in questa attività. La richiesta pull non viene modificata su GitHub."
+      },
+      "commit": {
+        "title": "Rimuovere il commit da questa attività?",
+        "description": "{{name}} non verrà più mostrato in questa attività. Il commit non viene modificato su GitHub."
+      }
+    },
+    "createBranch": {
+      "button": "Crea ramo",
+      "title": "Crea ramo",
+      "repository": "Deposito",
+      "name": "Nome della filiale",
+      "type": "Digitare",
+      "baseBranch": "Ramo di base",
+      "invalidName": "Utilizza lettere, numeri, punti, trattini, trattini bassi o barre.",
+      "created": "Filiale creata.",
+      "checkoutHint": "Esegui questo per iniziare a lavorarci localmente:",
+      "copy": "Copia comando",
+      "copied": "Copiato negli appunti.",
+      "done": "Fatto",
+      "errors": {
+        "generic": "Impossibile creare il ramo.",
+        "exists": "Esiste già un ramo con questo nome.",
+        "baseMissing": "Il ramo base non è stato trovato in questo repository.",
+        "permission": "L'app GitHub non è autorizzata a creare rami. Chiedi a un amministratore di concedergli l'accesso in scrittura ai contenuti."
+      },
+      "branchesFailed": "Impossibile caricare i rami. Puoi ancora digitare il ramo base.",
+      "loadingBranches": "Caricamento rami...",
+      "selectBranch": "Seleziona o digita un ramo"
+    }
+  },
+  "import": {
+    "button": "Problemi di importazione…",
+    "title": "Importa problemi da {{name}}",
+    "stateOpen": "Aperto",
+    "stateClosed": "Chiuso",
+    "stateAll": "Tutto",
+    "filterLabels": "Filtra per etichetta",
+    "destination": "Aggiungi a",
+    "backlog": "Arretrato",
+    "submit_one": "Importa il problema {{count}}",
+    "submit_other": "Importa problemi di {{count}}",
+    "imported": "Importato come {{key}}",
+    "loadMore": "Carica di più",
+    "empty": "Nessun problema trovato",
+    "loadFailed": "Impossibile caricare i problemi di GitHub.",
+    "success_one": "Problema {{count}} importato.",
+    "success_other": "Problemi di {{count}} importati.",
+    "partial": "{{imported}} importato, {{skipped}} saltato.",
+    "failed": "Impossibile importare i problemi selezionati.",
+    "columnTitle": "Titolo",
+    "columnStatus": "Stato"
+  },
+  "importSettings": {
+    "title": "Importazione dei problemi",
+    "autoImport": "Importa automaticamente i nuovi numeri",
+    "autoImportHint": "I nuovi problemi di GitHub vengono aggiunti automaticamente, filtrati dalle etichette seguenti.",
+    "labels": "Solo problemi con queste etichette",
+    "labelsPlaceholder": "Tutti i problemi",
+    "destination": "Aggiungi problemi importati a",
+    "closeOnClose": "Termina il problema quando il relativo problema GitHub viene chiuso",
+    "saveFailed": "Impossibile aggiornare le impostazioni di importazione."
+  },
+  "sync": {
+    "button": "Stato della sincronizzazione",
+    "title": "Stato della sincronizzazione di GitHub",
+    "refresh": "Aggiorna",
+    "loadFailed": "Impossibile caricare lo stato di sincronizzazione.",
+    "notConnected": "GitHub non è connesso.",
+    "lastEvent": "Ultimo evento ricevuto {{time}}",
+    "never": "Nessun evento ancora ricevuto.",
+    "processed": "Elaborato (7 giorni)",
+    "pending": "In sospeso",
+    "ignored": "Ignorato",
+    "failed": "Fallito",
+    "failedEvents": "Eventi falliti",
+    "noFailures": "Nessun evento non riuscito. Tutto è sincronizzato.",
+    "event": "Evento",
+    "error": "Errore",
+    "received": "Ricevuto",
+    "retry": "Riprova",
+    "retried": "Evento in coda per un nuovo tentativo.",
+    "retryFailed": "Impossibile riprovare l'evento."
+  }
+}

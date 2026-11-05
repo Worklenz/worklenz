@@ -29,10 +29,12 @@ LANG_CONFIG = {
     "zh": {"code": "zh-CN", "name": "Chinese (Simplified)"},
     "pl": {"code": "pl", "name": "Polish"},
     "fr": {"code": "fr", "name": "French"},
+    "it": {"code": "it", "name": "Italian"},
 }
 
 GLOSSARY = {
     "Recurring": {
+        "it": "Ricorrente",
         "alb": "E përsëritur",
         "de": "Wiederkehrend",
         "es": "Recurrente",
@@ -42,6 +44,7 @@ GLOSSARY = {
         "fr": "Récurrent",
     },
     "Subtasks": {
+        "it": "Sottoattività",
         "alb": "Nëndetyrat",
         "de": "Unteraufgaben",
         "es": "Subtareas",
@@ -51,6 +54,7 @@ GLOSSARY = {
         "fr": "Sous-tâches",
     },
     "Subtask": {
+        "it": "Sottoattività",
         "alb": "Nëndetyrë",
         "de": "Unteraufgabe",
         "es": "Subtarea",
@@ -60,6 +64,7 @@ GLOSSARY = {
         "fr": "Sous-tâche",
     },
     "Rollup": {
+        "it": "Riepilogo",
         "alb": "Përmbledhje",
         "de": "Rollup",
         "es": "Acumulado",
@@ -69,6 +74,7 @@ GLOSSARY = {
         "fr": "Cumul",
     },
     "Client Portal": {
+        "it": "Portale clienti",
         "alb": "Portali i Klientit",
         "de": "Kundenportal",
         "es": "Portal de Clientes",
@@ -78,6 +84,7 @@ GLOSSARY = {
         "fr": "Portail client",
     },
     "Order No": {
+        "it": "N. ordine",
         "alb": "Nr. i Porosisë",
         "de": "Bestell-Nr.",
         "es": "N.º de pedido",
@@ -87,6 +94,7 @@ GLOSSARY = {
         "fr": "N° de commande",
     },
     "Pro": {
+        "it": "Pro",
         "alb": "Pro",
         "de": "Pro",
         "es": "Pro",
@@ -96,6 +104,7 @@ GLOSSARY = {
         "fr": "Pro",
     },
     "Worklenz": {
+        "it": "Worklenz",
         "alb": "Worklenz",
         "de": "Worklenz",
         "es": "Worklenz",
@@ -105,6 +114,7 @@ GLOSSARY = {
         "fr": "Worklenz",
     },
     "Phase Color": {
+        "it": "Colore della fase",
         "alb": "Ngjyra e Fazës",
         "de": "Phasenfarbe",
         "es": "Color de la Fase",

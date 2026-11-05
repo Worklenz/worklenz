@@ -1,0 +1,42 @@
+{
+  "duplicateTask": "Duplica attività",
+  "duplicateTaskDescription": "Seleziona gli elementi da copiare nella nuova attività:",
+  "duplicateOptions": {
+    "subtasks": "Sottoattività",
+    "attachments": "Allegati",
+    "dates": "Date",
+    "dependencies": "Dipendenze",
+    "assignees": "Assegnatari",
+    "labels": "Etichette",
+    "customFields": "Valori dei campi personalizzati",
+    "subscribers": "Iscritti"
+  },
+  "duplicate": "Duplica",
+  "cancel": "Annulla",
+  "copyToProject": {
+    "title": "Copia attività nel progetto",
+    "selectProject": "Seleziona un progetto di destinazione",
+    "confirm": "Copia attività",
+    "copyTask": "Copia attività",
+    "checkDifferences": "Controlla differenze",
+    "check": "Controlla differenze",
+    "checking": "Controllo delle differenze...",
+    "confirmDifferences": "Aggiungi e copia attività",
+    "differencesFound": "Queste colonne mancano nel progetto di destinazione.",
+    "missingPhasesFound": "Queste fasi saranno create nel progetto di destinazione.",
+    "statusMissing": "Lo stato \"{{sourceStatus}}\" non è presente nel progetto di destinazione. All’attività sarà assegnato lo stato principale \"{{destinationStatus}}\".",
+    "createMissingItems": "Crea colonne e fasi mancanti",
+    "createMissingColumns": "Crea colonne mancanti",
+    "cancel": "Annulla",
+    "cancelDifferences": "Annulla copia",
+    "success": "Attività copiata",
+    "openTask": "Apri attività",
+    "loadError": "Impossibile caricare i progetti accessibili.",
+    "noProjects": "Nessun altro progetto accessibile trovato.",
+    "noDifferencesFound": "Il progetto di destinazione contiene tutte le colonne e le fasi necessarie.",
+    "copyDependencies": "Copia le attività da cui dipende",
+    "copyDependenciesDescription": "Includi tutte le attività da cui dipende questa attività quando la copi nel progetto di destinazione.",
+    "dependenciesInfo": "Questa attività ha dipendenze. Anche le attività da cui dipende saranno copiate nel progetto di destinazione.",
+    "error": "Impossibile copiare l’attività"
+  }
+}

@@ -1,0 +1,349 @@
+{
+  "title": "Seleziona il piano migliore per la tua squadra",
+  "subtitle": "Scegli il piano perfetto per potenziare la produttività del tuo team",
+  "billingCycle": {
+    "label": "Ciclo di fatturazione",
+    "monthly": "Mensile",
+    "yearly": "Annuale",
+    "savePercent": "Risparmia il 30%"
+  },
+  "pricingModel": {
+    "label": "Modello di prezzo",
+    "perUser": "Per utente",
+    "basePlan": "Piano Base",
+    "default": "Predefinito",
+    "explanation": {
+      "perUser": "Paga solo per gli utenti attivi. Perfetto per piccoli team (1-5 utenti) con prezzi flessibili adattabili al tuo team.",
+      "basePlan": "Prezzo base fisso con utenti inclusi più costi utente aggiuntivi. Ideale per team più grandi (6+ utenti) con fatturazione prevedibile."
+    },
+    "autoPerUser": "Utilizzo automatico del prezzo per utente per {{count}} utente{{s}}",
+    "autoBase": "Utilizzando automaticamente i prezzi del piano base per {{count}} utente{{s}}",
+    "additionalUserCharge": "Include {{included}} utenti. Ogni utente aggiuntivo costa ${{price}}/mese."
+  },
+  "teamSize": {
+    "label": "Dimensione della squadra",
+    "help": "Seleziona la dimensione della squadra attuale o prevista",
+    "user": "utente",
+    "users": "utenti",
+    "helpDescription": "Inserisci il numero di utenti nel tuo team (1-500)",
+    "placeholder": "Seleziona la dimensione della squadra",
+    "aria": "Dimensione della squadra"
+  },
+  "plans": {
+    "free": {
+      "name": "Gratuito",
+      "description": "Perfetto per iniziare",
+      "features": [
+        "3 progetti",
+        "Gestione delle attività di base",
+        "Collaborazione di squadra",
+        "Gestione manuale",
+        "Supporto comunitario"
+      ],
+      "forever": "Per sempre"
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Per squadre professionistiche",
+      "features": [
+        "Progetti illimitati",
+        "Gestione avanzata delle attività",
+        "Diagrammi di Gantt",
+        "Monitoraggio del tempo",
+        "Campi personalizzati",
+        "Supporto via e-mail"
+      ],
+      "payPerUser": "Paga per utente (1-5 utenti)",
+      "usersIncluded": "{{count}} Utenti inclusi",
+      "maxUsers": "Fino a {{count}} Utenti max"
+    },
+    "business": {
+      "name": "Affari",
+      "description": "Per organizzazioni in crescita",
+      "features": [
+        "Tutto nel professionista",
+        "Reportistica avanzata",
+        "Flussi di lavoro personalizzati",
+        "Accesso all'API",
+        "Supporto prioritario",
+        "Integrazioni avanzate"
+      ],
+      "payPerUser": "Paga per utente (1-5 utenti)",
+      "usersIncluded": "{{count}} Utenti inclusi",
+      "maxUsers": "Fino a {{count}} Utenti max",
+      "maxUsersAppSumo": "Fino a 50 utenti massimi (AppSumo Special)",
+      "namePromo": "Affari (Speciale AppSumo)"
+    },
+    "proSmall": {
+      "name": "Pro Piccolo",
+      "description": "Ideale per piccole squadre",
+      "features": [
+        "Progetti illimitati",
+        "Gestione avanzata delle attività",
+        "Diagrammi di Gantt",
+        "Monitoraggio del tempo",
+        "Campi personalizzati",
+        "Supporto via e-mail"
+      ]
+    },
+    "businessSmall": {
+      "name": "Piccola impresa",
+      "description": "Per team in crescita",
+      "features": [
+        "Tutto in Pro Small",
+        "Reportistica avanzata",
+        "Flussi di lavoro personalizzati",
+        "Accesso all'API",
+        "Supporto prioritario",
+        "Integrazioni avanzate"
+      ]
+    },
+    "proLarge": {
+      "name": "Pro Grande",
+      "description": "Per squadre più grandi",
+      "features": [
+        "Tutto in Pro Small",
+        "Gestione avanzata del team",
+        "Allocazione delle risorse",
+        "Gestione del portafoglio",
+        "Supporto prioritario"
+      ]
+    },
+    "businessLarge": {
+      "name": "Grandi affari",
+      "description": "Per i team aziendali",
+      "features": [
+        "Tutto in Business Small",
+        "Analisi avanzata",
+        "Marchio personalizzato",
+        "Integrazione SSO",
+        "Supporto dedicato",
+        "Garanzia SLA"
+      ]
+    },
+    "enterprise": {
+      "name": "Impresa",
+      "description": "Per le grandi organizzazioni",
+      "features": [
+        "Tutto in grandi aziende",
+        "Utenti illimitati",
+        "Sicurezza avanzata",
+        "Integrazioni personalizzate",
+        "Account manager dedicato",
+        "Distribuzione locale"
+      ],
+      "customPricing": "Personalizzato",
+      "customPricingNote": "su misura per la tua squadra"
+    },
+    "additionalUsersCharged": "Utenti aggiuntivi oltre a quelli inclusi: ${{price}}/utente/mese"
+  },
+  "badges": {
+    "mostPopular": "Il più popolare",
+    "recommended": "Consigliato",
+    "bestValue": "Miglior rapporto qualità/prezzo",
+    "currentPlan": "Piano attuale"
+  },
+  "pricing": {
+    "perMonth": "/mese",
+    "perUser": "per utente",
+    "forUsers": "per {{count}} {{unit}}",
+    "basePrice": "{{price}} base + {{additionalCost}} utenti extra",
+    "upToUsers": "Fino a {{count}} utenti",
+    "usersRange": "1-{{count}} utenti",
+    "savePerYear": "Risparmia ${{amount}}/anno",
+    "originalPrice": "Prezzo originale",
+    "discountPercent": "-{{percent}}%"
+  },
+  "buttons": {
+    "currentPlan": "Piano attuale",
+    "getStartedFree": "Inizia gratuitamente",
+    "contactSales": "Contatta l'ufficio vendite",
+    "choosePlan": "Scegli Piano",
+    "viewDetails": "Visualizza dettagli",
+    "chooseThisPlan": "Scegli questo piano",
+    "switchToMobile": "Passa alla visualizzazione mobile",
+    "toggleTheme": "Cambia tema",
+    "switchToLight": "Passa al tema chiaro",
+    "switchToDark": "Passa al tema scuro",
+    "closeModal": "Chiudi modalità di prezzo",
+    "loadingPlans": "Caricamento piani...",
+    "selectPlan": "Seleziona un piano",
+    "switchToFree": "Passa al piano gratuito",
+    "planSummary": "Piano {{planName}} - ${{total}}{{period}}{{userText}}",
+    "planSummaryNoName": "${{total}}{{period}}{{userText}}"
+  },
+  "userTypes": {
+    "trial": {
+      "title": "Utente di prova:",
+      "message": "{{days}} giorni rimanenti. Esegui ora l'upgrade per mantenere i tuoi dati e le tue funzionalità!"
+    },
+    "appsumo": {
+      "title": "Speciale AppSumo:",
+      "message": "50% di sconto sui piani Business+!",
+      "countdown": "Rimangono solo {{days}} giorni per usufruire di questa offerta esclusiva.",
+      "standardPricing": "Prezzo standard disponibile"
+    },
+    "free": {
+      "title": "Piano attuale:",
+      "message": "Gratuito. Pronto per sbloccare più funzionalità?"
+    },
+    "custom": {
+      "title": "Migrazione dal piano personalizzato:",
+      "message": "Mantieni i prezzi stabiliti dai tuoi predecessori durante la migrazione ai nostri nuovi piani standard."
+    }
+  },
+  "recommendations": {
+    "switchModel": "Risparmia ${{amount}}/mese passando a {{model}} per gli utenti {{count}}",
+    "perUserPricing": "Prezzo per utente",
+    "basePlanPricing": "Prezzi del piano base",
+    "switch": "Cambia"
+  },
+  "planDetails": {
+    "title": "Dettagli del piano",
+    "features": "Caratteristiche",
+    "limits": "Limiti",
+    "projects": "Progetti",
+    "users": "Utenti",
+    "storage": "Stoccaggio",
+    "unlimited": "Illimitato"
+  },
+  "tips": {
+    "switchAnytime": "💡 Suggerimento: puoi passare da un modello di prezzo all'altro in qualsiasi momento dalle impostazioni di fatturazione",
+    "smallTeamPricing": "💰 I piccoli team ottengono tariffe per utente migliori",
+    "annualDiscount": "💸 Risparmia fino al 30% con la fatturazione annuale",
+    "freeUpgrade": "🚀 Gli utenti gratuiti possono eseguire l'aggiornamento in qualsiasi momento"
+  },
+  "errors": {
+    "loadingData": "Errore durante il caricamento dei dati sui prezzi",
+    "loadingPlansRetry": "Impossibile caricare i piani tariffari. Aggiorna la pagina.",
+    "calculating": "Calcolo dei prezzi...",
+    "selectedPlan": "Piano selezionato: {{plan}}"
+  },
+  "accessibility": {
+    "availablePlans": "Piani disponibili",
+    "teamSizeHelp": "Aiuto per la dimensione della squadra",
+    "pricingUpdates": "Aggiornamenti sui prezzi"
+  },
+  "checkout": {
+    "title": "Conferma la tua iscrizione",
+    "subtitle": "Controlla i dettagli del tuo piano prima di procedere",
+    "summary": "Riepilogo dell'abbonamento",
+    "plan": "Piano",
+    "teamSize": "Dimensione della squadra",
+    "discount": "Sconto",
+    "total": "Totale",
+    "secureCheckout": "Pagamento sicuro",
+    "secureDescription": "Il tuo pagamento verrà elaborato in modo sicuro tramite Paddle. Puoi annullare o modificare il tuo piano in qualsiasi momento.",
+    "appsumoSpecial": "Prezzi speciali AppSumo",
+    "appsumoDescription": "Riceverai uno sconto del 50% per i primi 12 mesi. Questa è un'offerta a tempo limitato!",
+    "proceedToPayment": "Procedi al pagamento",
+    "cancel": "Annulla",
+    "processing": {
+      "title": "Elaborazione della tua iscrizione",
+      "subtitle": "Ti preghiamo di attendere mentre configuriamo il tuo abbonamento...",
+      "doNotClose": "Non chiudere questa finestra",
+      "doNotCloseDescription": "Il tuo pagamento è in fase di elaborazione. La chiusura di questa finestra potrebbe interrompere il processo."
+    },
+    "success": {
+      "title": "Abbonamento creato con successo!",
+      "subtitle": "Il tuo abbonamento è stato attivato. A breve riceverai un'e-mail di conferma.",
+      "withId": "Il tuo ID abbonamento è {{id}}. A breve riceverai un'e-mail di conferma.",
+      "goToDashboard": "Vai alla dashboard",
+      "viewBilling": "Visualizza fatturazione"
+    },
+    "error": {
+      "title": "Abbonamento non riuscito",
+      "subtitle": "Qualcosa è andato storto durante il processo di iscrizione.",
+      "tryAgain": "Riprova"
+    },
+    "steps": {
+      "confirm": "Conferma",
+      "payment": "Pagamento",
+      "complete": "Completo"
+    }
+  },
+  "ui": {
+    "loading": "Caricamento delle opzioni di prezzo...",
+    "selectTeamSize": "Seleziona la dimensione della tua squadra",
+    "chooseBilling": "Scegli la frequenza di fatturazione",
+    "planSelected": "Piano selezionato",
+    "totalCost": "Costo totale",
+    "perUserCost": "Costo per utente",
+    "included": "Incluso",
+    "popular": "Il più popolare",
+    "recommended": "Consigliato",
+    "currentPlan": "Piano attuale",
+    "upgrade": "Aggiorna",
+    "downgrade": "Downgrade",
+    "change": "Cambia piano",
+    "specialOffer": "Offerta speciale",
+    "limitedTime": "Tempo limitato",
+    "saveAmount": "Risparmia ${{amount}}",
+    "freeForever": "Libero per sempre",
+    "noCommitment": "Nessun impegno, annulla in qualsiasi momento",
+    "instantActivation": "Attivazione istantanea",
+    "supportIncluded": "Supporto incluso"
+  },
+  "features": {
+    "common": {
+      "taskManagement": "Gestione delle attività",
+      "projectTracking": "Monitoraggio del progetto",
+      "teamCollaboration": "Collaborazione di squadra",
+      "fileSharing": "Condivisione file",
+      "basicReporting": "Reporting di base",
+      "mobileApp": "Accesso all'app mobile"
+    },
+    "advanced": {
+      "ganttCharts": "Diagrammi di Gantt",
+      "timeTracking": "Monitoraggio del tempo",
+      "advancedReporting": "Reportistica avanzata",
+      "customFields": "Campi personalizzati",
+      "apiAccess": "Accesso all'API",
+      "prioritySupport": "Supporto prioritario"
+    },
+    "enterprise": {
+      "sso": "Accesso singolo (SSO)",
+      "advancedSecurity": "Sicurezza avanzata",
+      "customIntegrations": "Integrazioni personalizzate",
+      "dedicatedSupport": "Supporto dedicato",
+      "onPremise": "Distribuzione in sede",
+      "slaSupport": "Supporto SLA"
+    }
+  },
+  "appsumo": {
+    "exclusiveTitle": "🎉 Esclusiva AppSumo: 70% di sconto sui piani aziendali!",
+    "timeRemaining": "{{days}}d {{hours}}h {{minutes}}m rimanenti",
+    "urgency": {
+      "finalHours": "ULTIME ORE",
+      "urgent": "URGENTE",
+      "limitedTime": "TEMPO LIMITATO"
+    },
+    "specialPricing": "🎯 Prezzi speciali per i membri dell'offerta a vita AppSumo",
+    "businessUsers": "💪 I piani aziendali supportano fino a 50 utenti (normalmente 25)",
+    "lifetimeTitle": "Membro dell'offerta a vita di AppSumo",
+    "discountExpired": "Il periodo di sconto del 70% è scaduto, ma puoi comunque passare ai piani Business al prezzo standard.",
+    "watchOffers": "💡 Tieni d'occhio le campagne future e le offerte speciali!",
+    "discountApplied": "Sconto AppSumo del 70% applicato"
+  },
+  "billing": {
+    "billedAnnually": "(fatturato annualmente)",
+    "billedMonthly": "(fatturato mensilmente)",
+    "perYear": "/anno",
+    "perMonth": "/mese",
+    "forUsers": "per {{count}} utente{{s}}",
+    "annualSavingsShortOff": "Fino al {{percent}}% di sconto"
+  },
+  "ribbon": {
+    "recommended": "Consigliato",
+    "popular": "Il più popolare",
+    "bestValue": "Miglior rapporto qualità/prezzo",
+    "appsumoSpecial": "Speciale AppSumo"
+  },
+  "customFields": {
+    "upgradeModalHeadline": "Cattura ogni dettaglio con campi personalizzati illimitati",
+    "upgradeModalSubCopy": "Il tuo piano include fino a {{limit}} campi personalizzati. Passa a Business per creare campi illimitati e tenere traccia esattamente di ciò che conta per il tuo team.",
+    "benefit1": "Campi personalizzati illimitati per progetto",
+    "benefit2": "Tipi di campo: testo, numero, menu a discesa, data e altro",
+    "benefit3": "I campi vengono sincronizzati in tutte le visualizzazioni delle attività"
+  }
+}

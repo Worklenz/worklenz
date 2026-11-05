@@ -32,6 +32,11 @@ describe('calculateTimeGap', () => {
     const date = new Date(Date.now() - 7 * 60 * 1000);
     expect(calculateTimeGap(date, 'es')).toBe('hace 7 minutos');
   });
+
+  it('formats relative time in Italian', () => {
+    const date = new Date(Date.now() - 7 * 60 * 1000);
+    expect(calculateTimeGap(date, 'it')).toBe('7 minuti fa');
+  });
 });
 
 describe('formatDateTimeWithLocale', () => {

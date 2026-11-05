@@ -151,5 +151,12 @@
   "linkPlaceholder": "https://exemple.com",
   "apply": "Appliquer",
   "link": "Lien",
-  "textColor": "Couleur du texte"
+  "textColor": "Couleur du texte",
+  "sidebarTrialDays_one": "{{count}} jour",
+  "sidebarTrialDays_other": "{{count}} jours",
+  "sidebarTrialLabel": "Essai",
+  "sidebarUpgradeLabel": "AMÉLIORER",
+  "sidebarUpgradeTooltip": "Changer de forfait",
+  "sidebarTrialTooltip_one": "Il reste {{count}} jour d’essai",
+  "sidebarTrialTooltip_other": "Il reste {{count}} jours d’essai"
 }
