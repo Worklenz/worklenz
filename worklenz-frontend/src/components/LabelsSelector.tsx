@@ -28,7 +28,9 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { labels } = useSelector((state: RootState) => state.taskLabelsReducer);
-  const currentSession = useAuthService().getCurrentSession();
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
   const { socket } = useSocket();
   const { t } = useTranslation('task-list-table');
 
@@ -299,19 +301,21 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
             </div>
 
             {/* Footer */}
-            <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-              <button
-                type="button"
-                onClick={handleManageLabelsClick}
-                className={`flex w-full items-center justify-center gap-1 rounded px-2 py-1 text-xs transition-colors ${isDarkMode
-                    ? 'text-gray-400 hover:bg-gray-700 hover:text-blue-400'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-blue-600'
-                  }`}
-              >
-                <TagOutlined />
-                {t('manageLabelsPath')}
-              </button>
-            </div>
+            {isOwnerOrAdmin && (
+              <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                <button
+                  type="button"
+                  onClick={handleManageLabelsClick}
+                  className={`flex w-full items-center justify-center gap-1 rounded px-2 py-1 text-xs transition-colors ${isDarkMode
+                      ? 'text-gray-400 hover:bg-gray-700 hover:text-blue-400'
+                      : 'text-gray-500 hover:bg-gray-50 hover:text-blue-600'
+                    }`}
+                >
+                  <TagOutlined />
+                  {t('manageLabelsPath')}
+                </button>
+              </div>
+            )}
           </div>,
           document.body
         )}

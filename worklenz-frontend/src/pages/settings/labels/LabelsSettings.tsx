@@ -402,7 +402,8 @@ const LabelsSettings = () => {
         </div>
 
         {/* Page navigation */}
-        <div
+        <nav
+          aria-label={t('common:paginationNavigation')}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -412,6 +413,7 @@ const LabelsSettings = () => {
         >
           <button
             type="button"
+            aria-label={t('common:firstPage')}
             style={navBtnStyle(safePage > 1)}
             disabled={safePage === 1}
             onClick={() => setPage(1)}
@@ -421,9 +423,10 @@ const LabelsSettings = () => {
 
           <button
             type="button"
+            aria-label={t('common:previousPage')}
             style={navBtnStyle(safePage > 1)}
             disabled={safePage === 1}
-            onClick={() => setPage(p => Math.max(1, p - 1))}
+            onClick={() => setPage(Math.max(1, safePage - 1))}
           >
             ‹
           </button>
@@ -433,6 +436,7 @@ const LabelsSettings = () => {
               <button
                 type="button"
                 key={i}
+                aria-current={p === safePage ? 'page' : undefined}
                 style={btnStyle(p === safePage)}
                 onClick={() => setPage(p)}
               >
@@ -441,6 +445,7 @@ const LabelsSettings = () => {
             ) : (
               <span
                 key={i}
+                aria-hidden="true"
                 style={{
                   fontSize: 12,
                   padding: '0 4px',
@@ -454,6 +459,7 @@ const LabelsSettings = () => {
 
           <button
             type="button"
+            aria-label={t('common:nextPage')}
             style={navBtnStyle(safePage < totalPages)}
             disabled={safePage === totalPages}
             onClick={() =>
@@ -465,13 +471,14 @@ const LabelsSettings = () => {
 
           <button
             type="button"
+            aria-label={t('common:lastPage')}
             style={navBtnStyle(safePage < totalPages)}
             disabled={safePage === totalPages}
             onClick={() => setPage(totalPages)}
           >
             »
           </button>
-        </div>
+        </nav>
       </div>
 
       <LabelsDrawer
