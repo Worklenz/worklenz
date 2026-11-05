@@ -96,4 +96,29 @@ describe('custom report template restoration', () => {
     await waitFor(() => expect(result.current.selectedProjectIds).toEqual(['default-project']));
   });
 
+  it('ignores an earlier report response after switching to a restored custom report', async () => {
+    sessionStorage.setItem('worklenz.analyticsReportFilters:team-1:user-1:test:custom:second',
+      JSON.stringify({ selectedProjectIds: ['edited'], hasExplicitFilters: true }));
+    const listTemplates = vi.mocked(analyticsTemplatesApiService.listTemplates);
+    const pending: Array<(value: Awaited<ReturnType<typeof listTemplates>>) => void> = [];
+    listTemplates.mockImplementation(kind => kind === 'all'
+      ? Promise.resolve({ done: true, body: [] } as Awaited<ReturnType<typeof listTemplates>>)
+      : new Promise(resolve => pending.push(resolve)));
+    const wrapper = ({ children }: { children: React.ReactNode }) => <MemoryRouter>{children}</MemoryRouter>;
+    const hook = renderHook(({ id }) => {
+      const filters = usePersistedAnalyticsFilters({ reportKind: 'test', customTemplateId: id });
+      useAnalyticsReportTemplates({ reportKind: 'test', customTemplateId: id, wasRestored: filters.hasRestoredFilters,
+        onApply: template => filters.setSelectedProjectIds(template.filters_json?.project_ids as string[]),
+        getFilters: () => ({}) });
+      return filters;
+    }, { wrapper, initialProps: { id: 'first' } });
+    const firstRequests = pending.splice(0);
+    hook.rerender({ id: 'second' });
+    const response = { done: true, body: [{ id: 'second', filters_json: { project_ids: ['template'] } }] } as Awaited<ReturnType<typeof listTemplates>>;
+    await act(async () => { firstRequests.forEach(resolve => resolve(response)); });
+    expect(hook.result.current.selectedProjectIds).toEqual(['edited']);
+    await act(async () => { pending.forEach(resolve => resolve(response)); });
+    expect(hook.result.current.selectedProjectIds).toEqual(['edited']);
+  });
+
 });

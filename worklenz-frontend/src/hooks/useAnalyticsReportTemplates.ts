@@ -53,6 +53,8 @@ export const useAnalyticsReportTemplates = ({
   const pendingTemplateId = useRef<string | null>(
     customTemplateId ?? searchParams.get('template')
   );
+  const templateContextRef = useRef({ reportKind, customTemplateId, wasRestored });
+  templateContextRef.current = { reportKind, customTemplateId, wasRestored };
   const onApplyRef = useRef(onApply);
   const getFiltersRef = useRef(getFilters);
   onApplyRef.current = onApply;
@@ -90,11 +92,12 @@ export const useAnalyticsReportTemplates = ({
       }
 
       if (!isAnalyticsCustomReportsSessionActive(storageKeyAtFetch)) return;
+      if (templateContextRef.current.reportKind !== reportKind || templateContextRef.current.customTemplateId !== customTemplateId) return;
       const targetId = pendingTemplateId.current;
       if (targetId && appliedQueryTemplate.current !== targetId) {
         const fromTarget = res.body.find(tpl => tpl.id === targetId);
         if (fromTarget) {
-          if (!isCustomTemplateView || !wasRestored) onApplyRef.current(fromTarget);
+          if (!isCustomTemplateView || !templateContextRef.current.wasRestored) onApplyRef.current(fromTarget);
           appliedQueryTemplate.current = targetId;
           pendingTemplateId.current = null;
           appliedDefaultTemplate.current = true;
@@ -122,7 +125,7 @@ export const useAnalyticsReportTemplates = ({
     } catch {
       // templates optional
     }
-  }, [reportKind, isCustomTemplateView, skipDefaultTemplate, wasRestored]);
+  }, [reportKind, customTemplateId, isCustomTemplateView, skipDefaultTemplate, wasRestored]);
 
   useEffect(() => {
     void loadTemplates();

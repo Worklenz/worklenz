@@ -73,7 +73,10 @@ export const usePersistedAnalyticsFilters = (
 
   const readScope = () => {
     const restored = readAnalyticsFilterSession(reportKey, defaults);
-    return { scope: storageScope, ...restored, restoredState: restored.state, shouldPersist: restored.wasRestored };
+    const hasSavedFilters = restored.wasRestored &&
+      (restored.hasExplicitFilters || hasMeaningfulAnalyticsFilters(restored.state, defaults));
+    return { scope: storageScope, ...restored, restoredState: restored.state,
+      shouldPersist: hasSavedFilters, explicitProjects: hasSavedFilters, explicitTeams: hasSavedFilters };
   };
   const scopeRef = useRef({ storageScope, reportKey, defaults });
   scopeRef.current = { storageScope, reportKey, defaults };
@@ -93,24 +96,28 @@ export const usePersistedAnalyticsFilters = (
     }
   }, [storageScope, reportKey, stored]);
 
-  const updateState = useCallback((action: SetStateAction<AnalyticsFilterFields>, isAutomatic: boolean, preserveEmpty?: 'selectedProjectIds' | 'selectedTeamIds') => {
+  const updateState = useCallback((action: SetStateAction<AnalyticsFilterFields>, isAutomatic: boolean, preserveEmpty?: 'selectedProjectIds' | 'selectedTeamIds', explicitField?: 'explicitProjects' | 'explicitTeams') => {
     setStored(prev => {
       const { storageScope: scope, reportKey: key, defaults: scopeDefaults } = scopeRef.current;
       const restored = prev.scope === scope ? null : readAnalyticsFilterSession(key, scopeDefaults);
-      const base = restored ? { scope, ...restored, restoredState: restored.state, shouldPersist: restored.wasRestored } : prev;
+      const hasSavedFilters = restored && restored.wasRestored &&
+        (restored.hasExplicitFilters || hasMeaningfulAnalyticsFilters(restored.state, scopeDefaults));
+      const base = restored ? { scope, ...restored, restoredState: restored.state,
+        shouldPersist: Boolean(hasSavedFilters), explicitProjects: Boolean(hasSavedFilters), explicitTeams: Boolean(hasSavedFilters) } : prev;
       // Automatic defaults must not replace an explicitly cleared selection. Apply the
       // updater first so it can still reconcile non-empty selections with available options.
       let next = toSetStateAction(action, base.state);
-      const hasSavedSelection = base.hasExplicitFilters ||
-        (base.wasRestored && hasMeaningfulAnalyticsFilters(base.restoredState, scopeDefaults));
+      const hasSavedSelection = preserveEmpty === 'selectedProjectIds' ? base.explicitProjects : base.explicitTeams;
       if (preserveEmpty && hasSavedSelection && base.state[preserveEmpty].length === 0 && next[preserveEmpty].length > 0) {
         next = { ...next, [preserveEmpty]: base.state[preserveEmpty] };
       }
       const shouldPersist = base.shouldPersist || !isAutomatic;
       const hasExplicitFilters = base.hasExplicitFilters || !isAutomatic;
-      return next === base.state && shouldPersist === base.shouldPersist && hasExplicitFilters === base.hasExplicitFilters
+      const explicitProjects = base.explicitProjects || explicitField === 'explicitProjects';
+      const explicitTeams = base.explicitTeams || explicitField === 'explicitTeams';
+      return next === base.state && shouldPersist === base.shouldPersist && hasExplicitFilters === base.hasExplicitFilters && explicitProjects === base.explicitProjects && explicitTeams === base.explicitTeams
         ? base
-        : { ...base, state: next, shouldPersist, hasExplicitFilters };
+        : { ...base, state: next, shouldPersist, hasExplicitFilters, explicitProjects, explicitTeams };
     });
   }, []);
   const setState = useCallback<Dispatch<SetStateAction<AnalyticsFilterFields>>>(
@@ -141,14 +148,14 @@ export const usePersistedAnalyticsFilters = (
 
   const setSelectedProjectIds = useCallback<Dispatch<SetStateAction<string[]>>>(
     action => {
-      setState(prev => {
+      updateState(prev => {
         const next = toSetStateAction(action, prev.selectedProjectIds);
         return next === prev.selectedProjectIds
           ? prev
           : { ...prev, selectedProjectIds: next };
-      });
+      }, false, undefined, 'explicitProjects');
     },
-    [setState]
+    [updateState]
   );
 
   const setSelectedMemberIds = useCallback<Dispatch<SetStateAction<string[]>>>(
@@ -165,12 +172,12 @@ export const usePersistedAnalyticsFilters = (
 
   const setSelectedTeamIds = useCallback<Dispatch<SetStateAction<string[]>>>(
     action => {
-      setState(prev => {
+      updateState(prev => {
         const next = toSetStateAction(action, prev.selectedTeamIds);
         return next === prev.selectedTeamIds ? prev : { ...prev, selectedTeamIds: next };
-      });
+      }, false, undefined, 'explicitTeams');
     },
-    [setState]
+    [updateState]
   );
 
   const setSelectedStatusIds = useCallback<Dispatch<SetStateAction<string[]>>>(

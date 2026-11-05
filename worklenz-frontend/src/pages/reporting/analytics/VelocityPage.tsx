@@ -246,6 +246,9 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     }
   }, []);
 
+  const templateContextRef = useRef({ customTemplateId, hasRestoredFilters });
+  templateContextRef.current = { customTemplateId, hasRestoredFilters };
+
   const applyTemplateFilters = useCallback((template: AnalyticsReportTemplate) => {
     const f = template.filters_json ?? {};
     if (Array.isArray(f.project_ids)) setSelectedProjectIds(f.project_ids.map(String));
@@ -278,11 +281,12 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
         }
 
         if (!isAnalyticsCustomReportsSessionActive(storageKeyAtFetch)) return;
+        if (templateContextRef.current.customTemplateId !== customTemplateId) return;
         const queryTemplateId = pendingQueryTemplateId.current;
         if (queryTemplateId && appliedQueryTemplate.current !== queryTemplateId) {
           const fromQuery = res.body.find(tpl => tpl.id === queryTemplateId);
           if (fromQuery) {
-            if (!isCustomTemplateView || !hasRestoredFilters) applyTemplateFilters(fromQuery);
+            if (!isCustomTemplateView || !templateContextRef.current.hasRestoredFilters) applyTemplateFilters(fromQuery);
             appliedQueryTemplate.current = queryTemplateId;
             pendingQueryTemplateId.current = null;
             appliedDefaultTemplate.current = true;
@@ -312,7 +316,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     } catch {
       // templates are optional on first load
     }
-  }, [applyTemplateFilters, isCustomTemplateView, searchParams, setSearchParams, hasRestoredFilters]);
+  }, [applyTemplateFilters, customTemplateId, isCustomTemplateView, searchParams, setSearchParams, hasRestoredFilters]);
 
   const loadSeries = useCallback(async () => {
     if (!hasProjectSelection) {

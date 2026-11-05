@@ -165,3 +165,27 @@ it('still reconciles previously selected projects when available options change'
   act(() => hook.result.current.setAutomaticProjectIds(ids => ids.filter(id => id !== 'removed')));
   expect(hook.result.current.selectedProjectIds).toEqual(['keep']);
 });
+
+it('allows unrelated defaults after an explicit date or member selection', () => {
+  sessionStorage.clear();
+  const hook = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  act(() => hook.result.current.setDatePreset('last_7_days'));
+  act(() => {
+    hook.result.current.setAutomaticTeamIds(['team-1']);
+    hook.result.current.setAutomaticProjectIds(['project-1']);
+  });
+  expect(hook.result.current.selectedTeamIds).toEqual(['team-1']);
+  expect(hook.result.current.selectedProjectIds).toEqual(['project-1']);
+});
+
+it('does not persist automatically seeded projects from an empty legacy entry', () => {
+  sessionStorage.clear();
+  const key = 'worklenz.analyticsReportFilters:team-1:user-1:budget';
+  sessionStorage.setItem(key, '{}');
+  const first = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  act(() => first.result.current.setAutomaticProjectIds(['seeded']));
+  first.unmount();
+  const reopened = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'budget' }));
+  expect(reopened.result.current.hasRestoredFilters).toBe(false);
+  expect(reopened.result.current.selectedProjectIds).toEqual([]);
+});
