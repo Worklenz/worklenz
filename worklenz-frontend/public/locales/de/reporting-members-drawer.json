@@ -30,6 +30,7 @@
   "billableButton": "Abrechenbar",
   "billableText": "Abrechenbar",
   "nonBillableText": "Nicht abrechenbar",
+  "billableAndNonBillableText": "Alle",
   "timeLogsEmptyPlaceholder": "Keine Zeiterfassungen vorhanden",
   "loggedText": "Erfasst",
   "forText": "für",

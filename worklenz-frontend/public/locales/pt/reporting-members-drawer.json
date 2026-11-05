@@ -30,6 +30,7 @@
   "billableButton": "Cobrável",
   "billableText": "Cobrável",
   "nonBillableText": "Não Cobrável",
+  "billableAndNonBillableText": "Todas",
   "timeLogsEmptyPlaceholder": "Nenhum registro de tempo para mostrar",
   "loggedText": "Registrado",
   "forText": "para",

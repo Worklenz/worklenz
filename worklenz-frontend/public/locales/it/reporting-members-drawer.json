@@ -30,6 +30,7 @@
   "billableButton": "Fatturabile",
   "billableText": "Fatturabile",
   "nonBillableText": "Non fatturabile",
+  "billableAndNonBillableText": "Tutte",
   "timeLogsEmptyPlaceholder": "Nessuna registrazione del tempo da mostrare",
   "loggedText": "Registrato",
   "forText": "per",

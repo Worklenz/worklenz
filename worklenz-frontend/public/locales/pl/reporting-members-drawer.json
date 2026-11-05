@@ -30,6 +30,7 @@
   "billableButton": "Płatne",
   "billableText": "Płatne",
   "nonBillableText": "Niepodlegające rozliczeniu",
+  "billableAndNonBillableText": "Wszystko",
   "timeLogsEmptyPlaceholder": "Brak dzienników czasu do pokazania",
   "loggedText": "Zalogowano",
   "forText": "dla",

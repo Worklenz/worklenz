@@ -30,6 +30,7 @@
   "billableButton": "可计费",
   "billableText": "可计费",
   "nonBillableText": "不可计费",
+  "billableAndNonBillableText": "全部",
   "timeLogsEmptyPlaceholder": "没有时间日志可显示",
   "loggedText": "记录",
   "forText": "为",
