@@ -1,10 +1,30 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Card, ConfigProvider, theme } from '@/shared/antd-imports';
 import taskManagementStyles from '@/styles/task-management.css?raw';
+import { openAddClientWizard } from '@/features/clients-portal/clients/clients-slice';
+import type { PreviewUser } from '@/types/client-portal/v2';
 
-const state = vi.hoisted(() => ({ getBranding: vi.fn() }));
+const activeUser: PreviewUser = {
+  id: 'user-1',
+  name: 'Client Person',
+  email: 'client@example.com',
+  role: 'admin',
+  organization_id: 'client-1',
+  organization_name: 'Client organization',
+  status: 'active',
+};
+
+const state = vi.hoisted(() => ({
+  getBranding: vi.fn(),
+  dispatch: vi.fn(),
+  usersBody: {
+    users: [] as PreviewUser[],
+    has_client_users: true,
+  },
+}));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -22,11 +42,13 @@ vi.mock('@/api/client-portal/portal-projects-api', () => ({
   useGetProjectAccessQuery: () => ({ isLoading: false }),
 }));
 
+vi.mock('@/hooks/useAppDispatch', () => ({
+  useAppDispatch: () => state.dispatch,
+}));
+
 vi.mock('@/api/client-portal/portal-workflow-api', () => ({
   useGetPreviewUsersQuery: () => ({
-    data: {
-      body: [{ id: 'user-1', name: 'Client Person', role: 'admin', organization_id: 'client-1', organization_name: 'Client organization' }],
-    },
+    data: { body: state.usersBody },
     isLoading: false,
     isError: false,
   }),
@@ -78,6 +100,7 @@ let globalStyles: HTMLStyleElement;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  state.usersBody = { users: [{ ...activeUser }], has_client_users: true };
   globalStyles = document.createElement('style');
   globalStyles.textContent = taskManagementStyles;
   document.head.append(globalStyles);
@@ -115,6 +138,49 @@ const expectPortalTheme = (portalTheme: 'light' | 'dark') => {
     portalTheme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)'
   );
 };
+
+describe('ClientPortalPreviewPage users', () => {
+  it('labels a client user who has not accepted the invite', () => {
+    state.usersBody = {
+      users: [{ ...activeUser, status: 'invited', name: 'Pending Person' }],
+      has_client_users: true,
+    };
+    state.getBranding.mockResolvedValue({ done: true, body: { portal_theme: 'light' } });
+    renderPreview('light');
+
+    expect(screen.getByText('Pending invite')).toBeInTheDocument();
+    expect(screen.getByText('{{name}} · {{role}} · Pending invite')).toBeInTheDocument();
+  });
+
+  it('offers add client and add client user when nobody has been added', async () => {
+    const user = userEvent.setup();
+    state.usersBody = { users: [], has_client_users: false };
+    state.getBranding.mockResolvedValue({ done: true, body: { portal_theme: 'light' } });
+    renderPreview('light');
+
+    expect(
+      screen.getByText('No client users yet. Add a client and a client user, then assign a project to preview the portal.')
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Add client' }));
+    await user.click(screen.getByRole('button', { name: 'Add client user' }));
+
+    expect(state.dispatch).toHaveBeenNthCalledWith(1, openAddClientWizard('new_organization'));
+    expect(state.dispatch).toHaveBeenNthCalledWith(2, openAddClientWizard('existing_organization'));
+  });
+
+  it('asks for a project when client users exist but none can be previewed', () => {
+    state.usersBody = { users: [], has_client_users: true };
+    state.getBranding.mockResolvedValue({ done: true, body: { portal_theme: 'light' } });
+    renderPreview('light');
+
+    expect(
+      screen.getByText('No client users with a project yet. Invite a user and assign a project to preview the portal.')
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add client' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add client user' })).not.toBeInTheDocument();
+  });
+});
 
 describe('ClientPortalPreviewPage theme isolation', () => {
   it.each([

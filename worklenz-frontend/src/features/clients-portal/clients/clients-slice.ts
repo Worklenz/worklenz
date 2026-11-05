@@ -5,11 +5,10 @@ import {
   ClientPortalTeamMember,
 } from '../../../api/client-portal/client-portal-api';
 
-/** Opens the Add Client wizard already on "Add a client user" for this company. */
-export interface AddClientPreset {
-  method: 'user';
-  company: { id: string; name: string };
-}
+/** Opens the Add Client wizard on a specific step. `user` skips straight to one company. */
+export type AddClientPreset =
+  | { method: 'user'; company: { id: string; name: string } }
+  | { method: 'new_organization' | 'existing_organization' };
 
 export type ClientsState = {
   tempClients: TempClientPortalClientType[]; // Keep for backward compatibility
@@ -72,9 +71,13 @@ const clientsSlice = createSlice({
       // A preset only applies to the opening it was made for.
       if (!state.isAddClientDrawerOpen) state.addClientPreset = null;
     },
-    openAddCompanyUserDrawer: (state, action: PayloadAction<AddClientPreset['company']>) => {
+    openAddCompanyUserDrawer: (state, action: PayloadAction<{ id: string; name: string }>) => {
       state.isAddClientDrawerOpen = true;
       state.addClientPreset = { method: 'user', company: action.payload };
+    },
+    openAddClientWizard: (state, action: PayloadAction<'new_organization' | 'existing_organization'>) => {
+      state.isAddClientDrawerOpen = true;
+      state.addClientPreset = { method: action.payload };
     },
     toggleEditClientDrawer: (state, action: PayloadAction<string | null>) => {
       if (action.payload === null) {
@@ -194,6 +197,7 @@ const clientsSlice = createSlice({
 export const {
   toggleAddClientDrawer,
   openAddCompanyUserDrawer,
+  openAddClientWizard,
   toggleEditClientDrawer,
   toggleClientSettingsDrawer,
   toggleClientDetailsDrawer,

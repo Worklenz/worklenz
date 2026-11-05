@@ -1,0 +1,122 @@
+{
+  "auditRecorded": "Modifica dell'autorizzazione registrata nel registro di controllo.",
+  "loadEmpty": "Non è stata restituita alcuna impostazione del portale.",
+  "loadFailed": "Impossibile caricare le impostazioni del portale.",
+  "nav": {
+    "notifications": "Notifiche",
+    "roles": "Ruoli del cliente",
+    "sharing": "Condivisione e visibilità"
+  },
+  "notifications": {
+    "banner": "Le notifiche inviate ai client non contengono mai contenuto esclusivamente interno nel titolo o nel corpo. Gli avvisi in-app sono sempre attivi. L'e-mail è facoltativa per evento.",
+    "client": {
+      "accessChanges": "Accedi alle modifiche",
+      "accessChangesDescription": "Invito, cambio di ruolo o assegnazione di progetto.",
+      "approvalRequest": "Nuova richiesta di approvazione",
+      "approvalRequestDescription": "A un approvatore del cliente viene chiesto di approvare un elemento.",
+      "changeRequestUpdate": "Aggiornamento della richiesta di modifica",
+      "changeRequestUpdateDescription": "Stato, risposta o modifica della stima su una richiesta.",
+      "commentOrReply": "Commenta o rispondi",
+      "commentOrReplyDescription": "Qualcuno risponde in una discussione visibile al cliente.",
+      "fileShared": "File condiviso",
+      "fileSharedDescription": "Un file è contrassegnato come Visibile al client oppure viene caricata una nuova versione.",
+      "milestoneChange": "Cambio di pietra miliare",
+      "milestoneChangeDescription": "Un traguardo visibile al cliente cambia lo stato o la data.",
+      "projectUpdate": "Aggiornamento del progetto",
+      "projectUpdateDescription": "Lo stato del progetto cambia o viene pubblicato un aggiornamento.",
+      "title": "Notifiche ai clienti"
+    },
+    "emailColumn": "E-mail",
+    "emailLabel": "E-mail: {{event}}",
+    "eventColumn": "Evento",
+    "inAppColumn": "Nell'app",
+    "inAppLabel": "In-app: {{event}} (sempre attivo)",
+    "team": {
+      "approvalDecision": "Decisione di approvazione del cliente",
+      "approvalDecisionDescription": "Un cliente approva o richiede modifiche.",
+      "changeRequest": "Nuova richiesta di modifica o follow-up",
+      "changeRequestDescription": "Un cliente invia una richiesta o risponde a una domanda.",
+      "clientComment": "Commento del nuovo cliente",
+      "clientCommentDescription": "Un cliente commenta in una discussione.",
+      "clientFileUpload": "Caricamento file cliente",
+      "clientFileUploadDescription": "Un cliente carica un file in un progetto.",
+      "title": "Notifiche alla tua squadra"
+    }
+  },
+  "retry": "Riprova",
+  "roles": {
+    "allowed": "Consentito",
+    "alwaysTrue": {
+      "nextRequest": "La disattivazione di un utente o la rimozione di un'assegnazione di progetto ha effetto alla richiesta successiva, non al successivo accesso.",
+      "noTeamDirectory": "Un utente cliente non vede mai la directory del tuo team interno e non potrà mai diventare un amministratore del tuo spazio di lavoro.",
+      "oneOrganization": "Un utente cliente appartiene esattamente a un'organizzazione e vede solo i progetti a lui assegnati.",
+      "ownOrganizationOnly": "Un amministratore cliente può visualizzare e gestire gli utenti solo nella propria organizzazione, mai in quella di un altro cliente.",
+      "title": "Sempre vero"
+    },
+    "capability": {
+      "approve": "Approva articoli o richiedi modifiche",
+      "comment": "Commenta e rispondi nelle discussioni visibili ai clienti",
+      "manageUsers": "Gestisci gli utenti nella propria organizzazione (se abilitato di seguito)",
+      "submitChangeRequest": "Invia e segui le richieste di modifica",
+      "upload": "Carica file (dove il progetto lo consente)",
+      "view": "Visualizza progetti assegnati, traguardi, attività e file visibili al cliente"
+    },
+    "capabilityColumn": "Capacità",
+    "matrixDescription": "Tre ruoli, nessun generatore di autorizzazioni. Un ruolo si applica a ogni progetto a cui è assegnato l'utente.",
+    "matrixError": "Impossibile caricare le autorizzazioni del ruolo.",
+    "matrixTitle": "Cosa può fare ciascun ruolo",
+    "notAllowed": "Non consentito",
+    "selfManagement": {
+      "description": "Consenti a un amministratore cliente di gestire chi dalla propria organizzazione ha accesso al portale, invece di instradare ogni modifica attraverso il tuo team.",
+      "invite": {
+        "description": "Un amministratore cliente può invitare un collega della propria organizzazione.",
+        "label": "Consenti agli amministratori cliente di invitare gli utenti"
+      },
+      "remove": {
+        "description": "Un amministratore cliente può rimuovere un altro utente dalla propria organizzazione.",
+        "label": "Consenti agli amministratori client di rimuovere gli utenti"
+      },
+      "title": "Autogestione dell'amministratore del cliente"
+    },
+    "signIn": {
+      "addedOnly": "Solo un indirizzo aggiunto da te o da un amministratore cliente da te autorizzato può ricevere un codice. Qualcun altro non ottiene nulla.",
+      "code": "Non ci sono password. Un cliente accede con un codice di 6 cifre inviato al suo indirizzo email. Funziona una volta e scade dopo 10 minuti.",
+      "description": "Niente da configurare. Ogni cliente firma allo stesso modo.",
+      "direct": "I clienti possono anche aprire il portale, digitare il proprio indirizzo e ricevere un codice, senza il collegamento.",
+      "link": "Un'e-mail di invito contiene un collegamento di accesso con l'indirizzo integrato. Aprendolo viene inviato immediatamente il codice. I collegamenti scadono dopo 7 giorni e possono essere reinviati dagli Utenti.",
+      "title": "Come i clienti accedono"
+    }
+  },
+  "saveFailed": "Impossibile salvare le impostazioni del portale.",
+  "sharing": {
+    "defaults": {
+      "clientUploads": {
+        "description": "Gli amministratori cliente e i membri cliente possono aggiungere file. Gli spettatori del cliente non possono mai farlo. Puoi sovrascriverlo per progetto.",
+        "label": "Consenti caricamenti da parte dei clienti su nuovi progetti di portale"
+      },
+      "showInvoices": {
+        "description": "Aggiunge una pagina Fatture per i clienti. Nascosto per impostazione predefinita.",
+        "label": "Mostra fatture nel portale clienti"
+      },
+      "title": "Sezioni e valori predefiniti"
+    },
+    "rules": {
+      "defaultInternal": "Attività, file, attività cardine e commenti sono Solo interni per impostazione predefinita, per elementi esistenti e nuovi.",
+      "explicitShare": "Niente raggiunge il portale finché un membro del team autorizzato non lo contrassegna come Client Visibile.",
+      "fixedTag": "Regole fisse",
+      "neverExposed": "Commenti interni, registri temporali, stime, costi e dipendenze non vengono mai esposti, qualunque cosa tu condivida.",
+      "noHints": "Un elemento nascosto non viene mai conteggiato o accennato in dashboard, elenchi o notifiche.",
+      "revertImmediate": "Riportando un elemento su Solo interno lo rimuove immediatamente dal portale e ne conserva la cronologia interna.",
+      "title": "Come funziona la condivisione"
+    },
+    "shared": {
+      "count": "{{shared}} del cliente {{total}} visibile",
+      "description": "Conteggiato sui progetti per cui è attivato il Portale Clienti.",
+      "files": "File",
+      "milestones": "Pietre miliari",
+      "tasks": "Compiti",
+      "title": "Attualmente condiviso tra progetti del portale"
+    }
+  },
+  "subtitle": "Branding, cosa è condiviso per impostazione predefinita, ruoli e notifiche per il tuo portale clienti."
+}

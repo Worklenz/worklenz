@@ -16,6 +16,7 @@ import { zhCN } from 'date-fns/locale/zh-CN';
 import { sq } from 'date-fns/locale/sq';
 import { pl } from 'date-fns/locale/pl';
 import { fr } from 'date-fns/locale/fr';
+import { it } from 'date-fns/locale/it';
 import { getLanguageFromLocalStorage } from './language-utils';
 
 const JUST_NOW: Record<string, string> = {
@@ -28,6 +29,7 @@ const JUST_NOW: Record<string, string> = {
   alb: 'Sapo tani',
   pl: 'Przed chwilą',
   fr: "À l'instant",
+  it: 'Proprio ora',
 };
 
 const DATE_FNS_LOCALE: Record<string, typeof enUS> = {
@@ -39,6 +41,7 @@ const DATE_FNS_LOCALE: Record<string, typeof enUS> = {
   alb: sq,
   pl: pl,
   fr: fr,
+  it: it,
 };
 
 export function calculateTimeDifference(timestamp: string | Date, justNow?: string): string {
