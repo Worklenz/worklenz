@@ -1,3 +1,7 @@
+import { IO } from "../shared/io";
+import { SocketEvents } from "../socket.io/events";
+import { IActivityLogAttributeTypes, IActivityLogChangeType } from "../services/activity-logs/interfaces";
+import TaskMoveService from "../services/task-move.service";
 import { ParsedQs } from "qs";
 import { PoolClient } from "pg";
 
@@ -18,6 +22,7 @@ import { SqlHelper } from "../shared/sql-helpers";
 import { isValidUuid } from "../shared/validation-helpers";
 import {
   AssigneeTaskScope,
+  canUserEditTask,
   buildAssigneeScopeFilter,
   buildAssigneeScopedProgressExpression,
   buildAssigneeScopeReadonlyExpression,
@@ -2116,6 +2121,16 @@ export default class TasksControllerV2 extends TasksControllerBase {
       client.release();
     }
   }
+
+  @HandleExceptions()
+  public static async moveTasksToProject(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const result = await TaskMoveService.moveTasksToProject(req.body, req.user);
+    return res.status(result.status).send(result.response);
+  }
+
 
   public static async refreshProjectTaskProgressValues(
     projectId: string

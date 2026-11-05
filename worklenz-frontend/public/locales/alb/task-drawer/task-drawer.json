@@ -266,7 +266,8 @@
       "attachment": "bashkëngjitjen",
       "comment": "komentin",
       "assignee": "të caktuarin",
-      "archive": "arkivin"
+      "archive": "arkivin",
+      "project": "projekt"
     },
     "historyLockedBoundary": "Aktiviteti është i kufizuar në 90 ditët e fundit në këtë plan",
     "historyLockedTitle": "Historiku i aktivitetit i bllokuar",

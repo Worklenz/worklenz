@@ -116,7 +116,8 @@
     "deleteConfirmMessage": "Czy na pewno chcesz usunąć to zadanie? Tej akcji nie można cofnąć.",
     "deleteSubtaskConfirmMessage": "Czy na pewno chcesz usunąć to podzadanie? Tej akcji nie można cofnąć.",
     "deleteConfirmOk": "Usuń",
-    "deleteConfirmCancel": "Anuluj"
+    "deleteConfirmCancel": "Anuluj",
+    "moveToProject": "Przenieś do projektu"
   },
   "setDueDate": "Ustaw termin",
   "setStartDate": "Ustaw datę rozpoczęcia",
@@ -337,5 +338,41 @@
   "save": "Zapisz",
   "cancel": "Anuluj",
   "changeStatus": "Zmień status: {{status}}",
-  "ellipsis": "..."
+  "ellipsis": "...",
+  "moveTaskProject": {
+    "title": "Przenieś zadania do innego projektu",
+    "selectedTasksTitle": "Wybrane zadania",
+    "destinationLabel": "Projekt docelowy",
+    "destinationPlaceholder": "Wybierz projekt docelowy",
+    "mappingInfo": "Przed przeniesieniem przypisz pola źródłowe do pól projektu docelowego.",
+    "statusMappingTitle": "Mapowanie statusów",
+    "phaseMappingTitle": "Mapowanie faz",
+    "customFieldMappingTitle": "Mapowanie pól niestandardowych",
+    "selectStatus": "Wybierz status docelowy",
+    "selectPhase": "Wybierz fazę docelową",
+    "selectCustomField": "Wybierz pole docelowe",
+    "actions": {
+      "cancel": "Anuluj",
+      "move": "Przenieś zadania"
+    },
+    "options": {
+      "moveSubtasks": "Przenieś również podzadania",
+      "keepAssignees": "Zachowaj osoby przypisane, jeśli należą do projektu docelowego",
+      "keepLabels": "Zachowaj etykiety"
+    },
+    "messages": {
+      "movedSuccess": "Zadania zostały przeniesione.",
+      "movedWithWarnings": "Przeniesiono zadania z {{count}} ostrzeżeniami mapowania. Sprawdź projekt docelowy."
+    },
+    "errors": {
+      "loadData": "Nie można załadować projektów i mapowań. Spróbuj ponownie.",
+      "loadDestinationData": "Nie można załadować projektów i mapowań. Spróbuj ponownie.",
+      "moveFailed": "Nie można przenieść zadań. Spróbuj ponownie."
+    },
+    "partialMappingWarning": "Brakuje niektórych mapowań. Niezmapowane wartości zostaną pominięte.",
+    "loadFailed": "Nie można załadować projektów i mapowań. Spróbuj ponownie.",
+    "completedWithWarnings": "Przeniesiono zadania z {{count}} ostrzeżeniami mapowania. Sprawdź projekt docelowy.",
+    "completed": "Zadania zostały przeniesione.",
+    "moveFailed": "Nie można przenieść zadań. Spróbuj ponownie."
+  }
 }

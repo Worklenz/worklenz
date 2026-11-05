@@ -63,6 +63,30 @@ export interface IQuickTaskSearchResult {
   project_key: string;
 }
 
+export interface IMoveTasksToProjectPayload {
+  task_ids: string[];
+  source_project_id: string;
+  destination_project_id: string;
+  mapping: {
+    status: Record<string, string>;
+    phase?: Record<string, string>;
+    custom_fields?: Record<string, string>;
+  };
+  options: {
+    move_subtasks: boolean;
+    keep_assignees_if_member_exists: boolean;
+    keep_labels_by_name: boolean;
+  };
+}
+
+export interface IMoveTasksToProjectResponse {
+  moved_task_ids: string[];
+  unmoved_task_ids: string[];
+  warnings: Array<{ task_id: string; code: string; message: string }>;
+  destination_refresh_hint: { project_id: string };
+}
+
+
 export const tasksApiService = {
   getTaskList: async (config: ITaskListConfigV2): Promise<IServerResponse<ITaskListGroup[]>> => {
     const q = toQueryString(config);
@@ -236,6 +260,13 @@ export const tasksApiService = {
       group_value: params.groupValue,
       project_id: params.projectId,
     });
+    return response.data;
+  },
+
+  moveTasksToProject: async (
+    payload: IMoveTasksToProjectPayload
+  ): Promise<IServerResponse<IMoveTasksToProjectResponse>> => {
+    const response = await apiClient.post(`${rootUrl}/move-project`, payload);
     return response.data;
   },
 };

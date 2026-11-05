@@ -1,3 +1,5 @@
+import MoveTaskProjectModal from '@/components/task-list-common/move-task-project-modal/MoveTaskProjectModal';
+import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { isSoftwareProjectType } from '@/lib/project/software-project';
@@ -16,6 +18,7 @@ import {
   DeleteOutlined,
   CloseOutlined,
   RetweetOutlined,
+  CheckCircleOutlined,
   UserAddOutlined,
   InboxOutlined,
   TagsOutlined,
@@ -25,7 +28,8 @@ import {
   MoreOutlined,
   CalendarOutlined,
 } from '@/shared/antd-imports';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { selectTasks } from '@/features/projects/bulkActions/bulkActionSlice';
@@ -188,7 +192,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
   }) => {
     const { t } = useTranslation(['tasks/task-table-bulk-actions', 'task-management']);
     const { t: tCommon } = useTranslation('common');
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
 
     // Get data from Redux store
@@ -237,6 +241,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
 
     // Task template state
     const [showDrawer, setShowDrawer] = useState(false);
+    const [showMoveProjectModal, setShowMoveProjectModal] = useState(false);
 
     // Auth service for permissions
     const authService = useAuthService();
@@ -390,6 +395,36 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     const selectedTaskObjects = useMemo(() => {
       return Object.values(tasks).filter((task: any) => selectedTaskIds.includes(task.id));
     }, [tasks, selectedTaskIds]);
+
+    const selectedTasksForMove = useMemo<IProjectTask[]>(() => {
+      const normalizeToken = (value: string) =>
+        value.trim().toLowerCase().replace(/\s+/g, '_');
+
+      return selectedTaskObjects.map(task => {
+        const rawStatus = task.status || '';
+        const rawPhase = task.phase || '';
+        const resolvedStatus = statusList.find(
+          status =>
+            status.id === rawStatus ||
+            (status.name && normalizeToken(status.name) === normalizeToken(rawStatus))
+        );
+        const resolvedPhase = phaseList.find(
+          phase =>
+            phase.id === rawPhase ||
+            (phase.name && normalizeToken(phase.name) === normalizeToken(rawPhase))
+        );
+
+        return {
+          id: task.id,
+          name: task.title || task.name || '',
+          task_key: task.task_key,
+          status_id: resolvedStatus?.id || task.status,
+          phase_id: resolvedPhase?.id || task.phase,
+          custom_column_values: task.custom_column_values || {},
+        };
+      });
+    }, [selectedTaskObjects, statusList, phaseList]);
+
 
     // Union of member ids assigned to ANY of the currently selected tasks.
     // Real assignee data lives in `assignee_names` (assignees is placeholder-only).
@@ -924,6 +959,15 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             </Dropdown>
           </Tooltip>
 
+          {/* Move to Project */}
+          <ActionButton
+            icon={<RetweetOutlined />}
+            tooltip={t('moveToProject', { defaultValue: 'Move to project' })}
+            disabled={!canCreateTask}
+            onClick={canCreateTask ? () => setShowMoveProjectModal(true) : undefined}
+            isDarkMode={isDarkMode}
+          />
+
           {/* Set Due Date */}
           <Tooltip title={t('SET_DUE_DATE')} placement="top">
             <Dropdown
@@ -1077,6 +1121,18 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           document.body,
           'create-task-template'
         )}
+        <MoveTaskProjectModal
+          open={showMoveProjectModal}
+          sourceProjectId={projectId}
+          taskIds={selectedTaskIds}
+          selectedTasks={selectedTasksForMove}
+          onCancel={() => setShowMoveProjectModal(false)}
+          onMoved={() => {
+            setShowMoveProjectModal(false);
+            onClearSelection?.();
+            dispatch(fetchTasksV3(projectId));
+          }}
+        />
       </div>
     );
   }

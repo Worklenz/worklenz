@@ -1,3 +1,5 @@
+import MoveTaskProjectModal from '@/components/task-list-common/move-task-project-modal/MoveTaskProjectModal';
+import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -88,6 +90,8 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   const [updatingAssignToMe, setUpdatingAssignToMe] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
+  const [showMoveProjectModal, setShowMoveProjectModal] = useState(false);
+  const [suppressMenu, setSuppressMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   // Calculate optimal position to prevent overflow
   useEffect(() => {
@@ -139,6 +143,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      if (showMoveProjectModal) return;
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         onClose();
       }
@@ -148,7 +153,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [onClose]);
+  }, [onClose, showMoveProjectModal]);
 
   const handleAssignToMe = useCallback(async () => {
     if (!projectId || !task.id || !currentSession?.team_member_id) return;
@@ -537,6 +542,40 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     }
   }, [projectId, task.id, dispatch, onClose]);
 
+  const selectedTaskForMove = useMemo<IProjectTask[]>(
+    () => {
+      const rawStatus = task.status || '';
+      const rawPhase = task.phase || '';
+      const normalizeStatus = (value: string) =>
+        value.trim().toLowerCase().replace(/\s+/g, '_');
+      const normalizePhase = (value: string) =>
+        value.trim().toLowerCase().replace(/\s+/g, '_');
+      const resolvedStatus = statusList.find(
+        status =>
+          status.id === rawStatus ||
+          (status.name && normalizeStatus(status.name) === normalizeStatus(rawStatus))
+      );
+      const resolvedPhase = phaseList.find(
+        phase =>
+          phase.id === rawPhase ||
+          (phase.name && normalizePhase(phase.name) === normalizePhase(rawPhase))
+      );
+
+      return [
+        {
+          id: task.id,
+          name: task.title || task.name || '',
+          task_key: task.task_key,
+          status_id: resolvedStatus?.id || task.status,
+          phase_id: resolvedPhase?.id || task.phase,
+          custom_column_values: task.custom_column_values || {},
+        },
+      ];
+    },
+    [task, statusList, phaseList]
+  );
+
+
   // Shared disabled style for restricted items.
   // Note: no `pointer-events-none` here — it would suppress the `cursor-not-allowed`
   // rule. The `disabled` attribute and `onClick={undefined}` already block the action.
@@ -599,6 +638,24 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
           >
             <LinkOutlined className="text-gray-500 dark:text-gray-400" />
             <span>{t('contextMenu.copyLink')}</span>
+          </button>
+        ),
+      },
+      {
+        key: 'moveToProject',
+        label: (
+          <button
+            onClick={canCreateTask ? () => {
+              setSuppressMenu(true);
+              setShowMoveProjectModal(true);
+            } : undefined}
+            disabled={!canCreateTask}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+          >
+            <RetweetOutlined className="text-gray-500 dark:text-gray-400" />
+            <span>
+              {t('contextMenu.moveToProject', { defaultValue: 'Move to project' })}
+            </span>
           </button>
         ),
       },
@@ -820,7 +877,8 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   ]);
 
   return (
-    <div
+    <>
+      {!showMoveProjectModal && !suppressMenu && <div
       ref={menuRef}
       className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1 min-w-48"
       style={{
@@ -838,7 +896,18 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
           </li>
         ))}
       </ul>
-    </div>
+    </div>}
+      <MoveTaskProjectModal
+        open={showMoveProjectModal} sourceProjectId={projectId}
+        taskIds={task.id ? [task.id] : []} selectedTasks={selectedTaskForMove}
+        onCancel={() => { setShowMoveProjectModal(false); setSuppressMenu(false); onClose(); }}
+        onMoved={() => {
+          setShowMoveProjectModal(false); setSuppressMenu(false);
+          if (task.id) dispatch(deleteTask(task.id));
+          dispatch(fetchTasksV3(projectId)); onClose();
+        }}
+      />
+    </>
   );
 };
 
