@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Avatar, Flex, Table, Tag, Typography } from '@/shared/antd-imports';
+import { Avatar, Flex, Table, Tag, Typography, theme } from '@/shared/antd-imports';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
@@ -31,6 +31,7 @@ const fmtHours = (value: number): string => `${Number(value.toFixed(1))}h`;
 
 export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loading }) => {
   const { t } = useTranslation('reporting-analytics');
+  const { token } = theme.useToken();
 
   const columns: ColumnsType<UtilizationMemberRow> = useMemo(
     () => [
@@ -38,6 +39,7 @@ export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loa
         title: t('utilColMember', { defaultValue: 'Team Member' }),
         dataIndex: 'member_name',
         key: 'member_name',
+        width: 100,
         ellipsis: true,
         sorter: (a, b) => a.member_name.localeCompare(b.member_name),
         render: (name: string, record) => (
@@ -57,7 +59,7 @@ export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loa
         title: t('utilColRole', { defaultValue: 'Role' }),
         dataIndex: 'role_name',
         key: 'role_name',
-        width: 140,
+        width: 130,
         render: (value: string | null) => (
           <Text type="secondary" style={{ fontSize: 12 }}>
             {value || t('utilEmptyValue', { defaultValue: '—' })}
@@ -111,10 +113,27 @@ export const UtilizationTable: React.FC<UtilizationTableProps> = ({ members, loa
     [t]
   );
 
+  const borderedColumns = columns.map((column) => ({
+  ...column,
+  onCell: () => ({
+    style: {
+      borderInlineEnd: `1px solid ${token.colorBorder}`,
+      borderBottom: `1px solid ${token.colorBorder}`,
+    },
+  }),
+  onHeaderCell: () => ({
+    style: {
+      borderInlineEnd: `1px solid ${token.colorBorder}`,
+      borderBottom: `1px solid ${token.colorBorder}`,
+    },
+  }),
+}));
+
   return (
     <Table<UtilizationMemberRow>
+      bordered
       rowKey="team_member_id"
-      columns={columns}
+      columns={borderedColumns}
       dataSource={members}
       loading={loading}
       pagination={getClientTablePagination(20)}
