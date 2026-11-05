@@ -1,0 +1,63 @@
+{
+  "pageTitle": "Panoramica finanziaria",
+  "pageSubTitle": "Budget, costi effettivi e scostamenti aggregati per tutti i progetti. Apri un progetto per visualizzare la scheda finanziaria completa.",
+  "noBudgetSet": "Nessun budget impostato",
+  "emptyValue": "—",
+  "viewFinanceButton": "Visualizza finanze",
+  "viewButton": "Visualizza",
+  "exportButton": "Esporta in Excel",
+  "exportSuccess": "Esportazione completata.",
+  "exportFailed": "Esportazione non riuscita.",
+  "kpiCard": {
+    "totalManualBudget": "Budget manuale totale",
+    "totalActualCost": "Costo effettivo totale",
+    "totalVariance": "Scostamento totale",
+    "budgetUtilization": "Utilizzo del budget",
+    "estimatedHours": "Ore stimate",
+    "mixedCurrencyWarning": "I progetti usano valute diverse. Questo totale non è convertito in un’unica valuta.",
+    "mixedCurrencyNote": "Visualizzazione di {{dominant}} per {{count}} progetti su {{total}}. Include anche: {{others}}.",
+    "prevCurrency": "Valuta precedente",
+    "nextCurrency": "Valuta successiva"
+  },
+  "attention": {
+    "title": "Progetti che richiedono attenzione",
+    "emptyState": "Tutti i progetti rispettano il budget.",
+    "overBudget": "Budget superato",
+    "watch": "Da monitorare",
+    "ofBudgetSpent": "del budget speso"
+  },
+  "distribution": {
+    "title": "Distribuzione dello stato del budget",
+    "onTrack": "In linea (≤65% speso)",
+    "watch": "Da monitorare (65–100% speso)",
+    "overBudget": "Budget superato (>100% speso)",
+    "projects": "progetti",
+    "total": "Totale",
+    "breakdown": "Ripartizione dei costi effettivi: {{fixed}} fissi · {{timeBased}} basati sul tempo"
+  },
+  "tableCard": {
+    "title": "Stato finanziario dei progetti"
+  },
+  "currencyNote": {
+    "convertedPrefix": "Totali KPI convertiti in",
+    "convertedSuffix": "utilizzando i tassi di cambio aggiornati. Tassi aggiornati {{time}}.",
+    "changeCurrency": "Cambia valuta",
+    "unavailable": "Tassi di cambio non disponibili: impossibile convertire i totali KPI.",
+    "checkSettings": "Controlla le impostazioni della valuta",
+    "fetchUnavailable": "Servizio dei tassi di cambio non disponibile.",
+    "fetchFailed": "Impossibile caricare i tassi di cambio."
+  },
+  "table": {
+    "project": "Progetto",
+    "client": "Cliente",
+    "manualBudget": "Budget manuale",
+    "actualCost": "Costo effettivo",
+    "variance": "Scostamento",
+    "budgetUtilization": "Utilizzo del budget",
+    "estHours": "Ore stimate",
+    "searchPlaceholder": "Cerca progetti"
+  },
+  "myTasksView": {
+    "rowsPerPage": "Righe per pagina:"
+  }
+}

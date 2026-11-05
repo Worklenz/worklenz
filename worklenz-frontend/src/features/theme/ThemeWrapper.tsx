@@ -14,6 +14,7 @@ import 'dayjs/locale/de';
 import 'dayjs/locale/zh-cn';
 import 'dayjs/locale/pl';
 import 'dayjs/locale/fr';
+import 'dayjs/locale/it';
 
 // Import Ant Design locales
 import enUS from 'antd/locale/en_US';
@@ -23,6 +24,7 @@ import deDE from 'antd/locale/de_DE';
 import zhCN from 'antd/locale/zh_CN';
 import plPL from 'antd/locale/pl_PL';
 import frFR from 'antd/locale/fr_FR';
+import itIT from 'antd/locale/it_IT';
 
 type ChildrenProp = {
   children: React.ReactNode;
@@ -45,6 +47,7 @@ const ThemeWrapper = memo(({ children }: ChildrenProp) => {
     zh_cn: 'zh-cn',
     pl: 'pl',
     fr: 'fr',
+    it: 'it',
   };
 
   // Language mapping for Ant Design
@@ -57,6 +60,7 @@ const ThemeWrapper = memo(({ children }: ChildrenProp) => {
     zh_cn: zhCN,
     pl: plPL,
     fr: frFR,
+    it: itIT,
   };
 
   // Memoize theme configuration to prevent unnecessary re-renders
