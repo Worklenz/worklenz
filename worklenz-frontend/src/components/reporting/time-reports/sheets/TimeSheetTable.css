@@ -12,7 +12,7 @@
   overflow: hidden;
 }
 
-.project-name-text {
+.timesheet-project-name-text {
   display: inline-block;
   max-width: calc(100% - 24px);
   overflow: hidden;

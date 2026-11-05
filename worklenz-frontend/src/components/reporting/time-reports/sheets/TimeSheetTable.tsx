@@ -130,7 +130,7 @@ const TimeSheetTable: React.FC = () => {
                     <i className={item.status_icon}></i>
                   </span>
                   <Tooltip title={decodeHtmlEntities(item.name)} placement="topLeft">
-                    <span className="project-name-text ms-1">
+                    <span className="timesheet-project-name-text ms-1">
                       {decodeHtmlEntities(item.name)}
                     </span>
                   </Tooltip>
