@@ -121,7 +121,7 @@
     "sharp": "^0.35.5",
     "slugify": "^1.6.6",
     "socket.io": "^4.7.1",
-    "tinymce": "^7.8.0",
+    "tinymce": "^8.9.3",
     "uglify-js": "^3.17.4",
     "winston": "^3.10.0",
     "worklenz-backend": "file:",
