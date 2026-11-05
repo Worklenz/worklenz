@@ -130,6 +130,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     customTemplateId,
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
+    wasRestored,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,

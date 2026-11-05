@@ -135,6 +135,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
     customTemplateId,
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
+    wasRestored,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,

@@ -149,6 +149,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     customTemplateId,
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
+    wasRestored,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,
@@ -469,7 +470,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
                   <MetricCalcHint
                     title={t('phCalcProgressBudget', {
                       defaultValue:
-                        'Progress % = completed tasks ÷ total tasks. Budget used % = (task fixed costs + logged time cost) ÷ project budget.',
+                        'Progress % = completed tasks Ã· total tasks. Budget used % = (task fixed costs + logged time cost) Ã· project budget.',
                     })}
                     color={token.colorTextSecondary}
                   />

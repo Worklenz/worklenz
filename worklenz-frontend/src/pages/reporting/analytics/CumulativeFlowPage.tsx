@@ -122,6 +122,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     customTemplateId,
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
+    wasRestored,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       team_ids: selectedTeamIds,

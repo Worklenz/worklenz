@@ -96,7 +96,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
   const [data, setData] = useState<PlannedVsActualMilestonesSeriesResponse | null>(null);
 
   const chartRef = useRef<PvaMilestonesChartHandle>(null);
-  /** Milestone chart is project-wise — require an explicit project before loading. */
+  /** Milestone chart is project-wise â€” require an explicit project before loading. */
   const hasProjectSelection = selectedProjectIds.length > 0;
   const skipDefaultTemplate =
     wasRestored &&
@@ -130,6 +130,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
     customTemplateId,
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
+    wasRestored,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,

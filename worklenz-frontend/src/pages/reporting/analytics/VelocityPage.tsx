@@ -96,6 +96,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     setSelectedMemberIds,
     selectedTeamIds,
     setSelectedTeamIds,
+    wasRestored,
   } = usePersistedAnalyticsFilters({
     reportKind: 'velocity',
     customTemplateId,
@@ -279,7 +280,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
         if (queryTemplateId && appliedQueryTemplate.current !== queryTemplateId) {
           const fromQuery = res.body.find(tpl => tpl.id === queryTemplateId);
           if (fromQuery) {
-            applyTemplateFilters(fromQuery);
+            if (!isCustomTemplateView || !wasRestored) applyTemplateFilters(fromQuery);
             appliedQueryTemplate.current = queryTemplateId;
             pendingQueryTemplateId.current = null;
             appliedDefaultTemplate.current = true;
@@ -309,7 +310,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     } catch {
       // templates are optional on first load
     }
-  }, [applyTemplateFilters, isCustomTemplateView, searchParams, setSearchParams]);
+  }, [applyTemplateFilters, isCustomTemplateView, searchParams, setSearchParams, wasRestored]);
 
   const loadSeries = useCallback(async () => {
     if (!hasProjectSelection) {

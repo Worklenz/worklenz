@@ -36,7 +36,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
 
 const asStringArray = (value: unknown): string[] | undefined => {
   if (!Array.isArray(value)) return undefined;
-  return value.map(String).filter(Boolean);
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
 };
 
 const DATE_PRESETS: AnalyticsDatePreset[] = [

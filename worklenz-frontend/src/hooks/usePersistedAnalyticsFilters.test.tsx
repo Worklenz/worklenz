@@ -63,3 +63,20 @@ describe('hasMeaningfulAnalyticsFilters', () => {
     expect(hasMeaningfulAnalyticsFilters({})).toBe(false);
   });
 });
+
+it('restores the correct filters when the custom report changes without remounting', () => {
+  const hook = renderHook(({ id }) => usePersistedAnalyticsFilters({ reportKind: 'velocity', customTemplateId: id }), { initialProps: { id: 'one' } });
+  act(() => hook.result.current.setSelectedProjectIds(['one-project']));
+  hook.rerender({ id: 'two' });
+  expect(hook.result.current.selectedProjectIds).toEqual([]);
+  act(() => hook.result.current.setSelectedProjectIds(['two-project']));
+  hook.rerender({ id: 'one' });
+  expect(hook.result.current.selectedProjectIds).toEqual(['one-project']);
+  hook.rerender({ id: 'two' });
+  expect(hook.result.current.selectedProjectIds).toEqual(['two-project']);
+});
+
+it('does not treat the seeded session team as a user selection', () => {
+  expect(hasMeaningfulAnalyticsFilters({ selectedTeamIds: ['team-1'] })).toBe(false);
+  expect(hasMeaningfulAnalyticsFilters({ selectedTeamIds: ['team-2'] })).toBe(true);
+});

@@ -145,6 +145,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
     customTemplateId,
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
+    wasRestored,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,
@@ -424,13 +425,13 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
   };
 
   const sortOptions = getTimeInStatusSortOptions(reportView, {
-    avgDesc: t('tisSortAvgDesc', { defaultValue: 'Avg (high ? low)' }),
-    avgAsc: t('tisSortAvgAsc', { defaultValue: 'Avg (low ? high)' }),
-    medianDesc: t('tisSortMedianDesc', { defaultValue: 'Median (high ? low)' }),
-    countDesc: t('tisSortCountDesc', { defaultValue: 'Count (high ? low)' }),
+    avgDesc: t('tisSortAvgDesc', { defaultValue: 'Avg (high → low)' }),
+    avgAsc: t('tisSortAvgAsc', { defaultValue: 'Avg (low → high)' }),
+    medianDesc: t('tisSortMedianDesc', { defaultValue: 'Median (high → low)' }),
+    countDesc: t('tisSortCountDesc', { defaultValue: 'Count (high → low)' }),
     statusName: t('tisSortNameAsc', { defaultValue: 'Status name' }),
-    totalDesc: t('tisSortTotalDesc', { defaultValue: 'Total (high ? low)' }),
-    totalAsc: t('tisSortTotalAsc', { defaultValue: 'Total (low ? high)' }),
+    totalDesc: t('tisSortTotalDesc', { defaultValue: 'Total (high → low)' }),
+    totalAsc: t('tisSortTotalAsc', { defaultValue: 'Total (low → high)' }),
     taskKey: t('tisSortKeyAsc', { defaultValue: 'Task key' }),
     taskName: t('tisSortTaskNameAsc', { defaultValue: 'Task name' }),
   });

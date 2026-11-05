@@ -12,47 +12,42 @@ import {
  */
 export const useSessionPersistedState = <T,>(
   storageKey: string,
-  defaultValue: T
+  defaultValue: T,
+  isValid: (value: unknown) => value is T
 ): [T, Dispatch<SetStateAction<T>>] => {
-  const [state, setState] = useState<T>(() => {
-    if (typeof sessionStorage === 'undefined') return defaultValue;
+  const readState = useCallback((): T => {
     try {
       const raw = sessionStorage.getItem(storageKey);
-      if (raw == null) return defaultValue;
-      return JSON.parse(raw) as T;
+      if (raw === null) return defaultValue;
+      const value: unknown = JSON.parse(raw);
+      return isValid(value) ? value : defaultValue;
     } catch {
       return defaultValue;
     }
-  });
+  }, [storageKey, defaultValue, isValid]);
+
+  const [stored, setStored] = useState(() => ({ key: storageKey, value: readState() }));
+  const state = stored.key === storageKey ? stored.value : readState();
 
   useEffect(() => {
-    if (typeof sessionStorage === 'undefined') return;
-    try {
-      const raw = sessionStorage.getItem(storageKey);
-      if (raw == null) {
-        setState(defaultValue);
-        return;
-      }
-      setState(JSON.parse(raw) as T);
-    } catch {
-      setState(defaultValue);
-    }
-    // Re-hydrate when the key changes (e.g. workspace switch).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storageKey]);
+    if (stored.key !== storageKey) setStored({ key: storageKey, value: readState() });
+  }, [storageKey, stored.key, readState]);
 
   useEffect(() => {
-    if (typeof sessionStorage === 'undefined') return;
+    if (stored.key !== storageKey) return;
     try {
-      sessionStorage.setItem(storageKey, JSON.stringify(state));
+      sessionStorage.setItem(storageKey, JSON.stringify(stored.value));
     } catch {
-      // ignore quota / private mode
+      // Storage may be unavailable or full.
     }
-  }, [storageKey, state]);
+  }, [storageKey, stored]);
 
   const setPersistedState = useCallback<Dispatch<SetStateAction<T>>>(action => {
-    setState(prev => (typeof action === 'function' ? (action as (p: T) => T)(prev) : action));
-  }, []);
+    setStored(prev => {
+      const value = prev.key === storageKey ? prev.value : readState();
+      return { key: storageKey, value: typeof action === 'function' ? (action as (p: T) => T)(value) : action };
+    });
+  }, [storageKey, readState]);
 
   return [state, setPersistedState];
 };

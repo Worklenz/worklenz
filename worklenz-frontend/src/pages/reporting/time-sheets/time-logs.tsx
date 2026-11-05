@@ -20,6 +20,7 @@ import { TimeLogsGroupedList } from './components/time-logs/TimeLogsGroupedList'
 import { TimeLogsTable } from './components/time-logs/TimeLogsTable';
 import {
   DEFAULT_TIME_LOGS_FILTERS,
+  isTimeLogsFilterState,
   ITimeLogsFilterState,
   areFiltersEqual,
   countActiveFilters,
@@ -58,7 +59,8 @@ const TimeLogsPage: React.FC = () => {
 
   const [filters, setFilters] = useSessionPersistedState<ITimeLogsFilterState>(
     filtersStorageKey,
-    DEFAULT_TIME_LOGS_FILTERS
+    DEFAULT_TIME_LOGS_FILTERS,
+    isTimeLogsFilterState
   );
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);

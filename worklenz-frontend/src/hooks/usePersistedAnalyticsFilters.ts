@@ -70,22 +70,31 @@ export const usePersistedAnalyticsFilters = (
   );
   const storageScope = `${session?.team_id ?? ''}:${session?.id ?? ''}:${reportKey}`;
 
-  const [state, setState] = useState<AnalyticsFilterFields>(() => {
-    return readAnalyticsFilterSession(reportKey, defaults).state;
-  });
-  const [wasRestored, setWasRestored] = useState(() => {
-    return readAnalyticsFilterSession(reportKey, defaults).wasRestored;
-  });
+  const [stored, setStored] = useState(() => ({
+    scope: storageScope,
+    ...readAnalyticsFilterSession(reportKey, defaults),
+  }));
+  const current = stored.scope === storageScope
+    ? stored
+    : { scope: storageScope, ...readAnalyticsFilterSession(reportKey, defaults) };
+  const { state, wasRestored } = current;
 
   useEffect(() => {
-    const restored = readAnalyticsFilterSession(reportKey, defaults);
-    setState(restored.state);
-    setWasRestored(restored.wasRestored);
+    if (stored.scope !== storageScope) setStored(current);
+  }, [storageScope, stored.scope, current]);
+
+  useEffect(() => {
+    if (stored.scope === storageScope) writeAnalyticsFilterSession(reportKey, stored.state);
+  }, [storageScope, reportKey, stored]);
+
+  const setState = useCallback<Dispatch<SetStateAction<AnalyticsFilterFields>>>(action => {
+    setStored(prev => {
+      const base = prev.scope === storageScope
+        ? prev
+        : { scope: storageScope, ...readAnalyticsFilterSession(reportKey, defaults) };
+      return { ...base, state: toSetStateAction(action, base.state) };
+    });
   }, [storageScope, reportKey, defaults]);
-
-  useEffect(() => {
-    writeAnalyticsFilterSession(reportKey, state);
-  }, [reportKey, state]);
 
   const setDatePreset = useCallback<Dispatch<SetStateAction<AnalyticsDatePreset>>>(
     action => {
@@ -94,7 +103,7 @@ export const usePersistedAnalyticsFilters = (
         return next === prev.datePreset ? prev : { ...prev, datePreset: next };
       });
     },
-    []
+    [setState]
   );
 
   const setSelectedProjectIds = useCallback<Dispatch<SetStateAction<string[]>>>(
@@ -106,7 +115,7 @@ export const usePersistedAnalyticsFilters = (
           : { ...prev, selectedProjectIds: next };
       });
     },
-    []
+    [setState]
   );
 
   const setSelectedMemberIds = useCallback<Dispatch<SetStateAction<string[]>>>(
@@ -118,7 +127,7 @@ export const usePersistedAnalyticsFilters = (
           : { ...prev, selectedMemberIds: next };
       });
     },
-    []
+    [setState]
   );
 
   const setSelectedTeamIds = useCallback<Dispatch<SetStateAction<string[]>>>(
@@ -128,7 +137,7 @@ export const usePersistedAnalyticsFilters = (
         return next === prev.selectedTeamIds ? prev : { ...prev, selectedTeamIds: next };
       });
     },
-    []
+    [setState]
   );
 
   const setSelectedStatusIds = useCallback<Dispatch<SetStateAction<string[]>>>(
@@ -140,7 +149,7 @@ export const usePersistedAnalyticsFilters = (
           : { ...prev, selectedStatusIds: next };
       });
     },
-    []
+    [setState]
   );
 
   const setSelectedHealthIds = useCallback<Dispatch<SetStateAction<string[]>>>(
@@ -152,7 +161,7 @@ export const usePersistedAnalyticsFilters = (
           : { ...prev, selectedHealthIds: next };
       });
     },
-    []
+    [setState]
   );
 
   const setIncludeDone = useCallback<Dispatch<SetStateAction<boolean>>>(
@@ -162,7 +171,7 @@ export const usePersistedAnalyticsFilters = (
         return next === prev.includeDone ? prev : { ...prev, includeDone: next };
       });
     },
-    []
+    [setState]
   );
 
   return {
@@ -191,7 +200,8 @@ export const hasMeaningfulAnalyticsFilters = (
 ): boolean => {
   if ((state.selectedProjectIds?.length ?? 0) > 0) return true;
   if ((state.selectedMemberIds?.length ?? 0) > 0) return true;
-  if ((state.selectedTeamIds?.length ?? 0) > 0) return true;
+  const seededTeamId = getUserSession()?.team_id;
+  if (state.selectedTeamIds?.some(id => id !== seededTeamId)) return true;
   if ((state.selectedStatusIds?.length ?? 0) > 0) return true;
   if ((state.selectedHealthIds?.length ?? 0) > 0) return true;
   if (state.includeDone) return true;

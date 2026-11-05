@@ -63,6 +63,19 @@ export const TIME_LOGS_DATE_PRESETS: TimeLogsDatePreset[] = [
   'custom',
 ];
 
+export const isTimeLogsFilterState = (value: unknown): value is ITimeLogsFilterState => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const filters = value as Record<string, unknown>;
+  const isStringArray = (item: unknown): item is string[] =>
+    Array.isArray(item) && item.every(entry => typeof entry === 'string');
+  return typeof filters.datePreset === 'string' &&
+    TIME_LOGS_DATE_PRESETS.includes(filters.datePreset as TimeLogsDatePreset) &&
+    (filters.customRange === null || (isStringArray(filters.customRange) && filters.customRange.length === 2)) &&
+    isStringArray(filters.projectIds) && isStringArray(filters.practiceIds) &&
+    isStringArray(filters.clientIds) && isStringArray(filters.userIds) &&
+    isStringArray(filters.billable) && filters.billable.every(item => item === 'billable' || item === 'non_billable');
+};
+
 /**
  * The concrete calendar range a state stands for, or `null` for "all time"
  * (and for a custom range that has not been picked yet). Evaluated on demand

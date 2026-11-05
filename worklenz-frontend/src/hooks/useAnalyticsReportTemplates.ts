@@ -25,6 +25,7 @@ interface UseAnalyticsReportTemplatesOptions {
    * Used so session-persisted filters are not overwritten after navigation.
    */
   skipDefaultTemplate?: boolean;
+  wasRestored?: boolean;
 }
 
 /**
@@ -37,6 +38,7 @@ export const useAnalyticsReportTemplates = ({
   onApply,
   getFilters,
   skipDefaultTemplate = false,
+  wasRestored = false,
 }: UseAnalyticsReportTemplatesOptions) => {
   const { t } = useTranslation('reporting-analytics');
   const [searchParams, setSearchParams] = useSearchParams();
@@ -92,7 +94,7 @@ export const useAnalyticsReportTemplates = ({
       if (targetId && appliedQueryTemplate.current !== targetId) {
         const fromTarget = res.body.find(tpl => tpl.id === targetId);
         if (fromTarget) {
-          onApplyRef.current(fromTarget);
+          if (!isCustomTemplateView || !wasRestored) onApplyRef.current(fromTarget);
           appliedQueryTemplate.current = targetId;
           pendingTemplateId.current = null;
           appliedDefaultTemplate.current = true;
@@ -120,7 +122,7 @@ export const useAnalyticsReportTemplates = ({
     } catch {
       // templates optional
     }
-  }, [reportKind, isCustomTemplateView, skipDefaultTemplate]);
+  }, [reportKind, isCustomTemplateView, skipDefaultTemplate, wasRestored]);
 
   useEffect(() => {
     void loadTemplates();

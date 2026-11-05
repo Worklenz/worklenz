@@ -52,4 +52,10 @@ describe('analytics-filter-persistence', () => {
     expect(wasRestored).toBe(false);
     expect(state).toEqual(DEFAULT_ANALYTICS_FILTER_FIELDS);
   });
+  it('ignores non-string IDs in stored filters', () => {
+    sessionStorage.setItem(getAnalyticsFilterStorageKey('velocity', 'team-1', 'user-1'),
+      JSON.stringify({ selectedProjectIds: [null, {}, 42, '', 'valid'] }));
+    expect(readAnalyticsFilterSession('velocity', DEFAULT_ANALYTICS_FILTER_FIELDS).state.selectedProjectIds).toEqual(['valid']);
+  });
+
 });
