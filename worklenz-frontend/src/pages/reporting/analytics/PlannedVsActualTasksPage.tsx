@@ -1,5 +1,6 @@
+import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
 import { useScopedAnalyticsProjectSeed } from '@/hooks/useScopedAnalyticsProjectSeed';
-import { useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
+import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -106,8 +107,6 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const projectOptionsScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
   const seededProjectsForTeamsRef = useScopedAnalyticsProjectSeed(projectOptionsScope);
-  const currentProjectScopeRef = useRef(projectOptionsScope);
-  currentProjectScopeRef.current = projectOptionsScope;
   const dataScopeRef = useRef<string | null>(null);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
   const skipDefaultTemplate = hasRestoredFilters;
@@ -214,7 +213,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
-      if (!isCurrent()) return;
+      if (!isCurrent() || !areAnalyticsProjectResponsesComplete(projectResponses)) return;
       const projects: FilterOption[] = [];
       const projectsWithUpdatedAt: Array<{ id: string; updated_at?: string | null }> = [];
       const seen = new Set<string>();
@@ -252,12 +251,16 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
         return topIds;
       });
     } catch {
-      if (isCurrent()) setProjectOptions([]);
+      // Preserve existing selections and options when a team request fails.
     }
   }, [seededProjectsForTeamsRef]);
 
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(JSON.stringify([projectOptionsScope, filters]));
+
   const loadSeries = useCallback(async () => {
+    const isCurrent = beginSeriesRequest();
     if (!hasSelection) {
+      setLoading(false);
       setData(null);
       return;
     }
@@ -265,7 +268,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
     setError(null);
     try {
       const res = await analyticsPlannedVsActualTasksApiService.getSeries(filters);
-      if (currentProjectScopeRef.current !== projectOptionsScope) return;
+      if (!isCurrent()) return;
       if (res.done && res.body) {
         dataScopeRef.current = projectOptionsScope;
         setData(res.body);
@@ -279,7 +282,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
         setData(null);
       }
     } catch {
-      if (currentProjectScopeRef.current !== projectOptionsScope) return;
+      if (!isCurrent()) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -287,9 +290,9 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
       );
       setData(null);
     } finally {
-      if (currentProjectScopeRef.current === projectOptionsScope) setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [filters, hasSelection, t, projectOptionsScope]);
+  }, [filters, hasSelection, t, projectOptionsScope, beginSeriesRequest]);
 
   useEffect(() => {
     void loadTeams();

@@ -42,3 +42,16 @@ describe('useAnalyticsProjectOptionsLoader', () => {
     expect(applied).not.toHaveBeenCalled();
   });
 });
+
+it('preserves selected projects when a team returns an incomplete response', async () => {
+  const { areAnalyticsProjectResponsesComplete } = await import('./useAnalyticsProjectOptionsLoader');
+  let selected = ['project-a', 'project-b'];
+  const responses = [{ done: true, body: [{ id: 'project-a' }] }, { done: false, body: null }];
+  if (areAnalyticsProjectResponsesComplete(responses)) {
+    const ids = responses.flatMap(response => Array.isArray(response.body) ? response.body.map(project => project.id) : []);
+    selected = selected.filter(id => ids.includes(id));
+  }
+  expect(selected).toEqual(['project-a', 'project-b']);
+  expect(areAnalyticsProjectResponsesComplete([{ done: true, body: [] }])).toBe(true);
+  expect(areAnalyticsProjectResponsesComplete([{ done: true, body: null }])).toBe(false);
+});

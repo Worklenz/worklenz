@@ -1,5 +1,6 @@
+import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
 import { useScopedAnalyticsProjectSeed } from '@/hooks/useScopedAnalyticsProjectSeed';
-import { useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
+import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
 import { MetricCalcHint } from '@/components/reporting/analytics/MetricCalcHint';
@@ -112,8 +113,6 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
   /** Tracks team keys we already seeded with the latest-20 project default. */
   const projectOptionsScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
   const seededProjectsForTeamsRef = useScopedAnalyticsProjectSeed(projectOptionsScope);
-  const currentProjectScopeRef = useRef(projectOptionsScope);
-  currentProjectScopeRef.current = projectOptionsScope;
   const dataScopeRef = useRef<string | null>(null);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
   const skipDefaultTemplate = hasRestoredFilters;
@@ -242,7 +241,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
-      if (!isCurrent()) return;
+      if (!isCurrent() || !areAnalyticsProjectResponsesComplete(projectResponses)) return;
       const projects: FilterOption[] = [];
       const projectsWithUpdatedAt: Array<{ id: string; updated_at?: string | null }> = [];
       const seen = new Set<string>();
@@ -280,12 +279,16 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
         return topIds;
       });
     } catch {
-      if (isCurrent()) setProjectOptions([]);
+      // Preserve existing selections and options when a team request fails.
     }
   }, [seededProjectsForTeamsRef]);
 
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(JSON.stringify([projectOptionsScope, filters]));
+
   const loadSeries = useCallback(async () => {
+    const isCurrent = beginSeriesRequest();
     if (!hasSelection) {
+      setLoading(false);
       setData(null);
       return;
     }
@@ -293,7 +296,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     setError(null);
     try {
       const res = await analyticsProjectHealthApiService.getSeries(filters);
-      if (currentProjectScopeRef.current !== projectOptionsScope) return;
+      if (!isCurrent()) return;
       if (res.done && res.body) {
         dataScopeRef.current = projectOptionsScope;
         setData(res.body);
@@ -307,7 +310,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
         setData(null);
       }
     } catch {
-      if (currentProjectScopeRef.current !== projectOptionsScope) return;
+      if (!isCurrent()) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -315,9 +318,9 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
       );
       setData(null);
     } finally {
-      if (currentProjectScopeRef.current === projectOptionsScope) setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [filters, hasSelection, t, projectOptionsScope]);
+  }, [filters, hasSelection, t, projectOptionsScope, beginSeriesRequest]);
 
   useEffect(() => {
     void loadTeams();

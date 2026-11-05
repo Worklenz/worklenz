@@ -1,4 +1,4 @@
-import { useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
+import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import { formatCsvText } from '@/lib/reporting/csv-export';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -220,7 +220,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
-      if (!isCurrent()) return;
+      if (!isCurrent() || !areAnalyticsProjectResponsesComplete(projectResponses)) return;
       const overviewProjects: Array<{ id: string; name: string; project_type?: string }> =
         [];
       const seen = new Set<string>();
@@ -244,7 +244,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
         return prev.filter(id => allowed.has(id));
       });
     } catch {
-      if (isCurrent()) setProjectOptions([]);
+      // Preserve existing selections and options when a team request fails.
     }
   }, []);
 

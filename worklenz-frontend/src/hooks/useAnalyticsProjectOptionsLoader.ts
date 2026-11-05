@@ -16,3 +16,8 @@ export const useAnalyticsProjectOptionsLoader = (
     return () => { isActive = false; };
   }, [teamIds, scope, load]);
 };
+
+/** A partial team response must not be used to reconcile saved selections. */
+export const areAnalyticsProjectResponsesComplete = (
+  responses: ReadonlyArray<{ done: boolean; body: unknown }>
+): boolean => responses.every(response => response.done && Array.isArray(response.body));

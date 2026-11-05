@@ -1,4 +1,4 @@
-import { useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
+import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Flex, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -191,7 +191,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
       const projectResponses = await Promise.all(
         teamIds.map(teamId => reportingApiService.getOverviewProjectsByTeam(teamId))
       );
-      if (!isCurrent()) return;
+      if (!isCurrent() || !areAnalyticsProjectResponsesComplete(projectResponses)) return;
       const projects: FilterOption[] = [];
       const seen = new Set<string>();
       projectResponses.forEach(res => {
@@ -211,7 +211,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
         return prev.filter(id => allowed.has(id));
       });
     } catch {
-      if (isCurrent()) setProjectOptions([]);
+      // Preserve existing selections and options when a team request fails.
     }
   }, []);
 
