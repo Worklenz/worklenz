@@ -85,6 +85,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     selectedMemberIds,
     setSelectedMemberIds,
     wasRestored,
+    hasRestoredFilters,
   } = usePersistedAnalyticsFilters({
     reportKind: 'utilization',
     customTemplateId,
@@ -124,7 +125,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     customTemplateId,
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
-    wasRestored,
+    wasRestored: hasRestoredFilters,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,

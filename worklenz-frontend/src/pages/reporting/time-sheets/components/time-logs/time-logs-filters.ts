@@ -68,9 +68,12 @@ export const isTimeLogsFilterState = (value: unknown): value is ITimeLogsFilterS
   const filters = value as Record<string, unknown>;
   const isStringArray = (item: unknown): item is string[] =>
     Array.isArray(item) && item.every(entry => typeof entry === 'string');
+  const isCalendarDate = (date: string): boolean =>
+    /^\d{4}-\d{2}-\d{2}$/.test(date) && dayjs(date).isValid() && dayjs(date).format('YYYY-MM-DD') === date;
   return typeof filters.datePreset === 'string' &&
     TIME_LOGS_DATE_PRESETS.includes(filters.datePreset as TimeLogsDatePreset) &&
-    (filters.customRange === null || (isStringArray(filters.customRange) && filters.customRange.length === 2)) &&
+    (filters.customRange === null || (isStringArray(filters.customRange) && filters.customRange.length === 2 &&
+      filters.customRange.every(isCalendarDate) && filters.customRange[0] <= filters.customRange[1])) &&
     isStringArray(filters.projectIds) && isStringArray(filters.practiceIds) &&
     isStringArray(filters.clientIds) && isStringArray(filters.userIds) &&
     isStringArray(filters.billable) && filters.billable.every(item => item === 'billable' || item === 'non_billable');

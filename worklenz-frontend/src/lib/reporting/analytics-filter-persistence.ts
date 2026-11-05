@@ -53,9 +53,9 @@ const DATE_PRESETS: AnalyticsDatePreset[] = [
 export const readAnalyticsFilterSession = <T extends AnalyticsPersistedFilterState>(
   reportKey: string,
   defaults: T
-): { state: T; wasRestored: boolean } => {
+): { state: T; wasRestored: boolean; hasExplicitFilters: boolean } => {
   if (typeof sessionStorage === 'undefined') {
-    return { state: defaults, wasRestored: false };
+    return { state: defaults, wasRestored: false, hasExplicitFilters: false };
   }
 
   const session = getUserSession();
@@ -67,10 +67,10 @@ export const readAnalyticsFilterSession = <T extends AnalyticsPersistedFilterSta
 
   try {
     const raw = sessionStorage.getItem(storageKey);
-    if (!raw) return { state: defaults, wasRestored: false };
+    if (!raw) return { state: defaults, wasRestored: false, hasExplicitFilters: false };
 
     const parsed: unknown = JSON.parse(raw);
-    if (!isPlainObject(parsed)) return { state: defaults, wasRestored: false };
+    if (!isPlainObject(parsed)) return { state: defaults, wasRestored: false, hasExplicitFilters: false };
 
     const next: AnalyticsPersistedFilterState = { ...defaults };
 
@@ -100,16 +100,17 @@ export const readAnalyticsFilterSession = <T extends AnalyticsPersistedFilterSta
       next.includeDone = parsed.includeDone;
     }
 
-    return { state: next as T, wasRestored: true };
+    return { state: next as T, wasRestored: true, hasExplicitFilters: parsed.hasExplicitFilters === true };
   } catch {
-    return { state: defaults, wasRestored: false };
+    return { state: defaults, wasRestored: false, hasExplicitFilters: false };
   }
 };
 
 /** Persist analytics filters for the active session/workspace. */
 export const writeAnalyticsFilterSession = (
   reportKey: string,
-  state: AnalyticsPersistedFilterState
+  state: AnalyticsPersistedFilterState,
+  hasExplicitFilters = true
 ): void => {
   if (typeof sessionStorage === 'undefined') return;
 
@@ -121,7 +122,7 @@ export const writeAnalyticsFilterSession = (
   );
 
   try {
-    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    sessionStorage.setItem(storageKey, JSON.stringify({ ...state, hasExplicitFilters }));
   } catch {
     // Quota / private mode — ignore; in-memory React state still works for the visit.
   }

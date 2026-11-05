@@ -109,3 +109,17 @@ it('keeps setters bound to the active custom report after its identity changes',
   hook.rerender({ id: 'two' });
   expect(hook.result.current.selectedProjectIds).toEqual(['two-project']);
 });
+
+
+it('recognizes legacy meaningful filters and explicit empty selections', () => {
+  sessionStorage.clear();
+  const key = 'worklenz.analyticsReportFilters:team-1:user-1:velocity:custom:tpl';
+  sessionStorage.setItem(key, JSON.stringify({ selectedProjectIds: ['project'] }));
+  const legacy = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'velocity', customTemplateId: 'tpl' }));
+  expect(legacy.result.current.hasRestoredFilters).toBe(true);
+  act(() => legacy.result.current.setSelectedProjectIds([]));
+  legacy.unmount();
+  const reopened = renderHook(() => usePersistedAnalyticsFilters({ reportKind: 'velocity', customTemplateId: 'tpl' }));
+  expect(reopened.result.current.hasRestoredFilters).toBe(true);
+  expect(reopened.result.current.selectedProjectIds).toEqual([]);
+});

@@ -75,6 +75,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     selectedTeamIds,
     setSelectedTeamIds,
     wasRestored,
+    hasRestoredFilters,
   } = usePersistedAnalyticsFilters({
     reportKind: 'cumulative-flow',
     customTemplateId,
@@ -117,7 +118,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     customTemplateId,
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
-    wasRestored,
+    wasRestored: hasRestoredFilters,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       team_ids: selectedTeamIds,

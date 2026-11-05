@@ -91,6 +91,7 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
     selectedMemberIds,
     setSelectedMemberIds,
     wasRestored,
+    hasRestoredFilters,
   } = usePersistedAnalyticsFilters({
     reportKind: 'time-report',
     customTemplateId,
@@ -132,7 +133,7 @@ const TimeReportPage: React.FC<TimeReportPageProps> = ({
     customTemplateId,
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
-    wasRestored,
+    wasRestored: hasRestoredFilters,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,

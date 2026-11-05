@@ -25,7 +25,7 @@ describe('custom report template restoration', () => {
     const useReport = () => {
       const filters = usePersistedAnalyticsFilters({ reportKind: 'test', customTemplateId: 'tpl-1' });
       useAnalyticsReportTemplates({
-        reportKind: 'test', customTemplateId: 'tpl-1', wasRestored: filters.wasRestored,
+        reportKind: 'test', customTemplateId: 'tpl-1', wasRestored: filters.hasRestoredFilters,
         onApply: template => filters.setSelectedProjectIds(template.filters_json?.project_ids as string[]),
         getFilters: () => ({}),
       });
@@ -51,7 +51,7 @@ describe('custom report template restoration', () => {
     const useReport = () => {
       const filters = usePersistedAnalyticsFilters({ reportKind: 'test', customTemplateId: 'tpl-1' });
       useAnalyticsReportTemplates({
-        reportKind: 'test', customTemplateId: 'tpl-1', wasRestored: filters.wasRestored,
+        reportKind: 'test', customTemplateId: 'tpl-1', wasRestored: filters.hasRestoredFilters,
         onApply: template => filters.setSelectedProjectIds(template.filters_json?.project_ids as string[]),
         getFilters: () => ({}),
       });
@@ -62,6 +62,21 @@ describe('custom report template restoration', () => {
     const second = renderHook(useReport, { wrapper });
     await waitFor(() => expect(second.result.current.selectedProjectIds).toEqual(['saved']));
     await act(async () => releases.forEach(release => release()));
+  });
+
+  it('applies a template when a legacy session entry contains no meaningful filters', async () => {
+    sessionStorage.setItem('worklenz.analyticsReportFilters:team-1:user-1:test:custom:tpl-1', '{}');
+    const wrapper = ({ children }: { children: React.ReactNode }) => <MemoryRouter>{children}</MemoryRouter>;
+    const { result } = renderHook(() => {
+      const filters = usePersistedAnalyticsFilters({ reportKind: 'test', customTemplateId: 'tpl-1' });
+      useAnalyticsReportTemplates({
+        reportKind: 'test', customTemplateId: 'tpl-1', wasRestored: filters.hasRestoredFilters,
+        onApply: template => filters.setSelectedProjectIds(template.filters_json?.project_ids as string[]),
+        getFilters: () => ({}),
+      });
+      return filters;
+    }, { wrapper });
+    await waitFor(() => expect(result.current.selectedProjectIds).toEqual(['saved']));
   });
 
 });

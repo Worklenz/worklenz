@@ -96,6 +96,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
     selectedTeamIds,
     setSelectedTeamIds,
     wasRestored,
+    hasRestoredFilters,
   } = usePersistedAnalyticsFilters({
     reportKind: 'time-in-status',
     customTemplateId,
@@ -139,7 +140,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
     customTemplateId,
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
-    wasRestored,
+    wasRestored: hasRestoredFilters,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,

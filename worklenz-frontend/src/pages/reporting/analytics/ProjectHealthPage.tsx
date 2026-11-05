@@ -94,6 +94,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     selectedMemberIds,
     setSelectedMemberIds,
     wasRestored,
+    hasRestoredFilters,
   } = usePersistedAnalyticsFilters({
     reportKind: 'project-health',
     customTemplateId,
@@ -142,7 +143,7 @@ const ProjectHealthPage: React.FC<ProjectHealthPageProps> = ({
     customTemplateId,
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
-    wasRestored,
+    wasRestored: hasRestoredFilters,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,

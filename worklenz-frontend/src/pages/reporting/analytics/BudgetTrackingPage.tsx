@@ -92,6 +92,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     selectedMemberIds,
     setSelectedMemberIds,
     wasRestored,
+    hasRestoredFilters,
   } = usePersistedAnalyticsFilters({
     reportKind: 'budget-tracking',
     customTemplateId,
@@ -132,7 +133,7 @@ const BudgetTrackingPage: React.FC<BudgetTrackingPageProps> = ({
     customTemplateId,
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
-    wasRestored,
+    wasRestored: hasRestoredFilters,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,

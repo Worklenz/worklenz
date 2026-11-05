@@ -88,6 +88,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
     selectedMemberIds,
     setSelectedMemberIds,
     wasRestored,
+    hasRestoredFilters,
   } = usePersistedAnalyticsFilters({
     reportKind: 'planned-vs-actual-tasks',
     customTemplateId,
@@ -129,7 +130,7 @@ const PlannedVsActualTasksPage: React.FC<PlannedVsActualTasksPageProps> = ({
     customTemplateId,
     onApply: applyTemplateFilters,
     skipDefaultTemplate,
-    wasRestored,
+    wasRestored: hasRestoredFilters,
     getFilters: () => ({
       project_ids: selectedProjectIds,
       member_ids: selectedMemberIds,

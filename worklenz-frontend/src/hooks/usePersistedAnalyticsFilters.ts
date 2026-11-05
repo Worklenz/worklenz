@@ -73,13 +73,15 @@ export const usePersistedAnalyticsFilters = (
 
   const readScope = () => {
     const restored = readAnalyticsFilterSession(reportKey, defaults);
-    return { scope: storageScope, ...restored, shouldPersist: restored.wasRestored };
+    return { scope: storageScope, ...restored, restoredState: restored.state, shouldPersist: restored.wasRestored };
   };
   const scopeRef = useRef({ storageScope, reportKey, defaults });
   scopeRef.current = { storageScope, reportKey, defaults };
   const [stored, setStored] = useState(readScope);
   const current = stored.scope === storageScope ? stored : readScope();
   const { state, wasRestored } = current;
+  const hasRestoredFilters = wasRestored &&
+    (current.hasExplicitFilters || hasMeaningfulAnalyticsFilters(current.restoredState, defaults));
 
   useEffect(() => {
     if (stored.scope !== storageScope) setStored(current);
@@ -87,7 +89,7 @@ export const usePersistedAnalyticsFilters = (
 
   useEffect(() => {
     if (stored.scope === storageScope && stored.shouldPersist) {
-      writeAnalyticsFilterSession(reportKey, stored.state);
+      writeAnalyticsFilterSession(reportKey, stored.state, stored.hasExplicitFilters);
     }
   }, [storageScope, reportKey, stored]);
 
@@ -95,12 +97,13 @@ export const usePersistedAnalyticsFilters = (
     setStored(prev => {
       const { storageScope: scope, reportKey: key, defaults: scopeDefaults } = scopeRef.current;
       const restored = prev.scope === scope ? null : readAnalyticsFilterSession(key, scopeDefaults);
-      const base = restored ? { scope, ...restored, shouldPersist: restored.wasRestored } : prev;
+      const base = restored ? { scope, ...restored, restoredState: restored.state, shouldPersist: restored.wasRestored } : prev;
       const next = toSetStateAction(action, base.state);
       const shouldPersist = base.shouldPersist || !isAutomatic;
-      return next === base.state && shouldPersist === base.shouldPersist
+      const hasExplicitFilters = base.hasExplicitFilters || !isAutomatic;
+      return next === base.state && shouldPersist === base.shouldPersist && hasExplicitFilters === base.hasExplicitFilters
         ? base
-        : { ...base, state: next, shouldPersist };
+        : { ...base, state: next, shouldPersist, hasExplicitFilters };
     });
   }, []);
   const setState = useCallback<Dispatch<SetStateAction<AnalyticsFilterFields>>>(
@@ -215,6 +218,7 @@ export const usePersistedAnalyticsFilters = (
     setSelectedHealthIds,
     setIncludeDone,
     wasRestored,
+    hasRestoredFilters,
   };
 };
 
