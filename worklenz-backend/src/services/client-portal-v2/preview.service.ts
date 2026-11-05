@@ -17,6 +17,7 @@ import { ClientSubject } from "./subject";
 import { listClientThreads } from "./client-write.service";
 import { Queryable } from "./types";
 import { USER_VIEW_SQL } from "./users.service";
+import { subjectProjectsSql } from "./scope";
 
 /**
  * "Preview as client": what one specific client user sees, read-only. It is built by calling the SAME
@@ -46,8 +47,7 @@ export interface PreviewUsersResult {
 
 /**
  * Active and invited users who can open at least one portal project. Client Admins inherit org portal
- * projects (no client_contact_project_access rows), so the filter uses USER_VIEW_SQL.projects rather than
- * assignment rows alone. An invited user has not accepted yet; the preview still uses the same project
+ * projects (no client_contact_project_access rows). An invited user has not accepted yet; the preview uses the same project
  * and visibility rules they will be held to after they join. Deactivated and deleted users are excluded.
  */
 export async function listPreviewUsers(q: Queryable, teamId: string): Promise<PreviewUsersResult> {
@@ -57,7 +57,7 @@ export async function listPreviewUsers(q: Queryable, teamId: string): Promise<Pr
          FROM (${USER_VIEW_SQL}) u
          JOIN clients org ON org.id = u.client_id AND org.status <> 'inactive'
         WHERE u.status_key IN ('active', 'invited')
-          AND json_array_length(u.projects) > 0
+          AND EXISTS (${subjectProjectsSql("u.id", "u.client_id", "$1")})
         ORDER BY u.organization_name,
                  CASE WHEN u.status_key = 'active' THEN 0 ELSE 1 END,
                  u.name`,
