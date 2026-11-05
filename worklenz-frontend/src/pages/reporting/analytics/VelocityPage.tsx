@@ -1,3 +1,5 @@
+import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
+import { useScopedAnalyticsSeriesData } from '@/hooks/useScopedAnalyticsSeriesData';
 import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import { formatCsvText } from '@/lib/reporting/csv-export';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -109,7 +111,6 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<VelocitySeriesResponse | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
 
@@ -320,7 +321,13 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     }
   }, [applyTemplateFilters, customTemplateId, isCustomTemplateView, searchParams, setSearchParams, hasRestoredFilters]);
 
+  const seriesScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
+  const seriesRequestKey = JSON.stringify([seriesScope, filters]);
+  const { data, setData } = useScopedAnalyticsSeriesData<VelocitySeriesResponse>(seriesScope, seriesRequestKey);
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(seriesRequestKey);
+
   const loadSeries = useCallback(async () => {
+    const isCurrent = beginSeriesRequest();
     if (!hasProjectSelection) {
       setData(null);
       setError(null);
@@ -331,6 +338,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
     setError(null);
     try {
       const res = await analyticsVelocityApiService.getSeries(filters);
+      if (!isCurrent()) return;
       if (res.done && res.body) {
         setData(res.body);
       } else {
@@ -343,6 +351,7 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
         setData(null);
       }
     } catch {
+      if (!isCurrent()) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -350,9 +359,9 @@ const VelocityPage: React.FC<VelocityPageProps> = ({
       );
       setData(null);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [filters, hasProjectSelection, t]);
+  }, [filters, hasProjectSelection, t, beginSeriesRequest, setData]);
 
   useEffect(() => {
     void loadTeamsAndMembers();

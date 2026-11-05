@@ -1,3 +1,5 @@
+import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
+import { useScopedAnalyticsSeriesData } from '@/hooks/useScopedAnalyticsSeriesData';
 import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, Space, Switch, Typography, message } from '@/shared/antd-imports';
@@ -111,7 +113,6 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<TimeInStatusSeriesResponse | null>(null);
 
   const aggregateChartRef = useRef<TisAggregateChartHandle>(null);
   const perIssueChartRef = useRef<TisPerIssueChartHandle>(null);
@@ -291,13 +292,20 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
     [t]
   );
 
+  const seriesScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
+  const seriesRequestKey = JSON.stringify([seriesScope, filters]);
+  const { data, setData } = useScopedAnalyticsSeriesData<TimeInStatusSeriesResponse>(seriesScope, seriesRequestKey);
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(seriesRequestKey);
+
   const loadSeries = useCallback(async () => {
+    const isCurrent = beginSeriesRequest();
     setLoading(true);
     setError(null);
     try {
       // Empty project_ids ? all accessible projects rolled into To do / Doing / Done.
       // Selected project_ids ? that project's full status list.
       const res = await analyticsTimeInStatusApiService.getSeries(filters);
+      if (!isCurrent()) return;
       if (res.done && res.body) {
         const localizedStatuses = res.body.statuses.map(status => ({
           ...status,
@@ -330,6 +338,7 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
         setData(null);
       }
     } catch {
+      if (!isCurrent()) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -337,9 +346,9 @@ const TimeInStatusPage: React.FC<TimeInStatusPageProps> = ({
       );
       setData(null);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [filters, localizeCategoryLabel, t]);
+  }, [filters, localizeCategoryLabel, t, beginSeriesRequest, setData]);
 
   useEffect(() => {
     void loadTeamsAndMembers();

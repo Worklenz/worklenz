@@ -1,3 +1,5 @@
+import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
+import { useScopedAnalyticsSeriesData } from '@/hooks/useScopedAnalyticsSeriesData';
 import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
@@ -96,7 +98,6 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<UtilizationSeriesResponse | null>(null);
 
   const chartRef = useRef<UtilizationChartHandle>(null);
   const hasSelection = selectedProjectIds.length > 0 || selectedTeamIds.length > 0;
@@ -242,8 +243,15 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     }
   }, []);
 
+  const seriesScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
+  const seriesRequestKey = JSON.stringify([seriesScope, filters]);
+  const { data, setData } = useScopedAnalyticsSeriesData<UtilizationSeriesResponse>(seriesScope, seriesRequestKey);
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(seriesRequestKey);
+
   const loadSeries = useCallback(async () => {
+    const isCurrent = beginSeriesRequest();
     if (!hasSelection) {
+      setLoading(false);
       setData(null);
       return;
     }
@@ -251,6 +259,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
     setError(null);
     try {
       const res = await analyticsUtilizationApiService.getSeries(filters);
+      if (!isCurrent()) return;
       if (res.done && res.body) {
         setData(res.body);
       } else {
@@ -263,6 +272,7 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
         setData(null);
       }
     } catch {
+      if (!isCurrent()) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -270,9 +280,9 @@ const UtilizationPage: React.FC<UtilizationPageProps> = ({
       );
       setData(null);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [filters, hasSelection, t]);
+  }, [filters, hasSelection, t, beginSeriesRequest, setData]);
 
   useEffect(() => {
     void loadTeams();

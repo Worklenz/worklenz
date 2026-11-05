@@ -1,3 +1,5 @@
+import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
+import { useScopedAnalyticsSeriesData } from '@/hooks/useScopedAnalyticsSeriesData';
 import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Flex, message } from '@/shared/antd-imports';
@@ -89,7 +91,6 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<CfdSeriesResponse | null>(null);
 
   const chartRef = useRef<CfdChartHandle>(null);
   /** Tracks last rollup mode so switching category ? detail resets visible bands. */
@@ -215,11 +216,18 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
     }
   }, []);
 
+  const seriesScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
+  const seriesRequestKey = JSON.stringify([seriesScope, filters]);
+  const { data, setData } = useScopedAnalyticsSeriesData<CfdSeriesResponse>(seriesScope, seriesRequestKey);
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(seriesRequestKey);
+
   const loadSeries = useCallback(async () => {
+    const isCurrent = beginSeriesRequest();
     setLoading(true);
     setError(null);
     try {
       const res = await analyticsCfdApiService.getSeries(filters);
+      if (!isCurrent()) return;
       if (res.done && res.body) {
         const localizedStatuses = res.body.statuses.map(status => {
           if (status.id === '__cfd_todo__') {
@@ -290,6 +298,7 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
         setData(null);
       }
     } catch {
+      if (!isCurrent()) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -297,9 +306,9 @@ const CumulativeFlowPage: React.FC<CumulativeFlowPageProps> = ({
       );
       setData(null);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [filters, t]);
+  }, [filters, t, beginSeriesRequest, setData]);
 
   useEffect(() => {
     void loadTeamsAndMembers();

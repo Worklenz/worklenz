@@ -1,3 +1,5 @@
+import { useLatestAnalyticsSeriesRequest } from '@/hooks/useLatestAnalyticsSeriesRequest';
+import { useScopedAnalyticsSeriesData } from '@/hooks/useScopedAnalyticsSeriesData';
 import { areAnalyticsProjectResponsesComplete, useAnalyticsProjectOptionsLoader } from '@/hooks/useAnalyticsProjectOptionsLoader';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, Space, Typography, message, theme } from '@/shared/antd-imports';
@@ -95,7 +97,6 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<PlannedVsActualMilestonesSeriesResponse | null>(null);
 
   const chartRef = useRef<PvaMilestonesChartHandle>(null);
   /** Milestone chart is project-wise — require an explicit project before loading. */
@@ -225,7 +226,13 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
     }
   }, []);
 
+  const seriesScope = JSON.stringify([session?.team_id, session?.id, customTemplateId]);
+  const seriesRequestKey = JSON.stringify([seriesScope, filters]);
+  const { data, setData } = useScopedAnalyticsSeriesData<PlannedVsActualMilestonesSeriesResponse>(seriesScope, seriesRequestKey);
+  const beginSeriesRequest = useLatestAnalyticsSeriesRequest(seriesRequestKey);
+
   const loadSeries = useCallback(async () => {
+    const isCurrent = beginSeriesRequest();
     if (!hasProjectSelection) {
       setData(null);
       setError(null);
@@ -236,6 +243,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
     setError(null);
     try {
       const res = await analyticsPlannedVsActualMilestonesApiService.getSeries(filters);
+      if (!isCurrent()) return;
       if (res.done && res.body) {
         setData(res.body);
       } else {
@@ -248,6 +256,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
         setData(null);
       }
     } catch {
+      if (!isCurrent()) return;
       setError(
         t('errorDescription', {
           defaultValue: 'We could not load this report. Please try again.',
@@ -255,9 +264,9 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
       );
       setData(null);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [filters, hasProjectSelection, t]);
+  }, [filters, hasProjectSelection, t, beginSeriesRequest, setData]);
 
   useEffect(() => {
     void loadTeams();

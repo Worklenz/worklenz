@@ -33,3 +33,22 @@ it('invalidates pending responses on unmount and newer retries', () => {
   hook.unmount();
   expect(second()).toBe(false);
 });
+
+it('rejects an old response after the project selection is cleared', async () => {
+  const pending: Array<(value: string) => void> = [];
+  const hook = renderHook(({ project }) => {
+    const [data, setData] = useState<string | null>(null);
+    const begin = useLatestAnalyticsSeriesRequest(project);
+    useEffect(() => {
+      const isCurrent = begin();
+      if (!project) { setData(null); return; }
+      void new Promise<string>(resolve => pending.push(resolve)).then(value => {
+        if (isCurrent()) setData(value);
+      });
+    }, [begin, project]);
+    return data;
+  }, { initialProps: { project: 'project-a' } });
+  hook.rerender({ project: '' });
+  await act(async () => pending[0]('old results'));
+  expect(hook.result.current).toBeNull();
+});
