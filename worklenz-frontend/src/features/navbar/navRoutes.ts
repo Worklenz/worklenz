@@ -1,9 +1,14 @@
 import { getAddonSlotItems } from '@/addons/addon-slots';
+import {
+  ORGANIZATION_PERMISSIONS,
+  OrganizationPermission,
+} from '@/types/admin-center/permission-schemes.types';
 
 export type NavRoutesType = {
   name: string;
   path: string;
   adminOnly: boolean;
+  requiredPermission?: OrganizationPermission;
   freePlanFeature?: boolean;
   selfHostedExcluded?: boolean;
   teamLeadOnly?: boolean;

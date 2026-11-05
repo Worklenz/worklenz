@@ -33,6 +33,7 @@ import {
   canAssignRole,
   canManageTargetRole,
   canManageTeamMembers,
+  getManageUsersAssignableRoles,
   getTeamMemberRoleName,
   hasTeamAdminPrivileges,
   isSelfTeamMember,

@@ -44,6 +44,7 @@ import { isTeamLeadRole, ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role
 import { ConnectionStatusIndicator } from '@/components/connection-status/ConnectionStatusIndicator';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
 import { isSessionGuest } from '@/utils/guest-session';
+import { useOrganizationPermissions } from '@/hooks/useOrganizationPermission';
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
@@ -59,6 +60,7 @@ const Navbar = () => {
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
+  const { permissions: organizationPermissions } = useOrganizationPermissions();
   const currentRole = useMemo(() => getSessionRoleName(currentSession), [currentSession]);
   const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
   // Self-hosted deployments are licensed at the deployment level, so trial and
@@ -205,12 +207,15 @@ const Navbar = () => {
 
     return navRoutesList.filter(route => {
       if (route.adminOnly && !isOwnerOrAdmin) return false;
+      if (route.requiredPermission && !organizationPermissions.includes(route.requiredPermission)) {
+        return false;
+      }
       if (route.selfHostedExcluded && isSelfHosted) return false;
       if (route.teamLeadOnly && !isTeamLead) return false;
       if (route.guestExcluded && shouldHideGuestHome) return false; // Hide Home for guest-only users
       return true;
     });
-  }, [navRoutesList, isOwnerOrAdmin, currentSession, shouldHideGuestHome]);
+  }, [navRoutesList, isOwnerOrAdmin, organizationPermissions, currentSession, shouldHideGuestHome]);
 
   const visibleRoutes = useMemo(() => {
     return filteredRoutes
