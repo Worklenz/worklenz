@@ -18,6 +18,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useNavigate } from 'react-router-dom';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { buildProjectRoute } from '@/pages/projects/projectList/project-list.constants';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 import { IHomeTasksConfig } from '@/types/home/home-page.types';
 import {
@@ -86,14 +87,6 @@ const HomeContinueCard: React.FC = () => {
   ];
   const TABS = ALL_TABS.filter(({ key }) => !continueTabs.hidden.includes(key));
 
-  const handleOpenProject = useCallback(
-    (e: React.MouseEvent, projectId: string) => {
-      e.stopPropagation();
-      navigate(`/worklenz/projects/${projectId}?tab=tasks-list&pinned_tab=tasks-list`);
-    },
-    [navigate]
-  );
-
   const handleOpenTask = useCallback(
     (e: React.MouseEvent, taskId: string, projectId: string) => {
       e.stopPropagation();
@@ -143,6 +136,17 @@ const HomeContinueCard: React.FC = () => {
   const projects = useMemo(
     () => (projectsData?.body as IProjectViewModel[] | undefined) || [],
     [projectsData]
+  );
+
+  const handleOpenProject = useCallback(
+    (e: React.MouseEvent, projectId: string) => {
+      e.stopPropagation();
+      const project = projects.find(item => item.id === projectId);
+      navigate(
+        buildProjectRoute(projectId, project?.team_member_default_view, project?.project_type)
+      );
+    },
+    [navigate, projects]
   );
 
   const activeTasks = useMemo(
@@ -256,7 +260,12 @@ const HomeContinueCard: React.FC = () => {
                   <div
                     key={p.id}
                     style={{ ...ROW_STYLE, cursor: 'pointer' }}
-                    onClick={() => navigate(`/worklenz/projects/${p.id}?tab=tasks-list&pinned_tab=tasks-list`)}
+                    onClick={() =>
+                      p.id &&
+                      navigate(
+                        buildProjectRoute(p.id, p.team_member_default_view, p.project_type)
+                      )
+                    }
                   >
                     <span
                       style={{
