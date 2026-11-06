@@ -96,6 +96,7 @@ const membersReportsSlice = createSlice({
     },
     setSearchQuery: (state, action) => {
       state.searchQuery = action.payload;
+      state.index = 1;
     },
     setIndex: (state, action) => {
       state.index = action.payload;
