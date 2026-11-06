@@ -4,6 +4,7 @@ import {
   Flex,
   notification,
   Tooltip,
+  theme,
 } from '@/shared/antd-imports';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -65,6 +66,7 @@ type TaskDrawerHeaderProps = {
 };
 
 const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeaderProps) => {
+  const { token } = theme.useToken();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { t: tDuplicate } = useTranslation('task-duplicate');
@@ -188,11 +190,10 @@ const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeade
     return (
       <div
         style={{
-          background: 'var(--ant-color-bg-elevated)',
-          borderRadius: 'var(--ant-border-radius-lg)',
-          boxShadow: 'var(--ant-box-shadow-secondary)',
-          padding: '4px 0',
-          minWidth: '200px',
+          background: token.colorBgElevated,
+          color: token.colorText,
+          borderRadius: token.borderRadiusLG,
+          boxShadow: token.boxShadowSecondary,
         }}
       >
         {/* Copy link item */}
