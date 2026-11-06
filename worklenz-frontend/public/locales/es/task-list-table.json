@@ -116,7 +116,8 @@
     "deleteConfirmMessage": "¿Estás seguro de que deseas eliminar esta tarea? Esta acción no se puede deshacer.",
     "deleteSubtaskConfirmMessage": "¿Está seguro de que desea eliminar esta subtarea? Esta acción no se puede deshacer.",
     "deleteConfirmOk": "Eliminar",
-    "deleteConfirmCancel": "Cancelar"
+    "deleteConfirmCancel": "Cancelar",
+    "moveToProject": "Mover al proyecto"
   },
   "setDueDate": "Establecer fecha de vencimiento",
   "setStartDate": "Establecer fecha de inicio",
@@ -337,5 +338,41 @@
   "save": "Guardar",
   "cancel": "Cancelar",
   "changeStatus": "Cambiar estado: {{status}}",
-  "ellipsis": "..."
+  "ellipsis": "...",
+  "moveTaskProject": {
+    "title": "Mover tareas a otro proyecto",
+    "selectedTasksTitle": "Tareas seleccionadas",
+    "destinationLabel": "Proyecto de destino",
+    "destinationPlaceholder": "Selecciona un proyecto de destino",
+    "mappingInfo": "Asigna los campos del proyecto origen a los del proyecto destino antes de mover tareas.",
+    "statusMappingTitle": "Asignación de estados",
+    "phaseMappingTitle": "Asignación de fases",
+    "customFieldMappingTitle": "Asignación de campos personalizados",
+    "selectStatus": "Selecciona el estado de destino",
+    "selectPhase": "Selecciona la fase de destino",
+    "selectCustomField": "Selecciona el campo personalizado de destino",
+    "actions": {
+      "cancel": "Cancelar",
+      "move": "Mover tareas"
+    },
+    "options": {
+      "moveSubtasks": "Mover subtareas junto con las tareas seleccionadas",
+      "keepAssignees": "Mantener asignados si son miembros del proyecto de destino",
+      "keepLabels": "Mantener etiquetas"
+    },
+    "messages": {
+      "movedSuccess": "Tareas movidas correctamente",
+      "movedWithWarnings": "Tareas movidas con advertencias"
+    },
+    "errors": {
+      "loadData": "No se pudieron cargar los datos para mover tareas",
+      "loadDestinationData": "No se pudieron cargar los campos del proyecto de destino",
+      "moveFailed": "No se pudieron mover las tareas"
+    },
+    "partialMappingWarning": "Faltan algunas asignaciones de fases o campos personalizados. Se omitirán los valores sin asignar.",
+    "loadFailed": "No se pudieron cargar los proyectos y las asignaciones. Inténtalo de nuevo.",
+    "completedWithWarnings": "Tareas movidas con {{count}} advertencias de asignación. Revisa el proyecto de destino.",
+    "completed": "Tareas movidas correctamente.",
+    "moveFailed": "No se pudieron mover las tareas. Inténtalo de nuevo."
+  }
 }

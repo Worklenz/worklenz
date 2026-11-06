@@ -116,7 +116,8 @@
     "deleteConfirmMessage": "Sind Sie sicher, dass Sie diese Aufgabe löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
     "deleteSubtaskConfirmMessage": "Möchten Sie diese Unteraufgabe wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     "deleteConfirmOk": "Löschen",
-    "deleteConfirmCancel": "Abbrechen"
+    "deleteConfirmCancel": "Abbrechen",
+    "moveToProject": "In Projekt verschieben"
   },
   "setDueDate": "Fälligkeitsdatum festlegen",
   "setStartDate": "Startdatum festlegen",
@@ -337,5 +338,41 @@
   "save": "Speichern",
   "cancel": "Abbrechen",
   "changeStatus": "Status ändern: {{status}}",
-  "ellipsis": "..."
+  "ellipsis": "...",
+  "moveTaskProject": {
+    "title": "Aufgaben in ein anderes Projekt verschieben",
+    "selectedTasksTitle": "Ausgewählte Aufgaben",
+    "destinationLabel": "Zielprojekt",
+    "destinationPlaceholder": "Zielprojekt auswählen",
+    "mappingInfo": "Ordnen Sie vor dem Verschieben die Felder des Quellprojekts den Feldern des Zielprojekts zu.",
+    "statusMappingTitle": "Status-Zuordnung",
+    "phaseMappingTitle": "Phasen-Zuordnung",
+    "customFieldMappingTitle": "Zuordnung benutzerdefinierter Felder",
+    "selectStatus": "Zielstatus auswählen",
+    "selectPhase": "Zielphase auswählen",
+    "selectCustomField": "Benutzerdefiniertes Zielfeld auswählen",
+    "actions": {
+      "cancel": "Abbrechen",
+      "move": "Aufgaben verschieben"
+    },
+    "options": {
+      "moveSubtasks": "Unteraufgaben zusammen mit den ausgewählten Aufgaben verschieben",
+      "keepAssignees": "Zugewiesene beibehalten, wenn sie Mitglieder im Zielprojekt sind",
+      "keepLabels": "Labels beibehalten"
+    },
+    "messages": {
+      "movedSuccess": "Aufgaben erfolgreich verschoben",
+      "movedWithWarnings": "Aufgaben mit Warnungen verschoben"
+    },
+    "errors": {
+      "loadData": "Daten zum Verschieben der Aufgaben konnten nicht geladen werden",
+      "loadDestinationData": "Felder des Zielprojekts konnten nicht geladen werden",
+      "moveFailed": "Aufgaben konnten nicht verschoben werden"
+    },
+    "partialMappingWarning": "Einige Phasen oder benutzerdefinierte Felder sind nicht zugeordnet. Nicht zugeordnete Werte werden übersprungen.",
+    "loadFailed": "Projekte und Zuordnungen konnten nicht geladen werden. Bitte erneut versuchen.",
+    "completedWithWarnings": "Aufgaben mit {{count}} Zuordnungswarnungen verschoben. Bitte das Zielprojekt prüfen.",
+    "completed": "Aufgaben erfolgreich verschoben.",
+    "moveFailed": "Aufgaben konnten nicht verschoben werden. Bitte erneut versuchen."
+  }
 }
