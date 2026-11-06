@@ -148,6 +148,11 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
       }));
   }, [teamMembersState]);
 
+  const defaultTeamIds = useMemo(() => {
+    const id = session?.team_id ? String(session.team_id) : teamOptions[0]?.value;
+    return id ? [id] : [];
+  }, [session?.team_id, teamOptions]);
+
   const filters: PlannedVsActualMilestonesFilters = useMemo(
     () => ({
       project_ids: selectedProjectIds,
@@ -348,6 +353,7 @@ const PlannedVsActualMilestonesPage: React.FC<PlannedVsActualMilestonesPageProps
       teamOptions={teamOptions}
       selectedTeamIds={selectedTeamIds}
       onTeamsChange={setSelectedTeamIds}
+      defaultTeamIds={defaultTeamIds}
       loading={filtersLoading}
     />
   );
