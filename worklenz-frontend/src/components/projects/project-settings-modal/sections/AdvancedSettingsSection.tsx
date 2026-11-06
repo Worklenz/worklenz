@@ -209,36 +209,6 @@ const AdvancedSettingsSection = ({
           <Switch disabled={disabled} />
         </Form.Item>
       </SettingsCard>
-
-      <SettingsCard
-        title={t('phaseAssigneesSettings', { defaultValue: 'Phase Assignees' })}
-        description={t('phaseAssigneesSettingsDescription', {
-          defaultValue:
-            'When enabled, each pipeline phase can have a dedicated assignee. Tasks can only be advanced by their phase assignee (admins can always override).',
-        })}
-      >
-        <Form.Item
-          name="phase_assignees_enabled"
-          label={
-            <Space>
-              <Typography.Text>
-                {t('phaseAssigneesEnabled', { defaultValue: 'Enable Phase Assignees' })}
-              </Typography.Text>
-              <Tooltip
-                title={t('phaseAssigneesEnabledTooltip', {
-                  defaultValue:
-                    'When enabled, each phase in the pipeline can have a default assignee who is automatically assigned and responsible for completing tasks in that phase.',
-                })}
-              >
-                <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />
-              </Tooltip>
-            </Space>
-          }
-          valuePropName="checked"
-        >
-          <Switch disabled={disabled} />
-        </Form.Item>
-      </SettingsCard>
     </Flex>
   );
 };
