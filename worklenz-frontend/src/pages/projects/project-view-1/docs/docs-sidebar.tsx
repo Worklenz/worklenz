@@ -310,7 +310,9 @@ const DocsSidebar = ({
                   >
                     <StarFilled aria-hidden style={{ color: token.colorPrimary }} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate">{page.title}</span>
+                      <span className="block truncate">
+                        {page.title || t('untitled', { defaultValue: 'Untitled' })}
+                      </span>
                       {groupByProject && page.project_name ? (
                         <span className="block truncate text-xs" style={{ color: token.colorTextSecondary }}>
                           {page.project_name}
@@ -447,7 +449,9 @@ const SearchResults = ({ searching, results, onSelect }: SearchResultsProps) => 
           style={{ color: token.colorText }}
           onClick={() => onSelect(result.id)}
         >
-          <div className="truncate text-sm font-medium">{result.title}</div>
+          <div className="truncate text-sm font-medium">
+            {result.title || t('untitled', { defaultValue: 'Untitled' })}
+          </div>
           {result.project_name ? (
             <div className="truncate text-xs" style={{ color: token.colorTextSecondary }}>
               {result.project_name}
@@ -560,7 +564,7 @@ const PageRow = ({
           <FileTextOutlined
             style={{ color: active ? token.colorPrimary : token.colorTextSecondary }}
           />
-          <span className="truncate">{page.title}</span>
+          <span className="truncate">{page.title || t('untitled', { defaultValue: 'Untitled' })}</span>
         </button>
       )}
       <Tooltip

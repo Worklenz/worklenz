@@ -85,9 +85,10 @@ export const DocsDocumentEditor = ({
       createSlashCommands(commandsRef, slashMenuRef),
       createDocumentTaskItem(t('toggleItem', { defaultValue: 'Toggle to-do' })),
       Placeholder.configure({
-        placeholder: t('writingPlaceholder', {
-          defaultValue: "Write, '/' for blocks, '@' for members, '#' for tasks",
-        }),
+        placeholder: () =>
+          t('writingPlaceholder', {
+            defaultValue: "Write, '/' for blocks, '@' for members, '#' for tasks",
+          }),
       }),
       MemberMention,
       TaskMention,
@@ -164,6 +165,20 @@ export const DocsDocumentEditor = ({
     callbacks.current.onReady?.(editor);
     return () => callbacks.current.onReady?.(null);
   }, [editor]);
+
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    const placeholderExtension = editor.extensionManager.extensions.find(
+      extension => extension.name === 'placeholder'
+    );
+    if (placeholderExtension) {
+      placeholderExtension.options.placeholder = () =>
+        t('writingPlaceholder', {
+          defaultValue: "Write, '/' for blocks, '@' for members, '#' for tasks",
+        });
+      editor.view.dispatch(editor.state.tr);
+    }
+  }, [editor, t]);
 
   useEffect(() => registerDocsEditorRelease(() => setReleased(true)), []);
 

@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Table,
   Empty,
@@ -114,8 +115,9 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   navigate,
   onProjectSelect,
   loading,
-  t,
+  t: _propT,
 }) => {
+  const { t } = useTranslation('all-project-list');
   const { groupedRequestParams } = useAppSelector(state => state.projectsReducer);
   const projectListFields = useAppSelector(state => state.projectListFieldsReducer.fields);
   const { token } = theme.useToken();
@@ -500,7 +502,13 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 </button>
               </Tooltip>
               <Tooltip
-                title={isOwnerOrAdmin ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}
+                title={
+                  isOwnerOrAdmin
+                    ? record.archived
+                      ? t('unarchive', { defaultValue: 'Unarchive' })
+                      : t('archive', { defaultValue: 'Archive' })
+                    : t('noPermission', { defaultValue: "You don't have permission to perform this action" })
+                }
               >
                 <button
                   style={{
@@ -593,7 +601,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
               padding: '2px 4px',
             }}
           >
-            Expand All
+            {t('expandAll', { defaultValue: 'Expand All' })}
           </button>
           <span style={{ color: token.colorTextSecondary, fontSize: 12, lineHeight: '22px' }}>|</span>
           <button
@@ -608,7 +616,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
               padding: '2px 4px',
             }}
           >
-            Collapse All
+            {t('collapseAll', { defaultValue: 'Collapse All' })}
           </button>
         </div>
       )}
@@ -680,11 +688,16 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 )}
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <Title level={5} style={{ margin: 0, fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                    {group?.groupName || 'Unnamed Group'}
+                    {group?.groupName || t('unnamedGroup', { defaultValue: 'Unnamed Group' })}
                   </Title>
                   <span style={{ color: token.colorTextSecondary, fontSize: 12 }}>|</span>
                   <Text style={{ fontSize: 12, color: token.colorTextSecondary, whiteSpace: 'nowrap' }}>
-                    {projects.length} {projects.length === 1 ? 'project' : 'projects'}
+                    {t('projectCount', {
+                      count: projects.length,
+                      defaultValue_one: '{{count}} project',
+                      defaultValue_other: '{{count}} projects',
+                      defaultValue: '{{count}} projects',
+                    })}
                   </Text>
                 </div>
               </Space>
