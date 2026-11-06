@@ -1,6 +1,15 @@
 import { cfdDatesInclusive } from "./cfd-date-range";
+import { PoolClient } from "pg";
 import db from "../../config/db";
 import { STATUS_HISTORY_RETENTION_MONTHS } from "../../shared/reporting-analytics.constants";
+
+const SNAPSHOT_WRITE_LOCK_NAME = "cfd-daily-snapshots";
+
+async function lockSnapshotWrites(client: PoolClient): Promise<void> {
+  await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+    SNAPSHOT_WRITE_LOCK_NAME,
+  ]);
+}
 
 function toDateString(value: Date | string): string {
   if (typeof value === "string") return value.slice(0, 10);
@@ -29,6 +38,7 @@ export async function captureSnapshotsForDate(
   const client = await db.connect();
   try {
     await client.query("BEGIN");
+    await lockSnapshotWrites(client);
 
     const params: unknown[] = [snapshotDate];
     let projectFilter = "";
@@ -110,51 +120,60 @@ export async function backfillRange(
 
   const allDates = cfdDatesInclusive(fromDate, toDate);
 
-  const existing = await db.query(
-    `
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    await lockSnapshotWrites(client);
+
+    const existing = await client.query(
+      `
     SELECT project_id::TEXT AS project_id, snapshot_date::TEXT AS snapshot_date
     FROM cfd_daily_snapshots
     WHERE project_id = ANY($1::UUID[])
       AND snapshot_date >= $2::DATE
       AND snapshot_date <= $3::DATE
     `,
-    [projectIds, fromDate, toDate]
-  );
+      [projectIds, fromDate, toDate]
+    );
 
-  const have = new Set(
-    (existing.rows as Array<{ project_id: string; snapshot_date: string }>).map(
-      r => `${r.project_id}|${toDateString(r.snapshot_date)}`
-    )
-  );
+    const have = new Set(
+      (existing.rows as Array<{ project_id: string; snapshot_date: string }>).map(
+        r => `${r.project_id}|${toDateString(r.snapshot_date)}`
+      )
+    );
 
-  const missingPairs: Array<{ project_id: string; day: string }> = [];
-  for (const projectId of projectIds) {
-    for (const day of allDates) {
-      if (!have.has(`${projectId}|${day}`)) {
-        missingPairs.push({ project_id: projectId, day });
+    const missingPairs: Array<{ project_id: string; day: string }> = [];
+    for (const projectId of projectIds) {
+      for (const day of allDates) {
+        if (!have.has(`${projectId}|${day}`)) {
+          missingPairs.push({ project_id: projectId, day });
+        }
       }
     }
-  }
-  if (missingPairs.length === 0) return 0;
+    if (missingPairs.length === 0) {
+      await client.query("COMMIT");
+      return 0;
+    }
 
-  const missingProjectIds = [...new Set(missingPairs.map(p => p.project_id))];
+    const missingProjectIds = [...new Set(missingPairs.map(p => p.project_id))];
 
-  // Fast path: if nothing in history for these projects, skip heavy reconstruct.
-  const historyCheck = await db.query(
-    `
+    // Fast path: if nothing in history for these projects, skip heavy reconstruct.
+    const historyCheck = await client.query(
+      `
     SELECT 1
     FROM task_status_history h
     WHERE h.project_id = ANY($1::UUID[])
     LIMIT 1
     `,
-    [missingProjectIds]
-  );
-  if ((historyCheck.rowCount ?? 0) === 0) {
-    return 0;
-  }
+      [missingProjectIds]
+    );
+    if ((historyCheck.rowCount ?? 0) === 0) {
+      await client.query("COMMIT");
+      return 0;
+    }
 
-  const result = await db.query(
-    `
+    const result = await client.query(
+      `
     WITH needed AS (
       SELECT * FROM unnest($1::UUID[], $2::DATE[]) AS pairs(project_id, day)
     )
@@ -178,22 +197,42 @@ export async function backfillRange(
       created_at = CURRENT_TIMESTAMP
     RETURNING id
     `,
-    [missingPairs.map(p => p.project_id), missingPairs.map(p => p.day)]
-  );
+      [missingPairs.map(p => p.project_id), missingPairs.map(p => p.day)]
+    );
 
-  return result.rowCount ?? 0;
+    await client.query("COMMIT");
+    return result.rowCount ?? 0;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 /** Drop snapshot rows older than retention window. */
 export async function pruneOldSnapshots(): Promise<number> {
-  const result = await db.query(
-    `
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    await lockSnapshotWrites(client);
+
+    const result = await client.query(
+      `
     DELETE FROM cfd_daily_snapshots
     WHERE snapshot_date < (CURRENT_DATE - ($1::INT || ' months')::INTERVAL)
     `,
-    [STATUS_HISTORY_RETENTION_MONTHS]
-  );
-  return result.rowCount ?? 0;
+      [STATUS_HISTORY_RETENTION_MONTHS]
+    );
+
+    await client.query("COMMIT");
+    return result.rowCount ?? 0;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function runCfdDailySnapshotJob(): Promise<{

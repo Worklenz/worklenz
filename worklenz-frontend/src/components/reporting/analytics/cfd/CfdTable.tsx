@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Table, theme } from '@/shared/antd-imports';
+import { Table, Tooltip, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import type { ColumnsType } from 'antd/es/table';
 import { getClientTablePagination } from '@/lib/reporting/analytics-table-pagination';
@@ -44,8 +44,25 @@ export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, stat
     ];
     orderedVisible.forEach(statusId => {
       const status = statusById.get(statusId);
+      const statusName = status?.name ?? statusId;
+
       cols.push({
-        title: status?.name ?? statusId,
+        title: (
+          <Tooltip title={statusName}>
+            <span
+              style={{
+                display: 'block',
+                minWidth: 0,
+                maxWidth: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {statusName}
+            </span>
+          </Tooltip>
+        ),
         dataIndex: statusId,
         key: statusId,
         align: 'right',
