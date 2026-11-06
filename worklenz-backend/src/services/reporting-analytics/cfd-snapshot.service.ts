@@ -1,6 +1,7 @@
 import { cfdDatesInclusive } from "./cfd-date-range";
 import { PoolClient } from "pg";
 import db from "../../config/db";
+import { log_error } from "../../shared/utils";
 import { STATUS_HISTORY_RETENTION_MONTHS } from "../../shared/reporting-analytics.constants";
 
 const SNAPSHOT_WRITE_LOCK_NAME = "cfd-daily-snapshots";
@@ -39,15 +40,22 @@ async function withSnapshotWriteLock<T>(
         return result;
       }
 
-      await client.query("ROLLBACK");
-      inTransaction = false;
+      try {
+        await client.query("ROLLBACK");
+        inTransaction = false;
+      } catch (rollbackError) {
+        inTransaction = false;
+        discardConnection = true;
+        log_error(rollbackError);
+        throw rollbackError;
+      }
     } catch (error) {
       if (inTransaction) {
         try {
           await client.query("ROLLBACK");
         } catch (rollbackError) {
           discardConnection = true;
-          throw rollbackError;
+          log_error(rollbackError);
         }
       }
       throw error;

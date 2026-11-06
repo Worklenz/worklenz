@@ -48,8 +48,9 @@ export const CfdTable: React.FC<CfdTableProps> = ({ data, visibleStatusIds, stat
 
       cols.push({
         title: (
-          <Tooltip title={statusName}>
+          <Tooltip title={statusName} trigger={['hover', 'focus']}>
             <span
+              tabIndex={0}
               style={{
                 display: 'block',
                 minWidth: 0,

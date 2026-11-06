@@ -9,6 +9,7 @@ jest.mock("../redis/analytics-cache", () => ({
 }));
 
 import db from "../config/db";
+import * as sharedUtils from "../shared/utils";
 import { cfdDatesInclusive } from "../services/reporting-analytics/cfd-date-range";
 import {
   backfillRange,
@@ -34,8 +35,12 @@ describe("CFD date bounds and exports", () => {
     );
     clientRelease.mockReset();
     (db.connect as jest.Mock).mockReset().mockResolvedValue(client);
+    jest.spyOn(sharedUtils, "log_error").mockImplementation(() => {});
   });
-  afterEach(() => jest.useRealTimers());
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.useRealTimers();
+  });
 
   it("caps future month-end and far-future filters at today", () => {
     for (const date_to of ["2026-11-30", "9999-12-31"]) {
@@ -128,6 +133,37 @@ describe("CFD date bounds and exports", () => {
       "ROLLBACK",
     ]);
     expect(contendingRelease).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    [
+      "snapshot capture",
+      () => captureSnapshotsForDate("2026-11-02", ["project"]),
+      "DELETE FROM cfd_daily_snapshots",
+    ],
+    [
+      "backfill",
+      () => backfillRange(["project"], "2026-11-01", "2026-11-02"),
+      "SELECT project_id::TEXT",
+    ],
+  ])("preserves the original %s error when rollback fails", async (_name, operation, failingQuery) => {
+    const originalError = new Error("operation failed");
+    const rollbackError = new Error("rollback failed");
+    const query = jest.fn().mockImplementation((sql: string) => {
+      if (sql === "BEGIN") return Promise.resolve({ rows: [], rowCount: null });
+      if (sql.includes("pg_try_advisory_xact_lock")) {
+        return Promise.resolve({ rows: [{ acquired: true }], rowCount: 1 });
+      }
+      if (sql.includes(failingQuery)) return Promise.reject(originalError);
+      if (sql === "ROLLBACK") return Promise.reject(rollbackError);
+      return Promise.resolve({ rows: [], rowCount: 0 });
+    });
+    const release = jest.fn();
+    (db.connect as jest.Mock).mockResolvedValueOnce({ query, release });
+
+    await expect(operation()).rejects.toBe(originalError);
+    expect(sharedUtils.log_error).toHaveBeenCalledWith(rollbackError);
+    expect(release).toHaveBeenCalledWith(true);
   });
 
   it.each(["epic", "label", "assignee"])("loads all days in a single grouped %s query", async group_by => {
