@@ -21,6 +21,7 @@ import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { useGetProjectsQuery } from '@/api/home-page/home-page.api.service';
 import { useNavigate } from 'react-router-dom';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import { buildProjectRoute } from '@/pages/projects/projectList/project-list.constants';
 const MY_PROJECTS_FILTER_KEY = 'my-dashboard-active-projects-filter';
 
 const RecentAndFavouriteProjectList = () => {
@@ -81,9 +82,12 @@ const RecentAndFavouriteProjectList = () => {
           <Typography.Paragraph
             key={record.id}
             style={{ margin: 0, paddingInlineEnd: 6, cursor: 'pointer' }}
-            onClick={() =>
-              navigate(`/worklenz/projects/${record.id}?tab=tasks-list&pinned_tab=tasks-list`)
-            }
+            onClick={() => {
+              if (!record.id) return;
+              navigate(
+                buildProjectRoute(record.id, record.team_member_default_view, record.project_type)
+              );
+            }}
           >
             <Badge color={record.color_code} style={{ marginInlineEnd: 4 }} />
             {decodeHtmlEntities(record.name)}

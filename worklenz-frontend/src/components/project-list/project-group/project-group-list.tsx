@@ -704,7 +704,8 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                   onClick: () =>
                     onProjectSelect(
                       record?.id || '',
-                      (record as any)?.team_member_default_view || (record as any)?.default_view
+                      record.team_member_default_view || record.default_view,
+                      record.project_type
                     ),
                   style: { cursor: 'pointer' },
                   onMouseEnter: () => handleProjectHover(record?.id || ''),

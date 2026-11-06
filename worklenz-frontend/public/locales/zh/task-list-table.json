@@ -71,7 +71,7 @@
   "selectText": "选择",
   "labelsSelectorInputTip": "按回车键创建！",
   "addTaskText": "+ 添加任务",
-  "createIssueText": "创建问题",
+  "createIssueText": "创建工作项",
   "createWorkItemText": "创建工作项",
   "insertIssueText": "插入问题",
   "addSubTaskText": "+ 添加子任务",
