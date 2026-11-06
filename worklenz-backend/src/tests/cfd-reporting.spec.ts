@@ -68,21 +68,24 @@ describe("CFD date bounds and exports", () => {
   it("locks snapshot writes before replacing captured rows", async () => {
     clientQuery.mockResolvedValueOnce({ rows: [], rowCount: null })
       .mockResolvedValueOnce({ rows: [{ acquired: true }], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [{ acquired: true }], rowCount: 1 })
       .mockResolvedValueOnce({ rows: [], rowCount: 0 })
       .mockResolvedValueOnce({ rows: [], rowCount: 2 })
       .mockResolvedValueOnce({ rows: [], rowCount: null });
 
     await expect(captureSnapshotsForDate("2026-11-02", ["project"])).resolves.toBe(2);
     expect(clientQuery.mock.calls[0][0]).toBe("BEGIN");
-    expect(clientQuery.mock.calls[1][0]).toContain("pg_try_advisory_xact_lock");
-    expect(clientQuery.mock.calls[2][0]).toContain("DELETE FROM cfd_daily_snapshots");
-    expect(clientQuery.mock.calls[3][0]).toContain("INSERT INTO cfd_daily_snapshots");
-    expect(clientQuery.mock.calls[4][0]).toBe("COMMIT");
+    expect(clientQuery.mock.calls[1][0]).toContain("pg_try_advisory_xact_lock_shared");
+    expect(clientQuery.mock.calls[2][1]).toEqual(["cfd-daily-snapshots", ["project"]]);
+    expect(clientQuery.mock.calls[3][0]).toContain("DELETE FROM cfd_daily_snapshots");
+    expect(clientQuery.mock.calls[4][0]).toContain("INSERT INTO cfd_daily_snapshots");
+    expect(clientQuery.mock.calls[5][0]).toBe("COMMIT");
     expect(clientRelease).toHaveBeenCalledTimes(1);
   });
 
   it("backfills only missing project/day pairs using explicit UTC boundaries", async () => {
     clientQuery.mockResolvedValueOnce({ rows: [], rowCount: null })
+      .mockResolvedValueOnce({ rows: [{ acquired: true }], rowCount: 1 })
       .mockResolvedValueOnce({ rows: [{ acquired: true }], rowCount: 1 })
       .mockResolvedValueOnce({ rows: [
       { project_id: "a", snapshot_date: "2026-11-01" },
@@ -92,14 +95,14 @@ describe("CFD date bounds and exports", () => {
       .mockResolvedValueOnce({ rowCount: 2 })
       .mockResolvedValueOnce({ rows: [], rowCount: null });
     await expect(backfillRange(["a", "b"], "2026-11-01", "2026-11-02")).resolves.toBe(2);
-    const [sql, params] = clientQuery.mock.calls[4];
+    const [sql, params] = clientQuery.mock.calls[5];
     expect(params).toEqual([["a", "b"], ["2026-11-02", "2026-11-01"]]);
     expect(sql).toContain("unnest($1::UUID[], $2::DATE[])");
     expect(sql).toContain("h.entered_at < ((n.day + 1)::TIMESTAMP AT TIME ZONE 'UTC')");
     expect(sql).toContain("h.exited_at >= ((n.day + 1)::TIMESTAMP AT TIME ZONE 'UTC')");
     expect(clientQuery.mock.calls[1][0]).toContain("pg_try_advisory_xact_lock");
     expect(clientQuery.mock.calls[0][0]).toBe("BEGIN");
-    expect(clientQuery.mock.calls[5][0]).toBe("COMMIT");
+    expect(clientQuery.mock.calls[6][0]).toBe("COMMIT");
     expect(clientRelease).toHaveBeenCalledTimes(1);
   });
 
@@ -133,6 +136,81 @@ describe("CFD date bounds and exports", () => {
       "ROLLBACK",
     ]);
     expect(contendingRelease).toHaveBeenCalledTimes(1);
+  });
+
+  it("releases all project locks before retrying a partially contended set", async () => {
+    const contendingQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ acquired: true }] })
+      .mockResolvedValueOnce({ rows: [{ acquired: false }] })
+      .mockResolvedValueOnce({ rows: [] });
+    const release = jest.fn();
+    (db.connect as jest.Mock).mockReset()
+      .mockResolvedValueOnce({ query: contendingQuery, release })
+      .mockImplementationOnce(async () => {
+        expect(release).toHaveBeenCalledTimes(1);
+        return client;
+      });
+    jest.useRealTimers();
+
+    await expect(captureSnapshotsForDate("2026-11-02", ["b", "a", "b"])).resolves.toBe(0);
+    expect(contendingQuery.mock.calls[1][0]).toContain("pg_try_advisory_xact_lock_shared");
+    expect(contendingQuery.mock.calls[2][1]).toEqual(["cfd-daily-snapshots", ["a", "b"]]);
+    expect(contendingQuery.mock.calls[3][0]).toBe("ROLLBACK");
+  });
+
+  it("takes the exclusive global lock for full-table snapshot capture", async () => {
+    await captureSnapshotsForDate("2026-11-02");
+    expect(clientQuery.mock.calls[1][0]).toBe(
+      "SELECT pg_try_advisory_xact_lock(hashtext($1)) AS acquired"
+    );
+    expect(clientQuery.mock.calls[2][0]).toContain("DELETE FROM cfd_daily_snapshots");
+  });
+
+  it("allows independent projects to write while an overlapping project waits", async () => {
+    jest.useRealTimers();
+    const lockedProjects = new Set<string>();
+    let releaseFirst!: () => void;
+    let firstStarted!: () => void;
+    const firstBlocked = new Promise<void>(resolve => { releaseFirst = resolve; });
+    const firstStartedPromise = new Promise<void>(resolve => { firstStarted = resolve; });
+    let blockFirstInsert = true;
+
+    (db.connect as jest.Mock).mockImplementation(async () => {
+      const held: string[] = [];
+      return {
+        release: jest.fn(),
+        query: jest.fn(async (sql: string, params?: [string, string[]]) => {
+          if (sql.includes("pg_try_advisory_xact_lock_shared")) return { rows: [{ acquired: true }] };
+          if (sql.includes("bool_and(pg_try_advisory_xact_lock")) {
+            const projects = params?.[1] ?? [];
+            const acquired = projects.every(id => !lockedProjects.has(id));
+            if (acquired) projects.forEach(id => { lockedProjects.add(id); held.push(id); });
+            return { rows: [{ acquired }] };
+          }
+          if (sql.includes("INSERT INTO cfd_daily_snapshots") && blockFirstInsert) {
+            blockFirstInsert = false;
+            firstStarted();
+            await firstBlocked;
+          }
+          if (sql === "COMMIT" || sql === "ROLLBACK") held.forEach(id => lockedProjects.delete(id));
+          return { rows: [], rowCount: 0 };
+        }),
+      };
+    });
+
+    const first = captureSnapshotsForDate("2026-11-02", ["a"]);
+    await firstStartedPromise;
+    await expect(captureSnapshotsForDate("2026-11-02", ["b"])).resolves.toBe(0);
+    let overlappingFinished = false;
+    const overlapping = captureSnapshotsForDate("2026-11-02", ["a"]).then(result => {
+      overlappingFinished = true;
+      return result;
+    });
+    await new Promise(resolve => setTimeout(resolve, 75));
+    expect(overlappingFinished).toBe(false);
+    releaseFirst();
+    await expect(Promise.all([first, overlapping])).resolves.toEqual([0, 0]);
   });
 
   it.each([

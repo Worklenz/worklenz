@@ -17,11 +17,13 @@ export class CfdSnapshotLockBusyError extends Error {
   }
 }
 
-/** Run snapshot writes under the shared lock, releasing clients before retries. */
+/** Coordinate full-table writes with project-scoped writes, releasing clients before retries. */
 async function withSnapshotWriteLock<T>(
+  projectIds: string[] | undefined,
   fn: (client: PoolClient) => Promise<T>
 ): Promise<T> {
   const deadline = Date.now() + LOCK_WAIT_MS;
+  const projects = projectIds?.length ? [...new Set(projectIds)].sort() : undefined;
 
   while (true) {
     const client = await db.connect();
@@ -32,11 +34,23 @@ async function withSnapshotWriteLock<T>(
       await client.query("BEGIN");
       inTransaction = true;
       const lockResult = await client.query(
-        "SELECT pg_try_advisory_xact_lock(hashtext($1)) AS acquired",
+        projects
+          ? "SELECT pg_try_advisory_xact_lock_shared(hashtext($1)) AS acquired"
+          : "SELECT pg_try_advisory_xact_lock(hashtext($1)) AS acquired",
         [SNAPSHOT_WRITE_LOCK_NAME]
       );
 
-      if (lockResult.rows[0]?.acquired === true) {
+      let acquired = lockResult.rows[0]?.acquired === true;
+      if (acquired && projects) {
+        const projectLocks = await client.query(
+          `SELECT bool_and(pg_try_advisory_xact_lock(hashtext($1), hashtext(project_id::UUID::TEXT))) AS acquired
+           FROM unnest($2::TEXT[]) AS project_id`,
+          [SNAPSHOT_WRITE_LOCK_NAME, projects]
+        );
+        acquired = projectLocks.rows[0]?.acquired === true;
+      }
+
+      if (acquired) {
         const result = await fn(client);
         await client.query("COMMIT");
         inTransaction = false;
@@ -97,7 +111,7 @@ export async function captureSnapshotsForDate(
   snapshotDate: string,
   projectIds?: string[]
 ): Promise<number> {
-  return withSnapshotWriteLock(async client => {
+  return withSnapshotWriteLock(projectIds, async client => {
     const params: unknown[] = [snapshotDate];
     let projectFilter = "";
     let deleteFilter = "snapshot_date = $1::DATE";
@@ -172,7 +186,7 @@ export async function backfillRange(
 
   const allDates = cfdDatesInclusive(fromDate, toDate);
 
-  return withSnapshotWriteLock(async client => {
+  return withSnapshotWriteLock(projectIds, async client => {
     const existing = await client.query(
       `
     SELECT project_id::TEXT AS project_id, snapshot_date::TEXT AS snapshot_date
@@ -252,7 +266,7 @@ export async function backfillRange(
 
 /** Drop snapshot rows older than retention window. */
 export async function pruneOldSnapshots(): Promise<number> {
-  return withSnapshotWriteLock(async client => {
+  return withSnapshotWriteLock(undefined, async client => {
     const result = await client.query(
       `
     DELETE FROM cfd_daily_snapshots
