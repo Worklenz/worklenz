@@ -49,6 +49,7 @@ interface MoveModalTaskLike extends IProjectTask {
   phase?: string;
 }
 
+/** Collect destination mappings and submit selected tasks for a project move. */
 export const MoveTaskProjectModal = ({
   open,
   sourceProjectId,
@@ -87,6 +88,7 @@ export const MoveTaskProjectModal = ({
 
   const usedStatusIds = useMemo(() => {
     const ids = new Set<string>();
+    /** Gather statuses from a selected task and its loaded descendants. */
     const collectFromTask = (task: any) => {
       const statusId = task.status_id || task.status;
       if (statusId) ids.add(statusId);
@@ -98,14 +100,17 @@ export const MoveTaskProjectModal = ({
     return [...ids];
   }, [selectedTasks]);
 
+  /** Normalize names for matching source and destination metadata. */
   const normalizeToken = (value: string) =>
     value.trim().toLowerCase().replace(/\s+/g, '_');
 
+  /** Turn an underscored metadata token into a readable label. */
   const toDisplayLabel = (value: string) =>
     value
       .replace(/_/g, ' ')
       .replace(/\b\w/g, char => char.toUpperCase());
 
+  /** Read the field type from the supported custom-column representations. */
   const getColumnType = (col: ITaskListColumn): string => {
     const colAny = col as any;
     const obj = col.custom_column_obj as any;
@@ -185,6 +190,7 @@ export const MoveTaskProjectModal = ({
     setCustomFieldMapping({});
     let isActive = true;
 
+    /** Load available destinations and source metadata for mapping. */
     const loadProjectsAndSourceMetadata = async () => {
       try {
         setLoadingProjects(true);
@@ -232,6 +238,7 @@ export const MoveTaskProjectModal = ({
     }
 
     let isActive = true;
+    /** Load destination metadata and suggest mappings without replacing selections. */
     const loadDestinationMetadata = async () => {
       try {
         setLoadingMappings(true);
@@ -331,6 +338,7 @@ export const MoveTaskProjectModal = ({
     !missingStatusMapping &&
     taskIds.length > 0;
 
+  /** Submit the move and report its result, including any mapping warnings. */
   const handleMove = async () => {
     if (!canSubmit) return;
     try {

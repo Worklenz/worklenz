@@ -2122,6 +2122,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
     }
   }
 
+  /** Delegate a project move and return the service's status and response. */
   @HandleExceptions()
   public static async moveTasksToProject(
     req: IWorkLenzRequest,

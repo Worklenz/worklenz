@@ -561,6 +561,7 @@ async function copyObjectInAzure(sourceKey: string, destinationKey: string) {
   }
 }
 
+/** Copy an object within the configured storage provider, returning false on failure. */
 export async function copyObject(sourceKey: string, destinationKey: string) {
   if (STORAGE_PROVIDER === "local") {
     try {

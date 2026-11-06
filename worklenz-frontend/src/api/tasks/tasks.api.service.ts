@@ -263,6 +263,7 @@ export const tasksApiService = {
     return response.data;
   },
 
+  /** Submit task IDs, destination mappings, and move options to the server. */
   moveTasksToProject: async (
     payload: IMoveTasksToProjectPayload
   ): Promise<IServerResponse<IMoveTasksToProjectResponse>> => {

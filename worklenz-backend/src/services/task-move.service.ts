@@ -301,6 +301,7 @@ export class TaskMoveService {
       const destinationProjectName = projectNameById.get(destinationProjectId) || destinationProjectId;
 
       // Status resolution with fallback support for unmapped subtask statuses
+      /** Normalize status and phase names for fallback matching. */
       const normalizeToken = (value: string) => value.trim().toLowerCase().replace(/\s+/g, "_");
       const destStatusByNormalizedName = new Map<string, IStatusMeta>();
       let defaultTodoStatus: IStatusMeta | undefined;
