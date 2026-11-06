@@ -512,7 +512,7 @@
 /* Hover bar - appears above message */
 .comment-hover-bar {
   position: absolute;
-  top: -14px;
+  top: -40px;
   right: 8px;
   transform: translateY(0);
   display: inline-flex !important;

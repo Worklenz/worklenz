@@ -303,7 +303,7 @@
 /* ─── Hover bar (floats above the bubble on hover) ───────────────────────── */
 .comment-hover-bar {
   position: absolute;
-  top: -14px;
+  top: -40px;
   right: 8px;
   width: max-content !important;
   max-width: none !important;
