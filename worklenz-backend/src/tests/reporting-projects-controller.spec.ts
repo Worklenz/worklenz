@@ -136,8 +136,8 @@ describe("ReportingProjectsController", () => {
       );
       expect(query).toBeDefined();
       expect(query[0]).not.toContain("team_member_info_view");
-      expect(query[0]).toContain("ORDER BY ei.updated_at DESC, ei.id DESC");
-      expect(query[0]).toContain("ORDER BY pm.team_member_id");
+      expect(query[0].split("ORDER BY ei.updated_at DESC, ei.id DESC")).toHaveLength(3);
+      expect(query[0].split("ORDER BY pm.team_member_id")).toHaveLength(3);
       expect(query[0]).toContain("LIMIT 1) AS project_manager");
     });
 
