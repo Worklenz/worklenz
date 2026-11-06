@@ -344,6 +344,7 @@
     "selectedTasksTitle": "Attività selezionate",
     "destinationLabel": "Progetto di destinazione",
     "destinationPlaceholder": "Seleziona il progetto di destinazione",
+    "releaseWarning": "Le assegnazioni alle versioni verranno rimosse e non saranno ripristinate se le attività vengono riportate nel progetto originale.",
     "mappingInfo": "Associa i campi di origine ai campi del progetto di destinazione prima di spostare le attività.",
     "statusMappingTitle": "Associazione degli stati",
     "phaseMappingTitle": "Associazione delle fasi",

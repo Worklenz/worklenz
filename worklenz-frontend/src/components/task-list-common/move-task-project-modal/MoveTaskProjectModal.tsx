@@ -406,6 +406,13 @@ export const MoveTaskProjectModal = ({
       {(loadingProjects || loadingMappings) && <Spin className="mb-4" />}
 
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <Alert
+          type="warning"
+          showIcon
+          message={t('moveTaskProject.releaseWarning', {
+            defaultValue: 'Release assignments will be cleared and will not be restored if tasks are moved back.',
+          })}
+        />
         <div>
           <Typography.Text strong>
             {t('moveTaskProject.selectedTasksTitle', {

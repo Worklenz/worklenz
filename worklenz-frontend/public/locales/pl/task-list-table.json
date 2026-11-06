@@ -344,6 +344,7 @@
     "selectedTasksTitle": "Wybrane zadania",
     "destinationLabel": "Projekt docelowy",
     "destinationPlaceholder": "Wybierz projekt docelowy",
+    "releaseWarning": "Przypisania do wydań zostaną usunięte i nie zostaną przywrócone po przeniesieniu zadań z powrotem.",
     "mappingInfo": "Przed przeniesieniem przypisz pola źródłowe do pól projektu docelowego.",
     "statusMappingTitle": "Mapowanie statusów",
     "phaseMappingTitle": "Mapowanie faz",

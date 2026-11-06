@@ -344,6 +344,7 @@
     "selectedTasksTitle": "已选任务",
     "destinationLabel": "目标项目",
     "destinationPlaceholder": "选择目标项目",
+    "releaseWarning": "版本分配将被清除，即使将任务移回原项目也不会恢复。",
     "mappingInfo": "移动任务前，请将源项目字段映射到目标项目字段。",
     "statusMappingTitle": "状态映射",
     "phaseMappingTitle": "阶段映射",

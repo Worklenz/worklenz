@@ -344,6 +344,7 @@
     "selectedTasksTitle": "Detyrat e zgjedhura",
     "destinationLabel": "Projekti i destinacionit",
     "destinationPlaceholder": "Zgjidh projektin e destinacionit",
+    "releaseWarning": "Caktimet e versioneve do të hiqen dhe nuk do të rikthehen nëse detyrat zhvendosen përsëri.",
     "mappingInfo": "Harto fushat e projektit burim me fushat e projektit të destinacionit para zhvendosjes së detyrave.",
     "statusMappingTitle": "Hartimi i statusit",
     "phaseMappingTitle": "Hartimi i fazës",
