@@ -25,7 +25,8 @@ i18n
     debug: false,
 
     backend: {
-      loadPath: '/locales/{{lng}}/{{ns}}.json',
+      // Bump when locale JSON changes so browsers do not keep a stale translation file.
+      loadPath: '/locales/{{lng}}/{{ns}}.json?v=20261106-work-item',
     },
 
     react: {

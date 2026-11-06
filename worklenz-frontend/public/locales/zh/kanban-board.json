@@ -53,7 +53,7 @@
   "errorLoadingTasks": "加载任务时出错",
   "noTasksFound": "未找到任务",
   "noIssuesFound": "没有发现问题",
-  "createIssue": "创建问题",
+  "createIssue": "创建工作项",
   "newIssueNamePlaceholder": "写一个问题标题",
   "loadingFilters": "正在加载过滤器...",
   "failedToUpdateColumnOrder": "更新列顺序失败",
