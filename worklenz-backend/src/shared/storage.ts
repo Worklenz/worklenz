@@ -562,6 +562,22 @@ async function copyObjectInAzure(sourceKey: string, destinationKey: string) {
 }
 
 export async function copyObject(sourceKey: string, destinationKey: string) {
+  if (STORAGE_PROVIDER === "local") {
+    try {
+      const storageDir = path.resolve(process.cwd(), "storage");
+      const source = path.resolve(storageDir, sourceKey);
+      const destination = path.resolve(storageDir, destinationKey);
+      if (!source.startsWith(`${storageDir}${path.sep}`) || !destination.startsWith(`${storageDir}${path.sep}`)) {
+        throw new Error("Invalid storage key");
+      }
+      await fs.mkdir(path.dirname(destination), { recursive: true });
+      await fs.copyFile(source, destination);
+      return true;
+    } catch (error) {
+      log_error(error);
+      return false;
+    }
+  }
   if (STORAGE_PROVIDER === "azure") {
     return copyObjectInAzure(sourceKey, destinationKey);
   }

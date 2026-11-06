@@ -192,10 +192,14 @@ const TaskDrawerActivityLog = () => {
       case IActivityLogAttributeTypes.PROJECT:
         return (
           <Flex gap={4} align="center">
-            <Tag color={'default'}>{truncateText(activity.previous) || t('taskActivityLogTab.none')}</Tag>
+            <Tooltip title={activity.previous || t('taskActivityLogTab.none', { defaultValue: 'None' })}>
+              <Tag color={'default'} tabIndex={0}>{truncateText(activity.previous) || t('taskActivityLogTab.none', { defaultValue: 'None' })}</Tag>
+            </Tooltip>
             <ArrowRightOutlined />
             &nbsp;
-            <Tag color={'default'}>{truncateText(activity.current) || t('taskActivityLogTab.none')}</Tag>
+            <Tooltip title={activity.current || t('taskActivityLogTab.none', { defaultValue: 'None' })}>
+              <Tag color={'default'} tabIndex={0}>{truncateText(activity.current) || t('taskActivityLogTab.none', { defaultValue: 'None' })}</Tag>
+            </Tooltip>
           </Flex>
         );
 

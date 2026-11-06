@@ -294,9 +294,9 @@ export const MoveTaskProjectModal = ({
           if (matched?.key) nextCustomMapping[key] = matched.key;
         });
 
-        setStatusMapping(nextStatusMapping);
-        setPhaseMapping(nextPhaseMapping);
-        setCustomFieldMapping(nextCustomMapping);
+        setStatusMapping(previous => ({ ...nextStatusMapping, ...previous }));
+        setPhaseMapping(previous => ({ ...nextPhaseMapping, ...previous }));
+        setCustomFieldMapping(previous => ({ ...nextCustomMapping, ...previous }));
       } catch (_error) {
         if (isActive) {
           setHasMetadataError(true);

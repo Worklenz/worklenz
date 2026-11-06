@@ -7,6 +7,7 @@ import { canUserEditTasks } from "../shared/assignee-task-scope";
 import { log_error } from "../shared/utils";
 import { ServerResponse } from "../models/server-response";
 import TasksControllerV2 from "../controllers/tasks-controller-v2";
+import { copyObject, getKey, getTaskAttachmentKey } from "../shared/storage";
 
 export interface IMoveTasksOptions {
   move_subtasks: boolean;
@@ -56,25 +57,20 @@ interface IStatusMeta {
 }
 
 export class TaskMoveService {
+  /** Notify the sender and members of both projects after a move. */
   public static notifyProjectUpdatesForMove(
     socketId: string | null | undefined,
     sourceProjectId: string,
     destinationProjectId: string
   ): void {
-    const io = IO.getInstance();
     const event = SocketEvents.PROJECT_UPDATES_AVAILABLE.toString();
-
-    if (socketId) {
-      const socket = IO.getSocketById(socketId);
-      socket?.emit(event);
-      socket?.to(sourceProjectId).emit(event);
-      socket?.to(destinationProjectId).emit(event);
-    } else if (io) {
-      io.to(sourceProjectId).emit(event);
-      io.to(destinationProjectId).emit(event);
-    }
+    if (socketId) IO.getSocketById(socketId)?.emit(event);
+    const options = socketId ? { excludeSocketId: socketId } : undefined;
+    IO.emitToProjectRoom(sourceProjectId, event, undefined, options);
+    IO.emitToProjectRoom(destinationProjectId, event, undefined, options);
   }
 
+  /** Collect selected tasks and, when requested, their descendants in lock order. */
   public static async collectTaskIdsForMove(
     initialTaskIds: string[],
     moveSubtasks: boolean,
@@ -100,6 +96,7 @@ export class TaskMoveService {
     return result.rows.map((row: { id: string }) => row.id).sort();
   }
 
+  /** Fetch project statuses and their completion categories. */
   public static async fetchProjectStatuses(
     projectId: string,
     client: PoolClient
@@ -129,6 +126,7 @@ export class TaskMoveService {
     );
   }
 
+  /** Fetch phase names indexed by their IDs. */
   public static async fetchProjectPhases(
     projectId: string,
     client: PoolClient
@@ -142,6 +140,7 @@ export class TaskMoveService {
     );
   }
 
+  /** Fetch custom column IDs indexed by their keys. */
   public static async fetchProjectCustomColumns(
     projectId: string,
     client: PoolClient
@@ -155,6 +154,7 @@ export class TaskMoveService {
     );
   }
 
+  /** Move tasks and their supported project-specific metadata in one transaction. */
   public static async moveTasksToProject(
     payload: IMoveTasksPayload,
     user: any
@@ -334,11 +334,13 @@ export class TaskMoveService {
         // Subtask status fallback: use default To Do status
         if (defaultTodoStatus) {
           resolvedStatusMap.set(statusId, defaultTodoStatus);
-          warnings.push({
-            task_id: sourceProjectId,
-            code: "STATUS_FALLBACK",
-            message: `Status "${sourceMeta?.name || statusId}" was mapped to "${defaultTodoStatus.name}" by default`,
-          });
+          for (const task of taskRows.filter(row => row.status_id === statusId)) {
+            warnings.push({
+              task_id: task.id,
+              code: "STATUS_FALLBACK",
+              message: `Status "${sourceMeta?.name || statusId}" was mapped to "${defaultTodoStatus.name}" by default`,
+            });
+          }
           continue;
         }
 
@@ -409,6 +411,32 @@ export class TaskMoveService {
         });
       }
 
+      // Copy first: old keys remain valid if the transaction rolls back or clients retain URLs.
+      const attachments = await client.query(
+        "SELECT id, team_id, project_id, type FROM task_attachments WHERE task_id = ANY($1::UUID[]) FOR UPDATE",
+        [taskIds]
+      );
+      for (const attachment of attachments.rows as Array<{ id: string; team_id: string; project_id: string; type: string }>) {
+        const sourceKey = getKey(attachment.team_id, attachment.project_id, attachment.id, attachment.type);
+        const destinationKey = getKey(attachment.team_id, destinationProjectId, attachment.id, attachment.type);
+        if (sourceKey !== destinationKey && !(await copyObject(sourceKey, destinationKey))) {
+          throw new Error(`Failed to copy task attachment ${attachment.id}`);
+        }
+      }
+      const commentAttachments = await client.query(
+        "SELECT id, team_id, project_id, task_id, comment_id, type FROM task_comment_attachments WHERE task_id = ANY($1::UUID[]) FOR UPDATE",
+        [taskIds]
+      );
+      for (const attachment of commentAttachments.rows as Array<{ id: string; team_id: string; project_id: string; task_id: string; comment_id: string; type: string }>) {
+        const sourceKey = getTaskAttachmentKey(attachment.team_id, attachment.project_id, attachment.task_id, attachment.comment_id, attachment.id, attachment.type);
+        const destinationKey = getTaskAttachmentKey(attachment.team_id, destinationProjectId, attachment.task_id, attachment.comment_id, attachment.id, attachment.type);
+        if (sourceKey !== destinationKey && !(await copyObject(sourceKey, destinationKey))) {
+          throw new Error(`Failed to copy comment attachment ${attachment.id}`);
+        }
+      }
+      await client.query("UPDATE task_attachments SET project_id = $2 WHERE task_id = ANY($1::UUID[])", [taskIds, destinationProjectId]);
+      await client.query("UPDATE task_comment_attachments SET project_id = $2 WHERE task_id = ANY($1::UUID[])", [taskIds, destinationProjectId]);
+
       // Update tasks in deterministic batches with done and completed_at properly synchronized
       for (const task of taskRows) {
         const destStatus = resolvedStatusMap.get(task.status_id as string) || defaultTodoStatus;
@@ -431,12 +459,18 @@ export class TaskMoveService {
                 priority_sort_order = 0,
                 phase_sort_order = 0,
                 member_sort_order = 0,
-                parent_task_id = CASE WHEN parent_task_id = ANY($5::UUID[]) THEN parent_task_id ELSE NULL END
+                parent_task_id = CASE WHEN parent_task_id = ANY($5::UUID[]) THEN parent_task_id ELSE NULL END,
+                epic_id = CASE WHEN epic_id = ANY($5::UUID[]) THEN epic_id ELSE NULL END
             WHERE id = $1
           `,
           [task.id, destinationProjectId, destStatusId, nextSortOrder++, taskIds, nextTaskNo++, isDone]
         );
       }
+
+      await client.query(
+        "UPDATE tasks SET epic_id = NULL WHERE epic_id = ANY($1::UUID[]) AND NOT (id = ANY($1::UUID[]))",
+        [taskIds]
+      );
 
       // Phase handling
       if (phaseRows.length > 0) {
