@@ -406,7 +406,7 @@ const PortalProjectsPage = () => {
         <Typography.Text type="secondary">
           {t('list.description', {
             defaultValue:
-              'Choose which projects are visible in the Client Portal and what is shared inside each one. Everything starts as Internal Only.',
+              'Choose which projects are visible in the Client Portal and what is shared inside each one. Everything starts as Internal Only. Projects an Owner or Admin has archived are left out.',
           })}
         </Typography.Text>
       </div>
