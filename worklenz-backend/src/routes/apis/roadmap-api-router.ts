@@ -22,6 +22,7 @@ ganttApiRouter.get("/project-workload", safeControllerFunction(GanttController.g
 
 // New roadmap Gantt APIs
 ganttApiRouter.get("/roadmap-tasks", verifyProjectAccess('query', 'project_id'), verifyGuestViewAccess('query', 'project_id', 'roadmap'), safeControllerFunction(GanttController.getRoadmapTasks));
+ganttApiRouter.post("/export", verifyProjectAccess('body', 'project_id'), verifyGuestViewAccess('body', 'project_id', 'roadmap'), safeControllerFunction(GanttController.exportRoadmap));
 ganttApiRouter.get("/project-phases", verifyProjectAccess('query', 'project_id'), verifyGuestViewAccess('query', 'project_id', 'roadmap'), safeControllerFunction(GanttController.getProjectPhases));
 ganttApiRouter.post("/update-task-dates", verifyNonGuestTaskAccess('body', 'task_id'), safeControllerFunction(GanttController.updateTaskDates));
 ganttApiRouter.post("/create-task", verifyNonGuestProjectAccess('body', 'project_id'), safeControllerFunction(GanttController.createTask));

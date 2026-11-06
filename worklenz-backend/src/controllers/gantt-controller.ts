@@ -11,6 +11,13 @@ import {
   buildAssigneeScopeFilter,
   resolveAssigneeTaskScope,
 } from "../shared/assignee-task-scope";
+import {
+  buildRoadmapExcel,
+  buildRoadmapPdf,
+  prepareRoadmapExport,
+  roadmapContentDisposition,
+  roadmapExportFileName,
+} from "../services/roadmap/roadmap-export";
 
 export default class GanttController extends WorklenzControllerBase {
   @HandleExceptions()
@@ -203,21 +210,36 @@ export default class GanttController extends WorklenzControllerBase {
     if (result.rows.length > 0) {
       const parentIds = result.rows.map(task => task.id);
       const subtaskParams: unknown[] = [parentIds];
-      const subtaskScopeFilter = buildAssigneeScopeFilter(assigneeScope, "id", 2);
+      const subtaskScopeFilter = buildAssigneeScopeFilter(assigneeScope, "tasks.id", 2);
       if (subtaskScopeFilter.params.length > 0) {
         subtaskParams.push(...subtaskScopeFilter.params);
       }
 
       const subtasksQuery = `
         SELECT
-          id,
-          name,
-          start_date,
-          end_date,
-          done,
-          roadmap_sort_order,
-          parent_task_id,
-          CASE WHEN done THEN 100 ELSE 0 END as progress,
+          tasks.id,
+          tasks.name,
+          tasks.start_date,
+          tasks.end_date,
+          tasks.done,
+          tasks.roadmap_sort_order,
+          tasks.parent_task_id,
+          CASE WHEN tasks.done THEN 100 ELSE 0 END as progress,
+          sts.name as status_name,
+          spr.name as priority_name,
+          (
+            SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(assignee_info))), '[]'::JSON)
+            FROM (
+              SELECT
+                tm.id as team_member_id,
+                u.name as assignee_name,
+                u.avatar_url
+              FROM tasks_assignees ta
+              JOIN team_members tm ON ta.team_member_id = tm.id
+              JOIN users u ON tm.user_id = u.id
+              WHERE ta.task_id = tasks.id
+            ) assignee_info
+          ) as assignees,
           (
             SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(phase_info))), '[]'::JSON)
             FROM (
@@ -231,10 +253,12 @@ export default class GanttController extends WorklenzControllerBase {
             ) phase_info
           ) as phases
         FROM tasks
-        WHERE parent_task_id = ANY($1::uuid[])
-          AND archived = FALSE
+        LEFT JOIN task_statuses sts ON tasks.status_id = sts.id
+        LEFT JOIN task_priorities spr ON tasks.priority_id = spr.id
+        WHERE tasks.parent_task_id = ANY($1::uuid[])
+          AND tasks.archived = FALSE
           ${subtaskScopeFilter.clause ? `AND ${subtaskScopeFilter.clause}` : ""}
-        ORDER BY COALESCE(roadmap_sort_order, sort_order, 0), created_at;
+        ORDER BY COALESCE(tasks.roadmap_sort_order, tasks.sort_order, 0), tasks.created_at;
       `;
 
       const subtasksResult = await db.query(subtasksQuery, subtaskParams);
@@ -542,5 +566,49 @@ export default class GanttController extends WorklenzControllerBase {
       console.error('Failed to reorder phases:', error);
       return res.status(500).send(new ServerResponse(false, null, "Failed to reorder phases"));
     }
+  }
+
+  @HandleExceptions()
+  public static async exportRoadmap(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<void> {
+    const prepared = prepareRoadmapExport(req.body);
+    if (!prepared.ok) {
+      res.status(400).send(new ServerResponse(false, null, prepared.message));
+      return;
+    }
+
+    const projectId = req.body?.project_id as string;
+    const projectResult = await db.query(`SELECT name FROM projects WHERE id = $1`, [projectId]);
+    const projectName = projectResult.rows[0]?.name;
+    if (!projectName) {
+      res.status(404).send(new ServerResponse(false, null, "Project not found"));
+      return;
+    }
+
+    const exportedOn = moment().format("YYYY-MM-DD");
+    const file = prepared.value.format === "pdf"
+      ? {
+          buffer: await buildRoadmapPdf({
+            projectName,
+            exportedOn,
+            groupingLabel: prepared.value.groupingLabel,
+            rows: prepared.value.rows,
+          }),
+          contentType: "application/pdf",
+        }
+      : {
+          buffer: await buildRoadmapExcel({
+            projectName,
+            exportedOn,
+            groupingLabel: prepared.value.groupingLabel,
+            groupBy: prepared.value.groupBy,
+            rows: prepared.value.rows,
+          }),
+          contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        };
+
+    const fileName = roadmapExportFileName(projectName, prepared.value.format, exportedOn);
+    res.setHeader("Content-Type", file.contentType);
+    res.setHeader("Content-Disposition", roadmapContentDisposition(fileName));
+    res.end(file.buffer);
   }
 }
