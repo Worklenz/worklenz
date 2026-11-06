@@ -138,7 +138,8 @@ describe("ReportingProjectsController", () => {
       expect(query[0]).not.toContain("team_member_info_view");
       expect(query[0].split("ORDER BY ei.updated_at DESC, ei.id DESC")).toHaveLength(3);
       expect(query[0].split("ORDER BY pm.team_member_id")).toHaveLength(3);
-      expect(query[0]).toContain("LIMIT 1) AS project_manager");
+      expect(query[0]).toContain("LIMIT 1) AS project_manager_name");
+      expect(query[0]).toContain("LIMIT 1) pm) AS project_manager");
     });
 
     it("preserves workflow status ordering and stable pagination", async () => {
