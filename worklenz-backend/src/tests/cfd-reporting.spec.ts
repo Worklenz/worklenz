@@ -24,7 +24,14 @@ describe("CFD date bounds and exports", () => {
   beforeEach(() => {
     jest.useFakeTimers({ doNotFake: ["performance"] }).setSystemTime(new Date("2026-11-02T12:00:00Z"));
     (db.query as jest.Mock).mockReset();
-    clientQuery.mockReset().mockResolvedValue({ rows: [], rowCount: 0 });
+    clientQuery.mockReset().mockImplementation((sql: string) =>
+      Promise.resolve({
+        rows: sql.includes("pg_try_advisory_xact_lock")
+          ? [{ acquired: true }]
+          : [],
+        rowCount: 0,
+      })
+    );
     clientRelease.mockReset();
     (db.connect as jest.Mock).mockReset().mockResolvedValue(client);
   });
@@ -55,14 +62,14 @@ describe("CFD date bounds and exports", () => {
 
   it("locks snapshot writes before replacing captured rows", async () => {
     clientQuery.mockResolvedValueOnce({ rows: [], rowCount: null })
-      .mockResolvedValueOnce({ rows: [], rowCount: null })
+      .mockResolvedValueOnce({ rows: [{ acquired: true }], rowCount: 1 })
       .mockResolvedValueOnce({ rows: [], rowCount: 0 })
       .mockResolvedValueOnce({ rows: [], rowCount: 2 })
       .mockResolvedValueOnce({ rows: [], rowCount: null });
 
     await expect(captureSnapshotsForDate("2026-11-02", ["project"])).resolves.toBe(2);
     expect(clientQuery.mock.calls[0][0]).toBe("BEGIN");
-    expect(clientQuery.mock.calls[1][0]).toContain("pg_advisory_xact_lock");
+    expect(clientQuery.mock.calls[1][0]).toContain("pg_try_advisory_xact_lock");
     expect(clientQuery.mock.calls[2][0]).toContain("DELETE FROM cfd_daily_snapshots");
     expect(clientQuery.mock.calls[3][0]).toContain("INSERT INTO cfd_daily_snapshots");
     expect(clientQuery.mock.calls[4][0]).toBe("COMMIT");
@@ -71,7 +78,7 @@ describe("CFD date bounds and exports", () => {
 
   it("backfills only missing project/day pairs using explicit UTC boundaries", async () => {
     clientQuery.mockResolvedValueOnce({ rows: [], rowCount: null })
-      .mockResolvedValueOnce({ rows: [], rowCount: null })
+      .mockResolvedValueOnce({ rows: [{ acquired: true }], rowCount: 1 })
       .mockResolvedValueOnce({ rows: [
       { project_id: "a", snapshot_date: "2026-11-01" },
       { project_id: "b", snapshot_date: "2026-11-02" },
@@ -85,10 +92,42 @@ describe("CFD date bounds and exports", () => {
     expect(sql).toContain("unnest($1::UUID[], $2::DATE[])");
     expect(sql).toContain("h.entered_at < ((n.day + 1)::TIMESTAMP AT TIME ZONE 'UTC')");
     expect(sql).toContain("h.exited_at >= ((n.day + 1)::TIMESTAMP AT TIME ZONE 'UTC')");
-    expect(clientQuery.mock.calls[1][0]).toContain("pg_advisory_xact_lock");
+    expect(clientQuery.mock.calls[1][0]).toContain("pg_try_advisory_xact_lock");
     expect(clientQuery.mock.calls[0][0]).toBe("BEGIN");
     expect(clientQuery.mock.calls[5][0]).toBe("COMMIT");
     expect(clientRelease).toHaveBeenCalledTimes(1);
+  });
+
+  it("releases a contending pool client before retrying the snapshot lock", async () => {
+    const contendingQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [], rowCount: null })
+      .mockResolvedValueOnce({ rows: [{ acquired: false }], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [], rowCount: null });
+    const contendingRelease = jest.fn();
+    const acquiredQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [], rowCount: null })
+      .mockResolvedValueOnce({ rows: [{ acquired: true }], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+      .mockResolvedValueOnce({ rows: [], rowCount: null });
+
+    (db.connect as jest.Mock).mockReset()
+      .mockResolvedValueOnce({ query: contendingQuery, release: contendingRelease })
+      .mockImplementationOnce(async () => {
+        expect(contendingRelease).toHaveBeenCalledTimes(1);
+        return { query: acquiredQuery, release: jest.fn() };
+      });
+
+    jest.useRealTimers();
+    const pending = captureSnapshotsForDate("2026-11-02");
+    await expect(pending).resolves.toBe(0);
+
+    expect(contendingQuery.mock.calls.map(([sql]) => sql)).toEqual([
+      "BEGIN",
+      expect.stringContaining("pg_try_advisory_xact_lock"),
+      "ROLLBACK",
+    ]);
+    expect(contendingRelease).toHaveBeenCalledTimes(1);
   });
 
   it.each(["epic", "label", "assignee"])("loads all days in a single grouped %s query", async group_by => {

@@ -4,11 +4,62 @@ import db from "../../config/db";
 import { STATUS_HISTORY_RETENTION_MONTHS } from "../../shared/reporting-analytics.constants";
 
 const SNAPSHOT_WRITE_LOCK_NAME = "cfd-daily-snapshots";
+const LOCK_WAIT_MS = 5000;
+const RETRY_DELAY_MS = 50;
 
-async function lockSnapshotWrites(client: PoolClient): Promise<void> {
-  await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
-    SNAPSHOT_WRITE_LOCK_NAME,
-  ]);
+export class CfdSnapshotLockBusyError extends Error {
+  constructor() {
+    super("Timed out waiting for the CFD snapshot lock. Please try again.");
+    this.name = "CfdSnapshotLockBusyError";
+  }
+}
+
+async function withSnapshotWriteLock<T>(
+  fn: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const deadline = Date.now() + LOCK_WAIT_MS;
+
+  while (true) {
+    const client = await db.connect();
+    let inTransaction = false;
+    let discardConnection = false;
+
+    try {
+      await client.query("BEGIN");
+      inTransaction = true;
+      const lockResult = await client.query(
+        "SELECT pg_try_advisory_xact_lock(hashtext($1)) AS acquired",
+        [SNAPSHOT_WRITE_LOCK_NAME]
+      );
+
+      if (lockResult.rows[0]?.acquired === true) {
+        const result = await fn(client);
+        await client.query("COMMIT");
+        inTransaction = false;
+        return result;
+      }
+
+      await client.query("ROLLBACK");
+      inTransaction = false;
+    } catch (error) {
+      if (inTransaction) {
+        try {
+          await client.query("ROLLBACK");
+        } catch (rollbackError) {
+          discardConnection = true;
+          throw rollbackError;
+        }
+      }
+      throw error;
+    } finally {
+      client.release(discardConnection);
+    }
+
+    if (Date.now() >= deadline) {
+      throw new CfdSnapshotLockBusyError();
+    }
+    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+  }
 }
 
 function toDateString(value: Date | string): string {
@@ -35,11 +86,7 @@ export async function captureSnapshotsForDate(
   snapshotDate: string,
   projectIds?: string[]
 ): Promise<number> {
-  const client = await db.connect();
-  try {
-    await client.query("BEGIN");
-    await lockSnapshotWrites(client);
-
+  return withSnapshotWriteLock(async client => {
     const params: unknown[] = [snapshotDate];
     let projectFilter = "";
     let deleteFilter = "snapshot_date = $1::DATE";
@@ -76,14 +123,8 @@ export async function captureSnapshotsForDate(
       params
     );
 
-    await client.query("COMMIT");
     return result.rowCount ?? 0;
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+  });
 }
 
 /**
@@ -120,11 +161,7 @@ export async function backfillRange(
 
   const allDates = cfdDatesInclusive(fromDate, toDate);
 
-  const client = await db.connect();
-  try {
-    await client.query("BEGIN");
-    await lockSnapshotWrites(client);
-
+  return withSnapshotWriteLock(async client => {
     const existing = await client.query(
       `
     SELECT project_id::TEXT AS project_id, snapshot_date::TEXT AS snapshot_date
@@ -151,7 +188,6 @@ export async function backfillRange(
       }
     }
     if (missingPairs.length === 0) {
-      await client.query("COMMIT");
       return 0;
     }
 
@@ -168,7 +204,6 @@ export async function backfillRange(
       [missingProjectIds]
     );
     if ((historyCheck.rowCount ?? 0) === 0) {
-      await client.query("COMMIT");
       return 0;
     }
 
@@ -200,23 +235,13 @@ export async function backfillRange(
       [missingPairs.map(p => p.project_id), missingPairs.map(p => p.day)]
     );
 
-    await client.query("COMMIT");
     return result.rowCount ?? 0;
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+  });
 }
 
 /** Drop snapshot rows older than retention window. */
 export async function pruneOldSnapshots(): Promise<number> {
-  const client = await db.connect();
-  try {
-    await client.query("BEGIN");
-    await lockSnapshotWrites(client);
-
+  return withSnapshotWriteLock(async client => {
     const result = await client.query(
       `
     DELETE FROM cfd_daily_snapshots
@@ -225,14 +250,8 @@ export async function pruneOldSnapshots(): Promise<number> {
       [STATUS_HISTORY_RETENTION_MONTHS]
     );
 
-    await client.query("COMMIT");
     return result.rowCount ?? 0;
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+  });
 }
 
 export async function runCfdDailySnapshotJob(): Promise<{
