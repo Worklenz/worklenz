@@ -41,6 +41,7 @@ describe('move tasks dialog', () => {
     const onMoved = vi.fn();
     mocks.move.mockResolvedValue({ done: true, body: { moved_task_ids: ['task'], unmoved_task_ids: [], warnings: [], destination_refresh_hint: { project_id: 'destination' } } });
     render(<MoveTaskProjectModal open sourceProjectId="source" taskIds={['task']} selectedTasks={[{ id: 'task', name: 'Example', status_id: 'source-status' }]} onCancel={vi.fn()} onMoved={onMoved} />);
+    expect(screen.getByText('Release assignments will be cleared and will not be restored if tasks are moved back.')).toBeInTheDocument();
     const destination = await screen.findByRole('combobox', { name: 'Select destination project' });
     await waitFor(() => expect(screen.getByRole('option', { name: 'Destination' })).toBeInTheDocument());
     fireEvent.change(destination, { target: { value: 'destination' } });

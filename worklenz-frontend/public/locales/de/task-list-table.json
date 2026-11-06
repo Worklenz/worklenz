@@ -344,6 +344,7 @@
     "selectedTasksTitle": "Ausgewählte Aufgaben",
     "destinationLabel": "Zielprojekt",
     "destinationPlaceholder": "Zielprojekt auswählen",
+    "releaseWarning": "Release-Zuordnungen werden entfernt und nicht wiederhergestellt, wenn Aufgaben zurückverschoben werden.",
     "mappingInfo": "Ordnen Sie vor dem Verschieben die Felder des Quellprojekts den Feldern des Zielprojekts zu.",
     "statusMappingTitle": "Status-Zuordnung",
     "phaseMappingTitle": "Phasen-Zuordnung",

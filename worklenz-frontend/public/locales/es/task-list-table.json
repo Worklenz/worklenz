@@ -344,6 +344,7 @@
     "selectedTasksTitle": "Tareas seleccionadas",
     "destinationLabel": "Proyecto de destino",
     "destinationPlaceholder": "Selecciona un proyecto de destino",
+    "releaseWarning": "Las asignaciones de versión se eliminarán y no se restaurarán si las tareas se vuelven a mover al proyecto original.",
     "mappingInfo": "Asigna los campos del proyecto origen a los del proyecto destino antes de mover tareas.",
     "statusMappingTitle": "Asignación de estados",
     "phaseMappingTitle": "Asignación de fases",

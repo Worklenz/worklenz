@@ -344,6 +344,7 @@
     "selectedTasksTitle": "Selected tasks",
     "destinationLabel": "Destination project",
     "destinationPlaceholder": "Select destination project",
+    "releaseWarning": "Release assignments will be cleared and will not be restored if tasks are moved back.",
     "mappingInfo": "Map source fields to destination project fields before moving tasks.",
     "statusMappingTitle": "Status mapping",
     "phaseMappingTitle": "Phase mapping",

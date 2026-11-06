@@ -344,6 +344,7 @@
     "selectedTasksTitle": "Tâches sélectionnées",
     "destinationLabel": "Projet de destination",
     "destinationPlaceholder": "Sélectionner le projet de destination",
+    "releaseWarning": "Les affectations aux versions seront supprimées et ne seront pas rétablies si les tâches sont déplacées à nouveau vers le projet d’origine.",
     "mappingInfo": "Associez les champs source aux champs du projet de destination avant le déplacement.",
     "statusMappingTitle": "Correspondance des statuts",
     "phaseMappingTitle": "Correspondance des phases",
