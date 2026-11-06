@@ -58,5 +58,10 @@
     "loadFailed": "Nie udało się załadować projektów. Spróbuj ponownie."
   },
   "groups": "grupy",
-  "members": "Członkowie"
+  "members": "Członkowie",
+  "expandAll": "Rozwiń wszystko",
+  "collapseAll": "Zwiń wszystko",
+  "unnamedGroup": "Grupa bez nazwy",
+  "projectCount_one": "{{count}} projekt",
+  "projectCount_other": "{{count}} projekty"
 }

@@ -60,5 +60,10 @@
   "endDate": "项目结束日期",
   "settingsTooltip": "打开项目设置",
   "required": "必需",
-  "priority": "优先级"
+  "priority": "优先级",
+  "expandAll": "展开全部",
+  "collapseAll": "折叠全部",
+  "unnamedGroup": "未命名分组",
+  "projectCount_one": "{{count}} 个项目",
+  "projectCount_other": "{{count}} 个项目"
 }
