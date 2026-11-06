@@ -18,6 +18,20 @@ describe('analytics-permissions', () => {
     expect(getAnalyticsReportPermissions({ role: 'manager' }).canViewReports).toBe(false);
   });
 
+  it('allows members when View reports is granted', () => {
+    expect(
+      getAnalyticsReportPermissions({ role: 'member', hasViewReportsPermission: true })
+        .canViewReports
+    ).toBe(true);
+  });
+
+  it('allows guests when View reports is granted', () => {
+    expect(
+      getAnalyticsReportPermissions({ role: 'guest', hasViewReportsPermission: true })
+        .canViewReports
+    ).toBe(true);
+  });
+
   it('allows admins to view reports', () => {
     expect(getAnalyticsReportPermissions({ role: 'admin' }).canViewReports).toBe(true);
   });

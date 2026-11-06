@@ -382,6 +382,37 @@ export const getProjectAccess = async (
 };
 
 /**
+ * True when the user may edit a project member's profile via "Manage members"
+ * on the given project (invite/remove/edit job title — not team-role elevation).
+ * Target must belong to that project.
+ */
+export const canManageTeamMemberViaProjectPermission = async (
+  user: IPassportSession | undefined,
+  projectId: string | undefined,
+  targetTeamMemberId: string | undefined
+): Promise<boolean> => {
+  if (!user?.id || !user.team_id || !projectId || !targetTeamMemberId) {
+    return false;
+  }
+
+  const access = await getProjectAccess(user, projectId);
+  if (!access.permissions.members.changeMemberRole) {
+    return false;
+  }
+
+  const result = await db.query(
+    `SELECT 1
+     FROM project_members
+     WHERE project_id = $1::UUID
+       AND team_member_id = $2::UUID
+     LIMIT 1`,
+    [projectId, targetTeamMemberId]
+  );
+
+  return result.rows.length > 0;
+};
+
+/**
  * Cached per request + projectId (Phase 0 NFR: one membership lookup, cached).
  */
 export const getProjectAccessForRequest = async (

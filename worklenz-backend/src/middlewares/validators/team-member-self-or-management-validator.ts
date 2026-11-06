@@ -4,8 +4,17 @@ import db from "../../config/db";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
-import { canManageTeamMembers, isSelfTeamMember } from "../../shared/team-permissions";
+import { hasTeamMemberManagementAccess } from "../../shared/organization-permissions";
+import { canManageTeamMemberViaProjectPermission } from "../../shared/project-access";
+import { isSelfTeamMember } from "../../shared/team-permissions";
 import { isValidUuid } from "../../shared/validation-helpers";
+
+const resolveProjectId = (req: IWorkLenzRequest): string | undefined => {
+  const fromQuery = req.query?.project_id ?? req.query?.current_project_id;
+  const fromBody = req.body?.project_id;
+  const value = (fromQuery ?? fromBody) as string | undefined;
+  return value && isValidUuid(value) ? value : undefined;
+};
 
 export default async function teamMemberSelfOrManagementValidator(
   req: IWorkLenzRequest,
@@ -24,12 +33,29 @@ export default async function teamMemberSelfOrManagementValidator(
       );
   }
 
-  // Owner or Admin can manage all team members
-  if (canManageTeamMembers(req.user)) {
-    return next();
+  // Owner/Admin or users with "Manage users" can manage team members
+  try {
+    if (await hasTeamMemberManagementAccess(req.user)) {
+      return next();
+    }
+  } catch (error) {
+    return next(error);
   }
 
   const targetMemberId = req.params.id;
+
+  // Project "Manage members" — edit profile of someone on that project
+  try {
+    const projectId = resolveProjectId(req);
+    if (
+      targetMemberId &&
+      (await canManageTeamMemberViaProjectPermission(req.user, projectId, targetMemberId))
+    ) {
+      return next();
+    }
+  } catch (error) {
+    return next(error);
+  }
 
   // Authenticated self-read or self-update by session team_member_id
   if (isSelfTeamMember(req.user, targetMemberId)) {

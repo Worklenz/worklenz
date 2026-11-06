@@ -4,6 +4,7 @@ import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import WorklenzControllerBase from "../worklenz-controller-base";
+import { limitPlannerProjects, plannerProjectId } from "../../shared/planner-project-visibility";
 
 /**
  * Schedule v2 team workload.
@@ -187,7 +188,13 @@ export default class WorkloadController extends WorklenzControllerBase {
             : [startDate, endDate, organizationId, hoursPerDay];
 
         const result = await db.query(workloadQuery, params);
-        const workloadData = result.rows[0]?.workload_data || [];
+        const workloadData = (result.rows[0]?.workload_data || []).map(
+            (row: { projects?: Array<{ id?: string }>; projectCount?: number }) => {
+                if (!req.plannerVisibleProjectIds) return row;
+                const projects = limitPlannerProjects(req, row.projects, plannerProjectId);
+                return { ...row, projects, projectCount: projects.length };
+            }
+        );
 
         return res.status(200).send(new ServerResponse(true, workloadData));
     }

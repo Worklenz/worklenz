@@ -64,9 +64,12 @@ import {
   canManageUserRole,
   getSessionRoleName,
 } from '@/utils/role-permissions.utils';
+import { isManageUsersAssignableRole } from '@/utils/update-member-permissions';
 import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import useProjectPermissions from '@/hooks/useProjectPermissions';
+import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
+import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
 type MembersTab = 'team' | 'guests' | 'client';
 
@@ -87,8 +90,12 @@ const ProjectViewMembers = () => {
   const isOwnerOrAdmin = auth.isOwnerOrAdmin();
   const isTeamLead = isTeamLeadRole(auth.role);
   const { permissions, isProjectManager } = useProjectPermissions(projectId);
+  const { hasPermission: hasManageUsers } = useOrganizationPermission(
+    ORGANIZATION_PERMISSIONS.MANAGE_USERS
+  );
 
   const effectiveRole = getSessionRoleName(user);
+  const canManageProjectMembers = Boolean(permissions.members.changeMemberRole);
 
   const canManageUser = useCallback(
     (targetRole: string | undefined) => {
@@ -99,6 +106,52 @@ const ProjectViewMembers = () => {
       return canManageUserRole(effectiveRole, targetRole, user?.owner);
     },
     [effectiveRole, user?.owner]
+  );
+
+  /** Edit profile: Owner/Admin hierarchy, org Manage users, or project Manage members. */
+  const canEditProjectMember = useCallback(
+    (record: IProjectMemberViewModel): boolean => {
+      const isCurrentUser = user?.team_member_id === record.team_member_id;
+      const access = (record.access_level || record.access || '').toLowerCase();
+      const isTargetOwner = access === 'owner';
+
+      if (isCurrentUser || effectiveRole === ROLE_NAMES.OWNER) return true;
+      if (isTargetOwner) return false;
+
+      if (isOwnerOrAdmin) {
+        return canManageUser(record.access_level || record.access);
+      }
+
+      if (hasManageUsers) {
+        return isManageUsersAssignableRole(record.access_level || record.access);
+      }
+
+      if (!canManageProjectMembers) return false;
+
+      // Same elevation guard as remove — cannot edit another PM without assignPm
+      if (!permissions.assignPm) {
+        if (
+          access === 'project_manager' ||
+          access === 'project manager' ||
+          access === 'admin' ||
+          access === 'team owner'
+        ) {
+          return false;
+        }
+      }
+
+      return access === 'member' || access === 'guest' || access === '';
+    },
+    [
+      user?.team_member_id,
+      effectiveRole,
+      isOwnerOrAdmin,
+      hasManageUsers,
+      canManageUser,
+      canManageProjectMembers,
+      permissions.assignPm,
+      isManageUsersAssignableRole,
+    ]
   );
 
   const { trackMixpanelEvent } = useMixpanelTracking();
@@ -504,14 +557,7 @@ const ProjectViewMembers = () => {
             ? 'descend'
             : null,
       onCell: (record: IProjectMemberViewModel) => {
-        const isCurrentUser = user?.team_member_id === record.team_member_id;
-        const isTargetOwner =
-          (record.access_level || record.access || '').toLowerCase() === 'owner';
-        const canManage = canManageUser(record.access_level || record.access);
-        const canEdit =
-          isCurrentUser ||
-          effectiveRole === ROLE_NAMES.OWNER ||
-          (canManage && !isTargetOwner);
+        const canEdit = canEditProjectMember(record);
         return {
           onClick: () => canEdit && handleEditMember(record),
           style: { cursor: canEdit ? 'pointer' : 'default' },
@@ -592,13 +638,16 @@ const ProjectViewMembers = () => {
         const isTargetOwner =
           (record.access_level || record.access || '').toLowerCase() === 'owner';
 
-        const canEdit =
-          isCurrentUser ||
-          effectiveRole === ROLE_NAMES.OWNER ||
-          (canManage && !isTargetOwner);
+        const canEdit = canEditProjectMember(record);
 
-        const canChangeStatus = canManage && !isTargetOwner && !isCurrentUser;
-        const canManageMemberTimeOff = canManage && !isTargetOwner;
+        // Deactivate / time-off stay team-management (hierarchy or Manage users)
+        const manageUsersCanAct =
+          hasManageUsers &&
+          isManageUsersAssignableRole(record.access_level || record.access);
+        const canChangeStatus =
+          (canManage || manageUsersCanAct) && !isTargetOwner && !isCurrentUser;
+        const canManageMemberTimeOff =
+          (canManage || manageUsersCanAct || canManageProjectMembers) && !isTargetOwner;
 
         const hasAnyAction = canEdit || canManageMemberTimeOff || canChangeStatus || canRemove;
         if (!hasAnyAction) return null;
@@ -948,6 +997,8 @@ const ProjectViewMembers = () => {
           selectedMemberName={selectedMemberName}
           initialRoleName={selectedMemberRole || undefined}
           onJobTitleUpdate={handleJobTitleUpdate}
+          projectId={projectId}
+          allowProjectMemberManage={canManageProjectMembers}
         />,
         document.body
       )}
