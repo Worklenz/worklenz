@@ -163,8 +163,10 @@ const AllReportsPage: React.FC = () => {
     authService.getCurrentSession(),
     'advanced_reporting'
   );
+  const canFinanceModule = canUseFeature(authService.getCurrentSession(), 'finance_module');
   const { hasPermission: canViewFinance, isLoading: isFinancePermissionLoading } =
     useOrganizationPermission(ORGANIZATION_PERMISSIONS.VIEW_FINANCE);
+  const canPreviewFinance = canViewFinance && canFinanceModule;
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
@@ -254,11 +256,11 @@ const AllReportsPage: React.FC = () => {
         cfdRes,
         tisRes,
       ] = await Promise.all([
-        canViewFinance
+        canPreviewFinance
           ? settle(analyticsProjectHealthApiService.getSeries({}))
           : Promise.resolve(null),
         settle(analyticsTimeReportApiService.getSeries({})),
-        canViewFinance
+        canPreviewFinance
           ? settle(analyticsBudgetTrackingApiService.getSeries({}))
           : Promise.resolve(null),
         settle(analyticsUtilizationApiService.getSeries({})),
@@ -400,7 +402,7 @@ const AllReportsPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [t, canAdvancedReporting, canViewFinance, isFinancePermissionLoading]);
+  }, [t, canAdvancedReporting, canPreviewFinance, isFinancePermissionLoading]);
 
   const borderColor = isDark ? '#303030' : '#f0f0f0';
   const cardBg = token.colorBgContainer;
@@ -524,10 +526,11 @@ const AllReportsPage: React.FC = () => {
         <div className="all-reports-hub__cards">
           {cards.map(card => {
             const metrics = getMetrics(card);
+            const isFinanceReport = isFinanceAnalyticsReport(card.key);
             const isBusinessLocked =
-              isBusinessAnalyticsReport(card.key) && !canAdvancedReporting;
-            const isFinanceLocked =
-              isFinanceAnalyticsReport(card.key) && !canViewFinance;
+              (isBusinessAnalyticsReport(card.key) && !canAdvancedReporting) ||
+              (isFinanceReport && !canFinanceModule);
+            const isFinanceLocked = isFinanceReport && canFinanceModule && !canViewFinance;
             const isLocked = isBusinessLocked || isFinanceLocked;
             const reportName = t(card.titleKey, { defaultValue: card.defaultTitle });
             return (

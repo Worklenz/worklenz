@@ -112,13 +112,17 @@ export const requireProjectPermission = (
       req.query.current_project_id = projectId;
     }
 
-    const access = await getProjectAccessForRequest(req, projectId);
+    try {
+      const access = await getProjectAccessForRequest(req, projectId);
 
-    if (!hasProjectPermission(access.permissions, permission)) {
-      return res.status(status).send(new ServerResponse(false, null, message));
+      if (!hasProjectPermission(access.permissions, permission)) {
+        return res.status(status).send(new ServerResponse(false, null, message));
+      }
+
+      return next();
+    } catch (error) {
+      return next(error);
     }
-
-    return next();
   };
 };
 

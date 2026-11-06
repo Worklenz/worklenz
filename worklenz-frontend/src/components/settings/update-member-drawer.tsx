@@ -40,14 +40,14 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import { setSession } from '@/utils/session-helper';
 import { setUser } from '@/features/user/userSlice';
 import { ROLE_NAMES } from '@/types/roles/role.types';
-import {
-  canManageUserRole,
-  getAvailableRoleOptions,
-  getSessionRoleName,
-} from '@/utils/role-permissions.utils';
+import { getAvailableRoleOptions, getSessionRoleName } from '@/utils/role-permissions.utils';
 import { RolePermissionsPopover } from './role-permissions-popover';
 import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
 import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
+import {
+  evaluateUpdateMemberPermissions,
+  isManageUsersAssignableRole,
+} from '@/utils/update-member-permissions';
 
 type UpdateMemberDrawerProps = {
   selectedMemberId: string | null;
@@ -118,60 +118,30 @@ const UpdateMemberDrawer = ({
   const isOwnerOrAdmin =
     currentUserRole === ROLE_NAMES.OWNER || currentUserRole === ROLE_NAMES.ADMIN;
 
-  const isOwnAccount = useMemo(() => {
-    return (
-      (Boolean(currentUser?.email) && currentUser?.email === teamMember?.email) ||
-      (Boolean(currentUser?.team_member_id) && currentUser?.team_member_id === selectedMemberId)
-    );
-  }, [currentUser?.email, currentUser?.team_member_id, teamMember?.email, selectedMemberId]);
-
-  const canManageTarget = useMemo(() => {
-    if (currentUserRole === ROLE_NAMES.ADMIN) {
-      return teamMember?.role_name?.toLowerCase() !== 'owner';
-    }
-    return canManageUserRole(currentUser?.role_name, teamMember?.role_name, currentUser?.owner);
-  }, [currentUser?.role_name, currentUser?.owner, currentUserRole, teamMember?.role_name]);
-
-  const canEditMemberDetails = useMemo(() => {
-    if (currentUserRole === ROLE_NAMES.OWNER) return true;
-    if (currentUserRole === ROLE_NAMES.ADMIN) {
-      if (isOwnAccount) return true;
-      return Boolean(canManageTarget);
-    }
-    if (isOwnAccount) return true;
-    if (hasManageUsers) return teamMember?.role_name?.toLowerCase() !== 'owner';
-    if (allowProjectMemberManage) {
-      const role = teamMember?.role_name?.toLowerCase() || '';
-      return role !== 'owner' && role !== 'admin';
-    }
-    return false;
-  }, [
-    currentUserRole,
+  const {
     isOwnAccount,
-    canManageTarget,
-    hasManageUsers,
-    allowProjectMemberManage,
-    teamMember?.role_name,
-  ]);
-
-  const canCreateJobTitle = useMemo(() => {
-    return isOwnerOrAdmin || hasManageUsers;
-  }, [isOwnerOrAdmin, hasManageUsers]);
-
-  // Team role / manager changes require org Manage users (or Owner/Admin hierarchy)
-  const canEditRole = useMemo(() => {
-    if (isOwnAccount) return false;
-    if (canManageTarget) return true;
-    if (hasManageUsers) return teamMember?.role_name?.toLowerCase() !== 'owner';
-    return false;
-  }, [isOwnAccount, canManageTarget, hasManageUsers, teamMember?.role_name]);
-
-  const canEditManager = useMemo(() => {
-    if (isOwnAccount) return false;
-    if (canManageTarget) return true;
-    if (hasManageUsers) return teamMember?.role_name?.toLowerCase() !== 'owner';
-    return false;
-  }, [isOwnAccount, canManageTarget, hasManageUsers, teamMember?.role_name]);
+    canEditMemberDetails,
+    canCreateJobTitle,
+    canEditRole,
+    canEditManager,
+  } = useMemo(
+    () =>
+      evaluateUpdateMemberPermissions({
+        currentUser,
+        selectedMemberId,
+        teamMember,
+        hasManageUsers,
+        allowProjectMemberManage,
+      }),
+    [
+      currentUser,
+      selectedMemberId,
+      teamMember,
+      hasManageUsers,
+      allowProjectMemberManage,
+      isManageUsersAssignableRole,
+    ]
+  );
 
   const canEditOwnAccount = useMemo(() => {
     return isOwnAccount;

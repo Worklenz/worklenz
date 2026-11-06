@@ -4,6 +4,7 @@ import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import WorklenzControllerBase from "../worklenz-controller-base";
+import { limitPlannerProjects } from "../../shared/planner-project-visibility";
 
 /**
  * Splits `total` into whole percentages for each of `counts`, guaranteed to sum to exactly
@@ -131,7 +132,7 @@ export default class ProjectTimelineController extends WorklenzControllerBase {
             };
         });
 
-        return res.status(200).send(new ServerResponse(true, projects));
+        return res.status(200).send(new ServerResponse(true, limitPlannerProjects(req, projects, project => project.id)));
     }
 
     /**

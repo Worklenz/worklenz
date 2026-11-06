@@ -2,10 +2,8 @@ import db from "../config/db";
 import { log_error } from "./utils";
 import { normalizeTeamRoleName, TEAM_ROLE_NAMES } from "./team-permissions";
 import {
-  getDefaultSchemeRoleGrants,
   getProjectSchemeRoleGrants,
   GUEST_ROLE_NAME,
-  ORGANIZATION_PERMISSIONS,
   PROJECT_ROLE_PERMISSIONS,
   ProjectRolePermission,
 } from "./organization-permissions";
@@ -15,8 +13,8 @@ import {
  * the project's assigned permission scheme, falling back to the default scheme:
  * - Owner / Admin always hold them.
  * - Members and Guests hold them on projects they are assigned to.
- * - With org "View all projects", the same scheme grants also apply on projects
- *   they are not invited to (view-only when Create/Edit/Delete/Comment are off).
+ * - Non-members do not receive these grants, including when they can open a
+ *   project through "View all projects". Task changes require project membership.
  * - Project settings such as restrict_task_creation are enforced separately and
  *   take priority over these grants.
  */
@@ -26,8 +24,6 @@ export interface IProjectRoleContext {
   projectId: string;
   roleName: string;
   isProjectMember: boolean;
-  /** Org "View all projects" for Member/Guest non-members. */
-  canViewAllProjects?: boolean;
 }
 
 export interface IProjectRolePermissionResult {
@@ -65,6 +61,7 @@ interface IRoleContextRow {
   is_project_guest: boolean;
 }
 
+/** Maps a role-context query row to the permission check context. */
 const toRoleContext = (row: IRoleContextRow): IProjectRoleContext => {
   const teamRole = row.owner ? TEAM_ROLE_NAMES.OWNER : normalizeTeamRoleName(row.role_name);
   const isGuest = teamRole === TEAM_ROLE_NAMES.MEMBER && (row.is_team_guest || row.is_project_guest);
@@ -76,32 +73,16 @@ const toRoleContext = (row: IRoleContextRow): IProjectRoleContext => {
   };
 };
 
-const withViewAllFlag = async (
-  context: IProjectRoleContext
-): Promise<IProjectRoleContext> => {
-  const isMemberOrGuest =
-    context.roleName === TEAM_ROLE_NAMES.MEMBER || context.roleName === GUEST_ROLE_NAME;
-  if (!isMemberOrGuest || context.isProjectMember) {
-    return context;
-  }
-
-  const grants = await getDefaultSchemeRoleGrants(context.teamId, context.roleName, [
-    ORGANIZATION_PERMISSIONS.VIEW_ALL_PROJECTS,
-  ]);
-  return {
-    ...context,
-    canViewAllProjects: grants.includes(ORGANIZATION_PERMISSIONS.VIEW_ALL_PROJECTS),
-  };
-};
-
+/** Role and membership for a user on one project. */
 export async function getProjectRoleContext(
   userId: string,
   projectId: string
 ): Promise<IProjectRoleContext | null> {
   const result = await db.query(`${ROLE_CONTEXT_SELECT} WHERE p.id = $2 LIMIT 1`, [userId, projectId]);
-  return result.rows[0] ? withViewAllFlag(toRoleContext(result.rows[0])) : null;
+  return result.rows[0] ? toRoleContext(result.rows[0]) : null;
 }
 
+/** Role and membership for the project that owns a task. */
 export async function getProjectRoleContextForTask(
   userId: string,
   taskId: string
@@ -110,9 +91,10 @@ export async function getProjectRoleContextForTask(
     `${ROLE_CONTEXT_SELECT} WHERE p.id = (SELECT project_id FROM tasks WHERE id = $2) LIMIT 1`,
     [userId, taskId]
   );
-  return result.rows[0] ? withViewAllFlag(toRoleContext(result.rows[0])) : null;
+  return result.rows[0] ? toRoleContext(result.rows[0]) : null;
 }
 
+/** Permissions from the list that the role actually holds on this project. */
 const getGrantedPermissions = async (
   context: IProjectRoleContext,
   permissions: ProjectRolePermission[]
@@ -137,6 +119,7 @@ const getGrantedPermissions = async (
   )) as ProjectRolePermission[];
 };
 
+/** Checks one permission against an already loaded project role context. */
 const checkContextPermission = async (
   context: IProjectRoleContext | null,
   permission: ProjectRolePermission
@@ -146,6 +129,7 @@ const checkContextPermission = async (
   return { allowed: granted.includes(permission), roleName: context.roleName };
 };
 
+/** Whether the user holds one project-role permission on a project. */
 export async function checkProjectRolePermission(
   userId: string | null | undefined,
   projectId: string | null | undefined,
@@ -155,6 +139,7 @@ export async function checkProjectRolePermission(
   return checkContextPermission(await getProjectRoleContext(userId, projectId), permission);
 }
 
+/** Whether the user holds one project-role permission on a task's project. */
 export async function checkTaskRolePermission(
   userId: string | null | undefined,
   taskId: string | null | undefined,

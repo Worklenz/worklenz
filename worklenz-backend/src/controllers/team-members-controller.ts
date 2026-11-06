@@ -84,6 +84,24 @@ export default class TeamMembersController extends WorklenzControllerBase {
     }
   }
 
+  /**
+   * Owner/Admin role hierarchy, or Manage users limited to Team Lead and Member.
+   */
+  private static async hasRoleAssignmentAccess(
+    req: IWorkLenzRequest,
+    roleName: string,
+  ): Promise<boolean> {
+    if (canAssignRole(req.user, roleName)) {
+      return true;
+    }
+
+    if (!getManageUsersAssignableRoles().includes(normalizeTeamRoleName(roleName))) {
+      return false;
+    }
+
+    return hasTeamMemberManagementAccess(req.user);
+  }
+
   private static async ensureAssignableRole(
     req: IWorkLenzRequest,
     roleName?: string | null,
@@ -119,7 +137,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
     }
 
-    if (!canAssignRole(req.user, roleName)) {
+    if (!(await this.hasRoleAssignmentAccess(req, roleName))) {
       return new ServerResponse(
         false,
         null,
@@ -968,9 +986,13 @@ export default class TeamMembersController extends WorklenzControllerBase {
       isSelfTeamMember(req.user, req.params.id) ||
       (await this.isSelfMemberInTeam(req.user?.id, req.user?.team_id, req.params.id));
 
-    // If caller cannot manage team members or is editing their own record,
-    // protect role/admin fields from unauthorized modification or escalation.
-    if (!canManageTeamMembers(req.user) || isSelf) {
+    const incomingRoleName =
+      req.body.role_name ||
+      (req.body.is_admin ? TEAM_ROLE_NAMES.ADMIN : TEAM_ROLE_NAMES.MEMBER);
+    const canChangeRole = await this.hasRoleAssignmentAccess(req, incomingRoleName);
+
+    // Self-edits and callers who cannot assign this role keep the existing role.
+    if (!canChangeRole || isSelf) {
       req.body.role_name = previousRoleName;
       req.body.is_admin = previousRoleName === TEAM_ROLE_NAMES.ADMIN;
     }
@@ -1011,7 +1033,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     req.body.id = req.params.id;
     req.body.team_id = req.user?.team_id || null;
-    req.body.is_admin = !canManageTeamMembers(req.user) || isSelf
+    req.body.is_admin = !canChangeRole || isSelf
       ? previousRoleName === TEAM_ROLE_NAMES.ADMIN
       : !!req.body.is_admin;
 

@@ -13,8 +13,20 @@ import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-o
 import auditLogAccessValidator, { auditLogOwnerValidator } from "../../middlewares/validators/audit-log-access-validator";
 import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
 import { requireFeature } from "../../shared/entitlements/gates";
+import PermissionSchemesController from "../../controllers/permission-schemes-controller";
 
 const adminCenterApiRouter = express.Router();
+
+// Current user's own grants. Session auth only — ordinary members call these
+// for route and list gates, so they must not use the owner/admin validator.
+adminCenterApiRouter.get(
+  "/my-organization-permissions",
+  safeControllerFunction(PermissionSchemesController.getMyOrganizationPermissions)
+);
+adminCenterApiRouter.get(
+  "/my-default-project-permissions",
+  safeControllerFunction(PermissionSchemesController.getMyDefaultProjectPermissions)
+);
 
 // overview
 adminCenterApiRouter.get("/settings", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterOrganizationController.getAdminCenterSettings));

@@ -64,6 +64,7 @@ import {
   canManageUserRole,
   getSessionRoleName,
 } from '@/utils/role-permissions.utils';
+import { isManageUsersAssignableRole } from '@/utils/update-member-permissions';
 import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import useProjectPermissions from '@/hooks/useProjectPermissions';
@@ -117,8 +118,12 @@ const ProjectViewMembers = () => {
       if (isCurrentUser || effectiveRole === ROLE_NAMES.OWNER) return true;
       if (isTargetOwner) return false;
 
-      if (isOwnerOrAdmin || hasManageUsers) {
-        return canManageUser(record.access_level || record.access) || hasManageUsers;
+      if (isOwnerOrAdmin) {
+        return canManageUser(record.access_level || record.access);
+      }
+
+      if (hasManageUsers) {
+        return isManageUsersAssignableRole(record.access_level || record.access);
       }
 
       if (!canManageProjectMembers) return false;
@@ -145,6 +150,7 @@ const ProjectViewMembers = () => {
       canManageUser,
       canManageProjectMembers,
       permissions.assignPm,
+      isManageUsersAssignableRole,
     ]
   );
 
@@ -635,10 +641,13 @@ const ProjectViewMembers = () => {
         const canEdit = canEditProjectMember(record);
 
         // Deactivate / time-off stay team-management (hierarchy or Manage users)
+        const manageUsersCanAct =
+          hasManageUsers &&
+          isManageUsersAssignableRole(record.access_level || record.access);
         const canChangeStatus =
-          (canManage || hasManageUsers) && !isTargetOwner && !isCurrentUser;
+          (canManage || manageUsersCanAct) && !isTargetOwner && !isCurrentUser;
         const canManageMemberTimeOff =
-          (canManage || hasManageUsers || canManageProjectMembers) && !isTargetOwner;
+          (canManage || manageUsersCanAct || canManageProjectMembers) && !isTargetOwner;
 
         const hasAnyAction = canEdit || canManageMemberTimeOff || canChangeStatus || canRemove;
         if (!hasAnyAction) return null;

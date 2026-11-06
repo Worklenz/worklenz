@@ -107,7 +107,12 @@ scheduleApiRouter.get(
 scheduleApiRouter.get("/timeline/projects", safeControllerFunction(ProjectTimelineController.getProjectsTimeline));
 
 // Update a project's start/end date (drag-resize on the Timeline bar)
-scheduleApiRouter.put("/timeline/projects/:id/dates", requireProjectPermission("settings", { sources: ["params.id"] }), idParamValidator, safeControllerFunction(ProjectTimelineController.updateProjectDates));
+scheduleApiRouter.put(
+  "/timeline/projects/:id/dates",
+  idParamValidator,
+  requireProjectPermission("settings", { sources: ["params.id"] }),
+  safeControllerFunction(ProjectTimelineController.updateProjectDates)
+);
 
 // ============================================
 // Workload Management Endpoints (NEW)

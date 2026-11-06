@@ -22,6 +22,7 @@ import {
 type Queryable = Pick<typeof db, 'query'>;
 
 // Existing grants are never overwritten, so admin edits are preserved
+/** Inserts default scheme roles and grants that are not already saved. */
 async function insertMissingDefaultGrants(queryable: Queryable, schemeId: string): Promise<void> {
   await queryable.query(
     `INSERT INTO permission_scheme_roles (scheme_id, role_name, sort_order)
@@ -70,6 +71,7 @@ async function insertMissingDefaultGrants(queryable: Queryable, schemeId: string
 }
 
 // Adds the given permissions to the scheme using the team's default scheme values
+/** Copies the given permissions onto a scheme from the team default grants. */
 async function addPermissionsFromDefault(
   queryable: Queryable,
   teamId: string,
@@ -114,6 +116,7 @@ async function addPermissionsFromDefault(
   );
 }
 
+/** Returns a unique permission list, or null when a value is not allowed. */
 function parsePermissionList(value: unknown, allowedPermissions: string[]): string[] | null {
   if (!Array.isArray(value) || value.length === 0) return null;
   const permissions = [...new Set(value)];
@@ -123,6 +126,7 @@ function parsePermissionList(value: unknown, allowedPermissions: string[]): stri
 }
 
 // Only custom (non-default, unlocked) schemes can have permissions added or removed
+/** Ensures a custom scheme exists in the team and can be edited. */
 async function validateCustomSchemeAccess(
   schemeId: string,
   teamId: string
@@ -140,6 +144,7 @@ async function validateCustomSchemeAccess(
   return null;
 }
 
+/** Creates the team default permission scheme when it is missing. */
 async function seedDefaultScheme(teamId: string): Promise<void> {
   const client = await db.connect();
   try {
@@ -174,17 +179,20 @@ async function seedDefaultScheme(teamId: string): Promise<void> {
 // Controller
 // ---------------------------------------------------------------------------
 
+/** Returns whether the project belongs to the team. */
 const isProjectInTeam = async (projectId: string, teamId: string): Promise<boolean> => {
   const result = await db.query('SELECT 1 FROM projects WHERE id = $1 AND team_id = $2', [projectId, teamId]);
   return (result.rowCount ?? 0) > 0;
 };
 
+/** Returns whether the permission scheme belongs to the team. */
 const isSchemeInTeam = async (schemeId: string, teamId: string): Promise<boolean> => {
   const result = await db.query('SELECT 1 FROM permission_schemes WHERE id = $1 AND team_id = $2', [schemeId, teamId]);
   return (result.rowCount ?? 0) > 0;
 };
 
 export default class PermissionSchemesController extends WorklenzControllerBase {
+  /** Returns organization permissions granted to the current user. */
   @HandleExceptions()
   public static async getMyOrganizationPermissions(
     req: IWorkLenzRequest,
@@ -194,6 +202,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     return res.status(200).send(new ServerResponse(true, permissions));
   }
 
+  /** Returns default-scheme project permissions for the current user's role. */
   @HandleExceptions()
   public static async getMyDefaultProjectPermissions(
     req: IWorkLenzRequest,
@@ -207,6 +216,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
   // Schemes
   // -------------------------------------------------------------------------
 
+  /** Lists the team permission schemes, seeding the default scheme when needed. */
   @HandleExceptions()
   public static async getSchemes(
     req: IWorkLenzRequest,
@@ -237,6 +247,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
+  /** Creates a custom permission scheme for the team. */
   @HandleExceptions()
   public static async createScheme(
     req: IWorkLenzRequest,
@@ -280,6 +291,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     }
   }
 
+  /** Returns one scheme with its roles and grants. */
   @HandleExceptions()
   public static async getScheme(
     req: IWorkLenzRequest,
@@ -320,6 +332,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     );
   }
 
+  /** Renames a custom permission scheme. */
   @HandleExceptions()
   public static async updateScheme(
     req: IWorkLenzRequest,
@@ -356,6 +369,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     return res.status(200).send(new ServerResponse(true, result.rows[0]));
   }
 
+  /** Deletes a custom permission scheme. */
   @HandleExceptions()
   public static async deleteScheme(
     req: IWorkLenzRequest,
@@ -394,6 +408,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     return res.status(200).send(new ServerResponse(true, null));
   }
 
+  /** Replaces grant values on a custom permission scheme. */
   @HandleExceptions()
   public static async updateGrants(
     req: IWorkLenzRequest,
@@ -464,6 +479,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     return res.status(200).send(new ServerResponse(true, updatedGrants.rows));
   }
 
+  /** Adds permissions to a custom scheme using default grant values. */
   @HandleExceptions()
   public static async addSchemePermissions(
     req: IWorkLenzRequest,
@@ -491,6 +507,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     return res.status(200).send(new ServerResponse(true, updatedGrants.rows));
   }
 
+  /** Removes permissions from a custom permission scheme. */
   @HandleExceptions()
   public static async removeSchemePermissions(
     req: IWorkLenzRequest,
@@ -524,6 +541,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
   // Groups
   // -------------------------------------------------------------------------
 
+  /** Lists the team permission groups and their member counts. */
   @HandleExceptions()
   public static async getGroups(
     req: IWorkLenzRequest,
@@ -546,6 +564,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
+  /** Creates a permission group and optionally assigns validated team members. */
   @HandleExceptions()
   public static async createGroup(
     req: IWorkLenzRequest,
@@ -557,16 +576,60 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     const name = (req.body?.name || '').trim();
     if (!name) return res.status(200).send(new ServerResponse(false, null, 'Group name is required'));
 
-    const result = await db.query(
-      `INSERT INTO permission_groups (team_id, name)
-       VALUES ($1, $2)
-       RETURNING id, name, created_at`,
-      [teamId, name]
-    );
+    const hasMemberIds = Array.isArray(req.body?.member_ids);
+    const memberIds: string[] = hasMemberIds ? req.body.member_ids : [];
 
-    return res.status(200).send(new ServerResponse(true, result.rows[0]));
+    if (memberIds.length > 0) {
+      const validMembers = await db.query(
+        'SELECT COUNT(*)::INT AS count FROM team_members WHERE team_id = $1 AND id = ANY($2::UUID[])',
+        [teamId, memberIds]
+      );
+      if (validMembers.rows[0].count !== new Set(memberIds).size)
+        return res.status(200).send(new ServerResponse(false, null, 'Invalid group members'));
+    }
+
+    if (!hasMemberIds) {
+      const result = await db.query(
+        `INSERT INTO permission_groups (team_id, name)
+         VALUES ($1, $2)
+         RETURNING id, name, created_at`,
+        [teamId, name]
+      );
+      return res.status(200).send(new ServerResponse(true, result.rows[0]));
+    }
+
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await client.query(
+        `INSERT INTO permission_groups (team_id, name)
+         VALUES ($1, $2)
+         RETURNING id, name, created_at`,
+        [teamId, name]
+      );
+      const group = result.rows[0];
+      for (const memberId of memberIds) {
+        await client.query(
+          `INSERT INTO permission_group_members (group_id, team_member_id)
+           VALUES ($1, $2)
+           ON CONFLICT (group_id, team_member_id) DO NOTHING`,
+          [group.id, memberId]
+        );
+      }
+      await client.query('COMMIT');
+      return res.status(200).send(new ServerResponse(true, {
+        ...group,
+        member_count: new Set(memberIds).size,
+      }));
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
+  /** Renames a permission group and replaces its members when member ids are sent. */
   @HandleExceptions()
   public static async updateGroup(
     req: IWorkLenzRequest,
@@ -642,6 +705,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     return res.status(200).send(new ServerResponse(true, result.rows[0]));
   }
 
+  /** Deletes a permission group that belongs to the team. */
   @HandleExceptions()
   public static async deleteGroup(
     req: IWorkLenzRequest,
@@ -670,6 +734,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
   // Project scheme assignments
   // -------------------------------------------------------------------------
 
+  /** Lists projects and the permission scheme assigned to each. */
   @HandleExceptions()
   public static async getTeamProjectSchemes(
     req: IWorkLenzRequest,
@@ -690,6 +755,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
+  /** Returns the scheme assignment and role members for a project. */
   @HandleExceptions()
   public static async getProjectScheme(
     req: IWorkLenzRequest,
@@ -750,6 +816,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     return res.status(200).send(new ServerResponse(true, payload));
   }
 
+  /** Assigns or clears the permission scheme for a project in the team. */
   @HandleExceptions()
   public static async assignProjectScheme(
     req: IWorkLenzRequest,
@@ -778,6 +845,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     return res.status(200).send(new ServerResponse(true, result.rows[0]));
   }
 
+  /** Adds a team member or group to a role on the project scheme. */
   @HandleExceptions()
   public static async addSchemeMember(
     req: IWorkLenzRequest,
@@ -819,6 +887,7 @@ export default class PermissionSchemesController extends WorklenzControllerBase 
     return res.status(200).send(new ServerResponse(true, result.rows[0]));
   }
 
+  /** Removes a role assignment from the project scheme. */
   @HandleExceptions()
   public static async removeSchemeMember(
     req: IWorkLenzRequest,

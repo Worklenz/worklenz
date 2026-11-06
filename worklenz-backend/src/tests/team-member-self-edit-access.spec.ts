@@ -280,7 +280,9 @@ describe("TeamMembersController self-service operations", () => {
     mockedQuery.mockResolvedValueOnce(createQueryResult([{ name: "Member" }]));
     // 2. getTeamMemberRoleName in update
     mockedQuery.mockResolvedValueOnce(createQueryResult([{ name: "Member" }]));
-    // 3. update_team_member query
+    // 3. existing job title lookup — non-admins cannot create titles
+    mockedQuery.mockResolvedValueOnce(createQueryResult([{ name: "Software Engineer" }]));
+    // 4. update_team_member query
     mockedQuery.mockResolvedValueOnce(createQueryResult([{ team_member: memberId }]));
 
     const req = createMockRequest({

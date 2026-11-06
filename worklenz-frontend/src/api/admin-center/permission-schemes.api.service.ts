@@ -1,4 +1,10 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import {
+  BaseQueryFn,
+  createApi,
+  FetchArgs,
+  fetchBaseQuery,
+  FetchBaseQueryError,
+} from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/shared/constants';
 import { ensureCsrfToken, getCsrfToken } from '@/api/api-client';
 import config from '@/config/env';
@@ -19,18 +25,37 @@ import { IOrganizationProjectsGetResponse } from '@/types/admin-center/admin-cen
 
 const rootUrl = '/admin-center';
 
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: `${config.apiUrl}${API_BASE_URL}`,
+  prepareHeaders: async headers => {
+    const token = getCsrfToken() || (await ensureCsrfToken());
+    if (token) headers.set('X-CSRF-Token', token);
+    headers.set('Content-Type', 'application/json');
+    return headers;
+  },
+  credentials: 'include',
+});
+
+/** Treats HTTP 200 `{ done: false }` validation failures as RTK Query errors so unwrap() rejects. */
+const baseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
+  args,
+  api,
+  extraOptions
+) => {
+  const result = await rawBaseQuery(args, api, extraOptions);
+  if (result.error) return result;
+
+  const payload = result.data as { done?: boolean } | null | undefined;
+  if (payload && payload.done === false) {
+    return { error: { status: 200, data: payload } };
+  }
+
+  return result;
+};
+
 export const permissionSchemesApi = createApi({
   reducerPath: 'permissionSchemesApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${config.apiUrl}${API_BASE_URL}`,
-    prepareHeaders: async headers => {
-      const token = getCsrfToken() || (await ensureCsrfToken());
-      if (token) headers.set('X-CSRF-Token', token);
-      headers.set('Content-Type', 'application/json');
-      return headers;
-    },
-    credentials: 'include',
-  }),
+  baseQuery,
   tagTypes: [
     'PermissionSchemes',
     'PermissionGroups',

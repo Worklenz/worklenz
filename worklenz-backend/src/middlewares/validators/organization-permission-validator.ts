@@ -22,6 +22,7 @@ const isOwnerOrAdmin = (req: IWorkLenzRequest) => {
   return !!req.user && (role === TEAM_ROLE_NAMES.OWNER || role === TEAM_ROLE_NAMES.ADMIN);
 };
 
+/** Builds middleware that allows the request when the user holds `permission`. */
 export const organizationPermissionValidator = (permission: OrganizationPermission) =>
   async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction): Promise<IWorkLenzResponse | void> => {
     try {
@@ -50,22 +51,29 @@ export const viewReportsValidator = async (
   return organizationPermissionValidator(ORGANIZATION_PERMISSIONS.VIEW_REPORTS)(req, res, next);
 };
 
+/** Requires the View finance organization permission. */
 export const viewFinanceValidator = organizationPermissionValidator(ORGANIZATION_PERMISSIONS.VIEW_FINANCE);
+/** Requires the Manage organization settings permission. */
 export const manageOrganizationSettingsValidator = organizationPermissionValidator(
   ORGANIZATION_PERMISSIONS.MANAGE_ORGANIZATION_SETTINGS
 );
+/** Requires the Manage billing permission. */
 export const manageBillingValidator = organizationPermissionValidator(
   ORGANIZATION_PERMISSIONS.MANAGE_BILLING
 );
+/** Requires the Manage users permission. */
 export const manageUsersValidator = organizationPermissionValidator(
   ORGANIZATION_PERMISSIONS.MANAGE_USERS
 );
+/** Requires the Manage teams permission. */
 export const manageTeamsValidator = organizationPermissionValidator(
   ORGANIZATION_PERMISSIONS.MANAGE_TEAMS
 );
+/** Requires the Manage clients permission. */
 export const manageClientsValidator = organizationPermissionValidator(
   ORGANIZATION_PERMISSIONS.MANAGE_CLIENTS
 );
+/** Requires the Create projects permission. */
 export const createProjectsValidator = organizationPermissionValidator(
   ORGANIZATION_PERMISSIONS.CREATE_PROJECTS
 );

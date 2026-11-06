@@ -7,6 +7,7 @@ import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallba
 import NavSurfaceIndexRedirect from '@/features/navigation/NavSurfaceIndexRedirect';
 import { ANALYTICS_BASE_PATH, flatAnalyticsNavItems } from '@/lib/reporting/analytics-nav';
 import { AnalyticsBusinessGate, AnalyticsFinanceGate } from '@/components/reporting/analytics/AnalyticsBusinessGate';
+import { AdminGuard } from '@/app/routes/index';
 import { OrganizationPermissionGuard } from '@/guards/OrganizationPermissionGuard';
 import { ORGANIZATION_PERMISSIONS } from '@/types/admin-center/permission-schemes.types';
 
@@ -50,6 +51,12 @@ const flattenedItems = flattenItems(reportingsItems);
 
 const withSuspense = (element: ReactNode) => (
   <Suspense fallback={<SuspenseFallback />}>{element}</Suspense>
+);
+
+const ClassicReportingLayout = () => (
+  <AdminGuard>
+    <ReportingLayout />
+  </AdminGuard>
 );
 
 const enabledAnalyticsElements: Record<string, ReactNode> = {
@@ -120,17 +127,10 @@ const reportingRoutes: RouteObject[] = [
       { path: '*', element: <Navigate to={ANALYTICS_BASE_PATH} replace /> },
     ],
   },
-  // Classic reporting (NavRail) — same View reports gate
+  // Classic reporting stays Owner/Admin (and non-free) via AdminGuard.
   {
     path: 'worklenz/reporting',
-    element: (
-      <OrganizationPermissionGuard
-        permission={ORGANIZATION_PERMISSIONS.VIEW_REPORTS}
-        blockFreePlan
-      >
-        <ReportingLayout />
-      </OrganizationPermissionGuard>
-    ),
+    element: <ClassicReportingLayout />,
     children: [
       { index: true, element: <NavSurfaceIndexRedirect surfaceKey="reporting" /> },
       ...flattenedItems.map(item => ({

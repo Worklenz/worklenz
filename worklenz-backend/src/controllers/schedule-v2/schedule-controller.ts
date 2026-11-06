@@ -5,6 +5,7 @@ import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import moment from "moment";
 import WorklenzControllerBase from "../worklenz-controller-base";
+import { limitPlannerProjects, plannerProjectId } from "../../shared/planner-project-visibility";
 
 export default class ScheduleControllerV2 extends WorklenzControllerBase {
 
@@ -336,7 +337,11 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
         `;
 
         const results = await db.query(getDataq, [req.user?.id]);
-        return res.status(200).send(new ServerResponse(true, results.rows));
+        const members = results.rows.map(row => ({
+            ...row,
+            projects: limitPlannerProjects(req, row.projects, plannerProjectId),
+        }));
+        return res.status(200).send(new ServerResponse(true, members));
 
     }
 
@@ -574,8 +579,9 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
         const results = await db.query(getDataq, [id, chartStart, chartEnd || null]);
         
         const [data] = results.rows;
-        
-        return res.status(200).send(new ServerResponse(true, { projects: data?.projects || [], id }));
+        const projects = limitPlannerProjects(req, data?.projects || [], plannerProjectId);
+
+        return res.status(200).send(new ServerResponse(true, { projects, id }));
 
     }
 
@@ -649,6 +655,21 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
         if (projectId) {
             queryParams.push(projectId);
             projectFilter = 'AND t.project_id = $5';
+        }
+
+        if (req.plannerVisibleProjectIds) {
+            if (projectId && !req.plannerVisibleProjectIds.includes(String(projectId))) {
+                return res.status(200).send(new ServerResponse(true, {
+                    startDate,
+                    endDate,
+                    allocatedHours: 0,
+                    totalLogged: 0,
+                    loggedBillable: 0,
+                    loggedNonBillable: 0,
+                }));
+            }
+            queryParams.push(req.plannerVisibleProjectIds);
+            projectFilter += ` AND t.project_id = ANY($${queryParams.length}::UUID[])`;
         }
 
         // Main query to get allocated and logged hours

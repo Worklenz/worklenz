@@ -4,6 +4,7 @@ import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import WorklenzControllerBase from "../worklenz-controller-base";
+import { limitPlannerProjects } from "../../shared/planner-project-visibility";
 
 interface DailyCapacity {
     date: string;
@@ -139,7 +140,7 @@ export default class CapacityController extends WorklenzControllerBase {
                 is_full_day_time_off: row.is_full_day_time_off || false,
                 time_off_type: row.time_off_type || null,
                 status: row.status,
-                projects: row.projects || []
+                projects: limitPlannerProjects(req, row.projects || [], project => project.project_id)
             }));
 
             // Calculate summary
@@ -326,7 +327,11 @@ export default class CapacityController extends WorklenzControllerBase {
             allocated_hours: parseFloat(row.allocated_hours),
             overallocation_hours: parseFloat(row.overallocation_hours),
             utilization_percent: parseFloat(row.utilization_percent),
-            projects: row.projects,
+            projects: limitPlannerProjects(
+                req,
+                row.projects,
+                (project: { project_id?: string }) => project?.project_id
+            ),
             message: `${row.member_name} is over-allocated by ${parseFloat(row.overallocation_hours).toFixed(1)} hours on ${new Date(row.date).toLocaleDateString()}`
         }));
 

@@ -100,6 +100,7 @@ export const DEFAULT_GRANTS: Record<string, Record<string, boolean>> = {
   "Delete project":          { Owner: true, Admin: true, "Team Lead": false, Member: false, Guest: false },
 };
 
+/** Scheme role for the session, treating a guest-flagged Member as Guest. */
 const getSchemeRoleName = (user: IPassportSession): string => {
   const teamRole = getEffectiveTeamRole(user);
   if (teamRole === TEAM_ROLE_NAMES.MEMBER && user.is_guest) return GUEST_ROLE_NAME;
@@ -205,6 +206,7 @@ export async function getOrganizationPermissions(
   )) as OrganizationPermission[];
 }
 
+/** True when the user's default-scheme grants include the permission. */
 export async function hasOrganizationPermission(
   user: IPassportSession | undefined,
   permission: OrganizationPermission
