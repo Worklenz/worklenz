@@ -449,6 +449,7 @@ export class TaskMoveService {
             UPDATE tasks
             SET project_id = $2,
                 status_id = $3,
+                release_id = NULL,
                 task_no = $6,
                 sort_order = $4,
                 done = $7,

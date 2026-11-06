@@ -120,6 +120,7 @@ describe('move tasks between projects', () => {
     expect(query.mock.calls.some(([sql]) => sql.includes('INSERT INTO task_activity_logs'))).toBe(true);
     // Task updated with status, sort, task_no, and completion sync
     expect(query.mock.calls.some(([sql, params]) => sql.includes('parent_task_id = CASE') && sql.includes('done = $7') && params?.[5] === 10)).toBe(true);
+    expect(query.mock.calls.some(([sql, params]) => sql.includes('release_id = NULL') && params?.[0] === taskId && params?.[1] === destinationId)).toBe(true);
     expect(query.mock.calls.some(([sql]) => sql.includes('epic_id = CASE WHEN epic_id = ANY'))).toBe(true);
     expect(query.mock.calls.some(([sql]) => sql.includes('UPDATE tasks SET epic_id = NULL'))).toBe(true);
     expect(copySpy).toHaveBeenCalledWith(storage.getKey(sourceId, sourceId, taskId, 'png'), storage.getKey(sourceId, destinationId, taskId, 'png'));
