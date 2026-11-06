@@ -8,13 +8,16 @@ const SNAPSHOT_WRITE_LOCK_NAME = "cfd-daily-snapshots";
 const LOCK_WAIT_MS = 5000;
 const RETRY_DELAY_MS = 50;
 
+/** Signals that a snapshot write could not acquire the shared lock in time. */
 export class CfdSnapshotLockBusyError extends Error {
+  /** Create the retryable lock-contention error. */
   constructor() {
     super("Timed out waiting for the CFD snapshot lock. Please try again.");
     this.name = "CfdSnapshotLockBusyError";
   }
 }
 
+/** Run snapshot writes under the shared lock, releasing clients before retries. */
 async function withSnapshotWriteLock<T>(
   fn: (client: PoolClient) => Promise<T>
 ): Promise<T> {

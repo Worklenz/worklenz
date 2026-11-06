@@ -24,6 +24,7 @@ function accessibleProjectIds(req: IWorkLenzRequest): string[] {
   return (req as AnalyticsRequest).analyticsAccessibleProjectIds ?? [];
 }
 
+/** Send a retryable service-unavailable response for snapshot lock contention. */
 function handleSnapshotLockBusy(
   error: unknown,
   res: IWorkLenzResponse
