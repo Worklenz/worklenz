@@ -9,7 +9,11 @@ import HomeAddTaskModal from '../task-list/HomeAddTaskModal';
 import { ContinueTabsMenu } from './ContinueTabsMenu';
 import { resolveActiveContinueTab, type HomeContinueTab } from '../home-layout/homeContinueTabs';
 import { WIDGET_DATA_ATTRIBUTE } from '../home-widgets/widgetInteraction';
-import { useGetProjectsQuery, useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
+import {
+  useGetProjectsQuery,
+  useLazyGetProjectsQuery,
+  useGetMyTasksQuery,
+} from '@/api/home-page/home-page.api.service';
 import {
   useGetUserRecentTasksQuery,
   useGetUserTimeLoggedTasksQuery,
@@ -121,6 +125,7 @@ const HomeContinueCard: React.FC = () => {
   });
 
   const { data: projectsData } = useGetProjectsQuery({ view: 0, limit: 12 });
+  const [getProjects] = useLazyGetProjectsQuery();
   const { data: myTasksData } = useGetMyTasksQuery(TASKS_TAB_CONFIG, {
     skip: tab !== 'tasks',
   });
@@ -139,14 +144,25 @@ const HomeContinueCard: React.FC = () => {
   );
 
   const handleOpenProject = useCallback(
-    (e: React.MouseEvent, projectId: string) => {
+    async (e: React.MouseEvent, projectId: string) => {
       e.stopPropagation();
-      const project = projects.find(item => item.id === projectId);
+      if (!projectId) return;
+      let project = projects.find(item => item.id === projectId);
+      if (!project) {
+        try {
+          const result = await getProjects({ view: 0 }, true).unwrap();
+          project = (result.body as IProjectViewModel[] | undefined)?.find(
+            item => item.id === projectId
+          );
+        } catch {
+          // Preserve navigation if the lookup fails.
+        }
+      }
       navigate(
         buildProjectRoute(projectId, project?.team_member_default_view, project?.project_type)
       );
     },
-    [navigate, projects]
+    [getProjects, navigate, projects]
   );
 
   const activeTasks = useMemo(
