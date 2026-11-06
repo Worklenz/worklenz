@@ -359,8 +359,9 @@ export const RichCommentEditor = ({
   }, [editor, disabled]);
 
   useEffect(() => {
-    if (!editor || !placeholder) return;
-    const placeholderExtension = editor.extensionManager.extensions.find(
+    const extensions = editor?.extensionManager?.extensions;
+    if (!extensions || !placeholder) return;
+    const placeholderExtension = extensions.find(
       extension => extension.name === 'placeholder'
     );
     if (placeholderExtension) {

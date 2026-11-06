@@ -158,7 +158,7 @@
 /* Hover toolbar - floating popup above the message bubble */
 .chat-msg-toolbar {
   position: absolute;
-  top: -14px;
+  top: -40px;
   transform: translateY(0);
   display: inline-flex !important;
   flex-direction: row !important;
