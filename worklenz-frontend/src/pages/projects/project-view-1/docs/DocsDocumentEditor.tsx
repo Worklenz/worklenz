@@ -63,6 +63,13 @@ export const DocsDocumentEditor = ({
   const contentVersion = useRef(content.version);
   const callbacks = useRef({ onChange, onActivity, onReady });
   callbacks.current = { onChange, onActivity, onReady };
+  const resolvePlaceholder = useCallback(
+    () =>
+      t('writingPlaceholder', {
+        defaultValue: "Write, '/' for blocks, '@' for members, '#' for tasks",
+      }),
+    [t]
+  );
   // The page owns the document lifetime (keyed by page ID/reload token). Local echoes
   // must never call setContent: that would reset selection and document history.
   const editor = useEditor({
@@ -85,10 +92,7 @@ export const DocsDocumentEditor = ({
       createSlashCommands(commandsRef, slashMenuRef),
       createDocumentTaskItem(t('toggleItem', { defaultValue: 'Toggle to-do' })),
       Placeholder.configure({
-        placeholder: () =>
-          t('writingPlaceholder', {
-            defaultValue: "Write, '/' for blocks, '@' for members, '#' for tasks",
-          }),
+        placeholder: resolvePlaceholder,
       }),
       MemberMention,
       TaskMention,
@@ -172,13 +176,10 @@ export const DocsDocumentEditor = ({
       extension => extension.name === 'placeholder'
     );
     if (placeholderExtension) {
-      placeholderExtension.options.placeholder = () =>
-        t('writingPlaceholder', {
-          defaultValue: "Write, '/' for blocks, '@' for members, '#' for tasks",
-        });
+      placeholderExtension.options.placeholder = resolvePlaceholder;
       editor.view.dispatch(editor.state.tr);
     }
-  }, [editor, t]);
+  }, [editor, resolvePlaceholder]);
 
   useEffect(() => registerDocsEditorRelease(() => setReleased(true)), []);
 

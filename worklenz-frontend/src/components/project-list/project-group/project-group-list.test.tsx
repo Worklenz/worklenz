@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import enTranslations from '../../../../public/locales/en/all-project-list.json';
 import itTranslations from '../../../../public/locales/it/all-project-list.json';
 import ProjectGroupList from './project-group-list';
+import { GroupedProject } from '@/types/project/project.types';
 
 vi.mock('@/api/projects/projects.v1.api.service', () => ({
   useToggleFavoriteProjectMutation: () => [vi.fn().mockReturnValue({ unwrap: vi.fn() })],
@@ -52,22 +53,28 @@ const mockStore = configureStore({
   },
 });
 
-const mockGroups = [
+const mockGroups: GroupedProject[] = [
   {
     groupKey: 'high',
     groupName: 'High',
     groupColor: '#ff4d4f',
+    count: 1,
+    totalProgress: 0,
+    totalTasks: 1,
     projects: [
-      { id: 'p1', name: 'Alpha Project', color_code: '#1890ff', status: 'In Progress' },
+      { id: 'p1', name: 'Alpha Project', color_code: '#1890ff', status: 'In Progress' } as any,
     ],
   },
   {
     groupKey: 'medium',
     groupName: '', // Unnamed group test
     groupColor: '#faad14',
+    count: 2,
+    totalProgress: 0,
+    totalTasks: 2,
     projects: [
-      { id: 'p2', name: 'Beta Project', color_code: '#52c41a', status: 'Done' },
-      { id: 'p3', name: 'Gamma Project', color_code: '#722ed1', status: 'Todo' },
+      { id: 'p2', name: 'Beta Project', color_code: '#52c41a', status: 'Done' } as any,
+      { id: 'p3', name: 'Gamma Project', color_code: '#722ed1', status: 'Todo' } as any,
     ],
   },
 ];
@@ -92,6 +99,8 @@ const renderGroupList = async (lng = 'en', dark = false) => {
             groups={mockGroups}
             navigate={vi.fn()}
             onProjectSelect={vi.fn()}
+            onArchive={vi.fn()}
+            isOwnerOrAdmin={true}
             loading={false}
           />
         </ConfigProvider>
@@ -136,12 +145,16 @@ describe('ProjectGroupList Localization', () => {
   it('collapses and expands all groups with translated action buttons', async () => {
     await renderGroupList('it', false);
 
+    expect(screen.getByText('Alpha Project')).toBeInTheDocument();
+
     const collapseAllBtn = screen.getByRole('button', { name: 'Comprimi tutto' });
     fireEvent.click(collapseAllBtn);
+
+    expect(screen.queryByText('Alpha Project')).not.toBeInTheDocument();
 
     const expandAllBtn = screen.getByRole('button', { name: 'Espandi tutto' });
     fireEvent.click(expandAllBtn);
 
-    expect(expandAllBtn).toBeInTheDocument();
+    expect(screen.getByText('Alpha Project')).toBeInTheDocument();
   });
 });
