@@ -115,7 +115,6 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   navigate,
   onProjectSelect,
   loading,
-  t: _propT,
 }) => {
   const { t } = useTranslation('all-project-list');
   const { groupedRequestParams } = useAppSelector(state => state.projectsReducer);

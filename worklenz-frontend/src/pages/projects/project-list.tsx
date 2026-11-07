@@ -753,7 +753,6 @@ const ProjectList: React.FC = () => {
                 onArchive={noop}
                 isOwnerOrAdmin={isOwnerOrAdmin}
                 loading={groupedProjects.loading}
-                t={t}
               />
             </div>
             {!groupedProjects.loading && hasGroups && (

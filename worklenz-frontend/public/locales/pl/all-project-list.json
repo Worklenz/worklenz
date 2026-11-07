@@ -65,5 +65,7 @@
   "collapseAll": "Zwiń wszystko",
   "unnamedGroup": "Grupa bez nazwy",
   "projectCount_one": "{{count}} projekt",
-  "projectCount_other": "{{count}} projekty"
+  "projectCount_few": "{{count}} projekty",
+  "projectCount_many": "{{count}} projektów",
+  "projectCount_other": "{{count}} projektu"
 }

@@ -161,7 +161,6 @@ export interface ProjectGroupListProps {
   onArchive: (id: string) => void;
   isOwnerOrAdmin: boolean;
   loading: boolean;
-  t: (key: string, options?: { defaultValue: string }) => string;
 }
 
 export interface GroupedProject {
