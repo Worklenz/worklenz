@@ -7,10 +7,8 @@ import { clearSelection } from '@/features/task-management/selection.slice';
 import {
   fetchTasksV3,
   bulkDeleteTasks,
-  updateTask,
-  moveTaskBetweenGroups,
+  bulkUpdateTaskStatuses,
 } from '@/features/task-management/task-management.slice';
-import { store } from '@/app/store';
 
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
@@ -79,38 +77,8 @@ export const useBulkActions = () => {
 
   const applyBulkStatusUpdateLocally = useCallback(
     (taskIds: string[], statusId: string) => {
-      for (const taskId of taskIds) {
-        const { taskManagement, grouping } = store.getState();
-        const task = taskManagement.entities[taskId];
-        if (!task) continue;
-
-        dispatch(
-          updateTask({
-            ...task,
-            status: statusId,
-            updatedAt: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-        );
-
-        if (grouping.currentGrouping !== 'status') continue;
-
-        const groups = store.getState().taskManagement.groups;
-        const currentGroup = groups.find(group => group.taskIds.includes(taskId));
-        const targetGroup =
-          groups.find(group => group.id === statusId) ||
-          groups.find(group => group.groupValue === statusId);
-
-        if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-          dispatch(
-            moveTaskBetweenGroups({
-              taskId,
-              sourceGroupId: currentGroup.id,
-              targetGroupId: targetGroup.id,
-            })
-          );
-        }
-      }
+      const updatedAt = new Date().toISOString();
+      dispatch(bulkUpdateTaskStatuses({ taskIds, statusId, updatedAt }));
     },
     [dispatch]
   );

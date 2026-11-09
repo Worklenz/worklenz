@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { resolveTaskProgress } from './task-progress';
 import taskManagementReducer, {
+  bulkUpdateTaskStatuses,
   convertTaskToSubtask,
   fetchSubTasks,
   setTaskLatestComment,
+  updateTask,
 } from './task-management.slice';
 
 describe('resolveTaskProgress', () => {
@@ -94,6 +96,70 @@ describe('setTaskLatestComment', () => {
     );
 
     expect(next.entities['missing']).toBeUndefined();
+  });
+});
+
+describe('task status group updates', () => {
+  const task = (id: string, status: string) => ({
+    id,
+    status,
+    priority: 'low',
+    created_at: '',
+    updated_at: '',
+  });
+
+  const createState = () => {
+    const base = taskManagementReducer(undefined, { type: '@@INIT' });
+    return {
+      ...base,
+      grouping: 'status',
+      entities: {
+        'task-1': task('task-1', 'status-a'),
+        'task-2': task('task-2', 'status-a'),
+        'task-3': task('task-3', 'status-b'),
+      },
+      ids: ['task-1', 'task-2', 'task-3'],
+      groups: [
+        { id: 'status-a', title: 'Status A', taskIds: ['task-1', 'task-2'], type: 'status' },
+        { id: 'status-b', title: 'Status B', taskIds: ['task-3'], type: 'status' },
+      ],
+    } as unknown as ReturnType<typeof taskManagementReducer>;
+  };
+
+  it('moves an updated task between status groups', () => {
+    const next = taskManagementReducer(
+      createState(),
+      updateTask({ ...task('task-1', 'status-b') })
+    );
+
+    expect(next.groups.find(group => group.id === 'status-a')?.taskIds).toEqual(['task-2']);
+    expect(next.groups.find(group => group.id === 'status-b')?.taskIds).toEqual([
+      'task-1',
+      'task-3',
+    ]);
+  });
+
+  it('moves a bulk status update in one reducer action', () => {
+    const next = taskManagementReducer(
+      createState(),
+      bulkUpdateTaskStatuses({
+        taskIds: ['task-1', 'task-2'],
+        statusId: 'status-b',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      })
+    );
+
+    expect(next.groups.find(group => group.id === 'status-a')?.taskIds).toEqual([]);
+    expect(next.groups.find(group => group.id === 'status-b')?.taskIds).toEqual([
+      'task-2',
+      'task-1',
+      'task-3',
+    ]);
+    expect(next.entities['task-1']).toMatchObject({
+      status: 'status-b',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      updated_at: '2026-01-01T00:00:00.000Z',
+    });
   });
 });
 
