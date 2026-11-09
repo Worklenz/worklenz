@@ -590,6 +590,19 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
 
         const { allocated_from, allocated_to, project_id, team_member_id, seconds_per_day } = req.body;
 
+        const teamId = req.user?.team_id;
+        if (!teamId || !project_id || !team_member_id) {
+            return res.status(400).send(new ServerResponse(false, null, "Project and team member are required"));
+        }
+        const ownership = await db.query(
+            `SELECT 1 FROM projects p JOIN team_members tm ON tm.team_id = p.team_id
+             WHERE p.id = $1 AND tm.id = $2 AND p.team_id = $3`,
+            [project_id, team_member_id, teamId]
+        );
+        if (!ownership.rows.length) {
+            return res.status(403).send(new ServerResponse(false, null, "Project or member is not available"));
+        }
+
         const fromFormat = moment(allocated_from).format("YYYY-MM-DD");
         const toFormat = moment(allocated_to).format("YYYY-MM-DD");
 

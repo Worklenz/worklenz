@@ -64,7 +64,12 @@ scheduleApiRouter.get("/dates/:date/:type", safeControllerFunction(ScheduleContr
 scheduleApiRouter.get("/members", safeControllerFunction(ScheduleControllerV2.getOrganizationMembers));
 scheduleApiRouter.get("/members/projects/:id", safeControllerFunction(ScheduleControllerV2.getOrganizationMemberProjects));
 scheduleApiRouter.get("/members/:memberId/summary", safeControllerFunction(ScheduleControllerV2.getMemberScheduleSummary));
-scheduleApiRouter.post("/schedule", safeControllerFunction(ScheduleControllerV2.createSchedule));
+scheduleApiRouter.post(
+  "/schedule",
+  verifyNonGuestProjectAccess('body', 'project_id'),
+  requireProjectPermission("settings", { sources: ["body.project_id"] }),
+  safeControllerFunction(ScheduleControllerV2.createSchedule)
+);
 
 // ============================================
 // Capacity Management Endpoints (NEW)
