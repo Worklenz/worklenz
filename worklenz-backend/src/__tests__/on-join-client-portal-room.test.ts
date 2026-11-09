@@ -101,6 +101,7 @@ describe("on_join_client_portal_room", () => {
     expect(sql).toContain("cu.deleted_at IS NULL");
     expect(sql).toContain("c.deleted_at IS NULL");
     expect(sql).toContain("c.status <> 'inactive'");
+    expect(sql).toContain("COALESCE((SELECT cpa.is_active FROM client_portal_access cpa WHERE cpa.client_id = c.id LIMIT 1), TRUE)");
     expect(sql).not.toContain("IS NULL OR cu.id");
     expect(TokenService.hasOrganizationAccess).toHaveBeenCalledWith("cu-1", "team-1");
     expect(mockSocket.join).toHaveBeenCalledWith(clientPortalClientRoomName("team-1", "client-1"));
@@ -150,6 +151,25 @@ describe("on_join_client_portal_room", () => {
     expect(mockSocket.join).not.toHaveBeenCalled();
     expect(mockSocket.leave).toHaveBeenCalledWith(clientPortalClientRoomName("team-1", "client-1"));
     expect(logUnauthorizedSocketAccess).toHaveBeenCalled();
+  });
+
+  it("rejects a client when portal access is disabled", async () => {
+    mockSocket.request = { session: {} };
+    (TokenService.verifyClientToken as jest.Mock).mockReturnValue({
+      clientId: "client-1", organizationId: "team-1", clientUserId: "cu-1", type: "client",
+    });
+    (TokenService.hasOrganizationAccess as jest.Mock).mockResolvedValue(true);
+    (db.query as jest.Mock).mockImplementation(async (sql: string) => {
+      expect(sql).toContain("FROM client_portal_access cpa");
+      return { rows: [] };
+    });
+
+    await on_join_client_portal_room(mockIo as Server, mockSocket as Socket, {
+      type: "join", token: "client-jwt",
+    });
+
+    expect(mockSocket.join).not.toHaveBeenCalled();
+    expect(mockSocket.leave).toHaveBeenCalledWith(clientPortalClientRoomName("team-1", "client-1"));
   });
 
   it("rejects a client when the organization or contact is inactive", async () => {

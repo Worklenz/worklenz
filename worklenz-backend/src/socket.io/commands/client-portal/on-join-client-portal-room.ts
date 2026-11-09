@@ -147,7 +147,7 @@ async function handleClientRoom(socket: Socket, token: string, action: "join" | 
     return;
   }
 
-  const subject = await loadClientSubject(db, { clientUserId, clientId, teamId });
+  const subject = await loadClientSubject(db, { clientUserId, clientId, teamId, requirePortalAccess: true });
   if (!subject?.contactId) {
     await rejectClientJoin(socket, teamId, clientId);
     return;

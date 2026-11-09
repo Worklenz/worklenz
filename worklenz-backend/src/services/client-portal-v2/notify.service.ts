@@ -17,6 +17,7 @@ import {
 } from "./settings.service";
 import { CONTACT_CAN_OPEN_PROJECT_SQL } from "./scope";
 import { Queryable } from "./types";
+import { CLIENT_PORTAL_ACCESS_ACTIVE_SQL } from "./subject";
 
 /**
  * Notifications for Client Portal v2.
@@ -82,6 +83,7 @@ const ACTIVE_CONTACT_SQL = `
   AND cu.deleted_at IS NULL
   AND c.deleted_at IS NULL
   AND c.status <> 'inactive'
+  AND ${CLIENT_PORTAL_ACCESS_ACTIVE_SQL}
   AND EXISTS (
     SELECT 1 FROM client_user_organizations cuo
      WHERE cuo.client_user_id = cu.id AND cuo.team_id = cc.team_id

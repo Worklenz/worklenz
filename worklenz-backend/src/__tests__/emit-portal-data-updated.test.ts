@@ -111,6 +111,21 @@ describe("emitPortalDataUpdated", () => {
     expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, APPROVER))).toEqual([]);
   });
 
+  it("does not emit to connected contacts after portal access is disabled", async () => {
+    (db.query as jest.Mock).mockImplementation(async (sql: string) => {
+      expect(sql).toContain("COALESCE((SELECT cpa.is_active FROM client_portal_access cpa WHERE cpa.client_id = c.id LIMIT 1), TRUE)");
+      return { rows: [] };
+    });
+
+    await emitPortalDataUpdated({
+      teamId: TEAM, clientId: CLIENT, projectId: PROJECT,
+      type: "approval", referenceId: APPROVAL, source: "staff",
+    });
+
+    expect(payloadFor(clientRoom)).toEqual([]);
+    expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, APPROVER))).toEqual([]);
+  });
+
   it("limits a change request with no named audience to the requester and client admins", async () => {
     (db.query as jest.Mock).mockResolvedValue({ rows: [{ id: "requester-1" }, { id: "admin-1" }] });
 
