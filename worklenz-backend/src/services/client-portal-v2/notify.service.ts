@@ -295,6 +295,19 @@ export async function notifyStaff(input: StaffNotificationInput): Promise<void> 
       });
     }
 
+    // Deliver live updates before optional email work can delay or fail them.
+    await emitPortalDataUpdated(
+      {
+        teamId: input.teamId,
+        clientId: input.clientId ?? null,
+        projectId: input.projectId ?? null,
+        type: STAFF_KIND_TO_TYPE[input.kind],
+        referenceId: input.referenceId ?? null,
+        source: "client",
+      },
+      { staffSocketIds: recipients.map(recipient => recipient.socket_id) }
+    );
+
     if (input.emailEvent && !input.alreadyRead) {
       const settings = await getPortalSettingsV2(db, input.teamId);
       if (settings.team_email_events[input.emailEvent]) {
@@ -311,18 +324,6 @@ export async function notifyStaff(input: StaffNotificationInput): Promise<void> 
       }
     }
 
-    // Active clients get an identifier-free refresh; item ids go only to authorized contacts.
-    await emitPortalDataUpdated(
-      {
-        teamId: input.teamId,
-        clientId: input.clientId ?? null,
-        projectId: input.projectId ?? null,
-        type: STAFF_KIND_TO_TYPE[input.kind],
-        referenceId: input.referenceId ?? null,
-        source: "client",
-      },
-      { staffSocketIds: recipients.map(recipient => recipient.socket_id) }
-    );
   } catch (error) {
     log_error(error);
   }
@@ -412,6 +413,26 @@ export async function notifyClientUsers(input: ClientNotificationInput): Promise
       ]
     );
 
+    // A failed staff lookup must not suppress the room update or subsequent email work.
+    const staff = await getStaffRecipients(db, input.teamId).catch((error): StaffRecipient[] => {
+      log_error(error);
+      return [];
+    });
+    await emitPortalDataUpdated(
+      {
+        teamId: input.teamId,
+        clientId: input.clientId,
+        projectId: input.projectId ?? null,
+        type: input.type,
+        referenceId: input.referenceId ?? null,
+        source: "staff",
+      },
+      {
+        staffSocketIds: staff.map(recipient => recipient.socket_id),
+        onlyContactIds: input.onlyContactIds,
+      }
+    );
+
     if (input.emailEvent) {
       const settings = await getPortalSettingsV2(db, input.teamId);
       if (settings.client_email_events[input.emailEvent]) {
@@ -442,24 +463,6 @@ export async function notifyClientUsers(input: ClientNotificationInput): Promise
       }
     }
 
-    // Live sync for open client-portal + admin portal pages (direct staff sockets + rooms).
-    // Identifiers follow the same audience as the notification: project access, and onlyContactIds
-    // when the item is private to named contacts.
-    const staff = await getStaffRecipients(db, input.teamId);
-    await emitPortalDataUpdated(
-      {
-        teamId: input.teamId,
-        clientId: input.clientId,
-        projectId: input.projectId ?? null,
-        type: input.type,
-        referenceId: input.referenceId ?? null,
-        source: "staff",
-      },
-      {
-        staffSocketIds: staff.map(recipient => recipient.socket_id),
-        onlyContactIds: input.onlyContactIds,
-      }
-    );
   } catch (error) {
     log_error(error);
   }

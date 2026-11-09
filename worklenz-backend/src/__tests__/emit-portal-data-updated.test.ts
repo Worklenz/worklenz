@@ -1,6 +1,8 @@
 import { IO } from "../shared/io";
 import db from "../config/db";
-import { emitPortalDataUpdated, notifyClientUsers } from "../services/client-portal-v2/notify.service";
+import { emitPortalDataUpdated, notifyClientUsers, notifyStaff } from "../services/client-portal-v2/notify.service";
+import { getPortalSettingsV2 } from "../services/client-portal-v2/settings.service";
+import { sendEmail } from "../shared/email";
 import { CLIENT_PORTAL_SOCKET, clientPortalClientRoomName, clientPortalContactRoomName, clientPortalTeamRoomName } from "../socket.io/client-portal-room";
 
 jest.mock("../config/db", () => ({
@@ -21,6 +23,10 @@ jest.mock("../shared/email", () => ({
 
 jest.mock("../services/notifications/notifications.service", () => ({
   NotificationsService: { createNotification: jest.fn() },
+}));
+
+jest.mock("../services/client-portal-v2/settings.service", () => ({
+  getPortalSettingsV2: jest.fn(),
 }));
 
 const TEAM = "team-1";
@@ -210,5 +216,60 @@ describe("notifyClientUsers realtime audience", () => {
       expect.objectContaining({ referenceId: APPROVAL })
     );
     expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, EXCLUDED))).toEqual([]);
+  });
+
+  it("emits before email settings are loaded, even if loading fails", async () => {
+    (getPortalSettingsV2 as jest.Mock).mockImplementation(async () => {
+      expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, APPROVER))).not.toEqual([]);
+      throw new Error("settings unavailable");
+    });
+    await notifyClientUsers({
+      teamId: TEAM, clientId: CLIENT, projectId: PROJECT, type: "approval",
+      title: "Approval", message: "Review", referenceId: APPROVAL, emailEvent: "approval_request",
+    });
+    expect(getPortalSettingsV2).toHaveBeenCalled();
+    expect(payloadFor(clientPortalTeamRoomName(TEAM))).toHaveLength(1);
+  });
+
+  it("continues realtime delivery and email when staff lookup fails", async () => {
+    (db.query as jest.Mock).mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM team_members")) throw new Error("staff lookup unavailable");
+      if (sql.includes("SELECT DISTINCT cc.email")) return { rows: [{ email: "client@example.com" }] };
+      if (sql.includes("FROM client_contacts")) return { rows: [{ id: APPROVER }] };
+      return { rows: [] };
+    });
+    (getPortalSettingsV2 as jest.Mock).mockResolvedValue({ client_email_events: { approval_request: true } });
+    (sendEmail as jest.Mock).mockResolvedValue(undefined);
+
+    await notifyClientUsers({
+      teamId: TEAM, clientId: CLIENT, projectId: PROJECT, type: "approval",
+      title: "Approval", message: "Review", referenceId: APPROVAL, emailEvent: "approval_request",
+    });
+    expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, APPROVER))).toHaveLength(2);
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: ["client@example.com"] }));
+  });
+});
+
+describe("notifyStaff realtime ordering", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (db.query as jest.Mock).mockImplementation(async (sql: string) => ({
+      rows: sql.includes("FROM team_members")
+        ? [{ user_id: "staff-1", name: "Sam", email: "staff@example.com", socket_id: "staff-socket", team_name: "Team" }]
+        : [],
+    }));
+  });
+
+  it("emits before email settings are loaded, even if loading fails", async () => {
+    (getPortalSettingsV2 as jest.Mock).mockImplementation(async () => {
+      expect(payloadFor(clientPortalTeamRoomName(TEAM))).toHaveLength(1);
+      throw new Error("settings unavailable");
+    });
+    await notifyStaff({
+      teamId: TEAM, kind: "Comment", title: "Comment", body: "Hello",
+      url: "/portal", emailEvent: "client_comment",
+    });
+    expect(getPortalSettingsV2).toHaveBeenCalled();
+    expect(IO.emit).toHaveBeenCalledWith(CLIENT_PORTAL_SOCKET.DATA_UPDATED, "staff-socket", expect.any(Object));
   });
 });
