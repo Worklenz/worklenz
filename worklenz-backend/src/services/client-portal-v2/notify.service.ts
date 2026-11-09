@@ -6,7 +6,6 @@ import { htmlToPlainText, log_error, sanitizePlainText } from "../../shared/util
 import {
   CLIENT_PORTAL_SOCKET,
   ClientPortalDataUpdatedPayload,
-  clientPortalClientRoomName,
   clientPortalContactRoomName,
   clientPortalTeamRoomName,
 } from "../../socket.io/client-portal-room";
@@ -32,7 +31,7 @@ import { Queryable } from "./types";
  * callers pass only client-visible titles and bodies.
  *
  * Both paths also emit `client_portal:data_updated` so open Admin / Client Portal UIs can invalidate
- * their caches. The shared client room receives an identifier-free event. projectId and referenceId
+ * their caches. Active contact rooms receive an identifier-free event. projectId and referenceId
  * go only to the contact rooms of people allowed to see that item.
  */
 
@@ -59,13 +58,12 @@ export interface PortalDataUpdatedOptions {
    * Contacts who may receive projectId and referenceId. When set (including an empty list), those
    * identifiers are delivered only to this set, still limited to contacts who can open the project.
    * When omitted, a change request goes to its viewers (requester and client admins); any other
-   * event with a project goes to contacts who can open that project. The shared client room never
-   * receives the identifiers.
+   * event with a project goes to contacts who can open that project. Other contacts never receive the identifiers.
    */
   onlyContactIds?: string[];
 }
 
-/** Shared client room hears that something changed, without learning which project or item. */
+/** Active contacts hear that something changed without learning which project or item. */
 const identifierFreePayload = (payload: ClientPortalDataUpdatedPayload): ClientPortalDataUpdatedPayload => ({
   teamId: payload.teamId,
   clientId: payload.clientId ?? null,
@@ -84,6 +82,10 @@ const ACTIVE_CONTACT_SQL = `
   AND cu.deleted_at IS NULL
   AND c.deleted_at IS NULL
   AND c.status <> 'inactive'
+  AND EXISTS (
+    SELECT 1 FROM client_user_organizations cuo
+     WHERE cuo.client_user_id = cu.id AND cuo.team_id = cc.team_id
+  )
   AND ($3::uuid IS NULL OR ${CONTACT_CAN_OPEN_PROJECT_SQL("cc.id", "$3")})
 `;
 
@@ -173,13 +175,20 @@ export async function emitPortalDataUpdated(
       }
     }
     if (payload.clientId) {
-      // Everyone in the org may refresh lists they are allowed to see. Item identifiers stay on
-      // the contact rooms of people who can open that project (and, when set, onlyContactIds).
-      IO.emitToRoom(
-        clientPortalClientRoomName(payload.teamId, payload.clientId),
-        CLIENT_PORTAL_SOCKET.DATA_UPDATED,
-        identifierFreePayload(payload)
-      );
+      // Recheck access before each delivery; connected sockets may have been revoked since joining.
+      const activeContacts = await listIdentifierAudience({
+        clientId: payload.clientId,
+        teamId: payload.teamId,
+        projectId: null,
+        onlyContactIds: null,
+      });
+      for (const contactId of activeContacts) {
+        IO.emitToRoom(
+          clientPortalContactRoomName(payload.teamId, payload.clientId, contactId),
+          CLIENT_PORTAL_SOCKET.DATA_UPDATED,
+          identifierFreePayload(payload)
+        );
+      }
       await deliverIdentifiersToContacts(payload, options?.onlyContactIds);
     }
   } catch (error) {
@@ -300,8 +309,7 @@ export async function notifyStaff(input: StaffNotificationInput): Promise<void> 
       }
     }
 
-    // Live sync for open Admin Client Portal pages. Clients in the shared room get an
-    // identifier-free refresh; item ids go only to authorized contact rooms.
+    // Active clients get an identifier-free refresh; item ids go only to authorized contacts.
     await emitPortalDataUpdated(
       {
         teamId: input.teamId,

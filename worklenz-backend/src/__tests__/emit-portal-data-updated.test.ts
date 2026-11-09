@@ -60,10 +60,8 @@ describe("emitPortalDataUpdated", () => {
     expect(payloadFor(clientPortalTeamRoomName(TEAM))[0]).toEqual(
       expect.objectContaining({ projectId: PROJECT, referenceId: APPROVAL })
     );
-    expect(payloadFor(clientRoom)).toEqual([
-      expect.objectContaining({ type: "approval", projectId: null, referenceId: null }),
-    ]);
-    expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, APPROVER))[0]).toEqual(
+    expect(payloadFor(clientRoom)).toEqual([]);
+    expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, APPROVER))[1]).toEqual(
       expect.objectContaining({ projectId: PROJECT, referenceId: APPROVAL })
     );
     expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, EXCLUDED))).toEqual([]);
@@ -73,9 +71,7 @@ describe("emitPortalDataUpdated", () => {
       expect.objectContaining({ referenceId: APPROVAL })
     );
 
-    const audienceCall = (db.query as jest.Mock).mock.calls.find(call =>
-      String(call[0]).includes("client_contact_project_access")
-    );
+    const audienceCall = (db.query as jest.Mock).mock.calls.find(call => call[1]?.[2] === PROJECT);
     expect(audienceCall?.[1]).toEqual([CLIENT, TEAM, PROJECT, [APPROVER], null]);
   });
 
@@ -94,10 +90,25 @@ describe("emitPortalDataUpdated", () => {
       { onlyContactIds: [] }
     );
 
-    expect(payloadFor(clientRoom)[0]).toEqual(expect.objectContaining({ projectId: null, referenceId: null }));
+    expect(payloadFor(clientRoom)).toEqual([]);
     expect(roomEmits().some(call => String(call[0]).startsWith("client_portal_contact:"))).toBe(false);
-    const audienceCall = (db.query as jest.Mock).mock.calls.find(call => String(call[0]).includes("FROM client_contacts"));
+    const audienceCall = (db.query as jest.Mock).mock.calls.find(call => call[1]?.[2] === PROJECT);
     expect(audienceCall?.[1]?.[3]).toEqual([]);
+  });
+
+  it("does not emit to a connected contact after organization access is removed", async () => {
+    (db.query as jest.Mock).mockImplementation(async (sql: string) => {
+      expect(sql).toContain("FROM client_user_organizations cuo");
+      return { rows: [] };
+    });
+
+    await emitPortalDataUpdated({
+      teamId: TEAM, clientId: CLIENT, projectId: PROJECT,
+      type: "approval", referenceId: APPROVAL, source: "staff",
+    });
+
+    expect(payloadFor(clientRoom)).toEqual([]);
+    expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, APPROVER))).toEqual([]);
   });
 
   it("limits a change request with no named audience to the requester and client admins", async () => {
@@ -112,14 +123,14 @@ describe("emitPortalDataUpdated", () => {
       source: "staff",
     });
 
-    const audienceCall = (db.query as jest.Mock).mock.calls.find(call => String(call[0]).includes("requester_contact_id"));
+    const audienceCall = (db.query as jest.Mock).mock.calls.find(call => call[1]?.[2] === PROJECT);
     expect(String(audienceCall?.[0])).toContain("cc.role = 'admin'");
     expect(audienceCall?.[1]).toEqual([CLIENT, TEAM, PROJECT, null, REQUEST]);
-    expect(payloadFor(clientRoom)[0]).toEqual(expect.objectContaining({ projectId: null, referenceId: null }));
-    expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, "requester-1"))[0]).toEqual(
+    expect(payloadFor(clientRoom)).toEqual([]);
+    expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, "requester-1"))[1]).toEqual(
       expect.objectContaining({ referenceId: REQUEST })
     );
-    expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, "admin-1"))[0]).toEqual(
+    expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, "admin-1"))[1]).toEqual(
       expect.objectContaining({ referenceId: REQUEST })
     );
     expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, EXCLUDED))).toEqual([]);
@@ -137,15 +148,15 @@ describe("emitPortalDataUpdated", () => {
       source: "staff",
     });
 
-    const audienceCall = (db.query as jest.Mock).mock.calls.find(call =>
-      String(call[0]).includes("client_contact_project_access")
-    );
+    const audienceCall = (db.query as jest.Mock).mock.calls.find(call => call[1]?.[2] === PROJECT);
     expect(audienceCall?.[1]).toEqual([CLIENT, TEAM, PROJECT, null, null]);
+    expect(String(audienceCall?.[0])).toContain("FROM client_user_organizations cuo");
+    expect(String(audienceCall?.[0])).toContain("cuo.client_user_id = cu.id AND cuo.team_id = cc.team_id");
     expect(String(audienceCall?.[0])).toContain("cu.deleted_at IS NULL");
     expect(String(audienceCall?.[0])).toContain("c.status <> 'inactive'");
-    expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, "member-1"))).toHaveLength(1);
+    expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, "member-1"))).toHaveLength(2);
     expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, EXCLUDED))).toEqual([]);
-    expect(payloadFor(clientRoom)[0].referenceId).toBeNull();
+    expect(payloadFor(clientRoom)).toEqual([]);
   });
 });
 
@@ -177,12 +188,10 @@ describe("notifyClientUsers realtime audience", () => {
       onlyContactIds: [APPROVER],
     });
 
-    const audienceCall = (db.query as jest.Mock).mock.calls.find(call => String(call[0]).includes("requester_contact_id"));
+    const audienceCall = (db.query as jest.Mock).mock.calls.find(call => call[1]?.[2] === PROJECT);
     expect(audienceCall?.[1]).toEqual([CLIENT, TEAM, PROJECT, [APPROVER], null]);
-    expect(payloadFor(clientRoom)[0]).toEqual(
-      expect.objectContaining({ type: "approval", projectId: null, referenceId: null })
-    );
-    expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, APPROVER))[0]).toEqual(
+    expect(payloadFor(clientRoom)).toEqual([]);
+    expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, APPROVER))[1]).toEqual(
       expect.objectContaining({ referenceId: APPROVAL })
     );
     expect(payloadFor(clientPortalContactRoomName(TEAM, CLIENT, EXCLUDED))).toEqual([]);
