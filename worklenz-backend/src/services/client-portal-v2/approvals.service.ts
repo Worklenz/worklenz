@@ -1204,6 +1204,8 @@ export async function recordApprovalDecision(input: {
       body: n.body,
       url: `/worklenz/client-portal/approvals/${n.id}`,
       projectId: n.projectId,
+      clientId: subject.clientId,
+      referenceId: n.id,
       emailEvent: "approval_decision",
     });
   }

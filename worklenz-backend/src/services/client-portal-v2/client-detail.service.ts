@@ -172,6 +172,8 @@ export async function cancelClientChangeRequest(subject: ClientSubject, requestI
     body: `${subject.name} cancelled: ${request.title}`,
     url: `/worklenz/client-portal/change-requests/${requestId}`,
     projectId: request.project_id,
+    clientId: subject.clientId,
+    referenceId: requestId,
     emailEvent: "change_request",
   });
 }
