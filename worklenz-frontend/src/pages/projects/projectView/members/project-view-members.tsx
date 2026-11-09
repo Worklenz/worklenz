@@ -122,8 +122,8 @@ const ProjectViewMembers = () => {
         return canManageUser(record.access_level || record.access);
       }
 
-      if (hasManageUsers) {
-        return isManageUsersAssignableRole(record.access_level || record.access);
+      if (hasManageUsers && isManageUsersAssignableRole(record.access_level || record.access)) {
+        return true;
       }
 
       if (!canManageProjectMembers) return false;

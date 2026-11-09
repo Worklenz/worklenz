@@ -39,7 +39,7 @@ import logger from '@/utils/errorLogger';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { setSession } from '@/utils/session-helper';
 import { setUser } from '@/features/user/userSlice';
-import { ROLE_NAMES } from '@/types/roles/role.types';
+import { getRoleOptions, ROLE_NAMES } from '@/types/roles/role.types';
 import { getAvailableRoleOptions, getSessionRoleName } from '@/utils/role-permissions.utils';
 import { RolePermissionsPopover } from './role-permissions-popover';
 import { useOrganizationPermission } from '@/hooks/useOrganizationPermission';
@@ -152,8 +152,11 @@ const UpdateMemberDrawer = ({
   }, [isOwnAccount, currentUserRole]);
 
   const availableRoles = useMemo(() => {
+    if (hasManageUsers && !isOwnerOrAdmin) {
+      return getRoleOptions().filter(role => isManageUsersAssignableRole(role.value));
+    }
     return getAvailableRoleOptions(currentUser?.role_name, currentUser?.owner);
-  }, [currentUser?.role_name, currentUser?.owner]);
+  }, [currentUser?.role_name, currentUser?.owner, hasManageUsers, isOwnerOrAdmin]);
 
   const translatedRoleOptions = useMemo(
     () =>
